@@ -1,0 +1,110 @@
+Qualification : Icom IC-7300MK2 (Hamlib 4.7.2, backend Beta)
+
+================  ESSAI SUR UN VRAI POSTE : À LIRE AVANT DE CONTINUER  ================
+ 1. L'ANTENNE est DÉBRANCHÉE : une CHARGE FICTIVE (50 ohms, puissance suffisante) est connectée.
+ 2. La PUISSANCE d'émission du poste est au MINIMUM (5 W ou moins).
+ 3. Le VOX est désactivé. La TEMPORISATION D'ÉMISSION (TOT) INTERNE du poste est réglée
+    (1 à 3 minutes) : c'est le dernier filet si l'ordinateur, le logiciel ou le câble USB lâche.
+ 4. Les SONS WINDOWS (notifications) ne partent PAS vers la carte son du poste : ni sortie par
+    défaut, ni sons système, ni autre logiciel (WSJT-X, HRD...) qui utilise le poste.
+ 5. Tu restes PRÈS DU POSTE : tu peux couper l'alimentation ou débrancher la charge à tout moment.
+ 6. Ta licence t'autorise à émettre sur la fréquence affichée.
+=========================================================================================
+
+
+--- Étape 1 : liaison CAT (lecture seule, aucune émission) ---
+  Poste : Icom IC-7300MK2
+  Fréquence 27 430 000 Hz, mode USB, filtre 2400 Hz
+  S-mètre (dB / S9) : [-54, -54, -54, -54, -54]
+  [OK     ] CAT : 27 430 000 Hz USB  PTT lisible et en réception
+
+=== Phase 1 : tests automatiques (réception seulement, aucune émission) ===
+  [OK     ] Fréquence : écriture et relecture : 8/8 fréquences acceptées ; 1.905.12 -> 1.905.12, 3.650.12 -> 3.650.12, 5.359.12 -> 5.359.12, 7.100.12 -> 7.100.12, 10.125.12 -> 10.125.12, 14.175.12 -> 14.175.12, 18.118.12 -> 18.118.12, 21.225.12 -> 21.225.12
+  [OK     ] Mode AM : relu : AM
+  [OK     ] Mode CW : relu : CW
+  [OK     ] Mode USB : relu : USB
+  [OK     ] Mode LSB : relu : LSB
+  [OK     ] Mode RTTY : relu : RTTY
+  [OK     ] Mode FM : relu : FM
+  [OK     ] Mode CWR : relu : CWR
+  [OK     ] Mode RTTYR : relu : RTTYR
+  [OK     ] Mode PKTLSB : relu : PKTLSB
+  [OK     ] Mode PKTUSB : relu : PKTUSB
+  [OK     ] Mode FM-D : relu : FM-D
+  [OK     ] Mode AM-D : relu : AM-D
+  [OK     ] Mode : écriture et relecture : modes du socle relus : USB, LSB, CW, AM, FM
+  [OK     ] Filtres (largeur de bande) : relus : AM 9000->9000, AM 6000->6000, AM 3000->3000, CW 1200->1200, CW 500->500, CW 250->250, USB 3000->3000, USB 2400->2400, USB 1800->1800, LSB 3000->3000, LSB 2400->2400, LSB 1800->1800, FM 15000->15000, FM 10000->10000, FM 7000->7000
+  [OK     ] Lecture : réducteur de bruit (NR) : valeur lue : False
+  [OK     ] Lecture : noise blanker (NB) : valeur lue : True
+  [OK     ] Lecture : compresseur : valeur lue : True
+  [OK     ] Lecture : tuner d'antenne : valeur lue : False
+  [OK     ] Lecture : filtre notch auto (ANF) : valeur lue : False
+  [OK     ] Lecture : S-mètre : valeur lue : -54.0
+  [OK     ] Lecture : préampli : valeur lue : 0.0
+  [OK     ] Lecture : atténuateur : valeur lue : 0.0
+  [OK     ] Lecture : AGC : valeur lue : 2.0
+  [OK     ] Lecture : squelch : valeur lue : 0.00392157
+  [OK     ] Lecture : puissance réglée : valeur lue : 0.498039
+  [OK     ] Lecture : tension d'alimentation : valeur lue : 14.4737
+  [OK     ] Lecture : puissance mesurée : valeur lue : 0.0
+  [OK     ] Lecture : ROS : valeur lue : 1.0
+  [OK     ] Lecture : ALC : valeur lue : 0.0
+  [OK     ] Lecture : taux de compression : valeur lue : 0.0
+  [OK     ] Écriture : réducteur de bruit (NR) : activé puis rétabli, relu à chaque fois
+  [OK     ] Écriture : noise blanker (NB) : activé puis rétabli, relu à chaque fois
+  [OK     ] Écriture : compresseur : activé puis rétabli, relu à chaque fois
+  [IGNORÉ ] Écriture : tuner d'antenne : non testé automatiquement : l'activation du tuner peut lancer un accord, donc une porteuse
+  [OK     ] Écriture : squelch : 0.004 -> 0.3 -> 0.004, relu [0.298039, 0.00392157]
+  [ÉCHEC  ] Écriture : AGC : commande refusée : RPRT -9 (commande rejetée par le poste)
+  [OK     ] Écriture : préampli : 1 -> 0 -> 1, relu [0.0, 1.0]
+  [OK     ] Écriture : puissance réglée : 0.5 -> 0.25 -> 0.5, relu [0.247059, 0.498039]
+  !!! état d'origine NON rétabli pour : AGC (RPRT -9 (commande rejetée par le poste)) : vérifie le poste
+  Endurance : 500 lectures de fréquence…
+    250/500
+    500/500
+  [OK     ] Endurance de la liaison CAT : 500/500 lectures réussies, 0 erreur(s)
+  [OK     ] Temps de réponse CAT : médiane 0.2 ms, 95 % sous 0.3 ms, max 0.5 ms (≈ 3047.9 lectures/s)
+
+--- Étape 2 : audio reçu (5 s ; aucune émission) ---
+  Niveau : moyen -39 dBFS, crête -31 dBFS (251 trames) ; écoute qualifications\qualif-3094-20261026-152356\rx.wav
+  [OK     ] Audio RX : moyen -39 dBFS, crête -31 dBFS
+
+=== Phase 2 : vérifications visuelles (aucune émission) ===
+  Réponds o (oui), n (non), ou Entrée si tu ne sais pas. Ces réponses sont notées comme déclaratives.
+  [OK     ] Afficheur : fréquence : question : 27.430.00 MHz
+  [OK     ] Afficheur : réducteur de bruit (NR) : attendu : ACTIVÉ
+  [OK     ] Afficheur : noise blanker (NB) : attendu : DÉSACTIVÉ
+  [OK     ] Afficheur : compresseur : attendu : DÉSACTIVÉ
+  [OK     ] Écoute du son reçu : fichier : qualifications\qualif-3094-20261026-152356\rx.wav
+
+=== Phase 3 : émission (chaque étape demande une confirmation) ===
+
+--- Mode d'émission ---
+  [OK     ] Mode d'émission : USB -> PKTUSB
+
+>>> Étape 4 : PTT, 3 cycles de porteuse SANS audio (en SSB : aucun signal)
+    Charge fictive branchée, puissance minimale, tu es près du poste.
+  [IGNORÉ ] PTT : non confirmé : ignoré
+
+>>> Étape 5 : audio d'émission, tonalité 1 kHz à niveau croissant (faible puissance)
+    Charge fictive branchée, puissance minimale, tu es près du poste.
+  Surveille la puissance et l'ALC sur le poste : l'ALC doit rester à peine visible.
+  -40 dBFS : 100 trames passées ; ALC=0.00, SWR=1.00, RFPOWER_METER=0.00
+  -30 dBFS : 100 trames passées ; ALC=0.00, SWR=1.00, RFPOWER_METER=0.10
+  -24 dBFS : 100 trames passées ; ALC=0.00, SWR=1.00, RFPOWER_METER=0.42
+  [OK     ] Audio TX : 3 niveau(x) essayé(s) ; dernier : -24 dBFS : 100 trames passées ; ALC=0.00, SWR=1.00, RFPOWER_METER=0.42
+
+>>> Étape 6 : exercices de panne (porteuse sans audio : perte du heartbeat, TOT, déconnexion)
+    Charge fictive branchée, puissance minimale, tu es près du poste.
+  [OK     ] Panne : perte du heartbeat : coupée en 2.1 s par « heartbeat » (attendu : heartbeat, ~2.0 s)
+  [OK     ] Panne : TOT (8 s) : coupée en 8.1 s par « tot » (attendu : tot, ~8.0 s)
+  [OK     ] Panne : déconnexion du client : coupée en 0.1 s par « client_disconnected » (attendu : client_disconnected, ~0.0 s)
+
+>>> Panne : perte de la liaison CAT pendant l'émission (coupure de 1.5 s ; le poste reste en émission jusqu'au retour de la liaison)
+    Charge fictive branchée, puissance minimale, tu es près du poste.
+  [OK     ] Panne : perte de la liaison CAT : coupée en 1.7 s par « cat_down » (attendu : cat_down, ~1.5 s)
+  Mode USB rétabli.
+  Débranche MAINTENANT le câble USB du poste (côté ordinateur)…
+  [OK     ] Reprise après débranchement USB : liaison reprise en 0.0 s
+
+Retour en réception demandé au poste.

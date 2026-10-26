@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Station TRX</title>
+  <link rel="stylesheet" href="client.css">
+</head>
+<body>
+<div id="splash" class="splash" title="Touche pour passer"><img src="splash.webp" alt="rf-diy.com"></div>
+<div id="app" class="portrait">
+
+  <!-- Écran de sécurité : le profil n'a pas d'interface pour cet appareil (voir layout.js) -->
+  <section id="safe-screen" class="safe" hidden>
+    <div class="safe-title">Interface non disponible</div>
+    <p id="safe-text" class="note"></p>
+    <div id="safe-body" class="safe-body"></div>
+  </section>
+
+  <!-- Partie haute : toujours visible (informations clés + bouton d'émission) -->
+  <header id="top">
+    <div class="line1">
+      <span id="blk-mode" class="modegrp"><span id="tx-flag" class="txflag" hidden>TX</span>
+      <span id="mode-pill" class="modepill">—</span>
+      <span id="passband" class="dim"></span></span>
+      <span class="grow"></span>
+      <span id="status" class="badge">déconnecté</span>
+    </div>
+
+    <div id="blk-freq">
+    <div id="freq" class="freq" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
+    <div id="reconnect" class="reconnect" hidden>
+      <div id="reconnect-text" class="reconnect-text">RECONNEXION…</div>
+      <div class="reconnect-line"><span id="reconnect-sub" class="dim"></span><button id="reconnect-cancel" class="chip" hidden>Annuler</button></div>
+    </div>
+    </div>
+
+    <div id="blk-smeter" class="meters">
+      <div class="meter">
+        <span class="mlabel">S</span>
+        <div class="mtrack s-track"><div id="sql-marker" class="sqlmark" title="Niveau du squelch" hidden></div><div id="smeter-mask" class="mmask"></div></div>
+        <span id="smeter-text" class="mval">—</span>
+      </div>
+      <div class="scale s-scale"><span class="at-1">1</span><span class="at-3">3</span><span class="at-5">5</span><span class="at-7">7</span><span class="at-9">9</span><span class="at-20">+20</span><span class="at-40">+40</span><span class="at-60">+60dB</span></div>
+    </div>
+
+    <div id="txzone" class="txzone" title="Touche (ou double-touche) pour afficher le waterfall de l'audio reçu">
+      <div id="blk-po">
+      <div class="meter">
+        <span class="mlabel">Po</span>
+        <div class="mtrack po-track"><div id="po-mask" class="mmask"></div></div>
+        <span id="po-text" class="mval">—</span>
+      </div>
+      <div class="scale po-scale"><span class="at-p0">0</span><span class="at-p25">25</span><span class="at-p50">50</span><span class="at-p100">100%</span></div>
+      </div>
+
+      <div class="meters2">
+      <div id="blk-swr" class="mini">
+        <div class="meter">
+          <span class="mlabel">SWR</span>
+          <div class="mtrack swr-track"><div id="swr-mask" class="mmask"></div></div>
+          <span id="swr-text" class="mval">—</span>
+        </div>
+        <div class="scale"><span class="at-p0">1</span><span class="at-p25">1.5</span><span class="at-p50">2</span><span class="at-p75">2.5</span><span class="at-p100">3</span></div>
+      </div>
+      <div id="blk-alc" class="mini">
+        <div class="meter">
+          <span class="mlabel">ALC</span>
+          <div class="mtrack alc-track"><div id="alc-mask" class="mmask"></div></div>
+          <span id="alc-text" class="mval">—</span>
+        </div>
+        <div class="scale"><span class="at-p0">0</span><span class="at-p50">50</span><span class="at-p100">100%</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div id="waterfall" class="wf" hidden>
+      <div id="wf-plot" class="wf-plot" title="Touche (ou double-touche) pour revenir aux graphiques de puissance">
+        <canvas id="wf-spec" class="wf-spec"></canvas>
+        <canvas id="wf-fall" class="wf-fall"></canvas>
+        <canvas id="wf-grid" class="wf-grid"></canvas>
+        <div id="wf-tx" class="wf-tx" hidden></div>
+      </div>
+      <div id="wf-axis" class="wf-axis"></div>
+      <div class="wf-buttons">
+        <button id="wf-speed" class="chip" title="Vitesse de défilement : lignes par seconde">VIT 12</button>
+        <button id="wf-width" class="chip" title="Bande audio affichée, de 0 Hz à N kHz">LARG 5k</button>
+        <button id="wf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
+        <button id="wf-peak" class="chip" title="Pics : constante de temps de la décroissance">PIC 2s</button>
+        <span id="wf-peakinfo" class="dim"></span>
+      </div>
+    </div>
+
+    <div class="chips">
+      <button id="ctl-nr" class="chip" title="Réducteur de bruit" hidden>NR</button>
+      <button id="ctl-nb" class="chip" title="Antiparasite (noise blanker)" hidden>NB</button>
+      <button id="ctl-preamp" class="chip" title="Préampli : arrêt, puis chaque valeur du poste" hidden>P.AMP</button>
+      <button id="ctl-aip" class="chip" title="IP+ (point d'interception)" hidden>IP+</button>
+      <button id="ctl-agc" class="chip" title="AGC : rapide, moyen, lent" hidden>AGC</button>
+      <button id="ctl-comp" class="chip" title="Compresseur de parole" hidden>COMP</button>
+      <button id="ctl-fil" class="chip" title="Filtre de réception : largeur suivante" hidden>FIL</button>
+      <button id="ctl-tuner" class="chip" title="Tuner d'antenne en service ou non" hidden>TUNER</button>
+      <button id="ctl-pwr" class="chip" title="Puissance d'émission : 5, 10, 25, 50, 80, 100 % puis retour au début" hidden>PWR</button>
+    </div>
+
+    <div class="pttrow">
+      <button id="ptt" class="ptt" disabled>PTT</button>
+      <button id="stop" class="stop" disabled>STOP</button>
+    </div>
+
+    <div class="subrow">
+      <label id="blk-armed" class="check"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
+      <label id="blk-sql" class="sql">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
+    </div>
+
+    <div class="statusline"><span id="ptt-state" class="ptt-state rx">RÉCEPTION</span><span id="tot" class="note"></span></div>
+    <div id="mode-hint" class="alert warn" hidden></div>
+    <div id="fault" class="alert" hidden></div>
+  </header>
+
+  <!-- Partie basse : défile -->
+  <main id="bottom">
+
+    <details id="sec-connect" open>
+      <summary>Connexion</summary>
+      <div class="body">
+        <label>Identifiant <input id="client-id" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label>Mot de passe <input id="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"></label>
+        <p class="note">Le mot de passe n'est jamais enregistré par cette page : utilise le gestionnaire de mots de passe de ton navigateur.</p>
+        <label class="check"><input id="use-mic" type="checkbox" checked> Utiliser le micro (HTTPS requis)</label>
+        <label>Micro <select id="mic-select"></select></label>
+        <label id="out-label">Sortie audio (son reçu) <select id="out-select"></select></label>
+        <label class="check"><input id="ignore-rig-warning" type="checkbox"> Ce n'est pas le poste : ignorer l'avertissement</label>
+        <label class="check"><input id="audio-processing" type="checkbox" checked> Traitement audio du navigateur (écho, bruit)</label>
+        <label class="check"><input id="keep-awake" type="checkbox" checked> Garder l'écran allumé tant que je suis connecté (HTTPS requis)</label>
+        <label>Reconnexion automatique après une coupure
+          <select id="reconnect-select">
+            <option value="0">Désactivée</option>
+            <option value="15">Essayer pendant 15 s</option>
+            <option value="30">Essayer pendant 30 s</option>
+            <option value="60">Essayer pendant 60 s</option>
+          </select>
+        </label>
+        <p class="note">Le mot de passe est gardé en mémoire de la page le temps de la session (jamais enregistré) : il n'est pas redemandé pendant la reconnexion, mais il l'est après un rechargement de la page.</p>
+        <div class="row">
+          <button id="connect" class="primary">Se connecter</button>
+          <button id="disconnect" disabled>Déconnecter</button>
+        </div>
+        <div id="loss-last" class="note loss" hidden></div>
+        <button id="loss-open" hidden>Détails de la dernière perte de connexion</button>
+        <div id="insecure" class="note" hidden>
+          <p>Page en HTTP : le navigateur bloque le micro (c'est une règle du navigateur, qu'aucune page ne peut contourner). La réception et les commandes fonctionnent. Pour émettre depuis ce navigateur :</p>
+          <ol>
+            <li>ouvre la station en HTTPS (certificat auto-signé : <code>trx-setup --self-signed &lt;adresse&gt;</code>), ou</li>
+            <li>sur Chrome, ouvre <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>, active le réglage, ajoute exactement <code id="origin"></code>, puis relance Chrome.</li>
+          </ol>
+          <p>Détails : docs/acces-distant.md.</p>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-tune" open>
+      <summary>Accord</summary>
+      <div class="body">
+        <div id="bands" class="bands"></div>
+        <div id="blk-steps" class="row">
+          <button id="step-down" title="Plus bas d'un pas (maintenir pour répéter)">◀</button>
+          <label class="grow">Pas <select id="step-select"></select></label>
+          <button id="step-up" title="Plus haut d'un pas (maintenir pour répéter)">▶</button>
+        </div>
+        <div id="blk-freqinput" class="row">
+          <label class="grow">Fréquence (kHz) <input id="freq-input" inputmode="decimal" placeholder="14200"></label>
+          <button id="freq-set" disabled>Accorder</button>
+        </div>
+        <div id="blk-modeset" class="row">
+          <label class="grow">Mode <select id="mode-select" disabled></select></label>
+          <button id="mode-set" disabled>Changer</button>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-memories" open>
+      <summary>Mémoires <span id="mem-count" class="dim"></span></summary>
+      <div class="body"><div id="blk-memories" class="memblock">
+        <button id="mem-add-current" disabled>＋ Mémoriser la fréquence actuelle</button>
+        <div id="mem-form" class="memform" hidden>
+          <label>Nom <input id="mem-name" maxlength="40" placeholder="ex. Réseau 40 m" autocomplete="off"></label>
+          <div class="row">
+            <label class="grow">Fréquence (kHz) <input id="mem-khz" inputmode="decimal" placeholder="7100"></label>
+            <label class="grow">Mode <select id="mem-mode"></select></label>
+          </div>
+          <label class="check"><input id="mem-fav" type="checkbox"> ★ Favori (affiché en haut de la liste)</label>
+          <div class="row">
+            <button id="mem-save" class="primary">Enregistrer</button>
+            <button id="mem-cancel">Annuler</button>
+            <button id="mem-delete" class="danger" hidden>Supprimer</button>
+          </div>
+        </div>
+        <p id="mem-empty" class="note">Aucune mémoire. Accorde le poste, puis « Mémoriser la fréquence actuelle ».</p>
+        <ul id="mem-list" class="memlist"></ul>
+      </div></div>
+    </details>
+
+    <details id="sec-audio">
+      <summary>Audio</summary>
+      <div class="body">
+        <label class="check"><input id="mute" type="checkbox"> Couper le son reçu</label>
+        <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
+        <div class="row between small"><span>Réception <b id="rx-level">—</b></span><span>Émission <b id="tx-level">—</b></span></div>
+      </div>
+    </details>
+
+    <details id="sec-instruments">
+      <summary>Mesures du poste</summary>
+      <div class="body">
+        <div id="instruments" class="instruments"></div>
+        <p id="instruments-empty" class="note">Rien à afficher : le poste ne fournit pas ces mesures, ou la liaison est coupée.</p>
+        <div id="owner" class="note"></div>
+      </div>
+    </details>
+
+    <details id="sec-display">
+      <summary>Affichage</summary>
+      <div class="body">
+        <label>Taille du texte
+          <select id="text-size">
+            <option value="auto">Automatique (selon l'écran)</option>
+            <option value="s">Petit</option>
+            <option value="m">Moyen</option>
+            <option value="l">Grand</option>
+          </select>
+        </label>
+        <label>Disposition
+          <select id="layout-select">
+            <option value="auto">Automatique (paysage si l'écran est large)</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Paysage</option>
+          </select>
+        </label>
+        <label>Catégorie d'appareil (mise en page personnalisée)
+          <select id="device-select">
+            <option value="auto">Automatique (selon l'écran)</option>
+            <option value="phone">Smartphone</option>
+            <option value="tablet">Tablette</option>
+            <option value="desktop">Ordinateur</option>
+          </select>
+        </label>
+        <p id="layout-info" class="note"></p>
+        <button id="layout-factory" disabled>Revenir à l'interface d'usine</button>
+      </div>
+    </details>
+
+    <details id="sec-diag">
+      <summary>Diagnostic et journal</summary>
+      <div class="body">
+        <div id="net" class="note">—</div>
+        <div id="diag" class="note">—</div>
+        <label>Pertes de connexion (les 10 dernières)<select id="loss-select"></select></label>
+        <pre id="loss-detail" class="lossdetail">Aucune perte de connexion enregistrée.</pre>
+        <div class="row">
+          <button id="loss-copy" disabled>Copier le rapport</button>
+          <button id="loss-clear" disabled>Effacer l'historique</button>
+        </div>
+        <ul id="log"></ul>
+      </div>
+    </details>
+
+  </main>
+</div>
+<div id="keypad" class="keypad" hidden>
+  <div class="kp-panel">
+    <div id="kp-display" class="kp-display">—</div>
+    <div id="kp-preview" class="kp-preview">kHz si 1000 ou plus, sinon MHz (ex. 7074 ou 14.205)</div>
+    <div id="kp-keys" class="kp-keys"></div>
+    <div class="row">
+      <button id="kp-cancel">Annuler</button>
+      <button id="kp-ok" class="primary" disabled>OK</button>
+    </div>
+  </div>
+</div>
+<audio id="rx-audio" autoplay playsinline></audio>
+<script src="client.js"></script>
+<script src="waterfall.js"></script>
+<script src="layout.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

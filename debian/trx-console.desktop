@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=TRX Console
+GenericName=Station radio à distance
+Comment=Configurer, tester et dépanner la station TRX distant
+Exec=trx-console
+Icon=trx-console
+Terminal=true
+Categories=Network;HamRadio;
+Keywords=radio;trx;hamlib;radioamateur;station;

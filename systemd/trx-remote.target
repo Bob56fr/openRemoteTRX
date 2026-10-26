@@ -1,0 +1,6 @@
+[Unit]
+Description=Station TRX distant (rigctld, passerelle, superviseur)
+Wants=rigctld.service trx-gateway.service trx-supervisor.service
+
+[Install]
+WantedBy=multi-user.target

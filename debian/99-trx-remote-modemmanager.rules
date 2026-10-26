@@ -1,0 +1,2 @@
+# trx-remote : ModemManager ne doit pas « tester » les ports série USB (postes radio, interfaces CAT).
+SUBSYSTEM=="tty", KERNEL=="ttyUSB[0-9]*|ttyACM[0-9]*", ENV{ID_MM_DEVICE_IGNORE}="1"

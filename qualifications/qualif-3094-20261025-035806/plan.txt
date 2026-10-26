@@ -1,0 +1,59 @@
+Cahier de test : Icom IC-7300MK2 (modèle Hamlib 3094, backend Beta, Hamlib 4.7.2)
+
+Socle obligatoire (un échec refuse le poste)
+  - Connexion CAT et lecture de l'état PTT
+  - Endurance de la liaison CAT
+  - Fréquence : écriture et relecture
+  - Mode : écriture et relecture
+  - Audio en réception
+  - PTT activé puis désactivé, avec relecture
+  - Retour en réception sur perte de la liaison CAT
+
+Tests fixes (communs à tous les postes)
+  - Temps de réponse CAT
+  - Reprise après débranchement USB
+  - Audio en émission
+  - Panne : perte du heartbeat
+  - Panne : TOT
+  - Panne : déconnexion du client
+  - Filtres (largeur de bande)
+
+Tests générés depuis Hamlib
+  - Mode AM  (fait partie du socle)
+  - Mode CW  (fait partie du socle)
+  - Mode USB  (fait partie du socle)
+  - Mode LSB  (fait partie du socle)
+  - Mode RTTY
+  - Mode FM  (fait partie du socle)
+  - Mode CWR
+  - Mode RTTYR
+  - Mode PKTLSB
+  - Mode PKTUSB
+  - Mode FM-D
+  - Mode AM-D
+  - Lecture : réducteur de bruit (NR)
+  - Lecture : noise blanker (NB)
+  - Lecture : compresseur
+  - Lecture : tuner d'antenne
+  - Lecture : filtre notch auto (ANF)
+  - Lecture : S-mètre
+  - Lecture : préampli
+  - Lecture : atténuateur
+  - Lecture : AGC
+  - Lecture : squelch
+  - Lecture : puissance réglée
+  - Lecture : tension d'alimentation
+  - Lecture : puissance mesurée  (valeur significative en émission seulement)
+  - Lecture : ROS  (valeur significative en émission seulement)
+  - Lecture : ALC  (valeur significative en émission seulement)
+  - Lecture : taux de compression  (valeur significative en émission seulement)
+  - Écriture : réducteur de bruit (NR)
+  - Écriture : noise blanker (NB)
+  - Écriture : compresseur
+  - Écriture : tuner d'antenne  (non testé automatiquement : l'activation du tuner peut lancer un accord, donc une porteuse)
+  - Écriture : squelch
+  - Écriture : AGC
+  - Écriture : préampli
+  - Écriture : puissance réglée
+
+Déclaré par Hamlib, non exploité par TRX Remote : AF, AGC_TIME, ANTIVOX, BKINDL, CWPITCH, FBKIN, ID_METER, KEYSPD, LOCK, MICGAIN, MN, MON, MONITOR_GAIN, NOTCHF_RAW, OVF_STATUS, PBT_IN, PBT_OUT, RAWSTR, RF, RFPOWER_METER_WATTS, RIT, SBKIN, SCOPE, SEND_MORSE, SEND_VOICE_MEM, SPECTRUM, SPECTRUM_AVG, SPECTRUM_EDGE_HIGH, SPECTRUM_EDGE_LOW, SPECTRUM_HOLD, SPECTRUM_MODE, SPECTRUM_REF, SPECTRUM_SPAN, SPECTRUM_SPEED, TONE, TRANSCEIVE, TSQL, USB_AF, VOX, VOXDELAY, VOXGAIN, XIT

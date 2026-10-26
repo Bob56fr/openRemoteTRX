@@ -1,0 +1,28 @@
+[Unit]
+Description=Passerelle de la station TRX (CAT, sécurité PTT, audio, page web)
+After=network-online.target sound.target rigctld.service
+Wants=network-online.target rigctld.service
+PartOf=trx-remote.target
+ConditionPathExists=/etc/trx-remote/station.toml
+
+[Service]
+Type=simple
+User=trx
+Group=trx
+SupplementaryGroups=audio dialout
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.gateway.main --config /etc/trx-remote/station.toml
+# SIGTERM : la passerelle coupe l'émission avant de quitter.
+KillSignal=SIGTERM
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=3
+# 2 = configuration invalide, 5 = carte son introuvable : relancer ne changerait rien.
+RestartPreventExitStatus=2 5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=trx-remote.target

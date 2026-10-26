@@ -1,0 +1,56 @@
+# BROUILLON généré par trx-qualif : à relire par l'éditeur avant toute publication.
+# Verdict proposé : incomplet ; date : 2026-10-26 14:23 UTC
+
+[rig]
+nom = "IC-7300MK2"
+fabricant = "Icom"
+hamlib_model = 3094
+firmware = []
+hamlib_min = "4.7.2"
+hamlib_teste = "4.7.2"
+statut = "refuse"
+fiche_version = 1
+backend_hamlib = "Beta"
+
+[fonctions]
+freq = true
+mode = true
+ptt = false
+audio_rx = true
+audio_tx = true
+smetre = true
+filtres = true
+scope = false
+nr = true
+nb = true
+comp = true
+anf = true
+tuner = false
+preamp = true
+att = true
+agc = false
+sql = true
+rfpower = true
+rfpower_meter = true
+swr = true
+alc = true
+comp_meter = true
+vd_meter = true
+
+[avertissements]
+ptt = "non testé à la qualification"
+scope = "spectre non qualifié dans cette version"
+tuner = "écriture non qualifiée automatiquement (peut lancer un accord) : à valider à la main"
+agc = "en échec à la qualification : commande refusée : RPRT -9 (commande rejetée par le poste)"
+
+[mesures]
+latence_cat_ms = 0.22
+latence_cat_p95_ms = 0.33
+polling_max_hz = 3047.9
+resolution_hz = 1
+retour_rx_perte_cat_s = 1.7
+
+[validation]
+installations = 0
+heures_cumulees = 0
+rapports_qualif = 1

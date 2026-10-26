@@ -1,0 +1,18 @@
+TRX distant : installation sur Debian 12 ou 13 (PC avec bureau)
+================================================================
+
+1. Décompresse ce zip dans ton dossier Téléchargements (clic droit, « Extraire ici »).
+2. Dans le dossier obtenu, clic droit dans une zone vide, « Ouvrir dans un terminal », puis tape :
+
+       sudo bash install.sh
+
+   et ton mot de passe de session (rien ne s'affiche pendant la frappe : c'est normal).
+3. À la fin, déconnecte-toi puis reconnecte-toi.
+4. Ouvre « TRX Console » depuis le menu des applications et suis l'assistant.
+
+Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
+install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.
+
+Mettre à jour : même chose avec le nouveau zip (la configuration est conservée).
+Désinstaller  : sudo bash install.sh --desinstaller
+Compte-rendu de l'installation : /var/log/trx-remote-install.log

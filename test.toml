@@ -1,0 +1,98 @@
+# station.toml : source de vérité de la station (générée par trx-setup).
+# Les clés de [rig], [network], [bands], le plafond du TOT et [supervisor] ne se
+# modifient que sur le Pi. Le smartphone ne pourra changer que le reste.
+schema_version = 1
+config_revision = 1
+
+[rig]
+model = 1
+port = ""
+ptt_type = "RIG"   # RIG (CAT), RTS, DTR, GPIO, GPION, NONE
+ptt_port = ""
+extra_conf = []
+
+[audio]
+capture_device = ""
+playback_device = ""
+sample_rate = 48000
+
+[network]
+rigctld_host = "127.0.0.1"   # doit rester local
+rigctld_port = 4532
+gateway_bind = "127.0.0.1"   # adresse Tailscale du Pi
+gateway_port = 8443
+
+[safety]
+tot_s = 90
+tot_ceiling_s = 120
+warn_before_s = 10
+heartbeat_interval_ms = 500
+heartbeat_timeout_ms = 2000
+
+[supervisor]
+tot_abs_s = 135
+poll_interval_s = 1.0
+max_reboots_per_hour = 3
+notify_url = ""
+
+# Bandes où l'émission est autorisée. Liste vide = réception seule.
+# À vérifier et adapter à ta licence et à ton pays.
+[[bands]]
+name = "160m"
+low_mhz = 1.81
+high_mhz = 2.0
+
+[[bands]]
+name = "80m"
+low_mhz = 3.5
+high_mhz = 3.8
+
+[[bands]]
+name = "60m"
+low_mhz = 5.3515
+high_mhz = 5.3665
+
+[[bands]]
+name = "40m"
+low_mhz = 7.0
+high_mhz = 7.2
+
+[[bands]]
+name = "30m"
+low_mhz = 10.1
+high_mhz = 10.15
+
+[[bands]]
+name = "20m"
+low_mhz = 14.0
+high_mhz = 14.35
+
+[[bands]]
+name = "17m"
+low_mhz = 18.068
+high_mhz = 18.168
+
+[[bands]]
+name = "15m"
+low_mhz = 21.0
+high_mhz = 21.45
+
+[[bands]]
+name = "12m"
+low_mhz = 24.89
+high_mhz = 24.99
+
+[[bands]]
+name = "10m"
+low_mhz = 28.0
+high_mhz = 29.7
+
+[[bands]]
+name = "2m"
+low_mhz = 144.0
+high_mhz = 146.0
+
+[[bands]]
+name = "70cm"
+low_mhz = 430.0
+high_mhz = 440.0

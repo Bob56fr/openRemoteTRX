@@ -1,0 +1,25 @@
+[Unit]
+Description=Hamlib rigctld de la station TRX (écoute locale uniquement)
+After=network.target
+PartOf=trx-remote.target
+# Tant que la station n'est pas configurée (TRX Console, assistant), rien ne démarre.
+ConditionPathExists=/etc/trx-remote/station.toml
+# Redémarré par trx-supervisor (échelle de reprise) : Restart couvre les arrêts simples.
+
+[Service]
+Type=simple
+User=trx
+Group=trx
+SupplementaryGroups=dialout audio
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.run_rigctld --config /etc/trx-remote/station.toml
+Restart=on-failure
+RestartSec=2
+# 2 = configuration invalide, 3 = Hamlib absent : relancer ne changerait rien.
+RestartPreventExitStatus=2 3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
+[Install]
+WantedBy=trx-remote.target

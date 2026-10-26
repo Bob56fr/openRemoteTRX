@@ -1,0 +1,68 @@
+# BROUILLON généré par trx-qualif : à relire par l'éditeur avant toute publication.
+# Verdict proposé : incomplet ; date : 2026-10-25 02:58 UTC
+
+[rig]
+nom = "IC-7300MK2"
+fabricant = "Icom"
+hamlib_model = 3094
+firmware = []
+hamlib_min = "4.7.2"
+hamlib_teste = "4.7.2"
+statut = "refuse"
+fiche_version = 1
+backend_hamlib = "Beta"
+
+[fonctions]
+freq = false
+mode = false
+ptt = false
+audio_rx = false
+audio_tx = false
+smetre = false
+filtres = false
+scope = false
+nr = false
+nb = false
+comp = false
+anf = false
+tuner = false
+preamp = false
+att = false
+agc = false
+sql = false
+rfpower = false
+rfpower_meter = false
+swr = false
+alc = false
+comp_meter = false
+vd_meter = false
+
+[avertissements]
+freq = "non testé à la qualification"
+mode = "non testé à la qualification"
+ptt = "non testé à la qualification"
+audio_rx = "non testé à la qualification"
+audio_tx = "non testé à la qualification"
+smetre = "non testé à la qualification"
+filtres = "non testé à la qualification"
+scope = "spectre non qualifié dans cette version"
+nr = "non testé à la qualification"
+nb = "non testé à la qualification"
+comp = "non testé à la qualification"
+anf = "non testé à la qualification"
+tuner = "écriture non qualifiée automatiquement (peut lancer un accord) : à valider à la main"
+preamp = "non testé à la qualification"
+att = "non testé à la qualification"
+agc = "non testé à la qualification"
+sql = "non testé à la qualification"
+rfpower = "non testé à la qualification"
+rfpower_meter = "non testé à la qualification"
+swr = "non testé à la qualification"
+alc = "non testé à la qualification"
+comp_meter = "non testé à la qualification"
+vd_meter = "non testé à la qualification"
+
+[validation]
+installations = 0
+heures_cumulees = 0
+rapports_qualif = 1

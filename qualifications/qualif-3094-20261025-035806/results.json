@@ -1,0 +1,904 @@
+{
+  "outil": "trx-qualif",
+  "version": "0.20.0",
+  "format": 1,
+  "date": "2026-10-25T02:58:06+00:00",
+  "poste": {
+    "modele_hamlib": 3094,
+    "nom": "Icom IC-7300MK2",
+    "firmware": ""
+  },
+  "hamlib": {
+    "modele": 3094,
+    "nom": "Icom IC-7300MK2",
+    "statut_backend": "Beta",
+    "hamlib": "4.7.2",
+    "modes": [
+      "AM",
+      "CW",
+      "USB",
+      "LSB",
+      "RTTY",
+      "FM",
+      "CWR",
+      "RTTYR",
+      "PKTLSB",
+      "PKTUSB",
+      "FM-D",
+      "AM-D"
+    ],
+    "fonctions_lecture": [
+      "NB",
+      "COMP",
+      "VOX",
+      "TONE",
+      "TSQL",
+      "SBKIN",
+      "FBKIN",
+      "ANF",
+      "NR",
+      "MON",
+      "MN",
+      "LOCK",
+      "RIT",
+      "SCOPE",
+      "TUNER",
+      "XIT",
+      "TRANSCEIVE",
+      "SPECTRUM",
+      "SPECTRUM_HOLD",
+      "SEND_MORSE",
+      "SEND_VOICE_MEM",
+      "OVF_STATUS"
+    ],
+    "fonctions_ecriture": [
+      "NB",
+      "COMP",
+      "VOX",
+      "TONE",
+      "TSQL",
+      "SBKIN",
+      "FBKIN",
+      "ANF",
+      "NR",
+      "MON",
+      "MN",
+      "LOCK",
+      "RIT",
+      "SCOPE",
+      "TUNER",
+      "XIT",
+      "TRANSCEIVE",
+      "SPECTRUM",
+      "SPECTRUM_HOLD",
+      "SEND_MORSE",
+      "SEND_VOICE_MEM",
+      "OVF_STATUS"
+    ],
+    "niveaux_lecture": [
+      "PREAMP",
+      "ATT",
+      "VOXDELAY",
+      "AF",
+      "RF",
+      "SQL",
+      "NR",
+      "PBT_IN",
+      "PBT_OUT",
+      "CWPITCH",
+      "RFPOWER",
+      "MICGAIN",
+      "KEYSPD",
+      "COMP",
+      "AGC",
+      "BKINDL",
+      "VOXGAIN",
+      "ANTIVOX",
+      "RAWSTR",
+      "SWR",
+      "ALC",
+      "STRENGTH",
+      "RFPOWER_METER",
+      "COMP_METER",
+      "VD_METER",
+      "ID_METER",
+      "NOTCHF_RAW",
+      "MONITOR_GAIN",
+      "NB",
+      "RFPOWER_METER_WATTS",
+      "SPECTRUM_MODE",
+      "SPECTRUM_SPAN",
+      "SPECTRUM_EDGE_LOW",
+      "SPECTRUM_EDGE_HIGH",
+      "SPECTRUM_SPEED",
+      "SPECTRUM_REF",
+      "SPECTRUM_AVG",
+      "USB_AF",
+      "AGC_TIME"
+    ],
+    "niveaux_ecriture": [
+      "PREAMP",
+      "ATT",
+      "VOXDELAY",
+      "AF",
+      "RF",
+      "SQL",
+      "NR",
+      "PBT_IN",
+      "PBT_OUT",
+      "CWPITCH",
+      "RFPOWER",
+      "MICGAIN",
+      "KEYSPD",
+      "COMP",
+      "AGC",
+      "BKINDL",
+      "VOXGAIN",
+      "ANTIVOX",
+      "NOTCHF_RAW",
+      "MONITOR_GAIN",
+      "NB",
+      "SPECTRUM_MODE",
+      "SPECTRUM_SPAN",
+      "SPECTRUM_EDGE_LOW",
+      "SPECTRUM_EDGE_HIGH",
+      "SPECTRUM_SPEED",
+      "SPECTRUM_REF",
+      "SPECTRUM_AVG",
+      "USB_AF",
+      "AGC_TIME"
+    ],
+    "plages": {
+      "PREAMP": {
+        "min": 0.0,
+        "max": 20.0,
+        "pas": 10.0
+      },
+      "ATT": {
+        "min": 0.0,
+        "max": 12.0,
+        "pas": 0.0
+      },
+      "VOXDELAY": {
+        "min": 0.0,
+        "max": 20.0,
+        "pas": 1.0
+      },
+      "AF": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "RF": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "SQL": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "NR": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.066667
+      },
+      "PBT_IN": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "PBT_OUT": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "CWPITCH": {
+        "min": 300.0,
+        "max": 900.0,
+        "pas": 1.0
+      },
+      "RFPOWER": {
+        "min": 0.05,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "MICGAIN": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "KEYSPD": {
+        "min": 6.0,
+        "max": 48.0,
+        "pas": 1.0
+      },
+      "COMP": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.01
+      },
+      "AGC": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "BKINDL": {
+        "min": 30.0,
+        "max": 3000.0,
+        "pas": 1.0
+      },
+      "VOXGAIN": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "ANTIVOX": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "NOTCHF_RAW": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "MONITOR_GAIN": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "NB": {
+        "min": 0.0,
+        "max": 10.0,
+        "pas": 1.0
+      },
+      "SPECTRUM_MODE": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "SPECTRUM_SPAN": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "SPECTRUM_EDGE_LOW": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "SPECTRUM_EDGE_HIGH": {
+        "min": 0.0,
+        "max": 0.0,
+        "pas": 0.0
+      },
+      "SPECTRUM_SPEED": {
+        "min": 0.0,
+        "max": 2.0,
+        "pas": 1.0
+      },
+      "SPECTRUM_REF": {
+        "min": -20.0,
+        "max": 20.0,
+        "pas": 0.5
+      },
+      "SPECTRUM_AVG": {
+        "min": 0.0,
+        "max": 3.0,
+        "pas": 1.0
+      },
+      "USB_AF": {
+        "min": 0.0,
+        "max": 1.0,
+        "pas": 0.003922
+      },
+      "AGC_TIME": {
+        "min": 0.0,
+        "max": 8.0,
+        "pas": 0.1
+      }
+    },
+    "peut": {
+      "set Conf": true,
+      "get Conf": true,
+      "set Frequency": true,
+      "get Frequency": true,
+      "set Mode": true,
+      "get Mode": true,
+      "set VFO": true,
+      "get VFO": false,
+      "set PTT": true,
+      "get PTT": true,
+      "get DCD": true,
+      "set Repeater Duplex": false,
+      "get Repeater Duplex": false,
+      "set Repeater Offset": false,
+      "get Repeater Offset": false,
+      "set Split Freq": true,
+      "get Split Freq": true,
+      "set Split Mode": true,
+      "get Split Mode": true,
+      "set Split VFO": true,
+      "get Split VFO": true,
+      "set Tuning Step": true,
+      "get Tuning Step": true,
+      "set RIT": true,
+      "get RIT": true,
+      "set XIT": true,
+      "get XIT": true,
+      "set CTCSS": true,
+      "get CTCSS": true,
+      "set DCS": false,
+      "get DCS": false,
+      "set CTCSS Squelch": true,
+      "get CTCSS Squelch": true,
+      "set DCS Squelch": false,
+      "get DCS Squelch": false,
+      "set Power Stat": true,
+      "get Power Stat": true,
+      "get Ant": false,
+      "set Ant": false,
+      "set Transceive": true,
+      "get Transceive": false,
+      "set Func": true,
+      "get Func": true,
+      "set Level": true,
+      "get Level": true,
+      "set Param": true,
+      "get Param": true,
+      "set Bank": false,
+      "set Mem": true,
+      "get Mem": false,
+      "set Channel": true,
+      "get Channel": true,
+      "get Info": false
+    },
+    "preamplis_db": [
+      1,
+      2
+    ],
+    "attenuateurs_db": [
+      20
+    ],
+    "agc": [
+      0,
+      2,
+      5,
+      3
+    ],
+    "filtres": {
+      "AM": [
+        9000,
+        6000,
+        3000
+      ],
+      "CW": [
+        1200,
+        500,
+        250
+      ],
+      "USB": [
+        3000,
+        2400,
+        1800
+      ],
+      "LSB": [
+        3000,
+        2400,
+        1800
+      ],
+      "RTTY": [
+        2400,
+        500,
+        250
+      ],
+      "FM": [
+        15000,
+        10000,
+        7000
+      ],
+      "CWR": [
+        1200,
+        500,
+        250
+      ],
+      "RTTYR": [
+        2400,
+        500,
+        250
+      ],
+      "PKTLSB": [
+        3000,
+        2400,
+        1800
+      ],
+      "PKTUSB": [
+        3000,
+        2400,
+        1800
+      ],
+      "FM-D": [
+        15000,
+        10000,
+        7000
+      ],
+      "AM-D": [
+        9000,
+        6000,
+        3000
+      ]
+    }
+  },
+  "verdict": {
+    "statut": "incomplet",
+    "raisons": [
+      "socle non testé — Connexion CAT et lecture de l'état PTT",
+      "socle non testé — Endurance de la liaison CAT",
+      "socle non testé — Fréquence : écriture et relecture",
+      "socle non testé — Mode : écriture et relecture",
+      "socle non testé — Audio en réception",
+      "socle non testé — PTT activé puis désactivé, avec relecture",
+      "socle non testé — Retour en réception sur perte de la liaison CAT"
+    ]
+  },
+  "tests": [
+    {
+      "id": "audio_rx",
+      "label": "Audio (ouverture)",
+      "category": "socle",
+      "ok": null,
+      "detail": "aucun périphérique audio « Haut-parleurs (USB Audio Device) » (playback) : lance trx-setup pour la liste — à corriger avant de conclure (qualification incomplète)",
+      "data": {}
+    }
+  ],
+  "plan": {
+    "tests": [
+      {
+        "id": "cat",
+        "label": "Connexion CAT et lecture de l'état PTT",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "cat_endurance",
+        "label": "Endurance de la liaison CAT",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "freq_rw",
+        "label": "Fréquence : écriture et relecture",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "mode_rw",
+        "label": "Mode : écriture et relecture",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "audio_rx",
+        "label": "Audio en réception",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "ptt_cycle",
+        "label": "PTT activé puis désactivé, avec relecture",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "cat_loss_rx",
+        "label": "Retour en réception sur perte de la liaison CAT",
+        "category": "socle",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "latency",
+        "label": "Temps de réponse CAT",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "usb_replug",
+        "label": "Reprise après débranchement USB",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "audio_tx",
+        "label": "Audio en émission",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "drill_heartbeat",
+        "label": "Panne : perte du heartbeat",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "drill_tot",
+        "label": "Panne : TOT",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "drill_disconnect",
+        "label": "Panne : déconnexion du client",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "filters",
+        "label": "Filtres (largeur de bande)",
+        "category": "fixe",
+        "action": "fixed",
+        "target": "",
+        "note": ""
+      },
+      {
+        "id": "mode_AM",
+        "label": "Mode AM",
+        "category": "genere",
+        "action": "mode",
+        "target": "AM",
+        "note": "fait partie du socle"
+      },
+      {
+        "id": "mode_CW",
+        "label": "Mode CW",
+        "category": "genere",
+        "action": "mode",
+        "target": "CW",
+        "note": "fait partie du socle"
+      },
+      {
+        "id": "mode_USB",
+        "label": "Mode USB",
+        "category": "genere",
+        "action": "mode",
+        "target": "USB",
+        "note": "fait partie du socle"
+      },
+      {
+        "id": "mode_LSB",
+        "label": "Mode LSB",
+        "category": "genere",
+        "action": "mode",
+        "target": "LSB",
+        "note": "fait partie du socle"
+      },
+      {
+        "id": "mode_RTTY",
+        "label": "Mode RTTY",
+        "category": "genere",
+        "action": "mode",
+        "target": "RTTY",
+        "note": ""
+      },
+      {
+        "id": "mode_FM",
+        "label": "Mode FM",
+        "category": "genere",
+        "action": "mode",
+        "target": "FM",
+        "note": "fait partie du socle"
+      },
+      {
+        "id": "mode_CWR",
+        "label": "Mode CWR",
+        "category": "genere",
+        "action": "mode",
+        "target": "CWR",
+        "note": ""
+      },
+      {
+        "id": "mode_RTTYR",
+        "label": "Mode RTTYR",
+        "category": "genere",
+        "action": "mode",
+        "target": "RTTYR",
+        "note": ""
+      },
+      {
+        "id": "mode_PKTLSB",
+        "label": "Mode PKTLSB",
+        "category": "genere",
+        "action": "mode",
+        "target": "PKTLSB",
+        "note": ""
+      },
+      {
+        "id": "mode_PKTUSB",
+        "label": "Mode PKTUSB",
+        "category": "genere",
+        "action": "mode",
+        "target": "PKTUSB",
+        "note": ""
+      },
+      {
+        "id": "mode_FM-D",
+        "label": "Mode FM-D",
+        "category": "genere",
+        "action": "mode",
+        "target": "FM-D",
+        "note": ""
+      },
+      {
+        "id": "mode_AM-D",
+        "label": "Mode AM-D",
+        "category": "genere",
+        "action": "mode",
+        "target": "AM-D",
+        "note": ""
+      },
+      {
+        "id": "read_func_NR",
+        "label": "Lecture : réducteur de bruit (NR)",
+        "category": "genere",
+        "action": "read_func",
+        "target": "NR",
+        "note": ""
+      },
+      {
+        "id": "read_func_NB",
+        "label": "Lecture : noise blanker (NB)",
+        "category": "genere",
+        "action": "read_func",
+        "target": "NB",
+        "note": ""
+      },
+      {
+        "id": "read_func_COMP",
+        "label": "Lecture : compresseur",
+        "category": "genere",
+        "action": "read_func",
+        "target": "COMP",
+        "note": ""
+      },
+      {
+        "id": "read_func_TUNER",
+        "label": "Lecture : tuner d'antenne",
+        "category": "genere",
+        "action": "read_func",
+        "target": "TUNER",
+        "note": ""
+      },
+      {
+        "id": "read_func_ANF",
+        "label": "Lecture : filtre notch auto (ANF)",
+        "category": "genere",
+        "action": "read_func",
+        "target": "ANF",
+        "note": ""
+      },
+      {
+        "id": "read_level_STRENGTH",
+        "label": "Lecture : S-mètre",
+        "category": "genere",
+        "action": "read_level",
+        "target": "STRENGTH",
+        "note": ""
+      },
+      {
+        "id": "read_level_PREAMP",
+        "label": "Lecture : préampli",
+        "category": "genere",
+        "action": "read_level",
+        "target": "PREAMP",
+        "note": ""
+      },
+      {
+        "id": "read_level_ATT",
+        "label": "Lecture : atténuateur",
+        "category": "genere",
+        "action": "read_level",
+        "target": "ATT",
+        "note": ""
+      },
+      {
+        "id": "read_level_AGC",
+        "label": "Lecture : AGC",
+        "category": "genere",
+        "action": "read_level",
+        "target": "AGC",
+        "note": ""
+      },
+      {
+        "id": "read_level_SQL",
+        "label": "Lecture : squelch",
+        "category": "genere",
+        "action": "read_level",
+        "target": "SQL",
+        "note": ""
+      },
+      {
+        "id": "read_level_RFPOWER",
+        "label": "Lecture : puissance réglée",
+        "category": "genere",
+        "action": "read_level",
+        "target": "RFPOWER",
+        "note": ""
+      },
+      {
+        "id": "read_level_VD_METER",
+        "label": "Lecture : tension d'alimentation",
+        "category": "genere",
+        "action": "read_level",
+        "target": "VD_METER",
+        "note": ""
+      },
+      {
+        "id": "read_level_RFPOWER_METER",
+        "label": "Lecture : puissance mesurée",
+        "category": "genere",
+        "action": "read_level",
+        "target": "RFPOWER_METER",
+        "note": "valeur significative en émission seulement"
+      },
+      {
+        "id": "read_level_SWR",
+        "label": "Lecture : ROS",
+        "category": "genere",
+        "action": "read_level",
+        "target": "SWR",
+        "note": "valeur significative en émission seulement"
+      },
+      {
+        "id": "read_level_ALC",
+        "label": "Lecture : ALC",
+        "category": "genere",
+        "action": "read_level",
+        "target": "ALC",
+        "note": "valeur significative en émission seulement"
+      },
+      {
+        "id": "read_level_COMP_METER",
+        "label": "Lecture : taux de compression",
+        "category": "genere",
+        "action": "read_level",
+        "target": "COMP_METER",
+        "note": "valeur significative en émission seulement"
+      },
+      {
+        "id": "write_func_NR",
+        "label": "Écriture : réducteur de bruit (NR)",
+        "category": "genere",
+        "action": "write_func",
+        "target": "NR",
+        "note": ""
+      },
+      {
+        "id": "write_func_NB",
+        "label": "Écriture : noise blanker (NB)",
+        "category": "genere",
+        "action": "write_func",
+        "target": "NB",
+        "note": ""
+      },
+      {
+        "id": "write_func_COMP",
+        "label": "Écriture : compresseur",
+        "category": "genere",
+        "action": "write_func",
+        "target": "COMP",
+        "note": ""
+      },
+      {
+        "id": "write_func_TUNER",
+        "label": "Écriture : tuner d'antenne",
+        "category": "genere",
+        "action": "manual",
+        "target": "TUNER",
+        "note": "non testé automatiquement : l'activation du tuner peut lancer un accord, donc une porteuse"
+      },
+      {
+        "id": "write_level_SQL",
+        "label": "Écriture : squelch",
+        "category": "genere",
+        "action": "write_level",
+        "target": "SQL",
+        "note": ""
+      },
+      {
+        "id": "write_level_AGC",
+        "label": "Écriture : AGC",
+        "category": "genere",
+        "action": "write_level",
+        "target": "AGC",
+        "note": ""
+      },
+      {
+        "id": "write_level_PREAMP",
+        "label": "Écriture : préampli",
+        "category": "genere",
+        "action": "write_level",
+        "target": "PREAMP",
+        "note": ""
+      },
+      {
+        "id": "write_level_RFPOWER",
+        "label": "Écriture : puissance réglée",
+        "category": "genere",
+        "action": "write_level",
+        "target": "RFPOWER",
+        "note": ""
+      }
+    ],
+    "disponibles_non_exploitees": [
+      "AF",
+      "AGC_TIME",
+      "ANTIVOX",
+      "BKINDL",
+      "CWPITCH",
+      "FBKIN",
+      "ID_METER",
+      "KEYSPD",
+      "LOCK",
+      "MICGAIN",
+      "MN",
+      "MON",
+      "MONITOR_GAIN",
+      "NOTCHF_RAW",
+      "OVF_STATUS",
+      "PBT_IN",
+      "PBT_OUT",
+      "RAWSTR",
+      "RF",
+      "RFPOWER_METER_WATTS",
+      "RIT",
+      "SBKIN",
+      "SCOPE",
+      "SEND_MORSE",
+      "SEND_VOICE_MEM",
+      "SPECTRUM",
+      "SPECTRUM_AVG",
+      "SPECTRUM_EDGE_HIGH",
+      "SPECTRUM_EDGE_LOW",
+      "SPECTRUM_HOLD",
+      "SPECTRUM_MODE",
+      "SPECTRUM_REF",
+      "SPECTRUM_SPAN",
+      "SPECTRUM_SPEED",
+      "TONE",
+      "TRANSCEIVE",
+      "TSQL",
+      "USB_AF",
+      "VOX",
+      "VOXDELAY",
+      "VOXGAIN",
+      "XIT"
+    ]
+  }
+}

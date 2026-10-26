@@ -1,0 +1,71 @@
+"""Rapport de dépannage : un zip à joindre à une demande d'aide, SANS secret.
+
+Contenu : résultat du diagnostic, configuration expurgée (empreintes de mots de passe, jetons et sujet
+ntfy masqués), journaux des services, journal d'installation, versions et matériel détecté.
+"""
+from __future__ import annotations
+
+import datetime
+import os
+import re
+import zipfile
+from pathlib import Path
+
+from .diagnostics import CONFIG_PATH, UNITS, System, format_checks, run_all
+
+INSTALL_LOG = Path("/var/log/trx-remote-install.log")
+COMMANDS = {
+    "systeme.txt": [["uname", "-a"], ["cat", "/etc/os-release"], ["systemctl", "get-default"]],
+    "materiel.txt": [["ls", "-l", "/dev/serial/by-id/"], ["lsusb"], ["arecord", "-l"], ["aplay", "-l"]],
+    "hamlib.txt": [["rigctld", "--version"]],
+    "python.txt": [["/opt/trx-remote/venv/bin/python", "-m", "pip", "freeze"]],
+    "services.txt": [["systemctl", "status", "--no-pager", *UNITS]],
+}
+
+
+def redact_config(text: str) -> str:
+    """Masque les secrets d'une station.toml (le reste est utile au dépannage)."""
+    text = re.sub(r'(?m)^(\s*(?:password_hash|token)\s*=\s*)".*?"', r'\1"***"', text)
+    text = re.sub(r'(?m)^(\s*notify_url\s*=\s*")(https?://[^/"]+)?[^"]*(")',
+                  lambda m: f"{m.group(1)}{m.group(2) + '/***' if m.group(2) else ''}{m.group(3)}", text)
+    return text
+
+
+def desktop_dir(home: Path | None = None, sysm: System | None = None) -> Path:
+    home = home or Path(os.path.expanduser("~" + (os.environ.get("SUDO_USER") or "")))
+    sysm = sysm or System()
+    code, out = sysm.run(["xdg-user-dir", "DESKTOP"])
+    if code == 0 and out.strip() and Path(out.strip()).is_dir():
+        return Path(out.strip())
+    for name in ("Bureau", "Desktop"):
+        if (home / name).is_dir():
+            return home / name
+    return home
+
+
+def _command_output(sysm: System, commands: list[list[str]]) -> str:
+    parts = []
+    for cmd in commands:
+        code, out = sysm.run(cmd, timeout=30)
+        parts.append(f"$ {' '.join(cmd)}  (code {code})\n{out.rstrip()}\n")
+    return "\n".join(parts)
+
+
+def make_report(destination: Path | None = None, *, sysm: System | None = None,
+                config_path: Path = CONFIG_PATH, now: datetime.datetime | None = None) -> Path:
+    sysm = sysm or System()
+    stamp = (now or datetime.datetime.now()).strftime("%Y%m%d-%H%M")
+    folder = destination or desktop_dir(sysm=sysm)
+    target = folder / f"trx-remote-rapport-{stamp}.zip"
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("diagnostic.txt", format_checks(run_all(sysm, config_path)) + "\n")
+        config_text = sysm.read_text(config_path)
+        archive.writestr("station.toml", redact_config(config_text) if config_text is not None
+                         else "# configuration absente ou illisible pour ce compte\n")
+        for name, commands in COMMANDS.items():
+            archive.writestr(name, _command_output(sysm, commands))
+        archive.writestr("journal.txt", _command_output(sysm, [["journalctl", "--no-pager", "-n", "400",
+                                                                *[f"--unit={u}" for u in UNITS]]]))
+        log = sysm.read_text(INSTALL_LOG)
+        archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
+    return target

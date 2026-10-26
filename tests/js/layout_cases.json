@@ -1,0 +1,186 @@
+[
+ {
+  "variants": [
+   "phone/portrait"
+  ],
+  "device": "phone",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "phone",
+   "portrait",
+   "native"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait"
+  ],
+  "device": "tablet",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "phone",
+   "portrait",
+   "centered"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait"
+  ],
+  "device": "desktop",
+  "orientation": "landscape",
+  "forced": null,
+  "expect": [
+   "phone",
+   "portrait",
+   "centered"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait"
+  ],
+  "device": "phone",
+  "orientation": "landscape",
+  "forced": null,
+  "expect": [
+   "phone",
+   "portrait",
+   "centered"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "tablet/landscape"
+  ],
+  "device": "desktop",
+  "orientation": "landscape",
+  "forced": null,
+  "expect": [
+   "tablet",
+   "landscape",
+   "centered"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "tablet/landscape"
+  ],
+  "device": "tablet",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "tablet",
+   "landscape",
+   "rotate"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "tablet/landscape"
+  ],
+  "device": "tablet",
+  "orientation": "landscape",
+  "forced": "phone",
+  "expect": [
+   "phone",
+   "portrait",
+   "centered"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "tablet/landscape"
+  ],
+  "device": "phone",
+  "orientation": "portrait",
+  "forced": "tablet",
+  "expect": [
+   "phone",
+   "portrait",
+   "native"
+  ]
+ },
+ {
+  "variants": [
+   "tablet/portrait",
+   "desktop/landscape"
+  ],
+  "device": "phone",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": null
+ },
+ {
+  "variants": [
+   "desktop/landscape"
+  ],
+  "device": "tablet",
+  "orientation": "landscape",
+  "forced": null,
+  "expect": null
+ },
+ {
+  "variants": [
+   "phone/landscape"
+  ],
+  "device": "phone",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "phone",
+   "landscape",
+   "rotate"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "phone/landscape",
+   "desktop/landscape"
+  ],
+  "device": "desktop",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "desktop",
+   "landscape",
+   "rotate"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "tablet/portrait",
+   "desktop/portrait"
+  ],
+  "device": "desktop",
+  "orientation": "portrait",
+  "forced": null,
+  "expect": [
+   "desktop",
+   "portrait",
+   "native"
+  ]
+ },
+ {
+  "variants": [
+   "phone/portrait",
+   "desktop/landscape"
+  ],
+  "device": "tablet",
+  "orientation": "landscape",
+  "forced": null,
+  "expect": [
+   "phone",
+   "portrait",
+   "centered"
+  ]
+ }
+]

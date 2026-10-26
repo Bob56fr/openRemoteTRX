@@ -1,0 +1,24 @@
+[Unit]
+Description=Superviseur autonome de la station TRX (seconde couche de sécurité)
+After=network.target
+PartOf=trx-remote.target
+ConditionPathExists=/etc/trx-remote/station.toml
+
+[Service]
+Type=notify
+NotifyAccess=main
+# root : nécessaire pour systemctl restart/kill/reboot et la réinitialisation USB.
+# Le code est volontairement minimal (stdlib, pas de dépendance) pour limiter ce risque.
+User=root
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.supervisor.main --config /etc/trx-remote/station.toml
+Restart=always
+RestartSec=1
+# 2 = configuration invalide : ne pas relancer en boucle.
+RestartPreventExitStatus=2
+# systemd tue et relance le superviseur s'il cesse d'envoyer WATCHDOG=1 (boucle gelée).
+WatchdogSec=10
+# /var/lib/trx-remote et /run/trx-remote sont créés par tmpfiles (propriétaire trx, partagés avec la passerelle).
+NoNewPrivileges=false
+
+[Install]
+WantedBy=trx-remote.target

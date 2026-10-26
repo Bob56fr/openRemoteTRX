@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Configuration et secrets locaux de la station : jamais dans Git
+station.toml
+station.toml.*
+*.toml.bak
+dev.toml
+tls/
+
+# Enregistrements d'essai
+*.wav
+
+# Securite supplementaire
+.venv/
+venv/
+*.zip
+*.pem
+*.key
+.env

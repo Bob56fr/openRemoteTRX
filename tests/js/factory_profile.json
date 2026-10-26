@@ -1,0 +1,325 @@
+{
+ "format": 1,
+ "name": "Interface d'usine",
+ "rig_model": null,
+ "theme": {
+  "preset": "icom",
+  "dark": true
+ },
+ "fonts": {
+  "ui": "system",
+  "display": "system",
+  "numeric": "system",
+  "base_size": 16
+ },
+ "variants": {
+  "phone": {
+   "portrait": {
+    "widgets": [
+     {
+      "id": "mode",
+      "type": "mode",
+      "x": 0,
+      "y": 0,
+      "w": 3,
+      "h": 1
+     },
+     {
+      "id": "link",
+      "type": "link_status",
+      "x": 3,
+      "y": 0,
+      "w": 1,
+      "h": 1
+     },
+     {
+      "id": "freq",
+      "type": "frequency",
+      "x": 0,
+      "y": 1,
+      "w": 4,
+      "h": 1
+     },
+     {
+      "id": "smeter",
+      "type": "smeter",
+      "x": 0,
+      "y": 2,
+      "w": 4,
+      "h": 1
+     },
+     {
+      "id": "txzone",
+      "type": "layers",
+      "x": 0,
+      "y": 3,
+      "w": 4,
+      "h": 2,
+      "gestures": {
+       "next_layer": "tap",
+       "next_group": "double_tap"
+      },
+      "groups": [
+       [
+        {
+         "title": "Émission",
+         "widgets": [
+          {
+           "id": "po",
+           "type": "meter",
+           "x": 0,
+           "y": 0,
+           "w": 4,
+           "h": 1,
+           "bind": "RFPOWER_METER",
+           "label": "Po"
+          },
+          {
+           "id": "swr",
+           "type": "meter",
+           "x": 0,
+           "y": 1,
+           "w": 2,
+           "h": 1,
+           "bind": "SWR",
+           "label": "SWR"
+          },
+          {
+           "id": "alc",
+           "type": "meter",
+           "x": 2,
+           "y": 1,
+           "w": 2,
+           "h": 1,
+           "bind": "ALC",
+           "label": "ALC"
+          }
+         ]
+        },
+        {
+         "title": "Waterfall audio",
+         "widgets": [
+          {
+           "id": "wf",
+           "type": "waterfall",
+           "x": 0,
+           "y": 0,
+           "w": 4,
+           "h": 2
+          }
+         ]
+        }
+       ]
+      ]
+     },
+     {
+      "id": "nr",
+      "type": "switch",
+      "x": 0,
+      "y": 5,
+      "w": 1,
+      "h": 1,
+      "bind": "NR",
+      "label": "NR"
+     },
+     {
+      "id": "nb",
+      "type": "switch",
+      "x": 1,
+      "y": 5,
+      "w": 1,
+      "h": 1,
+      "bind": "NB",
+      "label": "NB"
+     },
+     {
+      "id": "preamp",
+      "type": "select",
+      "x": 2,
+      "y": 5,
+      "w": 1,
+      "h": 1,
+      "bind": "PREAMP",
+      "appearance": "cycle",
+      "label": "P.AMP"
+     },
+     {
+      "id": "aip",
+      "type": "switch",
+      "x": 3,
+      "y": 5,
+      "w": 1,
+      "h": 1,
+      "bind": "AIP",
+      "label": "IP+"
+     },
+     {
+      "id": "agc",
+      "type": "select",
+      "x": 0,
+      "y": 6,
+      "w": 1,
+      "h": 1,
+      "bind": "AGC",
+      "appearance": "cycle",
+      "label": "AGC"
+     },
+     {
+      "id": "comp",
+      "type": "switch",
+      "x": 1,
+      "y": 6,
+      "w": 1,
+      "h": 1,
+      "bind": "COMP",
+      "label": "COMP"
+     },
+     {
+      "id": "fil",
+      "type": "filter",
+      "x": 2,
+      "y": 6,
+      "w": 1,
+      "h": 1,
+      "label": "FIL"
+     },
+     {
+      "id": "tuner",
+      "type": "switch",
+      "x": 3,
+      "y": 6,
+      "w": 1,
+      "h": 1,
+      "bind": "TUNER",
+      "label": "TUNER"
+     },
+     {
+      "id": "pwr",
+      "type": "select",
+      "x": 0,
+      "y": 7,
+      "w": 1,
+      "h": 1,
+      "bind": "RFPOWER",
+      "appearance": "cycle",
+      "label": "PWR"
+     },
+     {
+      "id": "ptt",
+      "type": "ptt",
+      "x": 0,
+      "y": 8,
+      "w": 3,
+      "h": 2
+     },
+     {
+      "id": "stop",
+      "type": "stop",
+      "x": 3,
+      "y": 8,
+      "w": 1,
+      "h": 2
+     },
+     {
+      "id": "armed",
+      "type": "tx_armed",
+      "x": 0,
+      "y": 10,
+      "w": 2,
+      "h": 1
+     },
+     {
+      "id": "sql",
+      "type": "slider",
+      "x": 2,
+      "y": 10,
+      "w": 2,
+      "h": 1,
+      "bind": "SQL",
+      "label": "SQL"
+     },
+     {
+      "id": "tx",
+      "type": "tx_indicator",
+      "x": 0,
+      "y": 11,
+      "w": 2,
+      "h": 1
+     },
+     {
+      "id": "tot",
+      "type": "tot",
+      "x": 2,
+      "y": 11,
+      "w": 2,
+      "h": 1
+     },
+     {
+      "id": "more",
+      "type": "accordion",
+      "x": 0,
+      "y": 12,
+      "w": 4,
+      "h": 1,
+      "sections": [
+       {
+        "title": "Accord",
+        "open": true,
+        "widgets": [
+         {
+          "id": "bands",
+          "type": "bands",
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 1
+         },
+         {
+          "id": "steps",
+          "type": "steps",
+          "x": 0,
+          "y": 1,
+          "w": 4,
+          "h": 1
+         },
+         {
+          "id": "freq-entry",
+          "type": "frequency",
+          "x": 0,
+          "y": 2,
+          "w": 4,
+          "h": 1,
+          "appearance": "field"
+         },
+         {
+          "id": "mode-entry",
+          "type": "mode",
+          "x": 0,
+          "y": 3,
+          "w": 4,
+          "h": 1,
+          "appearance": "select"
+         }
+        ]
+       },
+       {
+        "title": "Mémoires",
+        "open": true,
+        "widgets": [
+         {
+          "id": "mem",
+          "type": "memories",
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 2
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

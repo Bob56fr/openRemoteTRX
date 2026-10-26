@@ -1,0 +1,16 @@
+Qualification : Icom IC-7300MK2 (Hamlib 4.7.2, backend Beta)
+
+================  ESSAI SUR UN VRAI POSTE : À LIRE AVANT DE CONTINUER  ================
+ 1. L'ANTENNE est DÉBRANCHÉE : une CHARGE FICTIVE (50 ohms, puissance suffisante) est connectée.
+ 2. La PUISSANCE d'émission du poste est au MINIMUM (5 W ou moins).
+ 3. Le VOX est désactivé. La TEMPORISATION D'ÉMISSION (TOT) INTERNE du poste est réglée
+    (1 à 3 minutes) : c'est le dernier filet si l'ordinateur, le logiciel ou le câble USB lâche.
+ 4. Les SONS WINDOWS (notifications) ne partent PAS vers la carte son du poste : ni sortie par
+    défaut, ni sons système, ni autre logiciel (WSJT-X, HRD...) qui utilise le poste.
+ 5. Tu restes PRÈS DU POSTE : tu peux couper l'alimentation ou débrancher la charge à tout moment.
+ 6. Ta licence t'autorise à émettre sur la fréquence affichée.
+=========================================================================================
+
+  [ÉCHEC  ] Audio (ouverture) : aucun périphérique audio « Haut-parleurs (USB Audio Device) » (playback) : lance trx-setup pour la liste — à corriger avant de conclure (qualification incomplète)
+
+Retour en réception demandé au poste.
