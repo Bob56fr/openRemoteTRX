@@ -83,7 +83,8 @@ class FakePC {
 }
 let offerStatus = 200;
 const offers = [];
-const pcs = [], rafQueue = [], audioContexts = [], sources = [], analysers = [], clipboard = [];
+const pcs = [], rafQueue = [], audioContexts = [], sources = [], analysers = [], clipboard = [], oscillators = [], vibrations = [];
+let rigAudioList = [];
 const storage = new Map();
 let landscape = false;
 const windowHandlers = {};
@@ -94,8 +95,16 @@ Object.assign(globalThis, {
   requestAnimationFrame: (fn) => { rafQueue.push(fn); return rafQueue.length; },
   cancelAnimationFrame: () => { rafQueue.length = 0; },
   AudioContext: class {
-    constructor() { this.sampleRate = 48000; this.state = "running"; audioContexts.push(this); }
+    constructor() { this.sampleRate = 48000; this.state = "running"; this.currentTime = 0; this.destination = { name: "sortie" }; audioContexts.push(this); }
     resume() { return Promise.resolve(); }
+    createOscillator() {
+      const osc = { type: "", frequency: { value: 0 }, connect(target) { this.target = target; }, start(t) { this.startAt = t; }, stop(t) { this.stopAt = t; } };
+      oscillators.push(osc); return osc;
+    }
+    createGain() {
+      const values = [];
+      return { values, gain: { setValueAtTime(v) { values.push(v); }, linearRampToValueAtTime(v) { values.push(v); } }, connect(target) { this.target = target; } };
+    }
     createMediaStreamSource(stream) { const node = { stream, disconnected: false, connect(target) { this.target = target; }, disconnect() { this.disconnected = true; } }; sources.push(node); return node; }
     createAnalyser() {
       const node = { fftSize: 2048, frequencyBinCount: 1024, get fftSize2() { return 0; }, smoothingTimeConstant: 0,
@@ -108,7 +117,7 @@ Object.assign(globalThis, {
   localStorage: { getItem: (k) => (storage.has(k) ? storage.get(k) : null), setItem: (k, v) => storage.set(k, String(v)) },
   MediaStream: class { constructor(tracks) { this.tracks = tracks; } },
   fetch: async (url, options) => {
-    if (url === "config") return { ok: true, status: 200, json: async () => ({ ice_servers: [], rig_audio: [] }) };
+    if (url === "config") return { ok: true, status: 200, json: async () => ({ ice_servers: [], rig_audio: rigAudioList }) };
     offers.push(JSON.parse(options.body));
     return { ok: offerStatus === 200, status: offerStatus, json: async () => ({ sdp: "v=0", type: "answer" }) };
   },
@@ -119,6 +128,7 @@ Object.defineProperty(globalThis, "navigator", { configurable: true, value: {
     { kind: "audioinput", deviceId: "m1", label: "Microphone (Realtek)" }, { kind: "audiooutput", deviceId: "o1", label: "Haut-parleurs" }] },
   clipboard: { writeText: async (text) => { clipboard.push(text); } },
   wakeLock: { request: async () => ({ released: false, addEventListener() {}, release() { return Promise.resolve(); } }) },
+  vibrate: (pattern) => { vibrations.push(pattern); return true; },
 } });
 byId.get("rx-audio").play = () => Promise.resolve();
 byId.get("rx-audio").setSinkId = async () => {};
@@ -727,6 +737,43 @@ step("mise en page personnalisée : profil du compte, grille, calques, élément
   assert.equal($("stop").parent, null); assert.equal($("ptt").parent, null); assert.ok(!$("top").children.some((c) => c.id === "lay-top"));
   assert.equal($("layout-info").textContent, "Interface d'usine.");
   await $("disconnect").click(); await wait();
+});
+
+step("sons de la liaison : réglage mémorisé, essai des trois sons, coupés, JAMAIS sur la sortie du poste", async () => {
+  assert.deepEqual($("alert-select").options.map((o) => o.value), ["high", "normal", "low", "off"]);
+  assert.equal($("alert-select").value, "normal"); assert.equal($("alert-test").disabled, true);    // pas d'essai avant de savoir quelle sortie est le poste
+  const login = async () => {
+    $("client-id").value = "phone"; $("password").value = "mot de passe"; await $("connect").click(); await wait();
+    send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [] }); await wait(30); state({});
+  };
+  $("reconnect-select").value = "0"; await $("reconnect-select").dispatch("change", { target: $("reconnect-select") });
+  await login();
+  assert.equal($("alert-test").disabled, false);
+  const notes = oscillators.length, buzz = vibrations.length;
+  await $("alert-test").click(); await wait(2900);                                  // les trois sons à la suite
+  const played = oscillators.slice(notes).map((o) => o.frequency.value);
+  assert.deepEqual(played, TrxWeb.LINK_ALERTS.lost.notes.concat(TrxWeb.LINK_ALERTS.restored.notes, TrxWeb.LINK_ALERTS.failed.notes).map(([hz]) => hz));
+  assert.ok(oscillators.slice(notes).every((o) => o.target && o.target.target && o.target.target.name === "sortie" && o.stopAt > o.startAt));
+  assert.equal(Math.max(...oscillators.slice(notes).map((o) => Math.max(...o.target.values))), TrxWeb.alertVolume("normal"));
+  assert.deepEqual(vibrations.slice(buzz), [TrxWeb.LINK_ALERTS.lost.vibrate, TrxWeb.LINK_ALERTS.restored.vibrate, TrxWeb.LINK_ALERTS.failed.vibrate]);
+  $("alert-select").value = "off"; await $("alert-select").dispatch("change", { target: $("alert-select") });
+  assert.equal(storage.get("trx.alerts"), "off");
+  const offNotes = oscillators.length, offBuzz = vibrations.length;
+  await $("alert-test").click(); await wait(50);
+  assert.deepEqual([oscillators.length, vibrations.length], [offNotes, offBuzz]);   // coupés : ni son ni vibration
+  $("alert-select").value = "normal"; await $("alert-select").dispatch("change", { target: $("alert-select") });
+  await $("disconnect").click(); await wait();
+  rigAudioList = ["Haut-parleurs"];                                                 // la sortie choisie est la carte son du poste
+  await login();
+  $("out-select").value = "o1"; await $("out-select").dispatch("change"); await wait();
+  assert.equal($("rx-audio").muted, true);
+  const rigNotes = oscillators.length, rigBuzz = vibrations.length;
+  await $("alert-test").click(); await wait(50);
+  assert.equal(oscillators.length, rigNotes);                                       // aucun son injecté dans l'émetteur...
+  assert.equal(vibrations.length, rigBuzz + 1);                                     // ... mais le téléphone vibre quand même
+  rigAudioList = []; $("out-select").value = ""; await $("out-select").dispatch("change"); await wait();
+  await $("disconnect").click(); await wait();
+  assert.equal($("alert-test").disabled, true);
 });
 
 (async () => {

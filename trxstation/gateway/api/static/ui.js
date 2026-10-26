@@ -4,7 +4,7 @@
   const web = root.TrxWeb;
   if (typeof document === "undefined" || !web) return;
   const { TrxClient, modeLabel, shortMode, matchesRigDevice, parseKilohertz, chooseLayout, formatIcomFrequency, frequencyDigits, parseFrequencyEntry,
-          BANDS, STEPS_HZ, describeLoss, lossSummary } = web;
+          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs } = web;
   const wf = root.TrxWaterfall;
   if (!wf) return;
   const lay = root.TrxLayout || null;                // mises en page personnalisées (layout.js) ; sans lui, la page reste celle d'usine
@@ -194,15 +194,56 @@
     async function applyOutput() {
       const id = $("out-select").value;
       if (audio.setSinkId) { try { await audio.setSinkId(id); } catch (err) { ui.log("Sortie audio non applicable : " + err.message, "warn"); } }
+      if (audioCtx && audioCtx.setSinkId) { try { await audioCtx.setSinkId(id); } catch (err) { /* les alertes restent sur la sortie par défaut */ } }
       const label = id ? deviceLabel("audiooutput", id)
         : (Array.from($("out-select").options).slice(1).map((o) => o.textContent).find((t) => /^(par défaut|default)/i.test(t)) || "");
-      if (!$("ignore-rig-warning").checked && matchesRigDevice(label, rigAudio)) {
+      outputIsRig = !$("ignore-rig-warning").checked && matchesRigDevice(label, rigAudio);
+      if (outputIsRig) {
         audio.muted = true;
         ui.log("Sortie audio COUPÉE : « " + label + " » est une entrée audio du poste (le son reçu serait injecté dans l'émetteur). " +
                "Choisis une autre sortie, ou coche « Ce n'est pas le poste ».", "bad");
       } else { audio.muted = $("mute").checked; }
     }
     if (!audio.setSinkId) $("out-label").hidden = true;
+
+    // ---- sons d'alerte de la liaison : produits ici (Web Audio, aucun fichier), sur la même sortie que le son reçu
+    let outputIsRig = false, alertLevel = store.get("trx.alerts", "normal");
+    function alertContext() {
+      const Context = window.AudioContext || window.webkitAudioContext;
+      if (!Context) return null;
+      try { if (!audioCtx) { audioCtx = new Context(); applyOutput(); } } catch (e) { return null; }
+      if (audioCtx.state === "suspended" && audioCtx.resume) audioCtx.resume().catch(() => {});
+      return audioCtx;
+    }
+    function playLinkAlert(kind) {
+      const alert = LINK_ALERTS[kind], gain = alertVolume(alertLevel);
+      if (!alert || gain === 0) return;
+      if (navigator.vibrate) { try { navigator.vibrate(alert.vibrate); } catch (e) { /* vibreur indisponible */ } }
+      if (outputIsRig) return;                                                        // JAMAIS de son injecté dans l'émetteur
+      const ctx = alertContext();
+      if (!ctx || !ctx.createOscillator) return;
+      let t = ctx.currentTime + 0.02;
+      for (const [hz, ms, gap] of alert.notes) {
+        const osc = ctx.createOscillator(), env = ctx.createGain(), end = t + ms / 1000;
+        osc.type = "sine"; osc.frequency.value = hz;
+        env.gain.setValueAtTime(0, t);                                                // montée et descente douces : pas de claquement
+        env.gain.linearRampToValueAtTime(gain, t + 0.015);
+        env.gain.setValueAtTime(gain, end - 0.03);
+        env.gain.linearRampToValueAtTime(0, end);
+        osc.connect(env); env.connect(ctx.destination);
+        osc.start(t); osc.stop(end + 0.02);
+        t = end + gap / 1000;
+      }
+    }
+    $("alert-select").value = ["off", "low", "normal", "high"].includes(alertLevel) ? alertLevel : "normal";
+    $("alert-select").addEventListener("change", (ev) => { alertLevel = ev.target.value; store.set("trx.alerts", alertLevel); });
+    $("alert-test").addEventListener("click", () => {                                 // les trois sons à la suite, pour les reconnaître
+      let delay = 0;
+      for (const [kind, text] of [["lost", "liaison perdue"], ["restored", "liaison rétablie"], ["failed", "reconnexion impossible"]]) {
+        window.setTimeout(() => { ui.log("Son « " + text + " ».", ""); playLinkAlert(kind); }, delay);
+        delay += alertDurationMs(kind) + 900;
+      }
+    });
     const showNet = () => { $("net").textContent = [rttText, statsText].filter(Boolean).join(" · ") || "—"; };
 
     // ---- mémoires
@@ -612,10 +653,12 @@
       memories(list) { renderMemories(list); },
       losses(list) { renderLosses(list); },
       lossRecorded() { /* l'écran se met à jour via losses(list) */ },
+      linkAlert(kind) { playLinkAlert(kind); },
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
-        for (const id of ["armed", "ptt", "stop", "freq-set", "mode-set", "mode-select", "disconnect", "mem-add-current", "step-down", "step-up"]) $(id).disabled = !value;
+        for (const id of ["armed", "ptt", "stop", "freq-set", "mode-set", "mode-select", "disconnect", "mem-add-current", "step-down", "step-up",
+                          "alert-test"]) $(id).disabled = !value;     // essai des sons : une fois connecté, quand la page sait quelle sortie est le poste
         $("connect").disabled = value;
         if (value) { $("reconnect").hidden = true; $("freq").hidden = false; }      // reconnecté : la fréquence reprend sa place
         $("sec-connect").open = !value;                     // une fois connecté : la zone de connexion se replie
@@ -704,6 +747,7 @@
       const clientId = $("client-id").value.trim(), password = $("password").value;
       if (!clientId || !password) { ui.log("Renseigne l'identifiant et le mot de passe.", "warn"); return; }
       audio.muted = $("mute").checked;
+      if (alertLevel !== "off") alertContext();          // le navigateur n'autorise le son qu'après un geste : on le prépare ici
       try {
         store.set("trx.mic", $("mic-select").value);
         store.set("trx.out", $("out-select").value);

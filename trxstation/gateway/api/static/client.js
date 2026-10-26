@@ -31,6 +31,8 @@
   const MAX_RECONNECT_WINDOW_S = 300;
   const BAND_STABLE_MS = 1500;          // fréquence stable avant d'être mémorisée pour sa bande
   const HEARTBEAT_GRACE_MS = 3000;       // heartbeats dès la demande de prise d'émission
+  const LINK_ALERT_REPEAT_MS = 3000;     // son « liaison perdue » répété tant que la reconnexion dure
+  const TX_SILENCE_MS = 1500;            // pendant SON émission, plus rien de la station depuis ce délai : alerte tout de suite
   const ACTIVE_STATES = ["KEYING", "TX", "UNKEYING"];
 
   const REASONS = {
@@ -424,13 +426,32 @@
     return hz >= 1 && hz <= 10000000000 ? hz : null;
   }
 
+  // ------------------------------------------------------------------ sons d'alerte de la liaison
+
+  /* Trois sons bien distincts entre eux et des bips d'émission : notes [fréquence Hz, durée ms, silence après ms].
+   * lost : deux notes DESCENDANTES (répétées pendant la reconnexion) ; restored : deux notes MONTANTES ;
+   * failed : trois notes graves et longues. Vibrations (Android) dans le même rythme. */
+  const LINK_ALERTS = {
+    lost: { notes: [[880, 160, 60], [587, 260, 0]], vibrate: [200, 100, 300] },
+    restored: { notes: [[587, 140, 50], [880, 220, 0]], vibrate: [80, 60, 80] },
+    failed: { notes: [[330, 420, 140], [330, 420, 140], [247, 700, 0]], vibrate: [400, 150, 400, 150, 700] },
+  };
+  const ALERT_VOLUMES = { off: 0, low: 0.08, normal: 0.2, high: 0.45 };
+
+  function alertVolume(name) { return Object.prototype.hasOwnProperty.call(ALERT_VOLUMES, name) ? ALERT_VOLUMES[name] : ALERT_VOLUMES.normal; }
+
+  function alertDurationMs(kind) {
+    const alert = LINK_ALERTS[kind];
+    return alert ? alert.notes.reduce((total, [, ms, gap]) => total + ms + gap, 0) : 0;
+  }
+
   // ------------------------------------------------------------------ logique du client
 
   class TrxClient {
     /* env : RTCPeerConnection, getConfig() -> {ice_servers}, waitIceComplete(pc, ms), postOffer(body) -> {status, body},
      *       getUserMedia(constraints), isSecureContext, now(), setInterval/clearInterval, collectStats(pc)
      * ui  : status(text, kind), state(view), log(text, level), remoteStream(stream, track), stats(text),
-     *       rtt(ms), modes(list), armed(bool), connected(bool) */
+     *       rtt(ms), modes(list), armed(bool), connected(bool) ; facultatif : linkAlert(kind) = son « lost » | « restored » | « failed » */
     constructor(env, ui) {
       this.env = env;
       this.ui = ui;
@@ -449,11 +470,16 @@
       this.connectedAt = 0; this.lastMessageAt = 0; this.lastRttMs = null; this.pingFailures = 0; this._helloTimer = null;
       this.autoWindowS = 0; this._credentials = null; this.reconnecting = null; this._reconnectTimer = null; this._token = null;
       this.recentLogs = [];
+      this._txSilenceAlerted = false;
       const rawLog = ui.log.bind(ui);                                  // le journal de l'écran alimente aussi le rapport de perte de connexion
       ui.log = (text, level) => { this.recentLogs.push({ t: this._epoch(), text: String(text).slice(0, 200) }); if (this.recentLogs.length > 20) this.recentLogs.shift(); rawLog(text, level); };
     }
 
     _epoch() { return this.env.epoch ? this.env.epoch() : Date.now(); }
+
+    _linkAlert(kind) {                   // l'interface joue le son ; une erreur de son ne doit jamais gêner la liaison
+      try { if (this.ui.linkAlert) this.ui.linkAlert(kind); } catch (e) { /* son indisponible */ }
+    }
 
     // ---- connexion
 
@@ -570,7 +596,7 @@
       if (this.dc) { this.dc.onclose = null; try { this.dc.close(); } catch (e) { /* déjà fermé */ } this.dc = null; }
       if (this.pc) { this.pc.onconnectionstatechange = null; this.pc.oniceconnectionstatechange = null; try { this.pc.close(); } catch (e) { /* déjà fermée */ } this.pc = null; }
       const wasConnected = this.connected;
-      this.connected = false; this.closed = true; this.armed = false; this._wasActive = false;
+      this.connected = false; this.closed = true; this.armed = false; this._wasActive = false; this._txSilenceAlerted = false;
       this.state = null; this.hello = null; this.memories = [];
       this.ui.connected(false); this.ui.armed(false); this.ui.memories([]);
       if (!silent) {                                                    // déconnexion voulue : jamais de reconnexion automatique, mot de passe oublié
@@ -639,6 +665,7 @@
       this.ui.status("Déconnecté", "bad");
       this.ui.log((wasConnected ? "Connexion perdue : " : "Connexion impossible : ") + entry.title + ". L'émission éventuelle est coupée par la station.", wasConnected ? "bad" : "warn");
       this._recordLoss(entry);
+      if (wasConnected) this._linkAlert("failed");                   // sans reconnexion automatique : la liaison est perdue pour de bon
     }
 
     // ---- reconnexion automatique (micro-coupures du réseau mobile) : mêmes identifiants, gardés en mémoire seulement
@@ -646,8 +673,9 @@
     _startReconnect(entry) {
       const now = this.env.now();
       this.reconnecting = { entry: entry, startedAt: now, deadline: now + this.autoWindowS * 1000, attempts: 0,
-                            nextAt: now + RECONNECT_FIRST_DELAY_MS, busy: false, lastTitle: entry.title };
+                            nextAt: now + RECONNECT_FIRST_DELAY_MS, busy: false, lastTitle: entry.title, alertAt: now };
       this.ui.status("Reconnexion…", "busy");
+      this._linkAlert("lost");
       this._reconnectUi();
       this._reconnectTimer = this.env.setInterval(() => this._reconnectTick(), RECONNECT_TICK_MS);
     }
@@ -665,6 +693,7 @@
       if (!r) return;
       const now = this.env.now();
       if (now >= r.deadline) { this._giveUp("timeout"); return; }
+      if (now - r.alertAt >= LINK_ALERT_REPEAT_MS) { r.alertAt = now; this._linkAlert("lost"); }   // rappel : la liaison n'est toujours pas revenue
       this._reconnectUi();
       if (r.busy || now < r.nextAt) return;
       if (this.env.isOnline && this.env.isOnline() === false) return;                 // pas de réseau : inutile d'essayer, on attend son retour
@@ -694,6 +723,7 @@
       const seconds = Math.round((this.env.now() - r.startedAt) / 1000), attempts = r.attempts;
       this._finishReconnect("ok");
       this.ui.log("Reconnecté après " + seconds + " s (" + attempts + " essai" + (attempts > 1 ? "s" : "") + "). Recoche « Émission autorisée » pour émettre.", "");
+      this._linkAlert("restored");                                     // la station est en RÉCEPTION : rien ne reprend tout seul
     }
 
     _giveUp(outcome) {
@@ -704,7 +734,7 @@
       this._finishReconnect(outcome);
       const text = { timeout: "Reconnexion abandonnée : plus de liaison après " + this.autoWindowS + " s.",
                      auth: "Reconnexion abandonnée : identifiants refusés par la station." }[outcome];
-      if (text) { this.ui.status("Déconnecté", "bad"); this.ui.log(text, "bad"); } else this.ui.status("Déconnecté", "");
+      if (text) { this.ui.status("Déconnecté", "bad"); this.ui.log(text, "bad"); this._linkAlert("failed"); } else this.ui.status("Déconnecté", "");
     }
 
     _finishReconnect(outcome) {
@@ -754,6 +784,11 @@
       let msg;
       try { msg = JSON.parse(raw); } catch (e) { return; }
       this.lastMessageAt = this.env.now();
+      if (this._txSilenceAlerted) {                                     // la station répond de nouveau (silence bref pendant l'émission)
+        this._txSilenceAlerted = false;
+        this.ui.log("La station répond de nouveau.", "");
+        this._linkAlert("restored");
+      }
       if (msg.type === "hello") {
         if (this._helloTimer !== null) { this.env.clearTimeout(this._helloTimer); this._helloTimer = null; }
         this.hello = msg;
@@ -910,6 +945,11 @@
     _tick() {
       const now = this.env.now();
       if (this.lastMessageAt && now - this.lastMessageAt > STALE_MS) { this._onClosed("silence"); return; }    // la station envoie son état plusieurs fois par seconde
+      if (!this._txSilenceAlerted && this.lastMessageAt && now - this.lastMessageAt > TX_SILENCE_MS && this._mineActive()) {
+        this._txSilenceAlerted = true;                                 // l'utilisateur parle peut-être dans le vide : on le prévient sans attendre la coupure
+        this.ui.log("Plus de nouvelles de la station depuis " + String(TX_SILENCE_MS / 1000).replace(".", ",") + " s pendant ton émission : arrête de parler.", "bad");
+        this._linkAlert("lost");
+      }
       if (this._mineActive() || now < this.hbUntil) this._sendRaw({ cmd: "heartbeat" });
       if (now - this.lastPing >= PING_EVERY_MS) {
         this.lastPing = now;
@@ -1119,6 +1159,7 @@
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode,
-                loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES };
+                loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
+                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

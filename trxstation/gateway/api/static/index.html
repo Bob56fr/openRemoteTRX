@@ -142,6 +142,16 @@
             <option value="60">Essayer pendant 60 s</option>
           </select>
         </label>
+        <label>Sons de la liaison (perdue, rétablie, reconnexion impossible)
+          <select id="alert-select">
+            <option value="high">Forts</option>
+            <option value="normal">Normaux</option>
+            <option value="low">Faibles</option>
+            <option value="off">Coupés</option>
+          </select>
+        </label>
+        <div class="row"><button id="alert-test" class="chip" disabled>Écouter les sons</button></div>
+        <p class="note">Deux notes descendantes : liaison perdue (répété pendant la reconnexion). Deux notes montantes : liaison rétablie, la station est en réception. Trois notes graves : reconnexion impossible. Le téléphone vibre aussi.</p>
         <p class="note">Le mot de passe est gardé en mémoire de la page le temps de la session (jamais enregistré) : il n'est pas redemandé pendant la reconnexion, mais il l'est après un rechargement de la page.</p>
         <div class="row">
           <button id="connect" class="primary">Se connecter</button>

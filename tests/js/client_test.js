@@ -58,6 +58,7 @@ function makeWorld(overrides) {
     memoryLists: [], memories(list) { this.memoryLists.push(list); },
     lossEvents: [], lossLists: [], lossRecorded(e) { this.lossEvents.push(e); }, losses(l) { this.lossLists.push(l); },
     reconnects: [], reconnecting(info) { this.reconnects.push(info); },
+    alerts: [], linkAlert(kind) { this.alerts.push(kind); },
     diags: [], stats() {}, diag(t) { this.diags.push(t); }, rtt(ms) { this.rtts.push(ms); }, modes(l) { this.modeLists.push(l); },
     armed(v) { this.armedCalls.push(v); }, connected(v) { this.connectedCalls.push(v); } };
   const client = new web.TrxClient(env, ui);
@@ -1173,4 +1174,103 @@ test("reconnexion : seulement après une VRAIE coupure ; un premier échec de co
   assert.deepEqual([lastReconnect(s).active, lastReconnect(s).remainingS], [true, 15]); assert.equal(s.client.losses.length, 2);
   await ticks(s, 2); s.hello();
   assert.deepEqual([s.client.losses[0].details.reconnect.outcome, s.client.losses[1].details.reconnect.outcome], ["ok", "ok"]);
+});
+
+// --------------------------------------------------------------------------- sons d'alerte de la liaison
+
+test("sons de liaison : trois motifs distincts (descendant, montant, grave), volumes, durées", () => {
+  const { LINK_ALERTS, alertVolume, alertDurationMs } = web;
+  const pitches = (kind) => LINK_ALERTS[kind].notes.map(([hz]) => hz);
+  assert.ok(pitches("lost")[0] > pitches("lost")[1], "perdue : notes descendantes");
+  assert.ok(pitches("restored")[0] < pitches("restored")[1], "rétablie : notes montantes");
+  assert.ok(Math.max(...pitches("failed")) < Math.min(...pitches("lost"), ...pitches("restored")), "échec : plus grave que les deux autres");
+  assert.equal(LINK_ALERTS.failed.notes.length, 3);
+  for (const kind of ["lost", "restored", "failed"]) {
+    assert.ok(alertDurationMs(kind) > 200 && alertDurationMs(kind) < 3000);
+    assert.ok(LINK_ALERTS[kind].vibrate.every((ms) => ms > 0));
+  }
+  assert.ok(alertDurationMs("lost") < 3000, "plus court que son intervalle de répétition");
+  assert.equal(alertVolume("off"), 0); assert.equal(alertVolume("inconnu"), alertVolume("normal"));
+  assert.ok(alertVolume("low") < alertVolume("normal") && alertVolume("normal") < alertVolume("high") && alertVolume("high") <= 0.5);
+  assert.equal(alertDurationMs("autre"), 0);
+});
+
+test("sons de liaison : micro-coupure = « perdue » répété pendant la reconnexion, puis « rétablie »", async () => {
+  const net = flaky(), w = makeWorld({ postOffer: net.postOffer });
+  await up(w);
+  assert.deepEqual(w.ui.alerts, []);                                                // connexion normale : aucun son
+  net.down = true; w.dc().onclose();
+  assert.deepEqual(w.ui.alerts, ["lost"]);
+  await ticks(w, 7);                                                                // 3,5 s : un rappel
+  assert.deepEqual(w.ui.alerts, ["lost", "lost"]);
+  net.down = false; await ticks(w, 6); w.hello();
+  assert.equal(w.ui.alerts.at(-1), "restored"); assert.ok(!w.ui.alerts.includes("failed"));
+  assert.equal(w.client.armed, false);                                              // rien ne reprend tout seul : il faut réarmer
+});
+
+test("sons de liaison : reconnexion abandonnée (délai écoulé ou identifiants refusés) = « échec »", async () => {
+  const net = flaky(), w = makeWorld({ postOffer: net.postOffer });
+  await up(w);
+  net.down = true; w.dc().onclose();
+  await ticks(w, 34);                                                               // 17 s > 15 s
+  assert.equal(lastReconnect(w).outcome, "timeout");
+  assert.equal(w.ui.alerts.at(-1), "failed"); assert.equal(w.ui.alerts.filter((k) => k === "failed").length, 1);
+  assert.ok(w.ui.alerts.filter((k) => k === "lost").length >= 4);
+  const a = makeWorld();
+  await up(a);
+  a.env.offerStatus = 401; a.dc().onclose();
+  await ticks(a, 3);
+  assert.equal(lastReconnect(a).outcome, "auth"); assert.deepEqual(a.ui.alerts, ["lost", "failed"]);
+});
+
+test("sons de liaison : sans reconnexion automatique, une perte = « échec » tout de suite", async () => {
+  const w = makeWorld();
+  await up(w, { reconnectWindowS: 0 });
+  w.dc().onclose();
+  assert.deepEqual(w.ui.alerts, ["failed"]);
+});
+
+test("sons de liaison : déconnexion voulue, annulation, premier échec de connexion = aucun son", async () => {
+  const w = makeWorld();
+  await up(w); w.client.disconnect();
+  assert.deepEqual(w.ui.alerts, []);
+  const net = flaky(), c = makeWorld({ postOffer: net.postOffer });
+  await up(c); net.down = true; c.dc().onclose(); c.client.cancelReconnect();
+  assert.deepEqual(c.ui.alerts, ["lost"]);                                          // le « perdue » initial seulement
+  await ticks(c, 10);
+  assert.deepEqual(c.ui.alerts, ["lost"]);
+  const f = makeWorld({ offerStatus: 500 });
+  await assert.rejects(() => f.client.connect({ clientId: "phone", password: PASSWORD, useMic: false, reconnectWindowS: 15 }));
+  assert.deepEqual(f.ui.alerts, []);
+});
+
+test("sons de liaison : pendant SON émission, 1,5 s de silence de la station = alerte immédiate, puis « rétablie » si elle répond", async () => {
+  const w = makeWorld();
+  await up(w);
+  w.state({ state: "TX", owner: "phone", tot_remaining_s: 80 });
+  w.env.advance(1000); w.env.tick();
+  assert.deepEqual(w.ui.alerts, []);
+  w.env.advance(600); w.env.tick();                                                 // 1,6 s sans message
+  assert.deepEqual(w.ui.alerts, ["lost"]);
+  assert.ok(w.ui.logs.some(([t, l]) => /arrête de parler/.test(t) && l === "bad"));
+  w.env.advance(500); w.env.tick();
+  assert.deepEqual(w.ui.alerts, ["lost"]);                                          // une seule alerte par silence
+  assert.ok(w.sentCommands("heartbeat").length > 0);                                // les battements continuent : la station décide de la coupure
+  w.state({ state: "TX", owner: "phone", tot_remaining_s: 77 });
+  assert.deepEqual(w.ui.alerts, ["lost", "restored"]);
+  const rx = makeWorld();                                                           // en réception, un silence court ne sonne pas
+  await up(rx); rx.env.advance(1600); rx.env.tick();
+  assert.deepEqual(rx.ui.alerts, []);
+  const other = makeWorld();                                                        // l'émission d'un autre : pas d'alerte pour moi
+  await up(other); other.state({ state: "TX", owner: "autre" }); other.env.advance(1600); other.env.tick();
+  assert.deepEqual(other.ui.alerts, []);
+});
+
+test("sons de liaison : une interface dont le son plante ne gêne jamais la liaison", async () => {
+  const net = flaky(), w = makeWorld({ postOffer: net.postOffer });
+  w.ui.linkAlert = () => { throw new Error("AudioContext cassé"); };
+  await up(w);
+  w.dc().onclose();
+  await ticks(w, 2); w.hello();
+  assert.equal(lastReconnect(w).outcome, "ok"); assert.equal(w.client.connected, true);
 });
