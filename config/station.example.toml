@@ -73,6 +73,11 @@ extra_dir = ""   # modules supplémentaires ; vide = modules fournis seulement
 enabled = true   # cherche une nouvelle version sur GitHub au démarrage puis toutes les 24 h (installation après confirmation seulement)
 allow_prerelease = false   # true : propose aussi les pré-versions
 
+[spectrum]
+enabled = false   # spectre HF du poste (Hamlib 4.6+, [rig] speed = 115200) ; diffusion locale seulement
+data_port = 4572   # UDP sur 127.0.0.1
+max_fps = 10   # images par seconde envoyées aux clients (1 à 20)
+
 # Bandes où l'émission est autorisée. Liste vide = réception seule.
 # À vérifier et adapter à ta licence et à ton pays.
 [[bands]]

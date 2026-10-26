@@ -363,3 +363,75 @@ def test_max_power_is_validated_stored_and_settable_from_the_command_line(tmp_pa
     bad = dummy_config()
     bad.rig.max_power_w = 3000
     assert any("max_power_w" in p for p in cfgmod.validate(bad))
+
+
+# --------------------------------------------------------------------------- coupure faite sur le poste
+
+def _rig_unkey_run(tmp_path, scenario, **kwargs):
+    run(tmp_path, scenario, only_rig_unkey=True, **kwargs)
+
+
+async def _press_transmit_when_told(hw, fake, out, *, stale=False):
+    """L'opérateur appuie sur TRANSMIT au signal ; `stale` = la relecture du PTT renvoie un état ancien (cache)."""
+    while not any(">>> COUPE MAINTENANT" in line for line in out):                       # le vrai signal, pas la consigne
+        await asyncio.sleep(0.02)
+    await asyncio.sleep(0.2)                                                             # temps de réaction
+    if stale:
+        fake.stale_ptt = True
+    fake.ptt = 0
+
+
+def test_rig_side_unkey_is_seen_by_the_readback(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        presser = asyncio.create_task(_press_transmit_when_told(hw, fake, out))
+        results = await hw.run()
+        await presser
+        assert [r.name for r in results] == ["CAT", "Coupure par le poste (spectre désactivé)"]
+        assert results[-1].ok is True and "vue en" in results[-1].detail
+        assert hw.ctrl.snapshot().last_cut_reason == "rig_reported_rx" and fake.ptt == 0
+        assert any("Prêt ?" in p for p in prompts)
+    _rig_unkey_run(tmp_path, scenario)
+
+
+def test_stale_ptt_readback_is_reported_as_a_failure(tmp_path):
+    def stale_fake(fake):
+        """Cache simulé : la relecture renvoie la DERNIÈRE VALEUR COMMANDÉE par CAT, pas l'état réel du poste."""
+        fake.stale_ptt, fake.commanded = False, 0
+        real_reply = fake._reply
+
+        def reply(line):
+            parts = line.lstrip("+").split()
+            if parts[:1] == ["T"] and len(parts) == 2:
+                fake.commanded = int(parts[1])
+            if parts == ["t"] and fake.stale_ptt:
+                return f"get_ptt:\nPTT: {fake.commanded}\nRPRT 0\n"
+            return real_reply(line)
+        fake._reply = reply
+
+    async def scenario(hw, fake, out, prompts):
+        presser = asyncio.create_task(_press_transmit_when_told(hw, fake, out, stale=True))
+        results = await hw.run()
+        await presser
+        assert results[-1].ok is False and "PAS VUE" in results[-1].detail and "NE PAS activer le spectre" in results[-1].detail
+        assert hw.report() == 1
+    _rig_unkey_run(tmp_path, scenario, fake_setup=stale_fake)
+
+
+def test_rig_side_unkey_needs_the_confirmation_word_and_never_asks_while_transmitting(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        states = []
+        original = hw.ask
+
+        def watching(prompt):
+            states.append(hw.ctrl.snapshot().state if hw.ctrl else "RX")
+            return original(prompt)
+        hw.ask = watching
+        results = await hw.run()
+        assert results[-1].ok is None and 1 not in fake.ptt_commands
+        assert set(states) == {"RX"}
+    _rig_unkey_run(tmp_path, scenario, answers={EMIT_WORD: "non"})
+
+
+def test_rig_unkey_option_on_the_command_line(tmp_path):
+    code, err = cli(["--config", str(tmp_path / "absent.toml"), "--coupure-poste"])
+    assert code == 2                                                                    # configuration absente : refus net

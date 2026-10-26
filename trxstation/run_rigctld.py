@@ -23,7 +23,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2
     if args.print:
-        print(" ".join(cfg.rig.rigctld_args(cfg.network.rigctld_host, cfg.network.rigctld_port)))
+        print(" ".join(cfg.rig.rigctld_args(cfg.network.rigctld_host, cfg.network.rigctld_port)
+                       + cfgmod.spectrum_rigctld_conf(cfg)))
         return 0
     try:
         command = rigctld_command(cfg)

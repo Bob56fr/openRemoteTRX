@@ -8,6 +8,10 @@
   5. Audio TX    : tonalité à niveau croissant, relevé ALC / SWR / puissance.           ÉMISSION (confirmation)
   6. Pannes      : perte du heartbeat, TOT, déconnexion du client.                      ÉMISSION (confirmation)
 
+`trx-hwtest --coupure-poste` : CAT puis un seul exercice, la coupure faite SUR LE POSTE (touche TRANSMIT) :
+la station doit la voir d'elle-même par sa relecture du PTT. À lancer avec [spectrum] enabled = false puis
+true : avec async=1, Hamlib ne doit pas renvoyer un état d'émission gardé en mémoire.
+
 Chaque étape d'émission exige de taper EMETTRE. Quoi qu'il arrive (erreur, Ctrl+C), l'émission est
 coupée à la fin. Le PTT n'est jamais actif pendant qu'une question est posée.
 """
@@ -65,8 +69,10 @@ class HwTest:
     def __init__(self, cfg: Config, *, ask: Callable[[str], str] = input, out: Callable[[str], None] = print,
                  tot_s: float = 8.0, hold_s: float = 1.5, tx_seconds: float = 2.0, rx_listen_s: float = 5.0,
                  tx_levels_db: tuple[float, ...] = (-40.0, -30.0, -24.0), cat_timeout_s: float = 10.0,
-                 record_wav: str = "hwtest_rx.wav", cycles: int = 3, capabilities: Capabilities | None = None):
+                 record_wav: str = "hwtest_rx.wav", cycles: int = 3, capabilities: Capabilities | None = None,
+                 only_rig_unkey: bool = False):
         self.cfg, self.ask, self.out = cfg, ask, out
+        self.only_rig_unkey = only_rig_unkey
         self.tot_s, self.hold_s, self.tx_seconds, self.rx_listen_s = tot_s, hold_s, tx_seconds, rx_listen_s
         self.tx_levels_db, self.cat_timeout_s, self.record_wav, self.cycles = tx_levels_db, cat_timeout_s, record_wav, cycles
         self.results: list[StageResult] = []
@@ -462,6 +468,42 @@ class HwTest:
         self.ctrl.connect_client(CLIENT)
         return ok
 
+    # ------------------------------------------------------------------ étape 7 : coupure par le poste
+
+    async def stage_rig_unkey(self) -> bool:
+        """Le poste repasse en réception de lui-même : la relecture du PTT (pas une valeur en cache) doit le voir."""
+        name = "Coupure par le poste (" + ("spectre activé, async=1" if self.cfg.spectrum.enabled else "spectre désactivé") + ")"
+        if not await self.confirm_emission("Étape 7 : coupure faite SUR LE POSTE (porteuse sans audio)"):
+            return self.record(name, None, "non confirmé : ignoré")
+        self.say("  Quand « COUPE MAINTENANT » s'affiche, appuie sur la touche TRANSMIT du poste pour repasser en réception.")
+        self.say(f"  La station doit s'en apercevoir seule (relecture toutes les {self.ctrl.limits.rig_poll_s:g} s). "
+                 f"Sinon, le TOT de l'essai coupe au bout de {self.tot_s:g} s.")
+        await self.prompt("  Prêt ? Entrée pour commencer : ")                      # question posée AVANT la prise d'émission
+        try:
+            await self.key()
+        except Refused as exc:
+            await self.ctrl.force_rx("hwtest")
+            return self.record(name, False, f"prise d'émission refusée : {exc}")
+        self.say("  >>> COUPE MAINTENANT sur le poste (touche TRANSMIT) <<<")
+        t0 = time.monotonic()
+        deadline = t0 + self.tot_s + 3.0
+        while self.ctrl.snapshot().state != "RX" and time.monotonic() < deadline:
+            self.ctrl.heartbeat(CLIENT)                                               # seul le poste doit provoquer la coupure
+            await asyncio.sleep(0.05)
+        elapsed = time.monotonic() - t0
+        snap = self.ctrl.snapshot()
+        if snap.state != "RX":
+            await self.ctrl.force_rx("hwtest")
+            return self.record(name, False, "L'ÉMISSION N'A PAS ÉTÉ COUPÉE dans le délai : voir le superviseur")
+        reason = snap.last_cut_reason
+        if reason == "rig_reported_rx":
+            return self.record(name, True, f"vue en {elapsed:.1f} s après le signal (ton temps de réaction compris)")
+        if reason == "tot":
+            return self.record(name, False, "PAS VUE : le TOT de l'essai a coupé. Si tu as bien appuyé sur TRANSMIT, la "
+                                            "relecture du PTT renvoie un état ancien : NE PAS activer le spectre")
+        return self.record(name, False, f"coupée par « {reason} » au lieu d'être vue comme une coupure du poste "
+                                        "(fréquence ou mode touchés ?) : recommence")
+
     # ------------------------------------------------------------------ déroulement
 
     async def run(self) -> list[StageResult]:
@@ -475,8 +517,9 @@ class HwTest:
             if not await self.stage_cat():
                 self.say("\nLiaison CAT impossible : on s'arrête ici (aucune émission n'a été tentée).")
                 return self.results
-            await self.stage_rx_audio()
-            await self.stage_tuning()
+            if not self.only_rig_unkey:
+                await self.stage_rx_audio()
+                await self.stage_tuning()
             await self.stage_band()
             await self.stage_tx_mode()
             if self.cfg.safety.enforce_bands and not self.cfg.bands:
@@ -484,6 +527,8 @@ class HwTest:
             elif self.cfg.safety.enforce_bands and not self.cfg.tx_allowed(self.link.state.frequency_hz or 0):
                 self.record("PTT / Audio TX / Pannes", False,
                             f"{self.link.state.frequency_hz} Hz hors des bandes autorisées : accorde le poste dans une bande autorisée")
+            elif self.only_rig_unkey:
+                await self.stage_rig_unkey()
             else:
                 if await self.stage_ptt():
                     if await self.stage_tx_audio():
@@ -561,11 +606,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tx-levels", type=float, nargs="+", default=[-40.0, -30.0, -24.0], metavar="DBFS",
                     help="niveaux d'essai de la tonalité, en dBFS, séparés par des espaces (défaut : -40 -30 -24)")
     ap.add_argument("--no-spawn", action="store_true", help="ne pas lancer rigctld soi-même")
+    ap.add_argument("--coupure-poste", action="store_true",
+                    help="CAT puis seulement l'exercice « coupure faite sur le poste » (à comparer spectre activé / désactivé)")
     args = ap.parse_args(argv)
     try:
         cfg = cfgmod.load(args.config)
     except cfgmod.ConfigError as exc:
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"Configuration illisible ({args.config}) : {exc}. Indique-la avec --config station.toml.", file=sys.stderr)
         return 2
     levels = tuple(args.tx_levels)
     if any(v > -12 for v in levels):
@@ -575,7 +625,7 @@ def main(argv: list[str] | None = None) -> int:
         print("--tot doit être compris entre 2 et 60 secondes.", file=sys.stderr)
         return 2
     try:
-        hw = HwTest(cfg, tot_s=args.tot, tx_levels_db=levels)
+        hw = HwTest(cfg, tot_s=args.tot, tx_levels_db=levels, only_rig_unkey=args.coupure_poste)
     except ValueError as exc:
         print(f"--tot : {exc}", file=sys.stderr)
         return 2

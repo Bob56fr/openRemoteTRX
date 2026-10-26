@@ -291,3 +291,21 @@ Effets :
 
 En mode données, certains réglages propres à la voix (largeur d'émission, compresseur, filtres de réception, AGC et réducteur de bruit
 mémorisés par mode) peuvent différer : à vérifier une fois dans le manuel du poste.
+
+## 13. Coupure faite sur le poste et spectre HF (`trx-hwtest --coupure-poste`)
+
+Avant d'activer `[spectrum]` (spectre HF du poste, Hamlib `async=1`), il faut prouver que la station voit
+toujours une coupure faite **sur le poste lui-même** : avec les données asynchrones, Hamlib pourrait
+renvoyer un état d'émission gardé en mémoire au lieu de relire le poste.
+
+Mêmes précautions qu'au début de ce document (charge fictive, puissance minimale, TOT interne du poste),
+station arrêtée, puis deux essais :
+
+1. `[spectrum] enabled = false` dans station.toml, puis `trx-hwtest --config station.toml --coupure-poste`.
+2. `[spectrum] enabled = true` (et `[rig] speed = 115200`), puis la même commande.
+
+Déroulé : la question est posée AVANT l'émission ; après `EMETTRE` et Entrée, la station prend l'émission et
+affiche `>>> COUPE MAINTENANT` : appuie sur la touche TRANSMIT du poste. Résultat attendu dans les deux cas :
+« Coupure par le poste (...) : vue en x s » (ton temps de réaction compris, relecture toutes les 1 s).
+« PAS VUE : le TOT de l'essai a coupé » avec le spectre activé = la relecture n'est pas fiable avec
+`async=1` : laisser `[spectrum] enabled = false`.

@@ -9,7 +9,7 @@ import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from .config import Config
+from .config import Config, spectrum_rigctld_conf
 
 WINDOWS_PATTERNS = (r"C:\Program Files\hamlib*", r"C:\Program Files (x86)\hamlib*", r"C:\hamlib*",
                     r"C:\Hamlib*")
@@ -39,7 +39,7 @@ def find_tool(name: str, hamlib_dir: str = "", *, env: Mapping[str, str] | None 
 
 def rigctld_command(cfg: Config, **find_kwargs) -> list[str]:
     """Commande complète de rigctld avec son chemin résolu (FileNotFoundError si Hamlib est absent)."""
-    args = cfg.rig.rigctld_args(cfg.network.rigctld_host, cfg.network.rigctld_port)
+    args = cfg.rig.rigctld_args(cfg.network.rigctld_host, cfg.network.rigctld_port) + spectrum_rigctld_conf(cfg)
     exe = find_tool("rigctld", cfg.tools.hamlib_dir, **find_kwargs)
     if exe is None:
         raise FileNotFoundError("rigctld introuvable : installe Hamlib ou renseigne [tools] hamlib_dir "

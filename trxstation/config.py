@@ -133,6 +133,32 @@ class Modules:
 
 
 @dataclass
+class Spectrum:
+    enabled: bool = False             # spectre HF du poste (Hamlib 4.6+ : async + diffusion UDP locale) ; false = comme avant
+    data_port: int = 4572             # port UDP de la diffusion de rigctld, sur 127.0.0.1 SEULEMENT
+    max_fps: int = 10                 # cadence maximale envoyée aux clients (images par seconde)
+
+
+# Options -C de rigctld réservées à [spectrum] : jamais dans extra_conf (le serveur de commandes UDP de Hamlib
+# n'a AUCUNE authentification et pourrait mettre le poste en émission ; la diffusion doit rester locale).
+RESERVED_RIGCTLD_CONF = ("async", "multicast_data_addr", "multicast_data_port", "multicast_cmd_addr", "multicast_cmd_port")
+SPECTRUM_MIN_SPEED = 115200
+
+
+def spectrum_rigctld_conf(cfg: "Config") -> list[str]:
+    """Options de rigctld pour le spectre (vide si désactivé) : diffusion vers 127.0.0.1, commandes UDP coupées."""
+    if not cfg.spectrum.enabled:
+        return []
+    return ["-C", f"async=1,multicast_data_addr=127.0.0.1,multicast_data_port={cfg.spectrum.data_port},"
+                  "multicast_cmd_addr=0.0.0.0"]
+
+
+def _conf_keys(entries: list[str]) -> list[str]:
+    """Noms des options d'une liste « -C » (chaque entrée peut en grouper plusieurs : a=1,b=2)."""
+    return [item.split("=", 1)[0].strip().lower() for entry in entries for item in str(entry).split(",") if item.strip()]
+
+
+@dataclass
 class Update:
     enabled: bool = True              # cherche une nouvelle version au démarrage puis toutes les 24 h (rien n'est installé sans confirmation)
     allow_prerelease: bool = False    # true : propose aussi les pré-versions publiées sur GitHub
@@ -166,6 +192,7 @@ class Config:
     supervisor: Supervisor = field(default_factory=Supervisor)
     modules: Modules = field(default_factory=Modules)
     update: Update = field(default_factory=Update)
+    spectrum: Spectrum = field(default_factory=Spectrum)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -281,6 +308,21 @@ def validate(cfg: Config) -> list[str]:
         if not isinstance(getattr(cfg.update, name), bool):
             p.append(f"[update] {name} doit valoir true ou false")
 
+    sp = cfg.spectrum
+    reserved = sorted(set(_conf_keys(r.extra_conf)) & set(RESERVED_RIGCTLD_CONF))
+    if reserved:
+        p.append(f"[rig] extra_conf : {', '.join(reserved)} interdit(s) ici (réglé par [spectrum] ; le serveur de "
+                 "commandes UDP de Hamlib n'a aucune authentification)")
+    if not isinstance(sp.enabled, bool):
+        p.append("[spectrum] enabled doit valoir true ou false")
+    if isinstance(sp.data_port, bool) or not isinstance(sp.data_port, int) or not 1024 <= sp.data_port <= 65535:
+        p.append("[spectrum] data_port hors plage (1024 à 65535)")
+    if isinstance(sp.max_fps, bool) or not isinstance(sp.max_fps, int) or not 1 <= sp.max_fps <= 20:
+        p.append("[spectrum] max_fps : de 1 à 20 images par seconde")
+    if sp.enabled is True and r.speed and r.speed < SPECTRUM_MIN_SPEED:
+        p.append(f"[spectrum] le spectre exige [rig] speed = {SPECTRUM_MIN_SPEED} au moins (débit actuel {r.speed}) : "
+                 "à un débit plus bas, il saturerait la liaison et retarderait les ordres du PTT")
+
     for b in cfg.bands:
         if not 0 < b.low_mhz < b.high_mhz:
             p.append(f"[[bands]] '{b.name}' : bornes invalides")
@@ -322,6 +364,9 @@ def warnings(cfg: Config) -> list[str]:
     problem = exposure_problem(cfg)
     if problem:
         w.append(problem)
+    if cfg.spectrum.enabled and cfg.rig.port and not cfg.rig.speed:
+        w.append(f"[spectrum] activé avec le débit par défaut de Hamlib : indique [rig] speed = {SPECTRUM_MIN_SPEED} "
+                 "(et le même débit CI-V dans le menu du poste).")
     if any(c.token for c in cfg.clients):
         w.append("Des clients utilisent encore un jeton en clair : remplace-le par un mot de passe haché "
                  "(trx-setup --set-password NOM).")
@@ -350,7 +395,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -365,6 +410,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             supervisor=_build(Supervisor, d.get("supervisor", {}), "supervisor", problems),
             modules=_build(Modules, d.get("modules", {}), "modules", problems),
             update=_build(Update, d.get("update", {}), "update", problems),
+            spectrum=_build(Spectrum, d.get("spectrum", {}), "spectrum", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -481,6 +527,11 @@ def render_toml(cfg: Config) -> str:
         "[update]",
         f"enabled = {str(cfg.update.enabled).lower()}   # cherche une nouvelle version sur GitHub (installation après confirmation seulement)",
         f"allow_prerelease = {str(cfg.update.allow_prerelease).lower()}   # true : propose aussi les pré-versions",
+        "",
+        "[spectrum]",
+        f"enabled = {str(cfg.spectrum.enabled).lower()}   # spectre HF du poste (Hamlib 4.6+, débit 115200) ; diffusion locale seulement",
+        f"data_port = {cfg.spectrum.data_port}   # UDP sur 127.0.0.1",
+        f"max_fps = {cfg.spectrum.max_fps}   # images par seconde envoyées aux clients (1 à 20)",
         "",
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",
         "# À vérifier et adapter à ta licence et à ton pays.",

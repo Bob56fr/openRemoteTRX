@@ -183,6 +183,12 @@ def check_system(sysm: System) -> list[Check]:
     return out
 
 
+def hamlib_version(text: str) -> tuple[int, ...] | None:
+    """(4, 7, 2) de « rigctld Hamlib 4.7.2 2026-06-21... » ; None si illisible."""
+    match = re.search(r"Hamlib\s+(\d+)\.(\d+)(?:\.(\d+))?", text or "")
+    return tuple(int(g) for g in match.groups() if g is not None) if match else None
+
+
 def check_software(sysm: System, cfg: Config | None) -> list[Check]:
     s = "Logiciels"
     out: list[Check] = []
@@ -199,6 +205,15 @@ def check_software(sysm: System, cfg: Config | None) -> list[Check]:
     else:
         _, text = sysm.run([rigctld, "--version"])
         out.append(Check(s, "Hamlib (rigctld)", OK, (text.strip().splitlines() or [rigctld])[0]))
+        if cfg is not None and cfg.spectrum.enabled:
+            version = hamlib_version(text)
+            if version is None:
+                out.append(Check(s, "Spectre HF", WARN, "version de Hamlib illisible : le spectre exige Hamlib 4.6 ou plus"))
+            elif version < (4, 6):
+                out.append(Check(s, "Spectre HF", FAIL, f"Hamlib {'.'.join(map(str, version))} trop ancien : 4.6 ou plus "
+                                 "nécessaire (rigctld refuserait de démarrer)", "Mets Hamlib à jour, ou [spectrum] enabled = false"))
+            else:
+                out.append(Check(s, "Spectre HF", OK, "Hamlib assez récent (diffusion locale du spectre)"))
     return out
 
 

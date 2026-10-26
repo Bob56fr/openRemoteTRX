@@ -23,3 +23,6 @@ venv/
 *.pem
 *.key
 .env
+
+spectre-*/
+rigctld-*.log
