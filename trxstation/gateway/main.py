@@ -89,6 +89,14 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
+def bind_hint(host: str) -> str:
+    """Conseil lisible quand l'adresse d'écoute ne peut pas être ouverte."""
+    if host in ("0.0.0.0", "::") or cfgmod.is_loopback(host):
+        return "Le port est sans doute déjà pris (autre passerelle encore active ?) : change [network] gateway_port ou arrête l'autre programme."
+    return (f"Cette machine n'a peut-être plus l'adresse {host} (réseau ou box changés) : relance l'assistant, "
+            "étape Accès (écoute sur toutes les adresses), ou corrige [network] gateway_bind.")
+
+
 def _client_sessions(manager) -> list:
     """Sessions client ouvertes (relais des messages des modules)."""
     if manager is None:
@@ -127,7 +135,12 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities):
     app = make_app(ClientRegistry(cfg.clients), manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,
                    rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device))
-    runner = await start_server(app, cfg.network.gateway_bind, cfg.network.gateway_port, ssl_context)
+    try:
+        runner = await start_server(app, cfg.network.gateway_bind, cfg.network.gateway_port, ssl_context)
+    except OSError as exc:                         # on ne quitte pas : le superviseur relancerait la passerelle en boucle
+        log.error("API NON DÉMARRÉE (réception seule) : écoute impossible sur %s:%s (%s). %s",
+                  cfg.network.gateway_bind, cfg.network.gateway_port, exc, bind_hint(cfg.network.gateway_bind))
+        return None, None
     log.info("API WebRTC%s en écoute en %s sur %s:%s", " et page web" if cfg.network.web_client else "",
              "HTTPS" if ssl_context else "HTTP", cfg.network.gateway_bind, cfg.network.gateway_port)
     return manager, runner

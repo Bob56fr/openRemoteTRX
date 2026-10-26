@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .. import __version__
+from ..status import replace_atomic
 
 REPO = "Bob56fr/openRemoteTRX"
 API_URL = f"https://api.github.com/repos/{REPO}/releases?per_page=30"
@@ -237,7 +238,7 @@ def write_state(path: str | Path, state: UpdateState) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(state.to_dict(), handle, ensure_ascii=False, indent=1)
         os.chmod(tmp, 0o644)
-        os.replace(tmp, path)
+        replace_atomic(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(tmp)

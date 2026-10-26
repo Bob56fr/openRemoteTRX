@@ -26,6 +26,7 @@ class StatusPublisher:
         self.pipeline = pipeline
         self._seq = 0
         self._stop = asyncio.Event()
+        self._failures = 0                # écritures refusées de suite (journal limité : pas une ligne par refus)
 
     def build(self) -> GatewayStatus:
         self._seq += 1
@@ -37,12 +38,27 @@ class StatusPublisher:
     def stop(self) -> None:
         self._stop.set()
 
+    def write_once(self) -> bool:
+        """Une écriture ; un échec est journalisé à la 1re occurrence puis toutes les ~5 s (20 écritures)."""
+        try:
+            write_status(self.path, self.build())
+        except OSError as exc:  # disque plein, droits, fichier tenu ouvert... : on continue d'essayer
+            self._failures += 1
+            if self._failures == 1:
+                log.warning("écriture de l'état refusée : %s", exc)
+            elif self._failures % 20 == 0:
+                log.error("écriture de l'état impossible depuis %d essais : %s "
+                          "(le superviseur jugera la passerelle muette)", self._failures, exc)
+            return False
+        if self._failures:
+            if self._failures > 1:
+                log.info("écriture de l'état rétablie après %d refus", self._failures)
+            self._failures = 0
+        return True
+
     async def run(self) -> None:
         while not self._stop.is_set():
-            try:
-                write_status(self.path, self.build())
-            except OSError as exc:  # disque plein, droits... : on continue d'essayer
-                log.error("écriture de l'état impossible : %s", exc)
+            self.write_once()
             try:
                 await asyncio.wait_for(self._stop.wait(), self.interval_s)
             except asyncio.TimeoutError:

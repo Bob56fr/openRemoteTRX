@@ -91,5 +91,9 @@ async def start_server(app: web.Application, host: str, port: int,
                        ssl_context: ssl.SSLContext | None = None) -> web.AppRunner:
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, host, port, ssl_context=ssl_context).start()
+    try:
+        await web.TCPSite(runner, host, port, ssl_context=ssl_context).start()
+    except BaseException:
+        await runner.cleanup()                     # port refusé : rien ne doit rester ouvert à moitié
+        raise
     return runner

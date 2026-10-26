@@ -4,7 +4,8 @@ et trx-monitor (lecteurs).
 La fraîcheur se juge sur le CHANGEMENT de `seq` mesuré avec l'horloge monotone du lecteur,
 jamais sur `written_at` : le Pi n'a pas toujours d'horloge fiable (pas de RTC, saut NTP).
 Écriture atomique (fichier temporaire + os.replace) : un lecteur ne voit jamais un fichier
-à moitié écrit.
+à moitié écrit. Sous Windows, le remplacement est refusé (PermissionError) tant qu'un lecteur
+tient le fichier ouvert : quelques millisecondes plus tard il passe, d'où `replace_atomic`.
 """
 from __future__ import annotations
 
@@ -12,10 +13,27 @@ import contextlib
 import json
 import os
 import tempfile
+import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 SCHEMA = 1
+REPLACE_RETRIES = 3               # au pire 5 + 10 + 15 ms d'attente, puis l'erreur remonte
+REPLACE_RETRY_S = 0.005
+
+
+def replace_atomic(tmp: str | Path, path: str | Path, *, retries: int = REPLACE_RETRIES,
+                   sleep: Callable[[float], None] = time.sleep) -> None:
+    """os.replace, réessayé brièvement si le fichier de destination est momentanément ouvert (Windows)."""
+    for attempt in range(retries + 1):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == retries:
+                raise
+            sleep(REPLACE_RETRY_S * (attempt + 1))
 
 
 @dataclass
@@ -38,7 +56,7 @@ def write_status(path: str | Path, status: GatewayStatus) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(payload)
-        os.replace(tmp, path)
+        replace_atomic(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):
             os.unlink(tmp)
