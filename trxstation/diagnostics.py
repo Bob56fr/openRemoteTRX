@@ -9,6 +9,7 @@ Tous les accès au système passent par `System` : les tests le remplacent par u
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import re
 import shutil
@@ -205,7 +206,7 @@ def check_software(sysm: System, cfg: Config | None) -> list[Check]:
     else:
         _, text = sysm.run([rigctld, "--version"])
         out.append(Check(s, "Hamlib (rigctld)", OK, (text.strip().splitlines() or [rigctld])[0]))
-        if cfg is not None and cfg.spectrum.enabled:
+        if cfg is not None and cfg.spectrum.enabled and cfg.spectrum.source == "rigctld":
             version = hamlib_version(text)
             if version is None:
                 out.append(Check(s, "Spectre HF", WARN, "version de Hamlib illisible : le spectre exige Hamlib 4.6 ou plus"))
@@ -378,6 +379,29 @@ def check_services(sysm: System, cfg: Config | None) -> list[Check]:
     return out
 
 
+def check_spectrum(sysm: System, cfg: Config | None) -> list[Check]:
+    """Spectre HF par le second port CI-V : état publié par la passerelle (vérifié par elle à chaque ouverture)."""
+    if cfg is None or not cfg.spectrum.enabled or cfg.spectrum.source != "civ_port":
+        return []
+    s, name = "Spectre HF", f"Second port {cfg.spectrum.port}"
+    text = sysm.read_text(cfg.supervisor.status_path)
+    try:
+        sp = json.loads(text).get("spectrum", {}) if text else {}
+    except (ValueError, AttributeError):
+        sp = {}
+    state = sp.get("state") if isinstance(sp, dict) else None
+    if not state:
+        return [Check(s, name, INFO, "état inconnu : passerelle arrêtée (vérifié à son démarrage)")]
+    if state == "ok":
+        return [Check(s, name, OK, f"spectre reçu ({sp.get('fps', '?')} balayages/s)")]
+    if state == "error":
+        return [Check(s, name, FAIL, f"PROBLÈME DE CONFIGURATION : {str(sp.get('message', ''))[:300]}",
+                      f"Corrige le réglage du poste, puis vérifie : trx-setup --spectre {cfg.spectrum.port} "
+                      "(station arrêtée) ; ou trx-setup --spectre off")]
+    return [Check(s, name, INFO, "en attente de la réception confirmée pour ouvrir le port"
+                  if state == "waiting" else "vérification en cours")]
+
+
 def check_network(sysm: System, cfg: Config | None) -> list[Check]:
     s = "Réseau"
     out: list[Check] = []
@@ -464,6 +488,7 @@ def run_all(sysm: System | None = None, path: Path = CONFIG_PATH) -> list[Check]
     checks += config_checks
     checks += check_hardware(sysm, cfg)
     checks += check_services(sysm, cfg)
+    checks += check_spectrum(sysm, cfg)
     checks += check_network(sysm, cfg)
     checks += check_update(sysm, cfg)
     return checks

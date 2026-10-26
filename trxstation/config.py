@@ -134,9 +134,32 @@ class Modules:
 
 @dataclass
 class Spectrum:
-    enabled: bool = False             # spectre HF du poste (Hamlib 4.6+ : async + diffusion UDP locale) ; false = comme avant
-    data_port: int = 4572             # port UDP de la diffusion de rigctld, sur 127.0.0.1 SEULEMENT
+    enabled: bool = False             # spectre HF du poste ; false = comme avant (un seul port, pas de waterfall HF)
+    source: str = "rigctld"           # "rigctld" : Hamlib 4.6+ async + diffusion UDP locale (rejeté sous Windows avec un
+                                      # IC-7300MK2) ; "civ_port" : second port série du poste réglé en CI-V (Icom)
+    data_port: int = 4572             # source rigctld : port UDP de la diffusion, sur 127.0.0.1 SEULEMENT
     max_fps: int = 10                 # cadence maximale envoyée aux clients (images par seconde)
+    port: str = ""                    # source civ_port : second port du poste (ex. COM7) ; JAMAIS le port CAT ou PTT
+    civ_address: str = ""             # source civ_port : adresse CI-V du poste en hexadécimal (ex. B6), revérifiée à chaque ouverture
+    baud: int = 115200                # source civ_port : débit du second port
+
+
+SPECTRUM_SOURCES = ("rigctld", "civ_port")
+CIV_BAUDS = (9600, 19200, 38400, 57600, 115200)
+
+
+def is_icom_model(model: int) -> bool:
+    """Modèles Hamlib du pilote Icom (numéros 3001 à 3999)."""
+    return 3000 < model < 4000
+
+
+def parse_civ_address(text: str) -> int | None:
+    """« B6 », « b6 » ou « 0xB6 » -> 0xB6 ; None si invalide (01 à DF)."""
+    t = text.strip().lower().removeprefix("0x")
+    if not re.fullmatch(r"[0-9a-f]{1,2}", t):
+        return None
+    value = int(t, 16)
+    return value if 0x01 <= value <= 0xDF else None
 
 
 # Options -C de rigctld réservées à [spectrum] : jamais dans extra_conf (le serveur de commandes UDP de Hamlib
@@ -147,7 +170,7 @@ SPECTRUM_MIN_SPEED = 115200
 
 def spectrum_rigctld_conf(cfg: "Config") -> list[str]:
     """Options de rigctld pour le spectre (vide si désactivé) : diffusion vers 127.0.0.1, commandes UDP coupées."""
-    if not cfg.spectrum.enabled:
+    if not cfg.spectrum.enabled or cfg.spectrum.source != "rigctld":
         return []
     return ["-C", f"async=1,multicast_data_addr=127.0.0.1,multicast_data_port={cfg.spectrum.data_port},"
                   "multicast_cmd_addr=0.0.0.0"]
@@ -319,7 +342,21 @@ def validate(cfg: Config) -> list[str]:
         p.append("[spectrum] data_port hors plage (1024 à 65535)")
     if isinstance(sp.max_fps, bool) or not isinstance(sp.max_fps, int) or not 1 <= sp.max_fps <= 20:
         p.append("[spectrum] max_fps : de 1 à 20 images par seconde")
-    if sp.enabled is True and r.speed and r.speed < SPECTRUM_MIN_SPEED:
+    if sp.source not in SPECTRUM_SOURCES:
+        p.append(f"[spectrum] source : {' ou '.join(SPECTRUM_SOURCES)} attendu")
+    if sp.enabled is True and sp.source == "civ_port":
+        same = {x.strip().lower() for x in (r.port, r.ptt_port) if x and x.strip()}
+        if not isinstance(sp.port, str) or not sp.port.strip():
+            p.append("[spectrum] port : second port du poste à indiquer (ex. COM7), ou enabled = false")
+        elif sp.port.strip().lower() in same:
+            p.append(f"[spectrum] port {sp.port} : c'est le port CAT ou PTT du poste ; il faut le SECOND port, réglé en CI-V")
+        if not isinstance(sp.civ_address, str) or parse_civ_address(sp.civ_address) is None:
+            p.append("[spectrum] civ_address : adresse CI-V du poste en hexadécimal, de 01 à DF (ex. B6)")
+        if sp.baud not in CIV_BAUDS:
+            p.append(f"[spectrum] baud : {', '.join(map(str, CIV_BAUDS))}")
+        if not is_icom_model(r.model):
+            p.append("[spectrum] source civ_port : postes Icom seulement (modèle Hamlib 3xxx)")
+    if sp.enabled is True and sp.source == "rigctld" and r.speed and r.speed < SPECTRUM_MIN_SPEED:
         p.append(f"[spectrum] le spectre exige [rig] speed = {SPECTRUM_MIN_SPEED} au moins (débit actuel {r.speed}) : "
                  "à un débit plus bas, il saturerait la liaison et retarderait les ordres du PTT")
 
@@ -364,7 +401,7 @@ def warnings(cfg: Config) -> list[str]:
     problem = exposure_problem(cfg)
     if problem:
         w.append(problem)
-    if cfg.spectrum.enabled and cfg.rig.port and not cfg.rig.speed:
+    if cfg.spectrum.enabled and cfg.spectrum.source == "rigctld" and cfg.rig.port and not cfg.rig.speed:
         w.append(f"[spectrum] activé avec le débit par défaut de Hamlib : indique [rig] speed = {SPECTRUM_MIN_SPEED} "
                  "(et le même débit CI-V dans le menu du poste).")
     if any(c.token for c in cfg.clients):
@@ -529,8 +566,12 @@ def render_toml(cfg: Config) -> str:
         f"allow_prerelease = {str(cfg.update.allow_prerelease).lower()}   # true : propose aussi les pré-versions",
         "",
         "[spectrum]",
-        f"enabled = {str(cfg.spectrum.enabled).lower()}   # spectre HF du poste (Hamlib 4.6+, débit 115200) ; diffusion locale seulement",
-        f"data_port = {cfg.spectrum.data_port}   # UDP sur 127.0.0.1",
+        f"enabled = {str(cfg.spectrum.enabled).lower()}   # spectre HF du poste (waterfall HF) ; false = un seul port, comme avant",
+        f"source = {_s(cfg.spectrum.source)}   # civ_port : second port CI-V du poste (Icom) ; rigctld : Hamlib 4.6+ async",
+        f"port = {_s(cfg.spectrum.port)}   # civ_port : second port du poste (jamais le port CAT) ; trx-setup --spectre PORT",
+        f"civ_address = {_s(cfg.spectrum.civ_address)}   # civ_port : adresse CI-V du poste (hexadécimal), revérifiée à chaque ouverture",
+        f"baud = {cfg.spectrum.baud}   # civ_port : débit du second port",
+        f"data_port = {cfg.spectrum.data_port}   # rigctld : UDP sur 127.0.0.1",
         f"max_fps = {cfg.spectrum.max_fps}   # images par seconde envoyées aux clients (1 à 20)",
         "",
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",

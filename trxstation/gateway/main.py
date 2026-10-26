@@ -26,6 +26,7 @@ from ..layout import LayoutStore
 from ..modules.gateway_bridge import ModuleBridge
 from ..paths import default_config_path
 from ..procutil import pid_alive
+from ..spectrum.service import SpectrumService
 from .audio import AudioConfigError, AudioPipeline
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
@@ -60,7 +61,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     link = CatLink(cfg.network.rigctld_host, cfg.network.rigctld_port, capabilities=capabilities)
     ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open)
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
-    publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline)
+    spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
+    publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum)
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]
     if parent_pid is not None:
         tasks.append(asyncio.create_task(_watch_parent(parent_pid, stop)))
@@ -68,13 +70,15 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     bridge = ModuleBridge(cfg, ctrl, link, clients=lambda: _client_sessions(manager))
     try:
         await ctrl.start()
-        manager, runner = await _start_api(cfg, ctrl, link, pipeline, capabilities)
+        await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
+        manager, runner = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum)
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()
     finally:
         log.info("arrêt : coupure de l'émission")
         await bridge.stop()
+        await spectrum.stop()                      # réglages du spectre remis, second port fermé
         if runner is not None:
             await runner.cleanup()                 # plus de nouvelle connexion
         if manager is not None:
@@ -104,7 +108,7 @@ def _client_sessions(manager) -> list:
     return [peer.session for peer in list(manager.peers.values()) if peer.session is not None]
 
 
-async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities):
+async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=None):
     """Démarre l'API WebRTC si des clients sont autorisés, si aiortc/aiohttp sont installés et si l'exposition est sûre."""
     if not cfg.clients:
         log.warning("aucun client autorisé ([[clients]]) : pas d'API, le poste reste en réception seule")
@@ -131,7 +135,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities):
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
-                          layouts=layouts)
+                          layouts=layouts, spectrum=spectrum)
     app = make_app(ClientRegistry(cfg.clients), manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,
                    rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device))

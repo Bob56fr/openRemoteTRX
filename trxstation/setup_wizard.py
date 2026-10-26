@@ -17,7 +17,8 @@ import socket
 import subprocess
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from . import config as cfgmod
@@ -29,6 +30,7 @@ from .hamlib import find_tool
 from .migrate import is_desktop
 from .passwords import generate_password, hash_password, password_problem
 from .ports import list_serial_ports
+from .spectrum.probe import USB_SEND_WARNING, CheckFailed, CivPort, check, detect_address, open_serial
 
 TEST_TCP_PORT = 4533  # port temporaire, distinct de celui du service (4532)
 
@@ -101,8 +103,9 @@ def _query(sock: socket.socket, cmd: str, timeout: float = 3.0) -> tuple[int | N
     return code, values
 
 
-def test_link(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> dict[str, str]:
-    """Lance rigctld temporairement et lit freq/mode/PTT. Lève SetupError en cas d'échec."""
+@contextmanager
+def _temp_rigctld(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> Iterator[socket.socket]:
+    """rigctld temporaire (127.0.0.1:TEST_TCP_PORT) ; donne la connexion, arrête rigctld en sortant."""
     rigctld = find_tool("rigctld", hamlib_dir)
     if rigctld is None:
         raise SetupError("`rigctld` introuvable : installe Hamlib ou renseigne son dossier.")
@@ -120,6 +123,22 @@ def test_link(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> dict[str
                 if time.monotonic() > deadline:
                     raise SetupError("rigctld ne répond pas (délai dépassé).")
                 time.sleep(0.3)
+        yield sock
+    except (OSError, ValueError) as exc:
+        raise SetupError(f"échec de la communication : {exc}") from exc
+    finally:
+        if sock:
+            sock.close()
+        proc.terminate()
+        try:
+            proc.wait(3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+
+def test_link(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> dict[str, str]:
+    """Lance rigctld temporairement et lit freq/mode/PTT. Lève SetupError en cas d'échec."""
+    with _temp_rigctld(rig, timeout, hamlib_dir) as sock:
         result: dict[str, str] = {}
         for key, cmd in (("freq", "f"), ("mode", "m"), ("ptt", "t")):
             code, values = _query(sock, cmd)
@@ -131,16 +150,118 @@ def test_link(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> dict[str
             _query(sock, "T 0")
             result["ptt_forced_rx"] = "1"
         return result
-    except (OSError, ValueError) as exc:
-        raise SetupError(f"échec de la communication : {exc}") from exc
-    finally:
-        if sock:
-            sock.close()
-        proc.terminate()
+
+
+# --------------------------------------------------------------------------- spectre (second port CI-V)
+
+def _station_running(cfg: Config) -> bool:
+    try:
+        with socket.create_connection((cfg.network.rigctld_host, cfg.network.rigctld_port), timeout=0.3):
+            return True
+    except OSError:
+        return False
+
+
+def check_spectrum_port(cfg: Config, port: str, address: int | None = None, baud: int = 115200, *,
+                        opener: Callable = open_serial, link: Callable | None = None,
+                        settle_s: float = 0.4, say: Callable[[str], None] = print) -> int:
+    """Vérifie le second port CI-V du poste, station arrêtée, avec un rigctld temporaire sur le port CAT : PTT relu
+    avant et après l'ouverture (actif = coupure et refus), poste qui répond, spectre disponible, même fréquence que
+    sur le port CAT. Renvoie l'adresse CI-V vérifiée ; SetupError sinon. N'émet jamais."""
+    if not cfgmod.is_icom_model(cfg.rig.model):
+        raise SetupError("spectre par le second port : postes Icom seulement (modèle Hamlib 3xxx).")
+    if port.strip().lower() in {p.strip().lower() for p in (cfg.rig.port, cfg.rig.ptt_port) if p}:
+        raise SetupError(f"{port} est le port CAT ou PTT du poste : il faut le SECOND port, réglé en CI-V.")
+    if link is None and _station_running(cfg):
+        raise SetupError("la station tourne (rigctld tient le port CAT) : arrête-la d'abord (TRX Console).")
+    with (link() if link is not None else _temp_rigctld(cfg.rig, hamlib_dir=cfg.tools.hamlib_dir)) as sock:
+        def ptt() -> str:
+            code, values = _query(sock, "t")
+            return next(iter(values.values()), "") if code == 0 else ""
+
+        def freq() -> int | None:
+            code, values = _query(sock, "f")
+            try:
+                return int(float(next(iter(values.values()), ""))) if code == 0 else None
+            except ValueError:
+                return None
+
+        def refuse_keyed(when: str) -> None:
+            _query(sock, "T 0")                    # on ne peut que couper
+            raise SetupError(f"DANGER : le poste est passé en ÉMISSION {when} de {port}. Un réglage « USB SEND » ou "
+                             "« USB Keying » du poste utilise ce port : corrige-le avant toute nouvelle tentative. "
+                             "Coupure envoyée ; spectre NON activé.")
+
+        if ptt() != "0":
+            raise SetupError("le poste n'est pas en réception confirmée (PTT actif ou illisible) : essai annulé.")
         try:
-            proc.wait(3)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+            ser = opener(port, baud)
+        except ImportError as exc:
+            raise SetupError("module pyserial absent : pip install pyserial") from exc
+        except (OSError, ValueError) as exc:
+            raise SetupError(CheckFailed("open_failed", str(exc)).message(port)) from exc
+        try:
+            for _ in range(4):                     # l'ouverture a-t-elle touché au PTT ?
+                time.sleep(settle_s)
+                if ptt() != "0":
+                    ser.close()
+                    refuse_keyed("à l'ouverture")
+            civ = CivPort(ser, address or 0)
+            if address is None:
+                address = detect_address(civ)
+                if address is None:
+                    raise SetupError(CheckFailed("no_answer").message(port))
+                civ.address = address
+                say(f"  Poste trouvé sur {port} à l'adresse CI-V {address:02X}h.")
+            try:
+                check(civ, freq)
+            except CheckFailed as exc:
+                raise SetupError(exc.message(port, address)) from exc
+        finally:
+            ser.close()
+        time.sleep(settle_s)
+        if ptt() != "0":
+            refuse_keyed("à la fermeture")
+    return address
+
+
+def apply_spectrum(cfg: Config, port: str, address: int, baud: int = 115200) -> None:
+    sp = cfg.spectrum
+    sp.enabled, sp.source, sp.port, sp.civ_address, sp.baud = True, "civ_port", port, f"{address:02X}", baud
+
+
+def disable_spectrum(cfg: Config) -> None:
+    cfg.spectrum.enabled = False
+
+
+def ask_spectrum(cfg: Config) -> None:
+    """Icom : propose le waterfall HF par le second port CI-V ; échec = mode normal (un seul port)."""
+    if cfg.rig.model == DUMMY_MODEL or not cfgmod.is_icom_model(cfg.rig.model):
+        return
+    current = cfg.spectrum.enabled and cfg.spectrum.source == "civ_port"
+    print("\nSpectre HF (waterfall du poste) : certains Icom (IC-7300MK2...) ont un SECOND port série USB, "
+          "réglable en CI-V, qui le transmet sans toucher au port CAT.")
+    if not ask_yes_no("Ce poste a-t-il un second port réglé en CI-V à utiliser pour le spectre", current):
+        if current:
+            disable_spectrum(cfg)
+            print("Spectre désactivé : un seul port, sans waterfall HF.")
+        return
+    ports = [p for p in list_serial_ports() if p.strip().lower() != cfg.rig.port.strip().lower()]
+    port = choose("Second port du poste (CI-V)", [(p, p) for p in ports], current=cfg.spectrum.port or None)
+    print("\n" + USB_SEND_WARNING)
+    if ask("Tape OUI si ces réglages sont vérifiés", "").strip().upper() != "OUI":
+        disable_spectrum(cfg)
+        print("Second port non ouvert : spectre désactivé (mode normal).")
+        return
+    try:
+        address = check_spectrum_port(cfg, port, cfgmod.parse_civ_address(cfg.spectrum.civ_address) if current else None)
+    except SetupError as exc:
+        disable_spectrum(cfg)
+        print(f"  PROBLÈME DE CONFIGURATION : {exc}\n  Spectre désactivé : la station fonctionnera en mode normal "
+              "(un seul port, sans waterfall HF). Corrige le réglage puis : trx-setup --spectre " + port)
+        return
+    apply_spectrum(cfg, port, address)
+    print(f"  OK : spectre disponible sur {port} (adresse CI-V {address:02X}h). La station le revérifiera à chaque démarrage.")
 
 
 # --------------------------------------------------------------------------- dialogue
@@ -286,6 +407,7 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
                       current=cfg.audio.playback_device)
         cfg.audio.capture_device, cfg.audio.playback_device = cap, play
 
+    ask_spectrum(cfg)
     ask_bands(cfg, keep_offer=base is not None)
     ask_network(cfg, tls_dir)
     if cfg.clients:
@@ -500,10 +622,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", type=Path, metavar="FICHIER",
                     help="reprend ce fichier comme point de départ (ex. configuration importée d'un autre PC) ; "
                          "par défaut, le fichier --output s'il existe")
+    ap.add_argument("--spectre", metavar="PORT",
+                    help="vérifie le second port CI-V du poste (Icom, station arrêtée) et active le waterfall HF ; "
+                         "« off » le désactive (--output)")
+    ap.add_argument("--adresse-civ", metavar="HEX", help="avec --spectre : adresse CI-V attendue (ex. B6) ; défaut : recherche")
+    ap.add_argument("--reglages-verifies", action="store_true",
+                    help="avec --spectre : USB SEND / USB Keying déjà vérifiés (pas de question)")
     ap.add_argument("--dummy", action="store_true",
                     help="génère sans questions une config de développement (poste factice Hamlib)")
     args = ap.parse_args(argv)
     try:
+        if args.spectre:
+            return _cli_spectrum(args)
         if args.add_client or args.set_password or args.self_signed or args.tx_modes or args.bands or args.max_power is not None:
             cfg = cfgmod.load(args.output)
             if args.max_power is not None:
@@ -546,6 +676,37 @@ def main(argv: list[str] | None = None) -> int:
     except (KeyboardInterrupt, EOFError):
         print("\nInterrompu, rien n'a été écrit.", file=sys.stderr)
         return 130
+    return 0
+
+
+def _cli_spectrum(args) -> int:
+    cfg = cfgmod.load(args.output)
+    if args.spectre.strip().lower() == "off":
+        disable_spectrum(cfg)
+        write_config(cfg, args.output)
+        print("Spectre HF désactivé : un seul port, sans waterfall HF. Redémarre la station pour l'appliquer.")
+        return 0
+    address = None
+    if args.adresse_civ:
+        address = cfgmod.parse_civ_address(args.adresse_civ)
+        if address is None:
+            print("--adresse-civ : un nombre hexadécimal de 01 à DF est attendu (ex. B6).", file=sys.stderr)
+            return 2
+    print(USB_SEND_WARNING)
+    if not args.reglages_verifies and input("Tape OUI si ces réglages sont vérifiés : ").strip().upper() != "OUI":
+        print("Annulé : le second port n'a pas été ouvert, configuration inchangée.")
+        return 2
+    print(f"Vérification de {args.spectre} (lecture seule, aucune émission)...")
+    try:
+        address = check_spectrum_port(cfg, args.spectre, address)
+    except SetupError as exc:
+        print(f"PROBLÈME DE CONFIGURATION : {exc}\nSpectre NON activé : la station reste en mode normal "
+              "(un seul port, sans waterfall HF).", file=sys.stderr)
+        return 1
+    apply_spectrum(cfg, args.spectre, address)
+    write_config(cfg, args.output)
+    print(f"OK : spectre HF activé sur {args.spectre} (adresse CI-V {address:02X}h). Redémarre la station ; "
+          "elle revérifiera ce port à chaque démarrage et reviendra au mode normal en cas de problème.")
     return 0
 
 

@@ -74,8 +74,12 @@ enabled = true   # cherche une nouvelle version sur GitHub au démarrage puis to
 allow_prerelease = false   # true : propose aussi les pré-versions
 
 [spectrum]
-enabled = false   # spectre HF du poste (Hamlib 4.6+, [rig] speed = 115200) ; diffusion locale seulement
-data_port = 4572   # UDP sur 127.0.0.1
+enabled = false   # spectre HF du poste (waterfall HF) ; false = un seul port, comme avant
+source = "rigctld"   # civ_port : second port CI-V du poste (Icom) ; rigctld : Hamlib 4.6+ async ([rig] speed = 115200)
+port = ""   # civ_port : second port du poste (ex. COM7), jamais le port CAT ; trx-setup --spectre PORT
+civ_address = ""   # civ_port : adresse CI-V du poste en hexadécimal (ex. B6), revérifiée à chaque ouverture
+baud = 115200   # civ_port : débit du second port
+data_port = 4572   # rigctld : UDP sur 127.0.0.1
 max_fps = 10   # images par seconde envoyées aux clients (1 à 20)
 
 # Bandes où l'émission est autorisée. Liste vide = réception seule.

@@ -309,3 +309,76 @@ affiche `>>> COUPE MAINTENANT` : appuie sur la touche TRANSMIT du poste. Résult
 « Coupure par le poste (...) : vue en x s » (ton temps de réaction compris, relecture toutes les 1 s).
 « PAS VUE : le TOT de l'essai a coupé » avec le spectre activé = la relecture n'est pas fiable avec
 `async=1` : laisser `[spectrum] enabled = false`.
+
+**Résultat (IC-7300MK2, Windows, Hamlib 4.7.2)** : `async=1` est rejeté (réponses décalées, `T 0` en
+échec). Piste suivante : le second port du poste (section 14).
+
+## 14. Spectre sur le second port du poste (`civ_dual`)
+
+Certains Icom (IC-7300MK2…) exposent deux ports série USB. Si le port B est réglé en **CI-V**, rigctld peut
+garder le port A **sans async** (réglages de la station inchangés) pendant qu'on lit le spectre sur le port B.
+Cet essai vérifie que c'est vrai, **sans aucune émission**.
+
+**Avant tout**, sur le poste (MENU > SET > Connecteurs) :
+
+- « USB SEND », « USB Keying (CW) » et « USB Keying (RTTY) » : **aucun ne doit utiliser le port B**
+  (OFF, ou une ligne du port A). Sinon, ouvrir le port B peut mettre le poste en émission.
+- fonction du port B : CI-V ;
+- charge fictive ou antenne, puissance au minimum (par précaution).
+
+Station arrêtée, puis :
+
+```
+python -m trxstation.devtools.civ_dual --config station.toml --port-b COM7 --duree 30
+```
+
+L'outil lance son propre rigctld sur le port A de station.toml (127.0.0.1:4542, sans async, journal
+`-vvvv`), relit le PTT, ouvre le port B (RTS et DTR à zéro), relit le PTT, puis lit le spectre sur le port B
+en interrogeant rigctld (fréquence et PTT) toutes les 0,5 s. Sur le port B il parle en **E1h** (rigctld
+parle en E0h) : toute trame E0h vue sur B prouve que les deux ports partagent le même bus CI-V.
+
+Lecture du bilan (`deux-ports-<date>/resume.txt`) :
+
+| Ligne | Bon | À traiter |
+| --- | --- | --- |
+| PTT | toujours 0 | « PTT relu ACTIF » : arrêt immédiat, port B fermé, `T 0` (code 4). Revoir USB SEND / USB Keying. |
+| Spectre | « spectre reçu sur le port B » | aucun balayage : port B pas en CI-V, mauvais débit, ou sortie du spectre réservée au port A |
+| rigctld | toutes les lectures répondues | échecs ou « rigctld ne répond plus » : le flux gêne le port A |
+| Bus | 0 ligne « spectre » dans le journal de rigctld | lignes « spectre » : le spectre arrive AUSSI sur le port A. Le journal `-vvvv` ne contient que des noms de fonctions (pas d'octets) : indicatif |
+| Fréquence | identique sur A et B | différente : ne pas toucher au poste pendant l'essai, puis relancer |
+
+Si le poste ne répond pas en E1h, l'outil réessaie en E0h et le note : le comptage du bus partagé est
+alors moins parlant. Ce relevé ne remplace pas `trx-hwtest --coupure-poste` (section 13), à refaire avec
+le port B ouvert avant toute mise en service.
+
+**Résultat (IC-7300MK2, Windows)** : spectre reçu sur le port B (4 balayages/s, 475 points), rigctld
+sans échec sur le port A, ports indépendants ; `trx-hwtest --coupure-poste` avec `civ_scope` actif sur le
+port B : coupure faite sur le poste vue en 4,2 s. Voie retenue pour la station (section 15).
+
+## 15. Mettre en service le spectre par le second port (`trx-setup --spectre`)
+
+Station arrêtée, mêmes vérifications du menu que la section 14 (USB SEND / USB Keying sur le port A ou OFF,
+port B en CI-V) :
+
+```
+trx-setup --output station.toml --spectre COM7
+```
+
+L'assistant lance un rigctld temporaire sur le port CAT, relit le PTT, ouvre le port B (RTS et DTR à zéro),
+relit le PTT, puis vérifie : le poste répond en CI-V (adresse trouvée et enregistrée), il fournit le
+spectre, et il affiche la même fréquence que sur le port CAT. Si tout va bien, `[spectrum]` est écrit
+(`source = "civ_port"`, `port`, `civ_address`). Sinon : « PROBLÈME DE CONFIGURATION », rien n'est activé.
+L'assistant complet (`trx-setup` sans option) pose la même question pour un Icom.
+`trx-setup --spectre off` revient au mode normal.
+
+**À chaque démarrage, puis en continu**, la passerelle refait ces vérifications :
+
+- le port B ne s'ouvre qu'en réception confirmée, et le PTT est relu juste après : s'il passe en émission,
+  le port est refermé, la coupure est envoyée et le spectre reste désactivé jusqu'au redémarrage ;
+- adresse CI-V, spectre et fréquence vérifiés à chaque ouverture ; adresse revérifiée toutes les 30 s ;
+- plus de spectre pendant 5 s (affichage éteint sur le poste, réglage changé, câble) = problème.
+
+En cas de problème, la station continue **en mode normal** (un seul port, sans waterfall HF) et prévient :
+journal de la passerelle, page web (« Spectre HF : problème de configuration… »), `trx-monitor` (panneau
+Audio) et diagnostic de TRX Console (section « Spectre HF »). Elle réessaie seule toutes les 60 s, toujours
+en réception confirmée.

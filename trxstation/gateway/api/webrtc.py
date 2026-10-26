@@ -100,8 +100,9 @@ class _Peer:
 
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
-                 ice_servers: list[str] | None = None, memories=None, layouts=None):
+                 ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None):
         self.ctrl, self.link, self.pipeline, self.capabilities = ctrl, link, pipeline, capabilities
+        self.spectrum = spectrum                # SpectrumService : son état est joint aux messages « state »
         self.memories = memories
         self.layouts = layouts
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
@@ -135,7 +136,7 @@ class PeerManager:
                     channel.send(json.dumps(message, separators=(",", ":")))
 
             session = ControlSession(client_id, self.ctrl, self.link, self.pipeline, self.capabilities, send,
-                                     memories=self.memories, layouts=self.layouts)
+                                     memories=self.memories, layouts=self.layouts, spectrum=self.spectrum)
             peer.session = session
 
             @channel.on("message")

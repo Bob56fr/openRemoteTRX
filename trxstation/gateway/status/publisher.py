@@ -20,8 +20,9 @@ log = logging.getLogger(__name__)
 
 class StatusPublisher:
     def __init__(self, path: str | Path, link: CatLink, controller: PttController, interval_s: float = 0.25,
-                 pipeline=None):
+                 pipeline=None, spectrum=None):
         self.path = Path(path)
+        self.spectrum = spectrum
         self.link, self.controller, self.interval_s = link, controller, interval_s
         self.pipeline = pipeline
         self._seq = 0
@@ -33,7 +34,8 @@ class StatusPublisher:
         return GatewayStatus(pid=os.getpid(), seq=self._seq, written_at=time.time(),
                              ptt=self.controller.snapshot().to_dict(), rig=self.link.state.to_dict(),
                              clients=self.controller.clients,
-                             audio=self.pipeline.stats() if self.pipeline is not None else {})
+                             audio=self.pipeline.stats() if self.pipeline is not None else {},
+                             spectrum=self.spectrum.stats() if self.spectrum is not None else {})
 
     def stop(self) -> None:
         self._stop.set()

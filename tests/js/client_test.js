@@ -440,6 +440,27 @@ test("messages mal formés ou inconnus : ignorés sans exception", async () => {
   assert.ok(w.ui.logs.some(([t]) => /rate_limited/.test(t)));
 });
 
+
+test("spectre HF : la page prévient du retour au mode normal, une seule fois, puis du rétablissement", async () => {
+  const w = makeWorld();
+  await w.connected();
+  const send = (spectrum) => w.dc().onmessage({ data: JSON.stringify({ type: "state",
+    ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
+    rig: { connected: true, frequency_hz: 14200000, mode: "USB", passband_hz: 2400, strength_db: -12 },
+    audio: {}, clients: ["phone"], spectrum }) });
+  const spectrumLogs = () => w.ui.logs.filter(([text]) => text.startsWith("Spectre HF"));
+  send({ state: "waiting", code: "", message: "" }); send({ state: "ok", code: "", message: "" });
+  assert.equal(spectrumLogs().length, 0);                                  // démarrage normal : rien à signaler
+  const problem = { state: "error", code: "no_answer", message: "Aucune réponse CI-V sur COM7. Mode normal : un seul port, sans waterfall HF." };
+  send(problem); send(problem); send(problem);
+  assert.equal(spectrumLogs().length, 1);
+  assert.match(spectrumLogs()[0][0], /problème de configuration.*Mode normal/); assert.equal(spectrumLogs()[0][1], "warn");
+  send({ state: "ok", code: "", message: "" });
+  assert.match(spectrumLogs().at(-1)[0], /de nouveau disponible/);
+  w.state();                                                               // station sans spectre : aucun message
+  assert.equal(spectrumLogs().length, 2);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

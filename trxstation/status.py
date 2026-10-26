@@ -46,6 +46,7 @@ class GatewayStatus:
     clients: list[str] = field(default_factory=list)
     schema: int = SCHEMA
     audio: dict = field(default_factory=dict)   # niveaux et compteurs audio (facultatif)
+    spectrum: dict = field(default_factory=dict)  # spectre HF : state (off|waiting|starting|ok|error), code, message, compteurs
 
 
 def write_status(path: str | Path, status: GatewayStatus) -> None:
@@ -75,10 +76,11 @@ def read_status(path: str | Path) -> GatewayStatus | None:
                 or not isinstance(seq, int) or not isinstance(ptt, dict) or "state" not in ptt
                 or not isinstance(rig, dict) or not isinstance(clients, list)):
             return None
-        audio = data.get("audio", {})
+        audio, spectrum = data.get("audio", {}), data.get("spectrum", {})
         return GatewayStatus(pid=pid, seq=seq, written_at=float(data.get("written_at", 0.0)),
                              ptt=ptt, rig=rig, clients=[str(c) for c in clients],
-                             audio=audio if isinstance(audio, dict) else {})
+                             audio=audio if isinstance(audio, dict) else {},
+                             spectrum=spectrum if isinstance(spectrum, dict) else {})
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

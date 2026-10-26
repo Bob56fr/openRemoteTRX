@@ -26,7 +26,8 @@ from .protocol import PROTOCOL_VERSION, ProtocolError, parse_command
 log = logging.getLogger(__name__)
 
 
-def build_state(link: CatLink, ctrl: PttController, pipeline=None) -> dict:
+def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None) -> dict:
+    """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients."""
     rig, ptt = link.state, ctrl.snapshot()
     remaining = None if ptt.tot_remaining_s is None else round(ptt.tot_remaining_s, 1)
     return {
@@ -38,6 +39,7 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None) -> dict:
                 "functions": dict(rig.functions), "levels": dict(rig.levels)},
         "audio": pipeline.stats() if pipeline is not None else {},
         "clients": ctrl.clients,
+        "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},
     }
 
 
@@ -46,8 +48,9 @@ class ControlSession:
                  capabilities: Capabilities | None, send: Callable[[dict], None], *,
                  max_msgs_per_s: int = 30, state_interval_s: float = 0.25,
                  clock: Callable[[], float] = time.monotonic, memories: MemoryStore | None = None,
-                 layouts: LayoutStore | None = None):
+                 layouts: LayoutStore | None = None, spectrum=None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
+        self.spectrum = spectrum
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
@@ -73,8 +76,11 @@ class ControlSession:
                    "layouts": self.layouts is not None})                     # mises en page personnalisées : layout_get
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
-        self.send(build_state(self.link, self.ctrl, self.pipeline))
+        self.send(self._state())
         self._state_task = asyncio.get_running_loop().create_task(self._state_loop())
+
+    def _state(self) -> dict:
+        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum)
 
     async def close(self) -> None:
         """Idempotent. Désenregistre le client : coupe l'émission s'il en était propriétaire."""
@@ -91,7 +97,7 @@ class ControlSession:
     async def _state_loop(self) -> None:
         last_key, last_sent = "", 0.0
         while not self.closed:
-            message = build_state(self.link, self.ctrl, self.pipeline)
+            message = self._state()
             key, now = json.dumps(message, sort_keys=True), self.clock()
             if key != last_key or now - last_sent >= 1.0:
                 self.send(message)
@@ -177,7 +183,7 @@ class ControlSession:
             if cmd.name == "heartbeat":
                 self.ctrl.heartbeat(self.client_id)             # silencieux : 2 par seconde en émission
             elif cmd.name == "get_state":
-                self._result(cmd.id, True, state=build_state(self.link, self.ctrl, self.pipeline))
+                self._result(cmd.id, True, state=self._state())
             elif cmd.name == "toggle":
                 snapshot = await self.ctrl.toggle(self.client_id)
                 self._result(cmd.id, True, ptt=snapshot.to_dict())

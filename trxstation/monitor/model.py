@@ -184,11 +184,24 @@ def _db_bar(db: float | None, width: int = 16) -> str:
     return "█" * filled + "░" * (width - filled)
 
 
+def _spectrum_rows(snap: Snapshot) -> tuple[Row, ...]:
+    """Spectre HF (second port CI-V) : rien s'il n'est pas configuré."""
+    sp = {} if snap.status is None else getattr(snap.status, "spectrum", {}) or {}
+    state = sp.get("state", "off")
+    if state == "off":
+        return ()
+    if state == "ok":
+        return (Row("Spectre HF", f"reçu sur {sp.get('port', '?')} ({sp.get('fps', '?')}/s)", "ok"),)
+    if state == "error":
+        return (Row("Spectre HF", "PROBLÈME DE CONFIGURATION : " + str(sp.get("message", ""))[:160], "bad"),)
+    return (Row("Spectre HF", "en attente" if state == "waiting" else "vérification du port", "dim"),)
+
+
 def _audio_panel(snap: Snapshot) -> Panel:
     status = snap.status
     audio = {} if status is None else status.audio
     if not audio:
-        return Panel("audio", "Audio", (Row("Audio", "pas de donnée (audio inactif)", "dim"),))
+        return Panel("audio", "Audio", (Row("Audio", "pas de donnée (audio inactif)", "dim"), *_spectrum_rows(snap)))
     rx, tx = audio.get("rx_db"), audio.get("tx_db")
     gate = bool(audio.get("gate_open"))
     dim = "info" if snap.gateway_fresh else "dim"
@@ -200,6 +213,7 @@ def _audio_panel(snap: Snapshot) -> Panel:
         Row("Trames", f"capturées {audio.get('rx_frames', 0)} · micro passées au poste {audio.get('tx_frames', 0)}", "dim"),
         Row("Pertes", f"RX {audio.get('rx_dropped', 0)}, TX hors propriétaire {audio.get('tx_dropped_not_owner', 0)}",
             "warn" if audio.get("rx_dropped", 0) or audio.get("tx_dropped_not_owner", 0) else "dim"),
+        *_spectrum_rows(snap),
     ))
 
 

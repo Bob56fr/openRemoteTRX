@@ -597,7 +597,7 @@
       if (this.pc) { this.pc.onconnectionstatechange = null; this.pc.oniceconnectionstatechange = null; try { this.pc.close(); } catch (e) { /* déjà fermée */ } this.pc = null; }
       const wasConnected = this.connected;
       this.connected = false; this.closed = true; this.armed = false; this._wasActive = false; this._txSilenceAlerted = false;
-      this.state = null; this.hello = null; this.memories = [];
+      this.state = null; this.hello = null; this.memories = []; this._spectrumKey = undefined;
       this.ui.connected(false); this.ui.armed(false); this.ui.memories([]);
       if (!silent) {                                                    // déconnexion voulue : jamais de reconnexion automatique, mot de passe oublié
         if (this.reconnecting) this._finishReconnect("cancelled");
@@ -834,11 +834,23 @@
         this.ui.log("Retour en réception" + (why ? " (" + why + ")" : "") + ".", "");
       }
       this._wasActive = active;
+      this._trackSpectrum();
       const rig = (this.state && this.state.rig) || {};
       const now = this.env.now();
       if (this.pendingHz !== null && (rig.frequency_hz === this.pendingHz || now - this.pendingSince > PENDING_MAX_MS)) this.pendingHz = null;
       this._trackBand(now, rig, active);
       this.ui.state(this.view());
+    }
+
+    _trackSpectrum() {
+      /* Spectre HF (second port du poste) : prévient l'utilisateur quand la station revient au mode normal, et quand il revient. */
+      const sp = (this.state && this.state.spectrum) || {};
+      const key = (sp.state || "off") + "|" + (sp.code || "");
+      if (key === this._spectrumKey) return;
+      const before = this._spectrumKey;
+      this._spectrumKey = key;
+      if (sp.state === "error") this.ui.log("Spectre HF : problème de configuration. " + String(sp.message || sp.code || "").slice(0, 400), "warn");
+      else if (sp.state === "ok" && before && before.startsWith("error")) this.ui.log("Spectre HF de nouveau disponible.", "");
     }
 
     _trackBand(now, rig, active) {
