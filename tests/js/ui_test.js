@@ -138,6 +138,7 @@ process.on("unhandledRejection", (err) => { console.error("ERREUR non gérée :"
 global.TrxWeb = require(path.join(STATIC, "client.js"));
 global.TrxWaterfall = require(path.join(STATIC, "waterfall.js"));
 global.TrxLayout = require(path.join(STATIC, "layout.js"));
+global.TrxTheme = require(path.join(STATIC, "theme.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -774,6 +775,16 @@ step("sons de la liaison : réglage mémorisé, essai des trois sons, coupés, J
   rigAudioList = []; $("out-select").value = ""; await $("out-select").dispatch("change"); await wait();
   await $("disconnect").click(); await wait();
   assert.equal($("alert-test").disabled, true);
+});
+
+step("thème des couleurs : choix appliqué tout de suite à la page et mémorisé sur l'appareil", async () => {
+  assert.deepEqual($("theme-select").options.map((o) => o.value), ["defaut", "icom", "yaesu", "kenwood"]);
+  assert.equal($("theme-select").value, "defaut");
+  $("theme-select").value = "kenwood"; await $("theme-select").dispatch("change", { target: $("theme-select") });
+  assert.equal(document.documentElement.getAttribute("data-theme"), "kenwood");
+  assert.equal(storage.get("trx.theme"), "kenwood");
+  $("theme-select").value = "defaut"; await $("theme-select").dispatch("change", { target: $("theme-select") });
+  assert.equal(document.documentElement.getAttribute("data-theme"), "defaut"); assert.equal(storage.get("trx.theme"), "defaut");
 });
 
 (async () => {

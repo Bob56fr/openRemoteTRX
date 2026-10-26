@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <title>Station TRX</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="client.css">
 </head>
 <body>
@@ -233,6 +234,14 @@
     <details id="sec-display">
       <summary>Affichage</summary>
       <div class="body">
+        <label>Thème des couleurs
+          <select id="theme-select">
+            <option value="defaut">Thème par défaut</option>
+            <option value="icom">Style Icom</option>
+            <option value="yaesu">Style Yaesu</option>
+            <option value="kenwood">Style Kenwood</option>
+          </select>
+        </label>
         <label>Taille du texte
           <select id="text-size">
             <option value="auto">Automatique (selon l'écran)</option>

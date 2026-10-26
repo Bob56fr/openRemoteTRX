@@ -144,6 +144,20 @@ test("réglages mémorisés : valeurs inconnues écartées, maintien conservé",
   }
 });
 
+test("palette du thème : 6 couleurs, LUT recalculée sur place, retour au défaut si invalide", () => {
+  const before = Array.from(wf.LUT);
+  assert.deepEqual(wf.parseGradient("#06080c #1e2432 #345698 #62a2ec #bee2ff #ffffff"), wf.DEFAULT_GRADIENT);
+  assert.equal(wf.parseGradient("#000000 #ffffff"), null); assert.equal(wf.parseGradient("rouge vert bleu a b c"), null);
+  assert.equal(wf.parseGradient(null), null);
+  const lut = wf.LUT;
+  const amber = ["#080600", "#2a1f06", "#8a6210", "#ffa000", "#ffd27a", "#fff0b0"];
+  assert.deepEqual(wf.setGradient(amber), amber);
+  assert.equal(wf.LUT, lut);                                                                     // même tableau : fillRow le voit tout de suite
+  assert.deepEqual([wf.LUT[0], wf.LUT[1], wf.LUT[2]], [8, 6, 0]); assert.deepEqual(wf.paletteRGB(1), [255, 240, 176]);
+  assert.deepEqual(wf.setGradient(["pas", "une", "couleur"]), wf.DEFAULT_GRADIENT);               // invalide : palette par défaut
+  assert.deepEqual(Array.from(wf.LUT), before);                                                   // exactement la palette d'origine
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

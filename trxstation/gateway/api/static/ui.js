@@ -494,13 +494,30 @@
       $("wf-speed").textContent = wf.speedLabel(wfSettings.speed); $("wf-width").textContent = wf.widthLabel(wfSettings.width);
       $("wf-gain").textContent = wf.gainLabel(wfSettings.gain); $("wf-peak").textContent = wf.peakLabel(wfSettings.peak);
     };
+    // Couleurs des dessins sur canvas : lues dans les variables CSS du thème (client.css), relues à chaque
+    // changement de thème. Valeur de secours = thème par défaut (variable absente, vieux navigateur).
+    const CANVAS_DEFAULTS = { "--fond": "#04070b", "--mesure": "#7cc0ff", "--alerte": "#f0a830",
+                              "--spectre-remplissage": "rgba(98, 162, 236, .35)", "--spectre-grille": "rgba(255, 255, 255, .11)",
+                              "--spectre-grille-forte": "rgba(255, 255, 255, .24)" };
+    let canvasColors = Object.assign({}, CANVAS_DEFAULTS);
+    function cssVar(name) {
+      try {
+        const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || null;
+      } catch (e) { return null; }
+    }
+    function loadThemeColors() {
+      for (const name of Object.keys(CANVAS_DEFAULTS)) canvasColors[name] = cssVar(name) || CANVAS_DEFAULTS[name];
+      wf.setGradient(wf.parseGradient(cssVar("--waterfall-degrade")) || wf.DEFAULT_GRADIENT);
+    }
+    loadThemeColors();
     function drawGrid() {
       gridCtx.clearRect(0, 0, WF_W, SPEC_H + FALL_H);
       const axis = $("wf-axis");
       axis.textContent = "";
       for (const tick of wf.axisTicks(wfSettings.width)) {
         const x = Math.round(tick.fraction * (WF_W - 1)) + 0.5;
-        gridCtx.strokeStyle = tick.hz % 1000 === 0 ? "rgba(255,255,255,.24)" : "rgba(255,255,255,.11)";
+        gridCtx.strokeStyle = tick.hz % 1000 === 0 ? canvasColors["--spectre-grille-forte"] : canvasColors["--spectre-grille"];
         gridCtx.lineWidth = 1; gridCtx.beginPath(); gridCtx.moveTo(x, 0); gridCtx.lineTo(x, SPEC_H + FALL_H); gridCtx.stroke();
         const label = el("span", "", tick.label);
         label.style.left = (tick.fraction * 100).toFixed(2) + "%";
@@ -508,22 +525,22 @@
       }
     }
     function resetFall() {
-      fallCtx.fillStyle = "#04070b"; fallCtx.fillRect(0, 0, WF_W, FALL_H);
+      fallCtx.fillStyle = canvasColors["--fond"]; fallCtx.fillRect(0, 0, WF_W, FALL_H);
       tracker.reset();
     }
     function drawSpectrum(values, peaks) {
-      specCtx.fillStyle = "#04070b"; specCtx.fillRect(0, 0, WF_W, SPEC_H);
+      specCtx.fillStyle = canvasColors["--fond"]; specCtx.fillRect(0, 0, WF_W, SPEC_H);
       const y = (db) => SPEC_H - 1 - wf.levelToT(db, wfSettings.gain) * (SPEC_H - 2);
       specCtx.beginPath(); specCtx.moveTo(0, SPEC_H);
       for (let x = 0; x < WF_W; x++) specCtx.lineTo(x, y(values[x]));
-      specCtx.lineTo(WF_W - 1, SPEC_H); specCtx.closePath(); specCtx.fillStyle = "rgba(98,162,236,.35)"; specCtx.fill();
+      specCtx.lineTo(WF_W - 1, SPEC_H); specCtx.closePath(); specCtx.fillStyle = canvasColors["--spectre-remplissage"]; specCtx.fill();
       specCtx.beginPath();
       for (let x = 0; x < WF_W; x++) { if (x === 0) specCtx.moveTo(x, y(values[x])); else specCtx.lineTo(x, y(values[x])); }
-      specCtx.strokeStyle = "#7cc0ff"; specCtx.lineWidth = 1; specCtx.stroke();
+      specCtx.strokeStyle = canvasColors["--mesure"]; specCtx.lineWidth = 1; specCtx.stroke();
       if (peaks) {
         specCtx.beginPath();
         for (let x = 0; x < WF_W; x++) { if (x === 0) specCtx.moveTo(x, y(peaks[x])); else specCtx.lineTo(x, y(peaks[x])); }
-        specCtx.strokeStyle = "#f0a830"; specCtx.lineWidth = 1; specCtx.stroke();
+        specCtx.strokeStyle = canvasColors["--alerte"]; specCtx.lineWidth = 1; specCtx.stroke();
       }
       const top = wf.strongest(peaks || values, wfSettings.width);
       $("wf-peakinfo").textContent = top ? "pic " + (top.hz / 1000).toFixed(2) : "";
@@ -821,6 +838,16 @@
     $("volume").addEventListener("input", (ev) => { audio.volume = parseFloat(ev.target.value); });
     $("text-size").addEventListener("change", (ev) => { store.set("trx.text", ev.target.value); applyDisplay(); });
     $("layout-select").addEventListener("change", (ev) => { store.set("trx.layout", ev.target.value); applyDisplay(); });
+    const themes = root.TrxTheme || null;                                        // theme.js, chargé dans <head>
+    const themeSelect = $("theme-select");
+    const knownTheme = (id) => themeSelect.options && Array.from(themeSelect.options).some((o) => o.value === id);
+    themeSelect.value = themes && knownTheme(themes.stored()) ? themes.stored() : "defaut";
+    if (themes && !knownTheme(themes.stored())) themes.apply("defaut");          // thème mémorisé disparu : celui par défaut
+    themeSelect.addEventListener("change", (ev) => {
+      if (themes) themes.choose(ev.target.value);
+      loadThemeColors();                                                           // canvas : nouvelles couleurs
+      if (wfVisible) { drawGrid(); resetFall(); }
+    });
     $("device-select").value = store.get("trx.device", "auto");
     $("device-select").addEventListener("change", (ev) => { store.set("trx.device", ev.target.value); renderLayout(true); });
     $("layout-factory").addEventListener("click", async () => {

@@ -20,8 +20,16 @@
   const gainLabel = (v) => "GAIN " + (v > 0 ? "+" + v : v);
   const peakLabel = (v) => (v === 0 ? "PIC OFF" : v === Infinity ? "PIC MAX" : "PIC " + v + "s");
 
-  // ---- palette : gris sombre, gris-bleu, bleu, bleu clair, blanc
-  const STOPS = [[0, 6, 8, 12], [0.2, 30, 36, 50], [0.45, 52, 86, 152], [0.7, 98, 162, 236], [0.88, 190, 226, 255], [1, 255, 255, 255]];
+  // ---- palette : 6 couleurs aux positions fixes ; thème par défaut : gris sombre, gris-bleu, bleu, bleu clair, blanc.
+  // Le thème la fournit par la variable CSS --waterfall-degrade (lue par ui.js) ; LUT est recalculée SUR PLACE.
+  const STOP_POSITIONS = [0, 0.2, 0.45, 0.7, 0.88, 1];
+  const DEFAULT_GRADIENT = ["#06080c", "#1e2432", "#345698", "#62a2ec", "#bee2ff", "#ffffff"];
+  let STOPS = [];
+
+  function parseGradient(text) {      // « #06080c #1e2432 ... » -> 6 couleurs #rrggbb, ou null si le texte ne convient pas
+    const colors = String(text || "").trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
+    return colors.length === STOP_POSITIONS.length && colors.every((c) => /^#[0-9a-f]{6}$/.test(c)) ? colors : null;
+  }
 
   function paletteRGB(t) {
     const x = Number.isFinite(t) ? Math.min(1, Math.max(0, t)) : 0;
@@ -35,7 +43,13 @@
   }
 
   const LUT = new Uint8Array(256 * 3);
-  for (let i = 0; i < 256; i++) { const [r, g, b] = paletteRGB(i / 255); LUT[i * 3] = r; LUT[i * 3 + 1] = g; LUT[i * 3 + 2] = b; }
+  function setGradient(colors) {      // couleurs invalides : palette du thème par défaut ; renvoie la palette appliquée
+    const list = parseGradient((colors || []).join(" ")) || DEFAULT_GRADIENT;
+    STOPS = list.map((c, i) => [STOP_POSITIONS[i], parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
+    for (let i = 0; i < 256; i++) { const [r, g, b] = paletteRGB(i / 255); LUT[i * 3] = r; LUT[i * 3 + 1] = g; LUT[i * 3 + 2] = b; }
+    return list;
+  }
+  setGradient(DEFAULT_GRADIENT);
 
   function levelToT(db, gain) {
     const floor = FLOOR_DB - (gain || 0);
@@ -121,6 +135,6 @@
   }
 
   const api = { SPEEDS, WIDTHS, GAINS, PEAK_TIMES, DEFAULTS, FLOOR_DB, RANGE_DB, GRID_HZ, cycle, speedLabel, widthLabel, gainLabel, peakLabel,
-                paletteRGB, LUT, levelToT, resample, fillRow, PeakTracker, strongest, axisTicks, normalizeSettings, serializeSettings, nextSetting };
+                paletteRGB, LUT, STOP_POSITIONS, DEFAULT_GRADIENT, parseGradient, setGradient, levelToT, resample, fillRow, PeakTracker, strongest, axisTicks, normalizeSettings, serializeSettings, nextSetting };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWaterfall = api; }
 })(typeof window !== "undefined" ? window : globalThis);
