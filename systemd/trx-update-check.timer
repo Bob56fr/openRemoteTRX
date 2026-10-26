@@ -1,0 +1,14 @@
+[Unit]
+Description=Recherche d'une nouvelle version de TRX distant (au démarrage puis toutes les 24 h)
+PartOf=trx-remote.target
+
+[Timer]
+Unit=trx-update-check.service
+# 2 minutes après le démarrage de la station (réseau prêt), puis toutes les 24 h.
+OnActiveSec=2min
+OnUnitActiveSec=24h
+# Étale les requêtes des stations sur GitHub.
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=trx-remote.target

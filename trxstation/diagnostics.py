@@ -140,6 +140,10 @@ class System:
         from .setup_wizard import local_addresses
         return local_addresses()
 
+    def previous_version(self) -> str | None:
+        from .update.apply import previous_version
+        return previous_version()
+
 
 # --------------------------------------------------------------------------- tests
 
@@ -397,6 +401,46 @@ def check_network(sysm: System, cfg: Config | None) -> list[Check]:
     return out
 
 
+def check_update(sysm: System, cfg: Config | None) -> list[Check]:
+    from . import __version__
+    from .update.check import clean_text, parse_state, parse_version, state_path
+    from .update.pubkey import PUBLIC_KEYS
+
+    s = "Mise à jour"
+    out = [Check(s, "Version installée", INFO, __version__)]
+    previous = sysm.previous_version()
+    if previous:
+        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 11)"))
+    if not PUBLIC_KEYS:
+        out.append(Check(s, "Clé de signature", WARN, "aucune clé connue : mise à jour automatique impossible",
+                         "Installe une version publiée (sudo bash install.sh)"))
+    if cfg is None:
+        return out
+    if not cfg.update.enabled:
+        out.append(Check(s, "Recherche de mise à jour", INFO, "désactivée ([update] enabled = false)"))
+        return out
+    text = sysm.read_text(state_path(cfg.supervisor.state_dir))
+    state = parse_state(text) if text is not None else None
+    if state is None:
+        out.append(Check(s, "Recherche de mise à jour", INFO, "pas encore faite (2 minutes après le démarrage)"))
+        return out
+    age_h = max(0.0, sysm.now() - state.checked_at) / 3600
+    stale = state.ok and age_h > 72
+    if not state.ok:
+        out.append(Check(s, "Recherche de mise à jour", WARN,
+                         f"dernière recherche impossible : {clean_text(state.error, 200, single_line=True)}",
+                         "Vérifie la connexion Internet ; nouvel essai automatique dans 24 h"))
+    elif stale:
+        out.append(Check(s, "Recherche de mise à jour", WARN, f"dernière recherche il y a {age_h / 24:.0f} jours",
+                         "systemctl status trx-update-check.timer"))
+    release = state.release
+    if release is not None and (parse_version(release.version) or ()) > (parse_version(__version__) or ()):
+        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 10 de TRX Console"))
+    elif state.ok and not stale:
+        out.append(Check(s, "Recherche de mise à jour", OK, f"à jour (vérifié il y a {age_h:.0f} h)"))
+    return out
+
+
 def run_all(sysm: System | None = None, path: Path = CONFIG_PATH) -> list[Check]:
     sysm = sysm or System()
     checks = check_system(sysm)
@@ -406,6 +450,7 @@ def run_all(sysm: System | None = None, path: Path = CONFIG_PATH) -> list[Check]
     checks += check_hardware(sysm, cfg)
     checks += check_services(sysm, cfg)
     checks += check_network(sysm, cfg)
+    checks += check_update(sysm, cfg)
     return checks
 
 

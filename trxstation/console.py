@@ -1,7 +1,8 @@
 """TRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
 
 Un menu numéroté regroupe le diagnostic, l'assistant de configuration, le tableau de bord, l'essai du poste,
-le démarrage et l'arrêt des services, le journal, le rapport de dépannage et la sortie du mode sûr.
+le démarrage et l'arrêt des services, le journal, le rapport de dépannage, la sortie du mode sûr,
+la mise à jour (paquet signé, après confirmation) et le retour à la version précédente.
 Les actions qui touchent au système passent par `sudo` : le mot de passe de session est demandé au besoin.
 
     trx-console               menu
@@ -17,10 +18,27 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
+from .paths import default_state_dir
+from .update import apply as upd
+from .update.apply import previous_version
+from .update.check import UpdateState, clean_text, parse_version, read_state, state_path
 
 TARGET = "trx-remote.target"
 IMPORT_NAME = "station.import.toml"
+CHECK_UNIT = "trx-update-check.service"
+INSTALL_LOG = "/var/log/trx-remote-install.log"
+
+
+def config_state_dir(config: Path) -> Path:
+    """Dossier d'état de la station (repli : emplacement par défaut si la configuration est illisible)."""
+    from . import config as cfgmod
+    try:
+        cfg, _ = cfgmod.load_unchecked(config)
+        return Path(cfg.supervisor.state_dir)
+    except (cfgmod.ConfigError, OSError):
+        return default_state_dir()
 
 
 class Runner:
@@ -51,8 +69,11 @@ class Runner:
 class Console:
     def __init__(self, config: Path = CONFIG_PATH, runner: Runner | None = None,
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
-                 python: str = sys.executable) -> None:
+                 python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
+                 previous: Callable[[], str | None] = previous_version, installed: str = __version__) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
+        self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
+        self.previous, self.installed = previous, installed
         self.items: list[tuple[str, str, Callable[[], None]]] = [
             ("1", "Diagnostic complet", self.diagnostic),
             ("2", "Assistant de configuration", self.assistant),
@@ -63,6 +84,8 @@ class Console:
             ("7", "Journal de la station", self.journal),
             ("8", "Rapport de dépannage (zip sur le Bureau)", self.report),
             ("9", "Sortir du mode sûr", self.clear_safe_mode),
+            ("10", "Mise à jour de TRX distant", self.update),
+            ("11", "Revenir à la version précédente", self.rollback),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -161,6 +184,69 @@ class Console:
         if code == 0:
             self.start()
 
+    def update(self) -> None:
+        state = self.update_state()
+        if state is None:
+            self.say("Pas encore de recherche de mise à jour (elle a lieu 2 minutes après le démarrage de la station).")
+            if self.config.exists() and self.yes("Chercher maintenant", False):
+                self.runner.run(["systemctl", "start", CHECK_UNIT], admin=True)
+                state = self.update_state()
+            if state is None:
+                return
+        if not state.ok:
+            self.say(f"Dernière recherche impossible : {clean_text(state.error, 300, single_line=True)}")
+        release = self.offered(state)
+        if release is None:
+            self.say(f"TRX distant est à jour (version {self.installed}).")
+            return
+        published = clean_text(release.published_at, 40, single_line=True)
+        self.say(f"\nNouvelle version : {release.version}{' (PRÉ-VERSION)' if release.prerelease else ''}"
+                 f" ; installée : {self.installed}\n{clean_text(release.name, 120, single_line=True)}"
+                 f"{' (' + published + ')' if published else ''}")
+        self.say("\nNotes de version :\n" + (clean_text(release.notes, 4000) or "(aucune)"))
+        self.say("\nPendant l'installation (quelques minutes, Internet nécessaire), la station est arrêtée.\n"
+                 "Elle est refusée tant que le poste émet. Le paquet est vérifié (signature) avant toute installation ;\n"
+                 f"la version {self.installed}, station.toml et les certificats sont conservés.")
+        typed = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
+        if typed != release.version:
+            self.say("Mise à jour annulée : rien n'a été modifié.")
+            return
+        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
+                                           "--version", release.version), admin=True)
+        self.say(self._apply_result(code, f"Version {release.version} installée. Quitte TRX Console (q) et "
+                                          "rouvre-la pour utiliser la nouvelle version."))
+
+    def rollback(self) -> None:
+        previous = self.previous()
+        if previous is None:
+            self.say("Aucune version précédente gardée : elle apparaît après une première mise à jour.")
+            return
+        self.say(f"Version active : {self.installed}. Version précédente gardée : {previous}.\n"
+                 "Le retour se fait sans Internet ; la station est arrêtée pendant l'opération.")
+        if not self.yes(f"Revenir à la version {previous}", False):
+            return
+        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "rollback"),
+                               admin=True)
+        self.say(self._apply_result(code, f"Retour à la version {previous} fait. Quitte TRX Console (q) et "
+                                          "rouvre-la. La version plus récente restera proposée par le menu 10."))
+
+    def offered(self, state: UpdateState | None):
+        """Version annoncée seulement si elle est plus récente que celle qui tourne (latest.json peut dater)."""
+        release = state.release if state is not None else None
+        if release is None or (parse_version(release.version) or ()) <= (parse_version(self.installed) or ()):
+            return None
+        return release
+
+    @staticmethod
+    def _apply_result(code: int, success: str) -> str:
+        if code == upd.EXIT_OK:
+            return success
+        if code == upd.EXIT_TX:
+            return "Refusé : le poste émet, ou son état n'a pas pu être vérifié. Rien n'a été modifié."
+        if code == upd.EXIT_REFUSED:
+            return "Refusé : paquet non vérifié ou indisponible. Rien n'a été installé."
+        return f"Échec (code {code}) : la version active est inchangée. Détails : {INSTALL_LOG}"
+
     # ------------------------------------------------------------------ boucle
 
     def header(self) -> str:
@@ -168,7 +254,11 @@ class Console:
             state = "station PAS ENCORE CONFIGURÉE : commence par le menu 2"
         else:
             state = "station en marche" if self.station_running() else "station arrêtée"
-        return f"\n=== TRX Console === ({state})"
+        line = f"\n=== TRX Console === ({state})"
+        release = self.offered(self.update_state())
+        if release is not None:
+            line += f"\n  ** Nouvelle version {release.version} disponible : menu 10 **"
+        return line
 
     def loop(self) -> int:
         if not self.config.exists():

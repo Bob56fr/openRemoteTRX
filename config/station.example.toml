@@ -69,6 +69,10 @@ bus_port = 47810   # API interne des modules, écoute en 127.0.0.1 seulement
 run_as = "trx"   # Linux : compte des modules quand le superviseur est root (jamais root)
 extra_dir = ""   # modules supplémentaires ; vide = modules fournis seulement
 
+[update]
+enabled = true   # cherche une nouvelle version sur GitHub au démarrage puis toutes les 24 h (installation après confirmation seulement)
+allow_prerelease = false   # true : propose aussi les pré-versions
+
 # Bandes où l'émission est autorisée. Liste vide = réception seule.
 # À vérifier et adapter à ta licence et à ton pays.
 [[bands]]

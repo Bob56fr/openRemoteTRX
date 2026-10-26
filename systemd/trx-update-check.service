@@ -1,0 +1,23 @@
+[Unit]
+Description=Recherche d'une nouvelle version de TRX distant (n'installe rien)
+# Lancée par trx-update-check.timer. Écrit /var/lib/trx-remote/update/latest.json, affiché par TRX Console.
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/trx-remote/station.toml
+
+[Service]
+Type=oneshot
+User=trx
+Group=trx
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.update.check --config /etc/trx-remote/station.toml
+TimeoutStartSec=90
+Nice=10
+# Simple lecteur de l'API GitHub : aucun droit, aucun périphérique, écriture dans l'état seulement.
+NoNewPrivileges=true
+CapabilityBoundingSet=
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/trx-remote
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

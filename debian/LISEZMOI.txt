@@ -13,6 +13,8 @@ TRX distant : installation sur Debian 12 ou 13 (PC avec bureau)
 Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
 install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.
 
-Mettre à jour : même chose avec le nouveau zip (la configuration est conservée).
+Mettre à jour : TRX Console, menu 10, quand une nouvelle version est annoncée (paquet signé, vérifié
+                avant installation) ; ou même chose qu'à l'installation avec le nouveau zip.
+                La configuration est conservée, la version précédente aussi (TRX Console, menu 11).
 Désinstaller  : sudo bash install.sh --desinstaller
 Compte-rendu de l'installation : /var/log/trx-remote-install.log

@@ -2,16 +2,15 @@
 # Installation de TRX distant sur Debian 12 ou 13 (PC avec bureau). Relançable sans danger :
 # une nouvelle exécution répare ou met à jour, sans jamais écraser la configuration.
 #
-#   sudo bash install.sh                  installe ou met à jour
+#   sudo bash install.sh                  installe ou met à jour (la version d'avant est gardée)
 #   sudo bash install.sh --importer F     reprend la station.toml F d'un autre PC (comptes, alertes, bandes)
 #   sudo bash install.sh --desinstaller   désinstalle (la configuration est gardée si tu le demandes)
+#   sudo bash /opt/trx-remote/previous/install.sh --reactiver   revient à la version précédente, sans réseau
 #
 # Une station.toml posée à côté de ce script est importée automatiquement à la première installation.
 set -Eeuo pipefail
 
 APP_DIR=/opt/trx-remote
-SRC_DIR=$APP_DIR/app
-VENV=$APP_DIR/venv
 CONF_DIR=/etc/trx-remote
 CONF=$CONF_DIR/station.toml
 IMPORT=$CONF_DIR/station.import.toml
@@ -19,7 +18,8 @@ STATE_DIR=/var/lib/trx-remote
 LOG=/var/log/trx-remote-install.log
 SERVICE_USER=trx
 UNIT_DIR=/etc/systemd/system
-UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-remote.target)
+UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-update-check.timer trx-remote.target)
+HELPER_UNITS=(trx-update-check.service)   # lancées par un timer : copiées, jamais activées
 TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
@@ -32,6 +32,13 @@ MIN_FREE_MB=2000
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TARGET_USER=${SUDO_USER:-}
 STEP="préparation"
+
+if [[ ! -f $HERE/releases.sh ]]; then
+  printf 'Fichier manquant : releases.sh. Décompresse tout le zip et lance install.sh depuis son dossier.\n'
+  exit 1
+fi
+# shellcheck source=releases.sh
+. "$HERE/releases.sh"          # RELEASES, CURRENT_LINK, PREVIOUS_LINK, VENV, activate_release...
 
 # ------------------------------------------------------------------ affichage
 
@@ -56,7 +63,7 @@ ask_yes() {   # ask_yes "Question" défaut(o/n) : lit au clavier même si la sor
   [[ ${answer,,} == o || ${answer,,} == oui || ${answer,,} == y ]]
 }
 
-usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # ------------------------------------------------------------------ options
 
@@ -65,6 +72,7 @@ IMPORT_SOURCE=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --desinstaller|--uninstall) MODE=uninstall ;;
+    --reactiver) MODE=reactivate ;;
     --importer) IMPORT_SOURCE=${2:-}; shift ;;
     -h|--aide|--help) usage; exit 0 ;;
     *) printf 'Option inconnue : %s\n' "$1"; usage; exit 2 ;;
@@ -91,6 +99,74 @@ stop_station() {
   return 1
 }
 
+config_loads() {   # config_loads [FICHIER] : vrai si la version active accepte cette configuration
+  "$VENV/bin/python" -c 'import sys; from trxstation import config; config.load(sys.argv[1])' "${1:-$CONF}" 2>/dev/null
+}
+
+# ------------------------------------------------------------------ sortie en cours de route
+
+WAS_RUNNING=0
+BUILDING=0          # 1 : releases/$TRX_VERSION est neuve et pas encore active (à retirer si on s'arrête)
+FINISHED=0
+on_exit() {
+  [[ $FINISHED -eq 1 || $MODE == uninstall ]] && return 0
+  if [[ $BUILDING -eq 1 && $(release_of "$CURRENT_LINK") != "$TRX_VERSION" ]]; then
+    rm -rf "${RELEASES:?}/$TRX_VERSION"
+    printf '  Version %s incomplète retirée : la version active reste inchangée.\n' "$TRX_VERSION"
+  fi
+  if [[ $WAS_RUNNING -eq 1 && -x $VENV/bin/python ]] && config_loads; then
+    systemctl start trx-remote.target && printf '  Station relancée sur la version active.\n' || true
+  fi
+}
+trap on_exit EXIT
+
+# ------------------------------------------------------------------ services et lanceur (installation et retour arrière)
+
+install_services() {   # units de la version active (dossier systeme/ donné), activées au démarrage
+  local src=$1 unit
+  install -D -m 0644 "$src/trx-remote-tmpfiles.conf" "$TMPFILES"
+  systemd-tmpfiles --create "$TMPFILES"
+  for unit in "${UNITS[@]}" "${HELPER_UNITS[@]}"; do install -D -m 0644 "$src/$unit" "$UNIT_DIR/$unit"; done
+  systemctl daemon-reload
+  systemctl enable "${UNITS[@]}" >/dev/null 2>&1
+  ok "services enregistrés, démarrage automatique avec le PC (recherche de mise à jour : au démarrage puis toutes les 24 h)"
+}
+
+start_if_configured() {
+  if [[ -f $CONF ]] && config_loads; then
+    if systemctl restart trx-remote.target; then
+      ok "station démarrée"
+    else
+      warn "la station n'a pas démarré : TRX Console, menus « Diagnostic » et « Journal »"
+    fi
+  elif [[ -f $CONF ]]; then
+    warn "configuration incomplète : la station démarrera après l'assistant de TRX Console"
+  else
+    ok "la station démarrera après l'assistant de TRX Console"
+  fi
+}
+
+install_launcher() {
+  local src=$1 cmd
+  for cmd in "${COMMANDS[@]}"; do ln -sf "$VENV/bin/$cmd" "/usr/local/bin/$cmd"; done
+  install -D -m 0644 "$src/trx-console.desktop" "$DESKTOP_FILE"
+  install -D -m 0644 "$src/trx-console.svg" "$ICON_FILE"
+  command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true
+  command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q /usr/share/icons/hicolor || true
+}
+
+backup_config_for() {  # copie de station.toml prise avant de passer à la version $1 (retour arrière)
+  [[ -f $CONF ]] || return 0
+  cp -p "$CONF" "$CONF_DIR/station.toml.avant-$1"
+  chown root:"$SERVICE_USER" "$CONF_DIR/station.toml.avant-$1" && chmod 0640 "$CONF_DIR/station.toml.avant-$1"
+  local f keep_cur keep_prev
+  keep_cur=$(release_of "$CURRENT_LINK"); keep_prev=$(release_of "$PREVIOUS_LINK")
+  for f in "$CONF_DIR"/station.toml.avant-*; do
+    [[ -f $f ]] || continue
+    case ${f##*.avant-} in "$1"|"$keep_cur"|"$keep_prev") ;; *) rm -f "$f" ;; esac
+  done
+}
+
 # ------------------------------------------------------------------ désinstallation
 
 uninstall() {
@@ -100,6 +176,7 @@ uninstall() {
     systemctl disable "$unit" >/dev/null 2>&1 || true
     rm -f "$UNIT_DIR/$unit"
   done
+  for unit in "${HELPER_UNITS[@]}"; do rm -f "$UNIT_DIR/$unit"; done
   systemctl daemon-reload
   ok "services supprimés"
   for cmd in "${COMMANDS[@]}"; do rm -f "/usr/local/bin/$cmd"; done
@@ -108,7 +185,7 @@ uninstall() {
   command -v udevadm >/dev/null && udevadm control --reload || true
   command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true
   rm -rf "$APP_DIR"
-  ok "logiciel, icône et règles USB supprimés"
+  ok "logiciel (toutes les versions), icône et règles USB supprimés"
   if ask_yes "Effacer aussi la configuration (comptes, réglages du poste) et l'état de la station" n; then
     rm -rf "$CONF_DIR" "$STATE_DIR" /run/trx-remote
     userdel "$SERVICE_USER" >/dev/null 2>&1 || true
@@ -122,12 +199,49 @@ uninstall() {
 
 if [[ $MODE == uninstall ]]; then uninstall; exit 0; fi
 
+# ------------------------------------------------------------------ retour à une version déjà installée (sans réseau)
+
+reactivate() {
+  step "Retour à la version $TRX_VERSION"
+  valid_version "$TRX_VERSION" || fail "version illisible dans $HERE/app/pyproject.toml"
+  [[ $HERE == "$RELEASES/$TRX_VERSION" ]] \
+    || fail "--reactiver se lance depuis $RELEASES/<version>/install.sh (version déjà installée)"
+  local left
+  left=$(release_of "$CURRENT_LINK")
+  [[ $left != "$TRX_VERSION" ]] || fail "la version $TRX_VERSION est déjà la version active"
+  "$HERE/venv/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography' 2>/dev/null \
+    || fail "environnement Python de la version $TRX_VERSION abîmé : réinstalle-la depuis son zip"
+  stop_station && WAS_RUNNING=1 || true
+  activate_release "$TRX_VERSION" || fail "activation de la version $TRX_VERSION impossible"
+  ok "version $TRX_VERSION active (version $left gardée comme précédente)"
+  if [[ -f $CONF ]] && ! config_loads; then
+    local backup=$CONF_DIR/station.toml.avant-$left
+    if [[ -f $backup ]] && config_loads "$backup"; then
+      cp -p "$CONF" "$CONF_DIR/station.toml.version-$left"
+      cp -p "$backup" "$CONF"
+      chown root:"$SERVICE_USER" "$CONF" "$CONF_DIR/station.toml.version-$left"
+      chmod 0640 "$CONF" "$CONF_DIR/station.toml.version-$left"
+      warn "configuration refusée par la version $TRX_VERSION : celle d'avant la mise à jour est remise (l'autre est gardée dans station.toml.version-$left)"
+    else
+      warn "configuration refusée par la version $TRX_VERSION : TRX Console, menu « Assistant de configuration »"
+    fi
+  fi
+  install_services "$HERE/systeme"
+  install_launcher "$HERE/systeme"
+  FINISHED=1
+  start_if_configured
+  printf '\n%s%sRetour terminé%s (TRX distant %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
+}
+
+if [[ $MODE == reactivate ]]; then reactivate; exit 0; fi
+
 # ------------------------------------------------------------------ 1. vérifications
 
 step "1/8 Vérifications"
 for f in app/pyproject.toml app/trxstation/__init__.py systeme/trx-remote.target; do
   [[ -f $HERE/$f ]] || fail "fichier manquant : $f. Décompresse tout le zip et lance install.sh depuis son dossier."
 done
+valid_version "$TRX_VERSION" || fail "version illisible dans app/pyproject.toml : $TRX_VERSION"
 ok "TRX distant version $TRX_VERSION"
 # shellcheck disable=SC1091
 . /etc/os-release
@@ -156,7 +270,12 @@ if [[ -z $TARGET_USER || $TARGET_USER == root ]]; then
 else
   ok "compte utilisateur : $TARGET_USER"
 fi
-WAS_RUNNING=0
+CURRENT_VERSION=$(release_of "$CURRENT_LINK")
+if [[ -n $CURRENT_VERSION && $CURRENT_VERSION != "$TRX_VERSION" ]]; then
+  ok "mise à jour : $CURRENT_VERSION -> $TRX_VERSION (la version $CURRENT_VERSION est gardée pour un retour arrière)"
+elif legacy_layout; then
+  ok "mise à jour d'une installation d'avant la 0.23.0 (pas de retour arrière possible vers elle)"
+fi
 stop_station && WAS_RUNNING=1 || true
 
 # ------------------------------------------------------------------ 2. paquets Debian
@@ -192,26 +311,44 @@ fi
 # ------------------------------------------------------------------ 4. logiciel
 
 step "4/8 Logiciel TRX distant (environnement Python isolé)"
-install -d -m 0755 "$APP_DIR"
-rm -rf "$SRC_DIR"
-cp -r "$HERE/app" "$SRC_DIR"
-find "$SRC_DIR" -name '__pycache__' -prune -exec rm -rf {} +
+RELEASE=$RELEASES/$TRX_VERSION
+install -d -m 0755 "$APP_DIR" "$RELEASES"
+if [[ $HERE != "$RELEASE" ]]; then
+  [[ $(release_of "$PREVIOUS_LINK") == "$TRX_VERSION" ]] && rm -f "$PREVIOUS_LINK"
+  if [[ $TRX_VERSION != "$CURRENT_VERSION" ]]; then
+    rm -rf "$RELEASE"
+    BUILDING=1
+  fi
+  install -d -m 0755 "$RELEASE"
+  rm -rf "$RELEASE/app" "$RELEASE/systeme"
+  cp -r "$HERE/app" "$HERE/systeme" "$RELEASE/"
+  install -m 0755 "$HERE/install.sh" "$RELEASE/install.sh"
+  install -m 0644 "$HERE/releases.sh" "$RELEASE/releases.sh"
+  install -m 0644 "$HERE/LISEZMOI.txt" "$RELEASE/LISEZMOI.txt"
+fi
+find "$RELEASE" -name '__pycache__' -prune -exec rm -rf {} +
+REL_VENV=$RELEASE/venv
 SYS_PY=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-VENV_PY=$("$VENV/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true)
+VENV_PY=$("$REL_VENV/bin/python" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true)
 if [[ $VENV_PY != "$SYS_PY" ]]; then
-  python3 -m venv --clear "$VENV"
-  ok "environnement Python $SYS_PY créé dans $VENV"
+  python3 -m venv --clear "$REL_VENV"
+  ok "environnement Python $SYS_PY créé dans $REL_VENV"
 else
   ok "environnement Python $SYS_PY réutilisé"
 fi
 printf '  Téléchargement et installation des modules Python (de 2 à 10 minutes)...\n'
-"$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip setuptools wheel \
+"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip setuptools wheel \
   || fail "mise à jour de pip impossible."
-"$VENV/bin/python" -m pip install --quiet --disable-pip-version-check "$SRC_DIR[station]" \
+"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check "$RELEASE/app[station]" \
   || fail "installation des modules Python impossible (détails dans $LOG)."
-"$VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography' \
+"$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography' \
   || fail "modules Python incomplets après installation."
 ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography)"
+if [[ -n $CURRENT_VERSION && $CURRENT_VERSION != "$TRX_VERSION" ]]; then backup_config_for "$TRX_VERSION"; fi
+activate_release "$TRX_VERSION" || fail "activation de la version $TRX_VERSION impossible."
+BUILDING=0
+PREVIOUS_VERSION=$(release_of "$PREVIOUS_LINK")
+ok "version $TRX_VERSION active${PREVIOUS_VERSION:+ (version précédente gardée : $PREVIOUS_VERSION)}"
 for cmd in "${COMMANDS[@]}"; do ln -sf "$VENV/bin/$cmd" "/usr/local/bin/$cmd"; done
 ok "commandes disponibles : ${COMMANDS[*]}"
 
@@ -263,32 +400,15 @@ udevadm control --reload && udevadm trigger --subsystem-match=tty || warn "recha
 # ------------------------------------------------------------------ 7. services
 
 step "7/8 Services de la station"
-install -D -m 0644 "$HERE/systeme/trx-remote-tmpfiles.conf" "$TMPFILES"
-systemd-tmpfiles --create "$TMPFILES"
-for unit in "${UNITS[@]}"; do install -D -m 0644 "$HERE/systeme/$unit" "$UNIT_DIR/$unit"; done
-systemctl daemon-reload
-systemctl enable "${UNITS[@]}" >/dev/null 2>&1
-ok "services enregistrés, démarrage automatique avec le PC"
-if [[ -f $CONF ]] && "$VENV/bin/python" -c "from trxstation import config; config.load('$CONF')" 2>/dev/null; then
-  if systemctl restart trx-remote.target; then
-    ok "station démarrée"
-  else
-    warn "la station n'a pas démarré : TRX Console, menus « Diagnostic » et « Journal »"
-  fi
-elif [[ -f $CONF ]]; then
-  warn "configuration incomplète : la station démarrera après l'assistant de TRX Console"
-else
-  ok "la station démarrera après l'assistant de TRX Console"
-fi
+install_services "$HERE/systeme"
+FINISHED=1
+start_if_configured
 [[ $WAS_RUNNING -eq 1 && ! -f $CONF ]] && warn "la station tournait avant la mise à jour mais n'a plus de configuration"
 
 # ------------------------------------------------------------------ 8. lanceur
 
 step "8/8 Lanceur TRX Console"
-install -D -m 0644 "$HERE/systeme/trx-console.desktop" "$DESKTOP_FILE"
-install -D -m 0644 "$HERE/systeme/trx-console.svg" "$ICON_FILE"
-command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true
-command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q /usr/share/icons/hicolor || true
+install_launcher "$HERE/systeme"
 ok "icône « TRX Console » ajoutée au menu des applications"
 
 printf '\n%s%sInstallation terminée%s (TRX distant %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"

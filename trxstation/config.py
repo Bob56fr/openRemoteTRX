@@ -133,6 +133,12 @@ class Modules:
 
 
 @dataclass
+class Update:
+    enabled: bool = True              # cherche une nouvelle version au démarrage puis toutes les 24 h (rien n'est installé sans confirmation)
+    allow_prerelease: bool = False    # true : propose aussi les pré-versions publiées sur GitHub
+
+
+@dataclass
 class Band:
     name: str
     low_mhz: float
@@ -159,6 +165,7 @@ class Config:
     safety: Safety = field(default_factory=Safety)
     supervisor: Supervisor = field(default_factory=Supervisor)
     modules: Modules = field(default_factory=Modules)
+    update: Update = field(default_factory=Update)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -270,6 +277,10 @@ def validate(cfg: Config) -> list[str]:
     elif m.run_as == "root":
         p.append("[modules] run_as : un module ne doit jamais tourner en root")
 
+    for name in ("enabled", "allow_prerelease"):
+        if not isinstance(getattr(cfg.update, name), bool):
+            p.append(f"[update] {name} doit valoir true ou false")
+
     for b in cfg.bands:
         if not 0 < b.low_mhz < b.high_mhz:
             p.append(f"[[bands]] '{b.name}' : bornes invalides")
@@ -339,7 +350,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -353,6 +364,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             safety=_build(Safety, d.get("safety", {}), "safety", problems),
             supervisor=_build(Supervisor, d.get("supervisor", {}), "supervisor", problems),
             modules=_build(Modules, d.get("modules", {}), "modules", problems),
+            update=_build(Update, d.get("update", {}), "update", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -465,6 +477,10 @@ def render_toml(cfg: Config) -> str:
         f"bus_port = {cfg.modules.bus_port}   # API interne, écoute en 127.0.0.1 seulement",
         f"run_as = {_s(cfg.modules.run_as)}   # Linux : compte des modules quand le superviseur est root (jamais root)",
         f"extra_dir = {_s(cfg.modules.extra_dir)}   # modules supplémentaires ; vide = modules fournis seulement",
+        "",
+        "[update]",
+        f"enabled = {str(cfg.update.enabled).lower()}   # cherche une nouvelle version sur GitHub (installation après confirmation seulement)",
+        f"allow_prerelease = {str(cfg.update.allow_prerelease).lower()}   # true : propose aussi les pré-versions",
         "",
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",
         "# À vérifier et adapter à ta licence et à ton pays.",

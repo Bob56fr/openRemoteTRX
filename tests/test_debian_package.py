@@ -72,7 +72,8 @@ def test_install_script_references_only_shipped_system_files():
     units = re.search(r"^UNITS=\(([^)]*)\)", text, re.M).group(1).split()
     assert referenced - {"$unit"} <= set(builder.SYSTEM_FILES)
     assert set(units) <= set(builder.SYSTEM_FILES)
-    assert set(console.UNITS) | {console.TARGET} == set(units)
+    timers = {u for u in units if u.endswith(".timer")}              # tâches périodiques, hors état de la station
+    assert set(console.UNITS) | {console.TARGET} == set(units) - timers
     assert set(diagnostics.UNITS) <= set(units)
 
 
