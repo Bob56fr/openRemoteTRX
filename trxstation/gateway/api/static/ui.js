@@ -4,7 +4,7 @@
   const web = root.TrxWeb;
   if (typeof document === "undefined" || !web) return;
   const { TrxClient, modeLabel, shortMode, matchesRigDevice, parseKilohertz, chooseLayout, formatIcomFrequency, frequencyDigits, parseFrequencyEntry,
-          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs, orderModes } = web;
+          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs, orderModes, versionLabel } = web;
   const wf = root.TrxWaterfall;
   if (!wf) return;
   const hfx = root.TrxHfScope || null;              // spectre HF du poste (hfscope.js) ; sans lui, la zone ne propose que puissance et audio
@@ -1121,6 +1121,8 @@
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
+        const version = value && client.hello ? versionLabel(client.hello.version) : "";
+        $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
         for (const id of ["armed", "ptt", "stop", "freq-set", "disconnect", "mem-add-current", "step-down", "step-up",
                           "alert-test"]) $(id).disabled = !value;     // essai des sons : une fois connecté, quand la page sait quelle sortie est le poste
         $("connect").disabled = value;

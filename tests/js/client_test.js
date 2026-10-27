@@ -913,6 +913,12 @@ test("modes : USB-D, LSB-D, FM-D, AM-D d'abord (noms Hamlib 4.6 ou 4.7), puis le
   assert.deepEqual(web.orderModes(null), []);
 });
 
+test("version de la station : affichée seulement si elle a une forme de version", () => {
+  assert.equal(web.versionLabel("0.37.0"), "v0.37.0");
+  assert.equal(web.versionLabel("1.2.3-beta.1"), "v1.2.3-beta.1");
+  for (const bad of [undefined, null, 37, "", "abc", "0.37", "<b>1.0.0</b>", "1.0.0 " + "x".repeat(50)]) assert.equal(web.versionLabel(bad), "", String(bad));
+});
+
 test("poste utilisé sur place : texte du bandeau, reprise de la main", async () => {
   assert.deepEqual(web.localView({ state: "RX" }), { active: false, transmitting: false, text: "" });
   const knob = web.localView({ local_remaining_s: 101, local_reason: "frequency", local_tx: false });

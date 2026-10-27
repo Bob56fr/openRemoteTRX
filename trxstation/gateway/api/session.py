@@ -17,6 +17,7 @@ import time
 from collections import deque
 from collections.abc import Callable
 
+from ... import __version__
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
@@ -76,6 +77,7 @@ class ControlSession:
     async def start(self) -> None:
         self.ctrl.connect_client(self.client_id)
         self.send({"type": "hello", "protocol": PROTOCOL_VERSION, "client_id": self.client_id,
+                   "version": __version__,                          # affichée par la page (clients authentifiés seulement)
                    "capabilities": self.capabilities.to_dict() if self.capabilities else None,
                    "tx_modes": list(self.ctrl.config.rig.tx_modes),
                    "max_power_w": self.ctrl.config.rig.max_power_w,

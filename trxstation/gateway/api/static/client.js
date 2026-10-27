@@ -122,6 +122,11 @@
     return code ? (CUT_REASONS[code] || code) : "";
   }
 
+  function versionLabel(version) {
+    /* Version de la station (hello.version), affichée à droite de l'indicateur de connexion ; "" si absente ou étrange. */
+    return typeof version === "string" && /^\d{1,3}\.\d{1,3}\.\d{1,3}([.+-][0-9A-Za-z.]{1,20})?$/.test(version) ? "v" + version : "";
+  }
+
   const LOCAL_REASONS = { tx: "émission au micro du poste", frequency: "fréquence changée sur le poste", mode: "mode changé sur le poste" };
 
   function localView(ptt) {
@@ -1339,7 +1344,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }

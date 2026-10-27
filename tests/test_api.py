@@ -346,6 +346,8 @@ def test_session_greets_registers_and_closes_cleanly():
             assert hello["protocol"] == 1 and hello["client_id"] == "phone"
             assert hello["capabilities"]["modes"] == ["USB", "LSB"] and hello["tx_modes"] == []
             assert hello["layouts"] is False                                        # pas de stockage de mises en page ici
+            from trxstation import __version__
+            assert hello["version"] == __version__                                  # affichée par la page à droite de « Connecté »
             assert phone.of_type("state")[0]["ptt"]["state"] == "RX" and st.ctrl.clients == ["phone"]
             await phone.session.close()
             await phone.session.close()                                             # idempotent

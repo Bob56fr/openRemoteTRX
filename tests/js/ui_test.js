@@ -192,8 +192,10 @@ step("connexion : zone de connexion repliée, identifiant mémorisé, mot de pas
   $("client-id").value = "phone"; $("password").value = "mot de passe";
   await $("connect").click(); await wait();
   assert.equal(pcs.length, 1);
-  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "PKTUSB", "PKTLSB"], filters: { USB: [3000, 2400, 1800] }, preamps: [10, 20] }, tx_modes: [], max_power_w: 100, memories: MEMORIES });
+  assert.equal($("version").hidden, true);                                                    // pas de version tant qu'on n'est pas connecté
+  send({ type: "hello", protocol: 1, client_id: "phone", version: "0.37.0", capabilities: { modes: ["USB", "LSB", "PKTUSB", "PKTLSB"], filters: { USB: [3000, 2400, 1800] }, preamps: [10, 20] }, tx_modes: [], max_power_w: 100, memories: MEMORIES });
   await wait(30);
+  assert.equal($("version").hidden, false); assert.equal($("version").textContent, "v0.37.0");   // à droite de « Connecté »
   assert.equal($("password").value, "");
   assert.equal(storage.get("trx.client_id"), "phone"); assert.ok(![...storage.values()].includes("mot de passe"));
   assert.equal($("ptt").disabled, false); assert.equal($("sec-connect").open, false); assert.equal($("disconnect").disabled, false);
