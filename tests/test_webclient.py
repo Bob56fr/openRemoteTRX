@@ -125,6 +125,19 @@ def test_waterfall_logic_with_node():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+
+def test_hf_scope_view_is_loaded_served_and_its_logic_passes_with_node():
+    assert HTML.index('src="client.js"') < HTML.index('src="hfscope.js"') < HTML.index('src="ui.js"')
+    server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
+    assert '"/hfscope.js": ("hfscope.js", "text/javascript")' in server
+    for element in ("hfscope", "hf-plot", "hf-spec", "hf-fall", "hf-grid", "hf-axis", "hf-marker", "hf-stop", "hf-close", "hf-gain", "hf-range", "hf-tx"):
+        assert f'id="{element}"' in HTML, element
+    node = shutil.which("node")
+    if not node:
+        return
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "hfscope_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+
 def test_power_zone_toggles_with_the_waterfall_and_contains_po_swr_alc():
     def inside(container_id, element_id):                    # l'élément est-il dans le conteneur ? (analyse de la structure, pas une simple recherche de texte)
         from html.parser import HTMLParser

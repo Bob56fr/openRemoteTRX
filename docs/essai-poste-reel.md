@@ -382,3 +382,11 @@ En cas de problème, la station continue **en mode normal** (un seul port, sans 
 journal de la passerelle, page web (« Spectre HF : problème de configuration… »), `trx-monitor` (panneau
 Audio) et diagnostic de TRX Console (section « Spectre HF »). Elle réessaie seule toutes les 60 s, toujours
 en réception confirmée.
+
+**Affichage du spectre HF dans la page** : touche la zone des graphiques de puissance une fois (spectre de
+l'audio reçu), puis une seconde fois : le spectre HF du poste s'ouvre en plein écran et le téléphone passe en
+paysage (Chrome Android). Le trait orange marque la fréquence du poste ; « GAIN » règle la sensibilité des
+couleurs ; « STOP » coupe l'émission ; « Fermer », un appui sur le spectre ou le geste retour referment la
+vue. Si le spectre n'est pas disponible (mode normal), cette étape est sautée.
+À vérifier à l'écran : les graduations en MHz correspondent aux bords affichés par le poste, en mode
+centré comme en mode fixe ; le trait orange est sur la fréquence affichée par le poste.

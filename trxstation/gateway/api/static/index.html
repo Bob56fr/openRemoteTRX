@@ -298,9 +298,32 @@
     </div>
   </div>
 </div>
+<div id="hfscope" class="hf" hidden>
+  <div class="hf-bar">
+    <span id="hf-freq" class="hf-freq">—</span>
+    <span id="hf-mode" class="hf-mode"></span>
+    <span id="hf-tx" class="hf-tx" hidden>ÉMISSION EN COURS</span>
+    <span id="hf-info" class="hf-info"></span>
+    <span class="hf-actions">
+      <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
+      <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)">PLAGE 40 dB</button>
+      <button id="hf-stop" class="stop" title="Coupe l'émission (toujours possible)">STOP</button>
+      <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance">Fermer</button>
+    </span>
+  </div>
+  <div id="hf-plot" class="hf-plot" title="Touche pour revenir aux graphiques de puissance">
+    <canvas id="hf-spec" class="hf-spec"></canvas>
+    <canvas id="hf-fall" class="hf-fall"></canvas>
+    <canvas id="hf-grid" class="hf-grid"></canvas>
+    <div id="hf-marker" class="hf-marker" hidden></div>
+    <div id="hf-wait" class="hf-wait">En attente du spectre du poste…</div>
+  </div>
+  <div id="hf-axis" class="hf-axis"></div>
+</div>
 <audio id="rx-audio" autoplay playsinline></audio>
 <script src="client.js"></script>
 <script src="waterfall.js"></script>
+<script src="hfscope.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>
 </body>

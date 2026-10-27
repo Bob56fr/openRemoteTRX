@@ -7,6 +7,7 @@
           BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs } = web;
   const wf = root.TrxWaterfall;
   if (!wf) return;
+  const hfx = root.TrxHfScope || null;              // spectre HF du poste (hfscope.js) ; sans lui, la zone ne propose que puissance et audio
   const lay = root.TrxLayout || null;                // mises en page personnalisées (layout.js) ; sans lui, la page reste celle d'usine
 
   const $ = (id) => document.getElementById(id);
@@ -108,6 +109,10 @@
     gridCanvas.width = WF_W; gridCanvas.height = SPEC_H + FALL_H;
     const specCtx = specCanvas.getContext("2d"), fallCtx = fallCanvas.getContext("2d"), gridCtx = gridCanvas.getContext("2d");
     let rowImage = null;
+    let hfVisible = false, hfLast = null, hfRow = null, hfFreqHz = null, hfFull = false, hfFloor = null, hfLine = 2, hfValues = null;
+    let hfSettings = hfx ? hfx.normalizeSettings(safeJson(store.get("trx.hf", "null"))) : { gain: 0, range: 40 };
+    const hfSpec = $("hf-spec"), hfFall = $("hf-fall"), hfGrid = $("hf-grid");
+    const hfSpecCtx = hfSpec.getContext("2d"), hfFallCtx = hfFall.getContext("2d"), hfGridCtx = hfGrid.getContext("2d");
     let layout = null, profile = null, profileSource = "factory", profileVersion = 0, planKey = "";
 
     // ---- affichage : taille du texte et disposition (portrait par défaut, paysage proposé)
@@ -592,10 +597,144 @@
       const now = performance.now();
       if (now - lastToggle < 350) return;                                               // double appui = UNE seule bascule
       lastToggle = now;
-      wfVisible = !wfVisible;
-      $("txzone").hidden = wfVisible; $("waterfall").hidden = !wfVisible;
-      if (wfVisible) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
+      const current = hfVisible ? "hf" : wfVisible ? "audio" : "tx";
+      const hfOk = !!hfx && hfx.available(client.hello, client.state);
+      showZone(hfx ? hfx.nextView(current, hfOk) : (current === "tx" ? "audio" : "tx"));
     }
+    function showZone(next) {
+      /* Zone des graphiques : « tx » (puissance), « audio » (waterfall de l'audio reçu) ou « hf » (spectre du poste, plein écran). */
+      const audio = next === "audio";
+      if (audio !== wfVisible) {
+        wfVisible = audio;
+        $("waterfall").hidden = !audio;
+        if (audio) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
+      }
+      $("txzone").hidden = audio;
+      setHf(next === "hf");
+    }
+    // ---- spectre HF du poste : vue plein écran, dessinée à l'arrivée de chaque balayage (pas d'animation continue)
+    const hfTexts = () => {
+      if (!hfx) return;
+      $("hf-gain").textContent = hfx.gainLabel(hfSettings.gain); $("hf-range").textContent = hfx.rangeLabel(hfSettings.range);
+    };
+    function hfLevelMax() {
+      const sp = client.hello && client.hello.spectrum;
+      return sp && sp.level_max > 0 ? sp.level_max : 160;
+    }
+    function hfResize(points) {
+      /* Canvas à la résolution RÉELLE de l'écran (taille affichée × densité) ; renvoie true si la taille a changé. */
+      const ratio = window.devicePixelRatio || 1;
+      const spec = hfx.canvasSize(hfSpec.clientWidth, hfSpec.clientHeight, ratio, points, 120);
+      const fall = hfx.canvasSize(hfFall.clientWidth, hfFall.clientHeight, ratio, points, 240);
+      const grid = hfx.canvasSize(hfGrid.clientWidth, hfGrid.clientHeight, ratio, points, 360);
+      hfLine = hfx.lineHeight(ratio);
+      if (hfSpec.width === spec.width && hfSpec.height === spec.height && hfFall.width === fall.width && hfFall.height === fall.height
+          && hfGrid.width === grid.width && hfGrid.height === grid.height) return false;
+      hfSpec.width = spec.width; hfSpec.height = spec.height; hfFall.width = fall.width; hfFall.height = fall.height;
+      hfGrid.width = grid.width; hfGrid.height = grid.height; hfRow = null; hfValues = null;
+      return true;
+    }
+    function hfDrawGrid(frame) {
+      const w = hfGrid.width, h = hfGrid.height;
+      hfGridCtx.clearRect(0, 0, w, h);
+      const axis = $("hf-axis");
+      axis.textContent = "";
+      for (const tick of hfx.scopeTicks(frame.lowHz, frame.highHz, 8)) {
+        const x = Math.round(tick.fraction * (w - 1)) + 0.5;
+        hfGridCtx.strokeStyle = canvasColors["--spectre-grille"];
+        hfGridCtx.lineWidth = Math.max(1, Math.round(window.devicePixelRatio || 1)); hfGridCtx.beginPath(); hfGridCtx.moveTo(x, 0); hfGridCtx.lineTo(x, h); hfGridCtx.stroke();
+        const label = el("span", "", tick.label);
+        label.style.left = (tick.fraction * 100).toFixed(2) + "%";
+        axis.appendChild(label);
+      }
+      $("hf-info").textContent = "largeur " + hfx.spanLabel(frame.lowHz, frame.highHz) + (frame.outOfRange ? " — HORS PLAGE" : "");
+    }
+    function hfResetFall() {
+      hfFallCtx.fillStyle = canvasColors["--fond"]; hfFallCtx.fillRect(0, 0, hfFall.width, hfFall.height);
+      hfFloor = null;
+    }
+    function hfMarker() {
+      const f = hfLast ? hfx.markerFraction(hfFreqHz, hfLast.lowHz, hfLast.highHz) : null;
+      const marker = $("hf-marker");
+      marker.hidden = f === null;
+      if (f !== null) marker.style.left = (f * 100).toFixed(2) + "%";
+    }
+    function hfDraw(frame) {
+      if (!hfx || !frame || !frame.points || !frame.points.length) return;
+      const n = frame.points.length, gain = hfSettings.gain;
+      const resized = hfResize(n);
+      if (resized || !hfx.sameScale(hfLast, frame)) { hfDrawGrid(frame); hfResetFall(); }   // autre taille, largeur ou bande : historique effacé
+      hfLast = frame;
+      $("hf-wait").hidden = true;
+      const win = hfx.colorWindow(frame.points, hfLevelMax(), hfSettings.range, hfFloor);
+      hfFloor = win.floor;
+      // spectre : tracé vectoriel à la résolution de l'écran
+      const W = hfSpec.width, H = hfSpec.height, ratio = window.devicePixelRatio || 1;
+      const xOf = (i) => (n > 1 ? (i * (W - 1)) / (n - 1) : 0);
+      const y = (v) => H - 1 - hfx.windowT(v, win, gain) * (H - 2);
+      hfSpecCtx.fillStyle = canvasColors["--fond"]; hfSpecCtx.fillRect(0, 0, W, H);
+      hfSpecCtx.beginPath(); hfSpecCtx.moveTo(0, H);
+      for (let i = 0; i < n; i++) hfSpecCtx.lineTo(xOf(i), y(frame.points[i]));
+      hfSpecCtx.lineTo(W - 1, H); hfSpecCtx.closePath(); hfSpecCtx.fillStyle = canvasColors["--spectre-remplissage"]; hfSpecCtx.fill();
+      hfSpecCtx.beginPath();
+      for (let i = 0; i < n; i++) { if (i === 0) hfSpecCtx.moveTo(xOf(i), y(frame.points[i])); else hfSpecCtx.lineTo(xOf(i), y(frame.points[i])); }
+      hfSpecCtx.strokeStyle = canvasColors["--mesure"]; hfSpecCtx.lineWidth = Math.max(1, ratio); hfSpecCtx.lineJoin = "round"; hfSpecCtx.stroke();
+      // waterfall : une bande fine par balayage, lissée entre les points du poste
+      const FW = hfFall.width, FH = hfFall.height, L = Math.min(hfLine, FH);
+      if (FH > L) hfFallCtx.drawImage(hfFall, 0, 0, FW, FH - L, 0, L, FW, FH - L);    // tout descend, le nouveau balayage arrive en haut
+      if (!hfRow || hfRow.width !== FW || hfRow.height !== L) hfRow = hfFallCtx.createImageData(FW, L);
+      hfValues = hfx.interpolateRow(frame.points, FW, hfValues);
+      const d = hfRow.data;
+      for (let x = 0; x < FW; x++) {
+        const i = Math.round(hfx.windowT(hfValues[x], win, gain) * 255) * 3;
+        d[x * 4] = wf.LUT[i]; d[x * 4 + 1] = wf.LUT[i + 1]; d[x * 4 + 2] = wf.LUT[i + 2]; d[x * 4 + 3] = 255;
+      }
+      for (let line = 1; line < L; line++) d.copyWithin(line * FW * 4, 0, FW * 4);
+      hfFallCtx.putImageData(hfRow, 0, 0);
+      hfMarker();
+    }
+    function enterFullscreen() {
+      /* Plein écran puis paysage (Chrome Android) ; refusé ou absent : la vue occupe quand même toute la page. */
+      const box = $("hfscope");
+      try {
+        const pending = box.requestFullscreen ? box.requestFullscreen({ navigationUI: "hide" }) : null;
+        if (pending && pending.then) {
+          pending.then(() => {
+            try { const o = window.screen && window.screen.orientation; if (o && o.lock) o.lock("landscape").catch(() => {}); } catch (e) { /* verrou refusé */ }
+          }).catch(() => {});
+        }
+      } catch (e) { /* plein écran refusé */ }
+    }
+    function leaveFullscreen() {
+      try { const o = window.screen && window.screen.orientation; if (o && o.unlock) o.unlock(); } catch (e) { /* rien à relâcher */ }
+      try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) { /* déjà sorti */ }
+    }
+    function setHf(on) {
+      on = on && !!hfx;
+      if (on === hfVisible) return;
+      hfVisible = on;
+      $("hfscope").hidden = !on;
+      if (on) {
+        hfLast = null; $("hf-wait").hidden = false; $("hf-marker").hidden = true; $("hf-axis").textContent = ""; $("hf-info").textContent = "";
+        hfTexts(); enterFullscreen();
+        if (lastView) hfState(lastView, lastView.pttState !== "RX");
+        if (client.spectrumFrame) hfDraw(client.spectrumFrame);
+      } else {
+        leaveFullscreen();
+      }
+    }
+    function hfState(v, transmitting) {
+      if (!hfVisible) return;
+      if (!hfx.available(client.hello, client.state)) { showZone("tx"); return; }   // spectre perdu (mode normal) : retour aux graphiques
+      hfFreqHz = v.frequencyHz;
+      $("hf-freq").textContent = v.frequency;
+      $("hf-mode").textContent = v.modeShort;
+      $("hf-tx").hidden = !transmitting;
+      $("hf-tx").textContent = v.mine ? "ÉMISSION EN COURS" : "ÉMISSION (" + (v.owner || "?") + ")";
+      $("hf-stop").disabled = !v.connected;
+      hfMarker();
+    }
+
     function setupAnalysis(stream) {
       const Context = window.AudioContext || window.webkitAudioContext;
       if (!Context || !stream) return;
@@ -617,6 +756,29 @@
     }
     $("txzone").addEventListener("click", toggleWaterfall);
     $("wf-plot").addEventListener("click", toggleWaterfall);
+    $("hf-plot").addEventListener("click", toggleWaterfall);
+    $("hf-close").addEventListener("click", () => showZone("tx"));
+    $("hf-stop").addEventListener("click", () => client.stop().catch(fail));          // STOP toujours possible, même en plein écran
+    $("hf-range").addEventListener("click", () => {
+      if (!hfx) return;
+      hfSettings = Object.assign({}, hfSettings, { range: hfx.nextRange(hfSettings.range) });
+      store.set("trx.hf", JSON.stringify(hfSettings));
+      hfTexts();
+      if (hfLast) { const again = hfLast; hfLast = null; hfDraw(again); }           // nouvelle échelle de couleurs : historique effacé
+    });
+    $("hf-gain").addEventListener("click", () => {
+      if (!hfx) return;
+      hfSettings = Object.assign({}, hfSettings, { gain: hfx.nextGain(hfSettings.gain) });
+      store.set("trx.hf", JSON.stringify(hfSettings));
+      hfTexts();
+      if (hfLast) { const again = hfLast; hfLast = null; hfDraw(again); }           // nouvelle échelle de couleurs : historique effacé
+    });
+    if (document.addEventListener) {
+      document.addEventListener("fullscreenchange", () => {                           // geste « retour » : quitter le plein écran ferme la vue
+        if (document.fullscreenElement && document.fullscreenElement === $("hfscope")) { hfFull = true; return; }
+        if (hfFull) { hfFull = false; if (hfVisible) showZone("tx"); }
+      });
+    }
     for (const [id, name] of [["wf-speed", "speed"], ["wf-width", "width"], ["wf-gain", "gain"], ["wf-peak", "peak"]]) {
       $(id).addEventListener("click", () => {
         wfSettings = wf.nextSetting(wfSettings, name);
@@ -635,6 +797,9 @@
         const li = el("li", level || "", new Date().toLocaleTimeString() + "  " + text);
         logList.insertBefore(li, logList.firstChild);
         while (logList.children.length > 50) logList.removeChild(logList.lastChild);
+      },
+      spectrum(frame) {
+        if (hfVisible) hfDraw(frame);
       },
       remoteStream(stream, track) {
         const media = stream || new MediaStream([track]);
@@ -688,6 +853,7 @@
           for (const [, id] of CONTROLS) $(id).disabled = true;                          // plus de commande sans liaison
           for (const button of bandButtons.values()) button.disabled = true;
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
+          if (hfVisible) showZone("tx");
         }
       },
       state(v) {
@@ -700,6 +866,7 @@
         }
         const transmitting = v.pttState !== "RX";
         $("wf-tx").hidden = !(wfVisible && transmitting);
+        hfState(v, transmitting);
         $("wf-tx").textContent = "Po " + v.powerText + " · SWR " + (v.swr ? v.swr.text : "—") + " · ALC " + (v.alc ? v.alc.text : "—");
         $("mode-pill").textContent = v.modeShort;
         $("passband").textContent = v.passband;
@@ -847,6 +1014,7 @@
       if (themes) themes.choose(ev.target.value);
       loadThemeColors();                                                           // canvas : nouvelles couleurs
       if (wfVisible) { drawGrid(); resetFall(); }
+      if (hfVisible && hfLast) { const again = hfLast; hfLast = null; hfDraw(again); }
     });
     $("device-select").value = store.get("trx.device", "auto");
     $("device-select").addEventListener("change", (ev) => { store.set("trx.device", ev.target.value); renderLayout(true); });

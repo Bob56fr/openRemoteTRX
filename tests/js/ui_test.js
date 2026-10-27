@@ -75,7 +75,7 @@ class FakeDC { constructor() { this.readyState = "open"; this.sent = []; this.on
 class FakePC {
   constructor() { this.tracks = []; this.dc = null; this.iceGatheringState = "complete"; this.connectionState = "new"; pcs.push(this); }
   addTrack(t) { this.tracks.push(t); } addTransceiver() {}
-  createDataChannel(label) { const ch = new FakeDC(); ch.label = label; if (label === "control") this.dc = ch; return ch; }
+  createDataChannel(label) { const ch = new FakeDC(); ch.label = label; (this.channels = this.channels || {})[label] = ch; if (label === "control") this.dc = ch; return ch; }
   async createOffer() { return { sdp: "v=0", type: "offer" }; }
   async setLocalDescription(d) { this.localDescription = d; } async setRemoteDescription() {}
   async getStats() { return { forEach() {} }; }
@@ -139,6 +139,7 @@ global.TrxWeb = require(path.join(STATIC, "client.js"));
 global.TrxWaterfall = require(path.join(STATIC, "waterfall.js"));
 global.TrxLayout = require(path.join(STATIC, "layout.js"));
 global.TrxTheme = require(path.join(STATIC, "theme.js"));
+global.TrxHfScope = require(path.join(STATIC, "hfscope.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -569,6 +570,69 @@ step("waterfall : sans audio reçu, un message ; l'analyse est coupée à la dé
   await wait(400);
   await $("wf-plot").dispatch("click");
   assert.equal($("waterfall").hidden, true);
+});
+
+step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère de fréquence, STOP, fermeture si le spectre disparaît", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         spectrum: { source: "civ_port", level_max: 160, max_fps: 10 } });
+  await wait(30);
+  const hfState = (spectrum, ptt) => send({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: { connected: true, frequency_hz: 14100000, mode: "USB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} },
+    audio: {}, clients: ["phone"], spectrum });
+  const frame = (seq, low, high) => {
+    const points = 475, buf = new ArrayBuffer(16 + points), v = new DataView(buf), b = new Uint8Array(buf);
+    b[0] = 1; b[1] = 1; v.setUint32(4, seq, true); v.setUint32(8, low, true); v.setUint32(12, high, true);
+    for (let i = 0; i < points; i++) b[16 + i] = i === 237 ? 150 : 20;
+    return buf;
+  };
+  const sc = () => pcs.at(-1).channels.spectrum;
+  hfState({ state: "ok", code: "", message: "" });
+  assert.equal($("hfscope").hidden, true);
+  await $("txzone").dispatch("click"); await wait(400);                                         // puissance -> audio
+  assert.equal($("waterfall").hidden, false);
+  await $("wf-plot").dispatch("click");                                                          // audio -> spectre HF
+  assert.equal($("hfscope").hidden, false); assert.equal($("waterfall").hidden, true); assert.equal($("hf-wait").hidden, false);
+  assert.equal($("hf-freq").textContent.length > 0, true); assert.equal($("hf-tx").hidden, true);
+  sc().onmessage({ data: frame(1, 14000000, 14200000) });
+  assert.equal($("hf-wait").hidden, true);
+  assert.equal($("hf-axis").children[0].textContent, "14.000"); assert.equal($("hf-axis").children.at(-1).textContent, "14.200");
+  assert.equal($("hf-info").textContent, "largeur 200 kHz");
+  assert.equal($("hf-marker").hidden, false); assert.equal($("hf-marker").style.left, "50.00%");   // fréquence du poste au milieu
+  assert.equal($("hf-fall").ctx.lastRow.width, 475);                                              // élément sans taille (faux navigateur) : repli sur les points
+  const lines = $("hf-fall").ctx.count("putImageData");
+  sc().onmessage({ data: frame(2, 14000000, 14200000) });
+  assert.equal($("hf-fall").ctx.count("putImageData"), lines + 1);                               // une ligne par balayage
+  assert.equal($("hf-range").textContent, "PLAGE 40 dB");
+  await $("hf-gain").click(); assert.equal($("hf-gain").textContent, "GAIN +6"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 40 });
+  await $("hf-range").click(); assert.equal($("hf-range").textContent, "PLAGE 30 dB"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 30 });
+  sc().onmessage({ data: frame(3, 14000000, 14200000) });
+  const row = $("hf-fall").ctx.lastRow;                                                           // bande fine (2 px CSS), signal clair, bruit sombre
+  assert.equal(row.height, 2);
+  const lum = (x) => row.data[x * 4] + row.data[x * 4 + 1] + row.data[x * 4 + 2];
+  const peakX = Math.round((237 / 474) * (row.width - 1));
+  assert.ok(lum(peakX) > lum(10) + 200, "le signal doit ressortir nettement du bruit");
+  hfState({ state: "ok", code: "", message: "" }, { state: "TX", owner: "phone", tot_remaining_s: 80 });
+  assert.equal($("hf-tx").hidden, false); assert.equal($("hf-tx").textContent, "ÉMISSION EN COURS");   // l'émission reste visible en plein écran
+  const stops = sent("stop").length;
+  await $("hf-stop").click(); await wait();
+  assert.equal(sent("stop").length, stops + 1);                                                   // STOP toujours à portée de main
+  answerAll(); hfState({ state: "ok", code: "", message: "" });
+  hfState({ state: "error", code: "silent", message: "Plus aucune donnée du spectre. Mode normal : un seul port, sans waterfall HF." });
+  assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // spectre perdu : retour aux graphiques
+  await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
+  assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // indisponible : le cycle saute la vue HF
+  hfState({ state: "ok", code: "", message: "" });
+  await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
+  assert.equal($("hfscope").hidden, false);
+  await $("hf-close").click();
+  assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);
+  await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
+  assert.equal($("hfscope").hidden, false);
+  await $("disconnect").click(); await wait();
+  assert.equal($("hfscope").hidden, true);                                                        // déconnexion : vue fermée
 });
 
 step("déconnexion : tout revient à l'état de départ", async () => {

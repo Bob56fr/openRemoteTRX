@@ -151,7 +151,7 @@ def test_web_client_page_is_served_with_strict_headers():
                     assert r.status == 200 and "text/html" in r.headers["Content-Type"] and "client.js" in page and "ui.js" in page and "waterfall.js" in page
                     assert "default-src 'self'" in r.headers["Content-Security-Policy"]
                     assert r.headers["X-Content-Type-Options"] == "nosniff" and r.headers["Cache-Control"] == "no-store"
-                for path, kind in (("/client.js", "javascript"), ("/ui.js", "javascript"), ("/waterfall.js", "javascript"), ("/splash.webp", "image"), ("/client.css", "css")):
+                for path, kind in (("/client.js", "javascript"), ("/ui.js", "javascript"), ("/waterfall.js", "javascript"), ("/hfscope.js", "javascript"), ("/splash.webp", "image"), ("/client.css", "css")):
                     async with http.get(lb.url + path) as r:
                         assert r.status == 200 and kind in r.headers["Content-Type"]
                 async with http.get(lb.url + "/health") as r:
