@@ -212,6 +212,9 @@ class PeerManager:
         """Balayages envoyés seulement pendant que ce client affiche la vue HF (connexion encore active)."""
         if not peer.closed and self.peers.get(client_id) is peer:
             self.fanout.watch(client_id, on)
+            retry = getattr(self.spectrum, "retry_now", None)
+            if on and retry is not None:
+                retry()                            # spectre en panne passagère : nouvel essai sans attendre une minute
 
     async def _expire_if_not_connected(self, client_id: str, peer: _Peer) -> None:
         await asyncio.sleep(self.peer_timeout_s)

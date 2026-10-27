@@ -704,15 +704,17 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   await $("hf-stop").click(); await wait();
   assert.equal(sent("stop").length, stops + 1);                                                   // STOP toujours à portée de main
   answerAll(); hfState({ state: "ok", code: "", message: "" });
-  hfState({ state: "error", code: "silent", message: "Plus aucune donnée du spectre. Mode normal : un seul port, sans waterfall HF." });
-  assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // spectre perdu : retour aux graphiques
+  hfState({ state: "error", code: "silent", message: "Plus aucune donnée du spectre (écran du poste sur un menu). Mode normal : un seul port, sans waterfall HF." });
+  assert.equal($("hfscope").hidden, false);                                                      // spectre perdu : la vue reste et dit pourquoi
+  assert.equal($("hf-wait").hidden, false); assert.match($("hf-wait").textContent, /n'envoie pas de spectre.*menu.*Nouvel essai/);
+  await $("hf-close").click();
   assert.equal(sent("spectrum_watch").at(-1).on, false);
   await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
-  assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // indisponible : le cycle saute la vue HF
+  assert.equal($("hfscope").hidden, false); assert.equal(sent("spectrum_watch").at(-1).on, true);   // toujours proposée (portrait compris) : son ouverture relance un essai
   hfState({ state: "ok", code: "", message: "" });
-  await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
-  assert.equal($("hfscope").hidden, false);
-  assert.equal(sent("spectrum_watch").at(-1).on, true);
+  assert.match($("hf-wait").textContent, /En attente du spectre/);
+  sc().onmessage({ data: frame(9, 14000000, 14200000) });
+  assert.equal($("hf-wait").hidden, true);                                                       // balayages revenus
   const watches = sent("spectrum_watch").length;
   await $("hf-close").click();
   assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);
@@ -778,7 +780,8 @@ step("spectre HF intégré (paysage large) : interrupteur sous RÉCEPTION, vue e
   send({ type: "state", ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
     rig: { connected: true, frequency_hz: 14100000, mode: "PKTUSB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} }, audio: {}, clients: ["phone"],
     spectrum: { state: "error", code: "silent", message: "Plus aucune donnée du spectre. Mode normal : un seul port, sans waterfall HF." } });
-  assert.equal($("hfscope").hidden, true); assert.equal($("blk-hfdock").hidden, true);              // spectre perdu : retirée
+  assert.equal($("hfscope").hidden, false); assert.equal($("blk-hfdock").hidden, false);            // spectre perdu : la vue reste...
+  assert.equal($("hf-wait").hidden, false); assert.match($("hf-wait").textContent, /n'envoie pas de spectre/);   // ... et dit pourquoi
   st({ mode: "PKTUSB" });
   assert.equal($("hfscope").hidden, false);                                                          // de retour avec le spectre
   $("hf-dock-on").checked = false; await $("hf-dock-on").dispatch("change");

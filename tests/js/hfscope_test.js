@@ -29,6 +29,11 @@ test("disponibilité : annoncé par la station ET reçu en ce moment", () => {
   assert.equal(hf.available(hello, { spectrum: { state: "error" } }), false);      // mode normal
   assert.equal(hf.available({ spectrum: null }, { spectrum: { state: "ok" } }), false);
   assert.equal(hf.available(null, null), false);
+  assert.equal(hf.configured(hello), true); assert.equal(hf.configured({ spectrum: null }), false); assert.equal(hf.configured(null), false);
+  assert.match(hf.waitText({ spectrum: { state: "ok" } }), /En attente/);
+  assert.match(hf.waitText({ spectrum: { state: "starting" } }), /Mise en route/);
+  assert.match(hf.waitText({ spectrum: { state: "error", code: "silent", message: "Écran du poste sur un menu." } }), /n'envoie pas de spectre : Écran du poste sur un menu\. Nouvel essai/);
+  assert.match(hf.waitText({ spectrum: { state: "error", code: "no_answer" } }), /no_answer/);
 });
 
 test("niveaux : 0..level_max, gain en dB (2 niveaux par dB), bornés", () => {

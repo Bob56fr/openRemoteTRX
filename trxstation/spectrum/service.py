@@ -51,6 +51,7 @@ class SpectrumService:
     PTT_SETTLE_S = 1.5
     CLOSE_SETTLE_S = 1.5
     READY_POLL_S = 0.5
+    MIN_RETRY_S = 5.0          # relance demandée par un client (ouverture de la vue HF) : pas plus souvent
 
     def __init__(self, cfg: Spectrum, link, ctrl, *, opener: Callable = open_serial,
                  clock: Callable[[], float] = time.monotonic):
@@ -59,6 +60,7 @@ class SpectrumService:
         self.address = parse_civ_address(cfg.civ_address) if self.active else None
         self._lock = threading.Lock()
         self._stop = threading.Event()
+        self._wake = threading.Event()             # relance anticipée (retry_now)
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._state = {"state": "waiting" if self.active else "off", "code": "", "message": ""}
@@ -68,6 +70,11 @@ class SpectrumService:
         self._listeners: list[Callable[[Sweep], None]] = []
         self._requests: queue.Queue = queue.Queue(maxsize=8)
         self._settings: dict = {}
+
+    def retry_now(self) -> None:
+        """Un client ouvre la vue HF : si le spectre est en panne passagère, nouvel essai sans attendre RETRY_S
+        (au plus tôt MIN_RETRY_S après l'échec précédent ; jamais après une panne définitive). Ne lève jamais."""
+        self._wake.set()
 
     def add_listener(self, callback: Callable[[Sweep], None]) -> None:
         """Appelé dans la boucle asyncio de la passerelle à chaque balayage (jamais dans le fil de lecture)."""
@@ -209,6 +216,7 @@ class SpectrumService:
     async def stop(self) -> None:
         """Ne lève jamais : remet les réglages du poste et ferme le port B (au plus quelques secondes)."""
         self._stop.set()
+        self._wake.set()                            # sort aussi de l'attente du prochain essai
         if self._thread is not None:
             await asyncio.to_thread(self._thread.join, 5.0)
 
@@ -266,13 +274,19 @@ class SpectrumService:
                     return
                 continue
             self._set("starting")
+            self._wake.clear()
             try:
                 self._session()
             except CheckFailed as exc:
                 self._fail(exc)
                 if exc.code in PERMANENT:
                     return
-            if self._wait(self.RETRY_S):
+            first = min(self.MIN_RETRY_S, self.RETRY_S)
+            if self._wait(first):
+                return
+            self._wake.wait(max(0.0, self.RETRY_S - first))   # réveillé plus tôt par retry_now
+            self._wake.clear()
+            if self._stop.is_set():
                 return
 
     def _session(self) -> None:

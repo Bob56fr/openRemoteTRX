@@ -20,8 +20,23 @@
   }
 
   function available(hello, state) {
-    /* Spectre HF annoncé par la station ET reçu en ce moment (sinon : mode normal, pas de vue HF). */
+    /* Spectre HF annoncé par la station ET reçu en ce moment. */
     return !!(hello && hello.spectrum && state && state.spectrum && state.spectrum.state === "ok");
+  }
+
+  function configured(hello) {
+    /* La station a un spectre configuré : la vue HF est TOUJOURS proposée (même s'il ne reçoit rien en ce moment :
+       la vue dit pourquoi, et son ouverture relance un essai côté station). */
+    return !!(hello && hello.spectrum);
+  }
+
+  function waitText(state) {
+    /* Texte affiché à la place du spectre tant qu'aucun balayage n'arrive. */
+    const sp = (state && state.spectrum) || {};
+    if (sp.state === "ok") return "En attente du spectre du poste…";
+    if (sp.state === "waiting" || sp.state === "starting") return "Mise en route du spectre du poste…";
+    const why = typeof sp.message === "string" && sp.message ? sp.message.slice(0, 300) : (sp.code || "raison inconnue");
+    return "Le poste n'envoie pas de spectre : " + why + " Nouvel essai à chaque ouverture de cette vue.";
   }
 
   function levelT(value, levelMax, gainDb) {
@@ -198,7 +213,7 @@
     return layoutName === "landscape" && Number.isFinite(width) && width >= DOCK_MIN_WIDTH && !customLayout;
   }
 
-  const api = { DOCK_MIN_WIDTH, canDock, GAINS, VIEWS, LEVELS_PER_DB, RANGES_DB, DEFAULT_RANGE_DB, nextView, available, levelT, noiseFloor, colorWindow,
+  const api = { DOCK_MIN_WIDTH, canDock, configured, waitText, GAINS, VIEWS, LEVELS_PER_DB, RANGES_DB, DEFAULT_RANGE_DB, nextView, available, levelT, noiseFloor, colorWindow,
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
                 sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
                 SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,

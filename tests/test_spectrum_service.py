@@ -311,6 +311,39 @@ def test_transmission_from_elsewhere_right_after_opening_is_not_blamed_on_port_b
     assert "micro du poste" in snap["message"] and "Mode normal" in snap["message"]
 
 
+def test_opening_the_hf_view_retries_a_silent_spectrum_without_waiting_a_minute():
+    rig = PortB()
+
+    async def scenario():
+        svc, *_ = make_service(rig)
+        svc.RETRY_S, svc.MIN_RETRY_S = 30.0, 0.2                           # attente normale longue, relance rapide
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["state"] == "ok")
+        rig.mute = True                                                    # écran du poste sur un menu
+        assert await wait_for(lambda: svc.snapshot()["code"] == "silent")
+        rig.mute = False
+        await asyncio.sleep(0.5)
+        still = svc.snapshot()["state"]                                    # sans demande : il attendrait 30 s
+        svc.retry_now()                                                    # un client ouvre la vue HF
+        back = await wait_for(lambda: svc.snapshot()["state"] == "ok", 3)
+        await svc.stop()
+        return still, back
+    still, back = asyncio.run(scenario())
+    assert still == "error" and back
+
+
+def test_stop_is_not_delayed_by_the_retry_wait():
+    async def scenario():
+        svc, *_ = make_service(PortB(answers=False))
+        svc.RETRY_S, svc.MIN_RETRY_S = 30.0, 0.1
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["state"] == "error")
+        start = time.monotonic()
+        await svc.stop()
+        return time.monotonic() - start
+    assert asyncio.run(scenario()) < 2.0
+
+
 def test_transmission_pauses_the_spectrum_instead_of_failing_it():
     rig = PortB()
 

@@ -680,7 +680,7 @@
       lastToggle = now;
       if (hfDocked) { showZone(wfVisible ? "tx" : "audio", true); return; }          // spectre HF déjà affiché à droite : puissance <-> audio
       const current = hfVisible ? "hf" : wfVisible ? "audio" : "tx";
-      const hfOk = !!hfx && hfx.available(client.hello, client.state);
+      const hfOk = !!hfx && hfx.configured(client.hello);                            // proposée même sans spectre reçu : la vue dit pourquoi
       showZone(hfx ? hfx.nextView(current, hfOk) : (current === "tx" ? "audio" : "tx"));
     }
     function showZone(next, keepDock) {
@@ -700,7 +700,7 @@
          Sinon la vue intégrée se referme (et l'interrupteur disparaît s'il ne peut pas servir). */
       if (!hfx) return;
       const allowed = hfx.canDock($("app").className, window.innerWidth, !!(layout && layout.active));
-      const usable = allowed && connectedFlag && hfx.available(client.hello, client.state);
+      const usable = allowed && connectedFlag && hfx.configured(client.hello);
       $("blk-hfdock").hidden = !usable;
       $("hf-dock-on").checked = hfDockWanted;
       const want = usable && hfDockWanted;
@@ -839,7 +839,11 @@
     }
     function hfState(v, transmitting) {
       if (!hfVisible) return;
-      if (!hfx.available(client.hello, client.state)) { showZone("tx"); return; }   // spectre perdu (mode normal) : retour aux graphiques
+      if (!hfx.configured(client.hello)) { showZone("tx"); return; }               // station sans spectre : retour aux graphiques
+      const receiving = hfx.available(client.hello, client.state);
+      $("hf-wait").textContent = hfx.waitText(client.state);                       // pourquoi rien n'arrive (écran du poste, port...)
+      if (!receiving) $("hf-wait").hidden = false;
+      else if (hfLast) $("hf-wait").hidden = true;
       hfFreqHz = v.frequencyHz;
       $("hf-freq").textContent = v.frequency;
       $("hf-mode").textContent = v.modeShort;
