@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Bips de fin d'émission (roger bip, bip de liaison perdue) : synthèse bornée, réglages, et TESTS DE PANNE
 du PttController (le bip retarde la coupure : toute autre coupure doit l'interrompre net)."""
 from __future__ import annotations

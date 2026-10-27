@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """trx-setup : assistant d'installation interactif (stdlib uniquement).
 
 Étapes : modèle de TRX (Hamlib) -> port CAT -> PTT -> test de liaison -> audio

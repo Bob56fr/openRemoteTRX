@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Essai « deux ports CI-V » d'un Icom : rigctld sur le port A, spectre lu directement sur le port B.
 
     python -m trxstation.devtools.civ_dual --port-b COM7 --duree 30

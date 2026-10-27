@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Client web de référence de la station TRX.
  *
  * Il parle exactement le protocole de la passerelle (voir gateway/api/protocol.py) et sert de
@@ -51,6 +53,10 @@
     rig_already_tx: "Le poste est déjà en émission.",
     local_active: "Poste utilisé sur place (micro, bouton ou mode du poste) : PTT à distance bloqué. « Reprendre la main » pour le débloquer.",
     local_tx: "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
+    report_empty: "Le rapport est vide.",
+    report_too_soon: "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
+    report_storage_error: "La station n'a pas pu enregistrer le rapport (disque ?).",
+    reports_unavailable: "Cette station ne reçoit pas les rapports : utilise « Partager / e-mail ».",
     fault_latched: "Défaut verrouillé : intervention sur la station requise.",
     starting: "La station démarre : réessaie dans un instant.",
     not_idle: "Une coupure ou une émission est en cours.",
@@ -120,6 +126,33 @@
 
   function cutText(code) {
     return code ? (CUT_REASONS[code] || code) : "";
+  }
+
+  const MAX_REPORT_CHARS = 30000;          // même limite que la station (protocol.MAX_BUG_REPORT_CHARS)
+
+  function formatProblemReport(d) {
+    /* Rapport « Signaler un problème » : texte lisible, montré à l'utilisateur AVANT tout envoi. Aucun secret :
+       ni mot de passe, ni jeton (la page n'en garde pas). */
+    const fmt = d.formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
+    const lines = ["=== Rapport de problème TRX distant ===", "Date : " + fmt(d.now), "",
+                   "Ce qui s'est passé :", (String(d.description || "").trim() || "(non décrit)").slice(0, 2000), "",
+                   "Station : " + (d.version ? "v" + d.version : "version inconnue") + (d.protocol ? ", protocole " + d.protocol : "") +
+                   (d.account ? ", compte " + d.account : "") + (d.connected ? ", connecté" : ", NON connecté"),
+                   "Appareil : " + (d.userAgent || "?"), "Écran : " + (d.screen || "?") + (d.layout ? ", disposition " + d.layout : "") +
+                   (d.theme ? ", thème " + d.theme : "")];
+    if (d.rig) lines.push("Poste : " + d.rig);
+    if (d.spectrum) lines.push("Spectre HF : " + d.spectrum);
+    if (d.rtt !== null && d.rtt !== undefined) lines.push("Dernier temps de réponse : " + d.rtt + " ms");
+    const losses = Array.isArray(d.losses) ? d.losses.slice(0, 3) : [];
+    lines.push("", "Dernières pertes de connexion : " + (losses.length ? "" : "aucune"));
+    for (const entry of losses) lines.push(describeLoss(entry, fmt), "");
+    const errors = Array.isArray(d.errors) ? d.errors : [];
+    lines.push("Erreurs de la page : " + (errors.length ? "" : "aucune"));
+    for (const e of errors) lines.push("  " + fmt(e.t) + "  " + e.text);
+    const logs = Array.isArray(d.logs) ? d.logs : [];
+    lines.push("", "Journal de la page (dernières lignes) :");
+    for (const l of logs) lines.push("  " + fmt(l.t).split(" ").pop() + "  " + l.text);
+    return lines.join("\n").slice(0, MAX_REPORT_CHARS);
   }
 
   function versionLabel(version) {
@@ -520,6 +553,7 @@
       this.connectedAt = 0; this.lastMessageAt = 0; this.lastRttMs = null; this.pingFailures = 0; this._helloTimer = null;
       this.autoWindowS = 0; this._credentials = null; this.reconnecting = null; this._reconnectTimer = null; this._token = null;
       this.recentLogs = [];
+      this.pageErrors = [];                                            // erreurs JavaScript de la page (pour « Signaler un problème »)
       this._txSilenceAlerted = false;
       const rawLog = ui.log.bind(ui);                                  // le journal de l'écran alimente aussi le rapport de perte de connexion
       ui.log = (text, level) => { this.recentLogs.push({ t: this._epoch(), text: String(text).slice(0, 200) }); if (this.recentLogs.length > 20) this.recentLogs.shift(); rawLog(text, level); };
@@ -998,6 +1032,8 @@
       const fnControl = (key, label) => { if (key in fn) controls.push({ key: key, label: label, on: !!fn[key] }); };
       fnControl("NR", "NR"); fnControl("NB", "NB");
       if ("PREAMP" in lv) controls.push({ key: "PREAMP", label: preampText(lv.PREAMP), on: lv.PREAMP > 0 });
+      if ("ATT" in lv) controls.push({ key: "ATT", label: lv.ATT > 0 ? "ATT " + Math.round(lv.ATT) : "ATT", on: lv.ATT > 0 });
+      if ("ANF" in fn || "MN" in fn) controls.push({ key: "NOTCH", label: fn.MN ? "NOTCH M" : fn.ANF ? "NOTCH A" : "NOTCH", on: !!(fn.ANF || fn.MN) });
       fnControl("AIP", "IP+");
       if ("AGC" in lv) controls.push({ key: "AGC", label: AGC_LABELS[Math.round(lv.AGC)] || "AGC", on: lv.AGC > 0 });
       fnControl("COMP", "COMP");
@@ -1131,6 +1167,37 @@
       return res;
     }
 
+    recordError(text) {
+      /* Erreur JavaScript de la page (window.onerror) : gardée en mémoire, jamais envoyée sans l'utilisateur. */
+      this.pageErrors.push({ t: this._epoch(), text: String(text).slice(0, 300) });
+      if (this.pageErrors.length > 10) this.pageErrors.shift();
+    }
+
+    problemReport(description, device) {
+      /* Texte du rapport, à montrer à l'utilisateur avant envoi. `device` : appareil, écran, disposition, thème. */
+      const rig = (this.state && this.state.rig) || {};
+      const sp = (this.state && this.state.spectrum) || {};
+      const p = this._ptt();
+      const dev = device || {};
+      return formatProblemReport({
+        now: this._epoch(), description: description, version: this.hello && this.hello.version,
+        protocol: this.hello && this.hello.protocol, account: this.clientId, connected: this.connected,
+        userAgent: dev.userAgent, screen: dev.screen, layout: dev.layout, theme: dev.theme,
+        rig: this.state ? formatFrequency(rig.frequency_hz) + " " + (rig.mode || "?") + ", liaison CAT " + (rig.connected ? "active" : "PERDUE") +
+             ", PTT " + (p ? p.state : "?") + (p && p.local_remaining_s ? ", poste utilisé sur place" : "") : null,
+        spectrum: this.hello && this.hello.spectrum ? (sp.state || "?") + (sp.code ? " (" + sp.code + ")" : "") : null,
+        rtt: this.lastRttMs, losses: this.losses, errors: this.pageErrors, logs: this.recentLogs,
+      });
+    }
+
+    async sendProblemReport(text) {
+      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 8). */
+      const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
+      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 8).", "");
+      else this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
     async releaseLocal() {
       /* « Reprendre la main » : lève l'attente « poste utilisé sur place ». Ne commande rien au poste ; refusé par la
          station pendant une émission au micro du poste. */
@@ -1173,6 +1240,41 @@
       const values = [0].concat(Array.isArray(known) && known.length ? known : [10]);
       const i = values.indexOf(Math.round((rig.levels || {}).PREAMP || 0));
       return this._rigSetting("set_level", { name: "PREAMP", value: values[(i + 1) % values.length] });
+    }
+
+    async toggleAttenuator() {
+      /* ATT : arrêt <-> première valeur déclarée par le poste (« Attenuator: 20dB »), sinon 20 dB. */
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      const known = this._caps().attenuators;
+      const on = Array.isArray(known) && known.length ? known[0] : 20;
+      return this._rigSetting("set_level", { name: "ATT", value: ((rig.levels || {}).ATT || 0) > 0 ? 0 : on });
+    }
+
+    async setNotch(kind) {
+      /* Notch : "off", "auto" (ANF) ou "manual" (MN). Les deux fonctions ne sont jamais allumées ensemble. */
+      const fn = (this.state && this.state.rig && this.state.rig.functions) || {};
+      const want = { ANF: kind === "auto", MN: kind === "manual" };
+      const steps = [];
+      for (const name of ["ANF", "MN"]) if (name in fn && !!fn[name] && !want[name]) steps.push([name, false]);   // éteindre d'abord
+      for (const name of ["ANF", "MN"]) if (name in fn && !fn[name] && want[name]) steps.push([name, true]);
+      let res = { ok: true };
+      for (const [name, on] of steps) {
+        res = await this._rigSetting("set_function", { name: name, on: on });
+        if (!res.ok) break;
+      }
+      return res;
+    }
+
+    async cycleNotch() {
+      const fn = (this.state && this.state.rig && this.state.rig.functions) || {};
+      const order = ["off"].concat("ANF" in fn ? ["auto"] : [], "MN" in fn ? ["manual"] : []);
+      const current = fn.MN ? "manual" : fn.ANF ? "auto" : "off";
+      return this.setNotch(order[(order.indexOf(current) + 1) % order.length]);
+    }
+
+    async setLevelValue(name, value) {
+      /* Fenêtre de réglage (NR, NB) : la station vérifie la plage déclarée par le poste et refuse pendant l'émission. */
+      return this._rigSetting("set_level", { name: name, value: value });
     }
 
     async cycleAgc() {
@@ -1242,6 +1344,8 @@
         return { ok: false, reason: "tx_active" };
       }
       if (key === "PWR") return this.cyclePower();
+      if (key === "ATT") return this.toggleAttenuator();
+      if (key === "NOTCH") return this.cycleNotch();
       if (key === "PREAMP") return this.cyclePreamp();
       if (key === "AGC") return this.cycleAgc();
       if (key === "FIL") return this.cycleFilter();
@@ -1344,7 +1448,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }

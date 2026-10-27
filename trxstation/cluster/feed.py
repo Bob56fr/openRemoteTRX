@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Sources de spots : reconnexion à délai croissant, bascule entre clusters, RBN à part.
 
 - Les clusters (type « telnet ») forment UN groupe : une seule connexion à la

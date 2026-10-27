@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Faux rigctld (protocole étendu) pour développer et tester sans Hamlib ni poste.
 
 Usage manuel (ex. sous Windows, pour lancer la passerelle sans matériel) :
@@ -22,8 +24,9 @@ class FakeRigctld:
         self.passband = 2400
         self.strength = -54
         self.levels: dict[str, float] = {"ALC": 0.0, "SWR": 1.1, "RFPOWER_METER": 0.0, "COMP_METER": 0.0, "PREAMP": 10,
-                                         "ATT": 0, "AGC": 3, "SQL": 0.2, "RFPOWER": 1.0, "VD_METER": 13.8, "TEMP_METER": 31.0}
-        self.funcs: dict[str, int] = {"NR": 0, "NB": 1, "AIP": 0, "ANF": 0, "COMP": 0, "TUNER": 0}
+                                         "ATT": 0, "AGC": 3, "SQL": 0.2, "RFPOWER": 1.0, "VD_METER": 13.8, "TEMP_METER": 31.0,
+                                         "NR": 0.4, "NB": 5.0}
+        self.funcs: dict[str, int] = {"NR": 0, "NB": 1, "AIP": 0, "ANF": 0, "MN": 0, "COMP": 0, "TUNER": 0}
         self.ptt = 0
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
@@ -124,9 +127,9 @@ class FakeRigctld:
                 self.funcs[args[0]] = int(args[1])
                 return f"set_func: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "L" and len(args) == 2:
-                if args[0] not in ("SQL", "AGC", "PREAMP", "RFPOWER"):
+                if args[0] not in ("SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"):
                     return "RPRT -11\n"
-                self.levels[args[0]] = float(args[1]) if args[0] in ("SQL", "RFPOWER") else int(args[1])
+                self.levels[args[0]] = float(args[1]) if args[0] in ("SQL", "RFPOWER", "NR", "NB") else int(args[1])
                 return f"set_level: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "t":
                 return f"get_ptt:\n{self._out('PTT', self.ptt)}RPRT 0\n"

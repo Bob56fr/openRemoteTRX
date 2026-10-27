@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mots de passe des clients : hachage scrypt (bibliothèque standard), jamais stockés en clair.
 
 Format stocké : scrypt$N$r$p$<sel base64>$<empreinte base64>. La vérification coûte ~100 ms par essai,

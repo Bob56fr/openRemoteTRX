@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Validation d'un profil de mise en page. Toute entrée externe passe par ici avant d'être stockée ou affichée.
 
 `validate_profile` ne lève jamais d'exception sur une donnée mal formée : il renvoie un `Report`.

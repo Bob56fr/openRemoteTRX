@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Faux processus passerelle (vraies couches CAT, sécurité PTT et publication d'état).
 
 Sert à tester le superviseur avec de vrais processus : on peut le suspendre (SIGSTOP)

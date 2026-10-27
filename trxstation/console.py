@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """TRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
 
 Un menu numéroté regroupe le diagnostic, l'assistant de configuration, le tableau de bord, l'essai du poste,
@@ -181,10 +183,16 @@ class Console:
         if not self.config.exists():
             self.say("Configure d'abord la station (menu 2).")
             return
-        self.say("Essai sur le vrai poste : charge fictive ou antenne accordée, puissance réduite.\n"
-                 "Chaque étape d'émission demande une confirmation.")
+        self.say("Essai sur le vrai poste :\n"
+                 "  1) en réception seule (aucune émission) : CAT, audio reçu, accord, largeurs de filtre, écran du spectre\n"
+                 "  2) complet : la même chose, puis l'émission (charge fictive, puissance réduite, confirmation à chaque étape)")
+        choice = self.ask("Choix (1, 2 ; Entrée = annuler) : ").strip()
+        if choice not in ("1", "2"):
+            self.say("Annulé.")
+            return
         stopped = self.stop_for_exclusive_use("l'essai")
-        self.runner.run(self.module("trxstation.devtools.hwtest", "--config", str(self.config)), admin=True)
+        extra = ["--reception-seule"] if choice == "1" else []
+        self.runner.run(self.module("trxstation.devtools.hwtest", "--config", str(self.config), *extra), admin=True)
         if stopped and self.yes("Redémarrer la station"):
             self.start()
 

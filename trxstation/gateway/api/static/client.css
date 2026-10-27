@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Copyright (C) 2026 RF-DIY.COM */
 /* Afficheur inspiré des postes modernes : fond noir, chiffres blancs, repères bleus, TX en rouge. Aucune ressource externe. */
 /* Couleurs : TOUTES ici, en variables (docs/themes.json, thème « defaut » = apparence d'origine, valeurs exactes).
    1) les 21 rôles, contrôlés (contraste, couleur d'émission réservée) ; 2) les teintes dérivées, que les autres
@@ -33,7 +35,7 @@ html { font-size: clamp(12px, 3.3vw, 15px); height: 100%; }
 html[data-text="s"] { font-size: 12px; } html[data-text="m"] { font-size: 14px; } html[data-text="l"] { font-size: 17px; }
 body { margin: 0; height: 100%; background: var(--fond); color: var(--texte); font: 1rem/1.35 system-ui, "Segoe UI", Roboto, sans-serif;
        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 
 /* ---- disposition : haut fixe, bas qui défile */
 #app { display: flex; flex-direction: column; height: 100%; max-width: 44rem; margin: 0 auto; }
@@ -101,7 +103,7 @@ summary::-webkit-details-marker { display: none; } summary::after { content: "�
 .body { padding: 0 .8rem .8rem; display: grid; gap: .5rem; }
 label { display: grid; gap: .2rem; color: var(--texte-secondaire); font-size: .85rem; }
 label.check { display: flex; gap: .5rem; align-items: center; color: var(--texte); }
-input:not([type=checkbox]):not([type=range]), select { width: 100%; padding: .5rem .6rem; border-radius: .4rem; border: 1px solid var(--champ-bord); background: var(--fond-champ); color: var(--texte); }
+input:not([type=checkbox]):not([type=range]), select, textarea { width: 100%; padding: .5rem .6rem; border-radius: .4rem; border: 1px solid var(--champ-bord); background: var(--fond-champ); color: var(--texte); }
 input[type=checkbox] { width: 1.2rem; height: 1.2rem; }
 button { padding: .55rem .9rem; border-radius: .5rem; border: 0; background: var(--commande-fond); color: var(--texte); }
 button.primary { background: var(--accent); color: var(--texte-sur-primaire); } button.danger { background: var(--danger-fond); color: var(--texte-sur-danger); }
@@ -214,6 +216,8 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 .keypad { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; background: var(--voile); }
 .kp-panel { width: 100%; max-width: 30rem; margin: 0 auto; padding: .8rem .8rem calc(.8rem + env(safe-area-inset-bottom)); background: var(--fond-panneau); border-radius: .8rem .8rem 0 0; display: grid; gap: .5rem; }
 .kp-display { font-size: 2.2rem; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; min-height: 2.8rem; }
+.kp-display.ctl-title { font-size: 1.3rem; min-height: 0; }                 /* fenêtre de réglage NR / NB / Notch */
+#ctl-dialog .row .chip { flex: 1; min-height: 2.4rem; }
 .kp-preview { text-align: center; color: var(--mesure); min-height: 1.4rem; font-size: .9rem; }
 .kp-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
 .kp-keys button { min-height: 3.2rem; font-size: 1.4rem; font-weight: 600; }

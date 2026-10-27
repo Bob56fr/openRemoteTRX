@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Manifestes de modules (modules/<nom>/manifest.toml).
 
 Le superviseur lit chaque manifeste au démarrage. Le bus s'en sert pour

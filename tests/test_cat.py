@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 import asyncio
 
 import pytest
@@ -347,10 +349,11 @@ def test_link_reads_functions_and_levels_round_robin_without_flooding_the_bus():
     async def scenario(fake):
         link = make_link(fake)
         task = asyncio.create_task(link.run())
-        await until(lambda: {"NR", "NB", "AIP", "COMP", "TUNER", "ANF"} <= set(link.state.functions) and
-                    {"PREAMP", "ATT", "AGC", "SQL", "VD_METER", "TEMP_METER"} <= set(link.state.levels))
+        await until(lambda: {"NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN"} <= set(link.state.functions) and
+                    {"PREAMP", "ATT", "AGC", "SQL", "VD_METER", "TEMP_METER", "NR", "NB"} <= set(link.state.levels))
         s = link.state
-        assert s.functions == {"NR": False, "NB": True, "AIP": False, "COMP": False, "TUNER": False, "ANF": False}
+        assert s.functions == {"NR": False, "NB": True, "AIP": False, "COMP": False, "TUNER": False, "ANF": False, "MN": False}
+        assert s.levels["NR"] == 0.4 and s.levels["NB"] == 5.0                  # NR/NB : fonction ET niveau, sans se mélanger
         assert s.levels["PREAMP"] == 10 and s.levels["SQL"] == 0.2 and s.levels["VD_METER"] == 13.8
         assert not {"RFPOWER_METER", "SWR", "ALC"} & set(s.levels)               # mesures d'émission : seulement en émission
         extras = fake.count_command("u NR") + fake.count_command("u NB") + fake.count_command("l PREAMP") + fake.count_command("l SQL")
@@ -528,9 +531,12 @@ def test_only_a_closed_list_of_functions_and_levels_can_be_written_and_never_the
         for bad in (1, 0, "1", None, "true"):
             with pytest.raises(ValueError):
                 await c.set_func("NR", bad)
-        for name in ("MICGAIN", "AF", "COMP", "ATT", "AGC\nT 1", "PTT", "RFPOWER\nT 1"):
+        for name in ("MICGAIN", "AF", "COMP", "RF", "AGC\nT 1", "PTT", "RFPOWER\nT 1"):
             with pytest.raises(ValueError):
                 await c.set_level(name, 1)
+        for name, bad in (("ATT", 1.5), ("ATT", 99), ("NR", 1.5), ("NB", 11), ("NB", float("nan"))):
+            with pytest.raises(ValueError):
+                await c.set_level(name, bad)                                       # plages bornées, entiers pour ATT
         assert fake.ptt_set_calls == 0
         await c.close()
     run(scenario)
@@ -612,6 +618,51 @@ def test_tx_power_is_read_and_set_among_a_closed_list_of_steps():
                 await link.set_level("RFPOWER", bad)
         assert fake.levels["RFPOWER"] == 1.0                                         # une valeur refusée n'est jamais envoyée
         assert fake.count_command("L RFPOWER 0.300") == 0 and fake.count_command("L RFPOWER 0.000") == 0
+        link.stop()
+        await asyncio.wait_for(task, 3)
+    run(scenario)
+
+
+def test_capabilities_read_attenuator_and_level_ranges_from_a_real_ic7300mk2_dump():
+    """Extraits RÉELS de « rigctl -m 3094 -u » (Hamlib 5.0.0~git, Debian, 2026-10-28)."""
+    from trxstation.gateway.cat.capabilities import parse_dump_caps
+    text = ("Model name:\tIC-7300MK2\nMode list: AM CW USB LSB RTTY FM CWR RTTYR PKTLSB PKTUSB FM-D AM-D \n"
+            "Preamp: 1dB 2dB\nAttenuator: 20dB\n"
+            "Set level: PREAMP(0..20/10) ATT(0..12/0) NR(0.000000..1.000000/0.066667) NOTCHF_RAW(0.000000..0.000000/0.000000) "
+            "NB(0.000000..10.000000/1.000000) AGC(0..0/0) \n")
+    caps = parse_dump_caps(text, 3094)
+    assert caps.attenuators == (20,)
+    assert caps.level_ranges["NR"] == [0.0, 1.0, 0.066667] and caps.level_ranges["NB"] == [0.0, 10.0, 1.0]
+    assert "NOTCHF_RAW" not in caps.level_ranges and "AGC" not in caps.level_ranges   # plages vides « 0..0 » ignorées
+    assert caps.to_dict()["attenuators"] == [20]
+
+
+def test_declared_level_range_is_enforced_by_the_link():
+    async def scenario(fake):
+        caps = Capabilities(complete=True, functions=("NR",), levels=("NB", "NR", "STRENGTH"), level_ranges={"NB": [0.0, 10.0, 1.0]})
+        link = make_link(fake, capabilities=caps)
+        task = asyncio.create_task(link.run())
+        await until(lambda: link.state.connected)
+        await link.set_level("NB", 7)
+        assert fake.levels["NB"] == 7.0
+        with pytest.raises(ValueError):
+            await link.set_level("NB", 10.5)                                      # au-delà de la plage du poste
+        link.stop()
+        await asyncio.wait_for(task, 3)
+    run(scenario)
+
+
+def test_declared_attenuator_values_win_over_an_inconsistent_range():
+    """Hamlib 5 (IC-7300MK2) : « Attenuator: 20dB » ET « ATT(0..12) » : 20 dB doit passer, 15 non."""
+    async def scenario(fake):
+        caps = Capabilities(complete=True, levels=("ATT", "STRENGTH"), attenuators=(20,), level_ranges={"ATT": [0.0, 12.0, 0.0]})
+        link = make_link(fake, capabilities=caps)
+        task = asyncio.create_task(link.run())
+        await until(lambda: link.state.connected)
+        await link.set_level("ATT", 20)
+        assert fake.levels["ATT"] == 20
+        with pytest.raises(ValueError):
+            await link.set_level("ATT", 15)                                      # ni dans la liste, ni dans la plage
         link.stop()
         await asyncio.wait_for(task, 3)
     run(scenario)

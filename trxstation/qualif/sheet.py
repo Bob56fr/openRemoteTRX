@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Fiche TRX : ce que TRX Remote sait d'un modèle qualifié, au-delà de Hamlib.
 
 Une fiche par modèle et par plage de firmware (fichier TOML). L'application ne propose que les

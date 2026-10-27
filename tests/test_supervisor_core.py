@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Logique du superviseur, testée dans un monde simulé : aucune attente réelle, aucun système."""
 import pytest
 

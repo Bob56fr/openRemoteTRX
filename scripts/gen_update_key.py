@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Crée la paire de clés Ed25519 qui signe les paquets de mise à jour.
 
     python scripts/gen_update_key.py              crée la clé (phrase de passe demandée) et inscrit la clé publique

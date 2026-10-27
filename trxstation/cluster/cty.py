@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Pays, continent et zone CQ d'un indicatif, d'après cty.dat (AD1C, country-files.com).
 
 Format d'une entité :

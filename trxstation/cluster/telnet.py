@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Une connexion telnet à un cluster ou au RBN, en LECTURE SEULE.
 
 Seuls envois : l'indicatif, et le mot de passe si le serveur le demande ET

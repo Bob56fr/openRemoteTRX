@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Cache des spots : normalisation, filtres, dédoublonnage, expiration, taille bornée.
 
 - Même indicatif à ±1 kHz = même spot : heure mise à jour, spotteurs comptés.

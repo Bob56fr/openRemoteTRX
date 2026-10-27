@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module Cluster DX, lot 1 : analyse, plan de bande, cty.dat, cache, telnet, bascule."""
 from __future__ import annotations
 

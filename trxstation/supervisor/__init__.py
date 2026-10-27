@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Superviseur autonome : seconde couche de sécurité, indépendante de la passerelle.
 
 Volontairement minimal : bibliothèque standard uniquement, synchrone, un seul fil. Il

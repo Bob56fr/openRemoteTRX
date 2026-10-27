@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Alertes vers le téléphone (compatible ntfy : POST du texte, titre en en-tête)."""
 from __future__ import annotations
 

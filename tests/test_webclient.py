@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Client web de référence : cohérence avec le serveur, hygiène de sécurité de la page, logique JavaScript (Node)."""
 import re
 import shutil

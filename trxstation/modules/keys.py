@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Clé des modules et secret de chaque module.
 
 Une seule clé maîtresse (`<state_dir>/modules.key`, 32 octets aléatoires) est

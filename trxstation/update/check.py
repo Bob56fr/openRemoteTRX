@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Recherche d'une nouvelle version sur GitHub (API publique, sans jeton) : `python -m trxstation.update.check`.
 
 Lancé par le timer systemd trx-update-check (compte trx, jamais root) au démarrage puis toutes les 24 h.

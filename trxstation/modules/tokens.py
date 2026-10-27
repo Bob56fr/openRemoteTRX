@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Jetons de session courts, signés HMAC-SHA256.
 
 La passerelle délivre un jeton au client après le login. Un module qui reçoit

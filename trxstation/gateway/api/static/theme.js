@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Thème de couleurs : chargé dans <head>, AVANT la feuille de style, pour appliquer le thème mémorisé avant le
  * premier affichage (pas d'éclair de couleurs). Un thème = l'attribut data-theme de <html> ; ses couleurs sont dans
  * client.css (générées depuis docs/themes.json). Un nom inconnu ne correspond à aucun bloc : le thème par défaut

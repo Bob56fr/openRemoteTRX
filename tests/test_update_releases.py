@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Versions installées côte à côte (/opt/trx-remote/releases) : version active, précédente, retour arrière.
 
 Les essais de releases.sh exigent bash et de vrais liens symboliques : Linux seulement. Les tests de

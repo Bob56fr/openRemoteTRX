@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Référence RÉELLE : `rigctl -m 3094 -u` de l'IC-7300MK2 avec Hamlib 4.7.2 (fichier relevé par l'utilisateur).
 
 Ces tests figent ce que le vrai Hamlib publie, et vérifient que la qualification et les modes données
@@ -93,7 +95,8 @@ def test_full_qualification_with_the_real_capabilities(tmp_path):
         fake.levels["AGC"], fake.levels["PREAMP"] = 3, 0
         await q.run()
         results = latest(q.checks)
-        assert [c.id for c in results.values() if c.ok is False] == []
+        failed = [(c.id, c.detail) for c in results.values() if c.ok is False]
+        assert failed == [], failed
         assert compute_verdict(q.checks).status == IN_VALIDATION
         agc_values = [c.split()[-1] for c in fake.commands if c.lstrip("+").startswith("L AGC")]
         assert agc_values[:2] == ["2", "3"]                   # FAST puis retour à SLOW : jamais OFF par défaut

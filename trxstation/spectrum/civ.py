@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Trames CI-V Icom et données du spectre (commande 27 00) : code commun à la station et aux outils d'essai.
 
 Stdlib seule. Sécurité : seules les commandes de la liste FERMÉE `ALLOWED` peuvent être encodées (identification,

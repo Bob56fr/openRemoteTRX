@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mémoires de fréquence et de mode : stockage partagé, ordre d'affichage, validation, robustesse du fichier."""
 import json
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Thèmes de couleurs de la page : 21 rôles (docs/themes.json) et teintes dérivées calculées à partir d'eux.
 
 Un thème fournit les rôles ; `derive` calcule les autres teintes (fond du PTT au repos, fond d'alerte, palette du

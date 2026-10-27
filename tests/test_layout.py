@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mises en page (designer, étape 19) : format, validation, sécurité, thèmes, cascade, stockage, protocole."""
 import asyncio
 import copy

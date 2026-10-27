@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Faux cluster DX (telnet) pour les essais sans internet.
 
     python -m trxstation.devtools.fake_cluster --port 7300

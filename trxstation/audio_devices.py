@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Périphériques audio : `sounddevice` (PortAudio) si disponible, identique sous Windows, Linux et
 Raspberry Pi ; sinon, sous Linux, repli sur ALSA (`arecord -l` / `aplay -l`).
 

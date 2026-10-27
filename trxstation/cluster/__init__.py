@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module Cluster DX : spots des clusters DX et du RBN (étape 28).
 
 Lot 1 (test autonome) : connexion telnet en LECTURE SEULE (identification

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Service du spectre HF dans la passerelle : lecture du second port CI-V d'un Icom ([spectrum] source = "civ_port").
 
 Jetable par construction : toute anomalie ferme le port B et la station continue en MODE NORMAL (un seul port,

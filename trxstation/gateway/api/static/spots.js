@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Spots du Cluster DX dans la vue HF : calculs purs (testés sous Node), AUCUNE couleur ni accès au DOM.
    Les spots arrivent du module « cluster » (trxstation/cluster/publish.py) : instantané de la bande courante,
    puis changements ; seulement pendant que la vue HF est ouverte. */

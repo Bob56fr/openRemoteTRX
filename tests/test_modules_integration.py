@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Modules branchés dans la passerelle et le superviseur (sans aiortc ni vrai poste)."""
 import asyncio
 import os

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Qualification (lot Q1) sur le faux poste : relais de trace, trois phases, sécurité, rapport.
 
 Comme trx-hwtest, l'outil est testé avec des réponses scriptées : il ne doit rien émettre sans

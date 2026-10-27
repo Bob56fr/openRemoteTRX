@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Spectre HF du poste (second port CI-V) : calculs purs de la vue plein écran. Le dessin est dans ui.js, les couleurs
    viennent du thème (variables CSS) ; aucune couleur ici. Trames reçues : voir parseSpectrumFrame (client.js). */
 (function (root) {

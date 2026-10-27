@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """API interne des modules : le cœur n'attend jamais un module."""
 import asyncio
 import json

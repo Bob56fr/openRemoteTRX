@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Stockage des profils sur la STATION (à côté des mémoires), un profil actif par identifiant de connexion.
 
   * Un profil n'est enregistré qu'après validation complète ; la version précédente est conservée

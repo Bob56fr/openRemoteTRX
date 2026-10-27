@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Fabrique le paquet d'installation Debian : dist/trx-remote-debian-<version>.zip.
 
     python scripts/build_debian_zip.py                  zip + signature (.zip.sig) à joindre à la Release

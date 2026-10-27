@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Thèmes : couleurs par RÔLE, chartes prêtes à l'emploi, contrôle du contraste, polices autorisées.
 
 Règles (§9 du cahier des charges) :

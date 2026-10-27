@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Signature Ed25519 des paquets de mise à jour : tout écart est un refus."""
 from __future__ import annotations
 

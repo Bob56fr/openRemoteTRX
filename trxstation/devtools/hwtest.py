@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Essai guidé sur un VRAI poste : `trx-hwtest --config station.toml` (Windows, Linux ou Raspberry Pi).
 
 Étapes, de la plus sûre à la plus risquée (voir docs/essai-poste-reel.md) :
@@ -7,6 +9,13 @@
   4. PTT         : 3 cycles porteuse SANS audio, temps de commutation.                  ÉMISSION (confirmation)
   5. Audio TX    : tonalité à niveau croissant, relevé ALC / SWR / puissance.           ÉMISSION (confirmation)
   6. Pannes      : perte du heartbeat, TOT, déconnexion du client.                      ÉMISSION (confirmation)
+
+Étapes de réception ajoutées après l'accord (AUCUNE émission) :
+  - Largeurs de filtre : chaque largeur candidate du mode actuel est demandée puis RELUE sur le poste (Hamlib ne
+    déclare que quelques largeurs ; le poste en accepte peut-être d'autres) ; la largeur d'origine est remise.
+  - Écran du spectre (second port CI-V) : balayages comptés écran normal, poste sur un MENU, puis après un nouvel
+    envoi de « spectre allumé » (27 10 01, liste fermée) ; réglages du spectre remis comme au départ.
+`trx-hwtest --reception-seule` : CAT, audio reçu, accord et ces deux étapes, sans aucune émission.
 
 `trx-hwtest --coupure-poste` : CAT puis un seul exercice, la coupure faite SUR LE POSTE (touche TRANSMIT) :
 la station doit la voir d'elle-même par sa relecture du PTT. À lancer avec [spectrum] enabled = false puis
@@ -56,6 +65,37 @@ PREFLIGHT = """
 """
 
 
+RX_ONLY_NOTICE = """
+================  ESSAI EN RÉCEPTION SEULE : AUCUNE ÉMISSION  ================
+ Le poste est relu, la fréquence, la largeur du filtre et l'écran du spectre sont changés puis remis.
+ Tu restes près du poste : deux étapes te demandent d'agir sur lui (touches MENU puis EXIT).
+==============================================================================
+"""
+
+# Largeurs essayées en plus de celles que Hamlib déclare (par famille de modes, pas par modèle de poste).
+EXTRA_WIDTHS = {
+    "ssb": (1800, 2100, 2400, 2700, 3000, 3600),
+    "cw": (250, 500, 1200),
+    "am": (3000, 6000, 9000),
+}
+SSB_MODES = ("USB", "LSB", "PKTUSB", "PKTLSB")
+CW_MODES = ("CW", "CWR", "RTTY", "RTTYR")
+AM_MODES = ("AM", "PKTAM", "AM-D")
+
+
+def filter_candidates(mode: str | None, declared: list[int] | None) -> list[int]:
+    """Largeurs à essayer pour ce mode : celles que Hamlib déclare, plus les largeurs usuelles de la famille."""
+    family = "ssb" if mode in SSB_MODES else "cw" if mode in CW_MODES else "am" if mode in AM_MODES else None
+    widths = set(int(w) for w in (declared or []) if isinstance(w, (int, float)) and w > 0)
+    if family:
+        widths.update(EXTRA_WIDTHS[family])
+    return sorted(widths)
+
+
+def khz(width: int) -> str:
+    return f"{width / 1000:g}k" if width >= 1000 else f"{width} Hz"
+
+
 @dataclass
 class StageResult:
     name: str
@@ -70,9 +110,11 @@ class HwTest:
                  tot_s: float = 8.0, hold_s: float = 1.5, tx_seconds: float = 2.0, rx_listen_s: float = 5.0,
                  tx_levels_db: tuple[float, ...] = (-40.0, -30.0, -24.0), cat_timeout_s: float = 10.0,
                  record_wav: str = "hwtest_rx.wav", cycles: int = 3, capabilities: Capabilities | None = None,
-                 only_rig_unkey: bool = False):
+                 only_rig_unkey: bool = False, rx_only: bool = False, scope_opener: Callable | None = None,
+                 scope_measure_s: float = 3.0):
         self.cfg, self.ask, self.out = cfg, ask, out
-        self.only_rig_unkey = only_rig_unkey
+        self.only_rig_unkey, self.rx_only = only_rig_unkey, rx_only
+        self.scope_opener, self.scope_measure_s = scope_opener, scope_measure_s
         self.tot_s, self.hold_s, self.tx_seconds, self.rx_listen_s = tot_s, hold_s, tx_seconds, rx_listen_s
         self.tx_levels_db, self.cat_timeout_s, self.record_wav, self.cycles = tx_levels_db, cat_timeout_s, record_wav, cycles
         self.results: list[StageResult] = []
@@ -242,6 +284,121 @@ class HwTest:
             return self.record("Accord", False, f"commande refusée : {exc}")
         return self.record("Accord", ok1 and ok2, f"{original} -> {target} -> {original} Hz relus sur le poste"
                            if ok1 and ok2 else "la fréquence relue ne correspond pas à la commande")
+
+    # ------------------------------------------------------------------ réception : largeurs de filtre
+
+    async def _wait_passband(self, width: int, timeout: float = 3.0) -> int | None:
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            if self.link.state.passband_hz == width:
+                return width
+            await asyncio.sleep(0.05)
+        return self.link.state.passband_hz
+
+    async def stage_filters(self) -> bool:
+        self.say("\n--- Largeurs de filtre (réception seulement) ---")
+        mode, original = self.link.state.mode, self.link.state.passband_hz
+        if not mode or not original:
+            return self.record("Largeurs de filtre", None, "mode ou largeur du filtre illisible")
+        declared = (self.caps.filters.get(mode) if self.caps is not None and self.caps.filters else None) or []
+        candidates = filter_candidates(mode, declared)
+        self.say(f"  Mode {mode}, largeur actuelle {khz(original)} ; Hamlib déclare : "
+                 f"{', '.join(khz(w) for w in declared) or 'rien'}")
+        answer = await self.prompt(f"  Essayer {', '.join(khz(w) for w in candidates)} puis remettre {khz(original)} ? [O/n] : ")
+        if answer.lower() in ("n", "non"):
+            return self.record("Largeurs de filtre", None, "ignoré")
+        accepted, changed = [], []
+        try:
+            for width in candidates:
+                await self.ctrl.set_mode(mode, width)
+                got = await self._wait_passband(width)
+                (accepted if got == width else changed).append((width, got))
+        except Exception as exc:
+            return self.record("Largeurs de filtre", False, f"commande refusée : {exc}")
+        finally:
+            try:
+                await self.ctrl.set_mode(mode, original)
+                await self._wait_passband(original)
+            except Exception as exc:
+                self.say(f"  !!! largeur d'origine non remise ({exc}) : remets-la sur le poste")
+        detail = "acceptées telles quelles : " + (", ".join(khz(w) for w, _ in accepted) or "aucune")
+        if changed:
+            detail += " ; ramenées par le poste : " + ", ".join(f"{khz(w)} -> {khz(g) if g else '?'}" for w, g in changed)
+        extra = [w for w, _ in accepted if w not in declared]
+        if extra:
+            detail += f" ; NON déclarées par Hamlib mais acceptées : {', '.join(khz(w) for w in extra)}"
+        return self.record("Largeurs de filtre", bool(accepted), detail)
+
+    # ------------------------------------------------------------------ réception : écran du spectre
+
+    def _count_sweeps(self, port, seconds: float) -> int:
+        start, end = port.sweeps, time.monotonic() + seconds
+        while time.monotonic() < end:
+            port.poll()
+        return port.sweeps - start
+
+    async def stage_scope_screen(self) -> bool:
+        sp = self.cfg.spectrum
+        name = "Écran du spectre"
+        if not (sp.enabled and sp.source == "civ_port" and sp.port):
+            self.say("\n  (Écran du spectre : pas de spectre par le second port dans station.toml, étape sautée)")
+            return True
+        self.say("\n--- Écran du spectre par le second port (réception seulement) ---")
+        answer = await self.prompt("  Mesurer le spectre écran normal, puis poste sur un menu ? [O/n] : ")
+        if answer.lower() in ("n", "non"):
+            return self.record(name, None, "ignoré")
+        from ..spectrum.probe import SCOPE_DISPLAY, SCOPE_OUTPUT, CivPort, open_serial
+        try:
+            ser = await asyncio.to_thread(self.scope_opener or open_serial, sp.port, sp.baud)
+        except ImportError:
+            return self.record(name, None, "module pyserial absent")
+        except (OSError, ValueError) as exc:
+            return self.record(name, False, f"ouverture de {sp.port} impossible : {exc}")
+        port = CivPort(ser, cfgmod.parse_civ_address(sp.civ_address))
+        before: dict[int, int | None] = {}
+        try:
+            await asyncio.sleep(1.5)                               # le PTT relu APRÈS l'ouverture (USB SEND sur ce port ?)
+            if await self.read_ptt() is True:
+                ser.close()
+                await self.ctrl.force_rx("spectrum_port_keyed")
+                return self.record(name, False, f"l'ouverture de {sp.port} met le poste en ÉMISSION (réglage USB SEND) : coupé")
+            before = {sub: await asyncio.to_thread(port.read_setting, sub) for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT)}
+            if None in before.values():
+                return self.record(name, False, f"le poste ne répond pas aux réglages du spectre sur {sp.port}")
+            for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT):
+                await asyncio.to_thread(port.set_setting, sub, 1)
+            s = self.scope_measure_s
+            normal = await asyncio.to_thread(self._count_sweeps, port, s)
+            await self.prompt("  Mets le poste sur un MENU (touche MENU), puis appuie sur Entrée : ")
+            on_menu = await asyncio.to_thread(self._count_sweeps, port, s)
+            shown = await asyncio.to_thread(port.read_setting, SCOPE_DISPLAY)
+            await asyncio.to_thread(port.set_setting, SCOPE_DISPLAY, 1)   # renvoi de « spectre allumé »
+            resent = await asyncio.to_thread(self._count_sweeps, port, s)
+            await self.prompt("  Remets le poste sur son écran habituel (touche EXIT), puis Entrée : ")
+            back = await asyncio.to_thread(self._count_sweeps, port, s)
+        finally:
+            for sub, value in before.items():
+                if value is not None:
+                    try:
+                        await asyncio.to_thread(port.set_setting, sub, value)
+                    except Exception:                               # noqa: BLE001 - port perdu : rien à remettre
+                        pass
+            try:
+                ser.close()
+            except Exception:                                       # noqa: BLE001
+                pass
+        rate = lambda n: f"{n / s:.1f}/s"                           # noqa: E731
+        silent = lambda n: n <= max(1, normal * 0.2)                # un balayage déjà en route ne compte pas  # noqa: E731
+        if normal == 0:
+            verdict = "aucun balayage même écran normal : spectre éteint ou port mal réglé"
+        elif not silent(on_menu):
+            verdict = "le poste envoie le spectre même sur un menu"
+        elif not silent(resent):
+            verdict = "le renvoi de « spectre allumé » RAMÈNE le spectre depuis un menu : la station peut le faire"
+        else:
+            verdict = "rien ne ramène le spectre depuis un menu : il faut que l'écran du poste montre le spectre"
+        return self.record(name, normal > 0, f"écran normal {rate(normal)}, sur un menu {rate(on_menu)} (affichage lu : "
+                                             f"{shown}), après renvoi {rate(resent)}, retour {rate(back)} ; {verdict}")
 
     async def _wait_mode(self, mode: str, timeout: float = 3.0) -> bool:
         end = time.monotonic() + timeout
@@ -507,10 +664,13 @@ class HwTest:
     # ------------------------------------------------------------------ déroulement
 
     async def run(self) -> list[StageResult]:
-        self.say(PREFLIGHT)
-        if (await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : ")).strip().upper() != "OUI":
-            self.say("Essai annulé.")
-            return []
+        if self.rx_only:
+            self.say(RX_ONLY_NOTICE)
+        else:
+            self.say(PREFLIGHT)
+            if (await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : ")).strip().upper() != "OUI":
+                self.say("Essai annulé.")
+                return []
         try:
             if not await self.setup():
                 return self.results
@@ -520,6 +680,10 @@ class HwTest:
             if not self.only_rig_unkey:
                 await self.stage_rx_audio()
                 await self.stage_tuning()
+                await self.stage_filters()
+                await self.stage_scope_screen()
+            if self.rx_only:
+                return self.results
             await self.stage_band()
             await self.stage_tx_mode()
             if self.cfg.safety.enforce_bands and not self.cfg.bands:
@@ -608,6 +772,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-spawn", action="store_true", help="ne pas lancer rigctld soi-même")
     ap.add_argument("--coupure-poste", action="store_true",
                     help="CAT puis seulement l'exercice « coupure faite sur le poste » (à comparer spectre activé / désactivé)")
+    ap.add_argument("--reception-seule", action="store_true",
+                    help="aucune émission : CAT, audio reçu, accord, largeurs de filtre, écran du spectre")
     args = ap.parse_args(argv)
     try:
         cfg = cfgmod.load(args.config)
@@ -625,7 +791,8 @@ def main(argv: list[str] | None = None) -> int:
         print("--tot doit être compris entre 2 et 60 secondes.", file=sys.stderr)
         return 2
     try:
-        hw = HwTest(cfg, tot_s=args.tot, tx_levels_db=levels, only_rig_unkey=args.coupure_poste)
+        hw = HwTest(cfg, tot_s=args.tot, tx_levels_db=levels, only_rig_unkey=args.coupure_poste,
+                    rx_only=args.reception_seule)
     except ValueError as exc:
         print(f"--tot : {exc}", file=sys.stderr)
         return 2

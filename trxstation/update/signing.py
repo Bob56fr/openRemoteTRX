@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Signature Ed25519 des paquets de mise à jour : fichier `<paquet>.zip.sig` à côté du zip.
 
 Format (texte UTF-8, une clé par ligne, dans cet ordre) :

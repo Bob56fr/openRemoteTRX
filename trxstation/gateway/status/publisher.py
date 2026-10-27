@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """StatusPublisher : écrit l'état de la passerelle plusieurs fois par seconde.
 
 Il tourne DANS la boucle asyncio de la passerelle : si la boucle se fige ou si le processus

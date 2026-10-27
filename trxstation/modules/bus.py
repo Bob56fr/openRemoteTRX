@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Serveur de l'API interne, côté cœur TRX (intégré à la passerelle).
 
 Règle d'or : le cœur n'attend jamais un module.

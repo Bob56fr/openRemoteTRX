@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Robustesse : fichier d'état tenu ouvert (Windows), port d'écoute impossible à ouvrir."""
 from __future__ import annotations
 

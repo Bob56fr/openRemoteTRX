@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Serveurs proposés par défaut.
 
 VÉRIFIÉS LE 2026-10-27 depuis le PC de développement (connexion TCP et

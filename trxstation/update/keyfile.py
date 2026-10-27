@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Clé privée de signature des paquets : création, lecture, clé publique (côté auteur, jamais sur la station).
 
 La clé privée est rangée HORS du dépôt, par défaut dans le profil de l'utilisateur :

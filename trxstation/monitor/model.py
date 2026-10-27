@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Modèle d'affichage de trx-monitor : tout ce qui se calcule sans écran, donc testable.
 
 Le moniteur est un LECTEUR. Il ne commande jamais le poste, sauf l'unique action « STOP TX »

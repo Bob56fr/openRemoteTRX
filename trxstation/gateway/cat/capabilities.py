@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Descripteur de capacités d'un poste, extrait de `rigctl -m <modèle> -u` (dump_caps Hamlib).
 
 L'application construit son interface à partir de ce descripteur : aucun modèle n'est codé
@@ -52,12 +54,14 @@ class Capabilities:
     complete: bool = False             # False = valeurs de repli, format Hamlib non reconnu
     filters: dict[str, list[int]] = field(default_factory=dict)  # mode -> largeurs en Hz, de la plus large à la plus étroite
     preamps: tuple[int, ...] = ()      # valeurs de préampli en dB (sans le 0 = arrêt) ; vide = inconnu
+    attenuators: tuple[int, ...] = ()  # valeurs d'atténuateur en dB (« Attenuator: 20dB ») ; vide = inconnu
+    level_ranges: dict[str, list[float]] = field(default_factory=dict)   # niveau réglable -> [min, max, pas] (« Set level »)
 
     def to_dict(self) -> dict:
         data = asdict(self)
         data["modes"] = list(self.modes)
         data["functions"], data["levels"] = list(self.functions), list(self.levels)
-        data["preamps"] = list(self.preamps)
+        data["preamps"], data["attenuators"] = list(self.preamps), list(self.attenuators)
         return data
 
 
@@ -72,6 +76,22 @@ def _names(text: str, label: str) -> tuple[str, ...]:
     if not match:
         return ()
     return tuple(dict.fromkeys(re.findall(r"\b([A-Z][A-Z0-9_]+)(?=\(|\s|$)", match.group(1))))
+
+
+def _ranges(text: str, label: str = "Set level") -> dict[str, list[float]]:
+    """« Set level: NB(0.000000..10.000000/1.000000) NR(0..1/0.0667) » -> {"NB": [0, 10, 1], ...} (plages non vides)."""
+    match = re.search(rf"^{label}:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
+    found: dict[str, list[float]] = {}
+    if not match:
+        return found
+    for name, low, high, step in re.findall(r"\b([A-Z][A-Z0-9_]+)\(\s*(-?[\d.]+)\.\.(-?[\d.]+)/(-?[\d.]+)\s*\)", match.group(1)):
+        try:
+            lo, hi, st = float(low), float(high), float(step)
+        except ValueError:
+            continue
+        if hi > lo:                                   # « 0..0 » : plage inconnue, ignorée
+            found[name] = [lo, hi, st]
+    return found
 
 
 def _hertz(text: str) -> int | None:
@@ -126,6 +146,9 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     caps.filters = _bandwidths(text)
     preamp = re.search(r"^Preamp:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
     caps.preamps = tuple(int(v) for v in re.findall(r"\d+", preamp.group(1))) if preamp else ()
+    att = re.search(r"^Attenuator:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
+    caps.attenuators = tuple(int(v) for v in re.findall(r"\d+", att.group(1)) if int(v) > 0) if att else ()
+    caps.level_ranges = _ranges(text)
     return caps
 
 

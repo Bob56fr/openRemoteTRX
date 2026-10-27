@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Emplacements par défaut selon le système (configuration, état, dossier d'exécution).
 
 Linux / Raspberry Pi : /etc, /run, /var/lib. Windows : %PROGRAMDATA%\\trx-remote.

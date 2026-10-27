@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """L'essai guidé (trx-hwtest) est lui-même testé sur le faux poste, avec des réponses scriptées :
 on vérifie qu'il ne tente rien sans confirmation, qu'il coupe toujours l'émission, et qu'il détecte les défauts."""
 import asyncio
@@ -66,7 +68,7 @@ def test_full_run_on_a_healthy_rig(tmp_path):
         fake.levels["ALC"] = 0.30
         results = await hw.run()
         assert hw.report() == 0 and names(results, False) == [] and names(results, None) == []
-        assert [r.name for r in results] == ["CAT", "Audio RX", "Accord", "PTT", "Audio TX",
+        assert [r.name for r in results] == ["CAT", "Audio RX", "Accord", "Largeurs de filtre", "PTT", "Audio TX",
                                              "Panne : perte du heartbeat", "Panne : TOT (3 s)",
                                              "Panne : déconnexion du client"]
         assert fake.ptt == 0 and hw.ctrl.snapshot().state == "RX"                      # coupé à la fin
@@ -78,6 +80,60 @@ def test_full_run_on_a_healthy_rig(tmp_path):
         with wave.open(str(tmp_path / "tx.wav"), "rb") as w:
             assert w.getnframes() >= 2 * 25 * 960                                       # la tonalité a franchi la porte
     run(tmp_path, scenario)
+
+
+def test_reception_only_run_never_transmits_and_tries_the_filter_widths(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        results = await hw.run()
+        assert [r.name for r in results] == ["CAT", "Audio RX", "Accord", "Largeurs de filtre"]
+        assert not any("OUI" in p or EMIT_WORD in p for p in prompts)                  # ni préambule d'émission ni EMETTRE
+        assert 1 not in fake.ptt_commands and fake.ptt == 0
+        widths = results[-1]
+        assert widths.ok and "3.6k" in widths.detail and "NON déclarées par Hamlib mais acceptées : 2.1k, 2.7k, 3.6k" in widths.detail
+        assert fake.passband == 2400 and fake.mode == "USB"                             # largeur d'origine remise
+    caps = Capabilities(filters={"USB": [2400, 1800, 3000]})
+    run(tmp_path, scenario, rx_only=True, capabilities=caps)
+
+
+def test_filter_candidates_by_mode_family():
+    from trxstation.devtools.hwtest import filter_candidates
+    assert filter_candidates("PKTUSB", [2400]) == [1800, 2100, 2400, 2700, 3000, 3600]
+    assert filter_candidates("CW", [500, 250]) == [250, 500, 1200]
+    assert filter_candidates("FM", [10000]) == [10000]                                    # pas de largeurs ajoutées
+    assert filter_candidates(None, None) == []
+
+
+def test_scope_screen_stage_measures_menu_and_resend_then_restores(tmp_path):
+    from test_spectrum_service import PortB
+
+    class Rig(PortB):
+        """Poste qui se tait sur un menu ; « spectre allumé » renvoyé le ramène."""
+        def __init__(self):
+            super().__init__()
+            self.on_menu = False
+
+        def write(self, data):
+            if self.on_menu and data[4:7] == b"\x27\x10\x01":
+                self.on_menu = self.mute = False
+            super().write(data)
+
+    rig = Rig()
+
+    async def scenario(hw, fake, out, prompts):
+        hw.cfg.spectrum = cfgmod.Spectrum(enabled=True, source="civ_port", port="COM7", civ_address="B6")
+        ask = hw.ask
+
+        def operator(prompt):
+            if "MENU" in prompt:
+                rig.on_menu = rig.mute = True
+            return ask(prompt)
+        hw.ask = operator
+        results = await hw.run()
+        scope = next(r for r in results if r.name == "Écran du spectre")
+        assert scope.ok and "sur un menu" in scope.detail and "RAMÈNE le spectre" in scope.detail
+        assert rig.settings == {0x10: 0, 0x11: 0} and rig.closed                     # poste remis comme au départ
+        assert fake.ptt == 0 and 1 not in fake.ptt_commands
+    run(tmp_path, scenario, rx_only=True, scope_opener=lambda port, baud: rig, scope_measure_s=0.3)
 
 
 def test_nothing_happens_unless_the_operator_confirms_the_preflight(tmp_path):
@@ -253,7 +309,7 @@ def test_data_mode_is_offered_for_usb_audio_then_the_original_mode_is_restored(t
 def test_data_mode_offer_can_be_declined_and_is_skipped_when_the_rig_has_none(tmp_path):
     async def declined(hw, fake, out, prompts):
         await hw.run()
-        assert fake.mode == "USB" and not any(line.startswith("+M ") for line in fake.commands)
+        assert fake.mode == "USB" and not any(line.startswith("+M PKT") for line in fake.commands)   # jamais en mode données
     caps = Capabilities(modes=("USB", "PKTUSB"), complete=True)
     run(tmp_path, declined, capabilities=caps, answers={"mode données": "n", EMIT_WORD: [EMIT_WORD, EMIT_WORD, "non"]})
 

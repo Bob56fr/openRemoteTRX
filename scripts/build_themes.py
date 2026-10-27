@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Génère les thèmes de la page à partir de docs/themes.json :
 
     python scripts/build_themes.py            écrit les teintes dérivées dans docs/themes.json et les blocs de client.css

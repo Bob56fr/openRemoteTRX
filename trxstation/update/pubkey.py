@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Clés publiques Ed25519 acceptées pour les paquets de mise à jour (32 octets bruts en base64).
 
 La clé privée correspondante n'est JAMAIS dans le dépôt : elle reste sur le PC de l'auteur

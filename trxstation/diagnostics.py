@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Diagnostic complet de la station (commande `trx-console --diagnostic`).
 
 Chaque test rend un résultat : OK, ATTENTION (fonctionne mais à surveiller), ERREUR (bloquant) ou INFO,

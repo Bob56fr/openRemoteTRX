@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Thèmes de couleurs : toutes les couleurs de la page en variables, cohérentes avec docs/themes.json."""
 from __future__ import annotations
 

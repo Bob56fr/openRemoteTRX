@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Exemple de sortie `rigctl -u` (dump_caps), cohérent avec FakeRigctld, pour tester la qualification.
 
 Inspiré du format de Hamlib 4.x (tabulation après les deux-points). Ce n'est PAS la sortie exacte

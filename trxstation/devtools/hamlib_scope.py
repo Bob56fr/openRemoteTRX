@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Relevé du spectre HF PAR HAMLIB (rigctld, données asynchrones diffusées en UDP) : outil d'essai autonome.
 
     python -m trxstation.devtools.hamlib_scope --duree 15                  (poste de station.toml)

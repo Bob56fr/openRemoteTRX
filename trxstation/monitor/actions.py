@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Unique action de trx-monitor : STOP TX. Elle ne peut que couper l'émission.
 
 L'ordre « T 0 » part directement vers rigctld (sonde indépendante du superviseur) : il

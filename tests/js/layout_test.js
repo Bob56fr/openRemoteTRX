@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 // Logique des mises en page côté navigateur (layout.js), sans DOM : `node tests/js/layout_test.js`
 "use strict";
 const assert = require("node:assert/strict");

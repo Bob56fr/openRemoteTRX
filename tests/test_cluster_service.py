@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module Cluster DX, lot 2 : configuration, secrets.toml, éditeur (questions de flux, test obligatoire),
 processus du module, lancement par le superviseur, diagnostic, rapport sans secret."""
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Essai autonome du cluster DX (lot 1) : affiche les spots filtrés dans la console.
 
     python -m trxstation.cluster --indicatif F4XXX

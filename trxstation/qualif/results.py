@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Résultats d'une qualification, verdict et brouillon de fiche.
 
 Le verdict est recalculé à partir des résultats bruts (jamais d'un verdict saisi) :

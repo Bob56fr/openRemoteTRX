@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Test d'une source avant enregistrement : connexion, identification, au moins un spot en 60 s.
 
 Compte rendu : OK, serveur injoignable, indicatif refusé, mot de passe refusé

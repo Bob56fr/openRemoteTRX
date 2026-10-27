@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Fichier d'état de la passerelle : contrat entre la passerelle (écrivain), le superviseur
 et trx-monitor (lecteurs).
 

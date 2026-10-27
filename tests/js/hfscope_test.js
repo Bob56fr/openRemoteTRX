@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 // Tests de la vue du spectre HF (calculs purs) : `node tests/js/hfscope_test.js`
 "use strict";
 const assert = require("node:assert/strict");

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Analyse des lignes « DX de » (DXSpider, AR-Cluster, CC Cluster, RBN).
 
 Formats observés (colonnes variables, on ne s'y fie pas) :

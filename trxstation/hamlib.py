@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Localisation des outils Hamlib (rigctl, rigctld) : réglage, variable d'environnement, PATH,
 puis dossiers d'installation habituels sous Windows."""
 from __future__ import annotations

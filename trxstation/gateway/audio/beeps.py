@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Bips de fin d'émission produits PAR LA STATION et émis juste avant « PTT off ».
 
 - Roger bip : quand le PROPRIÉTAIRE relâche le PTT lui-même (toggle). Tonalité et motif (1, 2 ou 3 bips) au choix.

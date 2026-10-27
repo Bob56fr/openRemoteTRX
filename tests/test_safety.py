@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Tests de panne de la couche de sécurité PTT, sur le faux rigctld (aucun matériel)."""
 import asyncio
 import contextlib

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Spectre par le second port CI-V : vérification du port B, service de la passerelle, retour au mode normal."""
 from __future__ import annotations
 

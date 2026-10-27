@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Audio de la passerelle : réception diffusée aux clients, émission derrière la porte du PTT."""
 from .devices import AudioConfigError, make_sink, make_source
 from .gate import TxAudioGate

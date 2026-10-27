@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Couche de portabilité Windows / Linux / Raspberry Pi, testée avec de faux systèmes."""
 import os
 import subprocess

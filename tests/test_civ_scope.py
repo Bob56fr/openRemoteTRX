@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Relevé du spectre Icom par le CI-V : trames, balayages, liste fermée des commandes, faux poste."""
 from __future__ import annotations
 

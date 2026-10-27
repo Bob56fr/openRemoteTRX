@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 // Mises en page personnalisées (designer) : choix de la variante, plan d'affichage et application à la page.
 // Partie pure (selectVariant, detectDevice, blockFor, buildPlan) testée sous Node ; applyPlan agit sur le DOM.
 //

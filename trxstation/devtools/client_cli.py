@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Client interactif de développement : se connecte à une passerelle qui tourne, enregistre le son
 reçu dans un WAV (pour l'écouter) et envoie une tonalité en guise de micro.
 

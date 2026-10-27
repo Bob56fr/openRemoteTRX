@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Spots envoyés aux pages : ceux de la BANDE COURANTE du poste, instantané puis changements.
 
 - Fenêtre : la bande (plan IARU R1, 11 m compris) qui contient la fréquence du

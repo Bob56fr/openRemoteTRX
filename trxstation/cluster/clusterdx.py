@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Source « Cluster DX » des cibistes (https://clusterdx.org), bande des 11 m.
 
 Pas de telnet ni d'API : la page publique `spots.php` est un tableau HTML des

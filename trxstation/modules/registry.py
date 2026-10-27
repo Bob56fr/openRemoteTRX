@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Modules à faire tourner, d'après [modules] de station.toml.
 
 Partagé par la passerelle (qui n'accepte sur le bus que ces modules) et par

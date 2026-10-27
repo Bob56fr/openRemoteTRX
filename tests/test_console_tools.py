@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """TRX Console : installation d'un paquet déposé (menu 13) et modification de station.toml (menu 14)."""
 from __future__ import annotations
 

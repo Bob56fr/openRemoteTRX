@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Gestion des processus de la station : systemd (Linux / Raspberry Pi) ou « mode géré ».
 
 Mode géré : le superviseur LANCE lui-même rigctld et la passerelle comme processus enfants,

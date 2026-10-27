@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Waterfall de l'audio reçu : calculs purs (palette, rééchantillonnage, pics, graduations). Le dessin et l'analyse audio sont dans ui.js. */
 (function (root) {
   "use strict";

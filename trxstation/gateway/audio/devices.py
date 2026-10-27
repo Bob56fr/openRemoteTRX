@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Sources (son reçu du poste) et puits (son envoyé au poste).
 
 Pour le développement sans matériel : `file:rx.wav` (boucle un WAV 48 kHz 16 bits), `tone:1000`,

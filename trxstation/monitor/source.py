@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Sources de données de trx-monitor : fichier d'état de la passerelle, mode sûr, matériel.
 
 Lecture seule. La fraîcheur de la passerelle se juge sur le changement de `seq`

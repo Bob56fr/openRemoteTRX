@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Ports série : liste et présence, sous Linux/Pi et sous Windows (sans dépendance).
 
 Sous Windows, les ports COM sont lus dans le registre (winreg, bibliothèque standard).

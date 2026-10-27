@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Bout en bout WebRTC : faux poste + passerelle complète + faux client dans un seul processus.
 
 Ces tests ne font RIEN si aiortc / aiohttp / av ne sont pas installés (`pip install -e ".[audio]"`) :

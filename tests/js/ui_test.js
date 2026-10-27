@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 // Essai de l'affichage (ui.js) avec un faux navigateur qui charge la VRAIE page : `node tests/js/ui_test.js`
 // Il attrape les éléments manquants, les fautes de frappe et les erreurs d'exécution avant qu'on ne les voie sur un téléphone.
 "use strict";
@@ -311,9 +313,9 @@ step("émission : la case reste cochée après la fin de l'émission", async () 
 });
 
 step("boutons de commande : un appui envoie la bonne commande, les cycles suivent le poste", async () => {
-  let pending = $("ctl-nr").click(); await wait();
+  let pending = $("ctl-nr").click(); await wait(320);                                                        // NR/NB : attente d'un éventuel double clic
   assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["NR", true]); answer(true); await pending;
-  pending = $("ctl-nb").click(); await wait();
+  pending = $("ctl-nb").click(); await wait(320);
   assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["NB", false]); answer(true); await pending;
   pending = $("ctl-tuner").click(); await wait();
   assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["TUNER", true]); answer(true); await pending;
@@ -327,8 +329,43 @@ step("boutons de commande : un appui envoie la bonne commande, les cycles suiven
   assert.deepEqual([sent("set_mode").at(-1).mode, sent("set_mode").at(-1).passband], ["USB", 1800]); answer(true); await pending;
   pending = $("ctl-pwr").click(); await wait();                                                                 // 50 % -> 80 %
   assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["RFPOWER", 0.8]); answer(true); await pending;
-  pending = $("ctl-nr").click(); await wait(); answer(false, { reason: "tx_active" }); await pending; await wait();   // refus affiché en français
+  pending = $("ctl-nr").click(); await wait(320); answer(false, { reason: "tx_active" }); await pending; await wait();   // refus affiché en français
   assert.match($("log").children[0].textContent, /pendant l'émission/);
+});
+
+step("ATT, NOTCH et fenêtre de réglage (double clic ou appui long) de NR, NB et Notch", async () => {
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"], attenuators: [20],
+         level_ranges: { NR: [0, 1, 0.0667], NB: [0, 10, 1] } }, tx_modes: [], max_power_w: 100, memories: [] });
+  state({}, { functions: { NR: true, NB: false, ANF: false, MN: false }, levels: { ATT: 0, NR: 0.4, NB: 5, PREAMP: 0, AGC: 2 } });
+  assert.equal($("ctl-att").hidden, false); assert.equal($("ctl-att").textContent, "ATT");
+  assert.equal($("ctl-notch").hidden, false); assert.equal($("ctl-notch").textContent, "NOTCH");
+  await $("ctl-att").click(); await wait();
+  assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["ATT", 20]); answer(true, {}, "set_level"); await wait();
+  await $("ctl-notch").click(); await wait(320);                                                          // arrêt -> automatique
+  assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["ANF", true]); answer(true, {}, "set_function"); await wait();
+  state({}, { functions: { NR: true, NB: false, ANF: true, MN: false }, levels: { ATT: 20, NR: 0.4, NB: 5, PREAMP: 0, AGC: 2 } });
+  assert.equal($("ctl-att").textContent, "ATT 20"); assert.equal($("ctl-notch").textContent, "NOTCH A");
+  // double clic sur NR : fenêtre, sans bascule
+  const toggles = sent("set_function").length;
+  await $("ctl-nr").click(); await $("ctl-nr").click(); await wait(320);
+  assert.equal($("ctl-dialog").hidden, false); assert.equal($("ctl-dialog-title").textContent, "Réducteur de bruit (NR)");
+  assert.equal(sent("set_function").length, toggles);                                                     // pas de bascule
+  assert.equal($("ctl-level-row").hidden, false); assert.equal($("ctl-level-text").textContent, "6 / 15");
+  $("ctl-level").value = "0.8"; await $("ctl-level").dispatch("input"); await wait(220);
+  assert.deepEqual([sent("set_level").at(-1).name, sent("set_level").at(-1).value], ["NR", 0.8]); answer(true, {}, "set_level"); await wait();
+  await $("ctl-dialog-close").click(); assert.equal($("ctl-dialog").hidden, true);
+  // appui long sur NOTCH : fenêtre ; « Manuel » éteint l'automatique puis allume le manuel
+  await $("ctl-notch").dispatch("pointerdown"); await wait(600); await $("ctl-notch").dispatch("pointerup"); await $("ctl-notch").click(); await wait(320);
+  assert.equal($("ctl-dialog").hidden, false); assert.equal($("ctl-notch-row").hidden, false); assert.equal($("ctl-notch-auto").className, "chip on");
+  const before = sent("set_function").length;
+  const manual = $("ctl-notch-manual").click(); await wait();
+  assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["ANF", false]); answer(true, {}, "set_function"); await wait();
+  assert.deepEqual([sent("set_function").at(-1).name, sent("set_function").at(-1).on], ["MN", true]); answer(true, {}, "set_function"); await manual;
+  assert.equal(sent("set_function").length, before + 2);                                                  // l'appui long n'a rien basculé
+  state({ state: "TX", owner: "phone" }, { functions: { NR: true, NB: false, ANF: false, MN: true }, levels: { ATT: 20, NR: 0.8, NB: 5 } });
+  assert.equal($("ctl-notch-off").disabled, true); assert.match($("ctl-dialog-note").textContent, /verrouillés pendant l'émission/);
+  state({}, { functions: { NR: true, NB: false, ANF: false, MN: true }, levels: { ATT: 20, NR: 0.8, NB: 5 } });
+  await $("ctl-dialog-close").click();
 });
 
 step("repère de squelch : visible seulement si le squelch est activé, il suit le réglage", async () => {
@@ -458,6 +495,18 @@ step("fréquence : verrouillée pendant l'émission (ni geste, ni clavier, ni mo
   assert.ok($("bands").children.every((b) => b.disabled === true));                                                      // boutons de bande grisés en émission
   assert.ok($("mode-buttons").children.every((b) => b.disabled === true));                                               // boutons de mode aussi
   state({ state: "RX" }, { frequency_hz: 7074000 });
+});
+
+step("signaler un problème : rapport préparé, relu à l'écran, puis envoyé à la station", async () => {
+  assert.equal($("bug-report").hidden, true); assert.equal($("bug-send").disabled, true);
+  $("bug-text").value = "Le spectre se fige";
+  await $("bug-prepare").click();
+  assert.equal($("bug-report").hidden, false); assert.match($("bug-report").textContent, /Le spectre se fige/);
+  assert.equal($("bug-send").disabled, false); assert.equal($("bug-share").disabled, false);
+  const before = sent("bug_report").length;
+  await $("bug-send").click(); await wait();
+  assert.equal(sent("bug_report").length, before + 1); assert.equal(sent("bug_report").at(-1).text, $("bug-report").textContent);
+  answer(true, { name: "page-1.txt" }, "bug_report"); await wait();
 });
 
 step("poste utilisé sur place : bandeau, reprise de la main en deux appuis, impossible pendant l'émission locale", async () => {

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Tampon circulaire d'octets, sûr entre fils (le callback PortAudio tourne dans un autre fil)."""
 from __future__ import annotations
 

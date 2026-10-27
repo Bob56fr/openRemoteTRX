@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Recherche de mise à jour sur GitHub : fausses réponses de l'API, aucun accès réseau."""
 from __future__ import annotations
 

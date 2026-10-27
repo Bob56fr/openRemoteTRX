@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Cœur du superviseur : décide, n'agit que par l'intermédiaire d'`actions` injectées.
 
 Toute la logique est déterministe (horloge, sondes et actions injectées) : on la teste sans

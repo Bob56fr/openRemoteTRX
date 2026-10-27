@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Signature du paquet Debian par build_debian_zip.py, telle que la station la vérifiera."""
 from __future__ import annotations
 

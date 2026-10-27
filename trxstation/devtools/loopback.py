@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Banc de test en boucle : faux poste + passerelle complète (audio, sécurité, API WebRTC) dans UN
 processus, sans matériel. Sert aux tests de bout en bout et à `devtools/latency.py`.
 

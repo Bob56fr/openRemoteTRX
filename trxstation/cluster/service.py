@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module Cluster DX : processus séparé lancé et surveillé par le superviseur (`[modules] run = ["cluster"]`).
 
 Il ne parle JAMAIS au poste : aucun droit sur le bus (ni PTT ni QSY), seulement

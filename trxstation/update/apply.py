@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Installation d'une mise à jour, ou retour à la version précédente (root, Debian) : `python -m trxstation.update.apply`.
 
     apply --config C install --version 0.23.0   installe la version annoncée (confirmée dans TRX Console)

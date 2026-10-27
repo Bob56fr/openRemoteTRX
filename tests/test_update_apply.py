@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Installation d'une mise à jour : refusée en émission ou au moindre doute, jamais sans signature valide."""
 from __future__ import annotations
 

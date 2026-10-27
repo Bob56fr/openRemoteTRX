@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Choix de la variante à afficher sur un appareil (§3 du cahier des charges).
 
 Règle : chaque appareil utilise sa propre variante, sinon la plus proche EN DESSOUS ; la cascade ne descend

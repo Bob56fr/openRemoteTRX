@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Lance rigctld avec les réglages de station.toml (utilisé par l'unit systemd rigctld.service)."""
 from __future__ import annotations
 

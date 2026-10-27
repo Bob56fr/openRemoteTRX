@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """CatLink : maintient la liaison avec rigctld, interroge le poste et publie l'état.
 
 Principe : une valeur inconnue vaut None, jamais « dernière valeur connue ». Si la liaison
@@ -20,8 +22,8 @@ log = logging.getLogger(__name__)
 
 POWER_METER = "RFPOWER_METER"                       # lu à chaque cycle PENDANT l'émission
 TX_METERS = ("SWR", "ALC", "COMP_METER")            # lus à tour de rôle pendant l'émission
-EXTRA_FUNCTIONS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF")   # AIP = IP+ chez Icom ; TUNER = tuner d'antenne
-EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER")
+EXTRA_FUNCTIONS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN")   # AIP = IP+ chez Icom ; TUNER = tuner d'antenne ; MN = notch manuel
+EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER", "NR", "NB")
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
 
@@ -175,7 +177,7 @@ class CatLink:
     # ------------------------------------------------------------------ lectures facultatives (une seule par cycle : le bus CAT est lent)
 
     def _supported(self, kind: str, name: str) -> bool:
-        if name in self._disabled:
+        if f"{kind}:{name}" in self._disabled:             # NR et NB existent en fonction ET en niveau : clés distinctes
             return False
         caps = self.capabilities
         if caps is not None and caps.complete:
@@ -188,25 +190,27 @@ class CatLink:
         try:
             value = await (self.client.get_func(name) if kind == "f" else self.client.get_level(name))
         except RigError as exc:
-            self._failures[name] = self._failures.get(name, 0) + 1
-            if exc.code in PERMANENT_ERRORS or self._failures[name] >= MAX_TRANSIENT_FAILURES:
-                self._disable(name, f"RPRT {exc.code}")
+            key = f"{kind}:{name}"
+            self._failures[key] = self._failures.get(key, 0) + 1
+            if exc.code in PERMANENT_ERRORS or self._failures[key] >= MAX_TRANSIENT_FAILURES:
+                self._disable(kind, name, f"RPRT {exc.code}")
             return
         except CatProtocolError as exc:
-            self._disable(name, str(exc))
+            self._disable(kind, name, str(exc))
             return
-        self._failures[name] = 0
+        self._failures[f"{kind}:{name}"] = 0
         bucket = "functions" if kind == "f" else "levels"
         merged = dict(getattr(self._state, bucket))
         merged[name] = value if kind == "f" else round(float(value), 3)
         self._update(**{bucket: merged})
 
-    def _disable(self, name: str, why: str) -> None:
-        if name not in self._disabled:
-            self._disabled.add(name)
-            log.info("lecture de %s abandonnée pour ce poste (%s)", name, why)
-        self._update(functions={k: v for k, v in self._state.functions.items() if k != name},
-                     levels={k: v for k, v in self._state.levels.items() if k != name})
+    def _disable(self, kind: str, name: str, why: str) -> None:
+        key = f"{kind}:{name}"
+        if key not in self._disabled:
+            self._disabled.add(key)
+            log.info("lecture de %s (%s) abandonnée pour ce poste (%s)", name, "fonction" if kind == "f" else "niveau", why)
+        bucket = "functions" if kind == "f" else "levels"            # seulement la lecture abandonnée, pas son homonyme
+        self._update(**{bucket: {k: v for k, v in getattr(self._state, bucket).items() if k != name}})
 
     async def _refresh_one_extra(self) -> None:
         items = ([("f", n) for n in EXTRA_FUNCTIONS] + [("l", n) for n in EXTRA_LEVELS])
@@ -246,10 +250,21 @@ class CatLink:
         self._update(functions={**self._state.functions, name: bool(on)})
 
     async def set_level(self, name: str, value) -> None:
-        """SQL (0 à 1), AGC et PREAMP (entiers) : voir WRITABLE_LEVELS."""
+        """Voir WRITABLE_LEVELS. Plage déclarée par le poste (« Set level ») vérifiée en plus des bornes larges."""
         self._check_known("l", name)
+        caps = self.capabilities
+        declared = caps.level_ranges.get(name) if caps is not None and caps.level_ranges else None
+        # Une liste de valeurs déclarée (« Attenuator: 20dB », « Preamp: 1dB 2dB ») prime sur la plage : Hamlib 5 déclare
+        # pour l'IC-7300MK2 « Attenuator: 20dB » ET « ATT(0..12) » ; la plage bloquerait la seule valeur réelle.
+        listed = {"ATT": caps.attenuators, "PREAMP": caps.preamps}.get(name) if caps is not None else None
+        if listed and value in (0, *listed):
+            declared = None
+        if declared and isinstance(value, (int, float)) and not isinstance(value, bool) \
+                and not declared[0] - 1e-9 <= value <= declared[1] + 1e-9:
+            raise ValueError(f"{name} : {value!r} hors de la plage du poste ({declared[0]:g} à {declared[1]:g})")
         await self.client.set_level(name, value)
-        self._update(levels={**self._state.levels, name: round(float(value), 3) if name in ("SQL", "RFPOWER") else int(value)})
+        decimal = name in ("SQL", "RFPOWER", "NR", "NB")
+        self._update(levels={**self._state.levels, name: round(float(value), 3) if decimal else int(value)})
 
     async def set_squelch(self, value: float) -> None:
         """Squelch du poste (0 à 1). Sans effet sur l'émission ; la valeur est reprise à la prochaine lecture."""

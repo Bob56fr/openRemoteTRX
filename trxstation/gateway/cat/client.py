@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Client asynchrone du protocole rigctld (Hamlib), protocole étendu ('+').
 
 RÈGLE DE SÉCURITÉ : le PTT se LIT librement, mais n'a qu'UN SEUL chemin d'écriture,
@@ -19,10 +21,12 @@ MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 LEVEL_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,23}$")
 FUNC_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,15}$")
 # Écritures autorisées : une liste FERMÉE (jamais de nom libre vers rigctld). Aucune n'agit sur le PTT.
-WRITABLE_FUNCS = ("NR", "NB", "AIP", "COMP", "TUNER")      # AIP = IP+ ; TUNER = tuner d'antenne en/hors service
-WRITABLE_LEVELS = ("SQL", "AGC", "PREAMP", "RFPOWER")
+WRITABLE_FUNCS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN")   # AIP = IP+ ; TUNER = tuner d'antenne ; ANF/MN = notch auto/manuel
+WRITABLE_LEVELS = ("SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB")
 POWER_STEPS = (0.05, 0.10, 0.25, 0.50, 0.80, 1.00)         # RFPOWER : fraction de la puissance maximale (5, 10, 25, 50, 80, 100 %)
-INT_LEVELS = {"AGC": (0, 6), "PREAMP": (0, 30)}             # AGC : 0 OFF 1 SUPERFAST 2 FAST 3 SLOW 4 USER 5 MEDIUM 6 AUTO ; PREAMP en dB (0 = arrêt)
+INT_LEVELS = {"AGC": (0, 6), "PREAMP": (0, 30), "ATT": (0, 60)}   # AGC : 0 OFF … 6 AUTO ; PREAMP et ATT en dB (0 = arrêt)
+# Niveaux décimaux : bornes LARGES (toutes versions de Hamlib) ; la passerelle resserre avec la plage déclarée par le poste.
+FLOAT_LEVELS = {"SQL": (0.0, 1.0), "NR": (0.0, 1.0), "NB": (0.0, 10.0)}
 _HEADER_RE = re.compile(r"^(get|set)_[a-z_]+:")        # écho de la commande : « get_level: STRENGTH »
 
 RIG_ENIMPL = -4    # non implémenté par le backend
@@ -216,8 +220,9 @@ class RigctldClient:
                 raise ValueError(f"puissance invalide (parmi {', '.join(str(round(p * 100)) for p in POWER_STEPS)} %) : {value!r}")
             text = f"{float(value):.3f}"
         else:
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0.0 <= value <= 1.0:
-                raise ValueError(f"valeur invalide (0 à 1 attendu) : {value!r}")
+            low, high = FLOAT_LEVELS[name]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
+                raise ValueError(f"valeur invalide ({low:g} à {high:g} attendu) : {value!r}")
             text = f"{float(value):.3f}"
         await self._command(f"L {name} {text}")
 

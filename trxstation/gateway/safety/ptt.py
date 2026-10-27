@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """PttController : le SEUL composant autorisé à commander le PTT.
 
 Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :

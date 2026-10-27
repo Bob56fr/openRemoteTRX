@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mode géré avec de VRAIS processus enfants (cross-platform : de simples scripts Python),
 et passerelle réelle (`trxstation.gateway.main`) lancée en sous-processus."""
 import os

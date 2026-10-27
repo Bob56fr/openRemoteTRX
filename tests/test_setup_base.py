@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """trx-setup reprend la configuration existante, et protège les fichiers qu'il écrit."""
 from __future__ import annotations
 

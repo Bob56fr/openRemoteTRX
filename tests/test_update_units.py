@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Timer systemd de recherche de mise à jour : compte trx, jamais root, intégré au zip et à install.sh."""
 from __future__ import annotations
 

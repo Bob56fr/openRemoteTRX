@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Lancement des modules par le superviseur (Windows, Linux, Raspberry Pi).
 
 Les modules sont des processus enfants du superviseur, sur toutes les

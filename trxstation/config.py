@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Chargement, validation et écriture de station.toml (stdlib uniquement).
 
 Principe de conception : en cas de doute, on refuse d'émettre.

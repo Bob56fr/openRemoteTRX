@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Import d'une configuration venue d'un autre PC (typiquement Windows) vers cette machine Linux.
 
 Tout ce qui ne dépend pas de la machine est conservé : comptes ([[clients]]), alertes (notify_url),

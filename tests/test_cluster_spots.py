@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module Cluster DX, lot 3 : spots de la bande courante vers les pages (vue HF ouverte seulement),
 rejeu à l'ouverture, page servie, QSY par les commandes existantes."""
 from __future__ import annotations

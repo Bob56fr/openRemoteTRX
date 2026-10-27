@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """trx-monitor : `trx-monitor` (TUI Textual) ou `trx-monitor --once` (capture texte, sans Textual)."""
 from __future__ import annotations
 

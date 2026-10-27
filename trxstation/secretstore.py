@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """secrets.toml : mots de passe et clés d'API des modules, À CÔTÉ de station.toml mais jamais dedans.
 
 station.toml se joint aux rapports, se copie d'une station à l'autre, se montre pour obtenir de l'aide :

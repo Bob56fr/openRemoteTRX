@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Qualification (lot Q1) : profil Hamlib, cahier de test généré, fiche TRX, catalogue et verdict."""
 import pytest
 
@@ -50,7 +52,7 @@ def test_plan_generates_tests_only_for_declared_functions_used_by_trx_remote():
     ids = {i.id for i in plan.items}
     assert {"read_level_STRENGTH", "read_func_NB", "write_func_NR", "write_level_SQL", "write_level_RFPOWER",
             "mode_PKTUSB"} <= ids
-    assert "write_level_ATT" not in ids                         # ATT n'est pas écrit par TRX Remote
+    assert "write_level_ATT" in ids                             # ATT est écrit par TRX Remote depuis la 0.40.0 (bouton ATT)
     assert plan.by_id("write_func_TUNER").action == "manual"   # jamais automatique : peut lancer un accord
     assert {"MON", "VOX", "SCOPE", "AF", "MICGAIN"} <= set(plan.unused)
     assert "NR" not in plan.unused and "STRENGTH" not in plan.unused

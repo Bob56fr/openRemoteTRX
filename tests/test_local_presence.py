@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """« Poste utilisé sur place » : logique seule (horloge simulée), puis avec le contrôleur PTT et le faux rigctld.
 
 Décision de l'utilisateur (2026-10-27) : une action faite sur le poste lui-même (micro, bouton d'accord, mode) bloque le

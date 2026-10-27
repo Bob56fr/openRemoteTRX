@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 # Installation de TRX distant sur Debian 12 ou 13 (PC avec bureau). Relançable sans danger :
 # une nouvelle exécution répare ou met à jour, sans jamais écraser la configuration.
 #

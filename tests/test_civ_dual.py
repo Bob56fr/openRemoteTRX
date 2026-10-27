@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Essai à deux ports CI-V : rigctld sur le port A, spectre sur le port B, surveillance du PTT, bus partagé."""
 from __future__ import annotations
 

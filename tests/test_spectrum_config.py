@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Section [spectrum] : désactivée par défaut, rigctld lancé en diffusion locale, serveur de commandes UDP interdit."""
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Pont entre la passerelle (cœur TRX) et les modules.
 
 - S'abonne aux écouteurs EXISTANTS du PttController et du CatLink : aucune

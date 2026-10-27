@@ -1,8 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Rapport de dépannage : un zip à joindre à une demande d'aide, SANS secret.
 
 Contenu : résultat du diagnostic, configuration expurgée (empreintes de mots de passe, jetons et sujet
 ntfy masqués), journaux des services, journal d'installation, versions et matériel détecté, état du
-Cluster DX (status.json). JAMAIS secrets.toml, ni le journal du cluster (texte venu d'internet).
+Cluster DX (status.json), et les 10 derniers rapports « Signaler un problème » envoyés par la page (texte relu et
+validé par l'utilisateur avant l'envoi). JAMAIS secrets.toml, ni le journal du cluster (texte venu d'internet).
 """
 from __future__ import annotations
 
@@ -45,6 +48,20 @@ def _state_dir(sysm: System, config_path: Path) -> Path | None:
     return Path(cfg.supervisor.state_dir)
 
 
+MAX_PAGE_REPORTS = 10
+PAGE_REPORT_NAME = re.compile(r"^page-\d{8}-\d{6}-[A-Za-z0-9_-]{1,32}\.txt$")
+
+
+def page_reports(state_dir: Path | None) -> list[Path]:
+    """Rapports de problème envoyés par la page (gateway/bugreports.py), du plus ancien au plus récent."""
+    if state_dir is None:
+        return []
+    try:
+        return sorted(p for p in (state_dir / "reports").iterdir() if PAGE_REPORT_NAME.match(p.name) and p.is_file())
+    except OSError:
+        return []
+
+
 def desktop_dir(home: Path | None = None, sysm: System | None = None) -> Path:
     home = home or Path(os.path.expanduser("~" + (os.environ.get("SUDO_USER") or "")))
     sysm = sysm or System()
@@ -83,6 +100,10 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
         state_dir = _state_dir(sysm, config_path)
         cluster = sysm.read_text(state_dir / "cluster" / "status.json") if state_dir else None
         archive.writestr("cluster-etat.json", cluster if cluster is not None else "{}\n")
+        for page in page_reports(state_dir)[-MAX_PAGE_REPORTS:]:    # « Signaler un problème » de la page, relus par l'utilisateur
+            text = sysm.read_text(page)
+            if text is not None:
+                archive.writestr(f"rapports-page/{page.name}", text)
         log = sysm.read_text(INSTALL_LOG)
         archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
     return target

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """`trx-qualif` : qualification d'un poste avant son intégration dans TRX Remote (lot Q1, ligne de commande).
 
   trx-qualif --plan                    cahier de test du modèle de station.toml, sans toucher au poste

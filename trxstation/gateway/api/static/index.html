@@ -1,4 +1,6 @@
 <!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -98,7 +100,9 @@
       <button id="ctl-nr" class="chip" title="Réducteur de bruit" hidden>NR</button>
       <button id="ctl-nb" class="chip" title="Antiparasite (noise blanker)" hidden>NB</button>
       <button id="ctl-preamp" class="chip" title="Préampli : arrêt, puis chaque valeur du poste" hidden>P.AMP</button>
+      <button id="ctl-att" class="chip" title="Atténuateur : arrêt ou marche" hidden>ATT</button>
       <button id="ctl-aip" class="chip" title="IP+ (point d'interception)" hidden>IP+</button>
+      <button id="ctl-notch" class="chip" title="Notch : arrêt, automatique, manuel (appui long ou double clic : réglages)" hidden>NOTCH</button>
       <button id="ctl-agc" class="chip" title="AGC : rapide, moyen, lent" hidden>AGC</button>
       <button id="ctl-comp" class="chip" title="Compresseur de parole" hidden>COMP</button>
       <button id="ctl-fil" class="chip" title="Filtre de réception : largeur suivante" hidden>FIL</button>
@@ -308,6 +312,20 @@
       </div>
     </details>
 
+    <details id="sec-bug">
+      <summary>Signaler un problème</summary>
+      <div class="body">
+        <p class="note">Décris ce qui s'est passé, puis prépare le rapport : il contient la version, l'appareil, l'état de la liaison et du poste, les dernières pertes de connexion et le journal de la page. Jamais de mot de passe. Tu le relis avant de l'envoyer.</p>
+        <label>Ce qui s'est passé <textarea id="bug-text" rows="4" maxlength="2000" placeholder="ex. le waterfall reste noir après avoir changé de bande"></textarea></label>
+        <div class="row"><button id="bug-prepare">Préparer le rapport</button></div>
+        <pre id="bug-report" class="lossdetail" hidden></pre>
+        <div class="row">
+          <button id="bug-send" disabled title="Rangé sur la station : il sera joint au rapport de dépannage de TRX Console (menu 8)">Envoyer à la station</button>
+          <button id="bug-share" disabled title="Partage du téléphone (e-mail, messagerie...) ou copie">Partager / e-mail</button>
+        </div>
+      </div>
+    </details>
+
   </main>
 </div>
 <div id="keypad" class="keypad" hidden>
@@ -319,6 +337,21 @@
       <button id="kp-cancel">Annuler</button>
       <button id="kp-ok" class="primary" disabled>OK</button>
     </div>
+  </div>
+</div>
+<div id="ctl-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div id="ctl-dialog-title" class="kp-display ctl-title">—</div>
+    <div id="ctl-dialog-onrow" class="row"><button id="ctl-dialog-toggle" class="chip">—</button></div>
+    <div id="ctl-notch-row" class="row" hidden>
+      <button id="ctl-notch-off" class="chip">Arrêt</button>
+      <button id="ctl-notch-auto" class="chip">Automatique</button>
+      <button id="ctl-notch-manual" class="chip">Manuel</button>
+    </div>
+    <label id="ctl-level-row" hidden>Niveau <span id="ctl-level-text" class="dim"></span>
+      <input id="ctl-level" type="range" min="0" max="1" step="0.01" value="0"></label>
+    <div id="ctl-dialog-note" class="note"></div>
+    <div class="row"><button id="ctl-dialog-close" class="primary">Fermer</button></div>
   </div>
 </div>
 <div id="hfscope" class="hf" hidden>

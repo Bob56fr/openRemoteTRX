@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Signalisation HTTP (aiohttp) : POST /offer {client_id, password, sdp, type} -> réponse SDP ; GET /config ; page web.
 
 Le mot de passe protège la commande de l'émetteur. Sur autre chose que la boucle locale, l'API doit être servie en

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Calculs de la mesure de latence (sans dépendance réseau, donc testables)."""
 from __future__ import annotations
 

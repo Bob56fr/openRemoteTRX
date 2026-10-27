@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Couche CAT : client rigctld, descripteur de capacités, état du poste."""
 from .capabilities import Capabilities, CapabilitiesError, load_capabilities, parse_dump_caps
 from .client import (CatConnectionError, CatProtocolError, RigctldClient, RigError)

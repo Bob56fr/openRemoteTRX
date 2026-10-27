@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Lancement et surveillance des modules, côté superviseur.
 
 - Mode géré (Windows, ou Linux sans systemd) : le superviseur lance chaque

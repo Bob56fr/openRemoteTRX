@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mises en page de l'interface (designer) : format, validation, cascade des variantes, profil d'usine, stockage.
 
 Un PROFIL décrit l'interface d'un utilisateur pour trois catégories d'appareils (smartphone, tablette,

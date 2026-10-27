@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Second port CI-V d'un Icom : ouverture prudente, lecture des trames et vérification du réglage du poste.
 
 Le poste doit avoir un second port série réglé en CI-V (IC-7300MK2 : « Serial Port B »). À CHAQUE ouverture, on

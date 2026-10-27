@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Indicateur de niveau (dBFS) : attaque instantanée, retombée lente, pour un affichage stable."""
 from __future__ import annotations
 

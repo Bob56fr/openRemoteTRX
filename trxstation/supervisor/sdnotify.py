@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Protocole sd_notify (systemd) sans dépendance : READY=1 et WATCHDOG=1."""
 from __future__ import annotations
 

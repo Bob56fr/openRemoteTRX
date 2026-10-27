@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Moteur de qualification d'un poste (lot Q1) : trois phases, sur la base de trx-hwtest.
 
   Phase 1, automatique, SANS émission : socle fréquence et mode, filtres, lectures et écritures
@@ -25,7 +27,7 @@ from pathlib import Path
 
 from ..config import Config
 from ..devtools.hwtest import PREFLIGHT, HwTest
-from ..gateway.cat.client import HAMLIB_ERRORS, POWER_STEPS, RigError
+from ..gateway.cat.client import FLOAT_LEVELS, HAMLIB_ERRORS, INT_LEVELS, POWER_STEPS, RigError
 from .plan import DECLARATIF, FIXE, GENERE, SOCLE, TestPlan, build_plan, core_modes, label, render_plan
 from .profile import HamlibProfile
 from .results import Check, compute_verdict, draft_sheet
@@ -190,12 +192,14 @@ class Qualification(HwTest):
     @staticmethod
     def _level_value(name: str, value: float):
         """Valeur acceptée par la couche CAT pour rétablir un niveau, ou None si on ne doit pas y toucher."""
-        if name in ("AGC", "PREAMP"):
+        if name in INT_LEVELS:                          # AGC, PREAMP, ATT : entiers (la relecture donne un décimal)
+            low, high = INT_LEVELS[name]
             rounded = round(value)
-            return rounded if 0 <= rounded <= (6 if name == "AGC" else 30) else None
+            return rounded if low <= rounded <= high else None
         if name == "RFPOWER":
             return next((s for s in POWER_STEPS if abs(s - value) <= POWER_TOLERANCE), None)
-        return min(1.0, max(0.0, round(float(value), 3)))
+        low, high = FLOAT_LEVELS.get(name, (0.0, 1.0))
+        return min(high, max(low, round(float(value), 3)))
 
     # ------------------------------------------------------------------ phase 1 : automatique
 
@@ -360,9 +364,20 @@ class Qualification(HwTest):
             lower = [s for s in POWER_STEPS if s < restore]                     # jamais plus fort qu'au départ si possible
             target = lower[-1] if lower else next(s for s in POWER_STEPS if s > restore)
             tol = POWER_TOLERANCE
+        elif name in FLOAT_LEVELS:                      # NR, NB : milieu de la plage (ou un cinquième si on y est déjà)
+            low, high = FLOAT_LEVELS[name]
+            middle = low + (high - low) / 2
+            target = round(middle if abs(restore - middle) > (high - low) * 0.1 else low + (high - low) / 5, 3)
+            tol = (high - low) * 0.07                   # le poste arrondit à son pas (NR : 1/15)
         else:
-            values = self.profile.agc_levels if name == "AGC" else (0, *self.profile.preamps)
-            choices = [v for v in values if v != restore and 0 <= v <= (6 if name == "AGC" else 30)]
+            if name == "AGC":
+                values = self.profile.agc_levels
+            elif name == "ATT":
+                values = (0, *getattr(self.profile, "attenuators", ()))
+            else:
+                values = (0, *self.profile.preamps)
+            low, high = INT_LEVELS.get(name, (0, 30))
+            choices = [v for v in values if v != restore and low <= v <= high]
             if name == "AGC":
                 choices.sort(key=lambda v: v == 0)      # AGC arrêtée (0 = OFF) en dernier recours seulement
             target, tol = (choices[0] if choices else restore), 0.5

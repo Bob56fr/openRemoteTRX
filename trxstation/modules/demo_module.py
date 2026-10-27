@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Module factice : valide le socle sans matériel.
 
 Il se comporte comme le futur service vidéo vis-à-vis du PTT : il se met en

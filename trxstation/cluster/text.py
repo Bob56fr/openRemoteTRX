@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Nettoyage du texte reçu d'internet et contrôle des indicatifs."""
 
 from __future__ import annotations

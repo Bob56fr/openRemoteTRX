@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """trx-monitor : tout ce qui ne dépend pas de Textual est testé ici ; le test de fumée de
 l'interface ne tourne que si Textual est installé (sinon il ne fait rien)."""
 import asyncio

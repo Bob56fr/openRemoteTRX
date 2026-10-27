@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Faux client (le rôle du smartphone) : connexion WebRTC complète à la passerelle.
 
 Nécessite aiortc et aiohttp. Sert aux tests de bout en bout et à la mesure de latence.

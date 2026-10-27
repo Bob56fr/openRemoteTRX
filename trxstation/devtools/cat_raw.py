@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Affiche les réponses BRUTES de rigctld (lecture seule) pour diagnostiquer un poste :
 
     python -m trxstation.devtools.cat_raw --port 4532 f m t "l STRENGTH" "l ALC"

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """API client : protocole, authentification, session de contrôle (sans aucun transport réseau)."""
 import asyncio
 import contextlib

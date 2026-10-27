@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Catalogue du format de mise en page : appareils, grilles, cibles et types de widgets.
 
 Chaque type de widget déclare :

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Point d'entrée du superviseur : `python -m trxstation.supervisor.main` (unit systemd Type=notify)."""
 from __future__ import annotations
 

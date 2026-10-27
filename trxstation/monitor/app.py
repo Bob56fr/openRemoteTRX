@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Interface Textual de trx-monitor. Couche mince : tout le contenu vient de model.py.
 
 Touches : s = STOP TX (coupe l'émission), q = quitter.

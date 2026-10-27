@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 /* Affichage : relie TrxClient (client.js, logique testée sous Node) à la page. Aucune logique de protocole ici. */
 (function (root) {
   "use strict";
@@ -22,8 +24,11 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  const CONTROLS = [["NR", "ctl-nr"], ["NB", "ctl-nb"], ["PREAMP", "ctl-preamp"], ["AIP", "ctl-aip"], ["AGC", "ctl-agc"],
-                    ["COMP", "ctl-comp"], ["FIL", "ctl-fil"], ["TUNER", "ctl-tuner"], ["PWR", "ctl-pwr"]];
+  const CONTROLS = [["NR", "ctl-nr"], ["NB", "ctl-nb"], ["PREAMP", "ctl-preamp"], ["ATT", "ctl-att"], ["AIP", "ctl-aip"],
+                    ["NOTCH", "ctl-notch"], ["AGC", "ctl-agc"], ["COMP", "ctl-comp"], ["FIL", "ctl-fil"], ["TUNER", "ctl-tuner"],
+                    ["PWR", "ctl-pwr"]];
+  const DIALOG_KEYS = ["NR", "NB", "NOTCH"];          // appui long (téléphone) ou double clic (PC) : fenêtre de réglage
+  const DOUBLE_CLICK_MS = 260;                        // un appui sur NR/NB/NOTCH attend ce délai : un second appui = double clic
   const percentLeft = (fraction) => (100 - Math.round(fraction * 100)) + "%";                    // largeur du masque : la partie VIDE de la barre
 
   function browserEnv() {
@@ -1127,6 +1132,7 @@
         connectedFlag = value;
         const version = value && client.hello ? versionLabel(client.hello.version) : "";
         $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
+        if ($("bug-report") && !$("bug-report").hidden) $("bug-send").disabled = !value;   // « Envoyer à la station » : connecté seulement
         for (const id of ["armed", "ptt", "stop", "freq-set", "disconnect", "mem-add-current", "step-down", "step-up",
                           "alert-test"]) $(id).disabled = !value;     // essai des sons : une fois connecté, quand la page sait quelle sortie est le poste
         $("connect").disabled = value;
@@ -1141,7 +1147,7 @@
           for (const [, id] of CONTROLS) $(id).disabled = true;                          // plus de commande sans liaison
           for (const button of bandButtons.values()) button.disabled = true;
           for (const button of modeButtons.values()) button.disabled = true;
-          $("local-banner").hidden = true; resetRelease();
+          $("local-banner").hidden = true; resetRelease(); closeControlDialog();
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
           if (hfVisible) showZone("tx");
           if (spotBook) { spotBook.clear(); closeSpotCard(); closeSpotList(); drawSpots(); }
@@ -1184,6 +1190,7 @@
             button.className = "chip" + (item.on ? " on" : "");
           }
         }
+        renderControlDialog(v);                                                      // fenêtre NR/NB/Notch : valeurs relues, verrou en émission
         const mark = $("sql-marker");
         mark.hidden = v.squelchMark === null;
         if (v.squelchMark !== null) mark.style.left = (v.squelchMark * 100).toFixed(1) + "%";   // repère du squelch sur l'échelle du S-mètre
@@ -1261,6 +1268,31 @@
       if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait
       client.pressModePill().catch(fail);
     });
+    // ---- signaler un problème : rapport assemblé, RELU par l'utilisateur, puis envoyé à la station ou partagé
+    let bugText = "";
+    const deviceInfo = () => ({
+      userAgent: navigator.userAgent || "", layout: $("app").className,
+      screen: window.innerWidth + "×" + window.innerHeight + " (densité " + (window.devicePixelRatio || 1) + ")",
+      theme: (document.documentElement.getAttribute && document.documentElement.getAttribute("data-theme")) || "défaut",
+    });
+    $("bug-prepare").addEventListener("click", () => {
+      bugText = client.problemReport($("bug-text").value, deviceInfo());
+      $("bug-report").textContent = bugText; $("bug-report").hidden = false;
+      $("bug-send").disabled = !connectedFlag; $("bug-share").disabled = false;
+    });
+    $("bug-send").addEventListener("click", () => { if (bugText) client.sendProblemReport(bugText).catch(fail); });
+    $("bug-share").addEventListener("click", async () => {
+      if (!bugText) return;
+      if (navigator.share) {
+        try { await navigator.share({ title: "Rapport de problème TRX distant", text: bugText }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }                     // partage annulé par l'utilisateur
+      }
+      try { await navigator.clipboard.writeText(bugText); ui.log("Rapport copié : colle-le dans un e-mail ou un message.", ""); }
+      catch (e) { ui.log("Copie impossible : sélectionne le texte du rapport et copie-le.", "warn"); }
+    });
+    window.addEventListener("error", (ev) => client.recordError((ev && ev.message) || "erreur inconnue"));
+    window.addEventListener("unhandledrejection", (ev) => client.recordError("promesse rejetée : " + ((ev && ev.reason && ev.reason.message) || (ev && ev.reason) || "?")));
+
     $("local-release").addEventListener("click", () => {                             // confirmation en deux temps
       if (!releaseArmed) {
         releaseArmed = true;
@@ -1281,7 +1313,88 @@
       if (hz === null) { ui.log("Fréquence invalide (en kHz, ex. 14200 ou 7074,5).", "warn"); return; }
       client.setFrequency(hz).catch(fail);
     });
-    for (const [key, id] of CONTROLS) $(id).addEventListener("click", () => client.pressControl(key).catch(fail));
+    for (const [key, id] of CONTROLS) {
+      const button = $(id);
+      if (!DIALOG_KEYS.includes(key)) { button.addEventListener("click", () => client.pressControl(key).catch(fail)); continue; }
+      // NR, NB, NOTCH : appui = bascule ; appui long (téléphone) ou double clic (PC) = fenêtre de réglage
+      let pressTimer = null, longDone = false, clickTimer = null;
+      button.addEventListener("pointerdown", () => {
+        longDone = false;
+        if (pressTimer !== null) window.clearTimeout(pressTimer);
+        pressTimer = window.setTimeout(() => { pressTimer = null; longDone = true; openControlDialog(key); }, 550);
+      });
+      for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+        button.addEventListener(type, () => { if (pressTimer !== null) { window.clearTimeout(pressTimer); pressTimer = null; } });
+      }
+      button.addEventListener("click", () => {
+        if (longDone) { longDone = false; return; }                                // l'appui long a déjà ouvert la fenêtre
+        if (clickTimer !== null) { window.clearTimeout(clickTimer); clickTimer = null; openControlDialog(key); return; }   // double clic
+        clickTimer = window.setTimeout(() => { clickTimer = null; client.pressControl(key).catch(fail); }, DOUBLE_CLICK_MS);
+      });
+      button.addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });   // appui long Android
+    }
+    // ---- fenêtre de réglage NR / NB / Notch (refusée par la station pendant l'émission, verrouillée ici aussi)
+    let dialogKey = null, levelTimer = null, levelTouched = 0;
+    const DIALOG_TITLES = { NR: "Réducteur de bruit (NR)", NB: "Antiparasite (NB)", NOTCH: "Notch" };
+    function levelRange(name) {
+      const caps = client.hello && client.hello.capabilities;
+      const range = caps && caps.level_ranges ? caps.level_ranges[name] : null;
+      return Array.isArray(range) && range.length === 3 && range[1] > range[0] ? range : null;
+    }
+    function levelText(value, range) {
+      return range[2] > 0 ? String(Math.round((value - range[0]) / range[2])) + " / " + Math.round((range[1] - range[0]) / range[2]) : Number(value).toFixed(2);
+    }
+    function openControlDialog(key) {
+      dialogKey = key;
+      $("ctl-dialog").hidden = false;
+      renderControlDialog(lastView);
+    }
+    function closeControlDialog() { dialogKey = null; $("ctl-dialog").hidden = true; }
+    function renderControlDialog(v) {
+      if (dialogKey === null || !v) return;
+      const fn = (v.rig && v.rig.functions) || {}, lv = (v.rig && v.rig.levels) || {};
+      const locked = !v.connected || v.controlsLocked;
+      const notch = dialogKey === "NOTCH";
+      $("ctl-dialog-title").textContent = DIALOG_TITLES[dialogKey];
+      $("ctl-dialog-onrow").hidden = notch; $("ctl-notch-row").hidden = !notch;
+      if (notch) {
+        const current = fn.MN ? "manual" : fn.ANF ? "auto" : "off";
+        for (const [kind, id, needs] of [["off", "ctl-notch-off", null], ["auto", "ctl-notch-auto", "ANF"], ["manual", "ctl-notch-manual", "MN"]]) {
+          $(id).className = "chip" + (current === kind ? " on" : "");
+          $(id).disabled = locked || (needs !== null && !(needs in fn));
+        }
+      } else {
+        $("ctl-dialog-toggle").textContent = fn[dialogKey] ? "En marche" : "Arrêté";
+        $("ctl-dialog-toggle").className = "chip" + (fn[dialogKey] ? " on" : "");
+        $("ctl-dialog-toggle").disabled = locked || !(dialogKey in fn);
+      }
+      const range = notch ? null : levelRange(dialogKey);
+      const has = !!range && dialogKey in lv;
+      $("ctl-level-row").hidden = !has;
+      if (has) {
+        const slider = $("ctl-level");
+        slider.min = String(range[0]); slider.max = String(range[1]); slider.step = String(range[2] > 0 ? range[2] : (range[1] - range[0]) / 100);
+        slider.disabled = locked;
+        if (performance.now() - levelTouched > 1500) slider.value = String(lv[dialogKey]);   // pas de saut pendant que le doigt règle
+        $("ctl-level-text").textContent = levelText(Number(slider.value), range);
+      }
+      $("ctl-dialog-note").textContent = locked ? "Réglages verrouillés pendant l'émission." :
+        (notch ? "" : has ? "" : "Le poste ne déclare pas de niveau réglable pour cette fonction.");
+    }
+    $("ctl-dialog-toggle").addEventListener("click", () => { if (dialogKey) client.pressControl(dialogKey).catch(fail); });
+    for (const [kind, id] of [["off", "ctl-notch-off"], ["auto", "ctl-notch-auto"], ["manual", "ctl-notch-manual"]]) {
+      $(id).addEventListener("click", () => client.setNotch(kind).catch(fail));
+    }
+    $("ctl-level").addEventListener("input", (ev) => {
+      const key = dialogKey, range = key ? levelRange(key) : null;
+      if (!range) return;
+      const value = Number(ev.target.value);
+      levelTouched = performance.now();
+      $("ctl-level-text").textContent = levelText(value, range);
+      window.clearTimeout(levelTimer);
+      levelTimer = window.setTimeout(() => client.setLevelValue(key, value).catch(fail), 150);   // une commande à la fin du geste
+    });
+    $("ctl-dialog-close").addEventListener("click", closeControlDialog);
     $("squelch").addEventListener("input", (ev) => {
       const percent = Number(ev.target.value);
       $("squelch-text").textContent = squelchLabel(percent);

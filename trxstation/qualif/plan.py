@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Cahier de test d'un modèle : partie FIXE (socle et exercices, communs à tous les postes) plus partie
 GÉNÉRÉE depuis le profil Hamlib (fonctions déclarées que TRX Remote sait utiliser).
 
@@ -31,7 +33,8 @@ CORE_MODES = ("USB", "LSB", "CW", "AM", "FM")
 
 LABELS = {
     "NR": "réducteur de bruit (NR)", "NB": "noise blanker (NB)", "AIP": "IP+", "COMP": "compresseur",
-    "TUNER": "tuner d'antenne", "ANF": "filtre notch auto (ANF)", "STRENGTH": "S-mètre", "PREAMP": "préampli",
+    "TUNER": "tuner d'antenne", "ANF": "filtre notch auto (ANF)", "MN": "filtre notch manuel (MN)",
+    "STRENGTH": "S-mètre", "PREAMP": "préampli",
     "ATT": "atténuateur", "AGC": "AGC", "SQL": "squelch", "RFPOWER": "puissance réglée",
     "VD_METER": "tension d'alimentation", "TEMP_METER": "température", "RFPOWER_METER": "puissance mesurée",
     "SWR": "ROS", "ALC": "ALC", "COMP_METER": "taux de compression",

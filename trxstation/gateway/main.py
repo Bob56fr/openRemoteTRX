@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Point d'entrée de la passerelle : `python -m trxstation.gateway.main` (commande `trx-gateway`).
 
 Assemble : liaison CAT, couche de sécurité PTT, audio (réception diffusée, émission derrière la
@@ -18,6 +20,7 @@ import ssl
 import sys
 from pathlib import Path
 
+from .. import __version__
 from .. import config as cfgmod
 from ..asyncio_noise import install_quiet_handler
 from ..audio_devices import real_device_names
@@ -29,6 +32,7 @@ from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
+from .bugreports import ReportStore
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
 from .safety import PttController
@@ -139,8 +143,9 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
             return None, None
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
+    reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__)   # « Signaler un problème »
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
-                          layouts=layouts, spectrum=spectrum)
+                          layouts=layouts, spectrum=spectrum, reports=reports)
     app = make_app(ClientRegistry(cfg.clients), manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,
                    rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device))

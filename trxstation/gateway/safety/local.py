@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """« Poste utilisé sur place » : quelqu'un se sert du poste lui-même (micro, bouton d'accord, touches de mode).
 
 Repéré d'après ce que la station relit du poste, sans rien commander :

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Lanceur des modules (superviseur) : relance, désactivation, clé attendue, jamais en root."""
 import os
 import sys

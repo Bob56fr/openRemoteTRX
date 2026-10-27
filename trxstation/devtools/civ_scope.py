@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Relevé du spectre HF d'un poste Icom par le port CI-V, SANS rigctld (outil d'essai autonome) :
 
     python -m trxstation.devtools.civ_scope --port COM8 --duree 15

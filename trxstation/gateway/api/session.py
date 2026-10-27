@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """ControlSession : la conversation d'UN client authentifié avec la passerelle.
 
 Le client est déjà authentifié (jeton vérifié avant la création de la connexion). La session :
@@ -19,6 +21,7 @@ from collections.abc import Callable
 
 from ... import __version__
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
+from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
 from ..safety import PttController, Refused
@@ -50,10 +53,11 @@ class ControlSession:
                  max_msgs_per_s: int = 30, state_interval_s: float = 0.25,
                  clock: Callable[[], float] = time.monotonic, memories: MemoryStore | None = None,
                  layouts: LayoutStore | None = None, spectrum=None,
-                 spectrum_watch: Callable[[bool], None] | None = None):
+                 spectrum_watch: Callable[[bool], None] | None = None, reports=None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.spectrum = spectrum
         self.spectrum_watch = spectrum_watch     # vue HF ouverte/fermée chez ce client (SpectrumFanout.watch)
+        self.reports = reports                   # ReportStore : rapports de problème de la page (bugreports.py)
         self.hf_view = False                     # vue HF affichée chez ce client (dernier spectrum_watch accepté)
         self.on_hf_view: Callable[["ControlSession", bool], None] | None = None   # ModuleBridge.replay (gateway/main)
         self.capabilities, self._send = capabilities, send
@@ -207,6 +211,17 @@ class ControlSession:
                 self._result(cmd.id, True, ptt=self.ctrl.snapshot().to_dict())
             elif cmd.name == "local_release":                    # ne commande rien au poste : lève seulement l'attente
                 self._result(cmd.id, True, ptt=self.ctrl.release_local(self.client_id).to_dict())
+            elif cmd.name == "bug_report":                       # aucun effet sur le poste : un fichier texte sur la station
+                if self.reports is None:
+                    self._result(cmd.id, False, reason="reports_unavailable")
+                else:
+                    try:
+                        name = self.reports.save(self.client_id, cmd.params["text"])   # compte de la SESSION
+                    except ReportRefused as exc:
+                        self._result(cmd.id, False, reason=exc.reason)
+                    else:
+                        log.info("rapport de problème reçu de %s : %s", self.client_id, name)
+                        self._result(cmd.id, True, name=name)
             elif cmd.name == "set_frequency":
                 await self.ctrl.set_frequency(cmd.params["hz"])
                 self._result(cmd.id, True)

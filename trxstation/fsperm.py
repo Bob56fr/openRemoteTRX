@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Droits des fichiers sensibles de la station (configuration, clé TLS) sous Linux.
 
 Les services tournent sous le compte système `trx` ; la configuration est écrite par root (sudo trx-setup).

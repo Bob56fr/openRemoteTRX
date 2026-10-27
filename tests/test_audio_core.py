@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Cœur audio de la passerelle : tout ce qui ne dépend ni d'aiortc ni d'une vraie carte son."""
 import asyncio
 import threading

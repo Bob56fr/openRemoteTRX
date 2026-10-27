@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Porte audio d'ÉMISSION : le micro d'un client n'atteint le poste que si
   1. le PTT est confirmé en émission (la porte est ouverte par le PttController), ET
   2. le client est le PROPRIÉTAIRE de l'émission.

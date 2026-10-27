@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """TRX Console : enchaînement des actions (commandes simulées)."""
 from __future__ import annotations
 
@@ -66,11 +68,22 @@ def test_hwtest_needs_a_configuration_and_frees_the_port_first(tmp_path):
     con.hwtest()
     assert fake.calls == [] and any("menu 2" in line for line in out)
     write_config(tmp_path)
-    con, fake, out = console(tmp_path, answers=["n"], running=True)
+    con, fake, out = console(tmp_path, answers=["2", "n"], running=True)
     con.hwtest()
     commands = [c for c, _ in fake.calls]
     assert commands[0] == ["systemctl", "stop", TARGET] and "trxstation.devtools.hwtest" in commands[1]
+    assert "--reception-seule" not in commands[1]                      # essai complet
     assert ["systemctl", "restart", TARGET] not in commands            # « n » : station laissée arrêtée
+
+
+def test_hwtest_offers_a_reception_only_run_and_can_be_cancelled(tmp_path):
+    write_config(tmp_path)
+    con, fake, out = console(tmp_path, answers=["1", "n"])
+    con.hwtest()
+    assert fake.calls[-1][0][-1] == "--reception-seule"
+    con, fake, out = console(tmp_path, answers=[""], running=True)
+    con.hwtest()
+    assert fake.calls == [] and out[-1] == "Annulé."                    # rien arrêté, rien lancé
 
 
 def test_leaving_safe_mode_requires_an_explicit_yes(tmp_path):

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
 // Tests de la logique du client web (TrxClient) avec un faux navigateur : `node tests/js/client_test.js`
 "use strict";
 const assert = require("node:assert/strict");
@@ -911,6 +913,27 @@ test("modes : USB-D, LSB-D, FM-D, AM-D d'abord (noms Hamlib 4.6 ou 4.7), puis le
   assert.deepEqual(web.orderModes(["USB", "FM-D", "AM-D", "PKTUSB"]), ["PKTUSB", "FM-D", "AM-D", "USB"]);
   assert.deepEqual(web.orderModes(["USB", "CW"]), ["USB", "CW"]);
   assert.deepEqual(web.orderModes(null), []);
+});
+
+test("signaler un problème : rapport lisible, sans mot de passe, rangé sur la station", async () => {
+  const w = makeWorld();
+  await w.connected(); w.hello({ version: "0.40.0", spectrum: { level_max: 160 } });
+  w.state({}, { frequency_hz: 7074000, mode: "PKTUSB" });
+  w.client.recordError("TypeError: x is undefined");
+  for (let i = 0; i < 12; i++) w.client.recordError("erreur " + i);                        // 10 au plus
+  const text = w.client.problemReport("Le waterfall reste noir", { userAgent: "Chrome Android", screen: "412×860", layout: "portrait" });
+  assert.match(text, /=== Rapport de problème TRX distant ===/);
+  assert.match(text, /Le waterfall reste noir/); assert.match(text, /Station : v0\.40\.0/); assert.match(text, /Chrome Android/);
+  assert.match(text, /7 074 000 Hz PKTUSB/); assert.match(text, /erreur 11/); assert.doesNotMatch(text, /erreur 0\b/);
+  assert.doesNotMatch(text, /mot de passe|password/i);                                     // jamais de secret
+  assert.ok(web.formatProblemReport({ now: 0, description: "x".repeat(40000), logs: [] }).length <= 30000);
+  const done = w.client.sendProblemReport(text);
+  const msg = w.sentCommands("bug_report").at(-1);
+  assert.equal(msg.text, text); assert.equal(Object.keys(msg)[0], "cmd");                   // « cmd » d'abord : la station reconnaît le préfixe
+  w.answer(true, { name: "page-20261028-100000-phone.txt" }); await done;
+  assert.ok(w.ui.logs.some(([t]) => /Rapport envoyé à la station/.test(t)));
+  const refused = w.client.sendProblemReport(text); w.answer(false, { reason: "report_too_soon" }); await refused;
+  assert.ok(w.ui.logs.some(([t]) => /vient déjà d'être envoyé/.test(t)));
 });
 
 test("version de la station : affichée seulement si elle a une forme de version", () => {

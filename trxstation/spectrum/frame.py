@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Balayages du spectre vers les clients : format binaire compact et diffusion « au plus récent ».
 
 Canal WebRTC « spectrum » ouvert par le client, NON ORDONNÉ et SANS RENVOI (maxRetransmits 0) : un balayage

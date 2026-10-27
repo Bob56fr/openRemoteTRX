@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Réglage du Cluster DX sans éditer de fichier (TRX Console, menu 12).
 
     python -m trxstation.cluster.setup --config /etc/trx-remote/station.toml

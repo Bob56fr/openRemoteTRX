@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Actions réelles du superviseur : sonde rigctld, alertes, et un backend de gestion des processus.
 
 Aucune logique de décision ici : elle est dans core.py.

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Paquet d'installation Debian : contenu du zip, cohérence install.sh / units / code."""
 from __future__ import annotations
 

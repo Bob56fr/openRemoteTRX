@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Authentification des clients : identifiant + mot de passe, comparaison à temps constant, freinage des essais.
 
 Menaces visées (l'API peut être exposée sur Internet) :

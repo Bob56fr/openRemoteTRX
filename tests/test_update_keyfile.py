@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Clé de signature des mises à jour : créée hors du dépôt, jamais écrasée, clé publique inscrite."""
 from __future__ import annotations
 

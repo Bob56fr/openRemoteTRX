@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mémoires de fréquence et de mode, enregistrées sur la STATION et partagées entre tous les clients
 (téléphone, voiture, navigateur) : une mémoire créée sur l'un apparaît tout de suite sur les autres.
 

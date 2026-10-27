@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """État persistant du superviseur : mode sûr et historique des redémarrages.
 
 Les dates utilisent l'horloge murale. Sur un Pi sans RTC l'heure peut être fausse après un

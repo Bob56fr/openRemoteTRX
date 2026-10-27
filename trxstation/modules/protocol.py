@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Format des messages de l'API interne.
 
 Une ligne = un message JSON (UTF-8), terminé par « \n ».

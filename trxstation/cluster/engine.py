@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Lignes reçues -> spots du cache, avec compteurs (reçus par minute, mal formés, filtrés...)."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Profil Hamlib d'un modèle, plus complet que le descripteur de la passerelle, pour la qualification.
 
 On lit la sortie de `rigctl -m <modèle> -u` (dump_caps) : fonctions et niveaux en LECTURE et en

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Entrées/sorties du superviseur : sonde rigctld, alertes, état, USB, sd_notify, boucle principale,
 et un test de bout en bout avec de VRAIS processus (POSIX uniquement : il utilise SIGSTOP)."""
 import asyncio

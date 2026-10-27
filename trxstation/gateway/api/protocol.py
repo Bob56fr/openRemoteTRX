@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Protocole de commandes (JSON) : validation stricte de tout ce qui vient d'un client.
 
 Client -> passerelle : {"cmd": <nom>, "id": <entier optionnel : numéro de la REQUÊTE, repris dans la réponse>, ...paramètres}
@@ -16,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 
 from ...layout.catalog import MAX_PROFILE_BYTES
-from ..cat.client import INT_LEVELS, POWER_STEPS, WRITABLE_FUNCS
+from ..cat.client import FLOAT_LEVELS, INT_LEVELS, POWER_STEPS, WRITABLE_FUNCS
 from ..memories import ID_RE, validate_fields
 
 PROTOCOL_VERSION = 1
@@ -25,11 +27,17 @@ MAX_MESSAGE_BYTES = 2048
 # (le client envoie toujours « cmd » en premier) AVANT toute analyse JSON.
 MAX_LAYOUT_MESSAGE_BYTES = MAX_PROFILE_BYTES + 1024
 LAYOUT_SAVE_PREFIX = '{"cmd":"layout_save"'
+# Même exception pour le rapport de problème de la page (texte relu et validé par l'utilisateur avant l'envoi).
+BUG_REPORT_PREFIX = '{"cmd":"bug_report"'
+MAX_BUG_REPORT_CHARS = 30_000
+MAX_BUG_MESSAGE_BYTES = 60_000                               # sous la taille maximale d'un message du canal (aiortc : 64 ko)
+LARGE_MESSAGES = {LAYOUT_SAVE_PREFIX: MAX_LAYOUT_MESSAGE_BYTES, BUG_REPORT_PREFIX: MAX_BUG_MESSAGE_BYTES}
 MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_state",
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
             "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
-            "local_release")                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
+            "local_release",                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
+            "bug_report")                    # rapport de problème de la page, rangé sur la station (text)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed")   # valeurs vérifiées par la liste fermée de spectrum/civ.py
 
 
@@ -60,9 +68,10 @@ def _memory_id(value) -> str:
 
 def parse_command(raw: str | bytes) -> Command:
     if len(raw) > MAX_MESSAGE_BYTES:
-        head = raw[:len(LAYOUT_SAVE_PREFIX)]
-        head = head.decode("utf-8", "replace") if isinstance(head, bytes) else head
-        if len(raw) > MAX_LAYOUT_MESSAGE_BYTES or head != LAYOUT_SAVE_PREFIX:
+        allowed = next((limit for prefix, limit in LARGE_MESSAGES.items()
+                        if (raw[:len(prefix)].decode("utf-8", "replace") if isinstance(raw, bytes) else raw[:len(prefix)])
+                        == prefix), None)
+        if allowed is None or len(raw) > allowed:
             raise ProtocolError("too_large")
     try:
         data = json.loads(raw)
@@ -107,8 +116,14 @@ def parse_command(raw: str | bytes) -> Command:
             if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
                 raise ProtocolError("invalid_params", f"value doit être un entier entre {low} et {high}")
             params["name"], params["value"] = level, value
+        elif level in FLOAT_LEVELS and level != "SQL":                    # NR, NB (le squelch garde set_squelch)
+            low, high = FLOAT_LEVELS[level]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
+                raise ProtocolError("invalid_params", f"value doit être un nombre entre {low:g} et {high:g}")
+            params["name"], params["value"] = level, float(value)
         else:
-            raise ProtocolError("invalid_params", "name doit être l'un des niveaux : RFPOWER, " + ", ".join(INT_LEVELS))
+            raise ProtocolError("invalid_params", "name doit être l'un des niveaux : RFPOWER, "
+                                + ", ".join([*INT_LEVELS, *[n for n in FLOAT_LEVELS if n != "SQL"]]))
     elif name == "memory_save":
         try:
             params["name"], params["hz"], params["mode"], params["favorite"] = validate_fields(
@@ -143,6 +158,11 @@ def parse_command(raw: str | bytes) -> Command:
         if not isinstance(data.get("on"), bool):
             raise ProtocolError("invalid_params", "on doit valoir true ou false")
         params["on"] = data["on"]
+    elif name == "bug_report":
+        text = data.get("text")
+        if not isinstance(text, str) or not text.strip() or len(text) > MAX_BUG_REPORT_CHARS:
+            raise ProtocolError("invalid_params", f"text doit être un texte non vide de {MAX_BUG_REPORT_CHARS} caractères au plus")
+        params["text"] = text
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

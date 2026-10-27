@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Profil d'usine : la page de contrôle actuelle (étapes 16-17) décrite dans le format de mise en page.
 
 Il est livré avec la station et toujours disponible : un nouvel utilisateur n'est jamais bloqué (§3).

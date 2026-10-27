@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Mesure de latence audio en boucle locale : `python -m trxstation.devtools.latency [--seconds 12]`.
 
   RX : salve générée côté « poste » -> arrivée dans le faux client (capture, Opus, WebRTC).

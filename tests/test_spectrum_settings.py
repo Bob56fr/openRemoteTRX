@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Réglages du spectre DU POSTE depuis la page (mode, largeur, référence, vitesse) : codage relevé sur l'IC-7300MK2,
 liste fermée, service (réception seulement, relecture), protocole, session, cohérence avec la page."""
 from __future__ import annotations

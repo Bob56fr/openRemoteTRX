@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Bandes et plan de bande IARU Région 1 (simplifié) : bande d'une fréquence, mode probable.
 
 Le mode n'est déduit de la fréquence que si le spot ne le donne pas. Les

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Sonde rigctld indépendante (sockets bloquants, une connexion par requête).
 
 Ce client n'a rien en commun avec celui de la passerelle : si l'un a un défaut, l'autre

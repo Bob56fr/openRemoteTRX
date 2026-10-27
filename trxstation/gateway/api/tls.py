@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """HTTPS natif de la passerelle : contexte TLS et génération d'un certificat auto-signé.
 
 Un certificat auto-signé chiffre la liaison mais le navigateur affiche un avertissement : à réserver à un essai.

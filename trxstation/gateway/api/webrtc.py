@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
 """Transport WebRTC (aiortc) : fine couche au-dessus de la logique testée (session, porte, hub).
 
 Une connexion par client :
@@ -107,7 +109,8 @@ class _Peer:
 
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
-                 ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None):
+                 ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None):
+        self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
         self.ctrl, self.link, self.pipeline, self.capabilities = ctrl, link, pipeline, capabilities
         self.spectrum = spectrum                # SpectrumService : son état est joint aux messages « state »
         self.fanout = SpectrumFanout(spectrum.cfg.max_fps if spectrum is not None else 10, time.monotonic)
@@ -151,7 +154,8 @@ class PeerManager:
 
             session = ControlSession(client_id, self.ctrl, self.link, self.pipeline, self.capabilities, send,
                                      memories=self.memories, layouts=self.layouts, spectrum=self.spectrum,
-                                     spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on))
+                                     spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
+                                     reports=self.reports)
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session
 
