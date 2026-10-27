@@ -2,7 +2,9 @@
 
 Un menu numéroté regroupe le diagnostic, l'assistant de configuration, le tableau de bord, l'essai du poste,
 le démarrage et l'arrêt des services, le journal, le rapport de dépannage, la sortie du mode sûr,
-la mise à jour (paquet signé, après confirmation), le retour à la version précédente et le Cluster DX.
+la mise à jour (paquet signé, après confirmation), le retour à la version précédente, le Cluster DX,
+l'installation d'un paquet zip déposé sur la machine (Bureau, Téléchargements) et la modification de station.toml
+(copie éditée avec nano, VALIDÉE avant d'être enregistrée, ancienne version gardée).
 Les actions qui touchent au système passent par `sudo` : le mot de passe de session est demandé au besoin.
 
     trx-console               menu
@@ -12,9 +14,13 @@ Les actions qui touchent au système passent par `sudo` : le mot de passe de ses
 from __future__ import annotations
 
 import argparse
+import difflib
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -29,6 +35,24 @@ TARGET = "trx-remote.target"
 IMPORT_NAME = "station.import.toml"
 CHECK_UNIT = "trx-update-check.service"
 INSTALL_LOG = "/var/log/trx-remote-install.log"
+ZIP_PLACES = ("Desktop", "Bureau", "Downloads", "Téléchargements", "")   # où chercher un paquet déposé ("" = dossier personnel)
+MAX_DIFF_LINES = 60
+
+
+def find_packages(home: Path) -> list[tuple[str, Path]]:
+    """Paquets « trx-remote-debian-X.Y.Z.zip » déposés par l'utilisateur, du plus récent au plus ancien."""
+    found: dict[Path, tuple[str, Path]] = {}
+    for place in ZIP_PLACES:
+        folder = home / place if place else home
+        try:
+            candidates = list(folder.glob("trx-remote-debian-*.zip"))
+        except OSError:
+            continue
+        for path in candidates:
+            version = upd.local_package_version(path)
+            if version and path.is_file():
+                found.setdefault(path.resolve(), (version, path))
+    return sorted(found.values(), key=lambda item: (parse_version(item[0]) or (), str(item[1])), reverse=True)
 
 
 def config_state_dir(config: Path) -> Path:
@@ -70,10 +94,13 @@ class Console:
     def __init__(self, config: Path = CONFIG_PATH, runner: Runner | None = None,
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
                  python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
-                 previous: Callable[[], str | None] = previous_version, installed: str = __version__) -> None:
+                 previous: Callable[[], str | None] = previous_version, installed: str = __version__,
+                 home: Path | None = None, editor: str | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
         self.previous, self.installed = previous, installed
+        self.home = home or Path.home()
+        self.editor = editor or os.environ.get("VISUAL") or os.environ.get("EDITOR") or shutil.which("nano") or ""
         self.items: list[tuple[str, str, Callable[[], None]]] = [
             ("1", "Diagnostic complet", self.diagnostic),
             ("2", "Assistant de configuration", self.assistant),
@@ -87,6 +114,8 @@ class Console:
             ("10", "Mise à jour de TRX distant", self.update),
             ("11", "Revenir à la version précédente", self.rollback),
             ("12", "Cluster DX (spots suivis, sources, test)", self.cluster),
+            ("13", "Installer une version depuis un fichier zip (Bureau, Téléchargements)", self.install_zip),
+            ("14", "Modifier la configuration (station.toml)", self.edit_config),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -239,6 +268,117 @@ class Console:
         self.say(self._apply_result(code, f"Retour à la version {previous} fait. Quitte TRX Console (q) et "
                                           "rouvre-la. La version plus récente restera proposée par le menu 10."))
 
+    def install_zip(self) -> None:
+        """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
+        packages = find_packages(self.home)
+        if not packages:
+            self.say("Aucun paquet « trx-remote-debian-X.Y.Z.zip » sur le Bureau, dans Téléchargements ni dans le\n"
+                     f"dossier personnel ({self.home}). Copie-le à l'un de ces endroits puis recommence.")
+            return
+        self.say(f"Version installée : {self.installed}\nPaquets trouvés :")
+        for number, (version, path) in enumerate(packages, 1):
+            signed = path.with_name(path.name + ".sig").is_file()
+            self.say(f"  {number}) {version:<10} {'signé' if signed else 'NON signé'}   {path}")
+        choice = self.ask("Numéro du paquet à installer (Entrée = annuler) : ").strip()
+        if not choice.isdigit() or not 1 <= int(choice) <= len(packages):
+            self.say("Annulé : rien n'a été modifié.")
+            return
+        version, path = packages[int(choice) - 1]
+        signed = path.with_name(path.name + ".sig").is_file()
+        newer, current = parse_version(version) or (), parse_version(self.installed) or ()
+        if newer < current:
+            self.say(f"ATTENTION : {version} est plus ANCIENNE que la version installée ({self.installed}).\n"
+                     "Pour revenir simplement à la version précédente, le menu 11 suffit.")
+        elif newer == current:
+            self.say(f"La version {version} est déjà installée : elle sera réinstallée.")
+        self.say("\nPendant l'installation (quelques minutes, Internet nécessaire pour les modules Python), la station\n"
+                 "est arrêtée. Elle est refusée tant que le poste émet ; le contenu du paquet est contrôlé avant\n"
+                 f"toute installation ; la version {self.installed}, station.toml et les certificats sont conservés.")
+        extra: list[str] = []
+        if not signed:
+            self.say("\nCe paquet n'est PAS SIGNÉ : rien ne garantit qu'il vient de l'équipe TRX distant. Installe-le\n"
+                     "seulement si tu l'as toi-même copié depuis une source sûre (ton PC, ta clé USB).")
+            if self.ask("Tape OUI pour accepter un paquet non signé (Entrée = non) : ").strip() != "OUI":
+                self.say("Annulé : rien n'a été modifié.")
+                return
+            extra = ["--sans-signature"]
+        typed = self.ask(f"Pour installer, tape le numéro de version {version} (Entrée = non) : ").strip()
+        if typed != version:
+            self.say("Annulé : rien n'a été modifié.")
+            return
+        code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "local",
+                                           "--zip", str(path), *extra), admin=True)
+        self.say(self._apply_result(code, f"Version {version} installée. Quitte TRX Console (q) et "
+                                          "rouvre-la pour utiliser la nouvelle version."))
+
+    def edit_config(self) -> None:
+        """station.toml modifiée sur une COPIE (nano), validée, différences montrées, puis enregistrée par sudo
+        avec ses droits d'origine ; l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        try:
+            original = self.config.read_bytes()
+        except OSError as exc:
+            self.say(f"Lecture de {self.config} impossible ({exc}).\nSi tu viens d'être ajouté au groupe « trx », "
+                     "ferme ta session puis rouvre-la.")
+            return
+        if not self.editor:
+            self.say("Aucun éditeur de texte trouvé : installe nano (sudo apt install nano).")
+            return
+        work = Path(tempfile.mkdtemp(prefix="trx-config-"))
+        draft = work / "station.toml"
+        try:
+            draft.write_bytes(original)
+            os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
+            self.say(f"Modification de {self.config} (sur une copie : rien n'est changé avant ta confirmation).\n"
+                     "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter.")
+            while True:
+                self.runner.run([self.editor, str(draft)])
+                edited = draft.read_bytes()
+                if edited == original:
+                    self.say("Aucune modification : station.toml n'a pas été changé.")
+                    return
+                try:
+                    cfgmod.load(draft)
+                    break
+                except cfgmod.ConfigError as exc:
+                    self.say("Configuration REFUSÉE (la station ne démarrerait pas) :\n  - " + "\n  - ".join(exc.problems))
+                    if not self.yes("Reprendre la modification", True):
+                        self.say("Abandon : station.toml n'a pas été changé.")
+                        return
+            before = original.decode("utf-8", "replace").splitlines()
+            after = edited.decode("utf-8", "replace").splitlines()
+            diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
+                    if not line.startswith(("---", "+++", "@@"))]
+            self.say("Changements :\n" + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
+                     + (f"\n  ... ({len(diff) - MAX_DIFF_LINES} lignes de plus)" if len(diff) > MAX_DIFF_LINES else ""))
+            if not self.yes("Enregistrer ces changements", False):
+                self.say("Abandon : station.toml n'a pas été changé.")
+                return
+            if self.config.read_bytes() != original:
+                self.say("station.toml a été modifié par ailleurs pendant ce temps : abandon, recommence.")
+                return
+            st = self.config.stat()
+            backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
+            if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
+                self.say("Copie de sauvegarde impossible : station.toml n'a pas été changé.")
+                return
+            code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
+                                    str(draft), str(self.config)], admin=True)
+            if code != 0:
+                self.say(f"Enregistrement impossible (code {code}) : station.toml n'a pas été changé.")
+                return
+            self.say(f"Enregistré. Ancienne version gardée : {backup}")
+            if self.station_running():
+                if self.yes("Redémarrer la station pour appliquer"):
+                    self.start()
+            else:
+                self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
     def offered(self, state: UpdateState | None):
         """Version annoncée seulement si elle est plus récente que celle qui tourne (latest.json peut dater)."""
         release = state.release if state is not None else None
@@ -294,6 +434,8 @@ class Console:
                 action()
             except KeyboardInterrupt:
                 self.say("\nInterrompu.")
+            except EOFError:                             # terminal fermé pendant une question : on quitte proprement
+                return 0
             self.pause()
 
 

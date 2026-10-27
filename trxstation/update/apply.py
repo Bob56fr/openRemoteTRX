@@ -1,6 +1,10 @@
 """Installation d'une mise à jour, ou retour à la version précédente (root, Debian) : `python -m trxstation.update.apply`.
 
     apply --config C install --version 0.23.0   installe la version annoncée (confirmée dans TRX Console)
+    apply --config C local --zip F [--sans-signature]
+                                                installe un paquet DÉJÀ PRÉSENT sur la machine (TRX Console, menu 13) :
+                                                signature vérifiée si F.sig est à côté ; sans .sig, refus sauf
+                                                --sans-signature (confirmation explicite de l'opérateur)
     apply --config C rollback                   revient à la version précédente (sans réseau)
 
 Ordre, et rien n'est installé au moindre écart :
@@ -15,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -40,6 +45,8 @@ MAX_MEMBERS = 5000
 MAX_UNPACKED_BYTES = 300 * 1024 * 1024
 FRESH_WAIT_S = 0.8            # la passerelle écrit son état toutes les 0,25 s
 REQUIRED = ("install.sh", "releases.sh", "app/pyproject.toml", "app/trxstation/__init__.py")
+LOCAL_NAME = re.compile(r"^trx-remote-debian-(\d{1,3}\.\d{1,3}\.\d{1,3})\.zip$")
+MAX_LOCAL_ZIP_BYTES = 100 * 1024 * 1024
 
 EXIT_OK, EXIT_FAILED, EXIT_TX, EXIT_REFUSED = 0, 1, 3, 4
 
@@ -131,6 +138,12 @@ def extract(package: Path, version: str, dest: Path) -> Path:
                 shutil.copyfileobj(src, out)
             os.chmod(target, 0o755 if (info.external_attr >> 16) & 0o111 else 0o644)
     return dest / f"trx-remote-debian-{version}"
+
+
+def local_package_version(path: Path) -> str | None:
+    """Version d'après le nom « trx-remote-debian-X.Y.Z.zip » ; None si le nom ne correspond pas."""
+    match = LOCAL_NAME.match(path.name)
+    return match.group(1) if match else None
 
 
 def previous_version(app_dir: Path = APP_DIR) -> str | None:
@@ -243,6 +256,46 @@ class Updater:
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
+    def install_local(self, package: Path, *, allow_unsigned: bool = False) -> int:
+        """Paquet déposé sur la machine (clé USB, copie depuis un autre PC). Mêmes contrôles qu'une mise à jour
+        téléchargée, mais la signature n'est exigée que si elle est fournie ou si `allow_unsigned` est faux."""
+        version = local_package_version(package)
+        if version is None:
+            raise UpdateRefused(f"nom de paquet inattendu : {package.name[:80]!r} (attendu : trx-remote-debian-X.Y.Z.zip)")
+        if not package.is_file() or package.is_symlink():
+            raise UpdateRefused(f"paquet introuvable ou non ordinaire : {package}")
+        if package.stat().st_size > MAX_LOCAL_ZIP_BYTES:
+            raise UpdateRefused("paquet démesuré")
+        self.ensure_receive()
+        self.work_root.mkdir(parents=True, exist_ok=True)
+        os.chmod(self.work_root, 0o700)
+        work = Path(tempfile.mkdtemp(prefix=f"local-{version}-", dir=self.work_root))
+        try:
+            copy = work / package.name                     # copie root : le fichier d'origine peut changer ensuite
+            copy.write_bytes(package.read_bytes())
+            sig = package.with_name(package.name + ".sig")
+            if sig.is_file() and not sig.is_symlink():
+                sig_text = sig.read_bytes()[:MAX_SIG_BYTES + 1].decode("utf-8", "replace")
+                try:
+                    verify_file(copy, sig_text, expected_file=package.name, expected_version=version)
+                except SignatureError as exc:
+                    raise UpdateRefused(f"SIGNATURE REFUSÉE : {exc}") from exc   # jamais de repli « sans signature »
+                self.say("Signature vérifiée.")
+            elif allow_unsigned:
+                self.say("Paquet NON signé : installé sur la demande explicite de l'opérateur.")
+            else:
+                raise UpdateRefused("paquet non signé (pas de fichier .sig à côté) : refusé")
+            source = extract(copy, version, work / "paquet")
+            self.stop_station()
+            self.say(f"Installation de la version {version} (la version {self.installed} est gardée)...")
+            code = self.sys.run_script(["bash", str(source / "install.sh")])
+            if code != 0:
+                self.say(f"L'installation a échoué (code {code}) : la version {self.installed} reste active.")
+                return EXIT_FAILED
+            return EXIT_OK
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
     def _download(self, url: str, max_bytes: int) -> bytes:
         try:
             return self.download(url, max_bytes)
@@ -282,6 +335,9 @@ def main(argv: list[str] | None = None, *, system: System | None = None, fetch: 
     sub = ap.add_subparsers(dest="action", required=True)
     inst = sub.add_parser("install", help="installe la version annoncée")
     inst.add_argument("--version", required=True)
+    loc = sub.add_parser("local", help="installe un paquet déjà présent sur la machine")
+    loc.add_argument("--zip", type=Path, required=True)
+    loc.add_argument("--sans-signature", action="store_true", help="accepte un paquet sans fichier .sig")
     sub.add_parser("rollback", help="revient à la version précédente")
     args = ap.parse_args(argv)
     if system is None:
@@ -296,7 +352,11 @@ def main(argv: list[str] | None = None, *, system: System | None = None, fetch: 
     updater = Updater(cfg, system or real_system(cfg), fetch=fetch, download=download, app_dir=app_dir,
                       work_root=work_root)
     try:
-        return updater.install(args.version) if args.action == "install" else updater.rollback()
+        if args.action == "install":
+            return updater.install(args.version)
+        if args.action == "local":
+            return updater.install_local(args.zip, allow_unsigned=args.sans_signature)
+        return updater.rollback()
     except UpdateRefused as exc:
         print(f"Refusé : {exc}\nRien n'a été installé.", file=sys.stderr)
         return EXIT_TX if isinstance(exc, TransmitRefused) else EXIT_REFUSED

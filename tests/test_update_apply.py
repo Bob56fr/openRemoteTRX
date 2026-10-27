@@ -385,3 +385,72 @@ def test_main_exit_codes(world, tmp_path, capsys):
     assert "Rien n'a été installé" in capsys.readouterr().err
     world["files"][DL + ZIP_NAME + ".sig"] = b"faux"
     assert _main(world, FakeSystem(), "install", "--version", V, tmp_path=tmp_path) == ap.EXIT_REFUSED
+
+
+# ------------------------------------------------------------------ paquet déposé sur la machine (menu 13)
+
+def dropped(tmp_path, *, version=V, signed=None, data=None, name=None):
+    """Paquet posé sur le « Bureau » ; `signed` : clé privée qui signe (None = pas de .sig)."""
+    desk = tmp_path / "Bureau"
+    desk.mkdir(exist_ok=True)
+    package = desk / (name or f"trx-remote-debian-{version}.zip")
+    package.write_bytes(data if data is not None else make_zip(version=version))
+    if signed is not None:
+        package.with_name(package.name + ".sig").write_text(signing.sign_file(package, version, signed), encoding="utf-8")
+    return package
+
+
+def test_local_signed_package_is_verified_then_installed(world, tmp_path):
+    package = dropped(tmp_path, signed=world["private"])
+    fake, messages = FakeSystem(), []
+    assert updater(world, fake, messages).install_local(package) == ap.EXIT_OK
+    assert "Signature vérifiée." in messages and fake.calls[-2:] == ["stop", "run:bash install.sh"]
+    assert world["fetched"] == []                                              # rien n'est demandé à Internet
+    assert package.exists() and not any(world["work"].iterdir())               # original laissé, travail effacé
+
+
+def test_local_unsigned_package_needs_the_explicit_flag(world, tmp_path):
+    package = dropped(tmp_path)
+    fake = FakeSystem()
+    with pytest.raises(UpdateRefused, match="non signé"):
+        updater(world, fake).install_local(package)
+    _assert_nothing_installed(fake)
+    messages = []
+    assert updater(world, fake, messages).install_local(package, allow_unsigned=True) == ap.EXIT_OK
+    assert any("NON signé" in m for m in messages)
+
+
+def test_local_bad_signature_is_refused_even_with_the_flag(world, tmp_path):
+    package = dropped(tmp_path, signed=Ed25519PrivateKey.generate())         # signé par une autre clé
+    fake = FakeSystem()
+    with pytest.raises(UpdateRefused, match="SIGNATURE REFUSÉE"):
+        updater(world, fake).install_local(package, allow_unsigned=True)
+    _assert_nothing_installed(fake)
+
+
+def test_local_package_checks_name_content_and_transmission(world, tmp_path):
+    fake = FakeSystem()
+    with pytest.raises(UpdateRefused, match="nom de paquet"):
+        updater(world, fake).install_local(dropped(tmp_path, name="station.zip"), allow_unsigned=True)
+    root = "trx-remote-debian-9.0.1"                                          # nom et dossier 9.0.1, pyproject 9.0.0
+    lying = make_zip({f"{root}/install.sh": b"#!/bin/bash\n", f"{root}/releases.sh": b"#\n",
+                      f"{root}/app/pyproject.toml": f'[project]\nversion = "{V}"\n'.encode(),
+                      f"{root}/app/trxstation/__init__.py": b""})
+    wrong = dropped(tmp_path, version="9.0.1", data=lying)
+    with pytest.raises(UpdateRefused, match="contient la version"):
+        updater(world, fake).install_local(wrong, allow_unsigned=True)
+    with pytest.raises(UpdateRefused, match="lien"):
+        updater(world, fake).install_local(dropped(tmp_path, data=make_zip(links=(f"{ROOT_DIR}/x",))),
+                                           allow_unsigned=True)
+    _assert_nothing_installed(fake)
+    tx = FakeSystem(states=("TX",))
+    with pytest.raises(TransmitRefused):
+        updater(world, tx).install_local(dropped(tmp_path), allow_unsigned=True)
+    _assert_nothing_installed(tx)
+
+
+def test_local_command_line(world, tmp_path, capsys):
+    package = dropped(tmp_path)
+    assert _main(world, FakeSystem(), "local", "--zip", str(package), tmp_path=tmp_path) == ap.EXIT_REFUSED
+    assert "non signé" in capsys.readouterr().err
+    assert _main(world, FakeSystem(), "local", "--zip", str(package), "--sans-signature", tmp_path=tmp_path) == ap.EXIT_OK
