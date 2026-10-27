@@ -48,7 +48,7 @@ def version(root: Path = ROOT) -> str:
 
 
 def _app_files(root: Path) -> list[tuple[str, Path]]:
-    files = [("app/pyproject.toml", root / "pyproject.toml"),
+    files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE"),   # AGPL : le texte suit le code
              ("app/config/station.example.toml", root / "config" / "station.example.toml")]
     for base in ("trxstation", "docs"):
         for path in sorted((root / base).rglob("*")):
@@ -62,7 +62,7 @@ def _app_files(root: Path) -> list[tuple[str, Path]]:
 def manifest(root: Path = ROOT) -> list[tuple[str, Path]]:
     """[(nom dans le zip, fichier source)], sans le dossier racine."""
     files = [("install.sh", root / "debian" / "install.sh"), ("releases.sh", root / "debian" / "releases.sh"),
-             ("LISEZMOI.txt", root / "debian" / "LISEZMOI.txt")]
+             ("LISEZMOI.txt", root / "debian" / "LISEZMOI.txt"), ("LICENSE", root / "LICENSE")]
     files += [(f"systeme/{name}", root / source) for name, source in SYSTEM_FILES.items()]
     files += _app_files(root)
     missing = [str(src.relative_to(root)) for _, src in files if not src.is_file()]
