@@ -1,0 +1,311 @@
+<!-- TRX Remote : architecture en schémas (matériel, réseau, briques de la station, page web). À coller dans un bloc
+     « HTML personnalisé » de WordPress. Schémas en SVG intégré, aucun script ni ressource externe. Styles regroupés sous
+     .trxr ; lisible en thème clair comme sombre (textes et traits dans la couleur du thème). Contenu fidèle à la version 0.30. -->
+<style>
+.trxr{--trxr-line:rgba(128,128,128,.38);--trxr-card:rgba(128,128,128,.12);--trxr-accent:#3a83d0;--trxr-tx:#d23b33;--trxr-ok:#2b9a5e;--trxr-spec:#9a6ad6;
+  color:inherit;font-size:1.02rem;line-height:1.6;max-width:60rem;margin:0 auto}
+.trxr h2{color:inherit;font-size:1.5rem;margin:2.4rem 0 .6rem;line-height:1.25}
+.trxr h3{color:inherit;font-size:1.1rem;margin:1.2rem 0 .3rem}
+.trxr p{margin:.5rem 0 .9rem}
+.trxr .trxr-lead{font-size:1.15rem;opacity:.82}
+.trxr .trxr-fig{margin:1.2rem 0 1.6rem;overflow-x:auto;border:1px solid var(--trxr-line);border-radius:.6rem;padding:.6rem;background:var(--trxr-card)}
+.trxr .trxr-fig svg{display:block;width:100%;min-width:760px;height:auto;color:inherit}
+.trxr .trxr-cap{font-size:.9rem;opacity:.8;margin:.4rem .2rem 0}
+.trxr svg text{fill:currentColor;font-family:inherit}
+.trxr svg .t{font-size:15px;font-weight:700}
+.trxr svg .s{font-size:12px;opacity:.82}
+.trxr svg .l{font-size:12px}
+.trxr svg .box{fill:rgba(128,128,128,.14);stroke:currentColor;stroke-opacity:.55;stroke-width:1.4}
+.trxr svg .zone{fill:rgba(128,128,128,.06);stroke:currentColor;stroke-opacity:.35;stroke-width:1.2;stroke-dasharray:6 5}
+.trxr svg .key{stroke:var(--trxr-tx);stroke-width:2.2}
+.trxr svg .w{fill:none;stroke-width:2.4}
+.trxr svg .net{stroke:var(--trxr-accent)}
+.trxr svg .cat{stroke:var(--trxr-tx)}
+.trxr svg .aud{stroke:var(--trxr-ok)}
+.trxr svg .spec{stroke:var(--trxr-spec)}
+.trxr svg .gray{stroke:currentColor;stroke-opacity:.55}
+.trxr svg .dash{stroke-dasharray:7 5}
+.trxr .trxr-legend{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.92rem;margin:.6rem 0 0}
+.trxr .trxr-legend span::before{content:"";display:inline-block;width:1.6rem;height:.25rem;border-radius:.2rem;vertical-align:middle;margin-right:.45rem;background:currentColor}
+.trxr .trxr-legend .net::before{background:var(--trxr-accent)}
+.trxr .trxr-legend .cat::before{background:var(--trxr-tx)}
+.trxr .trxr-legend .aud::before{background:var(--trxr-ok)}
+.trxr .trxr-legend .spec::before{background:var(--trxr-spec)}
+.trxr .trxr-legend .gray::before{opacity:.55}
+.trxr ul,.trxr ol{margin:.4rem 0 1rem 1.2rem;padding:0}
+.trxr li{margin:.3rem 0}
+.trxr table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.97rem}
+.trxr th,.trxr td{border-bottom:1px solid var(--trxr-line);padding:.5rem .4rem;text-align:left;vertical-align:top}
+.trxr th{opacity:.82;font-weight:600}
+</style>
+
+<div class="trxr">
+
+<p class="trxr-lead">Comment TRX Remote relie votre poste à votre téléphone : les équipements, le chemin sur le réseau, puis les briques logicielles de la station et de la page de contrôle.</p>
+
+<h2>1. Les équipements et le réseau</h2>
+<p>Le poste est relié en USB à un ordinateur, le <strong>serveur TRX Remote</strong> (PC Windows, PC Debian ou Raspberry Pi). Ce serveur est branché sur votre réseau local. Chez vous, votre téléphone ou votre PC s'y connecte directement en Wi-Fi. À l'extérieur, la connexion passe par votre box et Internet, au choix par un VPN ou par un accès HTTPS ouvert sur la box.</p>
+
+<div class="trxr-fig" role="img" aria-label="Schéma des équipements : poste relié en USB au serveur TRX Remote, serveur sur le réseau local, téléphone à la maison en Wi-Fi, box Internet, Internet, téléphone ou PC distant.">
+<svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="trxr-m1n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3a83d0"/></marker>
+    <marker id="trxr-m1c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d23b33"/></marker>
+    <marker id="trxr-m1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b9a5e"/></marker>
+    <marker id="trxr-m1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9a6ad6"/></marker>
+  </defs>
+
+  <!-- zone maison -->
+  <rect class="zone" x="10" y="20" width="740" height="520" rx="14"/>
+  <text class="s" x="26" y="44">À la maison (station)</text>
+
+  <!-- poste -->
+  <rect class="box key" x="30" y="215" width="150" height="120" rx="10"/>
+  <text class="t" x="105" y="258" text-anchor="middle">Poste (TRX)</text>
+  <text class="s" x="105" y="280" text-anchor="middle">ex. Icom IC-7300MK2</text>
+  <text class="s" x="105" y="300" text-anchor="middle">antenne ou charge</text>
+  <text class="s" x="105" y="316" text-anchor="middle">fictive</text>
+
+  <!-- liaisons USB -->
+  <line class="w cat" x1="180" y1="240" x2="338" y2="240" marker-start="url(#trxr-m1c)" marker-end="url(#trxr-m1c)"/>
+  <text class="l" x="259" y="232" text-anchor="middle">USB port A : CAT, PTT</text>
+  <line class="w spec" x1="180" y1="275" x2="338" y2="275" marker-end="url(#trxr-m1s)"/>
+  <text class="l" x="259" y="267" text-anchor="middle">USB port B : spectre</text>
+  <line class="w aud" x1="180" y1="310" x2="338" y2="310" marker-start="url(#trxr-m1a)" marker-end="url(#trxr-m1a)"/>
+  <text class="l" x="259" y="302" text-anchor="middle">USB carte son : audio</text>
+
+  <!-- serveur -->
+  <rect class="box" x="340" y="200" width="200" height="150" rx="10"/>
+  <text class="t" x="440" y="236" text-anchor="middle">Serveur TRX Remote</text>
+  <text class="s" x="440" y="258" text-anchor="middle">PC Windows, Debian</text>
+  <text class="s" x="440" y="276" text-anchor="middle">ou Raspberry Pi</text>
+  <text class="s" x="440" y="302" text-anchor="middle">page de contrôle :</text>
+  <text class="s" x="440" y="320" text-anchor="middle">HTTPS, port 8443</text>
+
+  <!-- LAN -->
+  <line class="w net" x1="540" y1="275" x2="598" y2="275" marker-start="url(#trxr-m1n)" marker-end="url(#trxr-m1n)"/>
+  <rect class="box" x="600" y="235" width="130" height="80" rx="10"/>
+  <text class="t" x="665" y="268" text-anchor="middle">Réseau local</text>
+  <text class="s" x="665" y="290" text-anchor="middle">Ethernet, Wi-Fi</text>
+
+  <!-- téléphone à la maison -->
+  <rect class="box" x="600" y="70" width="130" height="80" rx="10"/>
+  <text class="t" x="665" y="102" text-anchor="middle">Téléphone, PC</text>
+  <text class="s" x="665" y="124" text-anchor="middle">à la maison</text>
+  <line class="w net" x1="665" y1="152" x2="665" y2="233" marker-start="url(#trxr-m1n)" marker-end="url(#trxr-m1n)"/>
+  <text class="l" x="675" y="198">Wi-Fi</text>
+
+  <!-- box -->
+  <line class="w net" x1="665" y1="317" x2="665" y2="408" marker-start="url(#trxr-m1n)" marker-end="url(#trxr-m1n)"/>
+  <rect class="box" x="600" y="410" width="130" height="80" rx="10"/>
+  <text class="t" x="665" y="443" text-anchor="middle">Box Internet</text>
+  <text class="s" x="665" y="465" text-anchor="middle">routeur, NAT</text>
+
+  <!-- Internet -->
+  <line class="w net" x1="730" y1="450" x2="798" y2="450" marker-start="url(#trxr-m1n)" marker-end="url(#trxr-m1n)"/>
+  <rect class="box" x="800" y="415" width="160" height="70" rx="35"/>
+  <text class="t" x="880" y="456" text-anchor="middle">Internet</text>
+  <text class="s" x="880" y="508" text-anchor="middle">VPN au choix,</text>
+  <text class="s" x="880" y="524" text-anchor="middle">ou port HTTPS ouvert</text>
+
+  <!-- distant -->
+  <line class="w net" x1="880" y1="413" x2="880" y2="312" marker-start="url(#trxr-m1n)" marker-end="url(#trxr-m1n)"/>
+  <text class="l" x="890" y="368">4G, 5G, Wi-Fi</text>
+  <rect class="box" x="790" y="230" width="180" height="80" rx="10"/>
+  <text class="t" x="880" y="262" text-anchor="middle">Téléphone ou PC</text>
+  <text class="s" x="880" y="284" text-anchor="middle">en déplacement</text>
+</svg>
+<div class="trxr-legend"><span class="cat">commande du poste et émission</span><span class="aud">audio</span><span class="spec">spectre (si le poste le permet)</span><span class="net">réseau</span></div>
+<p class="trxr-cap">Le port B et le spectre n'existent que sur certains postes (deuxième port série réglable en CI-V, comme l'IC-7300MK2). Sans eux, tout le reste fonctionne.</p>
+</div>
+
+<h3>Ce qui circule sur le réseau</h3>
+<table>
+  <thead><tr><th>Flux</th><th>Contenu</th><th>Protection</th></tr></thead>
+  <tbody>
+    <tr><td>Page de contrôle</td><td>La page elle-même et la connexion (identifiant, mot de passe)</td><td>HTTPS chiffré ; sans chiffrement, l'accès réseau refuse de démarrer</td></tr>
+    <tr><td>Canal « control »</td><td>Commandes : émission, fréquence, mode, réglages ; état du poste en retour</td><td>WebRTC chiffré, ouvert seulement après la connexion</td></tr>
+    <tr><td>Audio</td><td>Son reçu du poste ; votre micro pendant votre émission</td><td>WebRTC chiffré (Opus)</td></tr>
+    <tr><td>Canal « spectrum »</td><td>Balayages du spectre, environ 4 par seconde</td><td>WebRTC chiffré ; un balayage perdu n'est jamais renvoyé</td></tr>
+  </tbody>
+</table>
+<p>L'audio et les canaux passent en UDP. Derrière certaines box ou chez certains opérateurs mobiles, l'UDP ne passe pas directement : un VPN règle alors le problème.</p>
+
+<h2>2. Les briques de la station</h2>
+<p>Sur le serveur, plusieurs programmes travaillent ensemble. Le principe : <strong>un seul chemin pour commander le poste</strong>, et un <strong>gardien indépendant</strong> qui surveille ce chemin.</p>
+
+<div class="trxr-fig" role="img" aria-label="Schéma des briques de la station : rigctld, passerelle avec ses modules, superviseur indépendant, fichier d'état, outils de la console, et leurs liaisons avec les ports du poste et les clients.">
+<svg viewBox="0 0 980 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="trxr-m2n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3a83d0"/></marker>
+    <marker id="trxr-m2c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d23b33"/></marker>
+    <marker id="trxr-m2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b9a5e"/></marker>
+    <marker id="trxr-m2s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9a6ad6"/></marker>
+    <marker id="trxr-m2g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor" fill-opacity=".6"/></marker>
+  </defs>
+
+  <!-- côté poste -->
+  <text class="s" x="20" y="26">Côté poste</text>
+  <rect class="box key" x="20" y="45" width="150" height="62" rx="9"/>
+  <text class="t" x="95" y="72" text-anchor="middle">Port A</text>
+  <text class="s" x="95" y="92" text-anchor="middle">CAT et PTT</text>
+  <rect class="box" x="20" y="205" width="150" height="62" rx="9"/>
+  <text class="t" x="95" y="232" text-anchor="middle">Carte son</text>
+  <text class="s" x="95" y="252" text-anchor="middle">audio RX et TX</text>
+  <rect class="box" x="20" y="285" width="150" height="62" rx="9"/>
+  <text class="t" x="95" y="312" text-anchor="middle">Port B</text>
+  <text class="s" x="95" y="332" text-anchor="middle">spectre (option)</text>
+
+  <!-- rigctld -->
+  <line class="w cat" x1="170" y1="76" x2="218" y2="76" marker-start="url(#trxr-m2c)" marker-end="url(#trxr-m2c)"/>
+  <rect class="box" x="220" y="40" width="170" height="72" rx="9"/>
+  <text class="t" x="305" y="68" text-anchor="middle">rigctld (Hamlib)</text>
+  <text class="s" x="305" y="88" text-anchor="middle">local uniquement,</text>
+  <text class="s" x="305" y="104" text-anchor="middle">jamais sur le réseau</text>
+
+  <!-- passerelle -->
+  <rect class="zone" x="430" y="20" width="330" height="430" rx="14"/>
+  <text class="t" x="445" y="44">Passerelle</text>
+  <rect class="box" x="450" y="58" width="290" height="50" rx="8"/>
+  <text class="t" x="595" y="80" text-anchor="middle">Liaison avec le poste</text>
+  <text class="s" x="595" y="98" text-anchor="middle">lit fréquence, mode, S-mètre, PTT</text>
+  <line class="w cat" x1="390" y1="80" x2="448" y2="83" marker-start="url(#trxr-m2c)" marker-end="url(#trxr-m2c)"/>
+
+  <rect class="box key" x="450" y="128" width="290" height="62" rx="8"/>
+  <text class="t" x="595" y="152" text-anchor="middle">Sécurité de l'émission</text>
+  <text class="s" x="595" y="172" text-anchor="middle">durée max., signaux de vie, opérateur,</text>
+  <text class="s" x="595" y="186" text-anchor="middle">bandes, modes, retour en réception</text>
+  <line class="w cat" x1="595" y1="128" x2="595" y2="111" marker-end="url(#trxr-m2c)"/>
+
+  <rect class="box" x="450" y="210" width="290" height="50" rx="8"/>
+  <text class="t" x="595" y="232" text-anchor="middle">Audio</text>
+  <text class="s" x="595" y="250" text-anchor="middle">réception diffusée, porte d'émission</text>
+  <line class="w aud" x1="170" y1="236" x2="448" y2="236" marker-start="url(#trxr-m2a)" marker-end="url(#trxr-m2a)"/>
+
+  <rect class="box" x="450" y="280" width="290" height="50" rx="8"/>
+  <text class="t" x="595" y="302" text-anchor="middle">Spectre HF</text>
+  <text class="s" x="595" y="320" text-anchor="middle">ouvert seulement en réception</text>
+  <line class="w spec" x1="170" y1="316" x2="448" y2="306" marker-start="url(#trxr-m2s)" marker-end="url(#trxr-m2s)"/>
+
+  <rect class="box" x="450" y="350" width="290" height="80" rx="8"/>
+  <text class="t" x="595" y="374" text-anchor="middle">Accès des clients</text>
+  <text class="s" x="595" y="394" text-anchor="middle">HTTPS et WebRTC, comptes protégés,</text>
+  <text class="s" x="595" y="410" text-anchor="middle">mémoires, mises en page</text>
+
+  <!-- clients -->
+  <line class="w net" x1="740" y1="390" x2="808" y2="390" marker-start="url(#trxr-m2n)" marker-end="url(#trxr-m2n)"/>
+  <rect class="box" x="810" y="350" width="160" height="80" rx="9"/>
+  <text class="t" x="890" y="382" text-anchor="middle">Clients</text>
+  <text class="s" x="890" y="402" text-anchor="middle">page web, application</text>
+
+  <!-- état, superviseur, outils -->
+  <line class="w gray" x1="595" y1="452" x2="595" y2="483" marker-end="url(#trxr-m2g)"/>
+  <rect class="box" x="520" y="485" width="150" height="58" rx="9"/>
+  <text class="t" x="595" y="510" text-anchor="middle">Fichier d'état</text>
+  <text class="s" x="595" y="528" text-anchor="middle">publié 4 fois/s</text>
+
+  <rect class="box key" x="190" y="470" width="270" height="100" rx="9"/>
+  <text class="t" x="325" y="496" text-anchor="middle">Superviseur, indépendant</text>
+  <text class="s" x="325" y="516" text-anchor="middle">interroge le poste lui-même,</text>
+  <text class="s" x="325" y="534" text-anchor="middle">coupe l'émission, relance,</text>
+  <text class="s" x="325" y="552" text-anchor="middle">mode sûr, alertes</text>
+  <line class="w gray" x1="520" y1="514" x2="462" y2="514" marker-end="url(#trxr-m2g)"/>
+  <line class="w cat dash" x1="300" y1="468" x2="300" y2="114" marker-end="url(#trxr-m2c)"/>
+  <text class="l" x="310" y="160">sonde directe,</text>
+  <text class="l" x="310" y="176">coupure</text>
+
+  <rect class="box" x="710" y="470" width="260" height="100" rx="9"/>
+  <text class="t" x="840" y="496" text-anchor="middle">Console et moniteur</text>
+  <text class="s" x="840" y="516" text-anchor="middle">diagnostic, assistant, mises à jour</text>
+  <text class="s" x="840" y="534" text-anchor="middle">signées, tableau de bord,</text>
+  <text class="s" x="840" y="552" text-anchor="middle">touche STOP</text>
+  <line class="w gray" x1="670" y1="514" x2="708" y2="514" marker-end="url(#trxr-m2g)"/>
+</svg>
+<div class="trxr-legend"><span class="cat">commande du poste et émission</span><span class="aud">audio</span><span class="spec">spectre</span><span class="net">réseau</span><span class="gray">état et surveillance</span></div>
+<p class="trxr-cap">Les briques encadrées de rouge portent la sécurité de l'émission. La flèche pointillée montre que le superviseur interroge le poste sans passer par la passerelle.</p>
+</div>
+
+<table>
+  <thead><tr><th>Brique</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td><strong>rigctld</strong> (Hamlib)</td><td>Traduit les commandes en langage du poste ; reconnaît plusieurs centaines de modèles. Il n'écoute que sur la machine elle-même.</td></tr>
+    <tr><td><strong>Passerelle</strong></td><td>Le cœur : elle décide de l'émission et applique toutes les sécurités. Elle transporte l'audio et sert la page de contrôle. Elle filtre chaque commande des clients.</td></tr>
+    <tr><td><strong>Superviseur</strong></td><td>Second gardien, indépendant de la passerelle. Il surveille le poste, la passerelle et les services, coupe l'émission en cas d'anomalie et relance ce qui est bloqué. En dernier recours, il passe en mode sûr.</td></tr>
+    <tr><td><strong>Fichier d'état</strong></td><td>L'état de la passerelle, réécrit plusieurs fois par seconde. S'il cesse de changer, le superviseur sait que la passerelle est figée.</td></tr>
+    <tr><td><strong>Console et moniteur</strong></td><td>Les outils de l'opérateur sur le serveur : diagnostic, assistant de configuration, mises à jour signées et tableau de bord. Le tableau de bord ne permet qu'une action : STOP.</td></tr>
+    <tr><td><strong>Modules</strong></td><td>Fonctions complémentaires, chacune dans son propre programme, sans jamais toucher au chemin de l'émission. Le socle est en place ; le premier module utile (cluster DX) est à venir.</td></tr>
+  </tbody>
+</table>
+
+<h2>3. Les briques de la page de contrôle</h2>
+<p>La page s'ouvre dans le navigateur du téléphone ou du PC. Elle ne décide de rien : elle envoie des demandes et affiche l'état que la station lui renvoie.</p>
+
+<div class="trxr-fig" role="img" aria-label="Schéma de la page de contrôle : logique et protocole, affichage, calculs des graphiques, micro et haut-parleur, reliés à la passerelle par trois canaux chiffrés.">
+<svg viewBox="0 0 980 330" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="trxr-m3n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#3a83d0"/></marker>
+    <marker id="trxr-m3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b9a5e"/></marker>
+    <marker id="trxr-m3s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9a6ad6"/></marker>
+    <marker id="trxr-m3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor" fill-opacity=".6"/></marker>
+  </defs>
+  <rect class="zone" x="10" y="20" width="560" height="295" rx="14"/>
+  <text class="t" x="26" y="46">Navigateur (téléphone ou PC)</text>
+
+  <rect class="box key" x="30" y="65" width="250" height="90" rx="9"/>
+  <text class="t" x="155" y="94" text-anchor="middle">Logique et protocole</text>
+  <text class="s" x="155" y="114" text-anchor="middle">connexion, signaux de vie,</text>
+  <text class="s" x="155" y="132" text-anchor="middle">reconnexion, alertes sonores</text>
+
+  <rect class="box" x="300" y="65" width="250" height="90" rx="9"/>
+  <text class="t" x="425" y="94" text-anchor="middle">Affichage</text>
+  <text class="s" x="425" y="114" text-anchor="middle">fréquence, S-mètre, PTT, STOP,</text>
+  <text class="s" x="425" y="132" text-anchor="middle">mémoires, réglages du poste</text>
+  <line class="w gray" x1="282" y1="110" x2="298" y2="110" marker-start="url(#trxr-m3g)" marker-end="url(#trxr-m3g)"/>
+
+  <rect class="box" x="30" y="185" width="250" height="110" rx="9"/>
+  <text class="t" x="155" y="214" text-anchor="middle">Micro et haut-parleur</text>
+  <text class="s" x="155" y="234" text-anchor="middle">micro ouvert seulement pendant</text>
+  <text class="s" x="155" y="252" text-anchor="middle">votre émission confirmée ;</text>
+  <text class="s" x="155" y="270" text-anchor="middle">jamais la carte son du poste</text>
+
+  <rect class="box" x="300" y="185" width="250" height="110" rx="9"/>
+  <text class="t" x="425" y="214" text-anchor="middle">Graphiques</text>
+  <text class="s" x="425" y="234" text-anchor="middle">spectre audio, spectre HF,</text>
+  <text class="s" x="425" y="252" text-anchor="middle">mises en page, thèmes</text>
+  <text class="s" x="425" y="270" text-anchor="middle">de couleurs</text>
+  <line class="w gray" x1="425" y1="157" x2="425" y2="183" marker-start="url(#trxr-m3g)" marker-end="url(#trxr-m3g)"/>
+
+  <!-- canaux -->
+  <line class="w net" x1="570" y1="100" x2="788" y2="100" marker-start="url(#trxr-m3n)" marker-end="url(#trxr-m3n)"/>
+  <text class="l" x="679" y="92" text-anchor="middle">canal control : commandes et état</text>
+  <line class="w spec" x1="788" y1="165" x2="570" y2="165" marker-end="url(#trxr-m3s)"/>
+  <text class="l" x="679" y="157" text-anchor="middle">canal spectrum : balayages</text>
+  <line class="w aud" x1="570" y1="230" x2="788" y2="230" marker-start="url(#trxr-m3a)" marker-end="url(#trxr-m3a)"/>
+  <text class="l" x="679" y="222" text-anchor="middle">audio : réception et émission</text>
+  <text class="s" x="679" y="268" text-anchor="middle">une seule connexion WebRTC,</text>
+  <text class="s" x="679" y="284" text-anchor="middle">chiffrée de bout en bout</text>
+
+  <rect class="box" x="790" y="70" width="180" height="190" rx="9"/>
+  <text class="t" x="880" y="150" text-anchor="middle">Passerelle</text>
+  <text class="s" x="880" y="172" text-anchor="middle">de la station</text>
+  <text class="s" x="880" y="194" text-anchor="middle">(accès des clients)</text>
+</svg>
+<div class="trxr-legend"><span class="net">commandes et état</span><span class="spec">spectre</span><span class="aud">audio</span><span class="gray">échanges internes à la page</span></div>
+</div>
+
+<h2>4. Le trajet d'une émission, de bout en bout</h2>
+<ol>
+  <li>Vous cochez « Émission autorisée », puis appuyez sur PTT : la page envoie une <strong>demande</strong> sur le canal control.</li>
+  <li>La passerelle vérifie :
+    <ul>
+      <li>que vous êtes le seul à émettre ;</li>
+      <li>que la bande et le mode sont autorisés ;</li>
+      <li>que le poste répond et qu'il est bien en réception.</li>
+    </ul>
+    Ensuite seulement, elle commande l'émission à rigctld, puis relit le poste.</li>
+  <li>La passerelle ouvre la porte audio <strong>pour vous seul</strong> : votre micro part vers le poste. La page affiche « ÉMISSION EN COURS », parce que la station l'a confirmé.</li>
+  <li>Pendant l'émission, la page envoie un signal de vie deux fois par seconde. La passerelle surveille la durée maximale, et le superviseur surveille le tout, de son côté.</li>
+  <li>Second appui, STOP, signal de vie perdu, durée dépassée ou connexion coupée : la porte audio se ferme d'abord, puis le poste repasse en réception. La station relit le poste pour le confirmer.</li>
+</ol>
+
+</div>

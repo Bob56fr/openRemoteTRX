@@ -13,6 +13,11 @@ reprise. Le superviseur ne déclenche JAMAIS d'émission.
 Échelle de reprise : redémarrer la passerelle -> redémarrer rigctld -> réinitialiser l'USB ->
 redémarrer le Pi. Redémarrages limités par heure ; au-delà, MODE SÛR : passerelle arrêtée,
 retour RX forcé, intervention manuelle requise (`trx-supervisor --clear-safe-mode`).
+
+Poste ABSENT (port du poste disparu : éteint ou débranché) sans émission connue : aucune reprise n'y peut rien
+(on ne réinitialise pas un périphérique absent) et rien ne peut émettre. Alerte « rig_absent » seulement, aucune
+action, jamais de mode sûr ; au retour du port, la reprise normale relance rigctld. Si la dernière émission connue
+était en cours, l'escalade complète reste due (poste qui émet sans liaison).
 """
 from __future__ import annotations
 
@@ -20,7 +25,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -184,6 +189,11 @@ class Supervisor:
         if (self.cfg.rig.model != DUMMY_MODEL and self.cfg.rig.port
                 and not self.port_exists(self.cfg.rig.port) and not in_grace):
             problems.append(Problem("usb_missing", self.cfg.rig.port, 2, False))
+
+        if self._tx_since is None and any(p.name == "usb_missing" for p in problems):
+            problems = [Problem("rig_absent", f"poste éteint ou débranché ({self.cfg.rig.port} absent) : la station "
+                                "attend son retour, sans relancer", None, False)] + \
+                       [replace(p, level=None) for p in problems if p.name != "usb_missing"]
 
         temperature = self.read_temp()
         if temperature is not None and temperature >= s.temp_alert_c:

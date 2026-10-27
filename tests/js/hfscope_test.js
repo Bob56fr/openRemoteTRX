@@ -96,6 +96,14 @@ test("réglages du poste : libellés, cycles et pas du niveau de référence (gr
   assert.deepEqual(hf.SPANS_HZ, [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000]);
 });
 
+test("accord au doigt : pas selon la largeur, sens d'un VFO", () => {
+  assert.equal(hf.tuneStep(5000), 10); assert.equal(hf.tuneStep(200000), 500); assert.equal(hf.tuneStep(1000000), 1000);
+  assert.equal(hf.dragSteps(-95, 475, 200000, 500), 80);                   // spectre tiré à gauche : fréquence qui monte
+  assert.equal(hf.dragSteps(95, 475, 200000, 500), -80);
+  assert.equal(hf.dragSteps(1, 475, 5000, 10), -1);
+  assert.equal(hf.dragSteps(50, 0, 200000, 500), 0); assert.equal(hf.dragSteps(NaN, 475, 200000, 500), 0);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

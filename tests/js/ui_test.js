@@ -629,7 +629,26 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   answer(false, { reason: "spectrum_refused" }, "spectrum_set"); await wait();
   hfState({ state: "ok", code: "", message: "", settings: Object.assign({}, rigSettings, { mode: "fixed" }) });
   assert.equal($("hf-set-span").disabled, true);                                               // en mode fixe, la largeur ne se règle pas
+  // accord au doigt : seulement avec le bouton VFO allumé
+  const drag = async (from, to) => {
+    await $("hf-plot").dispatch("pointerdown", { clientX: from, pointerId: 7 });
+    await $("hf-plot").dispatch("pointermove", { clientX: to, pointerId: 7 });
+    await $("hf-plot").dispatch("pointerup", { pointerId: 7 });
+  };
+  const freqSets = sent("set_frequency").length;
+  assert.equal($("hf-vfo").className, "chip"); assert.equal($("hf-vfo").disabled, false);
+  await drag(200, 105); await wait(250);
+  assert.equal(sent("set_frequency").length, freqSets);                                       // VFO éteint : glisser ne change rien
+  await $("hf-vfo").click();
+  assert.equal($("hf-vfo").className, "chip on"); assert.equal($("hf-plot").className, "hf-plot tuning");
+  await drag(200, 105); await wait(250);                                                       // 95 px à gauche sur 200 kHz : +40 kHz par pas de 500 Hz
+  assert.equal(sent("set_frequency").length, freqSets + 1); assert.equal(sent("set_frequency").at(-1).hz, 14140000);
+  answerAll();
+  await $("hf-plot").dispatch("click"); assert.equal($("hfscope").hidden, false);            // VFO allumé : un appui ne ferme pas la vue
   hfState({ state: "ok", code: "", message: "", settings: rigSettings }, { state: "TX", owner: "phone", tot_remaining_s: 80 });
+  assert.equal($("hf-vfo").className, "chip"); assert.equal($("hf-vfo").disabled, true);    // émission : VFO éteint et verrouillé
+  const during = sent("set_frequency").length;
+  await drag(200, 105); await wait(250); assert.equal(sent("set_frequency").length, during);
   for (const id of ["hf-set-mode", "hf-set-span", "hf-ref-down", "hf-ref-up", "hf-set-speed"]) assert.equal($(id).disabled, true, id);   // verrouillés en émission
   hfState({ state: "ok", code: "", message: "" }, { state: "TX", owner: "phone", tot_remaining_s: 80 });
   assert.equal($("hf-tx").hidden, false); assert.equal($("hf-tx").textContent, "ÉMISSION EN COURS");   // l'émission reste visible en plein écran

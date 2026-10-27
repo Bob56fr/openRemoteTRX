@@ -1,0 +1,143 @@
+<!-- TRX Remote : présentation de la qualification d'un poste. À coller dans un bloc « HTML personnalisé » de WordPress.
+     Aucun script ni ressource externe. Styles regroupés sous .trxr pour ne pas toucher au thème du site ; lisible en thème clair comme sombre.
+     À COMPLÉTER avant publication : l'adresse d'envoi des rapports (repère [À COMPLÉTER]). -->
+<style>
+.trxr{--trxr-line:rgba(128,128,128,.38);--trxr-card:rgba(128,128,128,.12);--trxr-accent:#3a83d0;--trxr-tx:#d23b33;--trxr-ok:#2b9a5e;
+  color:inherit;font-size:1.02rem;line-height:1.6;max-width:52rem;margin:0 auto}
+/* Couleurs neutres : le texte suit le thème du site (clair ou sombre), fonds et bordures semi-transparents. */
+.trxr h2{color:inherit;font-size:1.5rem;margin:2.2rem 0 .6rem;line-height:1.25}
+.trxr h3{color:inherit;font-size:1.15rem;margin:1.4rem 0 .4rem}
+.trxr p{margin:.5rem 0 .9rem}
+.trxr .trxr-lead{font-size:1.15rem;opacity:.82}
+.trxr .trxr-card{background:var(--trxr-card);border:1px solid var(--trxr-line);border-radius:.6rem;padding:1rem 1.2rem;margin:1rem 0}
+.trxr .trxr-warn{border-left:.35rem solid var(--trxr-tx)}
+.trxr .trxr-good{border-left:.35rem solid var(--trxr-ok)}
+.trxr ol.trxr-steps{list-style:none;counter-reset:s;padding:0;margin:1rem 0}
+.trxr ol.trxr-steps>li{counter-increment:s;position:relative;padding:.2rem 0 1rem 3.2rem;border-left:2px solid var(--trxr-line);margin-left:1.1rem}
+.trxr ol.trxr-steps>li:last-child{border-left-color:transparent}
+.trxr ol.trxr-steps>li::before{content:counter(s);position:absolute;left:-1.15rem;top:0;width:2.2rem;height:2.2rem;border-radius:50%;
+  background:var(--trxr-accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+.trxr .trxr-tag{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.02em;padding:.05rem .5rem;border-radius:1rem;
+  background:var(--trxr-line);color:inherit;vertical-align:middle;margin-left:.3rem}
+.trxr .trxr-tag.tx{background:var(--trxr-tx);color:#fff}
+.trxr table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.97rem}
+.trxr th,.trxr td{border-bottom:1px solid var(--trxr-line);padding:.5rem .4rem;text-align:left;vertical-align:top}
+.trxr th{opacity:.82;font-weight:600}
+.trxr code{background:var(--trxr-card);border:1px solid var(--trxr-line);border-radius:.3rem;padding:0 .3rem;font-size:.92em}
+.trxr ul{margin:.4rem 0 1rem 1.2rem;padding:0}
+.trxr li{margin:.25rem 0}
+@media (max-width:600px){.trxr ol.trxr-steps>li{padding-left:2.4rem}}
+</style>
+
+<div class="trxr">
+
+<p class="trxr-lead">TRX Remote pilote à distance la plupart des postes reconnus par Hamlib. Avant d'autoriser l'émission à distance sur un modèle, nous vérifions qu'il se comporte exactement comme prévu&nbsp;: c'est la qualification. Voici comment elle se déroule si vous voulez faire qualifier votre poste.</p>
+
+<h2>Pourquoi qualifier un poste&nbsp;?</h2>
+<p>Deux postes reconnus par Hamlib ne répondent pas toujours de la même façon. Selon le modèle et la version du micrologiciel, certaines fonctions sont absentes, d'autres répondent avec un format inattendu. Un poste peut aussi relire son état d'émission avec retard.</p>
+<p>Pour une écoute, ce n'est pas grave. Pour une <strong>émission à distance</strong>, on ne laisse rien au hasard. La station doit pouvoir lire à tout moment si le poste émet, et le ramener en réception à coup sûr. La qualification le vérifie, essai après essai, sur votre poste réel.</p>
+
+<div class="trxr-card trxr-good">
+<strong>En résumé</strong> : une séance au poste, une série d'essais automatiques puis guidés, et un rapport que vous nous envoyez. Le poste est remis dans l'état où vous l'avez trouvé, et rien n'est émis sans votre accord explicite.
+</div>
+
+<h2>Ce qu'il vous faut</h2>
+<ul>
+  <li>Une station TRX Remote installée (PC Windows, PC Debian ou Raspberry Pi) et votre poste relié en CAT (câble USB ou interface).</li>
+  <li>L'interface audio du poste (carte son intégrée au poste ou interface externe).</li>
+  <li>Une <strong>charge fictive</strong> adaptée à la puissance du poste. C'est indispensable pour les essais d'émission.</li>
+  <li>Votre indicatif et une bande où vous êtes autorisé à émettre.</li>
+  <li>Une séance pendant laquelle vous restez près du poste.</li>
+</ul>
+
+<div class="trxr-card trxr-warn">
+<strong>Précautions obligatoires avant de commencer</strong>
+<ul>
+  <li>Charge fictive branchée, puissance réglée <strong>au minimum</strong>.</li>
+  <li>Minuterie d'émission interne du poste (TOT) <strong>activée</strong> : c'est une sécurité de plus, indépendante de l'ordinateur.</li>
+  <li>VOX coupé.</li>
+  <li>Station TRX Remote arrêtée : la qualification utilise seule le poste pendant la séance.</li>
+</ul>
+</div>
+
+<h2>Le déroulé, étape par étape</h2>
+<p>Aujourd'hui, la qualification se lance avec la commande <code>trx-qualif</code> sur le PC de la station. Une page web d'accompagnement est prévue.</p>
+
+<ol class="trxr-steps">
+  <li><h3>Le plan d'essais de votre modèle <span class="trxr-tag">sans émission</span></h3>
+    <p>À partir de ce que Hamlib annonce pour votre poste, la station établit la liste des essais à faire : socle commun, puis tests propres à votre modèle (réducteur de bruit, préampli, filtres…). Vous pouvez consulter ce plan avant toute chose (<code>trx-qualif --plan</code>), sans toucher au poste.</p></li>
+  <li><h3>Les essais automatiques <span class="trxr-tag">sans émission</span></h3>
+    <p>La station relève d'abord l'état de votre poste. Elle vérifie ensuite :</p>
+    <ul>
+      <li>le réglage de la fréquence sur chaque bande ;</li>
+      <li>tous les modes et les filtres ;</li>
+      <li>les fonctions et niveaux que TRX Remote utilise ;</li>
+      <li>l'endurance (un millier de lectures) et les temps de réponse.</li>
+    </ul>
+    <p>À la fin, <strong>tout est remis comme avant</strong>. La puissance n'est jamais augmentée, et le coupleur d'antenne n'est jamais lancé (il pourrait émettre une porteuse).</p></li>
+  <li><h3>L'audio reçu <span class="trxr-tag">sans émission</span></h3>
+    <p>Un court enregistrement de ce que reçoit le poste vérifie la chaîne audio. Il est joint au rapport.</p></li>
+  <li><h3>Vos vérifications <span class="trxr-tag">guidé</span></h3>
+    <p>La station vous demande de confirmer ce que vous voyez sur l'afficheur et ce que vous entendez. Ces réponses complètent les mesures, elles ne les remplacent jamais.</p></li>
+  <li><h3>Les essais d'émission <span class="trxr-tag tx">émission</span></h3>
+    <p>Chaque étape d'émission attend que vous tapiez <code>EMETTRE</code>. Rien ne part sans cela. Sont vérifiés :</p>
+    <ul>
+      <li>la prise et le relâchement de l'émission, en boucle ;</li>
+      <li>l'audio d'émission, à niveau croissant, avec relevé de la puissance, du ROS et de l'ALC. Arrêt immédiat si le ROS dépasse 2.</li>
+    </ul>
+    <p>Viennent ensuite les <strong>pannes simulées</strong>, l'essentiel de la qualification :</p>
+    <ul>
+      <li>le téléphone qui ne donne plus signe de vie ;</li>
+      <li>le dépassement de la durée maximale d'émission ;</li>
+      <li>la déconnexion ;</li>
+      <li>la liaison avec le poste coupée en pleine émission.</li>
+    </ul>
+    <p>À chaque fois, le poste doit revenir en réception de lui-même. À la fin de la séance, il est toujours ramené en réception.</p></li>
+  <li><h3>Le rapport <span class="trxr-tag">à envoyer</span></h3>
+    <p>La station rassemble tout dans un dossier :</p>
+    <ul>
+      <li>les résultats de chaque essai ;</li>
+      <li>un brouillon de fiche du poste ;</li>
+      <li>la trace des échanges avec le poste ;</li>
+      <li>l'enregistrement audio.</li>
+    </ul>
+    <p>Vous nous l'envoyez : [À COMPLÉTER : adresse ou formulaire d'envoi].</p></li>
+</ol>
+
+<h2>Le résultat</h2>
+<p>Le verdict de la séance est recalculé à partir des résultats bruts, jamais saisi à la main :</p>
+<table>
+  <thead><tr><th>Verdict de la séance</th><th>Ce que cela veut dire</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Validation en cours</strong></td><td>Tous les essais du socle ont réussi. Le rapport part à l'examen.</td></tr>
+    <tr><td><strong>Incomplet</strong></td><td>Un essai n'a pas pu être fait, souvent pour une raison d'installation : câble, carte son, bandes mal réglées. On corrige et on recommence.</td></tr>
+    <tr><td><strong>Refusé</strong></td><td>Un essai essentiel a échoué. Par exemple, un poste dont on ne peut pas lire l'état d'émission ne sera jamais autorisé à émettre à distance.</td></tr>
+  </tbody>
+</table>
+<p>Après examen, le modèle reçoit son statut dans TRX Remote :</p>
+<ul>
+  <li><strong>validé</strong> : toutes les fonctions sont proposées ;</li>
+  <li><strong>restreint</strong> : certaines fonctions sont masquées, avec un avertissement ;</li>
+  <li><strong>en cours de validation</strong> ;</li>
+  <li><strong>refusé</strong>.</li>
+</ul>
+<p>Une fonction qui n'a pas fait ses preuves n'est jamais proposée. Un poste n'est utilisable que si la fréquence, le mode, l'émission et la réception audio ont tous réussi.</p>
+
+<h2>Ce que la qualification ne fait jamais</h2>
+<ul>
+  <li>Émettre sans que vous ayez tapé <code>EMETTRE</code> pour l'étape en cours.</li>
+  <li>Augmenter la puissance au-delà de celle que vous avez réglée.</li>
+  <li>Lancer le coupleur d'antenne.</li>
+  <li>Laisser le poste en émission : la fin de séance le ramène toujours en réception.</li>
+  <li>Modifier durablement les réglages du poste : ils sont relevés au début et remis à la fin.</li>
+</ul>
+
+<h2>Questions fréquentes</h2>
+<h3>Mon poste est-il déjà qualifié&nbsp;?</h3>
+<p>Consultez la liste des postes et de leur statut sur ce site. Si votre modèle est validé, une nouvelle qualification reste utile avec un autre micrologiciel : elle consolide la fiche.</p>
+<h3>Et si un essai échoue alors que mon poste marche très bien&nbsp;?</h3>
+<p>Envoyez-nous quand même le rapport. Un échec sur un poste en bon état révèle souvent un réglage d'installation, ou un défaut de la procédure elle-même. Dans les deux cas, nous voulons le savoir.</p>
+<h3>Combien de temps cela prend-il&nbsp;?</h3>
+<p>Le temps d'une séance au poste. Les essais automatiques s'enchaînent seuls. Seules les étapes d'émission attendent votre confirmation.</p>
+
+</div>

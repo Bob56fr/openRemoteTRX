@@ -361,11 +361,27 @@ def test_unexplained_tx_is_cut_even_during_startup_grace(tmp_path):
     assert "force_rx" in w.calls
 
 
-def test_missing_usb_device_resets_usb_first(tmp_path):
+def test_rig_switched_off_is_awaited_never_escalated_to_safe_mode(tmp_path):
+    """Poste éteint au démarrage du PC (cas réel, Debian 13) : avant, l'échelle menait au mode sûr en une minute."""
+    w = W(tmp_path, real_rig=True, max_reboots_per_hour=0)
+    w.port_present, w.gateway_up = False, False
+    w.rig = RigProbe(False, error="TimeoutError('timed out')")
+    w.run(600)                                                       # dix minutes poste éteint
+    assert w.calls == [] and w.store.safe_mode() is None
+    assert "Problème : rig_absent" in w.alerts and "MODE SÛR" not in w.alerts
+    w.port_present, w.gateway_up = True, True                       # poste rallumé : rigctld relancé par la reprise normale
+    w.run(30)
+    assert "restart_rigctld" in w.calls and w.store.safe_mode() is None
+
+
+def test_rig_lost_while_transmitting_still_escalates(tmp_path):
     w = W(tmp_path, real_rig=True)
-    w.port_present = False
+    w.gateway_transmitting()
     w.run(1)
-    assert w.calls == ["reset_usb"]
+    w.port_present = False
+    w.rig = RigProbe(False, error="perdu")                           # dernier état connu : émission
+    w.run(5)
+    assert any(c in w.calls for c in ("restart_rigctld", "kill_gateway", "reset_usb"))
 
 
 def test_cpu_hot_only_alerts(tmp_path):

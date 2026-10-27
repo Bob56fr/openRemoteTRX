@@ -591,3 +591,14 @@ def test_service_delivers_sweeps_to_listeners_in_the_event_loop():
     assert all(in_loop)                                                      # jamais dans le fil de lecture série
     assert capability == {"source": "civ_port", "level_max": 160, "max_fps": 10}
     assert SpectrumService(cfgmod.Spectrum(), None, None).capability() is None
+
+
+def test_diagnostic_fails_when_pyserial_is_missing_and_the_spectrum_is_enabled(tmp_path):
+    from trxstation import diagnostics as d
+    from test_diagnostics import FakeSystem
+    cfg = cfgmod.from_dict({**ICOM, "spectrum": CIV})
+    sysm = FakeSystem(tmp_path)
+    sysm.modules.discard("serial")
+    (check,) = d.check_spectrum(sysm, cfg)
+    assert check.status == d.FAIL and "pyserial" in check.message
+

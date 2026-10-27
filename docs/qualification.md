@@ -101,6 +101,25 @@ rapports_qualif = 1
 Règle bloquante : un statut utilisable exige `freq`, `mode`, `ptt` et `audio_rx` à `true`.
 `ptt` n'est vrai que si les cycles PTT ET le retour en réception sur perte CAT ont réussi.
 
+## Essai de la procédure sur l'IC-7300MK2 (premier passage complet)
+
+But : dérouler la qualification de bout en bout sur un poste connu, pour juger la procédure elle-même
+(clarté des questions, durée, verdict, fiche produite) avant de la proposer à d'autres utilisateurs.
+
+1. Préparer : charge fictive, puissance au minimum, TOT interne du poste réglé, VOX coupé, mode
+   données (USB-D), station arrêtée (TRX Console, ou arrêt du superviseur sous Windows).
+2. `trx-qualif --plan` : lire le cahier de test produit pour ce modèle. Noter tout test qui paraît
+   inutile, absent ou mal nommé.
+3. `trx-qualif` : suivre le déroulé, chronométrer chaque phase, taper `EMETTRE` seulement poste prêt.
+4. Me renvoyer le dossier `qualifications/qualif-…/` complet (zippé), avec :
+   - la durée totale et celle de chaque phase ;
+   - les questions ou messages peu clairs (copie du texte) ;
+   - le verdict obtenu et ce que tu en penses (le poste fonctionne : un `refuse` serait un défaut
+     de la procédure à corriger) ;
+   - tout ce que le poste a fait d'inattendu (réglage non rétabli à la fin, puissance changée…).
+
+Le spectre HF (second port) n'est pas couvert par la qualification à ce jour.
+
 ## Écarts connus avec le cahier des charges
 
 - La reprise après débranchement USB est un test **fixe** et non du socle : sous Windows, rigctld

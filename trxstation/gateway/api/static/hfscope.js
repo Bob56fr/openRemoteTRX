@@ -168,6 +168,23 @@
     return Math.min(REF_MAX, Math.max(REF_MIN, next));
   }
 
+  // ---- accord au doigt (bouton VFO allumé) : glisser le spectre comme on tourne le VFO
+  const TUNE_STEPS = [10, 50, 100, 500, 1000];
+
+  function tuneStep(spanHz) {
+    /* Pas d'accord adapté à la largeur affichée : environ 400 pas sur l'écran (10 Hz à ±2,5 kHz, 500 Hz à ±100 kHz). */
+    let step = TUNE_STEPS[0];
+    for (const s of TUNE_STEPS) if (s <= spanHz / 400) step = s;
+    return step;
+  }
+
+  function dragSteps(dxCss, plotWidthCss, spanHz, stepHz) {
+    /* Nombre de pas pour un glissement : tirer le spectre vers la GAUCHE fait monter la fréquence (le signal vient
+       vers le repère), comme un VFO. 0 si les dimensions sont inconnues. */
+    if (!(plotWidthCss > 0) || !(spanHz > 0) || !(stepHz > 0) || !Number.isFinite(dxCss)) return 0;
+    return Math.round((-dxCss * spanHz) / plotWidthCss / stepHz) || 0;
+  }
+
   function nextGain(gain) {
     const i = GAINS.indexOf(gain);
     return GAINS[(i + 1) % GAINS.length];
@@ -177,6 +194,6 @@
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
                 sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
                 SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,
-                refLabel, stepRef };
+                refLabel, stepRef, tuneStep, dragSteps };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxHfScope = api; }
 })(typeof window !== "undefined" ? window : globalThis);

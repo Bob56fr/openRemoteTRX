@@ -36,7 +36,7 @@ BRLTTY_RULE_NAMES = ("85-brltty.rules",)
 UDEV_SYSTEM_DIRS = (PurePosixPath("/usr/lib/udev/rules.d"), PurePosixPath("/lib/udev/rules.d"))
 MODULES = (("aiohttp", "serveur web de la station", True), ("aiortc", "audio WebRTC", True),
            ("sounddevice", "accès aux cartes son", True), ("cryptography", "certificat HTTPS", False),
-           ("textual", "tableau de bord trx-monitor", False))
+           ("textual", "tableau de bord trx-monitor", False), ("serial", "spectre HF par le second port du poste (pyserial)", False))
 
 OK, WARN, FAIL, INFO = "ok", "warn", "fail", "info"
 LABELS = {OK: "[OK]", WARN: "[ATTENTION]", FAIL: "[ERREUR]", INFO: "[INFO]"}
@@ -365,7 +365,10 @@ def check_services(sysm: System, cfg: Config | None) -> list[Check]:
             out.append(Check(s, unit, WARN, f"non installé ou désactivé ({enabled or 'inconnu'})",
                              "Relance l'installation : sudo bash install.sh"))
     if cfg is not None:
-        safe = sysm.read_text(Path(cfg.supervisor.state_dir) / "safe_mode")
+        safe_path = Path(cfg.supervisor.state_dir) / "safe_mode"
+        safe = sysm.read_text(safe_path)
+        if safe is None and sysm.exists(safe_path):
+            safe = "raison illisible (droits du fichier)"     # présent mais illisible : il est bien actif
         if safe is not None:
             out.append(Check(s, "Mode sûr", FAIL, f"ACTIF : {safe.strip() or 'raison inconnue'}",
                              "Corrige la cause, puis menu « Sortir du mode sûr »"))
@@ -384,6 +387,9 @@ def check_spectrum(sysm: System, cfg: Config | None) -> list[Check]:
     if cfg is None or not cfg.spectrum.enabled or cfg.spectrum.source != "civ_port":
         return []
     s, name = "Spectre HF", f"Second port {cfg.spectrum.port}"
+    if not sysm.module_present("serial"):
+        return [Check(s, name, FAIL, "module pyserial absent : le spectre ne peut pas fonctionner (mode normal)",
+                      "Relance l'installation (sudo bash install.sh), ou : pip install pyserial")]
     text = sysm.read_text(cfg.supervisor.status_path)
     try:
         sp = json.loads(text).get("spectrum", {}) if text else {}

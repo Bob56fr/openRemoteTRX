@@ -70,6 +70,12 @@ def import_config(source: Config, *, desktop: bool) -> tuple[Config, list[str]]:
         if _real_audio(value):
             notes.append(f"Carte son « {value} » ({name}) propre à l'ancien PC : à choisir dans l'assistant.")
             setattr(a, name, "")
+    sp = cfg.spectrum
+    if sp.port and (_windows_port(sp.port) or not Path(sp.port).exists()):
+        if sp.enabled:
+            notes.append(f"Spectre HF : second port « {sp.port} » inconnu ici, spectre désactivé (adresse CI-V {sp.civ_address or '?'} "
+                         "gardée). Une fois le poste branché : trx-setup --spectre <second port> (vérification complète).")
+        sp.port, sp.enabled = "", False
     if cfg.tools.hamlib_dir:
         notes.append("Dossier Hamlib de l'ancien PC oublié : Hamlib est installé par le système ici.")
         cfg.tools.hamlib_dir = ""

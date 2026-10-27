@@ -81,3 +81,13 @@ def test_is_desktop_reads_the_default_boot_target(monkeypatch):
     assert is_desktop(graphical, platform="linux") is True
     assert is_desktop(text_only, platform="linux") is False
     assert is_desktop(graphical, platform="win32") is False
+
+
+def test_windows_spectrum_port_is_disabled_with_a_note_and_the_address_kept():
+    cfg = windows_config()
+    cfg.rig.model = 3094
+    cfg.spectrum.enabled, cfg.spectrum.source, cfg.spectrum.port, cfg.spectrum.civ_address = True, "civ_port", "COM7", "B6"
+    out, notes = import_config(cfg, desktop=True)
+    assert (out.spectrum.enabled, out.spectrum.port, out.spectrum.civ_address, out.spectrum.source) == (False, "", "B6", "civ_port")
+    assert any("trx-setup --spectre" in n and "COM7" in n for n in notes)
+    assert not [p for p in cfgmod.validate(out) if "spectrum" in p]                     # aucun blocage dû au spectre

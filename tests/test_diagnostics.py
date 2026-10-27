@@ -25,7 +25,7 @@ class FakeSystem(d.System):
         self.files: dict[str, str] = {"/etc/os-release": OS_RELEASE}
         self.present: set[str] = set()
         self.commands: dict[str, tuple[int, str]] = {}
-        self.modules = {"aiohttp", "aiortc", "sounddevice", "cryptography", "textual"}
+        self.modules = {"aiohttp", "aiortc", "sounddevice", "cryptography", "textual", "serial"}
         self.groups = {"dialout": (20, ["luc"]), "trx": (996, ["luc"])}
         self.gids = [20, 996]
         self.ports = [PORT]
@@ -230,3 +230,15 @@ def test_report_is_complete_and_contains_no_secret(tmp_path):
 def test_redact_config_masks_tokens_and_empty_alert_url():
     text = 'token = "abcdefghijklmnopqrst"\nnotify_url = ""\nport = "/dev/x"\n'
     assert redact_config(text) == 'token = "***"\nnotify_url = ""\nport = "/dev/x"\n'
+
+
+def test_safe_mode_file_unreadable_is_still_reported(tmp_path):
+    from trxstation.config import Config
+    cfg = Config()
+    cfg.supervisor.state_dir = "/var/lib/trx-remote"
+    sysm = FakeSystem(tmp_path)
+    sysm.present.add(str(Path("/var/lib/trx-remote") / "safe_mode"))              # fichier du superviseur (root, 0600)
+    sysm.commands["systemctl is-active trx-gateway.service"] = (0, "inactive")
+    checks = [c for c in d.check_services(sysm, cfg) if c.name == "Mode sûr"]
+    assert checks and checks[0].status == d.FAIL and "illisible" in checks[0].message
+

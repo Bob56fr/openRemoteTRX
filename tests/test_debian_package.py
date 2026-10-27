@@ -135,3 +135,18 @@ def test_pyproject_station_extra_and_console_command():
     assert project["scripts"]["trx-console"] == "trxstation.console:main"
     launcher = (ROOT / "debian" / "trx-console.desktop").read_text(encoding="utf-8")
     assert "Exec=trx-console" in launcher and "Terminal=true" in launcher
+
+
+def test_every_linked_command_exists_and_qualification_is_available():
+    script = INSTALL.read_text(encoding="utf-8")
+    linked = re.search(r"^COMMANDS=\(([^)]*)\)", script, re.M).group(1).split()
+    declared = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["scripts"]
+    assert set(linked) <= set(declared), set(linked) - set(declared)
+    assert "trx-qualif" in linked                                   # qualification d'un poste sur le PC Debian
+
+
+def test_station_installs_pyserial_for_the_hf_spectrum():
+    extras = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["optional-dependencies"]
+    for name in ("station", "audio"):                              # Debian (station) et Windows (audio)
+        assert any(dep.startswith("pyserial") for dep in extras[name]), name
+

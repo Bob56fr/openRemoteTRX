@@ -25,7 +25,7 @@ MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
-COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest)
+COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif)
 APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-config libffi-dev libssl-dev
               libhamlib-utils alsa-utils libportaudio2 ca-certificates)
 MIN_FREE_MB=2000
@@ -341,9 +341,9 @@ printf '  Téléchargement et installation des modules Python (de 2 à 10 minute
   || fail "mise à jour de pip impossible."
 "$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check "$RELEASE/app[station]" \
   || fail "installation des modules Python impossible (détails dans $LOG)."
-"$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography' \
+"$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \
   || fail "modules Python incomplets après installation."
-ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography)"
+ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography, pyserial)"
 if [[ -n $CURRENT_VERSION && $CURRENT_VERSION != "$TRX_VERSION" ]]; then backup_config_for "$TRX_VERSION"; fi
 activate_release "$TRX_VERSION" || fail "activation de la version $TRX_VERSION impossible."
 BUILDING=0

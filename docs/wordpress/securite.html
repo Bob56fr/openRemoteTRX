@@ -1,0 +1,112 @@
+<!-- TRX Remote : les mesures de sécurité expliquées simplement. À coller dans un bloc « HTML personnalisé » de WordPress.
+     Aucun script ni ressource externe. Styles regroupés sous .trxr pour ne pas toucher au thème du site ; lisible en thème clair comme sombre.
+     Contenu fidèle à la version 0.30 ; à relire à chaque évolution des sécurités. -->
+<style>
+.trxr{--trxr-line:rgba(128,128,128,.38);--trxr-card:rgba(128,128,128,.12);--trxr-accent:#3a83d0;--trxr-tx:#d23b33;--trxr-ok:#2b9a5e;
+  color:inherit;font-size:1.02rem;line-height:1.6;max-width:52rem;margin:0 auto}
+/* Couleurs neutres : le texte suit le thème du site (clair ou sombre), fonds et bordures semi-transparents. */
+.trxr h2{color:inherit;font-size:1.5rem;margin:2.2rem 0 .6rem;line-height:1.25}
+.trxr h3{color:inherit;font-size:1.1rem;margin:0 0 .3rem}
+.trxr p{margin:.5rem 0 .9rem}
+.trxr .trxr-lead{font-size:1.15rem;opacity:.82}
+.trxr .trxr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.8rem;margin:1rem 0}
+.trxr .trxr-card{background:var(--trxr-card);border:1px solid var(--trxr-line);border-radius:.6rem;padding:.9rem 1.1rem}
+.trxr .trxr-card p{margin:.2rem 0 0;font-size:.97rem}
+.trxr .trxr-key{border-left:.35rem solid var(--trxr-tx)}
+.trxr .trxr-note{border-left:.35rem solid var(--trxr-accent)}
+.trxr .trxr-layers{list-style:none;padding:0;margin:1rem 0;counter-reset:l}
+.trxr .trxr-layers>li{counter-increment:l;display:grid;grid-template-columns:2.4rem 1fr;gap:.8rem;align-items:start;
+  background:var(--trxr-card);border:1px solid var(--trxr-line);border-radius:.6rem;padding:.8rem 1rem;margin:.6rem 0}
+.trxr .trxr-layers>li::before{content:counter(l);width:2.2rem;height:2.2rem;border-radius:50%;background:var(--trxr-accent);color:#fff;
+  font-weight:700;display:flex;align-items:center;justify-content:center}
+.trxr .trxr-layers p{margin:.2rem 0 0}
+.trxr ul{margin:.4rem 0 1rem 1.2rem;padding:0}
+.trxr li{margin:.25rem 0}
+.trxr table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.97rem}
+.trxr th,.trxr td{border-bottom:1px solid var(--trxr-line);padding:.5rem .4rem;text-align:left;vertical-align:top}
+.trxr th{opacity:.82;font-weight:600}
+</style>
+
+<div class="trxr">
+
+<p class="trxr-lead">Piloter un émetteur à distance, c'est accepter qu'il émette quand vous n'êtes pas à côté. TRX Remote est conçu autour d'une règle simple : <strong>en cas de doute, on n'émet pas</strong>. Voici, sans jargon, ce qui protège votre station, les autres radioamateurs et vous-même.</p>
+
+<div class="trxr-card trxr-key">
+<h3>Le principe</h3>
+<p>La décision d'émettre et l'état réel de l'émission appartiennent à la <strong>station</strong> (le PC relié au poste), jamais au téléphone. Votre téléphone demande, la station vérifie, puis elle vous dit ce qui se passe vraiment. Si la station perd le contact avec vous, elle repasse en réception toute seule.</p>
+</div>
+
+<h2>On n'émet jamais par erreur</h2>
+<div class="trxr-grid">
+  <div class="trxr-card"><h3>Un appui pour émettre, un appui pour arrêter</h3><p>Pas de bouton à maintenir enfoncé, qu'un geste involontaire pourrait coincer. L'émission se prend et se rend par deux appuis distincts.</p></div>
+  <div class="trxr-card"><h3>« Émission autorisée » à cocher</h3><p>Avant de pouvoir émettre, vous cochez une case, décochée à chaque déconnexion. Un téléphone qui se reconnecte ne peut pas émettre sans votre geste.</p></div>
+  <div class="trxr-card"><h3>L'état affiché est l'état réel</h3><p>« ÉMISSION EN COURS » s'affiche parce que la station l'a confirmé, pas parce que vous avez appuyé.</p></div>
+  <div class="trxr-card"><h3>Toujours en réception au démarrage</h3><p>Démarrage de la station, reconnexion d'un téléphone, retour après une coupure : on repart toujours en réception.</p></div>
+</div>
+
+<h2>L'émission s'arrête toute seule quand il le faut</h2>
+<table>
+  <thead><tr><th>Situation</th><th>Ce que fait la station</th></tr></thead>
+  <tbody>
+    <tr><td>Émission trop longue</td><td>Coupure au bout de 90 secondes par défaut (jamais plus de 120). Un avertissement s'affiche 10 secondes avant.</td></tr>
+    <tr><td>Le téléphone ne donne plus de nouvelles</td><td>Pendant l'émission, il envoie un signal de vie deux fois par seconde. Après 2 secondes sans signal, retour en réception.</td></tr>
+    <tr><td>La connexion tombe</td><td>Retour immédiat en réception.</td></tr>
+    <tr><td>Vous quittez la page web, ou l'écran se verrouille</td><td>L'émission est coupée par précaution.</td></tr>
+    <tr><td>Vous appuyez sur STOP</td><td>Coupure immédiate. STOP est toujours accepté, même par un autre utilisateur connecté.</td></tr>
+  </tbody>
+</table>
+
+<h2>Le micro et le poste sont tenus en laisse</h2>
+<div class="trxr-grid">
+  <div class="trxr-card"><h3>Un seul opérateur à la fois</h3><p>Une seule personne émet à la fois. Les autres écoutent et peuvent couper, mais pas prendre la main.</p></div>
+  <div class="trxr-card"><h3>Micro ouvert seulement quand il le faut</h3><p>Le son de votre micro ne passe vers le poste que pendant votre propre émission, confirmée. Il est coupé avant même que l'émission soit relâchée.</p></div>
+  <div class="trxr-card"><h3>Pas de micro « oublié » dans la pièce</h3><p>Sur certains postes (Icom notamment), l'émission peut être limitée aux modes données. Le poste modulerait sinon avec son propre micro, dans la pièce où il se trouve.</p></div>
+  <div class="trxr-card"><h3>Bandes et réglages verrouillés</h3><p>L'émission peut être limitée à vos bandes autorisées. Pendant l'émission, la fréquence, le mode et les réglages du poste ne se changent pas : le coupleur d'antenne, par exemple, pourrait émettre une porteuse.</p></div>
+</div>
+<p>La station relit aussi l'état réel du poste en permanence. Si vous repassez en réception sur le poste lui-même, la station le voit et suit. Si le poste refuse de quitter l'émission, la station insiste, puis signale un défaut qui demande une intervention.</p>
+
+<h2>Plusieurs gardiens indépendants</h2>
+<p>Un logiciel peut se bloquer. C'est pourquoi la sécurité ne repose jamais sur un seul élément :</p>
+<ol class="trxr-layers">
+  <li><div><h3>La page ou l'application</h3><p>Elle n'envoie de son micro que pendant l'émission confirmée, coupe quand elle est masquée et vous alerte par un son si la liaison se dégrade.</p></div></li>
+  <li><div><h3>La passerelle de la station</h3><p>Elle décide de l'émission et applique la durée maximale, les signaux de vie, les bandes, les modes et le verrou d'opérateur.</p></div></li>
+  <li><div><h3>Le superviseur, totalement indépendant</h3><p>Il interroge le poste directement, sans passer par la passerelle. Il coupe l'émission si elle dure trop, si la passerelle ne répond plus ou si le poste émet sans raison connue. Il relance ensuite ce qui est bloqué. Si rien n'y fait, il met la station en <strong>mode sûr</strong> : réception seule, accès coupé, jusqu'à votre intervention. Sur un PC de bureau, il ne redémarre jamais l'ordinateur de lui-même.</p></div></li>
+  <li><div><h3>Le poste lui-même</h3><p>Nous demandons d'activer sa propre minuterie d'émission (TOT) : une dernière barrière, indépendante de tout ordinateur.</p></div></li>
+</ol>
+
+<h2>Votre station n'est pas ouverte à tous</h2>
+<div class="trxr-grid">
+  <div class="trxr-card"><h3>Identifiant et mot de passe</h3><p>Chaque utilisateur a son compte. Les mots de passe ne sont jamais stockés en clair, seulement sous forme d'empreinte. La page web ne les mémorise pas.</p></div>
+  <div class="trxr-card"><h3>Essais répétés freinés</h3><p>Les tentatives de connexion répétées sont ralenties, par adresse et par compte : deviner un mot de passe devient très long.</p></div>
+  <div class="trxr-card"><h3>Chiffrement obligatoire</h3><p>Si la station est accessible depuis le réseau, l'accès doit être chiffré (HTTPS). Sinon, il refuse de démarrer et la station reste en réception seule. Vous choisissez librement votre mode d'accès, avec ou sans VPN.</p></div>
+  <div class="trxr-card"><h3>Le pilotage du poste reste interne</h3><p>Le programme qui commande directement le poste n'est jamais accessible depuis le réseau. Tout passe par la passerelle, qui filtre chaque commande.</p></div>
+</div>
+
+<h2>Des mises à jour dignes de confiance</h2>
+<p>Chaque mise à jour est <strong>signée numériquement</strong> par l'équipe TRX Remote. La station vérifie la signature avant d'installer quoi que ce soit, et refuse un paquet modifié ou ancien présenté comme récent.</p>
+<p>Une mise à jour ne s'installe jamais pendant une émission, ni en cas de doute sur l'état du poste. La version précédente est conservée : un retour en arrière est possible, même sans Internet.</p>
+
+<h2>Le spectre du poste, sans risque pour l'émission</h2>
+<p>Sur les postes qui le permettent, le spectre (waterfall) passe par un second port, distinct de celui qui commande l'émission. Ce port :</p>
+<ul>
+  <li>ne s'ouvre qu'en réception ;</li>
+  <li>est surveillé à son ouverture : s'il déclenchait une émission, il serait refermé aussitôt, l'émission coupée et le spectre désactivé ;</li>
+  <li>n'accepte qu'une liste fermée de commandes, sans aucune commande d'émission.</li>
+</ul>
+<p>Au moindre problème, la station continue sans spectre et vous prévient.</p>
+
+<h2>Éprouvé, pas seulement promis</h2>
+<p>Chaque sécurité est accompagnée d'essais de panne automatiques, rejoués à chaque modification. Ils simulent une coupure du signal de vie, un dépassement de durée, une déconnexion ou une passerelle figée. Les tests se font sur un poste simulé. Sur un vrai poste (Icom IC-7300MK2, sur charge fictive), trois pannes ont aussi été provoquées : passerelle gelée, superviseur arrêté, téléphone perdu. Chaque fois, le poste est revenu en réception.</p>
+
+<div class="trxr-card trxr-note">
+<h3>Ce qui reste de votre responsabilité</h3>
+<ul>
+  <li>Respecter votre licence et la réglementation, y compris pour le trafic à distance.</li>
+  <li>Activer la minuterie d'émission interne de votre poste, et vérifier antenne ou charge.</li>
+  <li>Ne pas manipuler l'émission en conduisant. Un mode « conduite » est prévu dans l'application Android.</li>
+  <li>Garder vos mots de passe pour vous, et mettre à jour votre station.</li>
+</ul>
+<p>Sachez aussi qu'une page web ne peut pas émettre en arrière-plan : quitter la page coupe l'émission. C'est voulu. Enfin, selon votre box ou votre opérateur, l'audio à distance peut demander un VPN.</p>
+</div>
+
+</div>

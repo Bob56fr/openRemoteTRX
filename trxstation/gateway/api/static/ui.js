@@ -109,6 +109,7 @@
     gridCanvas.width = WF_W; gridCanvas.height = SPEC_H + FALL_H;
     const specCtx = specCanvas.getContext("2d"), fallCtx = fallCanvas.getContext("2d"), gridCtx = gridCanvas.getContext("2d");
     let rowImage = null;
+    let hfVfo = false, hfDrag = null;                // accord au doigt (bouton VFO), éteint à chaque ouverture
     let hfVisible = false, hfLast = null, hfRow = null, hfFreqHz = null, hfFull = false, hfFloor = null, hfLine = 2, hfValues = null;
     let hfSettings = hfx ? hfx.normalizeSettings(safeJson(store.get("trx.hf", "null"))) : { gain: 0, range: 40 };
     const hfSpec = $("hf-spec"), hfFall = $("hf-fall"), hfGrid = $("hf-grid");
@@ -714,6 +715,7 @@
       if (on === hfVisible) return;
       hfVisible = on;
       $("hfscope").hidden = !on;
+      setVfo(false);
       if (on) {
         hfLast = null; $("hf-wait").hidden = false; $("hf-marker").hidden = true; $("hf-axis").textContent = ""; $("hf-info").textContent = "";
         hfTexts(); enterFullscreen();
@@ -732,8 +734,16 @@
       $("hf-tx").hidden = !transmitting;
       $("hf-tx").textContent = v.mine ? "ÉMISSION EN COURS" : "ÉMISSION (" + (v.owner || "?") + ")";
       $("hf-stop").disabled = !v.connected;
+      if (transmitting || !v.connected) setVfo(false);                            // jamais d'accord pendant l'émission
+      $("hf-vfo").disabled = !v.connected || transmitting || !!v.controlsLocked;
       hfRigSettings(v.connected && !transmitting);
       hfMarker();
+    }
+    function setVfo(on) {
+      hfVfo = !!on;
+      hfDrag = null;
+      $("hf-vfo").className = "chip" + (hfVfo ? " on" : "");
+      $("hf-plot").className = "hf-plot" + (hfVfo ? " tuning" : "");
     }
     function hfRigSettings(enabled) {
       /* Réglages du poste, tels que relus par la station ; verrouillés pendant l'émission ou s'ils sont inconnus. */
@@ -773,7 +783,26 @@
     }
     $("txzone").addEventListener("click", toggleWaterfall);
     $("wf-plot").addEventListener("click", toggleWaterfall);
-    $("hf-plot").addEventListener("click", toggleWaterfall);
+    $("hf-plot").addEventListener("click", () => { if (!hfVfo) toggleWaterfall(); });   // VFO allumé : un appui ne ferme pas la vue
+    $("hf-vfo").addEventListener("click", () => setVfo(!hfVfo));
+    $("hf-plot").addEventListener("pointerdown", (ev) => {
+      if (!hfVfo || frequencyLocked() || !hfLast) return;
+      const span = hfLast.highHz - hfLast.lowHz;
+      hfDrag = { id: ev.pointerId, startX: ev.clientX, applied: 0, span: span, step: hfx.tuneStep(span),
+                 width: $("hf-plot").clientWidth || hfSpec.width };
+      if ($("hf-plot").setPointerCapture) { try { $("hf-plot").setPointerCapture(ev.pointerId); } catch (e) { /* capture indisponible */ } }
+      if (ev.preventDefault) ev.preventDefault();
+    });
+    $("hf-plot").addEventListener("pointermove", (ev) => {
+      if (!hfDrag || ev.pointerId !== hfDrag.id) return;
+      if (frequencyLocked()) { hfDrag = null; return; }                           // l'émission a commencé pendant le geste
+      const steps = hfx.dragSteps(ev.clientX - hfDrag.startX, hfDrag.width, hfDrag.span, hfDrag.step);
+      if (steps !== hfDrag.applied) {
+        client.nudgeFrequency(hfDrag.step, steps - hfDrag.applied);               // affichage immédiat, UNE commande après le geste
+        hfDrag.applied = steps;
+      }
+    });
+    for (const type of ["pointerup", "pointercancel"]) $("hf-plot").addEventListener(type, () => { hfDrag = null; });
     $("hf-close").addEventListener("click", () => showZone("tx"));
     const hfSettingsNow = () => (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
     $("hf-set-mode").addEventListener("click", () => hfSet("mode", hfx.nextMode(hfSettingsNow().mode)));
