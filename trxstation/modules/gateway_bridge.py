@@ -30,6 +30,7 @@ from .registry import selected_manifests
 log = logging.getLogger(__name__)
 
 MIN_QSY_HZ, MAX_QSY_HZ = 100_000, 3_000_000_000
+RETAIN_MAX = 500                    # messages retenus par module (instantané + changements) pour les clients qui arrivent
 _MODE_RE = re.compile(r"[A-Za-z0-9\-]{1,16}")
 
 
@@ -45,6 +46,7 @@ class ModuleBridge:
         self._last_ptt: str | None = None
         self._last_freq_mode: tuple | None = None
         self._last_connected: bool | None = None
+        self._retained: dict[str, list[dict]] = {}
 
     # ------------------------------------------------------------- cycle de vie
     async def start(self) -> bool:
@@ -142,9 +144,38 @@ class ModuleBridge:
 
     # ------------------------------------------------------------- vers les clients
     def to_clients(self, module: str, message: dict) -> None:
+        """Relaie un message de module aux pages.
+
+        `scope: "hf_view"` : seulement aux clients qui affichent la vue HF (données mobiles).
+        `retain: "snapshot"|"delta"` : le dernier instantané et les changements qui l'ont suivi sont gardés
+        et rejoués au client qui ouvre la vue (il voit tout de suite les spots, sans attendre le suivant).
+        """
         payload = {"type": "module", "module": module, "data": message}
+        retain = message.get("retain")
+        if retain == "snapshot":
+            self._retained[module] = [payload]
+        elif retain == "delta" and module in self._retained:
+            if len(self._retained[module]) >= RETAIN_MAX:
+                del self._retained[module]           # trop de changements : le prochain instantané reprendra
+            else:
+                self._retained[module].append(payload)
+        only_hf = message.get("scope") == "hf_view"
         for session in list(self.clients()):
+            if only_hf and not getattr(session, "hf_view", False):
+                continue
             try:
                 session.send(payload)
             except Exception:
                 log.exception("message du module %s non transmis", module)
+
+    def on_hf_view(self, session, opened: bool) -> None:
+        """Un client ouvre la vue HF : lui renvoyer les messages retenus (instantané puis changements)."""
+        if not opened:
+            return
+        for payloads in list(self._retained.values()):
+            for payload in payloads:
+                try:
+                    session.send(payload)
+                except Exception:
+                    log.exception("rejeu vers un client impossible")
+                    return

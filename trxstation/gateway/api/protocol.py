@@ -5,7 +5,8 @@ Client -> passerelle : {"cmd": <nom>, "id": <entier optionnel : numéro de la RE
 Passerelle -> client : {"type": "hello"|"state"|"result"|"error", ...}
 Spectre HF : `hello.spectrum` = {source, level_max, max_fps} ou null ; `state.spectrum` = {state, code, message} ;
 balayages en BINAIRE sur un second canal « spectrum » ouvert par le client (non ordonné, maxRetransmits 0),
-format dans trxstation/spectrum/frame.py ; la passerelle n'y lit rien.
+format dans trxstation/spectrum/frame.py ; la passerelle n'y lit rien. Les balayages ne partent QUE pendant que
+le client affiche la vue HF : `spectrum_watch {on: true}` à l'ouverture, `{on: false}` à la fermeture (défaut : rien).
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ LAYOUT_SAVE_PREFIX = '{"cmd":"layout_save"'
 MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_state",
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
-            "layout_get", "layout_save", "layout_reset", "spectrum_set")
+            "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set")
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed")   # valeurs vérifiées par la liste fermée de spectrum/civ.py
 
 
@@ -130,6 +131,17 @@ def parse_command(raw: str | bytes) -> Command:
         else:
             value = float(value)
         params["name"], params["value"] = setting, value
+    elif name == "beeps_set":
+        from ..audio.beeps import validate_changes
+        changes = {k: v for k, v in data.items() if k not in ("cmd", "id")}
+        try:
+            params.update(validate_changes(changes))     # liste FERMÉE de réglages et de valeurs
+        except ValueError as exc:
+            raise ProtocolError("invalid_params", str(exc)) from exc
+    elif name == "spectrum_watch":
+        if not isinstance(data.get("on"), bool):
+            raise ProtocolError("invalid_params", "on doit valoir true ou false")
+        params["on"] = data["on"]
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

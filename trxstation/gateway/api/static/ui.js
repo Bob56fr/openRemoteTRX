@@ -8,6 +8,7 @@
   const wf = root.TrxWaterfall;
   if (!wf) return;
   const hfx = root.TrxHfScope || null;              // spectre HF du poste (hfscope.js) ; sans lui, la zone ne propose que puissance et audio
+  const sp = root.TrxSpots || null;                 // spots du Cluster DX sur le spectre HF (spots.js) ; sans lui, pas de marqueurs
   const lay = root.TrxLayout || null;                // mises en page personnalisées (layout.js) ; sans lui, la page reste celle d'usine
 
   const $ = (id) => document.getElementById(id);
@@ -113,6 +114,8 @@
     let hfVisible = false, hfLast = null, hfRow = null, hfFreqHz = null, hfFull = false, hfFloor = null, hfLine = 2, hfValues = null;
     let hfSettings = hfx ? hfx.normalizeSettings(safeJson(store.get("trx.hf", "null"))) : { gain: 0, range: 40 };
     const hfSpec = $("hf-spec"), hfFall = $("hf-fall"), hfGrid = $("hf-grid");
+    const spotBook = sp ? new sp.SpotBook() : null;
+    let spotsOn = store.get("trx.spots", "1") !== "0", spotTimer = null, spotCardId = null, spotListIds = null, spotSort = "freq";
     const hfSpecCtx = hfSpec.getContext("2d"), hfFallCtx = hfFall.getContext("2d"), hfGridCtx = hfGrid.getContext("2d");
     let layout = null, profile = null, profileSource = "factory", profileVersion = 0, planKey = "";
 
@@ -250,6 +253,65 @@
         delay += alertDurationMs(kind) + 900;
       }
     });
+    // ---- bips de fin d'émission (réglage de la STATION ; l'écoute ici n'émet rien)
+    const TONE_LABELS = { duo: "deux tons montants" };
+    let beepSettings = null;
+    function playSequence(seq) {
+      /* Segments [Hz, ms] (0 Hz = silence), sur le haut-parleur du téléphone ; jamais sur la sortie du poste. */
+      if (outputIsRig || !Array.isArray(seq)) return;
+      const ctx = alertContext();
+      if (!ctx || !ctx.createOscillator) return;
+      let t = ctx.currentTime + 0.02;
+      for (const [hz, ms] of seq) {
+        const end = t + ms / 1000;
+        if (hz > 0) {
+          const osc = ctx.createOscillator(), env = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = hz;
+          env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(0.35, t + 0.005);
+          env.gain.setValueAtTime(0.35, Math.max(t + 0.005, end - 0.005)); env.gain.linearRampToValueAtTime(0, end);
+          osc.connect(env); env.connect(ctx.destination);
+          osc.start(t); osc.stop(end + 0.02);
+        }
+        t = end;
+      }
+    }
+    function renderBeeps(settings) {
+      beepSettings = settings;
+      const ok = !!settings && connectedFlag;
+      for (const id of ["roger-on", "roger-tone", "roger-pattern", "roger-preview", "lost-on", "lost-preview"]) $(id).disabled = !ok;
+      if (!settings) {
+        $("beeps-note").textContent = connectedFlag ? "Cette station ne propose pas les bips de fin." : "";
+        return;
+      }
+      const tone = $("roger-tone"), pattern = $("roger-pattern");
+      if (tone.options.length !== (settings.tones || []).length) {
+        tone.textContent = "";
+        for (const t of settings.tones || []) tone.appendChild(Object.assign(el("option", "", TONE_LABELS[t] || t + " Hz"), { value: t }));
+      }
+      if (pattern.options.length !== (settings.patterns || []).length) {
+        pattern.textContent = "";
+        for (const n of settings.patterns || []) pattern.appendChild(Object.assign(el("option", "", n + (n > 1 ? " bips" : " bip")), { value: String(n) }));
+      }
+      $("roger-on").checked = !!settings.roger_enabled; $("lost-on").checked = !!settings.link_lost_enabled;
+      tone.value = settings.roger_tone; pattern.value = String(settings.roger_pattern);
+      $("beeps-note").textContent = settings.link_lost_enabled
+        ? "Bip de liaison perdue ACTIF : si la liaison tombe pendant votre émission, la station émet trois tons descendants avant de couper (émission automatique, sous votre responsabilité)."
+        : "";
+    }
+    function setBeeps(changes) { client.setBeeps(changes).catch(fail).finally(() => renderBeeps(client.beeps || beepSettings)); }
+    $("roger-on").addEventListener("change", (ev) => setBeeps({ roger_enabled: !!ev.target.checked }));
+    $("roger-tone").addEventListener("change", (ev) => setBeeps({ roger_tone: ev.target.value }));
+    $("roger-pattern").addEventListener("change", (ev) => setBeeps({ roger_pattern: Number(ev.target.value) }));
+    $("lost-on").addEventListener("change", (ev) => {
+      const on = !!ev.target.checked;
+      const ask = typeof window.confirm === "function" ? window.confirm : () => true;
+      if (on && !ask("Ce bip est ÉMIS par la station quand la liaison avec ce téléphone tombe pendant votre émission : "
+                     + "une émission automatique de 0,4 s, sous votre responsabilité. L'activer ?")) { ev.target.checked = false; return; }
+      setBeeps({ link_lost_enabled: on });
+    });
+    $("roger-preview").addEventListener("click", () => { if (beepSettings) playSequence(beepSettings.roger_sequence); });
+    $("lost-preview").addEventListener("click", () => { if (beepSettings) playSequence(beepSettings.link_lost_sequence); });
+
     const showNet = () => { $("net").textContent = [rttText, statsText].filter(Boolean).join(" · ") || "—"; };
 
     // ---- mémoires
@@ -664,8 +726,10 @@
       if (!hfx || !frame || !frame.points || !frame.points.length) return;
       const n = frame.points.length, gain = hfSettings.gain;
       const resized = hfResize(n);
-      if (resized || !hfx.sameScale(hfLast, frame)) { hfDrawGrid(frame); hfResetFall(); }   // autre taille, largeur ou bande : historique effacé
+      const rescaled = resized || !hfx.sameScale(hfLast, frame);
+      if (rescaled) { hfDrawGrid(frame); hfResetFall(); }   // autre taille, largeur ou bande : historique effacé
       hfLast = frame;
+      if (rescaled) drawSpots();
       $("hf-wait").hidden = true;
       const win = hfx.colorWindow(frame.points, hfLevelMax(), hfSettings.range, hfFloor);
       hfFloor = win.floor;
@@ -716,6 +780,11 @@
       hfVisible = on;
       $("hfscope").hidden = !on;
       setVfo(false);
+      client.watchSpectrum(on);                                                  // balayages reçus seulement vue ouverte
+      if (spotBook) spotBook.clear();                                            // la station rejoue les spots à l'ouverture
+      closeSpotCard(); closeSpotList(); drawSpots();
+      if (spotTimer !== null) { clearInterval(spotTimer); spotTimer = null; }
+      if (on && sp) spotTimer = setInterval(() => { drawSpots(); refreshSpotCard(); }, 15000);   // âges et estompage
       if (on) {
         hfLast = null; $("hf-wait").hidden = false; $("hf-marker").hidden = true; $("hf-axis").textContent = ""; $("hf-info").textContent = "";
         hfTexts(); enterFullscreen();
@@ -738,6 +807,7 @@
       $("hf-vfo").disabled = !v.connected || transmitting || !!v.controlsLocked;
       hfRigSettings(v.connected && !transmitting);
       hfMarker();
+      refreshSpotCard();
     }
     function setVfo(on) {
       hfVfo = !!on;
@@ -761,6 +831,110 @@
       if (value === null || value === undefined) return;
       client.setSpectrum(name, value).then(() => { if (lastView) hfState(lastView, lastView.pttState !== "RX"); }).catch(fail);
     }
+
+    // ---- spots du Cluster DX : marqueurs, fiche, QSY, liste (la station n'envoie que la bande courante, vue ouverte)
+    function spotsKnown() { $("hf-spots").hidden = $("hf-list").hidden = !sp; }
+    function spotTexts() { $("hf-spots").className = "chip" + (spotsOn ? " on" : ""); }
+    function drawSpots() {
+      const layer = $("hf-spot-layer");
+      layer.textContent = "";
+      if (!sp || !spotBook || !hfVisible || !hfLast || !spotsOn) return;
+      const now = Date.now(), visible = spotBook.visible(hfLast.lowHz, hfLast.highHz);
+      const width = layer.clientWidth || $("hf-plot").clientWidth || hfGrid.width / (window.devicePixelRatio || 1) || 0;
+      const span = hfLast.highHz - hfLast.lowHz;
+      for (const s of visible) {
+        const line = el("div", "spot-line k-" + s.kind);
+        line.style.left = (((s.hz - hfLast.lowHz) / span) * 100).toFixed(2) + "%";
+        line.style.opacity = String(sp.opacity(sp.ageSeconds(s, now)) * 0.7);
+        layer.appendChild(line);
+      }
+      const rowPx = 18;
+      for (const tag of sp.layoutLabels(visible, hfLast.lowHz, hfLast.highHz, width, { rows: 3, charPx: 7, padPx: 12 })) {
+        const first = spotBook.get(tag.ids[0]);
+        const age = first ? sp.ageSeconds(first, now) : 0;
+        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")
+                                    + (!tag.group && age <= sp.FRESH_S ? " fresh" : ""), tag.text);
+        button.style.left = tag.x.toFixed(1) + "px";
+        button.style.top = (2 + tag.row * rowPx) + "px";
+        if (!tag.group) button.style.opacity = String(sp.opacity(age));
+        button.title = tag.group ? tag.ids.length + " spots proches : liste" : (first ? first.dx + " " + first.khz.toFixed(1) + " kHz" : "");
+        const ids = tag.ids.slice();
+        button.addEventListener("pointerdown", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });   // ni accord au doigt, ni fermeture de la vue
+        button.addEventListener("click", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); if (ids.length > 1) openSpotList(ids); else openSpotCard(ids[0]); });
+        layer.appendChild(button);
+      }
+    }
+    function openSpotCard(id) {
+      spotCardId = id; $("spot-list").hidden = true; $("spot-card").hidden = false; $("spot-note").textContent = "";
+      refreshSpotCard();
+    }
+    function closeSpotCard() { spotCardId = null; $("spot-card").hidden = true; }
+    function refreshSpotCard() {
+      if (!sp || spotCardId === null || $("spot-card").hidden) return;
+      const s = spotBook.get(spotCardId);
+      const locked = frequencyLocked();
+      if (!s) { $("spot-qsy").disabled = true; $("spot-note").textContent = "Spot expiré ou hors de la bande."; return; }
+      $("spot-dx").textContent = s.dx;
+      $("spot-kind").textContent = sp.kindLabel(s.kind) + (s.count > 1 ? " · " + s.count + " spotteurs" : "");
+      $("spot-freq").textContent = s.khz.toFixed(1) + " kHz · " + sp.modeLabel(s);
+      $("spot-info").textContent = [s.country ? s.country + (s.continent ? " (" + s.continent + ")" : "") : "",
+                                    "de " + (s.de || "?"), (s.time ? s.time.slice(0, 2) + ":" + s.time.slice(2) + " UTC" : ""),
+                                    sp.ageLabel(sp.ageSeconds(s, Date.now()))].filter(Boolean).join(" · ");
+      $("spot-comment").textContent = s.comment;
+      $("spot-qsy").disabled = locked;
+      $("spot-qsy").title = locked ? "QSY impossible : émission en cours ou station déconnectée" : "Mettre le poste sur ce spot";
+    }
+    function spotQsy() {
+      const s = spotCardId === null ? null : spotBook.get(spotCardId);
+      if (!s || frequencyLocked()) return;
+      const target = sp.qsyTarget(s, (mode) => client.adaptSpotMode(mode));
+      $("spot-qsy").disabled = true; $("spot-note").textContent = "QSY en cours…";
+      client.qsy(target.hz, target.mode).then((res) => {
+        if (res && res.ok) { ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", ""); closeSpotCard(); }
+        else { $("spot-note").textContent = "QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."); refreshSpotCard(); }
+      }).catch((err) => { $("spot-note").textContent = "QSY impossible : " + err.message; refreshSpotCard(); });
+    }
+    function openSpotList(ids) {
+      spotListIds = ids || null; closeSpotCard(); $("spot-list").hidden = false;
+      renderSpotList();
+    }
+    function closeSpotList() { spotListIds = null; $("spot-list").hidden = true; }
+    function renderSpotList() {
+      if (!sp || $("spot-list").hidden) return;
+      const now = Date.now();
+      const all = spotListIds ? spotListIds.map((id) => spotBook.get(id)).filter(Boolean) : spotBook.all();
+      $("spot-sort").textContent = "Tri : " + (spotSort === "age" ? "âge" : "fréquence");
+      $("spot-list-title").textContent = (spotListIds ? "Spots proches" : "Spots de la bande") + " (" + all.length + ")";
+      const box = $("spot-items");
+      box.textContent = "";
+      if (!all.length) { box.appendChild(el("div", "hf-info", "Aucun spot pour l'instant.")); return; }
+      for (const s of sp.sortList(all, spotSort, now)) {
+        const item = el("button", "", s.khz.toFixed(1) + "  " + s.dx + "  " + (s.mode || "?") + "  " + sp.ageLabel(sp.ageSeconds(s, now))
+                                      + (s.kind !== "cluster" ? "  [" + sp.kindLabel(s.kind) + "]" : ""));
+        item.addEventListener("click", () => openSpotCard(s.id));
+        box.appendChild(item);
+      }
+    }
+    function onSpots(data) {
+      if (!sp || !spotBook) return;
+      spotsKnown();
+      if (!spotBook.apply(data, Date.now())) return;
+      drawSpots(); refreshSpotCard(); renderSpotList();
+    }
+    function onClusterHealth(state) {
+      const dot = $("hf-cluster");
+      dot.hidden = false;
+      dot.className = "cluster-dot " + (["green", "orange", "red"].includes(state) ? state : "");
+      dot.title = sp ? sp.healthLabel(state) : "Cluster DX";
+      spotsKnown();
+    }
+    $("hf-spots").addEventListener("click", () => { spotsOn = !spotsOn; store.set("trx.spots", spotsOn ? "1" : "0"); spotTexts(); drawSpots(); });
+    $("hf-list").addEventListener("click", () => { if ($("spot-list").hidden) openSpotList(null); else closeSpotList(); });
+    $("spot-close").addEventListener("click", closeSpotCard);
+    $("spot-qsy").addEventListener("click", spotQsy);
+    $("spot-list-close").addEventListener("click", closeSpotList);
+    $("spot-sort").addEventListener("click", () => { spotSort = spotSort === "age" ? "freq" : "age"; renderSpotList(); });
+    spotTexts();
 
     function setupAnalysis(stream) {
       const Context = window.AudioContext || window.webkitAudioContext;
@@ -888,6 +1062,9 @@
       losses(list) { renderLosses(list); },
       lossRecorded() { /* l'écran se met à jour via losses(list) */ },
       linkAlert(kind) { playLinkAlert(kind); },
+      spots(data) { onSpots(data); },
+      beeps(settings) { renderBeeps(settings); },
+      clusterHealth(state) { onClusterHealth(state); },
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
@@ -906,6 +1083,8 @@
           for (const button of bandButtons.values()) button.disabled = true;
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
           if (hfVisible) showZone("tx");
+          if (spotBook) { spotBook.clear(); closeSpotCard(); closeSpotList(); drawSpots(); }
+          renderBeeps(null);
         }
       },
       state(v) {

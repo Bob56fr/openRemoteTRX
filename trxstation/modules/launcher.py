@@ -90,7 +90,8 @@ class ModuleLauncher:
                  notify: Notify | None = None, poll_s: float = 0.5,
                  run_as: str = "", is_root: Callable[[], bool] = _is_root,
                  user_exists: Callable[[str], bool] = _user_exists,
-                 command_override: Callable[[Manifest], list[str]] | None = None) -> None:
+                 command_override: Callable[[Manifest], list[str]] | None = None,
+                 extra_env: dict[str, str] | None = None) -> None:
         # secrets : dictionnaire, ou fonction qui le renvoie (None tant que la
         # clé des modules n'existe pas : les lancements attendent).
         self._secrets_source: SecretsSource = secrets if callable(secrets) else (lambda: secrets)
@@ -106,6 +107,7 @@ class ModuleLauncher:
         self.notify = notify
         self.poll_s = poll_s
         self.command_override = command_override
+        self.extra_env = dict(extra_env or {})          # ex. TRX_CONFIG_PATH (jamais de secret ici)
         self.modules: dict[str, ModuleProcess] = {}
         for m in manifests:
             mp = ModuleProcess(manifest=m)
@@ -129,6 +131,7 @@ class ModuleLauncher:
                     "TRX_BUS_HOST": self.bus_host,
                     "TRX_BUS_PORT": str(self.bus_port),
                     "PYTHONUNBUFFERED": "1"})
+        env.update(self.extra_env)
         return env
 
     def _refresh_secrets(self) -> bool:

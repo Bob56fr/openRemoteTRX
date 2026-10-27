@@ -219,6 +219,20 @@
         <label class="check"><input id="mute" type="checkbox"> Couper le son reçu</label>
         <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
         <div class="row between small"><span>Réception <b id="rx-level">—</b></span><span>Émission <b id="tx-level">—</b></span></div>
+        <div id="beeps-box" class="beeps">
+          <div class="dim small">Bips de fin d'émission — produits et ÉMIS par la station, réglage commun à tous les appareils.</div>
+          <label class="check"><input id="roger-on" type="checkbox" disabled> Roger bip quand je relâche le PTT</label>
+          <div class="row">
+            <label>Tonalité <select id="roger-tone" disabled></select></label>
+            <label>Motif <select id="roger-pattern" disabled></select></label>
+            <button id="roger-preview" disabled title="Joué ici seulement, jamais émis">Écouter</button>
+          </div>
+          <label class="check"><input id="lost-on" type="checkbox" disabled> Bip de liaison perdue (émis si la liaison tombe pendant mon émission)</label>
+          <div class="row">
+            <button id="lost-preview" disabled title="Joué ici seulement, jamais émis">Écouter le bip de liaison perdue</button>
+          </div>
+          <div id="beeps-note" class="dim small"></div>
+        </div>
       </div>
     </details>
 
@@ -305,6 +319,9 @@
     <span id="hf-tx" class="hf-tx" hidden>ÉMISSION EN COURS</span>
     <span id="hf-info" class="hf-info"></span>
     <span class="hf-actions">
+      <span id="hf-cluster" class="cluster-dot" hidden title="Cluster DX"></span>
+      <button id="hf-spots" class="chip" hidden title="Afficher ou masquer les spots du Cluster DX sur le spectre">SPOTS</button>
+      <button id="hf-list" class="chip" hidden title="Liste des spots de la bande">LISTE</button>
       <button id="hf-vfo" class="chip" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)">VFO</button>
       <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
       <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)">PLAGE 40 dB</button>
@@ -326,14 +343,37 @@
     <canvas id="hf-fall" class="hf-fall"></canvas>
     <canvas id="hf-grid" class="hf-grid"></canvas>
     <div id="hf-marker" class="hf-marker" hidden></div>
+    <div id="hf-spot-layer" class="hf-spots"></div>
     <div id="hf-wait" class="hf-wait">En attente du spectre du poste…</div>
   </div>
   <div id="hf-axis" class="hf-axis"></div>
+  <div id="spot-card" class="spot-card" hidden>
+    <div class="spot-head"><span id="spot-dx" class="spot-dx"></span><span id="spot-kind" class="spot-kind"></span></div>
+    <div id="spot-freq" class="spot-freq"></div>
+    <div id="spot-info" class="hf-info"></div>
+    <div id="spot-comment" class="spot-comment"></div>
+    <div class="row">
+      <button id="spot-qsy" class="primary" title="Mettre le poste sur la fréquence (et le mode) du spot ; refusé pendant l'émission">QSY</button>
+      <button id="spot-close">Fermer</button>
+    </div>
+    <div id="spot-note" class="hf-info"></div>
+  </div>
+  <div id="spot-list" class="spot-list" hidden>
+    <div class="hf-bar">
+      <span id="spot-list-title" class="spot-dx">Spots de la bande</span>
+      <span class="hf-actions">
+        <button id="spot-sort" class="chip">Tri : fréquence</button>
+        <button id="spot-list-close" class="chip">Fermer</button>
+      </span>
+    </div>
+    <div id="spot-items" class="spot-items"></div>
+  </div>
 </div>
 <audio id="rx-audio" autoplay playsinline></audio>
 <script src="client.js"></script>
 <script src="waterfall.js"></script>
 <script src="hfscope.js"></script>
+<script src="spots.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>
 </body>

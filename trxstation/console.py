@@ -2,7 +2,7 @@
 
 Un menu numéroté regroupe le diagnostic, l'assistant de configuration, le tableau de bord, l'essai du poste,
 le démarrage et l'arrêt des services, le journal, le rapport de dépannage, la sortie du mode sûr,
-la mise à jour (paquet signé, après confirmation) et le retour à la version précédente.
+la mise à jour (paquet signé, après confirmation), le retour à la version précédente et le Cluster DX.
 Les actions qui touchent au système passent par `sudo` : le mot de passe de session est demandé au besoin.
 
     trx-console               menu
@@ -86,6 +86,7 @@ class Console:
             ("9", "Sortir du mode sûr", self.clear_safe_mode),
             ("10", "Mise à jour de TRX distant", self.update),
             ("11", "Revenir à la version précédente", self.rollback),
+            ("12", "Cluster DX (spots suivis, sources, test)", self.cluster),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -134,6 +135,14 @@ class Console:
                 self.runner.run(["systemctl", "start", TARGET], admin=True)
             return
         if self.yes("Démarrer la station maintenant"):
+            self.start()
+
+    def cluster(self) -> None:
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        code = self.runner.run(self.module("trxstation.cluster.setup", "--config", str(self.config)), admin=True)
+        if code == 0 and self.station_running() and self.yes("Redémarrer la station pour appliquer"):
             self.start()
 
     def monitor(self) -> None:

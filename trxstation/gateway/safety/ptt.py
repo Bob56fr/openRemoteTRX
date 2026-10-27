@@ -11,6 +11,11 @@ Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :
     fréquence ou PTT retombé => coupure).
   * Changer fréquence ou mode est REFUSÉ tant que l'état n'est pas RX confirmé.
   * Le micro (porte audio) est coupé AVANT d'envoyer « PTT off ».
+  * Bips de fin (gateway/audio/beeps.py), désactivés par défaut : roger bip quand le PROPRIÉTAIRE relâche
+    lui-même ; bip de liaison perdue quand le terminal ne répond plus (battement, connexion fermée) —
+    EXCEPTION assumée au retour RX immédiat (décision de l'utilisateur). Seulement depuis TX confirmé,
+    jamais pour une autre coupure, durée bornée (TAIL_MAX_WAIT_S) ; toute coupure pendant le bip
+    (STOP, autre client, TOT...) l'interrompt net et coupe aussitôt.
   * Le retour en RX est insistant : on réessaie jusqu'à confirmation par relecture.
     L'état n'affiche RX qu'une fois le retour confirmé. Si cela échoue au-delà du
     délai, un défaut `unkey_failed` est verrouillé (effacement manuel, côté Pi) et le
@@ -31,6 +36,7 @@ from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigSt
 log = logging.getLogger(__name__)
 
 _CAT_ERRORS = (CatConnectionError, CatProtocolError, RigError, OSError)
+TAIL_MAX_WAIT_S = 1.2      # bip de fin : 0,6 s de son au plus + marge ; au-delà, on coupe quoi qu'il arrive
 
 
 class PttState(str, enum.Enum):
@@ -92,7 +98,7 @@ class PttSnapshot:
 
 class PttController:
     def __init__(self, link: CatLink, config: Config, *, limits: PttLimits | None = None,
-                 audio_gate: Callable[[bool], None] | None = None):
+                 audio_gate: Callable[[bool], None] | None = None, tail=None):
         self.link = link
         self.config = config
         self.limits = limits or PttLimits.from_config(config)
@@ -117,6 +123,8 @@ class PttController:
         self._starting = True               # tant que le RX de démarrage n'est pas confirmé
         self._closing = False
         self._listeners: list[Callable[[PttSnapshot], None]] = []
+        self.tail = tail                    # TailPlayer (bips de fin) ou None : aucun bip
+        self._tail_task: asyncio.Task | None = None
 
     # ------------------------------------------------------------------ état
 
@@ -195,7 +203,7 @@ class PttController:
     async def disconnect_client(self, client_id: str) -> None:
         self._clients.discard(client_id)
         if client_id == self._owner and self._state is not PttState.RX:
-            await self.force_rx("client_disconnected", by=client_id)
+            await self._end_with_tail("client_disconnected", "link_lost", by=client_id)
 
     def heartbeat(self, client_id: str) -> bool:
         """Battement du client propriétaire. Les battements des autres clients sont ignorés."""
@@ -209,7 +217,10 @@ class PttController:
     async def toggle(self, client_id: str) -> PttSnapshot:
         """RX -> prise d'émission (sous conditions). Autre état -> coupure, toujours acceptée."""
         if self._state is not PttState.RX:
-            await self.force_rx("toggle", by=client_id)
+            if self._state is PttState.TX and client_id == self._owner:
+                await self._end_with_tail("toggle", "roger", by=client_id)     # relâché par son propriétaire
+            else:
+                await self.force_rx("toggle", by=client_id)
             return self.snapshot()
         return await self._key(client_id)
 
@@ -217,6 +228,7 @@ class PttController:
         """Coupure. Jamais refusée, idempotente, envoie toujours « PTT off »."""
         log.warning("coupure PTT : %s (demandée par %s)", reason, by or "interne")
         self._epoch += 1               # annule toute prise d'émission en préparation
+        self._stop_tail()              # un bip de fin en cours s'arrête net
         self._audio_gate(False)        # micro coupé AVANT « PTT off »
         if self._state in (PttState.TX, PttState.KEYING):
             self._set_state(PttState.UNKEYING, "cutting")
@@ -225,6 +237,53 @@ class PttController:
             await asyncio.wait_for(asyncio.shield(task), self.limits.unkey_deadline_s + 0.5)
         except asyncio.TimeoutError:
             pass  # la coupure continue en tâche de fond ; l'état reste UNKEYING
+
+    def _stop_tail(self) -> None:
+        task, self._tail_task = self._tail_task, None
+        if task is not None and not task.done():
+            task.cancel()
+            if self.tail is not None:
+                self.tail.stop()       # ce qui attendait dans le tampon de lecture est jeté
+
+    async def _end_with_tail(self, reason: str, kind: str, by: str | None = None) -> None:
+        """Fin d'émission précédée d'un bip (roger ou liaison perdue) s'il est activé ; sinon coupure immédiate.
+
+        Seulement depuis TX CONFIRMÉ. Micro du client fermé AVANT le bip ; état UNKEYING pendant le bip
+        (affiché comme émission) ; borne TAIL_MAX_WAIT_S ; une coupure venue d'ailleurs pendant le bip
+        (STOP, TOT, autre client...) l'interrompt et coupe, et on ne recoupe pas derrière elle.
+        """
+        tail = self.tail
+        try:
+            wanted = tail is not None and tail.wanted(kind)
+        except Exception:
+            log.exception("réglages des bips illisibles : coupure sans bip")
+            wanted = False
+        if self._state is not PttState.TX or not wanted or self._tail_task is not None:
+            await self.force_rx(reason, by=by)
+            return
+        epoch = self._epoch
+        log.info("bip %s avant la coupure (%s)", kind, reason)
+        self._audio_gate(False)                       # micro du client fermé (et son reste jeté) AVANT le bip
+        self._set_state(PttState.UNKEYING, "tail")
+        task = asyncio.get_running_loop().create_task(tail.play(kind))
+        self._tail_task = task
+        try:
+            await asyncio.wait_for(asyncio.shield(task), TAIL_MAX_WAIT_S)
+        except asyncio.TimeoutError:
+            log.error("bip de fin trop long : coupure sans attendre")
+        except asyncio.CancelledError:
+            if task.cancelled():
+                pass                                  # interrompu par une coupure (force_rx)
+            else:
+                # C'est l'appelant qui est annulé (fermeture de connexion, arrêt d'une tâche) : le chien de
+                # garde ne surveille plus (état UNKEYING), la coupure part donc quand même, en tâche à part.
+                if self._epoch == epoch:
+                    self._spawn(self.force_rx(reason, by=by))
+                raise
+        except Exception:
+            log.exception("bip de fin en erreur : coupure")
+        if self._epoch == epoch:                      # personne n'a coupé pendant le bip : on coupe maintenant
+            await self.force_rx(reason, by=by)
 
     async def set_frequency(self, hz: int) -> None:
         async with self._tx_lock:
@@ -358,7 +417,7 @@ class PttController:
                 await self.force_rx("tot", by="chien de garde")
                 return
             if now - self._last_heartbeat > lim.heartbeat_timeout_s:
-                await self.force_rx("heartbeat", by="chien de garde")
+                await self._end_with_tail("heartbeat", "link_lost", by="chien de garde")
                 return
             if not self._warning and elapsed >= lim.tot_s - lim.warn_before_s:
                 self._warning = True

@@ -110,7 +110,13 @@ def test_spectrum_channel_end_to_end():
         async with Loopback(spectrum=spectrum) as lb:
             phone = FakeClient(lb.url, "phone", PASSWORDS["phone"])
             await phone.connect()
+            await until(lambda: phone.state is not None, 5)                   # connect() n'attend que « hello »
             assert phone.hello["spectrum"]["level_max"] == 160 and phone.state["spectrum"]["state"] == "ok"
+            for n in range(5):                                                # vue HF fermée : aucun balayage envoyé
+                spectrum.emit(n)
+                await asyncio.sleep(0.06)
+            assert phone.spectrum_frames == []
+            assert (await phone.command("spectrum_watch", on=True))["ok"]
             for n in range(40):
                 spectrum.emit(n)
                 await asyncio.sleep(0.06)
@@ -120,6 +126,12 @@ def test_spectrum_channel_end_to_end():
             frame = phone.spectrum_frames[-1]
             assert frame[0] == 1 and len(frame) == 16 + 475
             assert int.from_bytes(frame[8:12], "little") == 14_000_000
+            assert (await phone.command("spectrum_watch", on=False))["ok"]
+            count = len(phone.spectrum_frames)
+            for n in range(5):
+                spectrum.emit(n)
+                await asyncio.sleep(0.06)
+            assert len(phone.spectrum_frames) <= count + 1                    # au plus une trame déjà en route
             await phone.close()
             await until(lambda: len(lb.manager.fanout) == 0, 5)               # client parti : plus d'envoi
     asyncio.run(asyncio.wait_for(scenario(), 60))

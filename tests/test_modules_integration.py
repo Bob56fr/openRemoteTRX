@@ -83,11 +83,11 @@ def make_cfg(tmp_path, run=("demo",), extra=True):
     cfg.rig.model = cfgmod.DUMMY_MODEL
     cfg.supervisor.state_dir = str(tmp_path / "etat")
     cfg.modules.run = list(run)
-    if extra:                                      # module « cluster » avec le droit de QSY
-        folder = tmp_path / "extra" / "cluster"
+    if extra:                                      # module « qsyfactice » avec le droit de QSY
+        folder = tmp_path / "extra" / "qsyfactice"
         folder.mkdir(parents=True)
         (folder / "manifest.toml").write_text(
-            '[module]\nname = "cluster"\nversion = "0.1.0"\napi = "1.0"\nentry = "x.y"\n'
+            '[module]\nname = "qsyfactice"\nversion = "0.1.0"\napi = "1.0"\nentry = "x.y"\n'
             '[rights]\nevents = ["ptt", "freq_mode"]\ncommands = ["qsy"]\nclient_messages = true\n',
             encoding="utf-8")
         cfg.modules.extra_dir = str(tmp_path / "extra")
@@ -160,10 +160,10 @@ def test_evenements_ptt_frequence_et_poste_publies(tmp_path):
 
 def test_qsy_passe_par_le_ptt_controller(tmp_path):
     async def scenario():
-        cfg, ctrl = make_cfg(tmp_path, run=("cluster",)), FakeCtrl()
+        cfg, ctrl = make_cfg(tmp_path, run=("qsyfactice",)), FakeCtrl()
         bridge = ModuleBridge(cfg, ctrl, FakeLink(), port=0)
         assert await bridge.start()
-        client, task = await connect(bridge, cfg, "cluster")
+        client, task = await connect(bridge, cfg, "qsyfactice")
         assert await client.command("qsy", freq=7_074_000, mode="PKTLSB") == {"freq": 7_074_000, "mode": "PKTLSB"}
         assert ctrl.calls == [("mode", "PKTLSB"), ("freq", 7_074_000)]
         ctrl.calls.clear()
@@ -175,10 +175,10 @@ def test_qsy_passe_par_le_ptt_controller(tmp_path):
 
 def test_qsy_refuse_pendant_lemission_et_refus_du_controleur_transmis(tmp_path):
     async def scenario():
-        cfg, ctrl = make_cfg(tmp_path, run=("cluster",)), FakeCtrl()
+        cfg, ctrl = make_cfg(tmp_path, run=("qsyfactice",)), FakeCtrl()
         bridge = ModuleBridge(cfg, ctrl, FakeLink(), port=0)
         assert await bridge.start()
-        client, task = await connect(bridge, cfg, "cluster")
+        client, task = await connect(bridge, cfg, "qsyfactice")
         for state in ("KEYING", "TX", "UNKEYING"):
             ctrl.set_ptt(state)
             with pytest.raises(RequestFailed) as exc:
@@ -198,10 +198,10 @@ def test_qsy_refuse_pendant_lemission_et_refus_du_controleur_transmis(tmp_path):
                                     {"freq": 7_074_000, "mode": "USB;rm"}, {}])
 def test_qsy_parametres_invalides(tmp_path, params):
     async def scenario():
-        cfg, ctrl = make_cfg(tmp_path, run=("cluster",)), FakeCtrl()
+        cfg, ctrl = make_cfg(tmp_path, run=("qsyfactice",)), FakeCtrl()
         bridge = ModuleBridge(cfg, ctrl, FakeLink(), port=0)
         assert await bridge.start()
-        client, task = await connect(bridge, cfg, "cluster")
+        client, task = await connect(bridge, cfg, "qsyfactice")
         with pytest.raises(RequestFailed) as exc:
             await client.command("qsy", **params)
         assert exc.value.code == "invalid" and ctrl.calls == []

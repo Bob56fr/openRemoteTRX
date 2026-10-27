@@ -1,0 +1,26 @@
+# Module Cluster DX (étape 28) : spots des clusters DX, du RBN et des cibistes.
+# AUCUN droit sur le poste : ni PTT, ni QSY (le QSY passera par les commandes du client).
+[module]
+name = "cluster"
+version = "0.2.0"
+api = "1.0"
+entry = "trxstation.cluster.service"
+start = "auto"
+description = "Cluster DX : spots des clusters, du RBN et de clusterdx.org (lecture seule)"
+
+[rights]
+events = ["freq_mode"]   # fréquence du poste : spots de la bande courante (lecture seule)
+commands = []
+client_messages = true
+verify_tokens = false
+
+[resources]
+cpu_quota = 10        # % d'un cœur
+memory_max_mb = 128   # cache borné à 2 000 spots
+nice = 15
+
+[degradation]
+levels = [4, 5]       # pause, arrêt
+
+[network]
+ports = []            # n'écoute sur aucun port (connexions sortantes seulement)

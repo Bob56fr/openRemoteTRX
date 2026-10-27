@@ -1,13 +1,15 @@
 """Rapport de dépannage : un zip à joindre à une demande d'aide, SANS secret.
 
 Contenu : résultat du diagnostic, configuration expurgée (empreintes de mots de passe, jetons et sujet
-ntfy masqués), journaux des services, journal d'installation, versions et matériel détecté.
+ntfy masqués), journaux des services, journal d'installation, versions et matériel détecté, état du
+Cluster DX (status.json). JAMAIS secrets.toml, ni le journal du cluster (texte venu d'internet).
 """
 from __future__ import annotations
 
 import datetime
 import os
 import re
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -25,10 +27,22 @@ COMMANDS = {
 
 def redact_config(text: str) -> str:
     """Masque les secrets d'une station.toml (le reste est utile au dépannage)."""
-    text = re.sub(r'(?m)^(\s*(?:password_hash|token)\s*=\s*)".*?"', r'\1"***"', text)
+    text = re.sub(r'(?m)^(\s*(?:password_hash|token|password|api_key|key)\s*=\s*)".*?"', r'\1"***"', text)
     text = re.sub(r'(?m)^(\s*notify_url\s*=\s*")(https?://[^/"]+)?[^"]*(")',
                   lambda m: f"{m.group(1)}{m.group(2) + '/***' if m.group(2) else ''}{m.group(3)}", text)
     return text
+
+
+def _state_dir(sysm: System, config_path: Path) -> Path | None:
+    from . import config as cfgmod
+    text = sysm.read_text(config_path)
+    if text is None:
+        return None
+    try:
+        cfg, _ = cfgmod.build(tomllib.loads(text))
+    except (cfgmod.ConfigError, tomllib.TOMLDecodeError):
+        return None
+    return Path(cfg.supervisor.state_dir)
 
 
 def desktop_dir(home: Path | None = None, sysm: System | None = None) -> Path:
@@ -66,6 +80,9 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
             archive.writestr(name, _command_output(sysm, commands))
         archive.writestr("journal.txt", _command_output(sysm, [["journalctl", "--no-pager", "-n", "400",
                                                                 *[f"--unit={u}" for u in UNITS]]]))
+        state_dir = _state_dir(sysm, config_path)
+        cluster = sysm.read_text(state_dir / "cluster" / "status.json") if state_dir else None
+        archive.writestr("cluster-etat.json", cluster if cluster is not None else "{}\n")
         log = sysm.read_text(INSTALL_LOG)
         archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
     return target

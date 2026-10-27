@@ -494,6 +494,28 @@ test("spectre HF : canal non ordonné sans renvoi, trames décodées, anciennes 
   assert.equal(w.client.spectrumFrame, null); assert.equal(sc.readyState, "closed");
 });
 
+test("spectre HF : balayages demandés seulement vue ouverte ET page visible", async () => {
+  const w = makeWorld();
+  await w.connected();
+  const watch = () => w.sentCommands("spectrum_watch").map((m) => m.on);
+  assert.deepEqual(watch(), []);                                           // connexion : rien n'est demandé
+  w.client.watchSpectrum(true);
+  w.client.onVisibility(true);                                             // écran éteint, vue ouverte
+  w.client.onVisibility(true);                                             // répété : rien de plus
+  w.client.onVisibility(false);
+  w.client.watchSpectrum(false);
+  assert.deepEqual(watch(), [true, false, true, false]);
+  w.client.onVisibility(true); w.client.onVisibility(false);               // vue fermée : la visibilité ne demande rien
+  assert.deepEqual(watch(), [true, false, true, false]);
+  w.client.onVisibility(true); w.client.watchSpectrum(true);               // vue ouverte page masquée : pas d'envoi demandé
+  assert.deepEqual(watch().at(-1), false);
+  w.client.onVisibility(false);
+  assert.deepEqual(watch().at(-1), true);
+  w.client.disconnect();
+  const res = await w.client.watchSpectrum(true);                          // hors liaison : rien, aucune exception
+  assert.equal(res.ok, false);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

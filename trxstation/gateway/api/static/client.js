@@ -61,6 +61,8 @@
     memories_unavailable: "Les mémoires ne sont pas disponibles sur cette station.",
     storage_error: "La station n'a pas pu enregistrer les mémoires (disque ?).",
     layouts_unavailable: "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
+    beeps_unavailable: "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
+    beeps_storage_error: "La station n'a pas pu enregistrer le réglage des bips.",
     layout_invalid: "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
     layout_storage_error: "La station n'a pas pu enregistrer la mise en page (disque ?).",
     invalid: "Valeur refusée par le poste.",
@@ -607,7 +609,7 @@
       if (this.micTrack) { try { this.micTrack.enabled = false; this.micTrack.stop(); } catch (e) { /* déjà arrêtée */ } this.micTrack = null; }
       if (this.dc) { this.dc.onclose = null; try { this.dc.close(); } catch (e) { /* déjà fermé */ } this.dc = null; }
       if (this.sc) { this.sc.onmessage = null; try { this.sc.close(); } catch (e) { /* déjà fermé */ } this.sc = null; }
-      this.spectrumFrame = null; this._spectrumSeq = -1;
+      this.spectrumFrame = null; this._spectrumSeq = -1; this._spectrumWatch = false;   // la station oublie l'abonnement avec la connexion
       if (this.pc) { this.pc.onconnectionstatechange = null; this.pc.oniceconnectionstatechange = null; try { this.pc.close(); } catch (e) { /* déjà fermée */ } this.pc = null; }
       const wasConnected = this.connected;
       this.connected = false; this.closed = true; this.armed = false; this._wasActive = false; this._txSilenceAlerted = false;
@@ -816,6 +818,8 @@
         this.ui.modes(caps && Array.isArray(caps.modes) ? caps.modes : []);
         this.memories = sortMemories(msg.memories);
         this.ui.memories(this.memories);
+        this.beeps = msg.beeps && typeof msg.beeps === "object" ? msg.beeps : null;     // null : station sans bips de fin
+        if (this.ui.beeps) this.ui.beeps(this.beeps);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -830,7 +834,53 @@
         if (entry) { this.pending.delete(msg.id); entry.resolve(msg); }
       } else if (msg.type === "error") {
         this.ui.log("Erreur de la station : " + msg.code + (msg.detail ? " (" + msg.detail + ")" : ""), "warn");
+      } else if (msg.type === "module") {
+        this._onModule(msg);
+      } else if (msg.type === "beeps") {                                // réglé depuis un autre appareil
+        if (msg.settings && typeof msg.settings === "object") { this.beeps = msg.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
       }
+    }
+
+    _onModule(msg) {
+      /* Message d'un module complémentaire (cluster DX...) : jamais d'effet sur le poste ; une erreur reste ici. */
+      const data = msg.data && typeof msg.data === "object" ? msg.data : {};
+      const name = typeof msg.module === "string" ? msg.module.slice(0, 32) : "module";
+      try {
+        if (data.kind === "spots") {
+          if (this.ui.spots) this.ui.spots(data);
+          return;
+        }
+        if (name === "cluster" && typeof data.health === "string" && this.ui.clusterHealth) this.ui.clusterHealth(data.health);
+        if (typeof data.text === "string" && data.text) this.ui.log("[" + name + "] " + data.text.slice(0, 200), "");
+      } catch (e) { /* affichage seulement */ }
+    }
+
+    async qsy(hz, mode) {
+      /* Se caler sur un spot : le mode d'abord (s'il est connu et utilisable), puis la fréquence. Refusé pendant
+         l'émission ici ET par la station (changement de fréquence refusé hors réception confirmée). */
+      if (!this.connected) return { ok: false, reason: "not_connected" };
+      if (this._ptt() && this._ptt().state !== "RX") { this.ui.log(reasonText("tx_active"), "warn"); return { ok: false, reason: "tx_active" }; }
+      if (!Number.isFinite(hz) || hz <= 0) return { ok: false, reason: "invalid_params" };
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      if (mode && rig.mode !== mode) {
+        const done = await this.setMode(mode, 0);
+        if (!done.ok) return done;
+      }
+      this.pendingHz = null;
+      return this.setFrequency(Math.round(hz));
+    }
+
+    async setBeeps(changes) {
+      /* Roger bip, bip de liaison perdue : réglages de la STATION (elle seule émet les bips). */
+      const res = await this.send("beeps_set", changes);
+      if (res.ok && res.settings) { this.beeps = res.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
+    adaptSpotMode(mode) {
+      /* Mode d'un spot adapté à ce poste (USB -> USB-D si l'émission l'exige) ; null si le poste ne l'a pas. */
+      return adaptMode(mode, this.hello ? this.hello.tx_modes : [], this._caps().modes);
     }
 
     // ---- état
@@ -1188,11 +1238,26 @@
       return res;
     }
 
+    watchSpectrum(on) {
+      /* Vue HF ouverte ou fermée : la station n'envoie les balayages QUE pendant que la vue est affichée
+         (données mobiles). Hors liaison : rien à faire, une nouvelle connexion part sans abonnement. */
+      this._spectrumWatch = !!on;
+      return this._sendSpectrumWatch(!!on && !this._pageHidden);
+    }
+
+    _sendSpectrumWatch(on) {
+      if (!this.dc || this.dc.readyState !== "open") return Promise.resolve({ ok: false, reason: "not_connected" });
+      return this.send("spectrum_watch", { on: on }).catch(() => ({ ok: false }));
+    }
+
     onVisibility(hidden) {               // un navigateur en arrière-plan ralentit ses minuteries : on coupe avant
       if (hidden && this._mineActive()) {
         this.ui.log("Page masquée : émission coupée par sécurité.", "warn");
         this.stop().catch(() => {});
       }
+      const wasHidden = !!this._pageHidden;
+      this._pageHidden = !!hidden;
+      if (this._spectrumWatch && wasHidden !== this._pageHidden) this._sendSpectrumWatch(!hidden);   // écran éteint, vue HF ouverte : plus de balayages
       if (!hidden) { this._acquireWakeLock(); this.onNetworkOnline(); }   // le navigateur a relâché le verrou ; au retour de la page, on retente sans attendre
     }
   }

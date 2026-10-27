@@ -408,6 +408,74 @@ def check_spectrum(sysm: System, cfg: Config | None) -> list[Check]:
                   if state == "waiting" else "vérification en cours")]
 
 
+CLUSTER_STATE_TEXT = {"connected": "connecté", "connecting": "connexion en cours", "reconnecting": "en reconnexion",
+                      "failed": "EN ÉCHEC", "disabled": "désactivé"}
+
+
+def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) -> list[Check]:
+    """Module Cluster DX : sources, droits de secrets.toml, état publié par le module (sans rien lui demander)."""
+    if cfg is None:
+        return []
+    s, c = "Cluster DX", cfg.cluster
+    if not c.enabled:
+        return [Check(s, "Module", INFO, "désactivé", "TRX Console, menu 12")] if c.source else []
+    active = [x for x in c.source if x.enabled]
+    out = [Check(s, "Sources", OK if active else FAIL,
+                 f"{len(active)} source(s) active(s) : {', '.join(x.name for x in active)}" if active
+                 else "aucune source active", "" if active else "TRX Console, menu 12")]
+    from .secretstore import path_for
+    spath = path_for(path)
+    named = sorted({x.secret for x in active if x.secret})
+    st = sysm.stat(spath)
+    if named and st is None:
+        out.append(Check(s, "secrets.toml", FAIL, f"absent alors que {', '.join(named)} y est attendu : "
+                         "connexion sans mot de passe", "Ressaisir le mot de passe : TRX Console, menu 12"))
+    elif st is not None:
+        mode = st.st_mode & 0o777
+        if sysm.platform != "win32" and mode & 0o077:
+            out.append(Check(s, "secrets.toml", FAIL, f"droits {oct(mode)[2:]} : mots de passe lisibles par d'autres "
+                             "comptes", f"sudo chmod 600 {spath} && sudo chown {cfg.modules.run_as} {spath}"))
+        else:
+            out.append(Check(s, "secrets.toml", OK, "présent, lisible par le seul compte de la station"
+                             if sysm.platform != "win32" else "présent"))
+    text = sysm.read_text(Path(cfg.supervisor.state_dir) / "cluster" / "status.json")
+    try:
+        data = json.loads(text) if text else None
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        out.append(Check(s, "Module", WARN, "aucun état publié : module pas encore lancé, ou station arrêtée",
+                         "Vérifier [modules] run et démarrer la station (menu 5)"))
+        return out
+    age = sysm.now() - float(data.get("time") or 0)
+    if age > 30:
+        out.append(Check(s, "Module", WARN, f"état vieux de {age:.0f} s : module arrêté ou bloqué",
+                         "Journal (menu 7) ; le superviseur le relance s'il s'est arrêté"))
+        return out
+    for name, src in (data.get("sources") or {}).items():
+        if not isinstance(src, dict):
+            continue
+        state = str(src.get("state", ""))
+        level = OK if state == "connected" else FAIL if state == "failed" else WARN
+        why = "" if state == "connected" else f" ({str(src.get('message', ''))[:160]})" if src.get("message") else ""
+        out.append(Check(s, f"Source {str(name)[:32]}", level,
+                         f"{CLUSTER_STATE_TEXT.get(state, state)}{why}",
+                         "" if level == OK else "Tester la source : TRX Console, menu 12"))
+    counters = data.get("counters") or {}
+    last = counters.get("last_spot_age_s")
+    if last is None:
+        out.append(Check(s, "Dernier spot", WARN, "aucun spot reçu depuis le démarrage du module"))
+    else:
+        out.append(Check(s, "Dernier spot", OK if last < 900 else WARN,
+                         f"il y a {last:.0f} s ; {counters.get('per_minute', 0)} spot(s)/min, "
+                         f"{counters.get('cache', 0)} en mémoire, {counters.get('malformed', 0)} ligne(s) illisible(s)"))
+    cty = data.get("cty") or {}
+    if cty.get("problem"):
+        out.append(Check(s, "cty.dat", WARN, f"{str(cty['problem'])[:200]} : pays inconnus, filtre de continent inopérant",
+                         "Accès à https://www.country-files.com nécessaire (mise à jour automatique)"))
+    return out
+
+
 def check_network(sysm: System, cfg: Config | None) -> list[Check]:
     s = "Réseau"
     out: list[Check] = []
@@ -495,6 +563,7 @@ def run_all(sysm: System | None = None, path: Path = CONFIG_PATH) -> list[Check]
     checks += check_hardware(sysm, cfg)
     checks += check_services(sysm, cfg)
     checks += check_spectrum(sysm, cfg)
+    checks += check_cluster(sysm, cfg, path)
     checks += check_network(sysm, cfg)
     checks += check_update(sysm, cfg)
     return checks

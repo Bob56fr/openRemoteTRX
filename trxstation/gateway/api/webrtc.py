@@ -6,6 +6,7 @@ Une connexion par client :
   * canal de données « control » : commandes JSON <-> ControlSession ;
   * canal de données « spectrum » (ouvert par le client, non ordonné, sans renvoi) : balayages du spectre HF
     en binaire (spectrum/frame.py), du serveur vers le client seulement ; ce qui arrive dessus est ignoré.
+    Rien n'y part tant que le client n'affiche pas la vue HF (commande `spectrum_watch`).
 Le jeton est vérifié AVANT la création de la connexion (server.py). Un client qui se reconnecte
 remplace l'ancienne connexion (ce qui coupe l'émission s'il l'avait).
 
@@ -116,6 +117,7 @@ class PeerManager:
         self.layouts = layouts
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
+        self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
         self.peers: dict[str, _Peer] = {}
         self._tasks: set[asyncio.Task] = set()
 
@@ -148,7 +150,9 @@ class PeerManager:
                     channel.send(json.dumps(message, separators=(",", ":")))
 
             session = ControlSession(client_id, self.ctrl, self.link, self.pipeline, self.capabilities, send,
-                                     memories=self.memories, layouts=self.layouts, spectrum=self.spectrum)
+                                     memories=self.memories, layouts=self.layouts, spectrum=self.spectrum,
+                                     spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on))
+            session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session
 
             @channel.on("message")
@@ -203,6 +207,11 @@ class PeerManager:
         else:
             channel.on("open", subscribe)
         channel.on("close", lambda: self.fanout.remove(client_id, send))
+
+    def _watch_spectrum(self, client_id: str, peer: _Peer, on: bool) -> None:
+        """Balayages envoyés seulement pendant que ce client affiche la vue HF (connexion encore active)."""
+        if not peer.closed and self.peers.get(client_id) is peer:
+            self.fanout.watch(client_id, on)
 
     async def _expire_if_not_connected(self, client_id: str, peer: _Peer) -> None:
         await asyncio.sleep(self.peer_timeout_s)

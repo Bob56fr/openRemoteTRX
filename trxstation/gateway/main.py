@@ -28,6 +28,7 @@ from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
 from .audio import AudioConfigError, AudioPipeline
+from .audio.beeps import BeepStore, TailPlayer
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
 from .safety import PttController
@@ -59,7 +60,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await pipeline.stop()
         raise
     link = CatLink(cfg.network.rigctld_host, cfg.network.rigctld_port, capabilities=capabilities)
-    ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open)
+    beeps = BeepStore(Path(cfg.supervisor.state_dir) / "beeps.json")   # roger bip, bip de liaison perdue (téléphone)
+    tail = TailPlayer(pipeline.sink, beeps, gain_db=cfg.audio.tx_gain_db)
+    ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open, tail=tail)
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum)
@@ -72,6 +75,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await ctrl.start()
         await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
         manager, runner = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum)
+        if manager is not None:
+            manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()

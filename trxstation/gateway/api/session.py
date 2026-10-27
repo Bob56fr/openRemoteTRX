@@ -48,13 +48,20 @@ class ControlSession:
                  capabilities: Capabilities | None, send: Callable[[dict], None], *,
                  max_msgs_per_s: int = 30, state_interval_s: float = 0.25,
                  clock: Callable[[], float] = time.monotonic, memories: MemoryStore | None = None,
-                 layouts: LayoutStore | None = None, spectrum=None):
+                 layouts: LayoutStore | None = None, spectrum=None,
+                 spectrum_watch: Callable[[bool], None] | None = None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.spectrum = spectrum
+        self.spectrum_watch = spectrum_watch     # vue HF ouverte/fermée chez ce client (SpectrumFanout.watch)
+        self.hf_view = False                     # vue HF affichée chez ce client (dernier spectrum_watch accepté)
+        self.on_hf_view: Callable[["ControlSession", bool], None] | None = None   # ModuleBridge.replay (gateway/main)
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
+        self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
+        tail = getattr(ctrl, "tail", None)
+        self.beeps = getattr(tail, "store", None)  # réglages des bips de fin (gateway/audio/beeps.py) ou None
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
         self._times: deque[float] = deque()
         self._state_task: asyncio.Task | None = None
@@ -74,7 +81,10 @@ class ControlSession:
                    "max_power_w": self.ctrl.config.rig.max_power_w,
                    "memories": self.memories.list() if self.memories else [],
                    "layouts": self.layouts is not None,
-                   "spectrum": self.spectrum.capability() if self.spectrum is not None else None})   # canal « spectrum »                     # mises en page personnalisées : layout_get
+                   "spectrum": self.spectrum.capability() if self.spectrum is not None else None,
+                   "beeps": self.beeps.config.to_dict() if self.beeps is not None else None})   # canal « spectrum »                     # mises en page personnalisées : layout_get
+        if self.beeps is not None:
+            self.beeps.add_listener(self._beeps_listener)             # réglé depuis un autre téléphone : affiché ici
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         self.send(self._state())
@@ -90,6 +100,8 @@ class ControlSession:
         self.closed = True
         if self.memories:
             self.memories.remove_listener(self._memories_listener)
+        if self.beeps is not None:
+            self.beeps.remove_listener(self._beeps_listener)
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
@@ -213,6 +225,30 @@ class ControlSession:
                     ok, reason = await self.spectrum.set_setting(cmd.params["name"], cmd.params["value"])
                     extra = {} if ok else {"reason": reason}
                     self._result(cmd.id, ok, settings=self.spectrum.snapshot().get("settings", {}), **extra)
+            elif cmd.name == "beeps_set":
+                if self.beeps is None:
+                    self._result(cmd.id, False, reason="beeps_unavailable")
+                else:                                    # n'agit sur le poste qu'à la PROCHAINE fin d'émission
+                    try:
+                        config = self.beeps.update(cmd.params)
+                    except OSError as exc:
+                        log.error("réglages des bips non enregistrés : %s", exc)
+                        self._result(cmd.id, False, reason="beeps_storage_error")
+                    else:
+                        log.info("bips réglés par %s : %s", self.client_id, cmd.params)
+                        self._result(cmd.id, True, settings=config.to_dict())
+            elif cmd.name == "spectrum_watch":
+                if self.spectrum is None or self.spectrum_watch is None:
+                    self._result(cmd.id, False, reason="spectrum_unavailable")
+                else:                                    # n'agit que sur l'envoi des balayages à CE client
+                    self.spectrum_watch(cmd.params["on"])
+                    self.hf_view = cmd.params["on"]      # spots du cluster : envoyés seulement vue HF ouverte
+                    self._result(cmd.id, True, on=cmd.params["on"])
+                    if self.on_hf_view is not None:
+                        try:
+                            self.on_hf_view(self, self.hf_view)
+                        except Exception:                # un module ne doit jamais gêner la session
+                            log.exception("rejeu des messages des modules impossible")
             elif cmd.name.startswith("memory_"):
                 await self._memory_command(cmd)
             elif cmd.name.startswith("layout_"):

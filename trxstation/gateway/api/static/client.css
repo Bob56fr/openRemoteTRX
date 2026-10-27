@@ -170,6 +170,36 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 .hf-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--texte-secondaire); pointer-events: none; }
 .hf-axis { position: relative; height: 1rem; font-size: .72rem; color: var(--texte-secondaire); }
 .hf-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+
+/* ---- spots du Cluster DX sur le spectre HF (couleur selon la source ; jamais la couleur d'émission) */
+.hf-spots { position: absolute; inset: 0; pointer-events: none; }
+.spot-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--accent); }
+.spot-line.k-rbn { border-left-color: var(--texte-secondaire); }
+.spot-line.k-cb { border-left-color: var(--favori); }
+.spot-tag { position: absolute; transform: translateX(-50%); pointer-events: auto; min-height: 0; margin: 0; font-size: .72rem;
+            line-height: 1.15; padding: .08rem .3rem; border-radius: .2rem; border: 1px solid var(--accent);
+            background: var(--fond-panneau); color: var(--texte); white-space: nowrap; cursor: pointer; }
+.spot-tag.k-rbn { border-color: var(--texte-secondaire); }
+.spot-tag.k-cb { border-color: var(--favori); }
+.spot-tag.fresh { font-weight: 700; border-width: 2px; }
+.spot-tag.group { border-style: dashed; color: var(--texte-secondaire); }
+.cluster-dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--texte-secondaire); flex: 0 0 auto; }
+.cluster-dot.green { background: var(--succes); }
+.cluster-dot.orange { background: var(--alerte); }
+.cluster-dot.red { background: var(--erreur); }
+.spot-card, .spot-list { position: absolute; z-index: 5; background: var(--fond-panneau); color: var(--texte);
+                         border: 1px solid var(--accent); border-radius: .4rem; padding: .6rem; }
+.spot-card { right: .5rem; top: 3.2rem; width: min(22rem, calc(100% - 1rem)); display: flex; flex-direction: column; gap: .35rem; }
+.spot-list { right: .5rem; top: 3.2rem; bottom: .5rem; width: min(26rem, calc(100% - 1rem)); display: flex; flex-direction: column; gap: .3rem; }
+.spot-head { display: flex; align-items: baseline; gap: .5rem; }
+.spot-dx { font-size: 1.15rem; font-weight: 700; }
+.spot-kind { color: var(--texte-secondaire); font-size: .8rem; }
+.spot-freq { color: var(--frequence); font-variant-numeric: tabular-nums; }
+.spot-comment { font-style: italic; overflow-wrap: anywhere; }
+.spot-items { overflow-y: auto; display: flex; flex-direction: column; gap: .2rem; }
+.spot-items button { text-align: left; min-height: 2rem; font-variant-numeric: tabular-nums; }
+.beeps { display: flex; flex-direction: column; gap: .35rem; margin-top: .6rem; padding-top: .5rem; border-top: 1px solid var(--bouton-bord); }
+
 #wf-peakinfo { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 /* ---- clavier de saisie de la fréquence */

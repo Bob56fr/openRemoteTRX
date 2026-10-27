@@ -24,8 +24,12 @@ log = logging.getLogger(__name__)
 
 
 def build_launcher(cfg, *, alert: Callable[[str, str], object] | None = None,
-                   policy: RestartPolicy | None = None, **kwargs) -> ModuleLauncher | None:
-    """Lanceur des modules de [modules] run, ou None s'il n'y en a aucun."""
+                   policy: RestartPolicy | None = None, config_path: Path | None = None,
+                   **kwargs) -> ModuleLauncher | None:
+    """Lanceur des modules de [modules] run, ou None s'il n'y en a aucun.
+
+    `config_path` : station.toml du superviseur, transmise aux modules (TRX_CONFIG_PATH, chemin absolu).
+    """
     if not cfg.modules.enabled:
         return None
     manifests, problems = selected_manifests(cfg.modules)
@@ -47,7 +51,9 @@ def build_launcher(cfg, *, alert: Callable[[str, str], object] | None = None,
     cwd = Path(cfg.supervisor.state_dir)
     return ModuleLauncher(manifests, secrets, bus_port=cfg.modules.bus_port,
                           cwd=cwd if cwd.is_dir() else None, policy=policy,
-                          notify=notify, run_as=cfg.modules.run_as, **kwargs)
+                          notify=notify, run_as=cfg.modules.run_as,
+                          extra_env={"TRX_CONFIG_PATH": str(Path(config_path).resolve())} if config_path else None,
+                          **kwargs)
 
 
 def start_modules(launcher: ModuleLauncher | None) -> None:

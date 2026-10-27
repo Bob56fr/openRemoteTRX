@@ -9,6 +9,7 @@ dist/
 # Configuration et secrets locaux de la station : jamais dans Git
 station.toml
 station.toml.*
+secrets.toml
 *.toml.bak
 dev.toml
 tls/

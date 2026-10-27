@@ -49,12 +49,18 @@ def encode(sweep: Sweep, seq: int) -> bytes | None:
 
 
 class SpectrumFanout:
-    """Envoie chaque trame aux clients abonnés, au plus `max_fps` par seconde chacun, sans jamais empiler."""
+    """Envoie chaque trame aux clients abonnés QUI REGARDENT la vue HF, au plus `max_fps` par seconde chacun,
+    sans jamais empiler.
+
+    Deux conditions par client : un canal « spectrum » ouvert (`add`) ET la vue HF affichée (`watch`, commande
+    `spectrum_watch`). Vue fermée = rien n'est envoyé : pas de données mobiles consommées pour rien.
+    """
 
     def __init__(self, max_fps: int, clock: Callable[[], float]):
         self.min_interval = 1.0 / max(1, max_fps)
         self.clock = clock
         self._subs: dict[str, dict] = {}
+        self._watching: set[str] = set()     # indépendant du canal : la demande peut précéder son ouverture
         self.seq = 0
 
     def add(self, client_id: str, send: Callable[[bytes], None], buffered: Callable[[], int]) -> None:
@@ -62,24 +68,37 @@ class SpectrumFanout:
 
     def remove(self, client_id: str, send: Callable[[bytes], None] | None = None) -> None:
         """`send` : ne désabonne que si c'est encore ce canal (la fermeture tardive d'une ancienne connexion
-        ne doit pas désabonner la nouvelle)."""
+        ne doit pas désabonner la nouvelle). Sans `send` (client parti) : la demande de vue est oubliée aussi."""
         sub = self._subs.get(client_id)
         if sub is not None and (send is None or sub["send"] is send):
             del self._subs[client_id]
+        if send is None:
+            self._watching.discard(client_id)
+
+    def watch(self, client_id: str, on: bool) -> None:
+        """Vue HF ouverte (`on`) ou fermée chez ce client."""
+        if on:
+            self._watching.add(client_id)
+        else:
+            self._watching.discard(client_id)
+
+    def watching(self, client_id: str) -> bool:
+        return client_id in self._watching
 
     def __len__(self) -> int:
         return len(self._subs)
 
     def publish(self, sweep: Sweep) -> int:
         """Renvoie le nombre de clients servis. Une erreur d'envoi désabonne ce client seulement."""
-        if not self._subs:
+        targets = [(c, s) for c, s in self._subs.items() if c in self._watching]
+        if not targets:
             return 0
         self.seq += 1
         frame = encode(sweep, self.seq)
         if frame is None:
             return 0
         now, served = self.clock(), 0
-        for client_id, sub in list(self._subs.items()):
+        for client_id, sub in targets:
             if now - sub["last"] < self.min_interval:
                 continue
             try:

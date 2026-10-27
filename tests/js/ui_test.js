@@ -140,6 +140,7 @@ global.TrxWaterfall = require(path.join(STATIC, "waterfall.js"));
 global.TrxLayout = require(path.join(STATIC, "layout.js"));
 global.TrxTheme = require(path.join(STATIC, "theme.js"));
 global.TrxHfScope = require(path.join(STATIC, "hfscope.js"));
+global.TrxSpots = require(path.join(STATIC, "spots.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -591,10 +592,13 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   const sc = () => pcs.at(-1).channels.spectrum;
   hfState({ state: "ok", code: "", message: "" });
   assert.equal($("hfscope").hidden, true);
+  assert.equal(sent("spectrum_watch").length, 0);                                                // vue fermée : aucun balayage demandé
   await $("txzone").dispatch("click"); await wait(400);                                         // puissance -> audio
   assert.equal($("waterfall").hidden, false);
+  assert.equal(sent("spectrum_watch").length, 0);
   await $("wf-plot").dispatch("click");                                                          // audio -> spectre HF
   assert.equal($("hfscope").hidden, false); assert.equal($("waterfall").hidden, true); assert.equal($("hf-wait").hidden, false);
+  assert.equal(sent("spectrum_watch").at(-1).on, true);                                          // vue ouverte : balayages demandés
   assert.equal($("hf-freq").textContent.length > 0, true); assert.equal($("hf-tx").hidden, true);
   sc().onmessage({ data: frame(1, 14000000, 14200000) });
   assert.equal($("hf-wait").hidden, true);
@@ -658,17 +662,132 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   answerAll(); hfState({ state: "ok", code: "", message: "" });
   hfState({ state: "error", code: "silent", message: "Plus aucune donnée du spectre. Mode normal : un seul port, sans waterfall HF." });
   assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // spectre perdu : retour aux graphiques
+  assert.equal(sent("spectrum_watch").at(-1).on, false);
   await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
   assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);              // indisponible : le cycle saute la vue HF
   hfState({ state: "ok", code: "", message: "" });
   await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
   assert.equal($("hfscope").hidden, false);
+  assert.equal(sent("spectrum_watch").at(-1).on, true);
+  const watches = sent("spectrum_watch").length;
   await $("hf-close").click();
   assert.equal($("hfscope").hidden, true); assert.equal($("txzone").hidden, false);
+  assert.equal(sent("spectrum_watch").length, watches + 1); assert.equal(sent("spectrum_watch").at(-1).on, false);   // fermée : plus de balayages
   await wait(400); await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
   assert.equal($("hfscope").hidden, false);
   await $("disconnect").click(); await wait();
   assert.equal($("hfscope").hidden, true);                                                        // déconnexion : vue fermée
+});
+
+step("cluster DX : pastille, marqueurs sur le spectre HF, fiche, QSY (refusé pendant l'émission), « +N », liste", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "CW"] }, tx_modes: [], max_power_w: 100, memories: [],
+         spectrum: { source: "civ_port", level_max: 160, max_fps: 10 } });
+  await wait(30);
+  const st = (ptt) => send({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: { connected: true, frequency_hz: 14100000, mode: "LSB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} },
+    audio: {}, clients: ["phone"], spectrum: { state: "ok", code: "", message: "" } });
+  const cluster = (data) => send({ type: "module", module: "cluster", data });
+  st();
+  assert.equal($("hf-cluster").hidden, true);
+  cluster({ kind: "module_state", module: "cluster", health: "orange", text: "Cluster DX : sources en partie connectées" });
+  assert.match($("log").children[0].textContent, /\[cluster\] Cluster DX : sources en partie/);            // texte des modules dans le journal
+  assert.equal($("hf-cluster").hidden, false); assert.equal($("hf-cluster").className, "cluster-dot orange");
+  assert.equal($("hf-spots").hidden, false); assert.equal($("hf-list").hidden, false);
+  await $("txzone").dispatch("click"); await wait(400); await $("wf-plot").dispatch("click");
+  assert.equal($("hfscope").hidden, false);
+  const frame = (seq, low, high) => {
+    const buf = new ArrayBuffer(16 + 475), v = new DataView(buf), b = new Uint8Array(buf);
+    b[0] = 1; b[1] = 1; v.setUint32(4, seq, true); v.setUint32(8, low, true); v.setUint32(12, high, true);
+    return buf;
+  };
+  pcs.at(-1).channels.spectrum.onmessage({ data: frame(1, 14000000, 14200000) });
+  cluster({ kind: "spots", op: "snapshot", scope: "hf_view", retain: "snapshot", window: [14000, 14350], spots: [
+    { id: 1, f: 14050, dx: "K1ABC", de: "F5XYZ", m: "SSB", k: "cluster", t: "1847", n: 2, age: 10, q: "USB", co: "United States", ct: "NA", c: "59 tnx" },
+    { id: 2, f: 14300, dx: "HORS", de: "F5XYZ", m: "CW", k: "rbn", t: "1847", n: 1, age: 10, q: "CW" }] });
+  const layer = $("hf-spot-layer");
+  const tags = () => layer.children.filter((c) => c.className.startsWith("spot-tag"));
+  const lines = () => layer.children.filter((c) => c.className.startsWith("spot-line"));
+  assert.deepEqual(tags().map((t) => t.textContent), ["K1ABC"]);                                // hors de la plage visible : pas de marqueur
+  assert.match(tags()[0].className, /k-cluster/); assert.match(tags()[0].className, /fresh/);   // moins de 2 min : mis en évidence
+  assert.equal(lines().length, 1); assert.equal(lines()[0].style.left, "25.00%");
+  await tags()[0].click();
+  assert.equal($("spot-card").hidden, false); assert.equal($("spot-dx").textContent, "K1ABC");
+  assert.equal($("spot-freq").textContent, "14050.0 kHz · BLU"); assert.match($("spot-kind").textContent, /2 spotteurs/);
+  assert.match($("spot-info").textContent, /United States \(NA\) · de F5XYZ · 18:47 UTC · à l'instant/);
+  assert.equal($("spot-comment").textContent, "59 tnx"); assert.equal($("spot-qsy").disabled, false);
+  const qsy = $("spot-qsy").click(); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "USB");                                            // le mode d'abord...
+  answer(true, {}, "set_mode"); await wait();
+  assert.equal(sent("set_frequency").at(-1).hz, 14050000);                                     // ... puis la fréquence
+  answer(true, {}, "set_frequency"); await qsy; await wait();
+  assert.equal($("spot-card").hidden, true); assert.match($("log").children[0].textContent, /QSY sur K1ABC/);
+  await tags()[0].click();
+  st({ state: "TX", owner: "phone", tot_remaining_s: 80 });
+  assert.equal($("spot-qsy").disabled, true);                                                   // émission : QSY verrouillé
+  const freqs = sent("set_frequency").length, modes = sent("set_mode").length;
+  await $("spot-qsy").click(); await wait();
+  assert.equal(sent("set_frequency").length, freqs); assert.equal(sent("set_mode").length, modes);
+  st(); await $("spot-close").click(); assert.equal($("spot-card").hidden, true);
+  const crowd = [];
+  for (let i = 0; i < 9; i++) crowd.push({ id: 10 + i, f: 14100 + i * 0.3, dx: "DX" + i + "AB", de: "G4AAA", m: "CW", k: i % 2 ? "rbn" : "cb", t: "1850", n: 1, age: 400 });
+  cluster({ kind: "spots", op: "delta", scope: "hf_view", retain: "delta", spots: crowd, removed: [1] });
+  assert.ok(!tags().some((t) => t.textContent === "K1ABC"));                                    // retiré
+  const group = tags().find((t) => /group/.test(t.className));
+  assert.ok(group, "les étiquettes en trop sont regroupées");
+  assert.match(group.textContent, /^\+\d+$/);
+  assert.ok(tags().filter((t) => !/group/.test(t.className)).every((t) => !/fresh/.test(t.className)));   // vieux de plus de 2 min
+  await group.click();
+  assert.equal($("spot-list").hidden, false); assert.match($("spot-list-title").textContent, /^Spots proches \(\d+\)$/);
+  assert.equal($("spot-items").children.length, Number(group.textContent.slice(1)));
+  await $("spot-items").children[0].click();
+  assert.equal($("spot-card").hidden, false); assert.equal($("spot-list").hidden, true);
+  await $("spot-close").click();
+  await $("hf-list").click();
+  assert.equal($("spot-list").hidden, false); assert.equal($("spot-list-title").textContent, "Spots de la bande (10)");
+  await $("spot-sort").click(); assert.equal($("spot-sort").textContent, "Tri : âge");
+  await $("spot-list-close").click(); assert.equal($("spot-list").hidden, true);
+  await $("hf-spots").click();
+  assert.equal(layer.children.length, 0); assert.equal(storage.get("trx.spots"), "0");          // marqueurs masqués, choix mémorisé
+  await $("hf-spots").click(); assert.ok(layer.children.length > 0);
+  await $("hf-close").click();
+  assert.equal(layer.children.length, 0);                                                       // vue fermée : rien n'est gardé (rejoué à l'ouverture)
+  await $("disconnect").click(); await wait();
+});
+
+step("bips de fin d'émission : réglage de la station depuis l'onglet Audio, écoute locale, liaison perdue avertie", async () => {
+  assert.equal($("roger-on").disabled, true);                                                   // hors liaison : rien à régler
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  const beeps = { roger_enabled: false, roger_tone: "1000", roger_pattern: 1, link_lost_enabled: false,
+                  roger_sequence: [[1000, 100]], link_lost_sequence: [[1200, 120], [0, 40], [900, 120], [0, 40], [600, 120]],
+                  tones: ["600", "800", "1000", "1500", "2000", "2500", "duo"], patterns: [1, 2, 3] };
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB"] }, tx_modes: [], max_power_w: 100, memories: [], beeps });
+  await wait(30);
+  assert.equal($("roger-on").disabled, false); assert.equal($("roger-on").checked, false);
+  assert.deepEqual($("roger-tone").options.map((o) => o.value), beeps.tones);
+  assert.equal($("roger-tone").options.at(-1).textContent, "deux tons montants");
+  assert.deepEqual($("roger-pattern").options.map((o) => o.textContent), ["1 bip", "2 bips", "3 bips"]);
+  $("roger-on").checked = true; await $("roger-on").dispatch("change", { target: $("roger-on") }); await wait();
+  assert.deepEqual(sent("beeps_set").at(-1), { cmd: "beeps_set", id: sent("beeps_set").at(-1).id, roger_enabled: true });
+  answer(true, { settings: Object.assign({}, beeps, { roger_enabled: true }) }, "beeps_set"); await wait();
+  assert.equal($("roger-on").checked, true);
+  $("roger-pattern").value = "3"; await $("roger-pattern").dispatch("change", { target: $("roger-pattern") }); await wait();
+  assert.equal(sent("beeps_set").at(-1).roger_pattern, 3);                                      // nombre, pas texte
+  answer(false, { reason: "beeps_storage_error" }, "beeps_set"); await wait();
+  assert.match($("log").children[0].textContent, /pas pu enregistrer le réglage des bips/);
+  $("lost-on").checked = true; await $("lost-on").dispatch("change", { target: $("lost-on") }); await wait();
+  assert.equal(sent("beeps_set").at(-1).link_lost_enabled, true);
+  answer(true, { settings: Object.assign({}, beeps, { roger_enabled: true, link_lost_enabled: true }) }, "beeps_set"); await wait();
+  assert.match($("beeps-note").textContent, /ACTIF.*sous votre responsabilité/);
+  send({ type: "beeps", settings: Object.assign({}, beeps, { roger_tone: "duo" }) });           // changé depuis un autre appareil
+  assert.equal($("roger-tone").value, "duo"); assert.equal($("lost-on").checked, false); assert.equal($("beeps-note").textContent, "");
+  await $("roger-preview").click(); await $("lost-preview").click();                            // écoute locale : aucune commande
+  assert.equal(sent("beeps_set").length, 3);
+  await $("disconnect").click(); await wait();
+  assert.equal($("roger-on").disabled, true);
 });
 
 step("déconnexion : tout revient à l'état de départ", async () => {

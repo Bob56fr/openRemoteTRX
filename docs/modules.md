@@ -16,7 +16,8 @@ Dans `station.toml` :
 Puis redémarrer la station. Liste vide (par défaut) : ni bus, ni module, la
 station se comporte exactement comme avant.
 
-Le seul module fourni pour l'instant est `demo`, un module factice qui se met
+Modules fournis : `cluster` (Cluster DX, voir `docs/cluster-dx.md` ; se règle
+avec TRX Console, menu 12, qui l'ajoute ici) et `demo`, un module factice qui se met
 en pause pendant l'émission et l'annonce dans le journal de la page web
 (« [demo] Démo en pause pendant l'émission », puis « [demo] Démo reprise »).
 Il sert à valider la chaîne complète sans matériel.

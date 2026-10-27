@@ -38,6 +38,7 @@ SYSTEM_FILES = {                                   # dossier systeme/ du zip <- 
 }
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".bak", ".wav", ".pem"}
+EXCLUDED_NAMES = {"station.toml", "secrets.toml", "cty.dat"}      # configuration et secrets locaux, données téléchargées
 
 
 def version(root: Path = ROOT) -> str:
@@ -51,7 +52,7 @@ def _app_files(root: Path) -> list[tuple[str, Path]]:
         for path in sorted((root / base).rglob("*")):
             rel = path.relative_to(root)
             if (path.is_file() and not EXCLUDED_PARTS.intersection(rel.parts)
-                    and path.suffix not in EXCLUDED_SUFFIXES):
+                    and path.suffix not in EXCLUDED_SUFFIXES and path.name not in EXCLUDED_NAMES):
                 files.append((f"app/{rel.as_posix()}", path))
     return files
 

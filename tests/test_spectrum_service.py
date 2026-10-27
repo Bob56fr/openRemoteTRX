@@ -546,6 +546,8 @@ def test_fanout_rate_limit_backpressure_and_failures():
     fan.add("b", got["b"].append, lambda: buffered["b"])
     send_c = lambda f: (_ for _ in ()).throw(ConnectionError("fermé"))      # noqa: E731
     fan.add("c", send_c, lambda: 0)
+    for client in got:
+        fan.watch(client, True)
     assert fan.publish(sweep()) == 1                                         # b engorgé, c en panne
     assert len(got["a"]) == 1 and got["b"] == [] and len(fan) == 2          # c désabonné, b gardé
     now[0] = 0.1
@@ -556,6 +558,27 @@ def test_fanout_rate_limit_backpressure_and_failures():
     assert len(got["a"]) == 2 and len(got["b"]) == 1
     seqs = [int.from_bytes(f[4:8], "little") for f in got["a"]]
     assert seqs == sorted(seqs) and seqs[0] < seqs[1]
+
+
+def test_fanout_sends_only_while_the_hf_view_is_shown():
+    from trxstation.spectrum.frame import SpectrumFanout
+    now = [0.0]
+    fan = SpectrumFanout(10, clock=lambda: now[0])
+    got = []
+    fan.add("phone", got.append, lambda: 0)
+    assert fan.publish(sweep()) == 0 and got == [] and fan.seq == 0         # canal ouvert, vue fermée : rien
+    fan.watch("phone", True)
+    assert fan.publish(sweep()) == 1 and len(got) == 1
+    fan.watch("phone", False)
+    now[0] = 1.0
+    assert fan.publish(sweep()) == 0 and len(got) == 1
+    fan.watch("tablet", True)                                                # demande avant l'ouverture du canal
+    fan.add("tablet", got.append, lambda: 0)
+    assert fan.publish(sweep()) == 1
+    fan.remove("tablet", got.append)                                         # canal fermé : la demande reste
+    assert fan.watching("tablet")
+    fan.remove("tablet")                                                     # client parti : demande oubliée
+    assert not fan.watching("tablet")
 
 
 def test_fanout_late_close_of_an_old_connection_keeps_the_new_one():

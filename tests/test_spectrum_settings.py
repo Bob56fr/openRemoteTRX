@@ -180,6 +180,30 @@ def test_protocol_spectrum_set():
             parse_command(json.dumps({"cmd": "spectrum_set", **bad}))
 
 
+def test_protocol_spectrum_watch():
+    assert parse_command('{"cmd":"spectrum_watch","id":1,"on":true}').params == {"on": True}
+    assert parse_command('{"cmd":"spectrum_watch","on":false}').params == {"on": False}
+    for bad in ({}, {"on": 1}, {"on": "true"}, {"on": None}):
+        with pytest.raises(ProtocolError):
+            parse_command(json.dumps({"cmd": "spectrum_watch", **bad}))
+
+
+def test_session_spectrum_watch_reaches_the_fanout_of_this_client_only():
+    from trxstation.gateway.api.session import ControlSession
+    sent, calls = [], []
+    ctrl = SimpleNamespace(snapshot=lambda: SimpleNamespace(state="RX"), config=SimpleNamespace(rig=SimpleNamespace()))
+    spectrum = SimpleNamespace(snapshot=lambda: {"state": "ok"})
+    session = ControlSession("phone", ctrl, SimpleNamespace(), None, None, sent.append,
+                             spectrum=spectrum, spectrum_watch=calls.append)
+    asyncio.run(session.on_message('{"cmd":"spectrum_watch","id":1,"on":true}'))
+    asyncio.run(session.on_message('{"cmd":"spectrum_watch","id":2,"on":false}'))
+    assert calls == [True, False]
+    assert sent == [{"type": "result", "id": 1, "ok": True, "on": True}, {"type": "result", "id": 2, "ok": True, "on": False}]
+    bare = ControlSession("phone", ctrl, SimpleNamespace(), None, None, sent.append)
+    asyncio.run(bare.on_message('{"cmd":"spectrum_watch","id":3,"on":true}'))
+    assert sent[-1]["ok"] is False and sent[-1]["reason"] == "spectrum_unavailable"
+
+
 def test_session_spectrum_set_returns_the_reread_settings():
     from trxstation.gateway.api.session import ControlSession
     sent = []

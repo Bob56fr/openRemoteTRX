@@ -187,6 +187,98 @@ class Update:
     allow_prerelease: bool = False    # true : propose aussi les pré-versions publiées sur GitHub
 
 
+CLUSTER_SOURCE_TYPES = ("telnet", "rbn", "web")     # telnet = cluster radioamateur ; web = page clusterdx.org (CB)
+_CLUSTER_NAME_RE = re.compile(r"[A-Za-z0-9_-]{1,32}")
+
+
+@dataclass
+class ClusterSource:
+    name: str
+    type: str = "telnet"              # telnet (cluster DX), rbn (Reverse Beacon Network), web (clusterdx.org, cibistes)
+    host: str = ""                    # telnet, rbn
+    port: int = 0
+    url: str = ""                     # web : https seulement
+    call: str = ""                    # vide = [cluster] call
+    secret: str = ""                  # NOM d'un mot de passe dans secrets.toml (jamais le mot de passe) ; vide = aucun
+    priority: int = 1                 # clusters telnet : 1 = principal, puis secours
+    enabled: bool = True
+
+
+@dataclass
+class Cluster:
+    enabled: bool = False             # module Cluster DX (spots des clusters, du RBN, des cibistes)
+    call: str = ""                    # VOTRE indicatif radioamateur, seul envoyé aux clusters et au RBN ; vide = activation refusée
+    cb_call: str = ""                 # votre indicatif de cibiste (sources CB) ; aujourd'hui envoyé nulle part (page publique)
+    modes: list[str] = field(default_factory=list)       # modes suivis (CW SSB AM FM FREEDV) ; vide = tous ; jamais le numérique
+    bands: list[str] = field(default_factory=list)       # vide = toutes
+    continents: list[str] = field(default_factory=list)  # continent du SPOTTEUR ; vide = tous
+    blacklist: list[str] = field(default_factory=list)   # indicatifs ignorés ; « XX* » = préfixe
+    ttl_min: float = 15.0             # durée de vie des spots de cluster et des cibistes
+    rbn_ttl_min: float = 10.0         # durée de vie des spots du RBN
+    cty_update: bool = True           # mise à jour hebdomadaire de cty.dat (pays des indicatifs)
+    source: list[ClusterSource] = field(default_factory=list)
+
+
+def validate_cluster(c: Cluster, modules: "Modules") -> list[str]:
+    """Erreurs bloquantes de [cluster] (contrôlées même désactivé, sauf l'indicatif et les sources actives)."""
+    from .cluster.bandplan import BAND_NAMES, MODES
+    from .cluster.cty import CONTINENTS
+    from .cluster.text import own_call_problem
+    p: list[str] = []
+    for name in ("enabled", "cty_update"):
+        if not isinstance(getattr(c, name), bool):
+            p.append(f"[cluster] {name} doit valoir true ou false")
+    for key, values, allowed in (("modes", c.modes, MODES), ("bands", c.bands, BAND_NAMES),
+                                 ("continents", c.continents, CONTINENTS)):
+        if not isinstance(values, list) or any(v not in allowed for v in values):
+            p.append(f"[cluster] {key} : valeurs possibles {' '.join(allowed)} (numérique exclu)")
+    if not isinstance(c.blacklist, list) or any(not isinstance(b, str) or not re.fullmatch(r"[A-Z0-9/]{1,15}\*?", b)
+                                                for b in c.blacklist):
+        p.append("[cluster] blacklist : indicatifs en majuscules, « XX* » pour un préfixe")
+    if c.cb_call and own_call_problem(c.cb_call):
+        p.append(f"[cluster] cb_call : {own_call_problem(c.cb_call)}")
+    for key in ("ttl_min", "rbn_ttl_min"):
+        v = getattr(c, key)
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not 1 <= v <= 120:
+            p.append(f"[cluster] {key} : de 1 à 120 minutes")
+    names: set[str] = set()
+    for s in c.source:
+        label = f"[[cluster.source]] « {s.name} »"
+        if not isinstance(s.name, str) or not _CLUSTER_NAME_RE.fullmatch(s.name):
+            p.append(f"[[cluster.source]] name {s.name!r} : lettres, chiffres, - et _ (32 au plus)")
+        elif s.name in names:
+            p.append(f"{label} : nom en double")
+        names.add(s.name)
+        if s.type not in CLUSTER_SOURCE_TYPES:
+            p.append(f"{label} : type {' ou '.join(CLUSTER_SOURCE_TYPES)} attendu")
+        elif s.type == "web":
+            if not isinstance(s.url, str) or not re.fullmatch(r"https://[A-Za-z0-9.-]+(:\d+)?(/[^\s\"']*)?", s.url):
+                p.append(f"{label} : url https://… attendue")
+        else:
+            if not isinstance(s.host, str) or not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", s.host or ""):
+                p.append(f"{label} : host (nom ou adresse du serveur) attendu")
+            if isinstance(s.port, bool) or not isinstance(s.port, int) or not 1 <= s.port <= 65535:
+                p.append(f"{label} : port de 1 à 65535")
+        if s.call and own_call_problem(s.call):
+            p.append(f"{label} : call : {own_call_problem(s.call)}")
+        if s.secret and (not isinstance(s.secret, str) or not _CLUSTER_NAME_RE.fullmatch(s.secret)):
+            p.append(f"{label} : secret = NOM du mot de passe dans secrets.toml (lettres, chiffres, - et _)")
+        if not isinstance(s.enabled, bool):
+            p.append(f"{label} : enabled doit valoir true ou false")
+        if isinstance(s.priority, bool) or not isinstance(s.priority, int) or not 1 <= s.priority <= 99:
+            p.append(f"{label} : priority de 1 à 99")
+    if c.enabled is True:
+        active = [s for s in c.source if s.enabled is True]
+        if not active:
+            p.append("[cluster] activé sans aucune source active")
+        if any(s.type != "web" and not s.call for s in active) and own_call_problem(c.call):
+            p.append("[cluster] call : VOTRE indicatif est obligatoire pour se connecter aux clusters et au RBN "
+                     f"({own_call_problem(c.call)})")
+        if "cluster" not in modules.run:
+            p.append("[cluster] activé mais « cluster » absent de [modules] run : le module ne serait jamais lancé")
+    return p
+
+
 @dataclass
 class Band:
     name: str
@@ -216,6 +308,7 @@ class Config:
     modules: Modules = field(default_factory=Modules)
     update: Update = field(default_factory=Update)
     spectrum: Spectrum = field(default_factory=Spectrum)
+    cluster: Cluster = field(default_factory=Cluster)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -363,6 +456,7 @@ def validate(cfg: Config) -> list[str]:
     for b in cfg.bands:
         if not 0 < b.low_mhz < b.high_mhz:
             p.append(f"[[bands]] '{b.name}' : bornes invalides")
+    p += validate_cluster(cfg.cluster, cfg.modules)
     return p
 
 
@@ -424,6 +518,17 @@ def _build(cls, data: dict, section: str, problems: list[str]):
     return cls(**{k: v for k, v in data.items() if k in known})
 
 
+def _build_cluster(data: dict, problems: list[str]) -> Cluster:
+    data = dict(data)
+    sources = data.pop("source", [])
+    if not isinstance(sources, list):
+        problems.append("[[cluster.source]] : tableau de sources attendu")
+        sources = []
+    cluster = _build(Cluster, data, "cluster", problems)
+    cluster.source = [_build(ClusterSource, s, "cluster.source", problems) for s in sources]
+    return cluster
+
+
 def build(d: dict) -> tuple[Config, list[str]]:
     """Construit une Config SANS la refuser : retourne (config, problèmes). Les clés inconnues sont ignorées et signalées.
 
@@ -432,7 +537,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -448,6 +553,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             modules=_build(Modules, d.get("modules", {}), "modules", problems),
             update=_build(Update, d.get("update", {}), "update", problems),
             spectrum=_build(Spectrum, d.get("spectrum", {}), "spectrum", problems),
+            cluster=_build_cluster(d.get("cluster", {}), problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -481,6 +587,39 @@ def load_unchecked(path: str | Path) -> tuple[Config, list[str]]:
 
 def _s(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)  # chaîne TOML valide
+
+
+def _list(values: list[str]) -> str:
+    return f"[{', '.join(_s(v) for v in values)}]"
+
+
+def _render_cluster(c: Cluster) -> list[str]:
+    lines = [
+        "[cluster]   # module Cluster DX : se règle avec TRX Console (menu 12) ou python -m trxstation.cluster.setup",
+        f"enabled = {str(c.enabled).lower()}",
+        f"call = {_s(c.call)}   # VOTRE indicatif radioamateur, seul envoyé aux clusters et au RBN",
+        f"cb_call = {_s(c.cb_call)}   # votre indicatif de cibiste (sources CB)",
+        f"modes = {_list(c.modes)}   # CW SSB AM FM FREEDV ; [] = tous ; le numérique (FT8...) est toujours écarté",
+        f"bands = {_list(c.bands)}   # [] = toutes",
+        f"continents = {_list(c.continents)}   # continent du spotteur, ex. [\"EU\"] ; [] = tous",
+        f"blacklist = {_list(c.blacklist)}",
+        f"ttl_min = {c.ttl_min}",
+        f"rbn_ttl_min = {c.rbn_ttl_min}",
+        f"cty_update = {str(c.cty_update).lower()}",
+        "",
+    ]
+    for s in c.source:
+        lines += ["[[cluster.source]]", f"name = {_s(s.name)}", f"type = {_s(s.type)}"]
+        if s.type == "web":
+            lines.append(f"url = {_s(s.url)}")
+        else:
+            lines += [f"host = {_s(s.host)}", f"port = {s.port}"]
+        if s.call:
+            lines.append(f"call = {_s(s.call)}")
+        if s.secret:
+            lines.append(f"secret = {_s(s.secret)}   # nom du mot de passe dans secrets.toml, jamais le mot de passe")
+        lines += [f"priority = {s.priority}", f"enabled = {str(s.enabled).lower()}", ""]
+    return lines
 
 
 def render_toml(cfg: Config) -> str:
@@ -574,6 +713,7 @@ def render_toml(cfg: Config) -> str:
         f"data_port = {cfg.spectrum.data_port}   # rigctld : UDP sur 127.0.0.1",
         f"max_fps = {cfg.spectrum.max_fps}   # images par seconde envoyées aux clients (1 à 20)",
         "",
+        *_render_cluster(cfg.cluster),
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",
         "# À vérifier et adapter à ta licence et à ton pays.",
     ]
