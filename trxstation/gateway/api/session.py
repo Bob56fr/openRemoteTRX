@@ -203,6 +203,8 @@ class ControlSession:
             elif cmd.name == "stop":
                 await self.ctrl.force_rx("stop", by=self.client_id)
                 self._result(cmd.id, True, ptt=self.ctrl.snapshot().to_dict())
+            elif cmd.name == "local_release":                    # ne commande rien au poste : lève seulement l'attente
+                self._result(cmd.id, True, ptt=self.ctrl.release_local(self.client_id).to_dict())
             elif cmd.name == "set_frequency":
                 await self.ctrl.set_frequency(cmd.params["hz"])
                 self._result(cmd.id, True)

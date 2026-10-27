@@ -10,6 +10,12 @@ Garde TX (priorité absolue) : si le poste émet réellement (lu directement sur
 alors on envoie « T 0 » à chaque passage tant que le poste émet, et on lance l'échelle de
 reprise. Le superviseur ne déclenche JAMAIS d'émission.
 
+Émission LOCALE (micro du poste, pédale, VOX : non expliquée par la passerelle) : avec `allow_local_tx` (défaut,
+« station partagée »), elle n'est pas coupée, sauf par le TOT absolu ; sans, elle est coupée à chaque passage. Dans les
+deux cas, l'échelle de reprise n'est lancée que si l'émission RÉSISTE à « T 0 » depuis STUCK_S : une émission qui
+revient après une coupure réussie est une nouvelle prise de l'opérateur, et relancer la passerelle n'y changerait rien.
+Passerelle muette pendant une émission : coupée si son dernier état connu était une émission (ou s'il est inconnu).
+
 Échelle de reprise : redémarrer la passerelle -> redémarrer rigctld -> réinitialiser l'USB ->
 redémarrer le Pi. Redémarrages limités par heure ; au-delà, MODE SÛR : passerelle arrêtée,
 retour RX forcé, intervention manuelle requise (`trx-supervisor --clear-safe-mode`).
@@ -37,6 +43,7 @@ from .state import StateStore
 log = logging.getLogger(__name__)
 
 LADDER = ("restart_gateway", "restart_rigctld", "reset_usb", "reboot")
+STUCK_S = 5.0              # émission non expliquée qui RÉSISTE à « T 0 » depuis ce délai : alors seulement, échelle de reprise
 RENOTIFY_S = 600.0
 SAFE_MODE_STOP_EVERY_S = 30.0
 ACTIVE_STATES = ("KEYING", "TX", "UNKEYING")
@@ -153,13 +160,19 @@ class Supervisor:
 
         if rig_tx and self._tx_since is not None:
             duration = now - self._tx_since
+            last = self.watch.status                 # dernier état publié par la passerelle (même figé)
+            explained = gateway_fresh and last is not None and self._tx_explained(last)
             if duration >= s.tot_abs_s:
-                problems.append(Problem("tot_absolu", f"émission depuis {duration:.0f} s", 0, True))
+                # Émission de la passerelle au-delà du TOT absolu : la passerelle a failli, échelle de reprise.
+                # Émission locale (micro du poste) : coupée et signalée ; l'échelle seulement si la coupure ne prend pas.
+                stuck = explained or duration >= s.tot_abs_s + STUCK_S
+                problems.append(Problem("tot_absolu", f"émission depuis {duration:.0f} s", 0 if stuck else None, True))
             if not gateway_fresh:
-                if not s.allow_local_tx:
+                remote = last is None or last.ptt.get("state") in ACTIVE_STATES   # inconnu = prudence : on coupe
+                if not s.allow_local_tx or remote:
                     problems.append(Problem("gateway_silent_tx", "passerelle muette pendant l'émission", 0, True))
             else:
-                status = self.watch.status
+                status = last
                 assert status is not None
                 if status.ptt.get("fault") == "unkey_failed":
                     problems.append(Problem("gateway_cannot_unkey", "la passerelle ne parvient pas à couper", 0, True))
@@ -168,10 +181,14 @@ class Supervisor:
                 else:
                     if self._unexplained_since is None:
                         self._unexplained_since = now
-                    if not s.allow_local_tx and now - self._unexplained_since >= s.mismatch_grace_s:
+                    unexplained = now - self._unexplained_since
+                    if not s.allow_local_tx and unexplained >= s.mismatch_grace_s:
+                        # « T 0 » à chaque passage. Une émission qui revient après une coupure réussie est une
+                        # nouvelle émission locale, pas une panne : l'échelle seulement si l'émission RÉSISTE.
+                        stuck = unexplained >= s.mismatch_grace_s + STUCK_S
                         problems.append(Problem(
                             "ptt_mismatch",
-                            f"poste en émission, passerelle en {status.ptt.get('state')}", 0, True))
+                            f"poste en émission, passerelle en {status.ptt.get('state')}", 0 if stuck else None, True))
 
         if not rig.ok:
             if self._rig_fail_since is None:

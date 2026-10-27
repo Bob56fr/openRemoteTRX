@@ -19,6 +19,7 @@ class World:
     def __init__(self, tmp_path, *, real_rig=False, **supervisor_settings):
         self.cfg = dummy_config()
         self.cfg.supervisor.startup_grace_s = 0.0
+        supervisor_settings.setdefault("allow_local_tx", False)   # mode A (« station distante seule ») sauf mention contraire
         for key, value in supervisor_settings.items():
             setattr(self.cfg.supervisor, key, value)
         if real_rig:
@@ -177,8 +178,64 @@ def test_mismatch_between_rig_and_gateway(tmp_path):
     w.run(1.0)                                    # sous la tolérance (1,5 s)
     assert w.calls == []
     w.run(2.0)
-    assert "force_rx" in w.calls and "restart_gateway" in w.calls
-    assert w.rig.ptt is False
+    assert "force_rx" in w.calls and w.rig.ptt is False
+    assert "restart_gateway" not in w.calls       # la coupure a pris : rien à relancer
+
+
+def test_mismatch_that_resists_the_cut_escalates(tmp_path):
+    w = W(tmp_path)
+    w.cut_works = False
+    w.rig = RigProbe(True, True, FREQ)
+    w.run(6.0)                                    # 1,5 s de tolérance + moins de 5 s de résistance
+    assert "force_rx" in w.calls and "restart_gateway" not in w.calls
+    w.run(1.5)
+    assert "restart_gateway" in w.calls           # « T 0 » sans effet : passerelle relancée
+
+
+def test_operator_keying_again_after_each_cut_never_leads_to_safe_mode(tmp_path):
+    """Incident du 2026-10-27 : micro du poste repris après chaque coupure (station distante seule)."""
+    w = W(tmp_path, max_reboots_per_hour=0)
+    for _ in range(100):                          # 5 minutes : l'opérateur reprend l'émission toutes les 3 s
+        w.rig = RigProbe(True, True, FREQ)
+        w.run(3.0)
+    assert w.calls.count("force_rx") >= 100       # coupé à chaque fois (mode A)
+    assert not set(w.calls) & {"kill_gateway", "restart_gateway", "restart_rigctld", "reset_usb", "reboot", "stop_gateway"}
+    assert not w.store.safe_mode()
+
+
+def test_shared_station_is_the_default(tmp_path):
+    assert cfgmod.Supervisor().allow_local_tx is True
+    assert dummy_config().supervisor.allow_local_tx is True
+
+
+def test_shared_station_local_tx_cut_by_absolute_tot_without_escalation(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    w.rig = RigProbe(True, True, FREQ)            # opérateur local au micro du poste
+    w.run(134)
+    assert w.calls == []                          # pas coupé avant le TOT absolu
+    w.run(2)
+    assert "force_rx" in w.calls and w.rig.ptt is False
+    assert "restart_gateway" not in w.calls       # la passerelle n'y est pour rien
+    w.rig = RigProbe(True, True, FREQ)            # il reprend aussitôt : nouveau chrono
+    w.run(30)
+    assert w.calls.count("force_rx") == 1
+
+
+def test_shared_station_still_cuts_a_frozen_gateway_that_was_transmitting(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    w.gateway_transmitting()
+    w.run(2)
+    w.freeze_gateway()                            # dernier état publié : émission à distance
+    w.run(3)
+    assert "force_rx" in w.calls and "kill_gateway" in w.calls
+
+
+def test_shared_station_with_unknown_gateway_state_cuts(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    w.gateway_up = False                          # aucune passerelle n'a jamais publié : prudence
+    w.rig = RigProbe(True, True, FREQ)
+    w.run(1)
+    assert "force_rx" in w.calls
 
 
 def test_gateway_that_cannot_unkey_triggers_immediate_cut(tmp_path):
@@ -409,6 +466,7 @@ def test_alerts_are_not_repeated_and_recovery_is_announced(tmp_path):
 def test_failing_actions_never_crash_the_supervisor(tmp_path, name):
     w = W(tmp_path)
     w.boom = {name}
+    w.cut_works = False                           # émission qui résiste : l'échelle de reprise est sollicitée
     w.rig = RigProbe(True, True, FREQ)
     w.run(10)                                     # ne doit lever aucune exception
     assert name in w.calls

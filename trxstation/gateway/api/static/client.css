@@ -47,7 +47,7 @@ button, input, select { font: inherit; }
 .line1 { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
 .grow { flex: 1; } .dim { color: var(--texte-secondaire); font-size: .8rem; }
 .txflag { border: 2px solid var(--tx); color: var(--tx); background: var(--txflag-fond); font-weight: 800; padding: 0 .4rem; border-radius: .25rem; letter-spacing: .05em; }
-.modepill { background: var(--accent); color: var(--texte-sur-accent); font-weight: 700; padding: .05rem .7rem; border-radius: .3rem; min-width: 3.2rem; text-align: center; }
+.modepill { background: var(--accent); color: var(--texte-sur-accent); font-weight: 700; padding: .05rem .7rem; border-radius: .3rem; min-width: 3.2rem; text-align: center; cursor: pointer; user-select: none; }
 .badge { padding: .1rem .55rem; border-radius: 1rem; background: var(--commande-fond); font-size: .75rem; }
 .badge.ok { background: var(--succes); color: var(--succes-sur); } .badge.busy { background: var(--alerte); color: var(--alerte-sur); } .badge.bad { background: var(--erreur); color: var(--texte-sur-erreur); }
 .freq { font-size: min(4.2rem, 17vw); line-height: 1.05; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .02em; padding: .1rem 0 .25rem; color: var(--frequence); }
@@ -152,6 +152,14 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 /* ---- spectre HF du poste : plein écran (paysage demandé au navigateur) */
 .hf { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; gap: .2rem; background: var(--fond);
       padding: calc(.3rem + env(safe-area-inset-top)) calc(.4rem + env(safe-area-inset-right)) calc(.3rem + env(safe-area-inset-bottom)) calc(.4rem + env(safe-area-inset-left)); }
+/* ---- poste utilisé sur place : PTT à distance bloqué, reprise de la main possible */
+.localbar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.localbar .chip { flex: 0 0 auto; }
+
+/* ---- même vue, intégrée en haut de la colonne de droite (paysage large, interrupteur « Waterfall HF permanent ») */
+.hfdock { margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--ligne); }
+.hf-dock { position: sticky; top: -.5rem; z-index: 5; margin: -.5rem -.6rem .5rem; padding: .5rem .6rem .3rem; background: var(--fond); border-bottom: 2px solid var(--ligne); }
+.hf.docked { position: relative; inset: auto; z-index: auto; height: min(26rem, 55vh); padding: 0 1.3rem; }   /* marge : graduations des bords lisibles */
 .hf-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .hf-freq { font-size: 1.35rem; font-weight: 600; color: var(--frequence); font-variant-numeric: tabular-nums; }
 .hf-mode { color: var(--texte-secondaire); }
@@ -214,6 +222,7 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 /* ---- bandes et pas */
 .bands { display: flex; flex-wrap: wrap; gap: .35rem; }
 .bands .chip { min-width: 2.7rem; min-height: 2.2rem; }
+.modes { margin-top: .25rem; } .modes .chip { min-width: 3.6rem; }
 
 /* ---- pertes de connexion */
 .loss { color: var(--alerte); }

@@ -43,6 +43,8 @@ MESSAGES = {
     "ptt_on_open": "l'ouverture de {port} a mis le poste en ÉMISSION : un réglage « USB SEND » ou « USB Keying » du "
                    "poste utilise ce port. Coupure faite ; spectre désactivé jusqu'au redémarrage de la station.",
     "ptt_unknown": "état d'émission illisible juste après l'ouverture de {port} : par prudence, port refermé.",
+    "ptt_busy": "le poste est passé en émission juste après l'ouverture de {port}, mais pas à cause de ce port (l'émission "
+                "a continué port refermé : micro du poste ?). Coupure faite par prudence ; nouvel essai plus tard.",
     "silent": "plus aucune donnée du spectre sur {port} depuis {detail} s (spectre éteint sur le poste, réglage "
               "modifié ou câble).",
     "port_lost": "port {port} perdu ({detail}).",

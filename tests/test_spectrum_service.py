@@ -269,12 +269,13 @@ def test_opening_port_b_that_keys_the_rig_cuts_and_disables_until_restart():
         def keying_opener(port, baud):
             opened.append(port)
             link.state.ptt = True                                          # « USB SEND » réglé sur ce port
+            rig.close = lambda: (setattr(rig, "closed", True), setattr(link.state, "ptt", False))   # port refermé : la ligne retombe
             return rig
         svc.opener = keying_opener
+        svc.CLOSE_SETTLE_S = 0.3
         await svc.start()
         assert await wait_for(lambda: svc.snapshot()["state"] == "error")
         assert await wait_for(lambda: ctrl.cuts == ["spectrum_port_keyed"])
-        link.state.ptt = False
         await asyncio.sleep(0.6)                                           # bien plus que RETRY_S : jamais rouvert
         snap = svc.snapshot()
         await svc.stop()
@@ -282,6 +283,51 @@ def test_opening_port_b_that_keys_the_rig_cuts_and_disables_until_restart():
     snap, opened = asyncio.run(scenario())
     assert snap["code"] == "ptt_on_open" and "ÉMISSION" in snap["message"] and "Mode normal" in snap["message"]
     assert opened == ["COM7"] and rig.closed
+
+
+def test_transmission_from_elsewhere_right_after_opening_is_not_blamed_on_port_b():
+    """Incident du 2026-10-27 : l'opérateur passe en émission au micro du poste juste après l'ouverture du port B."""
+    rig = PortB()
+
+    async def scenario():
+        svc, link, ctrl, opened = make_service(None)
+
+        def opener(port, baud):
+            opened.append(port)
+            if len(opened) == 1:
+                link.state.ptt = True                                      # micro du poste : rien à voir avec le port B
+            return rig
+        svc.opener, svc.CLOSE_SETTLE_S = opener, 0.3
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["code"] == "ptt_busy")
+        snap = svc.snapshot()
+        assert ctrl.cuts == ["spectrum_port_keyed"]                        # en cas de doute, coupure quand même
+        link.state.ptt = False                                             # fin de l'émission
+        assert await wait_for(lambda: len(opened) >= 2)                    # PAS désactivé : nouvel essai
+        assert await wait_for(lambda: svc.snapshot()["state"] == "ok")
+        await svc.stop()
+        return snap
+    snap = asyncio.run(scenario())
+    assert "micro du poste" in snap["message"] and "Mode normal" in snap["message"]
+
+
+def test_transmission_pauses_the_spectrum_instead_of_failing_it():
+    rig = PortB()
+
+    async def scenario():
+        svc, link, ctrl, _ = make_service(rig)
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["state"] == "ok")
+        rig.mute, link.state.ptt = True, True                              # émission : le poste ne balaie plus
+        await asyncio.sleep(1.5)                                           # bien plus que SILENT_S (0,6 s)
+        during = svc.snapshot()["state"]
+        rig.mute, link.state.ptt = False, False                            # retour en réception
+        await asyncio.sleep(0.3)
+        after = svc.snapshot()["state"]
+        await svc.stop()
+        return during, after, ctrl.cuts
+    during, after, cuts = asyncio.run(scenario())
+    assert during == "ok" and after == "ok" and cuts == []
 
 
 def test_misconfigured_port_falls_back_to_normal_mode_with_a_message():

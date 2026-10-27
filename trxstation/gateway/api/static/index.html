@@ -23,7 +23,7 @@
   <header id="top">
     <div class="line1">
       <span id="blk-mode" class="modegrp"><span id="tx-flag" class="txflag" hidden>TX</span>
-      <span id="mode-pill" class="modepill">—</span>
+      <span id="mode-pill" class="modepill" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)">—</span>
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
       <span id="status" class="badge">déconnecté</span>
@@ -116,12 +116,20 @@
     </div>
 
     <div class="statusline"><span id="ptt-state" class="ptt-state rx">RÉCEPTION</span><span id="tot" class="note"></span></div>
+    <div id="local-banner" class="alert warn localbar" hidden>
+      <span id="local-text" class="grow"></span>
+      <button id="local-release" class="chip" title="Débloque le PTT à distance avant la fin de l'attente (impossible pendant une émission au micro du poste)">Reprendre la main</button>
+    </div>
+    <div id="blk-hfdock" class="hfdock" hidden>
+      <label class="check" title="Grand écran en paysage : le spectre HF du poste reste affiché en haut de la colonne de droite (consomme des données tant qu'il est affiché)"><input id="hf-dock-on" type="checkbox"> Waterfall HF permanent</label>
+    </div>
     <div id="mode-hint" class="alert warn" hidden></div>
     <div id="fault" class="alert" hidden></div>
   </header>
 
   <!-- Partie basse : défile -->
   <main id="bottom">
+    <div id="hf-dock" class="hf-dock" hidden></div>
 
     <details id="sec-connect" open>
       <summary>Connexion</summary>
@@ -184,9 +192,9 @@
           <label class="grow">Fréquence (kHz) <input id="freq-input" inputmode="decimal" placeholder="14200"></label>
           <button id="freq-set" disabled>Accorder</button>
         </div>
-        <div id="blk-modeset" class="row">
-          <label class="grow">Mode <select id="mode-select" disabled></select></label>
-          <button id="mode-set" disabled>Changer</button>
+        <div id="blk-modeset">
+          <div class="dim">Mode</div>
+          <div id="mode-buttons" class="bands modes"></div>
         </div>
       </div>
     </details>
@@ -338,7 +346,7 @@
     <button id="hf-ref-up" class="chip" title="Niveau de référence +1 dB">REF +</button>
     <button id="hf-set-speed" class="chip" title="Vitesse de balayage du poste">VIT ?</button>
   </div>
-  <div id="hf-plot" class="hf-plot" title="Touche pour revenir aux graphiques de puissance">
+  <div id="hf-plot" class="hf-plot" title="Spectre HF du poste : « Fermer » pour revenir aux graphiques de puissance">
     <canvas id="hf-spec" class="hf-spec"></canvas>
     <canvas id="hf-fall" class="hf-fall"></canvas>
     <canvas id="hf-grid" class="hf-grid"></canvas>

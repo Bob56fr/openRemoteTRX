@@ -197,8 +197,9 @@ step("connexion : zone de connexion repliée, identifiant mémorisé, mot de pas
   assert.equal($("password").value, "");
   assert.equal(storage.get("trx.client_id"), "phone"); assert.ok(![...storage.values()].includes("mot de passe"));
   assert.equal($("ptt").disabled, false); assert.equal($("sec-connect").open, false); assert.equal($("disconnect").disabled, false);
-  assert.deepEqual($("mem-mode").options.map((o) => o.value), ["USB", "LSB", "PKTUSB", "PKTLSB"]);
-  assert.equal($("mem-mode").options[2].textContent, "USB-D (données)");
+  assert.deepEqual($("mem-mode").options.map((o) => o.value), ["PKTUSB", "PKTLSB", "USB", "LSB"]);       // modes données d'abord
+  assert.equal($("mem-mode").options[0].textContent, "USB-D (données)");
+  assert.deepEqual($("mode-buttons").children.map((b) => b.textContent), ["USB-D", "LSB-D", "USB", "LSB"]);   // un bouton par mode, même ordre
 });
 
 step("afficheur : fréquence, mode, S-mètre, puissance, indicateurs, squelch", async () => {
@@ -453,12 +454,44 @@ step("fréquence : verrouillée pendant l'émission (ni geste, ni clavier, ni mo
   assert.equal(sent("set_frequency").filter((m) => m.hz === 7075000 || m.hz === 7076000).length, 0);
   assert.ok(["step-up", "step-down"].every((id) => $(id).disabled === false));                                          // boutons de pas : refusés par la page à l'appui
   assert.ok($("bands").children.every((b) => b.disabled === true));                                                      // boutons de bande grisés en émission
+  assert.ok($("mode-buttons").children.every((b) => b.disabled === true));                                               // boutons de mode aussi
   state({ state: "RX" }, { frequency_hz: 7074000 });
 });
 
-step("bandes : onze boutons, bande en cours repérée, rappel du mode puis de la fréquence", async () => {
+step("poste utilisé sur place : bandeau, reprise de la main en deux appuis, impossible pendant l'émission locale", async () => {
+  assert.equal($("local-banner").hidden, true);
+  state({ local_remaining_s: 120, local_reason: "tx", local_tx: true });
+  assert.equal($("local-banner").hidden, false); assert.match($("local-text").textContent, /micro du poste/);
+  assert.equal($("local-release").disabled, true);                                       // il parle : pas de reprise
+  state({ local_remaining_s: 95, local_reason: "tx", local_tx: false });
+  assert.equal($("local-release").disabled, false); assert.match($("local-text").textContent, /encore 1:35/);
+  const before = sent("local_release").length;
+  await $("local-release").click();
+  assert.equal(sent("local_release").length, before); assert.equal($("local-release").textContent, "Confirmer : reprendre la main");
+  await $("local-release").click(); await wait();
+  assert.equal(sent("local_release").length, before + 1); assert.equal($("local-release").textContent, "Reprendre la main");
+  answer(true, {}, "local_release"); await wait();
+  state({});
+  assert.equal($("local-banner").hidden, true);                                          // station : de nouveau libre
+});
+
+step("modes : un appui sur un bouton change le mode, le mode du poste est allumé", async () => {
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "PKTUSB", "PKTLSB"] }, tx_modes: [], max_power_w: 100, memories: [] });
+  state({}, { frequency_hz: 7074000, mode: "PKTLSB" });
+  assert.deepEqual($("mode-buttons").children.filter((b) => b.className === "chip on").map((b) => b.textContent), ["LSB-D"]);
+  assert.ok($("mode-buttons").children.every((b) => b.disabled === false));
+  const before = sent("set_mode").length;
+  const change = $("mode-buttons").children.find((b) => b.textContent === "USB-D").click(); await wait();
+  assert.equal(sent("set_mode").length, before + 1);
+  assert.deepEqual([sent("set_mode").at(-1).mode, sent("set_mode").at(-1).passband], ["PKTUSB", 0]);
+  answer(true, {}, "set_mode"); await change;
+  state({}, { frequency_hz: 7074000, mode: "PKTUSB" });
+  assert.deepEqual($("mode-buttons").children.filter((b) => b.className === "chip on").map((b) => b.textContent), ["USB-D"]);
+});
+
+step("bandes : quatorze boutons (dont 85, 45 et 11), bande en cours repérée, rappel du mode puis de la fréquence", async () => {
   send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "PKTUSB", "PKTLSB"] }, tx_modes: [], max_power_w: 100, memories: [] });   // modes libres
-  assert.equal($("bands").children.length, 11); assert.deepEqual($("bands").children.map((b) => b.textContent), ["160", "80", "60", "40", "30", "20", "17", "15", "12", "10", "6"]);
+  assert.deepEqual($("bands").children.map((b) => b.textContent), ["160", "85", "80", "60", "45", "40", "30", "20", "17", "15", "12", "11", "10", "6"]);
   state({}, { frequency_hz: 14200000, mode: "USB" });
   assert.deepEqual($("bands").children.filter((b) => b.className === "chip on").map((b) => b.textContent), ["20"]);
   assert.ok($("bands").children.every((b) => b.disabled === false));
@@ -479,6 +512,13 @@ step("bandes : onze boutons, bande en cours repérée, rappel du mode puis de la
   answerAll(); await wait(); assert.equal(sent("set_frequency").at(-1).hz, 7080000); answerAll(); await goto40;
   state({}, { frequency_hz: 7080000, mode: "USB" });
   assert.deepEqual($("bands").children.filter((b) => b.className === "chip on").map((b) => b.textContent), ["40"]);
+  for (const [band, mode, hz] of [["85", "PKTLSB", 3450000], ["45", "PKTLSB", 6660000], ["11", "USB", 27430000]]) {                            // bandes ajoutées : point de départ demandé
+    const go = $("bands").children.find((b) => b.textContent === band).click(); await wait();
+    assert.equal(sent("set_mode").at(-1).mode, mode);
+    answerAll(); await wait(); assert.equal(sent("set_frequency").at(-1).hz, hz); answerAll(); await go;
+    state({}, { frequency_hz: hz, mode: mode });
+    assert.deepEqual($("bands").children.filter((b) => b.className === "chip on").map((b) => b.textContent), [band]);
+  }
 });
 
 step("pas de fréquence : un appui = un pas, maintenu = répétition, relâché = arrêt", async () => {
@@ -643,6 +683,8 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   assert.equal($("hf-vfo").className, "chip"); assert.equal($("hf-vfo").disabled, false);
   await drag(200, 105); await wait(250);
   assert.equal(sent("set_frequency").length, freqSets);                                       // VFO éteint : glisser ne change rien
+  await wait(400); await $("hf-plot").dispatch("click"); await wait(400);
+  assert.equal($("hfscope").hidden, false);                                                   // un appui ne ferme jamais la vue : seul « Fermer »
   await $("hf-vfo").click();
   assert.equal($("hf-vfo").className, "chip on"); assert.equal($("hf-plot").className, "hf-plot tuning");
   await drag(200, 105); await wait(250);                                                       // 95 px à gauche sur 200 kHz : +40 kHz par pas de 500 Hz
@@ -677,6 +719,70 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   assert.equal($("hfscope").hidden, false);
   await $("disconnect").click(); await wait();
   assert.equal($("hfscope").hidden, true);                                                        // déconnexion : vue fermée
+});
+
+step("spectre HF intégré (paysage large) : interrupteur sous RÉCEPTION, vue en haut à droite, bascule du mode au doigt", async () => {
+  const turn = async (isLandscape, width) => {
+    landscape = isLandscape; globalThis.innerWidth = width;
+    await Promise.all(windowHandlers.resize.map((fn) => fn()));
+  };
+  await turn(true, 1280);
+  assert.equal($("app").className, "landscape"); assert.equal($("blk-hfdock").hidden, true);         // pas connecté : rien à proposer
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "CW", "PKTUSB", "PKTLSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         spectrum: { source: "civ_port", level_max: 160, max_fps: 10 } });
+  await wait(30);
+  const st = (rig, ptt) => send({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: Object.assign({ connected: true, frequency_hz: 14100000, mode: "USB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} }, rig || {}),
+    audio: {}, clients: ["phone"], spectrum: { state: "ok", code: "", message: "" } });
+  st();
+  assert.equal($("blk-hfdock").hidden, false); assert.equal($("hf-dock-on").checked, false);         // proposé, éteint par défaut
+  assert.equal($("hfscope").hidden, true);
+  $("hf-dock-on").checked = true; await $("hf-dock-on").dispatch("change");
+  assert.equal(storage.get("trx.hfdock"), "1");
+  assert.equal($("hfscope").hidden, false); assert.equal($("hfscope").className, "hf docked");
+  assert.equal($("hfscope").parent, $("hf-dock")); assert.equal($("hf-dock").hidden, false);
+  assert.equal($("hf-close").hidden, true);                                                          // intégrée : retirée par l'interrupteur
+  assert.equal(sent("spectrum_watch").at(-1).on, true);
+  await wait(400); await $("txzone").dispatch("click");                                              // puissance -> audio...
+  assert.equal($("waterfall").hidden, false); assert.equal($("hfscope").hidden, false);
+  await wait(400); await $("wf-plot").dispatch("click");                                             // ... -> puissance : le spectre intégré reste
+  assert.equal($("waterfall").hidden, true); assert.equal($("txzone").hidden, false); assert.equal($("hfscope").className, "hf docked");
+  await $("hf-plot").dispatch("click"); assert.equal($("hfscope").hidden, false);                    // un appui sur le spectre ne le retire pas
+  // bouton du mode en haut à gauche
+  await $("mode-pill").click(); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "PKTUSB"); answer(true, {}, "set_mode"); await wait();  // USB -> USB-D
+  st({ mode: "PKTUSB" }); await $("mode-pill").click(); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "PKTLSB"); answer(true, {}, "set_mode"); await wait();  // USB-D -> LSB-D
+  st({ mode: "PKTLSB" }); await $("mode-pill").click(); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "PKTUSB"); answer(true, {}, "set_mode"); await wait();  // LSB-D -> USB-D
+  st({ mode: "CW" }); await $("mode-pill").click(); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "PKTUSB"); answer(true, {}, "set_mode"); await wait();  // autre mode -> USB-D
+  st({ mode: "PKTUSB" }, { state: "TX", owner: "phone", tot_remaining_s: 80 });
+  const modes = sent("set_mode").length;
+  await $("mode-pill").click(); await wait();
+  assert.equal(sent("set_mode").length, modes);                                                      // émission : rien n'est envoyé
+  assert.equal($("hfscope").hidden, false); assert.equal($("ptt").hidden, false);                    // PTT et STOP restent visibles à gauche
+  st({ mode: "PKTUSB" });
+  // portrait ou écran étroit : la vue intégrée se retire, et revient en paysage (interrupteur mémorisé)
+  await turn(false, 412);
+  assert.equal($("hfscope").hidden, true); assert.equal($("blk-hfdock").hidden, true); assert.equal(sent("spectrum_watch").at(-1).on, false);
+  await turn(true, 900);
+  assert.equal($("hfscope").hidden, true);                                                           // paysage, mais moins de 1000 px
+  await turn(true, 1280);
+  assert.equal($("hfscope").hidden, false); assert.equal($("hfscope").className, "hf docked"); assert.equal(sent("spectrum_watch").at(-1).on, true);
+  send({ type: "state", ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
+    rig: { connected: true, frequency_hz: 14100000, mode: "PKTUSB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} }, audio: {}, clients: ["phone"],
+    spectrum: { state: "error", code: "silent", message: "Plus aucune donnée du spectre. Mode normal : un seul port, sans waterfall HF." } });
+  assert.equal($("hfscope").hidden, true); assert.equal($("blk-hfdock").hidden, true);              // spectre perdu : retirée
+  st({ mode: "PKTUSB" });
+  assert.equal($("hfscope").hidden, false);                                                          // de retour avec le spectre
+  $("hf-dock-on").checked = false; await $("hf-dock-on").dispatch("change");
+  assert.equal($("hfscope").hidden, true); assert.equal(storage.get("trx.hfdock"), "0"); assert.equal(sent("spectrum_watch").at(-1).on, false);
+  await $("disconnect").click(); await wait();
+  await turn(false, 412);
 });
 
 step("cluster DX : pastille, marqueurs sur le spectre HF, fiche, QSY (refusé pendant l'émission), « +N », liste", async () => {

@@ -14,6 +14,15 @@ test("cycle de la zone : puissance -> audio -> HF (seulement s'il est disponible
   assert.equal(hf.nextView("hf", true), "tx");
 });
 
+test("spectre intégré : paysage d'au moins 1000 px, page d'usine ; jamais en portrait ni avec une mise en page personnalisée", () => {
+  assert.equal(hf.canDock("landscape", 1280, false), true);
+  assert.equal(hf.canDock("landscape", 1000, false), true);
+  assert.equal(hf.canDock("landscape", 999, false), false);
+  assert.equal(hf.canDock("portrait", 1920, false), false);
+  assert.equal(hf.canDock("landscape", 1920, true), false);
+  assert.equal(hf.canDock("landscape", NaN, false), false);
+});
+
 test("disponibilité : annoncé par la station ET reçu en ce moment", () => {
   const hello = { spectrum: { level_max: 160 } };
   assert.equal(hf.available(hello, { spectrum: { state: "ok" } }), true);

@@ -8,11 +8,14 @@ Règles :
   - le port B ne s'ouvre (ou ne se rouvre) qu'en RÉCEPTION CONFIRMÉE : passerelle en RX, liaison CAT active,
     PTT relu à 0 ;
   - juste après l'ouverture, le PTT est relu par le port CAT pendant PTT_SETTLE_S : s'il passe à 1, le port est
-    refermé, la coupure est demandée et le spectre est désactivé jusqu'au redémarrage (réglage « USB SEND » sur
-    ce port) ; illisible = port refermé ;
+    refermé AUSSITÔT puis on regarde pendant CLOSE_SETTLE_S si l'émission tombe : oui = c'est ce port qui la tenait
+    (réglage « USB SEND » / « USB Keying » sur une ligne DTR ou RTS de ce port ; sous Linux, l'ouverture lève DTR et
+    RTS), coupure et spectre désactivé jusqu'au redémarrage ; non = émission venue d'ailleurs (micro du poste...),
+    coupure par prudence et nouvel essai plus tard (`ptt_busy`) ; illisible = port refermé ;
   - à chaque ouverture, `probe.check` revérifie l'adresse CI-V, le spectre et la fréquence (même poste) ;
   - en marche : plus de balayage pendant SILENT_S, ou poste qui ne répond plus à son adresse (vérifiée toutes les
     IDENT_EVERY_S) = retour au mode normal ; nouvel essai toutes les RETRY_S, toujours en réception confirmée ;
+  - pendant une émission (de la station ou au micro du poste), le poste ne balaie plus : PAUSE, pas une panne ;
   - à l'arrêt, les deux réglages du spectre du poste sont remis comme au départ ;
   - réglages du spectre (mode, largeur, référence, vitesse) demandés par la page : liste fermée (civ.encode_setting),
     exécutés par le fil entre deux lectures, SEULEMENT en réception confirmée, puis RELUS sur le poste ; ils sont
@@ -46,6 +49,7 @@ class SpectrumService:
     SILENT_S = 5.0
     IDENT_EVERY_S = 30.0
     PTT_SETTLE_S = 1.5
+    CLOSE_SETTLE_S = 1.5
     READY_POLL_S = 0.5
 
     def __init__(self, cfg: Spectrum, link, ctrl, *, opener: Callable = open_serial,
@@ -233,6 +237,19 @@ class SpectrumService:
         if self.link.state.ptt is not False:
             raise CheckFailed("ptt_unknown")
 
+    def _keyed_by_port_b(self) -> bool:
+        """Port B déjà refermé : l'émission tombe-t-elle ? Oui = c'est lui qui la tenait (ligne DTR/RTS retombée)."""
+        end = self.clock() + self.CLOSE_SETTLE_S
+        while self.clock() < end:
+            if self.link.state.ptt is False:
+                return True
+            if self._wait(0.1):
+                break
+        return False
+
+    def _transmitting(self) -> bool:
+        return self.link.state.ptt is True or self.ctrl.snapshot().state != "RX"
+
     def _worker(self) -> None:
         try:
             self._run()
@@ -273,8 +290,11 @@ class SpectrumService:
                 self._ptt_after_open()
             except CheckFailed as exc:
                 if exc.code == "ptt_on_open":
-                    ser.close()                     # d'abord fermer le port qui tient le PTT, puis couper
-                    self._cut()
+                    ser.close()                     # d'abord fermer le port qui tient peut-être le PTT
+                    guilty = self._keyed_by_port_b()
+                    self._cut()                     # dans les deux cas : en cas de doute, pas d'émission
+                    if not guilty:
+                        raise CheckFailed("ptt_busy") from exc   # pas ce port : pas de désactivation définitive
                 raise
             if self._stop.is_set():
                 return
@@ -305,16 +325,20 @@ class SpectrumService:
     def _stream(self, port: CivPort) -> None:
         started = self.clock()
         next_ident = started + self.IDENT_EVERY_S
+        quiet_from = started
         while not self._stop.is_set():
             port.poll()
             now = self.clock()
-            last = port.last_sweep_at or started
+            transmitting = self._transmitting()
+            if transmitting:
+                quiet_from = now                       # le poste ne balaie plus en émission : pause, pas une panne
+            last = max(port.last_sweep_at or started, quiet_from)
             if now - last > self.SILENT_S:
                 raise CheckFailed("silent", f"{self.SILENT_S:g}")
             if port.sweeps and self._state["state"] != "ok":
                 self._set("ok")
             self._serve_requests(port)
-            if now >= next_ident:
+            if now >= next_ident and not transmitting:
                 next_ident = now + self.IDENT_EVERY_S
                 found = port.identify()
                 if found != self.address:

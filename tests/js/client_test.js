@@ -883,7 +883,13 @@ test("crans de fréquence : refusé en émission, valeur oubliée si le poste re
 test("bandes : repérage, point de départ, mémoire, respect des modes d'émission", () => {
   assert.equal(web.bandOf(14200000).key, "20"); assert.equal(web.bandOf(7100000).key, "40"); assert.equal(web.bandOf(50313000).key, "6");
   assert.equal(web.bandOf(14350000).key, "20"); assert.equal(web.bandOf(14350001), null); assert.equal(web.bandOf(7500000), null); assert.equal(web.bandOf(null), null);
-  assert.deepEqual(web.BANDS.map((b) => b.key), ["160", "80", "60", "40", "30", "20", "17", "15", "12", "10", "6"]);
+  assert.deepEqual(web.BANDS.map((b) => b.key), ["160", "85", "80", "60", "45", "40", "30", "20", "17", "15", "12", "11", "10", "6"]);
+  assert.equal(web.bandOf(3450000).key, "85"); assert.equal(web.bandOf(6660000).key, "45");
+  assert.equal(web.bandOf(27430000).key, "11"); assert.equal(web.bandOf(28000000).key, "10");
+  assert.deepEqual(web.bandTarget({}, "85", [], []), { hz: 3450000, mode: "PKTLSB" });
+  assert.deepEqual(web.bandTarget({}, "45", [], []), { hz: 6660000, mode: "PKTLSB" });
+  assert.deepEqual(web.bandTarget({}, "11", ["PKTUSB", "PKTLSB"], ["USB", "PKTUSB"]), { hz: 27430000, mode: "PKTUSB" });   // USB -> USB-D si l'émission l'exige
+  for (let i = 1; i < web.BANDS.length; i++) assert.ok(web.BANDS[i - 1].hi < web.BANDS[i].lo, "bandes sans chevauchement");
   assert.deepEqual(web.bandTarget({}, "20", [], []), { hz: 14200000, mode: "USB" });
   assert.deepEqual(web.bandTarget({}, "40", [], []), { hz: 7100000, mode: "LSB" });
   assert.deepEqual(web.bandTarget({ 20: { hz: 14074000, mode: "PKTUSB" } }, "20", [], []), { hz: 14074000, mode: "PKTUSB" });          // la dernière utilisée
@@ -897,6 +903,51 @@ test("bandes : repérage, point de départ, mémoire, respect des modes d'émiss
   const store = { get: () => JSON.stringify({ 20: { hz: 14074000, mode: "PKTUSB" }, 40: { hz: 14074000, mode: "USB" }, 15: { hz: 21100000, mode: "US\nB" }, 99: { hz: 1, mode: "USB" }, 10: "x" }) };
   assert.deepEqual(web.loadBandMemory(store), { 20: { hz: 14074000, mode: "PKTUSB" } });                                              // entrées hors bande ou mal formées écartées
   assert.deepEqual(web.loadBandMemory({ get: () => "{ pas du json" }), {}); assert.deepEqual(web.loadBandMemory({ get: () => null }), {});
+});
+
+test("modes : USB-D, LSB-D, FM-D, AM-D d'abord (noms Hamlib 4.6 ou 4.7), puis les autres dans l'ordre du poste", () => {
+  assert.deepEqual(web.orderModes(["USB", "LSB", "CW", "FM", "AM", "PKTUSB", "PKTLSB", "PKTFM", "PKTAM"]),
+                   ["PKTUSB", "PKTLSB", "PKTFM", "PKTAM", "USB", "LSB", "CW", "FM", "AM"]);
+  assert.deepEqual(web.orderModes(["USB", "FM-D", "AM-D", "PKTUSB"]), ["PKTUSB", "FM-D", "AM-D", "USB"]);
+  assert.deepEqual(web.orderModes(["USB", "CW"]), ["USB", "CW"]);
+  assert.deepEqual(web.orderModes(null), []);
+});
+
+test("poste utilisé sur place : texte du bandeau, reprise de la main", async () => {
+  assert.deepEqual(web.localView({ state: "RX" }), { active: false, transmitting: false, text: "" });
+  const knob = web.localView({ local_remaining_s: 101, local_reason: "frequency", local_tx: false });
+  assert.equal(knob.active, true); assert.equal(knob.transmitting, false);
+  assert.match(knob.text, /POSTE UTILISÉ SUR PLACE \(fréquence changée sur le poste\) : PTT à distance bloqué encore 1:41/);
+  const mic = web.localView({ local_remaining_s: 120, local_reason: "tx", local_tx: true });
+  assert.equal(mic.transmitting, true); assert.match(mic.text, /micro du poste.*pendant l'émission locale/);
+  const w = makeWorld();
+  await w.connected();
+  const done = w.client.releaseLocal();
+  assert.equal(w.sentCommands("local_release").length, 1);
+  w.answer(false, { reason: "local_tx" }); await done;
+  assert.ok(w.ui.logs.some(([t]) => /émet en ce moment depuis son micro/.test(t)));
+  const again = w.client.releaseLocal(); w.answer(true); await again;
+  assert.ok(w.ui.logs.some(([t]) => /Main reprise/.test(t)));
+});
+
+test("bouton du mode : USB-D <-> LSB-D, USB -> USB-D, LSB -> LSB-D, autre -> USB-D ; refusé pendant l'émission", async () => {
+  const all = ["USB", "LSB", "CW", "FM", "PKTUSB", "PKTLSB"];
+  assert.equal(web.pillModeTarget("PKTUSB", all), "PKTLSB");
+  assert.equal(web.pillModeTarget("PKTLSB", all), "PKTUSB");
+  assert.equal(web.pillModeTarget("USB", all), "PKTUSB");
+  assert.equal(web.pillModeTarget("LSB", all), "PKTLSB");
+  for (const other of ["CW", "FM", "AM", null]) assert.equal(web.pillModeTarget(other, all), "PKTUSB");
+  assert.equal(web.pillModeTarget("USB", ["USB", "LSB"]), null);                     // poste sans mode données : rien
+  const w = makeWorld();
+  await w.connected(); w.hello({ capabilities: { modes: all }, tx_modes: [] });
+  w.state({}, { frequency_hz: 7074000, mode: "PKTUSB" });
+  const done = w.client.pressModePill();
+  assert.deepEqual([w.sentCommands("set_mode").at(-1).mode, w.sentCommands("set_mode").at(-1).passband], ["PKTLSB", 0]);
+  w.answer(true); await done;
+  w.state({ state: "TX", owner: "phone" }, { frequency_hz: 7074000, mode: "PKTLSB" });
+  const count = w.sentCommands("set_mode").length;
+  assert.equal((await w.client.pressModePill()).reason, "tx_active");
+  assert.equal(w.sentCommands("set_mode").length, count);                                 // rien envoyé pendant l'émission
 });
 
 test("bandes : la dernière fréquence stable est mémorisée, puis rappelée (mode d'abord, puis fréquence)", async () => {

@@ -190,7 +190,15 @@
     return GAINS[(i + 1) % GAINS.length];
   }
 
-  const api = { GAINS, VIEWS, LEVELS_PER_DB, RANGES_DB, DEFAULT_RANGE_DB, nextView, available, levelT, noiseFloor, colorWindow,
+  // Waterfall HF intégré en permanence (en haut de la colonne de droite) : critère d'AFFICHAGE seulement (paysage assez
+  // large, page d'usine), jamais la catégorie d'appareil. Les sécurités d'émission sont dans la station, quel que soit l'affichage.
+  const DOCK_MIN_WIDTH = 1000;
+
+  function canDock(layoutName, width, customLayout) {
+    return layoutName === "landscape" && Number.isFinite(width) && width >= DOCK_MIN_WIDTH && !customLayout;
+  }
+
+  const api = { DOCK_MIN_WIDTH, canDock, GAINS, VIEWS, LEVELS_PER_DB, RANGES_DB, DEFAULT_RANGE_DB, nextView, available, levelT, noiseFloor, colorWindow,
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
                 sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
                 SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,

@@ -4,7 +4,7 @@
   const web = root.TrxWeb;
   if (typeof document === "undefined" || !web) return;
   const { TrxClient, modeLabel, shortMode, matchesRigDevice, parseKilohertz, chooseLayout, formatIcomFrequency, frequencyDigits, parseFrequencyEntry,
-          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs } = web;
+          BANDS, STEPS_HZ, describeLoss, lossSummary, LINK_ALERTS, alertVolume, alertDurationMs, orderModes } = web;
   const wf = root.TrxWaterfall;
   if (!wf) return;
   const hfx = root.TrxHfScope || null;              // spectre HF du poste (hfscope.js) ; sans lui, la zone ne propose que puissance et audio
@@ -100,6 +100,13 @@
     const safeJson = (text) => { try { return JSON.parse(text); } catch (e) { return null; } };
     let freqEls = [], drag = null, kpText = "";
     const bandButtons = new Map();
+    const modeButtons = new Map();                                                    // mode Hamlib -> bouton (onglet Accord)
+    let releaseArmed = false, releaseTimer = null;                                    // « Reprendre la main » : second appui pour confirmer
+    function resetRelease() {
+      releaseArmed = false;
+      if (releaseTimer !== null) { window.clearTimeout(releaseTimer); releaseTimer = null; }
+      $("local-release").textContent = "Reprendre la main";
+    }
     let wfSettings = wf.normalizeSettings(safeJson(store.get("trx.wf", "null")));
     let wfVisible = false, audioCtx = null, analyser = null, wfSource = null, spectrumBuf = null, wfValues = null;
     let wfRaf = null, lastLine = 0, lastFrame = 0, lastToggle = -1e9;
@@ -112,6 +119,9 @@
     let rowImage = null;
     let hfVfo = false, hfDrag = null;                // accord au doigt (bouton VFO), éteint à chaque ouverture
     let hfVisible = false, hfLast = null, hfRow = null, hfFreqHz = null, hfFull = false, hfFloor = null, hfLine = 2, hfValues = null;
+    let hfDocked = false;                                                              // vue HF intégrée (colonne de droite) plutôt que plein écran
+    let hfDockWanted = store.get("trx.hfdock", "0") === "1";                           // interrupteur « Waterfall HF permanent », mémorisé par appareil
+    const hfHome = $("hfscope").parentNode || null;                                    // emplacement d'origine de la vue (plein écran)
     let hfSettings = hfx ? hfx.normalizeSettings(safeJson(store.get("trx.hf", "null"))) : { gain: 0, range: 40 };
     const hfSpec = $("hf-spec"), hfFall = $("hf-fall"), hfGrid = $("hf-grid");
     const spotBook = sp ? new sp.SpotBook() : null;
@@ -127,6 +137,7 @@
       const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth > window.innerHeight;
       $("app").className = chooseLayout(store.get("trx.layout", "auto"), landscape, window.innerWidth);
       renderLayout(false);
+      syncDock();                                                                    // paysage étroit ou portrait : le spectre intégré se retire
     }
 
     // ---- mise en page personnalisée : profil du compte, servi par la station (layout_get)
@@ -509,6 +520,13 @@
       $("bands").appendChild(button);
       bandButtons.set(band.key, button);
     }
+    function paintModes(v) {                                                          // mode actuel allumé ; verrouillés pendant l'émission
+      const current = v.rig ? v.rig.mode : null;
+      for (const [m, button] of modeButtons) {
+        button.className = "chip" + (m === current ? " on" : "");
+        button.disabled = !v.connected || v.controlsLocked;
+      }
+    }
     const stepLabel = (hz) => (hz >= 1000 ? String(hz / 1000) + " kHz" : hz + " Hz");
     for (const hz of STEPS_HZ) $("step-select").appendChild(Object.assign(el("option", "", stepLabel(hz)), { value: String(hz) }));
     $("step-select").value = STEPS_HZ.includes(Number(store.get("trx.step", "1000"))) ? store.get("trx.step", "1000") : "1000";
@@ -660,12 +678,14 @@
       const now = performance.now();
       if (now - lastToggle < 350) return;                                               // double appui = UNE seule bascule
       lastToggle = now;
+      if (hfDocked) { showZone(wfVisible ? "tx" : "audio", true); return; }          // spectre HF déjà affiché à droite : puissance <-> audio
       const current = hfVisible ? "hf" : wfVisible ? "audio" : "tx";
       const hfOk = !!hfx && hfx.available(client.hello, client.state);
       showZone(hfx ? hfx.nextView(current, hfOk) : (current === "tx" ? "audio" : "tx"));
     }
-    function showZone(next) {
-      /* Zone des graphiques : « tx » (puissance), « audio » (waterfall de l'audio reçu) ou « hf » (spectre du poste, plein écran). */
+    function showZone(next, keepDock) {
+      /* Zone des graphiques : « tx » (puissance), « audio » (waterfall de l'audio reçu) ou « hf » (spectre du poste, plein écran).
+         `keepDock` : la bascule puissance/audio ne referme pas le spectre HF intégré. */
       const audio = next === "audio";
       if (audio !== wfVisible) {
         wfVisible = audio;
@@ -673,7 +693,19 @@
         if (audio) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
       }
       $("txzone").hidden = audio;
-      setHf(next === "hf");
+      if (!(keepDock && hfDocked)) setHf(next === "hf");
+    }
+    function syncDock() {
+      /* Spectre HF intégré : interrupteur allumé, paysage assez large, page d'usine, liaison établie et spectre disponible.
+         Sinon la vue intégrée se referme (et l'interrupteur disparaît s'il ne peut pas servir). */
+      if (!hfx) return;
+      const allowed = hfx.canDock($("app").className, window.innerWidth, !!(layout && layout.active));
+      const usable = allowed && connectedFlag && hfx.available(client.hello, client.state);
+      $("blk-hfdock").hidden = !usable;
+      $("hf-dock-on").checked = hfDockWanted;
+      const want = usable && hfDockWanted;
+      if (want && !(hfVisible && hfDocked)) setHf(true, true);
+      else if (!want && hfDocked) setHf(false);
     }
     // ---- spectre HF du poste : vue plein écran, dessinée à l'arrivée de chaque balayage (pas d'animation continue)
     const hfTexts = () => {
@@ -774,11 +806,21 @@
       try { const o = window.screen && window.screen.orientation; if (o && o.unlock) o.unlock(); } catch (e) { /* rien à relâcher */ }
       try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) { /* déjà sorti */ }
     }
-    function setHf(on) {
+    function setHf(on, docked) {
+      /* Ouvre la vue HF en plein écran (docked faux) ou intégrée en haut de la colonne de droite (docked vrai) ; la ferme sinon. */
       on = on && !!hfx;
-      if (on === hfVisible) return;
+      docked = on && !!docked;
+      if (on === hfVisible && docked === hfDocked) return;
+      if (on && hfVisible) setHf(false);                                         // changement plein écran <-> intégré : on referme d'abord
       hfVisible = on;
-      $("hfscope").hidden = !on;
+      hfDocked = docked;
+      const box = $("hfscope");
+      box.className = "hf" + (docked ? " docked" : "");
+      if (docked) $("hf-dock").appendChild(box);
+      else if (hfHome && box.parentNode !== hfHome) hfHome.appendChild(box);
+      $("hf-dock").hidden = !docked;
+      $("hf-close").hidden = docked;                                             // intégrée : on la retire avec l'interrupteur
+      box.hidden = !on;
       setVfo(false);
       client.watchSpectrum(on);                                                  // balayages reçus seulement vue ouverte
       if (spotBook) spotBook.clear();                                            // la station rejoue les spots à l'ouverture
@@ -787,7 +829,8 @@
       if (on && sp) spotTimer = setInterval(() => { drawSpots(); refreshSpotCard(); }, 15000);   // âges et estompage
       if (on) {
         hfLast = null; $("hf-wait").hidden = false; $("hf-marker").hidden = true; $("hf-axis").textContent = ""; $("hf-info").textContent = "";
-        hfTexts(); enterFullscreen();
+        hfTexts();
+        if (!docked) enterFullscreen();
         if (lastView) hfState(lastView, lastView.pttState !== "RX");
         if (client.spectrumFrame) hfDraw(client.spectrumFrame);
       } else {
@@ -957,7 +1000,7 @@
     }
     $("txzone").addEventListener("click", toggleWaterfall);
     $("wf-plot").addEventListener("click", toggleWaterfall);
-    $("hf-plot").addEventListener("click", () => { if (!hfVfo) toggleWaterfall(); });   // VFO allumé : un appui ne ferme pas la vue
+    // un appui sur le spectre ne ferme JAMAIS la vue HF : seulement le bouton « Fermer » (ou la sortie du plein écran)
     $("hf-vfo").addEventListener("click", () => setVfo(!hfVfo));
     $("hf-plot").addEventListener("pointerdown", (ev) => {
       if (!hfVfo || frequencyLocked() || !hfLast) return;
@@ -1037,11 +1080,21 @@
       diag(text) { $("diag").textContent = text + (audio.paused ? " · lecture en pause" : "") + (audio.muted ? " · son coupé" : ""); },
       rtt(ms) { rttText = "commande " + ms + " ms"; showNet(); },
       modes(list) {
-        for (const id of ["mode-select", "mem-mode"]) {
-          const select = $(id);
-          select.textContent = "";
-          for (const m of list) select.appendChild(Object.assign(el("option", "", modeLabel(m)), { value: m }));
+        const ordered = orderModes(list);                                            // USB-D, LSB-D, FM-D, AM-D d'abord
+        const select = $("mem-mode");
+        select.textContent = "";
+        for (const m of ordered) select.appendChild(Object.assign(el("option", "", modeLabel(m)), { value: m }));
+        const box = $("mode-buttons");                                                // un bouton par mode : un appui change le mode
+        box.textContent = ""; modeButtons.clear();
+        for (const m of ordered) {
+          const button = el("button", "chip", shortMode(m));
+          button.title = modeLabel(m);
+          button.disabled = true;
+          button.addEventListener("click", () => client.setMode(m, 0).catch(fail));
+          box.appendChild(button);
+          modeButtons.set(m, button);
         }
+        if (lastView) paintModes(lastView);
       },
       reconnecting(info) {                                                          // la zone de la fréquence cède la place à un grand texte coloré
         const banner = $("reconnect");
@@ -1068,7 +1121,7 @@
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
-        for (const id of ["armed", "ptt", "stop", "freq-set", "mode-set", "mode-select", "disconnect", "mem-add-current", "step-down", "step-up",
+        for (const id of ["armed", "ptt", "stop", "freq-set", "disconnect", "mem-add-current", "step-down", "step-up",
                           "alert-test"]) $(id).disabled = !value;     // essai des sons : une fois connecté, quand la page sait quelle sortie est le poste
         $("connect").disabled = value;
         if (value) { $("reconnect").hidden = true; $("freq").hidden = false; }      // reconnecté : la fréquence reprend sa place
@@ -1081,11 +1134,14 @@
           closeForm(); $("squelch").disabled = true;
           for (const [, id] of CONTROLS) $(id).disabled = true;                          // plus de commande sans liaison
           for (const button of bandButtons.values()) button.disabled = true;
+          for (const button of modeButtons.values()) button.disabled = true;
+          $("local-banner").hidden = true; resetRelease();
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
           if (hfVisible) showZone("tx");
           if (spotBook) { spotBook.clear(); closeSpotCard(); closeSpotList(); drawSpots(); }
           renderBeeps(null);
         }
+        syncDock();
       },
       state(v) {
         lastView = v;
@@ -1095,9 +1151,17 @@
           button.className = "chip" + (v.band === key ? " on" : "");
           button.disabled = !v.connected || v.controlsLocked;
         }
+        paintModes(v);
+        const local = v.local || { active: false };                                   // poste utilisé sur place
+        $("local-banner").hidden = !local.active;
+        if (local.active) {
+          $("local-text").textContent = local.text;
+          $("local-release").disabled = !v.connected || local.transmitting;          // jamais pendant l'émission au micro du poste
+        } else if (releaseArmed) resetRelease();
         const transmitting = v.pttState !== "RX";
         $("wf-tx").hidden = !(wfVisible && transmitting);
         hfState(v, transmitting);
+        syncDock();
         $("wf-tx").textContent = "Po " + v.powerText + " · SWR " + (v.swr ? v.swr.text : "—") + " · ALC " + (v.alc ? v.alc.text : "—");
         $("mode-pill").textContent = v.modeShort;
         $("passband").textContent = v.passband;
@@ -1187,14 +1251,29 @@
     $("armed").addEventListener("change", (ev) => client.setArmed(ev.target.checked));
     $("ptt").addEventListener("click", () => client.pressPtt().catch(fail));
     $("stop").addEventListener("click", () => client.stop().catch(fail));
+    $("mode-pill").addEventListener("click", () => {                                 // USB-D <-> LSB-D ; USB -> USB-D ; LSB -> LSB-D ; autre -> USB-D
+      if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait
+      client.pressModePill().catch(fail);
+    });
+    $("local-release").addEventListener("click", () => {                             // confirmation en deux temps
+      if (!releaseArmed) {
+        releaseArmed = true;
+        $("local-release").textContent = "Confirmer : reprendre la main";
+        releaseTimer = window.setTimeout(resetRelease, 4000);
+        return;
+      }
+      resetRelease();
+      client.releaseLocal().catch(fail);
+    });
+    $("hf-dock-on").addEventListener("change", (ev) => {
+      hfDockWanted = !!ev.target.checked;
+      store.set("trx.hfdock", hfDockWanted ? "1" : "0");
+      syncDock();
+    });
     $("freq-set").addEventListener("click", () => {
       const hz = parseKilohertz($("freq-input").value);
       if (hz === null) { ui.log("Fréquence invalide (en kHz, ex. 14200 ou 7074,5).", "warn"); return; }
       client.setFrequency(hz).catch(fail);
-    });
-    $("mode-set").addEventListener("click", () => {
-      const mode = $("mode-select").value;
-      if (mode) client.setMode(mode, 0).catch(fail);
     });
     for (const [key, id] of CONTROLS) $(id).addEventListener("click", () => client.pressControl(key).catch(fail));
     $("squelch").addEventListener("input", (ev) => {

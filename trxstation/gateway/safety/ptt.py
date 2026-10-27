@@ -26,12 +26,14 @@ from __future__ import annotations
 import asyncio
 import enum
 import logging
+import math
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
 from ...config import Config
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
+from .local import LocalPresence
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +93,9 @@ class PttSnapshot:
     last_cut_reason: str
     fault: str
     event: str = ""
+    local_remaining_s: float | None = None   # poste utilisé sur place : PTT à distance refusé encore N s (None = libre)
+    local_reason: str = ""                   # "tx" (micro du poste), "frequency", "mode"
+    local_tx: bool = False                   # émission locale EN COURS (reprise de la main impossible)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -125,6 +130,7 @@ class PttController:
         self._listeners: list[Callable[[PttSnapshot], None]] = []
         self.tail = tail                    # TailPlayer (bips de fin) ou None : aucun bip
         self._tail_task: asyncio.Task | None = None
+        self.local = LocalPresence()        # poste utilisé sur place : PTT à distance refusé (local.py)
 
     # ------------------------------------------------------------------ état
 
@@ -136,8 +142,11 @@ class PttController:
         remaining = None
         if self._state is PttState.TX:
             remaining = max(0.0, self.limits.tot_s - (time.monotonic() - self._tx_started))
+        local_left = self.local.remaining()
         return PttSnapshot(self._state.value, self._owner, remaining, self._warning,
-                           self._last_cut_reason, self._fault, event)
+                           self._last_cut_reason, self._fault, event,
+                           None if local_left is None else float(math.ceil(local_left)),   # à la seconde : pas plus d'un message d'état par seconde
+                           self.local.reason if local_left is not None else "", self.local.transmitting)
 
     def add_listener(self, callback: Callable[[PttSnapshot], None]) -> None:
         self._listeners.append(callback)
@@ -151,6 +160,8 @@ class PttController:
                 log.exception("écouteur PTT en erreur")
 
     def _set_state(self, new: PttState, event: str = "") -> None:
+        if new is not PttState.RX or self._state is not PttState.RX:
+            self.local.station_busy()       # émission de la station : le poste relu juste après ne dit rien de l'opérateur
         self._state = new
         self._emit(event)
 
@@ -288,12 +299,24 @@ class PttController:
     async def set_frequency(self, hz: int) -> None:
         async with self._tx_lock:
             self._require_rx_for_tuning()
+            self.local.expect("frequency")  # ce changement-là est celui de la station, pas de l'opérateur
             await self.link.set_frequency(hz)
 
     async def set_mode(self, mode: str, passband_hz: int = 0) -> None:
         async with self._tx_lock:
             self._require_rx_for_tuning()
+            self.local.expect("mode")
             await self.link.set_mode(mode, passband_hz)
+
+    def release_local(self, client_id: str) -> PttSnapshot:
+        """« Reprendre la main » avant la fin de l'attente. Refusé pendant une émission locale. Ne commande rien au poste."""
+        if client_id not in self._clients:
+            raise Refused("unknown_client")
+        if not self.local.release():
+            raise Refused("local_tx", "le poste émet en ce moment depuis son micro")
+        log.warning("poste utilisé sur place : main reprise à distance par %s", client_id)
+        self._emit("local_released")
+        return self.snapshot("local_released")
 
     async def set_function(self, name: str, on: bool) -> None:
         """NR, NB, IP+, compresseur, tuner : refusé pendant l'émission (le tuner pourrait lancer un accord, donc une porteuse)."""
@@ -325,6 +348,9 @@ class PttController:
             raise Refused("tx_disabled", "aucune bande autorisée dans station.toml")
         if not self.link.state.connected:
             raise Refused("cat_down")
+        if self.local.active():
+            left = self.local.remaining()
+            raise Refused("local_active", f"poste utilisé sur place, encore {left or 0:.0f} s")
         if time.monotonic() < self._cooldown_until:
             raise Refused("cooldown")
 
@@ -396,7 +422,12 @@ class PttController:
     # ------------------------------------------------------------------ surveillance
 
     def _on_rig_state(self, state: RigState) -> None:
-        """Appelé par CatLink à chaque changement : lien perdu ou poste muet pendant l'émission."""
+        """Appelé par CatLink à chaque changement : lien perdu ou poste muet pendant l'émission ; poste utilisé sur place."""
+        if not self._starting and self.local.observe(state.connected, state.ptt, state.frequency_hz, state.mode,
+                                                     self._state.value):
+            log.info("poste utilisé sur place (%s) : PTT à distance refusé pendant %.0f s après la dernière action",
+                     self.local.reason, self.local.hold_s)
+            self._emit("local_active")
         if self._state is not PttState.TX:
             return
         reason = None

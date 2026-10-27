@@ -28,7 +28,8 @@ LAYOUT_SAVE_PREFIX = '{"cmd":"layout_save"'
 MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_state",
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
-            "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set")
+            "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
+            "local_release")                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed")   # valeurs vérifiées par la liste fermée de spectrum/civ.py
 
 

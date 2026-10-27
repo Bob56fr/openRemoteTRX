@@ -62,6 +62,7 @@
   <div class="trxr-card"><h3>Micro ouvert seulement quand il le faut</h3><p>Le son de votre micro ne passe vers le poste que pendant votre propre émission, confirmée. Il est coupé avant même que l'émission soit relâchée.</p></div>
   <div class="trxr-card"><h3>Pas de micro « oublié » dans la pièce</h3><p>Sur certains postes (Icom notamment), l'émission peut être limitée aux modes données. Le poste modulerait sinon avec son propre micro, dans la pièce où il se trouve.</p></div>
   <div class="trxr-card"><h3>Bandes et réglages verrouillés</h3><p>L'émission peut être limitée à vos bandes autorisées. Pendant l'émission, la fréquence, le mode et les réglages du poste ne se changent pas : le coupleur d'antenne, par exemple, pourrait émettre une porteuse.</p></div>
+  <div class="trxr-card"><h3>Le poste reste utilisable sur place</h3><p>Si quelqu'un se sert du poste lui-même (micro, bouton d'accord, mode), la station le voit. L'émission à distance est alors bloquée pendant son émission, puis deux minutes, et la page l'affiche. Un utilisateur à distance peut reprendre la main plus tôt, mais jamais pendant que l'opérateur sur place parle.</p></div>
 </div>
 <p>La station relit aussi l'état réel du poste en permanence. Si vous repassez en réception sur le poste lui-même, la station le voit et suit. Si le poste refuse de quitter l'émission, la station insiste, puis signale un défaut qui demande une intervention.</p>
 
@@ -70,7 +71,7 @@
 <ol class="trxr-layers">
   <li><div><h3>La page ou l'application</h3><p>Elle n'envoie de son micro que pendant l'émission confirmée, coupe quand elle est masquée et vous alerte par un son si la liaison se dégrade.</p></div></li>
   <li><div><h3>La passerelle de la station</h3><p>Elle décide de l'émission et applique la durée maximale, les signaux de vie, les bandes, les modes et le verrou d'opérateur.</p></div></li>
-  <li><div><h3>Le superviseur, totalement indépendant</h3><p>Il interroge le poste directement, sans passer par la passerelle. Il coupe l'émission si elle dure trop, si la passerelle ne répond plus ou si le poste émet sans raison connue. Il relance ensuite ce qui est bloqué. Si rien n'y fait, il met la station en <strong>mode sûr</strong> : réception seule, accès coupé, jusqu'à votre intervention. Sur un PC de bureau, il ne redémarre jamais l'ordinateur de lui-même.</p></div></li>
+  <li><div><h3>Le superviseur, totalement indépendant</h3><p>Il interroge le poste directement, sans passer par la passerelle. Il coupe l'émission si elle dure trop ou si la passerelle ne répond plus pendant une émission à distance. Une émission faite au micro du poste est laissée à l'opérateur présent, sous la même durée maximale absolue, réglable sur la station. Si une émission résiste à ses coupures, il relance ce qui est bloqué. Si rien n'y fait, il met la station en <strong>mode sûr</strong> : réception seule, accès coupé, jusqu'à votre intervention. Sur un PC de bureau, il ne redémarre jamais l'ordinateur de lui-même.</p></div></li>
   <li><div><h3>Le poste lui-même</h3><p>Nous demandons d'activer sa propre minuterie d'émission (TOT) : une dernière barrière, indépendante de tout ordinateur.</p></div></li>
 </ol>
 

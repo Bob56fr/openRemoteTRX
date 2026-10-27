@@ -34,7 +34,7 @@ def test_page_has_no_inline_code_and_no_external_resource():
 
 def test_every_dom_id_used_by_the_script_exists_in_the_page():
     used = set(re.findall(r'\$\("([a-z-]+)"\)', JS))
-    used |= set(re.findall(r'"((?:armed|ptt|stop|freq-set|mode-set|mode-select|disconnect|mem-add-current))"', JS))
+    used |= set(re.findall(r'"((?:armed|ptt|stop|freq-set|disconnect|mem-add-current))"', JS))
     used |= {button for _, button in re.findall(r'\["([A-Z]+)", "(ctl-[a-z]+)"\]', UI)}
     used |= {button for button, _ in re.findall(r'\["(wf-[a-z]+)", "([a-z]+)"\]', UI)}              # boutons du waterfall créés en boucle
     defined = set(re.findall(r'\bid="([a-z-]+)"', HTML))
@@ -178,7 +178,7 @@ def test_loading_order_of_the_scripts_and_no_forbidden_constructs():
 def test_tune_section_comes_before_memories_and_is_open():
     assert HTML.index('id="sec-tune"') < HTML.index('id="sec-memories"')
     assert re.search(r'<details id="sec-tune" open>', HTML)
-    for needed in ("bands", "step-down", "step-select", "step-up", "freq-input", "mode-select"):
+    for needed in ("bands", "step-down", "step-select", "step-up", "freq-input", "mode-buttons"):
         assert f'id="{needed}"' in HTML[HTML.index('id="sec-tune"'):HTML.index('id="sec-memories"')], needed
 
 

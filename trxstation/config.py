@@ -115,7 +115,8 @@ class Supervisor:
     recovery_wait_s: float = 20.0     # attente entre deux niveaux de l'échelle de reprise
     healthy_reset_s: float = 120.0    # durée sans problème avant de repartir du niveau 0
     temp_alert_c: float = 80.0        # alerte seule
-    allow_local_tx: bool = False      # True : l'émission locale (micro du poste) n'est pas coupée
+    allow_local_tx: bool = True       # True (« station partagée ») : l'émission locale (micro du poste) n'est pas coupée,
+                                      # sauf par tot_abs_s ; False : coupée à chaque passage (jamais d'escalade si « T 0 » marche)
     gateway_unit: str = "trx-gateway.service"
     rigctld_unit: str = "rigctld.service"
 
@@ -690,7 +691,7 @@ def render_toml(cfg: Config) -> str:
         f"recovery_wait_s = {v.recovery_wait_s}",
         f"healthy_reset_s = {v.healthy_reset_s}",
         f"temp_alert_c = {v.temp_alert_c}",
-        f"allow_local_tx = {str(v.allow_local_tx).lower()}   # true : ne pas couper l'émission au micro du poste",
+        f"allow_local_tx = {str(v.allow_local_tx).lower()}   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s",
         f"gateway_unit = {_s(v.gateway_unit)}",
         f"rigctld_unit = {_s(v.rigctld_unit)}",
         "",

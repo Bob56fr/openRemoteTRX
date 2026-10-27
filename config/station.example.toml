@@ -44,7 +44,7 @@ heartbeat_interval_ms = 500
 heartbeat_timeout_ms = 2000
 
 [supervisor]
-tot_abs_s = 135
+tot_abs_s = 135   # TOT absolu (> tot_ceiling_s) : coupe aussi l'émission faite au micro du poste
 poll_interval_s = 1.0
 max_reboots_per_hour = 3
 notify_url = ""
@@ -59,7 +59,7 @@ rigctld_fail_s = 5.0
 recovery_wait_s = 20.0
 healthy_reset_s = 120.0
 temp_alert_c = 80.0
-allow_local_tx = false   # true : ne pas couper l'émission au micro du poste
+allow_local_tx = true   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s
 gateway_unit = "trx-gateway.service"
 rigctld_unit = "rigctld.service"
 

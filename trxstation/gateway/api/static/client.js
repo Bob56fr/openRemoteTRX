@@ -49,6 +49,8 @@
     cat_error: "Le poste ne répond pas correctement.",
     ptt_unreadable: "L'état du PTT n'est pas lisible sur ce poste : émission refusée par sécurité.",
     rig_already_tx: "Le poste est déjà en émission.",
+    local_active: "Poste utilisé sur place (micro, bouton ou mode du poste) : PTT à distance bloqué. « Reprendre la main » pour le débloquer.",
+    local_tx: "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
     fault_latched: "Défaut verrouillé : intervention sur la station requise.",
     starting: "La station démarre : réessaie dans un instant.",
     not_idle: "Une coupure ou une émission est en cours.",
@@ -120,6 +122,19 @@
     return code ? (CUT_REASONS[code] || code) : "";
   }
 
+  const LOCAL_REASONS = { tx: "émission au micro du poste", frequency: "fréquence changée sur le poste", mode: "mode changé sur le poste" };
+
+  function localView(ptt) {
+    /* « Poste utilisé sur place » (voir gateway/safety/local.py) : bandeau, durée restante, reprise possible ou non. */
+    const left = ptt && Number.isFinite(ptt.local_remaining_s) ? ptt.local_remaining_s : null;
+    if (left === null) return { active: false, transmitting: false, text: "" };
+    const transmitting = !!ptt.local_tx;
+    const s = Math.max(0, Math.ceil(left));
+    const when = transmitting ? "pendant l'émission locale" : "encore " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    return { active: true, transmitting: transmitting,
+             text: "POSTE UTILISÉ SUR PLACE (" + (LOCAL_REASONS[ptt.local_reason] || "action sur le poste") + ") : PTT à distance bloqué " + when };
+  }
+
   // Modes « données » : le nom dépend de la version de Hamlib (4.7 : FM-D et AM-D au lieu de PKTFM, PKTAM).
   const DATA_MODES = { USB: ["PKTUSB"], LSB: ["PKTLSB"], FM: ["PKTFM", "FM-D"], AM: ["PKTAM", "AM-D"] };
   const MODE_LABELS = { PKTUSB: "USB-D (données)", PKTLSB: "LSB-D (données)", PKTFM: "FM-D (données)", PKTAM: "AM-D (données)",
@@ -178,6 +193,25 @@
 
   function shortMode(mode) {
     return mode ? (SHORT_MODES[mode] || mode) : "—";
+  }
+
+  function pillModeTarget(mode, modes) {
+    /* Appui sur le mode en haut à gauche : USB-D <-> LSB-D ; USB -> USB-D ; LSB -> LSB-D ; tout autre mode -> USB-D.
+       Noms Hamlib du poste (dataModeFor) ; null si le poste n'a pas le mode voulu. */
+    const usbD = dataModeFor("USB", modes), lsbD = dataModeFor("LSB", modes);
+    if ((mode && mode === usbD) || mode === "LSB") return lsbD;      // USB-D -> LSB-D, LSB -> LSB-D
+    return usbD;                                                      // LSB-D, USB et tout autre mode -> USB-D
+  }
+
+  function orderModes(list) {
+    /* Boutons de mode : USB-D, LSB-D, FM-D, AM-D d'abord (quel que soit leur nom Hamlib), puis les autres dans l'ordre du poste. */
+    if (!Array.isArray(list)) return [];
+    const first = [];
+    for (const base of ["USB", "LSB", "FM", "AM"]) {
+      const name = (DATA_MODES[base] || []).find((n) => list.includes(n));
+      if (name) first.push(name);
+    }
+    return first.concat(list.filter((m) => !first.includes(m)));
   }
 
   const AGC_LABELS = { 0: "AGC-OFF", 1: "AGC-SF", 2: "AGC-F", 3: "AGC-S", 4: "AGC-U", 5: "AGC-M", 6: "AGC-A" };
@@ -288,14 +322,17 @@
 
   const BANDS = [
     { key: "160", label: "160", lo: 1800000, hi: 2000000, start: 1850000, mode: "LSB" },
+    { key: "85", label: "85", lo: 3300000, hi: 3499999, start: 3450000, mode: "PKTLSB" },    // demandé par l'utilisateur : 3,450 MHz en LSB-D (écoute)
     { key: "80", label: "80", lo: 3500000, hi: 4000000, start: 3700000, mode: "LSB" },
     { key: "60", label: "60", lo: 5250000, hi: 5450000, start: 5358500, mode: "USB" },
+    { key: "45", label: "45", lo: 6500000, hi: 6999999, start: 6660000, mode: "PKTLSB" },    // demandé par l'utilisateur : 6,660 MHz en LSB-D (écoute)
     { key: "40", label: "40", lo: 7000000, hi: 7300000, start: 7100000, mode: "LSB" },
     { key: "30", label: "30", lo: 10100000, hi: 10150000, start: 10130000, mode: "USB" },
     { key: "20", label: "20", lo: 14000000, hi: 14350000, start: 14200000, mode: "USB" },
     { key: "17", label: "17", lo: 18068000, hi: 18168000, start: 18130000, mode: "USB" },
     { key: "15", label: "15", lo: 21000000, hi: 21450000, start: 21300000, mode: "USB" },
     { key: "12", label: "12", lo: 24890000, hi: 24990000, start: 24950000, mode: "USB" },
+    { key: "11", label: "11", lo: 25615000, hi: 27995000, start: 27430000, mode: "USB" },    // mêmes bornes que le plan du cluster (cluster/bandplan.py)
     { key: "10", label: "10", lo: 28000000, hi: 29700000, start: 28400000, mode: "USB" },
     { key: "6", label: "6", lo: 50000000, hi: 54000000, start: 50150000, mode: "USB" },
   ];
@@ -978,6 +1015,7 @@
         frequencyIcom: formatIcomFrequency(this.pendingHz !== null ? this.pendingHz : rig.frequency_hz), modeShort: shortMode(rig.mode),
         frequencyHz: this.pendingHz !== null ? this.pendingHz : (Number.isFinite(rig.frequency_hz) ? rig.frequency_hz : null), frequencyPending: this.pendingHz !== null, band: (bandOf(this.pendingHz !== null ? this.pendingHz : rig.frequency_hz) || {}).key || null,
         controls: controls, controlsLocked: state !== "RX", instruments: instruments, power: power, swr: swr, alc: alc,
+        local: localView(p),
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
         memories: this.memories, rig: rig,
@@ -1086,6 +1124,26 @@
       const res = await this.send("set_mode", { mode: mode, passband: passband || 0 });
       if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
       return res;
+    }
+
+    async releaseLocal() {
+      /* « Reprendre la main » : lève l'attente « poste utilisé sur place ». Ne commande rien au poste ; refusé par la
+         station pendant une émission au micro du poste. */
+      const res = await this.send("local_release");
+      if (res.ok) this.ui.log("Main reprise : le PTT à distance est de nouveau permis.", "");
+      else this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
+    async pressModePill() {
+      /* Bouton du mode (en haut à gauche) : bascule USB-D / LSB-D (voir pillModeTarget). Refusé pendant l'émission. */
+      if (!this.connected) return { ok: false };
+      if (this._ptt() && this._ptt().state !== "RX") { this.ui.log(reasonText("tx_active"), "warn"); return { ok: false, reason: "tx_active" }; }
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      const target = pillModeTarget(rig.mode, this._caps().modes);
+      if (!target) { this.ui.log("Le poste ne propose pas ce mode données (USB-D ou LSB-D).", "warn"); return { ok: false }; }
+      if (target === rig.mode) return { ok: true };
+      return this.setMode(target, 0);
     }
 
     _caps() {
@@ -1281,7 +1339,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
