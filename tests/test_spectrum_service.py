@@ -510,3 +510,79 @@ def test_monitor_shows_a_spectrum_problem():
     assert row.level == "bad" and "PROBLÈME DE CONFIGURATION" in row.text
     (row,) = rows({"state": "ok", "port": "COM7", "fps": 4.1})
     assert row.level == "ok" and "COM7" in row.text
+
+
+# ------------------------------------------------------------------ étape 4 : trames et diffusion aux clients
+
+def sweep(mode=1, f1=14_000_000, f2=14_200_000, points=(0, 80, 200), out=False):
+    from trxstation.spectrum.civ import Sweep
+    return Sweep(t=0.0, mode=mode, f1_hz=f1, f2_hz=f2, out_of_range=out, points=list(points))
+
+
+def test_frame_encoding_and_edges():
+    import struct
+    from trxstation.spectrum import frame as fr
+    raw = fr.encode(sweep(out=True), 7)
+    version, mode, flags, _, seq, low, high = struct.unpack("<BBBBIII", raw[:16])
+    assert (version, mode, flags, seq, low, high) == (1, 1, 1, 7, 14_000_000, 14_200_000)
+    assert list(raw[16:]) == [0, 80, 160]                                     # bornées à LEVEL_MAX
+    assert fr.edges(sweep(mode=0, f1=14_074_000, f2=25_000)) == (14_049_000, 14_099_000)   # centre ± demi-largeur
+    assert fr.encode(sweep(f1=None), 1) is None and fr.encode(sweep(points=()), 1) is None
+    assert fr.encode(sweep(mode=None), 1)[1] == 255
+
+
+def test_fanout_rate_limit_backpressure_and_failures():
+    from trxstation.spectrum.frame import MAX_BUFFERED, SpectrumFanout
+    now = [0.0]
+    fan = SpectrumFanout(max_fps=4, clock=lambda: now[0])
+    got = {"a": [], "b": [], "c": []}
+    buffered = {"b": MAX_BUFFERED + 1}
+    fan.add("a", got["a"].append, lambda: 0)
+    fan.add("b", got["b"].append, lambda: buffered["b"])
+    send_c = lambda f: (_ for _ in ()).throw(ConnectionError("fermé"))      # noqa: E731
+    fan.add("c", send_c, lambda: 0)
+    assert fan.publish(sweep()) == 1                                         # b engorgé, c en panne
+    assert len(got["a"]) == 1 and got["b"] == [] and len(fan) == 2          # c désabonné, b gardé
+    now[0] = 0.1
+    fan.publish(sweep())
+    assert len(got["a"]) == 1                                                # 4/s au plus
+    now[0], buffered["b"] = 0.3, 0
+    fan.publish(sweep())
+    assert len(got["a"]) == 2 and len(got["b"]) == 1
+    seqs = [int.from_bytes(f[4:8], "little") for f in got["a"]]
+    assert seqs == sorted(seqs) and seqs[0] < seqs[1]
+
+
+def test_fanout_late_close_of_an_old_connection_keeps_the_new_one():
+    from trxstation.spectrum.frame import SpectrumFanout
+    fan = SpectrumFanout(10, clock=lambda: 0.0)
+    old, new = (lambda f: None), (lambda f: None)
+    fan.add("phone", old, lambda: 0)
+    fan.add("phone", new, lambda: 0)                                         # reconnexion
+    fan.remove("phone", old)                                                 # fermeture tardive de l'ancien canal
+    assert len(fan) == 1
+    fan.remove("phone", new)
+    assert len(fan) == 0
+
+
+def test_service_delivers_sweeps_to_listeners_in_the_event_loop():
+    rig = PortB()
+
+    async def scenario():
+        svc, *_ = make_service(rig)
+        loop_thread, got = [], []
+
+        def listener(s):
+            import threading
+            loop_thread.append(threading.current_thread() is threading.main_thread())
+            got.append(s)
+        svc.add_listener(listener)
+        svc.add_listener(lambda s: 1 / 0)                                    # un écouteur fautif ne gêne pas les autres
+        await svc.start()
+        assert await wait_for(lambda: len(got) >= 3)
+        await svc.stop()
+        return loop_thread, svc.capability()
+    in_loop, capability = asyncio.run(scenario())
+    assert all(in_loop)                                                      # jamais dans le fil de lecture série
+    assert capability == {"source": "civ_port", "level_max": 160, "max_fps": 10}
+    assert SpectrumService(cfgmod.Spectrum(), None, None).capability() is None

@@ -73,7 +73,8 @@ class ControlSession:
                    "tx_modes": list(self.ctrl.config.rig.tx_modes),
                    "max_power_w": self.ctrl.config.rig.max_power_w,
                    "memories": self.memories.list() if self.memories else [],
-                   "layouts": self.layouts is not None})                     # mises en page personnalisées : layout_get
+                   "layouts": self.layouts is not None,
+                   "spectrum": self.spectrum.capability() if self.spectrum is not None else None})   # canal « spectrum »                     # mises en page personnalisées : layout_get
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         self.send(self._state())

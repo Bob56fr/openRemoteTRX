@@ -25,7 +25,7 @@ import time
 from collections.abc import Callable
 
 from ..config import Spectrum, parse_civ_address
-from .civ import Sweep
+from .civ import LEVEL_MAX, Sweep
 from .probe import FALLBACK, SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, open_serial
 
 log = logging.getLogger("trx-gateway.spectrum")
@@ -53,6 +53,24 @@ class SpectrumService:
         self.latest: Sweep | None = None
         self.sweeps = 0
         self._fps_window: list[float] = []
+        self._listeners: list[Callable[[Sweep], None]] = []
+
+    def add_listener(self, callback: Callable[[Sweep], None]) -> None:
+        """Appelé dans la boucle asyncio de la passerelle à chaque balayage (jamais dans le fil de lecture)."""
+        self._listeners.append(callback)
+
+    def capability(self) -> dict | None:
+        """Annoncé dans « hello » : None si le spectre n'est pas configuré."""
+        if not self.active:
+            return None
+        return {"source": "civ_port", "level_max": LEVEL_MAX, "max_fps": self.cfg.max_fps}
+
+    def _dispatch(self, sweep: Sweep) -> None:
+        for callback in list(self._listeners):
+            try:
+                callback(sweep)
+            except Exception:                         # noqa: BLE001 - un client fautif ne touche ni les autres ni la lecture
+                log.exception("diffusion du spectre en erreur")
 
     # ------------------------------------------------------------------ état publié
 
@@ -91,6 +109,11 @@ class SpectrumService:
             self.sweeps += 1
             now = self.clock()
             self._fps_window = [t for t in self._fps_window if now - t <= 5.0] + [now]
+        if self._listeners and self._loop is not None:
+            try:
+                self._loop.call_soon_threadsafe(self._dispatch, sweep)
+            except RuntimeError:                      # boucle fermée (arrêt en cours)
+                pass
 
     # ------------------------------------------------------------------ cycle de vie
 

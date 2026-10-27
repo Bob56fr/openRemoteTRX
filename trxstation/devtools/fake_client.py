@@ -76,6 +76,7 @@ class FakeClient:
         self.state: dict | None = None
         self.hello: dict | None = None
         self.rx_frames = 0
+        self.spectrum_frames: list[bytes] = []      # balayages reçus sur le canal « spectrum » (binaire)
         self.rx_loud_times: list[float] = []         # instants où une salve/tonalité est arrivée
         self._ids = itertools.count(1)
         self._waiting: dict[int, asyncio.Future] = {}
@@ -85,6 +86,12 @@ class FakeClient:
     async def connect(self, timeout: float = 15.0) -> None:
         self.pc.addTrack(self.track)
         self.channel = self.pc.createDataChannel("control")
+        self.spectrum_channel = self.pc.createDataChannel("spectrum", ordered=False, maxRetransmits=0)
+
+        @self.spectrum_channel.on("message")
+        def on_spectrum(raw) -> None:
+            if isinstance(raw, (bytes, bytearray)):
+                self.spectrum_frames.append(bytes(raw))
 
         @self.channel.on("open")
         def on_open() -> None:

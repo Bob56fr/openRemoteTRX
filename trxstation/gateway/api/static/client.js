@@ -455,7 +455,8 @@
     constructor(env, ui) {
       this.env = env;
       this.ui = ui;
-      this.pc = null; this.dc = null; this.micTrack = null;
+      this.pc = null; this.dc = null; this.sc = null; this.micTrack = null;
+      this.spectrumFrame = null; this._spectrumSeq = -1;   // dernier balayage du spectre HF reçu (canal « spectrum »)
       this.clientId = ""; this.connected = false; this.closed = true;
       this.armed = false; this.hello = null; this.state = null;
       this.pending = new Map(); this.nextId = 1;
@@ -545,6 +546,12 @@
         this.dc = dc;
         dc.onmessage = (ev) => this._onMessage(ev.data);
         dc.onclose = () => this._onClosed("datachannel_closed");
+        try {                                                          // spectre HF : non ordonné, sans renvoi (un balayage perdu est remplacé)
+          const sc = pc.createDataChannel("spectrum", { ordered: false, maxRetransmits: 0 });
+          sc.binaryType = "arraybuffer";
+          sc.onmessage = (ev) => this._onSpectrum(ev.data);
+          this.sc = sc;
+        } catch (e) { this.sc = null; }                                // navigateur sans cette option : pas de spectre, le reste fonctionne
         pc.onconnectionstatechange = () => {
           if (pc.connectionState === "failed") this._onClosed("connection_failed");
           else if (pc.connectionState === "closed") this._onClosed("connection_closed");
@@ -594,6 +601,8 @@
       this._releaseWakeLock();
       if (this.micTrack) { try { this.micTrack.enabled = false; this.micTrack.stop(); } catch (e) { /* déjà arrêtée */ } this.micTrack = null; }
       if (this.dc) { this.dc.onclose = null; try { this.dc.close(); } catch (e) { /* déjà fermé */ } this.dc = null; }
+      if (this.sc) { this.sc.onmessage = null; try { this.sc.close(); } catch (e) { /* déjà fermé */ } this.sc = null; }
+      this.spectrumFrame = null; this._spectrumSeq = -1;
       if (this.pc) { this.pc.onconnectionstatechange = null; this.pc.oniceconnectionstatechange = null; try { this.pc.close(); } catch (e) { /* déjà fermée */ } this.pc = null; }
       const wasConnected = this.connected;
       this.connected = false; this.closed = true; this.armed = false; this._wasActive = false; this._txSilenceAlerted = false;
@@ -840,6 +849,15 @@
       if (this.pendingHz !== null && (rig.frequency_hz === this.pendingHz || now - this.pendingSince > PENDING_MAX_MS)) this.pendingHz = null;
       this._trackBand(now, rig, active);
       this.ui.state(this.view());
+    }
+
+    _onSpectrum(data) {
+      /* Balayage binaire du canal « spectrum » : les plus anciens (canal non ordonné) sont jetés. */
+      const frame = parseSpectrumFrame(data);
+      if (!frame || frame.seq <= this._spectrumSeq) return;
+      this._spectrumSeq = frame.seq;
+      this.spectrumFrame = frame;
+      if (this.ui.spectrum) { try { this.ui.spectrum(frame); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
     }
 
     _trackSpectrum() {
@@ -1166,12 +1184,27 @@
     }
   }
 
+  const SPECTRUM_HEADER = 16;
+
+  function parseSpectrumFrame(data) {
+    /* Trame du canal « spectrum » (voir trxstation/spectrum/frame.py) ; null si illisible. */
+    let bytes = null;
+    if (data instanceof ArrayBuffer) bytes = new Uint8Array(data);
+    else if (data && data.buffer instanceof ArrayBuffer && typeof data.byteLength === "number") bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    if (!bytes || bytes.length <= SPECTRUM_HEADER || bytes[0] !== 1) return null;
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const lowHz = view.getUint32(8, true), highHz = view.getUint32(12, true);
+    if (!(highHz > lowHz)) return null;
+    return { mode: bytes[1], outOfRange: (bytes[2] & 1) === 1, seq: view.getUint32(4, true), lowHz, highHz,
+             points: bytes.subarray(SPECTRUM_HEADER) };
+  }
+
   const api = { REASONS, CUT_REASONS, TrxClient, formatFrequency, sMeterText, sMeterFraction, levelFraction,
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
-                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs };
+                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

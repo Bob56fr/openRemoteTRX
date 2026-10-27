@@ -26,8 +26,9 @@ TOKENS = PASSWORDS          # ancien nom, conservé
 
 
 class Loopback:
-    def __init__(self, *, source=None, sink=None, limits: PttLimits | None = None):
+    def __init__(self, *, source=None, sink=None, limits: PttLimits | None = None, spectrum=None):
         self._source, self._sink, self._limits = source, sink, limits
+        self._spectrum = spectrum            # objet du type SpectrumService (facultatif, essais du canal « spectrum »)
         self.fake = FakeRigctld()
 
     async def __aenter__(self) -> "Loopback":
@@ -46,7 +47,8 @@ class Loopback:
         self.pipeline.gate.owner_provider = lambda: self.ctrl.snapshot().owner
         self.registry = ClientRegistry(self.cfg.clients)
         self.memories = MemoryStore()
-        self.manager = PeerManager(self.ctrl, self.link, self.pipeline, None, peer_timeout_s=10.0, memories=self.memories)
+        self.manager = PeerManager(self.ctrl, self.link, self.pipeline, None, peer_timeout_s=10.0, memories=self.memories,
+                                   spectrum=self._spectrum)
         self.runner = await start_server(make_app(self.registry, self.manager), "127.0.0.1", 0)
         self.port = self.runner.addresses[0][1]
         self._link_task = asyncio.ensure_future(self.link.run())

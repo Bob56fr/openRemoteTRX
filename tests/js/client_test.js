@@ -14,7 +14,12 @@ class FakePC {
                   this.localDescription = null; this.remote = null; this.closed = false; }
   addTrack(track) { this.tracks.push(track); }
   addTransceiver(kind, opts) { this.transceivers.push({ kind, opts }); }
-  createDataChannel(label) { this.dc = new FakeDC(); this.dc.label = label; return this.dc; }
+  createDataChannel(label, opts) {
+    const ch = new FakeDC(); ch.label = label; ch.opts = opts;
+    this.channels = Object.assign(this.channels || {}, { [label]: ch });
+    if (label === "control") this.dc = ch;
+    return ch;
+  }
   async createOffer() { return { sdp: "v=0 offre", type: "offer" }; }
   async setLocalDescription(d) { this.localDescription = d; }
   async setRemoteDescription(d) { this.remote = d; }
@@ -459,6 +464,34 @@ test("spectre HF : la page prévient du retour au mode normal, une seule fois, p
   assert.match(spectrumLogs().at(-1)[0], /de nouveau disponible/);
   w.state();                                                               // station sans spectre : aucun message
   assert.equal(spectrumLogs().length, 2);
+});
+
+
+test("spectre HF : canal non ordonné sans renvoi, trames décodées, anciennes et illisibles jetées", async () => {
+  const w = makeWorld();
+  const frames = [];
+  w.ui.spectrum = (f) => frames.push(f);
+  await w.connected();
+  const sc = w.pc().channels.spectrum;
+  assert.deepEqual(sc.opts, { ordered: false, maxRetransmits: 0 }); assert.equal(sc.binaryType, "arraybuffer");
+  const frame = (seq, low, high, points) => {
+    const buf = new ArrayBuffer(16 + points.length), v = new DataView(buf), b = new Uint8Array(buf);
+    b[0] = 1; b[1] = 1; b[2] = 1; v.setUint32(4, seq, true); v.setUint32(8, low, true); v.setUint32(12, high, true);
+    b.set(points, 16); return buf;
+  };
+  sc.onmessage({ data: frame(5, 14000000, 14200000, [0, 80, 160]) });
+  sc.onmessage({ data: frame(4, 14000000, 14200000, [1, 1, 1]) });                // arrivé en retard : jeté
+  sc.onmessage({ data: frame(6, 14200000, 14000000, [1]) });                      // bords incohérents : jeté
+  sc.onmessage({ data: new ArrayBuffer(10) });                                     // trop court
+  sc.onmessage({ data: "texte" });
+  assert.equal(frames.length, 1);
+  assert.deepEqual([frames[0].seq, frames[0].lowHz, frames[0].highHz, frames[0].mode, frames[0].outOfRange], [5, 14000000, 14200000, 1, true]);
+  assert.deepEqual(Array.from(frames[0].points), [0, 80, 160]);
+  w.ui.spectrum = () => { throw new Error("affichage cassé"); };                  // un affichage fautif ne casse rien
+  sc.onmessage({ data: frame(7, 14000000, 14200000, [2]) });
+  assert.equal(w.client.spectrumFrame.seq, 7);
+  w.client.disconnect();
+  assert.equal(w.client.spectrumFrame, null); assert.equal(sc.readyState, "closed");
 });
 
 (async () => {

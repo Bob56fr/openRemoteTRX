@@ -3,6 +3,9 @@
 Client -> passerelle : {"cmd": <nom>, "id": <entier optionnel : numéro de la REQUÊTE, repris dans la réponse>, ...paramètres}
 (l'identifiant d'une mémoire s'appelle « memory_id » : « id » est toujours le numéro de requête)
 Passerelle -> client : {"type": "hello"|"state"|"result"|"error", ...}
+Spectre HF : `hello.spectrum` = {source, level_max, max_fps} ou null ; `state.spectrum` = {state, code, message} ;
+balayages en BINAIRE sur un second canal « spectrum » ouvert par le client (non ordonné, maxRetransmits 0),
+format dans trxstation/spectrum/frame.py ; la passerelle n'y lit rien.
 """
 from __future__ import annotations
 

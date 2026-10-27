@@ -76,6 +76,55 @@ def test_webrtc_end_to_end():
     asyncio.run(asyncio.wait_for(scenario(), 90))
 
 
+def test_spectrum_channel_end_to_end():
+    """Canal « spectrum » réel (aiortc) : capacité annoncée, balayages reçus en binaire, rien en retour."""
+    if not _available():
+        return
+    from types import SimpleNamespace
+
+    from trxstation.devtools.fake_client import FakeClient
+    from trxstation.devtools.loopback import PASSWORDS, Loopback
+    from trxstation.spectrum.civ import Sweep
+
+    class Spectrum:
+        cfg = SimpleNamespace(max_fps=20)
+
+        def __init__(self):
+            self.listeners = []
+
+        def add_listener(self, cb):
+            self.listeners.append(cb)
+
+        def capability(self):
+            return {"source": "civ_port", "level_max": 160, "max_fps": 20}
+
+        def snapshot(self):
+            return {"state": "ok", "code": "", "message": ""}
+
+        def emit(self, n):
+            for cb in self.listeners:
+                cb(Sweep(t=0.0, mode=1, f1_hz=14_000_000, f2_hz=14_200_000, out_of_range=False, points=[n % 161] * 475))
+
+    async def scenario():
+        spectrum = Spectrum()
+        async with Loopback(spectrum=spectrum) as lb:
+            phone = FakeClient(lb.url, "phone", PASSWORDS["phone"])
+            await phone.connect()
+            assert phone.hello["spectrum"]["level_max"] == 160 and phone.state["spectrum"]["state"] == "ok"
+            for n in range(40):
+                spectrum.emit(n)
+                await asyncio.sleep(0.06)
+                if len(phone.spectrum_frames) >= 5:
+                    break
+            assert len(phone.spectrum_frames) >= 5
+            frame = phone.spectrum_frames[-1]
+            assert frame[0] == 1 and len(frame) == 16 + 475
+            assert int.from_bytes(frame[8:12], "little") == 14_000_000
+            await phone.close()
+            await until(lambda: len(lb.manager.fanout) == 0, 5)               # client parti : plus d'envoi
+    asyncio.run(asyncio.wait_for(scenario(), 60))
+
+
 def test_latency_tool_runs_and_reports_both_directions():
     if not _available():
         return

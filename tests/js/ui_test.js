@@ -75,7 +75,7 @@ class FakeDC { constructor() { this.readyState = "open"; this.sent = []; this.on
 class FakePC {
   constructor() { this.tracks = []; this.dc = null; this.iceGatheringState = "complete"; this.connectionState = "new"; pcs.push(this); }
   addTrack(t) { this.tracks.push(t); } addTransceiver() {}
-  createDataChannel() { this.dc = new FakeDC(); return this.dc; }
+  createDataChannel(label) { const ch = new FakeDC(); ch.label = label; if (label === "control") this.dc = ch; return ch; }
   async createOffer() { return { sdp: "v=0", type: "offer" }; }
   async setLocalDescription(d) { this.localDescription = d; } async setRemoteDescription() {}
   async getStats() { return { forEach() {} }; }

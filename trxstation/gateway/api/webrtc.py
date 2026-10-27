@@ -3,7 +3,9 @@
 Une connexion par client :
   * piste audio sortante  : le son reçu du poste (RxHub -> RxTrack) ;
   * piste audio entrante  : le micro du client -> porte d'émission (jetée hors TX ou hors propriétaire) ;
-  * canal de données « control » : commandes JSON <-> ControlSession.
+  * canal de données « control » : commandes JSON <-> ControlSession ;
+  * canal de données « spectrum » (ouvert par le client, non ordonné, sans renvoi) : balayages du spectre HF
+    en binaire (spectrum/frame.py), du serveur vers le client seulement ; ce qui arrive dessus est ignoré.
 Le jeton est vérifié AVANT la création de la connexion (server.py). Un client qui se reconnecte
 remplace l'ancienne connexion (ce qui coupe l'émission s'il l'avait).
 
@@ -14,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass
 from fractions import Fraction
 
@@ -21,11 +24,13 @@ import av
 from aiortc import MediaStreamTrack, RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription
 from aiortc.mediastreams import MediaStreamError
 
+from ...spectrum.frame import SpectrumFanout
 from ..audio.pcm import FRAME_SAMPLES, SAMPLE_RATE, FrameAssembler
 from .session import ControlSession
 
 log = logging.getLogger(__name__)
 CONTROL_LABEL = "control"
+SPECTRUM_LABEL = "spectrum"
 
 
 class PeerLimitError(Exception):
@@ -95,6 +100,7 @@ class _Peer:
     session: ControlSession | None = None
     rx_track: RxTrack | None = None
     tx_task: asyncio.Task | None = None
+    spectrum_channel: object | None = None
     closed: bool = False
 
 
@@ -103,6 +109,9 @@ class PeerManager:
                  ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None):
         self.ctrl, self.link, self.pipeline, self.capabilities = ctrl, link, pipeline, capabilities
         self.spectrum = spectrum                # SpectrumService : son état est joint aux messages « state »
+        self.fanout = SpectrumFanout(spectrum.cfg.max_fps if spectrum is not None else 10, time.monotonic)
+        if spectrum is not None:
+            spectrum.add_listener(self.fanout.publish)
         self.memories = memories
         self.layouts = layouts
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
@@ -128,6 +137,9 @@ class PeerManager:
 
         @pc.on("datachannel")
         def on_datachannel(channel) -> None:
+            if channel.label == SPECTRUM_LABEL:
+                self._attach_spectrum(client_id, peer, channel)
+                return
             if channel.label != CONTROL_LABEL or peer.session is not None:
                 return                                          # un seul canal de contrôle par client
 
@@ -171,6 +183,27 @@ class PeerManager:
         self._spawn(self._expire_if_not_connected(client_id, peer))
         return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
 
+    def _attach_spectrum(self, client_id: str, peer: _Peer, channel) -> None:
+        """Un seul canal « spectrum » par client ; rien n'y est lu."""
+        if peer.spectrum_channel is not None or self.spectrum is None:
+            return
+        peer.spectrum_channel = channel
+
+        def send(frame: bytes) -> None:
+            if channel.readyState != "open":
+                raise ConnectionError("canal du spectre fermé")
+            channel.send(frame)
+
+        def subscribe() -> None:
+            if not peer.closed:
+                self.fanout.add(client_id, send, lambda: channel.bufferedAmount)
+
+        if channel.readyState == "open":
+            subscribe()
+        else:
+            channel.on("open", subscribe)
+        channel.on("close", lambda: self.fanout.remove(client_id, send))
+
     async def _expire_if_not_connected(self, client_id: str, peer: _Peer) -> None:
         await asyncio.sleep(self.peer_timeout_s)
         if not peer.closed and peer.pc.connectionState != "connected":
@@ -184,6 +217,7 @@ class PeerManager:
         peer.closed = True
         if self.peers.get(client_id) is peer:
             del self.peers[client_id]
+            self.fanout.remove(client_id)
         if peer.session is not None:
             await peer.session.close()                          # coupe l'émission si ce client la détenait
         if peer.tx_task is not None:
