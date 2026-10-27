@@ -36,6 +36,11 @@
   const ACTIVE_STATES = ["KEYING", "TX", "UNKEYING"];
 
   const REASONS = {
+    spectrum_unavailable: "Spectre HF indisponible pour le moment.",
+    spectrum_busy: "Réglage du spectre déjà en cours : réessaie.",
+    spectrum_timeout: "Le poste n'a pas confirmé le réglage du spectre.",
+    spectrum_refused: "Le poste a refusé ce réglage du spectre (en mode fixe, la largeur ne se règle pas).",
+    bad_setting: "Réglage du spectre invalide.",
     out_of_band: "Fréquence hors des bandes d'émission autorisées.",
     cooldown: "Trop rapproché : attends une seconde avant de réémettre.",
     unknown_client: "Client non reconnu par la passerelle.",
@@ -1171,6 +1176,14 @@
 
     async resetLayout() {
       const res = await this.send("layout_reset");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
+    async setSpectrum(name, value) {
+      /* Réglage du spectre du poste (mode, span, ref, speed) : refusé par la station pendant l'émission ; relu sur le poste. */
+      const res = await this.send("spectrum_set", { name: name, value: value });
+      if (res.ok && this.state && this.state.spectrum) this.state.spectrum.settings = res.settings || this.state.spectrum.settings;
       if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
       return res;
     }

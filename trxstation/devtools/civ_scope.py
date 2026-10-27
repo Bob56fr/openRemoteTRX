@@ -2,6 +2,7 @@
 
     python -m trxstation.devtools.civ_scope --port COM8 --duree 15
     python -m trxstation.devtools.civ_scope --port COM8 --adresse B6     (adresse CI-V lue dans le menu du poste)
+    python -m trxstation.devtools.civ_scope --port COM7 --reglages       (réglages du spectre, lecture seule)
 
 But : savoir si l'on sait déjà recevoir les données du spectre (commande CI-V 27 00) avant d'écrire quoi que
 ce soit dans la station. La station (rigctld, superviseur) doit être ARRÊTÉE : le port n'a qu'un seul maître.
@@ -36,6 +37,27 @@ from ..spectrum.civ import (  # noqa: F401 - réexportés (outils d'essai et tes
     BROADCAST, MAX_FRAME, LEVEL_MAX, ALLOWED,
     CivRefused, encode_request, Frame, FrameReader, is_bcd, bcd_byte, bcd_le,
     Sweep, ScopeAssembler, ascii_line)
+
+SETTING_READS = ((0x14, "mode centré / fixe"), (0x15, "largeur (SPAN)"), (0x19, "niveau de référence"),
+                 (0x1A, "vitesse de balayage"))
+
+
+def read_scope_settings(probe: "ScopeProbe") -> list[str]:
+    """Relevé BRUT des réglages du spectre (lecture seule), avec et sans octet de choix : sert à établir le format
+    réel des réponses du poste avant d'écrire quoi que ce soit."""
+    lines = []
+    for sub, label in SETTING_READS:
+        for data, form in ((b"\x00", "avec 00"), (None, "sans octet")):
+            reply = probe.request(0x27, sub, data, timeout=0.8)
+            if reply is None:
+                text = "sans réponse"
+            elif reply.payload[:1] == b"\xFA":
+                text = "refusé (FA)"
+            else:
+                text = reply.payload.hex(" ").upper()
+            lines.append(f"27 {sub:02X} {form:<10} {label:<22} : {text}")
+    return lines
+
 
 # ------------------------------------------------------------------ rapport
 
@@ -275,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--adresse", default=None, help="adresse CI-V du poste en hexadécimal (ex. 94) ; défaut : recherche")
     ap.add_argument("--duree", type=float, default=15.0, help="durée du relevé en secondes (défaut 15)")
     ap.add_argument("--sortie", type=Path, default=None, help="dossier des résultats (défaut spectre-<date>)")
+    ap.add_argument("--reglages", action="store_true",
+                    help="relève seulement les réglages du spectre (largeur, mode, référence, vitesse), en lecture seule")
     args = ap.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):                    # console Windows redirigée : jamais d'arrêt sur un caractère
         try:
@@ -306,6 +330,19 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(f"{args.port} ouvert ({args.baud} bauds), RTS et DTR à zéro. Aucune commande d'émission n'existe dans cet outil.")
     probe = ScopeProbe(ser, address=address)
+    if args.reglages:
+        try:
+            if not probe.detect((0x94, 0xA4, 0xB6)):
+                return 1
+            lines = read_scope_settings(probe)
+        finally:
+            ser.close()
+        text = "\n".join([f"Réglages du spectre lus sur {args.port} (adresse {probe.address:02X}h), lecture seule :", *lines])
+        folder = args.sortie or Path(f"spectre-reglages-{datetime.now():%Y%m%d-%H%M%S}")
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "reglages.txt").write_text(text + "\n", encoding="utf-8")
+        print(text + f"\n\nRésultat : {(folder / 'reglages.txt').resolve()}")
+        return 0
     try:
         if probe.detect((0x94, 0xA4, 0xB6)):
             print(f"Relevé pendant {args.duree:g} s (Ctrl+C pour arrêter plus tôt)...")

@@ -135,6 +135,39 @@
     return RANGES_DB[(i + 1) % RANGES_DB.length];
   }
 
+  // ---- réglages du spectre DU POSTE (envoyés à la station : spectrum_set ; mêmes listes fermées que spectrum/civ.py)
+  const SPANS_HZ = [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000];
+  const MODE_LABELS = { center: "CENT", fixed: "FIX", scroll_center: "SCR-C", scroll_fixed: "SCR-F" };
+  const SPEED_LABELS = { fast: "VIT RAP", mid: "VIT MOY", slow: "VIT LENT" };
+  const SPEED_ORDER = ["fast", "mid", "slow"];
+  const REF_MIN = -20, REF_MAX = 20, REF_UI_STEP = 1;
+
+  const modeSettingLabel = (m) => MODE_LABELS[m] || "MODE ?";
+  const nextMode = (m) => (m === "center" ? "fixed" : "center");          // défilement (lu seulement) -> centré
+  function spanSettingLabel(hz) {
+    if (!Number.isFinite(hz)) return "SPAN ?";
+    return "±" + (hz >= 1000 ? (hz / 1000).toString().replace(".", ",") + "k" : hz);
+  }
+  function nextSpan(hz) {
+    const i = SPANS_HZ.indexOf(hz);
+    return SPANS_HZ[(i + 1) % SPANS_HZ.length];
+  }
+  const speedSettingLabel = (s) => SPEED_LABELS[s] || "VIT ?";
+  function nextSpeed(s) {
+    const i = SPEED_ORDER.indexOf(s);
+    return SPEED_ORDER[(i + 1) % SPEED_ORDER.length];
+  }
+  function refLabel(db) {
+    if (!Number.isFinite(db)) return "REF ?";
+    return "REF " + (db > 0 ? "+" : "") + db.toFixed(1).replace(".", ",");
+  }
+  function stepRef(db, delta) {
+    /* Pas de 1 dB, ramené sur la grille de 0,5 dB du poste et borné à ±20 dB ; null si la valeur actuelle est inconnue. */
+    if (!Number.isFinite(db)) return null;
+    const next = Math.round((db + delta) * 2) / 2;
+    return Math.min(REF_MAX, Math.max(REF_MIN, next));
+  }
+
   function nextGain(gain) {
     const i = GAINS.indexOf(gain);
     return GAINS[(i + 1) % GAINS.length];
@@ -142,6 +175,8 @@
 
   const api = { GAINS, VIEWS, LEVELS_PER_DB, RANGES_DB, DEFAULT_RANGE_DB, nextView, available, levelT, noiseFloor, colorWindow,
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
-                sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange };
+                sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
+                SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,
+                refLabel, stepRef };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxHfScope = api; }
 })(typeof window !== "undefined" ? window : globalThis);

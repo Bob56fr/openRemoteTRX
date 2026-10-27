@@ -732,7 +732,24 @@
       $("hf-tx").hidden = !transmitting;
       $("hf-tx").textContent = v.mine ? "ÉMISSION EN COURS" : "ÉMISSION (" + (v.owner || "?") + ")";
       $("hf-stop").disabled = !v.connected;
+      hfRigSettings(v.connected && !transmitting);
       hfMarker();
+    }
+    function hfRigSettings(enabled) {
+      /* Réglages du poste, tels que relus par la station ; verrouillés pendant l'émission ou s'ils sont inconnus. */
+      const sp = (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
+      $("hf-set-mode").textContent = hfx.modeSettingLabel(sp.mode);
+      $("hf-set-span").textContent = hfx.spanSettingLabel(sp.span);
+      $("hf-ref").textContent = hfx.refLabel(sp.ref);
+      $("hf-set-speed").textContent = hfx.speedSettingLabel(sp.speed);
+      $("hf-set-mode").disabled = !enabled || !sp.mode;
+      $("hf-set-span").disabled = !enabled || sp.mode !== "center" || !Number.isFinite(sp.span);   // la largeur ne vaut qu'en mode centré
+      $("hf-ref-down").disabled = $("hf-ref-up").disabled = !enabled || !Number.isFinite(sp.ref);
+      $("hf-set-speed").disabled = !enabled || !sp.speed;
+    }
+    function hfSet(name, value) {
+      if (value === null || value === undefined) return;
+      client.setSpectrum(name, value).then(() => { if (lastView) hfState(lastView, lastView.pttState !== "RX"); }).catch(fail);
     }
 
     function setupAnalysis(stream) {
@@ -758,6 +775,12 @@
     $("wf-plot").addEventListener("click", toggleWaterfall);
     $("hf-plot").addEventListener("click", toggleWaterfall);
     $("hf-close").addEventListener("click", () => showZone("tx"));
+    const hfSettingsNow = () => (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
+    $("hf-set-mode").addEventListener("click", () => hfSet("mode", hfx.nextMode(hfSettingsNow().mode)));
+    $("hf-set-span").addEventListener("click", () => hfSet("span", hfx.nextSpan(hfSettingsNow().span)));
+    $("hf-set-speed").addEventListener("click", () => hfSet("speed", hfx.nextSpeed(hfSettingsNow().speed)));
+    $("hf-ref-down").addEventListener("click", () => hfSet("ref", hfx.stepRef(hfSettingsNow().ref, -hfx.REF_UI_STEP)));
+    $("hf-ref-up").addEventListener("click", () => hfSet("ref", hfx.stepRef(hfSettingsNow().ref, hfx.REF_UI_STEP)));
     $("hf-stop").addEventListener("click", () => client.stop().catch(fail));          // STOP toujours possible, même en plein écran
     $("hf-range").addEventListener("click", () => {
       if (!hfx) return;

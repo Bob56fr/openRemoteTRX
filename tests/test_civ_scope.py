@@ -66,7 +66,11 @@ def test_transmit_command_does_not_exist_in_the_tool():
     keys = [k for node in ast.walk(tree) if isinstance(node, ast.Dict) for k in node.keys]
     assert all(not (isinstance(k, ast.Tuple) and isinstance(k.elts[0], ast.Constant) and k.elts[0].value == 0x1C)
                for k in keys)
-    assert set(cs.ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11)}
+    assert set(cs.ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A)}
+    assert not any(k[0] == 0x1C for k in cs.ALLOWED)                                         # émission : jamais
+    for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
+        from trxstation.spectrum.civ import decode_setting
+        assert all(v in (None, b"\x00") or decode_setting(sub, bytes([0x27, sub]) + v) is not None for v in cs.ALLOWED[(0x27, sub)])
 
 
 # ------------------------------------------------------------------ trames et BCD
@@ -304,3 +308,41 @@ def test_serial_port_is_opened_with_rts_and_dtr_low(monkeypatch):
     monkeypatch.setattr(serial, "Serial", Recorder)
     cs.open_serial("COM99", 115200)
     assert seen == {"rts": False, "dtr": False, "port": "COM99"}
+
+
+class SettingsRig(FakeRig):
+    """Répond aux lectures des réglages AVEC l'octet de choix, refuse sans (comportement à confirmer sur le vrai poste)."""
+
+    def write(self, data: bytes):
+        frame = next(FrameReader().feed(data))
+        p = frame.payload
+        if p[:1] == b"\x27" and len(p) >= 2 and p[1] in (0x14, 0x15, 0x19, 0x1A):
+            self.written.append(bytes(data))
+            reply = (p + {0x14: b"\x00", 0x15: b"\x00\x50\x00\x00\x00", 0x19: b"\x00\x00\x00", 0x1A: b"\x01"}[p[1]]
+                     if len(p) == 3 else b"\xFA")
+            self.out += rig_frame(reply, frm=self.address)
+            return
+        super().write(data)
+
+
+def test_settings_survey_is_read_only_and_reports_raw_answers():
+    rig = SettingsRig()
+    probe = ScopeProbe(rig, address=RIG, say=lambda m: None, clock=Clock())
+    lines = cs.read_scope_settings(probe)
+    assert len(lines) == 8
+    assert "27 15 avec 00" in lines[2] and lines[2].endswith("27 15 00 00 50 00 00 00")
+    assert lines[3].endswith("refusé (FA)")
+    sent = [bytes(w[4:-1]) for w in rig.written]
+    assert all(len(cmd) <= 3 and cmd[0] == 0x27 for cmd in sent)                 # 27 xx [00] : jamais de valeur écrite
+    assert rig.settings == {0x10: 0, 0x11: 0}
+
+
+def test_settings_mode_writes_a_report(monkeypatch, tmp_path, capsys):
+    rig = SettingsRig()
+    monkeypatch.setattr(cs, "station_running", lambda: None)
+    monkeypatch.setattr(cs, "open_serial", lambda port, baud: rig)
+    rig.close = lambda: None
+    assert cs.main(["--port", "COM7", "--adresse", "B6", "--reglages", "--sortie", str(tmp_path / "r")]) == 0
+    text = (tmp_path / "r" / "reglages.txt").read_text(encoding="utf-8")
+    assert "largeur (SPAN)" in text and "lecture seule" in text
+

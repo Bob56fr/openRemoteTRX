@@ -130,7 +130,7 @@ def test_hf_scope_view_is_loaded_served_and_its_logic_passes_with_node():
     assert HTML.index('src="client.js"') < HTML.index('src="hfscope.js"') < HTML.index('src="ui.js"')
     server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
     assert '"/hfscope.js": ("hfscope.js", "text/javascript")' in server
-    for element in ("hfscope", "hf-plot", "hf-spec", "hf-fall", "hf-grid", "hf-axis", "hf-marker", "hf-stop", "hf-close", "hf-gain", "hf-range", "hf-tx"):
+    for element in ("hfscope", "hf-plot", "hf-spec", "hf-fall", "hf-grid", "hf-axis", "hf-marker", "hf-stop", "hf-close", "hf-gain", "hf-range", "hf-tx", "hf-set-mode", "hf-set-span", "hf-ref-down", "hf-ref", "hf-ref-up", "hf-set-speed"):
         assert f'id="{element}"' in HTML, element
     node = shutil.which("node")
     if not node:

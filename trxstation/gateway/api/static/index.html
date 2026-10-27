@@ -311,6 +311,15 @@
       <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance">Fermer</button>
     </span>
   </div>
+  <div class="hf-bar hf-rig" title="Réglages du spectre du poste lui-même (refusés pendant l'émission)">
+    <span class="hf-info">Poste :</span>
+    <button id="hf-set-mode" class="chip" title="Mode du spectre : centré sur la fréquence ou bornes fixes">CENT</button>
+    <button id="hf-set-span" class="chip" title="Largeur affichée (mode centré) : plus étroite = plus de détail">SPAN ?</button>
+    <button id="hf-ref-down" class="chip" title="Niveau de référence -1 dB">REF −</button>
+    <span id="hf-ref" class="hf-info">REF ?</span>
+    <button id="hf-ref-up" class="chip" title="Niveau de référence +1 dB">REF +</button>
+    <button id="hf-set-speed" class="chip" title="Vitesse de balayage du poste">VIT ?</button>
+  </div>
   <div id="hf-plot" class="hf-plot" title="Touche pour revenir aux graphiques de puissance">
     <canvas id="hf-spec" class="hf-spec"></canvas>
     <canvas id="hf-fall" class="hf-fall"></canvas>

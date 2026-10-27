@@ -50,6 +50,8 @@ class PortB:
             reply = b"\x19\x00" + bytes([self.address])
         elif p == b"\x03":
             reply = b"\x03" + to_bcd_le(self.freq, 5)
+        elif p[:1] == b"\x27" and len(p) >= 2 and p[1] not in (0x10, 0x11):
+            reply = b"\xFA"                                                  # autres réglages : voir test_spectrum_settings
         elif p[:1] == b"\x27" and self.scope:
             if len(p) == 2:
                 reply = p + bytes([self.settings[p[1]]])
@@ -88,7 +90,10 @@ class Clock:
 # ------------------------------------------------------------------ sécurité de la liste fermée
 
 def test_closed_command_list_has_no_transmit_command():
-    assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11)}
+    assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A)}
+    from trxstation.spectrum.civ import decode_setting
+    for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
+        assert all(v in (None, b"\x00") or decode_setting(sub, bytes([0x27, sub]) + v) is not None for v in ALLOWED[(0x27, sub)])
     for path in ("trxstation/spectrum/civ.py", "trxstation/spectrum/probe.py", "trxstation/spectrum/service.py"):
         tree = ast.parse((ROOT / path).read_text(encoding="utf-8"))
         assert not any(isinstance(n, ast.Constant) and n.value == 0x1C for n in ast.walk(tree)), path
@@ -215,7 +220,7 @@ async def wait_for(predicate, timeout=5.0):
 
 def test_inactive_unless_civ_port():
     svc = SpectrumService(cfgmod.Spectrum(), SimpleNamespace(), Ctrl())
-    assert svc.snapshot() == {"state": "off", "code": "", "message": ""}
+    assert svc.snapshot() == {"state": "off", "code": "", "message": "", "settings": {}}
     asyncio.run(svc.start())
     assert svc._thread is None
 

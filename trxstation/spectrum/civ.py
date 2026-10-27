@@ -25,6 +25,12 @@ ALLOWED: dict[tuple[int, int | None], set[bytes | None]] = {
     (0x03, None): {None},             # lecture de la fréquence affichée
     (0x27, 0x10): {None, b"\x00", b"\x01"},   # affichage du spectre : lecture, arrêt, marche
     (0x27, 0x11): {None, b"\x00", b"\x01"},   # sortie des données du spectre sur le CI-V : lecture, arrêt, marche
+    # Réglages du spectre : LECTURE seulement (sans octet de choix, ou avec 00 = spectre principal). Formats relevés
+    # sur le vrai poste avant toute écriture (civ_scope --reglages).
+    (0x27, 0x14): {None, b"\x00"},   # mode centré / fixe
+    (0x27, 0x15): {None, b"\x00"},   # largeur (SPAN) du mode centré
+    (0x27, 0x19): {None, b"\x00"},   # niveau de référence
+    (0x27, 0x1A): {None, b"\x00"},   # vitesse de balayage
 }
 
 
@@ -197,3 +203,74 @@ def ascii_line(points: list[int], width: int = 72) -> str:
         level = min(max(chunk), LEVEL_MAX) if chunk else 0
         out.append(marks[round(level / LEVEL_MAX * (len(marks) - 1))])
     return "".join(out)
+
+
+# ------------------------------------------------------------------ réglages du spectre (relevés sur un IC-7300MK2)
+# Toujours avec l'octet de choix 00 (spectre principal) : sans lui, le poste répond FA.
+#   27 14 00 m        mode : 00 centré, 01 fixe, 02 défilement centré, 03 défilement fixe
+#   27 15 00 + 5 o.   demi-largeur du mode centré, Hz, BCD octet faible d'abord (00 00 50 00 00 = ±500 kHz)
+#   27 19 00 a b s    niveau de référence : « ab » = centièmes de dB en BCD (14 50 = 14,50), s = 01 négatif
+#   27 1A 00 v        vitesse : 00 rapide, 01 moyenne, 02 lente
+SCOPE_MODE, SCOPE_SPAN, SCOPE_REF, SCOPE_SPEED = 0x14, 0x15, 0x19, 0x1A
+MODES = {"center": 0, "fixed": 1}                         # écrits ; 2 et 3 (défilement) seulement lus
+MODE_NAMES = {0: "center", 1: "fixed", 2: "scroll_center", 3: "scroll_fixed"}
+SPANS_HZ = (2_500, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000)
+SPEEDS = {"fast": 0, "mid": 1, "slow": 2}
+SPEED_NAMES = {v: k for k, v in SPEEDS.items()}
+REF_MIN_DB, REF_MAX_DB, REF_STEP_DB = -20.0, 20.0, 0.5
+
+
+def _to_bcd_le(value: int, size: int) -> bytes:
+    out = []
+    for _ in range(size):
+        value, low = divmod(value, 10)
+        value, high = divmod(value, 10)
+        out.append(high << 4 | low)
+    return bytes(out)
+
+
+def _bcd(n: int) -> int:
+    return (n // 10) << 4 | n % 10
+
+
+def valid_ref(db) -> bool:
+    return (isinstance(db, (int, float)) and not isinstance(db, bool) and REF_MIN_DB <= db <= REF_MAX_DB
+            and abs(db / REF_STEP_DB - round(db / REF_STEP_DB)) < 1e-9)
+
+
+def encode_setting(sub: int, value) -> bytes:
+    """Données d'écriture (après 27 sub), octet de choix compris ; ValueError hors des valeurs permises."""
+    if sub == SCOPE_MODE and value in MODES:
+        return bytes([0, MODES[value]])
+    if sub == SCOPE_SPAN and value in SPANS_HZ:
+        return b"\x00" + _to_bcd_le(value, 5)
+    if sub == SCOPE_REF and valid_ref(value):
+        hundredths = round(abs(value) * 100)
+        return bytes([0, _bcd(hundredths // 100), _bcd(hundredths % 100), 1 if value < 0 else 0])
+    if sub == SCOPE_SPEED and value in SPEEDS:
+        return bytes([0, SPEEDS[value]])
+    raise ValueError(f"réglage du spectre refusé : 27 {sub:02X} = {value!r}")
+
+
+def decode_setting(sub: int, payload: bytes):
+    """Valeur lue dans une réponse « 27 sub 00 ... » ; None si illisible."""
+    if len(payload) < 4 or payload[:3] != bytes([0x27, sub, 0x00]):
+        return None
+    data = payload[3:]
+    if sub == SCOPE_MODE and len(data) == 1:
+        return MODE_NAMES.get(data[0])
+    if sub == SCOPE_SPAN and len(data) == 5:
+        return bcd_le(data)
+    if sub == SCOPE_REF and len(data) == 3 and is_bcd(data[0]) and is_bcd(data[1]) and data[2] in (0, 1):
+        db = (bcd_byte(data[0]) * 100 + bcd_byte(data[1])) / 100
+        return -db if data[2] == 1 else db
+    if sub == SCOPE_SPEED and len(data) == 1:
+        return SPEED_NAMES.get(data[0])
+    return None
+
+
+# Écritures permises : générées à partir des seules valeurs ci-dessus (liste fermée, jamais de valeur calculée ailleurs).
+ALLOWED[(0x27, SCOPE_MODE)] |= {encode_setting(SCOPE_MODE, m) for m in MODES}
+ALLOWED[(0x27, SCOPE_SPAN)] |= {encode_setting(SCOPE_SPAN, s) for s in SPANS_HZ}
+ALLOWED[(0x27, SCOPE_REF)] |= {encode_setting(SCOPE_REF, i * REF_STEP_DB) for i in range(-40, 41)}
+ALLOWED[(0x27, SCOPE_SPEED)] |= {encode_setting(SCOPE_SPEED, v) for v in SPEEDS}

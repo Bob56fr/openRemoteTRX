@@ -206,6 +206,13 @@ class ControlSession:
             elif cmd.name == "set_level":
                 await self.ctrl.set_level(cmd.params["name"], cmd.params["value"])
                 self._result(cmd.id, True)
+            elif cmd.name == "spectrum_set":
+                if self.spectrum is None:
+                    self._result(cmd.id, False, reason="spectrum_unavailable")
+                else:                                    # aucun effet sur l'émission ; refusé hors réception par le service
+                    ok, reason = await self.spectrum.set_setting(cmd.params["name"], cmd.params["value"])
+                    extra = {} if ok else {"reason": reason}
+                    self._result(cmd.id, ok, settings=self.spectrum.snapshot().get("settings", {}), **extra)
             elif cmd.name.startswith("memory_"):
                 await self._memory_command(cmd)
             elif cmd.name.startswith("layout_"):

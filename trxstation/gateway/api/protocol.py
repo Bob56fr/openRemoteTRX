@@ -27,7 +27,8 @@ LAYOUT_SAVE_PREFIX = '{"cmd":"layout_save"'
 MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_state",
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
-            "layout_get", "layout_save", "layout_reset")
+            "layout_get", "layout_save", "layout_reset", "spectrum_set")
+SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed")   # valeurs vérifiées par la liste fermée de spectrum/civ.py
 
 
 class ProtocolError(Exception):
@@ -115,6 +116,20 @@ def parse_command(raw: str | bytes) -> Command:
         params["memory_id"] = None if data.get("memory_id") is None else _memory_id(data.get("memory_id"))
     elif name in ("memory_delete", "memory_recall"):
         params["memory_id"] = _memory_id(data.get("memory_id"))
+    elif name == "spectrum_set":
+        setting, value = data.get("name"), data.get("value")
+        if setting not in SPECTRUM_SETTINGS:
+            raise ProtocolError("invalid_params", "name doit être l'un des réglages : " + ", ".join(SPECTRUM_SETTINGS))
+        if setting in ("mode", "speed"):
+            if not isinstance(value, str) or len(value) > 16:
+                raise ProtocolError("invalid_params", "value doit être un nom de réglage")
+        elif setting == "span":
+            value = _int(value, "value", 1, 1_000_000)
+        elif isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or abs(value) > 100:
+            raise ProtocolError("invalid_params", "value doit être un niveau en dB")
+        else:
+            value = float(value)
+        params["name"], params["value"] = setting, value
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

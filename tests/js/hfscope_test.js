@@ -84,6 +84,18 @@ test("rendu à la résolution de l'écran : interpolation sans marches, tailles 
   assert.equal(hf.lineHeight(1), 2); assert.equal(hf.lineHeight(2.75), 6); assert.equal(hf.lineHeight(undefined), 2);
 });
 
+test("réglages du poste : libellés, cycles et pas du niveau de référence (grille 0,5 dB, ±20 dB)", () => {
+  assert.equal(hf.modeSettingLabel("center"), "CENT"); assert.equal(hf.modeSettingLabel("scroll_center"), "SCR-C");
+  assert.equal(hf.nextMode("center"), "fixed"); assert.equal(hf.nextMode("scroll_fixed"), "center");
+  assert.equal(hf.spanSettingLabel(500000), "±500k"); assert.equal(hf.spanSettingLabel(2500), "±2,5k"); assert.equal(hf.spanSettingLabel(undefined), "SPAN ?");
+  assert.equal(hf.nextSpan(500000), 2500); assert.equal(hf.nextSpan(100000), 250000); assert.equal(hf.nextSpan(7), 2500);
+  assert.equal(hf.nextSpeed("slow"), "fast"); assert.equal(hf.speedSettingLabel("mid"), "VIT MOY");
+  assert.equal(hf.refLabel(-14.5), "REF -14,5"); assert.equal(hf.refLabel(20), "REF +20,0"); assert.equal(hf.refLabel(null), "REF ?");
+  assert.equal(hf.stepRef(-14.5, 1), -13.5); assert.equal(hf.stepRef(19.5, 1), 20); assert.equal(hf.stepRef(-20, -1), -20);
+  assert.equal(hf.stepRef(0.3, 1), 1.5); assert.equal(hf.stepRef(undefined, 1), null);
+  assert.deepEqual(hf.SPANS_HZ, [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000]);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

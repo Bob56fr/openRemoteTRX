@@ -390,3 +390,10 @@ couleurs ; « STOP » coupe l'émission ; « Fermer », un appui sur le spectre 
 vue. Si le spectre n'est pas disponible (mode normal), cette étape est sautée.
 À vérifier à l'écran : les graduations en MHz correspondent aux bords affichés par le poste, en mode
 centré comme en mode fixe ; le trait orange est sur la fréquence affichée par le poste.
+
+**Réglages du spectre du poste depuis la page** (ligne « Poste : » de la vue HF) : mode CENT/FIX, largeur
+(SPAN, mode centré seulement), niveau de référence (REF − / REF +, par 1 dB) et vitesse. Chaque appui part
+vers le poste par le second port, puis le réglage est RELU : le bouton affiche la valeur du poste. Ces
+réglages sont refusés pendant l'émission. Un réglage changé directement sur le poste apparaît dans la page
+en 30 s au plus. À vérifier : chaque bouton change bien le réglage affiché par le poste, et une largeur
+plus étroite affine bien le spectre.

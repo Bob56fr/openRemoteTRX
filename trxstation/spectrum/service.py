@@ -13,24 +13,32 @@ Règles :
   - à chaque ouverture, `probe.check` revérifie l'adresse CI-V, le spectre et la fréquence (même poste) ;
   - en marche : plus de balayage pendant SILENT_S, ou poste qui ne répond plus à son adresse (vérifiée toutes les
     IDENT_EVERY_S) = retour au mode normal ; nouvel essai toutes les RETRY_S, toujours en réception confirmée ;
-  - à l'arrêt, les deux réglages du spectre du poste sont remis comme au départ.
+  - à l'arrêt, les deux réglages du spectre du poste sont remis comme au départ ;
+  - réglages du spectre (mode, largeur, référence, vitesse) demandés par la page : liste fermée (civ.encode_setting),
+    exécutés par le fil entre deux lectures, SEULEMENT en réception confirmée, puis RELUS sur le poste ; ils sont
+    aussi relus à l'ouverture et toutes les IDENT_EVERY_S (un changement fait sur le poste apparaît dans la page).
 La lecture série (bloquante) tourne dans un fil à part : elle ne retarde jamais la boucle asyncio de la passerelle.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+import queue
 import threading
 import time
 from collections.abc import Callable
 
 from ..config import Spectrum, parse_civ_address
-from .civ import LEVEL_MAX, Sweep
+from .civ import (LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_setting,
+                  encode_setting)
 from .probe import FALLBACK, SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, open_serial
 
 log = logging.getLogger("trx-gateway.spectrum")
 
 PERMANENT = ("ptt_on_open", "no_pyserial")
+SETTING_SUBS = {"mode": SCOPE_MODE, "span": SCOPE_SPAN, "ref": SCOPE_REF, "speed": SCOPE_SPEED}
+# Motifs de refus d'un réglage (traduits par la page : REASONS de client.js).
+SETTING_REASONS = ("bad_setting", "spectrum_unavailable", "spectrum_busy", "spectrum_timeout", "spectrum_refused", "tx_active")
 
 
 class SpectrumService:
@@ -54,6 +62,8 @@ class SpectrumService:
         self.sweeps = 0
         self._fps_window: list[float] = []
         self._listeners: list[Callable[[Sweep], None]] = []
+        self._requests: queue.Queue = queue.Queue(maxsize=8)
+        self._settings: dict = {}
 
     def add_listener(self, callback: Callable[[Sweep], None]) -> None:
         """Appelé dans la boucle asyncio de la passerelle à chaque balayage (jamais dans le fil de lecture)."""
@@ -75,9 +85,9 @@ class SpectrumService:
     # ------------------------------------------------------------------ état publié
 
     def snapshot(self) -> dict:
-        """Pour les clients : état, code et message seulement (change rarement)."""
+        """Pour les clients : état, code, message et réglages relus du poste (change rarement)."""
         with self._lock:
-            return dict(self._state)
+            return dict(self._state, settings=dict(self._settings))
 
     def stats(self) -> dict:
         """Pour le fichier d'état : snapshot + compteurs."""
@@ -96,7 +106,7 @@ class SpectrumService:
             self._state = {"state": state, "code": code, "message": message}
         if changed:
             if state == "error":
-                log.error("spectre HF : %s %s", message, FALLBACK)
+                log.error("spectre HF : %s", message)          # le message contient déjà « Mode normal… »
             elif state == "ok":
                 log.info("spectre HF reçu sur %s", self.cfg.port)
 
@@ -114,6 +124,74 @@ class SpectrumService:
                 self._loop.call_soon_threadsafe(self._dispatch, sweep)
             except RuntimeError:                      # boucle fermée (arrêt en cours)
                 pass
+
+    # ------------------------------------------------------------------ réglages du spectre (demandés par la page)
+
+    async def set_setting(self, name: str, value, timeout: float = 3.0) -> tuple[bool, str]:
+        """(réussi, motif) ; jamais d'exception. Exécuté par le fil du port B, puis relu sur le poste."""
+        sub = SETTING_SUBS.get(name)
+        try:
+            if sub is None:
+                raise ValueError(name)
+            encode_setting(sub, value)
+        except ValueError:
+            return False, "bad_setting"
+        if self.snapshot()["state"] != "ok" or self._loop is None:
+            return False, "spectrum_unavailable"
+        if self.ctrl.snapshot().state != "RX":
+            return False, "tx_active"
+        future = self._loop.create_future()
+        try:
+            self._requests.put_nowait((name, value, future))
+        except queue.Full:
+            return False, "spectrum_busy"
+        try:
+            return await asyncio.wait_for(future, timeout)
+        except asyncio.TimeoutError:
+            return False, "spectrum_timeout"
+
+    def _resolve(self, future, result: tuple[bool, str]) -> None:
+        def done() -> None:
+            if not future.done():
+                future.set_result(result)
+        if self._loop is not None:
+            try:
+                self._loop.call_soon_threadsafe(done)
+            except RuntimeError:                      # boucle fermée
+                pass
+
+    def _drain_requests(self, reason: str) -> None:
+        while True:
+            try:
+                _, _, future = self._requests.get_nowait()
+            except queue.Empty:
+                return
+            self._resolve(future, (False, reason))
+
+    def _read_settings(self, port: CivPort) -> None:
+        values = {}
+        for name, sub in SETTING_SUBS.items():
+            reply = port.request(0x27, sub, b"\x00", timeout=0.6)
+            values[name] = decode_setting(sub, reply.payload) if reply is not None else None
+        with self._lock:
+            self._settings = values
+
+    def _serve_requests(self, port: CivPort) -> None:
+        while True:
+            try:
+                name, value, future = self._requests.get_nowait()
+            except queue.Empty:
+                return
+            if not self._rx_confirmed():                 # double garde : jamais pendant l'émission
+                self._resolve(future, (False, "tx_active"))
+                continue
+            sub = SETTING_SUBS[name]
+            reply = port.request(0x27, sub, encode_setting(sub, value))
+            accepted = reply is not None and reply.payload[:1] == bytes([OK])
+            self._read_settings(port)
+            now = self._settings.get(name)
+            same = now == value if not isinstance(value, float) else isinstance(now, float) and abs(now - value) < 0.01
+            self._resolve(future, (True, "") if accepted and same else (False, "spectrum_refused"))
 
     # ------------------------------------------------------------------ cycle de vie
 
@@ -201,6 +279,7 @@ class SpectrumService:
             if self._stop.is_set():
                 return
             before = check(port, lambda: self.link.state.frequency_hz)
+            self._read_settings(port)
             for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT):
                 if before[sub] != 1:
                     if not port.set_setting(sub, 1):
@@ -210,6 +289,9 @@ class SpectrumService:
         except OSError as exc:
             raise CheckFailed("port_lost", str(exc)) from exc
         finally:
+            self._drain_requests("spectrum_unavailable")
+            with self._lock:
+                self._settings = {}
             for sub, value in reversed(changed):    # remis comme au départ, chacun indépendamment
                 try:
                     port.set_setting(sub, value)
@@ -231,8 +313,10 @@ class SpectrumService:
                 raise CheckFailed("silent", f"{self.SILENT_S:g}")
             if port.sweeps and self._state["state"] != "ok":
                 self._set("ok")
+            self._serve_requests(port)
             if now >= next_ident:
                 next_ident = now + self.IDENT_EVERY_S
                 found = port.identify()
                 if found != self.address:
                     raise CheckFailed("no_answer")
+                self._read_settings(port)                  # réglage changé sur le poste : la page le voit

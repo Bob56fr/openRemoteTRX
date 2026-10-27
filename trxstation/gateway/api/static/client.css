@@ -159,6 +159,8 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 .hf-info { color: var(--texte-secondaire); font-size: .8rem; }
 .hf-actions { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
 .hf-actions .chip, .hf-actions .stop { flex: 0 0 auto; min-height: 2rem; padding: 0 .7rem; }
+.hf-rig { gap: .35rem; }
+.hf-rig .chip { min-height: 1.8rem; padding: 0 .6rem; }
 .hf-plot { position: relative; flex: 1 1 auto; min-height: 8rem; background: var(--fond); border-radius: .25rem; overflow: hidden; cursor: pointer; }
 .hf-spec { position: absolute; left: 0; top: 0; width: 100%; height: 30%; }
 .hf-fall { position: absolute; left: 0; top: 30%; width: 100%; height: 70%; }
