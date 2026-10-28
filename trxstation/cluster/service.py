@@ -140,7 +140,14 @@ def page_summary(feed: Feed | None, engine: Engine | None) -> dict:
                 verdict = "attente"
             sources.append({"name": s.name[:40], "type": s.kind, "verdict": verdict, "last_10min": stats["last_10min"],
                             "last_spot_age_s": age, "retry_in_s": st.retry_in_s, "code": (st.last_code or "")[:40]})
-    return {"kind": "cluster_status", "health": health(feed, engine), "sources": sources}
+    # Spots actifs par bande (ceux du cache : filtres de l'utilisateur appliqués, expirés retirés) : pastilles des boutons.
+    bands: dict[str, int] = {}
+    spots = getattr(engine.cache, "spots", None) if engine is not None else None
+    if callable(spots):
+        for spot in spots():
+            if spot.band:
+                bands[spot.band] = bands.get(spot.band, 0) + 1
+    return {"kind": "cluster_status", "health": health(feed, engine), "sources": sources, "bands": bands}
 
 
 def write_status(path: Path, data: dict) -> None:

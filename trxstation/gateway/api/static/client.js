@@ -165,6 +165,21 @@
              staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 1)" : "" };
   }
 
+  // Pastille des boutons de bande : nombre de spots actifs (« 20m » du cluster -> bouton « 20 ») ; couleur du gris au rouge.
+  const BAND_DOT_STEPS = [[15, 3], [5, 2], [1, 1]];   // >= 15 spots : rouge ; >= 5 : orange ; >= 1 : gris ; 0 : rien
+
+  function bandSpotLevels(bands) {
+    const out = {};
+    if (!bands || typeof bands !== "object") return out;
+    for (const band of BANDS) {
+      const count = bands[band.key + "m"];
+      if (!Number.isFinite(count) || count < 1) continue;
+      const n = Math.min(Math.round(count), 999);
+      out[band.key] = { count: n, level: BAND_DOT_STEPS.find(([min]) => n >= min)[1] };
+    }
+    return out;
+  }
+
   const MAX_REPORT_CHARS = 30000;          // même limite que la station (protocol.MAX_BUG_REPORT_CHARS)
 
   function formatProblemReport(d) {
@@ -1491,7 +1506,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport, clusterStatusView,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }

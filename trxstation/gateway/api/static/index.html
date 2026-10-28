@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="client.css">
 </head>
 <body>
-<div id="splash" class="splash" title="Touche pour passer"><img src="splash.webp" alt="rf-diy.com"></div>
+<div id="splash" class="splash" title="Touche pour passer"><img src="splash.webp" alt="openremotetrx"></div>
 <div id="app" class="portrait">
 
   <!-- Écran de sécurité : le profil n'a pas d'interface pour cet appareil (voir layout.js) -->
@@ -28,6 +28,7 @@
       <span id="mode-pill" class="modepill" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)">—</span>
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
+      <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)">www.rf-diy.com</a>
       <span id="status" class="badge">déconnecté</span>
       <span id="version" class="dim version" title="Version de la station" hidden></span>
     </div>
@@ -128,6 +129,10 @@
     <div id="blk-hfdock" class="hfdock" hidden>
       <label class="check" title="Grand écran en paysage : le spectre HF du poste reste affiché en haut de la colonne de droite (consomme des données tant qu'il est affiché)"><input id="hf-dock-on" type="checkbox"> Waterfall HF permanent</label>
     </div>
+    <div id="blk-audiodock" class="audiodock" hidden>
+      <label class="check" title="Grand écran en paysage : le spectre de l'audio reçu reste affiché sous ces réglages (calculé par le navigateur, aucune donnée réseau en plus)"><input id="audio-dock-on" type="checkbox" checked> Spectre audio permanent</label>
+    </div>
+    <div id="audio-dock" class="audio-dock" hidden></div>
     <div id="mode-hint" class="alert warn" hidden></div>
     <div id="fault" class="alert" hidden></div>
   </header>

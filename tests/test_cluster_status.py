@@ -86,7 +86,14 @@ def test_failed_and_waiting_sources_and_no_feed():
     assert by["RBN"]["verdict"] == "echec" and by["RBN"]["code"] == "callsign_refused"
     assert by["on0dxk"]["verdict"] == "attente" and by["on0dxk"]["retry_in_s"] == 30.0
     assert summary["kind"] == "cluster_status" and summary["health"] == "red"
-    assert page_summary(None, None) == {"kind": "cluster_status", "health": "off", "sources": []}
+    assert page_summary(None, None) == {"kind": "cluster_status", "health": "off", "sources": [], "bands": {}}
+
+
+def test_active_spots_are_counted_per_band_for_the_band_buttons():
+    eng = engine(Clock())
+    eng.cache.spots = lambda: [SimpleNamespace(band="20m"), SimpleNamespace(band="20m"), SimpleNamespace(band="40m"),
+                               SimpleNamespace(band=None)]
+    assert page_summary(feed_of(("RBN", "rbn", CONNECTED)), eng)["bands"] == {"20m": 2, "40m": 1}
 
 
 def test_service_sends_the_status_on_change_then_every_third_write(tmp_path):

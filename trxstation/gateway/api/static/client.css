@@ -46,7 +46,10 @@ button, input, select, textarea { font: inherit; }
 #app.landscape #bottom { flex: 1 1 0; }
 
 /* ---- afficheur */
-.line1 { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
+.line1 { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; position: relative; }
+.sitelink { position: absolute; left: 50%; transform: translateX(-50%); font-size: .75rem; color: var(--texte-secondaire); text-decoration: none; white-space: nowrap; }
+.sitelink:hover, .sitelink:focus-visible { color: var(--accent); text-decoration: underline; }
+@media (max-width: 380px) { .sitelink { display: none; } }   /* téléphone étroit : la ligne du haut est déjà pleine */
 .grow { flex: 1; } .dim { color: var(--texte-secondaire); font-size: .8rem; }
 .txflag { border: 2px solid var(--tx); color: var(--tx); background: var(--txflag-fond); font-weight: 800; padding: 0 .4rem; border-radius: .25rem; letter-spacing: .05em; }
 .modepill { background: var(--accent); color: var(--texte-sur-accent); font-weight: 700; padding: .05rem .7rem; border-radius: .3rem; min-width: 3.2rem; text-align: center; cursor: pointer; user-select: none; }
@@ -160,6 +163,9 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 
 /* ---- même vue, intégrée en haut de la colonne de droite (paysage large, interrupteur « Waterfall HF permanent ») */
 .hfdock { margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--ligne); }
+.audiodock { margin-top: .3rem; }
+#blk-hfdock[hidden] + .audiodock { margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--ligne); }   /* trait sous RÉCEPTION */
+.audio-dock { margin-top: .4rem; }
 .hf-dock { position: sticky; top: -.5rem; z-index: 5; margin: -.5rem -.6rem .5rem; padding: .5rem .6rem .3rem; background: var(--fond); border-bottom: 2px solid var(--ligne); }
 .hf.docked { position: relative; inset: auto; z-index: auto; height: min(26rem, 55vh); padding: 0 1.3rem; }   /* marge : graduations des bords lisibles */
 .hf-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
@@ -231,6 +237,12 @@ summary .cluster-dot { display: inline-block; margin-left: .4rem; vertical-align
 /* ---- bandes et pas */
 .bands { display: flex; flex-wrap: wrap; gap: .35rem; }
 .bands .chip { min-width: 2.7rem; min-height: 2.2rem; }
+#bands .chip { position: relative; }
+.banddot { position: absolute; top: -.3rem; right: -.3rem; width: .7rem; height: .7rem; border-radius: 50%;
+           border: 2px solid var(--fond-panneau); pointer-events: none; }
+.banddot.lvl1 { background: var(--texte-secondaire); }   /* quelques spots */
+.banddot.lvl2 { background: var(--alerte); }              /* bande active */
+.banddot.lvl3 { background: var(--erreur); }              /* bande très active (jamais la couleur d'émission) */
 .modes { margin-top: .25rem; } .modes .chip { min-width: 3.6rem; }
 
 /* ---- pertes de connexion */
@@ -247,7 +259,7 @@ summary .cluster-dot { display: inline-block; margin-left: .4rem; vertical-align
 
 /* ---- image d'accueil : 2 secondes au chargement ou à l'actualisation, puis elle s'efface seule (même sans JavaScript) */
 .splash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--fond-accueil); animation: splash-out .35s ease 2s forwards; }
-.splash img { max-width: min(82vw, 30rem); max-height: 74vh; border-radius: 1rem; box-shadow: 0 0 2.5rem var(--halo-accueil); }
+.splash img { max-width: min(94vw, 64rem); max-height: 84vh; border-radius: 1rem; box-shadow: 0 0 2.5rem var(--halo-accueil); }
 @keyframes splash-out { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { .splash { animation-duration: .01s; } }
 

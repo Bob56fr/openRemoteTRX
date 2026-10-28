@@ -505,6 +505,14 @@ step("cluster DX : section affichée dès que le module donne l'état de ses flu
   assert.equal($("cluster-title").textContent, "Les flux arrivent");
   assert.equal($("cluster-sources").children.length, 1); assert.match($("cluster-sources").children[0].children[1].textContent, /12 spots\/min/);
   assert.ok(!$("log").children.some((li) => /cluster_status/.test(li.textContent)));                // jamais au journal
+  const button = (label) => $("bands").children.find((b) => b.textContent === label);
+  const dotOf = (label) => button(label).children[0];
+  assert.equal(dotOf("20").hidden, true);                                                             // pas encore de compte par bande
+  send({ type: "module", module: "cluster", data: { kind: "cluster_status", health: "green", sources: [],
+         bands: { "20m": 12, "40m": 2, "10m": 30 } } });
+  assert.equal(dotOf("20").hidden, false); assert.equal(dotOf("20").className, "banddot lvl2");
+  assert.equal(dotOf("40").className, "banddot lvl1"); assert.equal(dotOf("10").className, "banddot lvl3");
+  assert.equal(dotOf("80").hidden, true); assert.match(button("20").title, /12 spots actifs/);
 });
 
 step("signaler un problème : rapport préparé, relu à l'écran, puis envoyé à la station", async () => {
@@ -809,6 +817,13 @@ step("spectre HF intégré (paysage large) : interrupteur sous RÉCEPTION, vue e
   assert.equal($("hfscope").parent, $("hf-dock")); assert.equal($("hf-dock").hidden, false);
   assert.equal($("hf-close").hidden, true);                                                          // intégrée : retirée par l'interrupteur
   assert.equal(sent("spectrum_watch").at(-1).on, true);
+  // spectre audio permanent (par défaut en paysage large) : puissance ET audio affichés, rien ne bascule
+  assert.equal($("blk-audiodock").hidden, false); assert.equal($("audio-dock-on").checked, true);
+  assert.equal($("waterfall").hidden, false); assert.equal($("txzone").hidden, false); assert.equal($("waterfall").parent, $("audio-dock"));
+  await wait(400); await $("txzone").dispatch("click");
+  assert.equal($("waterfall").hidden, false); assert.equal($("txzone").hidden, false); assert.equal($("hfscope").className, "hf docked");
+  $("audio-dock-on").checked = false; await $("audio-dock-on").dispatch("change");                   // éteint : retour à la bascule
+  assert.equal(storage.get("trx.audiodock"), "0"); assert.equal($("waterfall").hidden, true); assert.equal($("audio-dock").hidden, true);
   await wait(400); await $("txzone").dispatch("click");                                              // puissance -> audio...
   assert.equal($("waterfall").hidden, false); assert.equal($("hfscope").hidden, false);
   await wait(400); await $("wf-plot").dispatch("click");                                             // ... -> puissance : le spectre intégré reste

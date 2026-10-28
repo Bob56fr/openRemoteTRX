@@ -915,6 +915,12 @@ test("modes : USB-D, LSB-D, FM-D, AM-D d'abord (noms Hamlib 4.6 ou 4.7), puis le
   assert.deepEqual(web.orderModes(null), []);
 });
 
+test("pastilles des boutons de bande : spots actifs du gris au rouge, bandes inconnues ignorées", () => {
+  const levels = web.bandSpotLevels({ "20m": 12, "40m": 2, "10m": 30, "11m": 5, "2m": 40, "80m": 0, "17m": "x" });
+  assert.deepEqual(levels, { 20: { count: 12, level: 2 }, 40: { count: 2, level: 1 }, 10: { count: 30, level: 3 }, 11: { count: 5, level: 2 } });
+  assert.deepEqual(web.bandSpotLevels(null), {});
+});
+
 test("cluster DX : état des flux lisible, débit adapté à la vitesse de chaque flux, module silencieux signalé", () => {
   const data = { kind: "cluster_status", health: "orange", sources: [
     { name: "RBN", type: "rbn", verdict: "ok", last_10min: 340, last_spot_age_s: 2 },

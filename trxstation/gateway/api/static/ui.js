@@ -106,6 +106,7 @@
     let freqEls = [], drag = null, kpText = "";
     const bandButtons = new Map();
     const modeButtons = new Map();                                                    // mode Hamlib -> bouton (onglet Accord)
+    const bandDots = new Map();                                                       // bande -> pastille des spots actifs
     let releaseArmed = false, releaseTimer = null;                                    // « Reprendre la main » : second appui pour confirmer
     function resetRelease() {
       releaseArmed = false;
@@ -127,6 +128,9 @@
     let hfDocked = false;                                                              // vue HF intégrée (colonne de droite) plutôt que plein écran
     let hfDockWanted = store.get("trx.hfdock", "0") === "1";                           // interrupteur « Waterfall HF permanent », mémorisé par appareil
     const hfHome = $("hfscope").parentNode || null;                                    // emplacement d'origine de la vue (plein écran)
+    let audioDocked = false;                                                           // spectre audio permanent (paysage large)
+    let audioDockWanted = store.get("trx.audiodock", "1") !== "0";                     // allumé par défaut, mémorisé par appareil
+    const wfHome = $("waterfall").parentNode || null, wfNext = $("waterfall").nextSibling || null;
     let hfSettings = hfx ? hfx.normalizeSettings(safeJson(store.get("trx.hf", "null"))) : { gain: 0, range: 40 };
     const hfSpec = $("hf-spec"), hfFall = $("hf-fall"), hfGrid = $("hf-grid");
     const spotBook = sp ? new sp.SpotBook() : null;
@@ -522,8 +526,22 @@
       button.title = "Bande des " + band.key + " m : dernière fréquence et dernier mode utilisés";
       button.disabled = true;
       button.addEventListener("click", () => client.goBand(band.key).catch(fail));
+      const dot = el("span", "banddot");                                             // spots actifs du Cluster DX sur la bande
+      dot.hidden = true;
+      button.appendChild(dot);
       $("bands").appendChild(button);
       bandButtons.set(band.key, button);
+      bandDots.set(band.key, { dot: dot, title: button.title });
+    }
+    function paintBandDots(bands) {
+      /* Couleur du gris au rouge selon le nombre de spots actifs ; nombre exact dans la bulle d'aide. */
+      const levels = web.bandSpotLevels(bands);
+      for (const [key, item] of bandDots) {
+        const level = levels[key];
+        item.dot.hidden = !level;
+        if (level) item.dot.className = ["", "banddot lvl1", "banddot lvl2", "banddot lvl3"][level.level];
+        bandButtons.get(key).title = item.title + (level ? " — " + level.count + " spot" + (level.count > 1 ? "s actifs" : " actif") + " (Cluster DX)" : "");
+      }
     }
     function paintModes(v) {                                                          // mode actuel allumé ; verrouillés pendant l'émission
       const current = v.rig ? v.rig.mode : null;
@@ -683,6 +701,10 @@
       const now = performance.now();
       if (now - lastToggle < 350) return;                                               // double appui = UNE seule bascule
       lastToggle = now;
+      if (audioDocked) {                                                              // puissance ET audio déjà affichés : seul le spectre HF bascule
+        if (!hfDocked && hfx && hfx.configured(client.hello)) showZone(hfVisible ? "tx" : "hf");
+        return;
+      }
       if (hfDocked) { showZone(wfVisible ? "tx" : "audio", true); return; }          // spectre HF déjà affiché à droite : puissance <-> audio
       const current = hfVisible ? "hf" : wfVisible ? "audio" : "tx";
       const hfOk = !!hfx && hfx.configured(client.hello);                            // proposée même sans spectre reçu : la vue dit pourquoi
@@ -691,20 +713,40 @@
     function showZone(next, keepDock) {
       /* Zone des graphiques : « tx » (puissance), « audio » (waterfall de l'audio reçu) ou « hf » (spectre du poste, plein écran).
          `keepDock` : la bascule puissance/audio ne referme pas le spectre HF intégré. */
-      const audio = next === "audio";
-      if (audio !== wfVisible) {
-        wfVisible = audio;
-        $("waterfall").hidden = !audio;
-        if (audio) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
+      if (!audioDocked) {                                                             // spectre audio permanent : puissance et audio restent
+        const audio = next === "audio";
+        if (audio !== wfVisible) {
+          wfVisible = audio;
+          $("waterfall").hidden = !audio;
+          if (audio) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
+        }
+        $("txzone").hidden = audio;
       }
-      $("txzone").hidden = audio;
       if (!(keepDock && hfDocked)) setHf(next === "hf");
+    }
+    function setAudioDock(on) {
+      /* Paysage large : le spectre audio (calculé par le navigateur) reste affiché sous les réglages de la colonne de
+         gauche, en plus des graphiques de puissance. Aucune donnée réseau en plus. */
+      if (on === audioDocked) return;
+      audioDocked = on;
+      const box = $("waterfall");
+      if (on) $("audio-dock").appendChild(box);
+      else if (wfHome) wfHome.insertBefore(box, wfNext);
+      $("audio-dock").hidden = !on;
+      $("txzone").hidden = false;
+      box.hidden = !on;
+      wfVisible = on;
+      if (on) { drawGrid(); resetFall(); wfTexts(); startWf(); } else stopWf();
     }
     function syncDock() {
       /* Spectre HF intégré : interrupteur allumé, paysage assez large, page d'usine, liaison établie et spectre disponible.
          Sinon la vue intégrée se referme (et l'interrupteur disparaît s'il ne peut pas servir). */
       if (!hfx) return;
       const allowed = hfx.canDock($("app").className, window.innerWidth, !!(layout && layout.active));
+      const audioUsable = allowed && connectedFlag;                                   // spectre audio : pas besoin du spectre HF
+      $("blk-audiodock").hidden = !audioUsable;
+      $("audio-dock-on").checked = audioDockWanted;
+      setAudioDock(audioUsable && audioDockWanted);
       const usable = allowed && connectedFlag && hfx.configured(client.hello);
       $("blk-hfdock").hidden = !usable;
       $("hf-dock-on").checked = hfDockWanted;
@@ -1274,6 +1316,8 @@
     // ---- état des flux du Cluster DX (section affichée dès que le module parle ; âges mis à jour toutes les 5 s)
     let clusterData = null, clusterAt = 0;
     function renderCluster() {
+      paintBandDots(clusterData && !web.clusterStatusView(clusterData, (performance.now() - clusterAt) / 1000).stale
+        ? clusterData.bands : null);                                                 // module muet : pastilles retirées
       if (!clusterData) { $("sec-cluster").hidden = true; return; }
       const view = web.clusterStatusView(clusterData, (performance.now() - clusterAt) / 1000);
       $("sec-cluster").hidden = false;
@@ -1325,6 +1369,11 @@
       }
       resetRelease();
       client.releaseLocal().catch(fail);
+    });
+    $("audio-dock-on").addEventListener("change", (ev) => {
+      audioDockWanted = !!ev.target.checked;
+      store.set("trx.audiodock", audioDockWanted ? "1" : "0");
+      syncDock();
     });
     $("hf-dock-on").addEventListener("change", (ev) => {
       hfDockWanted = !!ev.target.checked;
