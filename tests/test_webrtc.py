@@ -49,6 +49,7 @@ def test_webrtc_end_to_end():
 
             phone = FakeClient(lb.url, "phone", PASSWORDS["phone"], track=ToneTrack(1000.0, -10.0, active=True))
             await phone.connect()
+            await until(lambda: phone.state is not None, 5)                   # connect() n'attend que « hello »
             assert phone.hello["client_id"] == "phone" and phone.state is not None
             await until(lambda: phone.rx_frames >= 20, 10)                  # le son du poste arrive au client
             assert lb.pipeline.stats()["listeners"] >= 1 and len(phone.rx_loud_times) > 0

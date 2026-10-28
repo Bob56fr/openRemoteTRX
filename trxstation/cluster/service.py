@@ -34,7 +34,7 @@ from ..status import replace_atomic
 from . import cty as ctymod
 from .cache import SpotCache, SpotFilter
 from .engine import Engine
-from .feed import CONNECTED, Feed, Source
+from .feed import CONNECTED, FAILED, Feed, Source
 from .publish import SpotPublisher
 
 log = logging.getLogger("trx.cluster")
@@ -47,6 +47,12 @@ STALE_SPOT_S = 15 * 60.0
 GREEN, ORANGE, RED, OFF = "green", "orange", "red", "off"
 HEALTH_TEXT = {GREEN: "toutes les sources connectées", ORANGE: "sources en partie connectées",
                RED: "aucune source connectée", OFF: "désactivé"}
+# État des flux pour les pages (« le cluster reçoit-il quelque chose ? ») : toutes les PAGE_STATUS_EVERY écritures
+# de status.json (5 s chacune), et à chaque changement de pastille. Un flux connecté mais sans spot depuis
+# QUIET_AFTER_S n'est pas en panne : il est « calme » (bande fermée, filtres) ; le délai dépend de sa vitesse habituelle.
+PAGE_STATUS_EVERY = 3
+QUIET_AFTER_S = {"rbn": 5 * 60.0, "telnet": 30 * 60.0, "web": 2 * 3600.0}
+MAX_PAGE_SOURCES = 12
 
 
 def cluster_dir(cfg: cfgmod.Config) -> Path:
@@ -112,6 +118,29 @@ def snapshot(feed: Feed | None, engine: Engine | None, *, enabled: bool, seq: in
                                                  for k, v in feed.streams.items()},
             "counters": {} if engine is None else engine.counters(),
             "cty": {"entities": cty_entities, "problem": cty_problem}, "problems": problems[:20]}
+
+
+def page_summary(feed: Feed | None, engine: Engine | None) -> dict:
+    """Résumé COURT pour les pages : pastille et, par flux, verdict, spots des 10 dernières minutes, âge du dernier."""
+    sources = []
+    if feed is not None:
+        active = [s for s in feed.sources if s.enabled]
+        cluster_up = any(s.kind == "telnet" and feed.states[s.name].state == CONNECTED for s in active)
+        for s in active[:MAX_PAGE_SOURCES]:
+            st = feed.states[s.name]
+            stats = engine.source_stats(s.name) if engine is not None else {"last_10min": 0, "last_spot_age_s": None}
+            age = stats["last_spot_age_s"]
+            if st.state == CONNECTED:
+                verdict = "ok" if age is not None and age <= QUIET_AFTER_S.get(s.kind, 30 * 60.0) else "calme"
+            elif s.kind == "telnet" and cluster_up:
+                verdict = "reserve"                     # clusters : un seul connecté à la fois, les autres en secours
+            elif st.state == FAILED:
+                verdict = "echec"
+            else:
+                verdict = "attente"
+            sources.append({"name": s.name[:40], "type": s.kind, "verdict": verdict, "last_10min": stats["last_10min"],
+                            "last_spot_age_s": age, "retry_in_s": st.retry_in_s, "code": (st.last_code or "")[:40]})
+    return {"kind": "cluster_status", "health": health(feed, engine), "sources": sources}
 
 
 def write_status(path: Path, data: dict) -> None:
@@ -219,10 +248,22 @@ class ClusterService:
             write_status(self.status_file, data)
         except OSError as exc:
             log.warning("état %s non écrit : %s", self.status_file, exc)
-        if data["health"] != self._last_health:
+        changed = data["health"] != self._last_health
+        if changed:
             self._last_health = data["health"]
             log.info("état : %s", HEALTH_TEXT[data["health"]])
             asyncio.ensure_future(self._tell_clients(data["health"]))
+        if changed or self.seq % PAGE_STATUS_EVERY == 0:
+            asyncio.ensure_future(self._tell_status())
+
+    async def _tell_status(self) -> None:
+        """État des flux pour les pages (message facultatif : une page absente ne gêne rien)."""
+        if self.bus is None:
+            return
+        try:
+            await self.bus.client_message(**page_summary(self.feed, self.engine))
+        except Exception as exc:
+            log.debug("état des flux non transmis : %s", exc)
 
     async def _tell_clients(self, state: str) -> None:
         if self.bus is None:

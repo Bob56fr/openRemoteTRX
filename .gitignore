@@ -28,3 +28,6 @@ venv/
 spectre-*/
 rigctld-*.log
 deux-ports-*/
+
+# Script de déploiement personnel (hôte donné à chaque lancement) : hors dépôt
+scripts/deploy_debian.ps1

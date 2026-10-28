@@ -13,6 +13,8 @@ from .clusterdx import WebSpot
 from .feed import Source
 from .parse import is_dx_line, parse_dx_line
 
+SOURCE_WINDOW_S = 600.0        # fenêtre du débit affiché par flux (10 minutes : utile pour les flux lents comme rapides)
+
 
 class Engine:
     def __init__(self, cache: SpotCache, *, clock: Callable[[], float] = time.monotonic,
@@ -24,6 +26,24 @@ class Engine:
         self.other_lines = 0
         self.last_spot_at: float | None = None
         self._recent: deque[float] = deque()
+        self._by_source: dict[str, dict] = {}      # par flux : reçus, dernier spot, instants des 10 dernières minutes
+
+    def _count(self, name: str, at: float) -> None:
+        stats = self._by_source.setdefault(name, {"received": 0, "last_at": None, "recent": deque()})
+        stats["received"] += 1
+        stats["last_at"] = at if stats["last_at"] is None else max(stats["last_at"], at)
+        stats["recent"].append(self.clock())
+
+    def source_stats(self, name: str) -> dict:
+        """Ce que ce flux a livré (avant filtrage) : total, 10 dernières minutes, âge du dernier spot."""
+        stats = self._by_source.get(name)
+        if stats is None:
+            return {"received": 0, "last_10min": 0, "last_spot_age_s": None}
+        limit = self.clock() - SOURCE_WINDOW_S
+        while stats["recent"] and stats["recent"][0] < limit:
+            stats["recent"].popleft()
+        age = None if stats["last_at"] is None else round(max(0.0, self.clock() - stats["last_at"]), 1)
+        return {"received": stats["received"], "last_10min": len(stats["recent"]), "last_spot_age_s": age}
 
     def handle_line(self, src: Source, line: str) -> None:
         if not is_dx_line(line):
@@ -36,6 +56,7 @@ class Engine:
         now = self.clock()
         self.last_spot_at = now
         self._recent.append(now)
+        self._count(src.name, now)
         kind = "rbn" if (src.kind == "rbn" or raw.skimmer) else src.spot_kind
         result = self.cache.add(raw, source=src.name, kind=kind, now=now)
         if result is not None and self.on_spot is not None:
@@ -49,6 +70,7 @@ class Engine:
             if ws.age_s < 60.0:
                 self.last_spot_at = now - ws.age_s
                 self._recent.append(now)
+            self._count(src.name, now - ws.age_s)              # âge réel du spot (page relevée toutes les minutes)
             result = self.cache.add(ws.raw, source=src.name, kind=src.spot_kind, now=now, age_s=ws.age_s)
             if result is not None and self.on_spot is not None:
                 self.on_spot(*result)

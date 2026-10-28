@@ -915,6 +915,27 @@ test("modes : USB-D, LSB-D, FM-D, AM-D d'abord (noms Hamlib 4.6 ou 4.7), puis le
   assert.deepEqual(web.orderModes(null), []);
 });
 
+test("cluster DX : état des flux lisible, débit adapté à la vitesse de chaque flux, module silencieux signalé", () => {
+  const data = { kind: "cluster_status", health: "orange", sources: [
+    { name: "RBN", type: "rbn", verdict: "ok", last_10min: 340, last_spot_age_s: 2 },
+    { name: "on0dxk", type: "telnet", verdict: "calme", last_10min: 3, last_spot_age_s: 2000 },
+    { name: "db0sue", type: "telnet", verdict: "reserve", last_10min: 0, last_spot_age_s: null },
+    { name: "clusterdx", type: "web", verdict: "ok", last_10min: 1, last_spot_age_s: 300 },
+    { name: "W3LPL", type: "telnet", verdict: "attente", retry_in_s: 30 },
+    { name: "VE7CC", type: "telnet", verdict: "echec", code: "callsign_refused" }] };
+  const view = web.clusterStatusView(data, 10);
+  assert.equal(view.title, "Une partie des flux seulement"); assert.equal(view.stale, false);
+  assert.equal(view.lines[0].text, "RBN (RBN) : reçoit · 34 spots/min · dernier il y a 12 s");          // flux rapide : par minute
+  assert.equal(view.lines[1].text, "on0dxk (cluster) : connecté, mais calme · 3 spots en 10 min · dernier il y a 34 min");
+  assert.equal(view.lines[2].text, "db0sue (cluster) : en réserve (secours)"); assert.equal(view.lines[2].dot, "");
+  assert.equal(view.lines[3].text, "clusterdx (page CB) : reçoit · 1 spot en 10 min · dernier il y a 5 min");
+  assert.match(view.lines[4].text, /connexion en cours · nouvel essai dans 30 s/);
+  assert.match(view.lines[5].text, /refusé · callsign_refused : voir TRX Console, menu 12/); assert.equal(view.lines[5].dot, "red");
+  const old = web.clusterStatusView(data, 120);
+  assert.equal(old.stale, true); assert.match(old.staleText, /Plus de nouvelles du module Cluster DX depuis 2 min/);
+  assert.equal(web.clusterStatusView({ health: "?" }, 0).health, "red");                                 // valeur douteuse : rouge
+});
+
 test("signaler un problème : rapport lisible, sans mot de passe, rangé sur la station", async () => {
   const w = makeWorld();
   await w.connected(); w.hello({ version: "0.40.0", spectrum: { level_max: 160 } });

@@ -128,6 +128,43 @@
     return code ? (CUT_REASONS[code] || code) : "";
   }
 
+  // ---- état des flux du Cluster DX (message « cluster_status » du module, toutes les 15 s)
+  const CLUSTER_TITLES = { green: "Les flux arrivent", orange: "Une partie des flux seulement", red: "Aucun flux reçu",
+                           off: "Cluster DX désactivé sur la station" };
+  const CLUSTER_TYPES = { rbn: "RBN", telnet: "cluster", web: "page CB" };
+  const CLUSTER_VERDICTS = { ok: ["green", "reçoit"], calme: ["orange", "connecté, mais calme"], reserve: ["", "en réserve (secours)"],
+                             echec: ["red", "refusé"], attente: ["orange", "connexion en cours"] };
+  const CLUSTER_STALE_S = 45;          // plus de nouvelles du module depuis ce délai : il est peut-être arrêté
+
+  function shortAge(seconds) {
+    if (seconds === null || seconds === undefined || !isFinite(seconds)) return null;
+    const s = Math.max(0, Math.round(seconds));
+    if (s < 90) return s + " s";
+    if (s < 5400) return Math.round(s / 60) + " min";
+    return Math.round(s / 3600) + " h";
+  }
+
+  function clusterStatusView(data, elapsedS) {
+    /* Ce que la station reçoit des clusters, RBN et page CB. `elapsedS` : secondes depuis la réception du message
+       (les âges s'y ajoutent). Débit sur 10 minutes : en spots par minute pour un flux rapide, en nombre sinon. */
+    const d = data && typeof data === "object" ? data : {};
+    const elapsed = Number.isFinite(elapsedS) ? Math.max(0, elapsedS) : 0;
+    const health = ["green", "orange", "red", "off"].includes(d.health) ? d.health : "red";
+    const lines = (Array.isArray(d.sources) ? d.sources : []).slice(0, 12).map((s) => {
+      const [dot, word] = CLUSTER_VERDICTS[s.verdict] || ["", String(s.verdict || "?")];
+      const n = Number.isFinite(s.last_10min) ? s.last_10min : 0;
+      const rate = n >= 10 ? Math.round(n / 10) + " spots/min" : n + " spot" + (n > 1 ? "s" : "") + " en 10 min";
+      const age = shortAge(s.last_spot_age_s === null || s.last_spot_age_s === undefined ? null : s.last_spot_age_s + elapsed);
+      const parts = [word];
+      if (s.verdict === "ok" || s.verdict === "calme") parts.push(rate, age ? "dernier il y a " + age : "aucun spot reçu");
+      if (s.verdict === "attente" && Number.isFinite(s.retry_in_s) && s.retry_in_s > 0) parts.push("nouvel essai dans " + shortAge(s.retry_in_s));
+      if (s.verdict === "echec" && s.code) parts.push(String(s.code).slice(0, 40) + " : voir TRX Console, menu 12");
+      return { dot: dot, text: String(s.name || "?").slice(0, 40) + " (" + (CLUSTER_TYPES[s.type] || "flux") + ") : " + parts.join(" · ") };
+    });
+    return { health: health, title: CLUSTER_TITLES[health], lines: lines, stale: elapsed > CLUSTER_STALE_S,
+             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 1)" : "" };
+  }
+
   const MAX_REPORT_CHARS = 30000;          // même limite que la station (protocol.MAX_BUG_REPORT_CHARS)
 
   function formatProblemReport(d) {
@@ -926,6 +963,12 @@
           if (this.ui.spots) this.ui.spots(data);
           return;
         }
+        if (data.kind === "cluster_status") {                          // état des flux : affiché, jamais au journal (toutes les 15 s)
+          this.clusterStatus = { data: data, at: this.env.now() };
+          if (this.ui.clusterStatus) this.ui.clusterStatus(data);
+          if (name === "cluster" && typeof data.health === "string" && this.ui.clusterHealth) this.ui.clusterHealth(data.health);
+          return;
+        }
         if (name === "cluster" && typeof data.health === "string" && this.ui.clusterHealth) this.ui.clusterHealth(data.health);
         if (typeof data.text === "string" && data.text) this.ui.log("[" + name + "] " + data.text.slice(0, 200), "");
       } catch (e) { /* affichage seulement */ }
@@ -1448,7 +1491,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport, clusterStatusView,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }

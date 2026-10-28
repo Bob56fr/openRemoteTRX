@@ -497,6 +497,16 @@ step("fréquence : verrouillée pendant l'émission (ni geste, ni clavier, ni mo
   state({ state: "RX" }, { frequency_hz: 7074000 });
 });
 
+step("cluster DX : section affichée dès que le module donne l'état de ses flux", async () => {
+  assert.equal($("sec-cluster").hidden, true);                                                        // pas de module : rien
+  send({ type: "module", module: "cluster", data: { kind: "cluster_status", health: "green",
+         sources: [{ name: "RBN", type: "rbn", verdict: "ok", last_10min: 120, last_spot_age_s: 3 }] } });
+  assert.equal($("sec-cluster").hidden, false); assert.equal($("cluster-dot").className, "cluster-dot green");
+  assert.equal($("cluster-title").textContent, "Les flux arrivent");
+  assert.equal($("cluster-sources").children.length, 1); assert.match($("cluster-sources").children[0].children[1].textContent, /12 spots\/min/);
+  assert.ok(!$("log").children.some((li) => /cluster_status/.test(li.textContent)));                // jamais au journal
+});
+
 step("signaler un problème : rapport préparé, relu à l'écran, puis envoyé à la station", async () => {
   assert.equal($("bug-report").hidden, true); assert.equal($("bug-send").disabled, true);
   $("bug-text").value = "Le spectre se fige";

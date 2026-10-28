@@ -197,6 +197,11 @@ code { background: var(--fond-champ); padding: .05rem .3rem; border-radius: .25r
 .cluster-dot.green { background: var(--succes); }
 .cluster-dot.orange { background: var(--alerte); }
 .cluster-dot.red { background: var(--erreur); }
+summary .cluster-dot { display: inline-block; margin-left: .4rem; vertical-align: middle; }
+.cluster-title { font-weight: 600; }
+.cluster-sources { list-style: none; margin: .3rem 0; padding: 0; display: grid; gap: .3rem; }
+.cluster-sources li { display: flex; gap: .5rem; align-items: baseline; font-size: .85rem; }
+.cluster-sources .cluster-dot { position: relative; top: .1rem; }
 .spot-card, .spot-list { position: absolute; z-index: 5; background: var(--fond-panneau); color: var(--texte);
                          border: 1px solid var(--accent); border-radius: .4rem; padding: .6rem; }
 .spot-card { right: .5rem; top: 3.2rem; width: min(22rem, calc(100% - 1rem)); display: flex; flex-direction: column; gap: .35rem; }

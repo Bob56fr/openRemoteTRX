@@ -1127,6 +1127,7 @@
       spots(data) { onSpots(data); },
       beeps(settings) { renderBeeps(settings); },
       clusterHealth(state) { onClusterHealth(state); },
+      clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
@@ -1148,6 +1149,8 @@
           for (const button of bandButtons.values()) button.disabled = true;
           for (const button of modeButtons.values()) button.disabled = true;
           $("local-banner").hidden = true; resetRelease(); closeControlDialog();
+          clusterData = null; renderCluster();                                        // plus de liaison : plus d'état des flux
+          $("hf-cluster").hidden = $("hf-spots").hidden = $("hf-list").hidden = true;   // reviendront quand le module reparlera
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
           if (hfVisible) showZone("tx");
           if (spotBook) { spotBook.clear(); closeSpotCard(); closeSpotList(); drawSpots(); }
@@ -1268,6 +1271,26 @@
       if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait
       client.pressModePill().catch(fail);
     });
+    // ---- état des flux du Cluster DX (section affichée dès que le module parle ; âges mis à jour toutes les 5 s)
+    let clusterData = null, clusterAt = 0;
+    function renderCluster() {
+      if (!clusterData) { $("sec-cluster").hidden = true; return; }
+      const view = web.clusterStatusView(clusterData, (performance.now() - clusterAt) / 1000);
+      $("sec-cluster").hidden = false;
+      $("cluster-dot").className = "cluster-dot " + (view.stale ? "red" : view.health);
+      $("cluster-title").textContent = view.stale ? "État inconnu" : view.title;
+      const list = $("cluster-sources");
+      list.textContent = "";
+      for (const line of view.lines) {
+        const item = el("li", "");
+        item.appendChild(el("span", "cluster-dot " + line.dot));
+        item.appendChild(el("span", "", line.text));
+        list.appendChild(item);
+      }
+      $("cluster-age").textContent = view.staleText || "État reçu de la station toutes les 15 s.";
+    }
+    window.setInterval(() => { if (clusterData) renderCluster(); }, 5000);
+
     // ---- signaler un problème : rapport assemblé, RELU par l'utilisateur, puis envoyé à la station ou partagé
     let bugText = "";
     const deviceInfo = () => ({
