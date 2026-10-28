@@ -2,6 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.app
 
+import android.content.Context
 import android.os.SystemClock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,6 +34,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,9 +54,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.core.RigUi
+import com.rfdiy.openremotetrx.logic.Controls
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.LogLevel
+import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 
 private val TX_RED = Color(0xFFC62828)
@@ -80,7 +86,17 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val radio = rig.state?.rig
     val hello = rig.hello
     val connected = rig.status == LinkStatus.CONNECTED
-    val canSet = connected && rig.protocolOk
+    // Réglages du poste : seulement en réception (la station les refuse pendant l'émission, comme la page).
+    val canSet = connected && rig.protocolOk && (rig.state?.ptt?.state ?: "RX") == "RX"
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
+    var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
+    // Écran allumé tant que la station est affichée (comme la page) ; l'écoute continue de toute façon écran éteint.
+    val view = LocalView.current
+    DisposableEffect(keepScreenOn, rig.status) {
+        view.keepScreenOn = keepScreenOn && rig.status != LinkStatus.DISCONNECTED
+        onDispose { view.keepScreenOn = false }
+    }
     val mineTx = ptt != null && ptt.mine && ptt.transmitting
     val debounce = remember { Debounce() }
     // Fréquence demandée : affichée et prise comme base des crans jusqu'à confirmation du poste (page : PENDING_MAX_MS).
@@ -107,7 +123,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     Column(modifier.fillMaxSize()) {
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // En-tête : station, liaison, sourdine
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -138,11 +154,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             if (!rig.protocolOk) Banner("Version de protocole inconnue : réception et STOP seulement.", WARN)
 
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
-            Surface(shape = RoundedCornerShape(14.dp), tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Surface(shape = RoundedCornerShape(12.dp), tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         Radio.formatIcom(shownHz),
-                        fontSize = 44.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace,
+                        fontSize = 34.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace,
                         modifier = Modifier.fillMaxWidth().clickable(enabled = canSet) { entry = true },
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -153,7 +169,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
                     LinearProgressIndicator(
                         progress = { Radio.sMeterFraction(radio?.strengthDb) },
-                        modifier = Modifier.fillMaxWidth().height(10.dp),
+                        drawStopIndicator = {},                       // pas de point en bout de barre : il ferait croire à S9+60
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         for (label in listOf("S1", "3", "5", "7", "9", "+20", "+40", "+60")) {
@@ -165,11 +182,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
 
             // Accord : pas, crans
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { tune(-1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("−", fontSize = 26.sp) }
+                OutlinedButton(onClick = { tune(-1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("−", fontSize = 20.sp) }
                 OutlinedButton(onClick = { stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size }, modifier = Modifier.weight(1.3f)) {
                     Text("pas ${stepLabel(step)}")
                 }
-                OutlinedButton(onClick = { tune(1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("+", fontSize = 26.sp) }
+                OutlinedButton(onClick = { tune(1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("+", fontSize = 20.sp) }
             }
 
             // Bandes
@@ -200,6 +217,28 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     Text("Émission permise en : " + hello.txModes.joinToString(", ") { Radio.modeLabel(it) },
                         style = MaterialTheme.typography.bodySmall)
                 }
+            }
+
+            // Fonctions du poste (comme la page) : verrouillées pendant l'émission
+            val chips = Controls.chips(hello, rig.state)
+            if (chips.isNotEmpty()) {
+                Section("Réglages du poste")
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (chip in chips) {
+                        FilterChip(selected = chip.on, enabled = canSet, onClick = { RigHub.pressControl(chip.key) }, label = { Text(chip.label) })
+                    }
+                }
+            }
+
+            // Indicateurs : Po, SWR, ALC pendant l'émission ; COMP, Vd, température en permanence s'ils existent
+            val meters = Controls.meters(rig.state)
+            val txMeters = meters.filter { it.key in setOf("PO", "SWR", "ALC") }
+            if (ptt?.transmitting == true && txMeters.isNotEmpty()) {
+                for (m in txMeters) MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
+            }
+            val others = meters.filterNot { it in txMeters }
+            if (others.isNotEmpty()) {
+                Text(others.joinToString("   ") { "${it.label} ${it.text}" }, style = MaterialTheme.typography.bodySmall)
             }
 
             // État de l'émission (station)
@@ -257,12 +296,20 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     },
                 )
             }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = keepScreenOn, onCheckedChange = {
+                    keepScreenOn = it
+                    prefs.edit().putBoolean("keep_screen_on", it).apply()
+                })
+                Spacer(Modifier.width(8.dp))
+                Text("Écran toujours allumé pendant la connexion", style = MaterialTheme.typography.bodyMedium)
+            }
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
         }
 
         // Toujours visibles : armement, PTT (appui simple), STOP
         Surface(tonalElevation = 6.dp) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk)
                     Spacer(Modifier.width(8.dp))
@@ -275,7 +322,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         enabled = pttEnabled,
                         colors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors(),
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(2f).height(80.dp),
+                        modifier = Modifier.weight(2f).height(64.dp),
                     ) {
                         Text(
                             when {
@@ -285,7 +332,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                                 !rig.armed -> "PTT\n(autoriser d'abord)"
                                 else -> "ÉMETTRE"
                             },
-                            fontSize = 20.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                            fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
                         )
                     }
                     Button(
@@ -293,8 +340,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         enabled = connected,
                         colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(80.dp),
-                    ) { Text("STOP", fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+                        modifier = Modifier.weight(1f).height(64.dp),
+                    ) { Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
                 }
             }
         }
@@ -338,6 +385,21 @@ private fun FrequencyDialog(current: Long?, onDismiss: () -> Unit, onSet: (Long)
     )
 }
 
+/** Indicateur : libellé, barre, valeur (orange si SWR >= 2 ou ALC >= 90 %). */
+@Composable
+private fun MeterRow(meter: Meter, warn: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(meter.label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
+        LinearProgressIndicator(
+            progress = { meter.fraction },
+            drawStopIndicator = {},
+            color = if (warn) WARN else MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f).height(8.dp),
+        )
+        Text(meter.text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
+    }
+}
+
 @Composable
 private fun Section(title: String) {
     Text(title, style = MaterialTheme.typography.titleSmall)
@@ -348,8 +410,8 @@ private fun Banner(text: String, color: Color, big: Boolean = false, textColor: 
     Text(
         text,
         color = textColor,
-        fontSize = if (big) 22.sp else 15.sp,
+        fontSize = if (big) 17.sp else 13.sp,
         fontWeight = if (big) FontWeight.Bold else FontWeight.Normal,
-        modifier = Modifier.fillMaxWidth().background(color, RoundedCornerShape(10.dp)).padding(12.dp),
+        modifier = Modifier.fillMaxWidth().background(color, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 8.dp),
     )
 }

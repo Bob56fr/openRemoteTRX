@@ -13,8 +13,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.4.0"
     }
     buildTypes {
         release { isMinifyEnabled = false }

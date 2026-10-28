@@ -347,18 +347,30 @@ class RigSession(
     fun selectBand(now: Long, key: String) {
         val h = hello ?: return
         val (hz, mode) = Radio.bandTarget(bands.spots, key, h.txModes, h.capabilities?.modes.orEmpty()) ?: return
-        control(now, Command.SetFrequency(hz))
-        if (mode != null && mode != state?.rig?.mode) control(now, Command.SetMode(mode))
+        val commands = buildList {                                  // comme la page : le mode d'abord, puis la fréquence
+            if (mode != null && mode != state?.rig?.mode) add(Command.SetMode(mode))
+            add(Command.SetFrequency(hz))
+        }
+        control(now, *commands.toTypedArray())
     }
 
-    private fun control(now: Long, command: Command) {
+    /** Bouton d'une fonction du poste (Controls.chips) : NR, NB, P.AMP, ATT, NOTCH, IP+, AGC, COMP, FIL, TUNER, PWR. */
+    fun pressControl(now: Long, key: String) {
+        val commands = Controls.press(key, hello, state)
+        if (commands.isNotEmpty()) control(now, *commands.toTypedArray())
+    }
+
+    /**
+     * Réglage du poste : jamais pendant une émission (page : « tx_active » ; la station refuse aussi), ni avec un
+     * protocole inconnu. Plusieurs commandes partent dans l'ordre (canal ordonné).
+     */
+    private fun control(now: Long, vararg commands: Command) {
         if (!connected) return
-        if (!protocolOk) {
-            log("Version de protocole inconnue : réglages impossibles (STOP reste permis).", LogLevel.WARN)
-            publish(now)
-            return
+        when {
+            !protocolOk -> log("Version de protocole inconnue : réglages impossibles (STOP reste permis).", LogLevel.WARN)
+            (state?.ptt?.state ?: "RX") != "RX" -> log(Texts.refusal("tx_active"), LogLevel.WARN)
+            else -> for (command in commands) send(now, command)
         }
-        send(now, command)
         publish(now)
     }
 

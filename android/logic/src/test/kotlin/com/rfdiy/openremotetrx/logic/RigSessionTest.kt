@@ -261,6 +261,28 @@ class RigSessionRadioTest {
     }
 
     @Test
+    fun `bande - le mode part AVANT la frequence, comme la page`() {
+        val (s, link) = session()
+        s.selectBand(10, "20")
+        val cmds = link.cmds()
+        assertTrue(cmds.indexOf("set_mode") in 0 until cmds.indexOf("set_frequency"))
+    }
+
+    @Test
+    fun `reglages refuses pendant une emission, STOP toujours permis`() {
+        val (s, link) = session()
+        s.onMessage(20, """{"type":"state","ptt":{"state":"TX","owner":"pc"},"rig":{"connected":true,"frequency_hz":7100000,"mode":"LSB"}}""")
+        link.sent.clear()
+        s.setFrequency(30, 7_074_000)
+        s.selectBand(30, "20")
+        s.pressControl(30, "NR")
+        assertTrue(link.sent.isEmpty())
+        assertEquals("Impossible pendant l'émission (fréquence, mode et réglages du poste sont verrouillés).", s.snapshot.log.last().text)
+        s.stop(40)
+        assertEquals(listOf("stop"), link.cmds())
+    }
+
+    @Test
     fun `memoires de la station triees, mise a jour par le message memories`() {
         val (s, _) = session()
         assertEquals(listOf("m2", "m1"), s.snapshot.memories.map { it.id })

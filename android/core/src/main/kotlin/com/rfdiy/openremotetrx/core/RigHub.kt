@@ -59,6 +59,9 @@ object RigHub {
 
     fun recallMemory(id: String) { service?.onRig { session, now -> session.recallMemory(now, id) } }
 
+    /** Bouton d'une fonction du poste (logic.Controls) ; refusé pendant l'émission. */
+    fun pressControl(key: String) { service?.onRig { session, now -> session.pressControl(now, key) } }
+
     fun setMuted(on: Boolean) { service?.setMuted(on) ?: publish { it.copy(muted = on) } }
 
     fun disconnect(context: Context) {

@@ -17,16 +17,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rfdiy.openremotetrx.core.AccountStore
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.LinkStatus
+
+/**
+ * Police plus petite que celle de Material (environ 85 %), proche de la page web : il faut placer beaucoup
+ * d'informations sur un écran de téléphone (demande de l'utilisateur).
+ */
+private fun compactTypography(factor: Float = 0.85f): Typography {
+    val t = Typography()
+    fun TextStyle.small() = copy(fontSize = fontSize * factor, lineHeight = lineHeight * factor)
+    return Typography(
+        displayLarge = t.displayLarge.small(), displayMedium = t.displayMedium.small(), displaySmall = t.displaySmall.small(),
+        headlineLarge = t.headlineLarge.small(), headlineMedium = t.headlineMedium.small(), headlineSmall = t.headlineSmall.small(),
+        titleLarge = t.titleLarge.small(), titleMedium = t.titleMedium.small(), titleSmall = t.titleSmall.small(),
+        bodyLarge = t.bodyLarge.small(), bodyMedium = t.bodyMedium.small(), bodySmall = t.bodySmall.small(),
+        labelLarge = t.labelLarge.small(), labelMedium = t.labelMedium.small(), labelSmall = t.labelSmall.small(),
+    )
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +53,10 @@ class MainActivity : ComponentActivity() {
         volumeControlStream = AudioManager.STREAM_MUSIC          // touches de volume = volume de la réception
         val store = AccountStore(this)
         setContent {
-            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
+            MaterialTheme(
+                colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
+                typography = compactTypography(),
+            ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
                     App(store, Modifier.padding(padding))
                 }
