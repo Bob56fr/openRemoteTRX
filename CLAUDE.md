@@ -104,6 +104,7 @@ Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; indicateur GNOME
 - Collecte des journaux (rf-diy / Azure) : identifiant de station prêt (`station-id`), cahier des charges `docs/collecte-azure-cahier-des-charges.md`, service à construire dans un AUTRE dépôt.
 - Signalement des problèmes : étape 2 (réception sur le site WordPress de l'utilisateur) ; formulaire de qualification « [À COMPLÉTER] ».
 - Rapport à Hamlib : `docs/hamlib-rapports.md` à envoyer par l'utilisateur.
+- Application Android : cahier des charges `docs/android-cahier-des-charges.md` (étape 49) ; questions ouvertes à trancher (§ 10), puis lot A0 côté station (`docs/protocole.md`, exemples partagés `tests/protocol/`) AVANT tout Kotlin.
 - Application Android (étapes 9 à 11 du plan d'origine), designer lot 3, qualification Q2 à Q6, plafonds CPU/mémoire des modules, superviseur (mémoire, disque, watchdog matériel du Pi), règle PipeWire.
 
 ## Pièges et leçons (à relire avant de coder)
