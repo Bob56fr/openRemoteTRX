@@ -27,6 +27,7 @@ from typing import Protocol
 
 from ..config import Config
 from ..hamlib import rigctld_command
+from ..logsetup import log_dir
 from .usb import reset_usb_sysfs
 
 log = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ log = logging.getLogger(__name__)
 class Backend(Protocol):
     def start(self) -> None: ...
     def maintain(self) -> None: ...
-    def stop_all(self) -> None: ...
+    def stop_all(self, force_rx: Callable[[], object] | None = None) -> None: ...
     def kill_gateway(self) -> None: ...
     def restart_gateway(self) -> None: ...
     def stop_gateway(self) -> None: ...
@@ -66,7 +67,8 @@ class SystemdBackend:
 
     def start(self) -> None: pass
     def maintain(self) -> None: pass
-    def stop_all(self) -> None: pass            # arrêter le superviseur ne doit pas arrêter la station
+    def stop_all(self, force_rx: Callable[[], object] | None = None) -> None:
+        pass                                   # arrêter le superviseur ne doit pas arrêter la station
 
     def kill_gateway(self) -> None:
         self._systemctl("kill", "--signal=SIGKILL", self.cfg.supervisor.gateway_unit)   # tout le cgroup
@@ -136,7 +138,24 @@ class ManagedBackend:
 
     def _spawn(self, child: _Child) -> None:
         flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0  # permet CTRL_BREAK ciblé
-        child.proc = subprocess.Popen(self._command(child.name), creationflags=flags)
+        output = None
+        if os.name == "nt" and sys.stdout is None:
+            # Station sans fenêtre (tâche planifiée, pythonw) : rigctld n'ouvre pas de console noire ; sa sortie va dans
+            # son journal (ou nulle part). La passerelle (pythonw) écrit elle-même le sien.
+            flags |= subprocess.CREATE_NO_WINDOW
+            folder = log_dir()
+            output = subprocess.DEVNULL
+            if folder is not None and child.name == "rigctld":
+                try:
+                    folder.mkdir(parents=True, exist_ok=True)
+                    output = open(folder / "rigctld.log", "ab")          # noqa: SIM115 - gardé ouvert par le processus
+                except OSError:
+                    output = subprocess.DEVNULL
+        if output is None:
+            child.proc = subprocess.Popen(self._command(child.name), creationflags=flags)
+        else:
+            child.proc = subprocess.Popen(self._command(child.name), creationflags=flags, stdin=subprocess.DEVNULL,
+                                          stdout=output, stderr=subprocess.STDOUT)
         child.last_start, child.stopped, child.safe_mode_hold = self._clock(), False, False
         log.info("%s lancé (pid %d)", child.name, child.proc.pid)
 
@@ -215,11 +234,24 @@ class ManagedBackend:
             child.restarts += 1
             self._spawn(child)
 
-    def stop_all(self) -> None:
-        for name in ("gateway", "rigctld"):              # la passerelle d'abord : elle coupe le PTT
-            child = self.children[name]
-            child.stopped = True
-            self._terminate(child)
+    def stop_all(self, force_rx: Callable[[], object] | None = None) -> None:
+        """La passerelle d'abord (elle coupe le PTT), puis « T 0 » envoyé par le superviseur lui-même, puis rigctld.
+        Sous Windows sans fenêtre, la passerelle ne reçoit pas la demande d'arrêt polie (pas de console commune) et
+        finit tuée sans son retour en réception : le « T 0 » garantit la réception avant que rigctld ne s'arrête."""
+        gateway = self.children["gateway"]
+        gateway.stopped = True
+        self._terminate(gateway)
+        rig = self.children["rigctld"]
+        if force_rx is not None and (self._alive(rig) or self.rigctld_adopted):
+            try:
+                if force_rx() is False:
+                    log.warning("arrêt : retour en réception non confirmé par le poste")
+                else:
+                    log.info("arrêt : poste remis en réception (T 0) avant l'arrêt de rigctld")
+            except Exception:                             # noqa: BLE001 - l'arrêt continue quoi qu'il arrive
+                log.exception("arrêt : « T 0 » impossible")
+        rig.stopped = True
+        self._terminate(rig)
 
     # ------------------------------------------------------------------ actions du superviseur
 

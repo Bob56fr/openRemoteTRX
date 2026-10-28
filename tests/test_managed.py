@@ -295,3 +295,40 @@ def test_gateway_refuses_to_start_when_the_audio_device_is_missing(tmp_path):
         assert read_status(tmp_path / "status.json") is None       # elle n'a jamais publié d'état
     finally:
         _stop(gateway)
+
+
+def test_stop_all_forces_rx_after_the_gateway_and_before_rigctld():
+    """Windows sans fenêtre : la passerelle peut finir tuée sans son retour RX. Le superviseur envoie « T 0 » lui-même,
+    passerelle déjà arrêtée (elle ne peut plus relancer une émission) et rigctld encore en marche (il transmet l'ordre)."""
+    b = backend({"rigctld": SLEEPER, "gateway": SLEEPER})
+    b.start()
+    seen = []
+
+    def force_rx():
+        seen.append((alive(b, "gateway"), alive(b, "rigctld")))
+        return True
+    b.stop_all(force_rx=force_rx)
+    assert seen == [(False, True)]
+    assert not alive(b, "rigctld") and not alive(b, "gateway")
+
+
+def test_stop_all_continues_when_rx_cannot_be_forced():
+    b = backend({"rigctld": SLEEPER, "gateway": SLEEPER})
+    b.start()
+    b.stop_all(force_rx=lambda: 1 / 0)
+    assert not alive(b, "rigctld") and not alive(b, "gateway")
+
+
+def test_stop_request_file_stops_a_running_supervisor(tmp_path):
+    """`trx-supervisor --stop` (raccourci « Arrêter la station » sous Windows) : rien qui tourne = « déjà arrêtée »."""
+    from types import SimpleNamespace
+    from trxstation.supervisor import main as sm
+    cfg = SimpleNamespace(supervisor=SimpleNamespace(state_dir=str(tmp_path), instance_lock_port=47398))
+    assert sm.request_stop(cfg) == 0 and not sm.stop_request_path(cfg).exists()
+    from trxstation.procutil import acquire_instance_lock
+    lock = acquire_instance_lock(47398)                  # un superviseur « en marche » qui ne s'arrête pas
+    try:
+        assert sm.request_stop(cfg, wait_s=1.0, sleep=lambda s: None) == 5
+        assert sm.stop_request_path(cfg).exists()        # demande déposée : le superviseur la lira à son prochain tour
+    finally:
+        lock.close()

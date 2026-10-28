@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import signal
 import sys
 import time
@@ -12,6 +13,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .. import config as cfgmod
+from ..logsetup import LOG_DIR_ENV, setup_logging
 from ..paths import default_config_path
 from ..ports import port_present
 from ..procutil import acquire_instance_lock
@@ -27,6 +29,35 @@ from .state import StateStore
 log = logging.getLogger("trx-supervisor")
 MAX_CONSECUTIVE_FAILURES = 5
 TX_POLL_S = 0.25
+STOP_REQUEST = "stop_request"      # fichier déposé par `--stop` (Windows : station sans fenêtre, pas de Ctrl+C)
+STOP_WAIT_S = 30.0
+
+
+def stop_request_path(cfg) -> Path:
+    return Path(cfg.supervisor.state_dir) / STOP_REQUEST
+
+
+def request_stop(cfg, *, wait_s: float = STOP_WAIT_S, sleep: Callable[[float], None] = time.sleep,
+                 clock: Callable[[], float] = time.monotonic) -> int:
+    """Demande l'arrêt au superviseur en marche et attend qu'il ait fini (passerelle d'abord : retour RX)."""
+    probe = acquire_instance_lock(cfg.supervisor.instance_lock_port)
+    if probe is not None:
+        probe.close()
+        print("La station est déjà arrêtée.")
+        return 0
+    path = stop_request_path(cfg)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("arrêt demandé\n", encoding="utf-8")
+    deadline = clock() + wait_s
+    while clock() < deadline:
+        sleep(0.5)
+        probe = acquire_instance_lock(cfg.supervisor.instance_lock_port)
+        if probe is not None:
+            probe.close()
+            print("Station arrêtée (le poste est en réception).")
+            return 0
+    print(f"La station ne s'est pas arrêtée en {wait_s:.0f} s : regarde ses journaux.", file=sys.stderr)
+    return 5
 
 
 def run_forever(sup: Supervisor, poll_interval_s: float, *, stop: Callable[[], bool] = lambda: False,
@@ -54,8 +85,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", type=Path, default=default_config_path())
     ap.add_argument("--clear-safe-mode", action="store_true", help="sort du mode sûr (action de l'opérateur)")
     ap.add_argument("--status", action="store_true", help="affiche le mode sûr et l'historique des redémarrages")
+    ap.add_argument("--stop", action="store_true", help="arrête proprement le superviseur en marche (et la station)")
+    ap.add_argument("--log-dir", type=Path, help="journaux dans ce dossier (aussi pour la passerelle et rigctld)")
     args = ap.parse_args(argv)
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    if args.log_dir is not None:
+        os.environ[LOG_DIR_ENV] = str(args.log_dir)        # transmis aux processus lancés par le superviseur
+    setup_logging("superviseur")
     try:
         cfg = cfgmod.load(args.config)
     except cfgmod.ConfigError as exc:
@@ -70,12 +105,16 @@ def main(argv: list[str] | None = None) -> int:
         print("mode sûr :", store.safe_mode() or "non")
         print("redémarrages enregistrés :", store.reboot_times())
         return 0
+    if args.stop:
+        return request_stop(cfg)
 
     lock = acquire_instance_lock(cfg.supervisor.instance_lock_port)
     if lock is None:
         print("Un superviseur est déjà en cours d'exécution (port de verrouillage "
               f"{cfg.supervisor.instance_lock_port} occupé).", file=sys.stderr)
         return 4
+    stop_file = stop_request_path(cfg)
+    stop_file.unlink(missing_ok=True)                         # demande d'arrêt d'une session précédente : oubliée
     status_path = cfg.supervisor.status_path
     probe = RigctlProbe(cfg.network.rigctld_host, cfg.network.rigctld_port)
     backend = choose_backend(cfg, args.config, store)
@@ -102,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         log.exception("modules non lancés : la station fonctionne sans eux")
         launcher = None
     try:
-        return run_forever(sup, cfg.supervisor.poll_interval_s, stop=lambda: stopping,
+        return run_forever(sup, cfg.supervisor.poll_interval_s, stop=lambda: stopping or stop_file.exists(),
                            tick=make_tick(backend.maintain, launcher))
     finally:
         if launcher is not None:
@@ -110,7 +149,8 @@ def main(argv: list[str] | None = None) -> int:
                 launcher.stop_all()
             except Exception:
                 log.exception("arrêt des modules incomplet")
-        backend.stop_all()                                    # no-op sous systemd
+        backend.stop_all(force_rx=sup.actions.force_rx)       # no-op sous systemd ; « T 0 » avant d'arrêter rigctld
+        stop_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

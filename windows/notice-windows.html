@@ -1,0 +1,164 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Notice Windows de TRX distant : jointe au paquet trx-remote-windows-X.Y.Z.zip et ouverte depuis le menu Démarrer. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRX distant sous Windows</title>
+<style>
+:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--rouge:#e0524a;--vert:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:52rem;margin:0 auto;padding:1.2rem 16px 3rem}
+h1{font-size:1.7rem;margin:.4rem 0 .2rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:1.2rem 0 .3rem}
+a{color:var(--accent)}
+code,kbd{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.25rem 0}
+table{width:100%;border-collapse:collapse;margin:.6rem 0 1rem;font-size:.96rem}
+th,td{border-bottom:1px solid var(--ligne);padding:.45rem .4rem;text-align:left;vertical-align:top}
+th{color:var(--doux);font-weight:600}
+.lead{color:var(--doux);margin-top:0}
+.note{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;padding:.5rem 1rem;margin:1rem 0}
+.danger{border-left-color:var(--rouge)}
+.ok{border-left-color:var(--vert)}
+nav ul{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;margin:1rem 0;padding:0}
+nav a{display:inline-block;background:var(--carte);border:1px solid var(--ligne);border-radius:2rem;padding:.2rem .85rem;text-decoration:none;color:var(--texte)}
+</style>
+</head>
+<body>
+<main>
+<h1>TRX distant sous Windows</h1>
+<p class="lead">Installation, configuration, utilisation et dépannage de la station sur un PC Windows 10 ou 11.</p>
+
+<nav><ul>
+<li><a href="#besoin">Ce qu'il faut</a></li><li><a href="#avant">Avant d'installer</a></li><li><a href="#installer">Installer</a></li>
+<li><a href="#configurer">Configurer et essayer</a></li><li><a href="#utiliser">Utiliser</a></li><li><a href="#maj">Mettre à jour</a></li>
+<li><a href="#depannage">Dépannage</a></li><li><a href="#differences">Différences avec Debian</a></li>
+</ul></nav>
+
+<div class="note danger"><strong>Sécurité d'émission.</strong> La station démarre toujours en réception, et son arrêt remet le
+poste en réception. Le PTT se commande par bascule depuis la page web, avec durée maximale d'émission et coupure si le
+téléphone ne répond plus. Pour les essais d'émission : <strong>charge fictive</strong> et puissance réduite.</div>
+
+<h2 id="besoin">1. Ce qu'il faut</h2>
+<ul>
+<li>Un PC <strong>Windows 10 ou 11, 64 bits</strong>, avec un <strong>compte administrateur</strong> (l'installateur demande la permission une fois).</li>
+<li><strong>Internet</strong> pendant l'installation (modules Python, environ 150 Mo).</li>
+<li>Le poste relié en USB (le câble transporte la commande CAT <em>et</em> le son sur la plupart des postes récents), ou une interface externe (Digirig, SignaLink...).</li>
+<li><strong>Python 3.11 ou plus récent</strong> : l'installateur le cherche et propose de l'installer s'il manque.</li>
+<li><strong>Hamlib 64 bits</strong> (le programme qui parle au poste) : à télécharger sur
+<a href="https://github.com/Hamlib/Hamlib/releases" target="_blank" rel="noopener noreferrer">github.com/Hamlib/Hamlib/releases</a>
+(fichier <code>hamlib-w64-X.Y.Z.exe</code>, version 4.6 ou plus récente) et à installer dans le dossier proposé.</li>
+</ul>
+
+<h2 id="avant">2. Avant d'installer : réglages de Windows</h2>
+<h3>Pilote USB et ports COM</h3>
+<p>Installe le pilote USB fourni par le fabricant du poste (Icom : « USB Driver » de Silicon Labs sur le site d'Icom).
+Poste allumé et branché, ouvre le <em>Gestionnaire de périphériques &gt; Ports (COM et LPT)</em> et note les numéros COM du poste.
+Certains postes en ont deux : le premier sert à la commande (CAT), le second peut servir au spectre HF (Icom).</p>
+<h3>Son : la carte du poste ne doit pas servir à Windows</h3>
+<ul>
+<li><em>Paramètres &gt; Système &gt; Son</em> : en <strong>Sortie</strong> les haut-parleurs ou le casque du PC, en <strong>Entrée</strong> le micro du PC, jamais la carte du poste (souvent « USB Audio CODEC »).</li>
+<li><em>Plus de paramètres de son</em>, onglets <em>Lecture</em> et <em>Enregistrement</em> : la carte du poste ne doit être ni « Périphérique par défaut » ni « Périphérique de communication par défaut ».</li>
+<li>Même fenêtre, propriétés de la carte du poste &gt; <em>Avancé</em> : format <strong>48000 Hz, 16 bits</strong> ; désactive les « améliorations audio ».</li>
+<li><em>Paramètres &gt; Personnalisation &gt; Thèmes &gt; Sons</em> : schéma <strong>« Aucun son »</strong>, pour qu'aucune notification ne parte vers le poste.</li>
+<li><em>Paramètres &gt; Confidentialité &gt; Microphone</em> : <strong>autoriser les applications de bureau</strong> (sinon le son reçu du poste est un silence).</li>
+</ul>
+<h3>Réseau et veille</h3>
+<ul>
+<li>Le réseau de la maison doit être en profil <strong>Privé</strong> (<em>Paramètres &gt; Réseau et Internet &gt; ta connexion</em>) : le pare-feu n'ouvre la station que sur les réseaux privés.</li>
+<li>Désactive la mise en veille et l'hibernation du PC (<em>Paramètres &gt; Système &gt; Alimentation</em>) : un PC en veille ne répond plus.</li>
+</ul>
+
+<h2 id="installer">3. Installer</h2>
+<ol>
+<li>Copie <code>trx-remote-windows-X.Y.Z.zip</code> sur le PC. S'il vient d'Internet : clic droit &gt; <em>Propriétés</em> &gt; coche <strong>Débloquer</strong> &gt; OK.</li>
+<li>Clic droit &gt; <em>Extraire tout</em>, puis ouvre le dossier obtenu.</li>
+<li>Double-clic sur <strong><code>installer.cmd</code></strong>. Si Windows affiche « Windows a protégé votre ordinateur » : <em>Informations complémentaires &gt; Exécuter quand même</em>.</li>
+<li>Accepte la demande d'autorisation (administrateur), puis réponds aux questions.</li>
+</ol>
+<p>L'installateur, en 7 étapes, sans jamais commander le poste :</p>
+<table>
+<tr><th>Étape</th><th>Ce qu'il fait</th></tr>
+<tr><td>1. Vérifications</td><td>Windows 64 bits, Python (installé avec winget si tu l'acceptes), Hamlib, place sur le disque.</td></tr>
+<tr><td>2. Station en marche</td><td>Arrête une version déjà en marche (le poste revient en réception).</td></tr>
+<tr><td>3. Logiciel</td><td>Installe TRX distant et ses modules dans <code>%LOCALAPPDATA%\Programs\TRX distant\versions\X.Y.Z</code>.</td></tr>
+<tr><td>4. Configuration</td><td>Réserve <code>C:\ProgramData\trx-remote</code> à ton compte et aux administrateurs (la configuration contient les empreintes des mots de passe).</td></tr>
+<tr><td>5. Pare-feu</td><td>Ouvre la page web (port 8443) et le son WebRTC, sur les réseaux <strong>privés</strong> seulement.</td></tr>
+<tr><td>6. Démarrage</td><td>Crée la tâche planifiée « TRX distant » (la station démarre à l'ouverture de ta session, sans fenêtre) et les raccourcis du menu Démarrer.</td></tr>
+<tr><td>7. Configuration</td><td>Propose l'assistant si la station n'est pas encore configurée, fait un diagnostic et propose de démarrer.</td></tr>
+</table>
+<p>Compte-rendu de l'installation : <code>%TEMP%\trx-remote-install.log</code>.</p>
+
+<h2 id="configurer">4. Configurer et essayer</h2>
+<p>L'assistant (raccourci <em>1 - Configuration de la station</em>) demande, dans l'ordre : le modèle du poste (liste
+Hamlib), le port COM du CAT, la méthode de PTT, les cartes son (réception et émission), les bandes autorisées, l'accès
+réseau et le premier compte (identifiant et mot de passe pour la page web). Le poste n'est interrogé qu'en lecture.</p>
+<ol>
+<li><strong>Diagnostic</strong> (raccourci 2) : chaque ligne est OK, à surveiller ou en échec, avec la marche à suivre.</li>
+<li><strong>Essai du poste</strong> : arrête d'abord la station (raccourci 4), puis raccourci 6. Commence par la réception seule ;
+l'essai d'émission demande une <strong>charge fictive</strong> et une confirmation à chaque étape (taper <code>EMETTRE</code>).</li>
+<li><strong>Démarre</strong> la station (raccourci 3) et refais un diagnostic.</li>
+</ol>
+
+<h2 id="utiliser">5. Utiliser</h2>
+<p>Sur le téléphone (même réseau) : <code>https://&lt;adresse-du-PC&gt;:8443</code> ; sur le PC lui-même :
+<code>https://localhost:8443</code>. Avec un certificat auto-signé, le navigateur avertit la première fois : c'est attendu sur ton
+réseau. L'adresse du PC est affichée par le diagnostic (« Adresses de ce PC »).</p>
+<table>
+<tr><th>Menu Démarrer &gt; TRX distant</th><th>Usage</th></tr>
+<tr><td>1 - Configuration de la station</td><td>Assistant (à refaire en cas de changement de poste ou d'interface ; station arrêtée de préférence).</td></tr>
+<tr><td>2 - Diagnostic</td><td>Contrôle complet, en lecture seule.</td></tr>
+<tr><td>3 - Démarrer la station</td><td>Démarre la station en arrière-plan (elle démarre aussi à chaque ouverture de session).</td></tr>
+<tr><td>4 - Arrêter la station</td><td>Arrêt propre : la passerelle s'arrête, puis le poste est remis en réception, puis Hamlib s'arrête.</td></tr>
+<tr><td>5 - Tableau de bord</td><td>État en direct (fréquence, émission, clients, services) ; touche <strong>STOP TX</strong>.</td></tr>
+<tr><td>6 - Essai du poste</td><td>Essai guidé, station arrêtée.</td></tr>
+<tr><td>7 - Journaux de la station</td><td><code>C:\ProgramData\trx-remote\logs</code> : superviseur, passerelle, rigctld.</td></tr>
+<tr><td>8 - Mode d'emploi Windows</td><td>Cette notice.</td></tr>
+<tr><td>9 - Désinstaller</td><td>Retire le logiciel ; la configuration est gardée sauf si tu demandes de l'effacer.</td></tr>
+</table>
+<p>Pour l'accès depuis l'extérieur (VPN de ton choix, ou port exposé avec TLS), voir la documentation « Accès distant » du projet.</p>
+
+<h2 id="maj">6. Mettre à jour, revenir en arrière</h2>
+<ul>
+<li><strong>Mise à jour</strong> : extrais le nouveau zip et lance son <code>installer.cmd</code>. La station est arrêtée pendant
+l'opération, la configuration et les profils de poste sont conservés.</li>
+<li><strong>Retour à une version précédente</strong> : garde le zip de l'ancienne version et relance son <code>installer.cmd</code>.</li>
+<li>La mise à jour automatique par Internet (menu 10 de TRX Console sous Debian) n'existe pas encore sous Windows.</li>
+</ul>
+
+<h2 id="depannage">7. Dépannage</h2>
+<table>
+<tr><th>Symptôme</th><th>À faire</th></tr>
+<tr><td>Page web injoignable depuis le téléphone</td><td>Réseau du PC en profil <strong>Public</strong> : passe-le en Privé. Vérifie l'adresse (diagnostic) et que la station tourne (tableau de bord).</td></tr>
+<tr><td>Pas de son reçu, ou silence</td><td>Autorisation du micro pour les applications de bureau ; carte du poste choisie par défaut dans Windows (voir « Son ») ; niveau de sortie USB du poste.</td></tr>
+<tr><td>« rigctld introuvable »</td><td>Installe Hamlib 64 bits dans <code>C:\Program Files\hamlib-w64-X.Y.Z</code>, ou relance l'installateur et indique son dossier.</td></tr>
+<tr><td>« Un superviseur est déjà en cours d'exécution »</td><td>La station tourne déjà (tâche planifiée) : arrête-la (raccourci 4) avant de la lancer à la main.</td></tr>
+<tr><td>La station ne démarre pas à l'ouverture de session</td><td>Planificateur de tâches &gt; « TRX distant » : dernier résultat ; puis les journaux (raccourci 7).</td></tr>
+<tr><td>Port COM absent</td><td>Poste éteint, câble de charge seule, pilote USB manquant (Gestionnaire de périphériques).</td></tr>
+<tr><td>Émission coupée seule</td><td>Normal si : durée maximale atteinte, téléphone qui ne répond plus, fréquence hors des bandes autorisées. La raison est affichée dans la page et dans les journaux.</td></tr>
+</table>
+<p>Pour demander de l'aide : joins les fichiers du dossier des journaux (raccourci 7), le résultat du diagnostic (raccourci 2)
+et le compte-rendu d'installation <code>%TEMP%\trx-remote-install.log</code>. Aucun de ces fichiers ne contient de mot de passe.</p>
+
+<h2 id="differences">8. Différences avec la version Debian</h2>
+<ul>
+<li>Pas de TRX Console à menus : les raccourcis du menu Démarrer la remplacent.</li>
+<li>Pas de mise à jour par Internet ni de vérification de signature : on installe le nouveau zip à la main.</li>
+<li>Pas d'indicateur dans la barre des tâches pour l'instant (prévu : icône près de l'horloge).</li>
+<li>Pas de réinitialisation automatique du port USB par le superviseur : en cas de panne répétée, rebranche le câble.</li>
+<li>La station tourne sous ton compte, à l'ouverture de ta session : le PC doit rester allumé avec ta session ouverte (verrouillée si tu veux).</li>
+</ul>
+<p class="note ok">TRX distant est un logiciel libre (AGPL-3.0-or-later). Code source :
+<a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">github.com/Bob56fr/openRemoteTRX</a> ·
+<a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
+</main>
+</body>
+</html>

@@ -28,9 +28,10 @@ from .audio_devices import card_name, desktop_audio_advice, list_audio_devices, 
 from .config import Config
 from .fsperm import SERVICE_GROUP
 from .hamlib import find_tool
+from .paths import default_config_path
 from .ports import list_serial_ports
 
-CONFIG_PATH = Path("/etc/trx-remote/station.toml")
+CONFIG_PATH = default_config_path()             # /etc/trx-remote/station.toml ; Windows : %PROGRAMDATA%\trx-remote
 UNITS = ("rigctld.service", "trx-gateway.service", "trx-supervisor.service")
 # Chemins Linux : PurePosixPath pour qu'ils gardent leurs « / » même quand les tests tournent sous Windows
 MM_RULE = PurePosixPath("/etc/udev/rules.d/99-trx-remote-modemmanager.rules")

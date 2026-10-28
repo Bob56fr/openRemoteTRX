@@ -27,6 +27,7 @@ from ..audio_devices import real_device_names
 from ..config import Config, exposure_problem
 from ..layout import LayoutStore
 from ..modules.gateway_bridge import ModuleBridge
+from ..logsetup import setup_logging
 from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
@@ -172,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", type=Path, default=default_config_path())
     ap.add_argument("--parent-pid", type=int, default=None, help="mode géré : quitter si ce processus disparaît")
     args = ap.parse_args(argv)
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    setup_logging("passerelle")
     try:
         cfg = cfgmod.load(args.config)
     except cfgmod.ConfigError as exc:

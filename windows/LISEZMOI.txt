@@ -1,0 +1,16 @@
+TRX distant : installation sur Windows 10 ou 11 (64 bits)
+=========================================================
+
+1. Si ce zip vient d'Internet : clic droit sur le zip > Propriétés > cocher « Débloquer » > OK.
+2. Clic droit > « Extraire tout ».
+3. Dans le dossier obtenu : double-clic sur installer.cmd, accepter la demande d'autorisation,
+   répondre aux questions. Internet est nécessaire.
+
+Il faut aussi Hamlib 64 bits (https://github.com/Hamlib/Hamlib/releases, hamlib-w64-X.Y.Z.exe) ;
+Python est installé par l'installateur s'il manque (avec ton accord).
+
+Notice complète : notice-windows.html (double-clic), aussi dans le menu Démarrer > TRX distant.
+
+Mettre à jour  : même chose avec le nouveau zip (configuration conservée).
+Désinstaller   : menu Démarrer > TRX distant > 9 - Désinstaller.
+Compte-rendu   : %TEMP%\trx-remote-install.log

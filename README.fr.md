@@ -51,7 +51,11 @@ Les versions suivantes s'installent depuis TRX Console (menu 10 par Internet, me
 
 ### Windows
 
-Installation manuelle pour l'instant : Hamlib pour Windows, Python 3.11 ou plus récent, puis dans le dossier du projet `pip install -e ".[station]"`, `trx-setup` pour la configuration et `trx-supervisor` pour lancer la station. Voir `docs/essai-poste-reel.md`.
+1. Installez **Hamlib 64 bits** (`hamlib-w64-X.Y.Z.exe`, [versions de Hamlib](https://github.com/Hamlib/Hamlib/releases)).
+2. Récupérez le paquet `trx-remote-windows-X.Y.Z.zip`, débloquez-le (Propriétés), extrayez-le, double-cliquez sur **`installer.cmd`**. Python est installé s'il manque (avec votre accord).
+3. Menu Démarrer > **TRX distant** : configuration, diagnostic, démarrage et arrêt de la station, tableau de bord, essai du poste, journaux.
+
+La station démarre à l'ouverture de session, sans fenêtre. Notice complète : `windows/notice-windows.html` (jointe au paquet).
 
 ## Accès depuis l'extérieur
 
