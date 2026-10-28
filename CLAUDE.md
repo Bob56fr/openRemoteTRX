@@ -80,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.47.0, étape 44)
+## État actuel (version 0.48.0, étape 45)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -111,6 +111,7 @@ Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur p
 - **IC-7300MK2** : modes données (PKTUSB…) seuls modulés par l'USB (`tx_modes`) ; port B (spectre) = `…-if02` sous Linux (pas if01), COM7 sous Windows, adresse B6h ; réglages USB SEND / USB Keying : un port B mal réglé peut mettre en émission ; le spectre se FIGE pendant l'émission (pause, pas une panne).
 - **Fils et asyncio** : un fil qui produit (port série) ne doit jamais empiler un `call_soon_threadsafe` par donnée : un seul envoi en attente (le dernier), sinon un petit PC noie la boucle (tests bloqués sur Debian, étape 44). Diagnostic d'un blocage : `py-spy dump --pid`.
 - **Sécurité** : la passerelle ne doit JAMAIS quitter sur une erreur d'API ou de port (le superviseur la relancerait en boucle jusqu'au mode sûr) ; une émission qui revient après « T 0 » est une nouvelle émission (opérateur), pas une panne ; NR/NB sont à la fois FONCTION et NIVEAU (clés distinctes `f:`/`l:`).
+- **Son sous Linux** : PortAudio ne liste PAS une carte occupée (station, PipeWire) ; le noyau (`arecord -l`) la voit toujours. Sur minix-bzh la carte du poste est la sortie par défaut du bureau.
 - **Debian** : superviseur en root => modules sous `run_as` ; fichiers lus par le compte de bureau en 0644 (état passerelle, mode sûr, cluster) ; poste éteint = `rig_absent` (jamais de mode sûr) ; renvoyer un zip ne suffit pas, il faut installer (menu 13) ; le mode sûr mémorisé survit aux corrections (menu 9) ; `station.toml` existante garde ses valeurs (un nouveau défaut ne s'y applique pas).
 - **Windows / outils de Claude** : PowerShell 5.1 relit en ANSI (`Get-Content | Set-Content` abîme les accents et ajoute un BOM : modifier en Python ou avec l'outil d'édition) et retire les guillemets intérieurs passés à `ssh` (envoyer un script à `bash` par l'entrée standard) ; pytest exige `--basetemp` dans le dossier temporaire de la conversation ; durées courtes avec `time.perf_counter()` ; `os.replace` réessayé (`status.replace_atomic`) ; remplacer `subprocess.Popen` globalement casse asyncio ; un message `hello` n'implique pas encore de `state` (attendre dans les tests).
 - **Page web** : l'attribut `hidden` est battu par un `display:` de classe (`[hidden]{display:none !important}`) ; clic fantôme Android après un appui ; le faux DOM des tests JS n'a ni id ni parent ; un vrai Chromium (Playwright) avec une fausse station trouve ce que les tests simulés ne voient pas ; le canal de données d'aiortc limite un message à 64 ko.

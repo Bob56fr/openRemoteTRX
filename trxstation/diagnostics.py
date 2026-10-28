@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from . import config as cfgmod
-from .audio_devices import list_audio_devices, real_device_names
+from .audio_devices import list_audio_devices, parse_audio_list, real_device_names
 from .config import Config
 from .fsperm import SERVICE_GROUP
 from .hamlib import find_tool
@@ -334,14 +334,53 @@ def _check_audio(sysm: System, cfg: Config | None) -> list[Check]:
             for name in real_device_names(spec):
                 wanted = name.lower()
                 found = any(wanted == d.lower() or wanted in d.lower() or wanted in lbl.lower() for d, lbl in devices)
-                out.append(Check(s, f"Carte son ({kind})", OK if found else FAIL, name,
-                                 "" if found else "Poste éteint ou débranché ? Sinon rechoisis-la dans l'assistant"))
+                if found:
+                    out.append(Check(s, f"Carte son ({kind})", OK, name))
+                    continue
+                # Absente de la liste du son, mais la carte est-elle branchée ? Une carte OCCUPÉE (station en marche,
+                # son du bureau PipeWire) n'apparaît pas dans la liste de PortAudio ; le noyau, lui, la voit toujours.
+                hardware = _alsa_hardware(sysm, kind)
+                card = _card_of(name, hardware)
+                if card is None:
+                    out.append(Check(s, f"Carte son ({kind})", FAIL, name,
+                                     "Poste éteint ou débranché ? Sinon rechoisis-la dans l'assistant"))
+                elif _gateway_active(sysm):
+                    out.append(Check(s, f"Carte son ({kind})", OK, f"{name} : utilisée par la station"))
+                else:
+                    out.append(Check(s, f"Carte son ({kind})", WARN,
+                                     f"{name} : branchée ({card}) mais occupée par un autre programme, sans doute le son "
+                                     "du bureau (PipeWire)",
+                                     "Dans les réglages du son du bureau, choisis une autre sortie et une autre entrée "
+                                     "que celles du poste, puis relance le diagnostic"))
     code, _ = sysm.run(["pgrep", "-x", "pipewire"])
     if code == 0:
         out.append(Check(s, "Son du bureau (PipeWire)", INFO,
                          "actif : il peut occuper la carte son du poste quand une session est ouverte",
                          "Si la station n'a pas de son, voir « Dépannage » dans le guide"))
     return out
+
+
+def _alsa_hardware(sysm: System, kind: str) -> list[tuple[str, str]]:
+    """Cartes vues par le noyau (`arecord -l` / `aplay -l`), occupées ou non."""
+    code, text = sysm.run(["arecord" if kind == "capture" else "aplay", "-l"])
+    return parse_audio_list(text) if code == 0 else []
+
+
+def _card_of(spec: str, hardware: list[tuple[str, str]]) -> str | None:
+    """Carte du noyau correspondant à un nom PortAudio « Nom de la carte: ... (hw:N,M) » ; None si aucune."""
+    m = re.search(r"\(hw:(\d+),(\d+)\)\s*$", spec)
+    card_name = spec.split(":", 1)[0].strip().lower()
+    for device, label in hardware:
+        dev = re.search(r"DEV=(\d+)", device)
+        name, _, number = label.rpartition(" (carte ")
+        if name.strip().lower() == card_name and (m is None or (dev and dev.group(1) == m.group(2))):
+            return f"carte {number.rstrip(')')}"
+    return None
+
+
+def _gateway_active(sysm: System) -> bool:
+    code, state = sysm.run(["systemctl", "is-active", "trx-gateway"])
+    return state.strip() == "active"
 
 
 def _last_line(text: str) -> str:

@@ -244,3 +244,27 @@ def test_safe_mode_file_unreadable_is_still_reported(tmp_path):
     checks = [c for c in d.check_services(sysm, cfg) if c.name == "Mode sûr"]
     assert checks and checks[0].status == d.FAIL and "illisible" in checks[0].message
 
+
+
+ARECORD = ("**** List of CAPTURE Hardware Devices ****\n"
+           "card 0: Camera [USB Camera], device 0: USB Audio [USB Audio]\n"
+           "card 2: CODEC [USB Audio CODEC], device 0: USB Audio [USB Audio]\n")
+
+
+def test_busy_sound_card_is_not_reported_as_a_switched_off_rig(tmp_path):
+    """Relevé sur Debian : la carte du poste, sortie par défaut du bureau, était tenue par PipeWire ; PortAudio ne liste
+    pas une carte occupée et le diagnostic disait « poste éteint ». Le noyau, lui, la voit : présente mais occupée."""
+    sysm, path = healthy(tmp_path)
+    sysm.devices = [("USB Camera: Audio (hw:0,0)", "USB Camera  [ALSA]")]       # carte du poste absente de PortAudio
+    sysm.commands["arecord -l"] = (0, ARECORD)
+    sysm.commands["aplay -l"] = (0, ARECORD.replace("CAPTURE", "PLAYBACK"))
+    check = by_name(d.run_all(sysm, path), "Carte son (capture)")
+    assert check.status == d.WARN and "occupée" in check.message and "carte 2" in check.message
+    assert "éteint" not in check.message + check.fix
+    sysm.commands["systemctl is-active trx-gateway"] = (0, "active\n")             # c'est la station qui la tient
+    check = by_name(d.run_all(sysm, path), "Carte son (capture)")
+    assert check.status == d.OK and "utilisée par la station" in check.message
+    sysm.commands["arecord -l"] = (0, ARECORD.replace("card 2: CODEC [USB Audio CODEC]", "card 2: Other [Other]"))
+    sysm.commands["systemctl is-active trx-gateway"] = (0, "inactive\n")
+    check = by_name(d.run_all(sysm, path), "Carte son (capture)")
+    assert check.status == d.FAIL and "éteint" in check.fix                         # vraiment absente : erreur
