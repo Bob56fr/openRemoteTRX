@@ -59,7 +59,7 @@ Règles :
 - Service au premier plan de type `microphone|mediaPlayback` (`connectedDevice` si bouton Bluetooth). **Piège Android 14+** : un service au premier plan « micro » ne peut pas démarrer depuis l'arrière-plan. Le service (et la capture micro, porte fermée côté station) démarre à la connexion, application visible ; un PTT venu de la voiture ou du volant ne fait ensuite qu'envoyer `toggle`.
 - Certificat TLS : **épinglé par empreinte SHA-256** saisie ou lue en QR code à l'appairage. Jamais de « faire confiance à tous les certificats ». Un changement d'empreinte bloque la connexion avec un message clair.
 - Plusieurs stations possibles (liste de comptes : adresse, identifiant, empreinte).
-- `minSdk` proposé : 29 (Android 10) ; `targetSdk` : la dernière version stable. À confirmer selon le téléphone de l'utilisateur (§ 10).
+- `minSdk` 29 (Android 10, décidé) ; `targetSdk` : la dernière version stable. Objectif de l'utilisateur : ne pas écarter les téléphones anciens ou modestes. Chaque différence de comportement entre Android 10 et 16 (services au premier plan, permissions micro et notifications, Bluetooth) est traitée explicitement et essayée sur un émulateur Android 10 en plus du téléphone de développement.
 
 ## 5. Fonctions, par lot
 
@@ -175,10 +175,16 @@ Exception : ce qui n'a de sens que sur le téléphone (Android Auto, boutons mat
 - Diffusion : APK installé à la main et mode développeur d'Android Auto (refus probable du Play Store en catégorie voiture). Une application installée à la main pilotant un émetteur : la clé de signature et le certificat épinglé sont les deux garanties d'origine, ne pas les négliger.
 - Les rapports de problème de l'application suivent les mêmes règles que ceux de la page (texte relu par l'utilisateur, aucun mot de passe).
 
-## 10. Questions ouvertes (à trancher avant le lot A1)
-1. Android Studio est-il installé sur le PC Windows ? Le code Kotlin est-il écrit ici avec Claude Code (recommandé : même dépôt, mêmes conversations) ?
-2. Téléphone(s) d'essai et version d'Android ; voiture compatible Android Auto, filaire ou sans fil ?
-3. `minSdk` 29 convient-il ?
-4. Nom du paquet (proposition : `com.rfdiy.trxremote`) et nom affiché de l'application.
-5. Ajout de `hello.features` côté station : d'accord ?
-6. Bouton Bluetooth HID prévu (lequel) ?
+## 10. Décisions (2026-10-28) et questions restantes
+
+Décidé par l'utilisateur :
+1. Android Studio : pas encore installé ; à installer avant le lot A1 (il fournit le SDK, l'émulateur, le journal `logcat` et le simulateur Android Auto « Desktop Head Unit »). Le lot A0 (station) n'en a pas besoin.
+2. Le code Kotlin est écrit ici, avec Claude Code, dans `android/`.
+3. Téléphone de développement : Samsung, Android 16, One UI 8.5. Essais aussi sur émulateur Android 10 (version minimale).
+4. `minSdk` 29 (Android 10).
+5. Nom affiché : **openRemoteTRX**. Identifiant du paquet (`applicationId`) proposé : `com.rfdiy.openremotetrx` (Android exige au moins un point, en minuscules par usage ; il ne peut plus changer une fois l'application installée, sinon c'est une autre application) : À CONFIRMER.
+6. `hello.features` : accepté, fait au lot A0.
+
+Restent ouvertes :
+- Voiture : compatible Android Auto ? filaire ou sans fil ? (seulement pour le lot A2)
+- Bouton matériel de PTT (bouton Bluetooth au volant, touches média) : voulu ? Par sécurité, AUCUNE touche média ne commande le PTT par défaut (une touche « lecture/pause » pressée par erreur, ou envoyée par la voiture à la connexion, ne doit jamais faire émettre) ; l'utilisateur choisit explicitement la touche qui sert de PTT, et la prise d'émission par bouton est confirmée par un bip.
