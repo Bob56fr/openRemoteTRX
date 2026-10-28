@@ -79,11 +79,11 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.43.0, étape 40)
+## État actuel (version 0.44.0, étape 41)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
-- **Station** (Python, `trxstation/`) : configuration validée (`config.py`, `station.toml`), assistant `trx-setup`, passerelle (`gateway/` : CAT par rigctld, sécurité PTT `safety/ptt.py` + opérateur sur place `safety/local.py`, audio WebRTC/aiortc, API et page web `api/`, mémoires, bips de fin, rapports de problème `bugreports.py`), superviseur indépendant (`supervisor/`, mode géré Windows ou systemd), tableau de bord `trx-monitor`, modules (`modules/` : bus 127.0.0.1, module cluster DX `cluster/`), spectre HF par le second port CI-V Icom (`spectrum/`), mises en page (`layout/`), qualification de poste (`qualif/`, `trx-qualif`), mise à jour signée (`update/`), TRX Console (`console.py`, 15 menus dont 13 = zip déposé, 14 = station.toml validée, 15 = menu expert/tests), diagnostic et rapport.
+- **Station** (Python, `trxstation/`) : configuration validée (`config.py`, `station.toml`), assistant `trx-setup`, passerelle (`gateway/` : CAT par rigctld, sécurité PTT `safety/ptt.py` + opérateur sur place `safety/local.py`, audio WebRTC/aiortc, API et page web `api/`, mémoires, bips de fin, rapports de problème `bugreports.py`), superviseur indépendant (`supervisor/`, mode géré Windows ou systemd), tableau de bord `trx-monitor`, modules (`modules/` : bus 127.0.0.1, module cluster DX `cluster/`), spectre HF par le second port CI-V Icom (`spectrum/`), mises en page (`layout/`), qualification de poste (`qualif/`, `trx-qualif`), mise à jour signée (`update/`), TRX Console (`console.py`, 16 menus dont 13 = zip déposé, 14 = station.toml validée, 15 = menu expert/tests, 16 = seuils de température ; en-tête : version et identifiant de station `station_id.py` ; réponses en casse libre `answers.py`), diagnostic et rapport.
 - **Page web** (`gateway/api/static/`) : `client.js` (logique, testée sous Node), `ui.js` (affichage), `waterfall.js`, `hfscope.js`, `spots.js`, `layout.js`, `theme.js` ; index.html, client.css (couleurs en variables, thèmes générés par `scripts/build_themes.py`).
 - **Installation Debian** : `debian/install.sh` + `releases.sh` (versions côte à côte, retour arrière), paquet `scripts/build_debian_zip.py` (`--sans-signature` pour les essais ; contient LICENSE et tests/ pour le menu expert).
 - **Validé sur le vrai matériel** (IC-7300MK2) : CAT, PTT, audio, page web (PC et téléphone en Wi-Fi), spectre HF par le port B, pannes (passerelle gelée, superviseur arrêté, client perdu) sous Windows ; installation et marche sous Debian 13 (minix-bzh).
@@ -97,7 +97,8 @@ Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur p
 ## En attente (décisions ou travaux à venir)
 
 - Signature des mises à jour : clé jamais générée (`scripts/gen_update_key.py`, `update/pubkey.py` vide => mise à jour par Internet refusée) ; `pip --require-hashes` à faire.
-- Température du poste : TEMP_METER lu et affiché (« Mesures du poste ») ; alertes et mesures à définir après relevé de la vraie valeur de l'IC-7300MK2.
+- Température du poste : seuils 40/50 °C (`safety/thermal.py`, coupure à distance au 2e) ; l'IC-7300MK2 n'expose PAS TEMP_METER sous Hamlib => sans effet sur ce poste, capteur externe à étudier.
+- Collecte des journaux (rf-diy / Azure) : identifiant de station prêt (`station-id`), service à construire.
 - Signalement des problèmes : étape 2 (réception sur le site WordPress de l'utilisateur) ; formulaire de qualification « [À COMPLÉTER] ».
 - Rapport à Hamlib : `docs/hamlib-rapports.md` à envoyer par l'utilisateur.
 - Application Android (étapes 9 à 11 du plan d'origine), designer lot 3, qualification Q2 à Q6, plafonds CPU/mémoire des modules, superviseur (mémoire, disque, watchdog matériel du Pi), règle PipeWire.

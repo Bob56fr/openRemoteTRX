@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,7 +29,9 @@ from pathlib import Path
 
 from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
+from .answers import typed, yes_no
 from .paths import default_state_dir
+from .station_id import read_station_id
 from .update import apply as upd
 from .update.apply import previous_version
 from .update.check import UpdateState, clean_text, parse_version, read_state, state_path
@@ -55,6 +58,30 @@ def find_packages(home: Path) -> list[tuple[str, Path]]:
             if version and path.is_file():
                 found.setdefault(path.resolve(), (version, path))
     return sorted(found.values(), key=lambda item: (parse_version(item[0]) or (), str(item[1])), reverse=True)
+
+
+def set_safety_values(text: str, values: dict[str, int]) -> str:
+    """Remplace (ou ajoute) des clés de la section [safety] de station.toml, sans toucher au reste ni aux commentaires."""
+    lines = text.splitlines(keepends=True)
+    newline = "\r\n" if text.endswith("\r\n") else "\n"
+    start = next((i for i, line in enumerate(lines) if line.strip() == "[safety]"), None)
+    if start is None:
+        if lines and not lines[-1].endswith(("\n", "\r")):
+            lines[-1] += newline
+        lines += [newline, "[safety]" + newline]
+        start = len(lines) - 1
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")), len(lines))
+    for key, value in values.items():
+        pattern = re.compile(rf"^(\s*{key}\s*=\s*)[^#\r\n]*?(\s*(#.*)?)(\r?\n)?$")
+        for i in range(start + 1, end):
+            match = pattern.match(lines[i])
+            if match:
+                lines[i] = f"{match.group(1)}{value}{match.group(2) or ''}{match.group(4) or ''}"
+                break
+        else:
+            lines.insert(start + 1, f"{key} = {value}{newline}")
+            end += 1
+    return "".join(lines)
 
 
 def config_state_dir(config: Path) -> Path:
@@ -139,6 +166,7 @@ class Console:
             ("13", "Installer une version depuis un fichier zip (Bureau, Téléchargements)", self.install_zip),
             ("14", "Modifier la configuration (station.toml)", self.edit_config),
             ("15", "Menu expert (tests automatiques du logiciel)", self.expert),
+            ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -153,8 +181,8 @@ class Console:
             pass
 
     def yes(self, question: str, default: bool = True) -> bool:
-        answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip().lower()
-        return default if not answer else answer in ("o", "oui", "y", "yes")
+        answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip()
+        return default if not answer else yes_no(answer) is True
 
     def station_running(self) -> bool:
         return any(self.runner.output(["systemctl", "is-active", unit]) == "active" for unit in UNITS)
@@ -274,8 +302,8 @@ class Console:
         self.say("\nPendant l'installation (quelques minutes, Internet nécessaire), la station est arrêtée.\n"
                  "Elle est refusée tant que le poste émet. Le paquet est vérifié (signature) avant toute installation ;\n"
                  f"la version {self.installed}, station.toml et les certificats sont conservés.")
-        typed = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
-        if typed != release.version:
+        entered = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
+        if entered != release.version:
             self.say("Mise à jour annulée : rien n'a été modifié.")
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
@@ -327,12 +355,12 @@ class Console:
         if not signed:
             self.say("\nCe paquet n'est PAS SIGNÉ : rien ne garantit qu'il vient de l'équipe TRX distant. Installe-le\n"
                      "seulement si tu l'as toi-même copié depuis une source sûre (ton PC, ta clé USB).")
-            if self.ask("Tape OUI pour accepter un paquet non signé (Entrée = non) : ").strip() != "OUI":
+            if not typed(self.ask("Tape OUI pour accepter un paquet non signé (Entrée = non) : "), "OUI"):
                 self.say("Annulé : rien n'a été modifié.")
                 return
             extra = ["--sans-signature"]
-        typed = self.ask(f"Pour installer, tape le numéro de version {version} (Entrée = non) : ").strip()
-        if typed != version:
+        entered = self.ask(f"Pour installer, tape le numéro de version {version} (Entrée = non) : ").strip()
+        if entered != version:
             self.say("Annulé : rien n'a été modifié.")
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "local",
@@ -377,36 +405,88 @@ class Console:
                     if not self.yes("Reprendre la modification", True):
                         self.say("Abandon : station.toml n'a pas été changé.")
                         return
-            before = original.decode("utf-8", "replace").splitlines()
-            after = edited.decode("utf-8", "replace").splitlines()
-            diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
-                    if not line.startswith(("---", "+++", "@@"))]
-            self.say("Changements :\n" + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
-                     + (f"\n  ... ({len(diff) - MAX_DIFF_LINES} lignes de plus)" if len(diff) > MAX_DIFF_LINES else ""))
-            if not self.yes("Enregistrer ces changements", False):
-                self.say("Abandon : station.toml n'a pas été changé.")
-                return
-            if self.config.read_bytes() != original:
-                self.say("station.toml a été modifié par ailleurs pendant ce temps : abandon, recommence.")
-                return
-            st = self.config.stat()
-            backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
-            if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
-                self.say("Copie de sauvegarde impossible : station.toml n'a pas été changé.")
-                return
-            code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
-                                    str(draft), str(self.config)], admin=True)
-            if code != 0:
-                self.say(f"Enregistrement impossible (code {code}) : station.toml n'a pas été changé.")
-                return
-            self.say(f"Enregistré. Ancienne version gardée : {backup}")
-            if self.station_running():
-                if self.yes("Redémarrer la station pour appliquer"):
-                    self.start()
-            else:
-                self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
+            self._save_config(original, edited, draft)
         finally:
             shutil.rmtree(work, ignore_errors=True)
+
+    def _save_config(self, original: bytes, edited: bytes, draft: Path) -> None:
+        """Différences montrées, confirmation, sauvegarde de l'ancienne version, enregistrement par sudo avec les
+        droits d'origine. `draft` est déjà validé."""
+        before = original.decode("utf-8", "replace").splitlines()
+        after = edited.decode("utf-8", "replace").splitlines()
+        diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
+                if not line.startswith(("---", "+++", "@@"))]
+        self.say("Changements :\n" + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
+                 + (f"\n  ... ({len(diff) - MAX_DIFF_LINES} lignes de plus)" if len(diff) > MAX_DIFF_LINES else ""))
+        if not self.yes("Enregistrer ces changements", False):
+            self.say("Abandon : station.toml n'a pas été changé.")
+            return
+        if self.config.read_bytes() != original:
+            self.say("station.toml a été modifié par ailleurs pendant ce temps : abandon, recommence.")
+            return
+        st = self.config.stat()
+        backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
+        if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
+            self.say("Copie de sauvegarde impossible : station.toml n'a pas été changé.")
+            return
+        code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
+                                str(draft), str(self.config)], admin=True)
+        if code != 0:
+            self.say(f"Enregistrement impossible (code {code}) : station.toml n'a pas été changé.")
+            return
+        self.say(f"Enregistré. Ancienne version gardée : {backup}")
+        if self.station_running():
+            if self.yes("Redémarrer la station pour appliquer"):
+                self.start()
+        else:
+            self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
+
+    def temperature(self) -> None:
+        """Seuils de température du poste ([safety] rig_temp_warn_c, rig_temp_cut_c), écrits dans station.toml par
+        le même chemin que le menu 14 : copie, validation, différences, confirmation, sauvegarde."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        try:
+            original = self.config.read_bytes()
+            cfg, _ = cfgmod.load_unchecked(self.config)
+        except (OSError, cfgmod.ConfigError) as exc:
+            self.say(f"Lecture de {self.config} impossible ({exc}).")
+            return
+        s = cfg.safety
+        self.say("Température du poste (lue par Hamlib, TEMP_METER) :\n"
+                 f"  1er seuil (avertissement : page et notification)            : {s.rig_temp_warn_c} °C\n"
+                 f"  2e seuil (émission à distance coupée, reprise sous le 1er)  : {s.rig_temp_cut_c} °C\n"
+                 "Sans effet si le poste ne donne pas sa température (cas de l'IC-7300MK2 sous Hamlib).")
+        warn = self._ask_degrees("Nouveau 1er seuil", s.rig_temp_warn_c)
+        cut = self._ask_degrees("Nouveau 2e seuil", s.rig_temp_cut_c)
+        if (warn, cut) == (s.rig_temp_warn_c, s.rig_temp_cut_c):
+            self.say("Aucune modification : station.toml n'a pas été changé.")
+            return
+        edited = set_safety_values(original.decode("utf-8"), {"rig_temp_warn_c": warn, "rig_temp_cut_c": cut}).encode("utf-8")
+        work = Path(tempfile.mkdtemp(prefix="trx-config-"))
+        draft = work / "station.toml"
+        try:
+            draft.write_bytes(edited)
+            os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
+            try:
+                cfgmod.load(draft)
+            except cfgmod.ConfigError as exc:
+                self.say("Seuils REFUSÉS :\n  - " + "\n  - ".join(exc.problems))
+                return
+            self._save_config(original, edited, draft)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+    def _ask_degrees(self, question: str, current: int) -> int:
+        while True:
+            answer = self.ask(f"{question} en °C (Entrée = {current}) : ").strip()
+            if not answer:
+                return current
+            if re.fullmatch(r"\d{1,3}", answer):
+                return int(answer)
+            self.say("Un nombre entier de degrés, par exemple 45.")
 
     def expert(self) -> None:
         self.say("\nMenu expert :\n"
@@ -471,12 +551,16 @@ class Console:
 
     # ------------------------------------------------------------------ boucle
 
+    def station_id(self) -> str | None:
+        return read_station_id(config_state_dir(self.config))
+
     def header(self) -> str:
         if not self.config.exists():
             state = "station PAS ENCORE CONFIGURÉE : commence par le menu 2"
         else:
             state = "station en marche" if self.station_running() else "station arrêtée"
-        line = f"\n=== TRX Console === ({state})"
+        line = (f"\n=== TRX Console  -  TRX distant version {self.installed} ===\n  {state}"
+                f"\n  Identifiant de la station : {self.station_id() or 'créé au premier démarrage de la station'}")
         release = self.offered(self.update_state())
         if release is not None:
             line += f"\n  ** Nouvelle version {release.version} disponible : menu 10 **"

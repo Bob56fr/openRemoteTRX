@@ -1190,7 +1190,7 @@
           for (const [, id] of CONTROLS) $(id).disabled = true;                          // plus de commande sans liaison
           for (const button of bandButtons.values()) button.disabled = true;
           for (const button of modeButtons.values()) button.disabled = true;
-          $("local-banner").hidden = true; resetRelease(); closeControlDialog();
+          $("local-banner").hidden = true; $("temp-banner").hidden = true; resetRelease(); closeControlDialog();
           clusterData = null; renderCluster();                                        // plus de liaison : plus d'état des flux
           $("hf-cluster").hidden = $("hf-spots").hidden = $("hf-list").hidden = true;   // reviendront quand le module reparlera
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
@@ -1215,6 +1215,10 @@
           $("local-text").textContent = local.text;
           $("local-release").disabled = !v.connected || local.transmitting;          // jamais pendant l'émission au micro du poste
         } else if (releaseArmed) resetRelease();
+        const temp = v.temp || { level: "" };                                        // température du poste
+        $("temp-banner").hidden = !temp.level;
+        $("temp-banner").className = "alert" + (temp.level === "hot" ? "" : " warn");
+        $("temp-banner").textContent = temp.text;
         const transmitting = v.pttState !== "RX";
         $("wf-tx").hidden = !(wfVisible && transmitting);
         hfState(v, transmitting);

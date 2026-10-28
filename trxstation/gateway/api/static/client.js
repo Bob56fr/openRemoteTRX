@@ -53,6 +53,7 @@
     rig_already_tx: "Le poste est déjà en émission.",
     local_active: "Poste utilisé sur place (micro, bouton ou mode du poste) : PTT à distance bloqué. « Reprendre la main » pour le débloquer.",
     local_tx: "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
+    rig_hot: "Poste trop chaud : émission refusée jusqu'à ce qu'il refroidisse.",
     report_empty: "Le rapport est vide.",
     report_too_soon: "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
     report_storage_error: "La station n'a pas pu enregistrer le rapport (disque ?).",
@@ -88,6 +89,7 @@
     rig_reported_rx: "le poste est repassé en réception",
     cat_down: "liaison avec le poste perdue",
     rig_silent: "poste muet",
+    rig_overheat: "poste trop chaud",
     ptt_write_failed: "échec de l'ordre d'émission",
     rig_did_not_key: "le poste n'a pas émis",
     shutdown: "arrêt de la station",
@@ -223,6 +225,15 @@
     const when = transmitting ? "pendant l'émission locale" : "encore " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
     return { active: true, transmitting: transmitting,
              text: "POSTE UTILISÉ SUR PLACE (" + (LOCAL_REASONS[ptt.local_reason] || "action sur le poste") + ") : PTT à distance bloqué " + when };
+  }
+
+  function tempView(ptt) {
+    /* Température du poste (gateway/safety/thermal.py) : "warn" = avertissement, "hot" = émission coupée et refusée. */
+    const level = ptt ? ptt.temp_alert : "";
+    if (level !== "warn" && level !== "hot") return { level: "", text: "" };
+    const temp = Number.isFinite(ptt.temp_c) ? Math.round(ptt.temp_c) + " °C" : "?";
+    return { level: level, text: level === "hot" ? "POSTE TROP CHAUD (" + temp + ") : émission à distance coupée et refusée jusqu'au refroidissement"
+                                                 : "Poste chaud (" + temp + ") : surveille la température, l'émission sera coupée au second seuil" };
   }
 
   // Modes « données » : le nom dépend de la version de Hamlib (4.7 : FM-D et AM-D au lieu de PKTFM, PKTAM).
@@ -1114,7 +1125,7 @@
         frequencyIcom: formatIcomFrequency(this.pendingHz !== null ? this.pendingHz : rig.frequency_hz), modeShort: shortMode(rig.mode),
         frequencyHz: this.pendingHz !== null ? this.pendingHz : (Number.isFinite(rig.frequency_hz) ? rig.frequency_hz : null), frequencyPending: this.pendingHz !== null, band: (bandOf(this.pendingHz !== null ? this.pendingHz : rig.frequency_hz) || {}).key || null,
         controls: controls, controlsLocked: state !== "RX", instruments: instruments, power: power, swr: swr, alc: alc,
-        local: localView(p),
+        local: localView(p), temp: tempView(p),
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
         memories: this.memories, rig: rig,
@@ -1506,7 +1517,7 @@
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
-                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
+                POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }

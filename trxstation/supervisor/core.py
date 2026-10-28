@@ -217,6 +217,14 @@ class Supervisor:
         temperature = self.read_temp()
         if temperature is not None and temperature >= s.temp_alert_c:
             problems.append(Problem("cpu_hot", f"{temperature:.0f} °C", None, False))
+        status = self.watch.status
+        if gateway_fresh and status is not None and status.ptt.get("temp_alert") in ("warn", "hot"):
+            # Température du POSTE (TEMP_METER) : la passerelle coupe et refuse elle-même ; ici, l'alerte seule.
+            hot = status.ptt.get("temp_alert") == "hot"
+            temp = status.ptt.get("temp_c")
+            shown = f"{temp:.0f} °C" if isinstance(temp, (int, float)) else "?"
+            problems.append(Problem("rig_hot" if hot else "rig_warm",
+                                    f"poste à {shown}" + (" : émission à distance coupée" if hot else ""), None, False))
         return problems
 
     # ------------------------------------------------------------------ reprise

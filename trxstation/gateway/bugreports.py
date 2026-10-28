@@ -39,9 +39,10 @@ def clean(text: str) -> str:
 
 
 class ReportStore:
-    def __init__(self, folder: Path, *, version: str = "", clock: Callable[[], float] = time.monotonic,
+    def __init__(self, folder: Path, *, version: str = "", station_id: str = "", clock: Callable[[], float] = time.monotonic,
                  now: Callable[[], datetime.datetime] = datetime.datetime.now):
         self.folder, self.version, self.clock, self.now = Path(folder), version, clock, now
+        self.station_id = station_id
         self._last: dict[str, float] = {}
 
     def save(self, client_id: str, text: str) -> str:
@@ -56,7 +57,8 @@ class ReportStore:
         account = _ACCOUNT.sub("_", client_id)[:32] or "inconnu"
         name = f"{PREFIX}{stamp.strftime('%Y%m%d-%H%M%S')}-{account}.txt"
         header = (f"# Rapport de problème envoyé par la page\n# compte : {account}\n"
-                  f"# reçu par la station le {stamp.strftime('%Y-%m-%d %H:%M:%S')} (version {self.version or '?'})\n\n")
+                  f"# reçu par la station le {stamp.strftime('%Y-%m-%d %H:%M:%S')} (version {self.version or '?'})\n"
+                  f"# station : {self.station_id or '?'}\n\n")
         try:
             self.folder.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(prefix=".rapport-", dir=self.folder)

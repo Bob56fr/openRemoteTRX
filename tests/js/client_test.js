@@ -986,6 +986,16 @@ test("poste utilisé sur place : texte du bandeau, reprise de la main", async ()
   assert.ok(w.ui.logs.some(([t]) => /Main reprise/.test(t)));
 });
 
+test("température du poste : bandeau d'avertissement puis de coupure", () => {
+  assert.deepEqual(web.tempView({ state: "RX" }), { level: "", text: "" });
+  assert.deepEqual(web.tempView(null), { level: "", text: "" });
+  const warm = web.tempView({ temp_alert: "warn", temp_c: 43.6 });
+  assert.equal(warm.level, "warn"); assert.match(warm.text, /Poste chaud \(44 °C\)/);
+  const hot = web.tempView({ temp_alert: "hot", temp_c: 51 });
+  assert.equal(hot.level, "hot"); assert.match(hot.text, /POSTE TROP CHAUD \(51 °C\).*coupée et refusée/);
+  assert.equal(web.tempView({ temp_alert: "<b>", temp_c: 51 }).level, "");
+});
+
 test("bouton du mode : USB-D <-> LSB-D, USB -> USB-D, LSB -> LSB-D, autre -> USB-D ; refusé pendant l'émission", async () => {
   const all = ["USB", "LSB", "CW", "FM", "PKTUSB", "PKTLSB"];
   assert.equal(web.pillModeTarget("PKTUSB", all), "PKTLSB");

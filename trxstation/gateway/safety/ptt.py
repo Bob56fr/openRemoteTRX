@@ -11,6 +11,7 @@ Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :
   * Pendant l'émission : TOT (avec avertissement), heartbeat du client propriétaire,
     surveillance de la liaison CAT, et relecture périodique du poste (changement de
     fréquence ou PTT retombé => coupure).
+  * Température du poste (thermal.py) : au second seuil, émission à distance coupée et refusée.
   * Changer fréquence ou mode est REFUSÉ tant que l'état n'est pas RX confirmé.
   * Le micro (porte audio) est coupé AVANT d'envoyer « PTT off ».
   * Bips de fin (gateway/audio/beeps.py), désactivés par défaut : roger bip quand le PROPRIÉTAIRE relâche
@@ -36,6 +37,7 @@ from dataclasses import asdict, dataclass
 from ...config import Config
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
 from .local import LocalPresence
+from .thermal import ThermalGuard
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +100,8 @@ class PttSnapshot:
     local_remaining_s: float | None = None   # poste utilisé sur place : PTT à distance refusé encore N s (None = libre)
     local_reason: str = ""                   # "tx" (micro du poste), "frequency", "mode"
     local_tx: bool = False                   # émission locale EN COURS (reprise de la main impossible)
+    temp_alert: str = ""                     # température du poste : "", "warn" ou "hot" (émission refusée)
+    temp_c: float | None = None              # dernière température valable (None : poste sans TEMP_METER)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -133,6 +137,7 @@ class PttController:
         self.tail = tail                    # TailPlayer (bips de fin) ou None : aucun bip
         self._tail_task: asyncio.Task | None = None
         self.local = LocalPresence()        # poste utilisé sur place : PTT à distance refusé (local.py)
+        self.thermal = ThermalGuard(config.safety.rig_temp_warn_c, config.safety.rig_temp_cut_c)   # thermal.py
 
     # ------------------------------------------------------------------ état
 
@@ -148,7 +153,8 @@ class PttController:
         return PttSnapshot(self._state.value, self._owner, remaining, self._warning,
                            self._last_cut_reason, self._fault, event,
                            None if local_left is None else float(math.ceil(local_left)),   # à la seconde : pas plus d'un message d'état par seconde
-                           self.local.reason if local_left is not None else "", self.local.transmitting)
+                           self.local.reason if local_left is not None else "", self.local.transmitting,
+                           self.thermal.level, self.thermal.temp_c)
 
     def add_listener(self, callback: Callable[[PttSnapshot], None]) -> None:
         self._listeners.append(callback)
@@ -353,6 +359,8 @@ class PttController:
         if self.local.active():
             left = self.local.remaining()
             raise Refused("local_active", f"poste utilisé sur place, encore {left or 0:.0f} s")
+        if self.thermal.hot:
+            raise Refused("rig_hot", f"poste à {self.thermal.temp_c:.0f} °C : émission reprise sous {self.thermal.warn_c:.0f} °C")
         if time.monotonic() < self._cooldown_until:
             raise Refused("cooldown")
 
@@ -430,6 +438,9 @@ class PttController:
             log.info("poste utilisé sur place (%s) : PTT à distance refusé pendant %.0f s après la dernière action",
                      self.local.reason, self.local.hold_s)
             self._emit("local_active")
+        if self.thermal.observe(state.levels.get("TEMP_METER")):
+            log.warning("température du poste : %.0f °C (niveau %s)", self.thermal.temp_c, self.thermal.level or "normal")
+            self._emit("temp_alert")
         if self._state is not PttState.TX:
             return
         reason = None
@@ -437,8 +448,10 @@ class PttController:
             reason = "cat_down"
         elif state.frequency_hz is None:
             reason = "rig_silent"
+        elif self.thermal.hot:
+            reason = "rig_overheat"
         if reason:
-            self._spawn(self.force_rx(reason, by="liaison CAT"))
+            self._spawn(self.force_rx(reason, by="température du poste" if reason == "rig_overheat" else "liaison CAT"))
 
     async def _watchdog(self) -> None:
         lim = self.limits

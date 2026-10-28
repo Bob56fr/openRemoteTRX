@@ -32,6 +32,7 @@ class World:
         self.pid, self.seq, self.status = 100, 0, None
         self.gw_state, self.gw_owner, self.gw_fault, self.gw_clients = "RX", None, "", []
         self.cut_works, self.port_present, self.temp = True, True, None
+        self.gw_temp = ""
         self.boom: set[str] = set()
         self.calls: list[str] = []
         self.alerts: list[str] = []
@@ -58,7 +59,8 @@ class World:
             self.seq += 1
             self.status = GatewayStatus(
                 pid=self.pid, seq=self.seq, written_at=self.wall,
-                ptt={"state": self.gw_state, "owner": self.gw_owner, "fault": self.gw_fault},
+                ptt={"state": self.gw_state, "owner": self.gw_owner, "fault": self.gw_fault,
+                     "temp_alert": self.gw_temp, "temp_c": 52.0 if self.gw_temp else None},
                 rig={}, clients=list(self.gw_clients))
         return self.sup.step()
 
@@ -448,6 +450,16 @@ def test_cpu_hot_only_alerts(tmp_path):
     w.temp = 85.0
     w.run(10)
     assert w.calls == [] and "Problème : cpu_hot" in w.alerts
+
+
+def test_hot_rig_only_alerts(tmp_path):
+    w = W(tmp_path)
+    w.gw_temp = "warn"
+    w.run(10)
+    assert w.calls == [] and "Problème : rig_warm" in w.alerts
+    w.gw_temp = "hot"                                                # la passerelle coupe elle-même ; ici l'alerte seule
+    w.run(10)
+    assert w.calls == [] and "Problème : rig_hot" in w.alerts
 
 
 def test_alerts_are_not_repeated_and_recovery_is_announced(tmp_path):

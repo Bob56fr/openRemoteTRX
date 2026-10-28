@@ -92,13 +92,13 @@ def test_signed_package_installed_after_typing_its_version(tmp_path):
 
 def test_unsigned_package_needs_oui_then_the_version(tmp_path):
     drop(tmp_path, "0.38.0")
-    con, fake, out = make(tmp_path, answers=["1", "oui"])                    # « oui » en minuscules : refusé
+    con, fake, out = make(tmp_path, answers=["1", "non"])
     con.install_zip()
     assert fake.calls == [] and any("NON signé" in line or "PAS SIGNÉ" in line for line in out)
-    con, fake, out = make(tmp_path, answers=["1", "OUI", "0.38"])            # mauvaise version tapée
+    con, fake, out = make(tmp_path, answers=["1", "oui", "0.38"])            # mauvaise version tapée
     con.install_zip()
     assert fake.calls == []
-    con, fake, out = make(tmp_path, answers=["1", "OUI", "0.38.0"])
+    con, fake, out = make(tmp_path, answers=["1", "Oui", "0.38.0"])          # casse indifférente
     con.install_zip()
     assert fake.calls[-1][0][-1] == "--sans-signature"
 
@@ -257,3 +257,44 @@ def test_failures_point_to_the_saved_result_and_old_versions_say_so(tmp_path):
                   app_dir=tmp_path / "nulle-part")
     con.expert()
     assert "absents de la version installée" in out[-1]
+
+
+# --------------------------------------------------------------------------- menu 16 : seuils de température
+
+def test_temperature_thresholds_are_written_through_the_validated_path(tmp_path):
+    path = write_config(tmp_path)
+    old = path.read_text(encoding="utf-8").replace("rig_temp_warn_c = 40", "rig_temp_warn_c = 40   # mon commentaire")
+    path.write_text(old, encoding="utf-8")
+    con, fake, out = make(tmp_path, answers=["45", "", "OUI"])          # 2e seuil inchangé ; « OUI » en majuscules
+    con.temperature()
+    assert any("1er seuil" in line and "40 °C" in line for line in out)
+    text = path.read_text(encoding="utf-8")
+    assert "rig_temp_warn_c = 45   # mon commentaire" in text and "rig_temp_cut_c = 50" in text
+    assert fake.admin_commands()[1][0] == "install"
+    assert cfgmod.load(path).safety.rig_temp_warn_c == 45
+
+
+def test_temperature_thresholds_added_to_an_old_file_and_bad_values_refused(tmp_path):
+    path = write_config(tmp_path)
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if not line.startswith("rig_temp_")]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")           # station.toml d'avant l'étape 41
+    con, fake, out = make(tmp_path, answers=["abc", "42", "48", "Oui"])
+    con.temperature()
+    assert any("nombre entier" in line for line in out)
+    assert (cfgmod.load(path).safety.rig_temp_warn_c, cfgmod.load(path).safety.rig_temp_cut_c) == (42, 48)
+    before = path.read_text(encoding="utf-8")
+    con, fake, out = make(tmp_path, answers=["60", "55"])                 # 1er seuil au-dessus du 2e : refusé
+    con.temperature()
+    assert fake.admin_commands() == [] and path.read_text(encoding="utf-8") == before
+    assert any("REFUSÉS" in line for line in out)
+
+
+def test_header_shows_version_and_station_id(tmp_path, monkeypatch):
+    from trxstation import console
+    from trxstation.station_id import ensure_station_id
+    monkeypatch.setattr(console, "config_state_dir", lambda _: tmp_path / "state")
+    write_config(tmp_path)
+    con, _, _ = make(tmp_path)
+    assert f"version {con.installed}" in con.header() and "premier démarrage" in con.header()
+    ident = ensure_station_id(tmp_path / "state")
+    assert ident in con.header()

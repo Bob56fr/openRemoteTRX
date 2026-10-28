@@ -32,6 +32,7 @@ CUT_REASONS = {
     "rig_reported_rx": "le poste est repassé en réception",
     "cat_down": "liaison CAT perdue",
     "rig_silent": "poste muet",
+    "rig_overheat": "poste trop chaud",
     "ptt_write_failed": "échec de l'ordre PTT",
     "rig_did_not_key": "le poste n'a pas émis",
     "shutdown": "arrêt de la passerelle",

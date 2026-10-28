@@ -28,6 +28,7 @@ from typing import Callable
 
 from .. import config as cfgmod
 from .. import secretstore
+from ..answers import yes_no
 from ..paths import default_config_path
 from .bandplan import BAND_NAMES, MODES
 from .cty import CONTINENTS
@@ -67,13 +68,11 @@ class ClusterEditor:
 
     def yes(self, question: str, default: bool) -> bool:
         while True:
-            answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip().lower()
+            answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip()
             if not answer:
                 return default
-            if answer in ("o", "oui", "y", "yes"):
-                return True
-            if answer in ("n", "non", "no"):
-                return False
+            if yes_no(answer) is not None:
+                return bool(yes_no(answer))
             self.say("Répondre o ou n.")
 
     def choose(self, question: str, count: int, *, allow_empty: bool = True) -> int | None:

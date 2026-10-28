@@ -43,6 +43,7 @@ from pathlib import Path
 
 from . import civ_scope
 from .civ_scope import CONTROLLER, ScopeProbe, bcd_le, open_serial, station_running
+from ..answers import typed
 from ..spectrum.probe import USB_SEND_WARNING
 from .hamlib_scope import RIGCTLD_PORT, RigctlLink, first_value, rigctld_probe_command, wait_port
 
@@ -272,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
             answer = input("Tape OUI si ces réglages sont vérifiés : ")
         except EOFError:
             answer = ""
-        if answer.strip().upper() != "OUI":
+        if not typed(answer, "OUI"):
             print(f"Réponse {answer.strip()!r} : essai annulé, le port B n'a PAS été ouvert (rien n'a été tenté). "
                   "Relance et tape OUI, ou ajoute --reglages-verifies.")
             return 2

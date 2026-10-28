@@ -17,6 +17,7 @@ import zipfile
 from pathlib import Path
 
 from .diagnostics import CONFIG_PATH, UNITS, System, format_checks, run_all
+from .station_id import id_path
 
 INSTALL_LOG = Path("/var/log/trx-remote-install.log")
 COMMANDS = {
@@ -100,6 +101,8 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
         state_dir = _state_dir(sysm, config_path)
         cluster = sysm.read_text(state_dir / "cluster" / "status.json") if state_dir else None
         archive.writestr("cluster-etat.json", cluster if cluster is not None else "{}\n")
+        station_id = sysm.read_text(id_path(state_dir)) if state_dir else None    # GUID de la station
+        archive.writestr("station-id.txt", (station_id or "inconnu (station jamais démarrée ?)\n").strip() + "\n")
         for page in page_reports(state_dir)[-MAX_PAGE_REPORTS:]:    # « Signaler un problème » de la page, relus par l'utilisateur
             text = sysm.read_text(page)
             if text is not None:

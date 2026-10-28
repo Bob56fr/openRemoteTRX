@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .. import config as cfgmod
+from ..answers import typed
 from ..asyncio_noise import install_quiet_handler
 from ..config import Config
 from ..gateway.audio import AudioConfigError, AudioPipeline
@@ -148,7 +149,7 @@ class HwTest:
         self.say(f"\n>>> {what}")
         self.say("    Charge fictive branchée, puissance minimale, tu es près du poste.")
         answer = await self.prompt(f"    Pour continuer, tape {EMIT_WORD} (autre chose = on passe) : ")
-        return answer.upper() == EMIT_WORD
+        return typed(answer, EMIT_WORD)
 
     async def read_ptt(self) -> bool | None:
         try:
@@ -668,7 +669,7 @@ class HwTest:
             self.say(RX_ONLY_NOTICE)
         else:
             self.say(PREFLIGHT)
-            if (await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : ")).strip().upper() != "OUI":
+            if not typed(await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : "), "OUI"):
                 self.say("Essai annulé.")
                 return []
         try:

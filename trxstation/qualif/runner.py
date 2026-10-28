@@ -25,6 +25,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ..answers import typed, yes_no
 from ..config import Config
 from ..devtools.hwtest import PREFLIGHT, HwTest
 from ..gateway.cat.client import FLOAT_LEVELS, HAMLIB_ERRORS, INT_LEVELS, POWER_STEPS, RigError
@@ -53,12 +54,7 @@ SETUP_FAILURES = {"Audio (ouverture)", "PTT / Audio TX / Pannes"}
 
 
 def _yes(answer: str) -> bool | None:
-    answer = answer.strip().lower()
-    if answer in ("o", "oui", "y", "yes"):
-        return True
-    if answer in ("n", "non", "no"):
-        return False
-    return None
+    return yes_no(answer)
 
 
 def _rprt(exc: Exception) -> str:
@@ -539,7 +535,7 @@ class Qualification(HwTest):
         self.say(f"Qualification : {self.profile.name} (Hamlib {self.profile.hamlib_version or '?'}, "
                  f"backend {self.profile.backend_status or '?'})")
         self.say(PREFLIGHT)
-        if (await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : ")).strip().upper() != "OUI":
+        if not typed(await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : "), "OUI"):
             self.say("Qualification annulée.")
             return []
         await self.ask_firmware()

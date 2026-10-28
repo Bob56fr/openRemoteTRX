@@ -30,6 +30,7 @@ from ..modules.gateway_bridge import ModuleBridge
 from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
+from ..station_id import ensure_station_id
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
 from .bugreports import ReportStore
@@ -143,7 +144,13 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
             return None, None
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
-    reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__)   # « Signaler un problème »
+    try:
+        station_id = ensure_station_id(cfg.supervisor.state_dir)    # GUID de la station (créé une seule fois)
+    except OSError as exc:                                           # jamais bloquant : la station marche sans
+        log.warning("identifiant de station indisponible : %s", exc)
+        station_id = ""
+    reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
+                          station_id=station_id)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
                           layouts=layouts, spectrum=spectrum, reports=reports)
     app = make_app(ClientRegistry(cfg.clients), manager, web_client=cfg.network.web_client,

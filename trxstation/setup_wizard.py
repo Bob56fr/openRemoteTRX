@@ -24,6 +24,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from . import config as cfgmod
+from .answers import typed, yes_no
 from .audio_devices import list_audio_devices, parse_audio_list  # noqa: F401 (parse_audio_list réexporté)
 from .config import DEFAULT_BANDS_R1, DUMMY_MODEL, ClientAuth, Config, Rig
 from .fsperm import protect
@@ -251,7 +252,7 @@ def ask_spectrum(cfg: Config) -> None:
     ports = [p for p in list_serial_ports() if p.strip().lower() != cfg.rig.port.strip().lower()]
     port = choose("Second port du poste (CI-V)", [(p, p) for p in ports], current=cfg.spectrum.port or None)
     print("\n" + USB_SEND_WARNING)
-    if ask("Tape OUI si ces réglages sont vérifiés", "").strip().upper() != "OUI":
+    if not typed(ask("Tape OUI si ces réglages sont vérifiés", ""), "OUI"):
         disable_spectrum(cfg)
         print("Second port non ouvert : spectre désactivé (mode normal).")
         return
@@ -279,8 +280,8 @@ def ask(prompt: str, default: str | None = None) -> str:
 
 
 def ask_yes_no(prompt: str, default: bool = False) -> bool:
-    answer = ask(f"{prompt} ({'O/n' if default else 'o/N'})", "o" if default else "n").lower()
-    return answer in ("o", "oui", "y", "yes")
+    answer = ask(f"{prompt} ({'O/n' if default else 'o/N'})", "o" if default else "n")
+    return yes_no(answer) is True
 
 
 def choose(title: str, options: list[tuple[str, str]], manual_label: str = "Saisir à la main",
@@ -695,7 +696,7 @@ def _cli_spectrum(args) -> int:
             print("--adresse-civ : un nombre hexadécimal de 01 à DF est attendu (ex. B6).", file=sys.stderr)
             return 2
     print(USB_SEND_WARNING)
-    if not args.reglages_verifies and input("Tape OUI si ces réglages sont vérifiés : ").strip().upper() != "OUI":
+    if not args.reglages_verifies and not typed(input("Tape OUI si ces réglages sont vérifiés : "), "OUI"):
         print("Annulé : le second port n'a pas été ouvert, configuration inchangée.")
         return 2
     print(f"Vérification de {args.spectre} (lecture seule, aucune émission)...")
