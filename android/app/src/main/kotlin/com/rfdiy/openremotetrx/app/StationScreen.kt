@@ -2,6 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.app
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,10 +30,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.AccountStore
-import com.rfdiy.openremotetrx.core.Fingerprint
+import com.google.zxing.client.android.Intents
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import com.rfdiy.openremotetrx.protocol.Fingerprint
+import com.rfdiy.openremotetrx.protocol.PairingCode
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.core.StationAccount
-import com.rfdiy.openremotetrx.core.StationAddress
+import com.rfdiy.openremotetrx.protocol.StationAddress
 
 private val WINDOWS = listOf(0, 30, 60, 120, 300)
 
@@ -57,7 +62,7 @@ fun StationScreen(
     var user by remember { mutableStateOf(initial?.user ?: "") }
     // Mot de passe non mémorisé : gardé en mémoire tant que l'application est ouverte (comme la page), pour réessayer.
     var password by remember { mutableStateOf(initial?.let { store.password(it) } ?: typedPassword) }
-    var remember by remember { mutableStateOf(initial?.secret?.isNotEmpty() ?: false) }
+    var keepPassword by remember { mutableStateOf(initial?.secret?.isNotEmpty() ?: false) }
     var fingerprint by remember { mutableStateOf(initial?.fingerprint ?: "") }
     var window by remember { mutableStateOf(initial?.reconnectWindowS ?: 60) }
     var error by remember { mutableStateOf("") }
@@ -65,8 +70,31 @@ fun StationScreen(
     fun select(a: StationAccount?) {
         editing = a
         name = a?.name ?: ""; address = a?.url ?: ""; user = a?.user ?: ""
-        password = a?.let { store.password(it) } ?: ""; remember = a?.secret?.isNotEmpty() ?: false
+        password = a?.let { store.password(it) } ?: ""; keepPassword = a?.secret?.isNotEmpty() ?: false
         fingerprint = a?.fingerprint ?: ""; window = a?.reconnectWindowS ?: 60; error = ""
+    }
+
+    // QR code du menu 19 de TRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
+    var notice by remember { mutableStateOf("") }
+    val scan = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val text = result.contents ?: return@rememberLauncherForActivityResult
+        val pairing = PairingCode.parse(text)
+        if (pairing == null) {
+            notice = ""
+            error = "Ce QR code n'est pas un QR code d'appairage openRemoteTRX (TRX Console, menu 19)."
+            return@rememberLauncherForActivityResult
+        }
+        val known = accounts.firstOrNull { it.url == pairing.url && (pairing.user.isEmpty() || it.user == pairing.user) }
+        select(known)
+        notice = when {
+            known == null -> "Station lue sur le QR code : saisis le mot de passe puis « Connecter »."
+            known.fingerprint != pairing.fingerprint -> "Station déjà connue : empreinte du certificat MISE À JOUR depuis le QR code."
+            else -> "Station déjà connue : rien n'a changé."
+        }
+        name = known?.name ?: pairing.name
+        address = pairing.url
+        if (pairing.user.isNotEmpty()) user = pairing.user
+        fingerprint = pairing.fingerprint
     }
 
     Column(
@@ -74,6 +102,17 @@ fun StationScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
+        OutlinedButton(onClick = {
+            scan.launch(
+                ScanOptions()
+                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt("QR code du menu 19 de TRX Console")
+                    .setBeepEnabled(false)
+                    .setOrientationLocked(false)
+                    .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
+            )
+        }) { Text("Scanner le QR code de la station") }
+        if (notice.isNotEmpty()) Text(notice, color = MaterialTheme.colorScheme.primary)
         if (accounts.isNotEmpty()) {
             Text("Stations", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -93,7 +132,7 @@ fun StationScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(remember, { remember = it })
+            Checkbox(keepPassword, { keepPassword = it })
             Text("Mémoriser le mot de passe (chiffré sur ce téléphone)")
         }
         OutlinedTextField(
@@ -122,7 +161,7 @@ fun StationScreen(
                     val base = editing ?: StationAccount(name = name.trim(), url = url!!, user = user.trim())
                     val account = store.save(
                         base.copy(name = name.trim(), url = url!!, user = user.trim(), fingerprint = pin!!, reconnectWindowS = window),
-                        if (remember) password else "",
+                        if (keepPassword) password else "",
                     )
                     store.lastId = account.id
                     accounts = store.list()

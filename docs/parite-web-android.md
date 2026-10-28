@@ -6,7 +6,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Fonction | Station | Page web | Application | Remarque |
 |---|---|---|---|---|
 | Connexion, mot de passe, reconnexion automatique | fait | fait | fait (A1, 0.1.0) | plusieurs stations ; mot de passe mémorisé chiffré (Keystore) au choix ; HTTPS seulement |
-| Certificat épinglé par empreinte | fait (menu 19, `--empreinte`) | absent volontairement | fait (A1) | la page dépend du navigateur ; QR code d'appairage : plus tard |
+| Certificat épinglé par empreinte | fait (menu 19, `--empreinte`) | absent volontairement | fait (A1) | la page dépend du navigateur ; QR code d'appairage : fait (station 0.53.0, menu 19 ; application 0.2.0) |
 | Écoute, volume, sourdine | fait | fait | fait (A1) | volume = touches « média » du téléphone |
 | Écoute écran éteint | fait | impossible (navigateur) | fait (A1), 30 min à confirmer sur le téléphone | raison d'être de l'application |
 | PTT toggle, STOP, battements, TOT | fait | fait | fait (A1) | « Émission autorisée » comme la case de la page |

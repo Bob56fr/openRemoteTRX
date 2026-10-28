@@ -508,7 +508,7 @@ def pairing_lines(cfg: Config, addresses: Callable[[], list[str]] | None = None)
     if n.gateway_bind in ("127.0.0.1", "localhost", "::1", ""):
         return lines + ["  La station n'est accessible que depuis cette machine (127.0.0.1) : aucun téléphone ne peut s'y connecter.",
                         "  Pour l'ouvrir au réseau local ou à un VPN : assistant de configuration, « Réseau local ou VPN, en HTTPS »."]
-    hosts = (addresses or local_addresses)() if n.gateway_bind in ("0.0.0.0", "::") else [n.gateway_bind]
+    hosts = _pairing_hosts(cfg, addresses)
     scheme = "https" if n.tls_cert else "http"
     lines.append("  Adresse : " + (", ".join(f"{scheme}://{h}:{n.gateway_port}" for h in hosts) or
                                    f"{scheme}://<adresse de ce PC>:{n.gateway_port}"))
@@ -521,6 +521,79 @@ def pairing_lines(cfg: Config, addresses: Callable[[], list[str]] | None = None)
     fingerprint = certificate_fingerprint(n.tls_cert)       # 32 octets : deux lignes de 16, plus faciles à comparer
     return lines + ["  Empreinte du certificat (SHA-256), à comparer avec celle que montre l'application :",
                     "    " + fingerprint[:47], "    " + fingerprint[48:]]
+
+
+def _pairing_hosts(cfg: Config, addresses: Callable[[], list[str]] | None = None) -> list[str]:
+    n = cfg.network
+    return (addresses or local_addresses)() if n.gateway_bind in ("0.0.0.0", "::") else [n.gateway_bind]
+
+
+def pairing_uri(name: str, url: str, user: str, fingerprint: str) -> str:
+    """Contenu du QR code d'appairage (docs/protocole.md § 12, exemples tests/protocol/pairing.json).
+    JAMAIS de mot de passe : seuls le nom, l'adresse, l'identifiant et l'empreinte du certificat."""
+    from urllib.parse import quote
+    fields = [("v", "1")] + [(key, value) for key, value in
+                             (("n", name), ("u", url), ("id", user), ("fp", fingerprint.replace(":", ""))) if value]
+    return "openremotetrx://pair?" + "&".join(f"{key}={quote(value, safe='')}" for key, value in fields)
+
+
+def qr_lines(text: str, border: int = 2) -> list[str] | None:
+    """QR code en caractères, deux rangées de modules par ligne, dessiné pour un terminal SOMBRE (modules clairs et
+    marge = blocs pleins) ; l'application lit aussi un QR inversé (terminal clair). None si segno est absent."""
+    try:
+        import segno
+    except ImportError:
+        return None
+    rows = [[bool(module) for module in row] for row in segno.make(text, error="m", micro=False).matrix]
+    size = len(rows)
+    height = width = size + 2 * border
+
+    def light(r: int, c: int) -> bool:
+        if r >= height:
+            return False                                       # sous le dernier rang : fond du terminal
+        r, c = r - border, c - border
+        return not (0 <= r < size and 0 <= c < size and rows[r][c])
+
+    return ["".join("█" if light(r, c) and light(r + 1, c) else "▀" if light(r, c) else "▄" if light(r + 1, c) else " "
+                    for c in range(width)) for r in range(0, height, 2)]
+
+
+def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
+                 addresses: Callable[[], list[str]] | None = None, hostname: Callable[[], str] = socket.gethostname) -> None:
+    """Menu 19 et `--empreinte` : informations d'appairage, puis un QR code à scanner par l'application.
+    Demande l'adresse et le compte seulement s'il y a un choix. OSError si le certificat est illisible."""
+    from .gateway.api.tls import certificate_fingerprint
+    say("\n".join(pairing_lines(cfg, addresses)))
+    n = cfg.network
+    if n.gateway_bind in ("127.0.0.1", "localhost", "::1", "") or not n.tls_cert:
+        return
+    hosts = _pairing_hosts(cfg, addresses)
+    if not hosts:
+        return
+    host = _pick(hosts, "Adresse à mettre dans le QR code", ask, say, default=hosts[0])
+    accounts = [c.id for c in cfg.clients]
+    user = _pick(accounts, "Compte à mettre dans le QR code", ask, say, default="") if accounts else ""
+    lines = qr_lines(pairing_uri(hostname(), f"https://{host}:{n.gateway_port}", user, certificate_fingerprint(n.tls_cert)))
+    if lines is None:
+        say("  QR code indisponible (paquet « segno » absent : réinstaller la station, menu 13) : saisir l'empreinte ci-dessus.")
+        return
+    say("  QR code à scanner avec l'application (« Scanner le QR code ») ; il ne contient AUCUN mot de passe :")
+    say("\n".join("  " + line for line in lines))
+    say(f"  ({host}:{n.gateway_port}, compte : {user or 'à saisir dans l application'})")
+
+
+def _pick(choices: list[str], title: str, ask: Callable[[str], str], say: Callable[[str], None], default: str) -> str:
+    """Un seul choix : pris d'office. Sinon liste numérotée ; Entrée ou réponse invalide = `default`."""
+    if len(choices) == 1:
+        return choices[0]
+    say(f"  {title} :")
+    for i, choice in enumerate(choices, 1):
+        say(f"    {i}) {choice}")
+    hint = f"Entrée = {choices.index(default) + 1}" if default in choices else "Entrée = aucun, à saisir dans l'application"
+    answer = ask(f"  Numéro ({hint}) : ").strip()
+    if answer.isdigit() and 1 <= int(answer) <= len(choices):
+        return choices[int(answer) - 1]
+    return default
 
 
 def _make_certificate(hosts: list[str], folder: Path, cfg: Config) -> None:
@@ -667,8 +740,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cli_spectrum(args)
         if args.empreinte:
             cfg, _ = cfgmod.load_unchecked(args.output)
-            try:
-                print("\n".join(pairing_lines(cfg)))
+            try:                                               # sans terminal (journal, tube) : choix par défaut
+                show_pairing(cfg, ask=input if sys.stdin.isatty() else (lambda _prompt: ""))
             except (OSError, ValueError) as exc:
                 print(f"Certificat illisible ({cfg.network.tls_cert}) : {exc}", file=sys.stderr)
                 return 1

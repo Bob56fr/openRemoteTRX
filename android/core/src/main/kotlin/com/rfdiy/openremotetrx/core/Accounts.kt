@@ -6,9 +6,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import java.net.URI
 import java.security.KeyStore
-import java.security.MessageDigest
 import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -32,36 +30,6 @@ data class StationAccount(
     /** Mot de passe chiffré par une clé du Keystore Android (jamais en clair), ou vide. */
     val secret: String = "",
 )
-
-object Fingerprint {
-    /** « ab cd … », « AB:CD:… » ou 64 chiffres hexadécimaux -> « AB:CD:… » (95 caractères), sinon null. */
-    fun normalize(text: String): String? {
-        val hex = text.uppercase().filter { it in "0123456789ABCDEF" }
-        if (hex.length != 64 || text.any { !it.isLetterOrDigit() && it != ':' && !it.isWhitespace() }) return null
-        return hex.chunked(2).joinToString(":")
-    }
-
-    fun of(der: ByteArray): String =
-        MessageDigest.getInstance("SHA-256").digest(der).joinToString(":") { "%02X".format(it) }
-}
-
-object StationAddress {
-    /**
-     * Adresse saisie -> « https://hôte:port » (port 8443 par défaut, celui de la station), sinon null.
-     * HTTPS obligatoire : la page n'est servie en HTTP que derrière un VPN, cas non pris en charge ici.
-     */
-    fun normalize(text: String): String? {
-        var t = text.trim().trimEnd('/')
-        if (t.isEmpty()) return null
-        if (!t.contains("://")) t = "https://$t"
-        val uri = try { URI(t) } catch (e: Exception) { return null }
-        if (uri.scheme?.lowercase() != "https" || uri.host.isNullOrEmpty()) return null
-        if (!uri.path.isNullOrEmpty() || uri.query != null || uri.userInfo != null) return null
-        val port = if (uri.port == -1) 8443 else uri.port
-        val host = if (uri.host.contains(':') && !uri.host.startsWith("[")) "[${uri.host}]" else uri.host
-        return "https://$host:$port"
-    }
-}
 
 /** Liste des stations, dans les préférences privées de l'application ; mots de passe chiffrés (Keystore). */
 class AccountStore(context: Context) {

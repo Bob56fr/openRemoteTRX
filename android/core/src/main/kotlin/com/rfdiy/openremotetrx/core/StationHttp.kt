@@ -2,8 +2,10 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.core
 
+import com.rfdiy.openremotetrx.protocol.Fingerprint
 import java.io.IOException
 import java.net.URL
+import java.security.cert.CertPathValidatorException
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.HostnameVerifier
@@ -110,6 +112,10 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
         } catch (e: SSLHandshakeException) {
             val mismatch = generateSequence(e as Throwable) { it.cause }.filterIsInstance<PinMismatch>().firstOrNull()
             if (mismatch != null) throw AttemptException("pin", "reçue ${mismatch.seen.take(23)}…")
+            // Sans empreinte, un certificat auto-signé (cas normal de la station) est refusé par Android.
+            if (pin == null && generateSequence(e as Throwable) { it.cause }.any { it is CertPathValidatorException }) {
+                throw AttemptException("untrusted")
+            }
             throw AttemptException("network", "TLS : ${e.message ?: ""}".take(160))
         } catch (e: IOException) {
             throw AttemptException("network", (e.message ?: e.javaClass.simpleName).take(160))

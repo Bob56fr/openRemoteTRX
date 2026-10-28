@@ -67,8 +67,8 @@ object Texts {
     )
 
     /**
-     * Causes d'une connexion perdue ou impossible (client.js : LOSS_REASONS, titres). « pin » et « protocol » sont
-     * propres à l'application (empreinte du certificat, version de protocole inconnue).
+     * Causes d'une connexion perdue ou impossible (client.js : LOSS_REASONS, titres). « pin » et « untrusted » sont
+     * propres à l'application (empreinte différente ; certificat auto-signé sans empreinte).
      */
     val LOSSES: Map<String, String> = mapOf(
         "datachannel_closed" to "Canal de contrôle fermé",
@@ -83,6 +83,7 @@ object Texts {
         "http" to "Réponse inattendue de la station",
         "client_error" to "Erreur dans l'application",
         "pin" to "Empreinte du certificat DIFFÉRENTE : ce n'est peut-être pas ta station, connexion bloquée",
+        "untrusted" to "Certificat de la station non reconnu : saisis son empreinte (TRX Console, menu 19) ou scanne son QR code",
     )
 
     val PTT_LABELS = mapOf("RX" to "RÉCEPTION", "KEYING" to "PRISE D'ÉMISSION", "TX" to "ÉMISSION", "UNKEYING" to "COUPURE EN COURS")

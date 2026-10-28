@@ -13,8 +13,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
     buildTypes {
         release { isMinifyEnabled = false }
@@ -35,5 +35,8 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
+    // Lecture du QR code d'appairage (Apache-2.0, sans services Google)
+    implementation(libs.zxing.embedded)
+    implementation(libs.zxing.core)
     debugImplementation(libs.compose.ui.tooling)
 }

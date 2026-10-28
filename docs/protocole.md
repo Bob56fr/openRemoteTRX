@@ -119,3 +119,21 @@ Toute livraison qui ajoute ou change une commande, un champ ou un message :
 2. ajoute ou corrige les exemples de `tests/protocol/` (le test échoue sinon) ;
 3. ajoute un mot à `hello.features` si c'est une fonction qu'une station peut ne pas offrir ;
 4. note dans la matrice de parité page / application ce qui reste à faire de chaque côté (`docs/android-cahier-des-charges.md` § 8).
+
+## 12. QR code d'appairage
+
+Affiché par TRX Console (menu 19) et `trx-setup --empreinte` ; lu par l'application (« Scanner le QR code de la station »). Il évite de taper l'empreinte. Il ne contient **JAMAIS de mot de passe** (la station ne les connaît pas en clair).
+
+```
+openremotetrx://pair?v=1&n=<nom>&u=<adresse>&id=<identifiant>&fp=<empreinte>
+```
+
+| Paramètre | Contenu |
+|---|---|
+| `v` | version du format : `1` (obligatoire ; une autre valeur est refusée) |
+| `n` | nom proposé pour la station (nom de la machine) ; facultatif (défaut : l'hôte) |
+| `u` | adresse `https://hôte:port` (obligatoire, HTTPS seulement) |
+| `id` | identifiant du compte (`[A-Za-z0-9_-]`, 32 au plus) ; absent = à saisir dans l'application |
+| `fp` | empreinte SHA-256 du certificat, 64 chiffres hexadécimaux sans séparateur ; absente = certificat reconnu (proxy) |
+
+Valeurs encodées en pourcentage (UTF-8). Un paramètre inconnu est ignoré ; un mot de passe éventuel n'est jamais lu. Le QR est dessiné en caractères pour un terminal sombre (modules clairs = blocs pleins) ; l'application lit aussi les QR inversés. Exemples partagés : [`tests/protocol/pairing.json`](../tests/protocol/pairing.json) (pytest `tests/test_pairing_qr.py`, Kotlin `PairingTest`).

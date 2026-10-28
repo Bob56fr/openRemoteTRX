@@ -1,0 +1,22 @@
+{
+  "comment": "QR code d'appairage (docs/protocole.md § 12). La station produit `uri` à partir de `station` ; l'application lit chaque `valid[].uri` en `pairing`, et refuse chaque `invalid`. Jamais de mot de passe.",
+  "station": {"name": "station-radio", "url": "https://192.168.1.10:8443", "user": "phone",
+              "fingerprint": "AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89"},
+  "valid": [
+    {"uri": "openremotetrx://pair?v=1&n=station-radio&u=https%3A%2F%2F192.168.1.10%3A8443&id=phone&fp=ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789",
+     "pairing": {"name": "station-radio", "url": "https://192.168.1.10:8443", "user": "phone",
+                 "fingerprint": "AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89"}},
+    {"uri": "openremotetrx://pair?v=1&u=https%3A%2F%2Fradio.example.org&futur=1",
+     "pairing": {"name": "radio.example.org", "url": "https://radio.example.org:8443", "user": "", "fingerprint": ""}},
+    {"uri": "openremotetrx://pair?v=1&n=Station%20%C3%A9t%C3%A9&u=https%3A%2F%2F%5Bfd00%3A%3A2%5D%3A9443&id=S25&pw=jamais-lu",
+     "pairing": {"name": "Station été", "url": "https://[fd00::2]:9443", "user": "S25", "fingerprint": ""}}
+  ],
+  "invalid": [
+    "https://192.168.1.10:8443",
+    "openremotetrx://pair?v=2&u=https%3A%2F%2F192.168.1.10%3A8443",
+    "openremotetrx://pair?v=1&n=sans-adresse",
+    "openremotetrx://pair?v=1&u=http%3A%2F%2F192.168.1.10%3A8443",
+    "openremotetrx://pair?v=1&u=https%3A%2F%2F192.168.1.10%3A8443&fp=ABCD",
+    "openremotetrx://pair?v=1&u=https%3A%2F%2F192.168.1.10%3A8443&id=pas%20valide"
+  ]
+}
