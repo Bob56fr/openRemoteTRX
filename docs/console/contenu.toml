@@ -1,0 +1,223 @@
+# Contenu du mode d'emploi de TRX Console (page publiée sur GitHub Pages, affichée dans le site rf-diy.com).
+# Fabriqué par : python scripts/build_console_doc.py  (résultat dans docs/site/console/).
+# La LISTE des menus vient du code (trxstation/console.py) ; ici, seulement les explications. Chaque menu de la console
+# doit avoir sa section [menus.<nom de la méthode>] : sinon la fabrication et les tests échouent.
+# Texte en HTML simple (p, ul, li, code, strong, em, a). Aucun script, aucune image ni ressource externe.
+# Exemples génériques uniquement : jamais d'adresse IP, de nom de machine, de port réel ni de clé.
+
+[page]
+titre = "TRX Console : mode d'emploi"
+intro = """
+<p><strong>TRX Console</strong> est le tableau de commande de la station TRX distant, sur le PC (ou le Raspberry Pi)
+relié au poste. Elle sert à installer et configurer la station, la démarrer, l'essayer, la mettre à jour et la
+dépanner. Elle s'ouvre depuis le menu des applications (« TRX Console ») ou en tapant <code>trx-console</code>
+dans un terminal.</p>
+<p>Elle n'émet jamais d'elle-même : les seuls menus qui peuvent faire passer le poste en émission sont l'essai
+complet (menu 4, avec confirmation à chaque étape) et, bien sûr, la station une fois démarrée, pilotée depuis la page web.</p>
+"""
+lecture = """
+<p><strong>Premier déploiement ?</strong> Suis le parcours ci-dessous dans l'ordre. <strong>Station déjà en
+service ?</strong> Va directement à la référence des menus. <strong>Tu aides à déboguer ?</strong> Voir la partie
+« Dépannage avancé ».</p>
+"""
+
+# ------------------------------------------------------------------ parcours du débutant
+
+[[parcours]]
+titre = "Installer le logiciel"
+texte = """
+<p>Sur un PC Debian 12 ou 13 avec bureau : décompresse le paquet <code>trx-remote-debian-X.Y.Z.zip</code> dans
+Téléchargements, ouvre un terminal dans le dossier obtenu et tape :</p>
+<pre>sudo bash install.sh</pre>
+<p>Ton mot de passe de session est demandé (rien ne s'affiche pendant la frappe : c'est normal). À la fin,
+<strong>déconnecte-toi puis reconnecte-toi</strong> pour que les droits soient pris en compte.</p>
+<p>Tu viens d'une station Windows ? Pose son fichier <code>station.toml</code> à côté de <code>install.sh</code>
+avant de lancer l'installation : comptes, bandes et alertes seront repris.</p>
+"""
+
+[[parcours]]
+titre = "Configurer la station (menu 2)"
+texte = """
+<p>Au premier lancement, TRX Console propose l'assistant. Il demande, dans l'ordre : le modèle du poste (liste
+Hamlib), le port série du CAT, la méthode de PTT, les cartes son (réception et émission), les bandes autorisées
+à l'émission, l'accès réseau et le premier compte (identifiant et mot de passe pour la page web).</p>
+<p>Le poste est interrogé <strong>en lecture seule</strong> pendant l'assistant : aucune émission. Rien n'est
+enregistré si tu abandonnes en cours de route.</p>
+"""
+
+[[parcours]]
+titre = "Vérifier (menu 1)"
+texte = """
+<p>Le diagnostic passe tout en revue sans rien modifier. Chaque ligne est <strong>OK</strong>, à
+<strong>surveiller</strong> ou en <strong>échec</strong>, avec la marche à suivre. Corrige les échecs avant
+d'aller plus loin (menu 14 pour retoucher la configuration, ou relance l'assistant).</p>
+"""
+
+[[parcours]]
+titre = "Essayer le poste (menu 4)"
+texte = """
+<p>Commence par l'essai <strong>en réception seule</strong> (choix 1) : liaison CAT, son reçu, changement de
+fréquence et de mode, largeurs de filtre, spectre. Ensuite seulement, l'essai <strong>complet</strong> (choix 2)
+vérifie l'émission : <strong>charge fictive obligatoire</strong>, puissance réduite, confirmation demandée à
+chaque étape. La station est arrêtée pendant l'essai.</p>
+"""
+
+[[parcours]]
+titre = "Démarrer (menu 5) et se connecter"
+texte = """
+<p>Le menu 5 démarre la station ; refais un diagnostic (menu 1) quelques secondes plus tard. Sur le téléphone
+ou un autre PC du même réseau, ouvre <code>https://&lt;adresse-de-la-station&gt;:8443</code> et connecte-toi avec
+le compte créé par l'assistant. Pour l'accès depuis l'extérieur, voir la documentation « Accès distant » du projet.</p>
+"""
+
+# ------------------------------------------------------------------ référence des menus
+# Champs : role (à quoi il sert), quand (quand l'utiliser), modifie (ce qu'il change), admin (mot de passe
+# demandé : sudo), expert (facultatif : détails pour le dépannage).
+
+[menus.diagnostic]
+role = "Contrôle complet de la station, en lecture seule : système, logiciels, configuration, matériel (ports série, cartes son), services, spectre HF, Cluster DX, accès réseau et mises à jour."
+quand = "Après l'installation, après chaque changement, et en premier réflexe dès que quelque chose ne va pas."
+modifie = "Rien. Aucune commande au poste, aucune émission."
+admin = false
+expert = "<p>Même résultat sans le menu : <code>trx-console --diagnostic</code> (code de sortie différent de 0 en cas d'échec, utilisable dans un script).</p>"
+
+[menus.assistant]
+role = "Assistant de configuration : poste, ports, PTT, cartes son, bandes autorisées, accès réseau, comptes. Écrit <code>station.toml</code>."
+quand = "Au premier déploiement, ou pour tout reprendre (changement de poste, d'interface audio, de PC)."
+modifie = "<code>station.toml</code> (seulement si tu vas au bout). La station est arrêtée pendant l'assistant puis redémarrée à la demande."
+admin = true
+expert = "<p>Le poste n'est interrogé qu'en lecture. Une configuration importée d'une ancienne station (<code>station.import.toml</code>) sert de point de départ.</p>"
+
+[menus.monitor]
+role = "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou réception, clients connectés, services, matériel, audio, journal."
+quand = "Pour surveiller la station sur place, ou pendant un essai."
+modifie = "Rien, sauf une touche : <strong>STOP TX</strong> force la réception. Le tableau de bord ne peut jamais faire émettre."
+admin = false
+
+[menus.hwtest]
+role = "Essai guidé du vrai poste. Choix 1 : réception seule (CAT, son reçu, accord, largeurs de filtre, écran du spectre). Choix 2 : la même chose puis l'émission."
+quand = "Après l'assistant, après un changement de câble ou d'interface audio, ou pour qualifier un nouveau poste."
+modifie = "Rien dans la configuration. Le choix 2 fait émettre le poste : charge fictive, puissance réduite, confirmation (taper <code>EMETTRE</code>) à chaque étape. La station est arrêtée pendant l'essai."
+admin = true
+expert = "<p>Le résumé final de l'essai s'affiche à l'écran : copie-le dans ta demande d'aide. Les réponses tapées ne tiennent compte ni des majuscules ni des accents (« emettre », « Émettre » et « EMETTRE » sont acceptés).</p>"
+
+[menus.start]
+role = "Démarre (ou redémarre) la station : rigctld, passerelle, superviseur."
+quand = "Après la configuration, après une modification, ou si la page web ne répond plus."
+modifie = "L'état des services. Le poste est toujours remis en réception au démarrage."
+admin = true
+
+[menus.stop]
+role = "Arrête la station."
+quand = "Avant de brancher ou débrancher le poste ou l'interface audio, ou pour utiliser un autre logiciel sur le poste."
+modifie = "L'état des services. Le poste reste en réception."
+admin = true
+
+[menus.journal]
+role = "Affiche les 80 dernières lignes du journal des services de la station."
+quand = "Quand le diagnostic signale un service en échec, ou pour comprendre une coupure d'émission."
+modifie = "Rien."
+admin = true
+expert = "<p>Journal complet : <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>.</p>"
+
+[menus.report]
+role = "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic, journaux, configuration <strong>sans aucun mot de passe</strong>, versions, matériel détecté, rapports envoyés depuis la page, identifiant de la station."
+quand = "Pour demander de l'aide : joins ce zip à ta demande."
+modifie = "Rien (un fichier est créé sur le Bureau)."
+admin = false
+expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code>station.toml</code> du rapport a ses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si tu le souhaites.</p>"
+
+[menus.clear_safe_mode]
+role = "Sort du <strong>mode sûr</strong>. Le superviseur y place la station après des pannes répétées : poste en réception, accès coupé."
+quand = "Seulement après avoir trouvé et corrigé la cause (menus 1 et 7)."
+modifie = "Efface le mode sûr mémorisé et redémarre la station."
+admin = true
+expert = "<p>Le mode sûr survit aux redémarrages et aux corrections : il faut le lever explicitement ici.</p>"
+
+[menus.update]
+role = "Mise à jour par Internet : affiche la nouvelle version, ses notes, puis l'installe après vérification de sa signature."
+quand = "Quand l'en-tête du menu annonce « Nouvelle version disponible »."
+modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 11). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer."
+admin = true
+
+[menus.rollback]
+role = "Revient à la version précédente, gardée lors de la dernière mise à jour, sans Internet."
+quand = "Si la nouvelle version pose problème."
+modifie = "La version active. La configuration est conservée."
+admin = true
+
+[menus.cluster]
+role = "Réglages du Cluster DX : spots suivis, sources (RBN, serveurs telnet, web), filtres, essai des sources."
+quand = "Pour afficher les spots sur le spectre et les pastilles des boutons de bande dans la page."
+modifie = "La section Cluster de <code>station.toml</code> ; redémarrage proposé ensuite."
+admin = true
+
+[menus.install_zip]
+role = "Installe une version à partir d'un fichier <code>trx-remote-debian-X.Y.Z.zip</code> déposé sur le Bureau, dans Téléchargements ou dans le dossier personnel."
+quand = "Station sans Internet, version d'essai, ou retour à une version précise."
+modifie = "Comme le menu 10 : nouvelle version à côté de l'ancienne, configuration conservée. Un paquet non signé demande de taper <code>OUI</code> puis le numéro de version."
+admin = true
+expert = "<p>Déposer le zip ne suffit pas : il faut l'installer ici. Compte-rendu : <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.edit_config]
+role = "Modifie <code>station.toml</code> dans l'éditeur nano, sur une copie."
+quand = "Pour un réglage précis sans relancer tout l'assistant."
+modifie = "<code>station.toml</code>, seulement si la copie est valide : elle est vérifiée, les différences sont montrées, une confirmation est demandée et l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite."
+admin = true
+expert = "<p>Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les copies de sauvegarde s'appellent <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p>"
+
+[menus.expert]
+role = "Menu expert : lance toute la suite de tests automatiques du logiciel sur la station."
+quand = "Pour aider au débogage, ou vérifier qu'une installation est saine."
+modifie = "Rien. Les tests utilisent un poste <strong>simulé</strong> : aucune commande au vrai poste, aucune émission. La station est arrêtée pendant les tests (7 à 10 minutes) puis relancée à la demande."
+admin = true
+expert = "<p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>) : transmets ce fichier si des tests échouent. L'outil de test (pytest) est installé au premier usage (Internet nécessaire).</p>"
+
+[menus.temperature]
+role = "Seuils de température du poste : premier seuil (avertissement dans la page et notification), second seuil (émission à distance coupée et refusée jusqu'au retour sous le premier seuil). 40 et 50 °C par défaut."
+quand = "Si ton poste chauffe en usage normal (modes numériques en continu, par exemple) ou pour plus de prudence."
+modifie = "Les clés <code>rig_temp_warn_c</code> et <code>rig_temp_cut_c</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 14."
+admin = true
+expert = "<p>Sans effet si le poste ne donne pas sa température par Hamlib (cas de l'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce motif.</p>"
+
+# ------------------------------------------------------------------ dépannage avancé
+
+[[expert]]
+titre = "En-tête de la console"
+texte = """
+<p>La première ligne donne la <strong>version installée</strong>, la deuxième l'état (en marche, arrêtée, pas
+encore configurée), la troisième l'<strong>identifiant de la station</strong> : un code unique créé au premier
+démarrage, qui permet de rapprocher plusieurs rapports d'une même station. Il n'est envoyé nulle part
+automatiquement.</p>
+"""
+
+[[expert]]
+titre = "Fichiers utiles (Debian)"
+texte = """
+<ul>
+<li><code>/etc/trx-remote/station.toml</code> : configuration (modifier par le menu 14).</li>
+<li><code>/var/lib/trx-remote/</code> : état de la station (mode sûr, mémoires, rapports de la page, identifiant <code>station-id</code>, Cluster DX).</li>
+<li><code>/run/trx-remote/gateway-status.json</code> : état en direct publié par la passerelle (lu par le tableau de bord).</li>
+<li><code>/opt/trx-remote/releases/</code> : versions installées côte à côte ; <code>/opt/trx-remote/current</code> pointe sur la version active.</li>
+<li><code>/var/log/trx-remote-install.log</code> : compte-rendu des installations et mises à jour.</li>
+</ul>
+"""
+
+[[expert]]
+titre = "Relevés sur le poste (lecture seule)"
+texte = """
+<p>Pour un poste Icom avec un second port CI-V (spectre), un relevé brut des réglages, sans aucune écriture,
+aide à établir le format réel des réponses. Station arrêtée (menu 6), puis :</p>
+<pre>/opt/trx-remote/current/venv/bin/python -m trxstation.devtools.civ_scope --port /dev/serial/by-id/&lt;port-B&gt; --reglages</pre>
+<p>Le résultat est enregistré dans un dossier <code>spectre-reglages-…</code> : joins-le à ta demande.</p>
+"""
+
+[[expert]]
+titre = "Transmettre un problème"
+texte = """
+<ol>
+<li>Dans la page web : section « Signaler un problème » (texte relu avant l'envoi).</li>
+<li>Sur la station : menu 8 (rapport de dépannage), et si besoin le résultat du menu 15.</li>
+<li>Décris ce que tu faisais, ce que tu attendais et ce qui s'est passé, avec l'heure approximative.</li>
+</ol>
+"""

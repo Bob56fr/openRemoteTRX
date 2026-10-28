@@ -63,7 +63,8 @@ openRemoteTRX/
 ├── CLAUDE.md, README.md, README.fr.md, LICENSE, pyproject.toml
 ├── trxstation/                   # tout le code de la station (voir « État actuel »)
 ├── tests/                        # pytest ; tests/js/ : tests Node de la page
-├── docs/                         # documentation (français) ; historique.md = historique des étapes
+├── docs/                         # documentation (français) ; historique.md = historique des étapes ; site/ = GitHub Pages
+├── .github/workflows/            # pages.yml : publication de docs/site sur GitHub Pages
 ├── debian/                       # install.sh, releases.sh, LISEZMOI.txt, règles, lanceur TRX Console
 ├── systemd/                      # rigctld, trx-gateway, trx-supervisor, trx-update-check, trx-remote.target
 ├── scripts/                      # build_debian_zip.py, build_themes.py, gen_update_key.py
@@ -79,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.45.0, étape 42)
+## État actuel (version 0.46.0, étape 43)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -125,4 +126,5 @@ Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur p
 - Python : annotations de types, `from __future__ import annotations`, asyncio pour la passerelle, pas de dépendance inutile (surtout dans le superviseur).
 - Valider toute entrée externe (config, messages réseau). Toute incohérence de sécurité est une erreur bloquante, pas un avertissement.
 - Messages utilisateur et commentaires en français.
+- MODE D'EMPLOI DE LA CONSOLE (page publique, thème sombre, iframe du site rf-diy.com) : toute livraison qui touche TRX Console (menus, comportement, messages importants) met à jour `docs/console/contenu.toml` puis relance `python scripts/build_console_doc.py` APRÈS le changement de version (le test `test_console_doc` échoue sinon). Publié par `.github/workflows/pages.yml` (https://bob56fr.github.io/openRemoteTRX/console/, une copie par version) ; bloc WordPress `docs/wordpress/console-iframe.html`. Contenu public : exemples génériques, jamais d'IP, de nom de machine ni de clé.
 - Avant d'écrire du code qui touche au PTT : relire la section « Règles de sécurité d'émission ».
