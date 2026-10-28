@@ -180,6 +180,13 @@ modifie = "Les clés <code>rig_temp_warn_c</code> et <code>rig_temp_cut_c</code>
 admin = true
 expert = "<p>Sans effet si le poste ne donne pas sa température par Hamlib (cas de l'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce motif.</p>"
 
+[menus.indicator]
+role = "Active ou désactive l'<strong>indicateur de la barre du haut</strong> (bureau GNOME) : un voyant à gauche du son (vert réception, rouge émission, orange alerte, gris station arrêtée, violet mode sûr), la fréquence ou le compte à rebours d'émission, et au clic l'état complet : émission, fréquence et filtre, clients web connectés, liaison avec le poste, opérateur sur place, dernière coupure, température, alimentation, spectre HF, Cluster DX, mise à jour disponible, version et identifiant."
+quand = "Une fois, après l'installation (puis une déconnexion et reconnexion), pour garder un œil sur la station en permanence."
+modifie = "Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état publié par la station : il ne peut rien commander."
+admin = false
+expert = "<p>Fichiers lus chaque seconde : <code>/run/trx-remote/gateway-status.json</code>, et dans <code>/var/lib/trx-remote/</code> : <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installée dans <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. Le menu de l'indicateur ouvre aussi la page web, TRX Console et le tableau de bord.</p>"
+
 # ------------------------------------------------------------------ dépannage avancé
 
 [[expert]]

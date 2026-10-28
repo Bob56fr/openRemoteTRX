@@ -27,6 +27,7 @@ MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
+GNOME_EXT_DIR=/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com   # indicateur de la barre du haut (lecture seule)
 COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif)
 APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-config libffi-dev libssl-dev
               libhamlib-utils alsa-utils libportaudio2 ca-certificates)
@@ -153,6 +154,11 @@ install_launcher() {
   for cmd in "${COMMANDS[@]}"; do ln -sf "$VENV/bin/$cmd" "/usr/local/bin/$cmd"; done
   install -D -m 0644 "$src/trx-console.desktop" "$DESKTOP_FILE"
   install -D -m 0644 "$src/trx-console.svg" "$ICON_FILE"
+  if [[ -d $src/gnome-extension ]]; then        # absent des versions d'avant 0.49.0 (retour arrière) : on laisse en place
+    rm -rf "$GNOME_EXT_DIR"
+    install -d -m 0755 "$GNOME_EXT_DIR"
+    install -m 0644 "$src"/gnome-extension/* "$GNOME_EXT_DIR"/
+  fi
   command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true
   command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q /usr/share/icons/hicolor || true
 }
@@ -183,6 +189,7 @@ uninstall() {
   ok "services supprimés"
   for cmd in "${COMMANDS[@]}"; do rm -f "/usr/local/bin/$cmd"; done
   rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE"
+  rm -rf "$GNOME_EXT_DIR"
   if [[ -f $BRLTTY_OVERRIDE ]] && grep -q 'trx-remote' "$BRLTTY_OVERRIDE"; then rm -f "$BRLTTY_OVERRIDE"; fi
   command -v udevadm >/dev/null && udevadm control --reload || true
   command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true

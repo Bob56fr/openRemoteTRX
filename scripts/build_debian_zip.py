@@ -37,6 +37,11 @@ SYSTEM_FILES = {                                   # dossier systeme/ du zip <- 
     "99-trx-remote-modemmanager.rules": "debian/99-trx-remote-modemmanager.rules",
     "trx-console.desktop": "debian/trx-console.desktop",
     "trx-console.svg": "debian/trx-console.svg",
+    # Indicateur GNOME (barre du haut), installé dans /usr/share/gnome-shell/extensions/trx-distant@rf-diy.com
+    "gnome-extension/metadata.json": "debian/gnome-extension/metadata.json",
+    "gnome-extension/extension.js": "debian/gnome-extension/extension.js",
+    "gnome-extension/status.js": "debian/gnome-extension/status.js",
+    "gnome-extension/stylesheet.css": "debian/gnome-extension/stylesheet.css",
 }
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".bak", ".wav", ".pem"}

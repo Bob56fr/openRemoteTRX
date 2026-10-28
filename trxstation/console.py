@@ -44,6 +44,8 @@ CHECK_UNIT = "trx-update-check.service"
 INSTALL_LOG = "/var/log/trx-remote-install.log"
 ZIP_PLACES = ("Desktop", "Bureau", "Downloads", "Téléchargements", "")   # où chercher un paquet déposé ("" = dossier personnel)
 MAX_DIFF_LINES = 60
+GNOME_EXTENSION_UUID = "trx-distant@rf-diy.com"
+GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSION_UUID
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
@@ -204,6 +206,7 @@ class Console:
             ("14", "Modifier la configuration (station.toml)", self.edit_config),
             ("15", "Menu expert (tests automatiques du logiciel)", self.expert),
             ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
+            ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -253,6 +256,35 @@ class Console:
             return
         if self.yes("Démarrer la station maintenant"):
             self.start()
+
+    def indicator(self) -> None:
+        """Extension GNOME installée par install.sh (lecture seule) : l'activer ou la désactiver pour ce compte."""
+        tool = shutil.which("gnome-extensions")
+        if tool is None:
+            self.say("Bureau sans GNOME (ou outil gnome-extensions absent) : l'indicateur n'existe que pour GNOME pour l'instant.")
+            return
+        if not GNOME_EXTENSION_DIR.is_dir():
+            self.say(f"Indicateur absent ({GNOME_EXTENSION_DIR}) : installe la version 0.49.0 ou plus récente (menu 13).")
+            return
+        known = GNOME_EXTENSION_UUID in self.runner.output([tool, "list"]).split()
+        if not known:
+            self.say("L'indicateur est installé mais GNOME ne le connaît pas encore : déconnecte-toi puis reconnecte-toi,\n"
+                     "puis reviens dans ce menu.")
+            return
+        enabled = GNOME_EXTENSION_UUID in self.runner.output([tool, "list", "--enabled"]).split()   # sans dépendre de la langue
+        self.say("L'indicateur affiche en haut de l'écran, à gauche du son : un voyant (vert réception, rouge émission,\n"
+                 "orange alerte, gris station arrêtée, violet mode sûr), la fréquence ou le compte à rebours d'émission,\n"
+                 "et au clic l'état complet (clients, poste, spectre, Cluster DX, température, mise à jour...).\n"
+                 "Il ne fait que LIRE l'état de la station : il ne peut rien commander.\n"
+                 f"État : {'ACTIVÉ' if enabled else 'désactivé'}.")
+        if enabled:
+            if self.yes("Désactiver l'indicateur", False):
+                code = self.runner.run([tool, "disable", GNOME_EXTENSION_UUID])
+                self.say("Indicateur désactivé." if code == 0 else f"Échec de la désactivation (code {code}).")
+        elif self.yes("Activer l'indicateur", True):
+            code = self.runner.run([tool, "enable", GNOME_EXTENSION_UUID])
+            self.say("Indicateur activé : il apparaît en haut à droite." if code == 0 else
+                     f"Échec de l'activation (code {code}) : déconnecte-toi puis reconnecte-toi et réessaie.")
 
     def cluster(self) -> None:
         if not self.config.exists():

@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Copyright (C) 2026 RF-DIY.COM */
+/* Indicateur TRX distant (barre du haut de GNOME). */
+.trx-dot { font-size: 1.1em; padding-right: 4px; }
+.trx-off { color: #8a94a3; }
+.trx-ok { color: #3fae72; }
+.trx-tx { color: #e0524a; }
+.trx-warn, .trx-stale { color: #e8a33c; }
+.trx-safe { color: #b07be6; }
+.trx-label-tx { color: #ff6b62; font-weight: bold; }
+.trx-key { min-width: 9em; color: #9aa8bb; padding-right: 12px; }
+.trx-value.trx-ok { color: #6fd39b; }
+.trx-value.trx-warn { color: #f0b85a; }
+.trx-value.trx-bad { color: #ff7a72; font-weight: bold; }
+.trx-value.trx-info { color: inherit; }

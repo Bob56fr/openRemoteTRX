@@ -1,0 +1,7 @@
+{
+  "uuid": "trx-distant@rf-diy.com",
+  "name": "TRX distant",
+  "description": "État de la station TRX distant dans la barre du haut : émission ou réception, fréquence, clients connectés, alertes. Lecture seule.",
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "url": "https://github.com/Bob56fr/openRemoteTRX"
+}
