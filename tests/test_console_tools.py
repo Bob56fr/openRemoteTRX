@@ -182,3 +182,78 @@ def test_menu_lists_the_two_new_entries(tmp_path):
     con, _, _ = make(tmp_path)
     labels = {key: label for key, label, _ in con.items}
     assert "zip" in labels["13"] and "station.toml" in labels["14"]
+
+
+# --------------------------------------------------------------------------- menu 15 : tests automatiques
+
+class PytestRunner(Runner):
+    def __init__(self, *, pytest_ok=True, installable=True, code=0, running=True):
+        super().__init__(running=running)
+        self.pytest_ok, self.installable, self.tests_code = pytest_ok, installable, code
+        self.logged = []
+
+    def output(self, cmd):
+        if "import pytest; print('ok')" in cmd:
+            return "ok" if self.pytest_ok else ""
+        return super().output(cmd)
+
+    def run(self, cmd, *, admin=False):
+        if cmd[1:4] == ["-m", "pip", "install"]:
+            self.calls.append((cmd, admin))
+            self.pytest_ok = self.installable
+            return 0
+        if cmd[:2] == ["systemctl", "stop"]:
+            self.running = False
+        return super().run(cmd, admin=admin)
+
+    def run_logged(self, cmd, log, *, cwd=None):
+        self.logged.append((cmd, log, cwd))
+        log.write_text("1119 passed\n", encoding="utf-8")
+        return self.tests_code
+
+
+def console_for_tests(tmp_path, answers, **runner):
+    write_config(tmp_path)
+    (tmp_path / "opt" / "current" / "app" / "tests").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "Bureau").mkdir(exist_ok=True)
+    script = iter(answers)
+    out: list[str] = []
+    fake = PytestRunner(**runner)
+    con = Console(tmp_path / "etc" / "station.toml", fake, ask=lambda _: next(script, ""), say=out.append, python="py",
+                  app_dir=tmp_path / "opt", desktop=lambda: tmp_path / "Bureau")
+    return con, fake, out
+
+
+def test_tests_run_on_a_stopped_station_and_the_result_lands_on_the_desktop(tmp_path):
+    con, fake, out = console_for_tests(tmp_path, answers=["1", "o", "o"])
+    con.expert()
+    cmd, log, _ = fake.logged[0]
+    assert cmd[:3] == ["py", "-m", "pytest"] and cmd[-1].endswith("tests") and "--basetemp" in cmd
+    assert log.parent == tmp_path / "Bureau" and log.read_text(encoding="utf-8") == "1119 passed\n"
+    commands = [c for c, _ in fake.calls]
+    assert ["systemctl", "stop", "trx-remote.target"] in commands            # station arrêtée pendant les tests
+    assert ["systemctl", "restart", "trx-remote.target"] in commands         # puis relancée à la demande
+    assert any("Tous les tests passent" in line for line in out)
+
+
+def test_missing_pytest_is_installed_only_on_request(tmp_path):
+    con, fake, out = console_for_tests(tmp_path, answers=["1", "n"], pytest_ok=False)
+    con.expert()
+    assert fake.logged == [] and not any(c[1:4] == ["-m", "pip", "install"] for c, _ in fake.calls)
+    con, fake, out = console_for_tests(tmp_path, answers=["1", "o", "o", "n"], pytest_ok=False)
+    con.expert()
+    pip = next((c, admin) for c, admin in fake.calls if c[1:4] == ["-m", "pip", "install"])
+    assert pip[1] is True and pip[0][-1] == "pytest" and len(fake.logged) == 1
+    con, fake, out = console_for_tests(tmp_path, answers=["1", "o"], pytest_ok=False, installable=False)
+    con.expert()
+    assert fake.logged == [] and "impossible" in out[-1]
+
+
+def test_failures_point_to_the_saved_result_and_old_versions_say_so(tmp_path):
+    con, fake, out = console_for_tests(tmp_path, answers=["1", "o", "n"], code=1)
+    con.expert()
+    assert any("Des tests échouent" in line and "Bureau" in line for line in out)
+    con = Console(tmp_path / "etc" / "station.toml", PytestRunner(), ask=lambda _: "1", say=out.append, python="py",
+                  app_dir=tmp_path / "nulle-part")
+    con.expert()
+    assert "absents de la version installée" in out[-1]

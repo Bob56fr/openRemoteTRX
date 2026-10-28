@@ -85,6 +85,23 @@ class Runner:
             print()
             return 130
 
+    def run_logged(self, cmd: list[str], log_path: Path, *, cwd: Path | None = None) -> int:
+        """Affiche la sortie au fil de l'eau ET l'enregistre dans `log_path` (résultat des tests à transmettre)."""
+        try:
+            with open(log_path, "w", encoding="utf-8") as log, subprocess.Popen(
+                    cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace") as proc:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    sys.stdout.write(line)
+                    log.write(line)
+                return proc.wait()
+        except FileNotFoundError:
+            print(f"Commande introuvable : {cmd[0]}")
+            return 127
+        except KeyboardInterrupt:
+            print()
+            return 130
+
     def output(self, cmd: list[str]) -> str:
         try:
             return subprocess.run(cmd, capture_output=True, text=True, timeout=15).stdout.strip()
@@ -97,12 +114,15 @@ class Console:
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
                  python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
                  previous: Callable[[], str | None] = previous_version, installed: str = __version__,
-                 home: Path | None = None, editor: str | None = None) -> None:
+                 home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
+                 desktop: Callable[[], Path] | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
         self.previous, self.installed = previous, installed
         self.home = home or Path.home()
         self.editor = editor or os.environ.get("VISUAL") or os.environ.get("EDITOR") or shutil.which("nano") or ""
+        self.app_dir = app_dir
+        self.desktop = desktop
         self.items: list[tuple[str, str, Callable[[], None]]] = [
             ("1", "Diagnostic complet", self.diagnostic),
             ("2", "Assistant de configuration", self.assistant),
@@ -118,6 +138,7 @@ class Console:
             ("12", "Cluster DX (spots suivis, sources, test)", self.cluster),
             ("13", "Installer une version depuis un fichier zip (Bureau, Téléchargements)", self.install_zip),
             ("14", "Modifier la configuration (station.toml)", self.edit_config),
+            ("15", "Menu expert (tests automatiques du logiciel)", self.expert),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -386,6 +407,50 @@ class Console:
                 self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
         finally:
             shutil.rmtree(work, ignore_errors=True)
+
+    def expert(self) -> None:
+        self.say("\nMenu expert :\n"
+                 "  1) Tests automatiques du logiciel (pytest, 7 à 10 minutes, poste SIMULÉ : aucune émission)\n"
+                 "  q) Retour")
+        if self.ask("Choix : ").strip() == "1":
+            self.run_tests()
+
+    def run_tests(self) -> None:
+        """Toute la suite de tests de la version installée, sur cette machine. Résultat enregistré sur le Bureau."""
+        tests = self.app_dir / "current" / "app" / "tests"
+        if not tests.is_dir():
+            self.say(f"Tests absents de la version installée ({tests}) : ils sont fournis à partir de la version 0.42.0.")
+            return
+        if self.runner.output([self.python, "-c", "import pytest; print('ok')"]) != "ok":
+            self.say("L'outil de test (pytest) n'est pas installé. Son installation demande Internet et le mot de passe\n"
+                     "(il est ajouté à la version installée ; une mise à jour le retire, il suffira de le réinstaller).")
+            if not self.yes("Installer pytest maintenant", False):
+                return
+            self.runner.run([self.python, "-m", "pip", "install", "--quiet", "pytest"], admin=True)
+            if self.runner.output([self.python, "-c", "import pytest; print('ok')"]) != "ok":
+                self.say("Installation de pytest impossible (Internet ?) : tests non lancés.")
+                return
+        self.say("Les tests utilisent un poste SIMULÉ (aucune commande au vrai poste, aucune émission). La station est\n"
+                 "arrêtée pendant les tests pour libérer ses ports réseau, puis relancée si tu le souhaites.")
+        if not self.yes("Lancer les tests", True):
+            return
+        stopped = self.stop_for_exclusive_use("les tests")
+        from .report import desktop_dir
+        folder = self.desktop() if self.desktop else desktop_dir()
+        log = folder / f"trx-remote-tests-{time.strftime('%Y%m%d-%H%M')}.txt"
+        work = Path(tempfile.mkdtemp(prefix="trx-tests-"))
+        try:
+            cmd = [self.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--basetemp", str(work / "tmp"), str(tests)]
+            runner = getattr(self.runner, "run_logged", None)
+            code = runner(cmd, log, cwd=work) if runner else self.runner.run(cmd)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        self.say("\nTous les tests passent." if code == 0 else
+                 f"\nDes tests échouent (code {code}). Transmets ce fichier pour analyse : {log}")
+        if code == 0:
+            self.say(f"Résultat enregistré : {log}")
+        if stopped and self.yes("Redémarrer la station"):
+            self.start()
 
     def offered(self, state: UpdateState | None):
         """Version annoncée seulement si elle est plus récente que celle qui tourne (latest.json peut dater)."""

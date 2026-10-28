@@ -59,6 +59,8 @@ def write_status(path: str | Path, status: GatewayStatus) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(payload)
+        if os.name == "posix":
+            os.chmod(tmp, 0o644)       # mkstemp crée en 0600 : trx-monitor et le diagnostic (compte de bureau) doivent lire
         replace_atomic(tmp, path)
     except BaseException:
         with contextlib.suppress(OSError):

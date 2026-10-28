@@ -40,7 +40,8 @@ SYSTEM_FILES = {                                   # dossier systeme/ du zip <- 
 }
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".bak", ".wav", ".pem"}
-EXCLUDED_NAMES = {"station.toml", "secrets.toml", "cty.dat"}      # configuration et secrets locaux, données téléchargées
+EXCLUDED_NAMES = {"station.toml", "secrets.toml", "cty.dat",      # configuration et secrets locaux, données téléchargées
+                  "deploy_debian.ps1"}                              # script personnel de l'auteur (hors dépôt)
 
 
 def version(root: Path = ROOT) -> str:
@@ -48,9 +49,10 @@ def version(root: Path = ROOT) -> str:
 
 
 def _app_files(root: Path) -> list[tuple[str, Path]]:
-    files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE"),   # AGPL : le texte suit le code
-             ("app/config/station.example.toml", root / "config" / "station.example.toml")]
-    for base in ("trxstation", "docs"):
+    files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE")]   # AGPL : le texte suit le code
+    # tests/ et les dossiers qu'ils lisent (debian/, systemd/, scripts/, config/), même disposition que le dépôt :
+    # TRX Console > menu expert lance toute la suite sur la station (python -m pytest app/tests).
+    for base in ("trxstation", "docs", "tests", "debian", "systemd", "scripts", "config"):
         for path in sorted((root / base).rglob("*")):
             rel = path.relative_to(root)
             if (path.is_file() and not EXCLUDED_PARTS.intersection(rel.parts)

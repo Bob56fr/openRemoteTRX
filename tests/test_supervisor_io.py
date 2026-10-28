@@ -13,6 +13,8 @@ import threading
 import time
 from pathlib import Path
 
+import pytest
+
 from trxstation.devtools.fake_rigctld import FakeRigctld
 from trxstation.setup_wizard import dummy_config
 from trxstation.status import GatewayStatus, read_status, write_status
@@ -322,3 +324,12 @@ def test_frozen_gateway_during_real_transmission_is_cut_by_supervisor(tmp_path):
             if proc is not None and proc.poll() is None:
                 proc.kill()
                 proc.wait(5)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="droits POSIX")
+def test_gateway_status_file_is_readable_by_the_desktop_account(tmp_path):
+    """trx-monitor et le diagnostic tournent sous le compte de bureau : 0644 (mkstemp créait du 0600)."""
+    from trxstation.status import GatewayStatus, write_status
+    path = tmp_path / "gateway-status.json"
+    write_status(path, GatewayStatus(pid=1, seq=1, written_at=0.0, ptt={"state": "RX"}, rig={}))
+    assert path.stat().st_mode & 0o777 == 0o644

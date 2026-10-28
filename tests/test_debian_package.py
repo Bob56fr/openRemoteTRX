@@ -52,7 +52,10 @@ def test_zip_contains_what_install_needs_and_nothing_private(tmp_path):
                        "app/config/station.example.toml", *[f"systeme/{n}" for n in builder.SYSTEM_FILES]):
             assert needed in short, needed
         assert not any("__pycache__" in n or n.endswith((".pyc", ".pem", ".bak", ".wav")) for n in names)
-        assert not any(n.endswith("/station.toml") or "/tls/" in n or "/tests/" in n for n in names)
+        assert not any(n.endswith("/station.toml") or "/tls/" in n for n in names)
+        assert {"app/tests/test_safety.py", "app/debian/install.sh", "app/systemd/trx-gateway.service",
+                "app/LICENSE", "LICENSE"} <= short                                # tests lançables sur la station (menu expert)
+        assert not any(n.endswith("deploy_debian.ps1") for n in names)           # script personnel de l'auteur
         script = archive.getinfo(prefix + "install.sh")
         assert (script.external_attr >> 16) & 0o111                          # exécutable
         for name in names:
