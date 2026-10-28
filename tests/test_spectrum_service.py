@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import contextlib
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -92,7 +93,8 @@ class Clock:
 # ------------------------------------------------------------------ sécurité de la liste fermée
 
 def test_closed_command_list_has_no_transmit_command():
-    assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A)}
+    assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
+                            (0x26, 0x00)}
     from trxstation.spectrum.civ import decode_setting
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
         assert all(v in (None, b"\x00") or decode_setting(sub, bytes([0x27, sub]) + v) is not None for v in ALLOWED[(0x27, sub)])
@@ -195,6 +197,17 @@ class Ctrl:
 
     async def force_rx(self, reason, by=None):
         self.cuts.append(reason)
+
+    @contextlib.asynccontextmanager
+    async def rig_setting(self):
+        from trxstation.gateway.safety import Refused
+        if self.state != "RX":
+            raise Refused("tx_active")
+        self.locked = True
+        try:
+            yield
+        finally:
+            self.locked = False
 
 
 def make_service(rig=None, *, ptt=False, opener=None, **cfg):

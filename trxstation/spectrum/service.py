@@ -21,7 +21,11 @@ Règles :
   - à l'arrêt, les deux réglages du spectre du poste sont remis comme au départ ;
   - réglages du spectre (mode, largeur, référence, vitesse) demandés par la page : liste fermée (civ.encode_setting),
     exécutés par le fil entre deux lectures, SEULEMENT en réception confirmée, puis RELUS sur le poste ; ils sont
-    aussi relus à l'ouverture et toutes les IDENT_EVERY_S (un changement fait sur le poste apparaît dans la page).
+    aussi relus à l'ouverture et toutes les IDENT_EVERY_S (un changement fait sur le poste apparaît dans la page) ;
+  - préréglage de filtre FIL1/2/3 (« filter ») : même chemin, plus le verrou des réglages du contrôleur PTT
+    (`ctrl.rig_setting`, jamais pendant une prise d'émission) ; le mode et le mode données relus sont réécrits tels
+    quels, seul le filtre change ; relu toutes les FILTER_EVERY_S. Poste qui ne répond pas à « 26 00 » : `filter`
+    reste None et la page garde son ancien bouton.
 La lecture série (bloquante) tourne dans un fil à part : elle ne retarde jamais la boucle asyncio de la passerelle.
 """
 from __future__ import annotations
@@ -34,8 +38,8 @@ import time
 from collections.abc import Callable
 
 from ..config import Spectrum, parse_civ_address
-from .civ import (LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_setting,
-                  encode_setting)
+from .civ import (FILTERS, LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_mode_filter,
+                  decode_setting, encode_mode_filter, encode_setting)
 from .probe import FALLBACK, SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, open_serial
 
 log = logging.getLogger("trx-gateway.spectrum")
@@ -54,6 +58,7 @@ class SpectrumService:
     CLOSE_SETTLE_S = 1.5
     READY_POLL_S = 0.5
     MIN_RETRY_S = 5.0          # relance demandée par un client (ouverture de la vue HF) : pas plus souvent
+    FILTER_EVERY_S = 1.0       # relecture du préréglage de filtre (changé sur le poste : la page suit)
 
     def __init__(self, cfg: Spectrum, link, ctrl, *, opener: Callable = open_serial,
                  clock: Callable[[], float] = time.monotonic):
@@ -142,6 +147,8 @@ class SpectrumService:
 
     async def set_setting(self, name: str, value, timeout: float = 3.0) -> tuple[bool, str]:
         """(réussi, motif) ; jamais d'exception. Exécuté par le fil du port B, puis relu sur le poste."""
+        if name == "filter":
+            return await self._set_filter(value, timeout)
         sub = SETTING_SUBS.get(name)
         try:
             if sub is None:
@@ -162,6 +169,26 @@ class SpectrumService:
             return await asyncio.wait_for(future, timeout)
         except asyncio.TimeoutError:
             return False, "spectrum_timeout"
+
+    async def _set_filter(self, value, timeout: float) -> tuple[bool, str]:
+        from ..gateway.safety import Refused
+        if isinstance(value, bool) or value not in FILTERS:
+            return False, "bad_setting"
+        if self.snapshot()["state"] != "ok" or self._loop is None or self.snapshot()["settings"].get("filter") is None:
+            return False, "spectrum_unavailable"
+        try:
+            async with self.ctrl.rig_setting():          # même verrou que fréquence et mode : jamais pendant une prise
+                future = self._loop.create_future()
+                try:
+                    self._requests.put_nowait(("filter", value, future))
+                except queue.Full:
+                    return False, "spectrum_busy"
+                try:
+                    return await asyncio.wait_for(future, timeout)
+                except asyncio.TimeoutError:
+                    return False, "spectrum_timeout"
+        except Refused:
+            return False, "tx_active"
 
     def _resolve(self, future, result: tuple[bool, str]) -> None:
         def done() -> None:
@@ -186,8 +213,41 @@ class SpectrumService:
         for name, sub in SETTING_SUBS.items():
             reply = port.request(0x27, sub, b"\x00", timeout=0.6)
             values[name] = decode_setting(sub, reply.payload) if reply is not None else None
+        current = self._mode_filter(port)
+        values["filter"] = current[2] if current else None
         with self._lock:
             self._settings = values
+
+    @staticmethod
+    def _mode_filter(port: CivPort) -> tuple[int, int, int] | None:
+        reply = port.request(0x26, 0x00, timeout=0.6)
+        return decode_mode_filter(reply.payload) if reply is not None else None
+
+    def _read_filter(self, port: CivPort) -> None:
+        with self._lock:
+            known = self._settings.get("filter") is not None
+        if not known:
+            return                                     # poste sans « 26 00 » : retenté seulement avec les autres réglages
+        current = self._mode_filter(port)
+        with self._lock:
+            if self._settings:
+                self._settings["filter"] = current[2] if current else None
+
+    def _change_filter(self, port: CivPort, value: int) -> tuple[bool, str]:
+        current = self._mode_filter(port)
+        if current is None:
+            return False, "spectrum_refused"
+        mode, data, filt = current
+        if filt != value:
+            reply = port.request(0x26, 0x00, encode_mode_filter(mode, data, value))
+            if reply is None or reply.payload[:1] != bytes([OK]):
+                self._read_filter(port)
+                return False, "spectrum_refused"
+        after = self._mode_filter(port)
+        with self._lock:
+            if self._settings:
+                self._settings["filter"] = after[2] if after else None
+        return ((True, "") if after == (mode, data, value) else (False, "spectrum_refused"))
 
     def _serve_requests(self, port: CivPort) -> None:
         while True:
@@ -197,6 +257,9 @@ class SpectrumService:
                 return
             if not self._rx_confirmed():                 # double garde : jamais pendant l'émission
                 self._resolve(future, (False, "tx_active"))
+                continue
+            if name == "filter":
+                self._resolve(future, self._change_filter(port, value))
                 continue
             sub = SETTING_SUBS[name]
             reply = port.request(0x27, sub, encode_setting(sub, value))
@@ -341,6 +404,7 @@ class SpectrumService:
     def _stream(self, port: CivPort) -> None:
         started = self.clock()
         next_ident = started + self.IDENT_EVERY_S
+        next_filter = started + self.FILTER_EVERY_S
         quiet_from = started
         while not self._stop.is_set():
             port.poll()
@@ -354,6 +418,9 @@ class SpectrumService:
             if port.sweeps and self._state["state"] != "ok":
                 self._set("ok")
             self._serve_requests(port)
+            if now >= next_filter and not transmitting:
+                next_filter = now + self.FILTER_EVERY_S
+                self._read_filter(port)
             if now >= next_ident and not transmitting:
                 next_ident = now + self.IDENT_EVERY_S
                 found = port.identify()

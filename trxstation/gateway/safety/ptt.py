@@ -27,6 +27,7 @@ Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import enum
 import logging
 import math
@@ -336,6 +337,14 @@ class PttController:
         async with self._tx_lock:
             self._require_rx_for_tuning()
             await self.link.set_level(name, value)
+
+    @contextlib.asynccontextmanager
+    async def rig_setting(self):
+        """Réglage du poste passé par un autre chemin que rigctld (préréglage de filtre par le port B du spectre) :
+        même verrou et même refus que fréquence et mode (Refused « tx_active » hors RX confirmé)."""
+        async with self._tx_lock:
+            self._require_rx_for_tuning()
+            yield
 
     def _require_rx_for_tuning(self) -> None:
         if self._state is not PttState.RX or self._cut_running():

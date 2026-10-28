@@ -107,11 +107,11 @@ def test_settings_are_read_at_opening_written_then_read_back():
         await svc.stop()
         return first, results, after
     first, results, after = asyncio.run(scenario())
-    assert first == {"mode": "center", "span": 100_000, "ref": -14.5, "speed": "fast"}
+    assert first == {"mode": "center", "span": 100_000, "ref": -14.5, "speed": "fast", "filter": None}   # pas de 26 ici
     assert results == [(True, ""), (True, ""), (True, "")]
-    assert after == {"mode": "center", "span": 10_000, "ref": -3.0, "speed": "slow"}
+    assert after == {"mode": "center", "span": 10_000, "ref": -3.0, "speed": "slow", "filter": None}
     assert rig.writes == [(0x15, 10_000), (0x19, -3.0), (0x1A, "slow")]
-    assert all(w[4] in (0x19, 0x03, 0x27) for w in rig.written)                       # jamais 1C
+    assert all(w[4] in (0x19, 0x03, 0x27, 0x26) for w in rig.written)                 # jamais 1C ; 26 : lecture du filtre
 
 
 def test_rig_refusal_is_reported_and_state_reread():

@@ -68,7 +68,8 @@ def test_transmit_command_does_not_exist_in_the_tool():
     keys = [k for node in ast.walk(tree) if isinstance(node, ast.Dict) for k in node.keys]
     assert all(not (isinstance(k, ast.Tuple) and isinstance(k.elts[0], ast.Constant) and k.elts[0].value == 0x1C)
                for k in keys)
-    assert set(cs.ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A)}
+    assert set(cs.ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
+                                (0x26, 0x00)}
     assert not any(k[0] == 0x1C for k in cs.ALLOWED)                                         # émission : jamais
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
         from trxstation.spectrum.civ import decode_setting
@@ -324,6 +325,10 @@ class SettingsRig(FakeRig):
                      if len(p) == 3 else b"\xFA")
             self.out += rig_frame(reply, frm=self.address)
             return
+        if p == b"\x26\x00":                                                     # USB-D, FIL2
+            self.written.append(bytes(data))
+            self.out += rig_frame(b"\x26\x00\x01\x01\x02", frm=self.address)
+            return
         super().write(data)
 
 
@@ -331,11 +336,12 @@ def test_settings_survey_is_read_only_and_reports_raw_answers():
     rig = SettingsRig()
     probe = ScopeProbe(rig, address=RIG, say=lambda m: None, clock=Clock())
     lines = cs.read_scope_settings(probe)
-    assert len(lines) == 8
+    assert len(lines) == 9
     assert "27 15 avec 00" in lines[2] and lines[2].endswith("27 15 00 00 50 00 00 00")
     assert lines[3].endswith("refusé (FA)")
+    assert lines[8].startswith("26 00") and lines[8].endswith("26 00 01 01 02")
     sent = [bytes(w[4:-1]) for w in rig.written]
-    assert all(len(cmd) <= 3 and cmd[0] == 0x27 for cmd in sent)                 # 27 xx [00] : jamais de valeur écrite
+    assert all((len(cmd) <= 3 and cmd[0] == 0x27) or cmd == b"\x26\x00" for cmd in sent)   # lectures seules : jamais de valeur écrite
     assert rig.settings == {0x10: 0, 0x11: 0}
 
 

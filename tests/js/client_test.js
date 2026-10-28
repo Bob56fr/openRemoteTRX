@@ -645,6 +645,27 @@ test("boutons de commande : NR, NB, préampli, IP+, AGC, compresseur, filtre, tu
   assert.deepEqual(w.ui.views.at(-1).controls, []);                           // largeur inconnue : pas de bouton de filtre
 });
 
+test("FIL1/2/3 : préréglages du poste par le port B ; jamais la largeur par Hamlib sur une station avec port B", async () => {
+  const w = makeWorld();
+  await w.connected();
+  w.hello({ capabilities: { modes: ["USB"], filters: { USB: [3000, 2400, 1800] } }, spectrum: { source: "civ_port", level_max: 160, max_fps: 10 } });
+  const send = (settings) => w.dc().onmessage({ data: JSON.stringify({ type: "state",
+    ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
+    rig: { connected: true, frequency_hz: 14200000, mode: "USB", passband_hz: 2400, strength_db: -12 },
+    audio: {}, clients: ["phone"], spectrum: { state: "ok", code: "", message: "", settings } }) });
+  send({ filter: 2 });
+  assert.deepEqual(w.ui.views.at(-1).controls.find((c) => c.key === "FIL"), { key: "FIL", label: "FIL2 2.4k", on: true });
+  const press = w.client.pressControl("FIL"); w.answer(true, { settings: { filter: 3 } }); await press;
+  assert.deepEqual(w.sentCommands("spectrum_set").at(-1), Object.assign({}, w.sentCommands("spectrum_set").at(-1), { name: "filter", value: 3 }));
+  assert.equal(w.sentCommands("set_mode").length, 0);                         // jamais de largeur réécrite par Hamlib
+  send({ filter: 3 });
+  const wrap = w.client.pressControl("FIL"); w.answer(true); await wrap;
+  assert.equal(w.sentCommands("spectrum_set").at(-1).value, 1);              // FIL3 -> FIL1
+  send({ filter: null });                                                     // port B en pause ou en panne : pas d'ancien bouton
+  assert.equal(w.ui.views.at(-1).controls.find((c) => c.key === "FIL"), undefined);
+  assert.equal((await w.client.pressControl("FIL")).ok, false); assert.equal(w.sentCommands("set_mode").length, 0);
+});
+
 test("boutons de commande : verrouillés pendant l'émission", async () => {
   const w = makeWorld();
   await w.connected(); w.state({}, { functions: { NR: false } });

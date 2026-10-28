@@ -58,6 +58,9 @@ def read_scope_settings(probe: "ScopeProbe") -> list[str]:
             else:
                 text = reply.payload.hex(" ").upper()
             lines.append(f"27 {sub:02X} {form:<10} {label:<22} : {text}")
+    reply = probe.request(0x26, 0x00, timeout=0.8)            # mode, mode données, préréglage FIL1/2/3 (lecture seule)
+    text = "sans réponse" if reply is None else "refusé (FA)" if reply.payload[:1] == b"\xFA" else reply.payload.hex(" ").upper()
+    lines.append(f"26 00 {'':<10} {'mode, données, FIL':<22} : {text}")
     return lines
 
 

@@ -1107,7 +1107,9 @@
       if ("AGC" in lv) controls.push({ key: "AGC", label: AGC_LABELS[Math.round(lv.AGC)] || "AGC", on: lv.AGC > 0 });
       fnControl("COMP", "COMP");
       const widths = capsInfo.filters && rig.mode ? capsInfo.filters[rig.mode] : null;
-      if (Array.isArray(widths) && widths.length > 1 && rig.passband_hz) controls.push({ key: "FIL", label: filterLabel(widths, rig.passband_hz), on: true });
+      const preset = this._filterPreset();
+      if (preset) controls.push({ key: "FIL", label: "FIL" + preset + (rig.passband_hz ? " " + formatWidth(rig.passband_hz) : ""), on: true });
+      else if (!this._presetsExpected() && Array.isArray(widths) && widths.length > 1 && rig.passband_hz) controls.push({ key: "FIL", label: filterLabel(widths, rig.passband_hz), on: true });
       fnControl("TUNER", "TUNER");
       if ("RFPOWER" in lv) controls.push({ key: "PWR", label: powerLabel(lv.RFPOWER, this.hello ? this.hello.max_power_w : 0), on: true });
       const instruments = [];
@@ -1352,7 +1354,22 @@
       return this._rigSetting("set_level", { name: "AGC", value: AGC_CYCLE[(i + 1) % AGC_CYCLE.length] });
     }
 
+    _filterPreset() {
+      /* Préréglage FIL1/2/3 relu par la station sur le port B (spectrum.settings.filter), sinon null. */
+      const sp = this.state && this.state.spectrum && this.state.spectrum.settings;
+      return sp && [1, 2, 3].includes(sp.filter) ? sp.filter : null;
+    }
+
+    _presetsExpected() {
+      /* Station avec port B (Icom) : la largeur par Hamlib RÉÉCRIRAIT les largeurs des préréglages du poste ; pas
+         d'ancien bouton tant que le préréglage n'est pas lisible (port B en panne ou en pause). */
+      return !!(this.hello && this.hello.spectrum && this.hello.spectrum.source === "civ_port");
+    }
+
     async cycleFilter() {
+      const preset = this._filterPreset();
+      if (preset) return this.setSpectrum("filter", preset % 3 + 1);            // FIL1 -> FIL2 -> FIL3 -> FIL1
+      if (this._presetsExpected()) return { ok: false };
       const rig = this.state && this.state.rig ? this.state.rig : {};
       const widths = this._caps().filters && rig.mode ? this._caps().filters[rig.mode] : null;
       if (!Array.isArray(widths) || widths.length < 2 || !rig.passband_hz) return { ok: false };

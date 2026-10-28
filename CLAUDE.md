@@ -79,11 +79,11 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.44.0, étape 41)
+## État actuel (version 0.45.0, étape 42)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
-- **Station** (Python, `trxstation/`) : configuration validée (`config.py`, `station.toml`), assistant `trx-setup`, passerelle (`gateway/` : CAT par rigctld, sécurité PTT `safety/ptt.py` + opérateur sur place `safety/local.py`, audio WebRTC/aiortc, API et page web `api/`, mémoires, bips de fin, rapports de problème `bugreports.py`), superviseur indépendant (`supervisor/`, mode géré Windows ou systemd), tableau de bord `trx-monitor`, modules (`modules/` : bus 127.0.0.1, module cluster DX `cluster/`), spectre HF par le second port CI-V Icom (`spectrum/`), mises en page (`layout/`), qualification de poste (`qualif/`, `trx-qualif`), mise à jour signée (`update/`), TRX Console (`console.py`, 16 menus dont 13 = zip déposé, 14 = station.toml validée, 15 = menu expert/tests, 16 = seuils de température ; en-tête : version et identifiant de station `station_id.py` ; réponses en casse libre `answers.py`), diagnostic et rapport.
+- **Station** (Python, `trxstation/`) : configuration validée (`config.py`, `station.toml`), assistant `trx-setup`, passerelle (`gateway/` : CAT par rigctld, sécurité PTT `safety/ptt.py` + opérateur sur place `safety/local.py`, audio WebRTC/aiortc, API et page web `api/`, mémoires, bips de fin, rapports de problème `bugreports.py`), superviseur indépendant (`supervisor/`, mode géré Windows ou systemd), tableau de bord `trx-monitor`, modules (`modules/` : bus 127.0.0.1, module cluster DX `cluster/`), spectre HF et préréglages FIL1/2/3 par le second port CI-V Icom (`spectrum/`), mises en page (`layout/`), qualification de poste (`qualif/`, `trx-qualif`), mise à jour signée (`update/`), TRX Console (`console.py`, 16 menus dont 13 = zip déposé, 14 = station.toml validée, 15 = menu expert/tests, 16 = seuils de température ; en-tête : version et identifiant de station `station_id.py` ; réponses en casse libre `answers.py`), diagnostic et rapport.
 - **Page web** (`gateway/api/static/`) : `client.js` (logique, testée sous Node), `ui.js` (affichage), `waterfall.js`, `hfscope.js`, `spots.js`, `layout.js`, `theme.js` ; index.html, client.css (couleurs en variables, thèmes générés par `scripts/build_themes.py`).
 - **Installation Debian** : `debian/install.sh` + `releases.sh` (versions côte à côte, retour arrière), paquet `scripts/build_debian_zip.py` (`--sans-signature` pour les essais ; contient LICENSE et tests/ pour le menu expert).
 - **Validé sur le vrai matériel** (IC-7300MK2) : CAT, PTT, audio, page web (PC et téléphone en Wi-Fi), spectre HF par le port B, pannes (passerelle gelée, superviseur arrêté, client perdu) sous Windows ; installation et marche sous Debian 13 (minix-bzh).
@@ -92,13 +92,13 @@ L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvé
 
 ## Essais réels à faire (sur charge fictive)
 
-Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur place (micro du poste, « Reprendre la main ») ; bips de fin (ALC en USB-D, STOP pendant un bip) ; TRX Console menu 4 « réception seule » (largeurs de filtre acceptées, spectre depuis un menu du poste) ; ATT / Notch / fenêtres NR-NB ; état des flux du Cluster DX dans la page ; menu expert (pytest sur Debian : 20 tests ne tournent que sous Linux) ; accès distant en 4G/5G ; Raspberry Pi (jamais essayé).
+Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur place (micro du poste, « Reprendre la main ») ; bips de fin (ALC en USB-D, STOP pendant un bip) ; TRX Console menu 4 « réception seule » (largeurs de filtre acceptées, spectre depuis un menu du poste) ; ATT / Notch / fenêtres NR-NB ; FIL1/2/3 par le port B (format CI-V 26 00 à confirmer) ; état des flux du Cluster DX dans la page ; menu expert (pytest sur Debian : 20 tests ne tournent que sous Linux) ; accès distant en 4G/5G ; Raspberry Pi (jamais essayé).
 
 ## En attente (décisions ou travaux à venir)
 
 - Signature des mises à jour : clé jamais générée (`scripts/gen_update_key.py`, `update/pubkey.py` vide => mise à jour par Internet refusée) ; `pip --require-hashes` à faire.
 - Température du poste : seuils 40/50 °C (`safety/thermal.py`, coupure à distance au 2e) ; l'IC-7300MK2 n'expose PAS TEMP_METER sous Hamlib => sans effet sur ce poste, capteur externe à étudier.
-- Collecte des journaux (rf-diy / Azure) : identifiant de station prêt (`station-id`), service à construire.
+- Collecte des journaux (rf-diy / Azure) : identifiant de station prêt (`station-id`), cahier des charges `docs/collecte-azure-cahier-des-charges.md`, service à construire dans un AUTRE dépôt.
 - Signalement des problèmes : étape 2 (réception sur le site WordPress de l'utilisateur) ; formulaire de qualification « [À COMPLÉTER] ».
 - Rapport à Hamlib : `docs/hamlib-rapports.md` à envoyer par l'utilisateur.
 - Application Android (étapes 9 à 11 du plan d'origine), designer lot 3, qualification Q2 à Q6, plafonds CPU/mémoire des modules, superviseur (mémoire, disque, watchdog matériel du Pi), règle PipeWire.
@@ -106,6 +106,7 @@ Essai Debian complet (`docs/essai-debian.md` dès l'étape 3) ; opérateur sur p
 ## Pièges et leçons (à relire avant de coder)
 
 - **Hamlib** : tout format de réponse ou de capacité doit venir d'un VRAI rigctld (réponses parfois sans libellé ; `dump_caps` incohérent : IC-7300MK2 « Attenuator: 20dB » mais « ATT(0..12) » => une liste déclarée prime sur la plage). `async=1` sous Windows (Hamlib 4.7.2) : réponses décalées, fréquence fausse renvoyée comme un succès => REJETÉ, spectre par le second port CI-V. rigctld relit parfois le PTT dans son cache.
+- **Hamlib et filtres Icom** : `set_mode` avec une largeur RÉÉCRIT la largeur du préréglage FIL choisi ; préréglages par le port B (26 00).
 - **IC-7300MK2** : modes données (PKTUSB…) seuls modulés par l'USB (`tx_modes`) ; port B (spectre) = `…-if02` sous Linux (pas if01), COM7 sous Windows, adresse B6h ; réglages USB SEND / USB Keying : un port B mal réglé peut mettre en émission ; le spectre se FIGE pendant l'émission (pause, pas une panne).
 - **Sécurité** : la passerelle ne doit JAMAIS quitter sur une erreur d'API ou de port (le superviseur la relancerait en boucle jusqu'au mode sûr) ; une émission qui revient après « T 0 » est une nouvelle émission (opérateur), pas une panne ; NR/NB sont à la fois FONCTION et NIVEAU (clés distinctes `f:`/`l:`).
 - **Debian** : superviseur en root => modules sous `run_as` ; fichiers lus par le compte de bureau en 0644 (état passerelle, mode sûr, cluster) ; poste éteint = `rig_absent` (jamais de mode sûr) ; renvoyer un zip ne suffit pas, il faut installer (menu 13) ; le mode sûr mémorisé survit aux corrections (menu 9) ; `station.toml` existante garde ses valeurs (un nouveau défaut ne s'y applique pas).

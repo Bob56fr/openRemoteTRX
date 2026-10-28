@@ -3,7 +3,8 @@
 """Trames CI-V Icom et données du spectre (commande 27 00) : code commun à la station et aux outils d'essai.
 
 Stdlib seule. Sécurité : seules les commandes de la liste FERMÉE `ALLOWED` peuvent être encodées (identification,
-lecture de la fréquence, marche/arrêt de l'affichage du spectre et de sa sortie CI-V) ; la commande d'émission 1C
+lecture de la fréquence, marche/arrêt de l'affichage du spectre et de sa sortie CI-V, préréglage de filtre
+FIL1/2/3 du mode en cours) ; la commande d'émission 1C
 n'y est pas et `encode_request` refuse tout le reste.
 Format vérifié sur un IC-7300MK2 : trames 27 00 AVEC octet de choix du spectre, 11 divisions en BCD, division 1 =
 en-tête de 12 octets (mode, deux fréquences BCD de 5 octets, hors plage), 475 points de 0 à 160.
@@ -271,8 +272,34 @@ def decode_setting(sub: int, payload: bytes):
     return None
 
 
+# Préréglages de filtre FIL1 / FIL2 / FIL3 : « 26 00 » = mode du VFO sélectionné (mode, mode données, filtre).
+# Lecture, puis réécriture du MÊME mode et du MÊME mode données avec un autre filtre : le poste change de préréglage
+# sans toucher à leurs largeurs (Hamlib, lui, réécrit la largeur du préréglage choisi).
+FILTERS = (1, 2, 3)
+CIV_MODES = (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x07, 0x08)    # LSB USB AM CW RTTY FM CW-R RTTY-R
+DATA_MODES = (0, 1, 2, 3)                                       # 0 = arrêt, 1 à 3 = D1 à D3 (l'IC-7300 n'a que D1)
+
+
+def decode_mode_filter(payload: bytes) -> tuple[int, int, int] | None:
+    """(mode, données, filtre) lu dans une réponse « 26 00 mm dd ff » ; None si illisible ou hors des valeurs connues."""
+    if len(payload) != 5 or payload[:2] != b"\x26\x00":
+        return None
+    mode, data, filt = payload[2], payload[3], payload[4]
+    if mode not in CIV_MODES or data not in DATA_MODES or filt not in FILTERS:
+        return None
+    return mode, data, filt
+
+
+def encode_mode_filter(mode: int, data: int, filt: int) -> bytes:
+    """Données d'écriture après « 26 00 » ; ValueError hors des valeurs permises."""
+    if mode not in CIV_MODES or data not in DATA_MODES or filt not in FILTERS or isinstance(filt, bool):
+        raise ValueError(f"préréglage de filtre refusé : {mode!r} {data!r} {filt!r}")
+    return bytes([mode, data, filt])
+
+
 # Écritures permises : générées à partir des seules valeurs ci-dessus (liste fermée, jamais de valeur calculée ailleurs).
 ALLOWED[(0x27, SCOPE_MODE)] |= {encode_setting(SCOPE_MODE, m) for m in MODES}
 ALLOWED[(0x27, SCOPE_SPAN)] |= {encode_setting(SCOPE_SPAN, s) for s in SPANS_HZ}
 ALLOWED[(0x27, SCOPE_REF)] |= {encode_setting(SCOPE_REF, i * REF_STEP_DB) for i in range(-40, 41)}
 ALLOWED[(0x27, SCOPE_SPEED)] |= {encode_setting(SCOPE_SPEED, v) for v in SPEEDS}
+ALLOWED[(0x26, 0x00)] = {None} | {encode_mode_filter(m, d, f) for m in CIV_MODES for d in DATA_MODES for f in FILTERS}

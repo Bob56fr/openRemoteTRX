@@ -38,7 +38,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
             "local_release",                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
             "bug_report")                    # rapport de problème de la page, rangé sur la station (text)
-SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed")   # valeurs vérifiées par la liste fermée de spectrum/civ.py
+SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
+                                                                 # filter = préréglage FIL1/2/3 du poste (port B)
 
 
 class ProtocolError(Exception):
@@ -142,6 +143,8 @@ def parse_command(raw: str | bytes) -> Command:
                 raise ProtocolError("invalid_params", "value doit être un nom de réglage")
         elif setting == "span":
             value = _int(value, "value", 1, 1_000_000)
+        elif setting == "filter":
+            value = _int(value, "value", 1, 3)
         elif isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or abs(value) > 100:
             raise ProtocolError("invalid_params", "value doit être un niveau en dB")
         else:
