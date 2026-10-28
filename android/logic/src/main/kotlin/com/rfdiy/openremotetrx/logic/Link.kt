@@ -21,6 +21,11 @@ class HeartbeatPolicy {
         graceUntil = Long.MIN_VALUE
     }
 
+    /** Toggle refusé par la station, ou STOP : plus de grâce (seule une émission confirmée garde les battements). */
+    fun cancelGrace() {
+        graceUntil = Long.MIN_VALUE
+    }
+
     fun shouldBeat(now: Long, mineActive: Boolean): Boolean = mineActive || now < graceUntil
 }
 

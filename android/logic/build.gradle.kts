@@ -16,7 +16,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":protocol"))
+    api(project(":protocol"))
     implementation(libs.serialization.json)
     testImplementation(kotlin("test"))
 }

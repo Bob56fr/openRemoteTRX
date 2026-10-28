@@ -72,7 +72,8 @@ Le plan d'origine garde ses numéros (9, 10, 11). La parité complète avec la p
 - `hello.features` : fait.
 - Reste pour A1 : QR code d'appairage (adresse + compte + empreinte, jamais le mot de passe), si utile.
 
-### Lot A1 (étape Android 9) — socle : connexion, écoute, émission
+### Lot A1 (étape Android 9) — socle : connexion, écoute, émission : ÉCRIT (étapes 51-52, application 0.1.0), essais sur le téléphone à faire
+Fait et essayé dans l'émulateur (Android 17) contre une vraie passerelle et le poste factice : connexion HTTPS épinglée, refus d'une empreinte fausse sans envoyer le mot de passe, émission maintenue par les battements, fin d'émission, STOP de la notification, application tuée pendant l'émission => RX en 1,9 s (motif heartbeat), passerelle arrêtée => reconnexion en RX et désarmée. Écarts assumés : pas de Hilt (inutile à ce stade), HTTPS obligatoire (pas de HTTP derrière VPN), `targetSdk` 36 (Android 16, celui du téléphone) avec `compileSdk` 37. Restent : bouton Bluetooth et perte du micro Bluetooth (A2), réglage du volume des alertes, QR code.
 - Appairage d'une station, connexion, reconnexion automatique (mêmes délais que la page : premier essai 400 ms, puis 1,5 / 3 / 4,5 s, fenêtre réglable, 300 s au plus).
 - Écoute en continu écran éteint ; volume, sourdine.
 - PTT toggle, STOP, compte à rebours du TOT et avertissement, motif de la dernière coupure (`last_cut_reason`), défaut (`fault`).

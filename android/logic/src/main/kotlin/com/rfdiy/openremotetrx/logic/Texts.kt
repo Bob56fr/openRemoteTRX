@@ -66,6 +66,25 @@ object Texts {
         "startup" to "démarrage de la station",
     )
 
+    /**
+     * Causes d'une connexion perdue ou impossible (client.js : LOSS_REASONS, titres). « pin » et « protocol » sont
+     * propres à l'application (empreinte du certificat, version de protocole inconnue).
+     */
+    val LOSSES: Map<String, String> = mapOf(
+        "datachannel_closed" to "Canal de contrôle fermé",
+        "connection_failed" to "Liaison réseau échouée",
+        "connection_closed" to "Liaison fermée",
+        "ice_failed" to "Liaison réseau échouée (ICE)",
+        "silence" to "Plus de nouvelles de la station",
+        "no_hello" to "Canal de contrôle jamais ouvert (UDP bloqué ?)",
+        "network" to "Station injoignable",
+        "auth" to "Identifiants refusés (ou trop d'essais : attends quelques minutes)",
+        "busy" to "Station occupée (trop de connexions)",
+        "http" to "Réponse inattendue de la station",
+        "client_error" to "Erreur dans l'application",
+        "pin" to "Empreinte du certificat DIFFÉRENTE : ce n'est peut-être pas ta station, connexion bloquée",
+    )
+
     val PTT_LABELS = mapOf("RX" to "RÉCEPTION", "KEYING" to "PRISE D'ÉMISSION", "TX" to "ÉMISSION", "UNKEYING" to "COUPURE EN COURS")
 
     /** Refus d'une commande : texte connu, sinon le détail donné par la station, sinon le code. */
@@ -73,4 +92,6 @@ object Texts {
         REFUSALS[reason] ?: detail.ifBlank { "Refusé par la station ($reason)." }
 
     fun cut(reason: String): String = CUTS[reason] ?: reason
+
+    fun loss(code: String): String = LOSSES[code] ?: LOSSES.getValue("client_error")
 }

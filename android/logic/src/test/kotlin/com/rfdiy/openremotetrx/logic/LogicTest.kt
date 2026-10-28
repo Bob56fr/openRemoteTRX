@@ -110,9 +110,31 @@ class TextsTest {
     }
 
     @Test
+    fun `memes causes de perte de liaison que la page`() {
+        val body = Regex("const LOSS_REASONS = \\{(.*?)\\n  \\};", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
+        val codes = Regex("^\\s*([a-z_]+): \\{", RegexOption.MULTILINE).findAll(body).map { it.groupValues[1] }.toSet()
+        assertTrue(codes.isNotEmpty())
+        assertEquals(emptySet(), codes - Texts.LOSSES.keys)
+    }
+
+    @Test
     fun `code inconnu - detail de la station ou code`() {
         assertEquals("Fréquence hors des bandes d'émission autorisées.", Texts.refusal("out_of_band"))
         assertEquals("détail", Texts.refusal("nouveau", "détail"))
         assertEquals("Refusé par la station (nouveau).", Texts.refusal("nouveau"))
+    }
+}
+
+class FormatTest {
+    @Test
+    fun `frequence et S-metre comme la page`() {
+        assertEquals("14 074 000 Hz", Format.frequency(14_074_000))
+        assertEquals("475 000 Hz", Format.frequency(475_000))
+        assertEquals("—", Format.frequency(null))
+        assertEquals("S9", Format.sMeter(0.0))
+        assertEquals("S9+20 dB", Format.sMeter(20.4))
+        assertEquals("S7", Format.sMeter(-12.0))
+        assertEquals("S0", Format.sMeter(-80.0))
+        assertEquals("1:05", Format.duration(65))
     }
 }

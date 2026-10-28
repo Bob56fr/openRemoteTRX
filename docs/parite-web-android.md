@@ -5,19 +5,19 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 
 | Fonction | Station | Page web | Application | Remarque |
 |---|---|---|---|---|
-| Connexion, mot de passe, reconnexion automatique | fait | fait | à faire (A1) | |
-| Certificat épinglé par empreinte | fait (menu 19, `--empreinte`) | absent volontairement | à faire (A1) | la page dépend du navigateur |
-| Écoute, volume, sourdine | fait | fait | à faire (A1) | |
-| Écoute écran éteint | fait | impossible (navigateur) | à faire (A1) | raison d'être de l'application |
-| PTT toggle, STOP, battements, TOT | fait | fait | à faire (A1) | |
-| Sons de liaison (perdue, rétablie, abandon) | — | fait | à faire (A1) | |
-| Notification permanente avec STOP | — | absent (navigateur) | à faire (A1) | |
-| Appel entrant pendant l'émission => STOP | — | absent (navigateur) | à faire (A1) | |
-| Opérateur sur place, « Reprendre la main » | fait | fait | à faire (A3) | champs dans `state.ptt` depuis 0.52.0 |
-| Alerte de température | fait | fait | à faire (A3) | |
+| Connexion, mot de passe, reconnexion automatique | fait | fait | fait (A1, 0.1.0) | plusieurs stations ; mot de passe mémorisé chiffré (Keystore) au choix ; HTTPS seulement |
+| Certificat épinglé par empreinte | fait (menu 19, `--empreinte`) | absent volontairement | fait (A1) | la page dépend du navigateur ; QR code d'appairage : plus tard |
+| Écoute, volume, sourdine | fait | fait | fait (A1) | volume = touches « média » du téléphone |
+| Écoute écran éteint | fait | impossible (navigateur) | fait (A1), 30 min à confirmer sur le téléphone | raison d'être de l'application |
+| PTT toggle, STOP, battements, TOT | fait | fait | fait (A1) | « Émission autorisée » comme la case de la page |
+| Sons de liaison (perdue, rétablie, abandon) | — | fait | fait (A1) | mêmes notes, vibrations ; réglage du volume : plus tard |
+| Notification permanente avec STOP | — | absent (navigateur) | fait (A1) | |
+| Appel entrant pendant l'émission => STOP | — | absent (navigateur) | fait (A1), à essayer sur le téléphone | perte du focus audio |
+| Opérateur sur place, « Reprendre la main » | fait | fait | fait (A1) | champs dans `state.ptt` depuis 0.52.0 |
+| Alerte de température | fait | fait | fait (A1, bandeau) | |
 | Fréquence, bandes, clavier | fait | fait | à faire (A3) | cas d'essai à partager (saisie, bandes) |
 | Modes, filtres | fait | fait | à faire (A3) | |
-| S-mètre, Po, SWR, ALC | fait | fait | à faire (A3) | |
+| S-mètre, Po, SWR, ALC | fait | fait | S-mètre en texte (A1) ; le reste à faire (A3) | |
 | Fonctions et niveaux du poste (NR NB P.AMP AGC COMP TUNER ATT…) | fait | fait | à faire (A3) | |
 | Mémoires partagées (`memories`) | fait | fait | à faire (A2 lecture, A3 édition) | présélections d'Android Auto |
 | Bips de fin (`beeps`) | fait | fait | à faire (A3) | |

@@ -18,3 +18,5 @@ dependencyResolutionManagement {
 rootProject.name = "openRemoteTRX"
 // Kotlin pur, testé sans émulateur : protocole (contrat avec la station) et logique (PTT, battements, liaison).
 include(":protocol", ":logic")
+// Android : service, WebRTC, audio, comptes (:core) ; écrans (:app).
+include(":core", ":app")

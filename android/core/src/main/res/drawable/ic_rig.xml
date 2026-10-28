@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Icône de notification : antenne et ondes (blanc sur transparent, exigé par Android). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M11,10h2v12h-2z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M12,6a3,3 0,1 1,0 6a3,3 0,1 1,0 -6z" />
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8"
+        android:pathData="M6.5,4.5a8,8 0,0 0,0 11M17.5,4.5a8,8 0,0 1,0 11" />
+</vector>

@@ -11,7 +11,8 @@ Client Android de la station TRX distant. Cahier des charges : [`docs/android-ca
 |---|---|---|
 | `:protocol` | messages et commandes, décodage tolérant, constantes | non (Kotlin/JVM) |
 | `:logic` | affichage de l'émission, battements, surveillance de la liaison, reconnexion, armement, textes | non (Kotlin/JVM) |
-| `:core`, `:app` | service au premier plan, WebRTC, écrans (lot A1) | à venir |
+| `:core` | `RigService` (seul propriétaire de la connexion), WebRTC, HTTPS épinglé, comptes, sons | oui |
+| `:app` | écrans Compose (stations, station connectée) | oui |
 
 Les tests de `:protocol` lisent les exemples partagés `../tests/protocol/` (les mêmes que pytest et la page) ; ceux de `:logic` comparent les textes avec `client.js`.
 
@@ -22,6 +23,9 @@ Prérequis : Android Studio (il fournit le JDK, le SDK et l'émulateur). En lign
 
 ```
 cd android
-gradlew.bat test          # Windows
-./gradlew test            # Linux
+gradlew.bat test assembleDebug     # Windows ; APK : app/build/outputs/apk/debug/app-debug.apk
+./gradlew test assembleDebug       # Linux
 ```
+
+Installer sur un téléphone branché en USB (débogage USB activé) : `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+(adb : `%LOCALAPPDATA%\Android\Sdk\platform-tools`).
