@@ -16,6 +16,7 @@ Les actions qui touchent au système passent par `sudo` : le mot de passe de ses
 from __future__ import annotations
 
 import argparse
+import codecs
 import difflib
 import os
 import re
@@ -23,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -42,6 +44,13 @@ CHECK_UNIT = "trx-update-check.service"
 INSTALL_LOG = "/var/log/trx-remote-install.log"
 ZIP_PLACES = ("Desktop", "Bureau", "Downloads", "Téléchargements", "")   # où chercher un paquet déposé ("" = dossier personnel)
 MAX_DIFF_LINES = 60
+QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
+HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
+
+
+def format_duration(seconds: float) -> str:
+    minutes, secs = divmod(int(seconds), 60)
+    return f"{minutes} min {secs:02d} s" if minutes else f"{secs} s"
 
 
 def find_packages(home: Path) -> list[tuple[str, Path]]:
@@ -112,16 +121,44 @@ class Runner:
             print()
             return 130
 
-    def run_logged(self, cmd: list[str], log_path: Path, *, cwd: Path | None = None) -> int:
-        """Affiche la sortie au fil de l'eau ET l'enregistre dans `log_path` (résultat des tests à transmettre)."""
+    def run_logged(self, cmd: list[str], log_path: Path, *, cwd: Path | None = None,
+                   quiet_after_s: float = QUIET_AFTER_S) -> int:
+        """Affiche la sortie AU CARACTÈRE PRÈS (les points de pytest, pas ligne par ligne) ET l'enregistre aussitôt dans
+        `log_path`. Sans rien de nouveau pendant `quiet_after_s`, rappelle que l'exécution continue (petit PC : un test
+        lent ne doit pas passer pour un plantage)."""
+        started = time.monotonic()
+        last = [started]
+        lock = threading.Lock()
+        done = threading.Event()
+
+        def heartbeat() -> None:
+            while not done.wait(1.0):
+                now = time.monotonic()
+                with lock:
+                    if now - last[0] >= quiet_after_s:
+                        last[0] = now
+                        sys.stdout.write(f"\n  ... toujours en cours ({format_duration(now - started)} écoulées) : "
+                                         "test long ou petit PC, patience.\n")
+                        sys.stdout.flush()
         try:
-            with open(log_path, "w", encoding="utf-8") as log, subprocess.Popen(
-                    cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace") as proc:
+            with open(log_path, "wb") as log, subprocess.Popen(
+                    cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}) as proc:
                 assert proc.stdout is not None
-                for line in proc.stdout:
-                    sys.stdout.write(line)
-                    log.write(line)
-                return proc.wait()
+                decoder = codecs.getincrementaldecoder("utf-8")("replace")
+                beat = threading.Thread(target=heartbeat, name="trx-console-patience", daemon=True)
+                beat.start()
+                try:
+                    while chunk := proc.stdout.read1(4096):
+                        log.write(chunk)
+                        log.flush()                      # le fichier sur le Bureau suit lui aussi
+                        with lock:
+                            last[0] = time.monotonic()
+                            sys.stdout.write(decoder.decode(chunk))
+                            sys.stdout.flush()
+                    return proc.wait()
+                finally:
+                    done.set()
         except FileNotFoundError:
             print(f"Commande introuvable : {cmd[0]}")
             return 127
@@ -490,7 +527,8 @@ class Console:
 
     def expert(self) -> None:
         self.say("\nMenu expert :\n"
-                 "  1) Tests automatiques du logiciel (pytest, 7 à 10 minutes, poste SIMULÉ : aucune émission)\n"
+                 "  1) Tests automatiques du logiciel (pytest, 7 à 10 minutes sur un PC récent, 30 minutes ou plus sur un\n"
+                 "     petit PC ; poste SIMULÉ : aucune émission)\n"
                  "  q) Retour")
         if self.ask("Choix : ").strip() == "1":
             self.run_tests()
@@ -520,7 +558,8 @@ class Console:
         log = folder / f"trx-remote-tests-{time.strftime('%Y%m%d-%H%M')}.txt"
         work = Path(tempfile.mkdtemp(prefix="trx-tests-"))
         try:
-            cmd = [self.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--basetemp", str(work / "tmp"), str(tests)]
+            cmd = [self.python, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", f"faulthandler_timeout={HANG_DUMP_S}",
+                   "--basetemp", str(work / "tmp"), str(tests)]
             runner = getattr(self.runner, "run_logged", None)
             code = runner(cmd, log, cwd=work) if runner else self.runner.run(cmd)
         finally:

@@ -719,3 +719,29 @@ def test_diagnostic_fails_when_pyserial_is_missing_and_the_spectrum_is_enabled(t
     (check,) = d.check_spectrum(sysm, cfg)
     assert check.status == d.FAIL and "pyserial" in check.message
 
+
+
+def test_a_slow_event_loop_is_never_flooded_by_sweeps(caplog):
+    """Petit PC : le fil de lecture produit plus vite que la boucle ne diffuse. Un seul envoi en attente (le dernier
+    balayage) au lieu d'une pile sans fin ; un écouteur en erreur n'est journalisé qu'une fois (relevé sur Debian :
+    la boucle noyée par des milliers d'appels et de traces ne reprenait plus jamais la main)."""
+    svc, *_ = make_service(PortB())
+    loop = asyncio.new_event_loop()
+    got = []
+    svc.add_listener(got.append)
+    svc.add_listener(lambda s: 1 / 0)
+    svc._loop = loop
+    try:
+        sweeps = [sweep(points=(i,)) for i in range(1000)]
+        for s in sweeps:
+            svc._on_sweep(s)                                                  # boucle à l'arrêt : rien n'est diffusé
+        assert len(loop._ready) == 1
+        loop.run_until_complete(asyncio.sleep(0))
+        assert got == [sweeps[-1]]                                           # le plus récent seulement
+        svc._on_sweep(sweeps[0])
+        loop.run_until_complete(asyncio.sleep(0))
+        assert got == [sweeps[-1], sweeps[0]]
+    finally:
+        loop.close()
+    assert sum("diffusion du spectre en erreur" in r.message for r in caplog.records) == 1
+    assert svc.sweeps == 1001

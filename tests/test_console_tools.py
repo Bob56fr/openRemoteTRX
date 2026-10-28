@@ -298,3 +298,16 @@ def test_header_shows_version_and_station_id(tmp_path, monkeypatch):
     assert f"version {con.installed}" in con.header() and "premier démarrage" in con.header()
     ident = ensure_station_id(tmp_path / "state")
     assert ident in con.header()
+
+
+def test_test_output_is_shown_as_it_comes_with_a_reminder_when_quiet(tmp_path, capsys):
+    """Petit PC : les points de pytest s'affichent sans attendre la fin de la ligne, le fichier suit, et un rappel
+    « toujours en cours » apparaît quand rien ne bouge (il ne va pas dans le fichier transmis)."""
+    import sys as _sys
+    from trxstation.console import Runner
+    child = "import sys, time; sys.stdout.write('..'); sys.stdout.flush(); time.sleep(1.6); print('é fin')"
+    log = tmp_path / "tests.txt"
+    assert Runner().run_logged([_sys.executable, "-c", child], log, quiet_after_s=0.5) == 0
+    shown = capsys.readouterr().out
+    assert shown.index("..") < shown.index("toujours en cours") < shown.index("é fin")
+    assert log.read_bytes().decode("utf-8").replace("\r\n", "\n") == "..é fin\n"

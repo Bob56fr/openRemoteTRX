@@ -77,6 +77,8 @@ class SpectrumService:
         self._listeners: list[Callable[[Sweep], None]] = []
         self._requests: queue.Queue = queue.Queue(maxsize=8)
         self._settings: dict = {}
+        self._pending: Sweep | None = None         # balayage en attente de diffusion dans la boucle (le plus récent)
+        self._failing: set[int] = set()            # écouteurs déjà signalés en erreur
 
     def retry_now(self) -> None:
         """Un client ouvre la vue HF : si le spectre est en panne passagère, nouvel essai sans attendre RETRY_S
@@ -98,7 +100,15 @@ class SpectrumService:
             try:
                 callback(sweep)
             except Exception:                         # noqa: BLE001 - un client fautif ne touche ni les autres ni la lecture
-                log.exception("diffusion du spectre en erreur")
+                if id(callback) not in self._failing:  # une fois par écouteur : pas un journal (et une boucle) noyés
+                    self._failing.add(id(callback))
+                    log.exception("diffusion du spectre en erreur (signalé une seule fois pour cet écouteur)")
+
+    def _dispatch_latest(self) -> None:
+        with self._lock:
+            sweep, self._pending = self._pending, None
+        if sweep is not None:
+            self._dispatch(sweep)
 
     # ------------------------------------------------------------------ état publié
 
@@ -137,11 +147,18 @@ class SpectrumService:
             self.sweeps += 1
             now = self.clock()
             self._fps_window = [t for t in self._fps_window if now - t <= 5.0] + [now]
-        if self._listeners and self._loop is not None:
+            # Un seul envoi en attente dans la boucle : si elle prend du retard (petit PC chargé), on garde le DERNIER
+            # balayage au lieu d'empiler des milliers d'appels (la boucle de la passerelle ne doit jamais être noyée).
+            if not self._listeners or self._loop is None:
+                return
+            scheduled = self._pending is not None
+            self._pending = sweep
+        if not scheduled:
             try:
-                self._loop.call_soon_threadsafe(self._dispatch, sweep)
+                self._loop.call_soon_threadsafe(self._dispatch_latest)
             except RuntimeError:                      # boucle fermée (arrêt en cours)
-                pass
+                with self._lock:
+                    self._pending = None
 
     # ------------------------------------------------------------------ réglages du spectre (demandés par la page)
 

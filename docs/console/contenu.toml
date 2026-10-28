@@ -169,9 +169,9 @@ expert = "<p>Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitt
 [menus.expert]
 role = "Menu expert : lance toute la suite de tests automatiques du logiciel sur la station."
 quand = "Pour aider au débogage, ou vérifier qu'une installation est saine."
-modifie = "Rien. Les tests utilisent un poste <strong>simulé</strong> : aucune commande au vrai poste, aucune émission. La station est arrêtée pendant les tests (7 à 10 minutes) puis relancée à la demande."
+modifie = "Rien. Les tests utilisent un poste <strong>simulé</strong> : aucune commande au vrai poste, aucune émission. La station est arrêtée pendant les tests (7 à 10 minutes sur un PC récent, 30 minutes ou plus sur un petit PC) puis relancée à la demande."
 admin = true
-expert = "<p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>) : transmets ce fichier si des tests échouent. L'outil de test (pytest) est installé au premier usage (Internet nécessaire).</p>"
+expert = "<p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>) : transmets ce fichier si des tests échouent. L'outil de test (pytest) est installé au premier usage (Internet nécessaire).</p><p>Les points s'affichent au fur et à mesure ; sans rien de nouveau pendant une minute, la console rappelle que les tests continuent. Un test vraiment bloqué 10 minutes affiche la pile de ses fils d'exécution : c'est ce qu'il faut transmettre (Ctrl+C arrête les tests).</p>"
 
 [menus.temperature]
 role = "Seuils de température du poste : premier seuil (avertissement dans la page et notification), second seuil (émission à distance coupée et refusée jusqu'au retour sous le premier seuil). 40 et 50 °C par défaut."
