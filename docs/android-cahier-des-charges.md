@@ -179,7 +179,7 @@ Exception : ce qui n'a de sens que sur le téléphone (Android Auto, boutons mat
 ## 10. Décisions (2026-10-28) et questions restantes
 
 Décidé par l'utilisateur :
-1. Android Studio : pas encore installé ; à installer avant le lot A1 (il fournit le SDK, l'émulateur, le journal `logcat` et le simulateur Android Auto « Desktop Head Unit »). Le lot A0 (station) n'en a pas besoin.
+1. Android Studio : installé (2026-10-28, SDK API 29 et 37) ; l'étape 51 a créé `android/` (modules `:protocol` et `:logic`, 15 tests). Il est nécessaire au lot A1 (il fournit le SDK, l'émulateur, le journal `logcat` et le simulateur Android Auto « Desktop Head Unit »). Le lot A0 (station) n'en a pas besoin.
 2. Le code Kotlin est écrit ici, avec Claude Code, dans `android/`.
 3. Téléphone de développement : Samsung, Android 16, One UI 8.5. Essais aussi sur émulateur Android 10 (version minimale).
 4. `minSdk` 29 (Android 10).

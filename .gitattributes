@@ -10,3 +10,7 @@
 *.desktop text eol=lf
 *.png binary
 *.wav binary
+# Script Gradle lancé sous Linux (CI) : toujours LF.
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
