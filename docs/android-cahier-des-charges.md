@@ -40,7 +40,7 @@ L'application **n'ajoute aucune sécurité côté poste et n'en retire aucune** 
 - Commandes client -> station : liste fermée `COMMANDS` de `trxstation/gateway/api/protocol.py` ; `id` = numéro de requête, `memory_id` = identifiant de mémoire ; message limité à 2 ko (sauf `layout_save` et `bug_report`), 64 ko au plus par message sur le canal (aiortc).
 - Audio d'émission : pas d'annulation d'écho ni de contrôle automatique de gain (`autoGainControl: false`, `echoCancellation`/`noiseSuppression` selon le réglage de traitement, comme la page) ; la station garde la porte audio d'émission.
 
-**Manque à combler avant le code Android** : le protocole n'est décrit que dans le code (`protocol.py`, `session.py`, `client.js`). CLAUDE.md exige qu'il soit « figé et documenté côté Pi avant l'étape Android ». Première livraison du chantier : `docs/protocole.md` + jeux d'exemples partagés (voir § 8).
+**Protocole** : décrit dans [`docs/protocole.md`](protocole.md), exemples partagés dans `tests/protocol/` (lot A0, étape 50). C'est la référence pour le code Android.
 
 ## 4. Architecture de l'application
 
@@ -65,11 +65,12 @@ Règles :
 
 Le plan d'origine garde ses numéros (9, 10, 11). La parité complète avec la page n'est PAS un objectif du premier jet.
 
-### Lot A0 — préalables (station, sans Kotlin)
+### Lot A0 — préalables (station, sans Kotlin) : FAIT (étape 50, version 0.52.0)
 - `docs/protocole.md` : chaque commande, chaque message, chaque code d'erreur, avec exemples.
 - `tests/protocol/` : exemples JSON partagés et tests pytest qui prouvent que la station les accepte / les produit (§ 8.3).
 - Empreinte du certificat affichée par `trx-setup` et TRX Console (et QR code d'appairage : adresse + identifiant + empreinte, JAMAIS le mot de passe).
-- Faut-il un champ `hello.features` (liste de fonctions offertes) ? Recommandé (§ 8.2).
+- `hello.features` : fait.
+- Reste pour A1 : QR code d'appairage (adresse + compte + empreinte, jamais le mot de passe), si utile.
 
 ### Lot A1 (étape Android 9) — socle : connexion, écoute, émission
 - Appairage d'une station, connexion, reconnexion automatique (mêmes délais que la page : premier essai 400 ms, puis 1,5 / 3 / 4,5 s, fenêtre réglable, 300 s au plus).
@@ -182,7 +183,7 @@ Décidé par l'utilisateur :
 2. Le code Kotlin est écrit ici, avec Claude Code, dans `android/`.
 3. Téléphone de développement : Samsung, Android 16, One UI 8.5. Essais aussi sur émulateur Android 10 (version minimale).
 4. `minSdk` 29 (Android 10).
-5. Nom affiché : **openRemoteTRX**. Identifiant du paquet (`applicationId`) proposé : `com.rfdiy.openremotetrx` (Android exige au moins un point, en minuscules par usage ; il ne peut plus changer une fois l'application installée, sinon c'est une autre application) : À CONFIRMER.
+5. Nom affiché : **openRemoteTRX**. Identifiant du paquet (`applicationId`) : `com.rfdiy.openremotetrx` (confirmé ; ne plus jamais le changer : ce serait une autre application).
 6. `hello.features` : accepté, fait au lot A0.
 
 Restent ouvertes :

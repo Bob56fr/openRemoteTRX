@@ -91,3 +91,35 @@ def test_tls_context_actually_serves_https_to_a_client_that_trusts_the_certifica
         server.close()
         await server.wait_closed()
     asyncio.run(asyncio.wait_for(scenario(), 20))
+
+
+def test_certificate_fingerprint_is_the_sha256_of_the_certificate_as_browsers_show_it(tmp_path):
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+
+    from trxstation.gateway.api.tls import certificate_fingerprint, generate_self_signed
+    cert, key = tmp_path / "cert.pem", tmp_path / "key.pem"
+    generate_self_signed(["192.168.1.10"], cert, key)
+    expected = x509.load_pem_x509_certificate(cert.read_bytes()).fingerprint(hashes.SHA256()).hex().upper()
+    fingerprint = certificate_fingerprint(cert)
+    assert fingerprint.replace(":", "") == expected and len(fingerprint) == 95     # 32 octets « AB:CD:… »
+    with pytest.raises(ValueError):
+        certificate_fingerprint(key)                                              # une clé n'est pas un certificat
+
+
+def test_pairing_lines_show_address_accounts_and_fingerprint_never_a_password(tmp_path):
+    from trxstation.gateway.api.tls import certificate_fingerprint
+    from trxstation.setup_wizard import _make_certificate, add_client, dummy_config, pairing_lines
+    cfg = dummy_config()
+    assert "cette machine" in "\n".join(pairing_lines(cfg))                         # 127.0.0.1 : aucun téléphone possible
+    add_client(cfg, "phone", "Un mot de passe correct 42")
+    _make_certificate(["192.168.1.10"], tmp_path / "tls", cfg)
+    cfg.network.gateway_bind = "0.0.0.0"
+    text = "\n".join(pairing_lines(cfg, addresses=lambda: ["192.168.1.10"]))
+    fingerprint = certificate_fingerprint(cfg.network.tls_cert)
+    assert "https://192.168.1.10:8443" in text and "phone" in text
+    assert fingerprint[:47] in text and fingerprint[48:] in text
+    assert "Un mot de passe correct 42" not in text and "scrypt" not in text
+    cfg.network.tls_cert = cfg.network.tls_key = ""
+    cfg.network.allow_insecure_http = True
+    assert "proxy" in "\n".join(pairing_lines(cfg, addresses=lambda: ["192.168.1.10"]))

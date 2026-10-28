@@ -25,7 +25,7 @@ from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
 from ..safety import PttController, Refused
-from .protocol import PROTOCOL_VERSION, ProtocolError, parse_command
+from .protocol import BASE_FEATURES, PROTOCOL_VERSION, ProtocolError, parse_command
 
 log = logging.getLogger(__name__)
 
@@ -34,10 +34,14 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
     """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients."""
     rig, ptt = link.state, ctrl.snapshot()
     remaining = None if ptt.tot_remaining_s is None else round(ptt.tot_remaining_s, 1)
+    local_left = None if ptt.local_remaining_s is None else round(ptt.local_remaining_s, 1)
     return {
         "type": "state",
         "ptt": {"state": ptt.state, "owner": ptt.owner, "tot_remaining_s": remaining,
-                "tot_warning": ptt.tot_warning, "last_cut_reason": ptt.last_cut_reason, "fault": ptt.fault},
+                "tot_warning": ptt.tot_warning, "last_cut_reason": ptt.last_cut_reason, "fault": ptt.fault,
+                # poste utilisé sur place et température : bandeaux et « Reprendre la main » de la page
+                "local_remaining_s": local_left, "local_reason": ptt.local_reason, "local_tx": ptt.local_tx,
+                "temp_alert": ptt.temp_alert, "temp_c": ptt.temp_c},
         "rig": {"connected": rig.connected, "frequency_hz": rig.frequency_hz, "mode": rig.mode,
                 "passband_hz": rig.passband_hz, "strength_db": rig.strength_db,
                 "functions": dict(rig.functions), "levels": dict(rig.levels)},
@@ -88,13 +92,23 @@ class ControlSession:
                    "memories": self.memories.list() if self.memories else [],
                    "layouts": self.layouts is not None,
                    "spectrum": self.spectrum.capability() if self.spectrum is not None else None,
-                   "beeps": self.beeps.config.to_dict() if self.beeps is not None else None})   # canal « spectrum »                     # mises en page personnalisées : layout_get
+                   "beeps": self.beeps.config.to_dict() if self.beeps is not None else None,
+                   "features": self.features()})
+        # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
         if self.beeps is not None:
             self.beeps.add_listener(self._beeps_listener)             # réglé depuis un autre téléphone : affiché ici
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         self.send(self._state())
         self._state_task = asyncio.get_running_loop().create_task(self._state_loop())
+
+    def features(self) -> list[str]:
+        """hello.features : ce que CETTE station offre. Un client affiche une fonction parce qu'elle est annoncée ici,
+        jamais d'après un numéro de version (docs/protocole.md)."""
+        offered = {"memories": self.memories is not None, "layouts": self.layouts is not None,
+                   "spectrum": self.spectrum is not None and self.spectrum.capability() is not None,
+                   "beeps": self.beeps is not None, "bug_report": self.reports is not None}
+        return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
         return build_state(self.link, self.ctrl, self.pipeline, self.spectrum)

@@ -69,6 +69,14 @@ def test_javascript_client_logic_with_a_fake_browser():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+def test_page_reads_the_shared_protocol_examples():
+    node = shutil.which("node")
+    if not node:
+        return
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "protocol_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
 def test_page_display_with_a_fake_browser_loading_the_real_page():
     node = shutil.which("node")
     if not node:

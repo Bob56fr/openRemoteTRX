@@ -210,6 +210,7 @@ class Console:
             ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
             ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
             ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
+            ("19", "Appairer un téléphone (application Android : adresse, empreinte du certificat)", self.pairing),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -484,6 +485,22 @@ class Console:
             shutil.rmtree(work, ignore_errors=True)
 
     # ------------------------------------------------------------------ profils de poste (menu 18)
+
+    def pairing(self) -> None:
+        """Adresse, comptes et empreinte du certificat à vérifier dans l'application Android. Lecture seule ;
+        aucun mot de passe affiché (la station ne les connaît pas en clair)."""
+        from . import config as cfgmod
+        from .setup_wizard import pairing_lines
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            self.say("\n".join(pairing_lines(cfg)))
+        except PermissionError:                            # certificat réservé à la station : relu avec les droits d'administration
+            self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--empreinte"), admin=True)
+        except (OSError, ValueError, cfgmod.ConfigError) as exc:
+            self.say(f"Lecture impossible ({exc}).")
 
     def profiles(self) -> None:
         if not self.config.exists():

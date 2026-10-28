@@ -4,7 +4,8 @@
 
 Client -> passerelle : {"cmd": <nom>, "id": <entier optionnel : numéro de la REQUÊTE, repris dans la réponse>, ...paramètres}
 (l'identifiant d'une mémoire s'appelle « memory_id » : « id » est toujours le numéro de requête)
-Passerelle -> client : {"type": "hello"|"state"|"result"|"error", ...}
+Passerelle -> client : {"type": "hello"|"state"|"result"|"error"|"memories"|"beeps"|"module", ...}
+Description complète, règles de version et exemples partagés : docs/protocole.md, tests/protocol/.
 Spectre HF : `hello.spectrum` = {source, level_max, max_fps} ou null ; `state.spectrum` = {state, code, message} ;
 balayages en BINAIRE sur un second canal « spectrum » ouvert par le client (non ordonné, maxRetransmits 0),
 format dans trxstation/spectrum/frame.py ; la passerelle n'y lit rien. Les balayages ne partent QUE pendant que
@@ -38,6 +39,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
             "local_release",                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
             "bug_report")                    # rapport de problème de la page, rangé sur la station (text)
+# hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
+# selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
+BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
+OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report")
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 

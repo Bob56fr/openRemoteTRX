@@ -107,3 +107,22 @@ def test_first_launch_offers_the_assistant_then_menu_quits(tmp_path):
 def test_diagnostic_command_line_returns_an_exit_code(tmp_path, capsys):
     assert main(["--diagnostic", "--config", str(tmp_path / "absent.toml")]) in (0, 1)
     assert "Bilan" in capsys.readouterr().out
+
+
+def test_pairing_menu_shows_what_the_android_app_needs_and_falls_back_to_admin_rights(tmp_path, monkeypatch):
+    con, fake, out = console(tmp_path)
+    con.pairing()
+    assert fake.calls == [] and any("menu 2" in line for line in out)
+    write_config(tmp_path)
+    con, fake, out = console(tmp_path)
+    con.pairing()
+    assert fake.calls == [] and "Appairage" in out[-1] and "cette machine" in out[-1]
+    import trxstation.setup_wizard as wizard
+
+    def refused(cfg, addresses=None):
+        raise PermissionError("certificat réservé au groupe de la station")
+    monkeypatch.setattr(wizard, "pairing_lines", refused)
+    con, fake, out = console(tmp_path)
+    con.pairing()
+    command, admin = fake.calls[0]
+    assert admin and command[-1] == "--empreinte" and "trxstation.setup_wizard" in command

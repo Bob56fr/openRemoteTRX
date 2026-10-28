@@ -495,6 +495,32 @@ def ask_network(cfg: Config, tls_dir: Path | None) -> None:
     for address in hosts[:-2] or ["<adresse de ce PC>"]:
         print(f"  Adresse à ouvrir sur le téléphone : https://{address}:{n.gateway_port}")
     print("  Le navigateur affichera un avertissement (certificat non reconnu) : c'est attendu, voir le guide.")
+    from .gateway.api.tls import certificate_fingerprint
+    print(f"  Empreinte du certificat (application Android) : {certificate_fingerprint(n.tls_cert)}")
+
+
+def pairing_lines(cfg: Config, addresses: Callable[[], list[str]] | None = None) -> list[str]:
+    """Ce qu'on saisit dans l'application Android pour appairer cette station : adresse(s), comptes, empreinte du
+    certificat. JAMAIS de mot de passe (seule son empreinte scrypt est connue). OSError si le certificat est illisible."""
+    from .gateway.api.tls import certificate_fingerprint
+    n = cfg.network
+    lines = ["Appairage d'un téléphone (application openRemoteTRX)"]
+    if n.gateway_bind in ("127.0.0.1", "localhost", "::1", ""):
+        return lines + ["  La station n'est accessible que depuis cette machine (127.0.0.1) : aucun téléphone ne peut s'y connecter.",
+                        "  Pour l'ouvrir au réseau local ou à un VPN : assistant de configuration, « Réseau local ou VPN, en HTTPS »."]
+    hosts = (addresses or local_addresses)() if n.gateway_bind in ("0.0.0.0", "::") else [n.gateway_bind]
+    scheme = "https" if n.tls_cert else "http"
+    lines.append("  Adresse : " + (", ".join(f"{scheme}://{h}:{n.gateway_port}" for h in hosts) or
+                                   f"{scheme}://<adresse de ce PC>:{n.gateway_port}"))
+    lines.append("  Comptes : " + (", ".join(c.id for c in cfg.clients) or "aucun (en créer un : assistant de configuration)")
+                 + "  (mot de passe : celui choisi à la création ; il n'est enregistré nulle part en clair)")
+    if not n.tls_cert:
+        lines.append("  Pas de certificat sur la station (HTTPS assuré par un proxy, ou absent) : l'empreinte à épingler "
+                     "dans l'application est celle du certificat du proxy.")
+        return lines
+    fingerprint = certificate_fingerprint(n.tls_cert)       # 32 octets : deux lignes de 16, plus faciles à comparer
+    return lines + ["  Empreinte du certificat (SHA-256), à comparer avec celle que montre l'application :",
+                    "    " + fingerprint[:47], "    " + fingerprint[48:]]
 
 
 def _make_certificate(hosts: list[str], folder: Path, cfg: Config) -> None:
@@ -622,6 +648,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="modes où l'émission est permise (ex. PKTUSB PKTLSB) ; « aucun » supprime la restriction (--output)")
     ap.add_argument("--self-signed", metavar="HÔTE", nargs="+",
                     help="génère un certificat TLS auto-signé pour ces noms/adresses IP et l'active (--output)")
+    ap.add_argument("--empreinte", action="store_true",
+                    help="affiche adresse, comptes et empreinte du certificat pour appairer l'application Android (--output, lecture seule)")
     ap.add_argument("--base", type=Path, metavar="FICHIER",
                     help="reprend ce fichier comme point de départ (ex. configuration importée d'un autre PC) ; "
                          "par défaut, le fichier --output s'il existe")
@@ -637,6 +665,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.spectre:
             return _cli_spectrum(args)
+        if args.empreinte:
+            cfg, _ = cfgmod.load_unchecked(args.output)
+            try:
+                print("\n".join(pairing_lines(cfg)))
+            except (OSError, ValueError) as exc:
+                print(f"Certificat illisible ({cfg.network.tls_cert}) : {exc}", file=sys.stderr)
+                return 1
+            return 0
         if args.add_client or args.set_password or args.self_signed or args.tx_modes or args.bands or args.max_power is not None:
             cfg = cfgmod.load(args.output)
             if args.max_power is not None:
@@ -662,6 +698,8 @@ def main(argv: list[str] | None = None) -> int:
                 _make_certificate(args.self_signed, args.output.resolve().parent / "tls", cfg)
                 print(f"Certificat auto-signé écrit : {cfg.network.tls_cert}\nLe navigateur affichera un avertissement (certificat non reconnu) : "
                       "à réserver à un essai. Pour un usage durable, voir docs/acces-distant.md.")
+                from .gateway.api.tls import certificate_fingerprint
+                print(f"Empreinte du certificat (application Android) : {certificate_fingerprint(cfg.network.tls_cert)}")
             write_config(cfg, args.output)
             return 0
         if args.dummy:

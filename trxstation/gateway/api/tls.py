@@ -8,6 +8,7 @@ Pour un usage durable, préfère un certificat reconnu (Let's Encrypt) via un pr
 from __future__ import annotations
 
 import datetime
+import hashlib
 import ipaddress
 import os
 import ssl
@@ -19,6 +20,22 @@ def make_ssl_context(cert_file: str, key_file: str) -> ssl.SSLContext:
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(cert_file, key_file)          # ssl.SSLError / OSError si fichiers absents ou incohérents
     return context
+
+
+def certificate_fingerprint(cert_file: str | Path) -> str:
+    """Empreinte SHA-256 du certificat (le premier du fichier PEM), « AB:CD:… » comme l'affichent les navigateurs.
+
+    C'est elle que l'application Android épingle à l'appairage : sans dépendance (stdlib), ValueError si le
+    fichier ne contient pas de certificat, OSError s'il est illisible.
+    """
+    text = Path(cert_file).read_text(encoding="ascii", errors="replace")
+    begin, end = "-----BEGIN CERTIFICATE-----", "-----END CERTIFICATE-----"
+    start = text.find(begin)
+    stop = text.find(end, start + 1) if start >= 0 else -1
+    if stop < 0:
+        raise ValueError("aucun certificat PEM dans ce fichier")
+    digest = hashlib.sha256(ssl.PEM_cert_to_DER_cert(text[start:stop + len(end)])).hexdigest().upper()
+    return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
 
 
 def generate_self_signed(hostnames: list[str], cert_path: str | Path, key_path: str | Path, days: int = 825) -> None:

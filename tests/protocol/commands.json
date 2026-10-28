@@ -1,0 +1,90 @@
+{
+  "_lisez_moi": "Exemples partagés (station pytest, page Node, application JUnit) : docs/protocole.md. Chaque commande de COMMANDS a au moins un exemple valide ; chaque exemple invalide donne le code d'erreur attendu.",
+  "format": 1,
+  "commands": {
+    "toggle": {
+      "valid": [{"cmd": "toggle", "id": 1}, {"cmd": "toggle"}],
+      "invalid": [{"message": {"cmd": "toggle", "id": "1"}, "code": "invalid_params"},
+                  {"message": {"cmd": "toggle", "id": -1}, "code": "invalid_params"}]
+    },
+    "stop": {"valid": [{"cmd": "stop", "id": 2}], "invalid": []},
+    "heartbeat": {"valid": [{"cmd": "heartbeat"}], "invalid": []},
+    "get_state": {"valid": [{"cmd": "get_state", "id": 3}], "invalid": []},
+    "set_frequency": {
+      "valid": [{"cmd": "set_frequency", "id": 4, "hz": 14074000}],
+      "invalid": [{"message": {"cmd": "set_frequency", "hz": 14.074e6}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_frequency", "hz": "14074000"}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_frequency", "hz": 0}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_frequency"}, "code": "invalid_params"}]
+    },
+    "set_mode": {
+      "valid": [{"cmd": "set_mode", "id": 5, "mode": "PKTUSB", "passband": 2400}, {"cmd": "set_mode", "mode": "LSB"}],
+      "invalid": [{"message": {"cmd": "set_mode", "mode": "USB\nT 1"}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_mode", "mode": "USB", "passband": 99999}, "code": "invalid_params"}]
+    },
+    "set_squelch": {
+      "valid": [{"cmd": "set_squelch", "id": 6, "value": 0.25}],
+      "invalid": [{"message": {"cmd": "set_squelch", "value": 1.5}, "code": "invalid_params"}]
+    },
+    "set_function": {
+      "valid": [{"cmd": "set_function", "id": 7, "name": "NR", "on": true}],
+      "invalid": [{"message": {"cmd": "set_function", "name": "VOX", "on": true}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_function", "name": "NR", "on": 1}, "code": "invalid_params"}]
+    },
+    "set_level": {
+      "valid": [{"cmd": "set_level", "id": 8, "name": "RFPOWER", "value": 0.25},
+                {"cmd": "set_level", "name": "AGC", "value": 2},
+                {"cmd": "set_level", "name": "NR", "value": 0.5}],
+      "invalid": [{"message": {"cmd": "set_level", "name": "RFPOWER", "value": 0.3}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_level", "name": "SQL", "value": 0.5}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_level", "name": "AGC", "value": 2.5}, "code": "invalid_params"}]
+    },
+    "memory_save": {
+      "valid": [{"cmd": "memory_save", "id": 9, "name": "FT8 20 m", "hz": 14074000, "mode": "PKTUSB", "favorite": true},
+                {"cmd": "memory_save", "name": "Relais", "hz": 145600000, "mode": "FM", "memory_id": "a1b2c3"}],
+      "invalid": [{"message": {"cmd": "memory_save", "name": "", "hz": 14074000, "mode": "USB"}, "code": "invalid_params"},
+                  {"message": {"cmd": "memory_save", "name": "X", "hz": 14074000, "mode": "USB", "memory_id": "A-1"}, "code": "invalid_params"}]
+    },
+    "memory_delete": {
+      "valid": [{"cmd": "memory_delete", "id": 10, "memory_id": "a1b2c3"}],
+      "invalid": [{"message": {"cmd": "memory_delete"}, "code": "invalid_params"}]
+    },
+    "memory_recall": {
+      "valid": [{"cmd": "memory_recall", "id": 11, "memory_id": "a1b2c3"}],
+      "invalid": [{"message": {"cmd": "memory_recall", "memory_id": 3}, "code": "invalid_params"}]
+    },
+    "layout_get": {"valid": [{"cmd": "layout_get", "id": 12}], "invalid": []},
+    "layout_save": {
+      "valid": [{"cmd": "layout_save", "id": 13, "profile": {"format": 1}}],
+      "invalid": [{"message": {"cmd": "layout_save", "profile": "texte"}, "code": "invalid_params"}]
+    },
+    "layout_reset": {"valid": [{"cmd": "layout_reset", "id": 14}], "invalid": []},
+    "spectrum_set": {
+      "valid": [{"cmd": "spectrum_set", "id": 15, "name": "span", "value": 25000},
+                {"cmd": "spectrum_set", "name": "ref", "value": -10.0},
+                {"cmd": "spectrum_set", "name": "filter", "value": 2}],
+      "invalid": [{"message": {"cmd": "spectrum_set", "name": "power", "value": 1}, "code": "invalid_params"},
+                  {"message": {"cmd": "spectrum_set", "name": "filter", "value": 4}, "code": "invalid_params"}]
+    },
+    "spectrum_watch": {
+      "valid": [{"cmd": "spectrum_watch", "id": 16, "on": true}],
+      "invalid": [{"message": {"cmd": "spectrum_watch", "on": "oui"}, "code": "invalid_params"}]
+    },
+    "beeps_set": {
+      "valid": [{"cmd": "beeps_set", "id": 17, "roger_enabled": true, "roger_tone": "1000", "roger_pattern": 2}],
+      "invalid": [{"message": {"cmd": "beeps_set", "roger_tone": "440"}, "code": "invalid_params"},
+                  {"message": {"cmd": "beeps_set", "volume": 3}, "code": "invalid_params"}]
+    },
+    "local_release": {"valid": [{"cmd": "local_release", "id": 18}], "invalid": []},
+    "bug_report": {
+      "valid": [{"cmd": "bug_report", "id": 19, "text": "La fréquence ne change pas après un appui sur 40 m."}],
+      "invalid": [{"message": {"cmd": "bug_report", "text": "   "}, "code": "invalid_params"}]
+    }
+  },
+  "rejected": [
+    {"raw": "pas du json", "code": "bad_json"},
+    {"raw": "[1, 2]", "code": "bad_message"},
+    {"raw": "{\"cmd\": \"format_disk\"}", "code": "unknown_command"},
+    {"raw": "{}", "code": "unknown_command"}
+  ]
+}

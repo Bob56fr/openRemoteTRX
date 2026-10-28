@@ -451,8 +451,9 @@ def test_state_message_for_clients_and_status_file():
     svc._set("error", "no_answer", "Aucune réponse CI-V sur COM7. Mode normal : un seul port, sans waterfall HF.")
     link.state = SimpleNamespace(connected=True, frequency_hz=1, mode="USB", passband_hz=1, strength_db=0,
                                  functions={}, levels={}, ptt=False)
-    ctrl.snapshot = lambda: SimpleNamespace(state="RX", owner=None, tot_remaining_s=None, tot_warning=False,
-                                            last_cut_reason="", fault="")
+    from trxstation.gateway.safety.ptt import PttSnapshot
+    ctrl.snapshot = lambda: PttSnapshot(state="RX", owner=None, tot_remaining_s=None, tot_warning=False,
+                                        last_cut_reason="", fault="")
     ctrl.clients = []
     assert build_state(link, ctrl, None, svc)["spectrum"]["code"] == "no_answer"
     assert build_state(link, ctrl)["spectrum"]["state"] == "off"
