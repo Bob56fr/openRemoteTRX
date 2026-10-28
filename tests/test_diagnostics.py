@@ -268,3 +268,31 @@ def test_busy_sound_card_is_not_reported_as_a_switched_off_rig(tmp_path):
     sysm.commands["systemctl is-active trx-gateway"] = (0, "inactive\n")
     check = by_name(d.run_all(sysm, path), "Carte son (capture)")
     assert check.status == d.FAIL and "éteint" in check.fix                         # vraiment absente : erreur
+
+
+WPCTL_SINK = ('id 71, type PipeWire:Interface:Node\n  * alsa.card_name = "USB Audio CODEC"\n'
+              '  * node.description = "USB Audio CODEC Analog Stereo"\n')
+
+
+def test_rig_card_used_as_the_desktop_default_is_explained(tmp_path):
+    """Relevé sur Debian : la carte du poste était la sortie par défaut du bureau. Le diagnostic le dit, avec les
+    réglages à faire (Paramètres > Son)."""
+    sysm, path = healthy(tmp_path)
+    sysm.commands["pgrep -x pipewire"] = (0, "1234\n")
+    sysm.commands["wpctl inspect @DEFAULT_AUDIO_SINK@"] = (0, WPCTL_SINK)
+    sysm.commands["wpctl inspect @DEFAULT_AUDIO_SOURCE@"] = (0, 'alsa.card_name = "USB Camera"\n')
+    check = by_name(d.run_all(sysm, path), "Son du bureau (PipeWire)")
+    assert check.status == d.WARN and "sortie son par défaut" in check.message and "entrée" not in check.message
+    assert "Paramètres > Son" in check.fix
+    text = d.format_checks([check])
+    assert "\n         " in text                                                 # conseil sur plusieurs lignes, indenté
+    sysm.commands["wpctl inspect @DEFAULT_AUDIO_SINK@"] = (0, 'alsa.card_name = "HDA Intel PCH"\n')
+    assert by_name(d.run_all(sysm, path), "Son du bureau (PipeWire)").status == d.INFO
+
+
+def test_desktop_audio_advice_per_system():
+    from trxstation.audio_devices import card_name, desktop_audio_advice
+    assert "Paramètres > Son" in desktop_audio_advice("linux")
+    assert "Périphérique de communication par défaut" in desktop_audio_advice("win32")
+    assert card_name("USB Audio Device: - (hw:2,0)") == "USB Audio Device"
+    assert card_name("plughw:CARD=CODEC,DEV=0") == "CODEC"

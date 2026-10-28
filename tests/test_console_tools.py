@@ -25,7 +25,10 @@ class Runner:
                 path.write_text(self.edits.pop(0)(path.read_text(encoding="utf-8")), encoding="utf-8")
             return 0
         if cmd[0] == "install":                                    # sudo install : la copie validée remplace l'originale
+            Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
             Path(cmd[-1]).write_bytes(Path(cmd[-2]).read_bytes())
+        if cmd[:2] == ["rm", "-f"]:
+            Path(cmd[-1]).unlink(missing_ok=True)
         if cmd[:2] in (["systemctl", "restart"], ["systemctl", "start"]):
             self.running = True
         return self.code

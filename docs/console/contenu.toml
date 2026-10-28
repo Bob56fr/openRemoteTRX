@@ -56,6 +56,9 @@ d'aller plus loin (menu 14 pour retoucher la configuration, ou relance l'assista
 [[parcours]]
 titre = "Essayer le poste (menu 4)"
 texte = """
+<p>Avant tout, la carte son du poste ne doit <strong>pas</strong> être le son par défaut du PC : sous Debian,
+<em>Paramètres &gt; Son</em>, choisis en sortie les haut-parleurs du PC et en entrée son micro (sous Windows,
+<em>Paramètres &gt; Système &gt; Son</em>). Sinon le bureau occupe la carte et ses sons partent vers le poste.</p>
 <p>Commence par l'essai <strong>en réception seule</strong> (choix 1) : liaison CAT, son reçu, changement de
 fréquence et de mode, largeurs de filtre, spectre. Ensuite seulement, l'essai <strong>complet</strong> (choix 2)
 vérifie l'émission : <strong>charge fictive obligatoire</strong>, puissance réduite, confirmation demandée à
@@ -186,6 +189,13 @@ quand = "Une fois, après l'installation (puis une déconnexion et reconnexion),
 modifie = "Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état publié par la station : il ne peut rien commander."
 admin = false
 expert = "<p>Fichiers lus chaque seconde : <code>/run/trx-remote/gateway-status.json</code>, et dans <code>/var/lib/trx-remote/</code> : <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installée dans <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. Le menu de l'indicateur ouvre aussi la page web, TRX Console et le tableau de bord.</p>"
+
+[menus.profiles]
+role = "Profils de poste, pour qui pilote plusieurs TRX tour à tour : <strong>enregistrer</strong> la configuration du poste en service sous un nom (« IC-7300 maison »), la <strong>recharger</strong> plus tard, ou supprimer un profil. Le profil en service est signalé dans la liste."
+quand = "Après avoir configuré et essayé un poste (menus 2 et 4) : enregistre-le. Pour changer de poste : branche-le, charge son profil, la station redémarre avec lui."
+modifie = "Charger un profil ne change que les réglages du POSTE dans <code>station.toml</code> (modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le menu 14 (différences montrées, confirmation, ancienne version gardée). Comptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé pendant une émission."
+admin = true
+expert = "<p>Fichiers : <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Chaque profil porte un numéro de format. Un profil d'une ancienne version est converti au chargement quand c'est possible (une clé manquante prend sa valeur par défaut) ; sinon, ou s'il vient d'une version plus récente, il est refusé avec la marche à suivre : refaire la configuration de ce poste (menu 2) puis l'enregistrer de nouveau. Le fichier d'origine n'est jamais modifié au chargement.</p>"
 
 # ------------------------------------------------------------------ dépannage avancé
 

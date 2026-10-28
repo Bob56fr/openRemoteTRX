@@ -14,6 +14,36 @@ import subprocess
 import sys
 
 _UNSET = object()
+
+# Conseil affiché par le diagnostic et avant l'essai du poste : la carte son du poste ne doit pas servir au bureau.
+DESKTOP_AUDIO_ADVICE = {
+    "linux": ("La carte son du poste (souvent « USB Audio Device » ou « USB Audio CODEC ») ne doit pas être le son\n"
+              "par défaut du bureau : sinon le bureau l'occupe (la station ne peut plus l'ouvrir) et ses sons\n"
+              "(notifications, vidéos) partent vers le poste. Debian (GNOME) : Paramètres > Son :\n"
+              "  - Sortie : choisis les haut-parleurs ou le casque du PC (« Audio intégré », HDMI...) ;\n"
+              "  - Entrée : choisis le micro du PC ou une webcam.\n"
+              "Le réglage est retenu pour ta session ; refais-le si tu rebranches le poste dans un autre port USB."),
+    "win32": ("La carte son du poste (souvent « USB Audio CODEC ») ne doit pas être le son par défaut de Windows :\n"
+              "ses sons (notifications, vidéos) partiraient vers le poste. Windows : Paramètres > Système > Son :\n"
+              "  - Sortie : choisis les haut-parleurs ou le casque du PC ;\n"
+              "  - Entrée : choisis le micro du PC.\n"
+              "Puis « Plus de paramètres de son » : dans les onglets Lecture et Enregistrement, la carte du poste ne doit\n"
+              "être ni « Périphérique par défaut » ni « Périphérique de communication par défaut »."),
+}
+
+
+def desktop_audio_advice(platform: str | None = None) -> str:
+    platform = platform or sys.platform
+    return DESKTOP_AUDIO_ADVICE["win32" if platform.startswith("win") else "linux"]
+
+
+def card_name(spec: str) -> str:
+    """Nom (ou identifiant) de la carte : « USB Audio Device: - (hw:2,0) » -> « USB Audio Device » (PortAudio) ;
+    « plughw:CARD=CODEC,DEV=0 » -> « CODEC » (ALSA)."""
+    alsa = re.search(r"CARD=([^,]+)", spec)
+    if alsa:
+        return alsa.group(1).strip()
+    return spec.split(":", 1)[0].strip()
 _CARD_RE = re.compile(r"^card (\d+): (\S+) \[(.+?)\], device (\d+): (.+?) \[")
 HOSTAPI_PREFERENCE = ("WASAPI", "ALSA", "Core Audio", "MME", "DirectSound", "WDM-KS")
 

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
 from . import config as cfgmod
-from .audio_devices import list_audio_devices, parse_audio_list, real_device_names
+from .audio_devices import card_name, desktop_audio_advice, list_audio_devices, parse_audio_list, real_device_names
 from .config import Config
 from .fsperm import SERVICE_GROUP
 from .hamlib import find_tool
@@ -350,13 +350,24 @@ def _check_audio(sysm: System, cfg: Config | None) -> list[Check]:
                     out.append(Check(s, f"Carte son ({kind})", WARN,
                                      f"{name} : branchée ({card}) mais occupée par un autre programme, sans doute le son "
                                      "du bureau (PipeWire)",
-                                     "Dans les réglages du son du bureau, choisis une autre sortie et une autre entrée "
-                                     "que celles du poste, puis relance le diagnostic"))
+                                     desktop_audio_advice("linux") + "\nPuis relance le diagnostic."))
     code, _ = sysm.run(["pgrep", "-x", "pipewire"])
     if code == 0:
-        out.append(Check(s, "Son du bureau (PipeWire)", INFO,
-                         "actif : il peut occuper la carte son du poste quand une session est ouverte",
-                         "Si la station n'a pas de son, voir « Dépannage » dans le guide"))
+        specs = real_device_names(cfg.audio.capture_device, cfg.audio.playback_device) if cfg is not None else []
+        cards = {card_name(spec).lower() for spec in specs} - {""}
+        taken = []
+        for target, label in (("@DEFAULT_AUDIO_SINK@", "sortie"), ("@DEFAULT_AUDIO_SOURCE@", "entrée")):
+            code, text = sysm.run(["wpctl", "inspect", target])
+            if code == 0 and any(c and c in text.lower() for c in cards):
+                taken.append(label)
+        if taken:
+            out.append(Check(s, "Son du bureau (PipeWire)", WARN,
+                             f"la carte du poste est la {' et l'.join(taken)} son par défaut du bureau",
+                             desktop_audio_advice("linux")))
+        else:
+            out.append(Check(s, "Son du bureau (PipeWire)", INFO,
+                             "actif : il peut occuper la carte son du poste quand une session est ouverte",
+                             "Si la station n'a pas de son, voir « Dépannage » dans le guide"))
     return out
 
 
@@ -627,7 +638,7 @@ def format_checks(checks: Iterable[Check], color: bool = False) -> str:
             label = f"{COLORS[check.status]}{label}\033[0m"
         lines.append(f"  {label} {check.name} : {check.message}")
         if check.fix and check.status in (WARN, FAIL):
-            lines.append(f"      -> {check.fix}")
+            lines.append("      -> " + check.fix.replace("\n", "\n         "))
     lines.append(f"\nBilan : {counts[OK]} OK, {counts[WARN]} à surveiller, {counts[FAIL]} erreur(s).")
     if counts[FAIL] == 0 and counts[WARN] == 0:
         lines.append("Tout est vert.")

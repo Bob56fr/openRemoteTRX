@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import codecs
 import difflib
+import json
 import os
 import re
 import shutil
@@ -33,6 +34,7 @@ from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
 from .paths import default_state_dir
+from . import profiles as prof
 from .station_id import read_station_id
 from .update import apply as upd
 from .update.apply import previous_version
@@ -207,6 +209,7 @@ class Console:
             ("15", "Menu expert (tests automatiques du logiciel)", self.expert),
             ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
             ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
+            ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -301,6 +304,8 @@ class Console:
         if not self.config.exists():
             self.say("Configure d'abord la station (menu 2).")
             return
+        from .audio_devices import desktop_audio_advice
+        self.say("Avant l'essai, vérifie le son de l'ordinateur :\n" + desktop_audio_advice() + "\n")
         self.say("Essai sur le vrai poste :\n"
                  "  1) en réception seule (aucune émission) : CAT, audio reçu, accord, largeurs de filtre, écran du spectre\n"
                  "  2) complet : la même chose, puis l'émission (charge fictive, puissance réduite, confirmation à chaque étape)")
@@ -477,6 +482,159 @@ class Console:
             self._save_config(original, edited, draft)
         finally:
             shutil.rmtree(work, ignore_errors=True)
+
+    # ------------------------------------------------------------------ profils de poste (menu 18)
+
+    def profiles(self) -> None:
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        self._list_profiles()
+        self.say("\n  1) Enregistrer la configuration actuelle du poste sous un profil\n"
+                 "  2) Charger un profil (changer de poste)\n"
+                 "  3) Supprimer un profil\n"
+                 "  q) Retour")
+        choice = self.ask("Choix : ").strip().lower()
+        action = {"1": self._save_profile, "2": self._load_profile, "3": self._delete_profile}.get(choice)
+        if action is not None:
+            action()
+
+    def _list_profiles(self) -> list[tuple[Path, prof.Profile | None, str]]:
+        from . import config as cfgmod
+        found = prof.list_profiles(self.config)
+        self.say("Un profil garde ce qui dépend du POSTE : modèle, ports, PTT, cartes son, spectre. Les comptes, le réseau,\n"
+                 "les bandes autorisées et les sécurités appartiennent à la station : un profil n'y touche jamais.")
+        if not found:
+            self.say("\nAucun profil enregistré.")
+            return found
+        try:
+            current, _ = cfgmod.load_unchecked(self.config)
+        except (OSError, cfgmod.ConfigError):
+            current = None
+        self.say("\nProfils enregistrés :")
+        for number, (path, profile, problem) in enumerate(found, 1):
+            if profile is None:
+                self.say(f"  {number}) {path.name:<28} INUTILISABLE : {problem}")
+                continue
+            if profile.format > prof.PROFILE_FORMAT:
+                state = "version plus récente : mettre TRX distant à jour"
+            elif profile.format < prof.PROFILE_FORMAT:
+                state = "ancien format : converti au chargement"
+            else:
+                state = ""
+            rig = profile.sections.get("rig")
+            model = rig.get("model", "?") if isinstance(rig, dict) else "?"
+            here = "  <- poste en service" if current is not None and prof.same_rig(current, profile) else ""
+            self.say(f"  {number}) {profile.name:<28} modèle Hamlib {model}, enregistré le {profile.saved_at} "
+                     f"(version {profile.version}){' ; ' + state if state else ''}{here}")
+        return found
+
+    def _choose_profile(self, found, verb: str):
+        if not found:
+            return None
+        choice = self.ask(f"Numéro du profil à {verb} (Entrée = annuler) : ").strip()
+        if not choice.isdigit() or not 1 <= int(choice) <= len(found):
+            self.say("Annulé.")
+            return None
+        return found[int(choice) - 1]
+
+    def _save_profile(self) -> None:
+        from . import config as cfgmod
+        try:
+            cfg = cfgmod.load(self.config)
+        except (OSError, cfgmod.ConfigError) as exc:
+            self.say(f"Configuration actuelle invalide ou illisible : corrige-la d'abord (menu 14). ({exc})")
+            return
+        name = self.ask("Nom du profil (ex. IC-7300 maison ; Entrée = annuler) : ").strip()
+        if not name:
+            self.say("Annulé.")
+            return
+        if not prof.valid_name(name):
+            self.say("Nom refusé : 40 caractères au plus, lettres, chiffres, espaces et - _ . + seulement.")
+            return
+        target = prof.folder_for(self.config) / prof.file_name(name)
+        if target.exists() and not self.yes(f"Le profil {target.name} existe déjà : le remplacer", False):
+            self.say("Annulé : rien n'a été modifié.")
+            return
+        text = prof.render(name, cfg, self.installed, time.strftime("%Y-%m-%d %H:%M"))
+        work = Path(tempfile.mkdtemp(prefix="trx-profil-"))
+        try:
+            draft = work / target.name
+            draft.write_text(text, encoding="utf-8")
+            st = self.config.stat()
+            code = self.runner.run(["install", "-D", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid),
+                                    "-g", str(st.st_gid), str(draft), str(target)], admin=True)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        self.say(f"Profil « {name} » enregistré : {target}" if code == 0 else
+                 f"Enregistrement impossible (code {code}) : rien n'a été modifié.")
+
+    def _load_profile(self) -> None:
+        picked = self._choose_profile(self._list_profiles(), "charger")
+        if picked is None:
+            return
+        path, profile, problem = picked
+        if profile is None:
+            self.say(f"Profil inutilisable : {problem}")
+            return
+        if self.transmitting():
+            self.say("Refusé : le poste émet (ou son état est illisible). Charge le profil une fois revenu en réception.")
+            return
+        try:
+            original = self.config.read_bytes()
+            _, text = prof.apply(original.decode("utf-8"), profile)
+        except prof.ProfileError as exc:
+            self.say(f"Chargement impossible : {exc}")
+            return
+        except OSError as exc:
+            self.say(f"Lecture de {self.config} impossible ({exc}).")
+            return
+        if profile.format < prof.PROFILE_FORMAT:
+            self.say(f"Profil d'un ancien format ({profile.format}) converti au format {prof.PROFILE_FORMAT}. Vérifie les "
+                     "changements ci-dessous ; réenregistre-le ensuite (choix 1) pour ne plus avoir à le convertir.")
+        rig = profile.sections.get("rig")
+        port = str(rig.get("port", "")) if isinstance(rig, dict) else ""
+        if port and not Path(port).exists():
+            self.say(f"Attention : le port du poste {port} est absent pour l'instant (poste éteint ou pas encore branché ?).")
+        edited = text.encode("utf-8")
+        if edited == original:
+            self.say("Ce profil est déjà celui du poste en service : rien à changer.")
+            return
+        work = Path(tempfile.mkdtemp(prefix="trx-config-"))
+        try:
+            draft = work / "station.toml"
+            draft.write_bytes(edited)
+            os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
+            self.say(f"Chargement du profil « {profile.name} » : seules les sections [rig], [audio] et [spectrum] changent "
+                     "(station.toml est réécrit dans sa forme standard).")
+            self._save_config(original, edited, draft)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+    def _delete_profile(self) -> None:
+        picked = self._choose_profile(self._list_profiles(), "supprimer")
+        if picked is None:
+            return
+        path, profile, _ = picked
+        if not self.yes(f"Supprimer définitivement le profil {profile.name if profile else path.name}", False):
+            self.say("Annulé.")
+            return
+        code = self.runner.run(["rm", "-f", str(path)], admin=True)
+        self.say("Profil supprimé." if code == 0 else f"Suppression impossible (code {code}).")
+
+    def transmitting(self) -> bool:
+        """Émission en cours d'après l'état publié par la passerelle ; en cas de doute (état illisible), oui."""
+        from . import config as cfgmod
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            status_path = Path(cfg.supervisor.status_path)
+            if not status_path.exists() or time.time() - status_path.stat().st_mtime > 10:
+                return False                               # passerelle arrêtée : pas d'émission de la station
+            status = json.loads(status_path.read_text(encoding="utf-8"))
+            state, rig_keyed = status.get("ptt", {}).get("state", "RX"), status.get("rig", {}).get("ptt")
+        except (OSError, ValueError, AttributeError, cfgmod.ConfigError):
+            return True
+        return state != "RX" or rig_keyed is True                 # émission de la station ou au micro du poste
 
     def _save_config(self, original: bytes, edited: bytes, draft: Path) -> None:
         """Différences montrées, confirmation, sauvegarde de l'ancienne version, enregistrement par sudo avec les
