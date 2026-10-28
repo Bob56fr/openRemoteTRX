@@ -62,3 +62,10 @@ def test_pages_workflow_publishes_the_site_folder():
         pytest.skip("dépôt seulement (absent du paquet Debian)")
     workflow = path.read_text(encoding="utf-8")
     assert "path: docs/site" in workflow and "actions/deploy-pages" in workflow
+
+
+def test_help_text_for_the_terminal_is_plain_and_wrapped():
+    text = doc.html_to_text("<p>Un <strong>essai</strong> &amp; <code>trx-setup</code>.</p><ul><li>premier</li><li>second</li></ul>", width=30)
+    assert text == "Un essai & trx-setup.\n\n- premier\n- second"
+    long = doc.html_to_text("<p>" + "mot " * 40 + "</p>", width=30)
+    assert all(len(line) <= 30 for line in long.splitlines())

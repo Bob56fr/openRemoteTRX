@@ -42,6 +42,15 @@ object Radio {
         "PKTUSB" to "USB-D", "PKTLSB" to "LSB-D", "PKTFM" to "FM-D", "PKTAM" to "AM-D", "FM-D" to "FM-D", "AM-D" to "AM-D",
     )
 
+    /** Ordre d'affichage des modes (décision de l'utilisateur) : modes données d'abord, puis CW, puis les autres. */
+    private val MODE_ORDER = listOf(
+        "PKTUSB", "PKTLSB", "PKTAM", "AM-D", "PKTFM", "FM-D", "CW", "CWR", "USB", "LSB", "AM", "FM", "RTTY", "RTTYR",
+    )
+
+    /** Modes du poste dans l'ordre USB-D, LSB-D, AM-D, FM-D, CW… ; un mode inconnu de la liste garde son rang, à la fin. */
+    fun orderModes(modes: List<String>): List<String> =
+        modes.distinct().sortedBy { MODE_ORDER.indexOf(it).let { i -> if (i < 0) MODE_ORDER.size else i } }
+
     fun bandOf(hz: Long?): Band? = hz?.let { f -> BANDS.firstOrNull { f in it.lo..it.hi } }
 
     /** Libellé court d'un mode (PKTUSB -> USB-D). */

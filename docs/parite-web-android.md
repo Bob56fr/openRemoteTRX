@@ -16,7 +16,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Opérateur sur place, « Reprendre la main » | fait | fait | fait (A1) | champs dans `state.ptt` depuis 0.52.0 |
 | Alerte de température | fait | fait | fait (A1, bandeau) | |
 | Fréquence, bandes, clavier | fait | fait | fait (0.3.0) : saisie au clavier, crans −/+ et pas, 14 bandes avec mémoire de bande | mêmes règles (tests : bandes et pas comparés à client.js) ; glisser par chiffre : plus tard |
-| Modes, filtres | fait | fait | modes fait (0.3.0, modes d'émission rappelés) ; filtres à faire (A3) | bande => mode données si `tx_modes` l'exige |
+| Modes, filtres | fait | fait | modes fait (0.3.0, modes d'émission rappelés ; ordre USB-D, LSB-D, AM-D, FM-D, CW puis les autres depuis 0.3.1) ; filtres à faire (A3) | bande => mode données si `tx_modes` l'exige ; ordre des modes de la page : à aligner si l'utilisateur le veut |
 | S-mètre, Po, SWR, ALC | fait | fait | S-mètre en barre et en texte (0.3.0) ; Po, SWR, ALC à faire (A3) | |
 | Fonctions et niveaux du poste (NR NB P.AMP AGC COMP TUNER ATT…) | fait | fait | à faire (A3) | |
 | Mémoires partagées (`memories`) | fait | fait | liste et rappel faits (0.3.0) ; édition à faire (A3) | présélections d'Android Auto (A2) |

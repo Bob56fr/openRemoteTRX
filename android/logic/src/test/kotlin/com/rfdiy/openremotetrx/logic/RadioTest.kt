@@ -66,6 +66,15 @@ class RadioTest {
     }
 
     @Test
+    fun `ordre des modes - USB-D LSB-D AM-D FM-D CW puis les autres`() {
+        val rig = listOf("LSB", "USB", "AM", "CW", "RTTY", "FM", "WFM", "CWR", "RTTYR", "PKTLSB", "PKTUSB", "PKTAM", "PKTFM")
+        assertEquals(
+            listOf("PKTUSB", "PKTLSB", "PKTAM", "PKTFM", "CW", "CWR", "USB", "LSB", "AM", "FM", "RTTY", "RTTYR", "WFM"),
+            Radio.orderModes(rig),
+        )
+    }
+
+    @Test
     fun `memoires - favorites d'abord, puis frequence`() {
         val list = listOf(Memory("a", "B", 14_000_000, "USB"), Memory("b", "A", 7_000_000, "LSB"), Memory("c", "Z", 28_000_000, "USB", favorite = true))
         assertEquals(listOf("c", "b", "a"), Radio.sortMemories(list).map { it.id })

@@ -210,7 +210,7 @@ class Console:
             ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
             ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
             ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
-            ("19", "Appairer un téléphone (application Android : adresse, empreinte du certificat)", self.pairing),
+            ("19", "Appairer un téléphone (application Android : adresse, empreinte, QR code)", self.pairing),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -812,6 +812,31 @@ class Console:
             line += f"\n  ** Nouvelle version {release.version} disponible : menu 10 **"
         return line
 
+    def help_menu(self, key: str = "") -> None:
+        """Touche « h » : à quoi sert un menu, quand s'en servir, ce qu'il modifie. Mêmes textes que le mode d'emploi
+        en ligne (docs/console/contenu.toml), livrés avec la station dans console_help.json."""
+        if not key:
+            key = self.ask("Aide sur quel menu ? Numéro (Entrée = annuler) : ").strip()
+            if not key:
+                return
+        item = next(((k, label, fn) for k, label, fn in self.items if k == key), None)
+        if item is None:
+            self.say(f"Pas de menu {key} : choisir un numéro de 1 à {len(self.items)}.")
+            return
+        number, label, fn = item
+        texts = load_help().get(fn.__name__)
+        if not texts:
+            self.say(f"Aide indisponible pour le menu {number} : voir le mode d'emploi en ligne, {DOC_URL}")
+            return
+        out = [f"\nMenu {number} : {label}", "=" * min(76, len(label) + 10)]
+        for title, field in (("À quoi il sert", "role"), ("Quand l'utiliser", "quand"), ("Ce qu'il modifie", "modifie")):
+            if texts.get(field):
+                out += ["", title.upper(), texts[field]]
+        out += ["", "Droits d'administration (sudo) : " + ("oui, le mot de passe de session sera demandé" if texts.get("admin") else "non")]
+        if texts.get("expert"):
+            out += ["", "POUR ALLER PLUS LOIN", texts["expert"]]
+        self.say("\n".join(out))
+
     def loop(self) -> int:
         if not self.config.exists():
             self.say(self.header())
@@ -822,6 +847,7 @@ class Console:
             self.say(self.header())
             for key, label, _ in self.items:
                 self.say(f"  {key}) {label}")
+            self.say("  h) Aide sur un menu (ex. « h 19 »)")
             self.say("  q) Quitter")
             try:
                 choice = self.ask("Choix : ").strip().lower()
@@ -829,6 +855,14 @@ class Console:
                 return 0
             if choice in ("q", "quitter"):
                 return 0
+            asked = re.fullmatch(r"(?:h|aide|\?)\s*(\d*)", choice)
+            if asked:
+                try:
+                    self.help_menu(asked.group(1))
+                except EOFError:
+                    return 0
+                self.pause()
+                continue
             action = next((fn for key, _, fn in self.items if key == choice), None)
             if action is None:
                 self.say("Choix inconnu.")
@@ -840,6 +874,19 @@ class Console:
             except EOFError:                             # terminal fermé pendant une question : on quitte proprement
                 return 0
             self.pause()
+
+
+DOC_URL = "https://bob56fr.github.io/openRemoteTRX/console/"
+
+
+def load_help() -> dict[str, dict]:
+    """Textes de l'aide (touche h) par nom de méthode du menu ; {} si le fichier manque ou est illisible."""
+    try:
+        from importlib.resources import files
+        data = json.loads(files("trxstation").joinpath("console_help.json").read_text(encoding="utf-8"))
+        return data.get("menus", {}) if isinstance(data, dict) else {}
+    except (OSError, ValueError, ModuleNotFoundError):
+        return {}
 
 
 def main(argv: list[str] | None = None) -> int:

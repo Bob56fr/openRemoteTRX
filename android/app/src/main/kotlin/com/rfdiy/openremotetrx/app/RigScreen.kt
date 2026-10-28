@@ -185,7 +185,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
 
             // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
-            val modes = hello?.capabilities?.modes.orEmpty()
+            val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
             if (modes.isNotEmpty()) {
                 Section("Mode")
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

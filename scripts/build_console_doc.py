@@ -15,13 +15,17 @@ que la page publiée est à jour).
 from __future__ import annotations
 
 import html
+import json
 import re
 import sys
+import textwrap
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTENT = ROOT / "docs" / "console" / "contenu.toml"
+# Aide de la touche « h » de la console : mêmes textes, en texte simple, livrés avec la station (package-data).
+HELP = ROOT / "trxstation" / "console_help.json"
 SITE = ROOT / "docs" / "site"
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 SITE_URL = "https://www.rf-diy.com"
@@ -190,6 +194,36 @@ def render(version: str, menus: list[tuple[str, str, str]], content: dict, versi
     return "\n".join(out)
 
 
+def html_to_text(fragment: str, width: int = 76) -> str:
+    """HTML simple du contenu (p, ul, li, code, strong, em, a) -> texte pour le terminal, coupé à `width`."""
+    text = re.sub(r"\s+", " ", fragment)
+    text = re.sub(r"<li[^>]*>", "\n- ", text, flags=re.I)
+    text = re.sub(r"</(p|ul|ol)\s*>", "\n\n", text, flags=re.I)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
+    text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    lines: list[str] = []
+    for para in text.split("\n"):
+        para = para.strip()
+        if not para:
+            if lines and lines[-1] != "":
+                lines.append("")
+            continue
+        # typographie française : jamais de « : ; ? ! » ni de guillemet seuls en début ou fin de ligne
+        para = re.sub(r" ([:;?!»])", " \\1", para).replace("« ", "« ")
+        lines.append(textwrap.fill(para, width, subsequent_indent="  " if para.startswith("- ") else "",
+                                   break_on_hyphens=False, break_long_words=False).replace(" ", " "))
+    return "\n".join(lines).strip()
+
+
+def help_json(content: dict) -> str:
+    """Contenu de trxstation/console_help.json : pour chaque menu, ses explications en texte simple."""
+    menus = {}
+    for name, fields in content.get("menus", {}).items():
+        menus[name] = {key: html_to_text(fields.get(key, "")) for key in ("role", "quand", "modifie", "expert")}
+        menus[name]["admin"] = bool(fields.get("admin"))
+    return json.dumps({"menus": menus}, ensure_ascii=False, indent=1, sort_keys=True) + "\n"
+
+
 def published_versions(site: Path = SITE) -> list[str]:
     folder = site / "console"
     found = [p.name for p in folder.iterdir() if p.is_dir() and VERSION_DIR.match(p.name)] if folder.is_dir() else []
@@ -208,7 +242,8 @@ def build(site: Path = SITE, version: str | None = None) -> dict[Path, str]:
             '<p><a style="color:#4c9be8" href="console/">Mode d\'emploi de TRX Console</a></p></body></html>\n')
     return {site / "console" / "index.html": render(version, menus, content, versions),
             site / "console" / version / "index.html": render(version, menus, content, versions, up="../"),
-            site / "index.html": home}
+            site / "index.html": home,
+            HELP: help_json(content)}
 
 
 def main() -> int:

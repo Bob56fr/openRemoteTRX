@@ -2,6 +2,7 @@
 # Fabriqué par : python scripts/build_console_doc.py  (résultat dans docs/site/console/).
 # La LISTE des menus vient du code (trxstation/console.py) ; ici, seulement les explications. Chaque menu de la console
 # doit avoir sa section [menus.<nom de la méthode>] : sinon la fabrication et les tests échouent.
+# Ces textes servent AUSSI à l'aide de la touche « h » de la console (trxstation/console_help.json, fabriqué par le même script).
 # Texte en HTML simple (p, ul, li, code, strong, em, a). Aucun script, aucune image ni ressource externe.
 # Exemples génériques uniquement : jamais d'adresse IP, de nom de machine, de port réel ni de clé.
 
@@ -12,6 +13,8 @@ intro = """
 relié au poste. Elle sert à installer et configurer la station, la démarrer, l'essayer, la mettre à jour et la
 dépanner. Elle s'ouvre depuis le menu des applications (« TRX Console ») ou en tapant <code>trx-console</code>
 dans un terminal.</p>
+<p><strong>Un doute sur un menu ?</strong> Tape <code>h</code> puis son numéro (ou directement <code>h 19</code>) :
+la console affiche, sans rien lancer, à quoi sert ce menu, quand s'en servir et ce qu'il modifie (les textes de cette page).</p>
 <p>Elle n'émet jamais d'elle-même : les seuls menus qui peuvent faire passer le poste en émission sont l'essai
 complet (menu 4, avec confirmation à chaque étape) et, bien sûr, la station une fois démarrée, pilotée depuis la page web.</p>
 """

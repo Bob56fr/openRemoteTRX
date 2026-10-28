@@ -1,0 +1,137 @@
+{
+ "menus": {
+  "assistant": {
+   "admin": true,
+   "expert": "Le poste n'est interrogé qu'en lecture. Une configuration importée d'une\nancienne station (station.import.toml) sert de point de départ.",
+   "modifie": "station.toml (seulement si tu vas au bout). La station est arrêtée pendant\nl'assistant puis redémarrée à la demande.",
+   "quand": "Au premier déploiement, ou pour tout reprendre (changement de poste,\nd'interface audio, de PC).",
+   "role": "Assistant de configuration : poste, ports, PTT, cartes son, bandes\nautorisées, accès réseau, comptes. Écrit station.toml."
+  },
+  "clear_safe_mode": {
+   "admin": true,
+   "expert": "Le mode sûr survit aux redémarrages et aux corrections : il faut le lever\nexplicitement ici.",
+   "modifie": "Efface le mode sûr mémorisé et redémarre la station.",
+   "quand": "Seulement après avoir trouvé et corrigé la cause (menus 1 et 7).",
+   "role": "Sort du mode sûr. Le superviseur y place la station après des pannes\nrépétées : poste en réception, accès coupé."
+  },
+  "cluster": {
+   "admin": true,
+   "expert": "",
+   "modifie": "La section Cluster de station.toml ; redémarrage proposé ensuite.",
+   "quand": "Pour afficher les spots sur le spectre et les pastilles des boutons de bande\ndans la page.",
+   "role": "Réglages du Cluster DX : spots suivis, sources (RBN, serveurs telnet, web),\nfiltres, essai des sources."
+  },
+  "diagnostic": {
+   "admin": false,
+   "expert": "Même résultat sans le menu : trx-console --diagnostic (code de sortie\ndifférent de 0 en cas d'échec, utilisable dans un script).",
+   "modifie": "Rien. Aucune commande au poste, aucune émission.",
+   "quand": "Après l'installation, après chaque changement, et en premier réflexe dès que\nquelque chose ne va pas.",
+   "role": "Contrôle complet de la station, en lecture seule : système, logiciels,\nconfiguration, matériel (ports série, cartes son), services, spectre HF,\nCluster DX, accès réseau et mises à jour."
+  },
+  "edit_config": {
+   "admin": true,
+   "expert": "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les\ncopies de sauvegarde s'appellent\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.",
+   "modifie": "station.toml, seulement si la copie est valide : elle est vérifiée, les\ndifférences sont montrées, une confirmation est demandée et l'ancienne\nversion est gardée à côté. Une configuration invalide n'est jamais écrite.",
+   "quand": "Pour un réglage précis sans relancer tout l'assistant.",
+   "role": "Modifie station.toml dans l'éditeur nano, sur une copie."
+  },
+  "expert": {
+   "admin": true,
+   "expert": "Le résultat est enregistré sur le Bureau\n(trx-remote-tests-AAAAMMJJ-HHMM.txt) : transmets ce fichier si des tests\néchouent. L'outil de test (pytest) est installé au premier usage (Internet\nnécessaire).\n\nLes points s'affichent au fur et à mesure ; sans rien de nouveau pendant une\nminute, la console rappelle que les tests continuent. Un test vraiment\nbloqué 10 minutes affiche la pile de ses fils d'exécution : c'est ce qu'il\nfaut transmettre (Ctrl+C arrête les tests).",
+   "modifie": "Rien. Les tests utilisent un poste simulé : aucune commande au vrai poste,\naucune émission. La station est arrêtée pendant les tests (7 à 10 minutes\nsur un PC récent, 30 minutes ou plus sur un petit PC) puis relancée à la\ndemande.",
+   "quand": "Pour aider au débogage, ou vérifier qu'une installation est saine.",
+   "role": "Menu expert : lance toute la suite de tests automatiques du logiciel sur la\nstation."
+  },
+  "hwtest": {
+   "admin": true,
+   "expert": "Le résumé final de l'essai s'affiche à l'écran : copie-le dans ta demande\nd'aide. Les réponses tapées ne tiennent compte ni des majuscules ni des\naccents (« emettre », « Émettre » et « EMETTRE » sont acceptés).",
+   "modifie": "Rien dans la configuration. Le choix 2 fait émettre le poste : charge\nfictive, puissance réduite, confirmation (taper EMETTRE) à chaque étape. La\nstation est arrêtée pendant l'essai.",
+   "quand": "Après l'assistant, après un changement de câble ou d'interface audio, ou\npour qualifier un nouveau poste.",
+   "role": "Essai guidé du vrai poste. Choix 1 : réception seule (CAT, son reçu, accord,\nlargeurs de filtre, écran du spectre). Choix 2 : la même chose puis\nl'émission."
+  },
+  "indicator": {
+   "admin": false,
+   "expert": "Fichiers lus chaque seconde : /run/trx-remote/gateway-status.json, et dans\n/var/lib/trx-remote/ : safe_mode, cluster/status.json, update/latest.json,\nstation-id. Extension installée dans\n/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com. Le menu de\nl'indicateur ouvre aussi la page web, TRX Console et le tableau de bord.",
+   "modifie": "Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état\npublié par la station : il ne peut rien commander.",
+   "quand": "Une fois, après l'installation (puis une déconnexion et reconnexion), pour\ngarder un œil sur la station en permanence.",
+   "role": "Active ou désactive l'indicateur de la barre du haut (bureau GNOME) : un\nvoyant à gauche du son (vert réception, rouge émission, orange alerte, gris\nstation arrêtée, violet mode sûr), la fréquence ou le compte à rebours\nd'émission, et au clic l'état complet : émission, fréquence et filtre,\nclients web connectés, liaison avec le poste, opérateur sur place, dernière\ncoupure, température, alimentation, spectre HF, Cluster DX, mise à jour\ndisponible, version et identifiant."
+  },
+  "install_zip": {
+   "admin": true,
+   "expert": "Déposer le zip ne suffit pas : il faut l'installer ici. Compte-rendu :\n/var/log/trx-remote-install.log.",
+   "modifie": "Comme le menu 10 : nouvelle version à côté de l'ancienne, configuration\nconservée. Un paquet non signé demande de taper OUI puis le numéro de\nversion.",
+   "quand": "Station sans Internet, version d'essai, ou retour à une version précise.",
+   "role": "Installe une version à partir d'un fichier trx-remote-debian-X.Y.Z.zip\ndéposé sur le Bureau, dans Téléchargements ou dans le dossier personnel."
+  },
+  "journal": {
+   "admin": true,
+   "expert": "Journal complet : journalctl -u trx-gateway -u trx-supervisor -u rigctld\n--since \"1 hour ago\".",
+   "modifie": "Rien.",
+   "quand": "Quand le diagnostic signale un service en échec, ou pour comprendre une\ncoupure d'émission.",
+   "role": "Affiche les 80 dernières lignes du journal des services de la station."
+  },
+  "monitor": {
+   "admin": false,
+   "expert": "",
+   "modifie": "Rien, sauf une touche : STOP TX force la réception. Le tableau de bord ne\npeut jamais faire émettre.",
+   "quand": "Pour surveiller la station sur place, ou pendant un essai.",
+   "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal."
+  },
+  "pairing": {
+   "admin": false,
+   "expert": "Même affichage en ligne de commande : trx-setup --output\n/etc/trx-remote/station.toml --empreinte. Si le certificat n'est lisible que\npar la station, la console le relit avec les droits d'administration.\nStation limitée à cette machine (boucle locale) : aucun téléphone ne peut\ns'y connecter, la console le dit. Derrière un proxy HTTPS, l'empreinte à\népingler est celle du certificat du proxy (pas de QR code). Le QR code est\ndessiné pour un terminal à fond sombre ; l'application lit aussi un terminal\nclair. S'il n'apparaît pas (paquet « segno » absent), réinstaller la station\n(menu 13) ou saisir l'empreinte à la main.",
+   "modifie": "Rien : lecture seule.",
+   "quand": "Au moment d'ajouter la station dans l'application Android, et après avoir\nrefait le certificat (menu 2).",
+   "role": "Affiche ce qu'il faut pour appairer l'application Android avec cette\nstation : l'adresse à saisir, les comptes autorisés, l'empreinte du\ncertificat (SHA-256, sur deux lignes), puis un QR code à scanner avec\nl'application (« Scanner le QR code de la station ») : il remplit l'adresse,\nl'identifiant et l'empreinte. S'il y a plusieurs adresses ou plusieurs\ncomptes, la console demande lesquels mettre dans le QR code (Entrée = choix\nproposé). Ni le QR code ni l'écran ne contiennent de mot de passe : la\nstation ne les connaît pas en clair, il se saisit dans l'application."
+  },
+  "profiles": {
+   "admin": true,
+   "expert": "Fichiers : /etc/trx-remote/profils/<nom>.toml. Chaque profil porte un numéro\nde format. Un profil d'une ancienne version est converti au chargement quand\nc'est possible (une clé manquante prend sa valeur par défaut) ; sinon, ou\ns'il vient d'une version plus récente, il est refusé avec la marche à\nsuivre : refaire la configuration de ce poste (menu 2) puis l'enregistrer de\nnouveau. Le fichier d'origine n'est jamais modifié au chargement.",
+   "modifie": "Charger un profil ne change que les réglages du POSTE dans station.toml\n(modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le\nmenu 14 (différences montrées, confirmation, ancienne version gardée).\nComptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé\npendant une émission.",
+   "quand": "Après avoir configuré et essayé un poste (menus 2 et 4) : enregistre-le.\nPour changer de poste : branche-le, charge son profil, la station redémarre\navec lui.",
+   "role": "Profils de poste, pour qui pilote plusieurs TRX tour à tour : enregistrer la\nconfiguration du poste en service sous un nom (« IC-7300 maison »), la\nrecharger plus tard, ou supprimer un profil. Le profil en service est\nsignalé dans la liste."
+  },
+  "report": {
+   "admin": false,
+   "expert": "Sans le menu : trx-console --rapport. Le fichier station.toml du rapport a\nses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si\ntu le souhaites.",
+   "modifie": "Rien (un fichier est créé sur le Bureau).",
+   "quand": "Pour demander de l'aide : joins ce zip à ta demande.",
+   "role": "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic,\njournaux, configuration sans aucun mot de passe, versions, matériel détecté,\nrapports envoyés depuis la page, identifiant de la station."
+  },
+  "rollback": {
+   "admin": true,
+   "expert": "",
+   "modifie": "La version active. La configuration est conservée.",
+   "quand": "Si la nouvelle version pose problème.",
+   "role": "Revient à la version précédente, gardée lors de la dernière mise à jour,\nsans Internet."
+  },
+  "start": {
+   "admin": true,
+   "expert": "",
+   "modifie": "L'état des services. Le poste est toujours remis en réception au démarrage.",
+   "quand": "Après la configuration, après une modification, ou si la page web ne répond\nplus.",
+   "role": "Démarre (ou redémarre) la station : rigctld, passerelle, superviseur."
+  },
+  "stop": {
+   "admin": true,
+   "expert": "",
+   "modifie": "L'état des services. Le poste reste en réception.",
+   "quand": "Avant de brancher ou débrancher le poste ou l'interface audio, ou pour\nutiliser un autre logiciel sur le poste.",
+   "role": "Arrête la station."
+  },
+  "temperature": {
+   "admin": true,
+   "expert": "Sans effet si le poste ne donne pas sa température par Hamlib (cas de\nl'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce\nmotif.",
+   "modifie": "Les clés rig_temp_warn_c et rig_temp_cut_c de station.toml, par le même\nchemin vérifié que le menu 14.",
+   "quand": "Si ton poste chauffe en usage normal (modes numériques en continu, par\nexemple) ou pour plus de prudence.",
+   "role": "Seuils de température du poste : premier seuil (avertissement dans la page\net notification), second seuil (émission à distance coupée et refusée\njusqu'au retour sous le premier seuil). 40 et 50 °C par défaut."
+  },
+  "update": {
+   "admin": true,
+   "expert": "",
+   "modifie": "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 11).\nstation.toml et les certificats sont conservés. Refusé tant que le poste\német. Il faut taper le numéro de version pour confirmer.",
+   "quand": "Quand l'en-tête du menu annonce « Nouvelle version disponible ».",
+   "role": "Mise à jour par Internet : affiche la nouvelle version, ses notes, puis\nl'installe après vérification de sa signature."
+  }
+ }
+}

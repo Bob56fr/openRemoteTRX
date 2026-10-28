@@ -126,3 +126,33 @@ def test_pairing_menu_shows_what_the_android_app_needs_and_falls_back_to_admin_r
     con.pairing()
     command, admin = fake.calls[0]
     assert admin and command[-1] == "--empreinte" and "trxstation.setup_wizard" in command
+
+
+def test_help_key_explains_a_menu_without_running_it(tmp_path):
+    con, fake, out = console(tmp_path)
+    con.help_menu("19")
+    text = "\n".join(out)
+    assert "Menu 19 : Appairer un téléphone" in text and "À QUOI IL SERT" in text and "QR code" in text
+    assert "<" not in text and fake.calls == []                        # texte simple, rien n'est lancé
+    con, fake, out = console(tmp_path, answers=["6"])                  # numéro demandé
+    con.help_menu("")
+    assert "Menu 6 : Arrêter la station" in "\n".join(out) and "oui" in "\n".join(out) and fake.calls == []
+    con, _, out = console(tmp_path)
+    con.help_menu("99")
+    assert "Pas de menu 99" in out[-1]
+
+
+def test_every_menu_has_help_text_shipped_with_the_station(tmp_path):
+    import trxstation.console as module
+    con, _, _ = console(tmp_path)
+    texts = module.load_help()
+    for key, label, fn in con.items:
+        assert texts.get(fn.__name__, {}).get("role"), f"menu {key} « {label} » sans aide (lancer scripts/build_console_doc.py)"
+
+
+def test_loop_offers_h_and_returns_to_the_menu(tmp_path):
+    write_config(tmp_path)
+    con, fake, out = console(tmp_path, answers=["h 2", "", "q"])
+    assert con.loop() == 0
+    text = "\n".join(out)
+    assert "h) Aide sur un menu" in text and "Menu 2 : Assistant de configuration" in text and fake.calls == []
