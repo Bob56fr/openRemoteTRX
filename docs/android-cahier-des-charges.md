@@ -186,7 +186,8 @@ Décidé par l'utilisateur :
 4. `minSdk` 29 (Android 10).
 5. Nom affiché : **openRemoteTRX**. Identifiant du paquet (`applicationId`) : `com.rfdiy.openremotetrx` (confirmé ; ne plus jamais le changer : ce serait une autre application).
 6. `hello.features` : accepté, fait au lot A0.
+7. (2026-10-29) Android Auto : doit marcher avec TOUTES les voitures compatibles, pas seulement celle de l'utilisateur : session média standard (aucun code propre à une voiture), filaire et sans fil ; développement avec le simulateur « Desktop Head Unit » d'Android Studio, essai final sur une vraie voiture.
+8. (2026-10-29) PTT au volant : touche **Lecture/Pause** (touches média du volant ou d'un bouton Bluetooth), en appui simple, à activer explicitement dans les réglages (désactivée par défaut), « Émission autorisée » toujours exigée, bip et « ÉMISSION EN COURS ».
 
 Restent ouvertes :
-- Voiture : compatible Android Auto ? filaire ou sans fil ? (seulement pour le lot A2)
-- Bouton matériel de PTT (bouton Bluetooth au volant, touches média) : voulu ? Par sécurité, AUCUNE touche média ne commande le PTT par défaut (une touche « lecture/pause » pressée par erreur, ou envoyée par la voiture à la connexion, ne doit jamais faire émettre) ; l'utilisateur choisit explicitement la touche qui sert de PTT, et la prise d'émission par bouton est confirmée par un bip.
+- (rien de bloquant pour A2.) Rappel de sécurité pour la touche Lecture/Pause : Par sécurité, AUCUNE touche média ne commande le PTT par défaut (une touche « lecture/pause » pressée par erreur, ou envoyée par la voiture à la connexion, ne doit jamais faire émettre) ; l'utilisateur choisit explicitement la touche qui sert de PTT, et la prise d'émission par bouton est confirmée par un bip.

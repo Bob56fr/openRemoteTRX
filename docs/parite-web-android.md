@@ -15,11 +15,11 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Appel entrant pendant l'émission => STOP | — | absent (navigateur) | fait (A1), à essayer sur le téléphone | perte du focus audio |
 | Opérateur sur place, « Reprendre la main » | fait | fait | fait (A1) | champs dans `state.ptt` depuis 0.52.0 |
 | Alerte de température | fait | fait | fait (A1, bandeau) | |
-| Fréquence, bandes, clavier | fait | fait | à faire (A3) | cas d'essai à partager (saisie, bandes) |
-| Modes, filtres | fait | fait | à faire (A3) | |
-| S-mètre, Po, SWR, ALC | fait | fait | S-mètre en texte (A1) ; le reste à faire (A3) | |
+| Fréquence, bandes, clavier | fait | fait | fait (0.3.0) : saisie au clavier, crans −/+ et pas, 14 bandes avec mémoire de bande | mêmes règles (tests : bandes et pas comparés à client.js) ; glisser par chiffre : plus tard |
+| Modes, filtres | fait | fait | modes fait (0.3.0, modes d'émission rappelés) ; filtres à faire (A3) | bande => mode données si `tx_modes` l'exige |
+| S-mètre, Po, SWR, ALC | fait | fait | S-mètre en barre et en texte (0.3.0) ; Po, SWR, ALC à faire (A3) | |
 | Fonctions et niveaux du poste (NR NB P.AMP AGC COMP TUNER ATT…) | fait | fait | à faire (A3) | |
-| Mémoires partagées (`memories`) | fait | fait | à faire (A2 lecture, A3 édition) | présélections d'Android Auto |
+| Mémoires partagées (`memories`) | fait | fait | liste et rappel faits (0.3.0) ; édition à faire (A3) | présélections d'Android Auto (A2) |
 | Bips de fin (`beeps`) | fait | fait | à faire (A3) | |
 | Rapport de problème (`bug_report`) | fait | fait | à faire (A3) | |
 | Android Auto, commande vocale, touches du volant | — | absent volontairement | à faire (A2) | |

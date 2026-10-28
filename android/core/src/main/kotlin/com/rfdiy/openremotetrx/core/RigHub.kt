@@ -51,6 +51,14 @@ object RigHub {
 
     fun releaseLocal() { service?.onRig { session, now -> session.releaseLocal(now) } }
 
+    fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }
+
+    fun setMode(mode: String) { service?.onRig { session, now -> session.setMode(now, mode) } }
+
+    fun selectBand(key: String) { service?.onRig { session, now -> session.selectBand(now, key) } }
+
+    fun recallMemory(id: String) { service?.onRig { session, now -> session.recallMemory(now, id) } }
+
     fun setMuted(on: Boolean) { service?.setMuted(on) ?: publish { it.copy(muted = on) } }
 
     fun disconnect(context: Context) {

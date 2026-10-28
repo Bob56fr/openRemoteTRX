@@ -6,6 +6,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import com.rfdiy.openremotetrx.logic.BandSpot
 import java.security.KeyStore
 import java.util.UUID
 import javax.crypto.Cipher
@@ -95,5 +96,23 @@ private object Secrets {
         String(cipher.doFinal(data, 12, data.size - 12), Charsets.UTF_8)
     } catch (e: Exception) {
         null
+    }
+}
+
+/** Mémoire des bandes, par station : « 20=14074000:USB;40=7100000:LSB ». Illisible = vide (BandMemory refait le tri). */
+class BandStore(context: Context) {
+    private val prefs = context.getSharedPreferences("bands", Context.MODE_PRIVATE)
+
+    fun load(stationId: String): Map<String, BandSpot> =
+        (prefs.getString(stationId, "") ?: "").split(';').mapNotNull { item ->
+            val (key, value) = item.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+            val (hz, mode) = value.split(':', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+            val f = hz.toLongOrNull() ?: return@mapNotNull null
+            if (!mode.matches(Regex("[A-Za-z0-9-]{1,16}"))) return@mapNotNull null
+            key to BandSpot(f, mode)
+        }.toMap()
+
+    fun save(stationId: String, spots: Map<String, BandSpot>) {
+        prefs.edit().putString(stationId, spots.entries.joinToString(";") { "${it.key}=${it.value.hz}:${it.value.mode}" }).apply()
     }
 }

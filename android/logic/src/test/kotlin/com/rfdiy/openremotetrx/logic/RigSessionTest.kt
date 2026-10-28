@@ -237,3 +237,44 @@ class RigSessionTest {
         assertEquals(LinkStatus.CONNECTED, s.snapshot.status)
     }
 }
+
+class RigSessionRadioTest {
+    private val helloTx = """{"type":"hello","protocol":1,"client_id":"phone","tx_modes":["PKTUSB","PKTLSB"],""" +
+        """"capabilities":{"modes":["USB","LSB","PKTUSB","PKTLSB"]},""" +
+        """"memories":[{"id":"m1","name":"FT8","hz":14074000,"mode":"PKTUSB"},{"id":"m2","name":"Fav","hz":28400000,"mode":"USB","favorite":true}]}"""
+
+    private fun session(spots: Map<String, BandSpot> = emptyMap()): Pair<RigSession, FakeLink> {
+        val link = FakeLink()
+        val s = RigSession(link, spots) { 0L }
+        s.begin(0, 30)
+        s.onMessage(0, helloTx)
+        s.onMessage(0, """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"frequency_hz":7100000,"mode":"LSB"}}""")
+        return s to link
+    }
+
+    @Test
+    fun `bande - frequence puis mode donnees exige par l'emission`() {
+        val (s, link) = session()
+        s.selectBand(10, "20")
+        assertTrue(link.sent.any { it.contains("\"set_frequency\"") && it.contains("14200000") })
+        assertTrue(link.sent.any { it.contains("\"set_mode\"") && it.contains("PKTUSB") })
+    }
+
+    @Test
+    fun `memoires de la station triees, mise a jour par le message memories`() {
+        val (s, _) = session()
+        assertEquals(listOf("m2", "m1"), s.snapshot.memories.map { it.id })
+        s.onMessage(5, """{"type":"memories","items":[{"id":"m3","name":"X","hz":3700000,"mode":"LSB"}]}""")
+        assertEquals(listOf("m3"), s.snapshot.memories.map { it.id })
+    }
+
+    @Test
+    fun `memoire des bandes enregistree apres 1,5 s sur une frequence`() {
+        val (s, _) = session()
+        var saved: Map<String, BandSpot>? = null
+        s.onBandSpots = { saved = it }
+        s.onMessage(2000, """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"frequency_hz":7100000,"mode":"LSB"}}""")
+        assertEquals(BandSpot(7_100_000, "LSB"), saved?.get("40"))
+        assertEquals(BandSpot(7_100_000, "LSB"), s.snapshot.bandSpots["40"])
+    }
+}

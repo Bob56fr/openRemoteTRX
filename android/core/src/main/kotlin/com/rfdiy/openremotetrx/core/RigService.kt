@@ -92,6 +92,7 @@ class RigService : Service() {
             override fun alert(kind: LinkAlert) = sounds.play(kind)
         })
         session.onChange = { state -> onState(state) }
+        session.onBandSpots = { spots -> request?.let { BandStore(this).save(it.account.id, spots) } }
         RigHub.service = this
         createChannel()
     }
@@ -110,7 +111,7 @@ class RigService : Service() {
                     request = req
                     RigHub.publish { it.copy(station = req.account, micAllowed = req.useMic) }
                     applyMute()
-                    session.begin(now(), req.account.reconnectWindowS)
+                    session.begin(now(), req.account.reconnectWindowS, BandStore(this).load(req.account.id))
                     startTicker()
                 }
             }

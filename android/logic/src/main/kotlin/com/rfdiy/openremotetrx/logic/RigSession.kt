@@ -5,6 +5,7 @@ package com.rfdiy.openremotetrx.logic
 import com.rfdiy.openremotetrx.protocol.Command
 import com.rfdiy.openremotetrx.protocol.ErrorMessage
 import com.rfdiy.openremotetrx.protocol.Hello
+import com.rfdiy.openremotetrx.protocol.Memory
 import com.rfdiy.openremotetrx.protocol.Memories
 import com.rfdiy.openremotetrx.protocol.Protocol
 import com.rfdiy.openremotetrx.protocol.ProtocolException
@@ -35,6 +36,10 @@ data class RigState(
     val reconnect: ReconnectInfo? = null,
     val rttMs: Int? = null,
     val log: List<LogLine> = emptyList(),
+    /** Mémoires partagées de la station, favorites d'abord. */
+    val memories: List<Memory> = emptyList(),
+    /** Dernière fréquence et dernier mode par bande (gardés sur le téléphone). */
+    val bandSpots: Map<String, BandSpot> = emptyMap(),
 )
 
 /**
@@ -57,10 +62,18 @@ interface SessionLink {
  * Sécurité : l'émission affichée vient TOUJOURS de `state.ptt` ; le micro n'est ouvert qu'en TX confirmé de ce
  * téléphone ; après une reconnexion, le téléphone est en réception et désarmé ; STOP est toujours permis.
  */
-class RigSession(private val link: SessionLink, private val wall: () -> Long = System::currentTimeMillis) {
+class RigSession(
+    private val link: SessionLink,
+    bandSpots: Map<String, BandSpot> = emptyMap(),
+    private val wall: () -> Long = System::currentTimeMillis,
+) {
     var snapshot = RigState()
         private set
     var onChange: ((RigState) -> Unit)? = null
+    /** Mémoire des bandes modifiée : à enregistrer par l'application. */
+    var onBandSpots: ((Map<String, BandSpot>) -> Unit)? = null
+    private var bands = BandMemory(bandSpots)
+    private var memories: List<Memory> = emptyList()
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -88,8 +101,12 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
 
     // ------------------------------------------------------------------ connexion
 
-    /** Connexion demandée par l'utilisateur. `windowS` : fenêtre de reconnexion automatique (0 = aucune). */
-    fun begin(now: Long, windowS: Int) {
+    /**
+     * Connexion demandée par l'utilisateur. `windowS` : fenêtre de reconnexion automatique (0 = aucune) ;
+     * `bandSpots` : mémoire des bandes de CETTE station (null = garder l'actuelle).
+     */
+    fun begin(now: Long, windowS: Int, bandSpots: Map<String, BandSpot>? = null) {
+        if (bandSpots != null) bands = BandMemory(bandSpots)
         teardown()
         reconnect = null
         this.windowS = windowS.coerceIn(0, ReconnectPolicy.MAX_WINDOW_S)
@@ -180,10 +197,11 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
             is State -> {
                 state = msg
                 afterState()
+                if (bands.observe(now, msg.rig.frequencyHz, msg.rig.mode)) onBandSpots?.invoke(bands.spots)
             }
             is Result -> onResult(now, msg)
             is ErrorMessage -> log("Erreur de la station : ${msg.code}" + (if (msg.detail.isNotEmpty()) " (${msg.detail})" else ""), LogLevel.WARN)
-            is Memories -> Unit                                  // mémoires : lot suivant
+            is Memories -> memories = Radio.sortMemories(msg.items)
             else -> Unit                                         // type inconnu ou non affiché : ignoré
         }
         publish(now)
@@ -193,6 +211,7 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
         helloDeadline = null
         attemptActive = false
         hello = msg
+        memories = Radio.sortMemories(msg.memories)
         status = LinkStatus.CONNECTED
         arming.onConnected()                                     // toujours désarmé à la connexion
         lastPing = now
@@ -316,6 +335,33 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
         publish(now)
     }
 
+    // ------------------------------------------------------------------ réglages du poste (la station valide tout)
+
+    fun setFrequency(now: Long, hz: Long) = control(now, Command.SetFrequency(hz.coerceIn(Radio.MIN_HZ, Radio.MAX_HZ)))
+
+    fun setMode(now: Long, mode: String) = control(now, Command.SetMode(mode))
+
+    fun recallMemory(now: Long, id: String) = control(now, Command.MemoryRecall(id))
+
+    /** Bande : dernière fréquence et dernier mode utilisés, sinon le point de départ ; mode données si l'émission l'exige. */
+    fun selectBand(now: Long, key: String) {
+        val h = hello ?: return
+        val (hz, mode) = Radio.bandTarget(bands.spots, key, h.txModes, h.capabilities?.modes.orEmpty()) ?: return
+        control(now, Command.SetFrequency(hz))
+        if (mode != null && mode != state?.rig?.mode) control(now, Command.SetMode(mode))
+    }
+
+    private fun control(now: Long, command: Command) {
+        if (!connected) return
+        if (!protocolOk) {
+            log("Version de protocole inconnue : réglages impossibles (STOP reste permis).", LogLevel.WARN)
+            publish(now)
+            return
+        }
+        send(now, command)
+        publish(now)
+    }
+
     // ------------------------------------------------------------------ interne
 
     private fun send(now: Long, command: Command) {
@@ -354,6 +400,7 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
         silenceAlerted = false
         hello = null
         state = null
+        memories = emptyList()
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -382,6 +429,8 @@ class RigSession(private val link: SessionLink, private val wall: () -> Long = S
             },
             rttMs = rttMs,
             log = log.toList(),
+            memories = memories,
+            bandSpots = bands.spots,
         )
         if (next != snapshot) {
             snapshot = next
