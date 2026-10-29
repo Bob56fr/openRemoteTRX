@@ -195,9 +195,12 @@
       this.clip.connect(this.monitor); this.monitor.connect(ctx.destination);
       this.bypass = ctx.createGain();
       this.input.connect(this.bypass); this.playIn.connect(this.bypass);
-      this.bypass.connect(this.limiter);
+      this.tail = ctx.createGain();                         // fin de chaîne : scrambler éventuel (scrambler.js) puis limiteur
+      this.tail.connect(this.limiter);
+      this.scrambler = null;
+      this.bypass.connect(this.tail);
       this.processed = ctx.createGain();
-      this.processed.connect(this.limiter);
+      this.processed.connect(this.tail);
       try {
         this._build();
       } catch (e) {
@@ -322,6 +325,14 @@
       } catch (e) {
         this._fail(e);
       }
+    }
+
+    setScrambler(node) {
+      /* Scrambler (nœud AudioWorklet « trx-scrambler ») inséré juste avant le limiteur, ou retiré (null). */
+      try { this.tail.disconnect(); } catch (e) { /* déjà débranché */ }
+      if (this.scrambler && this.scrambler !== node) { try { this.scrambler.disconnect(); } catch (e) { /* déjà débranché */ } }
+      this.scrambler = node || null;
+      if (this.scrambler) { this.tail.connect(this.scrambler); this.scrambler.connect(this.limiter); } else this.tail.connect(this.limiter);
     }
 
     setTx(on) {

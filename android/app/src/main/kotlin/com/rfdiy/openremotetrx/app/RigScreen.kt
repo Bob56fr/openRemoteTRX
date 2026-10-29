@@ -48,6 +48,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -70,6 +71,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.core.RigHub
+import com.rfdiy.openremotetrx.core.VoiceHub
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.logic.Band
 import com.rfdiy.openremotetrx.logic.Controls
@@ -119,6 +121,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     // Réglages du poste : seulement en réception (la station les refuse pendant l'émission, comme la page).
     val canSet = connected && rig.protocolOk && (rig.state?.ptt?.state ?: "RX") == "RX"
     val context = LocalContext.current
+    val voice by VoiceHub.ui.collectAsState()
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
     var keepTx by remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
@@ -458,6 +461,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 if (cv.stale) Text(cv.staleText, color = WARN, style = MaterialTheme.typography.bodySmall)
             } }
                 }
+                Tab.EQ -> VoiceTab(transmitting = ptt?.transmitting == true) { content -> Panel(content) }
                 Tab.REGLAGES -> {
             // Journal
             Panel {
@@ -508,7 +512,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk)
                     Spacer(Modifier.width(8.dp))
-                    Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "")
+                    Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
+                    // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Égaliseur »)
+                    val eqOn = voice.settings.enabled
+                    CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
+                        onLongClick = { tab = Tab.EQ })
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val pttEnabled = connected && rig.protocolOk && ui.micAllowed && (mineTx || (ptt?.transmitting != true && rig.armed))
@@ -782,7 +790,7 @@ private fun Banner(text: String, color: Color, big: Boolean = false, textColor: 
 
 /** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
 private enum class Tab(val symbol: String, val label: String) {
-    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), REGLAGES("⚙", "Réglages"),
+    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), EQ("♫", "Égaliseur"), REGLAGES("⚙", "Réglages"),
 }
 
 /** Barre d'onglets compacte (52 dp) : l'onglet choisi sur fond « sélection », comme les boutons de la page. */

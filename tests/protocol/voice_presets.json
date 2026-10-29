@@ -1,0 +1,353 @@
+{
+ "_note": "Préréglages de la voix exportés par la page (voice.js, exportJson) : l application (VoiceEq) doit retrouver exactement les mêmes réglages. Régénérer : voir tests/js/voice_test.js.",
+ "presets": {
+  "neutre": {
+   "format": "openremotetrx-voice",
+   "version": 1,
+   "enabled": true,
+   "highpassHz": 100,
+   "lowpassHz": 3000,
+   "bands": [
+    {
+     "hz": 100,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": true
+    },
+    {
+     "hz": 160,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 250,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 370,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 570,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 880,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 1350,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 2100,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 3250,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 5000,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": true
+    }
+   ],
+   "chorus": {
+    "on": false,
+    "type": "classic",
+    "mix": 30,
+    "rateHz": 0.8,
+    "depthMs": 3
+   },
+   "reverb": {
+    "on": false,
+    "type": "room",
+    "mix": 20,
+    "seconds": 0.5
+   },
+   "mic": {
+    "gainDb": 0,
+    "gateOn": false,
+    "gateDb": -50
+   }
+  },
+  "dx": {
+   "format": "openremotetrx-voice",
+   "version": 1,
+   "enabled": true,
+   "highpassHz": 250,
+   "lowpassHz": 2800,
+   "bands": [
+    {
+     "hz": 100,
+     "gainDb": -6,
+     "q": 1.4,
+     "shelf": true
+    },
+    {
+     "hz": 160,
+     "gainDb": -4,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 250,
+     "gainDb": -2,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 370,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 570,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 880,
+     "gainDb": 1,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 1350,
+     "gainDb": 3,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 2100,
+     "gainDb": 5,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 3250,
+     "gainDb": 4,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 5000,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": true
+    }
+   ],
+   "chorus": {
+    "on": false,
+    "type": "classic",
+    "mix": 30,
+    "rateHz": 0.8,
+    "depthMs": 3
+   },
+   "reverb": {
+    "on": false,
+    "type": "room",
+    "mix": 20,
+    "seconds": 0.5
+   },
+   "mic": {
+    "gainDb": 0,
+    "gateOn": false,
+    "gateDb": -50
+   }
+  },
+  "ragchew": {
+   "format": "openremotetrx-voice",
+   "version": 1,
+   "enabled": true,
+   "highpassHz": 100,
+   "lowpassHz": 3000,
+   "bands": [
+    {
+     "hz": 100,
+     "gainDb": 2,
+     "q": 1.4,
+     "shelf": true
+    },
+    {
+     "hz": 160,
+     "gainDb": 3,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 250,
+     "gainDb": 2,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 370,
+     "gainDb": 1,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 570,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 880,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 1350,
+     "gainDb": 1,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 2100,
+     "gainDb": 1,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 3250,
+     "gainDb": 0,
+     "q": 1.4,
+     "shelf": false
+    },
+    {
+     "hz": 5000,
+     "gainDb": -2,
+     "q": 1.4,
+     "shelf": true
+    }
+   ],
+   "chorus": {
+    "on": false,
+    "type": "classic",
+    "mix": 30,
+    "rateHz": 0.8,
+    "depthMs": 3
+   },
+   "reverb": {
+    "on": false,
+    "type": "room",
+    "mix": 20,
+    "seconds": 0.5
+   },
+   "mic": {
+    "gainDb": 0,
+    "gateOn": false,
+    "gateDb": -50
+   }
+  }
+ },
+ "defaults": {
+  "format": "openremotetrx-voice",
+  "version": 1,
+  "enabled": false,
+  "highpassHz": 100,
+  "lowpassHz": 3000,
+  "bands": [
+   {
+    "hz": 100,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": true
+   },
+   {
+    "hz": 160,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 250,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 370,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 570,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 880,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 1350,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 2100,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 3250,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": false
+   },
+   {
+    "hz": 5000,
+    "gainDb": 0,
+    "q": 1.4,
+    "shelf": true
+   }
+  ],
+  "chorus": {
+   "on": false,
+   "type": "classic",
+   "mix": 30,
+   "rateHz": 0.8,
+   "depthMs": 3
+  },
+  "reverb": {
+   "on": false,
+   "type": "room",
+   "mix": 20,
+   "seconds": 0.5
+  },
+  "mic": {
+   "gainDb": 0,
+   "gateOn": false,
+   "gateDb": -50
+  }
+ }
+}

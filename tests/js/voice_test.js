@@ -87,13 +87,19 @@ test("réglages validés : bornes, bandes complètes, coupe-haut au-dessus du co
 });
 
 test("hors émission : rien vers la station ; en émission : sortie ouverte ; limiteur toujours présent", () => {
-  const { chain: c } = chain(vx.PRESETS.dx.make());
+  const { chain: c, ctx } = chain(vx.PRESETS.dx.make());
   assert.equal(c.toStation.gain.value, 0);
   assert.equal(c.input.gain.value, 0);
   c.setTx(true);
   assert.equal(c.toStation.gain.value, 1);
   assert.equal(c.input.gain.value, 1);
-  assert.ok(c.bypass.out.has(c.limiter) && c.processed.out.has(c.limiter) && c.limiter.out.has(c.clip) && c.clip.out.has(c.toStation));
+  assert.ok(c.bypass.out.has(c.tail) && c.processed.out.has(c.tail) && c.tail.out.has(c.limiter) && c.limiter.out.has(c.clip) && c.clip.out.has(c.toStation))
+  // scrambler (scrambler.js) : inséré juste avant le limiteur, puis retiré ; le limiteur reste toujours en bout de chaîne
+  const scr = ctx.createGain();
+  c.setScrambler(scr);
+  assert.ok(c.tail.out.has(scr) && scr.out.has(c.limiter) && !c.tail.out.has(c.limiter));
+  c.setScrambler(null);
+  assert.ok(c.tail.out.has(c.limiter) && !c.tail.out.has(scr) && !scr.out.has(c.limiter));
   const curve = c.clip.curve;
   assert.ok(Math.max(...curve) <= Math.pow(10, vx.LIMIT_DBFS / 20) + 1e-6);         // jamais au-dessus du plafond
 });
@@ -191,6 +197,12 @@ test("micro : gain appliqué, porte de bruit réglable (atténue sans couper, ma
 });
 
 let failed = 0;
+test("préréglages partagés avec l'application (tests/protocol/voice_presets.json) : identiques à ceux de la page", () => {
+  const shared = JSON.parse(fs.readFileSync(path.join(__dirname, "../protocol/voice_presets.json"), "utf-8"));
+  for (const [key, p] of Object.entries(vx.PRESETS)) assert.deepEqual(JSON.parse(vx.exportJson(p.make())), shared.presets[key], key);
+  assert.deepEqual(JSON.parse(vx.exportJson(vx.defaults())), shared.defaults);
+});
+
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }
 }

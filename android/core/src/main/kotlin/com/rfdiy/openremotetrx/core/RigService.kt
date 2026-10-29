@@ -95,6 +95,7 @@ class RigService : Service() {
     override fun onCreate() {
         super.onCreate()
         sounds = LinkSounds(this)
+        VoiceHub.load(this)
         val prefs = getSharedPreferences(RigHub.PREFS, MODE_PRIVATE)
         headsetMic = prefs.getBoolean(RigHub.PREF_HEADSET_MIC, false)
         val processing = com.rfdiy.openremotetrx.logic.MicProfiles.processing(

@@ -16,6 +16,7 @@ import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
 import org.webrtc.AudioTrackSink
 import org.webrtc.DataChannel
+import org.webrtc.ExternalAudioProcessingFactory
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
@@ -49,6 +50,9 @@ class RtcLink(
     private val processing: MicProcessing = MicProcessing(echo = true, noise = true),
 ) {
     private val factory: PeerConnectionFactory
+    // Égaliseur et effets de voix (VoiceHub) : après l'annulation d'écho, avant l'encodage Opus. Créé APRÈS le chargement
+    // de la bibliothèque native ; s'il échoue, la liaison marche sans égaliseur (jamais de plantage pour lui).
+    private var voiceFx: ExternalAudioProcessingFactory? = null
     private var generation = 0
     private var pc: PeerConnection? = null
     private var dc: DataChannel? = null
@@ -72,7 +76,18 @@ class RtcLink(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
             )
             .createAudioDeviceModule()
-        factory = PeerConnectionFactory.builder().setAudioDeviceModule(adm).createPeerConnectionFactory()
+        voiceFx = try {
+            ExternalAudioProcessingFactory().apply {
+                setCapturePostProcessing(VoiceHub.processor)
+                setBypassFlagForCapturePost(false)
+            }
+        } catch (e: Throwable) {                                   // UnsatisfiedLinkError compris
+            VoiceHub.unavailable("Égaliseur indisponible sur ce téléphone (${e.javaClass.simpleName}) : voix sans traitement.")
+            null
+        }
+        factory = PeerConnectionFactory.builder().setAudioDeviceModule(adm)
+            .apply { voiceFx?.let { setAudioProcessingFactory(it) } }
+            .createPeerConnectionFactory()
     }
 
     /**
@@ -199,6 +214,7 @@ class RtcLink(
 
     fun setMicOpen(open: Boolean) {
         micTrack?.setEnabled(open)
+        VoiceHub.setTx(open)                                        // traîne coupée, relecture arrêtée à la prise
     }
 
     /** Sourdine de la réception (le volume se règle par les touches « média » du téléphone). */
@@ -218,6 +234,7 @@ class RtcLink(
     fun close() {
         generation++
         micTrack?.setEnabled(false)
+        VoiceHub.setTx(false)
         dc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         dc = null
         sc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
@@ -235,6 +252,7 @@ class RtcLink(
     fun release() {
         close()
         runCatching { factory.dispose() }
+        runCatching { voiceFx?.destroy() }
     }
 
     private fun closedBy(gen: Int, code: String) {

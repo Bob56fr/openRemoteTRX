@@ -45,7 +45,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Version du logiciel sur l'écran de connexion | — | en pied de page | fait (0.13.0) | |
 | Voyants de l'afficheur (ATT / P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB, NR) | fait | fait (0.56.0, `indicatorsView`) | fait (0.10.1-0.11.0) | |
 | Bandes préférées | — | fait (0.56.0 : cases à cocher, ordre du plan) | fait (0.9.0 : choix et ordre) | |
-| Égaliseur paramétrique 10 bandes, chorus, réverbération, limiteur, écoute de contrôle, enregistrement et relecture, bouton EQ direct, préréglages, export / import JSON | — (côté client) | fait (0.57.0, `voice.js`) | à faire (A3 ; vecteurs `tests/protocol/voice_vectors.json`) | |
+| Égaliseur paramétrique 10 bandes, chorus, réverbération, limiteur, écoute de contrôle, enregistrement et relecture, bouton EQ direct, préréglages, export / import JSON | — (côté client) | fait (0.57.0, `voice.js`) | fait (0.22.0 : onglet « Égaliseur », bouton EQ ; écoute de contrôle en direct NON faite, enregistrement et relecture seulement) | vecteurs communs `voice_vectors.json`, `voice_presets.json` |
 | Profil du micro (pièce calme / bruyante, micro-casque avec ou sans réduction de bruit, personnalisé) | compte les trous (`tx_underruns`) | fait (0.58.0 ; appliqué tout de suite si le navigateur le permet) | fait (0.16.0 ; à la connexion suivante) | coupures en émission, 2026-10-29 |
 | Gain du micro, porte de bruit réglable, niveau du micro | — | fait (0.58.0, `voice.js`) | à faire (A3, avec l'égaliseur) | |
 | SELCALL : indicateur, armer / réarmer / désactiver, historique, filtrage des tonalités, dernier appel, bip à l'ouverture | fait (0.61.0 : commandes `selcall_*`, message `selcall`) | fait (0.61.0) | fait (0.17.0) | lot 4 du cahier SELCALL |
