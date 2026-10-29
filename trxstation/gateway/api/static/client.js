@@ -361,11 +361,20 @@
   // « OVERLOAD ALC ». Même seuil que le réglage automatique de la station (selcall/calibrate.py) et l'application.
   const ALC_OVERLOAD = 0.5;
 
+  function vfoLabel(vfo) {
+    /* VFO actif tel que Hamlib le nomme -> texte du voyant ; rien si absent ou sans signification (currVFO). */
+    if (typeof vfo !== "string" || !/^[A-Za-z][A-Za-z0-9_]{0,11}$/.test(vfo) || /^(currVFO|None)$/i.test(vfo)) return "";
+    const names = { VFOA: "VFO A", VFOB: "VFO B", VFOC: "VFO C", MEM: "MEM", MAIN: "MAIN", SUB: "SUB" };
+    return names[vfo.toUpperCase()] || vfo.toUpperCase();
+  }
+
   function indicatorsView(fn, lv, rig, caps) {
-    /* Voyants de l'afficheur (comme l'application) : ATT ou P.AMP n ou rien ; RIT ; ΔTX ; SPLIT ; NOTCH ; NB ; NR.
-       Seuls ceux dont la station publie l'état ; allumé = actif. */
+    /* Voyants de l'afficheur (comme l'application) : VFO actif (postes qui le disent : Yaesu FTDX10/101...) ; ATT ou
+       P.AMP n ou rien ; RIT ; ΔTX ; SPLIT ; NOTCH ; NB ; NR. Seuls ceux dont la station publie l'état ; allumé = actif. */
     fn = fn || {}; lv = lv || {}; rig = rig || {};
     const out = [];
+    const vfo = vfoLabel(rig.vfo);
+    if (vfo) out.push({ label: vfo, on: true });
     if (lv.ATT > 0) out.push({ label: "ATT", on: true });
     else if (lv.PREAMP > 0) out.push({ label: "P.AMP " + preampNumber(lv.PREAMP, caps && caps.preamps), on: true });
     if ("RIT" in fn) out.push({ label: "RIT", on: !!fn.RIT });
@@ -1716,6 +1725,6 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD };
+                indicatorsView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

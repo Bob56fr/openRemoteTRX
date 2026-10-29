@@ -91,6 +91,16 @@ class IndicatorsTest {
     }
 
     @Test
+    fun `voyant du VFO actif en tete, comme la page`() {
+        val s = com.rfdiy.openremotetrx.protocol.ServerMessages.decode(
+            """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"vfo":"VFOB","functions":{"NB":true}}}"""
+        ) as com.rfdiy.openremotetrx.protocol.State
+        assertEquals(listOf("VFO B", "NB"), Indicators.of(null, s).map { it.label })
+        assertEquals("SUB", Indicators.vfoLabel("Sub"))
+        listOf(null, "", "currVFO", "<b>x</b>").forEach { assertEquals("", Indicators.vfoLabel(it)) }
+    }
+
+    @Test
     fun `voyants du clarifieur et du split, dans l'ordre voulu`() {
         val s = com.rfdiy.openremotetrx.protocol.ServerMessages.decode(
             """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"functions":{"NB":true,"RIT":false,"XIT":true,"ANF":false},

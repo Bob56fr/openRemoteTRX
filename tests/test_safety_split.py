@@ -125,3 +125,19 @@ def test_link_publishes_split_and_offsets():
             fake.split = 0
             await until(lambda: link.state.split is False and link.state.tx_frequency_hz is None)
     run(scenario)
+
+
+def test_link_publishes_the_active_vfo_and_gives_up_when_the_rig_cannot_say():
+    # Yaesu FTDX10 / FTDX101 : VFO lisible (« VFO: VFOA ») ; IC-7300MK2 : RPRT -11 => lecture abandonnée, voyant absent
+    async def scenario(fake):
+        async with station(fake) as (ctrl, link, gate):
+            await until(lambda: link.state.vfo == "VFOA")
+            fake.vfo = "VFOB"
+            await until(lambda: link.state.vfo == "VFOB")
+            fake.vfo = None
+            await until(lambda: link.state.vfo is None)
+            asked = fake.count("v")
+            await asyncio.sleep(0.3)
+            assert fake.count("v") == asked                   # plus jamais redemandé
+            assert ctrl.snapshot().state == "RX"              # simple lecture : aucun effet sur le PTT
+    run(scenario)

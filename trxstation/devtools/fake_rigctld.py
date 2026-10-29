@@ -34,6 +34,7 @@ class FakeRigctld:
         self.rit = 0
         self.xit = 0
         self.ptt = 0
+        self.vfo = "VFOA"          # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
         self.delay_s = 0.0
@@ -158,6 +159,10 @@ class FakeRigctld:
             if key == "Z" and args:
                 self.xit = int(args[0])
                 return f"set_xit: {args[0]}\nRPRT 0\n"
+            if key == "v":
+                if self.vfo is None:
+                    return "RPRT -11\n"
+                return f"get_vfo:\n{self._out('VFO', self.vfo)}RPRT 0\n"
             if key == "t":
                 return f"get_ptt:\n{self._out('PTT', self.ptt)}RPRT 0\n"
             if key == "T":

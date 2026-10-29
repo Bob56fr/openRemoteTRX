@@ -44,6 +44,7 @@ class RigState:
     split: bool | None = None          # split en service ; None = inconnu (poste qui ne le dit pas)
     tx_frequency_hz: int | None = None  # fréquence d'ÉMISSION en split ; None hors split ou inconnue
     offsets: dict = field(default_factory=dict)     # « RIT », « XIT » -> décalage en Hz (affichage ; la sécurité relit le poste)
+    vfo: str | None = None             # VFO actif (VFOA, VFOB, MEM, Main, Sub) ; None = non lisible (IC-7300MK2)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -52,7 +53,7 @@ class RigState:
         return (self.connected, self.frequency_hz, self.mode, self.passband_hz,
                 self.strength_db, self.ptt, self.last_error,
                 tuple(sorted(self.functions.items())), tuple(sorted(self.levels.items())),
-                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())))
+                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())), self.vfo)
 
 
 class CatLink:
@@ -185,6 +186,16 @@ class CatLink:
             except CatProtocolError as exc:
                 changes["split"] = changes["tx_frequency_hz"] = None
                 self._disable("s", "SPLIT", str(exc))
+        if "s:VFO" not in self._disabled:              # VFO actif (affichage seul ; lecture abandonnée si le poste ne le dit pas)
+            try:
+                changes["vfo"] = await self.client.get_vfo()
+            except RigError as exc:
+                changes["vfo"] = None
+                if exc.code in PERMANENT_ERRORS:
+                    self._disable("s", "VFO", f"RPRT {exc.code}")
+            except CatProtocolError as exc:
+                changes["vfo"] = None
+                self._disable("s", "VFO", str(exc))
         if changes.get("ptt") is False:                 # fin d'émission : les mesures d'émission ne sont plus d'actualité
             stale = {k: v for k, v in self._state.levels.items() if k not in (POWER_METER, *TX_METERS)}
             if len(stale) != len(self._state.levels):
@@ -230,7 +241,7 @@ class CatLink:
         key = f"{kind}:{name}"
         if key not in self._disabled:
             self._disabled.add(key)
-            what = {"f": "fonction", "l": "niveau", "o": "décalage", "s": "split"}.get(kind, kind)
+            what = {"f": "fonction", "l": "niveau", "o": "décalage", "s": "lecture"}.get(kind, kind)
             log.info("lecture de %s (%s) abandonnée pour ce poste (%s)", name, what, why)
         if kind == "s":
             return

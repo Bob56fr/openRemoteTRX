@@ -113,6 +113,8 @@ data class RigStatus(
     @SerialName("tx_frequency_hz") val txFrequencyHz: Long? = null,
     /** Décalages du clarifieur : « RIT », « XIT » (ΔTX) en Hz. */
     val offsets: Map<String, Int> = emptyMap(),
+    /** VFO actif tel que Hamlib le nomme (VFOA, VFOB, MEM, Main, Sub) ; null = non lisible (IC-7300MK2). Station 0.65.0+. */
+    val vfo: String? = null,
 )
 
 @Serializable

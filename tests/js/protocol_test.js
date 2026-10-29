@@ -39,6 +39,16 @@ test("voyants comme l'application : ATT ou P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB,
   assert.deepEqual(web.indicatorsView({}, {}, {}, {}), []);                              // rien de publié : aucun voyant
 });
 
+test("voyant du VFO actif : en tête, seulement si la station le lit (Yaesu FTDX10/101 oui, IC-7300MK2 non)", () => {
+  const rig = messages.state.rig;
+  assert.deepEqual(web.indicatorsView({}, {}, rig, {})[0], { label: "VFO A", on: true });
+  assert.equal(web.vfoLabel("VFOB"), "VFO B");
+  assert.equal(web.vfoLabel("Sub"), "SUB");
+  assert.equal(web.vfoLabel("MEM"), "MEM");
+  for (const nothing of [null, undefined, "", "currVFO", "<b>x</b>", 3]) assert.equal(web.vfoLabel(nothing), "");
+  assert.deepEqual(web.indicatorsView({}, {}, { vfo: null }, {}), []);
+});
+
 test("profils du micro : contrôle automatique de gain toujours coupé ; casque à réduction de bruit = rien du navigateur", () => {
   for (const key of Object.keys(web.MIC_PROFILES)) assert.equal(web.micConstraints(key, {}).autoGainControl, false);
   assert.deepEqual(web.micConstraints("headset_nr"), { echoCancellation: false, noiseSuppression: false, autoGainControl: false });

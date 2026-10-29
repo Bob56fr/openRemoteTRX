@@ -46,7 +46,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
                 "passband_hz": rig.passband_hz, "strength_db": rig.strength_db,
                 "functions": dict(rig.functions), "levels": dict(rig.levels),
                 # split (fréquence d'émission = autre VFO) et décalages du clarifieur (RIT, XIT = ΔTX) ; None = inconnu
-                "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets)},
+                "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets),
+                "vfo": rig.vfo},
         "audio": pipeline.stats() if pipeline is not None else {},
         "clients": ctrl.clients,
         "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},

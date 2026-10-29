@@ -33,6 +33,7 @@ from .hamlib import find_tool
 from .migrate import is_desktop
 from .passwords import generate_password, hash_password, password_problem
 from .ports import list_serial_ports
+from .rig_hints import RigHint, hint_for, port_label, port_role, windows_port_advice
 from .spectrum.probe import USB_SEND_WARNING, CheckFailed, CivPort, check, detect_address, open_serial
 
 TEST_TCP_PORT = 4533  # port temporaire, distinct de celui du service (4532)
@@ -340,6 +341,43 @@ def data_modes_for_model(model: int, hamlib_dir: str = "", *, dump=_run_dump_cap
     return found or list(ALL_DATA_MODES)
 
 
+def apply_rig_hint(cfg: Config, hint: RigHint, *, data_modes: Callable[[], list[str]],
+                   yes_no_fn: Callable[[str, bool], bool] | None = None, say: Callable[[str], None] = print) -> None:
+    """Poste connu de l'assistant (Yaesu FTDX10/101...) : menus du poste à régler, puis modes d'émission permis.
+
+    Fail-safe : sans réponse « oui » explicite, émission limitée aux modes données (sinon le poste modulerait avec son
+    propre micro, celui de la pièce, et non avec l'audio du client)."""
+    yes_no_fn = yes_no_fn or ask_yes_no
+    say(f"\n{hint.name} : réglages du poste conseillés (NON VALIDÉS sur un vrai poste, docs/postes/) :")
+    for line in hint.checklist:
+        say(f"  - {line}")
+    if yes_no_fn(hint.usb_voice_question, False):
+        cfg.rig.tx_modes = []
+        say("Émission permise dans tous les modes (la voix part par l'USB).")
+    else:
+        cfg.rig.tx_modes = data_modes()
+        say("Émission limitée aux modes données : " + ", ".join(cfg.rig.tx_modes)
+            + " (relancer trx-setup après avoir réglé le poste pour l'ouvrir aux autres modes).")
+
+
+def choose_cat_port(ports: list[str], current: str, *, chooser: Callable[..., str] | None = None,
+                    yes_no_fn: Callable[[str, bool], bool] | None = None, say: Callable[[str], None] = print) -> str:
+    """Port CAT. Double port CP2105 (Yaesu...) : « Enhanced » proposé en tête ; « Standard » refusé sauf confirmation."""
+    chooser, yes_no_fn = chooser or choose, yes_no_fn or ask_yes_no
+    ordered = sorted(ports, key=lambda p: {"enhanced": 0, "": 1, "standard": 2}[port_role(p)])
+    if sys.platform == "win32" and ports:
+        say(windows_port_advice())
+    while True:
+        port = chooser("Port CAT du TRX (de préférence /dev/serial/by-id/...)",
+                       [(p, port_label(p)) for p in ordered], current=current)
+        if port_role(port) != "standard":
+            return port
+        say("ATTENTION : ce port est le « Standard COM Port » (PTT/CW par RTS/DTR) : le poste n'y répond pas en CAT et "
+            "ses lignes RTS/DTR peuvent le mettre en émission.")
+        if yes_no_fn("Le prendre quand même", False):
+            return port
+
+
 def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Config:
     """Questions de configuration. `base` : configuration existante, dont chaque réglage est repris par défaut
     (comptes, alertes, bandes, sécurité... ne sont jamais perdus en relançant l'assistant)."""
@@ -363,13 +401,15 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
             if ask_yes_no("Limiter l'émission à ces modes données (recommandé)", True):
                 cfg.rig.tx_modes = data_modes_for_model(cfg.rig.model, cfg.tools.hamlib_dir)
                 print("Modes d'émission permis : " + ", ".join(cfg.rig.tx_modes))
+    hint = hint_for(cfg.rig.model)                         # poste connu de l'assistant (Yaesu FTDX10/101...)
+    if hint is not None and not keep_model:
+        apply_rig_hint(cfg, hint, data_modes=lambda: data_modes_for_model(cfg.rig.model, cfg.tools.hamlib_dir))
 
     if cfg.rig.model != DUMMY_MODEL:
-        ports = list_serial_ports()
-        cfg.rig.port = choose("Port CAT du TRX (de préférence /dev/serial/by-id/...)",
-                              [(p, p) for p in ports], current=cfg.rig.port)
-        speed = ask("Débit série (Entrée = " + (f"{cfg.rig.speed}" if cfg.rig.speed else "défaut Hamlib du modèle") + ")",
-                    str(cfg.rig.speed) if cfg.rig.speed else "auto")
+        cfg.rig.port = choose_cat_port(list_serial_ports(), cfg.rig.port)
+        default_speed = cfg.rig.speed or (hint.speed if hint else None)
+        speed = ask("Débit série (Entrée = " + (f"{default_speed}" if default_speed else "défaut Hamlib du modèle") + ")",
+                    str(default_speed) if default_speed else "auto")
         cfg.rig.speed = int(speed) if speed.isdigit() else None
 
         ptt = choose("Méthode PTT", [("RIG", "CAT (commande envoyée au poste)"),

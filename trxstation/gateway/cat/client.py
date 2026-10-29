@@ -30,6 +30,7 @@ INT_LEVELS = {"AGC": (0, 6), "PREAMP": (0, 30), "ATT": (0, 60)}   # AGC : 0 OFF 
 FLOAT_LEVELS = {"SQL": (0.0, 1.0), "NR": (0.0, 1.0), "NB": (0.0, 10.0)}
 _HEADER_RE = re.compile(r"^(get|set)_[a-z_]+:")        # écho de la commande : « get_level: STRENGTH »
 
+VFO_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,11}")
 RIG_ENIMPL = -4    # non implémenté par le backend
 RIG_ENAVAIL = -11  # fonction indisponible sur ce poste
 HAMLIB_ERRORS = {
@@ -201,6 +202,14 @@ class RigctldClient:
             return int(float(raw)) != 0
         except ValueError:
             raise CatProtocolError(f"split illisible : {raw!r}") from None
+
+    async def get_vfo(self) -> str:
+        """VFO actif (« VFO: VFOA » sur un vrai rigctld : VFOA, VFOB, MEM, Main, Sub...). RigError si le poste ne le dit pas
+        (IC-7300MK2 : RPRT -11)."""
+        raw = self._pick(await self._command("v"), "VFO", "#1", command="v")
+        if not VFO_RE.fullmatch(raw):
+            raise CatProtocolError(f"VFO illisible : {raw!r}")
+        return raw
 
     async def get_split_frequency(self) -> int:
         """Fréquence d'ÉMISSION en split, en Hz (« TX Frequency: 0 » hors split)."""

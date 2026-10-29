@@ -53,3 +53,4 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | SELCALL : appel manuel (« Envoyer SELCALL » / « Annuler (2/3) »), trame en fin d'émission | fait (0.62.0 : `selcall_send`, `send_on_tx_end`) | fait (0.62.0) | fait (0.18.0) | lot 3 du cahier SELCALL |
 | SELCALL : niveau de la trame (curseur), réglage automatique d'après l'ALC | fait (0.64.0 : `selcall_calibrate`, `tx_level_dbfs`) | fait (0.64.0) | fait (0.19.0) | demandé le 2026-10-29 |
 | Voyant « OVERLOAD ALC » (ALC >= 50 % pendant toute émission) | publie l'ALC pendant l'émission | fait (0.64.0) | fait (0.19.0) | seuil commun ALC_OVERLOAD, à ajuster |
+| Voyant du VFO actif (VFO A, VFO B, MEM, MAIN, SUB) quand le poste le dit | publie `rig.vfo` (0.65.0) | fait (0.65.0) | fait (0.20.0) | Yaesu FTDX10/101 ; absent sur l'IC-7300MK2 |
