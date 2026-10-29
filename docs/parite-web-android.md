@@ -24,7 +24,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Rapport de problème (`bug_report`) | fait | fait | à faire (A3) | |
 | Android Auto, commande vocale, touches du volant | — | absent volontairement | à faire (A2) | |
 | Mode conduite | — | absent | à faire (A3) | |
-| Waterfall audio | — | fait | plus tard (A4) | |
+| Waterfall audio | — | fait | fait (0.7.0 : même analyse que la page, FFT 4096 Blackman, lissage 0,35, -85 à -30 dBFS ; VIT, LARG, GAIN, PIC) | calcul sur le téléphone, seulement pendant l'affichage |
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |
 | Spots du cluster DX | fait | fait | plus tard (A4) | |
 | Mises en page du designer (`layouts`) | fait | fait | plus tard (A4), peut-être jamais | |

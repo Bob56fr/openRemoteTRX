@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
+import org.webrtc.AudioTrackSink
 import org.webrtc.DataChannel
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
@@ -50,6 +51,7 @@ class RtcLink(
     private var micSource: AudioSource? = null
     private var micTrack: AudioTrack? = null
     private var remoteTrack: AudioTrack? = null
+    private var sink: AudioTrackSink? = null                       // waterfall audio : gardée d'une connexion à l'autre
     private var muted = false
 
     init {
@@ -106,6 +108,7 @@ class RtcLink(
                     if (gen != generation) return@post
                     remoteTrack = track
                     track.setEnabled(!muted)
+                    sink?.let { track.addSink(it) }
                 }
             }
         }) ?: throw AttemptException("client_error", "WebRTC indisponible")
@@ -196,6 +199,13 @@ class RtcLink(
         remoteTrack?.setEnabled(!value)
     }
 
+    /** Prise du son reçu (waterfall audio) ; null = débranchée. */
+    fun setAudioSink(value: AudioTrackSink?) {
+        sink?.let { old -> remoteTrack?.let { runCatching { it.removeSink(old) } } }
+        sink = value
+        value?.let { s -> remoteTrack?.let { runCatching { it.addSink(s) } } }
+    }
+
     /** Ferme tout, micro d'abord ; les rappels de cette liaison seront ignorés. */
     fun close() {
         generation++
@@ -204,6 +214,7 @@ class RtcLink(
         dc = null
         sc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         sc = null
+        sink?.let { s -> remoteTrack?.let { runCatching { it.removeSink(s) } } }   // avant de libérer la piste
         pc?.let { p -> runCatching { p.close(); p.dispose() } }
         pc = null
         micTrack?.let { t -> runCatching { t.dispose() } }

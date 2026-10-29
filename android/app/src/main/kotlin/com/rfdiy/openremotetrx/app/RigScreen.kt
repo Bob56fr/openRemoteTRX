@@ -115,6 +115,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var showLog by rememberSaveable { mutableStateOf(false) }
     var levelsDialog by remember { mutableStateOf(false) }
     var showScope by rememberSaveable { mutableStateOf(false) }
+    var showWaterfall by rememberSaveable { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
@@ -206,12 +207,16 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
-            // Spectre HF du poste (si la station en a un) : vue ouverte = abonnement aux balayages
-            if (HfScope.configured(hello)) {
-                if (showScope) {
-                    HfScopeView(ui, canSet, onTune = { go(it) }, onClose = { showScope = false })
-                } else {
-                    OutlinedButton(onClick = { showScope = true }, enabled = connected) { Text("Spectre HF") }
+            // Graphiques : spectre HF du poste (si la station en a un ; vue ouverte = abonnement aux balayages) et
+            // waterfall du son reçu (calculé sur le téléphone, seulement pendant l'affichage)
+            if (showScope && HfScope.configured(hello)) HfScopeView(ui, canSet, onTune = { go(it) }, onClose = { showScope = false })
+            if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })
+            if ((!showScope && HfScope.configured(hello)) || !showWaterfall) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!showScope && HfScope.configured(hello)) {
+                        OutlinedButton(onClick = { showScope = true }, enabled = connected) { Text("Spectre HF") }
+                    }
+                    if (!showWaterfall) OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Waterfall audio") }
                 }
             }
 

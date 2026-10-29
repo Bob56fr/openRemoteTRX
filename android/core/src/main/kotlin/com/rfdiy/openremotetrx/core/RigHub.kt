@@ -48,6 +48,11 @@ object RigHub {
         _spectrum.value = null
     }
 
+    /** Waterfall audio affiché : prise du son reçu ; `null` à la fermeture (aucun calcul quand il est caché). */
+    fun startAudioTap(): AudioTap = AudioTap().also { tap -> service?.setAudioSink(tap) }
+
+    fun stopAudioTap() { service?.setAudioSink(null) }
+
     /** Vue du spectre ouverte ou fermée : la station n'envoie les balayages qu'aux clients qui regardent. */
     fun watchSpectrum(on: Boolean) {
         if (!on) { _spectrum.value = null; lastSeq = null }

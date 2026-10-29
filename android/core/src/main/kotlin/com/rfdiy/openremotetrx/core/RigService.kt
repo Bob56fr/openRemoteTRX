@@ -156,6 +156,10 @@ class RigService : Service() {
         }
     }
 
+    internal fun setAudioSink(sink: AudioTap?) {
+        executor.execute { rtc.setAudioSink(sink?.sink) }
+    }
+
     internal fun setMuted(on: Boolean) {
         executor.execute {
             userMuted = on
