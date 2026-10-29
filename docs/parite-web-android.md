@@ -26,7 +26,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Mode conduite | — | absent | à faire (A3) | |
 | Waterfall audio | — | fait | fait (0.7.0 : même analyse que la page, FFT 4096 Blackman, lissage 0,35, -85 à -30 dBFS ; VIT, LARG, GAIN, PIC) | calcul sur le téléphone, seulement pendant l'affichage |
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |
-| Spots du cluster DX | fait | fait | fait (0.8.0 : étiquettes sur le spectre en paysage, « +N », fiche, QSY) | liste triée et santé des sources : plus tard |
+| Spots du cluster DX | fait | fait | fait (0.8.0 : étiquettes sur le spectre en paysage, « +N », fiche, QSY ; 0.10.0 : voyant de santé, SPOTS, LISTE triée, VFO = accord au doigt) | |
 | Mises en page du designer (`layouts`) | fait | fait | plus tard (A4), peut-être jamais | |
 | Thèmes de couleurs | — | fait | plus tard (A4) | |
 | VFO A / B, split, clarifieur (RIT / XIT) | à faire (sécurité : en split, la bande d'émission est celle du VFO d'émission) | à faire | à faire | demandé le 2026-10-29 ; protocole à étendre (`docs/protocole.md`) |
@@ -35,3 +35,4 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Spectre HF en plein écran en tournant le téléphone (paysage), waterfall audio en portrait | — | page : vue HF plein écran / intégrée en paysage large | fait (0.8.0) | STOP et état de l'émission toujours visibles en paysage |
 | Zoom à deux doigts sur le spectre HF (span du poste) | fait (spectrum_set) | absent | fait (0.9.0) | passe en mode CENT si besoin |
 | NB : largeur et profondeur (en plus de marche/arrêt et niveau) | à faire : Hamlib ne les expose PAS pour l'IC-7300MK2 (dump_caps : NB 0..10 seul, aucun « Extra level ») ; possible par le second port CI-V (comme FIL1/2/3), à confirmer sur le poste | à faire | à faire | demandé le 2026-10-29 |
+| Voyants de l'afficheur (NB, NR, POWER, SWR, ALC ; VFO-A / VFO-B, CLAR, RIT après l'étape station) | — | à faire | fait (0.10.0, sauf VFO / CLAR / RIT) | vert = actif, gris = éteint ; demandé le 2026-10-29 |

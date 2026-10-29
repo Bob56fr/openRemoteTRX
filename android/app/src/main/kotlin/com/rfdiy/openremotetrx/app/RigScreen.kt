@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -70,6 +72,7 @@ import com.rfdiy.openremotetrx.logic.Band
 import com.rfdiy.openremotetrx.logic.Controls
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.HfScope
+import com.rfdiy.openremotetrx.logic.Indicators
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.LogLevel
 import com.rfdiy.openremotetrx.logic.Meter
@@ -197,6 +200,19 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
                         Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleMedium)
                         if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
+                    }
+                    // Voyants (comme sur un poste) : vert = actif, gris = éteint
+                    val lights = Indicators.of(rig.state)
+                    if (lights.isNotEmpty()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            for (light in lights) {
+                                Text(
+                                    light.label, style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (light.on) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (light.on) SQL_OPEN else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                )
+                            }
+                        }
                     }
                     LinearProgressIndicator(
                         progress = { Radio.sMeterFraction(radio?.strengthDb) },
@@ -326,25 +342,29 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         Text("+ Mémoriser ici")
                     }
                 }
-                for (m in rig.memories) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { RigHub.saveMemory(m.name, m.hz, m.mode, !m.favorite, m.id) }, enabled = connected) {
-                            Text(if (m.favorite) "★" else "☆")
-                        }
+                // Lignes de 40 dp (assez pour le doigt) : ★ favori, nom + fréquence = rappel, ✎ = modifier ; bloc sans
+                // l'espacement de l'écran (sinon 8 dp de plus de chaque côté du séparateur)
+                Column { for (m in rig.memories) {
+                    Row(Modifier.height(40.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(40.dp).clickable(enabled = connected) { RigHub.saveMemory(m.name, m.hz, m.mode, !m.favorite, m.id) },
+                            contentAlignment = Alignment.Center,
+                        ) { Text(if (m.favorite) "★" else "☆", color = MaterialTheme.colorScheme.primary) }
                         Row(
-                            Modifier.weight(1f).clickable(enabled = canSet) { RigHub.recallMemory(m.id) }.padding(vertical = 6.dp),
+                            Modifier.weight(1f).fillMaxHeight().clickable(enabled = canSet) { RigHub.recallMemory(m.id) },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(m.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                             Text("${Radio.formatIcom(m.hz)}  ${Radio.modeLabel(m.mode)}", fontFamily = FontFamily.Monospace,
                                 style = MaterialTheme.typography.bodyMedium)
                         }
-                        TextButton(onClick = { memoryDialog = MemoryEdit(m.id, m.name, m.hz, m.mode, m.favorite) }, enabled = connected) {
-                            Text("✎")
-                        }
+                        Box(
+                            Modifier.size(40.dp).clickable(enabled = connected) { memoryDialog = MemoryEdit(m.id, m.name, m.hz, m.mode, m.favorite) },
+                            contentAlignment = Alignment.Center,
+                        ) { Text("✎") }
                     }
                     HorizontalDivider()
-                }
+                } }
             }
 
             // Journal

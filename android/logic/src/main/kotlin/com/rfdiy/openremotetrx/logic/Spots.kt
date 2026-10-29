@@ -120,6 +120,19 @@ object Spots {
 
     fun kindLabel(kind: String): String = KINDS[kind] ?: "DX"
 
+    /** Liste des spots : par fréquence, ou par âge (les plus récents d'abord) comme la page. */
+    fun sortList(spots: List<Spot>, byAge: Boolean, nowMs: Long): List<Spot> =
+        if (byAge) spots.sortedWith(compareBy<Spot>({ ageSeconds(it, nowMs) }, { it.hz })) else spots.sortedBy { it.hz }
+
+    /** Texte de la santé des sources (page : healthLabel). */
+    fun healthLabel(state: String?): String = when (state) {
+        "green" -> "Cluster DX : toutes les sources connectées"
+        "orange" -> "Cluster DX : sources en partie connectées"
+        "red" -> "Cluster DX : aucune source connectée"
+        "off" -> "Cluster DX désactivé"
+        else -> ""
+    }
+
     /** Fréquence et mode du QSY ; `adapt` = mode utilisable par ce poste (Radio.adaptMode) ou null. */
     fun qsyTarget(spot: Spot, adapt: (String) -> String?): Pair<Long, String?> =
         spot.hz to spot.qsyMode.takeIf { it.isNotEmpty() }?.let(adapt)

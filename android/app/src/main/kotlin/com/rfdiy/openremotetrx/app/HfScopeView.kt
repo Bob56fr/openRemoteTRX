@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,6 +65,7 @@ import java.util.Locale
 import com.rfdiy.openremotetrx.protocol.SpectrumFrame
 
 private const val ROWS = 150                      // lignes d'historique du waterfall
+private val HEALTH_COLORS = mapOf("green" to Color(0xFF43A047), "orange" to Color(0xFFFB8C00), "red" to Color(0xFFE53935), "off" to Color.Gray)
 
 /**
  * Historique du waterfall : une image d'un pixel par point du poste (la mise à l'échelle lisse l'affichage), qui
@@ -136,13 +141,26 @@ fun HfScopeView(
     val labels = remember { mutableListOf<Pair<Rect, SpotLabel>>() }        // étiquettes dessinées, pour l'appui
     var cardId by remember { mutableStateOf<Long?>(null) }
     var listIds by remember { mutableStateOf<List<Long>?>(null) }
-    val spots = ui.rig.spots
+    var spotsOn by remember { mutableStateOf(prefs.getBoolean("spots_on", true)) }
+    var vfo by remember { mutableStateOf(false) }                  // accord au doigt (glisser), éteint par défaut comme la page
+    var listAll by remember { mutableStateOf(false) }
+    var sortByAge by remember { mutableStateOf(false) }
+    val spots = if (spotsOn) ui.rig.spots else emptyList()
     val now = System.currentTimeMillis()
+    val health = ui.rig.clusterHealth
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Spectre HF", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Spectre HF", style = MaterialTheme.typography.titleSmall)
             frame?.let { Text(HfScope.spanLabel(it.lowHz, it.highHz) + if (it.outOfRange) " — hors plage" else "", style = MaterialTheme.typography.labelMedium) }
+            Spacer(Modifier.weight(1f))
+            // Cluster DX (seulement si le module parle) : voyant de santé, spots affichés ou non, liste de la bande
+            if (health != null) {
+                Box(Modifier.size(12.dp).background(HEALTH_COLORS[health] ?: Color.Gray, CircleShape))
+                CompactChip("SPOTS", onClick = { spotsOn = !spotsOn; prefs.edit().putBoolean("spots_on", spotsOn).apply() }, selected = spotsOn)
+                CompactChip("LISTE", onClick = { listAll = true })
+            }
+            CompactChip("VFO", onClick = { vfo = !vfo }, selected = vfo)
         }
         Box(plotModifier) {
             val f = frame
@@ -181,7 +199,8 @@ fun HfScopeView(
                             if (canSet) onTune(HfScope.frequencyAt(pos.x / size.width, fr.lowHz, fr.highHz))
                         }
                     }
-                    .pointerInput(f?.lowHz, f?.highHz, canSet, rigHz) {
+                    .pointerInput(f?.lowHz, f?.highHz, canSet, rigHz, vfo) {
+                        if (!vfo) return@pointerInput                  // glisser n'accorde que si VFO est allumé (comme la page)
                         detectHorizontalDragGestures(
                             onDragStart = { dragX = 0f },
                             onDragEnd = {
@@ -302,6 +321,31 @@ fun HfScopeView(
                 TextButton(onClick = { RigHub.qsySpot(id); cardId = null }, enabled = s != null && canSet) { Text("QSY") }
             },
             dismissButton = { TextButton(onClick = { cardId = null }) { Text("Fermer") } },
+        )
+    }
+    if (listAll) {
+        // Liste des spots de la bande affichée, triée par fréquence ou par âge (comme la page)
+        val f = frame
+        val band = if (f != null) ui.rig.spots.filter { it.hz in f.lowHz..f.highHz } else ui.rig.spots
+        AlertDialog(
+            onDismissRequest = { listAll = false },
+            title = { Text("Spots de la bande (${band.size})") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (health != null) Text(Spots.healthLabel(health), style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { sortByAge = !sortByAge }) { Text("Tri : " + if (sortByAge) "âge" else "fréquence") }
+                    if (band.isEmpty()) Text("Aucun spot pour l'instant.")
+                    for (s in Spots.sortList(band, sortByAge, System.currentTimeMillis())) {
+                        Text(
+                            String.format(Locale.ROOT, "%.1f", s.khz) + "  " + s.dx + "  " + s.mode.ifEmpty { "?" } + "  " +
+                                Spots.ageLabel(Spots.ageSeconds(s, System.currentTimeMillis())) +
+                                if (s.kind != "cluster") "  [" + Spots.kindLabel(s.kind) + "]" else "",
+                            modifier = Modifier.fillMaxWidth().clickable { listAll = false; cardId = s.id }.padding(vertical = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { listAll = false }) { Text("Fermer") } },
         )
     }
     listIds?.let { ids ->

@@ -13,7 +13,9 @@ import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
 import com.rfdiy.openremotetrx.protocol.ServerMessages
 import com.rfdiy.openremotetrx.protocol.State
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 
@@ -44,6 +46,8 @@ data class RigState(
     val bandSpots: Map<String, BandSpot> = emptyMap(),
     /** Spots du Cluster DX reçus (vue du spectre ouverte), triés par fréquence. */
     val spots: List<Spot> = emptyList(),
+    /** Santé des sources du Cluster DX (« green », « orange », « red », « off »), null = module muet. */
+    val clusterHealth: String? = null,
 )
 
 /**
@@ -80,6 +84,7 @@ class RigSession(
     private var memories: List<Memory> = emptyList()
     private var spectrumWanted = false
     private val spotBook = SpotBook()
+    private var clusterHealth: String? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -208,7 +213,12 @@ class RigSession(
             is Result -> onResult(now, msg)
             is ErrorMessage -> log("Erreur de la station : ${msg.code}" + (if (msg.detail.isNotEmpty()) " (${msg.detail})" else ""), LogLevel.WARN)
             is Memories -> memories = Radio.sortMemories(msg.items)
-            is ModuleMessage -> spotBook.apply(msg.data, wall())         // spots du cluster ; autres modules : ignorés ici
+            is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
+                spotBook.apply(msg.data, wall())
+                if (msg.module == "cluster") {
+                    ((msg.data as? JsonObject)?.get("health") as? JsonPrimitive)?.contentOrNull?.let { clusterHealth = it }
+                }
+            }
             else -> Unit                                         // type inconnu ou non affiché : ignoré
         }
         publish(now)
@@ -467,6 +477,7 @@ class RigSession(
         state = null
         memories = emptyList()
         spotBook.clear()
+        clusterHealth = null
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -498,6 +509,7 @@ class RigSession(
             memories = memories,
             bandSpots = bands.spots,
             spots = spotBook.all().sortedBy { it.hz },
+            clusterHealth = clusterHealth,
         )
         if (next != snapshot) {
             snapshot = next

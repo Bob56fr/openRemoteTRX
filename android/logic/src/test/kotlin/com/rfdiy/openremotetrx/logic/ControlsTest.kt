@@ -72,3 +72,20 @@ class ControlsTest {
         assertEquals(agc, Controls.AGC_CYCLE)
     }
 }
+
+class IndicatorsTest {
+    private fun state(ptt: String, functions: String, levels: String) = com.rfdiy.openremotetrx.protocol.ServerMessages.decode(
+        """{"type":"state","ptt":{"state":"$ptt"},"rig":{"connected":true,"functions":$functions,"levels":$levels}}"""
+    ) as com.rfdiy.openremotetrx.protocol.State
+
+    @Test
+    fun `voyants - NB NR selon le poste, POWER SWR ALC seulement en emission mesuree`() {
+        val rx = Indicators.of(state("RX", """{"NB":true,"NR":false}""", """{"RFPOWER_METER":0.0,"SWR":1.0,"ALC":0.0}"""))
+        assertEquals(listOf("NB" to true, "NR" to false, "POWER" to false, "SWR" to false, "ALC" to false), rx.map { it.label to it.on })
+        val tx = Indicators.of(state("TX", "{}", """{"RFPOWER_METER":0.5,"SWR":1.3,"ALC":0.0}"""))
+        assertEquals(listOf("POWER" to true, "SWR" to true, "ALC" to false), tx.map { it.label to it.on })
+        assertTrue(Indicators.of(null).isEmpty())
+        val bare = Indicators.of(state("RX", "{}", "{}"))                       // mesures absentes en réception : gris
+        assertEquals(listOf("POWER" to false, "SWR" to false, "ALC" to false), bare.map { it.label to it.on })
+    }
+}
