@@ -52,6 +52,8 @@ data class RigState(
     /** Dernier état des flux du Cluster DX (`cluster_status`) et son heure de réception (ms, horloge murale). */
     val clusterStatus: JsonObject? = null,
     val clusterStatusAtMs: Long = 0,
+    /** 30 derniers spots toutes bandes (message « recent » du cluster, vue du spectre ou liste ouverte), le plus récent en tête. */
+    val recentSpots: List<Spot> = emptyList(),
     /** Bips de fin d'émission de la station (null : station sans bips). */
     val beeps: BeepSettings? = null,
 )
@@ -94,6 +96,7 @@ class RigSession(
     private var clusterStatus: JsonObject? = null
     private var clusterStatusAt = 0L
     private var beeps: BeepSettings? = null
+    private var recentSpots: List<Spot> = emptyList()
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -225,6 +228,7 @@ class RigSession(
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
+                Spots.recentOf(msg.data, wall())?.let { recentSpots = it }
                 if (msg.module == "cluster") {
                     val data = msg.data as? JsonObject
                     (data?.get("health") as? JsonPrimitive)?.contentOrNull?.let { clusterHealth = it }
@@ -510,6 +514,7 @@ class RigSession(
         clusterHealth = null
         clusterStatus = null
         beeps = null
+        recentSpots = emptyList()
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -545,6 +550,7 @@ class RigSession(
             clusterStatus = clusterStatus,
             clusterStatusAtMs = clusterStatusAt,
             beeps = beeps,
+            recentSpots = recentSpots,
         )
         if (next != snapshot) {
             snapshot = next

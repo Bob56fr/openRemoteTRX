@@ -41,5 +41,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Pastilles de spots sur les boutons de bande, rubrique « Cluster DX » (état des flux) | fait (`cluster_status`) | fait | fait (0.12.0) | spots actifs seulement (moins de 15 min) |
 | Quitter l'application pendant l'émission => retour en réception (réglage « rester en émission », désactivé par défaut) | — | absent (navigateur : la page en arrière-plan est suspendue, la station coupe faute de battements) | fait (0.12.0) | demandé le 2026-10-29 |
 | PTT par le bouton du casque (filaire ou Bluetooth) ou les touches du volant ; micro du casque Bluetooth | — | absent (navigateur) | fait (0.13.0, désactivés par défaut) | demandé le 2026-10-29 ; à essayer avec un vrai casque |
-| « Tout afficher » : 30 derniers spots (heure locale, indicatif, fréquence, source ; toucher = QSY) | fait (`scope: hf_view`) | à faire | fait (0.13.0) | demandé le 2026-10-29 |
+| « Tout afficher » : 30 derniers spots TOUTES BANDES (heure locale, indicatif, fréquence, source ; toucher = QSY) | fait (message `recent`, 0.56.0) | fait (0.56.0) | fait (0.14.0 ; 0.13.0 : bande du poste seulement) | demandé le 2026-10-29 |
 | Version du logiciel sur l'écran de connexion | — | en pied de page | fait (0.13.0) | |
+| Voyants de l'afficheur (ATT / P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB, NR) | fait | fait (0.56.0, `indicatorsView`) | fait (0.10.1-0.11.0) | |
+| Bandes préférées | — | fait (0.56.0 : cases à cocher, ordre du plan) | fait (0.9.0 : choix et ordre) | |

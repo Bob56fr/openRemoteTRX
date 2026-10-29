@@ -30,6 +30,20 @@ test("version de la station affichée depuis hello", () => {
   assert.equal(web.versionLabel(messages.hello.version), "v" + messages.hello.version);
 });
 
+test("voyants comme l'application : ATT ou P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB, NR", () => {
+  const caps = { preamps: [10, 20] };
+  const v = web.indicatorsView({ RIT: false, XIT: true, ANF: false, MN: true, NB: true, NR: false }, { PREAMP: 20, ATT: 0 }, { split: false }, caps);
+  assert.deepEqual(v.map((i) => i.label + (i.on ? "+" : "-")), ["P.AMP 2+", "RIT-", "ΔTX+", "SPLIT-", "NOTCH+", "NB+", "NR-"]);
+  assert.equal(web.indicatorsView({}, { ATT: 12, PREAMP: 1 }, {}, caps)[0].label, "ATT");
+  assert.equal(web.indicatorsView({}, { PREAMP: 1 }, {}, {})[0].label, "P.AMP 1");      // valeur déjà en rang (IC-7300MK2)
+  assert.deepEqual(web.indicatorsView({}, {}, {}, {}), []);                              // rien de publié : aucun voyant
+});
+
+test("bandes préférées : ordre du plan, inconnues ignorées, aucune = toutes", () => {
+  assert.deepEqual(web.favoriteBands("20, 11,99,40").map((b) => b.key), ["40", "20", "11"]);
+  assert.equal(web.favoriteBands("").length, web.BANDS.length);
+});
+
 test("clarifieur : ΔTX prioritaire, décalage borné, absent sans RIT ni XIT", () => {
   const rig = messages.state.rig, caps = messages.hello.capabilities;
   assert.equal(web.clarifierView({}, rig, caps), null);

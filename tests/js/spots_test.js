@@ -93,6 +93,17 @@ test("libellés : source, mode supposé, pastille", () => {
   assert.match(sp.healthLabel("red"), /aucune source/);
 });
 
+test("tout afficher : 30 derniers spots toutes bandes, le plus récent en tête", () => {
+  const spots = [];
+  for (let i = 0; i < 40; i++) spots.push(S(i, (i % 2 ? 7000 : 14000) + i, "K" + i + "AB", { age: 40 - i }));
+  const list = sp.recentList({ kind: "recent", spots: spots.reverse() }, 100000);
+  assert.equal(list.length, 30);
+  assert.equal(list[0].dx, "K39AB");
+  assert.equal(sp.arrivalMs(list[0]), 99000);
+  assert.equal(sp.sourceLabel(list[0]), "DX de F5XYZ");
+  assert.deepEqual(sp.recentList({ kind: "spots", spots: spots }, 0), []);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

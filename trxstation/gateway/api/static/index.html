@@ -35,6 +35,7 @@
 
     <div id="blk-freq">
     <div id="freq" class="freq" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
+    <div id="voyants" class="voyants" title="Voyants du poste : allumé = en service"></div>
     <div id="reconnect" class="reconnect" hidden>
       <div id="reconnect-text" class="reconnect-text">RECONNEXION…</div>
       <div class="reconnect-line"><span id="reconnect-sub" class="dim"></span><button id="reconnect-cancel" class="chip" hidden>Annuler</button></div>
@@ -172,6 +173,8 @@
           </select>
         </label>
         <div class="row"><button id="alert-test" class="chip" disabled>Écouter les sons</button></div>
+        <div>Bandes affichées (aucune cochée = toutes)</div>
+        <div id="fav-bands" class="row fav-bands"></div>
         <p class="note">Deux notes descendantes : liaison perdue (répété pendant la reconnexion). Deux notes montantes : liaison rétablie, la station est en réception. Trois notes graves : reconnexion impossible. Le téléphone vibre aussi.</p>
         <p class="note">Le mot de passe est gardé en mémoire de la page le temps de la session (jamais enregistré) : il n'est pas redemandé pendant la reconnexion, mais il l'est après un rechargement de la page.</p>
         <div class="row">
@@ -310,6 +313,8 @@
         <div id="cluster-title" class="cluster-title">—</div>
         <ul id="cluster-sources" class="cluster-sources"></ul>
         <div id="cluster-age" class="note"></div>
+        <div class="row"><button id="cluster-all" class="chip" title="Les 30 derniers spots reçus, toutes bandes">Tout afficher</button></div>
+        <div id="cluster-recent" class="cluster-recent" hidden></div>
       </div>
     </details>
 

@@ -344,6 +344,36 @@
     return { name: name, label: name === "XIT" ? "ΔTX" : "RIT", hz: hz, max: max };
   }
 
+  function preampNumber(level, preamps) {
+    /* Numéro du préampli : rang dans la liste du poste (10 dB -> 1, 20 dB -> 2), ou la valeur lue si c'est déjà 1 ou 2. */
+    const v = Math.round(level);
+    const i = Array.isArray(preamps) ? preamps.indexOf(v) : -1;
+    return i >= 0 ? i + 1 : v;
+  }
+
+  function indicatorsView(fn, lv, rig, caps) {
+    /* Voyants de l'afficheur (comme l'application) : ATT ou P.AMP n ou rien ; RIT ; ΔTX ; SPLIT ; NOTCH ; NB ; NR.
+       Seuls ceux dont la station publie l'état ; allumé = actif. */
+    fn = fn || {}; lv = lv || {}; rig = rig || {};
+    const out = [];
+    if (lv.ATT > 0) out.push({ label: "ATT", on: true });
+    else if (lv.PREAMP > 0) out.push({ label: "P.AMP " + preampNumber(lv.PREAMP, caps && caps.preamps), on: true });
+    if ("RIT" in fn) out.push({ label: "RIT", on: !!fn.RIT });
+    if ("XIT" in fn) out.push({ label: "ΔTX", on: !!fn.XIT });
+    if (typeof rig.split === "boolean") out.push({ label: "SPLIT", on: rig.split });
+    if ("ANF" in fn || "MN" in fn) out.push({ label: "NOTCH", on: !!fn.ANF || !!fn.MN });
+    if ("NB" in fn) out.push({ label: "NB", on: !!fn.NB });
+    if ("NR" in fn) out.push({ label: "NR", on: !!fn.NR });
+    return out;
+  }
+
+  function favoriteBands(saved) {
+    /* Bandes affichées (réglage du navigateur, « 11,20,40 ») dans l'ordre du plan ; aucune valide = toutes. */
+    const keys = String(saved || "").split(",").map((k) => k.trim()).filter(Boolean);
+    const bands = BANDS.filter((b) => keys.includes(b.key));
+    return bands.length ? bands : BANDS.slice();
+  }
+
   function clarifierText(hz) {
     return (hz >= 0 ? "+" : "") + Math.round(hz / 10) * 10 + " Hz";
   }
@@ -1008,6 +1038,11 @@
           if (this.ui.spots) this.ui.spots(data);
           return;
         }
+        if (data.kind === "recent") {                                  // 30 derniers spots toutes bandes (« Tout afficher »)
+          this.recentSpots = data;
+          if (this.ui.recentSpots) this.ui.recentSpots(data);
+          return;
+        }
         if (data.kind === "cluster_status") {                          // état des flux : affiché, jamais au journal (toutes les 15 s)
           this.clusterStatus = { data: data, at: this.env.now() };
           if (this.ui.clusterStatus) this.ui.clusterStatus(data);
@@ -1151,6 +1186,7 @@
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
         clarifier: clarifierView(fn, rig, this._caps()),
+        indicators: indicatorsView(fn, lv, rig, this._caps()),
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -1564,6 +1600,7 @@
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
-                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText };
+                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
+                indicatorsView, preampNumber, favoriteBands };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

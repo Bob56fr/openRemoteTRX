@@ -101,6 +101,32 @@ def test_snapshot_is_bounded_most_recent_first():
     assert len(json.dumps(snap)) < 40_000                       # bien sous la limite d'une ligne du bus (64 ko)
 
 
+def test_recent_lists_the_last_spots_of_all_bands_most_recent_first():
+    cache = SpotCache()
+    p = pub.SpotPublisher(cache)
+    for i in range(pub.RECENT_MAX + 5):
+        p.on_spot(add(cache, (7000.0 if i % 2 else 14000.0) + i, f"K{i}AB", i), True)
+    msg = p.recent(100)                                         # fréquence du poste inconnue : envoyé quand même
+    assert (msg["kind"], msg["scope"], msg["retain"]) == ("recent", "hf_view", "snapshot")
+    assert len(msg["spots"]) == pub.RECENT_MAX
+    assert msg["spots"][0]["dx"] == f"K{pub.RECENT_MAX + 4}AB"
+    assert {round(s["f"]) // 1000 for s in msg["spots"]} == {7, 14}            # toutes bandes
+    assert p.recent(101) is None                                # rien de nouveau
+    p.on_spot(add(cache, 21000.0, "JA1AA", 102), True)
+    assert p.recent(102) is None                                # au plus toutes les 5 s
+    assert p.recent(100 + pub.RECENT_EVERY_S)["spots"][0]["dx"] == "JA1AA"
+
+
+def test_bridge_keeps_recent_and_band_spots_apart(tmp_path):
+    bridge = ModuleBridge(make_cfg(tmp_path), FakeCtrl(), FakeLink(), clients=lambda: [], port=0)
+    bridge.to_clients("cluster", {"kind": "spots", "op": "snapshot", "retain": "snapshot", "spots": [1]})
+    bridge.to_clients("cluster", {"kind": "recent", "retain": "snapshot", "spots": [9]})
+    bridge.to_clients("cluster", {"kind": "spots", "op": "delta", "retain": "delta", "spots": [2]})
+    late = Session()
+    bridge.on_hf_view(late, True)
+    assert sorted((p["data"]["kind"], p["data"]["spots"][0]) for p in late.got) == [("recent", 9), ("spots", 1), ("spots", 2)]
+
+
 def test_cb_spot_has_no_qsy_mode_guess_but_ssb_has():
     cache = SpotCache()
     s = add(cache, 27555.0, "14LG56", 0, comment="73", kind="cb")

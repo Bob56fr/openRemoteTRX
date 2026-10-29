@@ -533,6 +533,29 @@
       bandButtons.set(band.key, button);
       bandDots.set(band.key, { dot: dot, title: button.title });
     }
+    function applyFavBands() {
+      /* Bandes préférées (réglage de ce navigateur) : les autres boutons sont masqués. */
+      const shown = new Set(web.favoriteBands(store.get("trx.favbands", "")).map((b) => b.key));
+      for (const [key, button] of bandButtons) button.hidden = !shown.has(key);
+    }
+    const favBoxes = new Map();
+    for (const band of BANDS) {
+      const label = el("label", "check");
+      const box = el("input", "");
+      box.type = "checkbox";
+      box.checked = String(store.get("trx.favbands", "")).split(",").includes(band.key);
+      box.addEventListener("change", () => {
+        const keys = [];
+        for (const [key, input] of favBoxes) if (input.checked) keys.push(key);
+        store.set("trx.favbands", keys.join(","));
+        applyFavBands();
+      });
+      favBoxes.set(band.key, box);
+      label.appendChild(box);
+      label.appendChild(el("span", "", band.label));
+      $("fav-bands").appendChild(label);
+    }
+    applyFavBands();
     function paintBandDots(bands) {
       /* Couleur du gris au rouge selon le nombre de spots actifs ; nombre exact dans la bulle d'aide. */
       const levels = web.bandSpotLevels(bands);
@@ -542,6 +565,16 @@
         if (level) item.dot.className = ["", "banddot lvl1", "banddot lvl2", "banddot lvl3"][level.level];
         bandButtons.get(key).title = item.title + (level ? " — " + level.count + " spot" + (level.count > 1 ? "s actifs" : " actif") + " (Cluster DX)" : "");
       }
+    }
+    let voyantsKey = "";
+    function paintVoyants(v) {
+      const list = v.connected ? v.indicators || [] : [];
+      const key = list.map((i) => i.label + (i.on ? "1" : "0")).join("|");
+      if (key === voyantsKey) return;
+      voyantsKey = key;
+      const box = $("voyants");
+      box.textContent = "";
+      for (const item of list) box.appendChild(el("span", "voyant" + (item.on ? " on" : ""), item.label));
     }
     function paintModes(v) {                                                          // mode actuel allumé ; verrouillés pendant l'émission
       const current = v.rig ? v.rig.mode : null;
@@ -869,7 +902,7 @@
       $("hf-close").hidden = docked;                                             // intégrée : on la retire avec l'interrupteur
       box.hidden = !on;
       setVfo(false);
-      client.watchSpectrum(on);                                                  // balayages reçus seulement vue ouverte
+      if (on || !recentOpen) client.watchSpectrum(on);                           // balayages reçus seulement vue ouverte (ou liste des spots)
       if (spotBook) spotBook.clear();                                            // la station rejoue les spots à l'ouverture
       closeSpotCard(); closeSpotList(); drawSpots();
       if (spotTimer !== null) { clearInterval(spotTimer); spotTimer = null; }
@@ -1168,6 +1201,7 @@
       linkAlert(kind) { playLinkAlert(kind); },
       spots(data) { onSpots(data); },
       beeps(settings) { renderBeeps(settings); },
+      recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
       clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
       armed(value) { $("armed").checked = value; },
@@ -1209,6 +1243,7 @@
           button.disabled = !v.connected || v.controlsLocked;
         }
         paintModes(v);
+        paintVoyants(v);
         const local = v.local || { active: false };                                   // poste utilisé sur place
         $("local-banner").hidden = !local.active;
         if (local.active) {
@@ -1328,6 +1363,49 @@
       if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait
       client.pressModePill().catch(fail);
     });
+    // ---- « Tout afficher » : 30 derniers spots toutes bandes ; la station ne les envoie qu'aux clients qui regardent
+    // le spectre : la liste s'y abonne le temps d'être ouverte (sans toucher à la vue HF si elle est déjà ouverte).
+    let recentData = null, recentAt = 0, recentOpen = false;
+    function renderRecent() {
+      const box = $("cluster-recent");
+      box.hidden = !recentOpen;
+      $("cluster-all").textContent = recentOpen ? "Masquer la liste" : "Tout afficher";
+      if (!recentOpen) return;
+      box.textContent = "";
+      const list = sp && recentData ? sp.recentList(recentData, recentAt) : [];
+      if (!list.length) {
+        box.appendChild(el("div", "note", client.hello && client.hello.spectrum ? "Aucun spot reçu pour l'instant."
+          : "Cette station n'envoie les spots qu'avec le spectre HF (second port CI-V)."));
+        return;
+      }
+      const locked = frequencyLocked();
+      for (const s of list) {
+        const at = new Date(sp.arrivalMs(s));
+        const row = el("button", "");
+        row.disabled = locked;
+        row.title = locked ? "QSY impossible : émission en cours ou station déconnectée" : "Mettre le poste sur ce spot";
+        row.appendChild(el("span", "mono", at.toLocaleTimeString("fr-FR")));
+        row.appendChild(el("span", "", s.dx));
+        row.appendChild(el("span", "mono", s.khz.toFixed(1)));
+        row.appendChild(el("span", "src", [sp.sourceLabel(s), sp.modeLabel(s), s.comment].filter(Boolean).join(" · ")));
+        row.addEventListener("click", () => {
+          const target = sp.qsyTarget(s, (mode) => client.adaptSpotMode(mode));
+          if (!target || frequencyLocked()) return;
+          client.qsy(target.hz, target.mode).then((res) => {
+            if (res && res.ok) ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", "");
+            else ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."), "warn");
+          }).catch(fail);
+        });
+        box.appendChild(row);
+      }
+    }
+    function setRecentOpen(on) {
+      if (on === recentOpen) return;
+      recentOpen = on;
+      if (!hfVisible) client.watchSpectrum(on);                                   // la vue HF ouverte s'en charge déjà
+      renderRecent();
+    }
+    $("cluster-all").addEventListener("click", () => setRecentOpen(!recentOpen));
     // ---- état des flux du Cluster DX (section affichée dès que le module parle ; âges mis à jour toutes les 5 s)
     let clusterData = null, clusterAt = 0;
     function renderCluster() {

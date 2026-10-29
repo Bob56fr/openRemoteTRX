@@ -100,6 +100,14 @@ object Spots {
     /** Heure d'arrivée du spot (ms, horloge murale) : sa réception moins l'âge qu'il avait alors. */
     fun arrivalMs(spot: Spot): Long = spot.receivedMs - (spot.age0 * 1000).roundToLong()
 
+    /** Message « recent » du cluster (station 0.56.0+) : derniers spots toutes bandes, le plus récent en tête ; null si autre message. */
+    fun recentOf(data: JsonElement, nowMs: Long): List<Spot>? {
+        val obj = data as? JsonObject ?: return null
+        if ((obj["kind"] as? JsonPrimitive)?.contentOrNull != "recent") return null
+        val spots = obj["spots"] as? JsonArray ?: return emptyList()
+        return recent(spots.take(60).mapNotNull { clean(it, nowMs) })
+    }
+
     /** « Tout afficher » de la rubrique Cluster DX : les `n` derniers spots, le plus récent en tête. */
     fun recent(spots: List<Spot>, n: Int = 30): List<Spot> = spots.sortedByDescending { arrivalMs(it) }.take(n)
 

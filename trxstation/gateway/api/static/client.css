@@ -290,3 +290,15 @@ audio { display: none; }
 .safe-title { font-weight: 800; color: var(--alerte); font-size: 1.1rem; margin-bottom: .4rem; }
 .safe-body { display: grid; gap: .6rem; margin-top: .6rem; }
 .safe-body .stop { min-height: 3.2rem; }
+/* Voyants de l'afficheur (ATT/P.AMP, RIT, ΔTX, SPLIT, NOTCH, NB, NR) : vert allumé, gris éteint */
+.voyants { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .8rem; font-weight: 700; letter-spacing: .03em; min-height: 1rem; }
+.voyant { color: var(--texte-secondaire); opacity: .55; }
+.voyant.on { color: var(--succes); opacity: 1; }
+/* « Tout afficher » du Cluster DX : 30 derniers spots */
+.cluster-recent { display: flex; flex-direction: column; gap: .15rem; margin-top: .4rem; }
+.cluster-recent button { display: grid; grid-template-columns: 4.6rem 1fr auto; gap: .5rem; text-align: left; background: none; border: 0;
+  border-bottom: 1px solid var(--ligne); color: var(--texte); padding: .3rem 0; font: inherit; cursor: pointer; }
+.cluster-recent button:disabled { cursor: default; }
+.cluster-recent .src { grid-column: 1 / -1; color: var(--texte-secondaire); font-size: .8rem; }
+.cluster-recent .mono { font-family: ui-monospace, monospace; }
+.fav-bands label { display: inline-flex; align-items: center; gap: .2rem; }

@@ -47,12 +47,13 @@ private val HOUR = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.syste
  * le temps d'être ouverte. Toucher un spot = QSY (en réception).
  */
 @Composable
-fun RecentSpotsDialog(spots: List<Spot>, hasSpectrum: Boolean, canSet: Boolean, onDismiss: () -> Unit) {
+fun RecentSpotsDialog(recentSpots: List<Spot>, bandSpots: List<Spot>, hasSpectrum: Boolean, canSet: Boolean, onDismiss: () -> Unit) {
     DisposableEffect(Unit) {
         RigHub.watchSpectrum(true)
         onDispose { RigHub.watchSpectrum(false) }
     }
-    val recent = Spots.recent(spots)
+    // Station 0.56.0+ : derniers spots toutes bandes ; plus ancienne : ceux de la bande du poste seulement
+    val recent = recentSpots.ifEmpty { Spots.recent(bandSpots) }
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },

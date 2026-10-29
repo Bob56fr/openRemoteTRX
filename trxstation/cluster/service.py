@@ -238,14 +238,16 @@ class ClusterService:
             await asyncio.sleep(PUBLISH_EVERY_S)
             if self.publisher is None or self.bus is None:
                 continue
-            message = self.publisher.tick(time.monotonic())
-            if message is None:
-                continue
-            try:
-                await self.bus.client_message(**message)
-            except Exception as exc:              # message perdu : l'instantané suivant remettra la page d'aplomb
-                self.publisher._need_snapshot = True
-                log.debug("spots non transmis : %s", exc)
+            now = time.monotonic()
+            for message in (self.publisher.tick(now), self.publisher.recent(now)):
+                if message is None:
+                    continue
+                try:
+                    await self.bus.client_message(**message)
+                except Exception as exc:          # message perdu : l'instantané suivant remettra la page d'aplomb
+                    self.publisher._need_snapshot = True
+                    self.publisher._recent_dirty = True
+                    log.debug("spots non transmis : %s", exc)
 
     def _status(self) -> None:
         self.seq += 1

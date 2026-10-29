@@ -104,6 +104,9 @@ class RecentSpotsTest {
         assertEquals("CALL10", recent.last().dx)
         assertEquals(99_000L, Spots.arrivalMs(recent.first()))
         assertEquals("DX de F5LEN", Spots.sourceLabel(recent.first()))
+        val msg = Json.parseToJsonElement("""{"kind":"recent","spots":[{"id":1,"f":7074,"dx":"A1","age":50},{"id":2,"f":27555,"dx":"B2","age":5}]}""")
+        assertEquals(listOf("B2", "A1"), Spots.recentOf(msg, 0)!!.map { it.dx })
+        assertNull(Spots.recentOf(Json.parseToJsonElement("""{"kind":"spots","spots":[]}"""), 0))
     }
 }
 

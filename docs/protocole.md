@@ -99,7 +99,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `result`, `error` | réponse à une commande | § 7 |
 | `memories` | une mémoire change (n'importe quel client) | `items` : `{id, name, hz, mode, favorite}` |
 | `beeps` | réglage des bips changé | `settings` |
-| `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots seulement vue HF ouverte |
+| `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte |
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.
 

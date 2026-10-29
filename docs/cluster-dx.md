@@ -230,6 +230,12 @@ clés courtes : `id`, `f` (kHz), `dx`, `de`, `m` (mode), `mg` (mode supposé),
 `k` (cluster, rbn, cb), `t` (HHMM UTC), `n` (spotteurs), `age` (s), `c`
 (commentaire), `co` (pays), `ct` (continent), `q` (mode proposé pour le QSY).
 
+Depuis 0.56.0, `data.kind = "recent"` (même portée, `retain = "snapshot"`) : les 30
+derniers spots TOUTES BANDES, le plus récent en tête, mêmes clés courtes ; renvoyé
+quand un spot arrive, au plus toutes les 5 s (« Tout afficher » de la page et de
+l'application, qui s'abonnent le temps que la liste est ouverte). La passerelle
+retient un fil par sorte de message (`spots`, `recent`).
+
 ### Pas fait dans ce lot
 
 - **Android Auto** : l'application Android est en attente.

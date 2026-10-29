@@ -518,7 +518,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         prefs.edit().putString("bands", bandsPref).apply()
         bandsDialog = false
     }
-    if (spotsDialog) RecentSpotsDialog(rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
+    if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
     }

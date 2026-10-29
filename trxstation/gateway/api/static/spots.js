@@ -141,12 +141,30 @@
     return { hz: spot.hz, mode: mode || null };
   }
 
+  function arrivalMs(spot) {
+    /* Heure d'arrivée (ms, horloge du navigateur) : réception moins l'âge qu'avait alors le spot. */
+    return spot.recv - spot.age0 * 1000;
+  }
+
+  function recentList(msg, nowMs) {
+    /* Message « recent » du module : les derniers spots TOUTES BANDES, le plus récent en tête (30 au plus). */
+    if (!msg || msg.kind !== "recent" || !Array.isArray(msg.spots)) return [];
+    const out = [];
+    for (const raw of msg.spots.slice(0, 60)) { const s = cleanSpot(raw, nowMs); if (s) out.push(s); }
+    out.sort((a, b) => arrivalMs(b) - arrivalMs(a));
+    return out.slice(0, 30);
+  }
+
+  function sourceLabel(spot) {
+    return kindLabel(spot.kind) + (spot.de ? " de " + spot.de : "");
+  }
+
   function healthLabel(state) {
     return { green: "Cluster DX : toutes les sources connectées", orange: "Cluster DX : sources en partie connectées",
              red: "Cluster DX : aucune source connectée", off: "Cluster DX désactivé" }[state] || "";
   }
 
   const api = { SpotBook, cleanSpot, ageSeconds, opacity, ageLabel, layoutLabels, sortList, modeLabel, kindLabel,
-                qsyTarget, healthLabel, FRESH_S };
+                qsyTarget, healthLabel, arrivalMs, recentList, sourceLabel, FRESH_S };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSpots = api; }
 })(typeof window !== "undefined" ? window : globalThis);

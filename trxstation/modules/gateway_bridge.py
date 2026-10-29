@@ -32,7 +32,7 @@ from .registry import selected_manifests
 log = logging.getLogger(__name__)
 
 MIN_QSY_HZ, MAX_QSY_HZ = 100_000, 3_000_000_000
-RETAIN_MAX = 500                    # messages retenus par module (instantané + changements) pour les clients qui arrivent
+RETAIN_MAX = 500                    # messages retenus par module et par sorte (instantané + changements) pour les clients qui arrivent
 _MODE_RE = re.compile(r"[A-Za-z0-9\-]{1,16}")
 
 
@@ -154,13 +154,14 @@ class ModuleBridge:
         """
         payload = {"type": "module", "module": module, "data": message}
         retain = message.get("retain")
+        key = f"{module}/{message.get('kind', '')}"     # un fil retenu par sorte de message (spots, recent…)
         if retain == "snapshot":
-            self._retained[module] = [payload]
-        elif retain == "delta" and module in self._retained:
-            if len(self._retained[module]) >= RETAIN_MAX:
-                del self._retained[module]           # trop de changements : le prochain instantané reprendra
+            self._retained[key] = [payload]
+        elif retain == "delta" and key in self._retained:
+            if len(self._retained[key]) >= RETAIN_MAX:
+                del self._retained[key]              # trop de changements : le prochain instantané reprendra
             else:
-                self._retained[module].append(payload)
+                self._retained[key].append(payload)
         only_hf = message.get("scope") == "hf_view"
         for session in list(self.clients()):
             if only_hf and not getattr(session, "hf_view", False):

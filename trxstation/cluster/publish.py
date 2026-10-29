@@ -13,6 +13,9 @@
   dérive) ; `delta` : ajouts, mises à jour et retraits, regroupés (1 s au plus).
 - Au plus 150 spots par instantané (les plus récents) : un message reste petit
   (environ 25 ko au pire).
+- `recent` : les 30 derniers spots TOUTES BANDES (« Tout afficher »), le plus
+  récent en tête, renvoyés quand un spot arrive (au plus toutes les 5 s) ;
+  même portée et même rejeu que les spots de la bande.
 """
 
 from __future__ import annotations
@@ -23,6 +26,8 @@ from .cache import Spot, SpotCache
 SNAPSHOT_EVERY_S = 60.0
 MAX_SPOTS = 150
 FALLBACK_HALF_KHZ = 500.0
+RECENT_MAX = 30
+RECENT_EVERY_S = 5.0
 
 
 def window_for(freq_hz: int | float | None) -> tuple[float, float] | None:
@@ -62,6 +67,8 @@ class SpotPublisher:
         self._upserts: dict[int, Spot] = {}
         self._need_snapshot = False
         self._last_snapshot = float("-inf")
+        self._recent_dirty = True
+        self._last_recent = float("-inf")
 
     def set_frequency(self, freq_hz: int | float | None) -> None:
         win = window_for(freq_hz)
@@ -73,6 +80,7 @@ class SpotPublisher:
         return self.window is not None and self.window[0] <= s.freq_khz <= self.window[1]
 
     def on_spot(self, s: Spot, new: bool) -> None:
+        self._recent_dirty = True
         if self._inside(s) or s.id in self.sent:       # sorti de la fenêtre : le retrait suivra
             self._upserts[s.id] = s
 
@@ -99,6 +107,15 @@ class SpotPublisher:
         self.sent = (self.sent - set(removed)) | {s.id for s in upserts}
         return {"kind": "spots", "op": "delta", "scope": "hf_view", "retain": "delta",
                 "spots": [compact(s, now) for s in upserts], "removed": removed}
+
+    def recent(self, now: float) -> dict | None:
+        """Les derniers spots toutes bandes, si un spot est arrivé depuis le dernier envoi (5 s au plus souvent)."""
+        if not self._recent_dirty or now - self._last_recent < RECENT_EVERY_S:
+            return None
+        self._recent_dirty = False
+        self._last_recent = now
+        spots = sorted(self.cache.spots(), key=lambda s: s.last_seen, reverse=True)[:RECENT_MAX]
+        return {"kind": "recent", "scope": "hf_view", "retain": "snapshot", "spots": [compact(s, now) for s in spots]}
 
     def _snapshot(self, now: float) -> dict:
         lo, hi = self.window
