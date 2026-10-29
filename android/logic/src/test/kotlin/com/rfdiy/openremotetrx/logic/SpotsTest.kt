@@ -124,19 +124,22 @@ class MediaKeysTest {
     }
 
     @Test
-    fun `lecture automatique a la connexion d'un casque ou d'une voiture - jamais de prise`() {
+    fun `touche automatique a la connexion d'un casque ou d'une voiture - jamais de prise`() {
         assertEquals(MediaAction.IGNORE, d(MediaKey.PLAY, device = 500))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.PAUSE, device = 500))
         assertEquals(MediaAction.IGNORE, d(MediaKey.TOGGLE, device = 2999))
         assertEquals(MediaAction.TOGGLE, d(MediaKey.PLAY, device = 3000))
         assertEquals(MediaAction.TOGGLE, d(MediaKey.PAUSE, mine = true, device = 10))   // terminer reste toujours permis
+        assertEquals("appareil audio arrivé à l'instant (touche automatique ?)", MediaKeys.ignoredWhy(MediaKey.PLAY, 0, false, 500, null))
     }
 
     @Test
-    fun `pause et stop ne prennent jamais, lecture ne coupe jamais`() {
-        assertEquals(MediaAction.IGNORE, d(MediaKey.PAUSE))
+    fun `lecture et pause = meme appui PTT (le casque choisit l'une ou l'autre), stop ne prend jamais`() {
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.PAUSE))                           // essai du 2026-10-29
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.PLAY, mine = true))              // « lecture » pendant l'émission : fin
         assertEquals(MediaAction.IGNORE, d(MediaKey.STOP))
         assertEquals(MediaAction.TOGGLE, d(MediaKey.STOP, mine = true))
-        assertEquals(MediaAction.IGNORE, d(MediaKey.PLAY, mine = true))
+        assertEquals("rebond", MediaKeys.ignoredWhy(MediaKey.TOGGLE, 0, true, null, 100))
     }
 }
 

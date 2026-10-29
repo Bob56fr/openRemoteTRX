@@ -77,7 +77,8 @@ class RigService : Service() {
     private var lastNotification = ""
     private var foreground = false
     private var media: MediaSession? = null                       // fil principal
-    private var mediaMine = false
+    private var commListener: Any? = null                         // AudioManager.OnCommunicationDeviceChangedListener (Android 12+)
+    private var lastMicFix = 0L
     private var deviceAddedAt: Long? = null                       // fil « rig »
     private var lastMediaKeyAt: Long? = null
     private var headsetMic = false
@@ -235,11 +236,7 @@ class RigService : Service() {
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
         if (mine != wasMine) sounds.txBeep(mine)
         wasMine = mine
-        val owned = state.ptt?.mine == true
-        if (owned != mediaMine) {
-            mediaMine = owned
-            media?.setPlaybackState(playback(owned))
-        }
+
         updateNotification(state)
         if (state.status == LinkStatus.DISCONNECTED && request != null && attempt?.isActive != true) {
             request = null                                         // abandon : plus rien à garder au premier plan
@@ -291,7 +288,7 @@ class RigService : Service() {
                             return true                         // appui et relâchement consommés : rien d'autre ne démarre
                         }
                     }, Handler(mainLooper))
-                    setPlaybackState(playback(mediaMine))
+                    setPlaybackState(playback())
                     isActive = true
                 }
             } else if (!want) {
@@ -305,10 +302,13 @@ class RigService : Service() {
         media = null
     }
 
-    /** « En lecture » pendant SON émission : un casque envoie alors « pause » (fin), sinon « lecture » (prise). */
-    private fun playback(mine: Boolean): PlaybackState = PlaybackState.Builder()
+    /**
+     * Toujours « en lecture » (la réception joue) : Android donne les touches en priorité à la session qui joue ; avec
+     * « en pause », le premier appui pouvait partir vers une autre application (essai du 2026-10-29).
+     */
+    private fun playback(): PlaybackState = PlaybackState.Builder()
         .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_STOP)
-        .setState(if (mine) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+        .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
         .build()
 
     private fun keyEvent(intent: Intent): KeyEvent? =
@@ -332,9 +332,16 @@ class RigService : Service() {
         val t = now()
         val snap = session.snapshot
         val mine = snap.ptt?.mine == true
-        val action = MediaKeys.decide(key, repeat, mine, deviceAddedAt?.let { t - it }, lastMediaKeyAt?.let { t - it })
-        if (action != MediaAction.TOGGLE) return
+        val sinceDevice = deviceAddedAt?.let { t - it }
+        val sinceLast = lastMediaKeyAt?.let { t - it }
+        val action = MediaKeys.decide(key, repeat, mine, sinceDevice, sinceLast)
+        val name = key.name.lowercase()
+        if (action != MediaAction.TOGGLE) {
+            if (repeat == 0) session.note(t, "Bouton du casque ou du volant ($name) ignoré : ${MediaKeys.ignoredWhy(key, repeat, mine, sinceDevice, sinceLast)}.")
+            return
+        }
         lastMediaKeyAt = t
+        session.note(t, "Bouton du casque ou du volant ($name) : " + if (mine) "fin d'émission." else "demande d'émission.")
         if (!mine && (!snap.armed || request?.useMic != true || snap.ptt?.transmitting == true)) {
             sounds.refused()                                       // refus audible : l'écran n'est peut-être pas visible
         }
@@ -354,15 +361,51 @@ class RigService : Service() {
                 "aucun casque Bluetooth connecté : micro du téléphone"
             } else {
                 am.mode = AudioManager.MODE_IN_COMMUNICATION
+                watchCommunicationDevice(am)
                 if (am.setCommunicationDevice(device)) "micro du casque : ${device.productName}" else "casque Bluetooth refusé par Android : micro du téléphone"
             }
         }
         RigHub.publish { it.copy(headsetMic = text) }
     }
 
+    /**
+     * Android peut reprendre l'appareil de communication (son revenu sur le téléphone, essai du 2026-10-29) : on remet
+     * le casque, au plus une fois toutes les 3 s pour ne jamais se battre avec le système, et on le note au journal.
+     */
+    @androidx.annotation.RequiresApi(31)
+    private fun watchCommunicationDevice(am: AudioManager) {
+        if (commListener != null) return
+        val listener = AudioManager.OnCommunicationDeviceChangedListener { current ->
+            executor.execute {
+                if (!headsetMic || !foreground) return@execute
+                val bt = current?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || current?.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+                if (bt) return@execute
+                val t = now()
+                val device = am.availableCommunicationDevices.firstOrNull {
+                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+                }
+                if (device == null || t - lastMicFix < 3000) {
+                    session.note(t, "Son et micro repassés sur le téléphone (casque " + (if (device == null) "déconnecté" else "repris par Android") + ").", warn = true)
+                    RigHub.publish { it.copy(headsetMic = "son et micro sur le téléphone") }
+                    return@execute
+                }
+                lastMicFix = t
+                am.mode = AudioManager.MODE_IN_COMMUNICATION
+                val ok = am.setCommunicationDevice(device)
+                session.note(t, "Son repassé sur le téléphone : casque " + (if (ok) "rétabli." else "refusé par Android."), warn = !ok)
+            }
+        }
+        am.addOnCommunicationDeviceChangedListener(mainExecutor, listener)
+        commListener = listener
+    }
+
     private fun releaseHeadsetMic() {
         if (!headsetMic) return
         val am = getSystemService(AudioManager::class.java) ?: return
+        if (Build.VERSION.SDK_INT >= 31) (commListener as? AudioManager.OnCommunicationDeviceChangedListener)?.let {
+            runCatching { am.removeOnCommunicationDeviceChangedListener(it) }
+        }
+        commListener = null
         runCatching {
             if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice()
             am.mode = AudioManager.MODE_NORMAL
@@ -413,8 +456,15 @@ class RigService : Service() {
     private fun onFocus(change: Int) {
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                focusLost = true
-                if (session.snapshot.ptt?.let { it.mine && it.transmitting } == true) session.stop(now())
+                if (session.snapshot.ptt?.let { it.mine && it.transmitting } == true) session.stop(now(), "Son pris par un appel ou une autre application : retour en réception.")
+                // Appel (perte passagère) : réception muette jusqu'au retour du son. Perte définitive (autre application de
+                // musique) : la réception continue, sinon elle resterait muette sans raison visible (essai du 2026-10-29).
+                if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                    focusLost = true
+                    session.note(now(), "Son pris par un appel ou une autre application : réception muette en attendant.")
+                } else {
+                    session.note(now(), "Une autre application a pris le son : la réception continue.")
+                }
                 applyMute()
             }
             AudioManager.AUDIOFOCUS_GAIN -> {

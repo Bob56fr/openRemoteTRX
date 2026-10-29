@@ -369,6 +369,12 @@ class RigSession(
     }
 
     /** « Reprendre la main » après une action sur le poste ; la station refuse pendant une émission locale. */
+    /** Ligne du journal venue de la couche Android (bouton du casque, routage audio) : utile aux essais. */
+    fun note(now: Long, text: String, warn: Boolean = false) {
+        log(text, if (warn) LogLevel.WARN else LogLevel.INFO)
+        publish(now)
+    }
+
     fun releaseLocal(now: Long) {
         if (!connected) return
         send(now, Command.LocalRelease)
