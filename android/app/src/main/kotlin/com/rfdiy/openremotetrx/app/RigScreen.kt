@@ -476,6 +476,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
             }
             }
+            Panel { MicSection() }
             Panel { HeadsetSection(ui.headsetMic) }
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }

@@ -98,7 +98,11 @@ class RigService : Service() {
     override fun onCreate() {
         super.onCreate()
         sounds = LinkSounds(this)
-        headsetMic = getSharedPreferences(RigHub.PREFS, MODE_PRIVATE).getBoolean(RigHub.PREF_HEADSET_MIC, false)
+        val prefs = getSharedPreferences(RigHub.PREFS, MODE_PRIVATE)
+        headsetMic = prefs.getBoolean(RigHub.PREF_HEADSET_MIC, false)
+        val processing = com.rfdiy.openremotetrx.logic.MicProfiles.processing(
+            prefs.getString(RigHub.PREF_MIC_PROFILE, null), prefs.getBoolean(RigHub.PREF_MIC_ECHO, true), prefs.getBoolean(RigHub.PREF_MIC_NOISE, false),
+        )
         rtc = RtcLink(
             this,
             post = { block -> runCatching { executor.execute(block) } },
@@ -106,6 +110,7 @@ class RigService : Service() {
             onClosed = { code -> session.onLinkClosed(now(), code) },
             onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
             voiceCall = headsetMic,
+            processing = processing,
         )
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()

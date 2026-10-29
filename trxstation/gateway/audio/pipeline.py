@@ -46,4 +46,6 @@ class AudioPipeline:
                 "rx_dropped": self.hub.dropped, "tx_dropped_not_owner": self.gate.dropped_not_owner,
                 "rx_frames": self.hub.frames,              # trames capturées sur la carte son du poste
                 "tx_frames": self.gate.passed,             # trames du micro d'un client passées au poste (porte ouverte)
-                "tx_dropped_closed": self.gate.dropped_closed}   # trames jetées porte fermée (normal en réception)
+                "tx_dropped_closed": self.gate.dropped_closed,   # trames jetées porte fermée (normal en réception)
+                "tx_underruns": getattr(self.sink, "underruns", 0),   # trous dans le son envoyé au poste (réseau en retard)
+                "tx_overruns": getattr(self.sink, "overruns", 0)}     # son jeté car arrivé trop tard

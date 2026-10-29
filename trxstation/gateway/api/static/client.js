@@ -374,6 +374,24 @@
     return bands.length ? bands : BANDS.slice();
   }
 
+  // Traitements du micro par le navigateur, selon l'environnement (demande de l'utilisateur, 2026-10-29 : coupures en
+  // émission). Le contrôle automatique de gain reste TOUJOURS coupé (il fausserait le niveau d'émission).
+  const MIC_PROFILES = {
+    quiet: { label: "Micro intégré, pièce calme", echo: true, noise: false },
+    noisy: { label: "Micro intégré, pièce bruyante", echo: true, noise: true },
+    headset_nr: { label: "Micro-casque avec réduction de bruit", echo: false, noise: false },
+    headset: { label: "Micro-casque sans réduction de bruit", echo: false, noise: true },
+    custom: { label: "Personnalisé", echo: null, noise: null },
+  };
+
+  function micConstraints(profile, custom) {
+    /* {echoCancellation, noiseSuppression, autoGainControl} pour getUserMedia ; profil inconnu = pièce calme. */
+    const p = MIC_PROFILES[profile] || MIC_PROFILES.quiet;
+    const c = custom || {};
+    return { echoCancellation: p.echo === null ? c.echo !== false : p.echo,
+             noiseSuppression: p.noise === null ? c.noise === true : p.noise, autoGainControl: false };
+  }
+
   function clarifierText(hz) {
     return (hz >= 0 ? "+" : "") + Math.round(hz / 10) * 10 + " Hz";
   }
@@ -715,7 +733,8 @@
           } else {
             try {
               const processing = opts.audioProcessing !== false;
-              const audio = { echoCancellation: processing, noiseSuppression: processing, autoGainControl: false, channelCount: 1 };
+              const audio = Object.assign(opts.micProfile ? micConstraints(opts.micProfile, opts.micCustom)
+                : { echoCancellation: processing, noiseSuppression: processing, autoGainControl: false }, { channelCount: 1 });
               if (opts.micDeviceId) audio.deviceId = { exact: opts.micDeviceId };
               const stream = await this.env.getUserMedia({ audio: audio });
               const track = stream.getAudioTracks()[0];
@@ -1210,6 +1229,7 @@
         tot: state === "TX" && p.tot_remaining_s !== null && p.tot_remaining_s !== undefined ? Math.round(p.tot_remaining_s) : null,
         totWarning: !!p.tot_warning, fault: p.fault || "",
         rxLevel: audio.rx_db === undefined ? "—" : audio.rx_db + " dBFS", txLevel: audio.tx_db === undefined ? "—" : audio.tx_db + " dBFS",
+        txHoles: Number.isInteger(audio.tx_underruns) ? audio.tx_underruns : null,     // trous dans le son envoyé au poste (réseau en retard)
         clients: (this.state && this.state.clients) || [], lastCut: cutText(p.last_cut_reason),
         rigConnected: rig.connected !== false,
         dataModeHint: txHint || dataModeHint(rig.mode, caps),
@@ -1570,6 +1590,21 @@
       return res;
     }
 
+    async applyMicProfile(profile, custom) {
+      /* Profil du micro changé en cours de liaison : appliqué au micro tout de suite si le navigateur le permet. */
+      const wanted = micConstraints(profile, custom);
+      if (!this.rawMic || !this.rawMic.applyConstraints) return false;
+      try {
+        await this.rawMic.applyConstraints(wanted);
+        this.ui.log("Micro : écho " + (wanted.echoCancellation ? "annulé" : "non traité") + ", réduction de bruit "
+                    + (wanted.noiseSuppression ? "en service" : "coupée") + ".", "");
+        return true;
+      } catch (e) {
+        this.ui.log("Réglage du micro appliqué à la prochaine connexion (" + (e && e.message ? e.message : e) + ").", "warn");
+        return false;
+      }
+    }
+
     watchSpectrum(on) {
       /* Vue HF ouverte ou fermée : la station n'envoie les balayages QUE pendant que la vue est affichée
          (données mobiles). Hors liaison : rien à faire, une nouvelle connexion part sans abonnement. */
@@ -1616,6 +1651,6 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, preampNumber, favoriteBands };
+                indicatorsView, preampNumber, favoriteBands, MIC_PROFILES, micConstraints };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -158,3 +158,22 @@ class BeepSettingsTest {
         assertNull(BeepSettings.parse(null))
     }
 }
+
+class MicProfilesTest {
+    @Test
+    fun `profils du micro comme la page - casque a reduction de bruit = aucun traitement, defaut = piece calme`() {
+        assertEquals(listOf("quiet", "noisy", "headset_nr", "headset", "custom"), MicProfiles.ALL.map { it.key })
+        assertEquals(MicProcessing(echo = false, noise = false), MicProfiles.processing("headset_nr"))
+        assertEquals(MicProcessing(echo = true, noise = true), MicProfiles.processing("noisy"))
+        assertEquals(MicProcessing(echo = true, noise = false), MicProfiles.processing("inconnu"))
+        assertEquals(MicProcessing(echo = false, noise = true), MicProfiles.processing("custom", customEcho = false, customNoise = true))
+        // Même table que la page (client.js, MIC_PROFILES)
+        val js = java.io.File("../../trxstation/gateway/api/static/client.js").readText()
+        for (p in MicProfiles.ALL) {
+            val pr = p.processing
+            val expected = if (pr == null) "${p.key}: { label: \"${p.label}\", echo: null, noise: null }"
+                else "${p.key}: { label: \"${p.label}\", echo: ${pr.echo}, noise: ${pr.noise} }"
+            assertTrue(expected in js, expected)
+        }
+    }
+}

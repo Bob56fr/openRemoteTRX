@@ -39,6 +39,14 @@ test("voyants comme l'application : ATT ou P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB,
   assert.deepEqual(web.indicatorsView({}, {}, {}, {}), []);                              // rien de publié : aucun voyant
 });
 
+test("profils du micro : contrôle automatique de gain toujours coupé ; casque à réduction de bruit = rien du navigateur", () => {
+  for (const key of Object.keys(web.MIC_PROFILES)) assert.equal(web.micConstraints(key, {}).autoGainControl, false);
+  assert.deepEqual(web.micConstraints("headset_nr"), { echoCancellation: false, noiseSuppression: false, autoGainControl: false });
+  assert.deepEqual(web.micConstraints("noisy"), { echoCancellation: true, noiseSuppression: true, autoGainControl: false });
+  assert.equal(web.micConstraints("inconnu").noiseSuppression, false);                       // défaut : pièce calme
+  assert.deepEqual(web.micConstraints("custom", { echo: false, noise: true }), { echoCancellation: false, noiseSuppression: true, autoGainControl: false });
+});
+
 test("bandes préférées : ordre du plan, inconnues ignorées, aucune = toutes", () => {
   assert.deepEqual(web.favoriteBands("20, 11,99,40").map((b) => b.key), ["40", "20", "11"]);
   assert.equal(web.favoriteBands("").length, web.BANDS.length);

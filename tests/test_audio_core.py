@@ -77,6 +77,22 @@ def test_ring_buffer_keeps_newest_and_pads_underruns():
     assert len(ring) == 0
 
 
+def test_ring_buffer_prefill_absorbs_network_jitter_and_counts_real_holes():
+    ring = RingBuffer(100, prefill_bytes=6)
+    ring.write(b"abcd")
+    assert ring.read(2) == bytes(2) and ring.underruns == 0        # réserve pas encore atteinte : silence, pas un trou
+    ring.write(b"ef")
+    assert ring.read(2) == b"ab" and ring.read(2) == b"cd"           # réserve atteinte : le flux passe
+    assert ring.read(4) == b"ef" + bytes(2) and ring.underruns == 1  # vrai trou en plein flux
+    ring.write(b"gh")
+    assert ring.read(2) == bytes(2)                                   # après un trou : réserve reconstituée d'abord
+    ring.write(b"ijkl")
+    assert ring.read(2) == b"gh"
+    ring.clear()
+    ring.write(b"mn")
+    assert ring.read(2) == bytes(2) and ring.underruns == 1           # après la porte fermée (clear) : réserve aussi
+
+
 def test_ring_buffer_is_thread_safe():
     ring = RingBuffer(100_000)
 
@@ -384,14 +400,18 @@ def test_sounddevice_sink_plays_from_ring_and_flushes():
     sink.write(frame(9))
     out = bytearray(FRAME_BYTES)
     stream.callback(out, FRAME_SAMPLES, None, None)
-    assert bytes(out) == frame(9)
+    assert bytes(out) == silence()                                                  # réserve de 60 ms pas encore atteinte
+    sink.write(frame(8)); sink.write(frame(7))
+    stream.callback(out, FRAME_SAMPLES, None, None)
+    assert bytes(out) == frame(9)                                                   # réserve atteinte : le flux passe
+    assert sink.underruns == 0
     sink.write(frame(9))
     sink.flush()                                                                    # coupure : plus de reste de son
     stream.callback(out, FRAME_SAMPLES, None, None)
     assert bytes(out) == silence()
-    for _ in range(20):                                                             # retard borné à 150 ms
+    for _ in range(20):                                                             # retard borné à 200 ms
         sink.write(frame(1))
-    assert len(sink._ring) <= int(48000 * 2 * 0.15)
+    assert len(sink._ring) <= int(48000 * 2 * 0.20) and sink.overruns > 0
     sink.close()
     assert stream.closed
     with pytest.raises(AudioConfigError):
@@ -410,7 +430,7 @@ def test_pipeline_streams_rx_and_reports_stats():
         assert all(len(f) == FRAME_BYTES for f in frames)
         stats = pipeline.stats()
         assert set(stats) == {"rx_db", "tx_db", "gate_open", "listeners", "rx_dropped", "tx_dropped_not_owner",
-                              "rx_frames", "tx_frames", "tx_dropped_closed"}
+                              "rx_frames", "tx_frames", "tx_dropped_closed", "tx_underruns", "tx_overruns"}
         assert stats["rx_frames"] >= 3 and stats["tx_frames"] == 0
         assert stats["rx_db"] > -20 and stats["listeners"] == 1 and stats["gate_open"] is False
         pipeline.gate.owner_provider = lambda: "phone"

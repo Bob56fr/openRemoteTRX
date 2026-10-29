@@ -245,12 +245,24 @@ class SoundDeviceSource:
 
 
 class SoundDeviceSink:
-    MAX_BACKLOG_S = 0.15        # au-delà, on jette le plus ancien : un retard d'émission est pire qu'une coupure
+    MAX_BACKLOG_S = 0.20        # au-delà, on jette le plus ancien : un retard d'émission est pire qu'une coupure
+    PREFILL_S = 0.06            # réserve contre la gigue du réseau (Wi-Fi, 4G) : sans elle, chaque paquet en retard
+                                # faisait un trou dans l'émission (constat de l'utilisateur, 2026-10-29)
 
     def __init__(self, device: str, sd=None):
         self.device, self._sd = device, sd
-        self._ring = RingBuffer(int(SAMPLE_RATE * 2 * self.MAX_BACKLOG_S))
+        self._ring = RingBuffer(int(SAMPLE_RATE * 2 * self.MAX_BACKLOG_S), int(SAMPLE_RATE * 2 * self.PREFILL_S))
         self._stream = None
+
+    @property
+    def underruns(self) -> int:
+        """Trous dans le son envoyé au poste (le réseau n'a pas livré à temps)."""
+        return self._ring.underruns
+
+    @property
+    def overruns(self) -> int:
+        """Son jeté parce qu'il arrivait trop en retard (plus de MAX_BACKLOG_S d'avance accumulée)."""
+        return self._ring.overruns
 
     def open(self) -> None:
         sd = self._sd or _import_sd()

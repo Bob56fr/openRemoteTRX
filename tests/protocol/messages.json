@@ -30,7 +30,7 @@
     "rig": {"connected": true, "frequency_hz": 14074000, "mode": "PKTUSB", "passband_hz": 3000, "strength_db": -54,
             "functions": {"NR": false, "NB": true}, "levels": {"PREAMP": 10, "SWR": 1.1, "ALC": 0.3},
             "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}},
-    "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1},
+    "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1, "tx_underruns": 0, "tx_overruns": 0},
     "clients": ["phone"],
     "spectrum": {"state": "ok", "code": "", "message": "", "settings": {"span": 25000}}
   },

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.LinkSounds
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.BeepSettings
+import com.rfdiy.openremotetrx.logic.MicProfiles
 import com.rfdiy.openremotetrx.logic.Spot
 import com.rfdiy.openremotetrx.logic.Spots
 import java.time.Instant
@@ -181,4 +182,37 @@ fun HeadsetSection(headsetMicState: String) {
             )
         }
     }
+}
+
+/** Micro : environnement (traitements d'écho et de bruit), comme la page ; pris en compte à la connexion suivante. */
+@Composable
+fun MicSection() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(RigHub.PREFS, android.content.Context.MODE_PRIVATE) }
+    var profile by remember { mutableStateOf(prefs.getString(RigHub.PREF_MIC_PROFILE, MicProfiles.DEFAULT) ?: MicProfiles.DEFAULT) }
+    var echo by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_MIC_ECHO, true)) }
+    var noise by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_MIC_NOISE, false)) }
+    Text("Micro : environnement", style = MaterialTheme.typography.titleSmall)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (p in MicProfiles.ALL) {
+            CompactChip(p.label, onClick = { profile = p.key; prefs.edit().putString(RigHub.PREF_MIC_PROFILE, p.key).apply() }, selected = p.key == profile)
+        }
+    }
+    if (profile == "custom") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = echo, onCheckedChange = { echo = it; prefs.edit().putBoolean(RigHub.PREF_MIC_ECHO, it).apply() })
+            Spacer(Modifier.width(8.dp))
+            Text("Annulation d'écho", style = MaterialTheme.typography.bodyMedium)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = noise, onCheckedChange = { noise = it; prefs.edit().putBoolean(RigHub.PREF_MIC_NOISE, it).apply() })
+            Spacer(Modifier.width(8.dp))
+            Text("Réduction de bruit", style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+    Text(
+        "Coupures de la voix en émission : essayez « pièce calme » ou un profil « micro-casque » (réduction de bruit coupée). " +
+            "Pris en compte à la prochaine connexion.",
+        color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
+    )
 }

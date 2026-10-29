@@ -26,6 +26,7 @@ import org.webrtc.RtpTransceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import org.webrtc.audio.JavaAudioDeviceModule
+import com.rfdiy.openremotetrx.logic.MicProcessing
 
 /**
  * Liaison WebRTC avec la station, comme la page : une piste audio dans chaque sens (micro FERMÉ tant que la
@@ -44,6 +45,8 @@ class RtcLink(
     private val onSpectrum: (ByteArray) -> Unit = {},
     /** Micro d'un casque Bluetooth : le son passe alors comme un appel (qualité téléphone, dans le casque). */
     voiceCall: Boolean = false,
+    /** Annulation d'écho et réduction de bruit du micro (profil choisi par l'utilisateur, logic.MicProfiles). */
+    private val processing: MicProcessing = MicProcessing(echo = true, noise = true),
 ) {
     private val factory: PeerConnectionFactory
     private var generation = 0
@@ -59,8 +62,8 @@ class RtcLink(
     init {
         PeerConnectionFactory.initialize(PeerConnectionFactory.InitializationOptions.builder(context.applicationContext).createInitializationOptions())
         val adm = JavaAudioDeviceModule.builder(context.applicationContext)
-            .setUseHardwareAcousticEchoCanceler(true)
-            .setUseHardwareNoiseSuppressor(true)
+            .setUseHardwareAcousticEchoCanceler(processing.echo)
+            .setUseHardwareNoiseSuppressor(processing.noise)
             // Son de la station joué comme un média : haut-parleur, casque, Bluetooth ou voiture, volume « média ».
             // Micro du casque Bluetooth choisi : comme un appel, sinon le son partirait sur le haut-parleur du téléphone.
             .setAudioAttributes(
@@ -123,8 +126,8 @@ class RtcLink(
             val constraints = MediaConstraints().apply {
                 // Comme la page : pas de contrôle automatique de gain (il fausserait le niveau d'émission).
                 optional.add(MediaConstraints.KeyValuePair("googAutoGainControl", "false"))
-                optional.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
-                optional.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+                optional.add(MediaConstraints.KeyValuePair("googEchoCancellation", processing.echo.toString()))
+                optional.add(MediaConstraints.KeyValuePair("googNoiseSuppression", processing.noise.toString()))
                 optional.add(MediaConstraints.KeyValuePair("googHighpassFilter", "true"))
             }
             val source = factory.createAudioSource(constraints)

@@ -25,7 +25,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 
 ## 3. Transport WebRTC
 
-- **Audio** : une piste dans chaque sens, Opus 48 kHz mono. Le client envoie toujours sa piste micro ; la station n'en fait passer le son au poste que pour le propriétaire de l'émission, porte ouverte (`state.audio.gate_open`). Traitement du micro : pas de contrôle automatique de gain ; annulation d'écho et réduction de bruit selon le réglage de l'utilisateur.
+- **Audio** : une piste dans chaque sens, Opus 48 kHz mono. Le client envoie toujours sa piste micro ; la station n'en fait passer le son au poste que pour le propriétaire de l'émission, porte ouverte (`state.audio.gate_open`). Traitement du micro : pas de contrôle automatique de gain ; annulation d'écho et réduction de bruit selon le profil choisi par l'utilisateur (pièce calme, pièce bruyante, micro-casque avec ou sans réduction de bruit, personnalisé). La station garde 60 ms de réserve avant de jouer le son d'émission vers le poste (gigue du réseau) ; `state.audio.tx_underruns` compte les trous restants (réseau en retard), `tx_overruns` le son jeté car arrivé trop tard (depuis 0.58.0).
 - **Canal `control`** (ouvert par le client, ordonné, fiable) : JSON, un objet par message, dans les deux sens.
 - **Canal `spectrum`** (facultatif, ouvert par le client, `ordered: false`, `maxRetransmits: 0`) : balayages du spectre HF en binaire (§ 8).
 - Limites : 2 048 octets par commande (sauf `layout_save` et `bug_report`, reconnus à leur début `{"cmd":"layout_save"` / `{"cmd":"bug_report"` : le client doit écrire `cmd` EN PREMIER), 64 ko au plus par message (aiortc), 30 messages/s par client (`error rate_limited` au-delà).

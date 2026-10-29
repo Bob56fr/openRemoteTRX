@@ -24,6 +24,7 @@
   const REVERB_TYPES = { room: { label: "Pièce", seconds: 0.5, bright: 0.5 }, hall: { label: "Salle", seconds: 1.8, bright: 0.35 },
                          plate: { label: "Plaque", seconds: 1.2, bright: 0.8 }, spring: { label: "Ressort", seconds: 0.9, bright: 0.6 } };
   const RECORD_MAX_S = 30;
+  const GATE_HOLD_MS = 250, GATE_TICK_MS = 10, GATE_FLOOR = 0.03;     // porte de bruit : maintien, cadence, -30 dB fermée
 
   function defaults() {
     return {
@@ -32,6 +33,8 @@
       bands: BANDS_HZ.map((hz, i) => ({ hz: hz, gainDb: 0, q: 1.4, shelf: i === 0 || i === BANDS_HZ.length - 1 })),
       chorus: { on: false, type: "classic", mix: 30, rateHz: 0.8, depthMs: 3 },
       reverb: { on: false, type: "room", mix: 20, seconds: 0.5 },
+      // Micro, actif même égaliseur éteint : gain, porte de bruit réglable (coupée par défaut)
+      mic: { gainDb: 0, gateOn: false, gateDb: -50 },
     };
   }
 
@@ -71,6 +74,8 @@
     const r = raw.reverb && typeof raw.reverb === "object" ? raw.reverb : {};
     s.reverb = { on: r.on === true, type: REVERB_TYPES[r.type] ? r.type : d.reverb.type, mix: num(r.mix, 0, 100, d.reverb.mix),
                  seconds: num(r.seconds, 0.2, 4, d.reverb.seconds) };
+    const m = raw.mic && typeof raw.mic === "object" ? raw.mic : {};
+    s.mic = { gainDb: num(m.gainDb, -12, 20, 0), gateOn: m.gateOn === true, gateDb: num(m.gateDb, -80, -20, -50) };
     return s;
   }
 
@@ -157,15 +162,25 @@
 
   class VoiceChain {
     /* ctx : AudioContext ; source : nœud du micro. `track` : piste à envoyer à la station (sortie de la chaîne). */
-    constructor(ctx, source, settings, log) {
+    constructor(ctx, source, settings, log, timers) {
       this.ctx = ctx;
       this.log = log || (() => {});
+      // Fonctions du navigateur enveloppées : appelées détachées de window, elles lèvent « Illegal invocation »
+      this.timers = timers || (typeof setInterval === "function"
+        ? { setInterval: (f, ms) => setInterval(f, ms), clearInterval: (id) => clearInterval(id) } : null);
       this.settings = validate(settings);
       this.tx = false; this.monitoring = false; this.playing = null;
       this.failed = false;
+      // Micro : gain, mesure du niveau (jamais envoyée), porte de bruit réglable
+      this.pre = ctx.createGain();
+      this.tap = ctx.createAnalyser(); this.tap.fftSize = 1024;
+      this.gate = ctx.createGain();
+      source.connect(this.pre); this.pre.connect(this.tap); this.pre.connect(this.gate);
+      this._tapBuf = new Float32Array(this.tap.fftSize);
+      this._gateOpenUntil = 0; this._gateTimer = null;
       this.input = ctx.createGain();                        // porte d'entrée : ouverte en émission et pendant l'écoute de contrôle
       this.input.gain.value = 0;
-      source.connect(this.input);
+      this.gate.connect(this.input);
       this.playIn = ctx.createGain();                       // relecture d'un enregistrement (jamais vers la station)
       this.limiter = ctx.createDynamicsCompressor();
       this.limiter.threshold.value = LIMIT_DBFS - 3; this.limiter.knee.value = 0; this.limiter.ratio.value = 20;
@@ -238,10 +253,49 @@
       this.bypass.gain.value = 1; this.processed.gain.value = 0;
     }
 
+    micLevelDb() {
+      /* Niveau efficace du micro (dBFS) après le gain : pour régler gain et seuil de la porte. */
+      this.tap.getFloatTimeDomainData(this._tapBuf);
+      let sum = 0;
+      for (const x of this._tapBuf) sum += x * x;
+      const rms = Math.sqrt(sum / this._tapBuf.length);
+      return rms > 1e-6 ? 20 * Math.log10(rms) : -120;
+    }
+
+    _gateTick(nowMs) {
+      /* Porte de bruit : ouverte au-dessus du seuil, maintenue 250 ms, sinon atténuée de 30 dB (jamais muette). */
+      const m = this.settings.mic;
+      let target = 1;
+      if (m.gateOn) {
+        if (this.micLevelDb() >= m.gateDb) this._gateOpenUntil = nowMs + GATE_HOLD_MS;
+        target = nowMs < this._gateOpenUntil ? 1 : GATE_FLOOR;
+      }
+      const g = this.gate.gain;
+      if (g.setTargetAtTime) g.setTargetAtTime(target, this.ctx.currentTime || 0, target === 1 ? 0.003 : 0.05);
+      else g.value = target;
+      return target;
+    }
+
+    _syncGateTimer() {
+      const want = this.settings.mic.gateOn && this.timers;
+      if (want && this._gateTimer === null) {
+        this._gateTimer = this.timers.setInterval(() => this._gateTick(Date.now()), GATE_TICK_MS);
+      } else if (!want && this._gateTimer !== null) {
+        this.timers.clearInterval(this._gateTimer);
+        this._gateTimer = null;
+      }
+      if (!this.settings.mic.gateOn) {
+        if (this.gate.gain.cancelScheduledValues) this.gate.gain.cancelScheduledValues(0);
+        this.gate.gain.value = 1;
+      }
+    }
+
     apply(settings) {
       /* Réglages appliqués tout de suite (curseurs) ; éteint ou en erreur : contournement, limiteur seul. */
       this.settings = validate(settings);
       const s = this.settings;
+      this.pre.gain.value = Math.pow(10, s.mic.gainDb / 20);
+      this._syncGateTimer();
       const on = s.enabled && !this.failed;
       this.bypass.gain.value = on ? 0 : 1;
       this.processed.gain.value = on ? 1 : 0;
@@ -316,11 +370,12 @@
       this.stopPlayback();
       this.toStation.gain.value = 0; this.monitor.gain.value = 0; this.input.gain.value = 0;
       for (const v of this.voices || []) { try { v.lfo.stop(); } catch (e) { /* déjà arrêté */ } }
+      if (this._gateTimer !== null && this.timers) { this.timers.clearInterval(this._gateTimer); this._gateTimer = null; }
       try { this.input.disconnect(); } catch (e) { /* déjà débranché */ }
     }
   }
 
-  const api = { BANDS_HZ, GAIN_MAX_DB, LIMIT_DBFS, CHORUS_TYPES, REVERB_TYPES, PRESETS, RECORD_MAX_S, defaults, validate, exportJson,
+  const api = { GATE_FLOOR, BANDS_HZ, GAIN_MAX_DB, LIMIT_DBFS, CHORUS_TYPES, REVERB_TYPES, PRESETS, RECORD_MAX_S, defaults, validate, exportJson,
                 importJson, biquad, responseDb, bandType, impulse, limiterCurve, VoiceChain };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxVoice = api; }
 })(typeof window !== "undefined" ? window : globalThis);

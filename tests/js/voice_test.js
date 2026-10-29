@@ -33,6 +33,10 @@ class FakeCtx {
     return this._make("compressor", { threshold: new Param(-24), knee: new Param(30), ratio: new Param(12), attack: new Param(0.003), release: new Param(0.25) });
   }
   createWaveShaper() { return this._make("shaper", { curve: null }); }
+  createAnalyser() {
+    const ctx = this;
+    return this._make("analyser", { fftSize: 2048, getFloatTimeDomainData(buf) { buf.fill(ctx.micLevel || 0); } });
+  }
   createMediaStreamDestination() {
     const track = { kind: "audio", enabled: true };
     return this._make("dest", { stream: { getAudioTracks: () => [track] } });
@@ -159,6 +163,31 @@ test("réponse impulsionnelle générée : longueur, décroissance, deux canaux"
   assert.equal(l.length, 8000); assert.equal(r.length, 8000);
   const energy = (a, b) => { let e = 0; for (let i = a; i < b; i++) e += l[i] * l[i]; return e; };
   assert.ok(energy(0, 800) > 20 * energy(7200, 8000));
+});
+
+test("micro : gain appliqué, porte de bruit réglable (atténue sans couper, maintien), coupée par défaut", () => {
+  const timers = { started: 0, cleared: 0, setInterval() { this.started++; return 7; }, clearInterval() { this.cleared++; } };
+  const ctx = new FakeCtx();
+  const s = vx.defaults();
+  assert.deepEqual(s.mic, { gainDb: 0, gateOn: false, gateDb: -50 });
+  const c = new vx.VoiceChain(ctx, new Node(ctx, "mic"), s, null, timers);
+  assert.equal(timers.started, 0);                                            // porte coupée : aucune minuterie
+  assert.equal(c.gate.gain.value, 1);
+  s.mic = { gainDb: 6, gateOn: true, gateDb: -40 };
+  c.apply(s);
+  assert.ok(Math.abs(c.pre.gain.value - Math.pow(10, 6 / 20)) < 1e-9);
+  assert.equal(timers.started, 1);
+  ctx.micLevel = 0.1;                                                         // -20 dBFS : voix au-dessus du seuil
+  assert.ok(Math.abs(c.micLevelDb() + 20) < 0.01);
+  assert.equal(c._gateTick(1000), 1);
+  ctx.micLevel = 0.001;                                                       // -60 dBFS : fond
+  assert.equal(c._gateTick(1200), 1);                                         // maintien 250 ms après la voix
+  assert.equal(c._gateTick(1300), vx.GATE_FLOOR);                            // puis atténuée, jamais muette
+  assert.ok(vx.GATE_FLOOR > 0);
+  s.mic.gateOn = false; c.apply(s);
+  assert.equal(timers.cleared, 1); assert.equal(c.gate.gain.value, 1);
+  assert.equal(vx.validate({ mic: { gainDb: 99, gateDb: 0 } }).mic.gainDb, 20);
+  assert.equal(vx.validate({ mic: { gateDb: 0 } }).mic.gateDb, -20);
 });
 
 let failed = 0;

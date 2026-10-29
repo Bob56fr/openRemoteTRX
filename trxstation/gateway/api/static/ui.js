@@ -1301,6 +1301,7 @@
         renderInstruments(v.instruments);
         markActive(v);
         $("rx-level").textContent = v.rxLevel; $("tx-level").textContent = v.txLevel;
+        $("tx-holes").textContent = v.txHoles === null ? "—" : String(v.txHoles);
         $("tx-flag").hidden = v.pttState === "RX";
         const badge = $("ptt-state");
         badge.textContent = v.pttLabel + (v.mine || !v.owner ? "" : " (" + v.owner + ")");
@@ -1323,6 +1324,21 @@
 
     const client = new TrxClient(browserEnv(), ui);
 
+    // ---- profil du micro (traitements du navigateur) : mémorisé ; appliqué tout de suite si possible
+    for (const [key, p] of Object.entries(web.MIC_PROFILES)) $("mic-profile").appendChild(Object.assign(el("option", "", p.label), { value: key }));
+    $("mic-profile").value = web.MIC_PROFILES[store.get("trx.micprofile", "quiet")] ? store.get("trx.micprofile", "quiet") : "quiet";
+    $("mic-echo").checked = store.get("trx.micecho", "1") !== "0";
+    $("mic-noise").checked = store.get("trx.micnoise", "0") === "1";
+    function micProfileChanged() {
+      store.set("trx.micprofile", $("mic-profile").value);
+      store.set("trx.micecho", $("mic-echo").checked ? "1" : "0");
+      store.set("trx.micnoise", $("mic-noise").checked ? "1" : "0");
+      $("mic-custom").hidden = $("mic-profile").value !== "custom";
+      client.applyMicProfile($("mic-profile").value, { echo: $("mic-echo").checked, noise: $("mic-noise").checked });
+    }
+    $("mic-custom").hidden = $("mic-profile").value !== "custom";
+    for (const id of ["mic-profile", "mic-echo", "mic-noise"]) $(id).addEventListener("change", micProfileChanged);
+
     // ---- égaliseur paramétrique et effets de voix (voice.js) : chaîne branchée sur le micro à la connexion
     const vx = root.TrxVoice || null;
     let voiceSettings = vx ? vx.validate(safeJson(store.get("trx.voice", "null"))) : null;
@@ -1332,6 +1348,13 @@
     function voiceRender() {
       if (!vx) return;
       const s = voiceSettings;
+      $("voice-gain").value = s.mic.gainDb; $("voice-gain-text").textContent = " " + (s.mic.gainDb > 0 ? "+" : "") + s.mic.gainDb + " dB";
+      $("voice-gate-on").checked = s.mic.gateOn;
+      $("voice-gate-db").value = s.mic.gateDb; $("voice-gate-db-text").textContent = " " + s.mic.gateDb + " dBFS";
+      $("voice-gate-db").disabled = !s.mic.gateOn;
+      const mark = $("voice-gate-mark");
+      mark.hidden = !s.mic.gateOn;
+      mark.style.left = Math.round((s.mic.gateDb + 80) / 80 * 100) + "%";
       $("voice-direct").className = "chip voice-direct" + (s.enabled ? " on" : "");
       $("voice-direct").textContent = s.enabled ? "EQ ON" : "EQ";
       $("voice-on").checked = s.enabled;
@@ -1375,6 +1398,16 @@
       });
       const bind = (id, apply) => $(id).addEventListener("input", (ev) => { apply(ev.target); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
       bind("voice-on", (t) => { voiceSettings.enabled = t.checked; });
+      bind("voice-gain", (t) => { voiceSettings.mic.gainDb = Number(t.value); });
+      bind("voice-gate-on", (t) => { voiceSettings.mic.gateOn = t.checked; });
+      bind("voice-gate-db", (t) => { voiceSettings.mic.gateDb = Number(t.value); });
+      // Niveau du micro (échelle -80..0 dBFS), seulement rubrique ouverte et micro branché
+      window.setInterval(() => {
+        if (!voiceChain || !$("sec-voice").open) { $("voice-level-text").textContent = "—"; $("voice-level-mask").style.width = "100%"; return; }
+        const db = Math.max(-80, Math.min(0, voiceChain.micLevelDb()));
+        $("voice-level-mask").style.width = percentLeft((db + 80) / 80);
+        $("voice-level-text").textContent = Math.round(db) + " dB";
+      }, 120);
       bind("voice-hp", (t) => { voiceSettings.highpassHz = Number(t.value); });
       bind("voice-lp", (t) => { voiceSettings.lowpassHz = Number(t.value); });
       bind("voice-chorus-on", (t) => { voiceSettings.chorus.on = t.checked; });
@@ -1473,7 +1506,8 @@
         store.set("trx.mic", $("mic-select").value);
         store.set("trx.out", $("out-select").value);
         await client.connect({ clientId: clientId, password: password, useMic: $("use-mic").checked,
-                               audioProcessing: $("audio-processing").checked, micDeviceId: $("mic-select").value || null,
+                               micProfile: $("mic-profile").value, micCustom: { echo: $("mic-echo").checked, noise: $("mic-noise").checked },
+                               micDeviceId: $("mic-select").value || null,
                                ignoreRigWarning: $("ignore-rig-warning").checked, keepAwake: $("keep-awake").checked,
                                reconnectWindowS: Number($("reconnect-select").value) });
         rigAudio = client.rigAudio;

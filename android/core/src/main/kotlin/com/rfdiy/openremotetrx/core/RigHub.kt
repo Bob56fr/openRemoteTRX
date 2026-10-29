@@ -72,6 +72,9 @@ object RigHub {
     const val PREFS = "ui"
     const val PREF_MEDIA_PTT = "media_ptt"
     const val PREF_HEADSET_MIC = "headset_mic"
+    const val PREF_MIC_PROFILE = "mic_profile"
+    const val PREF_MIC_ECHO = "mic_echo"
+    const val PREF_MIC_NOISE = "mic_noise"
 
     internal class Request(val account: StationAccount, val password: String, val useMic: Boolean)
 

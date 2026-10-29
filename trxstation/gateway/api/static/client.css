@@ -103,7 +103,7 @@ button:disabled { opacity: .4; }
 details { background: var(--fond-panneau); border: 1px solid var(--ligne); border-radius: .6rem; margin-bottom: .5rem; }
 summary { padding: .6rem .8rem; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 summary::-webkit-details-marker { display: none; } summary::after { content: "▾"; color: var(--texte-secondaire); } details[open] > summary::after { content: "▴"; }
-.body { padding: 0 .8rem .8rem; display: grid; gap: .5rem; }
+.body { padding: 0 .8rem .8rem; display: grid; gap: .5rem; grid-template-columns: minmax(0, 1fr); }   /* jamais plus large que l'écran */
 label { display: grid; gap: .2rem; color: var(--texte-secondaire); font-size: .85rem; }
 label.check { display: flex; gap: .5rem; align-items: center; color: var(--texte); }
 input:not([type=checkbox]):not([type=range]), select, textarea { width: 100%; padding: .5rem .6rem; border-radius: .4rem; border: 1px solid var(--champ-bord); background: var(--fond-champ); color: var(--texte); }
@@ -301,6 +301,7 @@ audio { display: none; }
 .cluster-recent button:disabled { cursor: default; }
 .cluster-recent .src { grid-column: 1 / -1; color: var(--texte-secondaire); font-size: .8rem; }
 .cluster-recent .mono { font-family: ui-monospace, monospace; }
+.fav-bands { flex-wrap: wrap; gap: .3rem .8rem; }
 .fav-bands label { display: inline-flex; align-items: center; gap: .2rem; }
 /* Égaliseur paramétrique : une ligne par bande (fréquence, gain, Q) ; bouton direct EQ près du PTT */
 .voice-bands { display: grid; grid-template-columns: 3.1rem minmax(0, 1fr) 2.8rem 4.1rem 3.4rem; gap: .25rem .4rem; align-items: center; font-size: .85rem; }
@@ -311,3 +312,5 @@ audio { display: none; }
 .voice-direct.on { background: var(--selection-fond); color: var(--selection-texte); border-color: var(--accent); }
 #sec-voice .body { grid-template-columns: minmax(0, 1fr); }
 #sec-voice .row { flex-wrap: wrap; }
+.voice-mic { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
+.voice-level { position: relative; }

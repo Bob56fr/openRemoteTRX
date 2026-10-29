@@ -115,11 +115,11 @@
     <div class="pttrow">
       <button id="ptt" class="ptt" disabled>PTT</button>
       <button id="stop" class="stop" disabled>STOP</button>
-      <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
     </div>
 
     <div class="subrow">
       <label id="blk-armed" class="check"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
+      <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
       <label id="blk-sql" class="sql">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
@@ -155,7 +155,15 @@
         <label>Micro <select id="mic-select"></select></label>
         <label id="out-label">Sortie audio (son reçu) <select id="out-select"></select></label>
         <label class="check"><input id="ignore-rig-warning" type="checkbox"> Ce n'est pas le poste : ignorer l'avertissement</label>
-        <label class="check"><input id="audio-processing" type="checkbox" checked> Traitement audio du navigateur (écho, bruit)</label>
+        <label>Micro : environnement
+          <select id="mic-profile"></select>
+        </label>
+        <div id="mic-custom" class="row" hidden>
+          <label class="check"><input id="mic-echo" type="checkbox" checked> Annulation d'écho</label>
+          <label class="check"><input id="mic-noise" type="checkbox"> Réduction de bruit du navigateur</label>
+        </div>
+        <p class="note">Coupures de la voix en émission : essayez « pièce calme » ou un profil « micro-casque » (réduction de bruit du
+          navigateur coupée). Gain du micro et porte de bruit réglable : rubrique « Égaliseur paramétrique ».</p>
         <label class="check"><input id="keep-awake" type="checkbox" checked> Garder l'écran allumé tant que je suis connecté (HTTPS requis)</label>
         <label>Reconnexion automatique après une coupure
           <select id="reconnect-select">
@@ -243,6 +251,7 @@
         <label class="check"><input id="mute" type="checkbox"> Couper le son reçu</label>
         <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
         <div class="row between small"><span>Réception <b id="rx-level">—</b></span><span>Émission <b id="tx-level">—</b></span></div>
+        <div class="small" title="Paquets de votre voix arrivés trop tard à la station (réseau) : chacun fait un petit trou dans l'émission. S'il ne bouge pas pendant une coupure, la cause est le traitement du micro.">Trous dans l'émission (réseau), depuis le démarrage de la station : <b id="tx-holes">—</b></div>
         <div id="beeps-box" class="beeps">
           <div class="dim small">Bips de fin d'émission — produits et ÉMIS par la station, réglage commun à tous les appareils.</div>
           <label class="check"><input id="roger-on" type="checkbox" disabled> Roger bip quand je relâche le PTT</label>
@@ -265,6 +274,14 @@
       <div class="body">
         <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
           Un limiteur reste toujours actif. Réglages gardés par ce navigateur.</p>
+        <div class="voice-mic">
+          <div>Micro (actif même égaliseur éteint)</div>
+          <div class="meter"><span class="mlabel">Mic</span><div class="mtrack voice-level"><div id="voice-gate-mark" class="sqlmark" hidden></div><div id="voice-level-mask" class="mmask"></div></div><span id="voice-level-text" class="mval">—</span></div>
+          <label>Gain du micro <input id="voice-gain" type="range" min="-12" max="20" step="1"><span id="voice-gain-text"></span></label>
+          <label class="check"><input id="voice-gate-on" type="checkbox"> Porte de bruit (atténue le fond entre les phrases)</label>
+          <label>Seuil de la porte <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
+          <p class="note">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
+        </div>
         <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
         <div class="row">
           <label>Préréglage <select id="voice-preset"></select></label>
