@@ -2,6 +2,9 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Signalisation HTTP (aiohttp) : POST /offer {client_id, password, sdp, type} -> réponse SDP ; GET /config ; page web.
 
+Mot de passe faux : 401, même réponse quelle que soit la cause. Mot de passe JUSTE mais accès refusé (compte désactivé
+ou expiré, visiteurs complets, opérateur absent : access.py) : 403 ou 503 avec {"error": motif, "message": texte}.
+
 Le mot de passe protège la commande de l'émetteur. Sur autre chose que la boucle locale, l'API doit être servie en
 HTTPS (tls_cert/tls_key, ou proxy HTTPS devant) : voir docs/acces-distant.md.
 """
@@ -15,6 +18,7 @@ from pathlib import Path
 
 from aiohttp import web
 
+from .access import AccessRefused
 from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
 from .webrtc import PeerLimitError, PeerManager
@@ -59,7 +63,10 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
             log.warning("connexion refusée pour « %s » depuis %s", client_id[:32], source[:64])
             return web.json_response({"error": "unauthorized"}, status=401)    # même réponse quelle que soit la cause
         try:
-            return web.json_response(await manager.handle_offer(client_id, sdp, sdp_type))
+            return web.json_response(await manager.handle_offer(client_id, sdp, sdp_type, source=source))
+        except AccessRefused as exc:
+            log.warning("connexion de « %s » depuis %s refusée : %s", client_id[:32], source[:64], exc.reason)
+            return web.json_response({"error": exc.reason, "message": exc.message}, status=exc.status)
         except PeerLimitError:
             return web.json_response({"error": "busy"}, status=503)
         except Exception:

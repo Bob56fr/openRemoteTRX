@@ -152,7 +152,7 @@ def test_busy_port_keeps_the_gateway_in_receive_only(tmp_path, caplog):
     cfg.supervisor.state_dir = str(tmp_path)
     try:
         with caplog.at_level(logging.ERROR, logger="trx-gateway"):
-            manager, runner = asyncio.run(gw._start_api(cfg, None, None, None, None))
+            manager, runner, _ = asyncio.run(gw._start_api(cfg, None, None, None, None))
     finally:
         blocker.close()
     assert (manager, runner) == (None, None)                                 # pas d'exception : la passerelle continue, en RX
@@ -167,7 +167,7 @@ def test_address_no_longer_on_this_machine_is_explained(tmp_path, caplog):
     cfg = _config("192.0.2.1", 8443)                                         # adresse de documentation : jamais sur cette machine
     cfg.supervisor.state_dir = str(tmp_path)
     with caplog.at_level(logging.ERROR, logger="trx-gateway"):
-        assert asyncio.run(gw._start_api(cfg, None, None, None, None)) == (None, None)
+        assert asyncio.run(gw._start_api(cfg, None, None, None, None)) == (None, None, None)
     message = caplog.records[-1].getMessage()
     assert "192.0.2.1:8443" in message and "n'a peut-être plus l'adresse" in message
 

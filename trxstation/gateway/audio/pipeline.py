@@ -12,6 +12,7 @@ from .devices import make_sink, make_source
 from .gate import TxAudioGate
 from .hub import RxHub
 from .levels import LevelMeter
+from .listeners import TapSink, TxTap
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ class AudioPipeline:
         self.sink = sink if sink is not None else make_sink(cfg.playback_device, sd)
         self.rx_meter, self.tx_meter = LevelMeter(), LevelMeter()
         self.hub = RxHub(self.source, self.rx_meter, cfg.rx_gain_db)
-        self.gate = TxAudioGate(self.sink, self.tx_meter, cfg.tx_gain_db, owner_provider)
+        self.tx_tap = TxTap()                     # copie de ce qui part vers le poste, pour les VISITEURS (listeners.py)
+        self.tx_sink = TapSink(self.sink, self.tx_tap)    # puits de la porte et des bips de fin : poste + visiteurs
+        self.gate = TxAudioGate(self.tx_sink, self.tx_meter, cfg.tx_gain_db, owner_provider)
         self._task: asyncio.Task | None = None
         self.selcall = None                       # SelcallReceiver si [selcall] enabled (gateway/main)
 

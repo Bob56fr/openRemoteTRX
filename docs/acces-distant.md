@@ -146,6 +146,15 @@ la lever. Deux manières de donner l'autorisation **au niveau du navigateur** :
 
 L'application Android n'a pas cette contrainte (elle capte le micro sans passer par le navigateur).
 
+## 4 ter. Visiteurs en réception seule
+
+Des comptes **visiteurs** (`role = "listener"`, TRX Console menu 20) écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste. Ils passent par la même adresse, le même port et le même certificat que l'opérateur : rien de plus à ouvrir.
+
+- Chaque visiteur a son propre compte et son mot de passe ; les autres connectés ne voient que son **pseudo**, jamais son identifiant.
+- Par défaut (`listeners_need_operator = true`), un visiteur n'est admis que si un opérateur est connecté, et il est déconnecté 60 s après la perte de l'opérateur si celui-ci ne revient pas.
+- Plus de comptes, c'est plus de portes : donne aux visiteurs des mots de passe forts (le menu 20 en génère), mets une date de fin aux comptes de démonstration, désactive ceux qui ne servent plus.
+- **Responsabilité de l'opérateur.** Retransmettre à des tiers ce que la station reçoit peut être encadré par la loi, surtout hors des bandes radioamateur (marine, aviation, services publics). Par défaut (`listeners_outside_bands = false`), les visiteurs n'entendent que du silence dès que la réception sort des bandes déclarées dans `[[bands]]`. Activer l'écoute hors bandes se fait sous ta seule responsabilité. Ce paragraphe n'est pas un avis juridique : renseigne-toi sur les règles de ton pays.
+
 ## 5. Mise en service : à vérifier une fois
 
 1. De l'extérieur (4G, VPN actif ou non selon l'option) : la page s'ouvre en HTTPS (cadenas) dans l'option B.

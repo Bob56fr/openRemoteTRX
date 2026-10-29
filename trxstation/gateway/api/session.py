@@ -4,7 +4,8 @@
 
 Le client est déjà authentifié (jeton vérifié avant la création de la connexion). La session :
   * enregistre le client auprès du PttController, et le désenregistre à la fermeture (ce qui
-    COUPE l'émission si ce client la détenait : perte de connexion = retour RX) ;
+    COUPE l'émission si ce client la détenait : perte de connexion = retour RX) ; un VISITEUR (rôle listener,
+    access.py) n'y est jamais enregistré et ne peut envoyer que get_state et spectrum_watch ;
   * traite les commandes (toggle, stop, heartbeat, fréquence, mode) ;
   * diffuse l'état toutes les 0,25 s (changement, ou au moins chaque seconde) ;
   * limite le débit des messages.
@@ -25,19 +26,27 @@ from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
 from ..safety import PttController, Refused
-from .protocol import BASE_FEATURES, PROTOCOL_VERSION, ProtocolError, parse_command
+from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
+from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, ProtocolError, parse_command
 
 log = logging.getLogger(__name__)
 
 
-def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None) -> dict:
-    """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients."""
+FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0    # visiteur : au-delà, connexion fermée et alerte
+
+
+def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
+                role: str = OPERATOR) -> dict:
+    """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients.
+    `access` (AccessControl, facultatif) : présence ; pour un visiteur, pseudos à la place des identifiants."""
     rig, ptt = link.state, ctrl.snapshot()
+    listener = role == LISTENER
     remaining = None if ptt.tot_remaining_s is None else round(ptt.tot_remaining_s, 1)
     local_left = None if ptt.local_remaining_s is None else round(ptt.local_remaining_s, 1)
     return {
         "type": "state",
-        "ptt": {"state": ptt.state, "owner": ptt.owner, "tot_remaining_s": remaining,
+        "ptt": {"state": ptt.state, "owner": access.public_owner(ptt.owner) if listener and access else ptt.owner,
+                "tot_remaining_s": remaining,
                 "tot_warning": ptt.tot_warning, "last_cut_reason": ptt.last_cut_reason, "fault": ptt.fault,
                 # poste utilisé sur place et température : bandeaux et « Reprendre la main » de la page
                 "local_remaining_s": local_left, "local_reason": ptt.local_reason, "local_tx": ptt.local_tx,
@@ -49,8 +58,9 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
                 "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets),
                 "vfo": rig.vfo},
         "audio": pipeline.stats() if pipeline is not None else {},
-        "clients": ctrl.clients,
+        "clients": [] if listener else ctrl.clients,             # identifiants : jamais vers un visiteur
         "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},
+        "presence": access.presence(role) if access is not None else None,
     }
 
 
@@ -60,8 +70,16 @@ class ControlSession:
                  max_msgs_per_s: int = 30, state_interval_s: float = 0.25,
                  clock: Callable[[], float] = time.monotonic, memories: MemoryStore | None = None,
                  layouts: LayoutStore | None = None, spectrum=None,
-                 spectrum_watch: Callable[[bool], None] | None = None, reports=None):
+                 spectrum_watch: Callable[[bool], None] | None = None, reports=None,
+                 role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
+                 alert: Callable[[str, str], None] | None = None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
+        self.role = LISTENER if role == LISTENER else OPERATOR
+        self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
+        self.disconnect = disconnect             # (motif) -> None : la couche réseau ferme CETTE connexion
+        self.alert = alert                       # (titre, message) -> None : alerte ntfy (refus répétés d'un visiteur)
+        self._forbidden: deque[float] = deque()
+        self._forbidden_logged = 0.0
         self.spectrum = spectrum
         self.spectrum_watch = spectrum_watch     # vue HF ouverte/fermée chez ce client (SpectrumFanout.watch)
         self.reports = reports                   # ReportStore : rapports de problème de la page (bugreports.py)
@@ -77,6 +95,10 @@ class ControlSession:
         self.selcall = getattr(receiver, "store", None)   # SELCALL (selcall/receiver.py) ou None : [selcall] enabled = false
         tail = getattr(ctrl, "tail", None)
         self.beeps = getattr(tail, "store", None)  # réglages des bips de fin (gateway/audio/beeps.py) ou None
+        if self.role == LISTENER:
+            self.beeps = None                    # réglage de la station : rien vers un visiteur
+            self.selcall = None                  # code de groupe : jamais vers un visiteur (hello, messages, fonctions) ;
+                                                 # le squelch s'applique quand même au son qu'il reçoit
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
         self._times: deque[float] = deque()
         self._state_task: asyncio.Task | None = None
@@ -88,9 +110,18 @@ class ControlSession:
         except Exception:
             log.exception("envoi vers %s impossible", self.client_id)
 
+    @property
+    def listener(self) -> bool:
+        return self.role == LISTENER
+
     async def start(self) -> None:
-        self.ctrl.connect_client(self.client_id)
+        if not self.listener:
+            self.ctrl.connect_client(self.client_id)     # un visiteur ne peut JAMAIS devenir propriétaire de l'émission
+        if self.access is not None:
+            self.access.opened(self.client_id)
         self.send({"type": "hello", "protocol": PROTOCOL_VERSION, "client_id": self.client_id,
+                   "role": self.role,
+                   "pseudo": self.access.pseudo(self.client_id) if self.access is not None else "",
                    "version": __version__,                          # affichée par la page (clients authentifiés seulement)
                    "capabilities": self.capabilities.to_dict() if self.capabilities else None,
                    "tx_modes": list(self.ctrl.config.rig.tx_modes),
@@ -119,11 +150,12 @@ class ControlSession:
                    "beeps": self.beeps is not None, "bug_report": self.reports is not None,
                    "selcall": self.selcall is not None,
                    "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
-                   "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None}
+                   "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
+                   "presence": self.access is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
-        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum)
+        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role)
 
     async def close(self) -> None:
         """Idempotent. Désenregistre le client : coupe l'émission s'il en était propriétaire."""
@@ -139,7 +171,8 @@ class ControlSession:
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
-        await self.ctrl.disconnect_client(self.client_id)
+        if not self.listener:
+            await self.ctrl.disconnect_client(self.client_id)
 
     async def _state_loop(self) -> None:
         last_key, last_sent = "", 0.0
@@ -279,6 +312,30 @@ class ControlSession:
         log.info("SELCALL : %s par %s -> %s", cmd.name, self.client_id, status.state)
         self._result(cmd.id, True, status=status.to_dict())
 
+    def bye(self, reason: str) -> None:
+        """Dernier message avant que la station ferme cette connexion : le client affiche le motif et ne se
+        reconnecte pas tout seul."""
+        self.send({"type": "bye", "reason": reason, "message": MESSAGES.get(reason, reason)})
+
+    def _forbid(self, name: str, ident) -> None:
+        """Commande refusée à un visiteur : réponse, journal limité, fermeture au-delà de 20 refus par minute."""
+        now = self.clock()
+        self._forbidden.append(now)
+        while self._forbidden and now - self._forbidden[0] > FORBIDDEN_WINDOW_S:
+            self._forbidden.popleft()
+        if now - self._forbidden_logged >= 1.0:
+            self._forbidden_logged = now
+            log.warning("visiteur %s : commande « %s » refusée (réception seule)", self.client_id, name[:40])
+        self._result(ident, False, reason="forbidden", detail="visiteur : réception seule, aucune commande")
+        if len(self._forbidden) > FORBIDDEN_LIMIT and self.disconnect is not None:
+            log.error("visiteur %s : %d commandes refusées en une minute, connexion fermée", self.client_id, len(self._forbidden))
+            if self.alert is not None:
+                self.alert("TRX distant : visiteur deconnecte",
+                           f"Le visiteur {self.client_id} a envoyé plus de {FORBIDDEN_LIMIT} commandes refusées en une "
+                           "minute (client modifié ?) : connexion fermée.")
+            self._forbidden.clear()
+            self.disconnect("too_many_forbidden")
+
     def _result(self, ident, ok: bool, **extra) -> None:
         self.send({"type": "result", "id": ident, "ok": ok, **extra})
 
@@ -295,10 +352,17 @@ class ControlSession:
         if self._rate_limited():
             self.send({"type": "error", "code": "rate_limited"})
             return
+        if self.listener and len(raw) > MAX_MESSAGE_BYTES:
+            self._forbid("(message trop long)", None)            # rapport, mise en page : jamais d'un visiteur
+            return
         try:
             cmd = parse_command(raw)
         except ProtocolError as exc:
             self.send({"type": "error", "code": exc.code, "detail": exc.detail})
+            return
+        if self.listener and cmd.name not in LISTENER_COMMANDS:   # LISTE BLANCHE : tout le reste est refusé
+            if cmd.name != "heartbeat":                          # battement : ignoré sans réponse, comme pour un non-propriétaire
+                self._forbid(cmd.name, cmd.id)
             return
         try:
             if cmd.name == "heartbeat":

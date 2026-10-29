@@ -101,7 +101,7 @@ Perte de l'opérateur (commutateur à `true`) :
 5. Piste micro d'un visiteur : la station n'en négocie pas (connexion en réception seule) ; si le client en envoie une quand même, elle est consommée et jetée, jamais passée à la porte d'émission.
 6. Données envoyées à un visiteur : `hello` et `state` habituels plus `role`, SANS ce qui ne le concerne pas : identifiants des comptes (remplacés par les pseudos), adresses IP, propriétaire du PTT sous forme d'identifiant (remplacé par son pseudo), réglages des bips et du SELCALL au-delà de l'état affiché. Aucun secret ne part aujourd'hui dans `hello` ; un test le vérifie pour un visiteur. Règle valable AUSSI entre opérateurs : un client ne reçoit jamais l'identifiant d'un autre compte, sauf dans la liste détaillée de l'opérateur (§ 7.2).
 7. Journal : chaque refus est noté (compte, origine, commande), au plus une ligne par seconde et par session. Au-delà de 20 refus en une minute, la session est fermée (`too_many_forbidden`) et une alerte ntfy part (client modifié ou attaque : la page ne les envoie jamais).
-8. Statut publié (`status.clients`) : les visiteurs sont dans un champ SÉPARÉ (`listeners`), pour que le superviseur et trx-monitor ne les confondent jamais avec un opérateur. Attention : le champ `listeners` actuel de `AudioPipeline.stats()` (abonnés du `RxHub`) est renommé `rx_subscribers` pour éviter la confusion.
+8. Statut publié : `status.clients` ne contient QUE les opérateurs (un visiteur n'est jamais enregistré auprès du PttController) ; les connexions des deux rôles sont dans `status.presence`, pour que le superviseur et trx-monitor ne les confondent jamais. (Le champ `audio.listeners` existant, abonnés du `RxHub` tous rôles confondus, est gardé tel quel : le renommer casserait les clients.)
 
 ## 5. Audio des visiteurs
 
@@ -222,12 +222,19 @@ Essai réel (IC-7300MK2, minix-bzh, charge fictive) :
 
 1. **Aucune action d'un visiteur sur le poste**, STOP compris : rien ne part de la page d'un visiteur vers le poste, et la station refuse tout sauf `get_state` et `spectrum_watch` (§ 4).
 2. **Scrambler invisible** pour les visiteurs (§ 6.2).
-3. **Les visiteurs voient les pseudos** des autres visiteurs et des opérateurs ; jamais les identifiants ni les IP (§ 7).
-4. **Pseudo** distinct de l'identifiant de connexion, partageable entre plusieurs comptes (§ 3).
-5. **Commutateur `listeners_need_operator`** et attente de 60 s par défaut (§ 3 bis).
-6. **Hors bandes** : un seul paramètre dans `station.toml` (§ 9).
+3. **SELCALL masqué** aux visiteurs (décision du 2026-10-30) : ni code armé, ni historique, ni état ; le squelch s'applique à leur son comme à celui de l'opérateur.
+4. **Les visiteurs voient les pseudos** des autres visiteurs et des opérateurs ; jamais les identifiants ni les IP (§ 7).
+5. **Pseudo** distinct de l'identifiant de connexion, partageable entre plusieurs comptes (§ 3).
+6. **Commutateur `listeners_need_operator`** et attente de 60 s par défaut (§ 3 bis).
+7. **Hors bandes** : un seul paramètre dans `station.toml` (§ 9).
 
 Restent à confirmer après la mesure du lot 2 : `max_listeners = 0` à l'installation (fonction désactivée), cadence du spectre 5 balayages/s, défaut du commutateur à `true`.
+
+## 14 bis. Réalisation
+
+- **Lot 1 FAIT** (étape 84, station 0.71.0) : `config.py` (`ClientAuth.role/pseudo/enabled/expires`, `[access]`), `gateway/api/access.py` (rôles, quotas, présence, attente, pseudos, liste blanche), `session.py` (liste blanche, `bye`, `state.presence`), `webrtc.py` (admission, micro des visiteurs jeté, silence hors bandes), `gateway/access_watch.py` (relecture de `station.toml`, demande de déconnexion de la console), TRX Console menu 20, page : refus 403 / 503 et `bye` affichés. Le SILENCE HORS BANDES (§ 9), prévu au lot 2, est fait dès le lot 1.
+- Reportés au lot 3 (avec la page) : commande `listener_kick` (« Déconnecter » depuis la page de l'opérateur), mise en page de la station jointe au `hello` d'un visiteur (§ 6.6), zone « Connexions » de trx-monitor (les données sont déjà dans le fichier d'état, `presence`).
+- **Lot 2 FAIT** (même étape 84) : `gateway/audio/listeners.py` (copie de ce qui part vers le poste, mélange et fondu par visiteur), `[access] listener_spectrum_fps` (5 par défaut), outil de mesure `python -m trxstation.devtools.listener_load`. « Visiteur trop lent » (§ 5.4) : sans objet en WebRTC (aiortc envoie sans contre-pression ; les files bornées garantissent qu'aucun visiteur ne retarde le poste). Première mesure (PC Windows de développement) : 5,5 % d'un cœur par visiteur, pire retard de la boucle 26 ms avec 5 visiteurs ; à refaire sur minix-bzh pour fixer `max_listeners` et décider du flux Opus partagé (§ 12).
 
 ## 14. Découpage en lots
 

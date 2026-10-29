@@ -314,3 +314,70 @@ def test_test_output_is_shown_as_it_comes_with_a_reminder_when_quiet(tmp_path, c
     shown = capsys.readouterr().out
     assert shown.index("..") < shown.index("toujours en cours") < shown.index("é fin")
     assert log.read_bytes().decode("utf-8").replace("\r\n", "\n") == "..é fin\n"
+
+
+# --------------------------------------------------------------------------- menu 20 : visiteurs
+
+def _with_operator(tmp_path):
+    from trxstation.config import ClientAuth
+    from trxstation.passwords import hash_password
+    path = write_config(tmp_path)
+    cfg = dummy_config()
+    cfg.clients = [ClientAuth("phone", password_hash=hash_password("Un mot de passe correct 42"))]
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    return path
+
+
+def test_visitors_menu_creates_an_account_and_opens_listening_through_the_validated_path(tmp_path):
+    path = _with_operator(tmp_path)
+    con, fake, out = make(tmp_path, answers=[
+        "2", "club1", "phone", "Radio-club", "", "", "o",            # pseudo = identifiant d'un compte : redemandé
+        "1", "5", "", "90", "", "3", "o",
+        "5", "1", "Kriss F4ABC", "o",
+        ""])
+    con.visitors()
+    cfg = cfgmod.load(path)
+    club = next(c for c in cfg.clients if c.id == "club1")
+    assert club.role == "listener" and club.pseudo == "Radio-club" and club.password_hash and not club.expires
+    assert cfg.access.max_listeners == 5 and cfg.access.operator_grace_s == 90 and cfg.access.listeners_need_operator
+    assert cfg.access.listener_spectrum_fps == 3
+    assert next(c for c in cfg.clients if c.id == "phone").pseudo == "Kriss F4ABC"
+    text = "\n".join(out)
+    assert "identifiant d'un compte" in text and "Mot de passe : " in text and "FERMÉE (0)" in text
+    assert "sans redémarrer" in text and not any(c[:2] == ["systemctl", "restart"] for c in fake.admin_commands())
+
+
+def test_visitors_menu_disables_deletes_and_refuses_bad_dates(tmp_path):
+    path = _with_operator(tmp_path)
+    con, _, _ = make(tmp_path, answers=["2", "club1", "", "31/12/2026", "2026-12-31", "", "o", ""])
+    con.visitors()
+    assert next(c for c in cfgmod.load(path).clients if c.id == "club1").expires == "2026-12-31"
+    con, _, _ = make(tmp_path, answers=["3", "1", "", "n", "", "", "o", ""])      # désactivé, pas de nouveau mot de passe
+    con.visitors()
+    assert next(c for c in cfgmod.load(path).clients if c.id == "club1").enabled is False
+    con, _, _ = make(tmp_path, answers=["4", "1", "o", "o", ""])
+    con.visitors()
+    assert [c.id for c in cfgmod.load(path).clients] == ["phone"]
+
+
+def test_visitors_menu_kick_writes_a_request_for_a_connected_listener_only(tmp_path):
+    import json
+    import time
+    from trxstation.gateway.access_watch import KICK_REQUEST
+    from trxstation.status import GatewayStatus, write_status
+    path = _with_operator(tmp_path)
+    state = tmp_path / "state"
+    cfg = cfgmod.load(path)
+    cfg.supervisor.state_dir, cfg.supervisor.status_path = str(state), str(state / "status.json")
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con, fake, out = make(tmp_path, answers=[""])
+    con.visitors()
+    assert any("aucun visiteur" in line for line in out)
+    write_status(state / "status.json", GatewayStatus(pid=1, seq=1, written_at=time.time(), ptt={"state": "RX"}, rig={},
+                 presence={"connections": [{"id": "phone", "pseudo": "Opérateur", "role": "operator", "source": "a", "since_s": 5},
+                                           {"id": "club1", "pseudo": "Radio-club", "role": "listener", "source": "b", "since_s": 125}]}))
+    con, fake, out = make(tmp_path, answers=["6", "1", "o", ""])
+    con.visitors()
+    assert any("Radio-club (club1, b, 2 min)" in line for line in out)
+    request = json.loads((state / KICK_REQUEST).read_text(encoding="utf-8"))
+    assert request["id"] == "club1" and abs(request["at"] - time.time()) < 5

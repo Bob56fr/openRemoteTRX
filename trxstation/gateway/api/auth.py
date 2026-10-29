@@ -71,6 +71,12 @@ class ClientRegistry:
     def __bool__(self) -> bool:
         return bool(self._secrets)
 
+    def update(self, clients: list[ClientAuth]) -> None:
+        """Nouvelle liste de comptes (station.toml relu) ; le freinage des essais en cours est gardé."""
+        secrets = {c.id: ("hash", c.password_hash) if c.password_hash else ("token", c.token) for c in clients}
+        with self._lock:
+            self._secrets = secrets
+
     @staticmethod
     def _recent(failures: deque, now: float, window: float) -> deque:
         while failures and now - failures[0] > window:

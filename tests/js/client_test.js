@@ -1360,6 +1360,23 @@ test("reconnexion : identifiants refusés = arrêt immédiat, un seul essai (la 
   assert.equal(w.client.losses[0].details.reconnect.outcome, "auth"); assert.equal(w.client._credentials, null);
 });
 
+test("visiteurs : accès refusé (403) avec le message de la station ; « bye » = aucune reconnexion automatique", async () => {
+  const w = makeWorld({ postOffer: async () => ({ status: 403, body: { error: "operator_absent", message: "L'opérateur n'est pas connecté à la station." } }) });
+  await assert.rejects(() => w.client.connect(lossOpts), /opérateur n'est pas connecté/);
+  const e = w.ui.lossEvents.at(-1);
+  assert.deepEqual([e.kind, e.code], ["failed", "refused"]); assert.match(e.details.detail, /opérateur n'est pas connecté/);
+  const full = makeWorld({ postOffer: async () => ({ status: 503, body: { error: "listeners_full", message: "Nombre maximal de visiteurs atteint." } }) });
+  await assert.rejects(() => full.client.connect(lossOpts), /visiteurs atteint/);
+  const net = flaky(), v = makeWorld({ postOffer: net.postOffer });
+  await up(v);
+  v.dc().onmessage({ data: JSON.stringify({ type: "bye", reason: "operator_absent", message: "Opérateur absent." }) });
+  const sent = net.offers.length;
+  v.dc().onclose();
+  await ticks(v, 10);
+  assert.equal(net.offers.length, sent);                                          // la station a dit pourquoi : on ne réessaie pas
+  assert.ok(v.ui.logs.some(([t]) => /fermé la connexion : Opérateur absent/.test(t)));
+});
+
 test("reconnexion : déconnexion voulue ou annulation = aucun essai ; une connexion manuelle reprend la main", async () => {
   const net = flaky(), w = makeWorld({ postOffer: net.postOffer });
   await up(w); w.client.disconnect();                                               // l'utilisateur se déconnecte

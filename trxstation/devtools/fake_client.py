@@ -84,6 +84,8 @@ class FakeClient:
         self._waiting: dict[int, asyncio.Future] = {}
         self._tasks: list[asyncio.Task] = []
         self._opened = asyncio.Event()
+        self.refused = ""
+        self.bye: dict | None = None                 # message « bye » : la station ferme la connexion (motif)
 
     async def connect(self, timeout: float = 15.0) -> None:
         self.pc.addTrack(self.track)
@@ -107,6 +109,8 @@ class FakeClient:
                 self.hello = message
             elif message.get("type") == "state":
                 self.state = message
+            elif message.get("type") == "bye":
+                self.bye = message
             elif message.get("type") == "result" and message.get("id") in self._waiting:
                 self._waiting.pop(message["id"]).set_result(message)
 
@@ -121,7 +125,12 @@ class FakeClient:
                     "client_id": self.client_id, "password": self.password,
                     "sdp": self.pc.localDescription.sdp, "type": self.pc.localDescription.type}) as response:
                 if response.status != 200:
-                    raise ConnectionRefusedError(f"offre refusée : HTTP {response.status}")
+                    try:
+                        reason = (await response.json()).get("error", "")
+                    except Exception:
+                        reason = ""
+                    self.refused = reason                   # motif d'un refus d'accès (access.py), ou ""
+                    raise ConnectionRefusedError(f"offre refusée : HTTP {response.status} {reason}".rstrip())
                 answer = await response.json()
         await self.pc.setRemoteDescription(RTCSessionDescription(**answer))
         await asyncio.wait_for(self._opened.wait(), timeout)

@@ -65,8 +65,11 @@ class SpectrumFanout:
         self._watching: set[str] = set()     # indépendant du canal : la demande peut précéder son ouverture
         self.seq = 0
 
-    def add(self, client_id: str, send: Callable[[bytes], None], buffered: Callable[[], int]) -> None:
-        self._subs[client_id] = {"send": send, "buffered": buffered, "last": float("-inf"), "sent": 0, "skipped": 0}
+    def add(self, client_id: str, send: Callable[[bytes], None], buffered: Callable[[], int],
+            max_fps: Callable[[], int] | None = None) -> None:
+        """`max_fps` : plafond propre à ce client, relu à chaque trame (visiteurs : [access] listener_spectrum_fps)."""
+        self._subs[client_id] = {"send": send, "buffered": buffered, "last": float("-inf"), "sent": 0, "skipped": 0,
+                                 "max_fps": max_fps}
 
     def remove(self, client_id: str, send: Callable[[bytes], None] | None = None) -> None:
         """`send` : ne désabonne que si c'est encore ce canal (la fermeture tardive d'une ancienne connexion
@@ -101,7 +104,10 @@ class SpectrumFanout:
             return 0
         now, served = self.clock(), 0
         for client_id, sub in targets:
-            if now - sub["last"] < self.min_interval:
+            interval = self.min_interval
+            if sub["max_fps"] is not None:
+                interval = max(interval, 1.0 / max(1, sub["max_fps"]()))
+            if now - sub["last"] < interval:
                 continue
             try:
                 if sub["buffered"]() > MAX_BUFFERED:

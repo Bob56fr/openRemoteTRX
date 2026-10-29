@@ -337,7 +337,7 @@ def test_beep_is_heard_as_transmission_and_rekey_waits():
 def test_gateway_builds_the_tail_player():
     from pathlib import Path
     main = (Path(__file__).resolve().parents[1] / "trxstation" / "gateway" / "main.py").read_text(encoding="utf-8")
-    assert "TailPlayer(pipeline.sink, beeps" in main and "tail=tail" in main
+    assert "TailPlayer(pipeline.tx_sink, beeps" in main and "tail=tail" in main
 
 
 def test_session_offers_and_changes_the_beeps():

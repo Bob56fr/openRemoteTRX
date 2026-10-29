@@ -11,6 +11,8 @@ Une connexion par client :
     Rien n'y part tant que le client n'affiche pas la vue HF (commande `spectrum_watch`).
 Le jeton est vérifié AVANT la création de la connexion (server.py). Un client qui se reconnecte
 remplace l'ancienne connexion (ce qui coupe l'émission s'il l'avait).
+Visiteur (rôle listener, access.py) : admis selon les quotas et la présence d'un opérateur ; son micro éventuel est
+consommé et jeté (jamais vers la porte d'émission) ; son reçu est remplacé par du silence hors [[bands]].
 
 Nécessite : pip install -e ".[audio]"   (aiortc, aiohttp, sounddevice).
 """
@@ -28,7 +30,9 @@ from aiortc import MediaStreamTrack, RTCConfiguration, RTCIceServer, RTCPeerConn
 from aiortc.mediastreams import MediaStreamError
 
 from ...spectrum.frame import SpectrumFanout
+from ..audio.listeners import ListenerMix, TxTap
 from ..audio.pcm import FRAME_SAMPLES, SAMPLE_RATE, FrameAssembler
+from .access import LISTENER, OPERATOR
 from .session import ControlSession
 
 log = logging.getLogger(__name__)
@@ -60,18 +64,22 @@ def as_list(result) -> list:
 
 
 class RxTrack(MediaStreamTrack):
-    """Son reçu du poste, vers UN client."""
+    """Son reçu du poste, vers UN client. `mix` (visiteur, audio/listeners.py) : voix de l'opérateur pendant ses
+    émissions, silence hors bandes ; même cadence (horloge : le son du poste)."""
 
     kind = "audio"
 
-    def __init__(self, hub):
+    def __init__(self, hub, mix=None):
         super().__init__()
         self._hub, self._queue, self._pts = hub, hub.subscribe(), 0
+        self._mix = mix
 
     async def recv(self):
         if self.readyState != "live":
             raise MediaStreamError
         pcm = await self._queue.get()
+        if self._mix is not None:
+            pcm = self._mix.next(pcm)
         frame = pcm_to_frame(pcm)
         frame.pts, frame.time_base = self._pts, Fraction(1, SAMPLE_RATE)
         self._pts += FRAME_SAMPLES
@@ -79,6 +87,8 @@ class RxTrack(MediaStreamTrack):
 
     def stop(self) -> None:
         self._hub.unsubscribe(self._queue)
+        if self._mix is not None:
+            self._mix.close()
         super().stop()
 
 
@@ -96,10 +106,20 @@ async def receive_tx_audio(track, client_id: str, gate) -> None:
         pass
 
 
+async def drain_audio(track) -> None:
+    """Micro d'un visiteur : lu (sinon la piste s'engorge) et jeté, JAMAIS vers la porte d'émission."""
+    try:
+        while True:
+            await track.recv()
+    except MediaStreamError:
+        pass
+
+
 @dataclass
 class _Peer:
     client_id: str
     pc: RTCPeerConnection
+    role: str = OPERATOR
     session: ControlSession | None = None
     rx_track: RxTrack | None = None
     tx_task: asyncio.Task | None = None
@@ -109,8 +129,12 @@ class _Peer:
 
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
-                 ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None):
+                 ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None,
+                 access=None, muted=None, alert=None):
         self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
+        self.access = access                    # AccessControl : rôles, quotas, présence ; None = tout client est opérateur
+        self.listener_muted = muted             # () -> bool : silence pour les visiteurs (réception hors bandes)
+        self.alert = alert                      # (titre, message) -> None : alerte ntfy
         self.ctrl, self.link, self.pipeline, self.capabilities = ctrl, link, pipeline, capabilities
         self.spectrum = spectrum                # SpectrumService : son état est joint aux messages « state »
         self.fanout = SpectrumFanout(spectrum.cfg.max_fps if spectrum is not None else 10, time.monotonic)
@@ -130,14 +154,24 @@ class PeerManager:
         task.add_done_callback(self._tasks.discard)
         return task
 
-    async def handle_offer(self, client_id: str, sdp: str, sdp_type: str) -> dict:
+    async def handle_offer(self, client_id: str, sdp: str, sdp_type: str, source: str = "") -> dict:
+        """AccessRefused (access.py) : compte désactivé, quota atteint, opérateur absent..."""
         await self.close_peer(client_id)                        # reconnexion : l'ancienne connexion est remplacée
-        if len(self.peers) >= self.max_peers:
+        if self.access is not None:
+            role = self.access.admit(client_id, source).role    # SANS attente jusqu'à l'enregistrement : pas de course
+        elif len(self.peers) >= self.max_peers:
             raise PeerLimitError(f"{self.max_peers} connexions simultanées au maximum")
+        else:
+            role = OPERATOR
         configuration = None if self.ice_servers is None else RTCConfiguration(
             iceServers=[RTCIceServer(urls=url) for url in self.ice_servers])
-        pc = RTCPeerConnection(configuration)
-        peer = _Peer(client_id, pc)
+        try:
+            pc = RTCPeerConnection(configuration)
+        except Exception:
+            if self.access is not None:
+                self.access.closed(client_id)                   # admis mais jamais créé : la place est rendue
+            raise
+        peer = _Peer(client_id, pc, role)
         self.peers[client_id] = peer
 
         @pc.on("datachannel")
@@ -155,7 +189,8 @@ class PeerManager:
             session = ControlSession(client_id, self.ctrl, self.link, self.pipeline, self.capabilities, send,
                                      memories=self.memories, layouts=self.layouts, spectrum=self.spectrum,
                                      spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
-                                     reports=self.reports)
+                                     reports=self.reports, role=role, access=self.access, alert=self.alert,
+                                     disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session
 
@@ -172,7 +207,8 @@ class PeerManager:
         @pc.on("track")
         def on_track(track) -> None:
             if track.kind == "audio" and peer.tx_task is None:
-                peer.tx_task = self._spawn(receive_tx_audio(track, client_id, self.pipeline.gate))
+                peer.tx_task = self._spawn(drain_audio(track) if role == LISTENER
+                                           else receive_tx_audio(track, client_id, self.pipeline.gate))
 
         @pc.on("connectionstatechange")
         async def on_state() -> None:
@@ -181,7 +217,7 @@ class PeerManager:
 
         try:
             await pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type=sdp_type))
-            peer.rx_track = RxTrack(self.pipeline.hub)
+            peer.rx_track = RxTrack(self.pipeline.hub, self._listener_mix() if role == LISTENER else None)
             pc.addTrack(peer.rx_track)
             answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
@@ -202,9 +238,12 @@ class PeerManager:
                 raise ConnectionError("canal du spectre fermé")
             channel.send(frame)
 
+        access = self.access
+        cap = (lambda: access.settings.listener_spectrum_fps) if peer.role == LISTENER and access is not None else None
+
         def subscribe() -> None:
             if not peer.closed:
-                self.fanout.add(client_id, send, lambda: channel.bufferedAmount)
+                self.fanout.add(client_id, send, lambda: channel.bufferedAmount, cap)   # visiteur : cadence plafonnée
 
         if channel.readyState == "open":
             subscribe()
@@ -226,6 +265,24 @@ class PeerManager:
             log.warning("connexion de %s jamais établie : abandon", client_id)
             await self.close_peer(client_id, peer)
 
+    async def kick(self, client_id: str, reason: str, peer: _Peer | None = None) -> None:
+        """Ferme une connexion en disant pourquoi (message « bye » avant la fermeture)."""
+        peer = peer or self.peers.get(client_id)
+        if peer is None or peer.closed:
+            return
+        log.warning("connexion de %s (%s) fermée par la station : %s", client_id, peer.role, reason)
+        if peer.session is not None:
+            peer.session.bye(reason)
+            await asyncio.sleep(0.3)                            # le temps que le message parte avant la fermeture
+        await self.close_peer(client_id, peer)
+
+    def _listener_mix(self) -> ListenerMix:
+        tap = getattr(self.pipeline, "tx_tap", None) or TxTap()        # banc d'essai sans copie : son du poste seul
+        return ListenerMix(tap, self.listener_muted)
+
+    def listener_ids(self) -> list[str]:
+        return [cid for cid, peer in self.peers.items() if peer.role == LISTENER]
+
     async def close_peer(self, client_id: str, peer: _Peer | None = None) -> None:
         peer = peer or self.peers.get(client_id)
         if peer is None or peer.closed:
@@ -234,6 +291,8 @@ class PeerManager:
         if self.peers.get(client_id) is peer:
             del self.peers[client_id]
             self.fanout.remove(client_id)
+            if self.access is not None:
+                self.access.closed(client_id)                   # dernier opérateur parti : attente des visiteurs
         if peer.session is not None:
             await peer.session.close()                          # coupe l'émission si ce client la détenait
         if peer.tx_task is not None:

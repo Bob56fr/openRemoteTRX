@@ -214,6 +214,7 @@ class Console:
             ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
             ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
             ("19", "Appairer un téléphone (application Android : adresse, empreinte, QR code)", self.pairing),
+            ("20", "Visiteurs en réception seule (comptes, nombre maximal, connectés)", self.visitors),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -705,9 +706,10 @@ class Console:
             return True
         return state != "RX" or rig_keyed is True                 # émission de la station ou au micro du poste
 
-    def _save_config(self, original: bytes, edited: bytes, draft: Path) -> None:
+    def _save_config(self, original: bytes, edited: bytes, draft: Path, live: bool = False) -> bool:
         """Différences montrées, confirmation, sauvegarde de l'ancienne version, enregistrement par sudo avec les
-        droits d'origine. `draft` est déjà validé."""
+        droits d'origine. `draft` est déjà validé. `live` : la passerelle relit d'elle-même ce qui change (comptes,
+        [access]) : pas de redémarrage proposé. Vrai si enregistré."""
         before = original.decode("utf-8", "replace").splitlines()
         after = edited.decode("utf-8", "replace").splitlines()
         diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
@@ -716,26 +718,309 @@ class Console:
                  + (f"\n  ... ({len(diff) - MAX_DIFF_LINES} lignes de plus)" if len(diff) > MAX_DIFF_LINES else ""))
         if not self.yes("Enregistrer ces changements", False):
             self.say("Abandon : station.toml n'a pas été changé.")
-            return
+            return False
         if self.config.read_bytes() != original:
             self.say("station.toml a été modifié par ailleurs pendant ce temps : abandon, recommence.")
-            return
+            return False
         st = self.config.stat()
         backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
         if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
             self.say("Copie de sauvegarde impossible : station.toml n'a pas été changé.")
-            return
+            return False
         code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
                                 str(draft), str(self.config)], admin=True)
         if code != 0:
             self.say(f"Enregistrement impossible (code {code}) : station.toml n'a pas été changé.")
-            return
+            return False
         self.say(f"Enregistré. Ancienne version gardée : {backup}")
-        if self.station_running():
+        if live:
+            self.say("La station prend ces changements en compte d'elle-même en quelques secondes (sans redémarrer) ; "
+                     "un compte désactivé ou supprimé est déconnecté aussitôt.")
+        elif self.station_running():
             if self.yes("Redémarrer la station pour appliquer"):
                 self.start()
         else:
             self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
+        return True
+
+    # ------------------------------------------------------------------ visiteurs (menu 20)
+
+    def visitors(self) -> None:
+        """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : réglages [access], comptes
+        role = "listener", pseudos, connectés et déconnexion. station.toml passe par le chemin validé du menu 14
+        (réécrit dans sa forme standard) ; la passerelle le relit sans redémarrer."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        while True:
+            try:
+                original = self.config.read_bytes()
+                cfg, _ = cfgmod.load_unchecked(self.config)
+            except (OSError, cfgmod.ConfigError) as exc:
+                self.say(f"Lecture de {self.config} impossible ({exc}).")
+                return
+            self.say(self._visitors_summary(cfg))
+            choice = self.ask("\n  1) Réglages (nombre maximal, opérateur requis, attente, hors bandes)\n"
+                              "  2) Créer un compte visiteur\n"
+                              "  3) Modifier un compte visiteur (pseudo, mot de passe, activé, expiration)\n"
+                              "  4) Supprimer un compte visiteur\n"
+                              "  5) Pseudo d'un compte opérateur (montré aux visiteurs)\n"
+                              "  6) Déconnecter un visiteur connecté\n"
+                              "Choix (Entrée = retour) : ").strip()
+            if not choice:
+                return
+            actions = {"1": self._visitor_settings, "2": self._visitor_create, "3": self._visitor_edit,
+                       "4": self._visitor_delete, "5": self._operator_pseudo}
+            if choice == "6":
+                self._visitor_kick(cfg)
+                continue
+            action = actions.get(choice)
+            if action is None:
+                self.say("Choix inconnu.")
+                continue
+            if action(cfg):
+                self._save_accounts(original, cfg)
+
+    def _visitors_summary(self, cfg) -> str:
+        a = cfg.access
+        listeners = [c for c in cfg.clients if c.role == "listener"]
+        lines = ["\nVisiteurs en réception seule : ils écoutent et voient l'écran, sans AUCUNE commande vers le poste.",
+                 f"  Écoute des visiteurs : {'ouverte, ' + str(a.max_listeners) + ' au plus' if a.max_listeners else 'FERMÉE (0)'}",
+                 "  Opérateur requis     : " + (f"oui (visiteurs déconnectés {a.operator_grace_s} s après sa perte)"
+                                                if a.listeners_need_operator else "non (écoute possible sans opérateur)"),
+                 "  Hors bandes          : " + ("écoute permise" if a.listeners_outside_bands else "silence pour les visiteurs"),
+                 "  Comptes visiteurs    : " + (", ".join(self._account_label(c) for c in listeners) or "aucun")]
+        connected = [c for c in self._connected() if c.get("role") == "listener"]
+        lines.append("  Connectés maintenant : " + (", ".join(
+            f"{c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')}, {int(c.get('since_s', 0)) // 60} min)"
+            for c in connected) or "aucun visiteur"))
+        return "\n".join(lines)
+
+    @staticmethod
+    def _account_label(c) -> str:
+        notes = [n for n in ("désactivé" if not c.enabled else "", f"jusqu'au {c.expires}" if c.expires else "") if n]
+        return f"{c.id} « {c.pseudo or 'sans pseudo'} »" + (f" ({', '.join(notes)})" if notes else "")
+
+    def _connected(self) -> list[dict]:
+        """Connexions publiées par la passerelle (fichier d'état) ; [] si elle est arrêtée."""
+        from . import config as cfgmod
+        from .status import read_status
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            path = Path(cfg.supervisor.status_path)
+            if not path.exists() or time.time() - path.stat().st_mtime > 10:
+                return []
+            status = read_status(path)
+        except (OSError, cfgmod.ConfigError):
+            return []
+        items = status.presence.get("connections", []) if status is not None else []
+        return [c for c in items if isinstance(c, dict)]
+
+    def _ask_int(self, question: str, current: int, low: int, high: int) -> int:
+        while True:
+            answer = self.ask(f"{question} ({low} à {high}, Entrée = {current}) : ").strip()
+            if not answer:
+                return current
+            if re.fullmatch(r"\d{1,4}", answer) and low <= int(answer) <= high:
+                return int(answer)
+            self.say(f"Un nombre entier de {low} à {high}.")
+
+    def _ask_yes(self, question: str, current: bool) -> bool:
+        while True:
+            answer = self.ask(f"{question} (o/n, Entrée = {'oui' if current else 'non'}) : ").strip()
+            if not answer:
+                return current
+            value = yes_no(answer)
+            if value is not None:
+                return value
+            self.say("Réponds par oui ou non.")
+
+    def _visitor_settings(self, cfg) -> bool:
+        a = cfg.access
+        before = (a.max_listeners, a.listeners_need_operator, a.operator_grace_s, a.listeners_outside_bands,
+                  a.listener_spectrum_fps)
+        a.max_listeners = self._ask_int("Visiteurs connectés en même temps au plus (0 = écoute fermée)", a.max_listeners, 0, 20)
+        a.listeners_need_operator = self._ask_yes("Visiteurs admis SEULEMENT si un opérateur est connecté",
+                                                  a.listeners_need_operator)
+        if a.listeners_need_operator:
+            a.operator_grace_s = self._ask_int("Attente après la perte de l'opérateur avant de déconnecter les visiteurs, "
+                                               "en secondes", a.operator_grace_s, 0, 600)
+        a.listeners_outside_bands = self._ask_yes("Laisser les visiteurs écouter HORS des bandes de la station "
+                                                  "(sous ta responsabilité)", a.listeners_outside_bands)
+        a.listener_spectrum_fps = self._ask_int("Spectre HF des visiteurs : images par seconde au plus",
+                                                a.listener_spectrum_fps, 1, 20)
+        return before != (a.max_listeners, a.listeners_need_operator, a.operator_grace_s, a.listeners_outside_bands,
+                          a.listener_spectrum_fps)
+
+    def _ask_pseudo(self, cfg, current: str = "") -> str | None:
+        """Pseudo montré aux autres connectés ; None = abandon."""
+        from .config import PSEUDO_MAX
+        while True:
+            answer = self.ask(f"Pseudo montré aux autres connectés ({PSEUDO_MAX} caractères au plus"
+                              + (f", Entrée = {current}" if current else ", Entrée = aucun") + ", - = abandon) : ").strip()
+            if answer == "-":
+                return None
+            if not answer:
+                return current
+            if len(answer) > PSEUDO_MAX or any(ord(ch) < 32 for ch in answer):
+                self.say(f"{PSEUDO_MAX} caractères au plus, sans caractère spécial.")
+            elif any(answer.casefold() == c.id.casefold() for c in cfg.clients):
+                self.say("C'est l'identifiant d'un compte : il serait montré aux autres connectés. Choisis un autre pseudo.")
+            else:
+                return answer
+
+    def _ask_new_password(self, login: str) -> str | None:
+        from .passwords import generate_password, password_problem
+        while True:
+            answer = self.ask("Mot de passe (Entrée = en générer un fort, - = abandon) : ").strip()
+            if answer == "-":
+                return None
+            if not answer:
+                answer = generate_password()
+                self.say(f"Mot de passe : {answer}\nTransmets-le au visiteur maintenant : la station ne le garde pas en clair.")
+                return answer
+            problem = password_problem(answer, login)
+            if problem is None:
+                return answer
+            self.say(f"Refusé : {problem}.")
+
+    def _ask_expiry(self, current: str) -> str | None:
+        from datetime import date
+        while True:
+            answer = self.ask("Date de fin AAAA-MM-JJ (Entrée = " + (current or "jamais") + ", 0 = jamais, - = abandon) : ").strip()
+            if answer == "-":
+                return None
+            if not answer:
+                return current
+            if answer == "0":
+                return ""
+            try:
+                date.fromisoformat(answer)
+                if re.fullmatch(r"\d{4}-\d{2}-\d{2}", answer):
+                    return answer
+            except ValueError:
+                pass
+            self.say("Une date comme 2026-12-31.")
+
+    def _pick_account(self, cfg, role: str, verb: str):
+        accounts = [c for c in cfg.clients if c.role == role]
+        if not accounts:
+            self.say("Aucun compte " + ("visiteur." if role == "listener" else "opérateur."))
+            return None
+        for i, c in enumerate(accounts, 1):
+            self.say(f"  {i}) {self._account_label(c)}")
+        answer = self.ask(f"Numéro du compte à {verb} (Entrée = annuler) : ").strip()
+        if answer.isdigit() and 1 <= int(answer) <= len(accounts):
+            return accounts[int(answer) - 1]
+        return None
+
+    def _visitor_create(self, cfg) -> bool:
+        from .config import ClientAuth
+        from .passwords import hash_password
+        login = self.ask("Identifiant de connexion du visiteur (lettres, chiffres, _ et -, Entrée = annuler) : ").strip()
+        if not login:
+            return False
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id == login for c in cfg.clients):
+            self.say("Identifiant invalide ou déjà utilisé.")
+            return False
+        pseudo = self._ask_pseudo(cfg)
+        expires = None if pseudo is None else self._ask_expiry("")
+        password = None if expires is None else self._ask_new_password(login)
+        if password is None:
+            return False
+        if pseudo and pseudo.casefold() == login.casefold():
+            self.say("Le pseudo ne peut pas être l'identifiant : il serait montré aux autres connectés.")
+            return False
+        cfg.clients.append(ClientAuth(id=login, password_hash=hash_password(password), role="listener", pseudo=pseudo,
+                                      expires=expires))
+        if not cfg.access.max_listeners:
+            self.say("Attention : l'écoute des visiteurs est FERMÉE (nombre maximal 0) : ouvre-la par le choix 1.")
+        return True
+
+    def _visitor_edit(self, cfg) -> bool:
+        from .passwords import hash_password
+        account = self._pick_account(cfg, "listener", "modifier")
+        if account is None:
+            return False
+        pseudo = self._ask_pseudo(cfg, account.pseudo)
+        if pseudo is None:
+            return False
+        enabled = self._ask_yes("Compte activé", account.enabled)
+        expires = self._ask_expiry(account.expires)
+        if expires is None:
+            return False
+        changed = (pseudo, enabled, expires) != (account.pseudo, account.enabled, account.expires)
+        account.pseudo, account.enabled, account.expires = pseudo, enabled, expires
+        if self.yes("Lui donner un nouveau mot de passe", False):
+            password = self._ask_new_password(account.id)
+            if password is None:
+                return False
+            account.password_hash, account.token, changed = hash_password(password), "", True
+        return changed
+
+    def _visitor_delete(self, cfg) -> bool:
+        account = self._pick_account(cfg, "listener", "supprimer")
+        if account is None or not self.yes(f"Supprimer le compte {account.id}", False):
+            return False
+        cfg.clients.remove(account)
+        return True
+
+    def _operator_pseudo(self, cfg) -> bool:
+        account = self._pick_account(cfg, "operator", "nommer")
+        if account is None:
+            return False
+        pseudo = self._ask_pseudo(cfg, account.pseudo)
+        if pseudo is None or pseudo == account.pseudo:
+            return False
+        account.pseudo = pseudo
+        return True
+
+    def _save_accounts(self, original: bytes, cfg) -> None:
+        from . import config as cfgmod
+        edited = cfgmod.render_toml(cfg).encode("utf-8")
+        if edited == original:
+            self.say("Aucune modification : station.toml n'a pas été changé.")
+            return
+        work = Path(tempfile.mkdtemp(prefix="trx-config-"))
+        try:
+            draft = work / "station.toml"
+            draft.write_bytes(edited)
+            os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
+            try:
+                cfgmod.load(draft)
+            except cfgmod.ConfigError as exc:
+                self.say("Changement REFUSÉ :\n  - " + "\n  - ".join(exc.problems))
+                return
+            self.say("(station.toml est réécrit dans sa forme standard.)")
+            self._save_config(original, edited, draft, live=True)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+    def _visitor_kick(self, cfg) -> None:
+        from .gateway.access_watch import KICK_REQUEST, kick_request
+        connected = [c for c in self._connected() if c.get("role") == "listener"]
+        if not connected:
+            self.say("Aucun visiteur connecté (ou station arrêtée).")
+            return
+        for i, c in enumerate(connected, 1):
+            self.say(f"  {i}) {c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')})")
+        answer = self.ask("Numéro du visiteur à déconnecter (Entrée = annuler) : ").strip()
+        if not (answer.isdigit() and 1 <= int(answer) <= len(connected)):
+            return
+        target = str(connected[int(answer) - 1].get("id", ""))
+        if not self.yes(f"Déconnecter {target} maintenant", False):
+            return
+        work = Path(tempfile.mkdtemp(prefix="trx-kick-"))
+        try:
+            request = work / KICK_REQUEST
+            request.write_bytes(kick_request(target))
+            code = self.runner.run(["install", "-m", "0644", str(request),
+                                    str(Path(cfg.supervisor.state_dir) / KICK_REQUEST)], admin=True)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
+                 "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
 
     def temperature(self) -> None:
         """Seuils de température du poste ([safety] rig_temp_warn_c, rig_temp_cut_c), écrits dans station.toml par

@@ -81,6 +81,7 @@
     layout_storage_error: "La station n'a pas pu enregistrer la mise en page (disque ?).",
     invalid: "Valeur refusée par le poste.",
     rig_error: "Erreur du poste.",
+    forbidden: "Compte visiteur : réception seule, aucune commande vers la station.",
   };
 
   const CUT_REASONS = {
@@ -599,6 +600,9 @@
       hint: "Corrige le mot de passe ou attends quelques minutes." },
     busy: { kind: "failed", title: "Station occupée",
       explain: "La station a atteint son nombre maximal de connexions.", hint: "Déconnecte un autre appareil." },
+    refused: { kind: "failed", title: "Accès refusé par la station",
+      explain: "Le mot de passe est juste, mais la station refuse ce compte pour l'instant (compte désactivé ou expiré, visiteurs complets, opérateur absent).",
+      hint: "Lis le message de la station dans les détails." },
     http: { kind: "failed", title: "Réponse inattendue de la station",
       explain: "La station a répondu par une erreur HTTP.", hint: "Regarde le journal de la station." },
     client_error: { kind: "failed", title: "Erreur dans le navigateur",
@@ -621,7 +625,7 @@
     if (d.iceState) info.push("ICE : " + d.iceState);
     if (d.dcState) info.push("canal : " + d.dcState);
     if (d.reconnect) {
-      const outcome = { ok: "réussie", timeout: "abandonnée (délai écoulé)", auth: "abandonnée (identifiants refusés)", cancelled: "annulée" }[d.reconnect.outcome] || d.reconnect.outcome;
+      const outcome = { ok: "réussie", timeout: "abandonnée (délai écoulé)", auth: "abandonnée (identifiants refusés)", refused: "abandonnée (accès refusé par la station)", cancelled: "annulée" }[d.reconnect.outcome] || d.reconnect.outcome;
       info.push("reconnexion automatique " + outcome + " après " + d.reconnect.seconds + " s, " + d.reconnect.attempts + " essai(s)");
     }
     if (d.detail) info.push(d.detail);
@@ -816,7 +820,9 @@
           throw Object.assign(new Error("La station est injoignable (réseau, VPN ou adresse incorrecte)."), { code: "network", detail: String(netErr && netErr.message || netErr) });
         }
         if (res.status === 401) throw Object.assign(new Error("Identifiant ou mot de passe refusé (ou trop d'essais : attends quelques minutes)."), { code: "auth" });
-        if (res.status === 503) throw Object.assign(new Error("La station est occupée (trop de connexions)."), { code: "busy" });
+        const said = res.body && typeof res.body.message === "string" ? res.body.message.slice(0, 200) : "";   // refus d'accès (visiteurs)
+        if (res.status === 403) throw Object.assign(new Error(said || "Accès refusé par la station."), { code: "refused", detail: said });
+        if (res.status === 503) throw Object.assign(new Error(said || "La station est occupée (trop de connexions)."), { code: "busy", detail: said });
         if (res.status !== 200) throw Object.assign(new Error("La station a répondu " + res.status + "."), { code: "http", detail: "HTTP " + res.status });
         if (this._token !== token) throw Object.assign(new Error("connexion annulée"), { code: "cancelled" });
         await pc.setRemoteDescription(res.body);
@@ -970,7 +976,7 @@
       if (!r) return;
       r.busy = false;
       r.lastTitle = (LOSS_REASONS[code] || LOSS_REASONS.client_error).title;
-      if (code === "auth") { this._giveUp("auth"); return; }                           // identifiants refusés : on n'insiste jamais (la station bloque après 5 essais)
+      if (code === "auth" || code === "refused") { this._giveUp(code); return; }                           // identifiants refusés : on n'insiste jamais (la station bloque après 5 essais)
       r.nextAt = this.env.now() + RECONNECT_RETRY_MS * Math.min(r.attempts, 3);
       this._reconnectUi();
     }
@@ -990,7 +996,8 @@
       this._credentials = null;
       this._finishReconnect(outcome);
       const text = { timeout: "Reconnexion abandonnée : plus de liaison après " + this.autoWindowS + " s.",
-                     auth: "Reconnexion abandonnée : identifiants refusés par la station." }[outcome];
+                     auth: "Reconnexion abandonnée : identifiants refusés par la station.",
+                     refused: "Reconnexion abandonnée : accès refusé par la station (compte, visiteurs complets ou opérateur absent)." }[outcome];
       if (text) { this.ui.status("Déconnecté", "bad"); this.ui.log(text, "bad"); this._linkAlert("failed"); } else this.ui.status("Déconnecté", "");
     }
 
@@ -1077,6 +1084,9 @@
         if (entry) { this.pending.delete(msg.id); entry.resolve(msg); }
       } else if (msg.type === "error") {
         this.ui.log("Erreur de la station : " + msg.code + (msg.detail ? " (" + msg.detail + ")" : ""), "warn");
+      } else if (msg.type === "bye") {                                  // la station ferme la connexion : pas de reconnexion automatique
+        this._credentials = null;
+        this.ui.log("La station a fermé la connexion : " + String(msg.message || msg.reason || "").slice(0, 200), "bad");
       } else if (msg.type === "module") {
         this._onModule(msg);
       } else if (msg.type === "beeps") {                                // réglé depuis un autre appareil

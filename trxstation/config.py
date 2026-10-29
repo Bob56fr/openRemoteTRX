@@ -13,6 +13,7 @@ import json
 import re
 import tomllib
 from dataclasses import dataclass, field, fields
+from datetime import date
 from pathlib import Path
 
 from .passwords import is_valid_hash
@@ -64,11 +65,42 @@ class Audio:
     tx_gain_db: float = 0.0        # gain appliqué au son émis (prudence : un excès sature l'émetteur)
 
 
+ROLES = ("operator", "listener")     # listener = visiteur en réception seule (docs/visiteurs-cahier-des-charges.md)
+PSEUDO_MAX = 32
+
+
 @dataclass
 class ClientAuth:
     id: str = ""                   # identifiant de connexion (ex. phone, car)
     token: str = ""                # ANCIEN secret en clair (16 caractères au moins) : accepté, mais à remplacer
     password_hash: str = ""        # empreinte scrypt du mot de passe (trx-setup --add-client / --set-password)
+    role: str = "operator"         # operator | listener (visiteur : écoute et affichage seulement) ; absent = operator
+    pseudo: str = ""               # nom montré aux autres connectés (jamais l'identifiant) ; plusieurs comptes peuvent le partager
+    enabled: bool = True           # false : connexion refusée, connexion en cours fermée
+    expires: str = ""              # AAAA-MM-JJ : refusé après ce jour (heure locale de la station) ; vide = jamais
+
+    def __post_init__(self) -> None:
+        if isinstance(self.expires, date):      # date TOML écrite sans guillemets : expires = 2026-12-31
+            self.expires = self.expires.isoformat()
+
+    def expired(self, today: date) -> bool:
+        if not self.expires:
+            return False
+        try:
+            return today > date.fromisoformat(self.expires)
+        except (TypeError, ValueError):
+            return True                         # illisible (refusé par la validation) : refusé, par prudence
+
+
+@dataclass
+class Access:
+    """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md). Relu par la passerelle sans redémarrer."""
+    max_listeners: int = 0              # visiteurs connectés en même temps ; 0 = fonction désactivée
+    max_operators: int = 4              # connexions opérateur : quota à part, jamais pris par un visiteur
+    listeners_need_operator: bool = True   # true : visiteurs admis SEULEMENT si un opérateur est connecté à distance
+    operator_grace_s: int = 60          # après la perte du dernier opérateur : attente avant de déconnecter les visiteurs
+    listeners_outside_bands: bool = False  # false : silence pour les visiteurs quand la réception sort des [[bands]]
+    listener_spectrum_fps: int = 5      # spectre HF des visiteurs : images par seconde au plus (l'opérateur garde max_fps)
 
 
 @dataclass
@@ -337,6 +369,7 @@ class Config:
     spectrum: Spectrum = field(default_factory=Spectrum)
     cluster: Cluster = field(default_factory=Cluster)
     selcall: Selcall = field(default_factory=Selcall)
+    access: Access = field(default_factory=Access)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -385,6 +418,8 @@ def validate(cfg: Config) -> list[str]:
             p.append(f"[[clients]] {client.id} : password_hash invalide (refais trx-setup --set-password {client.id})")
         elif client.token and len(client.token) < 16:
             p.append(f"[[clients]] {client.id} : jeton trop court (16 caractères minimum)")
+        p += _client_problems(client, cfg.clients)
+    p += _access_problems(cfg.access)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -505,6 +540,42 @@ def validate(cfg: Config) -> list[str]:
     return p
 
 
+def _client_problems(client: ClientAuth, clients: list[ClientAuth]) -> list[str]:
+    """Rôle, pseudo, activation et expiration d'un compte. Un rôle inconnu est BLOQUANT : une faute de frappe ne doit
+    jamais donner un compte opérateur."""
+    p, where = [], f"[[clients]] {client.id}"
+    if client.role not in ROLES:
+        p.append(f"{where} : role « {client.role} » inconnu (operator ou listener)")
+    if not isinstance(client.pseudo, str) or len(client.pseudo) > PSEUDO_MAX or client.pseudo != client.pseudo.strip() \
+            or any(ord(ch) < 32 or ord(ch) == 127 for ch in client.pseudo):
+        p.append(f"{where} : pseudo invalide ({PSEUDO_MAX} caractères au plus, sans caractère de contrôle ni espace autour)")
+    elif client.pseudo and any(client.pseudo.casefold() == other.id.casefold() for other in clients):
+        p.append(f"{where} : le pseudo « {client.pseudo} » est l'identifiant d'un compte (il serait montré aux autres connectés)")
+    if not isinstance(client.enabled, bool):
+        p.append(f"{where} : enabled doit valoir true ou false")
+    if not isinstance(client.expires, str) or (client.expires and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", client.expires)):
+        p.append(f"{where} : expires doit être une date AAAA-MM-JJ")
+    elif client.expires:
+        try:
+            date.fromisoformat(client.expires)
+        except ValueError:
+            p.append(f"{where} : expires « {client.expires} » n'est pas une date valide")
+    return p
+
+
+def _access_problems(a: Access) -> list[str]:
+    p = []
+    for name, low, high in (("max_listeners", 0, 20), ("max_operators", 1, 8), ("operator_grace_s", 0, 600),
+                            ("listener_spectrum_fps", 1, 20)):
+        value = getattr(a, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.append(f"[access] {name} doit être un entier entre {low} et {high}")
+    for name in ("listeners_need_operator", "listeners_outside_bands"):
+        if not isinstance(getattr(a, name), bool):
+            p.append(f"[access] {name} doit valoir true ou false")
+    return p
+
+
 def is_loopback(host: str) -> bool:
     try:
         return host == "localhost" or ipaddress.ip_address(host).is_loopback
@@ -582,7 +653,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -600,6 +671,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             spectrum=_build(Spectrum, d.get("spectrum", {}), "spectrum", problems),
             cluster=_build_cluster(d.get("cluster", {}), problems),
             selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
+            access=_build(Access, d.get("access", {}), "access", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -777,12 +849,31 @@ def render_toml(cfg: Config) -> str:
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",
         "# À vérifier et adapter à ta licence et à ton pays.",
     ]
+    ac = cfg.access
+    lines += [
+        "[access]   # visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) ; relu sans redémarrer",
+        f"max_listeners = {ac.max_listeners}   # visiteurs connectés en même temps ; 0 = fonction désactivée",
+        f"max_operators = {ac.max_operators}   # connexions opérateur (quota à part, jamais pris par un visiteur)",
+        f"listeners_need_operator = {str(ac.listeners_need_operator).lower()}   # true : visiteurs admis seulement si un opérateur est connecté",
+        f"operator_grace_s = {ac.operator_grace_s}   # opérateur perdu : attente avant de déconnecter les visiteurs (0 à 600 s)",
+        f"listeners_outside_bands = {str(ac.listeners_outside_bands).lower()}   # false : silence pour les visiteurs hors [[bands]]",
+        f"listener_spectrum_fps = {ac.listener_spectrum_fps}   # spectre HF des visiteurs : images par seconde au plus (1 à 20)",
+        "",
+    ]
     for client in cfg.clients:
         lines += ["[[clients]]", f"id = {_s(client.id)}"]
         if client.password_hash:
             lines.append(f"password_hash = {_s(client.password_hash)}")
         if client.token:
             lines.append(f"token = {_s(client.token)}   # ancien secret en clair : à remplacer")
+        if client.role != "operator":
+            lines.append(f"role = {_s(client.role)}   # visiteur : réception seule")
+        if client.pseudo:
+            lines.append(f"pseudo = {_s(client.pseudo)}")
+        if client.enabled is not True:
+            lines.append("enabled = false")
+        if client.expires:
+            lines.append(f"expires = {_s(client.expires)}")
         lines.append("")
     for b in cfg.bands:
         lines += ["[[bands]]", f"name = {_s(b.name)}", f"low_mhz = {b.low_mhz}",

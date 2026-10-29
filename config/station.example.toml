@@ -96,6 +96,23 @@ tx_level_dbfs = -6.0   # niveau de la trame émise (sous le seuil d'ALC)
 notify_on_call = true   # notification ntfy à l'ouverture
 history_size = 10
 
+[access]   # visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) ; TRX Console menu 20 ; relu sans redémarrer
+max_listeners = 0   # visiteurs connectés en même temps ; 0 = fonction désactivée
+max_operators = 4   # connexions opérateur (quota à part, jamais pris par un visiteur)
+listeners_need_operator = true   # true : visiteurs admis seulement si un opérateur est connecté
+operator_grace_s = 60   # opérateur perdu : attente avant de déconnecter les visiteurs (0 à 600 s)
+listeners_outside_bands = false   # false : silence pour les visiteurs hors [[bands]]
+listener_spectrum_fps = 5   # spectre HF des visiteurs : images par seconde au plus (1 à 20)
+
+# Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
+# [[clients]]
+# id = "club1"
+# password_hash = "..."   # TRX Console menu 20 (jamais de mot de passe en clair)
+# role = "listener"
+# pseudo = "Radio-club"
+# enabled = true
+# expires = "2026-12-31"
+
 # Bandes où l'émission est autorisée. Liste vide = réception seule.
 # À vérifier et adapter à ta licence et à ton pays.
 [[bands]]

@@ -32,6 +32,9 @@ from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
 from ..station_id import ensure_station_id
+from ..supervisor.notify import Notifier
+from .access_watch import AccessWatcher
+from .api.access import OPERATOR, AccessControl, listener_muted
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
 from .bugreports import ReportStore
@@ -52,7 +55,9 @@ async def _watch_parent(pid: int, stop: asyncio.Event, every_s: float = 1.0) -> 
         await asyncio.sleep(every_s)
 
 
-async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int | None = None) -> None:
+async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int | None = None,
+              config_path: Path | None = None) -> None:
+    """`config_path` : station.toml relu à chaud pour [[clients]] et [access] (visiteurs) ; None = jamais relu."""
     stop = stop or asyncio.Event()
     try:
         capabilities = await load_capabilities(cfg.rig.model, cfg.tools.hamlib_dir)
@@ -67,12 +72,14 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         raise
     link = CatLink(cfg.network.rigctld_host, cfg.network.rigctld_port, capabilities=capabilities)
     beeps = BeepStore(Path(cfg.supervisor.state_dir) / "beeps.json")   # roger bip, bip de liaison perdue (téléphone)
-    tail = TailPlayer(pipeline.sink, beeps, gain_db=cfg.audio.tx_gain_db)
+    tail = TailPlayer(pipeline.tx_sink, beeps, gain_db=cfg.audio.tx_gain_db)   # bips et trame SELCALL entendus aussi des visiteurs
     ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open, tail=tail)
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
-    publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum)
+    access = AccessControl(cfg.clients, cfg.access)       # rôles, quotas, présence de l'opérateur (visiteurs)
+    publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum,
+                                presence=lambda: access.presence(OPERATOR))
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]
     if parent_pid is not None:
         tasks.append(asyncio.create_task(_watch_parent(parent_pid, stop)))
@@ -81,9 +88,11 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     try:
         await ctrl.start()
         await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
-        manager, runner = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum)
+        manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
+            watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir))
+            tasks.append(asyncio.create_task(watcher.run(stop)))
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()
@@ -145,15 +154,16 @@ def _client_sessions(manager) -> list:
     return [peer.session for peer in list(manager.peers.values()) if peer.session is not None]
 
 
-async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=None):
-    """Démarre l'API WebRTC si des clients sont autorisés, si aiortc/aiohttp sont installés et si l'exposition est sûre."""
+async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=None, access=None):
+    """Démarre l'API WebRTC si des clients sont autorisés, si aiortc/aiohttp sont installés et si l'exposition est sûre.
+    Retourne (manager, runner, registry), ou trois None."""
     if not cfg.clients:
         log.warning("aucun client autorisé ([[clients]]) : pas d'API, le poste reste en réception seule")
-        return None, None
+        return None, None, None
     problem = exposure_problem(cfg)
     if problem:
         log.error("API NON DÉMARRÉE (réception seule) : %s", problem)    # on ne quitte pas : le superviseur redémarrerait la station
-        return None, None
+        return None, None, None
     try:
         from .api.auth import ClientRegistry
         from .api.server import make_app, start_server
@@ -161,14 +171,14 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         from .api.webrtc import PeerManager
     except ImportError as exc:
         log.error("API WebRTC indisponible (%s) : pip install -e \".[audio]\" ; réception seule", exc)
-        return None, None
+        return None, None, None
     ssl_context = None
     if cfg.network.tls_cert and cfg.network.tls_key:
         try:
             ssl_context = make_ssl_context(cfg.network.tls_cert, cfg.network.tls_key)
         except (OSError, ssl.SSLError) as exc:
             log.error("API NON DÉMARRÉE (réception seule) : certificat TLS inutilisable (%s)", exc)
-            return None, None
+            return None, None, None
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
     try:
@@ -178,9 +188,14 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         station_id = ""
     reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
                           station_id=station_id)
+    notifier = Notifier(cfg.supervisor.notify_url)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
-                          layouts=layouts, spectrum=spectrum, reports=reports)
-    app = make_app(ClientRegistry(cfg.clients), manager, web_client=cfg.network.web_client,
+                          layouts=layouts, spectrum=spectrum, reports=reports, access=access,
+                          muted=None if access is None else
+                          lambda: listener_muted(access.settings, cfg, link.state.frequency_hz),
+                          alert=notifier.send)
+    registry = ClientRegistry(cfg.clients)
+    app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,
                    rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device))
     try:
@@ -188,10 +203,10 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     except OSError as exc:                         # on ne quitte pas : le superviseur relancerait la passerelle en boucle
         log.error("API NON DÉMARRÉE (réception seule) : écoute impossible sur %s:%s (%s). %s",
                   cfg.network.gateway_bind, cfg.network.gateway_port, exc, bind_hint(cfg.network.gateway_bind))
-        return None, None
+        return None, None, None
     log.info("API WebRTC%s en écoute en %s sur %s:%s", " et page web" if cfg.network.web_client else "",
              "HTTPS" if ssl_context else "HTTP", cfg.network.gateway_bind, cfg.network.gateway_port)
-    return manager, runner
+    return manager, runner, registry
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -213,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
         for name in ("SIGTERM", "SIGINT", "SIGBREAK"):     # SIGBREAK : CTRL_BREAK_EVENT sous Windows
             if hasattr(signal, name):
                 signal.signal(getattr(signal, name), lambda *_: loop.call_soon_threadsafe(stop.set))
-        await run(cfg, stop=stop, parent_pid=args.parent_pid)
+        await run(cfg, stop=stop, parent_pid=args.parent_pid, config_path=args.config)
 
     try:
         asyncio.run(_main())

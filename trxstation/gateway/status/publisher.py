@@ -22,11 +22,12 @@ log = logging.getLogger(__name__)
 
 class StatusPublisher:
     def __init__(self, path: str | Path, link: CatLink, controller: PttController, interval_s: float = 0.25,
-                 pipeline=None, spectrum=None):
+                 pipeline=None, spectrum=None, presence=None):
         self.path = Path(path)
         self.spectrum = spectrum
         self.link, self.controller, self.interval_s = link, controller, interval_s
         self.pipeline = pipeline
+        self.presence = presence          # () -> dict : connexions (opérateurs, visiteurs) pour la console et trx-monitor
         self._seq = 0
         self._stop = asyncio.Event()
         self._failures = 0                # écritures refusées de suite (journal limité : pas une ligne par refus)
@@ -37,7 +38,8 @@ class StatusPublisher:
                              ptt=self.controller.snapshot().to_dict(), rig=self.link.state.to_dict(),
                              clients=self.controller.clients,
                              audio=self.pipeline.stats() if self.pipeline is not None else {},
-                             spectrum=self.spectrum.stats() if self.spectrum is not None else {})
+                             spectrum=self.spectrum.stats() if self.spectrum is not None else {},
+                             presence=self.presence() if self.presence is not None else {})
 
     def stop(self) -> None:
         self._stop.set()
