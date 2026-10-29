@@ -25,6 +25,10 @@ data class RigUi(
     val headsetMic: String = "",
     /** Message pour l'écran de la voiture (connexion refusée par Android, mot de passe absent…), vide sinon. */
     val carNotice: String = "",
+    /** Android Auto a ouvert le lecteur (voiture connectée) : mode conduite automatique. */
+    val carConnected: Boolean = false,
+    /** « Je suis passager » : mode conduite levé jusqu'à la déconnexion de la voiture. */
+    val passenger: Boolean = false,
 )
 
 /**
@@ -79,6 +83,8 @@ object RigHub {
     const val PREF_MIC_PROFILE = "mic_profile"
     const val PREF_MIC_ECHO = "mic_echo"
     const val PREF_MIC_NOISE = "mic_noise"
+    const val PREF_DRIVING = "driving_manual"
+    const val PREF_DRIVING_AUTO = "driving_auto"
 
     internal data class Request(val account: StationAccount, val password: String, val useMic: Boolean)
 
@@ -120,6 +126,12 @@ object RigHub {
     }
 
     internal fun carNotice(text: String) = publish { it.copy(carNotice = text) }
+
+    /** Voiture connectée ou partie (RigAutoService) ; à la déconnexion, le mode passager retombe. */
+    internal fun carConnected(on: Boolean) = publish { it.copy(carConnected = on, passenger = on && it.passenger) }
+
+    /** « Je suis passager » : lève le mode conduite automatique pour cette connexion de la voiture. */
+    fun setPassenger(on: Boolean) = publish { it.copy(passenger = on) }
 
     fun toggle() { service?.onRig { session, now -> session.pressPtt(now) } }
 

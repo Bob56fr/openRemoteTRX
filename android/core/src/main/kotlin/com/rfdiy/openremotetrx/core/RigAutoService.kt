@@ -26,13 +26,17 @@ class RigAutoService : MediaBrowserService() {
     }
 
     override fun onDestroy() {
+        RigHub.carConnected(false)
         RigMedia.onBrowseChanged = null
         RigMedia.release(RigMedia.USER_CAR)
         super.onDestroy()
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? =
-        if (clientPackageName in Car.BROWSE_CALLERS || clientPackageName == packageName) BrowserRoot(ROOT, null) else null
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+        if (clientPackageName !in Car.BROWSE_CALLERS && clientPackageName != packageName) return null
+        if (clientPackageName == AUTO) RigHub.carConnected(true)          // Android Auto : mode conduite automatique
+        return BrowserRoot(ROOT, null)
+    }
 
     override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowser.MediaItem>>) {
         val ui = RigHub.ui.value
@@ -66,6 +70,7 @@ class RigAutoService : MediaBrowserService() {
         MediaBrowser.MediaItem(MediaDescription.Builder().setMediaId(id).setTitle(title).setSubtitle(subtitle).build(), MediaBrowser.MediaItem.FLAG_PLAYABLE)
 
     companion object {
+        const val AUTO = "com.google.android.projection.gearhead"
         const val ROOT = "root"
         const val STATIONS = "stations"
         const val MEMORIES = "memories"

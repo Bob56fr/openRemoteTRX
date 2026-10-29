@@ -75,6 +75,8 @@ import com.rfdiy.openremotetrx.core.VoiceHub
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.logic.Band
 import com.rfdiy.openremotetrx.logic.Controls
+import com.rfdiy.openremotetrx.logic.Driving
+import com.rfdiy.openremotetrx.logic.DrivingReason
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.Indicators
@@ -125,6 +127,15 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
     var keepTx by remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
+    // Mode conduite (logic.Driving) : réglage, ou automatique quand une voiture est connectée (Android Auto, mode voiture)
+    var drivingManual by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING, false)) }
+    var drivingAuto by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING_AUTO, true)) }
+    val carMode = (LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_CAR
+    val driving = Driving.reason(drivingManual, drivingAuto, ui.carConnected || carMode, ui.passenger)
+    if (Driving.active(driving)) {
+        DrivingScreen(ui, driving, modifier) { drivingManual = false; prefs.edit().putBoolean(RigHub.PREF_DRIVING, false).apply() }
+        return
+    }
     // Écran allumé tant que la station est affichée (comme la page) ; l'écoute continue de toute façon écran éteint.
     val view = LocalView.current
     DisposableEffect(keepScreenOn, rig.status) {
@@ -218,6 +229,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 if (ptt.lastCut.isNotEmpty() && !ptt.transmitting) Text("Dernière coupure : ${ptt.lastCut}", style = MaterialTheme.typography.bodySmall)
             }
 
+            if (driving == DrivingReason.PASSENGER) Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Voiture connectée : mode passager (PTT de l'écran permis).", color = WARN, style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f))
+                TextButton(onClick = { RigHub.setPassenger(false) }) { Text("Mode conduite") }
+            }
             when (tab) {
                 Tab.STATION -> {
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
@@ -496,6 +512,22 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 })
                 Spacer(Modifier.width(8.dp))
                 Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = drivingManual, onCheckedChange = {
+                    drivingManual = it
+                    prefs.edit().putBoolean(RigHub.PREF_DRIVING, it).apply()
+                })
+                Spacer(Modifier.width(8.dp))
+                Text("Mode conduite (écran réduit, PTT tactile désactivé)", style = MaterialTheme.typography.bodyMedium)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = drivingAuto, onCheckedChange = {
+                    drivingAuto = it
+                    prefs.edit().putBoolean(RigHub.PREF_DRIVING_AUTO, it).apply()
+                })
+                Spacer(Modifier.width(8.dp))
+                Text("Mode conduite automatique quand une voiture est connectée (Android Auto)", style = MaterialTheme.typography.bodyMedium)
             }
             }
             Panel { MicSection() }

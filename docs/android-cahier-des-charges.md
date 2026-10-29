@@ -96,12 +96,15 @@ Fait et essayé dans l'émulateur (Android 17) contre une vraie passerelle et le
 
 ### Lot A3 (étape Android 11) — interface smartphone complète
 - S-mètre, fréquence (glisser par chiffre, clavier, bandes), modes et filtres permis par les capacités, mémoires (créer, rappeler, favoris), fonctions du poste (NR NB P.AMP IP+ AGC COMP FIL TUNER, ATT, Notch selon capacités), puissance, squelch.
-- Mode conduite : interface réduite, PTT tactile désactivé en roulant (vitesse ou connexion voiture), seulement voix, voiture, volant ou bouton Bluetooth.
+- Mode conduite : interface réduite, PTT tactile désactivé en roulant (vitesse ou connexion voiture), seulement voix, voiture, volant ou bouton Bluetooth. FAIT (étape 82, application 0.24.0) : écran réduit (état RX/TX, fréquence, mode, S-mètre, STOP et sourdine en très grand), AUCUN PTT tactile ; en service par le réglage ou automatiquement quand Android Auto ouvre le lecteur ou que le téléphone passe en mode voiture (réglage « automatique », activé par défaut) ; « Je suis passager » (appui long) le lève jusqu'à la déconnexion de la voiture. Vitesse (GPS) non utilisée (autorisation de localisation évitée). La voix ne fait jamais émettre.
 - Bips de fin (`beeps_set`), « Reprendre la main », rapport de problème (`bug_report`).
 - Onglet « Égaliseur paramétrique » (10 bandes 100-5 000 Hz, chorus, réverbération, écoute de contrôle, enregistrement/relecture) et bouton marche/arrêt d'accès direct : `docs/egaliseur-voix.md` (page web d'abord). FAIT (étape 80, application 0.22.0 : onglet « Égaliseur », bouton EQ ; écoute de contrôle en direct non faite : WebRTC n'ouvre le micro qu'en émission, enregistrement puis relecture à la place). Scrambler dans le même onglet (étape 81, `docs/scrambler.md`).
 
 ### Lot A4 — plus tard, si utile
 Waterfall audio, spectre HF (canal `spectrum`), spots du cluster DX (`module`), mises en page du designer (`layout_get`), thèmes. À décider fonction par fonction dans la matrice de parité.
+
+### Lot A5 — version tablette (après A3)
+Même APK, disposition selon la taille de la fenêtre, inspirée de la page PC (afficheur à gauche, spectre HF et rubriques à droite) : [`android-tablette-cahier-des-charges.md`](android-tablette-cahier-des-charges.md).
 
 ## 6. Essais
 

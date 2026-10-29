@@ -110,3 +110,19 @@ class VoiceTest {
         assertEquals(7_074_000, Voice.frequency("7074 kHz"))
     }
 }
+
+class DrivingTest {
+    @Test
+    fun `mode conduite - voiture connectee ou reglage, PTT tactile interdit, passager seulement si voiture`() {
+        val car = Driving.reason(manual = false, auto = true, carConnected = true, passenger = false)
+        assertEquals(DrivingReason.CAR, car)
+        assertFalse(Driving.touchPttAllowed(car))
+        assertEquals(DrivingReason.MANUAL, Driving.reason(manual = true, auto = true, carConnected = true, passenger = true))  // le réglage prime
+        val passenger = Driving.reason(manual = false, auto = true, carConnected = true, passenger = true)
+        assertEquals(DrivingReason.PASSENGER, passenger)
+        assertTrue(Driving.touchPttAllowed(passenger))
+        assertEquals(DrivingReason.OFF, Driving.reason(manual = false, auto = false, carConnected = true, passenger = false))
+        assertEquals(DrivingReason.OFF, Driving.reason(manual = false, auto = true, carConnected = false, passenger = true))
+        assertTrue(Driving.touchPttAllowed(DrivingReason.OFF))
+    }
+}
