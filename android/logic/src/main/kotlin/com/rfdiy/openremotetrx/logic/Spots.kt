@@ -97,6 +97,15 @@ object Spots {
         )
     }
 
+    /** Heure d'arrivée du spot (ms, horloge murale) : sa réception moins l'âge qu'il avait alors. */
+    fun arrivalMs(spot: Spot): Long = spot.receivedMs - (spot.age0 * 1000).roundToLong()
+
+    /** « Tout afficher » de la rubrique Cluster DX : les `n` derniers spots, le plus récent en tête. */
+    fun recent(spots: List<Spot>, n: Int = 30): List<Spot> = spots.sortedByDescending { arrivalMs(it) }.take(n)
+
+    /** Source d'un spot : type (DX, RBN, CB…) et indicatif de celui qui l'a signalé. */
+    fun sourceLabel(spot: Spot): String = kindLabel(spot.kind) + if (spot.de.isNotEmpty()) " de ${spot.de}" else ""
+
     fun ageSeconds(spot: Spot, nowMs: Long): Double = spot.age0 + max(0.0, (nowMs - spot.receivedMs) / 1000.0)
 
     /** Opacité : 1 les 2 premières minutes, puis estompage jusqu'à 0,35 en fin de vie. */

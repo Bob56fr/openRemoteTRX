@@ -35,6 +35,9 @@ class LinkSounds(private val context: Context) {
     private val txOn = Alert(listOf(Triple(1200, 90, 0)), longArrayOf(0, 60))
     private val txOff = Alert(listOf(Triple(700, 140, 0)), longArrayOf(0, 40, 60, 40))
 
+    /** Bouton du casque ou du volant refusé (émission non autorisée, réception seule) : deux notes graves brèves. */
+    private val refusedAlert = Alert(listOf(Triple(300, 120, 60), Triple(300, 120, 0)), longArrayOf(0, 120, 60, 120))
+
     fun play(kind: LinkAlert, volume: Float = 0.5f) {
         play(alerts[kind] ?: return, volume)
     }
@@ -46,6 +49,16 @@ class LinkSounds(private val context: Context) {
      */
     fun txBeep(on: Boolean, volume: Float = 0.5f) {
         play(if (on) txOn else txOff, volume)
+    }
+
+    fun refused(volume: Float = 0.5f) {
+        play(refusedAlert, volume)
+    }
+
+    /** « Écouter » un bip de fin de la station : segments (Hz, ms), 0 Hz = silence ; ici seulement, jamais émis. */
+    fun playSequence(segments: List<Pair<Int, Int>>, volume: Float = 0.5f) {
+        if (segments.isEmpty()) return
+        runCatching { playPcm(render(Alert(segments.map { (hz, ms) -> Triple(hz, ms, 0) }, longArrayOf())), volume) }
     }
 
     private fun play(alert: Alert, volume: Float) {

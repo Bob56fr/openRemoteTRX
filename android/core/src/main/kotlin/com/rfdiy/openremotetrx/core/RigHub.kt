@@ -19,6 +19,8 @@ data class RigUi(
     val muted: Boolean = false,
     /** Faux : micro non autorisé, réception seule. */
     val micAllowed: Boolean = true,
+    /** Micro du casque Bluetooth : état lisible (vide si le réglage est désactivé). */
+    val headsetMic: String = "",
 )
 
 /**
@@ -65,6 +67,11 @@ object RigHub {
     fun spectrumSet(name: String, value: Number) = spectrumSet(name, JsonPrimitive(value))
 
     private fun spectrumSet(name: String, value: JsonPrimitive) { service?.onRig { session, now -> session.spectrumSet(now, name, value) } }
+
+    /** Réglages du téléphone lus par le service (fichier de préférences de l'application). */
+    const val PREFS = "ui"
+    const val PREF_MEDIA_PTT = "media_ptt"
+    const val PREF_HEADSET_MIC = "headset_mic"
 
     internal class Request(val account: StationAccount, val password: String, val useMic: Boolean)
 
@@ -125,6 +132,18 @@ object RigHub {
 
     /** Bouton d'une fonction du poste (logic.Controls) ; refusé pendant l'émission. */
     fun pressControl(key: String) { service?.onRig { session, now -> session.pressControl(now, key) } }
+
+    /** Bips de fin (réglage commun de la station). */
+    fun setBeep(name: String, value: Boolean) = setBeep(name, JsonPrimitive(value))
+
+    fun setBeep(name: String, value: String) = setBeep(name, JsonPrimitive(value))
+
+    fun setBeep(name: String, value: Int) = setBeep(name, JsonPrimitive(value))
+
+    private fun setBeep(name: String, value: JsonPrimitive) { service?.onRig { session, now -> session.setBeeps(now, mapOf(name to value)) } }
+
+    /** Réglage « PTT par le bouton du casque ou du volant » changé : session média ouverte ou fermée tout de suite. */
+    fun mediaButtonsChanged() { service?.refreshMediaSession() }
 
     fun setMuted(on: Boolean) { service?.setMuted(on) ?: publish { it.copy(muted = on) } }
 

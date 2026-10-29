@@ -91,3 +91,64 @@ class ClusterStatusTest {
         assertEquals(mapOf("20" to BandDot(17, 3), "40" to BandDot(6, 2), "11" to BandDot(2, 1)), ClusterStatus.bandDots(data))
     }
 }
+
+class RecentSpotsTest {
+    @Test
+    fun `tout afficher - les 30 derniers par ordre d'arrivee, source lisible`() {
+        val spots = (0 until 40).map { i ->
+            Spots.clean(Json.parseToJsonElement("""{"id":$i,"f":14074,"dx":"CALL$i","de":"F5LEN","age":${40 - i}}"""), 100_000)!!
+        }
+        val recent = Spots.recent(spots.shuffled())
+        assertEquals(30, recent.size)
+        assertEquals("CALL39", recent.first().dx)                     // âge 1 s : arrivé le dernier
+        assertEquals("CALL10", recent.last().dx)
+        assertEquals(99_000L, Spots.arrivalMs(recent.first()))
+        assertEquals("DX de F5LEN", Spots.sourceLabel(recent.first()))
+    }
+}
+
+class MediaKeysTest {
+    private fun d(key: MediaKey, mine: Boolean = false, repeat: Int = 0, device: Long? = null, last: Long? = null) =
+        MediaKeys.decide(key, repeat, mine, device, last)
+
+    @Test
+    fun `bouton du casque - prise puis fin, appui simple seulement`() {
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.TOGGLE))
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.TOGGLE, mine = true))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.TOGGLE, repeat = 1))          // maintien : jamais
+        assertEquals(MediaAction.IGNORE, d(MediaKey.OTHER))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.TOGGLE, last = 200))           // rebond
+    }
+
+    @Test
+    fun `lecture automatique a la connexion d'un casque ou d'une voiture - jamais de prise`() {
+        assertEquals(MediaAction.IGNORE, d(MediaKey.PLAY, device = 500))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.TOGGLE, device = 2999))
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.PLAY, device = 3000))
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.PAUSE, mine = true, device = 10))   // terminer reste toujours permis
+    }
+
+    @Test
+    fun `pause et stop ne prennent jamais, lecture ne coupe jamais`() {
+        assertEquals(MediaAction.IGNORE, d(MediaKey.PAUSE))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.STOP))
+        assertEquals(MediaAction.TOGGLE, d(MediaKey.STOP, mine = true))
+        assertEquals(MediaAction.IGNORE, d(MediaKey.PLAY, mine = true))
+    }
+}
+
+class BeepSettingsTest {
+    @Test
+    fun `reglages des bips lus comme la page`() {
+        val b = BeepSettings.parse(Json.parseToJsonElement("""{"roger_enabled":true,"roger_tone":"duo","roger_pattern":2,
+            "link_lost_enabled":false,"roger_sequence":[[1000,100],[0,60],[1000,100]],"link_lost_sequence":[[1200,120],["x",1]],
+            "tones":["600","duo"],"patterns":[1,2,3]}""") as kotlinx.serialization.json.JsonObject)!!
+        assertTrue(b.rogerEnabled)
+        assertEquals(false, b.linkLostEnabled)
+        assertEquals(listOf(1000 to 100, 0 to 60, 1000 to 100), b.rogerSequence)
+        assertEquals(listOf(1200 to 120), b.linkLostSequence)           // segment illisible écarté
+        assertEquals("deux tons montants", BeepSettings.toneLabel(b.tone))
+        assertEquals("2 bips", BeepSettings.patternLabel(2))
+        assertNull(BeepSettings.parse(null))
+    }
+}

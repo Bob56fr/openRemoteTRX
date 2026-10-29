@@ -20,9 +20,9 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | S-mètre, Po, SWR, ALC | fait | fait | fait (S-mètre 0.3.0 ; Po, SWR, ALC pendant l'émission, COMP, Vd, température : 0.4.0) | SWR >= 2 et ALC >= 90 % en orange |
 | Fonctions et niveaux du poste (NR NB P.AMP AGC COMP TUNER ATT…) | fait | fait | boutons faits (0.4.0 : NR, NB, P.AMP, ATT, NOTCH, IP+, AGC, COMP, FIL, TUNER, PWR, mêmes cycles que la page)  ; squelch et niveaux NR/NB faits (0.5.0) | verrouillés pendant l'émission ; une commande à la fin du geste |
 | Mémoires partagées (`memories`) | fait | fait | fait (liste et rappel 0.3.0 ; création, modification, favori, suppression en deux temps 0.5.0) | présélections d'Android Auto (A2) |
-| Bips de fin (`beeps`) | fait | fait | à faire (A3) | |
+| Bips de fin (`beeps`) | fait | fait | fait (0.13.0 : roger, tonalité, motif, liaison perdue avec confirmation, Écouter) | |
 | Rapport de problème (`bug_report`) | fait | fait | à faire (A3) | |
-| Android Auto, commande vocale, touches du volant | — | absent volontairement | à faire (A2) | |
+| Android Auto, commande vocale, touches du volant | — | absent volontairement | touches du volant et bouton du casque : fait (0.13.0, désactivé par défaut) ; Android Auto et voix : à faire (A2) | |
 | Mode conduite | — | absent | à faire (A3) | |
 | Waterfall audio | — | fait | fait (0.7.0 : même analyse que la page, FFT 4096 Blackman, lissage 0,35, -85 à -30 dBFS ; VIT, LARG, GAIN, PIC) | calcul sur le téléphone, seulement pendant l'affichage |
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |
@@ -40,3 +40,6 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Bargraphs POWER, SWR, ALC toujours visibles dans l'afficheur | — | fait (graphiques de puissance) | fait (0.10.1) | à zéro en réception |
 | Pastilles de spots sur les boutons de bande, rubrique « Cluster DX » (état des flux) | fait (`cluster_status`) | fait | fait (0.12.0) | spots actifs seulement (moins de 15 min) |
 | Quitter l'application pendant l'émission => retour en réception (réglage « rester en émission », désactivé par défaut) | — | absent (navigateur : la page en arrière-plan est suspendue, la station coupe faute de battements) | fait (0.12.0) | demandé le 2026-10-29 |
+| PTT par le bouton du casque (filaire ou Bluetooth) ou les touches du volant ; micro du casque Bluetooth | — | absent (navigateur) | fait (0.13.0, désactivés par défaut) | demandé le 2026-10-29 ; à essayer avec un vrai casque |
+| « Tout afficher » : 30 derniers spots (heure locale, indicatif, fréquence, source ; toucher = QSY) | fait (`scope: hf_view`) | à faire | fait (0.13.0) | demandé le 2026-10-29 |
+| Version du logiciel sur l'écran de connexion | — | en pied de page | fait (0.13.0) | |

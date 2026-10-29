@@ -10,20 +10,29 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioDeviceCallback
+import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
+import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.LinkAlert
 import com.rfdiy.openremotetrx.logic.LinkStatus
+import com.rfdiy.openremotetrx.logic.MediaAction
+import com.rfdiy.openremotetrx.logic.MediaKey
+import com.rfdiy.openremotetrx.logic.MediaKeys
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.logic.SessionLink
@@ -45,6 +54,10 @@ import kotlinx.coroutines.launch
  *
  * Garde la réception écran éteint (verrous de veille et Wi-Fi), affiche une notification permanente avec STOP,
  * et applique E5 : perte du focus audio (appel) pendant SON émission => STOP.
+ *
+ * Réglage « PTT par le bouton du casque ou du volant » (désactivé par défaut) : session média Android qui reçoit
+ * Lecture/Pause d'un casque filaire ou Bluetooth et des touches du volant (logic.MediaKeys). Réglage « micro du
+ * casque Bluetooth » : appareil de communication choisi pour toute la connexion (son en qualité téléphone).
  */
 class RigService : Service() {
     private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "rig") }
@@ -63,6 +76,16 @@ class RigService : Service() {
     private var wasMine = false
     private var lastNotification = ""
     private var foreground = false
+    private var media: MediaSession? = null                       // fil principal
+    private var mediaMine = false
+    private var deviceAddedAt: Long? = null                       // fil « rig »
+    private var lastMediaKeyAt: Long? = null
+    private var headsetMic = false
+    private val devices = object : AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>?) {
+            executor.execute { deviceAddedAt = now() }             // casque ou voiture arrivé : « lecture » automatique ignorée
+        }
+    }
 
     private fun now(): Long = SystemClock.elapsedRealtime()
 
@@ -74,12 +97,14 @@ class RigService : Service() {
     override fun onCreate() {
         super.onCreate()
         sounds = LinkSounds(this)
+        headsetMic = getSharedPreferences(RigHub.PREFS, MODE_PRIVATE).getBoolean(RigHub.PREF_HEADSET_MIC, false)
         rtc = RtcLink(
             this,
             post = { block -> runCatching { executor.execute(block) } },
             onMessage = { text -> session.onMessage(now(), text) },
             onClosed = { code -> session.onLinkClosed(now(), code) },
             onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
+            voiceCall = headsetMic,
         )
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()
@@ -133,6 +158,7 @@ class RigService : Service() {
 
     override fun onDestroy() {
         RigHub.service = null
+        releaseMedia()
         runCatching {
             executor.submit {
                 session.onChange = null
@@ -209,6 +235,11 @@ class RigService : Service() {
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
         if (mine != wasMine) sounds.txBeep(mine)
         wasMine = mine
+        val owned = state.ptt?.mine == true
+        if (owned != mediaMine) {
+            mediaMine = owned
+            media?.setPlaybackState(playback(owned))
+        }
         updateNotification(state)
         if (state.status == LinkStatus.DISCONNECTED && request != null && attempt?.isActive != true) {
             request = null                                         // abandon : plus rien à garder au premier plan
@@ -221,6 +252,9 @@ class RigService : Service() {
         ticker = null
         releaseLocks()
         abandonFocus()
+        releaseHeadsetMic()
+        runCatching { getSystemService(AudioManager::class.java)?.unregisterAudioDeviceCallback(devices) }
+        Handler(mainLooper).post { releaseMedia() }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         foreground = false
         stopSelf()
@@ -235,6 +269,105 @@ class RigService : Service() {
         foreground = true
         acquireLocks()
         requestFocus()
+        getSystemService(AudioManager::class.java)?.registerAudioDeviceCallback(devices, Handler(mainLooper))
+        refreshMediaSession()
+        if (headsetMic) useHeadsetMic()
+    }
+
+    // ------------------------------------------------------------------ casque et volant
+
+    /** Ouvre ou ferme la session média selon le réglage (fil principal). Fermée : les touches restent aux autres applications. */
+    internal fun refreshMediaSession() {
+        Handler(mainLooper).post {
+            val want = foreground && getSharedPreferences(RigHub.PREFS, MODE_PRIVATE).getBoolean(RigHub.PREF_MEDIA_PTT, false)
+            if (want && media == null) {
+                media = MediaSession(this, "openRemoteTRX").apply {
+                    setCallback(object : MediaSession.Callback() {
+                        override fun onMediaButtonEvent(intent: Intent): Boolean {
+                            val event = keyEvent(intent) ?: return false
+                            val key = keyOf(event.keyCode)
+                            if (key == MediaKey.OTHER) return false
+                            if (event.action == KeyEvent.ACTION_DOWN) executor.execute { onMediaKey(key, event.repeatCount) }
+                            return true                         // appui et relâchement consommés : rien d'autre ne démarre
+                        }
+                    }, Handler(mainLooper))
+                    setPlaybackState(playback(mediaMine))
+                    isActive = true
+                }
+            } else if (!want) {
+                releaseMedia()
+            }
+        }
+    }
+
+    private fun releaseMedia() {
+        media?.let { runCatching { it.isActive = false; it.release() } }
+        media = null
+    }
+
+    /** « En lecture » pendant SON émission : un casque envoie alors « pause » (fin), sinon « lecture » (prise). */
+    private fun playback(mine: Boolean): PlaybackState = PlaybackState.Builder()
+        .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_STOP)
+        .setState(if (mine) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
+        .build()
+
+    private fun keyEvent(intent: Intent): KeyEvent? =
+        if (Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+        }
+
+    private fun keyOf(code: Int): MediaKey = when (code) {
+        KeyEvent.KEYCODE_HEADSETHOOK, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> MediaKey.TOGGLE
+        KeyEvent.KEYCODE_MEDIA_PLAY -> MediaKey.PLAY
+        KeyEvent.KEYCODE_MEDIA_PAUSE -> MediaKey.PAUSE
+        KeyEvent.KEYCODE_MEDIA_STOP -> MediaKey.STOP
+        else -> MediaKey.OTHER
+    }
+
+    /** Sur le fil « rig » : même chemin que le bouton PTT de l'écran (« Émission autorisée » exigée). */
+    private fun onMediaKey(key: MediaKey, repeat: Int) {
+        val t = now()
+        val snap = session.snapshot
+        val mine = snap.ptt?.mine == true
+        val action = MediaKeys.decide(key, repeat, mine, deviceAddedAt?.let { t - it }, lastMediaKeyAt?.let { t - it })
+        if (action != MediaAction.TOGGLE) return
+        lastMediaKeyAt = t
+        if (!mine && (!snap.armed || request?.useMic != true || snap.ptt?.transmitting == true)) {
+            sounds.refused()                                       // refus audible : l'écran n'est peut-être pas visible
+        }
+        session.pressPtt(t)                                        // journal : motif du refus éventuel
+    }
+
+    /** Micro du casque Bluetooth (Android 12+) : appareil de communication pour toute la connexion. */
+    private fun useHeadsetMic() {
+        val am = getSystemService(AudioManager::class.java) ?: return
+        val text = if (Build.VERSION.SDK_INT < 31) {
+            "micro du casque Bluetooth : Android 12 ou plus récent requis (micro du téléphone)"
+        } else {
+            val device = am.availableCommunicationDevices.firstOrNull {
+                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+            }
+            if (device == null) {
+                "aucun casque Bluetooth connecté : micro du téléphone"
+            } else {
+                am.mode = AudioManager.MODE_IN_COMMUNICATION
+                if (am.setCommunicationDevice(device)) "micro du casque : ${device.productName}" else "casque Bluetooth refusé par Android : micro du téléphone"
+            }
+        }
+        RigHub.publish { it.copy(headsetMic = text) }
+    }
+
+    private fun releaseHeadsetMic() {
+        if (!headsetMic) return
+        val am = getSystemService(AudioManager::class.java) ?: return
+        runCatching {
+            if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice()
+            am.mode = AudioManager.MODE_NORMAL
+        }
+        RigHub.publish { it.copy(headsetMic = "") }
     }
 
     private fun acquireLocks() {

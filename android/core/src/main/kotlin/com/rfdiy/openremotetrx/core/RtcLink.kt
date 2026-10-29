@@ -42,6 +42,8 @@ class RtcLink(
     private val onClosed: (String) -> Unit,
     /** Balayage du spectre HF (binaire), sur le fil de WebRTC : à traiter vite (une copie, pas de calcul lourd). */
     private val onSpectrum: (ByteArray) -> Unit = {},
+    /** Micro d'un casque Bluetooth : le son passe alors comme un appel (qualité téléphone, dans le casque). */
+    voiceCall: Boolean = false,
 ) {
     private val factory: PeerConnectionFactory
     private var generation = 0
@@ -60,8 +62,11 @@ class RtcLink(
             .setUseHardwareAcousticEchoCanceler(true)
             .setUseHardwareNoiseSuppressor(true)
             // Son de la station joué comme un média : haut-parleur, casque, Bluetooth ou voiture, volume « média ».
+            // Micro du casque Bluetooth choisi : comme un appel, sinon le son partirait sur le haut-parleur du téléphone.
             .setAudioAttributes(
-                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
+                AudioAttributes.Builder()
+                    .setUsage(if (voiceCall) AudioAttributes.USAGE_VOICE_COMMUNICATION else AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
             )
             .createAudioDeviceModule()
         factory = PeerConnectionFactory.builder().setAudioDeviceModule(adm).createPeerConnectionFactory()

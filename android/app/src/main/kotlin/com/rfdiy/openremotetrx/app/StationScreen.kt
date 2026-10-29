@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,8 @@ fun StationScreen(
     onConnect: (StationAccount, String) -> Unit,
 ) {
     var accounts by remember { mutableStateOf(store.list()) }
+    val context = LocalContext.current
+    val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?" }
     val initial = accounts.firstOrNull { it.id == store.lastId } ?: accounts.firstOrNull()
     var editing by remember { mutableStateOf(initial) }
     var name by remember { mutableStateOf(initial?.name ?: "") }
@@ -101,7 +104,10 @@ fun StationScreen(
         modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
+            Text("version $version", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
         OutlinedButton(onClick = {
             scan.launch(
                 ScanOptions()

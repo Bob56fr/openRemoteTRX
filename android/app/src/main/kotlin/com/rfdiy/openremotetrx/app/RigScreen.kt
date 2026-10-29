@@ -139,6 +139,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var bandsPref by remember { mutableStateOf(prefs.getString("bands", "") ?: "") }
     var bandsDialog by remember { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
+    var spotsDialog by remember { mutableStateOf(false) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     var offsetDrag by remember { mutableStateOf<Float?>(null) }
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
@@ -415,7 +416,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             rig.clusterView(System.currentTimeMillis())?.let { cv ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(10.dp).background(HEALTH[cv.health] ?: Page.TEXTE_2, CircleShape))
-                    Text("Cluster DX : " + cv.title, style = MaterialTheme.typography.titleSmall)
+                    Text("Cluster DX : " + cv.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { spotsDialog = true }) { Text("Tout afficher") }
                 }
                 for (line in cv.lines) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -458,6 +460,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
             }
+            HorizontalDivider(color = Page.LIGNE)
+            HeadsetSection(ui.headsetMic)
+            HorizontalDivider(color = Page.LIGNE)
+            BeepsSection(rig.beeps, connected && rig.protocolOk)
+            HorizontalDivider(color = Page.LIGNE)
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
         }
 
@@ -511,6 +518,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         prefs.edit().putString("bands", bandsPref).apply()
         bandsDialog = false
     }
+    if (spotsDialog) RecentSpotsDialog(rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
     }
