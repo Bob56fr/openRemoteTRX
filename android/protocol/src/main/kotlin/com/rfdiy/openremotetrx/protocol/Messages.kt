@@ -73,6 +73,8 @@ data class Hello(
     val layouts: Boolean = false,
     val spectrum: SpectrumCapability? = null,
     val beeps: JsonObject? = null,
+    /** État du SELCALL de la station (comme le message `selcall`), null si la station ne l'offre pas. */
+    val selcall: JsonObject? = null,
     val features: List<String> = emptyList(),
 ) : ServerMessage {
     fun offers(feature: String): Boolean = feature in features
@@ -139,6 +141,9 @@ data class Memories(val items: List<Memory>) : ServerMessage
 
 data class Beeps(val settings: JsonObject) : ServerMessage
 
+/** État du SELCALL changé (commande d'un client, appel reçu). */
+data class Selcall(val status: JsonObject) : ServerMessage
+
 data class ModuleMessage(val module: String, val data: JsonElement) : ServerMessage
 
 /** Type inconnu de cette version de l'application : ignoré (une station plus récente peut en ajouter). */
@@ -174,6 +179,7 @@ object ServerMessages {
                 "error" -> ErrorMessage(obj.text("code"), obj.text("detail"))
                 "memories" -> Memories(json.decodeFromJsonElement<List<Memory>>(obj["items"] ?: JsonArray(emptyList())))
                 "beeps" -> Beeps(obj["settings"]?.jsonObject ?: JsonObject(emptyMap()))
+                "selcall" -> Selcall(obj["status"]?.jsonObject ?: JsonObject(emptyMap()))
                 "module" -> ModuleMessage(obj.text("module"), obj["data"] ?: JsonNull)
                 else -> Unknown(type)
             }

@@ -120,6 +120,7 @@
     <div class="subrow">
       <label id="blk-armed" class="check"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
       <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
+      <button id="sel-ind" class="chip sel-ind" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
       <label id="blk-sql" class="sql">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
@@ -265,6 +266,42 @@
             <button id="lost-preview" disabled title="Joué ici seulement, jamais émis">Écouter le bip de liaison perdue</button>
           </div>
           <div id="beeps-note" class="dim small"></div>
+        </div>
+      </div>
+    </details>
+
+    <details id="sec-selcall" hidden>
+      <summary>SELCALL</summary>
+      <div class="body">
+        <p class="note">Squelch numérique de la station par appel de groupe : armé sur un code, il coupe le son reçu jusqu'à
+          ce qu'une station du groupe envoie ce code, puis le laisse ouvert jusqu'à ce que vous réarmiez. Réglage commun à tous
+          vos appareils.</p>
+        <div id="sel-state" class="sel-state">—</div>
+        <div class="row">
+          <label>Code (3 à 8 chiffres) <input id="sel-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
+          <button id="sel-activate" class="primary">Activer</button>
+        </div>
+        <div id="sel-history" class="row sel-history"></div>
+        <div class="row">
+          <button id="sel-rearm" class="chip">Réarmer</button>
+          <button id="sel-deactivate" class="chip">Désactiver</button>
+        </div>
+        <div class="row">
+          <label>Tonalités dans le son reçu <select id="sel-filter">
+            <option value="attenuate">atténuées</option><option value="mute">coupées</option><option value="chime">coupées + carillon</option>
+          </select></label>
+          <label>Atténuation <input id="sel-att" type="range" min="6" max="60" step="1"><span id="sel-att-text"></span></label>
+        </div>
+        <div id="sel-last" class="note"></div>
+        <div class="sel-test">
+          <div>Fichier de test (pour un correspondant)</div>
+          <p class="note">Fabriqué ici, sans la station : 2 s de silence puis la trame 3 fois. À envoyer comme DOCUMENT (pas en
+            message vocal) ; le correspondant le joue au micro de son poste, volume moyen, en émission, et s'identifie.</p>
+          <div class="row">
+            <label>Code <input id="sel-test-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
+            <button id="sel-test-play" class="chip">Écouter</button>
+            <button id="sel-test-save" class="chip">Télécharger</button>
+          </div>
         </div>
       </div>
     </details>
@@ -495,6 +532,7 @@
 <script src="hfscope.js"></script>
 <script src="spots.js"></script>
 <script src="voice.js"></script>
+<script src="selcall.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>
 </body>

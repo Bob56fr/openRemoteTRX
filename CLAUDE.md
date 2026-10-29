@@ -80,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.60.0, étape 73)
+## État actuel (version 0.61.0, étape 74)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -109,7 +109,7 @@ PTT par le bouton d'un casque Bluetooth / filaire et micro du casque (applicatio
 - NB largeur et profondeur (IC-7300) : Hamlib ne les expose pas (vrai rigctld, dump_caps : `NB(0..10)` seul, aucun « Extra level ») => second port CI-V comme FIL1/2/3, format à relever sur le poste (demande du 2026-10-29).
 - Commande vocale « QSY 27 555 » en réception, avec confirmation sur le téléphone (demande du 2026-10-29) : à étudier (bouton micro de l'application ou écoute permanente) ; ne change que la fréquence, jamais en émission.
 - SCRAMBLER (décision de l'utilisateur, 2026-10-29, malgré les réserves : UIT RR art. 25, codage interdit en bandes radioamateur) : découpage en bandes inversées/permutées (modes prêts : 1 à 5 bandes, mélanges), toutes fréquences, désactivé par défaut, message clair et confirmation de l'utilisateur ; avec l'égaliseur (même chemin audio) ; en BLU, réglage fin du décalage.
-- SELCALL (squelch numérique BLU par appel de groupe, tolérant ±300 Hz ; fourni par l'utilisateur le 2026-10-29) : `docs/selcall-cahier-des-charges.md`, 6 lots (lots 1 et 2 faits : `trxstation/selcall/`, étapes 72-73 ; lot 3 = émission, lot 4 = commandes et page) ; relecture § 15 : l'envoi en fin d'émission (2,2 à 3,7 s) dépasse l'exception des bips de fin (0,6 s) => décision explicite de l'utilisateur avant le lot 3 ; l'appel manuel est une prise d'émission du client (armement, verrou, battements, TOT, bande).
+- SELCALL (squelch numérique BLU par appel de groupe, tolérant ±300 Hz ; fourni par l'utilisateur le 2026-10-29) : `docs/selcall-cahier-des-charges.md`, 6 lots (lots 1, 2 et 4 faits : `trxstation/selcall/`, commandes `selcall_*`, page `selcall.js`, application ; étapes 72-74 ; reste le lot 3 = émission de la trame, puis 5 = supervision, 6 = Android Auto) ; relecture § 15 : l'envoi en fin d'émission (2,2 à 3,7 s) dépasse l'exception des bips de fin (0,6 s) => décision explicite de l'utilisateur avant le lot 3 ; l'appel manuel est une prise d'émission du client (armement, verrou, battements, TOT, bande).
 - Application Android (étapes 9 à 11 du plan d'origine), designer lot 3, qualification Q2 à Q6, plafonds CPU/mémoire des modules, superviseur (mémoire, disque, watchdog matériel du Pi), règle PipeWire.
 
 ## Pièges et leçons (à relire avant de coder)

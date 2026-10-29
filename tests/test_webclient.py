@@ -47,7 +47,7 @@ def test_every_dom_id_used_by_the_script_exists_in_the_page():
 
 def test_script_only_sends_commands_the_server_knows():
     sent = (set(re.findall(r'send\("([a-z_]+)"', JS)) | set(re.findall(r'_rigSetting\("([a-z_]+)"', JS))
-            | set(re.findall(r'cmd: "([a-z_]+)"', JS)))
+            | set(re.findall(r'cmd: "([a-z_]+)"', JS)) | set(re.findall(r'_selcallCommand\("([a-z_]+)"', JS)))
     assert sent == set(COMMANDS), (sent ^ set(COMMANDS))                                # ni inconnue, ni oubliée
 
 

@@ -39,11 +39,13 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
             "local_release",                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
             "bug_report",                    # rapport de problème de la page, rangé sur la station (text)
-            "set_offset")                    # décalage du clarifieur : name RIT ou XIT (ΔTX), hz entier
+            "set_offset",                    # décalage du clarifieur : name RIT ou XIT (ΔTX), hz entier
+            # SELCALL (docs/selcall-cahier-des-charges.md) : squelch numérique de la station ; n'émettent jamais rien
+            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
-OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report")
+OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall")
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -177,6 +179,21 @@ def parse_command(raw: str | bytes) -> Command:
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_BUG_REPORT_CHARS:
             raise ProtocolError("invalid_params", f"text doit être un texte non vide de {MAX_BUG_REPORT_CHARS} caractères au plus")
         params["text"] = text
+    elif name == "selcall_activate":
+        code = data.get("code")
+        if not isinstance(code, str) or not code.isascii() or not code.isdigit() or not 3 <= len(code) <= 8:
+            raise ProtocolError("invalid_params", "code : 3 à 8 chiffres")
+        params["code"] = code
+    elif name == "selcall_options":
+        if "filter_mode" in data:
+            if data["filter_mode"] not in ("mute", "attenuate", "chime"):
+                raise ProtocolError("invalid_params", "filter_mode : mute, attenuate ou chime")
+            params["filter_mode"] = data["filter_mode"]
+        if "attenuation_db" in data:
+            params["attenuation_db"] = _int(data["attenuation_db"], "attenuation_db", 6, 60)
+        unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db"}
+        if unknown or not params:
+            raise ProtocolError("invalid_params", "filter_mode et/ou attenuation_db attendus")
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

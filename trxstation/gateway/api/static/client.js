@@ -73,6 +73,7 @@
     storage_error: "La station n'a pas pu enregistrer les mémoires (disque ?).",
     layouts_unavailable: "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
     beeps_unavailable: "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
+    selcall_unavailable: "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
     beeps_storage_error: "La station n'a pas pu enregistrer le réglage des bips.",
     layout_invalid: "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
     layout_storage_error: "La station n'a pas pu enregistrer la mise en page (disque ?).",
@@ -1041,6 +1042,8 @@
         this.ui.memories(this.memories);
         this.beeps = msg.beeps && typeof msg.beeps === "object" ? msg.beeps : null;     // null : station sans bips de fin
         if (this.ui.beeps) this.ui.beeps(this.beeps);
+        this.selcall = msg.selcall && typeof msg.selcall === "object" ? msg.selcall : null;   // null : station sans SELCALL
+        if (this.ui.selcall) this.ui.selcall(this.selcall, false);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -1059,6 +1062,8 @@
         this._onModule(msg);
       } else if (msg.type === "beeps") {                                // réglé depuis un autre appareil
         if (msg.settings && typeof msg.settings === "object") { this.beeps = msg.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
+      } else if (msg.type === "selcall") {                              // armé ailleurs, ou appel reçu
+        if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
       }
     }
 
@@ -1109,6 +1114,31 @@
       if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
       return res;
     }
+
+    // ---- SELCALL : squelch numérique de la station (n'agit que sur le son reçu, jamais sur l'émission)
+
+    _setSelcall(status) {
+      const before = this.selcall;
+      this.selcall = status;
+      const call = !!before && before.state === "standby" && status.state === "open";      // appel reçu : bip discret
+      if (call && status.last_call) {
+        const c = status.last_call;
+        this.ui.log("SELCALL : appel " + c.code + " reçu (décalage " + (c.delta_hz > 0 ? "+" : "") + c.delta_hz + " Hz, SNR " + c.snr_db + " dB) : son ouvert.", "");
+      }
+      if (this.ui.selcall) this.ui.selcall(status, call);
+    }
+
+    async _selcallCommand(cmd, params) {
+      const res = await this.send(cmd, params || {});
+      if (res.ok && res.status) this._setSelcall(res.status);
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
+    selcallActivate(code) { return this._selcallCommand("selcall_activate", { code: String(code) }); }
+    selcallRearm() { return this._selcallCommand("selcall_rearm"); }
+    selcallDeactivate() { return this._selcallCommand("selcall_deactivate"); }
+    selcallOptions(options) { return this._selcallCommand("selcall_options", options); }
 
     adaptSpotMode(mode) {
       /* Mode d'un spot adapté à ce poste (USB -> USB-D si l'émission l'exige) ; null si le poste ne l'a pas. */

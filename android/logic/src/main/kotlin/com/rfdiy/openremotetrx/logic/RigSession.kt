@@ -12,6 +12,7 @@ import com.rfdiy.openremotetrx.protocol.ModuleMessage
 import com.rfdiy.openremotetrx.protocol.Protocol
 import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
+import com.rfdiy.openremotetrx.protocol.Selcall
 import com.rfdiy.openremotetrx.protocol.ServerMessages
 import com.rfdiy.openremotetrx.protocol.State
 import kotlinx.serialization.json.JsonObject
@@ -21,7 +22,7 @@ import kotlinx.serialization.json.contentOrNull
 enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 
 /** Sons de liaison (mêmes notes que la page) : perdue, rétablie, perdue pour de bon. */
-enum class LinkAlert { LOST, RESTORED, FAILED }
+enum class LinkAlert { LOST, RESTORED, FAILED, SELCALL_CALL }
 
 enum class LogLevel { INFO, WARN, BAD }
 
@@ -54,6 +55,8 @@ data class RigState(
     val clusterStatusAtMs: Long = 0,
     /** 30 derniers spots toutes bandes (message « recent » du cluster, vue du spectre ou liste ouverte), le plus récent en tête. */
     val recentSpots: List<Spot> = emptyList(),
+    /** SELCALL de la station (null : station sans SELCALL). */
+    val selcall: SelcallStatus? = null,
     /** Bips de fin d'émission de la station (null : station sans bips). */
     val beeps: BeepSettings? = null,
 )
@@ -97,6 +100,7 @@ class RigSession(
     private var clusterStatusAt = 0L
     private var beeps: BeepSettings? = null
     private var recentSpots: List<Spot> = emptyList()
+    private var selcall: SelcallStatus? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -226,6 +230,7 @@ class RigSession(
             is ErrorMessage -> log("Erreur de la station : ${msg.code}" + (if (msg.detail.isNotEmpty()) " (${msg.detail})" else ""), LogLevel.WARN)
             is Memories -> memories = Radio.sortMemories(msg.items)
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
+            is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
                 Spots.recentOf(msg.data, wall())?.let { recentSpots = it }
@@ -248,6 +253,7 @@ class RigSession(
         attemptActive = false
         hello = msg
         beeps = BeepSettings.parse(msg.beeps)
+        selcall = SelcallStatus.parse(msg.selcall)
         memories = Radio.sortMemories(msg.memories)
         status = LinkStatus.CONNECTED
         // La station oublie l'abonnement avec la connexion : on le redemande si la vue du spectre est ouverte.
@@ -434,6 +440,41 @@ class RigSession(
         publish(now)
     }
 
+    /** Appel reçu (veille -> ouvert) : noté au journal et bip discret (le son de la station revient). */
+    private fun onSelcall(status: SelcallStatus?) {
+        val before = selcall
+        selcall = status ?: return
+        if (before?.state == SelcallStatus.STANDBY && status.open) {
+            val c = status.lastCall
+            log("SELCALL : appel ${c?.code ?: status.code} reçu" +
+                (c?.let { " (décalage ${if (it.deltaHz > 0) "+" else ""}${it.deltaHz} Hz, SNR ${it.snrDb} dB)" } ?: "") + " : son ouvert.", LogLevel.INFO)
+            link.alert(LinkAlert.SELCALL_CALL)
+        }
+    }
+
+    /** SELCALL de la station : n'agit que sur le son reçu (jamais sur l'émission) ; permis même pendant une émission. */
+    private fun selcallCommand(now: Long, command: Command) {
+        if (!connected || !protocolOk || hello?.offers("selcall") != true) return
+        send(now, command)
+        publish(now)
+    }
+
+    fun selcallActivate(now: Long, code: String) {
+        if (!SelcallTones.validCode(code)) {
+            log("Code SELCALL : 3 à 8 chiffres.", LogLevel.WARN)
+            publish(now)
+            return
+        }
+        selcallCommand(now, Command.SelcallActivate(code))
+    }
+
+    fun selcallRearm(now: Long) = selcallCommand(now, Command.SelcallRearm)
+
+    fun selcallDeactivate(now: Long) = selcallCommand(now, Command.SelcallDeactivate)
+
+    fun selcallOptions(now: Long, filterMode: String? = null, attenuationDb: Int? = null) =
+        selcallCommand(now, Command.SelcallOptions(filterMode, attenuationDb))
+
     fun setOffset(now: Long, name: String, hz: Int) = control(now, Command.SetOffset(name, Math.round(hz / 10.0).toInt() * 10))
 
     /** Squelch du poste, 0 (ouvert) à 1. */
@@ -521,6 +562,7 @@ class RigSession(
         clusterStatus = null
         beeps = null
         recentSpots = emptyList()
+        selcall = null
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -557,6 +599,7 @@ class RigSession(
             clusterStatusAtMs = clusterStatusAt,
             beeps = beeps,
             recentSpots = recentSpots,
+            selcall = selcall,
         )
         if (next != snapshot) {
             snapshot = next

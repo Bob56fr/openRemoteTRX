@@ -27,4 +27,5 @@ tasks.test {
     systemProperty("trx.repo", rootProject.file("..").absolutePath)
     // Fichiers partagés lus par les tests : déclarés, sinon Gradle croit les tests à jour quand seuls eux changent
     inputs.dir(rootProject.file("../trxstation/gateway/api/static"))
+    inputs.dir(rootProject.file("../tests/protocol"))
 }

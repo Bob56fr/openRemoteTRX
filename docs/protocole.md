@@ -37,7 +37,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - **Retrait ou changement de sens** : version + 1 ; la station accepte encore l'ancienne pendant au moins une version de l'application. Un client qui ne connaît pas la version annoncée le dit à l'utilisateur et reste en réception.
 - **`hello.features`** : liste des fonctions offertes par CETTE station. Un client montre une fonction parce qu'elle y figure, jamais d'après un numéro de version.
   - toujours : `ptt`, `frequency`, `mode`, `squelch`, `functions`, `levels`, `local_release` ;
-  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`.
+  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0).
 - `hello.version` : version du logiciel de la station (affichage seulement).
 
 ## 5. Émission : états, battements, coupures
@@ -79,6 +79,10 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `spectrum_set` | `name` parmi `mode`, `span`, `ref`, `speed`, `filter` ; `value` : texte (mode, speed), entier (span 1 à 10^6, filter 1 à 3), dB (ref, ±100) | `settings` relus ; refusé hors réception |
 | `spectrum_watch` | `on` booléen | balayages envoyés à CE client seulement vue HF ouverte (`true` à l'ouverture, `false` à la fermeture) ; `on` |
 | `beeps_set` | parmi `roger_enabled`, `link_lost_enabled` (booléens), `roger_tone` (`600` `800` `1000` `1500` `2000` `2500` `duo`), `roger_pattern` (1 à 3) | `settings` ; message `beeps` diffusé à tous |
+| `selcall_activate` | `code` (texte de 3 à 8 chiffres) | `status` ; arme le squelch SELCALL de la station (VEILLE : plus aucun son reçu jusqu'à l'appel de ce code) ; message `selcall` diffusé à tous |
+| `selcall_rearm` | — | `status` ; OUVERT -> VEILLE (même code) |
+| `selcall_deactivate` | — | `status` ; son reçu normal |
+| `selcall_options` | `filter_mode` (`mute`, `attenuate`, `chime`) et/ou `attenuation_db` (6 à 60) | `status` ; filtrage des tonalités SELCALL dans le son reçu |
 | `bug_report` | `text` non vide, 30 000 caractères au plus, relu par l'utilisateur, sans mot de passe | `name` du fichier rangé sur la station |
 
 ## 7. Réponses et erreurs
@@ -87,18 +91,19 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 - `{"type":"result","id":N,"ok":false,"reason":"…","detail":"…"}` : refus. `detail` est un texte pour l'humain, `reason` un code stable :
   - émission : `not_idle`, `unknown_client`, `fault_latched`, `starting`, `tx_disabled` (aucune bande autorisée), `cat_down`, `cat_error`, `local_active`, `local_tx`, `rig_hot`, `cooldown`, `ptt_unreadable`, `cancelled`, `rig_already_tx`, `mode_not_allowed`, `out_of_band` (vérifié sur la fréquence d'ÉMISSION : en split celle de l'autre VFO, décalée du ΔTX s'il est en service), `split_unreadable`, `xit_unreadable` (split ou ΔTX déclarés par le poste mais illisibles : en cas de doute, pas d'émission), `ptt_write_failed`, `rig_did_not_key` ;
   - réglages : `tx_active` (pas en RX confirmé), `invalid`, `rig_error`, `cat_down` ;
-  - fonctions absentes ou en panne : `memories_unavailable`, `unknown_memory`, `storage_error`, `layouts_unavailable`, `layout_invalid`, `layout_storage_error`, `spectrum_unavailable`, `beeps_unavailable`, `beeps_storage_error`, `reports_unavailable` (et les motifs de refus d'un rapport).
+  - fonctions absentes ou en panne : `memories_unavailable`, `unknown_memory`, `storage_error`, `layouts_unavailable`, `layout_invalid`, `layout_storage_error`, `spectrum_unavailable`, `beeps_unavailable`, `beeps_storage_error`, `selcall_unavailable`, `reports_unavailable` (et les motifs de refus d'un rapport).
 - `{"type":"error","code":"…","detail":"…"}` : message illisible, sans `id` : `too_large`, `bad_json`, `bad_message`, `unknown_command`, `invalid_params`, `rate_limited`.
 
 ## 8. Messages (station -> client)
 
 | Type | Quand | Contenu |
 |---|---|---|
-| `hello` | une fois, à l'ouverture du canal | `protocol`, `client_id`, `version`, `capabilities` (descripteur du poste : modes, filtres par mode, fonctions et niveaux lisibles, préamplis, atténuateurs, plages ; construit l'interface), `tx_modes` (modes où l'émission est permise, vide = tous), `max_power_w` (0 = inconnue : puissance en %), `memories`, `layouts` (booléen), `spectrum` (`{source, level_max, max_fps}` ou `null`), `beeps` (réglages ou `null`), `features` |
+| `hello` | une fois, à l'ouverture du canal | `protocol`, `client_id`, `version`, `capabilities` (descripteur du poste : modes, filtres par mode, fonctions et niveaux lisibles, préamplis, atténuateurs, plages ; construit l'interface), `tx_modes` (modes où l'émission est permise, vide = tous), `max_power_w` (0 = inconnue : puissance en %), `memories`, `layouts` (booléen), `spectrum` (`{source, level_max, max_fps}` ou `null`), `beeps` (réglages ou `null`), `selcall` (état comme le message `selcall`, ou `null`), `features` |
 | `state` | aussitôt après `hello`, puis toutes les 250 ms s'il a changé, au moins chaque seconde | `ptt` (§ 5), `rig` (`connected`, `frequency_hz`, `mode`, `passband_hz`, `strength_db`, `functions` (dont `RIT`, `XIT`), `levels`, `split` (booléen, `null` = inconnu), `tx_frequency_hz` (fréquence d'émission en split, sinon `null`), `offsets` (`RIT`, `XIT` : décalages en Hz)) ; le VFO actif (A, B, mémoire) n'est PAS publié : l'IC-7300MK2 ne le donne pas (`get_vfo` : RPRT -11), `audio` (niveaux et compteurs, diagnostic), `clients` (comptes connectés), `spectrum` (`state` : `waiting`, `starting`, `ok`, `error` ; `code`, `message`, `settings`) |
 | `result`, `error` | réponse à une commande | § 7 |
 | `memories` | une mémoire change (n'importe quel client) | `items` : `{id, name, hz, mode, favorite}` |
 | `beeps` | réglage des bips changé | `settings` |
+| `selcall` | état du SELCALL changé (commande d'un client, appel reçu) | `status` : `state` (`disabled`, `standby`, `open`), `code`, `history` (récent en tête), `filter_mode`, `attenuation_db`, `last_call` (`code`, `delta_hz`, `snr_db`, `at` : heure Unix) ou `null` ; le passage `standby` -> `open` = appel reçu (bip discret chez le client) |
 | `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte |
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.

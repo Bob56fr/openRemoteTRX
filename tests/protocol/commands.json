@@ -38,6 +38,21 @@
                   {"message": {"cmd": "set_offset", "name": "XIT", "hz": 12.5}, "code": "invalid_params"},
                   {"message": {"cmd": "set_offset", "name": "XIT", "hz": 200000}, "code": "invalid_params"}]
     },
+    "selcall_activate": {
+      "valid": [{"cmd": "selcall_activate", "id": 31, "code": "4721"}],
+      "invalid": [{"message": {"cmd": "selcall_activate", "code": "12"}, "code": "invalid_params"},
+                  {"message": {"cmd": "selcall_activate", "code": "12a4"}, "code": "invalid_params"},
+                  {"message": {"cmd": "selcall_activate", "code": 4721}, "code": "invalid_params"}]
+    },
+    "selcall_rearm": {"valid": [{"cmd": "selcall_rearm", "id": 32}], "invalid": []},
+    "selcall_deactivate": {"valid": [{"cmd": "selcall_deactivate", "id": 33}], "invalid": []},
+    "selcall_options": {
+      "valid": [{"cmd": "selcall_options", "id": 34, "filter_mode": "chime"},
+                {"cmd": "selcall_options", "id": 35, "attenuation_db": 30}],
+      "invalid": [{"message": {"cmd": "selcall_options", "filter_mode": "fort"}, "code": "invalid_params"},
+                  {"message": {"cmd": "selcall_options", "attenuation_db": 3}, "code": "invalid_params"},
+                  {"message": {"cmd": "selcall_options"}, "code": "invalid_params"}]
+    },
     "set_level": {
       "valid": [{"cmd": "set_level", "id": 8, "name": "RFPOWER", "value": 0.25},
                 {"cmd": "set_level", "name": "AGC", "value": 2},

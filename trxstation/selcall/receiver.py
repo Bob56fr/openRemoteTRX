@@ -90,6 +90,10 @@ class SelcallStore:
     def add_listener(self, callback: Callable[[SelcallStatus], None]) -> None:
         self._listeners.append(callback)
 
+    def remove_listener(self, callback: Callable[[SelcallStatus], None]) -> None:
+        if callback in self._listeners:
+            self._listeners.remove(callback)
+
     def _set(self, status: SelcallStatus) -> SelcallStatus:
         with self._lock:
             self.status = status

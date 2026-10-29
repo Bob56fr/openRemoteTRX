@@ -4,6 +4,7 @@ package com.rfdiy.openremotetrx.logic
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -51,6 +52,33 @@ private fun transmitting(): Pair<RigSession, FakeLink> {
 }
 
 class RigSessionTest {
+    @Test
+    fun `SELCALL - etat du hello, appel recu = un bip, commandes envoyees seulement si la station l'offre`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        s.answered(0)
+        fun status(state: String) = """{"state":"$state","code":"4721","history":["4721"],"filter_mode":"attenuate","attenuation_db":20,""" +
+            """"last_call":{"code":"4721","delta_hz":-42.5,"snr_db":11.3,"at":1.0}}"""
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"$ME","features":["ptt","selcall"],"selcall":${status("standby")}}""")
+        s.onMessage(0, state("RX"))
+        assertEquals("SEL 4721", s.snapshot.selcall!!.indicator)
+        s.onMessage(10, """{"type":"selcall","status":${status("open")}}""")
+        assertEquals(listOf(LinkAlert.SELCALL_CALL), link.alerts)
+        assertTrue(s.snapshot.log.last().text.startsWith("SELCALL : appel 4721 reçu (décalage -42.5 Hz"))
+        s.onMessage(20, """{"type":"selcall","status":${status("open")}}""")
+        assertEquals(1, link.alerts.size)                                    // déjà ouvert : pas de second bip
+        s.selcallActivate(30, "12")                                          // code invalide : rien n'est envoyé
+        s.selcallActivate(30, "1234")
+        s.selcallRearm(31)
+        s.selcallOptions(32, filterMode = "chime")
+        assertEquals(listOf("selcall_activate", "selcall_rearm", "selcall_options"), link.cmds().filter { it.startsWith("selcall") })
+        val (plain, plainLink) = connected()                                  // station sans SELCALL
+        plain.selcallActivate(0, "1234")
+        assertTrue(plainLink.cmds().none { it.startsWith("selcall") })
+        assertNull(plain.snapshot.selcall)
+    }
+
     @Test
     fun `connexion - desarme, reception, micro ferme`() {
         val (s, link) = connected()

@@ -43,6 +43,7 @@ object Texts {
         "storage_error" to "La station n'a pas pu enregistrer les mémoires (disque ?).",
         "layouts_unavailable" to "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
         "beeps_unavailable" to "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
+        "selcall_unavailable" to "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
         "beeps_storage_error" to "La station n'a pas pu enregistrer le réglage des bips.",
         "layout_invalid" to "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
         "layout_storage_error" to "La station n'a pas pu enregistrer la mise en page (disque ?).",

@@ -63,8 +63,10 @@ def test_message_examples_have_the_fields_the_station_really_sends():
     assert set(MESSAGES["result"][0]["ptt"]) == set(asdict(PttSnapshot("RX", None, None, False, "", "")))
     assert set(hello["features"]) <= set(BASE_FEATURES + OPTIONAL_FEATURES)
     assert all(m["type"] == kind for kind in ("result", "error") for m in MESSAGES[kind])
-    assert {state["type"], MESSAGES["memories"]["type"], MESSAGES["beeps"]["type"], MESSAGES["module"]["type"]} == {
-        "state", "memories", "beeps", "module"}
+    assert {state["type"], MESSAGES["memories"]["type"], MESSAGES["beeps"]["type"], MESSAGES["module"]["type"],
+            MESSAGES["selcall"]["type"]} == {"state", "memories", "beeps", "module", "selcall"}
+    from trxstation.selcall.receiver import SelcallStatus
+    assert set(hello["selcall"]) == set(SelcallStatus().to_dict()) == set(MESSAGES["selcall"]["status"])
 
 
 def test_real_hello_and_state_match_the_shared_examples():

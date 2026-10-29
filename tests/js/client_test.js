@@ -188,6 +188,31 @@ test("égaliseur de voix : piste envoyée = sortie de la chaîne, qui suit le TX
   assert.ok(broken.ui.logs.some(([t, l]) => /Égaliseur indisponible/.test(t) && l === "warn"));
 });
 
+test("SELCALL : état du hello, appel reçu détecté (veille -> ouvert), commandes et refus", async () => {
+  const w = makeWorld();
+  const calls = [];
+  w.ui.selcall = (status, call) => calls.push([status && status.state, call]);
+  await w.client.connect({ clientId: "phone", password: "mot de passe de test", useMic: true });
+  const status = (state, extra) => Object.assign({ state, code: "4721", history: ["4721"], filter_mode: "attenuate", attenuation_db: 20, last_call: null }, extra || {});
+  w.hello({ selcall: status("standby") });
+  assert.deepEqual(calls.pop(), ["standby", false]);
+  w.dc().onmessage({ data: JSON.stringify({ type: "selcall", status: status("open", { last_call: { code: "4721", delta_hz: -42.5, snr_db: 11.3, at: 1 } }) }) });
+  assert.deepEqual(calls.pop(), ["open", true]);                                   // appel reçu : bip chez le client
+  assert.ok(w.ui.logs.some(([t]) => /SELCALL : appel 4721 reçu \(décalage -42.5 Hz/.test(t)));
+  w.dc().onmessage({ data: JSON.stringify({ type: "selcall", status: status("open") }) });
+  assert.deepEqual(calls.pop(), ["open", false]);                                  // déjà ouvert : pas de second bip
+  const pending = w.client.selcallActivate("1234");
+  const sent = w.sentCommands("selcall_activate").pop();
+  assert.equal(sent.code, "1234");
+  w.answer(false, { reason: "selcall_unavailable" });
+  assert.equal((await pending).ok, false);
+  assert.ok(w.ui.logs.some(([t, l]) => /SELCALL n'est pas en service/.test(t) && l === "warn"));
+  const other = makeWorld();
+  other.ui.selcall = (s) => calls.push([s, false]);
+  await other.connected();
+  assert.deepEqual(calls.pop(), [null, false]);                                    // station sans SELCALL
+});
+
 test("micro = entrée/sortie audio du poste : REFUSÉ (la réception serait renvoyée dans l'émission)", async () => {
   const w = makeWorld();
   w.mic.label = "Par défaut - Microphone (USB Audio Device)";

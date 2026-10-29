@@ -254,3 +254,38 @@ def test_manual_call_first_frame_lost_in_noise_the_next_ones_still_decode():
     burst[first] = band_noise(rng, first.stop - first.start, -20)                  # première trame noyée
     frames = dec.decode(x + burst + band_noise(rng, len(x), 10))
     assert [f.code for f in frames if f.valid] == ["4477", "4477"]
+
+
+def test_shared_vectors_match_the_station_protocol():
+    """tests/protocol/selcall_vectors.json : référence commune de la page et de l'application."""
+    import json
+    from pathlib import Path
+    data = json.loads((Path(__file__).parent / "protocol" / "selcall_vectors.json").read_text(encoding="utf-8"))
+    assert (data["f0_hz"], data["pilot_s"], data["symbol_s"]) == (p.F0_HZ, p.PILOT_S, p.SYMBOL_S)
+    for case in data["cases"]:
+        assert case["symbols"] == p.symbols(case["code"])
+        assert case["tones"] == [[f, d] for f, d in p.tones(case["code"])]
+    for bad in data["invalid"]:
+        with pytest.raises(p.CodeError):
+            p.validate_code(bad)
+
+
+def test_test_file_made_by_the_page_opens_the_station_squelch(tmp_path):
+    """Le fichier de test fabriqué par la page (selcall.js, sous Node) est décodé par la station : trois trames 4721."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+    node = shutil.which("node")
+    if not node:
+        return
+    out = tmp_path / "selcall-4721.wav"
+    root = Path(__file__).resolve().parents[1]
+    done = subprocess.run([node, str(root / "tests" / "js" / "selcall_test.js"), str(out)], capture_output=True, text=True,
+                          encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+    with wave.open(str(out)) as w:
+        assert (w.getframerate(), w.getnchannels(), w.getsampwidth()) == (RATE, 1, 2)
+        audio = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float64) / 32768
+    rng = np.random.default_rng(29)
+    frames = dec.decode(audio + band_noise(rng, len(audio), 10))
+    assert [f.code for f in frames if f.valid] == ["4721"] * 3

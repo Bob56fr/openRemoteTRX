@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fichiers partagés par FileProvider : seulement les fichiers de test SELCALL du cache. -->
+<paths>
+    <cache-path name="selcall" path="selcall/" />
+</paths>

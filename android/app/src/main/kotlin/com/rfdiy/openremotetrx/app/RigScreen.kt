@@ -8,6 +8,7 @@ import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
@@ -142,6 +143,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var bandsDialog by remember { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var spotsDialog by remember { mutableStateOf(false) }
+    var selcallDialog by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     var offsetDrag by remember { mutableStateOf<Float?>(null) }
@@ -231,13 +233,25 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
                     // Voyants (comme sur un poste) : vert = actif, gris = éteint
                     val lights = Indicators.of(hello, rig.state)
-                    if (lights.isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val sel = rig.selcall
+                    if (lights.isNotEmpty() || sel != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             for (light in lights) {
                                 Text(
                                     light.label, style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (light.on) FontWeight.Bold else FontWeight.Normal,
                                     color = if (light.on) SQL_OPEN else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                )
+                            }
+                            // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » ; toucher = panneau
+                            if (sel != null) {
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    sel.indicator ?: "SEL", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
+                                    color = when { sel.open -> Page.FOND; sel.disabled -> Page.TEXTE_2; else -> Page.ALERTE },
+                                    modifier = Modifier.background(if (sel.open) SQL_OPEN else Color.Transparent, RoundedCornerShape(6.dp))
+                                        .border(1.dp, if (sel.disabled) Page.BORD else if (sel.open) SQL_OPEN else Page.ALERTE, RoundedCornerShape(6.dp))
+                                        .clickable { selcallDialog = true }.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -535,6 +549,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         prefs.edit().putString("bands", bandsPref).apply()
         bandsDialog = false
     }
+    rig.selcall?.let { st -> if (selcallDialog) SelcallDialog(st, connected && rig.protocolOk, onDismiss = { selcallDialog = false }) }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })

@@ -96,6 +96,23 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { changes.forEach { (k, v) -> put(k, v) } }
     }
 
+    /** SELCALL de la station (squelch numérique par appel de groupe) : n'agit que sur le son reçu, jamais sur l'émission. */
+    data class SelcallActivate(val code: String) : Command("selcall_activate") {
+        override fun JsonObjectBuilder.params() { put("code", code) }
+    }
+
+    data object SelcallRearm : Command("selcall_rearm")
+
+    data object SelcallDeactivate : Command("selcall_deactivate")
+
+    /** `filterMode` : mute, attenuate, chime ; `attenuationDb` : 6 à 60. Au moins l'un des deux. */
+    data class SelcallOptions(val filterMode: String? = null, val attenuationDb: Int? = null) : Command("selcall_options") {
+        override fun JsonObjectBuilder.params() {
+            filterMode?.let { put("filter_mode", it) }
+            attenuationDb?.let { put("attenuation_db", it) }
+        }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -107,6 +124,7 @@ sealed class Command(val name: String) {
             "toggle", "stop", "heartbeat", "get_state", "set_frequency", "set_mode", "set_squelch", "set_function",
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
+            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options",
         )
     }
 }

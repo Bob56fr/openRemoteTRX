@@ -148,6 +148,17 @@ object RigHub {
     /** Réglage « PTT par le bouton du casque ou du volant » changé : session média ouverte ou fermée tout de suite. */
     fun mediaButtonsChanged() { service?.refreshMediaSession() }
 
+    /** SELCALL de la station : armer sur un code, réarmer, désactiver, filtrage des tonalités. */
+    fun selcallActivate(code: String) { service?.onRig { session, now -> session.selcallActivate(now, code) } }
+
+    fun selcallRearm() { service?.onRig { session, now -> session.selcallRearm(now) } }
+
+    fun selcallDeactivate() { service?.onRig { session, now -> session.selcallDeactivate(now) } }
+
+    fun selcallOptions(filterMode: String? = null, attenuationDb: Int? = null) {
+        service?.onRig { session, now -> session.selcallOptions(now, filterMode, attenuationDb) }
+    }
+
     fun setMuted(on: Boolean) { service?.setMuted(on) ?: publish { it.copy(muted = on) } }
 
     fun disconnect(context: Context) {

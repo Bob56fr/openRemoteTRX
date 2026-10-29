@@ -80,6 +80,7 @@ class ContractTest {
         assertEquals("unknown_command", error.code)
         assertEquals("FT8 20 m", assertIs<Memories>(ServerMessages.decode(messages["memories"].toString())).items.single().name)
         assertIs<Beeps>(ServerMessages.decode(messages["beeps"].toString()))
+        assertIs<Selcall>(ServerMessages.decode(messages["selcall"].toString()))
         assertEquals("cluster", assertIs<ModuleMessage>(ServerMessages.decode(messages["module"].toString())).module)
     }
 
@@ -120,6 +121,10 @@ class ContractTest {
             "beeps_set" -> Command.BeepsSet(e.filterKeys { it != "cmd" && it != "id" }.mapValues { it.value.jsonPrimitive })
             "bug_report" -> Command.BugReport(p("text").content)
             "set_offset" -> Command.SetOffset(p("name").content, p("hz").int)
+            "selcall_activate" -> Command.SelcallActivate(p("code").content)
+            "selcall_rearm" -> Command.SelcallRearm
+            "selcall_deactivate" -> Command.SelcallDeactivate
+            "selcall_options" -> Command.SelcallOptions(e["filter_mode"]?.jsonPrimitive?.content, e["attenuation_db"]?.jsonPrimitive?.int)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

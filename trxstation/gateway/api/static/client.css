@@ -314,3 +314,9 @@ audio { display: none; }
 #sec-voice .row { flex-wrap: wrap; }
 .voice-mic { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
 .voice-level { position: relative; }
+/* SELCALL : indicateur à côté du SQL (veille / ouvert), panneau */
+.sel-ind { font-weight: 700; letter-spacing: .03em; }
+.sel-ind.open { background: var(--succes); color: var(--succes-sur); border-color: var(--succes); }
+.sel-state { font-weight: 700; }
+#sec-selcall .row { flex-wrap: wrap; }
+.sel-test { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }

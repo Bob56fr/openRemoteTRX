@@ -71,6 +71,9 @@ class ControlSession:
         self.layouts = layouts
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
+        self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
+        receiver = getattr(pipeline, "selcall", None)
+        self.selcall = getattr(receiver, "store", None)   # SELCALL (selcall/receiver.py) ou None : [selcall] enabled = false
         tail = getattr(ctrl, "tail", None)
         self.beeps = getattr(tail, "store", None)  # réglages des bips de fin (gateway/audio/beeps.py) ou None
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
@@ -95,10 +98,13 @@ class ControlSession:
                    "layouts": self.layouts is not None,
                    "spectrum": self.spectrum.capability() if self.spectrum is not None else None,
                    "beeps": self.beeps.config.to_dict() if self.beeps is not None else None,
+                   "selcall": self.selcall.status.to_dict() if self.selcall is not None else None,
                    "features": self.features()})
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
         if self.beeps is not None:
             self.beeps.add_listener(self._beeps_listener)             # réglé depuis un autre téléphone : affiché ici
+        if self.selcall is not None:
+            self.selcall.add_listener(self._selcall_listener)         # armé ailleurs, ou appel reçu : affiché ici
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         self.send(self._state())
@@ -109,7 +115,8 @@ class ControlSession:
         jamais d'après un numéro de version (docs/protocole.md)."""
         offered = {"memories": self.memories is not None, "layouts": self.layouts is not None,
                    "spectrum": self.spectrum is not None and self.spectrum.capability() is not None,
-                   "beeps": self.beeps is not None, "bug_report": self.reports is not None}
+                   "beeps": self.beeps is not None, "bug_report": self.reports is not None,
+                   "selcall": self.selcall is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
@@ -124,6 +131,8 @@ class ControlSession:
             self.memories.remove_listener(self._memories_listener)
         if self.beeps is not None:
             self.beeps.remove_listener(self._beeps_listener)
+        if self.selcall is not None:
+            self.selcall.remove_listener(self._selcall_listener)    # la déconnexion ne change PAS l'état du SELCALL
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
@@ -192,6 +201,22 @@ class ControlSession:
         profile, source = self.layouts.get(self.client_id)
         warnings = validate_profile(profile, self.capabilities).warnings
         self._result(cmd.id, True, profile=profile, source=source, warnings=warnings)
+
+    def _selcall_command(self, cmd) -> None:
+        """SELCALL : n'agit que sur le son reçu par les clients (squelch), jamais sur le poste ni sur l'émission."""
+        if self.selcall is None:
+            self._result(cmd.id, False, reason="selcall_unavailable")
+            return
+        if cmd.name == "selcall_activate":
+            status = self.selcall.activate(cmd.params["code"])
+        elif cmd.name == "selcall_rearm":
+            status = self.selcall.rearm()
+        elif cmd.name == "selcall_deactivate":
+            status = self.selcall.deactivate()
+        else:
+            status = self.selcall.set_options(**cmd.params)
+        log.info("SELCALL : %s par %s -> %s", cmd.name, self.client_id, status.state)
+        self._result(cmd.id, True, status=status.to_dict())
 
     def _result(self, ident, ok: bool, **extra) -> None:
         self.send({"type": "result", "id": ident, "ok": ok, **extra})
@@ -275,6 +300,8 @@ class ControlSession:
                     else:
                         log.info("bips réglés par %s : %s", self.client_id, cmd.params)
                         self._result(cmd.id, True, settings=config.to_dict())
+            elif cmd.name.startswith("selcall_"):
+                self._selcall_command(cmd)
             elif cmd.name == "spectrum_watch":
                 if self.spectrum is None or self.spectrum_watch is None:
                     self._result(cmd.id, False, reason="spectrum_unavailable")

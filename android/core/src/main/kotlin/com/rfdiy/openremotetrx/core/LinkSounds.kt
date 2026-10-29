@@ -29,6 +29,8 @@ class LinkSounds(private val context: Context) {
             listOf(Triple(330, 420, 140), Triple(330, 420, 140), Triple(247, 700, 0)),
             longArrayOf(0, 400, 150, 400, 150, 700),
         ),
+        // SELCALL : appel du groupe reçu, le son de la station revient (même carillon que la page)
+        LinkAlert.SELCALL_CALL to Alert(listOf(Triple(880, 120, 40), Triple(1320, 160, 0)), longArrayOf(0, 100, 60, 160)),
     )
 
     /** Bips d'émission (E6) : aigu à la prise, grave à la fin. */

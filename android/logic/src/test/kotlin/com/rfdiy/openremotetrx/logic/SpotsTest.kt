@@ -177,3 +177,54 @@ class MicProfilesTest {
         }
     }
 }
+
+class SelcallTest {
+    private val vectors = Json.parseToJsonElement(
+        java.io.File(System.getProperty("trx.repo"), "tests/protocol/selcall_vectors.json").readText()
+    ) as kotlinx.serialization.json.JsonObject
+
+    @Test
+    fun `memes symboles et memes tons que la station (vecteurs partages)`() {
+        val cases = vectors["cases"] as kotlinx.serialization.json.JsonArray
+        for (c in cases) {
+            val o = c as kotlinx.serialization.json.JsonObject
+            val code = (o["code"] as kotlinx.serialization.json.JsonPrimitive).content
+            val symbols = (o["symbols"] as kotlinx.serialization.json.JsonArray).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
+            assertEquals(symbols, SelcallTones.symbols(code), code)
+            val tones = (o["tones"] as kotlinx.serialization.json.JsonArray).map { t ->
+                val pair = t as kotlinx.serialization.json.JsonArray
+                (pair[0] as kotlinx.serialization.json.JsonPrimitive).content.toDouble() to (pair[1] as kotlinx.serialization.json.JsonPrimitive).content.toDouble()
+            }
+            assertEquals(tones, SelcallTones.tones(code), code)
+        }
+        for (bad in vectors["invalid"] as kotlinx.serialization.json.JsonArray) {
+            assertEquals(false, SelcallTones.validCode((bad as kotlinx.serialization.json.JsonPrimitive).content))
+        }
+    }
+
+    @Test
+    fun `fichier de test - silence, trois trames, WAV valide, niveau -6 dBFS`() {
+        val rate = 48_000
+        val s = SelcallTones.testSamples("4721", rate)
+        assertEquals(2 * rate + 3 * (2.5 * rate).toInt() + 2 * rate / 2 + rate / 2, s.size)
+        assertTrue(s.take(2 * rate).all { it == 0f })
+        assertTrue(s.maxOf { kotlin.math.abs(it) } <= 0.5013f)
+        val wav = SelcallTones.testWav("4721")
+        assertEquals("RIFF", String(wav.copyOfRange(0, 4), Charsets.US_ASCII))
+        assertEquals(44 + 2 * s.size, wav.size)
+    }
+
+    @Test
+    fun `etat lu de la station, indicateur, etat refuse s'il est inconnu`() {
+        val st = SelcallStatus.parse(Json.parseToJsonElement("""{"state":"open","code":"4721","history":["4721","12","1234"],
+            "filter_mode":"chime","attenuation_db":99,"last_call":{"code":"4721","delta_hz":-42.5,"snr_db":11.3,"at":1.0}}""")
+            as kotlinx.serialization.json.JsonObject)!!
+        assertEquals("SEL OUVERT", st.indicator)
+        assertEquals(listOf("4721", "1234"), st.history)
+        assertEquals(60, st.attenuationDb)
+        assertEquals(-42.5, st.lastCall!!.deltaHz)
+        assertNull(SelcallStatus.parse(Json.parseToJsonElement("""{"state":"bizarre"}""") as kotlinx.serialization.json.JsonObject))
+        assertEquals("SEL 4721", st.copy(state = "standby").indicator)
+        assertNull(st.copy(state = "disabled").indicator)
+    }
+}

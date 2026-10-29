@@ -236,3 +236,44 @@ def test_gateway_wiring_squelch_on_the_real_hub(tmp_path):
     assert receiver.store.status.state == rc.OPEN
     assert np.max(np.abs(got[0])) == 0 and np.max(np.abs(got[-1])) > 1000          # silence en veille, voix une fois ouvert
     assert (tmp_path / "selcall.json").is_file()
+
+
+def test_clients_arm_rearm_and_set_options_and_every_client_sees_the_change(tmp_path):
+    """Commandes des clients (lot 4) sur une vraie station de test : armement, diffusion à tous, réarmement, options,
+    refus si la fonction est absente ; la déconnexion d'un client ne change pas l'état."""
+    from test_api import connect, run, station
+
+    async def scenario(fake):
+        async with station(fake) as st:
+            store = rc.SelcallStore(tmp_path / "selcall.json")
+            st.pipeline.selcall = rc.SelcallReceiver(store)
+            phone, pc = await connect(st, "phone"), await connect(st, "pc")
+            assert phone.of_type("hello")[0]["selcall"]["state"] == "disabled"
+            assert "selcall" in phone.of_type("hello")[0]["features"]
+            await phone.say(cmd="selcall_activate", id=1, code="4721")
+            assert phone.result(1)["ok"] and phone.result(1)["status"]["state"] == "standby"
+            assert pc.of_type("selcall")[-1]["status"]["code"] == "4721"                   # l'autre client le voit
+            await pc.say(cmd="selcall_options", id=2, filter_mode="chime")
+            assert phone.of_type("selcall")[-1]["status"]["filter_mode"] == "chime"
+            await phone.say(cmd="selcall_deactivate", id=3)
+            await phone.say(cmd="selcall_activate", id=4, code="1234")
+            assert store.status.history[:2] == ("1234", "4721")
+            await phone.session.close()
+            assert store.status.state == "standby"                                          # déconnexion : rien ne change
+            await pc.say(cmd="selcall_rearm", id=5)
+            assert pc.result(5)["status"]["state"] == "standby"
+
+    run(scenario)
+
+
+def test_selcall_commands_are_refused_when_the_station_has_no_selcall():
+    from test_api import connect, run, station
+
+    async def scenario(fake):
+        async with station(fake) as st:
+            phone = await connect(st, "phone")
+            assert phone.of_type("hello")[0]["selcall"] is None
+            await phone.say(cmd="selcall_activate", id=1, code="4721")
+            assert phone.result(1) == {"type": "result", "id": 1, "ok": False, "reason": "selcall_unavailable"}
+
+    run(scenario)

@@ -1201,12 +1201,14 @@
       linkAlert(kind) { playLinkAlert(kind); },
       spots(data) { onSpots(data); },
       beeps(settings) { renderBeeps(settings); },
+      selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
       clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
+        renderSelcall(value ? client.selcall : null);
         const version = value && client.hello ? versionLabel(client.hello.version) : "";
         $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
         if ($("bug-report") && !$("bug-report").hidden) $("bug-send").disabled = !value;   // « Envoyer à la station » : connecté seulement
@@ -1323,6 +1325,74 @@
     };
 
     const client = new TrxClient(browserEnv(), ui);
+
+    // ---- SELCALL (selcall.js) : squelch numérique de la station ; panneau seulement si la station l'offre
+    const scx = root.TrxSelcall || null;
+    let selStatus = null;
+    function renderSelcall(status) {
+      selStatus = status;
+      const offered = !!scx && !!status && connectedFlag;
+      $("sec-selcall").hidden = !offered;
+      const ind = scx ? scx.indicator(offered ? status : null) : null;
+      $("sel-ind").hidden = !ind;
+      if (ind) { $("sel-ind").textContent = ind.text; $("sel-ind").className = "chip sel-ind" + (ind.open ? " open" : ""); }
+      if (!offered) return;
+      $("sel-state").textContent = "État : " + (scx.STATE_LABELS[status.state] || status.state) + (status.code && status.state !== "disabled" ? " (code " + status.code + ")" : "");
+      if (document.activeElement !== $("sel-code") && !$("sel-code").value) $("sel-code").value = status.code || "";
+      if (document.activeElement !== $("sel-test-code") && !$("sel-test-code").value) $("sel-test-code").value = status.code || "";
+      $("sel-rearm").disabled = status.state === "disabled";
+      $("sel-deactivate").disabled = status.state === "disabled";
+      $("sel-filter").value = status.filter_mode;
+      $("sel-att").value = status.attenuation_db; $("sel-att-text").textContent = " " + status.attenuation_db + " dB";
+      $("sel-att").disabled = status.filter_mode !== "attenuate";
+      const box = $("sel-history");
+      box.textContent = "";
+      for (const code of status.history || []) {
+        const chip = el("button", "chip" + (code === status.code && status.state !== "disabled" ? " on" : ""), code);
+        chip.title = "Armer sur " + code;
+        chip.addEventListener("click", () => client.selcallActivate(code).catch(fail));
+        box.appendChild(chip);
+      }
+      const c = status.last_call;
+      $("sel-last").textContent = c ? "Dernier appel : " + c.code + " à " + new Date(c.at * 1000).toLocaleTimeString("fr-FR")
+        + " (décalage " + (c.delta_hz > 0 ? "+" : "") + c.delta_hz + " Hz, SNR " + c.snr_db + " dB)" : "Aucun appel reçu.";
+    }
+    if (scx) {
+      $("sel-ind").addEventListener("click", () => { $("sec-selcall").open = true; $("sec-selcall").scrollIntoView({ behavior: "smooth" }); });
+      $("sel-activate").addEventListener("click", () => {
+        const code = $("sel-code").value.trim();
+        if (!scx.validCode(code)) { ui.log("Code SELCALL : 3 à 8 chiffres.", "warn"); return; }
+        client.selcallActivate(code).catch(fail);
+      });
+      $("sel-rearm").addEventListener("click", () => client.selcallRearm().catch(fail));
+      $("sel-deactivate").addEventListener("click", () => client.selcallDeactivate().catch(fail));
+      $("sel-filter").addEventListener("change", (ev) => client.selcallOptions({ filter_mode: ev.target.value }).catch(fail));
+      $("sel-att").addEventListener("change", (ev) => client.selcallOptions({ attenuation_db: Number(ev.target.value) }).catch(fail));
+      const testCode = () => {
+        const code = $("sel-test-code").value.trim();
+        if (!scx.validCode(code)) { ui.log("Code du fichier de test : 3 à 8 chiffres.", "warn"); return null; }
+        return code;
+      };
+      $("sel-test-save").addEventListener("click", () => {
+        const code = testCode();
+        if (!code) return;
+        const link = el("a", "");
+        link.href = URL.createObjectURL(new Blob([scx.testWav(code)], { type: "audio/wav" }));
+        link.download = "selcall-" + code + ".wav";
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+      });
+      let testPlayer = null;
+      $("sel-test-play").addEventListener("click", () => {
+        const code = testCode();
+        if (!code) return;
+        if (testPlayer) { testPlayer.pause(); testPlayer = null; $("sel-test-play").textContent = "Écouter"; return; }
+        testPlayer = new Audio(URL.createObjectURL(new Blob([scx.testWav(code)], { type: "audio/wav" })));   // ici seulement, jamais émis
+        testPlayer.onended = () => { testPlayer = null; $("sel-test-play").textContent = "Écouter"; };
+        $("sel-test-play").textContent = "Arrêter";
+        testPlayer.play().catch(fail);
+      });
+    }
 
     // ---- profil du micro (traitements du navigateur) : mémorisé ; appliqué tout de suite si possible
     for (const [key, p] of Object.entries(web.MIC_PROFILES)) $("mic-profile").appendChild(Object.assign(el("option", "", p.label), { value: key }));

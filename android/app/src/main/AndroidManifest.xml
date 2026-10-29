@@ -18,6 +18,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Partage du fichier de test SELCALL (WhatsApp, Signal…) : le cache « selcall/ » seulement, lecture accordée au partage -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <!-- Lecteur de QR code (ZXing) : suit l'orientation du téléphone (paysage seul par défaut). -->
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
