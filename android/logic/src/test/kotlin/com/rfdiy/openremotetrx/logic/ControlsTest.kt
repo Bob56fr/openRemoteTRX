@@ -79,13 +79,22 @@ class IndicatorsTest {
     ) as com.rfdiy.openremotetrx.protocol.State
 
     @Test
-    fun `voyants - NB NR selon le poste, POWER SWR ALC seulement en emission mesuree`() {
-        val rx = Indicators.of(state("RX", """{"NB":true,"NR":false}""", """{"RFPOWER_METER":0.0,"SWR":1.0,"ALC":0.0}"""))
-        assertEquals(listOf("NB" to true, "NR" to false, "POWER" to false, "SWR" to false, "ALC" to false), rx.map { it.label to it.on })
-        val tx = Indicators.of(state("TX", "{}", """{"RFPOWER_METER":0.5,"SWR":1.3,"ALC":0.0}"""))
-        assertEquals(listOf("POWER" to true, "SWR" to true, "ALC" to false), tx.map { it.label to it.on })
-        assertTrue(Indicators.of(null).isEmpty())
-        val bare = Indicators.of(state("RX", "{}", "{}"))                       // mesures absentes en réception : gris
-        assertEquals(listOf("POWER" to false, "SWR" to false, "ALC" to false), bare.map { it.label to it.on })
+    fun `voyants - ATT sinon P_AMP, NOTCH, NB, NR, jamais POWER SWR ALC`() {
+        val a = Indicators.of(null, state("RX", """{"NB":true,"NR":false,"ANF":false,"MN":true}""", """{"ATT":20,"PREAMP":1}"""))
+        assertEquals(listOf("ATT" to true, "NOTCH" to true, "NB" to true, "NR" to false), a.map { it.label to it.on })
+        val p = Indicators.of(null, state("RX", "{}", """{"ATT":0,"PREAMP":2}"""))
+        assertEquals(listOf("P.AMP 2" to true), p.map { it.label to it.on })
+        assertTrue(Indicators.of(null, state("RX", "{}", """{"ATT":0,"PREAMP":0}""")).isEmpty())      // ni l'un ni l'autre : rien
+        assertEquals(1, Indicators.preampNumber(10.0, listOf(10, 20)))
+        assertEquals(2, Indicators.preampNumber(20.0, listOf(10, 20)))
+        assertTrue(Indicators.of(null, null).isEmpty())
+    }
+
+    @Test
+    fun `bargraphs POWER SWR ALC toujours presents, a zero en reception`() {
+        assertEquals(listOf("POWER —", "SWR —", "ALC —"), Indicators.txMeters(state("RX", "{}", "{}")).map { "${it.label} ${it.text}" })
+        val tx = Indicators.txMeters(state("TX", "{}", """{"RFPOWER_METER":0.5,"SWR":1.5,"ALC":0.3}"""))
+        assertEquals(listOf("POWER 50 %", "SWR 1.5", "ALC 30 %"), tx.map { "${it.label} ${it.text}" })
+        assertEquals(0.25f, tx[1].fraction, 0.001f)
     }
 }

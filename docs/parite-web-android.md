@@ -35,4 +35,5 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Spectre HF en plein écran en tournant le téléphone (paysage), waterfall audio en portrait | — | page : vue HF plein écran / intégrée en paysage large | fait (0.8.0) | STOP et état de l'émission toujours visibles en paysage |
 | Zoom à deux doigts sur le spectre HF (span du poste) | fait (spectrum_set) | absent | fait (0.9.0) | passe en mode CENT si besoin |
 | NB : largeur et profondeur (en plus de marche/arrêt et niveau) | à faire : Hamlib ne les expose PAS pour l'IC-7300MK2 (dump_caps : NB 0..10 seul, aucun « Extra level ») ; possible par le second port CI-V (comme FIL1/2/3), à confirmer sur le poste | à faire | à faire | demandé le 2026-10-29 |
-| Voyants de l'afficheur (NB, NR, POWER, SWR, ALC ; VFO-A / VFO-B, CLAR, RIT après l'étape station) | — | à faire | fait (0.10.0, sauf VFO / CLAR / RIT) | vert = actif, gris = éteint ; demandé le 2026-10-29 |
+| Voyants de l'afficheur : ATT ou P.AMP 1 / P.AMP 2 (ou rien), NOTCH, NB, NR ; VFO-A / VFO-B / MEM, RIT, CLAR, SPLIT après l'étape station | — | à faire | fait (0.10.1, sauf VFO / MEM / RIT / CLAR / SPLIT) | vert = actif, gris = éteint ; précisé par l'utilisateur le 2026-10-29 |
+| Bargraphs POWER, SWR, ALC toujours visibles dans l'afficheur | — | fait (graphiques de puissance) | fait (0.10.1) | à zéro en réception |

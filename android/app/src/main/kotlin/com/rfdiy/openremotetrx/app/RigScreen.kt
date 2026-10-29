@@ -202,7 +202,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
                     }
                     // Voyants (comme sur un poste) : vert = actif, gris = éteint
-                    val lights = Indicators.of(rig.state)
+                    val lights = Indicators.of(hello, rig.state)
                     if (lights.isNotEmpty()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             for (light in lights) {
@@ -223,6 +223,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         for (label in listOf("S1", "3", "5", "7", "9", "+20", "+40", "+60")) {
                             Text(label, style = MaterialTheme.typography.labelSmall)
                         }
+                    }
+                    // Bargraphs POWER, SWR, ALC toujours visibles (comme sur un poste ; à zéro en réception)
+                    for (m in Indicators.txMeters(rig.state)) {
+                        MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
                     }
                     radio?.levels?.get("SQL")?.let { sql ->
                         // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
@@ -299,13 +303,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
-            // Indicateurs : Po, SWR, ALC pendant l'émission ; COMP, Vd, température en permanence s'ils existent
-            val meters = Controls.meters(rig.state)
-            val txMeters = meters.filter { it.key in setOf("PO", "SWR", "ALC") }
-            if (ptt?.transmitting == true && txMeters.isNotEmpty()) {
-                for (m in txMeters) MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
-            }
-            val others = meters.filterNot { it in txMeters }
+            // Autres mesures (COMP, Vd, température) en une ligne, s'il y en a ; POWER, SWR, ALC sont dans l'afficheur
+            val others = Controls.meters(rig.state).filterNot { it.key in setOf("PO", "SWR", "ALC") }
             if (others.isNotEmpty()) {
                 Text(others.joinToString("   ") { "${it.label} ${it.text}" }, style = MaterialTheme.typography.bodySmall)
             }
@@ -640,14 +639,14 @@ private fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, m
 @Composable
 private fun MeterRow(meter: Meter, warn: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(meter.label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
+        Text(meter.label, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp))
         LinearProgressIndicator(
             progress = { meter.fraction },
             drawStopIndicator = {},
             color = if (warn) WARN else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f).height(8.dp),
+            modifier = Modifier.weight(1f).height(6.dp),
         )
-        Text(meter.text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
+        Text(meter.text, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp), textAlign = TextAlign.End)
     }
 }
 

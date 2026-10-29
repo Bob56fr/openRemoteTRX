@@ -2,29 +2,56 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.logic
 
+import com.rfdiy.openremotetrx.protocol.Hello
 import com.rfdiy.openremotetrx.protocol.State
+import java.util.Locale
+import kotlin.math.roundToInt
 
 /** Voyant de l'afficheur (comme sur un poste) : texte vert si actif, gris sinon. */
 data class Indicator(val label: String, val on: Boolean)
 
 /**
- * Voyants à côté de la fréquence (demande de l'utilisateur) : NB, NR (fonctions lues par la station), puis POWER, SWR,
- * ALC (toujours montrés), actifs seulement quand le poste émet ET mesure quelque chose. VFO-A / VFO-B, CLAR, RIT :
- * après leur ajout côté station.
+ * Voyants à côté de la fréquence (demande de l'utilisateur) : ATT, ou P.AMP 1 / P.AMP 2, ou rien ; NOTCH ; NB ; NR.
+ * Seuls les voyants dont la station publie l'état sont montrés : VFO-A / VFO-B / MEM, RIT, CLAR, SPLIT viendront avec
+ * leur lecture côté station. POWER, SWR, ALC ne sont pas des voyants mais des bargraphs (`Indicators.txMeters`).
  */
 object Indicators {
-    private const val MEASURED = 0.01
-
-    fun of(state: State?): List<Indicator> {
+    fun of(hello: Hello?, state: State?): List<Indicator> {
         val rig = state?.rig ?: return emptyList()
-        val tx = state.ptt.state in setOf("KEYING", "TX")
+        val fn = rig.functions
         val out = mutableListOf<Indicator>()
-        rig.functions["NB"]?.let { out += Indicator("NB", it) }
-        rig.functions["NR"]?.let { out += Indicator("NR", it) }
-        // Toujours affichés (gris en réception : la station ne publie ces mesures que pendant l'émission)
-        out += Indicator("POWER", tx && (rig.levels["RFPOWER_METER"] ?: 0.0) > MEASURED)
-        out += Indicator("SWR", tx && (rig.levels["SWR"] ?: 0.0) > 1.0 + MEASURED)
-        out += Indicator("ALC", tx && (rig.levels["ALC"] ?: 0.0) > MEASURED)
+        val att = rig.levels["ATT"] ?: 0.0
+        val preamp = rig.levels["PREAMP"] ?: 0.0
+        when {
+            att > 0 -> out += Indicator("ATT", true)
+            preamp > 0 -> out += Indicator("P.AMP ${preampNumber(preamp, hello?.capabilities?.preamps.orEmpty())}", true)
+        }
+        if ("ANF" in fn || "MN" in fn) out += Indicator("NOTCH", fn["ANF"] == true || fn["MN"] == true)
+        fn["NB"]?.let { out += Indicator("NB", it) }
+        fn["NR"]?.let { out += Indicator("NR", it) }
         return out
+    }
+
+    /** Numéro du préampli : rang dans la liste du poste (10 dB -> 1, 20 dB -> 2), ou la valeur lue si c'est déjà 1 ou 2. */
+    fun preampNumber(level: Double, preamps: List<Int>): Int {
+        val v = level.roundToInt()
+        val i = preamps.indexOf(v)
+        return if (i >= 0) i + 1 else v
+    }
+
+    /**
+     * Bargraphs POWER, SWR, ALC, toujours affichés comme sur un poste (à zéro en réception : la station ne publie ces
+     * mesures que pendant l'émission).
+     */
+    fun txMeters(state: State?): List<Meter> {
+        val lv = state?.rig?.levels.orEmpty()
+        val po = lv["RFPOWER_METER"]?.coerceIn(0.0, 1.0)
+        val swr = lv["SWR"]
+        val alc = lv["ALC"]?.coerceIn(0.0, 1.0)
+        return listOf(
+            Meter("PO", "POWER", po?.let { "${(it * 100).roundToInt()} %" } ?: "—", (po ?: 0.0).toFloat()),
+            Meter("SWR", "SWR", swr?.let { String.format(Locale.ROOT, "%.1f", it) } ?: "—", ((swr ?: 1.0) - 1).div(2).coerceIn(0.0, 1.0).toFloat()),
+            Meter("ALC", "ALC", alc?.let { "${(it * 100).roundToInt()} %" } ?: "—", (alc ?: 0.0).toFloat()),
+        )
     }
 }
