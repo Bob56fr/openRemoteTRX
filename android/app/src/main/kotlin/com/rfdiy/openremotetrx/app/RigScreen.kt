@@ -517,6 +517,14 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     val eqOn = voice.settings.enabled
                     CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
                         onLongClick = { tab = Tab.EQ })
+                    // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Égaliseur »)
+                    if (voice.scrambler.tx || voice.scrambler.rx) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            if (voice.scrambler.tx) "SCRAMBLER" else "DÉBROUILL.", color = TX_RED, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium, modifier = Modifier.clickable { tab = Tab.EQ },
+                        )
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val pttEnabled = connected && rig.protocolOk && ui.micAllowed && (mineTx || (ptt?.transmitting != true && rig.armed))

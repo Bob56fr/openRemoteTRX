@@ -60,6 +60,7 @@ class VoiceDsp(private val rate: Int) {
         if (resetWanted) {
             resetWanted = false
             chorus.clear(); reverb.clear()
+            scrambler?.clear()                                       // rien de l'émission précédente ne ressort
         }
         val set = current ?: return
         // gain du micro et mesure du niveau (porte de bruit)
@@ -88,11 +89,37 @@ class VoiceDsp(private val rate: Int) {
                     x = reverb.run(x)
                     if (!x.isFinite()) throw ArithmeticException("calcul divergent")
                 }
-                buf[i] = limit(x).toFloat()
+                buf[i] = x.toFloat()
             }
         } catch (e: RuntimeException) {
             fail(e.message ?: e.javaClass.simpleName)
-            for (i in 0 until n) buf[i] = limit(buf[i].toDouble().takeIf { it.isFinite() } ?: 0.0).toFloat()
+            for (i in 0 until n) if (!buf[i].isFinite()) buf[i] = 0f
+        }
+        scramble(buf, n)
+        for (i in 0 until n) buf[i] = limit(buf[i].toDouble()).toFloat()          // limiteur TOUJOURS en bout de chaîne
+    }
+
+    /** Scrambler d'émission (mode, ou null = voix en clair) ; inséré juste avant le limiteur, comme la page. */
+    @Volatile var scrambleMode: String? = null
+    private var scrambler: Scrambler? = null
+    private var scrambled: String? = null
+
+    private fun scramble(buf: FloatArray, n: Int) {
+        val want = scrambleMode
+        if (want != scrambled) {
+            scrambled = want
+            if (want != null && scrambler == null) scrambler = Scrambler(rate, tx = true)
+            scrambler?.set(want, 0)
+        }
+        val s = scrambler ?: return
+        if (!s.active) return
+        try {
+            s.process(buf, n)
+        } catch (e: RuntimeException) {
+            scrambleMode = null
+            scrambled = null
+            s.set(null, 0)
+            onFail?.invoke("Scrambler en erreur (${e.message ?: e.javaClass.simpleName}) : voix en CLAIR.")
         }
     }
 

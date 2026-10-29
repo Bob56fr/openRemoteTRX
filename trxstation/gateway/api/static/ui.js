@@ -103,6 +103,8 @@
     let instrumentKeys = null, instrumentEls = new Map();
     const fail = (e) => ui.log(e && e.message ? e.message : String(e), "bad");
     const safeJson = (text) => { try { return JSON.parse(text); } catch (e) { return null; } };
+    let rxMedia = null;                                                            // flux reçu (débrouillage du scrambler)
+    function audioContext48(Ctx) { try { return new Ctx({ sampleRate: 48000 }); } catch (e) { return new Ctx(); } }
     let freqEls = [], drag = null, kpText = "";
     const bandButtons = new Map();
     const modeButtons = new Map();                                                    // mode Hamlib -> bouton (onglet Accord)
@@ -1156,7 +1158,8 @@
       },
       remoteStream(stream, track) {
         const media = stream || new MediaStream([track]);
-        audio.srcObject = media;
+        rxMedia = media;
+        audio.srcObject = scrRxStream(media);                                       // débrouillage éventuel (scrambler.js)
         setupAnalysis(media);
         applyOutput().finally(() => audio.play().catch(() => ui.log("Lecture audio bloquée par le navigateur : touche l'écran.", "warn")));
       },
@@ -1572,11 +1575,12 @@
         /* Appelée par client.js à la connexion, avec le micro choisi ; la piste envoyée sort de la chaîne. */
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return null;
-        const ctx = new Ctx();
+        const ctx = audioContext48(Ctx);
         if (ctx.resume) ctx.resume().catch(() => {});
         const chain = new vx.VoiceChain(ctx, ctx.createMediaStreamSource(stream), voiceSettings, (text, level) => ui.log(text, level));
         voiceChain = chain; voiceCtx = ctx; voiceRaw = stream.getAudioTracks()[0] || null;
         voiceRender();
+        scrApplyTx();                                                  // scrambler d'émission en service : inséré tout de suite
         return {
           track: chain.track, stream: chain.stream,
           setTx(on) {
@@ -1588,14 +1592,148 @@
             if (recorder) { try { recorder.stop(); } catch (e) { /* déjà arrêté */ } }
             chain.close();
             if (ctx.close) ctx.close().catch(() => {});
-            if (voiceChain === chain) { voiceChain = null; voiceCtx = null; voiceRaw = null; }
-            voiceRender();
+            if (voiceChain === chain) { voiceChain = null; voiceCtx = null; voiceRaw = null; scrTxNode = null; }
+            voiceRender(); scrRender();
           },
         };
       };
       voiceRender();
     } else {
       $("sec-voice").hidden = true; $("voice-direct").hidden = true;
+    }
+
+    // ---- scrambler (scrambler.js) : émission brouillée juste avant le limiteur de la voix, réception débrouillée avant le
+    // haut-parleur (même élément audio : volume, sourdine et sortie inchangés). Décision de l'utilisateur du 2026-10-29 :
+    // désactivé par défaut, message clair et confirmation à chaque mise en service, jamais réactivé seul (seuls le mode
+    // et le décalage sont gardés par le navigateur).
+    const sx = root.TrxScrambler || null;
+    let scr = sx ? sx.validate(safeJson(store.get("trx.scrambler", "null"))) : null;
+    let scrTxNode = null, scrRx = null;
+    const SCR_WARNING = "SCRAMBLER : votre voix devient incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un " +
+      "chiffrement : tout possesseur d'un scrambler identique vous entend.\n\nEn bandes radioamateur, le Règlement des " +
+      "radiocommunications (UIT, art. 25) et la réglementation nationale interdisent les émissions destinées à masquer le sens " +
+      "des messages. Vous en prenez l'ENTIÈRE responsabilité.";
+    function scrMsg() { return { mode: scr.mode, offsetHz: scr.offsetHz }; }
+    function scrSave() { store.set("trx.scrambler", JSON.stringify(scrMsg())); }
+    function scrWorklet(ctx) {
+      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error("AudioWorklet absent de ce navigateur"));
+      if (!ctx.trxScrambler) ctx.trxScrambler = ctx.audioWorklet.addModule("scrambler.js");
+      return ctx.trxScrambler;
+    }
+    async function scrApplyTx() {
+      if (!sx) return;
+      const chain = voiceChain, ctx = voiceCtx;
+      if (!scr.tx || !chain || !ctx) {
+        if (chain) chain.setScrambler(null);
+        scrTxNode = null;
+        scrRender();
+        return;
+      }
+      try {
+        await scrWorklet(ctx);
+        if (voiceChain !== chain || !scr.tx) return;
+        if (!scrTxNode) scrTxNode = new AudioWorkletNode(ctx, "trx-scrambler", { processorOptions: Object.assign({ direction: "tx" }, scrMsg()) });
+        else scrTxNode.port.postMessage(scrMsg());
+        chain.setScrambler(scrTxNode);
+        if (ctx.sampleRate !== 48000) ui.log("Scrambler : son à " + ctx.sampleRate + " Hz (prévu pour 48 kHz) : décodage moins propre en face.", "warn");
+      } catch (err) {
+        scr.tx = false;
+        if (chain) chain.setScrambler(null);
+        ui.log("Scrambler d'émission impossible (" + (err && err.message ? err.message : err) + ") : voix en CLAIR.", "bad");
+      }
+      scrRender();
+    }
+    function scrRxStop() {
+      if (!scrRx) return;
+      try { scrRx.raw.pause(); scrRx.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
+      if (scrRx.ctx.close) scrRx.ctx.close().catch(() => {});
+      scrRx = null;
+    }
+    function scrRxStream(media) {
+      /* Flux à jouer : le flux reçu tel quel, ou débrouillé (AudioWorklet) si la réception débrouillée est en service. */
+      scrRxStop();
+      if (!sx || !scr.rx || !media) return media;
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = audioContext48(Ctx);
+        // Chrome : un flux WebRTC distant n'arrive à Web Audio que s'il est aussi lu par un élément (ici muet)
+        const raw = new Audio(); raw.muted = true; raw.srcObject = media; raw.play().catch(() => {});
+        const dest = ctx.createMediaStreamDestination();
+        const state = { ctx, raw, dest, node: null };
+        scrRx = state;
+        scrWorklet(ctx).then(() => {
+          if (scrRx !== state) return;
+          state.node = new AudioWorkletNode(ctx, "trx-scrambler", { processorOptions: Object.assign({ direction: "rx" }, scrMsg()) });
+          ctx.createMediaStreamSource(media).connect(state.node);
+          state.node.connect(dest);
+          scrRender();
+        }).catch((err) => {
+          if (scrRx !== state) return;
+          scr.rx = false; scrRxStop(); audio.srcObject = media;
+          ui.log("Débrouillage impossible (" + (err && err.message ? err.message : err) + ") : réception en clair.", "warn");
+          scrRender();
+        });
+        if (ctx.resume) ctx.resume().catch(() => {});
+        return dest.stream;
+      } catch (err) {
+        scr.rx = false;
+        ui.log("Débrouillage impossible (" + (err && err.message ? err.message : err) + ") : réception en clair.", "warn");
+        return media;
+      }
+    }
+    function scrApplyRx() {
+      if (rxMedia) {
+        audio.srcObject = scrRxStream(rxMedia);
+        audio.play().catch(() => {});
+      }
+      scrRender();
+    }
+    function scrRender() {
+      if (!sx) return;
+      $("scr-tx").checked = scr.tx; $("scr-rx").checked = scr.rx;
+      $("scr-mode").value = scr.mode;
+      $("scr-offset").value = scr.offsetHz;
+      $("scr-offset-text").textContent = " " + (scr.offsetHz > 0 ? "+" : "") + scr.offsetHz + " Hz";
+      const ind = $("scr-ind");
+      ind.hidden = !(scr.tx || scr.rx);
+      ind.textContent = scr.tx ? "SCRAMBLER" : "DÉBROUILLAGE";
+      const txState = !scr.tx ? "émission en clair" : (voiceChain && scrTxNode && voiceChain.scrambler === scrTxNode) ? "émission BROUILLÉE"
+        : voiceChain ? "émission brouillée : mise en route…" : "émission brouillée dès la connexion avec le micro";
+      const rxState = !scr.rx ? "réception en clair" : scrRx && scrRx.node ? "réception débrouillée" : "réception débrouillée dès la connexion";
+      $("scr-state").textContent = "État : " + txState + " ; " + rxState + " (mode « " + sx.MODES[scr.mode].label + " »).";
+    }
+    if (sx) {
+      for (const [key, m] of Object.entries(sx.MODES)) $("scr-mode").appendChild(Object.assign(el("option", "", m.label), { value: key }));
+      const confirmOn = (what) => window.confirm(SCR_WARNING + "\n\n" + what);
+      $("scr-tx").addEventListener("change", (ev) => {
+        if (ev.target.checked && !confirmOn("Brouiller VOTRE ÉMISSION ?")) { ev.target.checked = false; return; }
+        scr.tx = ev.target.checked;
+        ui.log(scr.tx ? "Scrambler : émission brouillée (mode « " + sx.MODES[scr.mode].label + " »)." : "Scrambler : émission en clair.", scr.tx ? "warn" : "");
+        scrApplyTx();
+      });
+      $("scr-rx").addEventListener("change", (ev) => {
+        if (ev.target.checked && !confirmOn("Débrouiller la RÉCEPTION ?")) { ev.target.checked = false; return; }
+        scr.rx = ev.target.checked;
+        ui.log(scr.rx ? "Scrambler : réception débrouillée." : "Scrambler : réception en clair.", "");
+        scrApplyRx();
+      });
+      $("scr-mode").addEventListener("change", (ev) => {
+        scr.mode = sx.MODES[ev.target.value] ? ev.target.value : scr.mode;
+        scrSave();
+        if (scrTxNode) scrTxNode.port.postMessage(scrMsg());
+        if (scrRx && scrRx.node) scrRx.node.port.postMessage(scrMsg());
+        scrRender();
+      });
+      $("scr-offset").addEventListener("input", (ev) => {
+        scr.offsetHz = sx.validate({ mode: scr.mode, offsetHz: parseFloat(ev.target.value) }).offsetHz;
+        scrSave();
+        if (scrRx && scrRx.node) scrRx.node.port.postMessage(scrMsg());
+        scrRender();
+      });
+      $("scr-ind").addEventListener("click", () => { $("sec-scrambler").open = true; $("sec-scrambler").scrollIntoView({ block: "start" }); });
+      scrRender();
+    } else {
+      $("sec-scrambler").hidden = true;
     }
     if (lay) layout = new lay.Layout(document, { store: store, onShown: layoutShown, now: () => performance.now(),
                                                  setTimeout: (fn, ms) => window.setTimeout(fn, ms), clearTimeout: (t) => window.clearTimeout(t) });

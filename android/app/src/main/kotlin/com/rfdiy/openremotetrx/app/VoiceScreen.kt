@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -20,6 +21,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.VoiceHub
+import com.rfdiy.openremotetrx.logic.ScramblerSettings
+import com.rfdiy.openremotetrx.logic.Scramblers
 import com.rfdiy.openremotetrx.logic.VoiceEq
 import com.rfdiy.openremotetrx.logic.VoiceSettings
 import java.util.Locale
@@ -46,6 +50,7 @@ fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.
     val context = LocalContext.current
     val ui by VoiceHub.ui.collectAsState()
     val s = ui.settings
+    LaunchedEffect(Unit) { VoiceHub.load(context) }                 // réglages enregistrés, même avant la connexion
     fun save(next: VoiceSettings) = VoiceHub.save(context, next)
     fun say(text: String?) { text?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() } }
 
@@ -175,6 +180,8 @@ fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.
         }
     }
 
+    ScramblerPanel(ui.scrambler, panel)
+
     panel {
         Text("Partager les réglages", style = MaterialTheme.typography.titleSmall)
         Text("Format commun avec la page web : la même voix sur le PC et le téléphone.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
@@ -207,3 +214,53 @@ private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRa
         )
     }
 }
+
+/** Texte montré avant toute mise en service (décision de l'utilisateur du 2026-10-29 : message clair et confirmation). */
+const val SCRAMBLER_WARNING = "Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un " +
+    "chiffrement : tout possesseur d'un scrambler identique vous entend.\n\nEn bandes radioamateur, le Règlement des " +
+    "radiocommunications (UIT, art. 25) et la réglementation nationale interdisent les émissions destinées à masquer le sens " +
+    "des messages. Vous en prenez l'ENTIÈRE responsabilité."
+
+/** Rubrique « Scrambler » : brouiller l'émission, débrouiller la réception, mode commun avec la page, décalage fin. */
+@Composable
+private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit) {
+    val context = LocalContext.current
+    var asking by remember { mutableStateOf<ScramblerSettings?>(null) }
+    fun change(next: ScramblerSettings) {
+        if ((next.tx && !scr.tx) || (next.rx && !scr.rx)) asking = next else VoiceHub.setScrambler(context, next)
+    }
+    panel {
+        Text("Scrambler (voix brouillée)", style = MaterialTheme.typography.titleSmall)
+        Text("Désactivé à chaque démarrage. Même mode des deux côtés ; retard ajouté : environ 43 ms. Les tonalités SELCALL et les " +
+            "bips de la station ne sont pas brouillés.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) })
+            Spacer(Modifier.width(8.dp))
+            Text("Brouiller mon émission", style = MaterialTheme.typography.bodyMedium, color = if (scr.tx) WARN else Page.TEXTE)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = scr.rx, onCheckedChange = { change(scr.copy(rx = it)) })
+            Spacer(Modifier.width(8.dp))
+            Text("Débrouiller la réception", style = MaterialTheme.typography.bodyMedium)
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            for ((key, m) in Scramblers.MODES) CompactChip(m.label, onClick = { VoiceHub.setScrambler(context, scr.copy(mode = key)) }, selected = scr.mode == key)
+        }
+        SliderRow("Décalage fin", scr.offsetHz.toDouble(), -Scramblers.OFFSET_MAX_HZ.toDouble()..Scramblers.OFFSET_MAX_HZ.toDouble(), 5.0, "Hz") {
+            VoiceHub.setScrambler(context, scr.copy(offsetHz = it.roundToInt()))
+        }
+        Text("Réception BLU encore brouillée : ajustez le décalage fin (ou le RIT du poste). Essai sans émettre : « Relire » "+
+            "(ci-dessus) fait entendre votre voix brouillée ; avec « Débrouiller » aussi, elle doit redevenir claire.",
+            color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+    }
+    asking?.let { next ->
+        AlertDialog(
+            onDismissRequest = { asking = null },
+            title = { Text(if (next.tx && !scr.tx) "Brouiller votre émission ?" else "Débrouiller la réception ?") },
+            text = { Text(SCRAMBLER_WARNING) },
+            confirmButton = { TextButton(onClick = { VoiceHub.setScrambler(context, next); asking = null }) { Text("J'ai compris, activer") } },
+            dismissButton = { TextButton(onClick = { asking = null }) { Text("Annuler") } },
+        )
+    }
+}
+

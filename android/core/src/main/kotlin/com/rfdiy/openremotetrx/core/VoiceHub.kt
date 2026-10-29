@@ -8,6 +8,9 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.AudioTrack
+import com.rfdiy.openremotetrx.logic.Scrambler
+import com.rfdiy.openremotetrx.logic.ScramblerSettings
+import com.rfdiy.openremotetrx.logic.Scramblers
 import com.rfdiy.openremotetrx.logic.VoiceDsp
 import com.rfdiy.openremotetrx.logic.VoiceEq
 import com.rfdiy.openremotetrx.logic.VoiceSettings
@@ -32,6 +35,8 @@ data class VoiceUi(
     /** Le micro passe-t-il par le traitement ? (connecté avec le micro) */
     val live: Boolean = false,
     val failed: String = "",
+    /** Scrambler : tx et rx toujours éteints au démarrage (jamais enregistrés), mode et décalage gardés. */
+    val scrambler: ScramblerSettings = ScramblerSettings(),
 )
 
 /**
@@ -59,12 +64,43 @@ object VoiceHub {
     @Volatile private var playing = false
 
     internal val processor = Processor()
+    internal val rxProcessor = RxProcessor()
+    private const val PREF_SCR_MODE = "scrambler_mode"
+    private const val PREF_SCR_OFFSET = "scrambler_offset"
+
+    /**
+     * Scrambler (décision de l'utilisateur du 2026-10-29, docs/scrambler.md) : `tx` brouille l'émission juste avant le
+     * limiteur, `rx` débrouille la réception avant le haut-parleur. La confirmation est demandée par l'écran.
+     */
+    fun setScrambler(context: Context, settings: ScramblerSettings) {
+        val s = Scramblers.validate(settings.mode, settings.offsetHz).copy(tx = settings.tx, rx = settings.rx)
+        context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).edit()
+            .putString(PREF_SCR_MODE, s.mode).putInt(PREF_SCR_OFFSET, s.offsetHz).apply()
+        val before = _ui.value.scrambler
+        _ui.value = _ui.value.copy(scrambler = s)
+        applyScrambler()
+        if (before.tx != s.tx || before.rx != s.rx) {
+            val text = "Scrambler : émission " + (if (s.tx) "BROUILLÉE" else "en clair") + ", réception " + (if (s.rx) "débrouillée" else "en clair") +
+                " (mode « ${Scramblers.MODES.getValue(s.mode).label} »)."
+            RigHub.service?.onRig { session, now -> session.note(now, text, warn = s.tx) }
+        }
+    }
+
+    private fun applyScrambler() {
+        val s = _ui.value.scrambler
+        processor.dsp?.scrambleMode = if (s.tx) s.mode else null
+        rxProcessor.wanted = if (s.rx) s else null
+    }
 
     fun load(context: Context) {
         val text = context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).getString(PREF, null)
         val s = text?.let { runCatching { VoiceEq.validate(Json.parseToJsonElement(it) as? JsonObject) }.getOrNull() } ?: VoiceSettings()
         processor.dsp?.apply(s)
-        _ui.value = _ui.value.copy(settings = s)
+        val prefs = context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE)
+        val scr = Scramblers.validate(prefs.getString(PREF_SCR_MODE, null), prefs.getInt(PREF_SCR_OFFSET, 0))
+            .copy(tx = _ui.value.scrambler.tx, rx = _ui.value.scrambler.rx)    // en service : gardé tant que l'application vit
+        _ui.value = _ui.value.copy(settings = s, scrambler = scr)
+        applyScrambler()
     }
 
     fun save(context: Context, settings: VoiceSettings) {
@@ -174,6 +210,7 @@ object VoiceHub {
                 .build()
             try {
                 val dsp = VoiceDsp(rate)
+                val back = Scrambler(rate, tx = false)                 // auto-essai du scrambler : brouillé puis débrouillé
                 val block = rate / 100
                 track.play()
                 var i = 0
@@ -181,7 +218,11 @@ object VoiceHub {
                     val n = minOf(block, take.size - i)
                     val chunk = take.copyOfRange(i, i + n)
                     dsp.apply(_ui.value.settings)                   // réglages modifiables pendant la relecture
+                    val scr = _ui.value.scrambler
+                    dsp.scrambleMode = if (scr.tx) scr.mode else null  // relecture telle qu'elle partirait
+                    back.set(if (scr.tx && scr.rx) scr.mode else null, 0)
                     dsp.process(chunk, n)
+                    if (scr.tx && scr.rx) back.process(chunk, n)
                     track.write(chunk, 0, n, AudioTrack.WRITE_BLOCKING)
                     i += n
                 }
@@ -213,6 +254,52 @@ object VoiceHub {
         )
     }
 
+    /** Débrouillage de la réception (« render pre-processing » de WebRTC, avant le haut-parleur) ; transparent sinon. */
+    internal class RxProcessor : ExternalAudioProcessingFactory.AudioProcessing {
+        @Volatile var wanted: ScramblerSettings? = null
+        private var scrambler: Scrambler? = null
+        private var rate = 48000
+        private var applied: ScramblerSettings? = null
+        private var scale = 1f
+        private var work = FloatArray(480)
+
+        override fun initialize(sampleRateHz: Int, numChannels: Int) {
+            rate = sampleRateHz
+            scrambler = null
+            applied = null
+            scale = 1f
+            android.util.Log.i("VoiceHub", "traitement de la réception : $sampleRateHz Hz, $numChannels canal(aux)")
+        }
+
+        override fun reset(sampleRateHz: Int) = initialize(sampleRateHz, 1)
+
+        override fun process(numBands: Int, numFrames: Int, buffer: ByteBuffer) {
+            val want = wanted
+            if (want == null) {
+                if (applied != null) { applied = null; scrambler?.set(null, 0) }
+                return                                                // réception en clair : rien n'est touché
+            }
+            try {
+                val s = scrambler ?: Scrambler(rate, tx = false).also { scrambler = it }
+                if (want != applied) { applied = want; s.set(want.mode, want.offsetHz) }
+                val fb = buffer.order(ByteOrder.nativeOrder()).asFloatBuffer()
+                val n = minOf(numFrames, fb.capacity())
+                if (n <= 0) return
+                if (work.size < n) work = FloatArray(n)
+                fb.position(0)
+                fb.get(work, 0, n)
+                if (scale == 1f) for (i in 0 until n) if (abs(work[i]) > 4f) { scale = 32768f; break }
+                if (scale != 1f) for (i in 0 until n) work[i] /= scale
+                s.process(work, n)
+                if (scale != 1f) for (i in 0 until n) work[i] *= scale
+                fb.position(0)
+                fb.put(work, 0, n)
+            } catch (_: RuntimeException) {
+                // le bloc part tel quel
+            }
+        }
+    }
+
     /** Traitement appelé par WebRTC (fil audio, blocs de 10 ms), échantillons flottants mono. */
     internal class Processor : ExternalAudioProcessingFactory.AudioProcessing {
         @Volatile var dsp: VoiceDsp? = null
@@ -224,6 +311,7 @@ object VoiceHub {
         override fun initialize(sampleRateHz: Int, numChannels: Int) {
             dsp = VoiceDsp(sampleRateHz).also { d ->
                 d.apply(_ui.value.settings)
+                d.scrambleMode = _ui.value.scrambler.let { if (it.tx) it.mode else null }
                 d.onFail = { text ->
                     _ui.value = _ui.value.copy(failed = text)
                     RigHub.service?.onRig { s, now -> s.note(now, text, warn = true) }

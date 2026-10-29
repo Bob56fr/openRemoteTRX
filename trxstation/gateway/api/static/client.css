@@ -322,3 +322,5 @@ audio { display: none; }
 .sel-test { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
 .voyant.alert { color: var(--tx); opacity: 1; animation: alc-blink 0.8s steps(2) infinite; }
 @keyframes alc-blink { 50% { opacity: .35; } }
+.scr-ind { color: var(--tx); border-color: var(--tx); font-weight: 700; }
+.warn-text { color: var(--alerte); }

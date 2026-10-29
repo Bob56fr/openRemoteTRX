@@ -82,6 +82,19 @@ def test_voice_equalizer_and_effects_with_a_fake_audio_context():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+def test_scrambler_bands_round_trip_and_shared_modes():
+    """Scrambler (scrambler.js) : bins pairs, aller-retour décalé dans le temps, BLU mal accordée, modes partagés avec l'application."""
+    node = shutil.which("node")
+    if not node:
+        return
+    html = (ROOT / "trxstation" / "gateway" / "api" / "static" / "index.html").read_text(encoding="utf-8")
+    assert html.index('src="scrambler.js"') < html.index('src="ui.js"')
+    server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
+    assert '"/scrambler.js": ("scrambler.js", "text/javascript")' in server
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "scrambler_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
 def test_page_reads_the_shared_protocol_examples():
     node = shutil.which("node")
     if not node:

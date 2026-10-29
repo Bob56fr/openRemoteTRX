@@ -108,6 +108,21 @@ class VoiceEqTest {
     }
 
     @Test
+    fun `scrambler d'emission - limiteur toujours en bout, rien de l'emission precedente a la prise suivante`() {
+        val ceil = 10.0.pow(-3.0 / 20) + 1e-6
+        val dsp = VoiceDsp(48000).apply { apply(VoiceSettings(mic = MicSettings(gainDb = 20.0))); scrambleMode = "mix5a" }
+        val loud = sine(1000.0, 0.0, 9600).also { dsp.process(it) }
+        assertTrue(peak(loud) <= ceil, "crête ${peak(loud)}")
+        assertTrue(peak(loud, 4800) > 0.05, "le scrambler laisse passer un signal (brouillé)")
+        dsp.setTx(true)                                                             // nouvelle émission
+        val after = FloatArray(4800).also { dsp.process(it) }
+        assertTrue(peak(after) < 1e-9, "reste de l'émission précédente : ${peak(after)}")
+        dsp.scrambleMode = null                                                      // retour en clair : sans retard
+        val clear = sine(1000.0, -20.0, 960).also { dsp.process(it) }
+        assertTrue(peak(clear, 480) > 0.09)
+    }
+
+    @Test
     fun `erreur de calcul - contournement, jamais de silence`() {
         val dsp = VoiceDsp(48000)
         var told = ""

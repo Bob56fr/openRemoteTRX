@@ -80,6 +80,8 @@ class RtcLink(
             ExternalAudioProcessingFactory().apply {
                 setCapturePostProcessing(VoiceHub.processor)
                 setBypassFlagForCapturePost(false)
+                setRenderPreProcessing(VoiceHub.rxProcessor)                // débrouillage du scrambler (réception)
+                setBypassFlagForRenderPre(false)
             }
         } catch (e: Throwable) {                                   // UnsatisfiedLinkError compris
             VoiceHub.unavailable("Égaliseur indisponible sur ce téléphone (${e.javaClass.simpleName}) : voix sans traitement.")

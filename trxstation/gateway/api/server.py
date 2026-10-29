@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
 WEB_FILES = {"/": ("index.html", "text/html"), "/client.js": ("client.js", "text/javascript"),
              "/client.css": ("client.css", "text/css"), "/ui.js": ("ui.js", "text/javascript"),
-             "/waterfall.js": ("waterfall.js", "text/javascript"), "/layout.js": ("layout.js", "text/javascript"), "/theme.js": ("theme.js", "text/javascript"), "/hfscope.js": ("hfscope.js", "text/javascript"), "/spots.js": ("spots.js", "text/javascript"), "/voice.js": ("voice.js", "text/javascript"), "/selcall.js": ("selcall.js", "text/javascript"), "/splash.webp": ("splash.webp", "image/webp")}
+             "/waterfall.js": ("waterfall.js", "text/javascript"), "/layout.js": ("layout.js", "text/javascript"), "/theme.js": ("theme.js", "text/javascript"), "/hfscope.js": ("hfscope.js", "text/javascript"), "/spots.js": ("spots.js", "text/javascript"), "/voice.js": ("voice.js", "text/javascript"), "/selcall.js": ("selcall.js", "text/javascript"), "/scrambler.js": ("scrambler.js", "text/javascript"), "/splash.webp": ("splash.webp", "image/webp")}
 SECURITY_HEADERS = {
     # aucune ressource externe, aucun script ni style en ligne : une page injectée ne pourrait pas lire le jeton
     "Content-Security-Policy": "default-src 'self'; media-src 'self' blob:; connect-src 'self'; "

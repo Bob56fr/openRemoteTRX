@@ -120,6 +120,7 @@
     <div class="subrow">
       <label id="blk-armed" class="check"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
       <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
+      <button id="scr-ind" class="chip scr-ind" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
       <button id="sel-ind" class="chip sel-ind" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
       <label id="blk-sql" class="sql">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
@@ -367,6 +368,23 @@
       </div>
     </details>
 
+    <details id="sec-scrambler">
+      <summary>Scrambler (voix brouillée)</summary>
+      <div class="body">
+        <p class="note warn-text">Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un chiffrement :
+          tout possesseur d'un scrambler identique vous entend. En bandes radioamateur, le Règlement des radiocommunications (UIT, art. 25)
+          et la réglementation nationale interdisent les émissions destinées à masquer le sens des messages : vous en prenez l'entière
+          responsabilité. Toujours éteint à l'ouverture de la page.</p>
+        <label class="check"><input id="scr-tx" type="checkbox"> Brouiller mon émission</label>
+        <label class="check"><input id="scr-rx" type="checkbox"> Débrouiller la réception</label>
+        <label>Mode <select id="scr-mode"></select></label>
+        <label>Décalage fin (réception, BLU mal accordée) <input id="scr-offset" type="range" min="-300" max="300" step="5"><span id="scr-offset-text"></span></label>
+        <p class="note">Même mode des deux côtés. Retard ajouté : environ 43 ms. Si la voix reste brouillée en BLU, ajustez le décalage fin
+          (ou le RIT du poste). Les tonalités SELCALL et les bips de la station ne sont pas brouillés.</p>
+        <div id="scr-state" class="note"></div>
+      </div>
+    </details>
+
     <details id="sec-instruments">
       <summary>Mesures du poste</summary>
       <div class="body">
@@ -546,6 +564,7 @@
 <script src="hfscope.js"></script>
 <script src="spots.js"></script>
 <script src="voice.js"></script>
+<script src="scrambler.js"></script>
 <script src="selcall.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>
