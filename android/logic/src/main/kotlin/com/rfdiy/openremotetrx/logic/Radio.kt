@@ -113,6 +113,34 @@ object Radio {
 
     fun nudge(hz: Long, step: Long, steps: Int): Long = (hz + step * steps).coerceIn(MIN_HZ, MAX_HZ)
 
+    /**
+     * Repère du squelch sur l'échelle du S-mètre (page : squelchMarkerFraction) : le squelch (0 à 1) correspond à
+     * l'échelle 0-255 du poste, qui est aussi celle du S-mètre (120 = S9, 241 = S9+60 dB). 0 = ouvert : null. INDICATIF.
+     */
+    fun squelchMarkerFraction(sql: Double?): Float? {
+        if (sql == null || sql <= 0) return null
+        val raw = minOf(1.0, sql) * 255
+        return sMeterFraction(if (raw <= 120) -54 + raw * 54 / 120 else (raw - 120) * 60 / 121)
+    }
+
+    /** Squelch ouvert (le son passe) : réglé à 0, ou signal au-dessus du repère. Estimation, la station ne donne pas le DCD. */
+    fun squelchOpen(sql: Double?, strengthDb: Double?): Boolean {
+        val mark = squelchMarkerFraction(sql) ?: return sql != null
+        return sMeterFraction(strengthDb) >= mark
+    }
+
+    /**
+     * Bandes préférées (réglage de l'application) : clés dans l'ordre choisi, séparées par des virgules ; clés
+     * inconnues et doublons ignorés ; vide ou illisible = toutes les bandes, dans l'ordre des fréquences.
+     */
+    fun favoriteBands(saved: String?): List<Band> {
+        val keys = saved.orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val bands = keys.mapNotNull { k -> BANDS.firstOrNull { it.key == k } }
+        return bands.ifEmpty { BANDS }
+    }
+
+    fun favoriteBandsText(bands: List<Band>): String = bands.joinToString(",") { it.key }
+
     /** Part de la barre du S-mètre : S0 (-54 dB) .. S9+60. */
     fun sMeterFraction(db: Double?): Float = if (db == null) 0f else ((db + 54) / 114).toFloat().coerceIn(0f, 1f)
 

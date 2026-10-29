@@ -26,8 +26,10 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Mode conduite | — | absent | à faire (A3) | |
 | Waterfall audio | — | fait | fait (0.7.0 : même analyse que la page, FFT 4096 Blackman, lissage 0,35, -85 à -30 dBFS ; VIT, LARG, GAIN, PIC) | calcul sur le téléphone, seulement pendant l'affichage |
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |
-| Spots du cluster DX | fait | fait | plus tard (A4) | |
+| Spots du cluster DX | fait | fait | fait (0.8.0 : étiquettes sur le spectre en paysage, « +N », fiche, QSY) | liste triée et santé des sources : plus tard |
 | Mises en page du designer (`layouts`) | fait | fait | plus tard (A4), peut-être jamais | |
 | Thèmes de couleurs | — | fait | plus tard (A4) | |
 | VFO A / B, split, clarifieur (RIT / XIT) | à faire (sécurité : en split, la bande d'émission est celle du VFO d'émission) | à faire | à faire | demandé le 2026-10-29 ; protocole à étendre (`docs/protocole.md`) |
 | Commande vocale « QSY 27 555 » (confirmation sur le téléphone) | — | absent | à étudier (bouton micro ou écoute permanente) | demandé le 2026-10-29 ; jamais en émission, fréquence seulement |
+| Bandes préférées (choix et ordre des boutons de bande) | — (réglage de l'appareil) | à faire (étape suivante) | fait (0.8.0 : ✎ au bout des bandes) | demandé le 2026-10-29 ; aucune cochée = toutes |
+| Spectre HF en plein écran en tournant le téléphone (paysage), waterfall audio en portrait | — | page : vue HF plein écran / intégrée en paysage large | fait (0.8.0) | STOP et état de l'émission toujours visibles en paysage |

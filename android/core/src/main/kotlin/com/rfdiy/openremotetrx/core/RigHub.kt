@@ -98,6 +98,9 @@ object RigHub {
 
     fun recallMemory(id: String) { service?.onRig { session, now -> session.recallMemory(now, id) } }
 
+    /** QSY sur un spot du Cluster DX (mode adapté au poste, puis fréquence). */
+    fun qsySpot(id: Long) { service?.onRig { session, now -> session.qsySpot(now, id) } }
+
     fun setSquelch(value: Double) { service?.onRig { session, now -> session.setSquelch(now, value) } }
 
     fun setLevel(name: String, value: Double) { service?.onRig { session, now -> session.setLevel(now, name, value) } }

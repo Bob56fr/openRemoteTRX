@@ -7,6 +7,7 @@ import com.rfdiy.openremotetrx.protocol.ErrorMessage
 import com.rfdiy.openremotetrx.protocol.Hello
 import com.rfdiy.openremotetrx.protocol.Memory
 import com.rfdiy.openremotetrx.protocol.Memories
+import com.rfdiy.openremotetrx.protocol.ModuleMessage
 import com.rfdiy.openremotetrx.protocol.Protocol
 import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
@@ -41,6 +42,8 @@ data class RigState(
     val memories: List<Memory> = emptyList(),
     /** Dernière fréquence et dernier mode par bande (gardés sur le téléphone). */
     val bandSpots: Map<String, BandSpot> = emptyMap(),
+    /** Spots du Cluster DX reçus (vue du spectre ouverte), triés par fréquence. */
+    val spots: List<Spot> = emptyList(),
 )
 
 /**
@@ -76,6 +79,7 @@ class RigSession(
     private var bands = BandMemory(bandSpots)
     private var memories: List<Memory> = emptyList()
     private var spectrumWanted = false
+    private val spotBook = SpotBook()
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -204,6 +208,7 @@ class RigSession(
             is Result -> onResult(now, msg)
             is ErrorMessage -> log("Erreur de la station : ${msg.code}" + (if (msg.detail.isNotEmpty()) " (${msg.detail})" else ""), LogLevel.WARN)
             is Memories -> memories = Radio.sortMemories(msg.items)
+            is ModuleMessage -> spotBook.apply(msg.data, wall())         // spots du cluster ; autres modules : ignorés ici
             else -> Unit                                         // type inconnu ou non affiché : ignoré
         }
         publish(now)
@@ -361,12 +366,25 @@ class RigSession(
     /** Vue du spectre HF ouverte (`on`) ou fermée : abonnement aux balayages, gardé pour les reconnexions. */
     fun watchSpectrum(now: Long, on: Boolean) {
         spectrumWanted = on
+        spotBook.clear()                                             // la station rejoue les spots à l'ouverture (page : idem)
         if (connected && protocolOk && hello?.spectrum != null) send(now, Command.SpectrumWatch(on))
         publish(now)
     }
 
     /** Réglage du spectre du poste : `mode`, `span`, `ref`, `speed`, `filter` (refusé hors réception, comme la page). */
     fun spectrumSet(now: Long, name: String, value: JsonPrimitive) = control(now, Command.SpectrumSet(name, value))
+
+    /** QSY sur un spot : son mode (adapté à ce poste, mode données si l'émission l'exige) puis sa fréquence. */
+    fun qsySpot(now: Long, id: Long) {
+        val spot = spotBook.get(id) ?: return
+        val h = hello ?: return
+        val (hz, mode) = Spots.qsyTarget(spot) { Radio.adaptMode(it, h.txModes, h.capabilities?.modes.orEmpty()) }
+        val commands = buildList {
+            if (mode != null && mode != state?.rig?.mode) add(Command.SetMode(mode))
+            add(Command.SetFrequency(hz))
+        }
+        control(now, *commands.toTypedArray())
+    }
 
     /** Squelch du poste, 0 (ouvert) à 1. */
     fun setSquelch(now: Long, value: Double) = control(now, Command.SetSquelch(value.coerceIn(0.0, 1.0)))
@@ -448,6 +466,7 @@ class RigSession(
         hello = null
         state = null
         memories = emptyList()
+        spotBook.clear()
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -478,6 +497,7 @@ class RigSession(
             log = log.toList(),
             memories = memories,
             bandSpots = bands.spots,
+            spots = spotBook.all().sortedBy { it.hz },
         )
         if (next != snapshot) {
             snapshot = next

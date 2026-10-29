@@ -350,3 +350,22 @@ class RigSessionSpectrumTest {
         assertTrue(link.sent.isEmpty())
     }
 }
+
+class RigSessionSpotsTest {
+    @Test
+    fun `QSY sur un spot - mode adapte a l'emission puis frequence, spots oublies a l'ouverture de la vue`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone","tx_modes":["PKTUSB"],"spectrum":{"source":"civ_port"},"capabilities":{"modes":["USB","PKTUSB","LSB"]}}""")
+        s.onMessage(0, """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"frequency_hz":7100000,"mode":"LSB"}}""")
+        s.onMessage(1, """{"type":"module","module":"cluster","data":{"kind":"spots","op":"snapshot","spots":[{"id":9,"f":14074,"dx":"EA8XYZ","q":"USB"}]}}""")
+        assertEquals(listOf("EA8XYZ"), s.snapshot.spots.map { it.dx })
+        link.sent.clear()
+        s.qsySpot(2, 9)
+        assertEquals(listOf("set_mode", "set_frequency"), link.cmds())
+        assertTrue(link.sent[0].contains("PKTUSB") && link.sent[1].contains("14074000"))
+        s.watchSpectrum(3, true)
+        assertTrue(s.snapshot.spots.isEmpty())
+    }
+}

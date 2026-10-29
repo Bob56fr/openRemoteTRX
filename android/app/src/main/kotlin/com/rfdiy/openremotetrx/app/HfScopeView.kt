@@ -6,6 +6,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -13,13 +15,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Path
@@ -47,6 +54,9 @@ import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.Palette
+import com.rfdiy.openremotetrx.logic.SpotLabel
+import com.rfdiy.openremotetrx.logic.Spots
+import java.util.Locale
 import com.rfdiy.openremotetrx.protocol.SpectrumFrame
 
 private const val ROWS = 150                      // lignes d'historique du waterfall
@@ -84,13 +94,24 @@ private class WaterfallBuffer {
     }
 }
 
+private val SPOT_COLORS = mapOf("cluster" to Color(0xFF4FC3F7), "rbn" to Color(0xFFB39DDB), "cb" to Color(0xFFFFB74D))
+
 /**
- * Spectre HF du poste (second port CI-V) : courbe, waterfall, repère de la fréquence, graduations. Toucher = accorder ;
- * glisser = tourner le VFO (vers la gauche : fréquence plus haute). Réglages du poste par spectrum_set (réception
- * seulement) ; gain et plage de couleurs gardés sur le téléphone. Abonnement aux balayages tant que la vue est ouverte.
+ * Spectre HF du poste (second port CI-V) : courbe, waterfall, repère de la fréquence, graduations, étiquettes des spots
+ * du Cluster DX (appui = fiche avec QSY ; « +N » = liste). Toucher le spectre = accorder ; glisser = tourner le VFO
+ * (vers la gauche : fréquence plus haute). Réglages du poste par spectrum_set (réception seulement) ; gain et plage
+ * gardés sur le téléphone. Abonnement aux balayages tant que la vue est ouverte. `plotModifier` : taille du dessin
+ * (230 dp en portrait, tout l'écran en paysage).
  */
 @Composable
-fun HfScopeView(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, onClose: () -> Unit) {
+fun HfScopeView(
+    ui: RigUi,
+    canSet: Boolean,
+    onTune: (Long) -> Unit,
+    onClose: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    plotModifier: Modifier = Modifier.fillMaxWidth().height(230.dp),
+) {
     DisposableEffect(Unit) {
         RigHub.watchSpectrum(true)
         onDispose { RigHub.watchSpectrum(false) }
@@ -111,18 +132,27 @@ fun HfScopeView(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, onClose: () 
     val lineColor = MaterialTheme.colorScheme.primary
     val labelPaint = remember { Paint().apply { color = android.graphics.Color.LTGRAY; isAntiAlias = true } }
     var dragX by remember { mutableStateOf(0f) }
+    val labels = remember { mutableListOf<Pair<Rect, SpotLabel>>() }        // étiquettes dessinées, pour l'appui
+    var cardId by remember { mutableStateOf<Long?>(null) }
+    var listIds by remember { mutableStateOf<List<Long>?>(null) }
+    val spots = ui.rig.spots
+    val now = System.currentTimeMillis()
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Spectre HF", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             frame?.let { Text(HfScope.spanLabel(it.lowHz, it.highHz) + if (it.outOfRange) " — hors plage" else "", style = MaterialTheme.typography.labelMedium) }
         }
-        Box(Modifier.fillMaxWidth().height(230.dp)) {
+        Box(plotModifier) {
             val f = frame
             Canvas(
-                Modifier.fillMaxWidth().height(230.dp)
+                Modifier.fillMaxWidth().fillMaxHeight()
                     .pointerInput(f?.lowHz, f?.highHz, canSet) {
                         detectTapGestures { pos ->
+                            labels.firstOrNull { it.first.contains(pos) }?.let { (_, label) ->   // une étiquette : fiche ou liste
+                                if (label.ids.size > 1) listIds = label.ids else cardId = label.ids.first()
+                                return@detectTapGestures
+                            }
                             val fr = frame ?: return@detectTapGestures
                             if (canSet) onTune(HfScope.frequencyAt(pos.x / size.width, fr.lowHz, fr.highHz))
                         }
@@ -175,6 +205,33 @@ fun HfScopeView(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, onClose: () 
                         val x = m * size.width
                         drawLine(Color(0xFFE53935), Offset(x, 0f), Offset(x, size.height), strokeWidth = 2f)
                     }
+                    // Spots du Cluster DX : trait vertical estompé avec l'âge, étiquettes sur 3 rangées puis « +N »
+                    labels.clear()
+                    val visible = spots.filter { it.hz in f.lowHz..f.highHz }
+                    val span = (f.highHz - f.lowHz).toFloat()
+                    for (s in visible) {
+                        val x = (s.hz - f.lowHz) / span * size.width
+                        val alpha = Spots.opacity(Spots.ageSeconds(s, now)) * 0.7f
+                        drawLine((SPOT_COLORS[s.kind] ?: SPOT_COLORS.getValue("cluster")).copy(alpha = alpha), Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.5f)
+                    }
+                    labelPaint.textSize = 12.dp.toPx()
+                    val charPx = labelPaint.measureText("M") * 0.8f
+                    val rowPx = 18.dp.toPx()
+                    val tagTop = 16.dp.toPx()
+                    for (label in Spots.layoutLabels(visible, f.lowHz, f.highHz, size.width, charPx = charPx, padPx = 12.dp.toPx())) {
+                        val first = visible.firstOrNull { it.id == label.ids.first() }
+                        val w = labelPaint.measureText(label.text) + 10.dp.toPx()
+                        val left = (label.x - w / 2).coerceIn(0f, size.width - w)
+                        val top = tagTop + label.row * rowPx
+                        val rect = Rect(left, top, left + w, top + rowPx - 3f)
+                        val base = SPOT_COLORS[first?.kind] ?: SPOT_COLORS.getValue("cluster")
+                        val alpha = if (label.group || first == null) 1f else Spots.opacity(Spots.ageSeconds(first, now))
+                        drawRoundRect(base.copy(alpha = 0.85f * alpha), rect.topLeft, rect.size, CornerRadius(6f, 6f))
+                        labelPaint.color = android.graphics.Color.BLACK
+                        drawContext.canvas.nativeCanvas.drawText(label.text, left + 5.dp.toPx(), top + rowPx - 8f, labelPaint)
+                        labelPaint.color = android.graphics.Color.LTGRAY
+                        labels += rect to label
+                    }
                 }
             }
             if (f == null) {
@@ -199,7 +256,52 @@ fun HfScopeView(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, onClose: () 
                 label = { Text(HfScope.gainLabel(gain)) })
             AssistChip(onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() },
                 label = { Text(HfScope.rangeLabel(range)) })
-            AssistChip(onClick = onClose, label = { Text("Fermer") })
+            if (onClose != null) AssistChip(onClick = onClose, label = { Text("Fermer") })
         }
+    }
+
+    // Fiche d'un spot (QSY : mode adapté au poste puis fréquence ; refusé pendant l'émission) et liste d'un « +N »
+    cardId?.let { id ->
+        val s = spots.firstOrNull { it.id == id }
+        AlertDialog(
+            onDismissRequest = { cardId = null },
+            title = { Text(s?.dx ?: "Spot") },
+            text = {
+                if (s == null) Text("Spot expiré ou hors de la bande.")
+                else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(Spots.kindLabel(s.kind) + if (s.count > 1) " · ${s.count} spotteurs" else "")
+                    Text(String.format(Locale.ROOT, "%.1f kHz", s.khz) + " · " + Spots.modeLabel(s), style = MaterialTheme.typography.titleMedium)
+                    Text(listOfNotNull(
+                        s.country.takeIf { it.isNotEmpty() }?.let { it + if (s.continent.isNotEmpty()) " (${s.continent})" else "" },
+                        "de " + s.de.ifEmpty { "?" },
+                        s.time.takeIf { it.length == 4 }?.let { it.take(2) + ":" + it.drop(2) + " UTC" },
+                        Spots.ageLabel(Spots.ageSeconds(s, System.currentTimeMillis())),
+                    ).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+                    if (s.comment.isNotEmpty()) Text(s.comment, style = MaterialTheme.typography.bodySmall)
+                    if (!canSet) Text("QSY impossible : émission en cours ou station déconnectée.", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { RigHub.qsySpot(id); cardId = null }, enabled = s != null && canSet) { Text("QSY") }
+            },
+            dismissButton = { TextButton(onClick = { cardId = null }) { Text("Fermer") } },
+        )
+    }
+    listIds?.let { ids ->
+        AlertDialog(
+            onDismissRequest = { listIds = null },
+            title = { Text("${ids.size} spots proches") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    for (s in spots.filter { it.id in ids }) {
+                        Text(
+                            s.dx + "   " + String.format(Locale.ROOT, "%.1f", s.khz) + "   " + Spots.modeLabel(s),
+                            modifier = Modifier.fillMaxWidth().clickable { listIds = null; cardId = s.id }.padding(vertical = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { listIds = null }) { Text("Fermer") } },
+        )
     }
 }

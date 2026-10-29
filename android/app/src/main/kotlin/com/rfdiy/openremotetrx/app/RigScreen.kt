@@ -3,8 +3,14 @@
 package com.rfdiy.openremotetrx.app
 
 import android.content.Context
+import android.content.res.Configuration
 import android.os.SystemClock
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +27,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -56,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.core.RigUi
+import com.rfdiy.openremotetrx.logic.Band
 import com.rfdiy.openremotetrx.logic.Controls
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.HfScope
@@ -70,6 +81,7 @@ import kotlin.math.roundToInt
 
 private val TX_RED = Color(0xFFC62828)
 private val WARN = Color(0xFFEF6C00)
+private val SQL_OPEN = Color(0xFF43A047)
 
 /** Anti-rebond du PTT : Android peut livrer un « clic fantôme » juste après un appui (CLAUDE.md, page web). */
 private class Debounce(private val ms: Long = 600) {
@@ -114,8 +126,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var entry by remember { mutableStateOf(false) }
     var showLog by rememberSaveable { mutableStateOf(false) }
     var levelsDialog by remember { mutableStateOf(false) }
-    var showScope by rememberSaveable { mutableStateOf(false) }
     var showWaterfall by rememberSaveable { mutableStateOf(false) }
+    var bandsPref by remember { mutableStateOf(prefs.getString("bands", "") ?: "") }
+    var bandsDialog by remember { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
@@ -130,6 +143,12 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
 
     fun tune(steps: Int) {
         go(Radio.nudge(shownHz ?: return, step, steps))
+    }
+
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    if (landscape && HfScope.configured(hello) && rig.status != LinkStatus.DISCONNECTED) {
+        LandscapeScope(ui, canSet, onTune = { go(it) }, modifier)
+        return
     }
 
     Column(modifier.fillMaxSize()) {
@@ -193,7 +212,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
                         val shown = squelchDrag ?: sql.toFloat()
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("SQL", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
+                            // Vert : squelch ouvert (le son passe ; estimation par le S-mètre, la station ne donne pas le DCD)
+                            Text("SQL", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp),
+                                color = if (Radio.squelchOpen(sql, radio.strengthDb)) SQL_OPEN else Color.Unspecified,
+                                fontWeight = if (Radio.squelchOpen(sql, radio.strengthDb)) FontWeight.Bold else FontWeight.Normal)
                             Slider(
                                 value = shown, onValueChange = { squelchDrag = it }, enabled = canSet,
                                 onValueChangeFinished = { squelchDrag?.let { RigHub.setSquelch(it.toDouble()) }; squelchDrag = null },
@@ -207,17 +229,12 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
-            // Graphiques : spectre HF du poste (si la station en a un ; vue ouverte = abonnement aux balayages) et
-            // waterfall du son reçu (calculé sur le téléphone, seulement pendant l'affichage)
-            if (showScope && HfScope.configured(hello)) HfScopeView(ui, canSet, onTune = { go(it) }, onClose = { showScope = false })
+            // Portrait : waterfall du son reçu (calculé sur le téléphone, seulement pendant l'affichage). Le spectre HF du
+            // poste s'affiche en plein écran en tournant le téléphone (paysage).
             if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })
-            if ((!showScope && HfScope.configured(hello)) || !showWaterfall) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!showScope && HfScope.configured(hello)) {
-                        OutlinedButton(onClick = { showScope = true }, enabled = connected) { Text("Spectre HF") }
-                    }
-                    if (!showWaterfall) OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Waterfall audio") }
-                }
+            else Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Waterfall audio") }
+                if (HfScope.configured(hello)) Text("Spectre HF : tourner le téléphone", style = MaterialTheme.typography.bodySmall)
             }
 
             // Accord : pas, crans
@@ -229,23 +246,22 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 OutlinedButton(onClick = { tune(1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("+", fontSize = 20.sp) }
             }
 
-            // Bandes
-            Section("Bandes")
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val current = Radio.bandOf(radio?.frequencyHz)?.key
-                for (band in Radio.BANDS) {
+                for (band in Radio.favoriteBands(bandsPref)) {
                     FilterChip(
                         selected = band.key == current, enabled = canSet,
                         onClick = { RigHub.selectBand(band.key) }, label = { Text(band.key) },
                     )
                 }
+                AssistChip(onClick = { bandsDialog = true }, label = { Text("✎") })
             }
 
             // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
             val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
             if (modes.isNotEmpty()) {
-                Section("Mode")
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (mode in modes) {
                         FilterChip(
                             selected = mode == radio?.mode, enabled = canSet,
@@ -262,14 +278,15 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             // Fonctions du poste (comme la page) : verrouillées pendant l'émission
             val chips = Controls.chips(hello, rig.state)
             if (chips.isNotEmpty()) {
-                Section("Réglages du poste")
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Appui : marche / arrêt (comme la page) ; appui LONG sur NR ou NB : niveaux de NR et NB (fenêtre)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (chip in chips) {
-                        FilterChip(selected = chip.on, enabled = canSet, onClick = { RigHub.pressControl(chip.key) }, label = { Text(chip.label) })
+                        PressChip(
+                            chip.label, chip.on, canSet,
+                            onClick = { RigHub.pressControl(chip.key) },
+                            onLongClick = if (chip.key == "NR" || chip.key == "NB") ({ levelsDialog = true }) else null,
+                        )
                     }
-                }
-                if (levelRanges(hello, radio?.levels).isNotEmpty()) {
-                    TextButton(onClick = { levelsDialog = true }, enabled = canSet) { Text("Niveaux NR / NB…") }
                 }
             }
 
@@ -408,6 +425,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         go(hz)
     }
     if (levelsDialog) LevelsDialog(levelRanges(hello, radio?.levels), radio?.levels.orEmpty(), canSet) { levelsDialog = false }
+    if (bandsDialog) BandsDialog(Radio.favoriteBands(bandsPref), onDismiss = { bandsDialog = false }) { chosen ->
+        bandsPref = Radio.favoriteBandsText(chosen)
+        prefs.edit().putString("bands", bandsPref).apply()
+        bandsDialog = false
+    }
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
     }
@@ -446,6 +468,7 @@ private fun LevelsDialog(ranges: Map<String, List<Double>>, levels: Map<String, 
                         onValueChangeFinished = { dragging.remove(name)?.let { RigHub.setLevel(name, it.toDouble()) } },
                     )
                 }
+                if (ranges.isEmpty()) Text("Le poste ne déclare pas de niveau réglable pour NR ni NB.")
                 if (!enabled) Text("Réglages verrouillés pendant l'émission.", color = WARN)
             }
         },
@@ -533,6 +556,94 @@ private fun FrequencyDialog(current: Long?, onDismiss: () -> Unit, onSet: (Long)
     )
 }
 
+/** Bouton d'une fonction du poste : appui = marche / arrêt, appui long (facultatif) = réglage fin. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PressChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, onLongClick: (() -> Unit)?) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (selected) colors.secondaryContainer else Color.Transparent,
+        border = BorderStroke(1.dp, if (selected) colors.secondaryContainer else colors.outline),
+        modifier = Modifier.height(32.dp).combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick),
+    ) {
+        Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+            Text(
+                label + if (onLongClick != null) " ⋯" else "",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (enabled) (if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant) else colors.onSurface.copy(alpha = 0.38f),
+            )
+        }
+    }
+}
+
+/**
+ * Bandes affichées : cocher, ordonner (↑ ↓). Réglage de CE téléphone (la page a le sien). Aucune cochée = toutes.
+ */
+@Composable
+private fun BandsDialog(current: List<Band>, onDismiss: () -> Unit, onSave: (List<Band>) -> Unit) {
+    val order = remember { mutableStateListOf<Band>().apply { addAll(current); addAll(Radio.BANDS.filterNot { it in current }) } }
+    val checked = remember { mutableStateMapOf<String, Boolean>().apply { for (b in Radio.BANDS) put(b.key, b in current && current.size < Radio.BANDS.size) } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Bandes affichées") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Cochez vos bandes et mettez-les dans l'ordre voulu. Aucune cochée : toutes.", style = MaterialTheme.typography.bodySmall)
+                for ((i, band) in order.withIndex()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = checked[band.key] == true, onCheckedChange = { checked[band.key] = it })
+                        Text("${band.key} m", modifier = Modifier.weight(1f))
+                        TextButton(onClick = { if (i > 0) { order.removeAt(i); order.add(i - 1, band) } }, enabled = i > 0) { Text("↑") }
+                        TextButton(onClick = { if (i < order.size - 1) { order.removeAt(i); order.add(i + 1, band) } }, enabled = i < order.size - 1) { Text("↓") }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(order.filter { checked[it.key] == true }) }) { Text("Enregistrer") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+    )
+}
+
+/**
+ * Paysage : spectre HF du poste en plein écran avec les spots du Cluster DX. En haut, toujours : fréquence, mode,
+ * état de l'émission (celui de la station) et STOP. Pour émettre, revenir en portrait (PTT et « Émission autorisée »).
+ */
+@Composable
+private fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, modifier: Modifier) {
+    val rig = ui.rig
+    val ptt = rig.ptt
+    val radio = rig.state?.rig
+    val screenH = LocalConfiguration.current.screenHeightDp.dp
+    Column(modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(Radio.formatIcom(radio?.frequencyHz), fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+            Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleSmall)
+            Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.weight(1f))
+            rig.reconnect?.let { Text("LIAISON PERDUE : reconnexion…", color = TX_RED, fontWeight = FontWeight.Bold) }
+            if (ptt != null) {
+                Text(
+                    if (ptt.mine && ptt.transmitting) "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else ptt.label,
+                    color = if (ptt.transmitting) Color.White else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.background(if (ptt.transmitting) TX_RED else Color.Transparent, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+            Button(
+                onClick = { RigHub.stop() }, enabled = rig.status == LinkStatus.CONNECTED,
+                colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
+                modifier = Modifier.height(40.dp),
+            ) { Text("STOP", fontWeight = FontWeight.Bold) }
+        }
+        HfScopeView(
+            ui, canSet, onTune, onClose = null,
+            plotModifier = Modifier.fillMaxWidth().height((screenH - 150.dp).coerceAtLeast(120.dp)),
+        )
+    }
+}
+
 /** Indicateur : libellé, barre, valeur (orange si SWR >= 2 ou ALC >= 90 %). */
 @Composable
 private fun MeterRow(meter: Meter, warn: Boolean) {
@@ -546,11 +657,6 @@ private fun MeterRow(meter: Meter, warn: Boolean) {
         )
         Text(meter.text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
     }
-}
-
-@Composable
-private fun Section(title: String) {
-    Text(title, style = MaterialTheme.typography.titleSmall)
 }
 
 @Composable
