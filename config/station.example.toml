@@ -84,6 +84,18 @@ baud = 115200   # civ_port : débit du second port
 data_port = 4572   # rigctld : UDP sur 127.0.0.1
 max_fps = 10   # images par seconde envoyées aux clients (1 à 20)
 
+[selcall]   # squelch numérique par appel de groupe (docs/selcall-cahier-des-charges.md)
+enabled = false   # fonction disponible sur cette station
+send_on_tx_end = false   # trame émise en fin d'émission, à la place du roger bip
+manual_repeat = 3   # appel manuel : nombre d'émissions de la trame (1 à 5)
+manual_gap_ms = 500
+filter_mode = "attenuate"   # tonalités dans l'audio reçu : mute | attenuate | chime
+attenuation_db = 20
+audio_delay_ms = 500   # retard de l'audio reçu (250 à 1 000 ms)
+tx_level_dbfs = -6.0   # niveau de la trame émise (sous le seuil d'ALC)
+notify_on_call = true   # notification ntfy à l'ouverture
+history_size = 10
+
 # Bandes où l'émission est autorisée. Liste vide = réception seule.
 # À vérifier et adapter à ta licence et à ton pays.
 [[bands]]

@@ -70,6 +70,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     tail = TailPlayer(pipeline.sink, beeps, gain_db=cfg.audio.tx_gain_db)
     ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open, tail=tail)
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
+    pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum)
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]
@@ -102,6 +103,26 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+
+
+def _start_selcall(cfg: Config, pipeline: AudioPipeline, ctrl, link):
+    """SELCALL (docs/selcall-cahier-des-charges.md) : squelch numérique sur le son reçu, état dans state_dir/selcall.json.
+    Décodeur suspendu pendant toute émission (de la station ou au micro du poste). N'émet jamais rien."""
+    sc = cfg.selcall
+    if not sc.enabled:
+        return None
+    from ..selcall.receiver import SelcallReceiver, SelcallStore      # numpy : seulement si la fonction est en service
+
+    store = SelcallStore(Path(cfg.supervisor.state_dir) / "selcall.json", history_size=sc.history_size,
+                         filter_mode=sc.filter_mode, attenuation_db=sc.attenuation_db)
+
+    def transmitting() -> bool:
+        return ctrl.snapshot().state != "RX" or bool(getattr(link.state, "ptt", False))
+
+    receiver = SelcallReceiver(store, delay_ms=sc.audio_delay_ms, transmitting=transmitting)
+    pipeline.hub.processor = receiver.process
+    log.info("SELCALL en service : état %s%s", store.status.state, f" (code {store.status.code})" if store.status.code else "")
+    return receiver
 
 
 def bind_hint(host: str) -> str:

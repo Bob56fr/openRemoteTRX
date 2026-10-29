@@ -41,6 +41,7 @@ PRESENCE_DB = 14.0              # un ton de la grille au-dessus du plancher. Dan
 SYMBOL_MARGIN_DB = 6.0          # meilleur candidat contre le second
 CELL_MARGIN_S = 0.056           # trames centrales d'une case : fenêtre presque entière dans la case
 MAX_CELLS = p.CODE_MAX + 1
+PRE_DETECT_S = 0.15            # pré-détecteur du filtrage : ton stable depuis 150 ms
 
 
 @dataclass
@@ -82,6 +83,33 @@ class SelcallDecoder:
         self._recent: deque[tuple[float, float | None, float, float]] = deque(maxlen=int(round(PILOT_SPAN_S * RATE / HOP)))
         self._locked: _Locked | None = None
         self.rejected = 0                         # trames invalides (compteur pour la supervision)
+
+    # ------------------------------------------------------------------ pour le squelch (lot 2)
+
+    @property
+    def busy(self) -> bool:
+        """Pilote verrouillé : une trame est en cours."""
+        return self._locked is not None
+
+    @property
+    def busy_since(self) -> float | None:
+        return self._locked.start_s if self._locked is not None else None
+
+    def tone_since(self, min_s: float = PRE_DETECT_S) -> float | None:
+        """Pré-détecteur (§ 6) : début d'un ton stable (±5 Hz) dans la zone du pilote, présent depuis `min_s` au moins ;
+        None sinon. Le début rendu est celui de la fenêtre d'analyse de la première trame du ton (prudent : un peu tôt)."""
+        run: list[tuple[float, float]] = []
+        for t, hz, _db, _snr in reversed(self._recent):
+            if hz is None or (run and abs(hz - run[0][1]) > PILOT_STABLE_HZ):
+                break
+            run.append((t, hz))
+        if not run or run[0][0] - run[-1][0] < min_s:
+            return None
+        return run[-1][0] - WIN / 2 / RATE
+
+    def reset(self) -> None:
+        """Oublie toute trame en cours (début d'une émission : le décodeur est suspendu)."""
+        self._reset()
 
     # ------------------------------------------------------------------ entrée
 
@@ -174,11 +202,13 @@ class SelcallDecoder:
         central = [g for c, g in lk.frames if cell_start + CELL_MARGIN_S <= c <= cell_end - CELL_MARGIN_S]
         lk.frames = [(c, g) for c, g in lk.frames if c > cell_end - CELL_MARGIN_S]
         lk.cell += 1
-        symbol, present = self._vote(central)
-        if not present:                                        # case sans ton : fin de trame
-            return self._finish(cell_start)
+        symbol, _present = self._vote(central)
         if symbol is None:
-            return self._end("symbole illisible", cell_end)
+            # Case sans ton NET de la grille (silence, bruit ou voix qui suit la trame) : fin de trame (§ 4.3 : « aucun
+            # ton de la grille »). Le contrôle et la longueur valident ce qui a été reçu ; un symbole perdu en cours de
+            # trame donne une trame trop courte, rejetée par le contrôle dans 9 cas sur 10, et le squelch ne s'ouvre
+            # de toute façon que sur le code armé.
+            return self._finish(cell_start)
         lk.symbols.append(symbol)
         if len(lk.symbols) > MAX_CELLS:
             return self._end("trame trop longue", cell_end)

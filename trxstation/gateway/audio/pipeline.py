@@ -25,6 +25,7 @@ class AudioPipeline:
         self.hub = RxHub(self.source, self.rx_meter, cfg.rx_gain_db)
         self.gate = TxAudioGate(self.sink, self.tx_meter, cfg.tx_gain_db, owner_provider)
         self._task: asyncio.Task | None = None
+        self.selcall = None                       # SelcallReceiver si [selcall] enabled (gateway/main)
 
     async def start(self) -> None:
         await self.source.start()

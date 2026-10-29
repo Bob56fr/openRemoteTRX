@@ -195,6 +195,25 @@ class Update:
     allow_prerelease: bool = False    # true : propose aussi les pré-versions publiées sur GitHub
 
 
+SELCALL_FILTER_MODES = ("mute", "attenuate", "chime")
+
+
+@dataclass
+class Selcall:
+    """SELCALL : squelch numérique par appel de groupe (docs/selcall-cahier-des-charges.md). Réglages de la station ;
+    l'état (veille, ouvert), le code armé et l'historique sont dans un fichier d'état à part (state_dir/selcall.json)."""
+    enabled: bool = False             # fonction disponible sur cette station
+    send_on_tx_end: bool = False      # trame émise en fin d'émission, à la place du roger bip (lot 3)
+    manual_repeat: int = 3            # appel manuel : nombre d'émissions de la trame (1 à 5)
+    manual_gap_ms: int = 500          # appel manuel : silence entre deux trames
+    filter_mode: str = "attenuate"    # tonalités SELCALL dans l'audio reçu : mute | attenuate | chime
+    attenuation_db: int = 20          # mode attenuate
+    audio_delay_ms: int = 500         # retard de l'audio reçu (250 à 1 000 ms) : les tons sont filtrés avant d'être entendus
+    tx_level_dbfs: float = -6.0       # niveau de la trame émise (sous le seuil d'ALC)
+    notify_on_call: bool = True       # notification ntfy du superviseur à l'ouverture
+    history_size: int = 10            # derniers codes gardés
+
+
 CLUSTER_SOURCE_TYPES = ("telnet", "rbn", "web")     # telnet = cluster radioamateur ; web = page clusterdx.org (CB)
 _CLUSTER_NAME_RE = re.compile(r"[A-Za-z0-9_-]{1,32}")
 
@@ -317,6 +336,7 @@ class Config:
     update: Update = field(default_factory=Update)
     spectrum: Spectrum = field(default_factory=Spectrum)
     cluster: Cluster = field(default_factory=Cluster)
+    selcall: Selcall = field(default_factory=Selcall)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -434,6 +454,21 @@ def validate(cfg: Config) -> list[str]:
         if not isinstance(getattr(cfg.update, name), bool):
             p.append(f"[update] {name} doit valoir true ou false")
 
+    sc = cfg.selcall
+    for name in ("enabled", "send_on_tx_end", "notify_on_call"):
+        if not isinstance(getattr(sc, name), bool):
+            p.append(f"[selcall] {name} doit valoir true ou false")
+    ranges = {"manual_repeat": (1, 5), "manual_gap_ms": (200, 3000), "attenuation_db": (6, 60),
+              "audio_delay_ms": (250, 1000), "history_size": (1, 50)}
+    for name, (lo, hi) in ranges.items():
+        v = getattr(sc, name)
+        if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
+            p.append(f"[selcall] {name} : entier de {lo} à {hi} attendu")
+    if sc.filter_mode not in SELCALL_FILTER_MODES:
+        p.append(f"[selcall] filter_mode : {' | '.join(SELCALL_FILTER_MODES)} attendu")
+    if not isinstance(sc.tx_level_dbfs, (int, float)) or isinstance(sc.tx_level_dbfs, bool) or not -30 <= sc.tx_level_dbfs <= -1:
+        p.append("[selcall] tx_level_dbfs : de -30 à -1 dBFS (sous le seuil d'ALC)")
+
     sp = cfg.spectrum
     reserved = sorted(set(_conf_keys(r.extra_conf)) & set(RESERVED_RIGCTLD_CONF))
     if reserved:
@@ -547,7 +582,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -564,6 +599,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             update=_build(Update, d.get("update", {}), "update", problems),
             spectrum=_build(Spectrum, d.get("spectrum", {}), "spectrum", problems),
             cluster=_build_cluster(d.get("cluster", {}), problems),
+            selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -726,6 +762,18 @@ def render_toml(cfg: Config) -> str:
         f"max_fps = {cfg.spectrum.max_fps}   # images par seconde envoyées aux clients (1 à 20)",
         "",
         *_render_cluster(cfg.cluster),
+        "[selcall]   # squelch numérique par appel de groupe (docs/selcall-cahier-des-charges.md)",
+        f"enabled = {str(cfg.selcall.enabled).lower()}   # fonction disponible sur cette station",
+        f"send_on_tx_end = {str(cfg.selcall.send_on_tx_end).lower()}   # trame émise en fin d'émission, à la place du roger bip",
+        f"manual_repeat = {cfg.selcall.manual_repeat}   # appel manuel : nombre d'émissions de la trame (1 à 5)",
+        f"manual_gap_ms = {cfg.selcall.manual_gap_ms}",
+        f"filter_mode = {_s(cfg.selcall.filter_mode)}   # tonalités dans l'audio reçu : mute | attenuate | chime",
+        f"attenuation_db = {cfg.selcall.attenuation_db}",
+        f"audio_delay_ms = {cfg.selcall.audio_delay_ms}   # retard de l'audio reçu (250 à 1 000 ms)",
+        f"tx_level_dbfs = {cfg.selcall.tx_level_dbfs}   # niveau de la trame émise (sous le seuil d'ALC)",
+        f"notify_on_call = {str(cfg.selcall.notify_on_call).lower()}   # notification ntfy à l'ouverture",
+        f"history_size = {cfg.selcall.history_size}",
+        "",
         "# Bandes où l'émission est autorisée si enforce_bands = true. Liste vide = réception seule.",
         "# À vérifier et adapter à ta licence et à ton pays.",
     ]

@@ -208,6 +208,14 @@ def test_no_false_opening_over_five_minutes_of_mixed_audio():
 # ------------------------------------------------------------------ trames successives, appel manuel
 
 
+def test_voice_right_after_the_frame_does_not_spoil_it():
+    rng = np.random.default_rng(23)
+    for code in ("4721", "12345678", "190"):
+        x = np.concatenate([np.zeros(2000), sg.synthesize(code, offset_hz=-120).astype(np.float64), voice(rng, 3)])
+        frames = dec.decode(x + band_noise(rng, len(x), 15))
+        assert [f.code for f in frames if f.valid] == [code]
+
+
 def test_two_successive_frames_and_streaming_in_small_chunks():
     rng = np.random.default_rng(13)
     x = np.concatenate([on_air("4721", rng, snr=12, lead=1000), on_air("5555", rng, snr=12, lead=3000)])

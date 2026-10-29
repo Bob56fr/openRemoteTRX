@@ -17,6 +17,10 @@ class RxHub:
         self.source, self.meter, self.gain_db = source, meter or LevelMeter(), gain_db
         self._subscribers: set[asyncio.Queue] = set()
         self.frames = self.dropped = 0
+        # Traitement facultatif du son reçu avant les clients (SELCALL : retard, squelch, filtrage des tonalités).
+        # Une erreur n'arrête jamais la réception : le son passe alors tel quel.
+        self.processor = None
+        self._processor_failed = False
 
     @property
     def subscribers(self) -> int:
@@ -32,8 +36,15 @@ class RxHub:
 
     def publish(self, pcm: bytes) -> None:
         pcm = apply_gain(pcm, self.gain_db)
-        self.meter.update(pcm)
+        self.meter.update(pcm)                                      # niveau du poste, avant tout traitement
         self.frames += 1
+        if self.processor is not None:
+            try:
+                pcm = self.processor(pcm)
+            except Exception:
+                if not self._processor_failed:
+                    log.exception("traitement du son reçu en erreur : le son passe sans traitement")
+                self._processor_failed = True
         for queue in self._subscribers:
             if queue.full():                                        # client lent : on jette le plus ancien
                 queue.get_nowait()
