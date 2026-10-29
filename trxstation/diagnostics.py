@@ -179,10 +179,11 @@ def check_system(sysm: System) -> list[Check]:
                          "" if status == OK else "Libère de la place (corbeille, Téléchargements)"))
     except OSError:
         pass
-    temp = sysm.read_text("/sys/class/thermal/thermal_zone0/temp")
-    if temp and temp.strip().isdigit():
-        celsius = int(temp) / 1000
-        out.append(Check(s, "Température", OK if celsius < 80 else WARN, f"{celsius:.0f} °C",
+    from .cpu_temp import read_cpu_temp
+    temp = read_cpu_temp(getattr(sysm, "sys_root", "/sys"))     # processeur (coretemp...), jamais la carte mère
+    if temp is not None:
+        celsius = temp.celsius
+        out.append(Check(s, "Température du processeur", OK if celsius < 80 else WARN, f"{celsius:.0f} °C ({temp.source})",
                          "" if celsius < 80 else "Vérifie la ventilation du PC"))
     return out
 

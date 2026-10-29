@@ -222,9 +222,11 @@ def test_read_system_info(tmp_path):
     (proc / "meminfo").write_text("MemTotal: 4000000 kB\nMemAvailable: 2048000 kB\n")
     (proc / "loadavg").write_text("0.35 0.20 0.10 1/200 999\n")
     (proc / "uptime").write_text("3600.55 7000.1\n")
-    thermal = tmp_path / "temp"
-    thermal.write_text("47500\n")
-    info = read_system_info(str(proc), str(thermal))
+    chip = tmp_path / "sys" / "class" / "hwmon" / "hwmon3"
+    chip.mkdir(parents=True)
+    (chip / "name").write_text("coretemp\n")
+    (chip / "temp1_input").write_text("47500\n")
+    info = read_system_info(str(proc), str(tmp_path / "sys"))
     assert (info.temp_c, info.load1, info.mem_available_mb, info.uptime_s) == (47.5, 0.35, 2000.0, 3600.55)
     empty = read_system_info(str(tmp_path / "rien"), str(tmp_path / "rien"))
     assert empty == SystemInfo()

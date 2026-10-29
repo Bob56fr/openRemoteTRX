@@ -11,6 +11,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+from ..cpu_temp import cpu_celsius
 from ..status import GatewayWatch, read_status
 from ..supervisor.state import StateStore
 from .model import Snapshot, SystemInfo
@@ -23,8 +24,8 @@ def _read_float(path: Path, scale: float = 1.0) -> float | None:
         return None
 
 
-def read_system_info(proc: str = "/proc", thermal: str = "/sys/class/thermal/thermal_zone0/temp") -> SystemInfo:
-    """Température, charge, mémoire libre, disponibilité (Linux ; champs None ailleurs)."""
+def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
+    """Température du PROCESSEUR (cpu_temp.py), charge, mémoire libre, disponibilité (Linux ; champs None ailleurs)."""
     mem = None
     try:
         for line in (Path(proc) / "meminfo").read_text().splitlines():
@@ -33,7 +34,7 @@ def read_system_info(proc: str = "/proc", thermal: str = "/sys/class/thermal/the
                 break
     except (OSError, ValueError, IndexError):
         pass
-    return SystemInfo(temp_c=_read_float(Path(thermal), 1000.0), load1=_read_float(Path(proc) / "loadavg"),
+    return SystemInfo(temp_c=cpu_celsius(sys_root), load1=_read_float(Path(proc) / "loadavg"),
                       mem_available_mb=mem, uptime_s=_read_float(Path(proc) / "uptime"))
 
 

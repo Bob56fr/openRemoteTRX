@@ -80,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.71.0, étape 84)
+## État actuel (version 0.72.0, étape 85)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -124,6 +124,7 @@ Visiteurs (station 0.71.0, minix-bzh) : `python -m trxstation.devtools.listener_
 - **IC-7300MK2** : modes données (PKTUSB…) seuls modulés par l'USB (`tx_modes`) ; port B (spectre) = `…-if02` sous Linux (pas if01), COM7 sous Windows, adresse B6h ; réglages USB SEND / USB Keying : un port B mal réglé peut mettre en émission ; le spectre se FIGE pendant l'émission (pause, pas une panne).
 - **Fils et asyncio** : un fil qui produit (port série) ne doit jamais empiler un `call_soon_threadsafe` par donnée : un seul envoi en attente (le dernier), sinon un petit PC noie la boucle (tests bloqués sur Debian, étape 44). Diagnostic d'un blocage : `py-spy dump --pid`.
 - **Sécurité** : la passerelle ne doit JAMAIS quitter sur une erreur d'API ou de port (le superviseur la relancerait en boucle jusqu'au mode sûr) ; une émission qui revient après « T 0 » est une nouvelle émission (opérateur), pas une panne ; NR/NB sont à la fois FONCTION et NIVEAU (clés distinctes `f:`/`l:`).
+- **Température du PC (étape 85)** : jamais `thermal_zone0` (souvent `acpitz`, la carte mère : 28 °C sur minix-bzh pour 42 °C au processeur) ; `cpu_temp.py` lit hwmon `coretemp`/`k10temp` comme lm-sensors, sans paquet.
 - **Son sous Linux** : PortAudio ne liste PAS une carte occupée (station, PipeWire) ; le noyau (`arecord -l`) la voit toujours. Sur minix-bzh la carte du poste est la sortie par défaut du bureau.
 - **Debian** : superviseur en root => modules sous `run_as` ; fichiers lus par le compte de bureau en 0644 (état passerelle, mode sûr, cluster) ; poste éteint = `rig_absent` (jamais de mode sûr) ; renvoyer un zip ne suffit pas, il faut installer (menu 13) ; le mode sûr mémorisé survit aux corrections (menu 9) ; `station.toml` existante garde ses valeurs (un nouveau défaut ne s'y applique pas).
 - **Windows sans fenêtre** (pythonw) : un processus enfant ne reçoit PAS CTRL_BREAK (pas de console commune) et finit tué ; d'où « T 0 » par le superviseur dans `stop_all`. rigctld lancé avec CREATE_NO_WINDOW. Le Python d'un venv relance l'interpréteur de base : règles de pare-feu sur `sys._base_executable`.

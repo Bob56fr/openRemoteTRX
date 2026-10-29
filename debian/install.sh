@@ -24,6 +24,7 @@ UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-update-che
 HELPER_UNITS=(trx-update-check.service)   # lancées par un timer : copiées, jamais activées
 TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
+SENSOR_MODULES=/etc/modules-load.d/trx-remote-sensors.conf   # capteur de température du processeur (coretemp, k10temp)
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
@@ -188,7 +189,7 @@ uninstall() {
   systemctl daemon-reload
   ok "services supprimés"
   for cmd in "${COMMANDS[@]}"; do rm -f "/usr/local/bin/$cmd"; done
-  rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE"
+  rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE" "$SENSOR_MODULES"
   rm -rf "$GNOME_EXT_DIR"
   if [[ -f $BRLTTY_OVERRIDE ]] && grep -q 'trx-remote' "$BRLTTY_OVERRIDE"; then rm -f "$BRLTTY_OVERRIDE"; fi
   command -v udevadm >/dev/null && udevadm control --reload || true
@@ -405,6 +406,22 @@ elif [[ -f $BRLTTY_OVERRIDE ]]; then
   ok "brltty déjà neutralisé"
 fi
 udevadm control --reload && udevadm trigger --subsystem-match=tty || warn "rechargement des règles USB impossible : redémarre le PC"
+
+# Température du PROCESSEUR : lue par la station dans /sys/class/hwmon (coretemp, k10temp), comme lm-sensors, sans
+# paquet. Le pilote est d'ordinaire chargé tout seul ; sinon, on le charge et on le garde au démarrage.
+if grep -qs -E '^(coretemp|k10temp|zenpower|cpu_thermal)$' /sys/class/hwmon/hwmon*/name; then
+  ok "capteur de température du processeur présent"
+else
+  SENSOR=""
+  grep -qs GenuineIntel /proc/cpuinfo && SENSOR=coretemp
+  grep -qs AuthenticAMD /proc/cpuinfo && SENSOR=k10temp
+  if [[ -n $SENSOR ]] && modprobe "$SENSOR" 2>/dev/null; then
+    printf '# trx-remote : température du processeur (supervision de la station)\n%s\n' "$SENSOR" >"$SENSOR_MODULES"
+    ok "pilote $SENSOR chargé (et gardé au démarrage)"
+  else
+    warn "température du processeur illisible sur ce PC (machine virtuelle ?) : affichée « inconnue »"
+  fi
+fi
 
 # ------------------------------------------------------------------ 7. services
 

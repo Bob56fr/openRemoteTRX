@@ -37,6 +37,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Protocol
 
+from ..cpu_temp import cpu_celsius
 from ..config import DUMMY_MODEL, Config
 from ..status import GatewayStatus, GatewayWatch
 from .rigctl import RigProbe
@@ -78,10 +79,8 @@ class StepReport:
 
 
 def default_read_temp() -> float | None:
-    try:
-        return int(Path("/sys/class/thermal/thermal_zone0/temp").read_text()) / 1000.0
-    except (OSError, ValueError):
-        return None
+    """Température du PROCESSEUR (coretemp, k10temp... : cpu_temp.py), jamais celle de la carte mère."""
+    return cpu_celsius()
 
 
 class Supervisor:
