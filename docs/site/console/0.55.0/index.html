@@ -1,0 +1,162 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_console_doc.py à partir de docs/console/contenu.toml : ne pas modifier à la main. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRX Console : mode d&#x27;emploi (0.55.0)</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .2rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:0}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent)}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.2rem 0}
+.version{color:var(--doux);font-size:.95rem;margin:0 0 1rem}
+.lecture{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.sommaire{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0;padding:0;list-style:none}
+.sommaire a{display:inline-block;background:var(--carte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.25rem .9rem;text-decoration:none;color:var(--texte)}
+.etapes{list-style:none;margin:0;padding:0;counter-reset:e}
+.etapes>li{counter-increment:e;display:grid;grid-template-columns:2.2rem 1fr;gap:.8rem;background:var(--carte);
+  border:1px solid var(--ligne);border-radius:.6rem;padding:.8rem 1rem;margin:.7rem 0}
+.etapes>li::before{content:counter(e);width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:700;display:flex;align-items:center;justify-content:center}
+.etapes>li>div{min-width:0}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;margin:.55rem 0}
+summary{cursor:pointer;padding:.65rem 1rem;display:flex;gap:.7rem;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";color:var(--doux);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.num{flex:none;min-width:2.1rem;text-align:center;font-weight:700;color:#fff;background:var(--accent);border-radius:.4rem;
+  padding:0 .3rem}
+.corps{padding:0 1rem .8rem 1rem}
+dl{display:grid;grid-template-columns:minmax(7rem,max-content) 1fr;gap:.35rem 1rem;margin:.2rem 0 .6rem}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0}
+.sudo{color:var(--emission);font-weight:600}
+.libre{color:var(--ok);font-weight:600}
+.expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
+.expert::before{content:"Pour aller plus loin";display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;
+  letter-spacing:.04em}
+.bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+@media (max-width:30rem){dl{grid-template-columns:1fr}dt{margin-top:.3rem}}</style>
+</head>
+<body>
+<main>
+<h1>TRX Console : mode d&#x27;emploi</h1>
+<p class="version">TRX distant version 0.55.0</p>
+<p><strong>TRX Console</strong> est le tableau de commande de la station TRX distant, sur le PC (ou le Raspberry Pi)
+relié au poste. Elle sert à installer et configurer la station, la démarrer, l'essayer, la mettre à jour et la
+dépanner. Elle s'ouvre depuis le menu des applications (« TRX Console ») ou en tapant <code>trx-console</code>
+dans un terminal.</p>
+<p><strong>Un doute sur un menu ?</strong> Tape <code>h</code> puis son numéro (ou directement <code>h 19</code>) :
+la console affiche, sans rien lancer, à quoi sert ce menu, quand s'en servir et ce qu'il modifie (les textes de cette page).</p>
+<p>Elle n'émet jamais d'elle-même : les seuls menus qui peuvent faire passer le poste en émission sont l'essai
+complet (menu 4, avec confirmation à chaque étape) et, bien sûr, la station une fois démarrée, pilotée depuis la page web.</p>
+<div class="lecture"><p><strong>Premier déploiement ?</strong> Suis le parcours ci-dessous dans l'ordre. <strong>Station déjà en
+service ?</strong> Va directement à la référence des menus. <strong>Tu aides à déboguer ?</strong> Voir la partie
+« Dépannage avancé ».</p></div>
+<ul class="sommaire"><li><a href="#premier-deploiement">Premier déploiement</a></li><li><a href="#menus">Les menus</a></li><li><a href="#depannage">Dépannage avancé</a></li></ul>
+<h2 id="premier-deploiement">Premier déploiement, pas à pas</h2>
+<ol class="etapes">
+<li><div><h3>Installer le logiciel</h3><p>Sur un PC Debian 12 ou 13 avec bureau : décompresse le paquet <code>trx-remote-debian-X.Y.Z.zip</code> dans
+Téléchargements, ouvre un terminal dans le dossier obtenu et tape :</p>
+<pre>sudo bash install.sh</pre>
+<p>Ton mot de passe de session est demandé (rien ne s'affiche pendant la frappe : c'est normal). À la fin,
+<strong>déconnecte-toi puis reconnecte-toi</strong> pour que les droits soient pris en compte.</p>
+<p>Tu viens d'une station Windows ? Pose son fichier <code>station.toml</code> à côté de <code>install.sh</code>
+avant de lancer l'installation : comptes, bandes et alertes seront repris.</p></div></li>
+<li><div><h3>Configurer la station (menu 2)</h3><p>Au premier lancement, TRX Console propose l'assistant. Il demande, dans l'ordre : le modèle du poste (liste
+Hamlib), le port série du CAT, la méthode de PTT, les cartes son (réception et émission), les bandes autorisées
+à l'émission, l'accès réseau et le premier compte (identifiant et mot de passe pour la page web).</p>
+<p>Le poste est interrogé <strong>en lecture seule</strong> pendant l'assistant : aucune émission. Rien n'est
+enregistré si tu abandonnes en cours de route.</p></div></li>
+<li><div><h3>Vérifier (menu 1)</h3><p>Le diagnostic passe tout en revue sans rien modifier. Chaque ligne est <strong>OK</strong>, à
+<strong>surveiller</strong> ou en <strong>échec</strong>, avec la marche à suivre. Corrige les échecs avant
+d'aller plus loin (menu 14 pour retoucher la configuration, ou relance l'assistant).</p></div></li>
+<li><div><h3>Essayer le poste (menu 4)</h3><p>Avant tout, la carte son du poste ne doit <strong>pas</strong> être le son par défaut du PC : sous Debian,
+<em>Paramètres &gt; Son</em>, choisis en sortie les haut-parleurs du PC et en entrée son micro (sous Windows,
+<em>Paramètres &gt; Système &gt; Son</em>). Sinon le bureau occupe la carte et ses sons partent vers le poste.</p>
+<p>Commence par l'essai <strong>en réception seule</strong> (choix 1) : liaison CAT, son reçu, changement de
+fréquence et de mode, largeurs de filtre, spectre. Ensuite seulement, l'essai <strong>complet</strong> (choix 2)
+vérifie l'émission : <strong>charge fictive obligatoire</strong>, puissance réduite, confirmation demandée à
+chaque étape. La station est arrêtée pendant l'essai.</p></div></li>
+<li><div><h3>Démarrer (menu 5) et se connecter</h3><p>Le menu 5 démarre la station ; refais un diagnostic (menu 1) quelques secondes plus tard. Sur le téléphone
+ou un autre PC du même réseau, ouvre <code>https://&lt;adresse-de-la-station&gt;:8443</code> et connecte-toi avec
+le compte créé par l'assistant. Pour l'accès depuis l'extérieur, voir la documentation « Accès distant » du projet.</p></div></li>
+</ol>
+<h2 id="menus">Les menus de la console</h2>
+<p>Tape le numéro du menu puis Entrée ; <code>q</code> pour quitter. Les réponses aux questions (oui, non, OUI, EMETTRE...) ne tiennent compte ni des majuscules ni des accents. <span class="sudo">Mot de passe</span> : le menu demande ton mot de passe de session (sudo).</p>
+<details id="menu-1"><summary><span class="num">1</span><h3>Diagnostic complet</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Contrôle complet de la station, en lecture seule : système, logiciels, configuration, matériel (ports série, cartes son), services, spectre HF, Cluster DX, accès réseau et mises à jour.</dd><dt>Quand</dt><dd>Après l'installation, après chaque changement, et en premier réflexe dès que quelque chose ne va pas.</dd><dt>Ce qu'il modifie</dt><dd>Rien. Aucune commande au poste, aucune émission.</dd><dt>Droits</dt><dd><span class="libre">non</span></dd></dl><div class="expert"><p>Même résultat sans le menu : <code>trx-console --diagnostic</code> (code de sortie différent de 0 en cas d'échec, utilisable dans un script).</p></div></div></details>
+<details id="menu-2"><summary><span class="num">2</span><h3>Assistant de configuration</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Assistant de configuration : poste, ports, PTT, cartes son, bandes autorisées, accès réseau, comptes. Écrit <code>station.toml</code>.</dd><dt>Quand</dt><dd>Au premier déploiement, ou pour tout reprendre (changement de poste, d'interface audio, de PC).</dd><dt>Ce qu'il modifie</dt><dd><code>station.toml</code> (seulement si tu vas au bout). La station est arrêtée pendant l'assistant puis redémarrée à la demande.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Le poste n'est interrogé qu'en lecture. Une configuration importée d'une ancienne station (<code>station.import.toml</code>) sert de point de départ.</p></div></div></details>
+<details id="menu-3"><summary><span class="num">3</span><h3>Tableau de bord (fréquence, émission, services)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou réception, clients connectés, services, matériel, audio, journal.</dd><dt>Quand</dt><dd>Pour surveiller la station sur place, ou pendant un essai.</dd><dt>Ce qu'il modifie</dt><dd>Rien, sauf une touche : <strong>STOP TX</strong> force la réception. Le tableau de bord ne peut jamais faire émettre.</dd><dt>Droits</dt><dd><span class="libre">non</span></dd></dl></div></details>
+<details id="menu-4"><summary><span class="num">4</span><h3>Essai du poste (CAT, audio, PTT)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Essai guidé du vrai poste. Choix 1 : réception seule (CAT, son reçu, accord, largeurs de filtre, écran du spectre). Choix 2 : la même chose puis l'émission.</dd><dt>Quand</dt><dd>Après l'assistant, après un changement de câble ou d'interface audio, ou pour qualifier un nouveau poste.</dd><dt>Ce qu'il modifie</dt><dd>Rien dans la configuration. Le choix 2 fait émettre le poste : charge fictive, puissance réduite, confirmation (taper <code>EMETTRE</code>) à chaque étape. La station est arrêtée pendant l'essai.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Le résumé final de l'essai s'affiche à l'écran : copie-le dans ta demande d'aide. Les réponses tapées ne tiennent compte ni des majuscules ni des accents (« emettre », « Émettre » et « EMETTRE » sont acceptés).</p></div></div></details>
+<details id="menu-5"><summary><span class="num">5</span><h3>Démarrer ou redémarrer la station</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Démarre (ou redémarre) la station : rigctld, passerelle, superviseur.</dd><dt>Quand</dt><dd>Après la configuration, après une modification, ou si la page web ne répond plus.</dd><dt>Ce qu'il modifie</dt><dd>L'état des services. Le poste est toujours remis en réception au démarrage.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl></div></details>
+<details id="menu-6"><summary><span class="num">6</span><h3>Arrêter la station</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Arrête la station.</dd><dt>Quand</dt><dd>Avant de brancher ou débrancher le poste ou l'interface audio, ou pour utiliser un autre logiciel sur le poste.</dd><dt>Ce qu'il modifie</dt><dd>L'état des services. Le poste reste en réception.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl></div></details>
+<details id="menu-7"><summary><span class="num">7</span><h3>Journal de la station</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Affiche les 80 dernières lignes du journal des services de la station.</dd><dt>Quand</dt><dd>Quand le diagnostic signale un service en échec, ou pour comprendre une coupure d'émission.</dd><dt>Ce qu'il modifie</dt><dd>Rien.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Journal complet : <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since "1 hour ago"</code>.</p></div></div></details>
+<details id="menu-8"><summary><span class="num">8</span><h3>Rapport de dépannage (zip sur le Bureau)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic, journaux, configuration <strong>sans aucun mot de passe</strong>, versions, matériel détecté, rapports envoyés depuis la page, identifiant de la station.</dd><dt>Quand</dt><dd>Pour demander de l'aide : joins ce zip à ta demande.</dd><dt>Ce qu'il modifie</dt><dd>Rien (un fichier est créé sur le Bureau).</dd><dt>Droits</dt><dd><span class="libre">non</span></dd></dl><div class="expert"><p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code>station.toml</code> du rapport a ses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si tu le souhaites.</p></div></div></details>
+<details id="menu-9"><summary><span class="num">9</span><h3>Sortir du mode sûr</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Sort du <strong>mode sûr</strong>. Le superviseur y place la station après des pannes répétées : poste en réception, accès coupé.</dd><dt>Quand</dt><dd>Seulement après avoir trouvé et corrigé la cause (menus 1 et 7).</dd><dt>Ce qu'il modifie</dt><dd>Efface le mode sûr mémorisé et redémarre la station.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Le mode sûr survit aux redémarrages et aux corrections : il faut le lever explicitement ici.</p></div></div></details>
+<details id="menu-10"><summary><span class="num">10</span><h3>Mise à jour de TRX distant</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Mise à jour par Internet : affiche la nouvelle version, ses notes, puis l'installe après vérification de sa signature.</dd><dt>Quand</dt><dd>Quand l'en-tête du menu annonce « Nouvelle version disponible ».</dd><dt>Ce qu'il modifie</dt><dd>Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 11). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl></div></details>
+<details id="menu-11"><summary><span class="num">11</span><h3>Revenir à la version précédente</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Revient à la version précédente, gardée lors de la dernière mise à jour, sans Internet.</dd><dt>Quand</dt><dd>Si la nouvelle version pose problème.</dd><dt>Ce qu'il modifie</dt><dd>La version active. La configuration est conservée.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl></div></details>
+<details id="menu-12"><summary><span class="num">12</span><h3>Cluster DX (spots suivis, sources, test)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Réglages du Cluster DX : spots suivis, sources (RBN, serveurs telnet, web), filtres, essai des sources.</dd><dt>Quand</dt><dd>Pour afficher les spots sur le spectre et les pastilles des boutons de bande dans la page.</dd><dt>Ce qu'il modifie</dt><dd>La section Cluster de <code>station.toml</code> ; redémarrage proposé ensuite.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl></div></details>
+<details id="menu-13"><summary><span class="num">13</span><h3>Installer une version depuis un fichier zip (Bureau, Téléchargements)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Installe une version à partir d'un fichier <code>trx-remote-debian-X.Y.Z.zip</code> déposé sur le Bureau, dans Téléchargements ou dans le dossier personnel.</dd><dt>Quand</dt><dd>Station sans Internet, version d'essai, ou retour à une version précise.</dd><dt>Ce qu'il modifie</dt><dd>Comme le menu 10 : nouvelle version à côté de l'ancienne, configuration conservée. Un paquet non signé demande de taper <code>OUI</code> puis le numéro de version.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Déposer le zip ne suffit pas : il faut l'installer ici. Compte-rendu : <code>/var/log/trx-remote-install.log</code>.</p></div></div></details>
+<details id="menu-14"><summary><span class="num">14</span><h3>Modifier la configuration (station.toml)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Modifie <code>station.toml</code> dans l'éditeur nano, sur une copie.</dd><dt>Quand</dt><dd>Pour un réglage précis sans relancer tout l'assistant.</dd><dt>Ce qu'il modifie</dt><dd><code>station.toml</code>, seulement si la copie est valide : elle est vérifiée, les différences sont montrées, une confirmation est demandée et l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les copies de sauvegarde s'appellent <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p></div></div></details>
+<details id="menu-15"><summary><span class="num">15</span><h3>Menu expert (tests automatiques du logiciel)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Menu expert : lance toute la suite de tests automatiques du logiciel sur la station.</dd><dt>Quand</dt><dd>Pour aider au débogage, ou vérifier qu'une installation est saine.</dd><dt>Ce qu'il modifie</dt><dd>Rien. Les tests utilisent un poste <strong>simulé</strong> : aucune commande au vrai poste, aucune émission. La station est arrêtée pendant les tests (7 à 10 minutes sur un PC récent, 30 minutes ou plus sur un petit PC) puis relancée à la demande.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>) : transmets ce fichier si des tests échouent. L'outil de test (pytest) est installé au premier usage (Internet nécessaire).</p><p>Les points s'affichent au fur et à mesure ; sans rien de nouveau pendant une minute, la console rappelle que les tests continuent. Un test vraiment bloqué 10 minutes affiche la pile de ses fils d'exécution : c'est ce qu'il faut transmettre (Ctrl+C arrête les tests).</p></div></div></details>
+<details id="menu-16"><summary><span class="num">16</span><h3>Seuils de température du poste (avertissement, coupure)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Seuils de température du poste : premier seuil (avertissement dans la page et notification), second seuil (émission à distance coupée et refusée jusqu'au retour sous le premier seuil). 40 et 50 °C par défaut.</dd><dt>Quand</dt><dd>Si ton poste chauffe en usage normal (modes numériques en continu, par exemple) ou pour plus de prudence.</dd><dt>Ce qu'il modifie</dt><dd>Les clés <code>rig_temp_warn_c</code> et <code>rig_temp_cut_c</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 14.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Sans effet si le poste ne donne pas sa température par Hamlib (cas de l'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce motif.</p></div></div></details>
+<details id="menu-17"><summary><span class="num">17</span><h3>Indicateur dans la barre du haut (GNOME : état de la station en permanence)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Active ou désactive l'<strong>indicateur de la barre du haut</strong> (bureau GNOME) : un voyant à gauche du son (vert réception, rouge émission, orange alerte, gris station arrêtée, violet mode sûr), la fréquence ou le compte à rebours d'émission, et au clic l'état complet : émission, fréquence et filtre, clients web connectés, liaison avec le poste, opérateur sur place, dernière coupure, température, alimentation, spectre HF, Cluster DX, mise à jour disponible, version et identifiant.</dd><dt>Quand</dt><dd>Une fois, après l'installation (puis une déconnexion et reconnexion), pour garder un œil sur la station en permanence.</dd><dt>Ce qu'il modifie</dt><dd>Seulement l'affichage de ton bureau. L'indicateur ne fait que LIRE l'état publié par la station : il ne peut rien commander.</dd><dt>Droits</dt><dd><span class="libre">non</span></dd></dl><div class="expert"><p>Fichiers lus chaque seconde : <code>/run/trx-remote/gateway-status.json</code>, et dans <code>/var/lib/trx-remote/</code> : <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installée dans <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. Le menu de l'indicateur ouvre aussi la page web, TRX Console et le tableau de bord.</p></div></div></details>
+<details id="menu-18"><summary><span class="num">18</span><h3>Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Profils de poste, pour qui pilote plusieurs TRX tour à tour : <strong>enregistrer</strong> la configuration du poste en service sous un nom (« IC-7300 maison »), la <strong>recharger</strong> plus tard, ou supprimer un profil. Le profil en service est signalé dans la liste.</dd><dt>Quand</dt><dd>Après avoir configuré et essayé un poste (menus 2 et 4) : enregistre-le. Pour changer de poste : branche-le, charge son profil, la station redémarre avec lui.</dd><dt>Ce qu'il modifie</dt><dd>Charger un profil ne change que les réglages du POSTE dans <code>station.toml</code> (modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le menu 14 (différences montrées, confirmation, ancienne version gardée). Comptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé pendant une émission.</dd><dt>Droits</dt><dd><span class="sudo">mot de passe de session demandé</span></dd></dl><div class="expert"><p>Fichiers : <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Chaque profil porte un numéro de format. Un profil d'une ancienne version est converti au chargement quand c'est possible (une clé manquante prend sa valeur par défaut) ; sinon, ou s'il vient d'une version plus récente, il est refusé avec la marche à suivre : refaire la configuration de ce poste (menu 2) puis l'enregistrer de nouveau. Le fichier d'origine n'est jamais modifié au chargement.</p></div></div></details>
+<details id="menu-19"><summary><span class="num">19</span><h3>Appairer un téléphone (application Android : adresse, empreinte, QR code)</h3></summary><div class="corps"><dl><dt>À quoi il sert</dt><dd>Affiche ce qu'il faut pour <strong>appairer l'application Android</strong> avec cette station : l'adresse à saisir, les comptes autorisés, l'<strong>empreinte du certificat</strong> (SHA-256, sur deux lignes), puis un <strong>QR code</strong> à scanner avec l'application (« Scanner le QR code de la station ») : il remplit l'adresse, l'identifiant et l'empreinte. S'il y a plusieurs adresses ou plusieurs comptes, la console demande lesquels mettre dans le QR code (Entrée = choix proposé). Ni le QR code ni l'écran ne contiennent de mot de passe : la station ne les connaît pas en clair, il se saisit dans l'application.</dd><dt>Quand</dt><dd>Au moment d'ajouter la station dans l'application Android, et après avoir refait le certificat (menu 2).</dd><dt>Ce qu'il modifie</dt><dd>Rien : lecture seule.</dd><dt>Droits</dt><dd><span class="libre">non</span></dd></dl><div class="expert"><p>Même affichage en ligne de commande : <code>trx-setup --output /etc/trx-remote/station.toml --empreinte</code>. Si le certificat n'est lisible que par la station, la console le relit avec les droits d'administration. Station limitée à cette machine (boucle locale) : aucun téléphone ne peut s'y connecter, la console le dit. Derrière un proxy HTTPS, l'empreinte à épingler est celle du certificat du proxy (pas de QR code). Le QR code est dessiné pour un terminal à fond sombre ; l'application lit aussi un terminal clair. S'il n'apparaît pas (paquet « segno » absent), réinstaller la station (menu 13) ou saisir l'empreinte à la main.</p></div></div></details>
+<h2 id="depannage">Dépannage avancé</h2>
+<div class="bloc" id="en-t-te-de-la-console"><h3>En-tête de la console</h3><p>La première ligne donne la <strong>version installée</strong>, la deuxième l'état (en marche, arrêtée, pas
+encore configurée), la troisième l'<strong>identifiant de la station</strong> : un code unique créé au premier
+démarrage, qui permet de rapprocher plusieurs rapports d'une même station. Il n'est envoyé nulle part
+automatiquement.</p></div>
+<div class="bloc" id="fichiers-utiles-debian"><h3>Fichiers utiles (Debian)</h3><ul>
+<li><code>/etc/trx-remote/station.toml</code> : configuration (modifier par le menu 14).</li>
+<li><code>/var/lib/trx-remote/</code> : état de la station (mode sûr, mémoires, rapports de la page, identifiant <code>station-id</code>, Cluster DX).</li>
+<li><code>/run/trx-remote/gateway-status.json</code> : état en direct publié par la passerelle (lu par le tableau de bord).</li>
+<li><code>/opt/trx-remote/releases/</code> : versions installées côte à côte ; <code>/opt/trx-remote/current</code> pointe sur la version active.</li>
+<li><code>/var/log/trx-remote-install.log</code> : compte-rendu des installations et mises à jour.</li>
+</ul></div>
+<div class="bloc" id="relev-s-sur-le-poste-lecture-seule"><h3>Relevés sur le poste (lecture seule)</h3><p>Pour un poste Icom avec un second port CI-V (spectre), un relevé brut des réglages, sans aucune écriture,
+aide à établir le format réel des réponses. Station arrêtée (menu 6), puis :</p>
+<pre>/opt/trx-remote/current/venv/bin/python -m trxstation.devtools.civ_scope --port /dev/serial/by-id/&lt;port-B&gt; --reglages</pre>
+<p>Le résultat est enregistré dans un dossier <code>spectre-reglages-…</code> : joins-le à ta demande.</p></div>
+<div class="bloc" id="transmettre-un-probl-me"><h3>Transmettre un problème</h3><ol>
+<li>Dans la page web : section « Signaler un problème » (texte relu avant l'envoi).</li>
+<li>Sur la station : menu 8 (rapport de dépannage), et si besoin le résultat du menu 15.</li>
+<li>Décris ce que tu faisais, ce que tu attendais et ce qui s'est passé, avec l'heure approximative.</li>
+</ol></div>
+<footer>
+<p><a href="../">Dernière version</a>. Autres versions : <a href="../0.54.0/">0.54.0</a>, <a href="../0.53.0/">0.53.0</a>, <a href="../0.52.0/">0.52.0</a>, <a href="../0.51.0/">0.51.0</a>, <a href="../0.50.0/">0.50.0</a>, <a href="../0.49.0/">0.49.0</a>, <a href="../0.48.0/">0.48.0</a>, <a href="../0.47.0/">0.47.0</a>, <a href="../0.46.0/">0.46.0</a>. Projet libre (AGPL-3.0-or-later) : <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
+</footer>
+</main>
+<script>(function () {
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  document.addEventListener("toggle", send, true);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();</script>
+</body>
+</html>

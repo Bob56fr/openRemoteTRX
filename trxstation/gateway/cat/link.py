@@ -22,7 +22,8 @@ log = logging.getLogger(__name__)
 
 POWER_METER = "RFPOWER_METER"                       # lu à chaque cycle PENDANT l'émission
 TX_METERS = ("SWR", "ALC", "COMP_METER")            # lus à tour de rôle pendant l'émission
-EXTRA_FUNCTIONS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN")   # AIP = IP+ chez Icom ; TUNER = tuner d'antenne ; MN = notch manuel
+EXTRA_FUNCTIONS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN", "RIT", "XIT")   # AIP = IP+ chez Icom ; TUNER = tuner d'antenne ; MN = notch manuel ; RIT/XIT = clarifieur
+OFFSETS = ("RIT", "XIT")                            # décalages du clarifieur, lus à tour de rôle avec les lectures facultatives
 EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER", "NR", "NB")
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
@@ -40,6 +41,9 @@ class RigState:
     updated_at: float | None = None    # horloge murale, pour affichage
     functions: dict = field(default_factory=dict)   # NR, NB, AIP (IP+)... -> bool ; seulement ce que le poste fournit
     levels: dict = field(default_factory=dict)      # PREAMP, ATT, AGC, SQL, RFPOWER_METER, SWR, ALC... -> nombre
+    split: bool | None = None          # split en service ; None = inconnu (poste qui ne le dit pas)
+    tx_frequency_hz: int | None = None  # fréquence d'ÉMISSION en split ; None hors split ou inconnue
+    offsets: dict = field(default_factory=dict)     # « RIT », « XIT » -> décalage en Hz (affichage ; la sécurité relit le poste)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -47,7 +51,8 @@ class RigState:
     def _key(self) -> tuple:
         return (self.connected, self.frequency_hz, self.mode, self.passband_hz,
                 self.strength_db, self.ptt, self.last_error,
-                tuple(sorted(self.functions.items())), tuple(sorted(self.levels.items())))
+                tuple(sorted(self.functions.items())), tuple(sorted(self.levels.items())),
+                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())))
 
 
 class CatLink:
@@ -168,6 +173,18 @@ class CatLink:
             changes["ptt"] = await self.client.get_ptt()
         except (RigError, CatProtocolError):
             changes["ptt"] = None
+        if "s:SPLIT" not in self._disabled:            # split (lecture abandonnée si le poste ne le dit pas)
+            try:
+                split = await self.client.get_split()
+                changes["split"] = split
+                changes["tx_frequency_hz"] = (await self.client.get_split_frequency() or None) if split else None
+            except RigError as exc:
+                changes["split"] = changes["tx_frequency_hz"] = None
+                if exc.code in PERMANENT_ERRORS:
+                    self._disable("s", "SPLIT", f"RPRT {exc.code}")
+            except CatProtocolError as exc:
+                changes["split"] = changes["tx_frequency_hz"] = None
+                self._disable("s", "SPLIT", str(exc))
         if changes.get("ptt") is False:                 # fin d'émission : les mesures d'émission ne sont plus d'actualité
             stale = {k: v for k, v in self._state.levels.items() if k not in (POWER_METER, *TX_METERS)}
             if len(stale) != len(self._state.levels):
@@ -180,6 +197,8 @@ class CatLink:
         if f"{kind}:{name}" in self._disabled:             # NR et NB existent en fonction ET en niveau : clés distinctes
             return False
         caps = self.capabilities
+        if kind == "o":                                    # décalage : seulement si le poste a la fonction RIT / XIT
+            return caps is None or not caps.complete or not caps.functions or name in caps.functions
         if caps is not None and caps.complete:
             known = caps.functions if kind == "f" else caps.levels
             if known:
@@ -188,7 +207,10 @@ class CatLink:
 
     async def _read_optional(self, kind: str, name: str) -> None:
         try:
-            value = await (self.client.get_func(name) if kind == "f" else self.client.get_level(name))
+            if kind == "o":
+                value = await self.client.get_offset(name)
+            else:
+                value = await (self.client.get_func(name) if kind == "f" else self.client.get_level(name))
         except RigError as exc:
             key = f"{kind}:{name}"
             self._failures[key] = self._failures.get(key, 0) + 1
@@ -199,21 +221,24 @@ class CatLink:
             self._disable(kind, name, str(exc))
             return
         self._failures[f"{kind}:{name}"] = 0
-        bucket = "functions" if kind == "f" else "levels"
+        bucket = {"f": "functions", "l": "levels", "o": "offsets"}[kind]
         merged = dict(getattr(self._state, bucket))
-        merged[name] = value if kind == "f" else round(float(value), 3)
+        merged[name] = value if kind in ("f", "o") else round(float(value), 3)
         self._update(**{bucket: merged})
 
     def _disable(self, kind: str, name: str, why: str) -> None:
         key = f"{kind}:{name}"
         if key not in self._disabled:
             self._disabled.add(key)
-            log.info("lecture de %s (%s) abandonnée pour ce poste (%s)", name, "fonction" if kind == "f" else "niveau", why)
-        bucket = "functions" if kind == "f" else "levels"            # seulement la lecture abandonnée, pas son homonyme
+            what = {"f": "fonction", "l": "niveau", "o": "décalage", "s": "split"}.get(kind, kind)
+            log.info("lecture de %s (%s) abandonnée pour ce poste (%s)", name, what, why)
+        if kind == "s":
+            return
+        bucket = {"f": "functions", "l": "levels", "o": "offsets"}[kind]     # seulement la lecture abandonnée, pas son homonyme
         self._update(**{bucket: {k: v for k, v in getattr(self._state, bucket).items() if k != name}})
 
     async def _refresh_one_extra(self) -> None:
-        items = ([("f", n) for n in EXTRA_FUNCTIONS] + [("l", n) for n in EXTRA_LEVELS])
+        items = ([("f", n) for n in EXTRA_FUNCTIONS] + [("l", n) for n in EXTRA_LEVELS] + [("o", n) for n in OFFSETS])
         items = [item for item in items if self._supported(*item)]
         if not items:
             return
@@ -265,6 +290,16 @@ class CatLink:
         await self.client.set_level(name, value)
         decimal = name in ("SQL", "RFPOWER", "NR", "NB")
         self._update(levels={**self._state.levels, name: round(float(value), 3) if decimal else int(value)})
+
+    async def set_offset(self, which: str, hz: int) -> None:
+        """Décalage RIT ou XIT (ΔTX). Borne : « Max RIT/XIT » du poste si connu. La sécurité d'émission relit le poste."""
+        self._check_known("f", which)
+        caps = self.capabilities
+        limit = (caps.max_rit_hz if which == "RIT" else caps.max_xit_hz) if caps is not None else 0
+        if limit and isinstance(hz, int) and not isinstance(hz, bool) and abs(hz) > limit:
+            raise ValueError(f"{which} : {hz} Hz hors de la plage du poste (±{limit} Hz)")
+        await self.client.set_offset(which, hz)
+        self._update(offsets={**self._state.offsets, which: hz})
 
     async def set_squelch(self, value: float) -> None:
         """Squelch du poste (0 à 1). Sans effet sur l'émission ; la valeur est reprise à la prochaine lecture."""

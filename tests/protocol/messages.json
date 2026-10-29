@@ -10,7 +10,8 @@
       "can_get_ptt": true, "has_s_meter": true,
       "functions": ["NB", "NR", "COMP", "TUNER"], "levels": ["PREAMP", "AGC", "SQL", "STRENGTH", "SWR", "ALC"],
       "complete": true, "filters": {"USB": [3000, 2400, 1800], "PKTUSB": [3000, 1200, 500]},
-      "preamps": [10, 20], "attenuators": [20], "level_ranges": {"NR": [0, 1, 0.0667]}
+      "preamps": [10, 20], "attenuators": [20], "level_ranges": {"NR": [0, 1, 0.0667]},
+      "can_get_split": true, "max_rit_hz": 9999, "max_xit_hz": 9999
     },
     "tx_modes": ["PKTUSB", "PKTLSB"], "max_power_w": 100,
     "memories": [{"id": "a1b2c3", "name": "FT8 20 m", "hz": 14074000, "mode": "PKTUSB", "favorite": true}],
@@ -27,7 +28,8 @@
     "ptt": {"state": "TX", "owner": "phone", "tot_remaining_s": 74.6, "tot_warning": false, "last_cut_reason": "toggle",
             "fault": "", "local_remaining_s": null, "local_reason": "", "local_tx": false, "temp_alert": "", "temp_c": null},
     "rig": {"connected": true, "frequency_hz": 14074000, "mode": "PKTUSB", "passband_hz": 3000, "strength_db": -54,
-            "functions": {"NR": false, "NB": true}, "levels": {"PREAMP": 10, "SWR": 1.1, "ALC": 0.3}},
+            "functions": {"NR": false, "NB": true}, "levels": {"PREAMP": 10, "SWR": 1.1, "ALC": 0.3},
+            "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}},
     "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1},
     "clients": ["phone"],
     "spectrum": {"state": "ok", "code": "", "message": "", "settings": {"span": 25000}}

@@ -56,6 +56,9 @@ class Capabilities:
     preamps: tuple[int, ...] = ()      # valeurs de préampli en dB (sans le 0 = arrêt) ; vide = inconnu
     attenuators: tuple[int, ...] = ()  # valeurs d'atténuateur en dB (« Attenuator: 20dB ») ; vide = inconnu
     level_ranges: dict[str, list[float]] = field(default_factory=dict)   # niveau réglable -> [min, max, pas] (« Set level »)
+    can_get_split: bool | None = None  # « Can get Split VFO » ; None = non déclaré (la sécurité tente quand même la lecture)
+    max_rit_hz: int = 0                # « Max RIT: -9.999kHz/+9.999kHz » -> 9999 ; 0 = inconnu
+    max_xit_hz: int = 0
 
     def to_dict(self) -> dict:
         data = asdict(self)
@@ -68,6 +71,17 @@ class Capabilities:
 def _flag(text: str, verb: str, what: str) -> bool | None:
     m = re.search(rf"^Can {verb} {what}:\s*(\S+)", text, re.MULTILINE | re.IGNORECASE)
     return None if m is None else m.group(1).upper().startswith("Y")
+
+
+def _max_offset(text: str, what: str) -> int:
+    """« Max RIT: -9.999kHz/+9.999kHz » -> 9999 (Hz) ; 0 si absent ou illisible."""
+    m = re.search(rf"^Max {what}:\s*-?\s*([\d.]+)\s*(k?)Hz\s*/\s*\+?\s*([\d.]+)\s*(k?)Hz", text, re.MULTILINE | re.IGNORECASE)
+    if m is None:
+        return 0
+    try:
+        return round(float(m.group(3)) * (1000 if m.group(4).lower() == "k" else 1))
+    except ValueError:
+        return 0
 
 
 def _names(text: str, label: str) -> tuple[str, ...]:
@@ -135,7 +149,7 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     for attr, verb, what in (("can_set_frequency", "set", "Frequency"), ("can_get_frequency", "get", "Frequency"),
                              ("can_set_mode", "set", "Mode"), ("can_get_mode", "get", "Mode"),
                              ("can_get_ptt", "get", "PTT")):
-        value = _flag(text, verb, what)
+        value = _flag(text, verb, what)                    # (split et clarifieur : plus bas)
         if value is not None:
             setattr(caps, attr, value)
 
@@ -143,6 +157,8 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     caps.has_s_meter = bool(levels and re.search(r"\bSTRENGTH\b", levels.group(1)))
     caps.levels = _names(text, "Get level")
     caps.functions = _names(text, "Get functions")
+    caps.can_get_split = _flag(text, "get", "Split VFO")
+    caps.max_rit_hz, caps.max_xit_hz = _max_offset(text, "RIT"), _max_offset(text, "XIT")
     caps.filters = _bandwidths(text)
     preamp = re.search(r"^Preamp:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
     caps.preamps = tuple(int(v) for v in re.findall(r"\d+", preamp.group(1))) if preamp else ()

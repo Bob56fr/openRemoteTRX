@@ -1252,6 +1252,17 @@
           $("squelch-text").textContent = squelchLabel(Math.round(v.squelch * 100));
         }
         if (v.squelch === null) $("squelch-text").textContent = "—";
+        const clar = v.clarifier;                                                       // ΔTX ou RIT en service : curseur du décalage
+        $("blk-clar").hidden = !clar;
+        if (clar) {
+          $("clar").disabled = !v.connected || v.pttState !== "RX";
+          $("clar").min = String(-clar.max); $("clar").max = String(clar.max);
+          $("clar").dataset.name = clar.name; $("clar-name").textContent = clar.label;
+          if (performance.now() - clarTouched > 1500) {
+            $("clar").value = String(clar.hz);
+            $("clar-text").textContent = web.clarifierText(clar.hz);
+          }
+        }
         renderInstruments(v.instruments);
         markActive(v);
         $("rx-level").textContent = v.rxLevel; $("tx-level").textContent = v.txLevel;
@@ -1471,6 +1482,14 @@
       levelTimer = window.setTimeout(() => client.setLevelValue(key, value).catch(fail), 150);   // une commande à la fin du geste
     });
     $("ctl-dialog-close").addEventListener("click", closeControlDialog);
+    let clarTouched = -1e9, clarTimer = null;
+    $("clar").addEventListener("input", (ev) => {
+      const hz = Number(ev.target.value), name = ev.target.dataset.name || "XIT";
+      $("clar-text").textContent = web.clarifierText(hz);
+      clarTouched = performance.now();
+      window.clearTimeout(clarTimer);
+      clarTimer = window.setTimeout(() => client.setOffset(name, hz).catch(fail), 150);   // une commande à la fin du geste
+    });
     $("squelch").addEventListener("input", (ev) => {
       const percent = Number(ev.target.value);
       $("squelch-text").textContent = squelchLabel(percent);

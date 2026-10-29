@@ -103,6 +103,8 @@ object RigHub {
 
     fun setSquelch(value: Double) { service?.onRig { session, now -> session.setSquelch(now, value) } }
 
+    fun setOffset(name: String, hz: Int) { service?.onRig { session, now -> session.setOffset(now, name, hz) } }
+
     fun setLevel(name: String, value: Double) { service?.onRig { session, now -> session.setLevel(now, name, value) } }
 
     fun saveMemory(name: String, hz: Long, mode: String, favorite: Boolean, id: String?) {

@@ -91,6 +91,18 @@ class IndicatorsTest {
     }
 
     @Test
+    fun `voyants du clarifieur et du split, dans l'ordre voulu`() {
+        val s = com.rfdiy.openremotetrx.protocol.ServerMessages.decode(
+            """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"functions":{"NB":true,"RIT":false,"XIT":true,"ANF":false},
+               "levels":{"PREAMP":1},"split":true,"tx_frequency_hz":14210000,"offsets":{"RIT":20,"XIT":20}}}"""
+        ) as com.rfdiy.openremotetrx.protocol.State
+        assertEquals(
+            listOf("P.AMP 1" to true, "RIT" to false, "ΔTX" to true, "SPLIT" to true, "NOTCH" to false, "NB" to true),
+            Indicators.of(null, s).map { it.label to it.on },
+        )
+    }
+
+    @Test
     fun `bargraphs POWER SWR ALC toujours presents, a zero en reception`() {
         assertEquals(listOf("POWER —", "SWR —", "ALC —"), Indicators.txMeters(state("RX", "{}", "{}")).map { "${it.label} ${it.text}" })
         val tx = Indicators.txMeters(state("TX", "{}", """{"RFPOWER_METER":0.5,"SWR":1.5,"ALC":0.3}"""))

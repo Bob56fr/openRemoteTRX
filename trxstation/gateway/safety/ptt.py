@@ -5,12 +5,13 @@
 Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :
   * Toggle uniquement. L'état (RX / KEYING / TX / UNKEYING) appartient au serveur.
   * Couper est toujours permis et jamais refusé : n'importe quel client peut couper.
-  * Prendre l'émission exige : client connu, liaison CAT active, fréquence LUE À
-    L'INSTANT dans une bande autorisée, poste pas déjà en émission, PTT relisible,
+  * Prendre l'émission exige : client connu, liaison CAT active, fréquence d'ÉMISSION LUE À
+    L'INSTANT dans une bande autorisée (en split : celle de l'autre VFO ; avec le ΔTX / XIT : décalée ;
+    un split ou un XIT que le poste déclare mais qui ne se relit pas => refus), poste pas déjà en émission, PTT relisible,
     aucun défaut verrouillé, pas de coupure en cours, pas dans le délai anti-rebond.
   * Pendant l'émission : TOT (avec avertissement), heartbeat du client propriétaire,
     surveillance de la liaison CAT, et relecture périodique du poste (changement de
-    fréquence ou PTT retombé => coupure).
+    fréquence, de split ou de ΔTX, ou PTT retombé => coupure).
   * Température du poste (thermal.py) : au second seuil, émission à distance coupée et refusée.
   * Changer fréquence ou mode est REFUSÉ tant que l'état n'est pas RX confirmé.
   * Le micro (porte audio) est coupé AVANT d'envoyer « PTT off ».
@@ -37,6 +38,7 @@ from dataclasses import asdict, dataclass
 
 from ...config import Config
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
+from ..cat.client import RIG_ENAVAIL, RIG_ENIMPL
 from .local import LocalPresence
 from .thermal import ThermalGuard
 
@@ -128,6 +130,7 @@ class PttController:
         self._last_heartbeat = 0.0
         self._tx_freq: int | None = None
         self._tx_mode: str | None = None       # mode relu à la prise d'émission (seulement si tx_modes est défini)
+        self._tx_plan: tuple | None = None     # (split, fréquence en split, XIT, décalage) relus à la prise d'émission
         self._cooldown_until = 0.0
         self._warning = False
         self._last_cut_reason = ""
@@ -317,6 +320,13 @@ class PttController:
             self.local.expect("mode")
             await self.link.set_mode(mode, passband_hz)
 
+    async def set_offset(self, which: str, hz: int) -> None:
+        """Décalage RIT ou ΔTX / XIT : refusé pendant l'émission (le XIT déplace la fréquence d'émission ; il est revérifié
+        à chaque prise d'émission)."""
+        async with self._tx_lock:
+            self._require_rx_for_tuning()
+            await self.link.set_offset(which, hz)
+
     def release_local(self, client_id: str) -> PttSnapshot:
         """« Reprendre la main » avant la fin de l'attente. Refusé pendant une émission locale. Ne commande rien au poste."""
         if client_id not in self._clients:
@@ -399,18 +409,23 @@ class PttController:
                 except _CAT_ERRORS as exc:
                     raise Refused("cat_error", f"mode illisible : {exc}") from exc
 
+            tx_freq, plan = await self._transmit_plan(client, freq)
+
             if self._epoch != epoch:
                 raise Refused("cancelled")
             if keyed:
                 raise Refused("rig_already_tx")
             if allowed_modes and mode not in allowed_modes:
                 raise Refused("mode_not_allowed", f"{mode} (autorisés : {', '.join(allowed_modes)})")
-            if self.config.safety.enforce_bands and not self.config.tx_allowed(freq):
-                raise Refused("out_of_band", f"{freq / 1e6:.4f} MHz")
+            if self.config.safety.enforce_bands and not self.config.tx_allowed(tx_freq):
+                why = " (émission en split)" if plan[0] else ""
+                why += f" (ΔTX {plan[3]:+d} Hz)" if plan[2] else ""
+                raise Refused("out_of_band", f"{tx_freq / 1e6:.4f} MHz{why}")
 
             # Aucune attente entre la dernière vérification d'`epoch` et l'écriture.
             self._tx_freq = freq
             self._tx_mode = mode
+            self._tx_plan = plan
             self._owner = client_id
             self._set_state(PttState.KEYING, "keying")
             try:
@@ -437,6 +452,47 @@ class PttController:
             self._audio_gate(True)                        # micro ouvert seulement une fois en TX confirmé
             self._watch_task = asyncio.get_running_loop().create_task(self._watchdog())
             return self.snapshot("tx_started")
+
+    async def _transmit_plan(self, client, rx_freq: int) -> tuple[int, tuple]:
+        """Fréquence d'ÉMISSION réelle, lue à l'instant : en split, celle de l'autre VFO ; avec le ΔTX / XIT en service,
+        décalée. Retourne (fréquence, (split, fréquence en split, XIT, décalage)). Un split ou un XIT que le poste déclare
+        mais qui ne se relit pas => Refused (en cas de doute, ne pas émettre). Un poste qui ne les connaît pas du tout
+        (RPRT -4 / -11 sans les avoir déclarés) n'a rien à vérifier."""
+        caps = self.link.capabilities
+        tx, split, split_freq, xit_on, xit = rx_freq, False, None, False, 0
+        if caps is None or caps.can_get_split is not False:
+            try:
+                split = await client.get_split()
+                if split:
+                    split_freq = await client.get_split_frequency()
+                    if not split_freq or split_freq <= 0:
+                        raise Refused("split_unreadable", "fréquence d'émission du split inconnue")
+                    tx = split_freq
+            except RigError as exc:
+                declared = caps is not None and caps.can_get_split is True
+                if declared or exc.code not in (RIG_ENIMPL, RIG_ENAVAIL):
+                    raise Refused("split_unreadable", str(exc)) from exc
+                split, split_freq, tx = False, None, rx_freq
+            except CatProtocolError as exc:
+                raise Refused("split_unreadable", str(exc)) from exc
+            except (CatConnectionError, OSError) as exc:
+                raise Refused("cat_error", str(exc)) from exc
+        declared_xit = caps is not None and caps.complete and "XIT" in caps.functions
+        if caps is None or not caps.complete or not caps.functions or declared_xit:
+            try:
+                xit_on = await client.get_func("XIT")
+                if xit_on:
+                    xit = await client.get_offset("XIT")
+                    tx += xit
+            except RigError as exc:
+                if declared_xit or exc.code not in (RIG_ENIMPL, RIG_ENAVAIL):
+                    raise Refused("xit_unreadable", str(exc)) from exc
+                xit_on, xit = False, 0
+            except CatProtocolError as exc:
+                raise Refused("xit_unreadable", str(exc)) from exc
+            except (CatConnectionError, OSError) as exc:
+                raise Refused("cat_error", str(exc)) from exc
+        return tx, (split, split_freq, xit_on, xit)
 
     # ------------------------------------------------------------------ surveillance
 
@@ -505,6 +561,13 @@ class PttController:
                 return None
             if self._state is PttState.TX and mode != self._tx_mode:
                 return "mode_changed"
+        if self._tx_plan is not None:              # split ou ΔTX changé sur le poste : la fréquence d'émission a bougé
+            try:
+                _, plan = await self._transmit_plan(client, freq)
+            except Refused:
+                plan = None                         # relecture impossible : liaison et poste muet sont surveillés ailleurs
+            if plan is not None and self._state is PttState.TX and plan != self._tx_plan:
+                return "split_changed" if plan[:2] != self._tx_plan[:2] else "xit_changed"
         try:
             keyed = await client.get_ptt()
         except _CAT_ERRORS:

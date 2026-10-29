@@ -94,8 +94,8 @@ def test_state_carries_local_operator_and_temperature_for_the_clients():
     température d'après state.ptt : ces champs doivent y être (absents jusqu'à la version 0.51.0)."""
     snap = PttSnapshot("RX", None, None, False, "", "", local_remaining_s=95.4321, local_reason="frequency",
                        local_tx=False, temp_alert="warn", temp_c=43.0)
-    rig = SimpleNamespace(connected=True, frequency_hz=7074000, mode="USB", passband_hz=2400, strength_db=-60,
-                          functions={}, levels={})
+    from trxstation.gateway.cat import RigState
+    rig = RigState(connected=True, frequency_hz=7074000, mode="USB", passband_hz=2400, strength_db=-60)
     ctrl = SimpleNamespace(snapshot=lambda: snap, clients=["phone"])
     ptt = build_state(SimpleNamespace(state=rig), ctrl)["ptt"]
     assert ptt["local_remaining_s"] == 95.4 and ptt["local_reason"] == "frequency" and ptt["local_tx"] is False

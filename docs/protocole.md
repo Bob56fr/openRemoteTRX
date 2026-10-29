@@ -48,7 +48,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - `stop` : coupure immédiate, jamais refusée, idempotente, par n'importe quel client.
 - **Battements** : `{"cmd":"heartbeat"}` toutes les **400 ms**, dès l'envoi de `toggle` et tant que le client est propriétaire d'une émission. La station attend un battement toutes les 500 ms (`[safety] heartbeat_interval_ms`) et coupe après 2 s sans battement (`heartbeat_timeout_ms`). Aucune réponse n'est envoyée aux battements. Ils partent du composant qui possède la connexion (service Android), jamais d'un écran.
 - **TOT** : `tot_remaining_s` (secondes restantes, `null` hors émission), `tot_warning` vrai 10 s avant la coupure.
-- **Dernière coupure** `last_cut_reason` : `toggle`, `stop`, `tot`, `heartbeat`, `client_disconnected`, `cat_down`, `rig_silent`, `rig_overheat`, `frequency_changed`, `mode_changed`, `rig_reported_rx`, `ptt_write_failed`, `rig_did_not_key`, `spectrum_port_keyed`, `startup`, `shutdown`.
+- **Dernière coupure** `last_cut_reason` : `toggle`, `stop`, `tot`, `heartbeat`, `client_disconnected`, `cat_down`, `rig_silent`, `rig_overheat`, `frequency_changed`, `mode_changed`, `split_changed` (split mis ou ôté sur le poste pendant l'émission), `xit_changed` (ΔTX changé pendant l'émission), `rig_reported_rx`, `ptt_write_failed`, `rig_did_not_key`, `spectrum_port_keyed`, `startup`, `shutdown`.
 - **`fault`** : `unkey_failed` = la station n'a pas pu confirmer le retour en réception ; émission refusée jusqu'à intervention sur la station. À afficher en alerte.
 - **Opérateur sur place** : `local_remaining_s` (secondes pendant lesquelles le PTT à distance reste refusé, `null` = libre), `local_reason` (`tx`, `frequency`, `mode`), `local_tx` (émission au micro du poste EN COURS). `local_release` (« Reprendre la main ») n'est proposé que si `local_remaining_s` n'est pas `null` ET `local_tx` est faux.
 - **Température** : `temp_alert` (`""`, `warn`, `hot` = émission refusée et coupée), `temp_c` (`null` si le poste ne la donne pas).
@@ -67,7 +67,8 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `set_frequency` | `hz` entier 1 à 10^10 | refusé hors RX confirmé (`tx_active`) |
 | `set_mode` | `mode` (`[A-Za-z0-9-]{1,16}`), `passband` entier 0 à 20 000 (0 = largeur par défaut) | refusé hors RX confirmé |
 | `set_squelch` | `value` nombre 0 à 1 | squelch du poste |
-| `set_function` | `name` parmi `NR NB AIP COMP TUNER ANF MN`, `on` booléen | refusé pendant l'émission |
+| `set_function` | `name` parmi `NR NB AIP COMP TUNER ANF MN RIT XIT`, `on` booléen | refusé pendant l'émission ; `XIT` = ΔTX (décale la fréquence d'ÉMISSION) |
+| `set_offset` | `name` `RIT` ou `XIT`, `hz` entier (±99 999, resserré au « Max RIT/XIT » du poste : ±9 999 sur l'IC-7300MK2) | décalage du clarifieur ; refusé pendant l'émission ; sur l'IC-7300 le RIT et le ΔTX partagent le même décalage |
 | `set_level` | `name`, `value` : `RFPOWER` parmi 0.05 0.1 0.25 0.5 0.8 1 ; `AGC` 0-6, `PREAMP` 0-30, `ATT` 0-60 (entiers) ; `NR` 0-1, `NB` 0-10 (nombres) | refusé pendant l'émission ; le squelch passe par `set_squelch` |
 | `memory_save` | `name` (1 à 40 caractères imprimables), `hz`, `mode`, `favorite` booléen, `memory_id` facultatif (`[a-z0-9]{1,16}`, remplace) | `memory` ; message `memories` diffusé à TOUS les clients |
 | `memory_delete` | `memory_id` | `ok` faux + `unknown_memory` si absente |
@@ -84,7 +85,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 
 - `{"type":"result","id":N,"ok":true, ...}` : succès, champs selon la commande.
 - `{"type":"result","id":N,"ok":false,"reason":"…","detail":"…"}` : refus. `detail` est un texte pour l'humain, `reason` un code stable :
-  - émission : `not_idle`, `unknown_client`, `fault_latched`, `starting`, `tx_disabled` (aucune bande autorisée), `cat_down`, `cat_error`, `local_active`, `local_tx`, `rig_hot`, `cooldown`, `ptt_unreadable`, `cancelled`, `rig_already_tx`, `mode_not_allowed`, `out_of_band`, `ptt_write_failed`, `rig_did_not_key` ;
+  - émission : `not_idle`, `unknown_client`, `fault_latched`, `starting`, `tx_disabled` (aucune bande autorisée), `cat_down`, `cat_error`, `local_active`, `local_tx`, `rig_hot`, `cooldown`, `ptt_unreadable`, `cancelled`, `rig_already_tx`, `mode_not_allowed`, `out_of_band` (vérifié sur la fréquence d'ÉMISSION : en split celle de l'autre VFO, décalée du ΔTX s'il est en service), `split_unreadable`, `xit_unreadable` (split ou ΔTX déclarés par le poste mais illisibles : en cas de doute, pas d'émission), `ptt_write_failed`, `rig_did_not_key` ;
   - réglages : `tx_active` (pas en RX confirmé), `invalid`, `rig_error`, `cat_down` ;
   - fonctions absentes ou en panne : `memories_unavailable`, `unknown_memory`, `storage_error`, `layouts_unavailable`, `layout_invalid`, `layout_storage_error`, `spectrum_unavailable`, `beeps_unavailable`, `beeps_storage_error`, `reports_unavailable` (et les motifs de refus d'un rapport).
 - `{"type":"error","code":"…","detail":"…"}` : message illisible, sans `id` : `too_large`, `bad_json`, `bad_message`, `unknown_command`, `invalid_params`, `rate_limited`.
@@ -94,7 +95,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | Type | Quand | Contenu |
 |---|---|---|
 | `hello` | une fois, à l'ouverture du canal | `protocol`, `client_id`, `version`, `capabilities` (descripteur du poste : modes, filtres par mode, fonctions et niveaux lisibles, préamplis, atténuateurs, plages ; construit l'interface), `tx_modes` (modes où l'émission est permise, vide = tous), `max_power_w` (0 = inconnue : puissance en %), `memories`, `layouts` (booléen), `spectrum` (`{source, level_max, max_fps}` ou `null`), `beeps` (réglages ou `null`), `features` |
-| `state` | aussitôt après `hello`, puis toutes les 250 ms s'il a changé, au moins chaque seconde | `ptt` (§ 5), `rig` (`connected`, `frequency_hz`, `mode`, `passband_hz`, `strength_db`, `functions`, `levels`), `audio` (niveaux et compteurs, diagnostic), `clients` (comptes connectés), `spectrum` (`state` : `waiting`, `starting`, `ok`, `error` ; `code`, `message`, `settings`) |
+| `state` | aussitôt après `hello`, puis toutes les 250 ms s'il a changé, au moins chaque seconde | `ptt` (§ 5), `rig` (`connected`, `frequency_hz`, `mode`, `passband_hz`, `strength_db`, `functions` (dont `RIT`, `XIT`), `levels`, `split` (booléen, `null` = inconnu), `tx_frequency_hz` (fréquence d'émission en split, sinon `null`), `offsets` (`RIT`, `XIT` : décalages en Hz)) ; le VFO actif (A, B, mémoire) n'est PAS publié : l'IC-7300MK2 ne le donne pas (`get_vfo` : RPRT -11), `audio` (niveaux et compteurs, diagnostic), `clients` (comptes connectés), `spectrum` (`state` : `waiting`, `starting`, `ok`, `error` ; `code`, `message`, `settings`) |
 | `result`, `error` | réponse à une commande | § 7 |
 | `memories` | une mémoire change (n'importe quel client) | `items` : `{id, name, hz, mode, favorite}` |
 | `beeps` | réglage des bips changé | `settings` |

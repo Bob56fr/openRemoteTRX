@@ -349,10 +349,11 @@ def test_link_reads_functions_and_levels_round_robin_without_flooding_the_bus():
     async def scenario(fake):
         link = make_link(fake)
         task = asyncio.create_task(link.run())
-        await until(lambda: {"NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN"} <= set(link.state.functions) and
+        await until(lambda: {"NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN", "RIT", "XIT"} <= set(link.state.functions) and
                     {"PREAMP", "ATT", "AGC", "SQL", "VD_METER", "TEMP_METER", "NR", "NB"} <= set(link.state.levels))
         s = link.state
-        assert s.functions == {"NR": False, "NB": True, "AIP": False, "COMP": False, "TUNER": False, "ANF": False, "MN": False}
+        assert s.functions == {"NR": False, "NB": True, "AIP": False, "COMP": False, "TUNER": False, "ANF": False, "MN": False,
+                               "RIT": False, "XIT": False}
         assert s.levels["NR"] == 0.4 and s.levels["NB"] == 5.0                  # NR/NB : fonction ET niveau, sans se mélanger
         assert s.levels["PREAMP"] == 10 and s.levels["SQL"] == 0.2 and s.levels["VD_METER"] == 13.8
         assert not {"RFPOWER_METER", "SWR", "ALC"} & set(s.levels)               # mesures d'émission : seulement en émission

@@ -30,6 +30,16 @@ test("version de la station affichée depuis hello", () => {
   assert.equal(web.versionLabel(messages.hello.version), "v" + messages.hello.version);
 });
 
+test("clarifieur : ΔTX prioritaire, décalage borné, absent sans RIT ni XIT", () => {
+  const rig = messages.state.rig, caps = messages.hello.capabilities;
+  assert.equal(web.clarifierView({}, rig, caps), null);
+  const x = web.clarifierView({ XIT: true, RIT: true }, Object.assign({}, rig, { offsets: { XIT: 250, RIT: 20 } }), caps);
+  assert.deepEqual(x, { name: "XIT", label: "ΔTX", hz: 250, max: 9999 });
+  assert.equal(web.clarifierView({ RIT: true }, Object.assign({}, rig, { offsets: { RIT: 50000 } }), caps).hz, 9999);
+  assert.equal(web.clarifierText(-1234), "-1230 Hz");
+  assert.equal(web.clarifierText(0), "+0 Hz");
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

@@ -44,6 +44,8 @@
     spectrum_refused: "Le poste a refusé ce réglage du spectre (en mode fixe, la largeur ne se règle pas).",
     bad_setting: "Réglage du spectre invalide.",
     out_of_band: "Fréquence hors des bandes d'émission autorisées.",
+    split_unreadable: "Split illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
+    xit_unreadable: "ΔTX (XIT) illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
     cooldown: "Trop rapproché : attends une seconde avant de réémettre.",
     unknown_client: "Client non reconnu par la passerelle.",
     tx_disabled: "Aucune bande d'émission autorisée dans la configuration.",
@@ -86,6 +88,8 @@
     client_disconnected: "déconnexion du client émetteur",
     frequency_changed: "fréquence modifiée sur le poste",
     mode_changed: "mode modifié sur le poste pendant l'émission",
+    split_changed: "split modifié sur le poste pendant l'émission",
+    xit_changed: "ΔTX (XIT) modifié sur le poste pendant l'émission",
     rig_reported_rx: "le poste est repassé en réception",
     cat_down: "liaison avec le poste perdue",
     rig_silent: "poste muet",
@@ -327,6 +331,21 @@
   function chooseLayout(preference, isLandscape, width) {
     if (preference === "portrait" || preference === "landscape") return preference;
     return isLandscape && width >= 640 ? "landscape" : "portrait";   // « auto » : paysage seulement si l'écran est assez large
+  }
+
+  function clarifierView(fn, rig, caps) {
+    /* Curseur du clarifieur : ΔTX (XIT) en service, sinon RIT en service ; null si aucun. Décalage commun aux deux sur l'IC-7300. */
+    const name = fn && fn.XIT ? "XIT" : fn && fn.RIT ? "RIT" : null;
+    if (!name) return null;
+    const declared = caps && (name === "XIT" ? caps.max_xit_hz : caps.max_rit_hz);
+    const max = Number.isInteger(declared) && declared > 0 ? declared : 9999;
+    const offsets = rig && rig.offsets && typeof rig.offsets === "object" ? rig.offsets : {};
+    const hz = Number.isFinite(offsets[name]) ? Math.max(-max, Math.min(max, Math.round(offsets[name]))) : 0;
+    return { name: name, label: name === "XIT" ? "ΔTX" : "RIT", hz: hz, max: max };
+  }
+
+  function clarifierText(hz) {
+    return (hz >= 0 ? "+" : "") + Math.round(hz / 10) * 10 + " Hz";
   }
 
   function squelchMarkerFraction(sql) {
@@ -1110,6 +1129,7 @@
       const preset = this._filterPreset();
       if (preset) controls.push({ key: "FIL", label: "FIL" + preset + (rig.passband_hz ? " " + formatWidth(rig.passband_hz) : ""), on: true });
       else if (!this._presetsExpected() && Array.isArray(widths) && widths.length > 1 && rig.passband_hz) controls.push({ key: "FIL", label: filterLabel(widths, rig.passband_hz), on: true });
+      fnControl("RIT", "RIT"); fnControl("XIT", "ΔTX");                  // clarifieur (ΔTX = XIT : décale l'ÉMISSION)
       fnControl("TUNER", "TUNER");
       if ("RFPOWER" in lv) controls.push({ key: "PWR", label: powerLabel(lv.RFPOWER, this.hello ? this.hello.max_power_w : 0), on: true });
       const instruments = [];
@@ -1130,6 +1150,7 @@
         local: localView(p), temp: tempView(p),
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
+        clarifier: clarifierView(fn, rig, this._caps()),
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -1438,6 +1459,13 @@
       return this.toggleFunction(key);
     }
 
+    async setOffset(name, hz) {
+      /* Décalage du clarifieur (RIT, ou XIT = ΔTX qui décale l'ÉMISSION), arrondi à 10 Hz ; refusé par la station pendant l'émission. */
+      const res = await this.send("set_offset", { name: name, hz: Math.round(hz / 10) * 10 });
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
     async setSquelch(value) {
       const res = await this.send("set_squelch", { value: value });
       if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
@@ -1536,6 +1564,6 @@
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
-                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame };
+                LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

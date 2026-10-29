@@ -21,7 +21,8 @@ MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 LEVEL_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,23}$")
 FUNC_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,15}$")
 # Écritures autorisées : une liste FERMÉE (jamais de nom libre vers rigctld). Aucune n'agit sur le PTT.
-WRITABLE_FUNCS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN")   # AIP = IP+ ; TUNER = tuner d'antenne ; ANF/MN = notch auto/manuel
+WRITABLE_FUNCS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN", "RIT", "XIT")   # AIP = IP+ ; TUNER = tuner d'antenne ; ANF/MN = notch auto/manuel ; RIT/XIT = clarifieur (XIT = ΔTX, décale l'ÉMISSION)
+OFFSET_MAX_HZ = 99_999                                       # décalage RIT / XIT : borne large ; la passerelle resserre avec « Max RIT/XIT » du poste
 WRITABLE_LEVELS = ("SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB")
 POWER_STEPS = (0.05, 0.10, 0.25, 0.50, 0.80, 1.00)         # RFPOWER : fraction de la puissance maximale (5, 10, 25, 50, 80, 100 %)
 INT_LEVELS = {"AGC": (0, 6), "PREAMP": (0, 30), "ATT": (0, 60)}   # AGC : 0 OFF … 6 AUTO ; PREAMP et ATT en dB (0 = arrêt)
@@ -193,6 +194,33 @@ class RigctldClient:
         except ValueError:
             raise CatProtocolError(f"état PTT illisible : {raw!r}") from None
 
+    async def get_split(self) -> bool:
+        """Split en service ? (« Split: 0 / TX VFO: currVFO » sur un vrai rigctld). RigError si le poste ne le dit pas."""
+        raw = self._pick(await self._command("s"), "Split", "#1", command="s")
+        try:
+            return int(float(raw)) != 0
+        except ValueError:
+            raise CatProtocolError(f"split illisible : {raw!r}") from None
+
+    async def get_split_frequency(self) -> int:
+        """Fréquence d'ÉMISSION en split, en Hz (« TX Frequency: 0 » hors split)."""
+        raw = self._pick(await self._command("i"), "TX Frequency", "#1", command="i")
+        try:
+            return int(float(raw))
+        except ValueError:
+            raise CatProtocolError(f"fréquence d'émission illisible : {raw!r}") from None
+
+    async def get_offset(self, which: str) -> int:
+        """Décalage du clarifieur en Hz : `which` = « RIT » (réception) ou « XIT » (ΔTX, émission)."""
+        letter = {"RIT": "j", "XIT": "z"}.get(which)
+        if letter is None:
+            raise ValueError(f"décalage inconnu : {which!r}")
+        raw = self._pick(await self._command(letter), which, "#1", command=letter)
+        try:
+            return int(float(raw))
+        except ValueError:
+            raise CatProtocolError(f"décalage illisible : {raw!r}") from None
+
     # ------------------------------------------------------------------ PTT (réservé)
 
     async def write_ptt(self, tx: bool) -> None:
@@ -225,6 +253,15 @@ class RigctldClient:
                 raise ValueError(f"valeur invalide ({low:g} à {high:g} attendu) : {value!r}")
             text = f"{float(value):.3f}"
         await self._command(f"L {name} {text}")
+
+    async def set_offset(self, which: str, hz: int) -> None:
+        """Décalage RIT (« J ») ou XIT / ΔTX (« Z ») en Hz, entier borné : jamais d'autre valeur vers rigctld."""
+        letter = {"RIT": "J", "XIT": "Z"}.get(which)
+        if letter is None:
+            raise ValueError(f"décalage inconnu : {which!r}")
+        if isinstance(hz, bool) or not isinstance(hz, int) or not -OFFSET_MAX_HZ <= hz <= OFFSET_MAX_HZ:
+            raise ValueError(f"décalage invalide (entier de {-OFFSET_MAX_HZ} à {OFFSET_MAX_HZ} Hz) : {hz!r}")
+        await self._command(f"{letter} {hz}")
 
     async def set_func(self, name: str, on: bool) -> None:
         """Met en ou hors service une fonction de la liste WRITABLE_FUNCS (NR, NB, IP+, compresseur, tuner)."""

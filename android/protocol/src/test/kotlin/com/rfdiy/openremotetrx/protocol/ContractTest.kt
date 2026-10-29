@@ -119,6 +119,7 @@ class ContractTest {
             "spectrum_watch" -> Command.SpectrumWatch(p("on").boolean)
             "beeps_set" -> Command.BeepsSet(e.filterKeys { it != "cmd" && it != "id" }.mapValues { it.value.jsonPrimitive })
             "bug_report" -> Command.BugReport(p("text").content)
+            "set_offset" -> Command.SetOffset(p("name").content, p("hz").int)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

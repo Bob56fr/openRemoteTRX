@@ -31,6 +31,13 @@
       "invalid": [{"message": {"cmd": "set_function", "name": "VOX", "on": true}, "code": "invalid_params"},
                   {"message": {"cmd": "set_function", "name": "NR", "on": 1}, "code": "invalid_params"}]
     },
+    "set_offset": {
+      "valid": [{"cmd": "set_offset", "id": 21, "name": "XIT", "hz": 250},
+                {"cmd": "set_offset", "name": "RIT", "hz": -1200}],
+      "invalid": [{"message": {"cmd": "set_offset", "name": "SPLIT", "hz": 0}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_offset", "name": "XIT", "hz": 12.5}, "code": "invalid_params"},
+                  {"message": {"cmd": "set_offset", "name": "XIT", "hz": 200000}, "code": "invalid_params"}]
+    },
     "set_level": {
       "valid": [{"cmd": "set_level", "id": 8, "name": "RFPOWER", "value": 0.25},
                 {"cmd": "set_level", "name": "AGC", "value": 2},

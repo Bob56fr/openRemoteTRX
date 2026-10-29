@@ -44,7 +44,9 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
                 "temp_alert": ptt.temp_alert, "temp_c": ptt.temp_c},
         "rig": {"connected": rig.connected, "frequency_hz": rig.frequency_hz, "mode": rig.mode,
                 "passband_hz": rig.passband_hz, "strength_db": rig.strength_db,
-                "functions": dict(rig.functions), "levels": dict(rig.levels)},
+                "functions": dict(rig.functions), "levels": dict(rig.levels),
+                # split (fréquence d'émission = autre VFO) et décalages du clarifieur (RIT, XIT = ΔTX) ; None = inconnu
+                "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets)},
         "audio": pipeline.stats() if pipeline is not None else {},
         "clients": ctrl.clients,
         "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},
@@ -250,6 +252,9 @@ class ControlSession:
                 self._result(cmd.id, True)
             elif cmd.name == "set_level":
                 await self.ctrl.set_level(cmd.params["name"], cmd.params["value"])
+                self._result(cmd.id, True)
+            elif cmd.name == "set_offset":
+                await self.ctrl.set_offset(cmd.params["name"], cmd.params["hz"])          # refusé pendant l'émission
                 self._result(cmd.id, True)
             elif cmd.name == "spectrum_set":
                 if self.spectrum is None:

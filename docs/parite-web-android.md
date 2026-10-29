@@ -29,11 +29,12 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Spots du cluster DX | fait | fait | fait (0.8.0 : étiquettes sur le spectre en paysage, « +N », fiche, QSY ; 0.10.0 : voyant de santé, SPOTS, LISTE triée, VFO = accord au doigt) | |
 | Mises en page du designer (`layouts`) | fait | fait | plus tard (A4), peut-être jamais | |
 | Thèmes de couleurs | — | fait | plus tard (A4) | |
-| VFO A / B, split, clarifieur (RIT / XIT) | à faire (sécurité : en split, la bande d'émission est celle du VFO d'émission) | à faire | à faire | demandé le 2026-10-29 ; protocole à étendre (`docs/protocole.md`) |
+| Split, RIT, ΔTX / XIT : lecture, boutons RIT et ΔTX, curseur du décalage | fait (0.55.0 : `split`, `tx_frequency_hz`, `offsets`, `set_offset` ; bande vérifiée sur la fréquence d'ÉMISSION) | fait (boutons, curseur sous le squelch) ; voyants : à faire | fait (0.11.0 : voyants RIT, ΔTX, SPLIT, boutons, curseur) | |
+| VFO actif (A, B, mémoire) | non lisible sur l'IC-7300MK2 (`get_vfo` : RPRT -11) ; second port CI-V à étudier | — | — | voyant absent plutôt que deviné |
 | Commande vocale « QSY 27 555 » (confirmation sur le téléphone) | — | absent | à étudier (bouton micro ou écoute permanente) | demandé le 2026-10-29 ; jamais en émission, fréquence seulement |
 | Bandes préférées (choix et ordre des boutons de bande) | — (réglage de l'appareil) | à faire (étape suivante) | fait (0.8.0 : ✎ au bout des bandes) | demandé le 2026-10-29 ; aucune cochée = toutes |
 | Spectre HF en plein écran en tournant le téléphone (paysage), waterfall audio en portrait | — | page : vue HF plein écran / intégrée en paysage large | fait (0.8.0) | STOP et état de l'émission toujours visibles en paysage |
 | Zoom à deux doigts sur le spectre HF (span du poste) | fait (spectrum_set) | absent | fait (0.9.0) | passe en mode CENT si besoin |
 | NB : largeur et profondeur (en plus de marche/arrêt et niveau) | à faire : Hamlib ne les expose PAS pour l'IC-7300MK2 (dump_caps : NB 0..10 seul, aucun « Extra level ») ; possible par le second port CI-V (comme FIL1/2/3), à confirmer sur le poste | à faire | à faire | demandé le 2026-10-29 |
-| Voyants de l'afficheur : ATT ou P.AMP 1 / P.AMP 2 (ou rien), NOTCH, NB, NR ; VFO-A / VFO-B / MEM, RIT, CLAR, SPLIT après l'étape station | — | à faire | fait (0.10.1, sauf VFO / MEM / RIT / CLAR / SPLIT) | vert = actif, gris = éteint ; précisé par l'utilisateur le 2026-10-29 |
+| Voyants de l'afficheur : ATT ou P.AMP 1 / P.AMP 2 (ou rien), RIT, ΔTX, SPLIT, NOTCH, NB, NR (VFO-A / VFO-B / MEM : non lisible) | — | à faire | fait (0.11.0) | vert = actif, gris = éteint ; précisé par l'utilisateur le 2026-10-29 |
 | Bargraphs POWER, SWR, ALC toujours visibles dans l'afficheur | — | fait (graphiques de puissance) | fait (0.10.1) | à zéro en réception |

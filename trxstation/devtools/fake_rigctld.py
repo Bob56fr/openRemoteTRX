@@ -26,7 +26,13 @@ class FakeRigctld:
         self.levels: dict[str, float] = {"ALC": 0.0, "SWR": 1.1, "RFPOWER_METER": 0.0, "COMP_METER": 0.0, "PREAMP": 10,
                                          "ATT": 0, "AGC": 3, "SQL": 0.2, "RFPOWER": 1.0, "VD_METER": 13.8, "TEMP_METER": 31.0,
                                          "NR": 0.4, "NB": 5.0}
-        self.funcs: dict[str, int] = {"NR": 0, "NB": 1, "AIP": 0, "ANF": 0, "MN": 0, "COMP": 0, "TUNER": 0}
+        self.funcs: dict[str, int] = {"NR": 0, "NB": 1, "AIP": 0, "ANF": 0, "MN": 0, "COMP": 0, "TUNER": 0, "RIT": 0, "XIT": 0}
+        # Split et clarifieur, formats relevés sur un vrai rigctld (IC-7300MK2, Hamlib 5) : « Split: 0 / TX VFO: currVFO »,
+        # « TX Frequency: 0 » hors split, « RIT: 20 » et « XIT: 20 » (décalage commun au RIT et au ΔTX sur ce poste).
+        self.split = 0
+        self.split_freq = 0
+        self.rit = 0
+        self.xit = 0
         self.ptt = 0
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
@@ -131,6 +137,27 @@ class FakeRigctld:
                     return "RPRT -11\n"
                 self.levels[args[0]] = float(args[1]) if args[0] in ("SQL", "RFPOWER", "NR", "NB") else int(args[1])
                 return f"set_level: {args[0]} {args[1]}\nRPRT 0\n"
+            if key == "s":
+                vfo = "VFOB" if self.split else "currVFO"
+                return f"get_split_vfo:\n{self._out('Split', self.split)}{self._out('TX VFO', vfo)}RPRT 0\n"
+            if key == "S" and len(args) == 2:
+                self.split = int(args[0])
+                return f"set_split_vfo: {args[0]} {args[1]}\nRPRT 0\n"
+            if key == "i":
+                return f"get_split_freq:\n{self._out('TX Frequency', self.split_freq if self.split else 0)}RPRT 0\n"
+            if key == "I" and args:
+                self.split_freq = int(float(args[0]))
+                return f"set_split_freq: {args[0]}\nRPRT 0\n"
+            if key == "j":
+                return f"get_rit:\n{self._out('RIT', self.rit)}RPRT 0\n"
+            if key == "J" and args:
+                self.rit = int(args[0])
+                return f"set_rit: {args[0]}\nRPRT 0\n"
+            if key == "z":
+                return f"get_xit:\n{self._out('XIT', self.xit)}RPRT 0\n"
+            if key == "Z" and args:
+                self.xit = int(args[0])
+                return f"set_xit: {args[0]}\nRPRT 0\n"
             if key == "t":
                 return f"get_ptt:\n{self._out('PTT', self.ptt)}RPRT 0\n"
             if key == "T":

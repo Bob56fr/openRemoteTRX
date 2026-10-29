@@ -19,7 +19,7 @@ import re
 from dataclasses import dataclass, field
 
 from ...layout.catalog import MAX_PROFILE_BYTES
-from ..cat.client import FLOAT_LEVELS, INT_LEVELS, POWER_STEPS, WRITABLE_FUNCS
+from ..cat.client import FLOAT_LEVELS, INT_LEVELS, OFFSET_MAX_HZ, POWER_STEPS, WRITABLE_FUNCS
 from ..memories import ID_RE, validate_fields
 
 PROTOCOL_VERSION = 1
@@ -38,7 +38,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
             "layout_get", "layout_save", "layout_reset", "spectrum_set", "spectrum_watch", "beeps_set",
             "local_release",                 # « reprendre la main » quand le poste est utilisé sur place (sans paramètre)
-            "bug_report")                    # rapport de problème de la page, rangé sur la station (text)
+            "bug_report",                    # rapport de problème de la page, rangé sur la station (text)
+            "set_offset")                    # décalage du clarifieur : name RIT ou XIT (ΔTX), hz entier
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -111,6 +112,11 @@ def parse_command(raw: str | bytes) -> Command:
         if not isinstance(data.get("on"), bool):
             raise ProtocolError("invalid_params", "on doit valoir true ou false")
         params["name"], params["on"] = data["name"], data["on"]
+    elif name == "set_offset":
+        if data.get("name") not in ("RIT", "XIT"):
+            raise ProtocolError("invalid_params", "name doit valoir RIT ou XIT")
+        params["name"] = data["name"]
+        params["hz"] = _int(data.get("hz"), "hz", -OFFSET_MAX_HZ, OFFSET_MAX_HZ)
     elif name == "set_level":
         level, value = data.get("name"), data.get("value")
         if level == "RFPOWER":

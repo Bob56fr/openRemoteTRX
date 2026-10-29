@@ -91,6 +91,8 @@ object Controls {
             val close = i >= 0 && abs(widths[i] - passband) <= maxOf(50.0, widths[i] * 0.15)
             out += ControlChip("FIL", "FIL " + formatWidth(if (close) widths[i] else passband), true)
         }
+        function("RIT", "RIT")
+        function("XIT", "ΔTX")                                    // ΔTX = XIT : décale la fréquence d'ÉMISSION
         function("TUNER", "TUNER")
         lv["RFPOWER"]?.let { out += ControlChip("PWR", powerLabel(it, hello?.maxPowerW ?: 0), true) }
         return out

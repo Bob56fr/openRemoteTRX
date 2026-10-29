@@ -396,6 +396,9 @@ class RigSession(
         control(now, *commands.toTypedArray())
     }
 
+    /** Décalage du clarifieur (RIT ou XIT = ΔTX), arrondi à 10 Hz ; refusé pendant l'émission. */
+    fun setOffset(now: Long, name: String, hz: Int) = control(now, Command.SetOffset(name, Math.round(hz / 10.0).toInt() * 10))
+
     /** Squelch du poste, 0 (ouvert) à 1. */
     fun setSquelch(now: Long, value: Double) = control(now, Command.SetSquelch(value.coerceIn(0.0, 1.0)))
 

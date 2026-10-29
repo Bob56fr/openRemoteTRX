@@ -51,6 +51,11 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("name", function); put("on", on) }
     }
 
+    /** Décalage du clarifieur : `RIT` (réception) ou `XIT` (ΔTX, émission), en Hz. Refusé pendant l'émission. */
+    data class SetOffset(val offset: String, val hz: Int) : Command("set_offset") {
+        override fun JsonObjectBuilder.params() { put("name", offset); put("hz", hz) }
+    }
+
     /** Entier pour AGC, PREAMP, ATT ; nombre pour RFPOWER, NR, NB : la station distingue les deux. */
     data class SetLevel(val level: String, val value: Number) : Command("set_level") {
         override fun JsonObjectBuilder.params() { put("name", level); put("value", JsonPrimitive(value)) }
@@ -101,7 +106,7 @@ sealed class Command(val name: String) {
         val NAMES = setOf(
             "toggle", "stop", "heartbeat", "get_state", "set_frequency", "set_mode", "set_squelch", "set_function",
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
-            "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report",
+            "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
         )
     }
 }

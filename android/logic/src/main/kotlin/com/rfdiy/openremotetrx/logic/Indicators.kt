@@ -11,9 +11,9 @@ import kotlin.math.roundToInt
 data class Indicator(val label: String, val on: Boolean)
 
 /**
- * Voyants à côté de la fréquence (demande de l'utilisateur) : ATT, ou P.AMP 1 / P.AMP 2, ou rien ; NOTCH ; NB ; NR.
- * Seuls les voyants dont la station publie l'état sont montrés : VFO-A / VFO-B / MEM, RIT, CLAR, SPLIT viendront avec
- * leur lecture côté station. POWER, SWR, ALC ne sont pas des voyants mais des bargraphs (`Indicators.txMeters`).
+ * Voyants à côté de la fréquence (demande de l'utilisateur) : ATT, ou P.AMP 1 / P.AMP 2, ou rien ; RIT ; ΔTX (XIT) ;
+ * SPLIT ; NOTCH ; NB ; NR. Seuls les voyants dont la station publie l'état sont montrés (VFO-A / VFO-B / MEM : non lisible
+ * sur l'IC-7300MK2). POWER, SWR, ALC ne sont pas des voyants mais des bargraphs (`Indicators.txMeters`).
  */
 object Indicators {
     fun of(hello: Hello?, state: State?): List<Indicator> {
@@ -26,6 +26,10 @@ object Indicators {
             att > 0 -> out += Indicator("ATT", true)
             preamp > 0 -> out += Indicator("P.AMP ${preampNumber(preamp, hello?.capabilities?.preamps.orEmpty())}", true)
         }
+        // Clarifieur et split (lus par la station) ; le VFO actif n'est pas lisible sur l'IC-7300MK2 (get_vfo : RPRT -11)
+        fn["RIT"]?.let { out += Indicator("RIT", it) }
+        fn["XIT"]?.let { out += Indicator("ΔTX", it) }
+        rig.split?.let { out += Indicator("SPLIT", it) }
         if ("ANF" in fn || "MN" in fn) out += Indicator("NOTCH", fn["ANF"] == true || fn["MN"] == true)
         fn["NB"]?.let { out += Indicator("NB", it) }
         fn["NR"]?.let { out += Indicator("NR", it) }

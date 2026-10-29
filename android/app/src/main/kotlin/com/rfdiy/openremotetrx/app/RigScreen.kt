@@ -134,6 +134,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var bandsDialog by remember { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
+    var offsetDrag by remember { mutableStateOf<Float?>(null) }
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
     val shownHz = pendingLive ?: radio?.frequencyHz
     val step = Radio.STEPS_HZ[stepIndex]
@@ -244,6 +245,32 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                             val percent = (shown * 100).roundToInt()
                             Text(if (percent == 0) "ouvert" else "$percent %", style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
+                        }
+                    }
+                    // Clarifieur : ΔTX (XIT) ou RIT en service => curseur du décalage (commun aux deux sur l'IC-7300), pas de 10 Hz
+                    val clar = when {
+                        radio?.functions?.get("XIT") == true -> "XIT"
+                        radio?.functions?.get("RIT") == true -> "RIT"
+                        else -> null
+                    }
+                    if (clar != null) {
+                        val max = (if (clar == "XIT") hello?.capabilities?.maxXitHz else hello?.capabilities?.maxRitHz)?.takeIf { it > 0 } ?: 9999
+                        val current = (radio?.offsets?.get(clar) ?: 0).coerceIn(-max, max)
+                        val shown = offsetDrag ?: current.toFloat()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (clar == "XIT") "ΔTX" else "RIT", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
+                            Slider(
+                                value = shown, onValueChange = { offsetDrag = it }, enabled = canSet,
+                                valueRange = -max.toFloat()..max.toFloat(),
+                                onValueChangeFinished = { offsetDrag?.let { RigHub.setOffset(clar, it.roundToInt()) }; offsetDrag = null },
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                (if (shown >= 0) "+" else "") + (Math.round(shown / 10.0) * 10) + " Hz",
+                                style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(72.dp).clickable(enabled = canSet) {
+                                    RigHub.setOffset(clar, 0)                                       // toucher la valeur : remise à zéro
+                                }, textAlign = TextAlign.End,
+                            )
                         }
                     }
                 }

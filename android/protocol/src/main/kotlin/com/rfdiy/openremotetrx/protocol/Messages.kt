@@ -38,6 +38,11 @@ data class Capabilities(
     val preamps: List<Int> = emptyList(),
     val attenuators: List<Int> = emptyList(),
     @SerialName("level_ranges") val levelRanges: Map<String, List<Double>> = emptyMap(),
+    /** Split lisible (« Can get Split VFO ») ; null = non déclaré. */
+    @SerialName("can_get_split") val canGetSplit: Boolean? = null,
+    /** Décalages maximaux du clarifieur (Hz) ; 0 = inconnu. */
+    @SerialName("max_rit_hz") val maxRitHz: Int = 0,
+    @SerialName("max_xit_hz") val maxXitHz: Int = 0,
 )
 
 @Serializable
@@ -100,6 +105,12 @@ data class RigStatus(
     @SerialName("strength_db") val strengthDb: Double? = null,
     val functions: Map<String, Boolean> = emptyMap(),
     val levels: Map<String, Double> = emptyMap(),
+    /** Split en service ; null = inconnu (poste qui ne le dit pas). */
+    val split: Boolean? = null,
+    /** Fréquence d'ÉMISSION en split ; null hors split. */
+    @SerialName("tx_frequency_hz") val txFrequencyHz: Long? = null,
+    /** Décalages du clarifieur : « RIT », « XIT » (ΔTX) en Hz. */
+    val offsets: Map<String, Int> = emptyMap(),
 )
 
 @Serializable

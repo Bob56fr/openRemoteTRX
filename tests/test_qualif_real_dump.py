@@ -42,7 +42,7 @@ def test_real_plan_matches_what_trx_qualif_printed():
     ids = {i.id for i in plan.items}
     assert {"mode_FM-D", "mode_AM-D", "write_level_AGC", "write_level_PREAMP", "read_level_VD_METER"} <= ids
     assert not any("AIP" in i for i in ids) and "read_level_TEMP_METER" not in ids
-    assert {"SPECTRUM", "RFPOWER_METER_WATTS", "PBT_IN", "RIT", "XIT", "USB_AF"} <= set(plan.unused)
+    assert {"SPECTRUM", "RFPOWER_METER_WATTS", "PBT_IN", "USB_AF"} <= set(plan.unused)     # RIT et XIT : utilisés depuis 0.55.0
 
 
 def test_data_mode_names_follow_the_hamlib_version():

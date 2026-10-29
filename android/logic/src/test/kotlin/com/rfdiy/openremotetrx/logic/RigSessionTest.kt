@@ -369,3 +369,20 @@ class RigSessionSpotsTest {
         assertTrue(s.snapshot.spots.isEmpty())
     }
 }
+
+class RigSessionOffsetTest {
+    @Test
+    fun `decalage du clarifieur arrondi a 10 Hz, refuse pendant l'emission`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone"}""")
+        s.onMessage(0, """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true}}""")
+        s.setOffset(1, "XIT", 247)
+        assertTrue(link.sent.last().contains("\"cmd\":\"set_offset\"") && link.sent.last().contains("\"hz\":250"))
+        s.onMessage(2, """{"type":"state","ptt":{"state":"TX","owner":"pc"},"rig":{"connected":true}}""")
+        link.sent.clear()
+        s.setOffset(3, "XIT", 0)
+        assertTrue(link.sent.isEmpty())
+    }
+}
