@@ -66,3 +66,28 @@ class SpotsTest {
         assertEquals("11,20", Radio.favoriteBandsText(Radio.favoriteBands("11,20")))
     }
 }
+
+class ClusterStatusTest {
+    private val data = kotlinx.serialization.json.Json.parseToJsonElement("""{"kind":"cluster_status","health":"orange",
+        "sources":[{"name":"F5LEN","type":"telnet","verdict":"ok","last_10min":42,"last_spot_age_s":20},
+                   {"name":"RBN","type":"rbn","verdict":"attente","retry_in_s":30},
+                   {"name":"CB","type":"web","verdict":"echec","code":"http_403"}],
+        "bands":{"20m":17,"40m":6,"11m":2,"2m":9}}""") as kotlinx.serialization.json.JsonObject
+
+    @Test
+    fun `etat des flux comme la page`() {
+        val v = ClusterStatus.view(data, 10.0)
+        assertEquals("Une partie des flux seulement", v.title)
+        assertEquals(listOf("green", "orange", "red"), v.lines.map { it.dot })
+        assertEquals("F5LEN (cluster) : reçoit · 4 spots/min · dernier il y a 30 s", v.lines[0].text)
+        assertEquals("RBN (RBN) : connexion en cours · nouvel essai dans 30 s", v.lines[1].text)
+        assertTrue(v.lines[2].text.endsWith("http_403 : voir TRX Console, menu 12"))
+        assertEquals(false, v.stale)
+        assertTrue(ClusterStatus.view(data, 60.0).stale)
+    }
+
+    @Test
+    fun `pastilles des bandes - gris, orange, rouge, bandes inconnues ignorees`() {
+        assertEquals(mapOf("20" to BandDot(17, 3), "40" to BandDot(6, 2), "11" to BandDot(2, 1)), ClusterStatus.bandDots(data))
+    }
+}

@@ -12,14 +12,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -54,7 +51,7 @@ class MainActivity : ComponentActivity() {
         val store = AccountStore(this)
         setContent {
             MaterialTheme(
-                colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
+                colorScheme = Page.scheme,                         // couleurs de la page web (thème par défaut)
                 typography = compactTypography(),
             ) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
@@ -62,6 +59,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Sortie de l'application (autre application, écran verrouillé), hors simple rotation : retour en réception si CE
+     * téléphone émet, sauf réglage « Rester en émission en quittant l'application » (désactivé par défaut).
+     */
+    override fun onStop() {
+        super.onStop()
+        if (isChangingConfigurations) return
+        RigHub.leaving(getSharedPreferences("ui", MODE_PRIVATE).getBoolean("keep_tx_background", false))
     }
 
     private fun granted(permission: String) =

@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -73,6 +74,8 @@ import com.rfdiy.openremotetrx.logic.Controls
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.Indicators
+import com.rfdiy.openremotetrx.logic.bandDots
+import com.rfdiy.openremotetrx.logic.clusterView
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.LogLevel
 import com.rfdiy.openremotetrx.logic.Meter
@@ -82,9 +85,11 @@ import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val TX_RED = Color(0xFFC62828)
-private val WARN = Color(0xFFEF6C00)
-private val SQL_OPEN = Color(0xFF43A047)
+private val TX_RED = Page.TX                     // couleurs de la page web (client.css)
+private val WARN = Page.ALERTE
+private val SQL_OPEN = Page.SUCCES
+private val HEALTH = mapOf("green" to Page.SUCCES, "orange" to Page.ALERTE, "red" to Page.TX, "off" to Page.TEXTE_2)
+private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX)    // pastilles des bandes (page : lvl1..3)
 
 /** Anti-rebond du PTT : Android peut livrer un « clic fantôme » juste après un appui (CLAUDE.md, page web). */
 private class Debounce(private val ms: Long = 600) {
@@ -113,6 +118,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
+    var keepTx by remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
     // Écran allumé tant que la station est affichée (comme la page) ; l'écoute continue de toute façon écran éteint.
     val view = LocalView.current
     DisposableEffect(keepScreenOn, rig.status) {
@@ -189,7 +195,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             if (!rig.protocolOk) Banner("Version de protocole inconnue : réception et STOP seulement.", WARN)
 
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
-            Surface(shape = RoundedCornerShape(12.dp), tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         Radio.formatIcom(shownHz),
@@ -228,6 +234,18 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     // Bargraphs POWER, SWR, ALC toujours visibles (comme sur un poste ; à zéro en réception)
                     for (m in Indicators.txMeters(rig.state)) {
                         MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
+                    }
+                    // État de l'émission (station), bien visible dans l'afficheur, au-dessus du squelch
+                    if (ptt != null) {
+                        Banner(
+                            when {
+                                mineTx -> "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " — coupure dans ${Format.duration(it)}" } ?: "")
+                                ptt.other -> "${ptt.label} : autre client (${rig.state?.ptt?.owner ?: "?"})"
+                                else -> ptt.label
+                            },
+                            if (ptt.transmitting) TX_RED else Page.SELECTION, big = true,
+                            textColor = Color.White,
+                        )
                     }
                     radio?.levels?.get("SQL")?.let { sql ->
                         // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
@@ -293,16 +311,20 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 OutlinedButton(onClick = { tune(1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("+", fontSize = 20.sp) }
             }
 
-            // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner)
+            // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
+            HorizontalDivider(color = Page.LIGNE)
+            val dots = rig.bandDots(System.currentTimeMillis())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 val current = Radio.bandOf(radio?.frequencyHz)?.key
                 for (band in Radio.favoriteBands(bandsPref)) {
-                    CompactChip(band.key, onClick = { RigHub.selectBand(band.key) }, enabled = canSet, selected = band.key == current)
+                    CompactChip(band.key, onClick = { RigHub.selectBand(band.key) }, enabled = canSet, selected = band.key == current,
+                        dot = dots[band.key]?.let { DOT_COLORS[it.level] })
                 }
                 CompactChip("✎", onClick = { bandsDialog = true })
             }
 
             // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
+            HorizontalDivider(color = Page.LIGNE)
             val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
             if (modes.isNotEmpty()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -315,6 +337,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall)
                 }
             }
+
+            HorizontalDivider(color = Page.LIGNE)
 
             // Fonctions du poste (comme la page) : verrouillées pendant l'émission
             val chips = Controls.chips(hello, rig.state)
@@ -336,17 +360,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 Text(others.joinToString("   ") { "${it.label} ${it.text}" }, style = MaterialTheme.typography.bodySmall)
             }
 
-            // État de l'émission (station)
+            // Avertissements de l'émission (l'état lui-même est dans l'afficheur)
             if (ptt != null) {
-                val text = when {
-                    mineTx -> "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " — coupure dans ${Format.duration(it)}" } ?: "")
-                    ptt.other -> "${ptt.label} : autre client (${rig.state?.ptt?.owner ?: "?"})"
-                    else -> ptt.label
-                }
-                Banner(
-                    text, if (ptt.transmitting) TX_RED else MaterialTheme.colorScheme.secondaryContainer, big = true,
-                    textColor = if (ptt.transmitting) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
-                )
                 if (ptt.totWarning) Banner("Fin du temps d'émission proche (TOT).", WARN)
                 ptt.local?.let { local ->
                     Banner(local, WARN)
@@ -361,6 +376,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
 
             // Mémoires partagées de la station
+            HorizontalDivider(color = Page.LIGNE)
             if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Mémoires", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
@@ -393,6 +409,24 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 } }
             }
 
+            HorizontalDivider(color = Page.LIGNE)
+
+            // Cluster DX : état des flux reçus par la station (comme la page)
+            rig.clusterView(System.currentTimeMillis())?.let { cv ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.size(10.dp).background(HEALTH[cv.health] ?: Page.TEXTE_2, CircleShape))
+                    Text("Cluster DX : " + cv.title, style = MaterialTheme.typography.titleSmall)
+                }
+                for (line in cv.lines) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.size(8.dp).background(HEALTH[line.dot] ?: Color.Transparent, CircleShape))
+                        Text(line.text, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (cv.stale) Text(cv.staleText, color = WARN, style = MaterialTheme.typography.bodySmall)
+                HorizontalDivider(color = Page.LIGNE)
+            }
+
             // Journal
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Journal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
@@ -415,6 +449,14 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 })
                 Spacer(Modifier.width(8.dp))
                 Text("Écran toujours allumé pendant la connexion", style = MaterialTheme.typography.bodyMedium)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = keepTx, onCheckedChange = {
+                    keepTx = it
+                    prefs.edit().putBoolean("keep_tx_background", it).apply()
+                })
+                Spacer(Modifier.width(8.dp))
+                Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
             }
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
         }

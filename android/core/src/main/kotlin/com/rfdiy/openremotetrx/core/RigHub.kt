@@ -86,6 +86,16 @@ object RigHub {
     /** STOP : toujours transmis, armé ou non. */
     fun stop() { service?.onRig { session, now -> session.stop(now) } }
 
+    /**
+     * Application quittée (autre application, écran verrouillé) : si CE téléphone émet et que l'utilisateur n'a pas
+     * choisi de rester en émission, retour en réception (STOP), noté au journal.
+     */
+    fun leaving(keepTransmitting: Boolean) {
+        val ptt = _ui.value.rig.ptt ?: return
+        if (keepTransmitting || !(ptt.mine && ptt.transmitting)) return
+        service?.onRig { session, now -> session.stop(now, "Application quittée pendant l'émission : retour en réception.") }
+    }
+
     fun setArmed(on: Boolean) { service?.onRig { session, now -> session.setArmed(now, on) } }
 
     fun releaseLocal() { service?.onRig { session, now -> session.releaseLocal(now) } }

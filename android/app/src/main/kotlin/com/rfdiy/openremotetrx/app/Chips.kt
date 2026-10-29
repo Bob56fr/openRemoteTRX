@@ -5,7 +5,11 @@ package com.rfdiy.openremotetrx.app
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,8 +36,10 @@ fun CompactChip(
     enabled: Boolean = true,
     selected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    dot: Color? = null,
 ) {
     val colors = MaterialTheme.colorScheme
+    Box {
     Surface(
         shape = RoundedCornerShape(7.dp),
         color = if (selected) colors.secondaryContainer else Color.Transparent,
@@ -52,5 +58,8 @@ fun CompactChip(
                 },
             )
         }
+    }
+    // Pastille de coin (spots du Cluster DX sur la bande), comme la page
+    if (dot != null) Box(Modifier.align(Alignment.TopEnd).offset(x = 3.dp, y = (-3).dp).size(9.dp).background(dot, CircleShape))
     }
 }

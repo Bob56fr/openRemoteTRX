@@ -386,3 +386,19 @@ class RigSessionOffsetTest {
         assertTrue(link.sent.isEmpty())
     }
 }
+
+class RigSessionLeaveTest {
+    @Test
+    fun `STOP avec motif note au journal`() {
+        val (s, link) = run {
+            val link = FakeLink()
+            val s = RigSession(link) { 0L }
+            s.begin(0, 30)
+            s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone"}""")
+            s to link
+        }
+        s.stop(5, "Application quittée pendant l'émission : retour en réception.")
+        assertEquals(listOf("stop"), link.cmds())
+        assertEquals("Application quittée pendant l'émission : retour en réception.", s.snapshot.log.last().text)
+    }
+}

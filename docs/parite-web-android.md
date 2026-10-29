@@ -28,7 +28,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |
 | Spots du cluster DX | fait | fait | fait (0.8.0 : étiquettes sur le spectre en paysage, « +N », fiche, QSY ; 0.10.0 : voyant de santé, SPOTS, LISTE triée, VFO = accord au doigt) | |
 | Mises en page du designer (`layouts`) | fait | fait | plus tard (A4), peut-être jamais | |
-| Thèmes de couleurs | — | fait | plus tard (A4) | |
+| Thèmes de couleurs | — | fait | thème par défaut de la page repris (0.12.0) ; choix du thème (Icom, Yaesu, Kenwood) : plus tard | |
 | Split, RIT, ΔTX / XIT : lecture, boutons RIT et ΔTX, curseur du décalage | fait (0.55.0 : `split`, `tx_frequency_hz`, `offsets`, `set_offset` ; bande vérifiée sur la fréquence d'ÉMISSION) | fait (boutons, curseur sous le squelch) ; voyants : à faire | fait (0.11.0 : voyants RIT, ΔTX, SPLIT, boutons, curseur) | |
 | VFO actif (A, B, mémoire) | non lisible sur l'IC-7300MK2 (`get_vfo` : RPRT -11) ; second port CI-V à étudier | — | — | voyant absent plutôt que deviné |
 | Commande vocale « QSY 27 555 » (confirmation sur le téléphone) | — | absent | à étudier (bouton micro ou écoute permanente) | demandé le 2026-10-29 ; jamais en émission, fréquence seulement |
@@ -38,3 +38,5 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | NB : largeur et profondeur (en plus de marche/arrêt et niveau) | à faire : Hamlib ne les expose PAS pour l'IC-7300MK2 (dump_caps : NB 0..10 seul, aucun « Extra level ») ; possible par le second port CI-V (comme FIL1/2/3), à confirmer sur le poste | à faire | à faire | demandé le 2026-10-29 |
 | Voyants de l'afficheur : ATT ou P.AMP 1 / P.AMP 2 (ou rien), RIT, ΔTX, SPLIT, NOTCH, NB, NR (VFO-A / VFO-B / MEM : non lisible) | — | à faire | fait (0.11.0) | vert = actif, gris = éteint ; précisé par l'utilisateur le 2026-10-29 |
 | Bargraphs POWER, SWR, ALC toujours visibles dans l'afficheur | — | fait (graphiques de puissance) | fait (0.10.1) | à zéro en réception |
+| Pastilles de spots sur les boutons de bande, rubrique « Cluster DX » (état des flux) | fait (`cluster_status`) | fait | fait (0.12.0) | spots actifs seulement (moins de 15 min) |
+| Quitter l'application pendant l'émission => retour en réception (réglage « rester en émission », désactivé par défaut) | — | absent (navigateur : la page en arrière-plan est suspendue, la station coupe faute de battements) | fait (0.12.0) | demandé le 2026-10-29 |
