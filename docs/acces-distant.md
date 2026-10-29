@@ -58,6 +58,27 @@ Android, elle, n'a pas cette contrainte.
 
 Sous Android, **un seul VPN** peut être actif à la fois.
 
+### Android Auto et VPN (WireGuard)
+
+**Symptôme** : Android Auto affiche « Erreur de communication 21 - Si vous êtes connecté à un VPN… ».
+
+**Cause** : un tunnel qui fait passer TOUT le trafic (`AllowedIPs = 0.0.0.0/0, ::/0`) emporte aussi la liaison locale entre le
+téléphone et la voiture. Android Auto sans fil passe par un Wi-Fi direct, en général `192.168.49.x`.
+
+Il faut que seul le chemin vers la station passe par le tunnel. Dans l'application WireGuard, modifiez le tunnel (crayon) :
+
+1. **Côté pair (Peer), « IP autorisées »** : ne mettre que l'adresse de la station dans le VPN et, si besoin, son réseau
+   local. Exemple : `10.8.0.0/24, 192.168.1.0/24` au lieu de `0.0.0.0/0, ::/0`. Le reste du téléphone, Internet en 4G et la
+   voiture compris, sort alors normalement. Le réseau local de la station ne doit pas être `192.168.49.0/24`.
+2. **Côté interface, « Applications exclues »** : cochez **Android Auto**. Si l'erreur persiste, cochez aussi **Services
+   Google Play**. Ne cochez **pas** openRemoteTRX : elle doit passer par le tunnel.
+3. Dans Android, Paramètres > Connexions > Plus de paramètres de connexion > VPN > roue dentée de WireGuard : **« Bloquer
+   les connexions sans VPN » désactivé**. Ce réglage bloque Android Auto même avec les deux points ci-dessus.
+4. Désactivez puis réactivez le tunnel, débranchez ou rebranchez la voiture, puis vérifiez qu'openRemoteTRX se connecte
+   encore à la station.
+
+Avec Android Auto **filaire** (câble USB), l'erreur est en général absente, mais le réglage 1 reste conseillé.
+
 ## 4. Option B : port exposé
 
 ### Prérequis
