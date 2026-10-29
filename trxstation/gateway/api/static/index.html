@@ -297,6 +297,15 @@
           <button id="sel-send" class="primary" title="Appel du groupe sans parler : la station ÉMET la trame du code armé plusieurs fois">Envoyer SELCALL</button>
           <span id="sel-send-note" class="dim small"></span>
         </div>
+        <div id="sel-level-box" class="sel-test">
+          <label>Niveau de la trame émise <input id="sel-level" type="range" min="-30" max="-1" step="0.5"><span id="sel-level-text"></span></label>
+          <div class="row">
+            <button id="sel-calibrate" class="chip" title="Émet un ton de 1 000 Hz qui monte par paliers en surveillant l'ALC, puis règle le niveau">Réglage automatique (ALC)</button>
+          </div>
+          <p class="note">Le réglage automatique ÉMET un ton jusqu'à 18 s (puissance réglée sur le poste) : sur charge fictive ou
+            fréquence libre, « Émission autorisée » cochée. Annuler = STOP.</p>
+          <div id="sel-calibration" class="note"></div>
+        </div>
         <div id="sel-last" class="note"></div>
         <div class="sel-test">
           <div>Fichier de test (pour un correspondant)</div>

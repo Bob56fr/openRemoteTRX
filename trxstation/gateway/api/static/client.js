@@ -357,6 +357,10 @@
     return i >= 0 ? i + 1 : v;
   }
 
+  // ALC en surcharge pendant une émission (quel que soit l'usage : PTT, SELCALL, poste utilisé sur place) : voyant
+  // « OVERLOAD ALC ». Même seuil que le réglage automatique de la station (selcall/calibrate.py) et l'application.
+  const ALC_OVERLOAD = 0.5;
+
   function indicatorsView(fn, lv, rig, caps) {
     /* Voyants de l'afficheur (comme l'application) : ATT ou P.AMP n ou rien ; RIT ; ΔTX ; SPLIT ; NOTCH ; NB ; NR.
        Seuls ceux dont la station publie l'état ; allumé = actif. */
@@ -370,6 +374,7 @@
     if ("ANF" in fn || "MN" in fn) out.push({ label: "NOTCH", on: !!fn.ANF || !!fn.MN });
     if ("NB" in fn) out.push({ label: "NB", on: !!fn.NB });
     if ("NR" in fn) out.push({ label: "NR", on: !!fn.NR });
+    if (typeof lv.ALC === "number" && lv.ALC >= ALC_OVERLOAD) out.push({ label: "OVERLOAD ALC", on: true, alert: true });
     return out;
   }
 
@@ -1346,6 +1351,18 @@
       return res;
     }
 
+    async selcallCalibrate() {
+      /* Réglage automatique du niveau de la trame d'après l'ALC : une ÉMISSION (ton par paliers), mêmes conditions. */
+      if (!this.connected) return null;
+      const p = this._ptt();
+      if (!this.armed) { this.ui.log("Coche d'abord « Émission autorisée » : le réglage automatique est une émission.", "warn"); return null; }
+      if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : réglage impossible.", "warn"); return null; }
+      this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
+      const res = await this.send("selcall_calibrate");
+      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
+      return res;
+    }
+
     async selcallSend() {
       /* Appel SELCALL manuel : c'est une ÉMISSION de ce client (mêmes conditions que le PTT : « Émission autorisée »,
          personne d'autre en émission) ; la station émet la trame du code armé, micro fermé. Annuler = stop(). */
@@ -1699,6 +1716,6 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, preampNumber, favoriteBands, MIC_PROFILES, micConstraints };
+                indicatorsView, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

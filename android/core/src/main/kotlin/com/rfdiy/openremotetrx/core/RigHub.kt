@@ -155,9 +155,12 @@ object RigHub {
 
     fun selcallDeactivate() { service?.onRig { session, now -> session.selcallDeactivate(now) } }
 
-    fun selcallOptions(filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null) {
-        service?.onRig { session, now -> session.selcallOptions(now, filterMode, attenuationDb, sendOnTxEnd) }
+    fun selcallOptions(filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null, txLevelDbfs: Double? = null) {
+        service?.onRig { session, now -> session.selcallOptions(now, filterMode, attenuationDb, sendOnTxEnd, txLevelDbfs) }
     }
+
+    /** Réglage automatique du niveau de la trame d'après l'ALC : une émission (annuler = stop). */
+    fun selcallCalibrate() { service?.onRig { session, now -> session.selcallCalibrate(now) } }
 
     /** Appel SELCALL manuel : une émission (annuler = stop). */
     fun selcallSend() { service?.onRig { session, now -> session.selcallSend(now) } }

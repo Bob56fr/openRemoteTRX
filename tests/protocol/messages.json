@@ -21,9 +21,9 @@
               "roger_sequence": [[1000, 100]], "link_lost_sequence": [[1200, 120], [0, 40], [900, 120], [0, 40], [600, 120]],
               "tones": ["600", "800", "1000", "1500", "2000", "2500", "duo"], "patterns": [1, 2, 3]},
     "selcall": {"state": "standby", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate", "attenuation_db": 20,
-                "last_call": null, "send_on_tx_end": false, "sending": ""},
+                "last_call": null, "send_on_tx_end": false, "sending": "", "tx_level_dbfs": -6.0, "calibration": ""},
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
-                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send"]
+                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate"]
   },
   "state": {
     "type": "state",
@@ -53,5 +53,5 @@
   "module": {"type": "module", "module": "cluster", "data": {"kind": "exemple"}},
   "selcall": {"type": "selcall", "status": {"state": "open", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate",
               "attenuation_db": 20, "last_call": {"code": "4721", "delta_hz": -42.5, "snr_db": 11.3, "at": 1761753600.25},
-              "send_on_tx_end": true, "sending": "2/3"}}
+              "send_on_tx_end": true, "sending": "2/3", "tx_level_dbfs": -18.5, "calibration": ""}}
 }

@@ -472,16 +472,22 @@ class RigSession(
 
     fun selcallDeactivate(now: Long) = selcallCommand(now, Command.SelcallDeactivate)
 
-    fun selcallOptions(now: Long, filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null) =
-        selcallCommand(now, Command.SelcallOptions(filterMode, attenuationDb, sendOnTxEnd))
+    fun selcallOptions(now: Long, filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null,
+                       txLevelDbfs: Double? = null) =
+        selcallCommand(now, Command.SelcallOptions(filterMode, attenuationDb, sendOnTxEnd, txLevelDbfs))
+
+    /** Réglage automatique du niveau de la trame d'après l'ALC : une ÉMISSION (mêmes conditions que l'appel manuel). */
+    fun selcallCalibrate(now: Long) = selcallTransmit(now, "selcall_calibrate", Command.SelcallCalibrate)
 
     /**
      * Appel SELCALL manuel : c'est une ÉMISSION de ce téléphone, mêmes conditions que le PTT (« Émission autorisée »,
      * personne d'autre en émission) ; battements dès la demande. Annuler = `stop`.
      */
-    fun selcallSend(now: Long) {
+    fun selcallSend(now: Long) = selcallTransmit(now, "selcall_send", Command.SelcallSend)
+
+    private fun selcallTransmit(now: Long, feature: String, command: Command) {
         if (!connected || hello?.offers("selcall") != true) return
-        if (hello?.offers("selcall_send") != true) {
+        if (hello?.offers(feature) != true) {
             log("Appel SELCALL : station à mettre à jour (0.63.0 ou plus).", LogLevel.WARN)
             publish(now)
             return
@@ -491,10 +497,10 @@ class RigSession(
             !protocolOk -> log("Version de protocole inconnue : émission impossible (STOP reste permis).", LogLevel.WARN)
             !arming.armed -> log("Active d'abord « Émission autorisée » : l'appel SELCALL est une émission.", LogLevel.WARN)
             ptt != null && ptt.state != "RX" -> log("Une émission est en cours (${ptt.owner ?: "?"}) : appel SELCALL impossible.", LogLevel.WARN)
-            selcall?.disabled != false -> log("Arme d'abord le SELCALL sur un code.", LogLevel.WARN)
+            command == Command.SelcallSend && selcall?.disabled != false -> log("Arme d'abord le SELCALL sur un code.", LogLevel.WARN)
             else -> {
                 heartbeat.onToggleSent(now)
-                send(now, Command.SelcallSend)
+                send(now, command)
             }
         }
         publish(now)

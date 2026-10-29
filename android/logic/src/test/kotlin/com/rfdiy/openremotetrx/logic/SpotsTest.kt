@@ -228,3 +228,13 @@ class SelcallTest {
         assertNull(st.copy(state = "disabled").indicator)
     }
 }
+
+class AlcOverloadTest {
+    @Test
+    fun `voyant OVERLOAD ALC au meme seuil que la page`() {
+        val js = java.io.File(System.getProperty("trx.repo"), "trxstation/gateway/api/static/client.js").readText()
+        assertTrue("const ALC_OVERLOAD = ${Indicators.ALC_OVERLOAD};" in js)
+        val station = java.io.File(System.getProperty("trx.repo"), "trxstation/selcall/calibrate.py").readText()
+        assertTrue("ALC_OVERLOAD = ${Indicators.ALC_OVERLOAD} " in station)
+    }
+}

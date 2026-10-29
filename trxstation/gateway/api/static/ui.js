@@ -574,7 +574,7 @@
       voyantsKey = key;
       const box = $("voyants");
       box.textContent = "";
-      for (const item of list) box.appendChild(el("span", "voyant" + (item.on ? " on" : ""), item.label));
+      for (const item of list) box.appendChild(el("span", "voyant" + (item.on ? " on" : "") + (item.alert ? " alert" : ""), item.label));
     }
     function paintModes(v) {                                                          // mode actuel allumé ; verrouillés pendant l'émission
       const current = v.rig ? v.rig.mode : null;
@@ -1342,6 +1342,14 @@
       if (document.activeElement !== $("sel-code") && !$("sel-code").value) $("sel-code").value = status.code || "";
       if (document.activeElement !== $("sel-test-code") && !$("sel-test-code").value) $("sel-test-code").value = status.code || "";
       $("sel-tail").checked = !!status.send_on_tx_end;
+      const calOffered = !!(client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("selcall_calibrate"));
+      $("sel-level-box").hidden = !calOffered;
+      if (calOffered) {
+        if (document.activeElement !== $("sel-level")) $("sel-level").value = status.tx_level_dbfs;
+        $("sel-level-text").textContent = " " + String(status.tx_level_dbfs).replace(".", ",") + " dBFS";
+        $("sel-calibration").textContent = status.calibration ? "Dernier réglage : " + status.calibration : "";
+        $("sel-calibrate").disabled = !connectedFlag || !!status.sending || !(lastView && lastView.armed) || (lastView && lastView.pttState !== "RX");
+      }
       paintSelcallSend();
       $("sel-rearm").disabled = status.state === "disabled";
       $("sel-deactivate").disabled = status.state === "disabled";
@@ -1383,6 +1391,11 @@
         client.selcallSend().then((res) => { if (!res || !res.ok) selSendAsked = false; paintSelcallSend(); }).catch(fail);
       });
       $("sel-tail").addEventListener("change", (ev) => client.selcallOptions({ send_on_tx_end: ev.target.checked }).catch(fail));
+      $("sel-level").addEventListener("change", (ev) => client.selcallOptions({ tx_level_dbfs: Number(ev.target.value) }).catch(fail));
+      $("sel-calibrate").addEventListener("click", () => {
+        selSendAsked = true;                                                      // même bouton « Annuler » pendant le réglage
+        client.selcallCalibrate().then((res) => { if (!res || !res.ok) selSendAsked = false; paintSelcallSend(); }).catch(fail);
+      });
       $("sel-ind").addEventListener("click", () => { $("sec-selcall").open = true; $("sec-selcall").scrollIntoView({ behavior: "smooth" }); });
       $("sel-activate").addEventListener("click", () => {
         const code = $("sel-code").value.trim();

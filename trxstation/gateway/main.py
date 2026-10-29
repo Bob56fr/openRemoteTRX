@@ -114,11 +114,12 @@ def _start_selcall(cfg: Config, pipeline: AudioPipeline, ctrl, link):
     from ..selcall.receiver import SelcallReceiver, SelcallStore      # numpy : seulement si la fonction est en service
 
     store = SelcallStore(Path(cfg.supervisor.state_dir) / "selcall.json", history_size=sc.history_size,
-                         filter_mode=sc.filter_mode, attenuation_db=sc.attenuation_db, send_on_tx_end=sc.send_on_tx_end)
+                         filter_mode=sc.filter_mode, attenuation_db=sc.attenuation_db, send_on_tx_end=sc.send_on_tx_end,
+                         tx_level_dbfs=sc.tx_level_dbfs)
     tail = getattr(ctrl, "tail", None)
     if tail is not None:                                    # trame de fin d'émission à la place du roger bip (option)
         tail.selcall_code = store.tail_code
-        tail.selcall_level_db = sc.tx_level_dbfs
+        tail.selcall_level = lambda: store.status.tx_level_dbfs     # curseur et réglage automatique (clients)
 
     def transmitting() -> bool:
         return ctrl.snapshot().state != "RX" or bool(getattr(link.state, "ptt", False))

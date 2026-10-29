@@ -125,8 +125,9 @@ class ContractTest {
             "selcall_rearm" -> Command.SelcallRearm
             "selcall_deactivate" -> Command.SelcallDeactivate
             "selcall_options" -> Command.SelcallOptions(e["filter_mode"]?.jsonPrimitive?.content, e["attenuation_db"]?.jsonPrimitive?.int,
-                e["send_on_tx_end"]?.jsonPrimitive?.boolean)
+                e["send_on_tx_end"]?.jsonPrimitive?.boolean, e["tx_level_dbfs"]?.jsonPrimitive?.content?.toDouble())
             "selcall_send" -> Command.SelcallSend
+            "selcall_calibrate" -> Command.SelcallCalibrate
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

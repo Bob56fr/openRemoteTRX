@@ -29,8 +29,11 @@ data class SelcallStatus(
     val lastCall: SelcallCall?,
     /** Trame émise en fin d'émission à la place du roger bip. */
     val sendOnTxEnd: Boolean = false,
-    /** Appel manuel en cours : « 1/3 »…, sinon vide. */
+    /** Appel manuel ou réglage en cours : « 1/3 », « réglage -20 dBFS : ALC 5 % »…, sinon vide. */
     val sending: String = "",
+    /** Niveau de la trame émise (dBFS) et résultat du dernier réglage automatique. */
+    val txLevelDbfs: Double = -6.0,
+    val calibration: String = "",
 ) {
     val disabled get() = state == DISABLED
     val open get() = state == OPEN
@@ -71,7 +74,9 @@ data class SelcallStatus(
                 attenuationDb = (obj["attenuation_db"] as? JsonPrimitive)?.intOrNull?.coerceIn(6, 60) ?: 20,
                 lastCall = call,
                 sendOnTxEnd = (obj["send_on_tx_end"] as? JsonPrimitive)?.contentOrNull == "true",
-                sending = obj.text("sending")?.take(8).orEmpty(),
+                sending = obj.text("sending")?.take(60).orEmpty(),
+                txLevelDbfs = (obj["tx_level_dbfs"] as? JsonPrimitive)?.doubleOrNull?.coerceIn(-30.0, -1.0) ?: -6.0,
+                calibration = obj.text("calibration")?.take(200).orEmpty(),
             )
         }
     }

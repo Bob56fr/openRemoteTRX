@@ -51,11 +51,13 @@ class SelcallStatus:
     last_call: dict | None = None                   # dernier appel reçu (code, Δ, SNR, heure)
     send_on_tx_end: bool = False                    # trame émise en fin d'émission, à la place du roger bip
     sending: str = ""                               # appel manuel en cours : « 1/3 », « 2/3 »… (jamais enregistré)
+    tx_level_dbfs: float = -6.0                     # niveau de la trame émise (curseur, réglage automatique)
+    calibration: str = ""                           # résultat du dernier réglage automatique (jamais enregistré)
 
     def to_dict(self) -> dict:
         return {"state": self.state, "code": self.code, "history": list(self.history), "filter_mode": self.filter_mode,
                 "attenuation_db": self.attenuation_db, "last_call": self.last_call, "send_on_tx_end": self.send_on_tx_end,
-                "sending": self.sending}
+                "sending": self.sending, "tx_level_dbfs": self.tx_level_dbfs, "calibration": self.calibration}
 
 
 class SelcallStore:
@@ -63,12 +65,13 @@ class SelcallStore:
     Fichier absent ou illisible : DÉSACTIVÉ. Au chargement, OUVERT redevient VEILLE (sûr par défaut)."""
 
     def __init__(self, path: str | Path | None, *, history_size: int = 10, filter_mode: str = "attenuate",
-                 attenuation_db: int = 20, send_on_tx_end: bool = False) -> None:
+                 attenuation_db: int = 20, send_on_tx_end: bool = False, tx_level_dbfs: float = -6.0) -> None:
         self.path = Path(path) if path is not None else None
         self.history_size = history_size
         self._lock = threading.Lock()
         self._listeners: list[Callable[[SelcallStatus], None]] = []
-        self.status = SelcallStatus(filter_mode=filter_mode, attenuation_db=attenuation_db, send_on_tx_end=send_on_tx_end)
+        self.status = SelcallStatus(filter_mode=filter_mode, attenuation_db=attenuation_db, send_on_tx_end=send_on_tx_end,
+                                    tx_level_dbfs=tx_level_dbfs)
         self._load()
 
     def _load(self) -> None:
@@ -88,8 +91,10 @@ class SelcallStore:
             att = att if isinstance(att, int) and not isinstance(att, bool) and 6 <= att <= 60 else self.status.attenuation_db
             tail = data.get("send_on_tx_end")
             tail = tail if isinstance(tail, bool) else self.status.send_on_tx_end
+            level = data.get("tx_level_dbfs")
+            level = float(level) if _level_ok(level) else self.status.tx_level_dbfs
             self.status = SelcallStatus(state=state, code=code, history=history, filter_mode=mode, attenuation_db=att,
-                                        send_on_tx_end=tail)
+                                        send_on_tx_end=tail, tx_level_dbfs=level)
         except (OSError, ValueError, AttributeError) as exc:
             log.warning("état SELCALL illisible (%s) : fonction désactivée", exc)
 
@@ -115,7 +120,8 @@ class SelcallStore:
         if self.path is None:
             return
         data = self.status.to_dict()
-        data.pop("sending", None)                                   # passager : jamais enregistré
+        data.pop("sending", None)                                   # passagers : jamais enregistrés
+        data.pop("calibration", None)
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".selcall-")
@@ -147,6 +153,15 @@ class SelcallStore:
         log.info("SELCALL désactivé")
         return self._set(_replace(self.status, state=DISABLED))
 
+    def set_calibration(self, text: str) -> None:
+        """Résultat du réglage automatique, annoncé aux clients (jamais enregistré)."""
+        self.status = _replace(self.status, calibration=text)
+        for callback in list(self._listeners):
+            try:
+                callback(self.status)
+            except Exception:
+                log.exception("écouteur SELCALL en erreur")
+
     def set_sending(self, text: str) -> None:
         """Progression d'un appel manuel (« 2/3 », « » à la fin) : annoncée aux clients, jamais enregistrée."""
         self.status = _replace(self.status, sending=text)
@@ -162,8 +177,12 @@ class SelcallStore:
         return s.code if s.send_on_tx_end and s.state != DISABLED and s.code else None
 
     def set_options(self, *, filter_mode: str | None = None, attenuation_db: int | None = None,
-                    send_on_tx_end: bool | None = None) -> SelcallStatus:
+                    send_on_tx_end: bool | None = None, tx_level_dbfs: float | None = None) -> SelcallStatus:
         s = self.status
+        if tx_level_dbfs is not None:
+            if not _level_ok(tx_level_dbfs):
+                raise ValueError("niveau de la trame : -30 à -1 dBFS")
+            s = _replace(s, tx_level_dbfs=round(float(tx_level_dbfs) * 2) / 2)
         if send_on_tx_end is not None:
             if not isinstance(send_on_tx_end, bool):
                 raise ValueError("send_on_tx_end : true ou false")
@@ -187,6 +206,10 @@ class SelcallStore:
             self._set(_replace(s, state=OPEN, last_call=last))
             return True
         return False
+
+
+def _level_ok(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and -30 <= value <= -1
 
 
 def _valid(code) -> bool:

@@ -212,7 +212,8 @@ class TailPlayer:
         # SELCALL (gateway/main) : code à émettre en fin d'émission À LA PLACE du roger bip, ou None (fonction absente,
         # désactivée, ou option « send_on_tx_end » coupée) ; niveau de la trame (dBFS, sous le seuil d'ALC).
         self.selcall_code: Callable[[], str | None] = lambda: None
-        self.selcall_level_db = -6.0
+        self.selcall_level: Callable[[], float] = lambda: -6.0      # niveau de la trame, réglable (SelcallStore)
+        self._tone_phase = 0.0
 
     def wanted(self, kind: str) -> bool:
         c = self.store.config
@@ -231,7 +232,7 @@ class TailPlayer:
     def frames(self, kind: str) -> list[bytes]:
         c = self.store.config
         if kind == "selcall":
-            return selcall_frames(self.selcall_code(), self.selcall_level_db + self.gain_db)[0]
+            return selcall_frames(self.selcall_code(), self.selcall_level() + self.gain_db)[0]
         seq = LINK_LOST if kind == "link_lost" else roger_sequence(c.roger_tone, c.roger_pattern)
         return render(seq, LEVEL_DB + self.gain_db)
 
@@ -246,12 +247,27 @@ class TailPlayer:
         """Appel manuel : la trame `repeat` fois séparées de `gap_s` (silence écrit, pas de trou compté), progression
         annoncée au début de chaque trame. Le PttController la lance en émission confirmée, micro du client fermé."""
         self._stopped = False
-        frames, marks = selcall_frames(code, self.selcall_level_db + self.gain_db, gap_s, repeat)
+        frames, marks = selcall_frames(code, self.selcall_level() + self.gain_db, gap_s, repeat)
         self.played.append("selcall_call")
         await self._play_frames(frames, {m: k + 1 for k, m in enumerate(marks)}, lambda k: progress(k, repeat))
 
+    async def play_tone(self, hz: float, level_dbfs: float, seconds: float, *, last: bool = False) -> None:
+        """Palier du réglage automatique : ton continu (phase gardée d'un palier à l'autre, pas de clic) ; seul le
+        dernier palier attend que la carte ait tout joué."""
+        n = int(round(seconds / FRAME_S))
+        per = FRAME_BYTES // 2
+        amp = 10 ** (min(level_dbfs + self.gain_db, -1.0) / 20) * 32767
+        step = 2 * math.pi * hz / SAMPLE_RATE
+        frames = []
+        for _ in range(n):
+            samples = array("h", (int(amp * math.sin(self._tone_phase + step * i)) for i in range(per)))
+            self._tone_phase = (self._tone_phase + step * per) % (2 * math.pi)
+            frames.append(samples.tobytes())
+        if not self._stopped:
+            await self._play_frames(frames, drain=last)
+
     async def _play_frames(self, frames: list[bytes], marks: dict[int, int] | None = None,
-                           on_mark: Callable[[int], None] = lambda k: None) -> None:
+                           on_mark: Callable[[int], None] = lambda k: None, *, drain: bool = True) -> None:
         clock = self._clock or asyncio.get_running_loop().time
         start = clock()
         for i, frame in enumerate(frames):
@@ -266,7 +282,8 @@ class TailPlayer:
                 on_mark(marks[i])
             self.sink.write(frame)
         # la carte joue la fin (avance d'écriture + réserve contre la gigue de la sortie) avant « PTT off »
-        await self._sleep(LEAD_S + FRAME_S + getattr(self.sink, "PREFILL_S", 0.0))
+        if drain:
+            await self._sleep(LEAD_S + FRAME_S + getattr(self.sink, "PREFILL_S", 0.0))
 
     def stop(self) -> None:
         """Coupure : plus rien n'est écrit et ce qui attendait est jeté."""

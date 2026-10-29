@@ -117,7 +117,8 @@ class ControlSession:
                    "spectrum": self.spectrum is not None and self.spectrum.capability() is not None,
                    "beeps": self.beeps is not None, "bug_report": self.reports is not None,
                    "selcall": self.selcall is not None,
-                   "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None}
+                   "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
+                   "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
@@ -229,6 +230,38 @@ class ControlSession:
         snapshot = await self.ctrl.send_selcall(self.client_id, sequence, duration)    # Refused : refus comme toggle
         self._result(cmd.id, True, ptt=snapshot.to_dict())
 
+    async def _selcall_calibrate(self, cmd) -> None:
+        """Réglage automatique du niveau de la trame d'après l'ALC : ÉMISSION d'un ton par paliers (mêmes vérifications que
+        toggle, micro du client fermé, toute coupure l'interrompt) ; niveau retenu enregistré et annoncé à tous."""
+        tail = getattr(self.ctrl, "tail", None)
+        if self.selcall is None or tail is None:
+            self._result(cmd.id, False, reason="selcall_unavailable")
+            return
+        from ...selcall import calibrate
+        store, link = self.selcall, self.link
+
+        def read_alc():
+            value = link.state.levels.get("ALC")
+            return float(value) if isinstance(value, (int, float)) else None
+
+        async def step(level, seconds):
+            await tail.play_tone(calibrate.TONE_HZ, level, seconds)
+
+        async def sequence() -> None:
+            try:
+                level, why = await calibrate.run(step, read_alc, store.set_sending)
+                if level is not None:
+                    store.set_options(tx_level_dbfs=level)
+                log.warning("SELCALL : réglage automatique : %s", why)
+                store.set_calibration(why)
+            finally:
+                store.set_sending("")
+
+        store.set_calibration("")
+        log.warning("SELCALL : réglage automatique du niveau demandé par %s", self.client_id)
+        snapshot = await self.ctrl.send_selcall(self.client_id, sequence, calibrate.duration_s())
+        self._result(cmd.id, True, ptt=snapshot.to_dict())
+
     def _selcall_command(self, cmd) -> None:
         """SELCALL : n'agit que sur le son reçu par les clients (squelch), jamais sur le poste ni sur l'émission."""
         if self.selcall is None:
@@ -329,6 +362,8 @@ class ControlSession:
                         self._result(cmd.id, True, settings=config.to_dict())
             elif cmd.name == "selcall_send":
                 await self._selcall_send(cmd)
+            elif cmd.name == "selcall_calibrate":
+                await self._selcall_calibrate(cmd)
             elif cmd.name.startswith("selcall_"):
                 self._selcall_command(cmd)
             elif cmd.name == "spectrum_watch":

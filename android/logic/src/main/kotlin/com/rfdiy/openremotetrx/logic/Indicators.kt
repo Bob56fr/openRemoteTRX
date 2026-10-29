@@ -8,7 +8,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /** Voyant de l'afficheur (comme sur un poste) : texte vert si actif, gris sinon. */
-data class Indicator(val label: String, val on: Boolean)
+data class Indicator(val label: String, val on: Boolean, val alert: Boolean = false)
 
 /**
  * Voyants à côté de la fréquence (demande de l'utilisateur) : ATT, ou P.AMP 1 / P.AMP 2, ou rien ; RIT ; ΔTX (XIT) ;
@@ -16,6 +16,9 @@ data class Indicator(val label: String, val on: Boolean)
  * sur l'IC-7300MK2). POWER, SWR, ALC ne sont pas des voyants mais des bargraphs (`Indicators.txMeters`).
  */
 object Indicators {
+    /** Seuil du voyant « OVERLOAD ALC » (page : ALC_OVERLOAD ; station : selcall/calibrate.py). */
+    const val ALC_OVERLOAD = 0.5
+
     fun of(hello: Hello?, state: State?): List<Indicator> {
         val rig = state?.rig ?: return emptyList()
         val fn = rig.functions
@@ -33,6 +36,8 @@ object Indicators {
         if ("ANF" in fn || "MN" in fn) out += Indicator("NOTCH", fn["ANF"] == true || fn["MN"] == true)
         fn["NB"]?.let { out += Indicator("NB", it) }
         fn["NR"]?.let { out += Indicator("NR", it) }
+        // ALC en surcharge pendant une émission, quel que soit l'usage (même seuil que la page et la station)
+        rig.levels["ALC"]?.let { if (it >= ALC_OVERLOAD) out += Indicator("OVERLOAD ALC", on = true, alert = true) }
         return out
     }
 

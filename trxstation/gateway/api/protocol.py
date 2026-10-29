@@ -42,12 +42,14 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "set_offset",                    # décalage du clarifieur : name RIT ou XIT (ΔTX), hz entier
             # SELCALL (docs/selcall-cahier-des-charges.md) : squelch numérique de la station ; n'émettent jamais rien
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options",
-            "selcall_send")                  # appel manuel : ÉMISSION (prise normale, micro fermé, trame N fois) ; annuler = stop
+            "selcall_send",                  # appel manuel : ÉMISSION (prise normale, micro fermé, trame N fois) ; annuler = stop
+            "selcall_calibrate")             # réglage automatique du niveau d'après l'ALC : ÉMISSION d'un ton par paliers ; annuler = stop
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
 OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall",
-                     "selcall_send")              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
+                     "selcall_send",              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
+                     "selcall_calibrate")         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -193,13 +195,18 @@ def parse_command(raw: str | bytes) -> Command:
             params["filter_mode"] = data["filter_mode"]
         if "attenuation_db" in data:
             params["attenuation_db"] = _int(data["attenuation_db"], "attenuation_db", 6, 60)
+        if "tx_level_dbfs" in data:
+            v = data["tx_level_dbfs"]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not -30 <= v <= -1:
+                raise ProtocolError("invalid_params", "tx_level_dbfs : de -30 à -1 dBFS")
+            params["tx_level_dbfs"] = float(v)
         if "send_on_tx_end" in data:
             if not isinstance(data["send_on_tx_end"], bool):
                 raise ProtocolError("invalid_params", "send_on_tx_end doit valoir true ou false")
             params["send_on_tx_end"] = data["send_on_tx_end"]
-        unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db", "send_on_tx_end"}
+        unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db", "send_on_tx_end", "tx_level_dbfs"}
         if unknown or not params:
-            raise ProtocolError("invalid_params", "filter_mode, attenuation_db et/ou send_on_tx_end attendus")
+            raise ProtocolError("invalid_params", "filter_mode, attenuation_db, send_on_tx_end et/ou tx_level_dbfs attendus")
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

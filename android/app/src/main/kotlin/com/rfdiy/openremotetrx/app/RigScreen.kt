@@ -240,7 +240,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                                 Text(
                                     light.label, style = MaterialTheme.typography.labelMedium,
                                     fontWeight = if (light.on) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (light.on) SQL_OPEN else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                    color = when {
+                                        light.alert -> TX_RED                                   // OVERLOAD ALC
+                                        light.on -> SQL_OPEN
+                                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    },
                                 )
                             }
                             // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » ; toucher = panneau
@@ -552,7 +556,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     rig.selcall?.let { st ->
         if (selcallDialog) SelcallDialog(st, connected && rig.protocolOk, armed = rig.armed && ui.micAllowed,
             transmitting = ptt?.transmitting == true || (rig.state?.ptt?.state ?: "RX") != "RX", mine = ptt?.mine == true,
-            sendOffered = hello?.offers("selcall_send") == true, lastMessage = rig.log.lastOrNull()?.text.orEmpty(),
+            sendOffered = hello?.offers("selcall_send") == true, calibrateOffered = hello?.offers("selcall_calibrate") == true,
+            lastMessage = rig.log.lastOrNull()?.text.orEmpty(),
             onDismiss = { selcallDialog = false })
     }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })

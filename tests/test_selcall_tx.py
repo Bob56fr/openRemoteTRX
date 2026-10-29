@@ -300,3 +300,84 @@ def test_client_manual_call_through_the_session_with_progress_and_real_audio(tmp
             assert [f.code for f in decoded if f.valid] == ["123"] * 3
 
     api_run(scenario)
+
+
+# ------------------------------------------------------------------ niveau et réglage automatique d'après l'ALC
+
+
+def test_calibration_decision_from_alc_readings():
+    from trxstation.selcall import calibrate as cal
+    rising = [(-30, 0.0), (-28, 0.0), (-26, 0.02), (-24, 0.05), (-22, 0.3)]
+    assert cal.decide(rising)[0] == -26.0                                          # dernier propre (-24) moins 2 dB
+    assert cal.decide([(-30, 0.6)])[0] == cal.LEVEL_MIN                             # surcharge dès le départ
+    assert cal.decide([(-30, None), (-28, None)])[0] is None                         # ALC illisible : rien ne change
+    assert cal.decide([(lvl, 0.0) for lvl in cal.STEPS_DBFS])[0] == -4.0             # jamais d'ALC : dernier palier -2, moins 2 dB
+    assert cal.decide([(-30, 0.25), (-28, 0.27), (-26, 0.36)])[0] == -30.0          # départ non nul : c'est la HAUSSE qui compte
+
+
+def test_calibration_steps_stop_as_soon_as_the_alc_acts():
+    from trxstation.selcall import calibrate as cal
+
+    async def go():
+        played, steps = [], []
+        level = {"now": -60.0}
+
+        async def play(lvl, seconds):
+            played.append(lvl)
+            level["now"] = lvl
+
+        alc = lambda: 0.0 if level["now"] < -20 else 0.4                          # l'ALC agit à -20 dBFS
+        result, why = await cal.run(play, alc, steps.append, dwell=0)
+        assert played == [-30, -28, -26, -24, -22, -20] and result == -24.0 and "agit à -20" in why
+        assert steps[-1].startswith("réglage -20 dBFS : ALC 40")
+    asyncio.run(go())
+
+
+def test_continuous_tone_steps_have_the_requested_level_and_no_phase_jump():
+    async def go():
+        sink = RecordingSink()
+        player = bp.TailPlayer(sink, bp.BeepStore())
+        await player.play_tone(1000, -20, 0.2)
+        await player.play_tone(1000, -14, 0.2, last=True)
+        pcm = np.frombuffer(b"".join(sink.frames), dtype="<i2").astype(np.float64) / 32768
+        half = len(pcm) // 2
+        assert np.max(np.abs(pcm[:half])) == pytest.approx(10 ** (-20 / 20), rel=0.02)
+        assert np.max(np.abs(pcm[half:])) == pytest.approx(10 ** (-14 / 20), rel=0.02)
+        assert np.max(np.abs(np.diff(pcm))) < 2 * np.pi * 1000 / SAMPLE_RATE * 10 ** (-14 / 20) * 1.05   # pas de clic
+    asyncio.run(go())
+
+
+def test_level_option_and_calibration_command_through_the_session(tmp_path):
+    from test_api import connect, run as api_run, station as api_station
+    from trxstation.selcall import calibrate as cal
+    from trxstation.selcall import receiver as rc
+
+    async def scenario(fake):
+        async with api_station(fake, limits=fast_limits(tot_s=40.0)) as st:
+            store = rc.SelcallStore(tmp_path / "selcall.json")
+            st.pipeline.selcall = rc.SelcallReceiver(store)
+            st.ctrl.tail = bp.TailPlayer(st.sink, bp.BeepStore())
+            phone = await connect(st, "phone")
+            assert "selcall_calibrate" in phone.of_type("hello")[0]["features"]
+            await phone.say(cmd="selcall_options", id=1, tx_level_dbfs=-18.3)
+            assert store.status.tx_level_dbfs == -18.5
+            assert rc.SelcallStore(tmp_path / "selcall.json").status.tx_level_dbfs == -18.5   # enregistré
+            original = cal.run
+
+            async def quick(play, read, progress, steps=cal.STEPS_DBFS, dwell=cal.DWELL_S):
+                assert read() is None                                                   # le faux poste ne donne pas l'ALC
+                return await original(play, lambda: 0.0, progress, steps=(-30, -28, -26), dwell=0.1)
+
+            cal.run = quick
+            try:
+                beat = asyncio.ensure_future(beating(st.ctrl, "phone"))
+                await phone.say(cmd="selcall_calibrate", id=2)
+                assert phone.result(2)["ok"] and st.pipeline.gate.passed == 0
+                await until(lambda: st.ctrl.snapshot().state == "RX", timeout=10)
+                beat.cancel()
+            finally:
+                cal.run = original
+            assert store.status.tx_level_dbfs == -28.0 and "n'a pas agi" in store.status.calibration
+            assert st.ctrl.snapshot().last_cut_reason == "selcall_sent" and fake.ptt == 0
+
+    api_run(scenario)

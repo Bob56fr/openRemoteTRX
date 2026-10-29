@@ -37,7 +37,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - **Retrait ou changement de sens** : version + 1 ; la station accepte encore l'ancienne pendant au moins une version de l'application. Un client qui ne connaît pas la version annoncée le dit à l'utilisateur et reste en réception.
 - **`hello.features`** : liste des fonctions offertes par CETTE station. Un client montre une fonction parce qu'elle y figure, jamais d'après un numéro de version.
   - toujours : `ptt`, `frequency`, `mode`, `squelch`, `functions`, `levels`, `local_release` ;
-  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce).
+  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce), `selcall_calibrate` (niveau de la trame et réglage automatique, depuis 0.64.0).
 - `hello.version` : version du logiciel de la station (affichage seulement).
 
 ## 5. Émission : états, battements, coupures
@@ -82,7 +82,8 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `selcall_activate` | `code` (texte de 3 à 8 chiffres) | `status` ; arme le squelch SELCALL de la station (VEILLE : plus aucun son reçu jusqu'à l'appel de ce code) ; message `selcall` diffusé à tous |
 | `selcall_rearm` | — | `status` ; OUVERT -> VEILLE (même code) |
 | `selcall_deactivate` | — | `status` ; son reçu normal |
-| `selcall_options` | `filter_mode` (`mute`, `attenuate`, `chime`), `attenuation_db` (6 à 60) et/ou `send_on_tx_end` (booléen : trame émise en fin d'émission à la place du roger bip) | `status` |
+| `selcall_options` | `filter_mode` (`mute`, `attenuate`, `chime`), `attenuation_db` (6 à 60) `send_on_tx_end` (booléen : trame émise en fin d'émission à la place du roger bip) et/ou `tx_level_dbfs` (niveau de la trame, -30 à -1, arrondi à 0,5 dB) | `status` |
+| `selcall_calibrate` | — | `ptt` ; réglage automatique du niveau de la trame d'après l'ALC : ÉMISSION par ce client (mêmes refus que `toggle`), micro fermé, ton de 1 000 Hz par paliers de 2 dB (1,2 s chacun) depuis -30 dBFS ; arrêt dès que l'ALC décolle de son niveau de départ (+10 %) ou dépasse 50 % ; niveau retenu = dernier palier propre - 2 dB, enregistré ; progression dans `status.sending`, résultat dans `status.calibration` ; annuler = `stop` |
 | `selcall_send` | — | `ptt` ; appel SELCALL manuel : ÉMISSION par ce client (mêmes refus que `toggle`, plus `selcall_not_armed`, `selcall_too_long`), micro du client fermé, trame du code armé `manual_repeat` fois ; progression dans `status.sending` ; annuler = `stop` ; fin : `last_cut_reason` `selcall_sent` (ou `selcall_timeout`, `selcall_failed`). Le client envoie ses battements comme pour toute émission dont il est propriétaire |
 | `bug_report` | `text` non vide, 30 000 caractères au plus, relu par l'utilisateur, sans mot de passe | `name` du fichier rangé sur la station |
 
@@ -104,7 +105,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `result`, `error` | réponse à une commande | § 7 |
 | `memories` | une mémoire change (n'importe quel client) | `items` : `{id, name, hz, mode, favorite}` |
 | `beeps` | réglage des bips changé | `settings` |
-| `selcall` | état du SELCALL changé (commande d'un client, appel reçu) | `status` : `state` (`disabled`, `standby`, `open`), `code`, `history` (récent en tête), `filter_mode`, `attenuation_db`, `last_call` (`code`, `delta_hz`, `snr_db`, `at` : heure Unix) ou `null`, `send_on_tx_end`, `sending` (appel manuel en cours : « 1/3 »…, sinon vide) ; le passage `standby` -> `open` = appel reçu (bip discret chez le client) |
+| `selcall` | état du SELCALL changé (commande d'un client, appel reçu) | `status` : `state` (`disabled`, `standby`, `open`), `code`, `history` (récent en tête), `filter_mode`, `attenuation_db`, `last_call` (`code`, `delta_hz`, `snr_db`, `at` : heure Unix) ou `null`, `send_on_tx_end`, `sending` (appel manuel ou réglage en cours : « 1/3 », « réglage -20 dBFS : ALC 5 % »…, sinon vide), `tx_level_dbfs`, `calibration` (résultat du dernier réglage automatique) ; le passage `standby` -> `open` = appel reçu (bip discret chez le client) |
 | `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte |
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.

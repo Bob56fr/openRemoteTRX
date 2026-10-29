@@ -47,6 +47,13 @@ test("profils du micro : contrôle automatique de gain toujours coupé ; casque 
   assert.deepEqual(web.micConstraints("custom", { echo: false, noise: true }), { echoCancellation: false, noiseSuppression: true, autoGainControl: false });
 });
 
+test("voyant OVERLOAD ALC : à partir du seuil commun, pendant toute émission", () => {
+  assert.equal(web.ALC_OVERLOAD, 0.5);
+  const over = web.indicatorsView({}, { ALC: 0.6 }, {}, {});
+  assert.deepEqual(over, [{ label: "OVERLOAD ALC", on: true, alert: true }]);
+  assert.deepEqual(web.indicatorsView({}, { ALC: 0.3 }, {}, {}), []);
+});
+
 test("bandes préférées : ordre du plan, inconnues ignorées, aucune = toutes", () => {
   assert.deepEqual(web.favoriteBands("20, 11,99,40").map((b) => b.key), ["40", "20", "11"]);
   assert.equal(web.favoriteBands("").length, web.BANDS.length);

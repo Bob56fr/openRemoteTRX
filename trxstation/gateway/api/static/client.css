@@ -320,3 +320,5 @@ audio { display: none; }
 .sel-state { font-weight: 700; }
 #sec-selcall .row { flex-wrap: wrap; }
 .sel-test { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
+.voyant.alert { color: var(--tx); opacity: 1; animation: alc-blink 0.8s steps(2) infinite; }
+@keyframes alc-blink { 50% { opacity: .35; } }

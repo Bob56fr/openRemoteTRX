@@ -56,12 +56,13 @@ private val CALL_TIME = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.
 @Composable
 fun SelcallDialog(
     status: SelcallStatus, connected: Boolean, armed: Boolean, transmitting: Boolean, mine: Boolean,
-    sendOffered: Boolean, lastMessage: String, onDismiss: () -> Unit,
+    sendOffered: Boolean, calibrateOffered: Boolean, lastMessage: String, onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     var code by remember { mutableStateOf(status.code) }
     var testCode by remember { mutableStateOf(status.code) }
     var attDrag by remember { mutableStateOf<Float?>(null) }
+    var levelDrag by remember { mutableStateOf<Float?>(null) }
     var player by remember { mutableStateOf<MediaPlayer?>(null) }
     var note by remember { mutableStateOf("") }
     DisposableEffect(Unit) { onDispose { player?.release() } }
@@ -141,6 +142,29 @@ fun SelcallDialog(
                 ) { Text(if (sending) "Annuler" + (status.sending.takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: "") else "Envoyer SELCALL") }
                 if (sendOffered && !sending && !armed) Text("Activez « Émission autorisée » : l'appel SELCALL est une émission.",
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                if (calibrateOffered) {
+                    // Niveau de la trame émise ; réglage automatique d'après l'ALC (une émission d'un ton par paliers)
+                    val shown = levelDrag ?: status.txLevelDbfs.toFloat()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Niveau", style = MaterialTheme.typography.bodySmall)
+                        Slider(
+                            value = shown, onValueChange = { levelDrag = it }, valueRange = -30f..-1f, enabled = connected && status.sending.isEmpty(),
+                            onValueChangeFinished = { levelDrag?.let { RigHub.selcallOptions(txLevelDbfs = (it * 2).roundToInt() / 2.0) }; levelDrag = null },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text("${"%.1f".format(shown).replace('.', ',')} dBFS", style = MaterialTheme.typography.bodySmall)
+                    }
+                    OutlinedButton(
+                        onClick = { RigHub.selcallCalibrate() },
+                        enabled = connected && armed && !transmitting && status.sending.isEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Réglage automatique du niveau (ALC)") }
+                    Text(
+                        "Émet un ton jusqu'à 18 s (puissance du poste) : sur charge fictive ou fréquence libre. Annuler = STOP." +
+                            if (status.calibration.isNotEmpty()) "\nDernier réglage : ${status.calibration}" else "",
+                        color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 // Dernier message du journal (refus, appel envoyé…) : visible ici, sans fermer la fenêtre
                 if (lastMessage.isNotEmpty()) Text(lastMessage, color = Page.MESURE, style = MaterialTheme.typography.bodySmall)
                 Text(
