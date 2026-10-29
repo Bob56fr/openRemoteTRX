@@ -33,3 +33,5 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Commande vocale « QSY 27 555 » (confirmation sur le téléphone) | — | absent | à étudier (bouton micro ou écoute permanente) | demandé le 2026-10-29 ; jamais en émission, fréquence seulement |
 | Bandes préférées (choix et ordre des boutons de bande) | — (réglage de l'appareil) | à faire (étape suivante) | fait (0.8.0 : ✎ au bout des bandes) | demandé le 2026-10-29 ; aucune cochée = toutes |
 | Spectre HF en plein écran en tournant le téléphone (paysage), waterfall audio en portrait | — | page : vue HF plein écran / intégrée en paysage large | fait (0.8.0) | STOP et état de l'émission toujours visibles en paysage |
+| Zoom à deux doigts sur le spectre HF (span du poste) | fait (spectrum_set) | absent | fait (0.9.0) | passe en mode CENT si besoin |
+| NB : largeur et profondeur (en plus de marche/arrêt et niveau) | à faire : Hamlib ne les expose PAS pour l'IC-7300MK2 (dump_caps : NB 0..10 seul, aucun « Extra level ») ; possible par le second port CI-V (comme FIL1/2/3), à confirmer sur le poste | à faire | à faire | demandé le 2026-10-29 |

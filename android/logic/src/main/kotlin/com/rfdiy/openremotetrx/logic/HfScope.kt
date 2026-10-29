@@ -201,6 +201,18 @@ object HfScope {
     fun stepRef(db: Double?, delta: Double): Double? =
         db?.let { (Math.round((it + delta) * 2) / 2.0).coerceIn(REF_MIN, REF_MAX) }
 
+    /**
+     * Zoom à deux doigts : écarter (facteur > 1) = span plus étroit, pincer = plus large, d'un cran de la liste du poste
+     * par doublement environ ; null si le geste est trop petit (entre 0,8 et 1,25) ou le span actuel inconnu.
+     */
+    fun zoomSpan(current: Long?, factor: Float): Long? {
+        val i = SPANS_HZ.indexOf(current ?: return null).takeIf { it >= 0 } ?: return null
+        if (factor in 0.8f..1.25f || factor <= 0f) return null
+        val steps = Math.round(Math.log(factor.toDouble()) / Math.log(2.0)).toInt().let { if (it == 0) (if (factor > 1) 1 else -1) else it }
+        val next = SPANS_HZ[(i - steps).coerceIn(0, SPANS_HZ.size - 1)]
+        return next.takeIf { it != current }
+    }
+
     /** Pas d'accord adapté à la largeur affichée : environ 400 pas sur l'écran. */
     fun tuneStep(spanHz: Long): Long {
         var step = TUNE_STEPS.first()

@@ -55,6 +55,18 @@ class HfScopeTest {
     }
 
     @Test
+    fun `zoom a deux doigts - un cran par doublement, borne a la liste`() {
+        assertEquals(10_000, HfScope.zoomSpan(25_000, 2f))              // écarter : plus étroit
+        assertEquals(5_000, HfScope.zoomSpan(25_000, 4f))
+        assertEquals(50_000, HfScope.zoomSpan(25_000, 0.5f))            // pincer : plus large
+        assertEquals(10_000, HfScope.zoomSpan(25_000, 1.4f))            // petit geste franc : un cran
+        assertNull(HfScope.zoomSpan(25_000, 1.1f))                      // trop petit
+        assertNull(HfScope.zoomSpan(2_500, 3f))                         // déjà au plus étroit
+        assertNull(HfScope.zoomSpan(null, 2f))
+        assertEquals(2_500, HfScope.zoomSpan(500_000, 1000f))
+    }
+
+    @Test
     fun `reglages du poste - libelles et cycles comme la page`() {
         assertEquals("±2,5k", HfScope.spanSettingLabel(2500))
         assertEquals("±25k", HfScope.spanSettingLabel(25_000))

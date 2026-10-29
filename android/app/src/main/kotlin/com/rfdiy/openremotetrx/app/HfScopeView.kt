@@ -8,6 +8,8 @@ import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -21,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -147,6 +148,29 @@ fun HfScopeView(
             val f = frame
             Canvas(
                 Modifier.fillMaxWidth().fillMaxHeight()
+                    // Zoom à deux doigts : span du poste (en mode centré ; passe en CENT si besoin). Geste à deux
+                    // doigts consommé : il n'accorde pas le poste.
+                    .pointerInput(canSet, settings.spanHz, settings.mode) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            var start = 0f
+                            var factor = 1f
+                            do {
+                                val event = awaitPointerEvent()
+                                val down = event.changes.filter { it.pressed }
+                                if (down.size >= 2) {
+                                    val d = (down[0].position - down[1].position).getDistance()
+                                    if (start == 0f) start = d else if (start > 0f) factor = d / start
+                                    event.changes.forEach { it.consume() }
+                                }
+                            } while (event.changes.any { it.pressed })
+                            val span = if (start > 0f && canSet) HfScope.zoomSpan(settings.spanHz, factor) else null
+                            if (span != null) {
+                                if (settings.mode != "center") RigHub.spectrumSet("mode", "center")
+                                RigHub.spectrumSet("span", span)
+                            }
+                        }
+                    }
                     .pointerInput(f?.lowHz, f?.highHz, canSet) {
                         detectTapGestures { pos ->
                             labels.firstOrNull { it.first.contains(pos) }?.let { (_, label) ->   // une étiquette : fiche ou liste
@@ -241,22 +265,15 @@ fun HfScopeView(
         }
         // Réglages : ceux du poste (station, réception seulement) puis ceux de l'affichage (téléphone)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            AssistChip(onClick = { RigHub.spectrumSet("span", HfScope.nextSpan(settings.spanHz)) },
-                enabled = canSet, label = { Text(HfScope.spanSettingLabel(settings.spanHz)) })
-            AssistChip(onClick = { RigHub.spectrumSet("mode", HfScope.nextMode(settings.mode)) },
-                enabled = canSet, label = { Text(HfScope.modeSettingLabel(settings.mode)) })
-            AssistChip(onClick = { RigHub.spectrumSet("speed", HfScope.nextSpeed(settings.speed)) },
-                enabled = canSet, label = { Text(HfScope.speedSettingLabel(settings.speed)) })
-            AssistChip(onClick = { HfScope.stepRef(settings.refDb, -1.0)?.let { RigHub.spectrumSet("ref", it) } },
-                enabled = canSet && settings.refDb != null, label = { Text("REF −") })
+            CompactChip(HfScope.spanSettingLabel(settings.spanHz), onClick = { RigHub.spectrumSet("span", HfScope.nextSpan(settings.spanHz)) }, enabled = canSet)
+            CompactChip(HfScope.modeSettingLabel(settings.mode), onClick = { RigHub.spectrumSet("mode", HfScope.nextMode(settings.mode)) }, enabled = canSet)
+            CompactChip(HfScope.speedSettingLabel(settings.speed), onClick = { RigHub.spectrumSet("speed", HfScope.nextSpeed(settings.speed)) }, enabled = canSet)
+            CompactChip("REF −", onClick = { HfScope.stepRef(settings.refDb, -1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
             Text(HfScope.refLabel(settings.refDb), style = MaterialTheme.typography.labelLarge, modifier = Modifier.align(Alignment.CenterVertically))
-            AssistChip(onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } },
-                enabled = canSet && settings.refDb != null, label = { Text("REF +") })
-            AssistChip(onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() },
-                label = { Text(HfScope.gainLabel(gain)) })
-            AssistChip(onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() },
-                label = { Text(HfScope.rangeLabel(range)) })
-            if (onClose != null) AssistChip(onClick = onClose, label = { Text("Fermer") })
+            CompactChip("REF +", onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
+            CompactChip(HfScope.gainLabel(gain), onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() })
+            CompactChip(HfScope.rangeLabel(range), onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() })
+            if (onClose != null) CompactChip("Fermer", onClick = onClose)
         }
     }
 

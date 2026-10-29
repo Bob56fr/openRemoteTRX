@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -126,7 +125,7 @@ fun AudioWaterfallView(onClose: () -> Unit) {
     val top = AudioWaterfall.strongest(peaks ?: values, settings.width)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Waterfall audio", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text("Spectre audio", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Text(top?.let { "pic " + String.format(Locale.ROOT, "%.2f", it.hz / 1000.0) } ?: "", style = MaterialTheme.typography.labelMedium)
         }
         Canvas(Modifier.fillMaxWidth().height(210.dp)) {
@@ -163,11 +162,11 @@ fun AudioWaterfallView(onClose: () -> Unit) {
             }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            AssistChip(onClick = { save(AudioWaterfall.nextSpeed(settings)) }, label = { Text(AudioWaterfall.speedLabel(settings.speed)) })
-            AssistChip(onClick = { save(AudioWaterfall.nextWidth(settings)) }, label = { Text(AudioWaterfall.widthLabel(settings.width)) })
-            AssistChip(onClick = { save(AudioWaterfall.nextGain(settings)) }, label = { Text(AudioWaterfall.gainLabel(settings.gain)) })
-            AssistChip(onClick = { save(AudioWaterfall.nextPeak(settings)) }, label = { Text(AudioWaterfall.peakLabel(settings.peak)) })
-            AssistChip(onClick = onClose, label = { Text("Fermer") })
+            CompactChip(AudioWaterfall.speedLabel(settings.speed), onClick = { save(AudioWaterfall.nextSpeed(settings)) })
+            CompactChip(AudioWaterfall.widthLabel(settings.width), onClick = { save(AudioWaterfall.nextWidth(settings)) })
+            CompactChip(AudioWaterfall.gainLabel(settings.gain), onClick = { save(AudioWaterfall.nextGain(settings)) })
+            CompactChip(AudioWaterfall.peakLabel(settings.peak), onClick = { save(AudioWaterfall.nextPeak(settings)) })
+            CompactChip("Fermer", onClick = onClose)
         }
     }
 }

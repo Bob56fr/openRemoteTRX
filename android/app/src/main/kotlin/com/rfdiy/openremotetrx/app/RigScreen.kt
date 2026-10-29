@@ -233,7 +233,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             // poste s'affiche en plein écran en tournant le téléphone (paysage).
             if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })
             else Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Waterfall audio") }
+                OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Spectre audio") }
                 if (HfScope.configured(hello)) Text("Spectre HF : tourner le téléphone", style = MaterialTheme.typography.bodySmall)
             }
 
@@ -247,26 +247,20 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
 
             // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 val current = Radio.bandOf(radio?.frequencyHz)?.key
                 for (band in Radio.favoriteBands(bandsPref)) {
-                    FilterChip(
-                        selected = band.key == current, enabled = canSet,
-                        onClick = { RigHub.selectBand(band.key) }, label = { Text(band.key) },
-                    )
+                    CompactChip(band.key, onClick = { RigHub.selectBand(band.key) }, enabled = canSet, selected = band.key == current)
                 }
-                AssistChip(onClick = { bandsDialog = true }, label = { Text("✎") })
+                CompactChip("✎", onClick = { bandsDialog = true })
             }
 
             // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
             val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
             if (modes.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (mode in modes) {
-                        FilterChip(
-                            selected = mode == radio?.mode, enabled = canSet,
-                            onClick = { RigHub.setMode(mode) }, label = { Text(Radio.modeLabel(mode)) },
-                        )
+                        CompactChip(Radio.modeLabel(mode), onClick = { RigHub.setMode(mode) }, enabled = canSet, selected = mode == radio?.mode)
                     }
                 }
                 if (hello?.txModes?.isNotEmpty() == true) {
@@ -279,11 +273,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             val chips = Controls.chips(hello, rig.state)
             if (chips.isNotEmpty()) {
                 // Appui : marche / arrêt (comme la page) ; appui LONG sur NR ou NB : niveaux de NR et NB (fenêtre)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     for (chip in chips) {
-                        PressChip(
-                            chip.label, chip.on, canSet,
-                            onClick = { RigHub.pressControl(chip.key) },
+                        CompactChip(
+                            chip.label, onClick = { RigHub.pressControl(chip.key) }, enabled = canSet, selected = chip.on,
                             onLongClick = if (chip.key == "NR" || chip.key == "NB") ({ levelsDialog = true }) else null,
                         )
                     }
@@ -554,27 +547,6 @@ private fun FrequencyDialog(current: Long?, onDismiss: () -> Unit, onSet: (Long)
         confirmButton = { TextButton(onClick = { parsed?.let(onSet) }, enabled = parsed != null) { Text("Aller") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
     )
-}
-
-/** Bouton d'une fonction du poste : appui = marche / arrêt, appui long (facultatif) = réglage fin. */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun PressChip(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit, onLongClick: (() -> Unit)?) {
-    val colors = MaterialTheme.colorScheme
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = if (selected) colors.secondaryContainer else Color.Transparent,
-        border = BorderStroke(1.dp, if (selected) colors.secondaryContainer else colors.outline),
-        modifier = Modifier.height(32.dp).combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick),
-    ) {
-        Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-            Text(
-                label + if (onLongClick != null) " ⋯" else "",
-                style = MaterialTheme.typography.labelLarge,
-                color = if (enabled) (if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant) else colors.onSurface.copy(alpha = 0.38f),
-            )
-        }
-    }
 }
 
 /**
