@@ -202,6 +202,32 @@ class ControlSession:
         warnings = validate_profile(profile, self.capabilities).warnings
         self._result(cmd.id, True, profile=profile, source=source, warnings=warnings)
 
+    async def _selcall_send(self, cmd) -> None:
+        """Appel SELCALL manuel : ÉMISSION par ce client (mêmes vérifications que toggle), code armé, trame N fois."""
+        tail = getattr(self.ctrl, "tail", None)
+        if self.selcall is None or tail is None:
+            self._result(cmd.id, False, reason="selcall_unavailable")
+            return
+        status = self.selcall.status
+        if status.state == "disabled" or not status.code:
+            self._result(cmd.id, False, reason="selcall_not_armed")
+            return
+        from ...selcall import protocol as sp
+        sc = self.ctrl.config.selcall
+        code, repeat, gap = status.code, sc.manual_repeat, sc.manual_gap_ms / 1000
+        duration = repeat * sp.duration_s(code) + (repeat - 1) * gap
+        store = self.selcall
+
+        async def sequence() -> None:
+            try:
+                await tail.play_selcall_call(code, repeat, gap, progress=lambda k, n: store.set_sending(f"{k}/{n}"))
+            finally:
+                store.set_sending("")
+
+        log.warning("SELCALL : appel manuel %s (%d fois) demandé par %s", code, repeat, self.client_id)
+        snapshot = await self.ctrl.send_selcall(self.client_id, sequence, duration)    # Refused : refus comme toggle
+        self._result(cmd.id, True, ptt=snapshot.to_dict())
+
     def _selcall_command(self, cmd) -> None:
         """SELCALL : n'agit que sur le son reçu par les clients (squelch), jamais sur le poste ni sur l'émission."""
         if self.selcall is None:
@@ -300,6 +326,8 @@ class ControlSession:
                     else:
                         log.info("bips réglés par %s : %s", self.client_id, cmd.params)
                         self._result(cmd.id, True, settings=config.to_dict())
+            elif cmd.name == "selcall_send":
+                await self._selcall_send(cmd)
             elif cmd.name.startswith("selcall_"):
                 self._selcall_command(cmd)
             elif cmd.name == "spectrum_watch":

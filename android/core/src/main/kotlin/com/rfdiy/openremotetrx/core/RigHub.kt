@@ -155,9 +155,12 @@ object RigHub {
 
     fun selcallDeactivate() { service?.onRig { session, now -> session.selcallDeactivate(now) } }
 
-    fun selcallOptions(filterMode: String? = null, attenuationDb: Int? = null) {
-        service?.onRig { session, now -> session.selcallOptions(now, filterMode, attenuationDb) }
+    fun selcallOptions(filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null) {
+        service?.onRig { session, now -> session.selcallOptions(now, filterMode, attenuationDb, sendOnTxEnd) }
     }
+
+    /** Appel SELCALL manuel : une émission (annuler = stop). */
+    fun selcallSend() { service?.onRig { session, now -> session.selcallSend(now) } }
 
     fun setMuted(on: Boolean) { service?.setMuted(on) ?: publish { it.copy(muted = on) } }
 

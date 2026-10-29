@@ -49,10 +49,13 @@ class SelcallStatus:
     filter_mode: str = "attenuate"
     attenuation_db: int = 20
     last_call: dict | None = None                   # dernier appel reçu (code, Δ, SNR, heure)
+    send_on_tx_end: bool = False                    # trame émise en fin d'émission, à la place du roger bip
+    sending: str = ""                               # appel manuel en cours : « 1/3 », « 2/3 »… (jamais enregistré)
 
     def to_dict(self) -> dict:
         return {"state": self.state, "code": self.code, "history": list(self.history), "filter_mode": self.filter_mode,
-                "attenuation_db": self.attenuation_db, "last_call": self.last_call}
+                "attenuation_db": self.attenuation_db, "last_call": self.last_call, "send_on_tx_end": self.send_on_tx_end,
+                "sending": self.sending}
 
 
 class SelcallStore:
@@ -60,12 +63,12 @@ class SelcallStore:
     Fichier absent ou illisible : DÉSACTIVÉ. Au chargement, OUVERT redevient VEILLE (sûr par défaut)."""
 
     def __init__(self, path: str | Path | None, *, history_size: int = 10, filter_mode: str = "attenuate",
-                 attenuation_db: int = 20) -> None:
+                 attenuation_db: int = 20, send_on_tx_end: bool = False) -> None:
         self.path = Path(path) if path is not None else None
         self.history_size = history_size
         self._lock = threading.Lock()
         self._listeners: list[Callable[[SelcallStatus], None]] = []
-        self.status = SelcallStatus(filter_mode=filter_mode, attenuation_db=attenuation_db)
+        self.status = SelcallStatus(filter_mode=filter_mode, attenuation_db=attenuation_db, send_on_tx_end=send_on_tx_end)
         self._load()
 
     def _load(self) -> None:
@@ -83,7 +86,10 @@ class SelcallStore:
             mode = data.get("filter_mode") if data.get("filter_mode") in ("mute", "attenuate", "chime") else self.status.filter_mode
             att = data.get("attenuation_db")
             att = att if isinstance(att, int) and not isinstance(att, bool) and 6 <= att <= 60 else self.status.attenuation_db
-            self.status = SelcallStatus(state=state, code=code, history=history, filter_mode=mode, attenuation_db=att)
+            tail = data.get("send_on_tx_end")
+            tail = tail if isinstance(tail, bool) else self.status.send_on_tx_end
+            self.status = SelcallStatus(state=state, code=code, history=history, filter_mode=mode, attenuation_db=att,
+                                        send_on_tx_end=tail)
         except (OSError, ValueError, AttributeError) as exc:
             log.warning("état SELCALL illisible (%s) : fonction désactivée", exc)
 
@@ -109,6 +115,7 @@ class SelcallStore:
         if self.path is None:
             return
         data = self.status.to_dict()
+        data.pop("sending", None)                                   # passager : jamais enregistré
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".selcall-")
@@ -140,8 +147,27 @@ class SelcallStore:
         log.info("SELCALL désactivé")
         return self._set(_replace(self.status, state=DISABLED))
 
-    def set_options(self, *, filter_mode: str | None = None, attenuation_db: int | None = None) -> SelcallStatus:
+    def set_sending(self, text: str) -> None:
+        """Progression d'un appel manuel (« 2/3 », « » à la fin) : annoncée aux clients, jamais enregistrée."""
+        self.status = _replace(self.status, sending=text)
+        for callback in list(self._listeners):
+            try:
+                callback(self.status)
+            except Exception:
+                log.exception("écouteur SELCALL en erreur")
+
+    def tail_code(self) -> str | None:
+        """Code à émettre en fin d'émission (à la place du roger bip), ou None."""
         s = self.status
+        return s.code if s.send_on_tx_end and s.state != DISABLED and s.code else None
+
+    def set_options(self, *, filter_mode: str | None = None, attenuation_db: int | None = None,
+                    send_on_tx_end: bool | None = None) -> SelcallStatus:
+        s = self.status
+        if send_on_tx_end is not None:
+            if not isinstance(send_on_tx_end, bool):
+                raise ValueError("send_on_tx_end : true ou false")
+            s = _replace(s, send_on_tx_end=send_on_tx_end)
         if filter_mode is not None:
             if filter_mode not in ("mute", "attenuate", "chime"):
                 raise ValueError("mode de filtrage : mute, attenuate ou chime")

@@ -73,6 +73,11 @@ class RigSessionTest {
         s.selcallRearm(31)
         s.selcallOptions(32, filterMode = "chime")
         assertEquals(listOf("selcall_activate", "selcall_rearm", "selcall_options"), link.cmds().filter { it.startsWith("selcall") })
+        s.selcallSend(40)                                                     // pas armé : rien
+        assertTrue(link.cmds().none { it == "selcall_send" })
+        s.setArmed(41, true)
+        s.selcallSend(42)
+        assertEquals("selcall_send", link.cmds().last())
         val (plain, plainLink) = connected()                                  // station sans SELCALL
         plain.selcallActivate(0, "1234")
         assertTrue(plainLink.cmds().none { it.startsWith("selcall") })

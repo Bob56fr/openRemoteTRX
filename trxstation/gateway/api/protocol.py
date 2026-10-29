@@ -41,7 +41,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "bug_report",                    # rapport de problème de la page, rangé sur la station (text)
             "set_offset",                    # décalage du clarifieur : name RIT ou XIT (ΔTX), hz entier
             # SELCALL (docs/selcall-cahier-des-charges.md) : squelch numérique de la station ; n'émettent jamais rien
-            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options")
+            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options",
+            "selcall_send")                  # appel manuel : ÉMISSION (prise normale, micro fermé, trame N fois) ; annuler = stop
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -191,9 +192,13 @@ def parse_command(raw: str | bytes) -> Command:
             params["filter_mode"] = data["filter_mode"]
         if "attenuation_db" in data:
             params["attenuation_db"] = _int(data["attenuation_db"], "attenuation_db", 6, 60)
-        unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db"}
+        if "send_on_tx_end" in data:
+            if not isinstance(data["send_on_tx_end"], bool):
+                raise ProtocolError("invalid_params", "send_on_tx_end doit valoir true ou false")
+            params["send_on_tx_end"] = data["send_on_tx_end"]
+        unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db", "send_on_tx_end"}
         if unknown or not params:
-            raise ProtocolError("invalid_params", "filter_mode et/ou attenuation_db attendus")
+            raise ProtocolError("invalid_params", "filter_mode, attenuation_db et/ou send_on_tx_end attendus")
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

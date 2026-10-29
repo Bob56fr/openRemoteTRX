@@ -1246,6 +1246,7 @@
         }
         paintModes(v);
         paintVoyants(v);
+        if (selStatus) paintSelcallSend();
         const local = v.local || { active: false };                                   // poste utilisé sur place
         $("local-banner").hidden = !local.active;
         if (local.active) {
@@ -1340,6 +1341,8 @@
       $("sel-state").textContent = "État : " + (scx.STATE_LABELS[status.state] || status.state) + (status.code && status.state !== "disabled" ? " (code " + status.code + ")" : "");
       if (document.activeElement !== $("sel-code") && !$("sel-code").value) $("sel-code").value = status.code || "";
       if (document.activeElement !== $("sel-test-code") && !$("sel-test-code").value) $("sel-test-code").value = status.code || "";
+      $("sel-tail").checked = !!status.send_on_tx_end;
+      paintSelcallSend();
       $("sel-rearm").disabled = status.state === "disabled";
       $("sel-deactivate").disabled = status.state === "disabled";
       $("sel-filter").value = status.filter_mode;
@@ -1357,7 +1360,26 @@
       $("sel-last").textContent = c ? "Dernier appel : " + c.code + " à " + new Date(c.at * 1000).toLocaleTimeString("fr-FR")
         + " (décalage " + (c.delta_hz > 0 ? "+" : "") + c.delta_hz + " Hz, SNR " + c.snr_db + " dB)" : "Aucun appel reçu.";
     }
+    function paintSelcallSend() {
+      /* « Envoyer SELCALL » : devient « Annuler » pendant l'appel (progression 1/3...) ; une émission de ce client. */
+      const st = selStatus, v = lastView;
+      const sending = !!(st && st.sending) || !!(v && v.mine && v.pttState && v.pttState !== "RX" && selSendAsked);
+      const button = $("sel-send");
+      button.textContent = sending ? "Annuler" + (st && st.sending ? " (" + st.sending + ")" : "") : "Envoyer SELCALL";
+      button.className = sending ? "stop" : "primary";
+      button.disabled = !connectedFlag || !st || (!sending && (st.state === "disabled" || !(v && v.armed) || (v && v.pttState !== "RX")));
+      $("sel-send-note").textContent = !st || st.state === "disabled" ? "Armez d'abord sur un code."
+        : !(v && v.armed) && !sending ? "Cochez « Émission autorisée » (c'est une émission)." : "";
+      if (!sending && v && v.pttState === "RX") selSendAsked = false;
+    }
+    let selSendAsked = false;
     if (scx) {
+      $("sel-send").addEventListener("click", () => {
+        if ($("sel-send").className === "stop") { client.stop().catch(fail); return; }   // annuler = STOP, toujours permis
+        selSendAsked = true;
+        client.selcallSend().then((res) => { if (!res || !res.ok) selSendAsked = false; paintSelcallSend(); }).catch(fail);
+      });
+      $("sel-tail").addEventListener("change", (ev) => client.selcallOptions({ send_on_tx_end: ev.target.checked }).catch(fail));
       $("sel-ind").addEventListener("click", () => { $("sec-selcall").open = true; $("sec-selcall").scrollIntoView({ behavior: "smooth" }); });
       $("sel-activate").addEventListener("click", () => {
         const code = $("sel-code").value.trim();

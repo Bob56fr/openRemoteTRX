@@ -74,6 +74,8 @@
     layouts_unavailable: "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
     beeps_unavailable: "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
     selcall_unavailable: "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
+    selcall_not_armed: "Armez d'abord le SELCALL sur un code : l'appel émet le code armé.",
+    selcall_too_long: "Appel SELCALL plus long que la durée maximale d'émission (TOT) : réduisez manual_repeat sur la station.",
     beeps_storage_error: "La station n'a pas pu enregistrer le réglage des bips.",
     layout_invalid: "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
     layout_storage_error: "La station n'a pas pu enregistrer la mise en page (disque ?).",
@@ -84,6 +86,9 @@
   const CUT_REASONS = {
     tot: "durée maximale d'émission atteinte",
     heartbeat: "perte du signal de vie du client",
+    selcall_sent: "appel SELCALL envoyé",
+    selcall_timeout: "appel SELCALL trop long : coupé",
+    selcall_failed: "appel SELCALL en erreur : coupé",
     toggle: "demande d'un client",
     stop: "bouton STOP",
     client_disconnected: "déconnexion du client émetteur",
@@ -1337,6 +1342,19 @@
       if (!mine && p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : utilise STOP pour couper.", "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
       const res = await this.send("toggle");
+      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
+      return res;
+    }
+
+    async selcallSend() {
+      /* Appel SELCALL manuel : c'est une ÉMISSION de ce client (mêmes conditions que le PTT : « Émission autorisée »,
+         personne d'autre en émission) ; la station émet la trame du code armé, micro fermé. Annuler = stop(). */
+      if (!this.connected) return null;
+      const p = this._ptt();
+      if (!this.armed) { this.ui.log("Coche d'abord « Émission autorisée » : l'appel SELCALL est une émission.", "warn"); return null; }
+      if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : appel SELCALL impossible.", "warn"); return null; }
+      this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;            // battements dès la demande, comme pour le PTT
+      const res = await this.send("selcall_send");
       if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
       return res;
     }

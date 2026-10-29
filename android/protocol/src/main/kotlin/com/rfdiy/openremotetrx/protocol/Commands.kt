@@ -105,13 +105,18 @@ sealed class Command(val name: String) {
 
     data object SelcallDeactivate : Command("selcall_deactivate")
 
-    /** `filterMode` : mute, attenuate, chime ; `attenuationDb` : 6 à 60. Au moins l'un des deux. */
-    data class SelcallOptions(val filterMode: String? = null, val attenuationDb: Int? = null) : Command("selcall_options") {
+    /** `filterMode` : mute, attenuate, chime ; `attenuationDb` : 6 à 60 ; `sendOnTxEnd` : trame en fin d'émission. */
+    data class SelcallOptions(val filterMode: String? = null, val attenuationDb: Int? = null, val sendOnTxEnd: Boolean? = null) :
+        Command("selcall_options") {
         override fun JsonObjectBuilder.params() {
             filterMode?.let { put("filter_mode", it) }
             attenuationDb?.let { put("attenuation_db", it) }
+            sendOnTxEnd?.let { put("send_on_tx_end", it) }
         }
     }
+
+    /** Appel SELCALL manuel : une ÉMISSION de ce client (micro fermé, trame du code armé N fois) ; annuler = Stop. */
+    data object SelcallSend : Command("selcall_send")
 
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
@@ -124,7 +129,7 @@ sealed class Command(val name: String) {
             "toggle", "stop", "heartbeat", "get_state", "set_frequency", "set_mode", "set_squelch", "set_function",
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
-            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options",
+            "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send",
         )
     }
 }

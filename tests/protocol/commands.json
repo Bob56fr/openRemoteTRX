@@ -48,11 +48,14 @@
     "selcall_deactivate": {"valid": [{"cmd": "selcall_deactivate", "id": 33}], "invalid": []},
     "selcall_options": {
       "valid": [{"cmd": "selcall_options", "id": 34, "filter_mode": "chime"},
-                {"cmd": "selcall_options", "id": 35, "attenuation_db": 30}],
+                {"cmd": "selcall_options", "id": 35, "attenuation_db": 30},
+                {"cmd": "selcall_options", "id": 36, "send_on_tx_end": true}],
       "invalid": [{"message": {"cmd": "selcall_options", "filter_mode": "fort"}, "code": "invalid_params"},
                   {"message": {"cmd": "selcall_options", "attenuation_db": 3}, "code": "invalid_params"},
+                  {"message": {"cmd": "selcall_options", "send_on_tx_end": "oui"}, "code": "invalid_params"},
                   {"message": {"cmd": "selcall_options"}, "code": "invalid_params"}]
     },
+    "selcall_send": {"valid": [{"cmd": "selcall_send", "id": 37}], "invalid": []},
     "set_level": {
       "valid": [{"cmd": "set_level", "id": 8, "name": "RFPOWER", "value": 0.25},
                 {"cmd": "set_level", "name": "AGC", "value": 2},

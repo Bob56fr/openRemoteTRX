@@ -472,8 +472,28 @@ class RigSession(
 
     fun selcallDeactivate(now: Long) = selcallCommand(now, Command.SelcallDeactivate)
 
-    fun selcallOptions(now: Long, filterMode: String? = null, attenuationDb: Int? = null) =
-        selcallCommand(now, Command.SelcallOptions(filterMode, attenuationDb))
+    fun selcallOptions(now: Long, filterMode: String? = null, attenuationDb: Int? = null, sendOnTxEnd: Boolean? = null) =
+        selcallCommand(now, Command.SelcallOptions(filterMode, attenuationDb, sendOnTxEnd))
+
+    /**
+     * Appel SELCALL manuel : c'est une ÉMISSION de ce téléphone, mêmes conditions que le PTT (« Émission autorisée »,
+     * personne d'autre en émission) ; battements dès la demande. Annuler = `stop`.
+     */
+    fun selcallSend(now: Long) {
+        if (!connected || hello?.offers("selcall") != true) return
+        val ptt = state?.ptt
+        when {
+            !protocolOk -> log("Version de protocole inconnue : émission impossible (STOP reste permis).", LogLevel.WARN)
+            !arming.armed -> log("Active d'abord « Émission autorisée » : l'appel SELCALL est une émission.", LogLevel.WARN)
+            ptt != null && ptt.state != "RX" -> log("Une émission est en cours (${ptt.owner ?: "?"}) : appel SELCALL impossible.", LogLevel.WARN)
+            selcall?.disabled != false -> log("Arme d'abord le SELCALL sur un code.", LogLevel.WARN)
+            else -> {
+                heartbeat.onToggleSent(now)
+                send(now, Command.SelcallSend)
+            }
+        }
+        publish(now)
+    }
 
     fun setOffset(now: Long, name: String, hz: Int) = control(now, Command.SetOffset(name, Math.round(hz / 10.0).toInt() * 10))
 

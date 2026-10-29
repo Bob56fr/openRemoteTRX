@@ -82,7 +82,8 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `selcall_activate` | `code` (texte de 3 à 8 chiffres) | `status` ; arme le squelch SELCALL de la station (VEILLE : plus aucun son reçu jusqu'à l'appel de ce code) ; message `selcall` diffusé à tous |
 | `selcall_rearm` | — | `status` ; OUVERT -> VEILLE (même code) |
 | `selcall_deactivate` | — | `status` ; son reçu normal |
-| `selcall_options` | `filter_mode` (`mute`, `attenuate`, `chime`) et/ou `attenuation_db` (6 à 60) | `status` ; filtrage des tonalités SELCALL dans le son reçu |
+| `selcall_options` | `filter_mode` (`mute`, `attenuate`, `chime`), `attenuation_db` (6 à 60) et/ou `send_on_tx_end` (booléen : trame émise en fin d'émission à la place du roger bip) | `status` |
+| `selcall_send` | — | `ptt` ; appel SELCALL manuel : ÉMISSION par ce client (mêmes refus que `toggle`, plus `selcall_not_armed`, `selcall_too_long`), micro du client fermé, trame du code armé `manual_repeat` fois ; progression dans `status.sending` ; annuler = `stop` ; fin : `last_cut_reason` `selcall_sent` (ou `selcall_timeout`, `selcall_failed`). Le client envoie ses battements comme pour toute émission dont il est propriétaire |
 | `bug_report` | `text` non vide, 30 000 caractères au plus, relu par l'utilisateur, sans mot de passe | `name` du fichier rangé sur la station |
 
 ## 7. Réponses et erreurs
@@ -103,7 +104,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `result`, `error` | réponse à une commande | § 7 |
 | `memories` | une mémoire change (n'importe quel client) | `items` : `{id, name, hz, mode, favorite}` |
 | `beeps` | réglage des bips changé | `settings` |
-| `selcall` | état du SELCALL changé (commande d'un client, appel reçu) | `status` : `state` (`disabled`, `standby`, `open`), `code`, `history` (récent en tête), `filter_mode`, `attenuation_db`, `last_call` (`code`, `delta_hz`, `snr_db`, `at` : heure Unix) ou `null` ; le passage `standby` -> `open` = appel reçu (bip discret chez le client) |
+| `selcall` | état du SELCALL changé (commande d'un client, appel reçu) | `status` : `state` (`disabled`, `standby`, `open`), `code`, `history` (récent en tête), `filter_mode`, `attenuation_db`, `last_call` (`code`, `delta_hz`, `snr_db`, `at` : heure Unix) ou `null`, `send_on_tx_end`, `sending` (appel manuel en cours : « 1/3 »…, sinon vide) ; le passage `standby` -> `open` = appel reçu (bip discret chez le client) |
 | `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte |
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.

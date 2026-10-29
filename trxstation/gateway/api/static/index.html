@@ -292,6 +292,11 @@
           </select></label>
           <label>Atténuation <input id="sel-att" type="range" min="6" max="60" step="1"><span id="sel-att-text"></span></label>
         </div>
+        <label class="check"><input id="sel-tail" type="checkbox"> Envoyer la trame en fin d'émission (à la place du roger bip ; ÉMIS par la station)</label>
+        <div class="row">
+          <button id="sel-send" class="primary" title="Appel du groupe sans parler : la station ÉMET la trame du code armé plusieurs fois">Envoyer SELCALL</button>
+          <span id="sel-send-note" class="dim small"></span>
+        </div>
         <div id="sel-last" class="note"></div>
         <div class="sel-test">
           <div>Fichier de test (pour un correspondant)</div>

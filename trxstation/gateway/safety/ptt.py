@@ -20,6 +20,11 @@ Principes (voir CLAUDE.md, « Règles de sécurité d'émission ») :
     EXCEPTION assumée au retour RX immédiat (décision de l'utilisateur). Seulement depuis TX confirmé,
     jamais pour une autre coupure, durée bornée (TAIL_MAX_WAIT_S) ; toute coupure pendant le bip
     (STOP, autre client, TOT...) l'interrompt net et coupe aussitôt.
+  * SELCALL (docs/selcall-cahier-des-charges.md, exception ÉTENDUE par l'utilisateur le 2026-10-29) : trame de fin
+    à la place du roger bip, mêmes règles (seulement relâché par son propriétaire depuis TX confirmé, micro fermé avant,
+    toute coupure l'interrompt), attente bornée à sa durée + 0,6 s, et seulement si le TOT la contient. Appel manuel
+    (`send_selcall`) : prise d'émission NORMALE (mêmes vérifications que `toggle`), porte du micro gardée FERMÉE, la trame
+    N fois, puis retour en RX ; battements, TOT et surveillance du poste restent actifs, toute coupure l'interrompt.
   * Le retour en RX est insistant : on réessaie jusqu'à confirmation par relecture.
     L'état n'affiche RX qu'une fois le retour confirmé. Si cela échoue au-delà du
     délai, un défaut `unkey_failed` est verrouillé (effacement manuel, côté Pi) et le
@@ -46,6 +51,7 @@ log = logging.getLogger(__name__)
 
 _CAT_ERRORS = (CatConnectionError, CatProtocolError, RigError, OSError)
 TAIL_MAX_WAIT_S = 1.2      # bip de fin : 0,6 s de son au plus + marge ; au-delà, on coupe quoi qu'il arrive
+TAIL_SELCALL_MAX_S = 4.5   # trame SELCALL de fin (8 chiffres : 3,7 s) + marge : plafond absolu
 
 
 class PttState(str, enum.Enum):
@@ -241,7 +247,7 @@ class PttController:
         """RX -> prise d'émission (sous conditions). Autre état -> coupure, toujours acceptée."""
         if self._state is not PttState.RX:
             if self._state is PttState.TX and client_id == self._owner:
-                await self._end_with_tail("toggle", "roger", by=client_id)     # relâché par son propriétaire
+                await self._end_with_tail("toggle", self._release_kind(), by=client_id)   # relâché par son propriétaire
             else:
                 await self.force_rx("toggle", by=client_id)
             return self.snapshot()
@@ -260,6 +266,51 @@ class PttController:
             await asyncio.wait_for(asyncio.shield(task), self.limits.unkey_deadline_s + 0.5)
         except asyncio.TimeoutError:
             pass  # la coupure continue en tâche de fond ; l'état reste UNKEYING
+
+    def _release_kind(self) -> str:
+        """Son de fin quand le propriétaire relâche : trame SELCALL si elle est voulue ET que le TOT la contient, sinon roger."""
+        tail, kind = self.tail, "roger"
+        try:
+            if tail is not None and tail.wanted("selcall"):
+                left = self.limits.tot_s - (time.monotonic() - self._tx_started)
+                if tail.max_wait("selcall") <= left:
+                    kind = "selcall"
+                else:
+                    log.warning("trame SELCALL de fin omise : plus assez de temps avant le TOT (%.1f s)", left)
+        except Exception:
+            log.exception("trame SELCALL de fin impossible : roger bip ou coupure")
+        return kind
+
+    async def send_selcall(self, client_id: str, sequence, duration_s: float) -> PttSnapshot:
+        """Appel SELCALL manuel : prise d'émission par `client_id` (mêmes refus que `toggle`), micro du client FERMÉ,
+        `sequence()` joue les trames, puis retour en RX. Toute coupure (STOP, TOT, battement perdu, déconnexion, défaut,
+        nouvel appui) l'interrompt net : la séquence est la « tâche de fin » que `force_rx` arrête."""
+        if duration_s + 1.0 > self.limits.tot_s:
+            raise Refused("selcall_too_long", f"{duration_s:.1f} s pour un TOT de {self.limits.tot_s:.0f} s")
+        snap = await self._key(client_id, open_gate=False)
+        epoch = self._epoch
+        task = asyncio.get_running_loop().create_task(sequence())
+        self._tail_task = task
+        self._spawn(self._end_selcall_call(task, epoch, client_id, duration_s + 2.0))
+        return snap
+
+    async def _end_selcall_call(self, task: asyncio.Task, epoch: int, client_id: str, bound_s: float) -> None:
+        reason = "selcall_sent"
+        try:
+            await asyncio.wait_for(asyncio.shield(task), bound_s)
+        except asyncio.TimeoutError:
+            reason = "selcall_timeout"
+            log.error("appel SELCALL trop long : coupure")
+        except asyncio.CancelledError:
+            if not task.cancelled():
+                raise
+        except Exception:
+            reason = "selcall_failed"
+            log.exception("appel SELCALL en erreur : coupure")
+        if self._epoch == epoch:                      # personne n'a coupé pendant l'appel : fin normale
+            if self._tail_task is task:
+                self._tail_task = None
+            await self.force_rx(reason, by=client_id)
 
     def _stop_tail(self) -> None:
         task, self._tail_task = self._tail_task, None
@@ -290,8 +341,14 @@ class PttController:
         self._set_state(PttState.UNKEYING, "tail")
         task = asyncio.get_running_loop().create_task(tail.play(kind))
         self._tail_task = task
+        bound = TAIL_MAX_WAIT_S
+        if kind == "selcall":
+            try:
+                bound = max(TAIL_MAX_WAIT_S, min(float(tail.max_wait(kind)), TAIL_SELCALL_MAX_S))
+            except Exception:
+                log.exception("durée de la trame SELCALL inconnue : attente d'un bip")
         try:
-            await asyncio.wait_for(asyncio.shield(task), TAIL_MAX_WAIT_S)
+            await asyncio.wait_for(asyncio.shield(task), bound)
         except asyncio.TimeoutError:
             log.error("bip de fin trop long : coupure sans attendre")
         except asyncio.CancelledError:
@@ -383,7 +440,7 @@ class PttController:
         if time.monotonic() < self._cooldown_until:
             raise Refused("cooldown")
 
-    async def _key(self, client_id: str) -> PttSnapshot:
+    async def _key(self, client_id: str, *, open_gate: bool = True) -> PttSnapshot:
         async with self._tx_lock:
             epoch = self._epoch
             self._check_idle(client_id)
@@ -449,7 +506,8 @@ class PttController:
             self._tx_started = self._last_heartbeat = time.monotonic()
             self._warning = False
             self._set_state(PttState.TX, "tx_started")
-            self._audio_gate(True)                        # micro ouvert seulement une fois en TX confirmé
+            if open_gate:
+                self._audio_gate(True)                    # micro ouvert seulement une fois en TX confirmé (jamais pour un appel SELCALL)
             self._watch_task = asyncio.get_running_loop().create_task(self._watchdog())
             return self.snapshot("tx_started")
 

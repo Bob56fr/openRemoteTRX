@@ -27,6 +27,10 @@ data class SelcallStatus(
     val filterMode: String,
     val attenuationDb: Int,
     val lastCall: SelcallCall?,
+    /** Trame émise en fin d'émission à la place du roger bip. */
+    val sendOnTxEnd: Boolean = false,
+    /** Appel manuel en cours : « 1/3 »…, sinon vide. */
+    val sending: String = "",
 ) {
     val disabled get() = state == DISABLED
     val open get() = state == OPEN
@@ -66,6 +70,8 @@ data class SelcallStatus(
                 filterMode = obj.text("filter_mode")?.takeIf { m -> FILTER_MODES.any { it.first == m } } ?: "attenuate",
                 attenuationDb = (obj["attenuation_db"] as? JsonPrimitive)?.intOrNull?.coerceIn(6, 60) ?: 20,
                 lastCall = call,
+                sendOnTxEnd = (obj["send_on_tx_end"] as? JsonPrimitive)?.contentOrNull == "true",
+                sending = obj.text("sending")?.take(8).orEmpty(),
             )
         }
     }

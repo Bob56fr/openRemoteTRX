@@ -50,3 +50,4 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Gain du micro, porte de bruit réglable, niveau du micro | — | fait (0.58.0, `voice.js`) | à faire (A3, avec l'égaliseur) | |
 | SELCALL : indicateur, armer / réarmer / désactiver, historique, filtrage des tonalités, dernier appel, bip à l'ouverture | fait (0.61.0 : commandes `selcall_*`, message `selcall`) | fait (0.61.0) | fait (0.17.0) | lot 4 du cahier SELCALL |
 | SELCALL : fichier de test pour un correspondant | — (fabriqué par le client) | Écouter, Télécharger (0.61.0) | Écouter, Partager, Téléchargements (0.17.0) | demandé le 2026-10-29 |
+| SELCALL : appel manuel (« Envoyer SELCALL » / « Annuler (2/3) »), trame en fin d'émission | fait (0.62.0 : `selcall_send`, `send_on_tx_end`) | fait (0.62.0) | fait (0.18.0) | lot 3 du cahier SELCALL |

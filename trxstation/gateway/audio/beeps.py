@@ -34,6 +34,7 @@ from .pcm import FRAME_BYTES, FRAME_S, SAMPLE_RATE
 log = logging.getLogger(__name__)
 
 MAX_TAIL_S = 0.6
+TAIL_WAIT_S = 1.2                 # attente maximale d'un bip de fin par le PttController (0,6 s de son + marge)
 BEEP_MS = 100
 GAP_MS = 60
 RAMP_MS = 5
@@ -172,8 +173,34 @@ class BeepStore:
         return new
 
 
+SELCALL_MARGIN_S = 0.6            # trame SELCALL de fin : sa durée + cette marge, au plus (exception étendue, 2026-10-29)
+
+
+def selcall_frames(code: str, level_dbfs: float, gap_s: float = 0.0, repeat: int = 1) -> tuple[list[bytes], list[int]]:
+    """Trame SELCALL (selcall/signal.py) en trames PCM de 20 ms, `repeat` fois séparées de `gap_s` de silence ;
+    rend aussi l'indice de la première trame PCM de chaque répétition (progression de l'appel manuel)."""
+    import numpy as np                                      # seulement quand le SELCALL sert
+
+    from ...selcall import signal as sg
+
+    one = sg.synthesize(code, rate=SAMPLE_RATE, level_dbfs=min(level_dbfs, -1.0)).astype(np.float64)
+    gap = np.zeros(int(round(gap_s * SAMPLE_RATE)))
+    parts, marks, pos = [], [], 0
+    per = FRAME_BYTES // 2
+    for k in range(repeat):
+        marks.append(pos // per)
+        parts.append(one)
+        pos += len(one)
+        if k < repeat - 1:
+            parts.append(gap)
+            pos += len(gap)
+    pcm = (np.clip(np.concatenate(parts), -1, 1) * 32767).astype("<i2").tobytes()
+    pcm += bytes((-len(pcm)) % FRAME_BYTES)
+    return [pcm[i:i + FRAME_BYTES] for i in range(0, len(pcm), FRAME_BYTES)], marks
+
+
 class TailPlayer:
-    """Joue un bip sur la sortie vers le poste, au rythme réel (le tampon de la carte ne garde que 150 ms)."""
+    """Joue un bip (ou la trame SELCALL) sur la sortie vers le poste, au rythme réel (le tampon de la carte est court)."""
 
     def __init__(self, sink, store: BeepStore, *, gain_db: float = 0.0, sleep=asyncio.sleep,
                  clock: Callable[[], float] | None = None) -> None:
@@ -182,13 +209,29 @@ class TailPlayer:
         self._clock = clock
         self._stopped = False
         self.played: list[str] = []
+        # SELCALL (gateway/main) : code à émettre en fin d'émission À LA PLACE du roger bip, ou None (fonction absente,
+        # désactivée, ou option « send_on_tx_end » coupée) ; niveau de la trame (dBFS, sous le seuil d'ALC).
+        self.selcall_code: Callable[[], str | None] = lambda: None
+        self.selcall_level_db = -6.0
 
     def wanted(self, kind: str) -> bool:
         c = self.store.config
+        if kind == "selcall":
+            return self.selcall_code() is not None
         return c.roger_enabled if kind == "roger" else c.link_lost_enabled if kind == "link_lost" else False
+
+    def max_wait(self, kind: str) -> float:
+        """Attente maximale du PttController pour ce son de fin (au-delà : coupure quoi qu'il arrive)."""
+        if kind == "selcall":
+            from ...selcall import protocol as sp
+            code = self.selcall_code()
+            return (sp.duration_s(code) if code else 0.0) + SELCALL_MARGIN_S + getattr(self.sink, "PREFILL_S", 0.0)
+        return TAIL_WAIT_S
 
     def frames(self, kind: str) -> list[bytes]:
         c = self.store.config
+        if kind == "selcall":
+            return selcall_frames(self.selcall_code(), self.selcall_level_db + self.gain_db)[0]
         seq = LINK_LOST if kind == "link_lost" else roger_sequence(c.roger_tone, c.roger_pattern)
         return render(seq, LEVEL_DB + self.gain_db)
 
@@ -196,6 +239,19 @@ class TailPlayer:
         self._stopped = False
         frames = self.frames(kind)
         self.played.append(kind)
+        await self._play_frames(frames)
+
+    async def play_selcall_call(self, code: str, repeat: int, gap_s: float,
+                                progress: Callable[[int, int], None] = lambda k, n: None) -> None:
+        """Appel manuel : la trame `repeat` fois séparées de `gap_s` (silence écrit, pas de trou compté), progression
+        annoncée au début de chaque trame. Le PttController la lance en émission confirmée, micro du client fermé."""
+        self._stopped = False
+        frames, marks = selcall_frames(code, self.selcall_level_db + self.gain_db, gap_s, repeat)
+        self.played.append("selcall_call")
+        await self._play_frames(frames, {m: k + 1 for k, m in enumerate(marks)}, lambda k: progress(k, repeat))
+
+    async def _play_frames(self, frames: list[bytes], marks: dict[int, int] | None = None,
+                           on_mark: Callable[[int], None] = lambda k: None) -> None:
         clock = self._clock or asyncio.get_running_loop().time
         start = clock()
         for i, frame in enumerate(frames):
@@ -206,8 +262,11 @@ class TailPlayer:
                 await self._sleep(delay)
                 if self._stopped:
                     return
+            if marks and i in marks:
+                on_mark(marks[i])
             self.sink.write(frame)
-        await self._sleep(LEAD_S + FRAME_S)                 # la carte joue la fin avant « PTT off »
+        # la carte joue la fin (avance d'écriture + réserve contre la gigue de la sortie) avant « PTT off »
+        await self._sleep(LEAD_S + FRAME_S + getattr(self.sink, "PREFILL_S", 0.0))
 
     def stop(self) -> None:
         """Coupure : plus rien n'est écrit et ce qui attendait est jeté."""

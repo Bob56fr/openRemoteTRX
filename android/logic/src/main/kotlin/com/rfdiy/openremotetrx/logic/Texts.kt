@@ -44,6 +44,8 @@ object Texts {
         "layouts_unavailable" to "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
         "beeps_unavailable" to "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
         "selcall_unavailable" to "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
+        "selcall_not_armed" to "Armez d'abord le SELCALL sur un code : l'appel émet le code armé.",
+        "selcall_too_long" to "Appel SELCALL plus long que la durée maximale d'émission (TOT) : réduisez manual_repeat sur la station.",
         "beeps_storage_error" to "La station n'a pas pu enregistrer le réglage des bips.",
         "layout_invalid" to "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
         "layout_storage_error" to "La station n'a pas pu enregistrer la mise en page (disque ?).",
@@ -54,6 +56,9 @@ object Texts {
     val CUTS: Map<String, String> = mapOf(
         "tot" to "durée maximale d'émission atteinte",
         "heartbeat" to "perte du signal de vie du client",
+        "selcall_sent" to "appel SELCALL envoyé",
+        "selcall_timeout" to "appel SELCALL trop long : coupé",
+        "selcall_failed" to "appel SELCALL en erreur : coupé",
         "toggle" to "demande d'un client",
         "stop" to "bouton STOP",
         "client_disconnected" to "déconnexion du client émetteur",

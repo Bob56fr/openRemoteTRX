@@ -213,6 +213,23 @@ test("SELCALL : état du hello, appel reçu détecté (veille -> ouvert), comman
   assert.deepEqual(calls.pop(), [null, false]);                                    // station sans SELCALL
 });
 
+test("appel SELCALL manuel : une émission (Émission autorisée exigée, battements dès la demande)", async () => {
+  const w = makeWorld();
+  await w.connected();
+  w.state();
+  assert.equal(await w.client.selcallSend(), null);                                 // pas armé : rien n'est envoyé
+  assert.ok(w.ui.logs.some(([t]) => /Émission autorisée/.test(t)));
+  assert.equal(w.sentCommands("selcall_send").length, 0);
+  w.client.setArmed(true);
+  const pending = w.client.selcallSend();
+  assert.equal(w.sentCommands("selcall_send").length, 1);
+  assert.ok(w.client.hbUntil > 0);                                                   // battements avant la confirmation
+  w.answer(true, { ptt: { state: "TX", owner: "phone" } });
+  assert.equal((await pending).ok, true);
+  w.state({ state: "TX", owner: "car" });
+  assert.equal(await w.client.selcallSend(), null);                                 // autre client en émission
+});
+
 test("micro = entrée/sortie audio du poste : REFUSÉ (la réception serait renvoyée dans l'émission)", async () => {
   const w = makeWorld();
   w.mic.label = "Par défaut - Microphone (USB Audio Device)";
