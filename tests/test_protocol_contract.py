@@ -100,3 +100,14 @@ def test_state_carries_local_operator_and_temperature_for_the_clients():
     ptt = build_state(SimpleNamespace(state=rig), ctrl)["ptt"]
     assert ptt["local_remaining_s"] == 95.4 and ptt["local_reason"] == "frequency" and ptt["local_tx"] is False
     assert ptt["temp_alert"] == "warn" and ptt["temp_c"] == 43.0
+
+
+def test_spectrum_frames_match_the_shared_examples():
+    """Trames du canal « spectrum » : la station produit exactement les octets des exemples (lus aussi par l'application)."""
+    from trxstation.spectrum.civ import Sweep
+    from trxstation.spectrum.frame import encode
+    examples = json.loads((FOLDER / "spectrum.json").read_text(encoding="utf-8"))
+    for case in examples["valid"]:
+        s = case["sweep"]
+        sweep = Sweep(t=0.0, mode=s["mode"], f1_hz=s["f1_hz"], f2_hz=s["f2_hz"], out_of_range=s["out_of_range"], points=s["points"])
+        assert encode(sweep, case["seq"]).hex() == case["hex"], case["name"]

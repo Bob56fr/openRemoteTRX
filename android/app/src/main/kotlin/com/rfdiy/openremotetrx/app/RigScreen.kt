@@ -58,6 +58,7 @@ import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.logic.Controls
 import com.rfdiy.openremotetrx.logic.Format
+import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.LogLevel
 import com.rfdiy.openremotetrx.logic.Meter
@@ -113,6 +114,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var entry by remember { mutableStateOf(false) }
     var showLog by rememberSaveable { mutableStateOf(false) }
     var levelsDialog by remember { mutableStateOf(false) }
+    var showScope by rememberSaveable { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
@@ -201,6 +203,15 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                                 modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
                         }
                     }
+                }
+            }
+
+            // Spectre HF du poste (si la station en a un) : vue ouverte = abonnement aux balayages
+            if (HfScope.configured(hello)) {
+                if (showScope) {
+                    HfScopeView(ui, canSet, onTune = { go(it) }, onClose = { showScope = false })
+                } else {
+                    OutlinedButton(onClick = { showScope = true }, enabled = connected) { Text("Spectre HF") }
                 }
             }
 

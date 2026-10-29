@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.protocol.SpectrumFrame
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,38 @@ data class RigUi(
 object RigHub {
     private val _ui = MutableStateFlow(RigUi())
     val ui: StateFlow<RigUi> = _ui.asStateFlow()
+
+    // Spectre HF : flux à part (jusqu'à 25 balayages par seconde) pour ne pas redessiner tout l'écran à chaque trame.
+    private val _spectrum = MutableStateFlow<SpectrumFrame?>(null)
+    val spectrum: StateFlow<SpectrumFrame?> = _spectrum.asStateFlow()
+    @Volatile private var lastSeq: Long? = null
+
+    /** Trame reçue (fil de WebRTC) : illisible ou plus ancienne que la dernière = jetée (canal non ordonné). */
+    internal fun offerSpectrum(bytes: ByteArray) {
+        val frame = SpectrumFrame.parse(bytes) ?: return
+        if (!SpectrumFrame.newer(frame.seq, lastSeq)) return
+        lastSeq = frame.seq
+        _spectrum.value = frame
+    }
+
+    /** Nouvelle connexion : la station peut avoir redémarré et renuméroter ses balayages depuis 0 (page : idem). */
+    internal fun resetSpectrum() {
+        lastSeq = null
+        _spectrum.value = null
+    }
+
+    /** Vue du spectre ouverte ou fermée : la station n'envoie les balayages qu'aux clients qui regardent. */
+    fun watchSpectrum(on: Boolean) {
+        if (!on) { _spectrum.value = null; lastSeq = null }
+        service?.onRig { session, now -> session.watchSpectrum(now, on) }
+    }
+
+    /** Réglage du spectre DU POSTE (mode, span, ref, speed) ; refusé par la station hors réception. */
+    fun spectrumSet(name: String, value: String) = spectrumSet(name, JsonPrimitive(value))
+
+    fun spectrumSet(name: String, value: Number) = spectrumSet(name, JsonPrimitive(value))
+
+    private fun spectrumSet(name: String, value: JsonPrimitive) { service?.onRig { session, now -> session.spectrumSet(now, name, value) } }
 
     internal class Request(val account: StationAccount, val password: String, val useMic: Boolean)
 

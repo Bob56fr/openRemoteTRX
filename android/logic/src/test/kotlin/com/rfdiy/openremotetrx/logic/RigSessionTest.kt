@@ -319,3 +319,34 @@ class RigSessionMemoryTest {
         assertEquals(3, link.sent.size)
     }
 }
+
+class RigSessionSpectrumTest {
+    @Test
+    fun `abonnement au spectre - envoye, puis redemande apres une reconnexion`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        val hello = """{"type":"hello","protocol":1,"client_id":"phone","spectrum":{"source":"civ_port","level_max":160,"max_fps":25}}"""
+        s.onMessage(0, hello)
+        s.watchSpectrum(10, true)
+        assertEquals(listOf("spectrum_watch"), link.cmds())
+        s.onLinkClosed(20, "connection_failed")
+        link.sent.clear()
+        s.tick(420, true)
+        s.answered(500)
+        s.onMessage(600, hello)
+        assertEquals(listOf("spectrum_watch"), link.cmds())             // la station l'avait oublié
+        s.watchSpectrum(700, false)
+        assertTrue(link.sent.last().contains("\"on\":false"))
+    }
+
+    @Test
+    fun `station sans spectre - aucun abonnement envoye`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone"}""")
+        s.watchSpectrum(10, true)
+        assertTrue(link.sent.isEmpty())
+    }
+}

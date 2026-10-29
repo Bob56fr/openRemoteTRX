@@ -28,8 +28,8 @@ import org.webrtc.audio.JavaAudioDeviceModule
 
 /**
  * Liaison WebRTC avec la station, comme la page : une piste audio dans chaque sens (micro FERMÉ tant que la
- * session ne l'ouvre pas, en TX confirmé), canal « control » en JSON. Pas de canal « spectrum » (pas de spectre
- * dans l'application pour l'instant : la station n'envoie alors rien).
+ * session ne l'ouvre pas, en TX confirmé), canal « control » en JSON, canal « spectrum » (binaire, non ordonné,
+ * sans renvoi : un balayage perdu est remplacé par le suivant ; la station n'envoie rien sans `spectrum_watch`).
  *
  * Toutes les méthodes s'appellent sur le fil de RigService ; les rappels de WebRTC y sont renvoyés par `post`,
  * et ceux d'une liaison déjà fermée sont ignorés (numéro de génération).
@@ -39,11 +39,14 @@ class RtcLink(
     private val post: (() -> Unit) -> Unit,
     private val onMessage: (String) -> Unit,
     private val onClosed: (String) -> Unit,
+    /** Balayage du spectre HF (binaire), sur le fil de WebRTC : à traiter vite (une copie, pas de calcul lourd). */
+    private val onSpectrum: (ByteArray) -> Unit = {},
 ) {
     private val factory: PeerConnectionFactory
     private var generation = 0
     private var pc: PeerConnection? = null
     private var dc: DataChannel? = null
+    private var sc: DataChannel? = null
     private var micSource: AudioSource? = null
     private var micTrack: AudioTrack? = null
     private var remoteTrack: AudioTrack? = null
@@ -145,6 +148,21 @@ class RtcLink(
             }
         })
 
+        // Spectre HF : non ordonné, sans renvoi (comme la page) ; facultatif, le reste fonctionne sans lui.
+        val spectrumInit = DataChannel.Init().apply { ordered = false; maxRetransmits = 0 }
+        peer.createDataChannel("spectrum", spectrumInit)?.let { channel ->
+            sc = channel
+            channel.registerObserver(object : DataChannel.Observer {
+                override fun onBufferedAmountChange(amount: Long) {}
+                override fun onStateChange() {}
+                override fun onMessage(buffer: DataChannel.Buffer) {
+                    if (!buffer.binary || gen != generation) return
+                    val bytes = ByteArray(buffer.data.remaining()).also { buffer.data.get(it) }
+                    onSpectrum(bytes)
+                }
+            })
+        }
+
         try {
             val offer = sdp { peer.createOffer(it, MediaConstraints()) }
             sdpSet { peer.setLocalDescription(it, offer) }
@@ -184,6 +202,8 @@ class RtcLink(
         micTrack?.setEnabled(false)
         dc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         dc = null
+        sc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
+        sc = null
         pc?.let { p -> runCatching { p.close(); p.dispose() } }
         pc = null
         micTrack?.let { t -> runCatching { t.dispose() } }

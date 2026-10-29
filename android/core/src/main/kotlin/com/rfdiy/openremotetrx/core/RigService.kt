@@ -79,6 +79,7 @@ class RigService : Service() {
             post = { block -> runCatching { executor.execute(block) } },
             onMessage = { text -> session.onMessage(now(), text) },
             onClosed = { code -> session.onLinkClosed(now(), code) },
+            onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
         )
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()
@@ -167,6 +168,7 @@ class RigService : Service() {
     private fun launchAttempt() {
         val req = request ?: return
         attempt?.cancel()
+        RigHub.resetSpectrum()
         attempt = scope.launch {
             try {
                 rtc.open(req.account, req.password, req.useMic)

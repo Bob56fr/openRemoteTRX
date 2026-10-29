@@ -12,6 +12,7 @@ import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
 import com.rfdiy.openremotetrx.protocol.ServerMessages
 import com.rfdiy.openremotetrx.protocol.State
+import kotlinx.serialization.json.JsonPrimitive
 
 enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 
@@ -74,6 +75,7 @@ class RigSession(
     var onBandSpots: ((Map<String, BandSpot>) -> Unit)? = null
     private var bands = BandMemory(bandSpots)
     private var memories: List<Memory> = emptyList()
+    private var spectrumWanted = false
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -213,6 +215,8 @@ class RigSession(
         hello = msg
         memories = Radio.sortMemories(msg.memories)
         status = LinkStatus.CONNECTED
+        // La station oublie l'abonnement avec la connexion : on le redemande si la vue du spectre est ouverte.
+        if (spectrumWanted && msg.spectrum != null && msg.protocol == Protocol.VERSION) send(now, Command.SpectrumWatch(true))
         arming.onConnected()                                     // toujours désarmé à la connexion
         lastPing = now
         protocolOk = msg.protocol == Protocol.VERSION
@@ -353,6 +357,16 @@ class RigSession(
         }
         control(now, *commands.toTypedArray())
     }
+
+    /** Vue du spectre HF ouverte (`on`) ou fermée : abonnement aux balayages, gardé pour les reconnexions. */
+    fun watchSpectrum(now: Long, on: Boolean) {
+        spectrumWanted = on
+        if (connected && protocolOk && hello?.spectrum != null) send(now, Command.SpectrumWatch(on))
+        publish(now)
+    }
+
+    /** Réglage du spectre du poste : `mode`, `span`, `ref`, `speed`, `filter` (refusé hors réception, comme la page). */
+    fun spectrumSet(now: Long, name: String, value: JsonPrimitive) = control(now, Command.SpectrumSet(name, value))
 
     /** Squelch du poste, 0 (ouvert) à 1. */
     fun setSquelch(now: Long, value: Double) = control(now, Command.SetSquelch(value.coerceIn(0.0, 1.0)))

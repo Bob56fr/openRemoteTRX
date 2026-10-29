@@ -102,7 +102,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.
 
-**Balayages du spectre** (canal `spectrum`, binaire, petit-boutiste) : en-tête de 16 octets `version(1) mode flags réservé | numéro uint32 | bord gauche Hz uint32 | bord droit Hz uint32`, puis un octet par point de 0 à `level_max`. Un numéro plus ancien que le dernier reçu est jeté. Détail : `trxstation/spectrum/frame.py`.
+**Balayages du spectre** (canal `spectrum`, binaire, petit-boutiste) : en-tête de 16 octets `version(1) mode flags réservé | numéro uint32 | bord gauche Hz uint32 | bord droit Hz uint32`, puis un octet par point de 0 à `level_max`. Un numéro plus ancien que le dernier reçu est jeté (compteur remis à zéro à chaque connexion : la station peut avoir redémarré). Détail : `trxstation/spectrum/frame.py` ; exemples partagés : [`tests/protocol/spectrum.json`](../tests/protocol/spectrum.json) (pytest `test_spectrum_frames_match_the_shared_examples`, Kotlin `SpectrumTest`).
 
 ## 9. Instantané `ptt` des réponses
 

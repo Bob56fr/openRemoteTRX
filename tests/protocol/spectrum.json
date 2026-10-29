@@ -1,0 +1,76 @@
+{
+ "comment": "Trames du canal « spectrum » (docs/protocole.md § 8, trxstation/spectrum/frame.py). La station produit `hex` à partir de `sweep` et `seq` ; un client lit `hex` en `frame` (points bornés à level_max). Trames refusées : `invalid` (hex).",
+ "valid": [
+  {
+   "name": "centré (centre ± demi-largeur)",
+   "sweep": {
+    "mode": 0,
+    "f1_hz": 14200000,
+    "f2_hz": 25000,
+    "out_of_range": false,
+    "points": [
+     0,
+     10,
+     80,
+     160,
+     40,
+     5
+    ]
+   },
+   "seq": 7,
+   "hex": "0100000007000000184bd800680ed900000a50a02805",
+   "frame": {
+    "mode": 0,
+    "out_of_range": false,
+    "seq": 7,
+    "low_hz": 14175000,
+    "high_hz": 14225000,
+    "points": [
+     0,
+     10,
+     80,
+     160,
+     40,
+     5
+    ]
+   }
+  },
+  {
+   "name": "fixe (bornes), hors plage",
+   "sweep": {
+    "mode": 1,
+    "f1_hz": 7000000,
+    "f2_hz": 7200000,
+    "out_of_range": true,
+    "points": [
+     3,
+     200,
+     1,
+     0
+    ]
+   },
+   "seq": 4294967295,
+   "hex": "01010100ffffffffc0cf6a0000dd6d0003a00100",
+   "frame": {
+    "mode": 1,
+    "out_of_range": true,
+    "seq": 4294967295,
+    "low_hz": 7000000,
+    "high_hz": 7200000,
+    "points": [
+     3,
+     160,
+     1,
+     0
+    ]
+   }
+  }
+ ],
+ "invalid": [
+  "",
+  "01",
+  "02000000010000004054d800f854d80000",
+  "0100000001000000f854d8004054d80000",
+  "01000000010000004054d800f854d800"
+ ]
+}
