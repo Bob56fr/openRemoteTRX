@@ -80,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.62.0, étape 75)
+## État actuel (version 0.63.0, étape 76)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -126,6 +126,7 @@ PTT par le bouton d'un casque Bluetooth / filaire et micro du casque (applicatio
 - **Windows sans fenêtre** (pythonw) : un processus enfant ne reçoit PAS CTRL_BREAK (pas de console commune) et finit tué ; d'où « T 0 » par le superviseur dans `stop_all`. rigctld lancé avec CREATE_NO_WINDOW. Le Python d'un venv relance l'interpréteur de base : règles de pare-feu sur `sys._base_executable`.
 - **Windows / outils de Claude** : PowerShell 5.1 relit en ANSI (`Get-Content | Set-Content` abîme les accents et ajoute un BOM : modifier en Python ou avec l'outil d'édition) et retire les guillemets intérieurs passés à `ssh` (envoyer un script à `bash` par l'entrée standard) ; pytest exige `--basetemp` dans le dossier temporaire de la conversation ; durées courtes avec `time.perf_counter()` ; `os.replace` réessayé (`status.replace_atomic`) ; remplacer `subprocess.Popen` globalement casse asyncio ; un message `hello` n'implique pas encore de `state` (attendre dans les tests).
 - **Android (Gradle)** : Android Studio fournit Java 25 => Gradle 9.6+ (exigé par AGP 9.5) et Kotlin 2.2+ ; AGP 9 intègre Kotlin (pas de plugin kotlin-android) ; nom de test entre accents graves sans « : » ni « ; » (refusés par la JVM). Essai de bout en bout : passerelle en 127.0.0.1:8443, TLS auto-signé (hôtes 127.0.0.1 et 10.0.2.2), faux rigctld ; l'émulateur voit le PC en 10.0.2.2 ; `adb shell input text` tronque les textes longs, et sous Git Bash il faut MSYS_NO_PATHCONV=1.
+- **Fonction nouvelle** : un bouton qui envoie une commande nouvelle n'apparaît que si `hello.features` l'annonce (étape 76 : « Envoyer SELCALL » sur une station 0.61.0 = « commande inconnue » invisible) ; un refus doit se voir là où l'on a cliqué.
 - **Page web** : l'attribut `hidden` est battu par un `display:` de classe (`[hidden]{display:none !important}`) ; clic fantôme Android après un appui ; le faux DOM des tests JS n'a ni id ni parent ; un vrai Chromium (Playwright) avec une fausse station trouve ce que les tests simulés ne voient pas ; le canal de données d'aiortc limite un message à 64 ko.
 
 ## Environnement de l'utilisateur

@@ -116,7 +116,8 @@ class ControlSession:
         offered = {"memories": self.memories is not None, "layouts": self.layouts is not None,
                    "spectrum": self.spectrum is not None and self.spectrum.capability() is not None,
                    "beeps": self.beeps is not None, "bug_report": self.reports is not None,
-                   "selcall": self.selcall is not None}
+                   "selcall": self.selcall is not None,
+                   "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:

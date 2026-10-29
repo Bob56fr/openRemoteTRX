@@ -1365,6 +1365,9 @@
       const st = selStatus, v = lastView;
       const sending = !!(st && st.sending) || !!(v && v.mine && v.pttState && v.pttState !== "RX" && selSendAsked);
       const button = $("sel-send");
+      const offered = !!(client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("selcall_send"));
+      button.hidden = !offered; $("sel-tail-row").hidden = !offered;
+      if (!offered) { $("sel-send-note").textContent = "Appel et trame de fin : station à mettre à jour (0.63.0 ou plus)."; return; }
       button.textContent = sending ? "Annuler" + (st && st.sending ? " (" + st.sending + ")" : "") : "Envoyer SELCALL";
       button.className = sending ? "stop" : "primary";
       button.disabled = !connectedFlag || !st || (!sending && (st.state === "disabled" || !(v && v.armed) || (v && v.pttState !== "RX")));

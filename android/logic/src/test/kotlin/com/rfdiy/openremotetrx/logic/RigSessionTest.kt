@@ -60,7 +60,7 @@ class RigSessionTest {
         s.answered(0)
         fun status(state: String) = """{"state":"$state","code":"4721","history":["4721"],"filter_mode":"attenuate","attenuation_db":20,""" +
             """"last_call":{"code":"4721","delta_hz":-42.5,"snr_db":11.3,"at":1.0}}"""
-        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"$ME","features":["ptt","selcall"],"selcall":${status("standby")}}""")
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"$ME","features":["ptt","selcall","selcall_send"],"selcall":${status("standby")}}""")
         s.onMessage(0, state("RX"))
         assertEquals("SEL 4721", s.snapshot.selcall!!.indicator)
         s.onMessage(10, """{"type":"selcall","status":${status("open")}}""")

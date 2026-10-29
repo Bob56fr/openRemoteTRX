@@ -46,7 +46,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
-OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall")
+OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall",
+                     "selcall_send")              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 

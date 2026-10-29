@@ -37,7 +37,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - **Retrait ou changement de sens** : version + 1 ; la station accepte encore l'ancienne pendant au moins une version de l'application. Un client qui ne connaît pas la version annoncée le dit à l'utilisateur et reste en réception.
 - **`hello.features`** : liste des fonctions offertes par CETTE station. Un client montre une fonction parce qu'elle y figure, jamais d'après un numéro de version.
   - toujours : `ptt`, `frequency`, `mode`, `squelch`, `functions`, `levels`, `local_release` ;
-  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0).
+  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce).
 - `hello.version` : version du logiciel de la station (affichage seulement).
 
 ## 5. Émission : états, battements, coupures

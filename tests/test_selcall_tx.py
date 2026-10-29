@@ -280,6 +280,7 @@ def test_client_manual_call_through_the_session_with_progress_and_real_audio(tmp
             st.ctrl.config.selcall.manual_gap_ms = 300
             st.ctrl.tail = bp.TailPlayer(st.sink, bp.BeepStore())
             phone, pc = await connect(st, "phone"), await connect(st, "pc")
+            assert "selcall_send" in phone.of_type("hello")[0]["features"]
             await phone.say(cmd="selcall_send", id=1)
             assert phone.result(1)["reason"] == "selcall_not_armed" and fake.ptt == 0
             await phone.say(cmd="selcall_activate", id=2, code="123")

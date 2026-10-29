@@ -23,7 +23,7 @@
     "selcall": {"state": "standby", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate", "attenuation_db": 20,
                 "last_call": null, "send_on_tx_end": false, "sending": ""},
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
-                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall"]
+                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send"]
   },
   "state": {
     "type": "state",

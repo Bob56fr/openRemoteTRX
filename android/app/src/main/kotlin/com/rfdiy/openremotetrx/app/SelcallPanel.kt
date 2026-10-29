@@ -54,7 +54,10 @@ private val CALL_TIME = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.
  * poste. Le fichier est fabriqué sur le téléphone, sans la station.
  */
 @Composable
-fun SelcallDialog(status: SelcallStatus, connected: Boolean, armed: Boolean, transmitting: Boolean, mine: Boolean, onDismiss: () -> Unit) {
+fun SelcallDialog(
+    status: SelcallStatus, connected: Boolean, armed: Boolean, transmitting: Boolean, mine: Boolean,
+    sendOffered: Boolean, lastMessage: String, onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
     var code by remember { mutableStateOf(status.code) }
     var testCode by remember { mutableStateOf(status.code) }
@@ -117,7 +120,9 @@ fun SelcallDialog(status: SelcallStatus, connected: Boolean, armed: Boolean, tra
                         Text("${shown.roundToInt()} dB", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!sendOffered) Text("Appel SELCALL et trame de fin : station à mettre à jour (0.63.0 ou plus).",
+                    color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
+                if (sendOffered) Row(verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.material3.Switch(
                         checked = status.sendOnTxEnd, enabled = connected,
                         onCheckedChange = { RigHub.selcallOptions(sendOnTxEnd = it) },
@@ -127,15 +132,17 @@ fun SelcallDialog(status: SelcallStatus, connected: Boolean, armed: Boolean, tra
                 }
                 // Appel manuel : une ÉMISSION (« Émission autorisée » exigée) ; pendant l'appel, le bouton annule (STOP)
                 val sending = status.sending.isNotEmpty() || (mine && transmitting)
-                Button(
+                if (sendOffered) Button(
                     onClick = { if (sending) RigHub.stop() else RigHub.selcallSend() },
                     enabled = connected && (sending || (!status.disabled && armed && !transmitting)),
                     colors = if (sending) androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Page.TX) else
                         androidx.compose.material3.ButtonDefaults.buttonColors(),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(if (sending) "Annuler" + (status.sending.takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: "") else "Envoyer SELCALL") }
-                if (!sending && !armed) Text("Activez « Émission autorisée » : l'appel SELCALL est une émission.",
+                if (sendOffered && !sending && !armed) Text("Activez « Émission autorisée » : l'appel SELCALL est une émission.",
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                // Dernier message du journal (refus, appel envoyé…) : visible ici, sans fermer la fenêtre
+                if (lastMessage.isNotEmpty()) Text(lastMessage, color = Page.MESURE, style = MaterialTheme.typography.bodySmall)
                 Text(
                     status.lastCall?.let {
                         "Dernier appel : ${it.code} à ${CALL_TIME.format(Instant.ofEpochMilli((it.at * 1000).toLong()))} " +

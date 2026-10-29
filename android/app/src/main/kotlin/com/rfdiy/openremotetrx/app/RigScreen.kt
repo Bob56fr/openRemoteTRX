@@ -552,6 +552,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     rig.selcall?.let { st ->
         if (selcallDialog) SelcallDialog(st, connected && rig.protocolOk, armed = rig.armed && ui.micAllowed,
             transmitting = ptt?.transmitting == true || (rig.state?.ptt?.state ?: "RX") != "RX", mine = ptt?.mine == true,
+            sendOffered = hello?.offers("selcall_send") == true, lastMessage = rig.log.lastOrNull()?.text.orEmpty(),
             onDismiss = { selcallDialog = false })
     }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })

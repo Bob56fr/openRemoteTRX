@@ -250,6 +250,7 @@ def test_clients_arm_rearm_and_set_options_and_every_client_sees_the_change(tmp_
             phone, pc = await connect(st, "phone"), await connect(st, "pc")
             assert phone.of_type("hello")[0]["selcall"]["state"] == "disabled"
             assert "selcall" in phone.of_type("hello")[0]["features"]
+            assert "selcall_send" not in phone.of_type("hello")[0]["features"]           # pas de joueur de fin : pas d'appel
             await phone.say(cmd="selcall_activate", id=1, code="4721")
             assert phone.result(1)["ok"] and phone.result(1)["status"]["state"] == "standby"
             assert pc.of_type("selcall")[-1]["status"]["code"] == "4721"                   # l'autre client le voit

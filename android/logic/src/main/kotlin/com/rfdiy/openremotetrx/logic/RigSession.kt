@@ -481,6 +481,11 @@ class RigSession(
      */
     fun selcallSend(now: Long) {
         if (!connected || hello?.offers("selcall") != true) return
+        if (hello?.offers("selcall_send") != true) {
+            log("Appel SELCALL : station à mettre à jour (0.63.0 ou plus).", LogLevel.WARN)
+            publish(now)
+            return
+        }
         val ptt = state?.ptt
         when {
             !protocolOk -> log("Version de protocole inconnue : émission impossible (STOP reste permis).", LogLevel.WARN)
