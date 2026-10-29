@@ -22,7 +22,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Mémoires partagées (`memories`) | fait | fait | fait (liste et rappel 0.3.0 ; création, modification, favori, suppression en deux temps 0.5.0) | présélections d'Android Auto (A2) |
 | Bips de fin (`beeps`) | fait | fait | fait (0.13.0 : roger, tonalité, motif, liaison perdue avec confirmation, Écouter) | |
 | Rapport de problème (`bug_report`) | fait | fait | à faire (A3) | |
-| Android Auto, commande vocale, touches du volant | — | absent volontairement | touches du volant et bouton du casque : fait (0.13.0, désactivé par défaut) ; Android Auto et voix : à faire (A2) | |
+| Android Auto, commande vocale, touches du volant | — | absent volontairement | touches du volant et bouton du casque : fait (0.13.0, désactivé par défaut) ; Android Auto et voix : fait (0.21.0, non essayé en voiture) | prendre l'émission : voiture et application seulement ; voix : jamais d'émission |
 | Mode conduite | — | absent | à faire (A3) | |
 | Waterfall audio | — | fait | fait (0.7.0 : même analyse que la page, FFT 4096 Blackman, lissage 0,35, -85 à -30 dBFS ; VIT, LARG, GAIN, PIC) | calcul sur le téléphone, seulement pendant l'affichage |
 | Spectre HF (`spectrum`) | fait | fait | fait (0.6.0 : courbe, waterfall, repère, graduations, toucher = accorder, glisser = VFO, span / mode / vitesse / REF du poste, gain et plage) | trames : exemples partagés `tests/protocol/spectrum.json` ; vue intégrée en paysage (page : dock) : plus tard |

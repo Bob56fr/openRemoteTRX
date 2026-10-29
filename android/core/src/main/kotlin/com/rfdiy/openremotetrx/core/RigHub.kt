@@ -2,8 +2,10 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.core
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.protocol.SpectrumFrame
@@ -12,7 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Ce que les vues (écran, notification, voiture plus tard) observent. */
+/** Ce que les vues (écran, notification, voiture) observent. */
 data class RigUi(
     val rig: RigState = RigState(),
     val station: StationAccount? = null,
@@ -21,6 +23,8 @@ data class RigUi(
     val micAllowed: Boolean = true,
     /** Micro du casque Bluetooth : état lisible (vide si le réglage est désactivé). */
     val headsetMic: String = "",
+    /** Message pour l'écran de la voiture (connexion refusée par Android, mot de passe absent…), vide sinon. */
+    val carNotice: String = "",
 )
 
 /**
@@ -76,7 +80,7 @@ object RigHub {
     const val PREF_MIC_ECHO = "mic_echo"
     const val PREF_MIC_NOISE = "mic_noise"
 
-    internal class Request(val account: StationAccount, val password: String, val useMic: Boolean)
+    internal data class Request(val account: StationAccount, val password: String, val useMic: Boolean)
 
     @Volatile internal var pending: Request? = null
     @Volatile internal var service: RigService? = null
@@ -88,8 +92,34 @@ object RigHub {
     /** Connexion : démarre le service au premier plan (application visible : exigé par Android 14+ pour le micro). */
     fun connect(context: Context, account: StationAccount, password: String, useMic: Boolean) {
         pending = Request(account, password, useMic)
+        publish { it.copy(carNotice = "") }
         ContextCompat.startForegroundService(context, Intent(context, RigService::class.java).setAction(RigService.ACTION_CONNECT))
     }
+
+    /**
+     * Connexion choisie dans la voiture (Parcourir > Stations) : compte et mot de passe enregistrés sur le téléphone.
+     * Android peut refuser de démarrer le service (application en arrière-plan) : message sur l'écran de la voiture.
+     */
+    internal fun connectFromCar(context: Context, accountId: String) {
+        val store = AccountStore(context)
+        val account = store.list().firstOrNull { it.id == accountId } ?: return carNotice("Station inconnue.")
+        val busy = _ui.value.rig.status != com.rfdiy.openremotetrx.logic.LinkStatus.DISCONNECTED && service != null
+        if (busy) {
+            if (_ui.value.station?.id != accountId) carNotice("Déconnectez d'abord ${_ui.value.station?.name ?: "la station"}.")
+            return
+        }
+        val password = store.password(account) ?: return carNotice("Mot de passe à saisir sur le téléphone.")
+        val mic = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        pending = Request(account, password, mic)
+        publish { it.copy(carNotice = "") }
+        val intent = Intent(context, RigService::class.java).setAction(RigService.ACTION_CONNECT)
+        if (!RigMedia.startService(context, intent)) {
+            pending = null
+            carNotice("Android refuse la connexion depuis la voiture : ouvrez openRemoteTRX sur le téléphone.")
+        }
+    }
+
+    internal fun carNotice(text: String) = publish { it.copy(carNotice = text) }
 
     fun toggle() { service?.onRig { session, now -> session.pressPtt(now) } }
 

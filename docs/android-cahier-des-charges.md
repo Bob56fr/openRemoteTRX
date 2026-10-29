@@ -86,6 +86,13 @@ Fait et essayé dans l'émulateur (Android 17) contre une vraie passerelle et le
 - Fréquence, mode, mémoire et S-mètre en texte dans titre/sous-titre ; aucun graphique, aucune saisie.
 - Commande vocale (`onPlayFromSearch` : « mémoire 40 mètres », « fréquence 7 074 »), touches du volant (`onMediaButtonEvent`).
 - Essais sur le Desktop Head Unit (DHU) puis dans la voiture.
+- FAIT (étape 79, application 0.21.0), NON ESSAYÉ en voiture. Écart : dans `:core` (et non un module `:auto`), car la session média est commune avec le PTT au casque (une seule session, sinon les touches se partagent mal).
+  - `RigAutoService` (MediaBrowserService exporté, `onGetRoot` réservé à Android Auto, Android Automotive, l'interface système et l'application) ; Parcourir > Stations (connexion avec le compte enregistré), Mémoires, Bandes.
+  - `RigMedia` : LA session média. Lecture / Pause = réception audible / muette ; Arrêt = STOP si émission ; actions ÉMETTRE ou FIN D'ÉMISSION, STOP, Autoriser / Interdire l'émission, Reprendre la main (`logic/Car.kt`).
+  - Sécurité : PRENDRE l'émission (armer, PTT) seulement depuis Android Auto ou l'application (appelant vérifié par `MediaSession.getCurrentControllerInfo`) ; couper : tout appelant. Toujours désarmé après une connexion (E4) : deux gestes pour émettre (Autoriser puis ÉMETTRE).
+  - Voix (`logic/Voice.kt`) : mémoire, bande, fréquence ; JAMAIS d'émission ; la session refuse tout réglage pendant une émission.
+  - Connexion depuis la voiture, téléphone en arrière-plan : Android peut refuser le service (message sur l'écran de la voiture) ou seulement le micro (Android 14+ : réception seule, PTT impossible).
+  - Touches du volant : PTT seulement avec le réglage « PTT par le bouton » (désactivé par défaut) ; sinon Lecture/Pause.
 
 ### Lot A3 (étape Android 11) — interface smartphone complète
 - S-mètre, fréquence (glisser par chiffre, clavier, bandes), modes et filtres permis par les capacités, mémoires (créer, rappeler, favoris), fonctions du poste (NR NB P.AMP IP+ AGC COMP FIL TUNER, ATT, Notch selon capacités), puissance, squelch.

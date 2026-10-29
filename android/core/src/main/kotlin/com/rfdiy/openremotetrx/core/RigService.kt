@@ -14,8 +14,6 @@ import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.session.MediaSession
-import android.media.session.PlaybackState
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
@@ -76,7 +74,6 @@ class RigService : Service() {
     private var wasMine = false
     private var lastNotification = ""
     private var foreground = false
-    private var media: MediaSession? = null                       // fil principal
     private var commListener: Any? = null                         // AudioManager.OnCommunicationDeviceChangedListener (Android 12+)
     private var lastMicFix = 0L
     private var deviceAddedAt: Long? = null                       // fil « rig »
@@ -132,13 +129,13 @@ class RigService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CONNECT -> {
-                val req = RigHub.pending
+                val asked = RigHub.pending
                 RigHub.pending = null
-                if (req == null) {
+                if (asked == null) {
                     if (!foreground) stopSelf()
                     return START_NOT_STICKY
                 }
-                goForeground(req)
+                val req = goForeground(asked) ?: return START_NOT_STICKY   // micro refusé par Android : réception seule
                 executor.execute {
                     request = req
                     RigHub.publish { it.copy(station = req.account, micAllowed = req.useMic) }
@@ -264,57 +261,65 @@ class RigService : Service() {
 
     // ------------------------------------------------------------------ premier plan, veille, focus audio
 
-    private fun goForeground(req: RigHub.Request) {
-        var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-        if (req.useMic && Build.VERSION.SDK_INT >= 30) types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(req.account.name, "Connexion…", "", false), types)
+    /**
+     * Premier plan. Lancé depuis la voiture, application en arrière-plan : Android peut refuser le micro (Android 14+)
+     * => réception seule (le PTT reste impossible, jamais d'émission sans micro) ; tout refusé => rien (null).
+     */
+    private fun goForeground(request: RigHub.Request): RigHub.Request? {
+        var req = request
+        val note = buildNotification(req.account.name, "Connexion…", "", false)
+        val media = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        val withMic = if (Build.VERSION.SDK_INT >= 30) media or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else media
+        try {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, note, if (req.useMic) withMic else media)
+        } catch (e: RuntimeException) {                           // SecurityException, ForegroundServiceStartNotAllowedException
+            if (!req.useMic) return refuseStart()
+            try {
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, note, media)
+            } catch (e2: RuntimeException) {
+                return refuseStart()
+            }
+            req = req.copy(useMic = false)
+            RigHub.carNotice("Réception seule : Android refuse le micro depuis la voiture (ouvrez l'application sur le téléphone pour émettre).")
+        }
         foreground = true
         acquireLocks()
         requestFocus()
         getSystemService(AudioManager::class.java)?.registerAudioDeviceCallback(devices, Handler(mainLooper))
         refreshMediaSession()
         if (headsetMic) useHeadsetMic()
+        return req
+    }
+
+    private fun refuseStart(): RigHub.Request? {
+        RigHub.carNotice("Android refuse la connexion depuis la voiture : ouvrez openRemoteTRX sur le téléphone.")
+        if (!foreground) stopSelf()
+        return null
     }
 
     // ------------------------------------------------------------------ casque et volant
 
-    /** Ouvre ou ferme la session média selon le réglage (fil principal). Fermée : les touches restent aux autres applications. */
+    /**
+     * Session média commune (RigMedia, partagée avec la voiture) : prise pour les touches selon le réglage (fil
+     * principal). Sans réglage ni voiture, fermée : les touches restent aux autres applications.
+     */
     internal fun refreshMediaSession() {
         Handler(mainLooper).post {
             val want = foreground && getSharedPreferences(RigHub.PREFS, MODE_PRIVATE).getBoolean(RigHub.PREF_MEDIA_PTT, false)
-            if (want && media == null) {
-                media = MediaSession(this, "openRemoteTRX").apply {
-                    setCallback(object : MediaSession.Callback() {
-                        override fun onMediaButtonEvent(intent: Intent): Boolean {
-                            val event = keyEvent(intent) ?: return false
-                            val key = keyOf(event.keyCode)
-                            if (key == MediaKey.OTHER) return false
-                            if (event.action == KeyEvent.ACTION_DOWN) executor.execute { onMediaKey(key, event.repeatCount) }
-                            return true                         // appui et relâchement consommés : rien d'autre ne démarre
-                        }
-                    }, Handler(mainLooper))
-                    setPlaybackState(playback())
-                    isActive = true
-                }
-            } else if (!want) {
-                releaseMedia()
-            }
+            if (want) RigMedia.acquire(this, RigMedia.USER_BUTTONS) else RigMedia.release(RigMedia.USER_BUTTONS)
         }
     }
 
-    private fun releaseMedia() {
-        media?.let { runCatching { it.isActive = false; it.release() } }
-        media = null
-    }
+    private fun releaseMedia() = RigMedia.release(RigMedia.USER_BUTTONS)
 
-    /**
-     * Toujours « en lecture » (la réception joue) : Android donne les touches en priorité à la session qui joue ; avec
-     * « en pause », le premier appui pouvait partir vers une autre application (essai du 2026-10-29).
-     */
-    private fun playback(): PlaybackState = PlaybackState.Builder()
-        .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_STOP)
-        .setState(PlaybackState.STATE_PLAYING, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
-        .build()
+    /** Touche du casque ou du volant avec « PTT par le bouton » (fil principal) : vrai si consommée. */
+    internal fun mediaButton(intent: Intent): Boolean {
+        val event = keyEvent(intent) ?: return false
+        val key = keyOf(event.keyCode)
+        if (key == MediaKey.OTHER) return false
+        if (event.action == KeyEvent.ACTION_DOWN) executor.execute { onMediaKey(key, event.repeatCount) }
+        return true                                                 // appui et relâchement consommés : rien d'autre ne démarre
+    }
 
     private fun keyEvent(intent: Intent): KeyEvent? =
         if (Build.VERSION.SDK_INT >= 33) {

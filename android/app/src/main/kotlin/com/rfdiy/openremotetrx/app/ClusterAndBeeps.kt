@@ -182,6 +182,15 @@ fun HeadsetSection(headsetMicState: String) {
             )
         }
     }
+    Text("Android Auto", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+    Text(
+        "Dans la voiture : lecteur « openRemoteTRX » (Lecture = écoute, Pause = muet), boutons ÉMETTRE / STOP / " +
+            "Autoriser l'émission, Parcourir > Stations, Mémoires, Bandes, et la voix (« mémoire 40 mètres », " +
+            "« fréquence 7 074 », « bande 20 mètres » : jamais d'émission par la voix). Les touches du volant ne font " +
+            "PTT qu'avec le réglage ci-dessus. Application installée à la main : dans Android Auto, Paramètres > " +
+            "version (10 appuis) > Paramètres pour les développeurs > « Sources inconnues ».",
+        color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
+    )
 }
 
 /** Micro : environnement (traitements d'écho et de bruit), comme la page ; pris en compte à la connexion suivante. */

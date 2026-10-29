@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 RF-DIY.COM -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -20,5 +21,19 @@
             android:name=".RigService"
             android:exported="false"
             android:foregroundServiceType="microphone|mediaPlayback" />
+        <!-- Android Auto (lot A2) : exporté pour que la voiture le trouve ; RigAutoService.onGetRoot n'admet qu'Android
+             Auto, Android Automotive, l'interface système et l'application ; prendre l'émission : voiture et application
+             seulement (logic.Car.allowed). -->
+        <service
+            android:name=".RigAutoService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
     </application>
 </manifest>
