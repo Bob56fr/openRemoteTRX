@@ -51,7 +51,11 @@ def text(out):
 
 def test_header_announces_a_newer_version(tmp_path):
     con, _, _ = make(tmp_path, state=chk.UpdateState(installed="0.22.0", ok=True, release=release()))
-    assert "Nouvelle version 0.23.0 disponible : menu 10" in con.header()
+    assert "NOUVELLE VERSION 0.23.0 DISPONIBLE (installée : 0.22.0)" in con.header()
+    assert "Menu 10 : voir les changements" in con.header()
+    assert "\x1b" not in con.header()                                     # pas de couleur hors d'un terminal
+    assert con.menu_label("10", "Mise à jour") == "Mise à jour   <== NOUVELLE VERSION 0.23.0"
+    assert con.menu_label("11", "Retour") == "Retour"
     con, _, _ = make(tmp_path, state=chk.UpdateState(installed="0.22.0", ok=True, release=release()),
                      installed="0.23.0")                         # déjà installée : plus annoncée
     assert "Nouvelle version" not in con.header()
@@ -67,10 +71,13 @@ def test_menu_lists_update_and_rollback(tmp_path):
 
 def test_update_shows_notes_and_installs_only_after_typed_confirmation(tmp_path):
     state = chk.UpdateState(installed="0.22.0", ok=True, release=release(notes="Ligne 1\nLigne 2"))
-    con, runner, out = make(tmp_path, answers=["o"], state=state)            # « o » n'est pas le numéro
+    con, runner, out = make(tmp_path, answers=["o", "o"], state=state)       # « o » n'est pas le numéro
     con.update()
     assert runner.calls == [] and "annulée" in text(out) and "Ligne 1\nLigne 2" in text(out)
-    con, runner, out = make(tmp_path, answers=["0.23.0"], state=state)
+    con, runner, out = make(tmp_path, answers=["n", "0.23.0"], state=state)
+    con.update()
+    assert "Ligne 1" not in text(out)                                       # changements vus seulement sur demande
+    con, runner, out = make(tmp_path, answers=["n", "0.23.0"], state=state)
     con.update()
     cmd, admin = runner.calls[0]
     assert admin and cmd == ["py", "-m", "trxstation.update.apply", "--config", str(tmp_path / "station.toml"),
@@ -96,7 +103,7 @@ def test_prerelease_is_flagged(tmp_path):
     (upd.EXIT_TX, "le poste émet"), (upd.EXIT_REFUSED, "paquet non vérifié"), (upd.EXIT_FAILED, "inchangée")])
 def test_update_failures_are_explained(tmp_path, code, expected):
     state = chk.UpdateState(installed="0.22.0", ok=True, release=release())
-    con, _, out = make(tmp_path, answers=["0.23.0"], state=state, code=code)
+    con, _, out = make(tmp_path, answers=["n", "0.23.0"], state=state, code=code)
     con.update()
     assert expected in text(out)
 
@@ -140,3 +147,48 @@ def test_previous_version_reads_the_link(tmp_path):
 
 def test_previous_version_without_link_is_none(tmp_path):
     assert previous_version(tmp_path) is None
+
+
+def test_changes_of_every_skipped_version_are_paged_newest_first(tmp_path):
+    changes = [chk.Change("0.25.0", "Version 0.25.0", "2026-11-03T10:00:00Z", "\n".join(f"c{i}" for i in range(30))),
+               chk.Change("0.24.0", "Version 0.24.0", "2026-11-02", "Quatre"),
+               chk.Change("0.22.0", "Déjà installée", "", "Ancienne")]          # pas plus récente : écartée
+    state = chk.UpdateState(installed="0.22.0", ok=True, release=release("0.25.0", notes="ignorées"), changes=changes)
+    con, runner, out = make(tmp_path, answers=["", "", ""], state=state)
+    con.update()
+    shown = text(out)
+    assert "2 versions publiées depuis la tienne : 0.24.0, 0.25.0" in shown
+    assert shown.index("Version 0.25.0 du 2026-11-03") < shown.index("c29") < shown.index("Version 0.24.0")
+    assert "Ancienne" not in shown and "ignorées" not in shown and runner.calls == []
+    con, _, out = make(tmp_path, answers=["", "q", ""], state=state)          # q : arrêter les notes, pas la mise à jour
+    con.update()
+    assert "c5" in text(out) and "c29" not in text(out) and "tape le numéro" not in text(out).split("c5")[0]
+    assert "annulée" in text(out)
+
+
+def test_without_changelog_the_offered_notes_are_shown(tmp_path):
+    state = chk.UpdateState(installed="0.22.0", ok=True, release=release(notes="Seules notes"))
+    con, _, out = make(tmp_path, answers=["", ""], state=state)
+    con.update()
+    assert "Version 0.23.0 du 2026-11-01" in text(out) and "Seules notes" in text(out)
+
+
+def test_up_to_date_can_search_again_on_demand(tmp_path):
+    (tmp_path / "station.toml").write_text("", encoding="utf-8")
+    states = iter([chk.UpdateState(installed="0.22.0", ok=True, checked_at=1.0),
+                   chk.UpdateState(installed="0.22.0", ok=True, release=release(notes="Nouveau"))])
+    out: list[str] = []
+    runner = Runner()
+    answers = iter(["o", "o", ""])
+    con = Console(tmp_path / "station.toml", runner, ask=lambda _: next(answers, ""), say=out.append, python="py",
+                  update_state=lambda: next(states), installed="0.22.0")
+    con.update()
+    assert runner.calls == [(["systemctl", "start", con_mod.CHECK_UNIT], True)]
+    assert "NOUVELLE VERSION 0.23.0" in text(out) and "Nouveau" in text(out) and "annulée" in text(out)
+
+
+def test_banner_is_colored_only_in_a_terminal(tmp_path):
+    state = chk.UpdateState(installed="0.22.0", ok=True, release=release())
+    con = Console(tmp_path / "station.toml", Runner(), ask=lambda _: "", say=lambda _: None, python="py",
+                  update_state=lambda: state, installed="0.22.0", color=True)
+    assert "\x1b[1;30;43m" in con.header()

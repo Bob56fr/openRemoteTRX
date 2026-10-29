@@ -185,3 +185,38 @@ def test_main_refuses_invalid_config(tmp_path):
 def test_state_has_expected_shape():
     data = UpdateState(installed="0.22.0").to_dict()
     assert data["schema"] == chk.SCHEMA and data["release"] is None
+
+
+def test_changes_of_every_version_between_installed_and_offered():
+    items = [gh("0.26.0"), gh("0.25.0", sig=False, body="Sans paquet"), gh("0.24.0", prerelease=True),
+             gh("0.23.0", body="\x1b[31mrouge"), gh("0.22.0"), gh("0.27.0", draft=True)]
+    state = chk.check(installed="0.22.0", fetch=fetch_of(items))
+    assert state.release.version == "0.26.0"
+    assert [c.version for c in state.changes] == ["0.26.0", "0.25.0", "0.23.0"]   # ni pré-version, ni brouillon
+    assert state.changes[1].notes == "Sans paquet" and state.changes[2].notes == "rouge"
+    allowed = chk.check(installed="0.22.0", fetch=fetch_of(items), allow_prerelease=True)
+    assert "0.24.0" in [c.version for c in allowed.changes]
+    assert chk.check(installed="0.26.0", fetch=fetch_of(items)).changes == []
+
+
+def test_changes_are_bounded_and_survive_the_state_file(tmp_path):
+    items = [gh(f"0.{n}.0", body="x" * 3000) for n in range(23, 43)]
+    state = chk.check(installed="0.22.0", fetch=fetch_of(items))
+    assert len(state.changes) == chk.MAX_CHANGES and state.changes[0].version == "0.42.0"
+    assert sum(len(c.notes) for c in state.changes) <= chk.MAX_CHANGES_CHARS + 200
+    path = chk.state_path(tmp_path)
+    write_state(path, state)
+    assert read_state(path).changes == state.changes
+    def offline(url):
+        raise CheckError("hors ligne")
+    kept = chk.check(installed="0.30.0", fetch=offline, previous=state)
+    assert kept.changes and all(chk.parse_version(c.version) > chk.parse_version("0.30.0") for c in kept.changes)
+
+
+def test_old_state_file_without_changes_is_still_read(tmp_path):
+    data = chk.check(installed="0.22.0", fetch=fetch_of([gh("0.23.0")])).to_dict()
+    del data["changes"]
+    state = chk.parse_state(json.dumps(data))
+    assert state.release.version == "0.23.0" and state.changes == []
+    data["changes"] = [{"version": "pas une version"}, "texte", {"version": "0.23.0", "notes": "\x07ok"}]
+    assert [c.notes for c in chk.parse_state(json.dumps(data)).changes] == ["ok"]

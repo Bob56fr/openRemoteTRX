@@ -23,7 +23,7 @@ import unicodedata
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .. import __version__
@@ -39,6 +39,8 @@ MAX_PACKAGE_BYTES = 100 * 1024 * 1024
 MAX_SIG_BYTES = 4096
 MAX_NOTES_CHARS = 4000
 MAX_NAME_CHARS = 120
+MAX_CHANGES = 12                  # versions sautées dont les notes sont gardées (de la plus récente à la plus ancienne)
+MAX_CHANGES_CHARS = 16000         # total des notes gardées pour le journal des changements
 TIMEOUT_S = 20.0
 
 _VERSION_RE = re.compile(r"v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})(?:(a|b|rc)(\d{1,4}))?")
@@ -187,6 +189,53 @@ def choose_release(items: object, installed: str, *, allow_prerelease: bool) -> 
     return best
 
 
+@dataclass(frozen=True)
+class Change:
+    """Notes d'une version publiée entre la version installée et celle proposée (journal des changements)."""
+    version: str
+    name: str
+    published_at: str
+    notes: str
+
+    @classmethod
+    def from_dict(cls, data: object) -> Change | None:
+        if not isinstance(data, dict) or parse_version(data.get("version")) is None:
+            return None
+        return cls(version=data["version"], name=clean_text(data.get("name"), MAX_NAME_CHARS, single_line=True),
+                   published_at=clean_text(data.get("published_at"), 40, single_line=True),
+                   notes=clean_text(data.get("notes"), MAX_NOTES_CHARS))
+
+
+def collect_changes(items: object, installed: str, offered: str, *, allow_prerelease: bool) -> list[Change]:
+    """Notes de TOUTES les versions publiées après `installed` jusqu'à `offered` incluse, la plus récente d'abord.
+    Une version sans paquet signé compte aussi (ses notes décrivent des changements contenus dans `offered`)."""
+    low, high = parse_version(installed), parse_version(offered)
+    if not isinstance(items, list) or low is None or high is None:
+        return []
+    found: dict[tuple, Change] = {}
+    for item in items:
+        if not isinstance(item, dict) or item.get("draft") is not False:
+            continue
+        tag = item.get("tag_name")
+        key = parse_version(tag[1:]) if isinstance(tag, str) and tag.startswith("v") else None
+        if key is None or not low < key <= high:
+            continue
+        if (bool(item.get("prerelease")) or is_prerelease_version(tag[1:])) and not allow_prerelease:
+            continue
+        found[key] = Change(version=tag[1:], name=clean_text(item.get("name") or tag, MAX_NAME_CHARS, single_line=True),
+                            published_at=clean_text(item.get("published_at") or "", 40, single_line=True),
+                            notes=clean_text(item.get("body") or "", MAX_NOTES_CHARS))
+    changes, budget = [], MAX_CHANGES_CHARS
+    for key in sorted(found, reverse=True)[:MAX_CHANGES]:
+        change = found[key]
+        if len(change.notes) > budget:
+            change = Change(change.version, change.name, change.published_at,
+                            (change.notes[:budget].rstrip() + " […] (suite sur GitHub)") if budget > 0 else "(voir GitHub)")
+        budget -= len(change.notes)
+        changes.append(change)
+    return changes
+
+
 # ------------------------------------------------------------------ réseau
 
 def http_get(url: str, *, max_bytes: int = MAX_RESPONSE_BYTES, timeout: float = TIMEOUT_S,
@@ -221,6 +270,7 @@ class UpdateState:
     error: str = ""
     release: Release | None = None    # version plus récente disponible (None = à jour ou inconnu)
     schema: int = SCHEMA
+    changes: list[Change] = field(default_factory=list)   # facultatif (ajouté en 0.70.0, même schéma)
 
     def to_dict(self) -> dict:
         data = asdict(self)
@@ -260,9 +310,11 @@ def parse_state(text: str) -> UpdateState | None:
         data = json.loads(text)
         if not isinstance(data, dict) or data.get("schema") != SCHEMA or not isinstance(data.get("installed"), str):
             return None
+        raw_changes = data.get("changes")
+        changes = [c for c in (Change.from_dict(x) for x in raw_changes[:MAX_CHANGES]) if c is not None]             if isinstance(raw_changes, list) else []
         return UpdateState(installed=data["installed"], checked_at=float(data.get("checked_at", 0.0)),
                            ok=data.get("ok") is True, error=clean_text(data.get("error", ""), 300, single_line=True),
-                           release=Release.from_dict(data.get("release")))
+                           release=Release.from_dict(data.get("release")), changes=changes)
     except (ValueError, TypeError):
         return None
 
@@ -276,14 +328,16 @@ def check(*, installed: str = __version__, allow_prerelease: bool = False, fetch
         except ValueError as exc:
             raise CheckError("réponse de GitHub illisible") from exc
         release = choose_release(items, installed, allow_prerelease=allow_prerelease)
-        return UpdateState(installed=installed, checked_at=now(), ok=True, release=release)
+        changes = collect_changes(items, installed, release.version, allow_prerelease=allow_prerelease) if release else []
+        return UpdateState(installed=installed, checked_at=now(), ok=True, release=release, changes=changes)
     except CheckError as exc:
         kept = previous.release if previous else None
         if kept is not None and (parse_version(kept.version) or ()) <= (parse_version(installed) or ()):
             kept = None
         if kept is not None and kept.prerelease and not allow_prerelease:
             kept = None
-        return UpdateState(installed=installed, checked_at=now(), ok=False, error=str(exc), release=kept)
+        changes = [c for c in previous.changes if (parse_version(c.version) or ()) > (parse_version(installed) or ())]             if kept is not None and previous is not None else []
+        return UpdateState(installed=installed, checked_at=now(), ok=False, error=str(exc), release=kept, changes=changes)
 
 
 def main(argv: list[str] | None = None, *, fetch: Fetch = http_get) -> int:

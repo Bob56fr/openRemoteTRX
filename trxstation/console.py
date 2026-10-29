@@ -38,7 +38,7 @@ from . import profiles as prof
 from .station_id import read_station_id
 from .update import apply as upd
 from .update.apply import previous_version
-from .update.check import UpdateState, clean_text, parse_version, read_state, state_path
+from .update.check import Change, UpdateState, clean_text, parse_version, read_state, state_path
 
 TARGET = "trx-remote.target"
 IMPORT_NAME = "station.import.toml"
@@ -49,6 +49,8 @@ MAX_DIFF_LINES = 60
 GNOME_EXTENSION_UUID = "trx-distant@rf-diy.com"
 GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSION_UUID
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
+NOTES_PAGE_LINES = 20             # notes de version : affichées par pages de 20 lignes
+UPDATE_MENU = "10"
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
 
@@ -183,8 +185,9 @@ class Console:
                  python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
                  previous: Callable[[], str | None] = previous_version, installed: str = __version__,
                  home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
-                 desktop: Callable[[], Path] | None = None) -> None:
+                 desktop: Callable[[], Path] | None = None, color: bool | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
+        self.color = color if color is not None else (say is print and sys.stdout.isatty())
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
         self.previous, self.installed = previous, installed
         self.home = home or Path.home()
@@ -359,32 +362,81 @@ class Console:
         if state is None:
             self.say("Pas encore de recherche de mise à jour (elle a lieu 2 minutes après le démarrage de la station).")
             if self.config.exists() and self.yes("Chercher maintenant", False):
-                self.runner.run(["systemctl", "start", CHECK_UNIT], admin=True)
-                state = self.update_state()
+                state = self.search_now()
             if state is None:
                 return
         if not state.ok:
             self.say(f"Dernière recherche impossible : {clean_text(state.error, 300, single_line=True)}")
         release = self.offered(state)
         if release is None:
-            self.say(f"TRX distant est à jour (version {self.installed}).")
-            return
-        published = clean_text(release.published_at, 40, single_line=True)
-        self.say(f"\nNouvelle version : {release.version}{' (PRÉ-VERSION)' if release.prerelease else ''}"
-                 f" ; installée : {self.installed}\n{clean_text(release.name, 120, single_line=True)}"
-                 f"{' (' + published + ')' if published else ''}")
-        self.say("\nNotes de version :\n" + (clean_text(release.notes, 4000) or "(aucune)"))
+            checked = time.strftime("%d/%m/%Y %H:%M", time.localtime(state.checked_at)) if state.checked_at else "inconnue"
+            self.say(f"TRX distant est à jour (version {self.installed}). Dernière recherche : {checked}.")
+            if not (self.config.exists() and self.yes("Chercher à nouveau maintenant sur GitHub", False)):
+                return
+            state = self.search_now()
+            release = self.offered(state)
+            if release is None:
+                self.say("Toujours à jour." if state is not None and state.ok else "Recherche impossible : "
+                         + clean_text(state.error if state is not None else "aucun résultat", 300, single_line=True))
+                return
+        changes = self.changes_of(state, release)
+        published = clean_text(release.published_at, 40, single_line=True)[:10]
+        self.say(self.banner([f"NOUVELLE VERSION {release.version}{' (PRÉ-VERSION)' if release.prerelease else ''}"
+                              f" ; installée : {self.installed}",
+                              clean_text(release.name, 120, single_line=True) + (f" ({published})" if published else "")]))
+        if len(changes) > 1:
+            self.say(f"{len(changes)} versions publiées depuis la tienne : "
+                     + ", ".join(c.version for c in reversed(changes)) + " (toutes comprises dans la mise à jour).")
+        if self.yes("Voir la nature des changements avant de décider", True):
+            self.show_changes(changes)
+            self.say(f"\nNotes complètes sur GitHub : {clean_text(release.page_url, 200, single_line=True)}")
         self.say("\nPendant l'installation (quelques minutes, Internet nécessaire), la station est arrêtée.\n"
                  "Elle est refusée tant que le poste émet. Le paquet est vérifié (signature) avant toute installation ;\n"
-                 f"la version {self.installed}, station.toml et les certificats sont conservés.")
+                 f"la version {self.installed}, station.toml et les certificats sont conservés (retour possible : menu 11).")
         entered = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
         if entered != release.version:
-            self.say("Mise à jour annulée : rien n'a été modifié.")
+            self.say(f"Mise à jour annulée : rien n'a été modifié. Elle reste proposée par le menu {UPDATE_MENU}.")
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
                                            "--version", release.version), admin=True)
         self.say(self._apply_result(code, f"Version {release.version} installée. Quitte TRX Console (q) et "
                                           "rouvre-la pour utiliser la nouvelle version."))
+
+    def search_now(self) -> UpdateState | None:
+        """Recherche immédiate par le service de la station (compte trx, jamais root) ; rien n'est installé."""
+        self.say("Recherche sur GitHub...")
+        self.runner.run(["systemctl", "start", CHECK_UNIT], admin=True)
+        return self.update_state()
+
+    def changes_of(self, state: UpdateState, release) -> list[Change]:
+        """Journal des changements, la plus récente d'abord ; à défaut, les seules notes de la version proposée."""
+        low, high = parse_version(self.installed) or (), parse_version(release.version) or ()
+        changes = [c for c in state.changes if low < (parse_version(c.version) or ()) <= high]
+        if not any(c.version == release.version for c in changes):
+            changes.insert(0, Change(release.version, release.name, release.published_at, release.notes))
+        return changes
+
+    def show_changes(self, changes: list[Change]) -> None:
+        """Notes de chaque version, par pages (Entrée = suite, q = arrêter là)."""
+        lines: list[str] = []
+        for change in changes:
+            published = clean_text(change.published_at, 40, single_line=True)[:10]
+            lines += ["", f"--- Version {change.version}{' du ' + published if published else ''} : "
+                          f"{clean_text(change.name, 120, single_line=True)} ---"]
+            lines += (clean_text(change.notes, 4000) or "(aucune note)").split("\n")
+        for start in range(0, len(lines), NOTES_PAGE_LINES):
+            self.say("\n".join(lines[start:start + NOTES_PAGE_LINES]))
+            if start + NOTES_PAGE_LINES < len(lines):
+                if self.ask("-- Entrée : suite des notes ; q : arrêter là -- ").strip().lower() in ("q", "quitter"):
+                    return
+
+    def banner(self, lines: list[str]) -> str:
+        """Cadre bien visible (texte noir sur fond jaune dans un vrai terminal)."""
+        width = max(len(line) for line in lines)
+        body = ["*" * (width + 4)] + [f"* {line.ljust(width)} *" for line in lines] + ["*" * (width + 4)]
+        if self.color:
+            body = [f"\033[1;30;43m{line}\033[0m" for line in body]
+        return "\n" + "\n".join("  " + line for line in body)
 
     def rollback(self) -> None:
         previous = self.previous()
@@ -809,8 +861,13 @@ class Console:
                 f"\n  Identifiant de la station : {self.station_id() or 'créé au premier démarrage de la station'}")
         release = self.offered(self.update_state())
         if release is not None:
-            line += f"\n  ** Nouvelle version {release.version} disponible : menu 10 **"
+            line += self.banner([f"NOUVELLE VERSION {release.version} DISPONIBLE (installée : {self.installed})",
+                                 f"Menu {UPDATE_MENU} : voir les changements, puis installer si tu le souhaites"])
         return line
+
+    def menu_label(self, key: str, label: str) -> str:
+        release = self.offered(self.update_state()) if key == UPDATE_MENU else None
+        return f"{label}   <== NOUVELLE VERSION {release.version}" if release is not None else label
 
     def help_menu(self, key: str = "") -> None:
         """Touche « h » : à quoi sert un menu, quand s'en servir, ce qu'il modifie. Mêmes textes que le mode d'emploi
@@ -846,7 +903,7 @@ class Console:
         while True:
             self.say(self.header())
             for key, label, _ in self.items:
-                self.say(f"  {key}) {label}")
+                self.say(f"  {key}) {self.menu_label(key, label)}")
             self.say("  h) Aide sur un menu (ex. « h 19 »)")
             self.say("  q) Quitter")
             try:

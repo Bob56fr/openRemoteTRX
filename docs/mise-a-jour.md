@@ -38,7 +38,9 @@ python scripts/gen_update_key.py
 4. Sur GitHub, créer une Release :
    - étiquette **`v` + la version exacte** de `pyproject.toml` : `v0.24.0` ;
    - joindre **les deux fichiers**, sans les renommer ;
-   - notes de version : texte libre, affiché dans TRX Console (4 000 caractères au plus) ;
+   - notes de version : texte libre, affiché dans TRX Console (4 000 caractères au plus) ; écrire ce qui
+     change POUR L'UTILISATEUR (une ligne par changement, « - … »), la console les montre sur demande avant
+     d'installer, avec celles de toutes les versions sautées ;
    - pré-version : version de la forme `0.24.0rc1` (pas `0.24.0-rc1`) ET case « pre-release » cochée.
      Les stations l'ignorent sauf `[update] allow_prerelease = true`.
 
@@ -55,8 +57,12 @@ allow_prerelease = false  # true : propose aussi les pré-versions
 - Recherche : timer `trx-update-check.timer` (compte `trx`, jamais root, sans droit particulier),
   2 minutes après le démarrage de la station puis toutes les 24 h. Résultat :
   `/var/lib/trx-remote/update/latest.json`. Hors ligne : la dernière version connue est gardée.
-- TRX Console : en-tête « Nouvelle version X disponible », **menu 10** (notes, puis confirmation en
-  tapant le numéro de version), **menu 11** (retour à la version précédente). Le diagnostic (menu 1)
+- TRX Console : cadre « NOUVELLE VERSION X DISPONIBLE » en haut du menu (noir sur jaune dans un
+  terminal), menu 10 marqué « <== NOUVELLE VERSION X ». **Menu 10** : résumé, « Voir la nature des
+  changements » (notes de chaque version publiée depuis celle installée, la plus récente d'abord, 12
+  versions et 16 000 caractères au plus, par pages de 20 lignes ; une Release sans paquet signé compte
+  aussi), puis confirmation en tapant le numéro de version ; à jour : nouvelle recherche immédiate
+  proposée. **Menu 11** : retour à la version précédente. Le diagnostic (menu 1)
   a une section « Mise à jour ».
 - Installation (`python -m trxstation.update.apply ... install --version X`, en root par TRX Console) :
   1. refus si le poste émet ou si on ne peut pas prouver qu'il n'émet pas (fichier d'état de la

@@ -80,7 +80,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (version 0.69.0, étape 82)
+## État actuel (version 0.70.0, étape 83)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -100,7 +100,7 @@ PTT par le bouton d'un casque Bluetooth / filaire et micro du casque (applicatio
 
 ## En attente (décisions ou travaux à venir)
 
-- Signature des mises à jour : clé jamais générée (`scripts/gen_update_key.py`, `update/pubkey.py` vide => mise à jour par Internet refusée) ; `pip --require-hashes` à faire.
+- Mises à jour : la console annonce la nouvelle version (cadre, menu 10 marqué) et montre les notes de chaque version sautée sur demande (étape 83) ; AUCUNE Release publiée sur GitHub à ce jour. Signature des mises à jour : clé jamais générée (`scripts/gen_update_key.py`, `update/pubkey.py` vide => mise à jour par Internet refusée) ; `pip --require-hashes` à faire.
 - Température du poste : seuils 40/50 °C (`safety/thermal.py`, coupure à distance au 2e) ; l'IC-7300MK2 n'expose PAS TEMP_METER sous Hamlib => sans effet sur ce poste, capteur externe à étudier.
 - Collecte des journaux (rf-diy / Azure) : identifiant de station prêt (`station-id`), cahier des charges `docs/collecte-azure-cahier-des-charges.md`, service à construire dans un AUTRE dépôt.
 - Signalement des problèmes : étape 2 (réception sur le site WordPress de l'utilisateur) ; formulaire de qualification « [À COMPLÉTER] ».

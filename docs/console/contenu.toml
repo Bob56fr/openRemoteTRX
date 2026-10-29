@@ -141,8 +141,8 @@ admin = true
 expert = "<p>Le mode sûr survit aux redémarrages et aux corrections : il faut le lever explicitement ici.</p>"
 
 [menus.update]
-role = "Mise à jour par Internet : affiche la nouvelle version, ses notes, puis l'installe après vérification de sa signature."
-quand = "Quand l'en-tête du menu annonce « Nouvelle version disponible »."
+role = "Mise à jour par Internet : présente la nouvelle version, propose de voir la nature des changements (notes de CHAQUE version publiée depuis la tienne, la plus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis l'installe après vérification de sa signature. À jour : propose une nouvelle recherche immédiate sur GitHub."
+quand = "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la console (jaune dans un terminal) et que le menu 10 est marqué « <== NOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la station puis toutes les 24 h."
 modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 11). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer."
 admin = true
 
