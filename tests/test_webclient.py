@@ -69,6 +69,19 @@ def test_javascript_client_logic_with_a_fake_browser():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+def test_voice_equalizer_and_effects_with_a_fake_audio_context():
+    """Égaliseur et effets de voix (voice.js) : biquads = vecteurs partagés, limiteur toujours là, rien vers la station hors TX."""
+    node = shutil.which("node")
+    if not node:
+        return
+    html = (ROOT / "trxstation" / "gateway" / "api" / "static" / "index.html").read_text(encoding="utf-8")
+    assert html.index('src="voice.js"') < html.index('src="ui.js"')
+    server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
+    assert '"/voice.js": ("voice.js", "text/javascript")' in server
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "voice_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
 def test_page_reads_the_shared_protocol_examples():
     node = shutil.which("node")
     if not node:

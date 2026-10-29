@@ -644,12 +644,13 @@
   class TrxClient {
     /* env : RTCPeerConnection, getConfig() -> {ice_servers}, waitIceComplete(pc, ms), postOffer(body) -> {status, body},
      *       getUserMedia(constraints), isSecureContext, now(), setInterval/clearInterval, collectStats(pc)
+     *       facultatif : voiceChain(stream) -> {track, stream, setTx(bool), close()} = égaliseur et effets (voice.js)
      * ui  : status(text, kind), state(view), log(text, level), remoteStream(stream, track), stats(text),
      *       rtt(ms), modes(list), armed(bool), connected(bool) ; facultatif : linkAlert(kind) = son « lost » | « restored » | « failed » */
     constructor(env, ui) {
       this.env = env;
       this.ui = ui;
-      this.pc = null; this.dc = null; this.sc = null; this.micTrack = null;
+      this.pc = null; this.dc = null; this.sc = null; this.micTrack = null; this.rawMic = null; this.voice = null;
       this.spectrumFrame = null; this._spectrumSeq = -1;   // dernier balayage du spectre HF reçu (canal « spectrum »)
       this.clientId = ""; this.connected = false; this.closed = true;
       this.armed = false; this.hello = null; this.state = null;
@@ -724,9 +725,20 @@
                 this.ui.log("Micro REFUSÉ : « " + label + " » est une entrée/sortie audio du poste lui-même (la réception serait renvoyée dans l'émission). " +
                             "Choisis un autre micro, ou coche « Ce n'est pas le poste » si c'est une erreur. Réception seule.", "bad");
               } else {
-                this.micTrack = track;
+                // Égaliseur et effets (voice.js) : la piste envoyée sort de la chaîne ; en cas d'échec, le micro tel quel
+                let sent = track, sentStream = stream;
+                if (this.env.voiceChain) {
+                  try {
+                    const voice = this.env.voiceChain(stream);
+                    if (voice && voice.track) { this.voice = voice; sent = voice.track; sentStream = voice.stream || stream; }
+                  } catch (err) {
+                    this.ui.log("Égaliseur indisponible (" + (err && err.message ? err.message : err) + ") : voix sans traitement.", "warn");
+                  }
+                }
+                this.rawMic = track;
+                this.micTrack = sent;
                 this.micTrack.enabled = false;                         // fermé tant que l'émission n'est pas confirmée
-                pc.addTrack(this.micTrack, stream);
+                pc.addTrack(this.micTrack, sentStream);
                 mic = true;
                 this.ui.log("Micro utilisé : " + label + ".", "");
               }
@@ -795,6 +807,8 @@
       this.pending.clear();
       this._releaseWakeLock();
       if (this.micTrack) { try { this.micTrack.enabled = false; this.micTrack.stop(); } catch (e) { /* déjà arrêtée */ } this.micTrack = null; }
+      if (this.voice) { try { this.voice.close(); } catch (e) { /* déjà fermée */ } this.voice = null; }
+      if (this.rawMic) { try { this.rawMic.stop(); } catch (e) { /* déjà arrêtée */ } this.rawMic = null; }
       if (this.dc) { this.dc.onclose = null; try { this.dc.close(); } catch (e) { /* déjà fermé */ } this.dc = null; }
       if (this.sc) { this.sc.onmessage = null; try { this.sc.close(); } catch (e) { /* déjà fermé */ } this.sc = null; }
       this.spectrumFrame = null; this._spectrumSeq = -1; this._spectrumWatch = false;   // la station oublie l'abonnement avec la connexion
@@ -1090,6 +1104,7 @@
 
     _afterState() {
       if (this.micTrack) this.micTrack.enabled = this._mineTx();       // micro ouvert seulement en TX confirmé
+      if (this.voice) { try { this.voice.setTx(this._mineTx()); } catch (e) { /* affichage seulement */ } }   // traîne coupée au retour en RX
       const active = this._mineActive();
       if (this._wasActive && !active) {                                // fin d'émission : la case reste cochée (jusqu'à décision de l'utilisateur)
         const p = this._ptt();

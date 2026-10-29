@@ -1322,6 +1322,140 @@
     };
 
     const client = new TrxClient(browserEnv(), ui);
+
+    // ---- égaliseur paramétrique et effets de voix (voice.js) : chaîne branchée sur le micro à la connexion
+    const vx = root.TrxVoice || null;
+    let voiceSettings = vx ? vx.validate(safeJson(store.get("trx.voice", "null"))) : null;
+    let voiceChain = null, voiceCtx = null, voiceRaw = null, recorder = null, recordTimer = null, recordBuffer = null;
+    function voiceSave() { store.set("trx.voice", JSON.stringify(voiceSettings)); if (voiceChain) voiceChain.apply(voiceSettings); voiceRender(); }
+    function voiceTx() { return !!(lastView && lastView.mine && lastView.pttState && lastView.pttState !== "RX"); }
+    function voiceRender() {
+      if (!vx) return;
+      const s = voiceSettings;
+      $("voice-direct").className = "chip voice-direct" + (s.enabled ? " on" : "");
+      $("voice-direct").textContent = s.enabled ? "EQ ON" : "EQ";
+      $("voice-on").checked = s.enabled;
+      $("voice-hp").value = s.highpassHz; $("voice-hp-text").textContent = " " + s.highpassHz + " Hz";
+      $("voice-lp").value = s.lowpassHz; $("voice-lp-text").textContent = " " + s.lowpassHz + " Hz";
+      s.bands.forEach((b, i) => {
+        const row = bandRows[i];
+        row.gain.value = b.gainDb; row.gainText.textContent = (b.gainDb > 0 ? "+" : "") + b.gainDb + " dB";
+        if (document.activeElement !== row.hz) row.hz.value = Math.round(b.hz);
+        if (document.activeElement !== row.q) row.q.value = b.q;
+      });
+      $("voice-chorus-on").checked = s.chorus.on; $("voice-chorus-type").value = s.chorus.type;
+      $("voice-chorus-mix").value = s.chorus.mix; $("voice-chorus-mix-text").textContent = " " + s.chorus.mix + " %";
+      $("voice-chorus-rate").value = s.chorus.rateHz; $("voice-chorus-depth").value = s.chorus.depthMs;
+      $("voice-reverb-on").checked = s.reverb.on; $("voice-reverb-type").value = s.reverb.type;
+      $("voice-reverb-mix").value = s.reverb.mix; $("voice-reverb-mix-text").textContent = " " + s.reverb.mix + " %";
+      $("voice-reverb-time").value = s.reverb.seconds; $("voice-reverb-time-text").textContent = " " + s.reverb.seconds + " s";
+      const ready = !!voiceChain && !voiceTx();
+      $("voice-monitor").disabled = !ready;
+      if (!voiceChain || voiceTx()) $("voice-monitor").checked = false;
+      $("voice-record").disabled = !ready || !voiceRaw || typeof MediaRecorder === "undefined";
+      $("voice-play").disabled = !ready || !recordBuffer;
+      $("voice-record").textContent = recorder ? "Arrêter l'enregistrement" : "Enregistrer";
+    }
+    const bandRows = [];
+    if (vx) {
+      for (const [key, preset] of Object.entries(vx.PRESETS)) $("voice-preset").appendChild(Object.assign(el("option", "", preset.label), { value: key }));
+      for (const [key, t] of Object.entries(vx.CHORUS_TYPES)) $("voice-chorus-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
+      for (const [key, t] of Object.entries(vx.REVERB_TYPES)) $("voice-reverb-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
+      vx.BANDS_HZ.forEach((hz, i) => {
+        const label = el("span", "", (hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 2 : 0).replace(".", ",") + " k" : hz + " Hz"));
+        const gain = Object.assign(el("input", ""), { type: "range", min: String(-vx.GAIN_MAX_DB), max: String(vx.GAIN_MAX_DB), step: "1" });
+        const gainText = el("span", "mono", "");
+        const fz = Object.assign(el("input", ""), { type: "number", min: String(Math.round(hz / 1.5)), max: String(Math.round(hz * 1.5)), step: "10", title: "Fréquence (Hz)" });
+        const q = Object.assign(el("input", ""), { type: "number", min: "0.3", max: "8", step: "0.1", title: "Largeur Q (grand = étroit)" });
+        gain.addEventListener("input", () => { voiceSettings.bands[i].gainDb = Number(gain.value); voiceSave(); });
+        fz.addEventListener("change", () => { voiceSettings.bands[i].hz = Number(fz.value); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
+        q.addEventListener("change", () => { voiceSettings.bands[i].q = Number(q.value); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
+        for (const node of [label, gain, gainText, fz, q]) $("voice-bands").appendChild(node);
+        bandRows.push({ gain, gainText, hz: fz, q });
+      });
+      const bind = (id, apply) => $(id).addEventListener("input", (ev) => { apply(ev.target); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
+      bind("voice-on", (t) => { voiceSettings.enabled = t.checked; });
+      bind("voice-hp", (t) => { voiceSettings.highpassHz = Number(t.value); });
+      bind("voice-lp", (t) => { voiceSettings.lowpassHz = Number(t.value); });
+      bind("voice-chorus-on", (t) => { voiceSettings.chorus.on = t.checked; });
+      bind("voice-chorus-type", (t) => { voiceSettings.chorus.type = t.value; });
+      bind("voice-chorus-mix", (t) => { voiceSettings.chorus.mix = Number(t.value); });
+      bind("voice-chorus-rate", (t) => { voiceSettings.chorus.rateHz = Number(t.value); });
+      bind("voice-chorus-depth", (t) => { voiceSettings.chorus.depthMs = Number(t.value); });
+      bind("voice-reverb-on", (t) => { voiceSettings.reverb.on = t.checked; });
+      bind("voice-reverb-type", (t) => { voiceSettings.reverb.type = t.value; });
+      bind("voice-reverb-mix", (t) => { voiceSettings.reverb.mix = Number(t.value); });
+      bind("voice-reverb-time", (t) => { voiceSettings.reverb.seconds = Number(t.value); });
+      $("voice-direct").addEventListener("click", () => { voiceSettings.enabled = !voiceSettings.enabled; voiceSave(); });
+      $("voice-apply").addEventListener("click", () => { voiceSettings = vx.PRESETS[$("voice-preset").value].make(); voiceSave(); });
+      $("voice-export").addEventListener("click", () => {
+        const link = el("a", "");
+        link.href = URL.createObjectURL(new Blob([vx.exportJson(voiceSettings)], { type: "application/json" }));
+        link.download = "voix-openremotetrx.json";
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+      });
+      $("voice-import").addEventListener("change", (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        file.text().then((text) => { voiceSettings = vx.importJson(text); voiceSave(); ui.log("Réglages de voix importés.", ""); })
+          .catch((e) => ui.log("Import impossible : " + e.message, "warn"))
+          .finally(() => { ev.target.value = ""; });
+      });
+      $("voice-monitor").addEventListener("change", (ev) => {
+        if (!voiceChain) { ev.target.checked = false; return; }
+        ev.target.checked = voiceChain.setMonitor(ev.target.checked && !voiceTx());
+      });
+      $("voice-record").addEventListener("click", () => {
+        if (recorder) { recorder.stop(); return; }
+        if (!voiceRaw || voiceTx()) return;
+        const chunks = [];
+        try { recorder = new MediaRecorder(new MediaStream([voiceRaw])); } catch (e) { ui.log("Enregistrement impossible : " + e.message, "warn"); return; }
+        recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = () => {
+          recorder = null;
+          if (recordTimer !== null) { window.clearTimeout(recordTimer); recordTimer = null; }
+          new Blob(chunks).arrayBuffer().then((data) => voiceCtx.decodeAudioData(data)).then((buffer) => {
+            recordBuffer = buffer;
+            $("voice-rec-text").textContent = "Prise de " + buffer.duration.toFixed(1).replace(".", ",") + " s.";
+            voiceRender();
+          }).catch((e) => { ui.log("Enregistrement illisible : " + e.message, "warn"); voiceRender(); });
+        };
+        recorder.start();
+        $("voice-rec-text").textContent = "Enregistrement… (" + vx.RECORD_MAX_S + " s au plus)";
+        recordTimer = window.setTimeout(() => { if (recorder) recorder.stop(); }, vx.RECORD_MAX_S * 1000);
+        voiceRender();
+      });
+      $("voice-play").addEventListener("click", () => { if (voiceChain && recordBuffer && !voiceTx()) voiceChain.playBuffer(recordBuffer); });
+      client.env.voiceChain = (stream) => {
+        /* Appelée par client.js à la connexion, avec le micro choisi ; la piste envoyée sort de la chaîne. */
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return null;
+        const ctx = new Ctx();
+        if (ctx.resume) ctx.resume().catch(() => {});
+        const chain = new vx.VoiceChain(ctx, ctx.createMediaStreamSource(stream), voiceSettings, (text, level) => ui.log(text, level));
+        voiceChain = chain; voiceCtx = ctx; voiceRaw = stream.getAudioTracks()[0] || null;
+        voiceRender();
+        return {
+          track: chain.track, stream: chain.stream,
+          setTx(on) {
+            chain.setTx(on);
+            if (on && recorder) recorder.stop();                       // toute prise d'émission arrête l'enregistrement
+            voiceRender();
+          },
+          close() {
+            if (recorder) { try { recorder.stop(); } catch (e) { /* déjà arrêté */ } }
+            chain.close();
+            if (ctx.close) ctx.close().catch(() => {});
+            if (voiceChain === chain) { voiceChain = null; voiceCtx = null; voiceRaw = null; }
+            voiceRender();
+          },
+        };
+      };
+      voiceRender();
+    } else {
+      $("sec-voice").hidden = true; $("voice-direct").hidden = true;
+    }
     if (lay) layout = new lay.Layout(document, { store: store, onShown: layoutShown, now: () => performance.now(),
                                                  setTimeout: (fn, ms) => window.setTimeout(fn, ms), clearTimeout: (t) => window.clearTimeout(t) });
     $("insecure").hidden = window.isSecureContext;

@@ -115,6 +115,7 @@
     <div class="pttrow">
       <button id="ptt" class="ptt" disabled>PTT</button>
       <button id="stop" class="stop" disabled>STOP</button>
+      <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
     </div>
 
     <div class="subrow">
@@ -256,6 +257,45 @@
           </div>
           <div id="beeps-note" class="dim small"></div>
         </div>
+      </div>
+    </details>
+
+    <details id="sec-voice">
+      <summary>Égaliseur paramétrique</summary>
+      <div class="body">
+        <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
+          Un limiteur reste toujours actif. Réglages gardés par ce navigateur.</p>
+        <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
+        <div class="row">
+          <label>Préréglage <select id="voice-preset"></select></label>
+          <button id="voice-apply" class="chip">Appliquer</button>
+          <button id="voice-export" class="chip">Exporter</button>
+          <label class="chip">Importer <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
+        </div>
+        <label>Coupe-bas <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
+        <label>Coupe-haut <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
+        <div id="voice-bands" class="voice-bands"></div>
+        <label class="check"><input id="voice-chorus-on" type="checkbox"> Chorus</label>
+        <div class="row">
+          <label>Type <select id="voice-chorus-type"></select></label>
+          <label>Dosage <input id="voice-chorus-mix" type="range" min="0" max="100" step="1"><span id="voice-chorus-mix-text"></span></label>
+          <label>Vitesse <input id="voice-chorus-rate" type="range" min="0.1" max="5" step="0.1"></label>
+          <label>Profondeur <input id="voice-chorus-depth" type="range" min="0.5" max="8" step="0.5"></label>
+        </div>
+        <label class="check"><input id="voice-reverb-on" type="checkbox"> Réverbération</label>
+        <div class="row">
+          <label>Type <select id="voice-reverb-type"></select></label>
+          <label>Dosage <input id="voice-reverb-mix" type="range" min="0" max="100" step="1"><span id="voice-reverb-mix-text"></span></label>
+          <label>Durée <input id="voice-reverb-time" type="range" min="0.2" max="4" step="0.1"><span id="voice-reverb-time-text"></span></label>
+        </div>
+        <p class="note">En BLU, le chorus et la réverbération réduisent la compréhension : à doser avec prudence. Ils sont coupés net au retour en réception.</p>
+        <label class="check"><input id="voice-monitor" type="checkbox" disabled> Écoute de contrôle (CASQUE obligatoire : sur haut-parleur, effet Larsen)</label>
+        <div class="row">
+          <button id="voice-record" class="chip" disabled>Enregistrer</button>
+          <button id="voice-play" class="chip" disabled>Relire</button>
+          <span id="voice-rec-text" class="dim small"></span>
+        </div>
+        <p class="note">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
       </div>
     </details>
 
@@ -437,6 +477,7 @@
 <script src="waterfall.js"></script>
 <script src="hfscope.js"></script>
 <script src="spots.js"></script>
+<script src="voice.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>
 </body>

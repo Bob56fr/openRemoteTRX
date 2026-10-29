@@ -261,6 +261,8 @@ Exigences transverses : fonctionnement identique sous Windows (mode géré), Deb
 
 ## 15. Relecture (Claude, 2026-10-29) : points à trancher avant le lot 3
 
+DÉCISIONS DE L'UTILISATEUR (2026-10-29) : point 1 => OUI, l'exception des bips de fin est ÉTENDUE au SELCALL de fin d'émission (trame de 3,7 s au plus, mêmes garde-fous) ; ordre des travaux : égaliseur et effets, puis SELCALL, puis scrambler.
+
 1. **Envoi en fin d'émission (§ 7.1) et exception des bips de fin.** La règle de sécurité décidée à l'étape 32 limite toute émission
    produite par la station après le relâchement à 0,6 s de son et 1,2 s d'attente. Une trame dure 2,2 à 3,7 s : il faut une
    EXTENSION EXPLICITE de cette exception par l'utilisateur (même règles : seulement depuis une émission confirmée relâchée par son

@@ -302,3 +302,12 @@ audio { display: none; }
 .cluster-recent .src { grid-column: 1 / -1; color: var(--texte-secondaire); font-size: .8rem; }
 .cluster-recent .mono { font-family: ui-monospace, monospace; }
 .fav-bands label { display: inline-flex; align-items: center; gap: .2rem; }
+/* Égaliseur paramétrique : une ligne par bande (fréquence, gain, Q) ; bouton direct EQ près du PTT */
+.voice-bands { display: grid; grid-template-columns: 3.1rem minmax(0, 1fr) 2.8rem 4.1rem 3.4rem; gap: .25rem .4rem; align-items: center; font-size: .85rem; }
+.voice-bands input { min-width: 0; width: 100%; box-sizing: border-box; }
+.voice-bands input[type=number] { padding: .25rem .2rem; font-size: .8rem; -moz-appearance: textfield; }
+.voice-bands input[type=number]::-webkit-inner-spin-button { display: none; }
+.voice-direct { align-self: center; }
+.voice-direct.on { background: var(--selection-fond); color: var(--selection-texte); border-color: var(--accent); }
+#sec-voice .body { grid-template-columns: minmax(0, 1fr); }
+#sec-voice .row { flex-wrap: wrap; }

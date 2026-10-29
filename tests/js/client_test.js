@@ -166,6 +166,28 @@ test("micro choisi : identifiant exact demandé, nom affiché dans le journal", 
   assert.equal(free.env.constraints.audio.deviceId, undefined);               // périphérique par défaut
 });
 
+test("égaliseur de voix : piste envoyée = sortie de la chaîne, qui suit le TX confirmé ; échec = micro tel quel", async () => {
+  const sentTrack = { kind: "audio", enabled: true }, calls = [];
+  const voice = { track: sentTrack, stream: { id: "eq" }, setTx(on) { calls.push(on); }, close() { calls.push("close"); } };
+  const w = makeWorld({ voiceChain: () => voice });
+  await w.connected();
+  assert.equal(w.client.micTrack, sentTrack);
+  assert.equal(w.pc().tracks[0], sentTrack);
+  assert.equal(sentTrack.enabled, false);                                     // fermée tant que l'émission n'est pas confirmée
+  w.state({ state: "KEYING", owner: "phone" });
+  assert.equal(calls[calls.length - 1], false);
+  w.state({ state: "TX", owner: "phone" });
+  assert.equal(sentTrack.enabled, true); assert.equal(calls[calls.length - 1], true);
+  w.state({ state: "RX", owner: null });
+  assert.equal(sentTrack.enabled, false); assert.equal(calls[calls.length - 1], false);
+  w.client.disconnect();
+  assert.ok(calls.includes("close")); assert.equal(w.mic.stopped, true);     // micro réel arrêté aussi
+  const broken = makeWorld({ voiceChain: () => { throw new Error("pas de WebAudio"); } });
+  await broken.connected();
+  assert.equal(broken.client.micTrack, broken.mic);
+  assert.ok(broken.ui.logs.some(([t, l]) => /Égaliseur indisponible/.test(t) && l === "warn"));
+});
+
 test("micro = entrée/sortie audio du poste : REFUSÉ (la réception serait renvoyée dans l'émission)", async () => {
   const w = makeWorld();
   w.mic.label = "Par défaut - Microphone (USB Audio Device)";
