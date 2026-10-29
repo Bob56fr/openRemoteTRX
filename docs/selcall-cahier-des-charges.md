@@ -261,6 +261,8 @@ Exigences transverses : fonctionnement identique sous Windows (mode géré), Deb
 
 ## 15. Relecture (Claude, 2026-10-29) : points à trancher avant le lot 3
 
+AVANCEMENT : lot 1 FAIT (station 0.59.0, étape 72) : `trxstation/selcall/` (`protocol`, `signal`, `decoder`), `tests/test_selcall_protocol.py`. Mesures sur signaux synthétiques : 100 % de détection de -300 à +300 Hz (pas de 50 Hz) jusqu'à 0 dB de SNR dans 2,4 kHz, encore 100 % à -3 dB et 83 % à -6 dB ; Δ à ±2 Hz ; SNR mesuré à ±1,5 dB ; aucune trame valide sur 5 minutes de voix, voyelles tenues, sifflements et porteuses ; environ 1 % d'un cœur de PC. Choix de réalisation : seuil de présence d'un ton de la grille porté à 14 dB au-dessus du plancher (à 10 dB, le plus fort des ~120 bins regardés dépassait souvent le seuil dans le bruit seul et rendait la fin de trame illisible) ; fin de trame = première case de 300 ms sans ton (au lieu de 100 ms : même effet, cases déjà calées) ; pilote verrouillé plus de 2,5 s sans chiffres = porteuse, abandon.
+
 DÉCISIONS DE L'UTILISATEUR (2026-10-29) : point 1 => OUI, l'exception des bips de fin est ÉTENDUE au SELCALL de fin d'émission (trame de 3,7 s au plus, mêmes garde-fous) ; ordre des travaux : égaliseur et effets, puis SELCALL, puis scrambler.
 
 1. **Envoi en fin d'émission (§ 7.1) et exception des bips de fin.** La règle de sécurité décidée à l'étape 32 limite toute émission
