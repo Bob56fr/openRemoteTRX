@@ -354,6 +354,27 @@ class RigSession(
         control(now, *commands.toTypedArray())
     }
 
+    /** Squelch du poste, 0 (ouvert) à 1. */
+    fun setSquelch(now: Long, value: Double) = control(now, Command.SetSquelch(value.coerceIn(0.0, 1.0)))
+
+    /** Niveau d'une fonction (NR, NB) : la station vérifie la plage déclarée par le poste. */
+    fun setLevel(now: Long, name: String, value: Double) = control(now, Command.SetLevel(name, value))
+
+    /**
+     * Mémoire partagée de la station : création (`id` null) ou modification. Ne touche pas au poste : permis aussi
+     * pendant une émission (comme la page). La station renvoie la liste à jour (message `memories`).
+     */
+    fun saveMemory(now: Long, name: String, hz: Long, mode: String, favorite: Boolean, id: String? = null) =
+        memoryCommand(now, Command.MemorySave(name.trim().take(MEMORY_NAME_MAX), hz, mode, favorite, id))
+
+    fun deleteMemory(now: Long, id: String) = memoryCommand(now, Command.MemoryDelete(id))
+
+    private fun memoryCommand(now: Long, command: Command) {
+        if (!connected) return
+        if (!protocolOk) log("Version de protocole inconnue : mémoires en lecture seule.", LogLevel.WARN) else send(now, command)
+        publish(now)
+    }
+
     /** Bouton d'une fonction du poste (Controls.chips) : NR, NB, P.AMP, ATT, NOTCH, IP+, AGC, COMP, FIL, TUNER, PWR. */
     fun pressControl(now: Long, key: String) {
         val commands = Controls.press(key, hello, state)
@@ -457,5 +478,7 @@ class RigSession(
         const val HELLO_TIMEOUT_MS = 15_000L
         const val LINK_ALERT_REPEAT_MS = 3000L
         const val MAX_LOG = 60
+        /** Nom d'une mémoire : 40 caractères au plus (station : memories.MAX_NAME). */
+        const val MEMORY_NAME_MAX = 40
     }
 }

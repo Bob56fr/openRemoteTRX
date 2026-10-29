@@ -300,3 +300,22 @@ class RigSessionRadioTest {
         assertEquals(BandSpot(7_100_000, "LSB"), s.snapshot.bandSpots["40"])
     }
 }
+
+class RigSessionMemoryTest {
+    @Test
+    fun `memoires - creation, modification, suppression, permises meme en emission`() {
+        val link = FakeLink()
+        val s = RigSession(link) { 0L }
+        s.begin(0, 30)
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone"}""")
+        s.onMessage(0, """{"type":"state","ptt":{"state":"TX","owner":"phone"},"rig":{"connected":true}}""")
+        s.saveMemory(1, "  FT8 20 m  ", 14_074_000, "PKTUSB", favorite = true)
+        s.saveMemory(2, "Balise", 28_200_000, "CW", favorite = false, id = "m1")
+        s.deleteMemory(3, "m2")
+        assertEquals(listOf("memory_save", "memory_save", "memory_delete"), link.cmds())
+        assertTrue(link.sent[0].contains("\"name\":\"FT8 20 m\"") && link.sent[0].contains("\"favorite\":true"))
+        assertTrue(link.sent[1].contains("\"memory_id\":\"m1\"") && !link.sent[1].contains("favorite"))
+        s.setSquelch(4, 0.3)                                       // réglage du poste : refusé pendant l'émission
+        assertEquals(3, link.sent.size)
+    }
+}

@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +62,10 @@ import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.LogLevel
 import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
+import com.rfdiy.openremotetrx.logic.RigSession
+import com.rfdiy.openremotetrx.protocol.Hello
+import java.util.Locale
+import kotlin.math.roundToInt
 
 private val TX_RED = Color(0xFFC62828)
 private val WARN = Color(0xFFEF6C00)
@@ -106,6 +112,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var stepIndex by rememberSaveable { mutableStateOf(Radio.STEPS_HZ.indexOf(1000L)) }
     var entry by remember { mutableStateOf(false) }
     var showLog by rememberSaveable { mutableStateOf(false) }
+    var levelsDialog by remember { mutableStateOf(false) }
+    var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
+    var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
     val shownHz = pendingLive ?: radio?.frequencyHz
     val step = Radio.STEPS_HZ[stepIndex]
@@ -177,6 +186,21 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                             Text(label, style = MaterialTheme.typography.labelSmall)
                         }
                     }
+                    radio?.levels?.get("SQL")?.let { sql ->
+                        // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
+                        val shown = squelchDrag ?: sql.toFloat()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("SQL", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
+                            Slider(
+                                value = shown, onValueChange = { squelchDrag = it }, enabled = canSet,
+                                onValueChangeFinished = { squelchDrag?.let { RigHub.setSquelch(it.toDouble()) }; squelchDrag = null },
+                                modifier = Modifier.weight(1f),
+                            )
+                            val percent = (shown * 100).roundToInt()
+                            Text(if (percent == 0) "ouvert" else "$percent %", style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
+                        }
+                    }
                 }
             }
 
@@ -228,6 +252,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         FilterChip(selected = chip.on, enabled = canSet, onClick = { RigHub.pressControl(chip.key) }, label = { Text(chip.label) })
                     }
                 }
+                if (levelRanges(hello, radio?.levels).isNotEmpty()) {
+                    TextButton(onClick = { levelsDialog = true }, enabled = canSet) { Text("Niveaux NR / NB…") }
+                }
             }
 
             // Indicateurs : Po, SWR, ALC pendant l'émission ; COMP, Vd, température en permanence s'ils existent
@@ -266,16 +293,29 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
 
             // Mémoires partagées de la station
-            if (rig.memories.isNotEmpty()) {
-                Section("Mémoires")
+            if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Mémoires", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { memoryDialog = MemoryEdit(null, "", shownHz, radio?.mode, false) }, enabled = connected) {
+                        Text("+ Mémoriser ici")
+                    }
+                }
                 for (m in rig.memories) {
-                    Row(
-                        Modifier.fillMaxWidth().clickable(enabled = canSet) { RigHub.recallMemory(m.id) }.padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text((if (m.favorite) "★ " else "") + m.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        Text("${Radio.formatIcom(m.hz)}  ${Radio.modeLabel(m.mode)}", fontFamily = FontFamily.Monospace,
-                            style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { RigHub.saveMemory(m.name, m.hz, m.mode, !m.favorite, m.id) }, enabled = connected) {
+                            Text(if (m.favorite) "★" else "☆")
+                        }
+                        Row(
+                            Modifier.weight(1f).clickable(enabled = canSet) { RigHub.recallMemory(m.id) }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(m.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            Text("${Radio.formatIcom(m.hz)}  ${Radio.modeLabel(m.mode)}", fontFamily = FontFamily.Monospace,
+                                style = MaterialTheme.typography.bodyMedium)
+                        }
+                        TextButton(onClick = { memoryDialog = MemoryEdit(m.id, m.name, m.hz, m.mode, m.favorite) }, enabled = connected) {
+                            Text("✎")
+                        }
                     }
                     HorizontalDivider()
                 }
@@ -351,6 +391,98 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         entry = false
         go(hz)
     }
+    if (levelsDialog) LevelsDialog(levelRanges(hello, radio?.levels), radio?.levels.orEmpty(), canSet) { levelsDialog = false }
+    memoryDialog?.let { edit ->
+        MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
+    }
+}
+
+/** Mémoire en cours de création (`id` null) ou de modification. */
+private data class MemoryEdit(val id: String?, val name: String, val hz: Long?, val mode: String?, val favorite: Boolean)
+
+/** Niveaux réglables (NR, NB) : plage [min, max, pas] déclarée par le poste ET valeur lue (page : levelRange). */
+private fun levelRanges(hello: Hello?, levels: Map<String, Double>?): Map<String, List<Double>> =
+    listOf("NR", "NB").mapNotNull { name ->
+        val range = hello?.capabilities?.levelRanges?.get(name)
+        if (range != null && range.size == 3 && range[1] > range[0] && levels?.containsKey(name) == true) name to range else null
+    }.toMap()
+
+private fun levelText(value: Double, range: List<Double>): String =
+    if (range[2] > 0) "${((value - range[0]) / range[2]).roundToInt()} / ${((range[1] - range[0]) / range[2]).roundToInt()}"
+    else String.format(Locale.ROOT, "%.2f", value)
+
+/** Fenêtre des niveaux NR / NB : une commande à la fin de chaque geste ; verrouillée pendant l'émission. */
+@Composable
+private fun LevelsDialog(ranges: Map<String, List<Double>>, levels: Map<String, Double>, enabled: Boolean, onDismiss: () -> Unit) {
+    val dragging = remember { mutableStateMapOf<String, Float>() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Niveaux du poste") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                for ((name, range) in ranges) {
+                    val value = dragging[name] ?: (levels[name] ?: range[0]).toFloat()
+                    val steps = if (range[2] > 0) (((range[1] - range[0]) / range[2]).roundToInt() - 1).coerceAtLeast(0) else 0
+                    Text("${if (name == "NR") "Réducteur de bruit (NR)" else "Antiparasite (NB)"} : ${levelText(value.toDouble(), range)}")
+                    Slider(
+                        value = value, onValueChange = { dragging[name] = it }, enabled = enabled,
+                        valueRange = range[0].toFloat()..range[1].toFloat(), steps = steps,
+                        onValueChangeFinished = { dragging.remove(name)?.let { RigHub.setLevel(name, it.toDouble()) } },
+                    )
+                }
+                if (!enabled) Text("Réglages verrouillés pendant l'émission.", color = WARN)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+    )
+}
+
+/** Création ou modification d'une mémoire partagée ; suppression confirmée en deux temps (comme la page). */
+@Composable
+private fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf(edit.name) }
+    var freq by remember { mutableStateOf(edit.hz?.let { Radio.formatIcom(it) } ?: "") }
+    var mode by remember { mutableStateOf(edit.mode ?: modes.firstOrNull() ?: "") }
+    var favorite by remember { mutableStateOf(edit.favorite) }
+    var deleteArmed by remember { mutableStateOf(false) }
+    val hz = Radio.parseFrequencyEntry(freq)
+    val nameOk = name.isNotBlank() && name.trim().length <= RigSession.MEMORY_NAME_MAX
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (edit.id == null) "Nouvelle mémoire" else "Mémoire") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true)
+                OutlinedTextField(
+                    freq, { freq = it }, label = { Text("Fréquence (7074 kHz, 14.205 MHz)") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    supportingText = { Text(hz?.let { Format.frequency(it) } ?: "Fréquence invalide") },
+                )
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (m in modes.ifEmpty { listOfNotNull(edit.mode) }) {
+                        FilterChip(selected = m == mode, onClick = { mode = m }, label = { Text(Radio.modeLabel(m)) })
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(checked = favorite, onCheckedChange = { favorite = it })
+                    Spacer(Modifier.width(8.dp))
+                    Text("Favorite (en tête de liste)")
+                }
+                if (edit.id != null) {
+                    TextButton(onClick = {
+                        if (deleteArmed) { RigHub.deleteMemory(edit.id); onDismiss() } else deleteArmed = true
+                    }) { Text(if (deleteArmed) "Confirmer la suppression" else "Supprimer", color = MaterialTheme.colorScheme.error) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                RigHub.saveMemory(name.trim(), hz!!, mode, favorite, edit.id)
+                onDismiss()
+            }, enabled = nameOk && hz != null && mode.isNotEmpty()) { Text("Enregistrer") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+    )
 }
 
 private fun stepLabel(hz: Long): String = when {

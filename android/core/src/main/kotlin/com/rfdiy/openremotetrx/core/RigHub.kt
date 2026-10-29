@@ -59,6 +59,16 @@ object RigHub {
 
     fun recallMemory(id: String) { service?.onRig { session, now -> session.recallMemory(now, id) } }
 
+    fun setSquelch(value: Double) { service?.onRig { session, now -> session.setSquelch(now, value) } }
+
+    fun setLevel(name: String, value: Double) { service?.onRig { session, now -> session.setLevel(now, name, value) } }
+
+    fun saveMemory(name: String, hz: Long, mode: String, favorite: Boolean, id: String?) {
+        service?.onRig { session, now -> session.saveMemory(now, name, hz, mode, favorite, id) }
+    }
+
+    fun deleteMemory(id: String) { service?.onRig { session, now -> session.deleteMemory(now, id) } }
+
     /** Bouton d'une fonction du poste (logic.Controls) ; refusé pendant l'émission. */
     fun pressControl(key: String) { service?.onRig { session, now -> session.pressControl(now, key) } }
 
