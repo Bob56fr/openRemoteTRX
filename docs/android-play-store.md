@@ -51,6 +51,8 @@ testeurs sans « Sources inconnues ») ; si la revue de Google le refuse, le ret
    ouvre le lien avec le compte Google de la liste, accepte, puis installe depuis le Play Store.
 
 Un testeur qui a déjà la version `debug` (même identifiant, autre signature) doit la **désinstaller** d'abord.
+Décision de l'utilisateur (2026-10-30) : le Samsung S25 GARDE la version `debug` (développement par `adb`) ; la
+version du Play Store s'essaie sur un AUTRE téléphone.
 
 ## Fiche et déclarations (Play Console, une seule fois)
 
