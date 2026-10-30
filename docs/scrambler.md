@@ -14,6 +14,12 @@ radiocommunications de l'UIT (art. 25) et la réglementation nationale interdise
 - Un voyant « SCRAMBLER » (ou « DÉBROUILLAGE ») reste visible près du PTT.
 - Ce n'est PAS un chiffrement : tout possesseur d'un scrambler identique entend la voix.
 
+## Version Google Play
+
+L'application envoyée au Play Store (`bundlePlay`, étape 89) ne contient PAS la rubrique Scrambler : l'éditeur
+nommé sur le Store ne propose pas un codage interdit en bandes radioamateur. Les versions `debug` et `release`
+(diffusion hors Store) la gardent.
+
 ## Principe
 
 Le traitement est fait **dans le client** (page web ou application). La station n'en sait rien et le protocole ne

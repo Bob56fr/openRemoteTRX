@@ -180,7 +180,7 @@ fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.
         }
     }
 
-    ScramblerPanel(ui.scrambler, panel)
+    if (BuildConfig.SCRAMBLER) ScramblerPanel(ui.scrambler, panel)   // absent de la version Google Play
 
     panel {
         Text("Partager les réglages", style = MaterialTheme.typography.titleSmall)

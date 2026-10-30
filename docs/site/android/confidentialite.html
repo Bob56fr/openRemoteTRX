@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openRemoteTRX : confidentialité</title>
+<style>
+  :root { --fond: #0f141c; --texte: #dbe3ee; --texte-2: #9fb0c4; --lien: #4c9be8; --trait: #26303d; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 16px/1.55 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5em; } h2 { font-size: 1.15em; margin-top: 1.8em; }
+  a { color: var(--lien); } .petit { color: var(--texte-2); font-size: .9em; }
+  hr { border: 0; border-top: 1px solid var(--trait); margin: 40px 0; }
+</style>
+</head>
+<body><main>
+<h1>Application openRemoteTRX : règles de confidentialité</h1>
+<p class="petit">Version du 30 octobre 2026. Application Android <code>com.rfdiy.openremotetrx</code>, logiciel libre (AGPL-3.0),
+sources : <a href="https://github.com/Bob56fr/openRemoteTRX">github.com/Bob56fr/openRemoteTRX</a>.</p>
+
+<h2>En bref</h2>
+<p>L'application ne parle qu'à <strong>votre propre station</strong> radioamateur (l'adresse que vous saisissez ou que
+vous lisez dans son QR code). Elle n'envoie rien à l'éditeur ni à un tiers : ni compte, ni publicité, ni statistiques,
+ni traceur.</p>
+
+<h2>Données traitées et où elles vont</h2>
+<ul>
+  <li><strong>Microphone</strong> : votre voix est envoyée à votre station, chiffrée (WebRTC, DTLS-SRTP), seulement
+  pendant une émission que vous avez demandée. L'enregistrement d'essai de l'égaliseur reste sur le téléphone et n'est
+  jamais envoyé.</li>
+  <li><strong>Caméra</strong> : seulement pour lire le QR code d'appairage de la station ; aucune image n'est gardée.</li>
+  <li><strong>Liste des stations</strong> (adresse, identifiant, mot de passe chiffré par le Keystore d'Android, empreinte
+  du certificat), réglages et mémoires : sur le téléphone seulement, exclus de la sauvegarde Google.</li>
+  <li><strong>Réseau</strong> : l'état de la connexion est lu pour se reconnecter ; aucune donnée de localisation.</li>
+</ul>
+
+<h2>Partage, conservation, suppression</h2>
+<p>Aucune donnée n'est vendue ni partagée. Ce que l'application garde sur le téléphone disparaît en la désinstallant ou
+par « Effacer les données » dans les réglages d'Android. Les données reçues par votre station dépendent de votre station
+(c'est la vôtre).</p>
+
+<h2>Contact</h2>
+<p>Par les <a href="https://github.com/Bob56fr/openRemoteTRX/issues">tickets du projet sur GitHub</a>.</p>
+
+<hr>
+<h1 lang="en">openRemoteTRX app: privacy policy</h1>
+<div lang="en">
+<p>The app only talks to <strong>your own</strong> amateur radio station (the address you enter or scan). It sends
+nothing to the publisher or to any third party: no account, no ads, no analytics, no tracker.</p>
+<ul>
+  <li><strong>Microphone</strong>: your voice goes to your station, encrypted (WebRTC), only while you transmit. The
+  equalizer test recording stays on the phone.</li>
+  <li><strong>Camera</strong>: only to read the station pairing QR code; no image is kept.</li>
+  <li><strong>Stations, settings, memories</strong>: stored on the phone only (password encrypted by the Android
+  Keystore), excluded from Google backup.</li>
+</ul>
+<p>No data is sold or shared. Uninstalling the app deletes everything it stored. Contact:
+<a href="https://github.com/Bob56fr/openRemoteTRX/issues">GitHub issues</a>.</p>
+</div>
+</main></body>
+</html>

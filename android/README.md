@@ -27,5 +27,8 @@ gradlew.bat test assembleDebug     # Windows ; APK : app/build/outputs/apk/debug
 ./gradlew test assembleDebug       # Linux
 ```
 
+Google Play (test interne) : `gradlew.bat bundlePlay` -> `app/build/outputs/bundle/play/app-play.aab`, signé par la clé
+d'envoi (`keystore.properties`, hors dépôt), sans le scrambler : voir `docs/android-play-store.md`.
+
 Installer sur un téléphone branché en USB (débogage USB activé) : `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 (adb : `%LOCALAPPDATA%\Android\Sdk\platform-tools`).

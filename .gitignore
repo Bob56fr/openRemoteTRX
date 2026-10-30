@@ -43,3 +43,4 @@ captures/
 *.aab
 *.jks
 *.keystore
+android/keystore.properties
