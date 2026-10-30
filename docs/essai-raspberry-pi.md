@@ -1,4 +1,4 @@
-# Essai sur un Raspberry Pi 4 sans bureau, tout par SSH depuis Windows (version 0.77.0)
+# Essai sur un Raspberry Pi 4 sans bureau, tout par SSH depuis Windows (version 0.78.0)
 
 But : savoir si un Raspberry Pi 4 suffit pour faire tourner la station (passerelle avec audio WebRTC, rigctld,
 superviseur, spectre HF, visiteurs) et l'utiliser au quotidien sans écran, sans clavier ni bureau. Aucun Raspberry
@@ -65,7 +65,7 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 
    ```
    python scripts/build_debian_zip.py --sans-signature
-   scp dist\trx-remote-debian-0.77.0.zip bob@<IP du Pi>:
+   scp dist\trx-remote-debian-0.78.0.zip bob@<IP du Pi>:
    ```
 
    Rien d'autre à copier : on part d'une station vierge, sans reprendre la `station.toml` d'une autre station.
@@ -73,7 +73,7 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 
    ```
    $pi = "bob@<IP du Pi>"
-   ssh -t $pi "sudo apt install -y unzip && unzip -oq trx-remote-debian-0.77.0.zip && cd trx-remote-debian-0.77.0 && time sudo bash install.sh"
+   ssh -t $pi "sudo apt install -y unzip && unzip -oq trx-remote-debian-0.78.0.zip && cd trx-remote-debian-0.78.0 && time sudo bash install.sh"
    ```
 
    `-t` est indispensable : `sudo` demande le mot de passe et `install.sh` pose ses questions au clavier.
@@ -96,18 +96,19 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
    ssh -t $pi /opt/trx-remote/venv/bin/python -m trxstation.devtools.station_load --minutes 10
    ```
 
-4. **Hamlib récent pour l'IC-7300MK2.** Raspberry Pi OS (comme Debian) fournit un Hamlib trop ancien : le
-   modèle 3094 (IC-7300MK2) n'arrive qu'avec Hamlib 4.7, et `install.sh` le signale par un avertissement. Le
-   script `compiler-hamlib.sh` du zip compile Hamlib 4.7.2 dans `/usr/local` (de 10 à 30 minutes ; l'archive
-   est vérifiée par son empreinte SHA-256). La station prend alors ce rigctld-là : `/usr/local/bin` passe
-   avant `/usr/bin`, comme sur minix-bzh.
+4. **Hamlib récent pour l'IC-7300MK2.** Raspberry Pi OS 13 (comme Debian 13) fournit Hamlib 4.6.2, et le
+   modèle 3094 (IC-7300MK2) n'arrive qu'avec Hamlib 4.7. `install.sh` installe alors tout seul Hamlib 4.7 depuis
+   les **backports officiels de Debian** (`trixie-backports`, fichier
+   `/etc/apt/sources.list.d/trx-remote-backports.sources`), sans rien compiler. Vérifier :
 
    ```
-   ssh -t $pi "cd trx-remote-debian-0.77.0 && time sudo bash compiler-hamlib.sh"
    ssh $pi "rigctld --version; rigctl -l | grep -i 7300"
    ```
 
-   Attendu : `Hamlib 4.7.2`, puis deux lignes, `3073 Icom IC-7300` et `3094 Icom IC-7300MK2`. Noter la durée.
+   Attendu : `Hamlib 4.7.2`, puis deux lignes, `3073 Icom IC-7300` et `3094 Icom IC-7300MK2`.
+
+   Le script `compiler-hamlib.sh` du zip ne sert plus que sur Debian 12, ou pour une version plus récente que
+   celle des backports : il compile la dernière Hamlib publique dans `/usr/local` (de 10 à 30 minutes).
 
 ## 4. Mesure sans le poste (faux poste Hamlib)
 

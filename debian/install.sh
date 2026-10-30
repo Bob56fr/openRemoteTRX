@@ -26,6 +26,7 @@ TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
 SENSOR_MODULES=/etc/modules-load.d/trx-remote-sensors.conf   # capteur de température du processeur (coretemp, k10temp)
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
+BACKPORTS_SOURCES=/etc/apt/sources.list.d/trx-remote-backports.sources   # Hamlib 4.7 sur Debian 13 (étape 93)
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
 GNOME_EXT_DIR=/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com   # indicateur de la barre du haut (lecture seule)
@@ -193,7 +194,7 @@ uninstall() {
   systemctl daemon-reload
   ok "services supprimés"
   for cmd in "${COMMANDS[@]}"; do rm -f "/usr/local/bin/$cmd"; done
-  rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE" "$SENSOR_MODULES"
+  rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE" "$SENSOR_MODULES" "$BACKPORTS_SOURCES"
   rm -rf "$GNOME_EXT_DIR"
   if [[ -f $BRLTTY_OVERRIDE ]] && grep -q 'trx-remote' "$BRLTTY_OVERRIDE"; then rm -f "$BRLTTY_OVERRIDE"; fi
   command -v udevadm >/dev/null && udevadm control --reload || true
@@ -315,10 +316,31 @@ apt-get install -y -q --no-install-recommends "${APT_PACKAGES[@]}" || fail "inst
 ok "paquets installés"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
   || fail "Python 3.11 ou plus récent est nécessaire (Debian 12 et plus)."
+hamlib_too_old() {   # vrai si le rigctld du PATH est antérieur à Hamlib 4.7 (IC-7300MK2 et postes récents absents)
+  local v
+  v=$(rigctld --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -n1 || true)
+  [[ $v =~ ^([0-9]+)\.([0-9]+)$ ]] && (( BASH_REMATCH[1] < 4 || (BASH_REMATCH[1] == 4 && BASH_REMATCH[2] < 7) ))
+}
+# Debian 13 (et Raspberry Pi OS 13) : Hamlib 4.6 ; la 4.7 vient des backports OFFICIELS de Debian. Les backports
+# ne remplacent rien d'autre : apt ne les prend que pour les paquets demandés avec -t.
+if [[ ${VERSION_CODENAME:-} == trixie ]] && hamlib_too_old; then
+  if ! grep -rqs 'trixie-backports' /etc/apt/sources.list /etc/apt/sources.list.d/; then
+    KEYRING=""
+    for k in /usr/share/keyrings/debian-archive-keyring.pgp /usr/share/keyrings/debian-archive-keyring.gpg; do
+      [[ -f $k ]] && KEYRING=$k && break
+    done
+    { printf '# trx-remote : Hamlib récent (backports officiels de Debian)\nTypes: deb\nURIs: http://deb.debian.org/debian\n'
+      printf 'Suites: trixie-backports\nComponents: main\n'
+      [[ -n $KEYRING ]] && printf 'Signed-By: %s\n' "$KEYRING"
+    } >"$BACKPORTS_SOURCES"
+    apt-get update -q || fail "lecture des backports de Debian impossible (apt-get update)."
+  fi
+  apt-get install -y -q --no-install-recommends -t trixie-backports libhamlib-utils \
+    && ok "Hamlib mis à jour depuis trixie-backports" || warn "Hamlib des backports non installé"
+fi
 ok "$(python3 --version) ; $(rigctld --version 2>/dev/null | head -n1 || echo 'rigctld présent')"
-HAMLIB_VERSION=$(rigctld --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -n1 || true)
-if [[ $HAMLIB_VERSION =~ ^([0-9]+)\.([0-9]+)$ ]] && (( BASH_REMATCH[1] < 4 || (BASH_REMATCH[1] == 4 && BASH_REMATCH[2] < 7) )); then
-  warn "Hamlib $HAMLIB_VERSION ne connaît pas les postes récents (IC-7300MK2…). Si le tien manque dans « rigctl -l » : sudo bash compiler-hamlib.sh"
+if hamlib_too_old; then
+  warn "ce Hamlib ne connaît pas les postes récents (IC-7300MK2…). Si le tien manque dans « rigctl -l » : sudo bash compiler-hamlib.sh"
 fi
 
 # ------------------------------------------------------------------ 3. comptes

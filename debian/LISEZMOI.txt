@@ -15,7 +15,8 @@ Sans bureau (serveur, Raspberry Pi OS Lite 64 bits), tout par SSH : copie le zip
 ferme la connexion SSH, reconnecte-toi et tape : trx-console
 Raspberry Pi : Pi 4 (2 Go) au minimum, bloc d'alimentation officiel, ventilation.
 
-Ton poste manque dans « rigctl -l » (ex. IC-7300MK2 avec un Hamlib plus ancien que 4.7) :
+Debian 13 : Hamlib 4.7 est pris dans les backports officiels de Debian par install.sh.
+Ton poste manque encore dans « rigctl -l » (ex. IC-7300MK2 sur Debian 12) :
        sudo bash compiler-hamlib.sh
 compile un Hamlib récent dans /usr/local (le paquet de Debian reste en place).
 

@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 # Compile et installe une version récente de Hamlib dans /usr/local, quand celle de Debian ou de Raspberry Pi OS
-# ne connaît pas le poste (ex. IC-7300MK2, modèle 3094, absent avant Hamlib 4.7). La station prend le rigctld
+# ne connaît pas le poste (ex. IC-7300MK2, modèle 3094, absent avant Hamlib 4.7). Sur Debian 13 (trixie),
+# install.sh prend d'abord Hamlib 4.7 dans les backports officiels : ce script ne sert alors que pour une version
+# plus récente que celle des backports, ou sur Debian 12. La station prend le rigctld
 # trouvé en premier dans le PATH : /usr/local/bin passe avant /usr/bin, le paquet Debian reste en place.
 #
 #   sudo bash compiler-hamlib.sh            compile la version prévue (de 10 à 30 minutes sur un Raspberry Pi 4)
@@ -24,7 +26,7 @@ FORCE=0
 case ${1:-} in
   --force) FORCE=1 ;;
   "") ;;
-  *) printf 'Option inconnue : %s\n' "$1"; sed -n '7,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) printf 'Option inconnue : %s\n' "$1"; sed -n '10,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
 [[ $EUID -eq 0 ]] || { printf 'Droits administrateur nécessaires. Tape :\n\n    sudo bash compiler-hamlib.sh\n\n'; exit 1; }
 
@@ -51,7 +53,10 @@ tar xzf hamlib.tar.gz
 cd "hamlib-$HAMLIB_VERSION"
 
 printf '== Compilation (de 10 à 30 minutes sur un Raspberry Pi 4) ==\n'
-./configure --prefix="$PREFIX" --disable-static --without-cxx-binding >configure.log 2>&1 \
+# RUNPATH vers $PREFIX/lib : sans lui, le rigctld neuf chargeait la libhamlib.so.4 du paquet Debian (même nom,
+# version 4.6.2 relevée sur Raspberry Pi OS, étape 93) et répondait « Hamlib 4.6.2 ».
+./configure --prefix="$PREFIX" --disable-static --without-cxx-binding \
+            LDFLAGS="-Wl,-rpath,$PREFIX/lib -Wl,--enable-new-dtags" >configure.log 2>&1 \
   || { tail -n 30 configure.log; fail "configure a échoué"; }
 make -j"$(nproc)" >make.log 2>&1 || { tail -n 30 make.log; fail "la compilation a échoué"; }
 make install >install.log 2>&1 || { tail -n 30 install.log; fail "l'installation a échoué"; }
