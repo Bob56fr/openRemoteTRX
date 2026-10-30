@@ -1,0 +1,172 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Guide des bêta-testeurs : récupérer le journal d'erreurs du téléphone. Affiché aussi dans une iframe sur rf-diy.com
+     (docs/wordpress/android-journaux-iframe.html) : la page envoie sa hauteur à la page parente. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openRemoteTRX : journal d'erreurs</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .6rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:1.4rem 0 .4rem}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent)}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.3rem 0}
+.carte{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.7rem 1rem;margin:1rem 0}
+.attention{border-left:4px solid var(--emission)}
+.conseil{border-left:4px solid var(--ok)}
+.doux{color:var(--doux)}
+kbd{border:1px solid var(--ligne);border-bottom-width:2px;border-radius:.3rem;padding:0 .35rem;font:inherit;font-size:.9em}
+</style>
+</head>
+<body><main>
+<h1>Bêta-test de l'application : envoyer le journal d'erreurs du téléphone</h1>
+<p>Quand l'installation échoue (« Une erreur s'est produite », sans plus de détail) ou que l'application se ferme
+toute seule, le Play Store ne nous dit rien. La vraie cause est écrite dans le <strong>journal</strong> de votre
+téléphone. Cette page explique comment le récupérer et nous l'envoyer.</p>
+
+<div class="carte attention">
+<p><strong>Le journal contient des informations personnelles</strong> (noms de réseaux Wi-Fi, comptes, autres
+applications). Ne le publiez <strong>jamais</strong> dans un forum ni dans un ticket public : envoyez-le seulement en
+répondant à l'e-mail qui vous a invité au test.</p>
+</div>
+
+<p>Deux méthodes :</p>
+<ul>
+  <li><strong>Méthode 1, sans ordinateur</strong> : le « rapport de bug » d'Android. Simple, mais gros fichier
+  (10 à 50 Mo) et très complet.</li>
+  <li><strong>Méthode 2, avec un ordinateur</strong> (Windows, macOS ou Linux) et un câble USB : un petit fichier
+  texte qui ne garde que les lignes utiles. <em>Préférée si vous pouvez.</em></li>
+</ul>
+
+<h2>Étape commune : activer les options pour les développeurs</h2>
+<ol>
+  <li>Ouvrez <strong>Paramètres</strong> &rarr; <strong>À propos du téléphone</strong>.
+    <span class="doux">Samsung : puis <strong>Informations sur le logiciel</strong>.</span></li>
+  <li>Appuyez <strong>7 fois</strong> sur <strong>Numéro de version</strong> (ou « Numéro de build »). Saisissez le
+  code du téléphone si demandé. Le message « Mode développeur activé » apparaît.</li>
+  <li>Un nouveau menu <strong>Options pour les développeurs</strong> apparaît dans Paramètres (Samsung : tout en bas ;
+  autres marques : dans <strong>Système</strong>).</li>
+</ol>
+<p class="doux">Rien n'est modifié sur le téléphone : ce menu reste simplement visible. Vous pourrez le désactiver à la
+fin (voir plus bas).</p>
+
+<h2>Méthode 1 : rapport de bug, sans ordinateur</h2>
+<ol>
+  <li><strong>Reproduisez le problème</strong> (lancez l'installation qui échoue, ou l'action qui ferme
+  l'application), puis faites le rapport <strong>tout de suite</strong> : le journal ne garde que les dernières
+  minutes.</li>
+  <li><strong>Paramètres</strong> &rarr; <strong>Options pour les développeurs</strong> &rarr;
+  <strong>Rapport de bug</strong> (ou « Créer un rapport de bug ») &rarr; <strong>Rapport interactif</strong> &rarr;
+  <strong>Signaler</strong>.</li>
+  <li>Attendez une à trois minutes : une notification « Rapport de bug … prêt » apparaît.</li>
+  <li>Appuyez sur la notification, choisissez votre messagerie, et envoyez le fichier <code>.zip</code> en réponse à
+  l'e-mail d'invitation. S'il est trop gros pour la messagerie, passez par un service de partage de fichiers (lien
+  privé).</li>
+</ol>
+
+<h2>Méthode 2 : journal ciblé, avec un ordinateur</h2>
+
+<h3>1. Installer l'outil adb (une seule fois)</h3>
+<ol>
+  <li>Téléchargez les <strong>SDK Platform-Tools</strong> de Google pour votre système :
+  <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank" rel="noopener noreferrer">developer.android.com/tools/releases/platform-tools</a>.</li>
+  <li>Décompressez le fichier : vous obtenez un dossier <code>platform-tools</code> (par exemple dans
+  <code>Téléchargements</code>). Il n'y a rien à installer.</li>
+  <li>Ouvrez un terminal <strong>dans ce dossier</strong> :
+    <ul>
+      <li><strong>Windows</strong> : ouvrez le dossier dans l'Explorateur, clic droit dans un espace vide &rarr;
+      <strong>Ouvrir dans le terminal</strong> (ou <kbd>Maj</kbd> + clic droit &rarr; « Ouvrir la fenêtre
+      PowerShell ici »).</li>
+      <li><strong>macOS</strong> : Terminal, tapez <code>cd </code> puis glissez le dossier dans la fenêtre, puis
+      <kbd>Entrée</kbd>.</li>
+      <li><strong>Linux</strong> : clic droit dans le dossier &rarr; « Ouvrir un terminal ici ».</li>
+    </ul>
+  </li>
+</ol>
+<p class="doux">Dans les commandes ci-dessous, tapez <code>.\adb</code> sous Windows et <code>./adb</code> sous macOS
+et Linux.</p>
+
+<h3>2. Brancher le téléphone</h3>
+<ol>
+  <li>Sur le téléphone : <strong>Options pour les développeurs</strong> &rarr; activez <strong>Débogage USB</strong>.</li>
+  <li>Branchez le téléphone à l'ordinateur avec un câble USB <strong>de données</strong> (certains câbles ne font que
+  charger).</li>
+  <li>Dans le terminal :
+<pre>.\adb devices</pre>
+  </li>
+  <li>Sur le téléphone, une fenêtre demande « Autoriser le débogage USB ? » : cochez « Toujours autoriser depuis cet
+  ordinateur » puis <strong>Autoriser</strong>.</li>
+  <li>Relancez <code>.\adb devices</code> : une ligne se termine par <code>device</code>. Si elle se termine par
+  <code>unauthorized</code>, déverrouillez le téléphone et acceptez la fenêtre ; si rien n'apparaît, changez de câble
+  ou de prise USB.</li>
+</ol>
+
+<h3>3. Enregistrer le problème</h3>
+<ol>
+  <li>Videz le journal pour ne garder que le problème :
+<pre>.\adb logcat -c</pre>
+  </li>
+  <li><strong>Reproduisez le problème</strong> sur le téléphone (installation depuis le Play Store, ou l'action qui
+  ferme l'application).</li>
+  <li>Juste après, enregistrez les lignes utiles dans un fichier :
+    <p><strong>Windows</strong> :</p>
+<pre>.\adb logcat -d | findstr /i "Finsky PackageInstaller openremotetrx AndroidRuntime webrtc" &gt; journal-openremotetrx.txt</pre>
+    <p><strong>macOS et Linux</strong> :</p>
+<pre>./adb logcat -d | grep -iE "finsky|packageinstaller|openremotetrx|androidruntime|webrtc" &gt; journal-openremotetrx.txt</pre>
+  </li>
+  <li>Le fichier <code>journal-openremotetrx.txt</code> est dans le dossier <code>platform-tools</code>. Ouvrez-le pour
+  vérifier qu'il n'est pas vide, puis envoyez-le en réponse à l'e-mail d'invitation.</li>
+</ol>
+<div class="carte conseil">
+<p>Si nous vous demandons le <strong>journal complet</strong> (plus gros, avec plus d'informations personnelles) :</p>
+<pre>.\adb logcat -d &gt; journal-complet.txt</pre>
+</div>
+
+<h2>Ce qu'il faut écrire avec le fichier</h2>
+<ul>
+  <li>Le <strong>modèle</strong> du téléphone et sa <strong>version d'Android</strong> (Paramètres &rarr; À propos du
+  téléphone).</li>
+  <li>La <strong>version de l'application</strong> si elle est installée (Paramètres &rarr; Applications &rarr;
+  openRemoteTRX, en bas de la page).</li>
+  <li>L'<strong>heure</strong> du problème, à la minute près.</li>
+  <li><strong>Ce que vous faisiez</strong> et le <strong>message affiché</strong> (une capture d'écran aide
+  beaucoup).</li>
+</ul>
+
+<h2>Après le test</h2>
+<ul>
+  <li>Désactivez le <strong>Débogage USB</strong> : un téléphone qui l'a activé peut être lu par un ordinateur
+  autorisé.</li>
+  <li>Pour cacher le menu, désactivez l'interrupteur en haut de <strong>Options pour les développeurs</strong>.</li>
+  <li>Supprimez les fichiers de journal de l'ordinateur et de la messagerie une fois envoyés.</li>
+</ul>
+
+<p class="doux">Les journaux reçus servent uniquement à corriger l'application et sont supprimés ensuite. Règles de
+confidentialité de l'application : <a href="confidentialite.html" target="_blank" rel="noopener noreferrer">confidentialité</a>.</p>
+</main>
+<script>(function () {
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();</script>
+</body>
+</html>
