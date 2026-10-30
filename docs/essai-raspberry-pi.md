@@ -69,13 +69,16 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
    ```
 
    Rien d'autre à copier : on part d'une station vierge, sans reprendre la `station.toml` d'une autre station.
-2. Sur le Pi (SSH) :
+2. Toujours depuis PowerShell sur le PC, sans ouvrir de session sur le Pi :
 
    ```
-   sudo apt install -y unzip
-   unzip -q trx-remote-debian-0.75.0.zip && cd trx-remote-debian-0.75.0
-   time sudo bash install.sh
+   $pi = "bob@<IP du Pi>"
+   ssh -t $pi "sudo apt install -y unzip && unzip -oq trx-remote-debian-0.75.0.zip && cd trx-remote-debian-0.75.0 && time sudo bash install.sh"
    ```
+
+   `-t` est indispensable : `sudo` demande le mot de passe et `install.sh` pose ses questions au clavier.
+   Ne pas mettre de guillemets À L'INTÉRIEUR de la commande : PowerShell 5.1 les retire avant de la passer à `ssh`.
+   `unzip -o` permet de relancer la même ligne après une correction.
 
 | Attendu | À noter |
 | --- | --- |
@@ -84,8 +87,14 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 | Étape 8 : « pas de bureau : TRX Console se lance par la commande trx-console » | |
 | Fin : « Installation terminée » | sinon la dernière ligne et `/var/log/trx-remote-install.log` |
 
-3. `exit`, puis `ssh bob@<IP du Pi>` à nouveau : les nouveaux groupes (`dialout`, `audio`, `trx`) ne valent
-   qu'après une nouvelle connexion.
+3. Chaque commande `ssh` ouvre une NOUVELLE connexion, donc les nouveaux groupes (`dialout`, `audio`, `trx`)
+   s'appliquent d'eux-mêmes. TRX Console, `trx-monitor` et les mesures se lancent de la même façon :
+
+   ```
+   ssh -t $pi trx-console
+   ssh -t $pi trx-monitor
+   ssh -t $pi /opt/trx-remote/venv/bin/python -m trxstation.devtools.station_load --minutes 10
+   ```
 
 ## 4. Mesure sans le poste (faux poste Hamlib)
 
