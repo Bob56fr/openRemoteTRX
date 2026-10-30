@@ -316,6 +316,10 @@ ok "paquets installés"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
   || fail "Python 3.11 ou plus récent est nécessaire (Debian 12 et plus)."
 ok "$(python3 --version) ; $(rigctld --version 2>/dev/null | head -n1 || echo 'rigctld présent')"
+HAMLIB_VERSION=$(rigctld --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -n1 || true)
+if [[ $HAMLIB_VERSION =~ ^([0-9]+)\.([0-9]+)$ ]] && (( BASH_REMATCH[1] < 4 || (BASH_REMATCH[1] == 4 && BASH_REMATCH[2] < 7) )); then
+  warn "Hamlib $HAMLIB_VERSION ne connaît pas les postes récents (IC-7300MK2…). Si le tien manque dans « rigctl -l » : sudo bash compiler-hamlib.sh"
+fi
 
 # ------------------------------------------------------------------ 3. comptes
 

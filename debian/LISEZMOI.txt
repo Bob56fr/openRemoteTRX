@@ -15,6 +15,10 @@ Sans bureau (serveur, Raspberry Pi OS Lite 64 bits), tout par SSH : copie le zip
 ferme la connexion SSH, reconnecte-toi et tape : trx-console
 Raspberry Pi : Pi 4 (2 Go) au minimum, bloc d'alimentation officiel, ventilation.
 
+Ton poste manque dans « rigctl -l » (ex. IC-7300MK2 avec un Hamlib plus ancien que 4.7) :
+       sudo bash compiler-hamlib.sh
+compile un Hamlib récent dans /usr/local (le paquet de Debian reste en place).
+
 Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
 install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.
 

@@ -46,7 +46,7 @@ def test_zip_contains_what_install_needs_and_nothing_private(tmp_path):
         names = archive.namelist()
         assert all(n.startswith(prefix) for n in names)
         short = {n[len(prefix):] for n in names}
-        for needed in ("install.sh", "LISEZMOI.txt", "app/pyproject.toml", "app/trxstation/__init__.py",
+        for needed in ("install.sh", "LISEZMOI.txt", "compiler-hamlib.sh", "app/pyproject.toml", "app/trxstation/__init__.py",
                        "app/trxstation/console.py", "app/trxstation/gateway/api/static/index.html",
                        "app/trxstation/modules/bus.py", "app/trxstation/modules/builtin/demo/manifest.toml",
                        "app/config/station.example.toml", *[f"systeme/{n}" for n in builder.SYSTEM_FILES]):
