@@ -35,7 +35,7 @@
     "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1, "tx_underruns": 0, "tx_overruns": 0},
     "clients": ["phone"],
     "spectrum": {"state": "ok", "code": "", "message": "", "settings": {"span": 25000}},
-    "presence": {"operators": 1, "listeners": 2, "max_listeners": 5, "grace_remaining_s": null,
+    "presence": {"operators": 1, "listeners": 2, "max_listeners": 5, "suspended": null, "grace_remaining_s": null,
                  "people": [{"pseudo": "Kriss F4ABC", "role": "operator", "since_s": 1520, "count": 1},
                             {"pseudo": "Radio-club F6KXX", "role": "listener", "since_s": 600, "count": 2}],
                  "connections": [{"id": "phone", "pseudo": "Kriss F4ABC", "role": "operator", "source": "192.0.2.10", "since_s": 1520},
@@ -46,6 +46,8 @@
     "_note": "le même message vu par un VISITEUR : propriétaire de l'émission en pseudo, aucune liste d'identifiants, présence sans « connections »",
     "ptt_owner": "Kriss F4ABC", "clients": [],
     "presence": {"operators": 1, "listeners": 2, "max_listeners": 5, "grace_remaining_s": null,
+                 "suspended": {"reason": "processeur à 87 °C", "message": "Station surchargée (processeur à 87 °C) : écoute des visiteurs suspendue pour protéger la station. Réouverture automatique après 5 minutes de fonctionnement normal.",
+                               "since_s": 42, "locked": false, "reopen_in_s": 300},
                  "people": [{"pseudo": "Kriss F4ABC", "role": "operator", "since_s": 1520, "count": 1},
                             {"pseudo": "Radio-club F6KXX", "role": "listener", "since_s": 600, "count": 2}]}
   },

@@ -128,6 +128,8 @@ class ContractTest {
                 e["send_on_tx_end"]?.jsonPrimitive?.boolean, e["tx_level_dbfs"]?.jsonPrimitive?.content?.toDouble())
             "selcall_send" -> Command.SelcallSend
             "selcall_calibrate" -> Command.SelcallCalibrate
+            "listener_kick" -> Command.ListenerKick(p("account").content)
+            "listeners_reopen" -> Command.ListenersReopen
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

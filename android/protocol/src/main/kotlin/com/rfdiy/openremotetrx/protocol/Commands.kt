@@ -123,6 +123,14 @@ sealed class Command(val name: String) {
     /** Réglage automatique du niveau de la trame d'après l'ALC : une ÉMISSION (ton par paliers) ; annuler = Stop. */
     data object SelcallCalibrate : Command("selcall_calibrate")
 
+    /** Visiteurs : déconnecter un visiteur (OPÉRATEUR seulement ; `account` = identifiant du compte visiteur). */
+    data class ListenerKick(val account: String) : Command("listener_kick") {
+        override fun JsonObjectBuilder.params() { put("account", account) }
+    }
+
+    /** Visiteurs : rouvrir l'écoute après une surcharge de la station (acceptée seulement au vert). */
+    data object ListenersReopen : Command("listeners_reopen")
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -135,6 +143,7 @@ sealed class Command(val name: String) {
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
+            "listener_kick", "listeners_reopen",
         )
     }
 }

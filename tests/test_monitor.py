@@ -349,3 +349,20 @@ def test_textual_app_smoke(tmp_path):
         assert stops == [True]
         assert any("trx-monitor démarré" in line for line in app.events.lines)
     asyncio.run(scenario())
+
+
+def test_connexion_panel_lists_operators_and_listeners_read_only():
+    from dataclasses import replace
+    st = replace(status(clients=("phone",)), presence={
+        "listeners": 2, "max_listeners": 5, "grace_remaining_s": 42, "suspended": {"reason": "processeur à 87 °C", "locked": True},
+        "connections": [{"id": "phone", "pseudo": "Kriss", "role": "operator", "source": "192.0.2.10", "since_s": 3725},
+                        {"id": "club1", "pseudo": "Club", "role": "listener", "source": "198.51.100.7", "since_s": 125}]})
+    p = panel(snap(st), "connexion")
+    assert row(p, "Visiteurs").text == "2 / 5"
+    assert row(p, "Écoute suspendue").text == "processeur à 87 °C (réouverture à la main)"
+    assert row(p, "Opérateur absent").text == "visiteurs déconnectés dans 42 s"
+    assert row(p, "Opérateur").text == "Kriss (phone, 192.0.2.10, 01:02)"
+    assert row(p, "Visiteur").text == "Club (club1, 198.51.100.7, 00:02)"
+    closed = panel(snap(replace(status(), presence={"listeners": 0, "max_listeners": 0, "connections": []})), "connexion")
+    assert row(closed, "Visiteurs").text == "écoute fermée"
+    assert not [r for r in panel(snap(status()), "connexion").rows if r.label == "Visiteurs"]    # ancienne passerelle : rien

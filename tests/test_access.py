@@ -336,7 +336,7 @@ class FakeManager:
     def __init__(self):
         self.kicked = []
 
-    async def kick(self, client_id, reason):
+    async def kick(self, client_id, reason, message=""):
         self.kicked.append((client_id, reason))
 
 

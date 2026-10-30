@@ -72,12 +72,14 @@ class ControlSession:
                  layouts: LayoutStore | None = None, spectrum=None,
                  spectrum_watch: Callable[[bool], None] | None = None, reports=None,
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
-                 alert: Callable[[str, str], None] | None = None):
+                 alert: Callable[[str, str], None] | None = None,
+                 kick_listener: Callable[[str], bool] | None = None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
         self.disconnect = disconnect             # (motif) -> None : la couche réseau ferme CETTE connexion
         self.alert = alert                       # (titre, message) -> None : alerte ntfy (refus répétés d'un visiteur)
+        self.kick_listener = kick_listener       # (compte) -> bool : « Déconnecter » un visiteur (opérateur seulement)
         self._forbidden: deque[float] = deque()
         self._forbidden_logged = 0.0
         self.spectrum = spectrum
@@ -312,10 +314,10 @@ class ControlSession:
         log.info("SELCALL : %s par %s -> %s", cmd.name, self.client_id, status.state)
         self._result(cmd.id, True, status=status.to_dict())
 
-    def bye(self, reason: str) -> None:
+    def bye(self, reason: str, message: str = "") -> None:
         """Dernier message avant que la station ferme cette connexion : le client affiche le motif et ne se
         reconnecte pas tout seul."""
-        self.send({"type": "bye", "reason": reason, "message": MESSAGES.get(reason, reason)})
+        self.send({"type": "bye", "reason": reason, "message": message or MESSAGES.get(reason, reason)})
 
     def _forbid(self, name: str, ident) -> None:
         """Commande refusée à un visiteur : réponse, journal limité, fermeture au-delà de 20 refus par minute."""
@@ -443,6 +445,17 @@ class ControlSession:
                             self.on_hf_view(self, self.hf_view)
                         except Exception:                # un module ne doit jamais gêner la session
                             log.exception("rejeu des messages des modules impossible")
+            elif cmd.name == "listener_kick":            # opérateur seulement (liste blanche : jamais d'un visiteur)
+                ok = self.kick_listener is not None and self.kick_listener(cmd.params["account"])
+                if ok:
+                    log.warning("visiteur %s déconnecté par l'opérateur %s", cmd.params["account"], self.client_id)
+                self._result(cmd.id, ok, **({} if ok else {"reason": "unknown_listener"}))
+            elif cmd.name == "listeners_reopen":
+                guard = getattr(self.access, "guard", None)
+                refusal = guard.reopen() if guard is not None else ""
+                if not refusal:
+                    log.warning("écoute des visiteurs rouverte par l'opérateur %s", self.client_id)
+                self._result(cmd.id, not refusal, **({"reason": "still_overloaded", "detail": refusal} if refusal else {}))
             elif cmd.name.startswith("memory_"):
                 await self._memory_command(cmd)
             elif cmd.name.startswith("layout_"):

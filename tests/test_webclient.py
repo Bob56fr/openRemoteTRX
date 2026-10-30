@@ -204,7 +204,7 @@ def test_power_zone_toggles_with_the_waterfall_and_contains_po_swr_alc():
     for needed in ("wf-spec", "wf-fall", "wf-grid", "wf-axis", "wf-speed", "wf-width", "wf-gain", "wf-peak"):
         assert inside("waterfall", needed), needed
     assert re.search(r'<div id="waterfall"[^>]*\bhidden\b', HTML) and not re.search(r'<div id="txzone"[^>]*\bhidden\b', HTML)   # fermé au départ
-    assert HTML.index('id="waterfall"') < HTML.index('class="chips"')                                                              # toujours dans la partie haute, avant les boutons et le PTT
+    assert HTML.index('id="waterfall"') < HTML.index('class="chips')                                                              # toujours dans la partie haute, avant les boutons et le PTT
 
 
 def test_loading_order_of_the_scripts_and_no_forbidden_constructs():
@@ -215,7 +215,7 @@ def test_loading_order_of_the_scripts_and_no_forbidden_constructs():
 
 def test_tune_section_comes_before_memories_and_is_open():
     assert HTML.index('id="sec-tune"') < HTML.index('id="sec-memories"')
-    assert re.search(r'<details id="sec-tune" open>', HTML)
+    assert re.search(r'<details id="sec-tune"[^>]* open>', HTML)
     for needed in ("bands", "step-down", "step-select", "step-up", "freq-input", "mode-buttons"):
         assert f'id="{needed}"' in HTML[HTML.index('id="sec-tune"'):HTML.index('id="sec-memories"')], needed
 

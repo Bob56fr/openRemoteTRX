@@ -35,6 +35,7 @@ from ..station_id import ensure_station_id
 from ..supervisor.notify import Notifier
 from .access_watch import AccessWatcher
 from .api.access import OPERATOR, AccessControl, listener_muted
+from .api.overload import Limits, LagMeter, OverloadGuard, system_sampler
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
 from .bugreports import ReportStore
@@ -91,8 +92,12 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
+            lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
+            a = cfg.access
+            access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,
+                                                                      a.overload_lag_ms, a.overload_mem_pct))
             watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir))
-            tasks.append(asyncio.create_task(watcher.run(stop)))
+            tasks += [asyncio.create_task(watcher.run(stop)), asyncio.create_task(lag.run(stop))]
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()

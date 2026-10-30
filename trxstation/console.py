@@ -767,6 +767,7 @@ class Console:
                               "  4) Supprimer un compte visiteur\n"
                               "  5) Pseudo d'un compte opérateur (montré aux visiteurs)\n"
                               "  6) Déconnecter un visiteur connecté\n"
+                              "  7) Rouvrir l'écoute suspendue par une surcharge de la station\n"
                               "Choix (Entrée = retour) : ").strip()
             if not choice:
                 return
@@ -774,6 +775,9 @@ class Console:
                        "4": self._visitor_delete, "5": self._operator_pseudo}
             if choice == "6":
                 self._visitor_kick(cfg)
+                continue
+            if choice == "7":
+                self._visitor_reopen(cfg)
                 continue
             action = actions.get(choice)
             if action is None:
@@ -791,6 +795,9 @@ class Console:
                                                 if a.listeners_need_operator else "non (écoute possible sans opérateur)"),
                  "  Hors bandes          : " + ("écoute permise" if a.listeners_outside_bands else "silence pour les visiteurs"),
                  "  Comptes visiteurs    : " + (", ".join(self._account_label(c) for c in listeners) or "aucun")]
+        suspended = self._presence().get("suspended")
+        if isinstance(suspended, dict):
+            lines.append("  ÉCOUTE SUSPENDUE     : " + str(suspended.get("message", ""))[:300])
         connected = [c for c in self._connected() if c.get("role") == "listener"]
         lines.append("  Connectés maintenant : " + (", ".join(
             f"{c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')}, {int(c.get('since_s', 0)) // 60} min)"
@@ -804,18 +811,22 @@ class Console:
 
     def _connected(self) -> list[dict]:
         """Connexions publiées par la passerelle (fichier d'état) ; [] si elle est arrêtée."""
+        items = self._presence().get("connections", [])
+        return [c for c in items if isinstance(c, dict)] if isinstance(items, list) else []
+
+    def _presence(self) -> dict:
+        """`presence` du fichier d'état de la passerelle ; {} si elle est arrêtée."""
         from . import config as cfgmod
         from .status import read_status
         try:
             cfg, _ = cfgmod.load_unchecked(self.config)
             path = Path(cfg.supervisor.status_path)
             if not path.exists() or time.time() - path.stat().st_mtime > 10:
-                return []
+                return {}
             status = read_status(path)
         except (OSError, cfgmod.ConfigError):
-            return []
-        items = status.presence.get("connections", []) if status is not None else []
-        return [c for c in items if isinstance(c, dict)]
+            return {}
+        return status.presence if status is not None else {}
 
     def _ask_int(self, question: str, current: int, low: int, high: int) -> int:
         while True:
@@ -996,6 +1007,23 @@ class Console:
             self._save_config(original, edited, draft, live=True)
         finally:
             shutil.rmtree(work, ignore_errors=True)
+
+    def _visitor_reopen(self, cfg) -> None:
+        """Demande à la station de rouvrir l'écoute (elle refuse tant qu'elle n'est pas nettement revenue à la normale)."""
+        from .gateway.access_watch import REOPEN_REQUEST, kick_request
+        if not isinstance(self._presence().get("suspended"), dict):
+            self.say("L'écoute des visiteurs n'est pas suspendue.")
+            return
+        work = Path(tempfile.mkdtemp(prefix="trx-reopen-"))
+        try:
+            request = work / REOPEN_REQUEST
+            request.write_bytes(kick_request("reopen"))
+            code = self.runner.run(["install", "-m", "0644", str(request),
+                                    str(Path(cfg.supervisor.state_dir) / REOPEN_REQUEST)], admin=True)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        self.say("Demande envoyée : la station rouvre l'écoute si elle est revenue nettement sous les seuils "
+                 "(sinon elle refuse : voir le journal, menu 7)." if code == 0 else f"Demande impossible (code {code}).")
 
     def _visitor_kick(self, cfg) -> None:
         from .gateway.access_watch import KICK_REQUEST, kick_request

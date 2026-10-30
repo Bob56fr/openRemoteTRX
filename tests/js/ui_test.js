@@ -1191,6 +1191,53 @@ step("thème des couleurs : choix appliqué tout de suite à la page et mémoris
   assert.equal(document.documentElement.getAttribute("data-theme"), "defaut"); assert.equal(storage.get("trx.theme"), "defaut");
 });
 
+step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis compte visiteur (inerte, réglages masqués)", async () => {
+  const presence = { operators: 1, listeners: 1, max_listeners: 5, grace_remaining_s: null, suspended: null,
+    people: [{ pseudo: "Kriss", role: "operator", since_s: 90, count: 1 }, { pseudo: "Club", role: "listener", since_s: 30, count: 1 }],
+    connections: [{ id: "club1", pseudo: "Club", role: "listener", source: "198.51.100.7", since_s: 30 }] };
+  $("client-id").value = "phone"; $("password").value = "mot de passe";
+  await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [] });
+  await wait(30);
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"], presence });
+  await wait(30);
+  assert.equal($("presence").hidden, false); assert.equal($("presence").textContent, "🎧 1");
+  assert.equal(document.documentElement.getAttribute("data-role"), null); assert.equal($("listener-badge").hidden, true);
+  await $("presence").click();
+  assert.equal($("presence-dialog").hidden, false);
+  const kick = $("presence-list").children.at(-1).children.at(-1);
+  assert.equal(kick.textContent, "Déconnecter");
+  globalThis.confirm = () => true;
+  await kick.click(); await wait();
+  assert.deepEqual(sent("listener_kick").map((m) => m.account), ["club1"]);
+  await $("presence-close").click(); assert.equal($("presence-dialog").hidden, true);
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
+         presence: Object.assign({}, presence, { suspended: { message: "Station surchargée (processeur à 87 °C)" } }) });
+  await wait(30);
+  assert.equal($("presence-banner").hidden, false); assert.match($("presence-banner").textContent, /87 °C/);
+  await $("disconnect").click(); await wait();
+
+  $("client-id").value = "club1"; $("password").value = "mot de passe visiteur";
+  await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "club1", role: "listener", pseudo: "Club", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [] });
+  await wait(30);
+  send({ type: "state", ptt: { state: "TX", owner: "Kriss" }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: [],
+         presence: { operators: 1, listeners: 1, max_listeners: 5, grace_remaining_s: 45, suspended: null, people: presence.people } });
+  await wait(30);
+  assert.equal(document.documentElement.getAttribute("data-role"), "listener"); assert.equal($("listener-badge").hidden, false);
+  assert.match($("presence-banner").textContent, /dans 45 s/);
+  const before = dc().sent.length;
+  await $("stop").click(); await $("ptt").click(); await wait();
+  assert.equal(dc().sent.filter((m) => m.cmd !== "get_state" && m.cmd !== "spectrum_watch").length,
+               dc().sent.slice(0, before).filter((m) => m.cmd !== "get_state" && m.cmd !== "spectrum_watch").length);   // rien ne part
+  await $("presence").click();
+  assert.ok($("presence-list").children.every((li) => !li.children.some((c) => c.textContent === "Déconnecter")));
+  assert.equal($("presence-reopen").hidden, true);
+  await $("presence-close").click();
+  await $("disconnect").click(); await wait();
+  assert.equal(document.documentElement.getAttribute("data-role"), null);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of steps) {

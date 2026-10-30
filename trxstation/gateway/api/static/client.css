@@ -324,3 +324,14 @@ audio { display: none; }
 @keyframes alc-blink { 50% { opacity: .35; } }
 .scr-ind { color: var(--tx); border-color: var(--tx); font-weight: 700; }
 .warn-text { color: var(--alerte); }
+
+/* Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : commandes visibles mais inertes, réglages
+   de la station masqués. Confort seulement : la station refuse de toute façon (et client.js n'envoie rien). */
+[data-role="listener"] .listener-hide { display: none !important; }
+[data-role="listener"] .listener-off { pointer-events: none; opacity: .45; filter: grayscale(.6); }
+.listener-badge { text-align: center; font-weight: 600; }
+.presence { margin-left: .4rem; }
+.presence-list { list-style: none; margin: .4rem 0; padding: 0; max-height: 50vh; overflow-y: auto; }
+.presence-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--ligne); }
+.presence-list li .grow { flex: 1; }
+.presence-list li .dim { color: var(--texte-secondaire); font-size: .85em; }

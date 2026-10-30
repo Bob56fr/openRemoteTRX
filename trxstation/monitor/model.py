@@ -137,11 +137,35 @@ def _connexion_panel(snap: Snapshot) -> Panel:
     clients = ", ".join(status.clients) if status.clients else "aucun"
     owner = status.ptt.get("owner")
     reason = str(status.ptt.get("last_cut_reason") or "")
-    return Panel("connexion", "Connexion", (
+    rows = [
         Row("Clients", clients, "info" if status.clients else "dim"),
         Row("Émetteur", str(owner) if owner else "—", "bad" if owner else "dim"),
         Row("Dernière coupure", CUT_REASONS.get(reason, reason) if reason else "—", "info" if reason else "dim"),
-    ))
+    ]
+    return Panel("connexion", "Connexion", tuple(rows + _visitor_rows(status.presence)))
+
+
+def _visitor_rows(presence: dict) -> list[Row]:
+    """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : lecture seule, aucune action ici."""
+    if not isinstance(presence, dict) or not presence:
+        return []
+    most = presence.get("max_listeners") or 0
+    count = presence.get("listeners") or 0
+    rows = [Row("Visiteurs", f"{count} / {most}" if most else "écoute fermée", "info" if count else "dim")]
+    suspended = presence.get("suspended")
+    if isinstance(suspended, dict):
+        rows.append(Row("Écoute suspendue", str(suspended.get("reason", "surcharge"))
+                        + (" (réouverture à la main)" if suspended.get("locked") else ""), "warn"))
+    grace = presence.get("grace_remaining_s")
+    if isinstance(grace, (int, float)):
+        rows.append(Row("Opérateur absent", f"visiteurs déconnectés dans {grace:.0f} s", "warn"))
+    for c in presence.get("connections", []) or []:
+        if isinstance(c, dict):
+            since = int(c.get("since_s") or 0)
+            role = "Visiteur" if c.get("role") == "listener" else "Opérateur"
+            rows.append(Row(role, f"{c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')}, "
+                                  f"{since // 3600:02d}:{since % 3600 // 60:02d})", "info"))
+    return rows
 
 
 def _sante_panel(snap: Snapshot) -> Panel:

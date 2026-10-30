@@ -101,6 +101,11 @@ class Access:
     operator_grace_s: int = 60          # après la perte du dernier opérateur : attente avant de déconnecter les visiteurs
     listeners_outside_bands: bool = False  # false : silence pour les visiteurs quand la réception sort des [[bands]]
     listener_spectrum_fps: int = 5      # spectre HF des visiteurs : images par seconde au plus (l'opérateur garde max_fps)
+    # Surcharge (gateway/api/overload.py) : au-delà pendant 10 s, visiteurs déconnectés ; retour sous les seuils 5 min
+    overload_temp_c: int = 85           # température du processeur (°C)
+    overload_cpu_pct: int = 90          # charge de tous les cœurs (%)
+    overload_lag_ms: int = 100          # retard de la boucle de la passerelle (ms)
+    overload_mem_pct: int = 10          # mémoire libre minimale (%)
 
 
 @dataclass
@@ -566,7 +571,8 @@ def _client_problems(client: ClientAuth, clients: list[ClientAuth]) -> list[str]
 def _access_problems(a: Access) -> list[str]:
     p = []
     for name, low, high in (("max_listeners", 0, 20), ("max_operators", 1, 8), ("operator_grace_s", 0, 600),
-                            ("listener_spectrum_fps", 1, 20)):
+                            ("listener_spectrum_fps", 1, 20), ("overload_temp_c", 50, 105), ("overload_cpu_pct", 50, 100),
+                            ("overload_lag_ms", 20, 2000), ("overload_mem_pct", 1, 50)):
         value = getattr(a, name)
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
             p.append(f"[access] {name} doit être un entier entre {low} et {high}")
@@ -858,6 +864,11 @@ def render_toml(cfg: Config) -> str:
         f"operator_grace_s = {ac.operator_grace_s}   # opérateur perdu : attente avant de déconnecter les visiteurs (0 à 600 s)",
         f"listeners_outside_bands = {str(ac.listeners_outside_bands).lower()}   # false : silence pour les visiteurs hors [[bands]]",
         f"listener_spectrum_fps = {ac.listener_spectrum_fps}   # spectre HF des visiteurs : images par seconde au plus (1 à 20)",
+        "# Surcharge : au-delà pendant 10 s, visiteurs déconnectés ; réouverture après 5 min nettement en dessous",
+        f"overload_temp_c = {ac.overload_temp_c}   # température du processeur (°C)",
+        f"overload_cpu_pct = {ac.overload_cpu_pct}   # charge de tous les cœurs (%)",
+        f"overload_lag_ms = {ac.overload_lag_ms}   # retard de la boucle de la passerelle (ms)",
+        f"overload_mem_pct = {ac.overload_mem_pct}   # mémoire libre minimale (%)",
         "",
     ]
     for client in cfg.clients:

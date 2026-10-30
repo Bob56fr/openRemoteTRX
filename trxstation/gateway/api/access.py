@@ -31,7 +31,7 @@ LISTENER_REFUSED = frozenset({
     "toggle", "stop", "heartbeat", "set_frequency", "set_mode", "set_squelch", "set_function", "set_level",
     "set_offset", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
     "spectrum_set", "beeps_set", "local_release", "bug_report", "selcall_activate", "selcall_rearm",
-    "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate"})
+    "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen"})
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {
@@ -44,13 +44,14 @@ MESSAGES = {
     "operator_absent": "L'opérateur n'est pas connecté à la station : l'écoute des visiteurs n'est possible qu'en sa présence.",
     "too_many_forbidden": "Trop de commandes refusées : connexion fermée.",
     "kicked": "Déconnecté par l'opérateur de la station.",
+    "station_overload": "Station surchargée : écoute des visiteurs suspendue pour protéger la station.",
 }
 HTTP_STATUS = {"listeners_full": 503, "operators_full": 503}     # le reste : 403
 
 
 class AccessRefused(Exception):
-    def __init__(self, reason: str):
-        self.reason, self.message = reason, MESSAGES.get(reason, reason)
+    def __init__(self, reason: str, message: str = ""):
+        self.reason, self.message = reason, message or MESSAGES.get(reason, reason)
         self.status = HTTP_STATUS.get(reason, 403)
         super().__init__(self.message)
 
@@ -81,6 +82,7 @@ class AccessControl:
         self.connections: dict[str, Connection] = {}
         self._grace: _Grace | None = None
         self._numbers = 0
+        self.guard = None                # OverloadGuard (overload.py) : écoute suspendue quand la station souffre
         self.reload(clients, settings)
 
     # ------------------------------------------------------------------ comptes
@@ -125,6 +127,8 @@ class AccessControl:
         if role == LISTENER:
             if s.max_listeners <= 0:
                 raise AccessRefused("listeners_off")
+            if self.guard is not None and self.guard.suspended:
+                raise AccessRefused("station_overload", self.guard.message())
             if sum(c.role == LISTENER for c in others) >= s.max_listeners:
                 raise AccessRefused("listeners_full")
             if s.listeners_need_operator and not self.operator_present():
@@ -204,6 +208,7 @@ class AccessControl:
         remaining = self.grace_remaining()
         out = {"operators": sum(c.role == OPERATOR for c in live), "listeners": sum(c.role == LISTENER for c in live),
                "max_listeners": self.settings.max_listeners,
+               "suspended": self.guard.status() if self.guard is not None else None,
                "grace_remaining_s": None if remaining is None else round(remaining),
                "people": list(people.values())}
         if role == OPERATOR:

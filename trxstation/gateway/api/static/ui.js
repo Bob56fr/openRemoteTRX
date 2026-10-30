@@ -1146,6 +1146,49 @@
 
     const squelchLabel = (percent) => (percent === 0 ? "ouvert" : percent + " %");
 
+    // ---- visiteurs (docs/visiteurs-cahier-des-charges.md) : 🎧 N, liste, bandeaux, mode visiteur
+    let presenceOpen = false, lastPresence = null;
+    function renderPresenceList() {
+      const list = $("presence-list"), pv = lastPresence;
+      list.textContent = "";
+      if (!pv) return;
+      for (const person of pv.people) {
+        const li = el("li", "");
+        li.appendChild(el("span", "grow", person.text)); li.appendChild(el("span", "dim", person.role + " · " + person.since));
+        list.appendChild(li);
+      }
+      for (const visitor of pv.kick) {                                          // opérateur : « Déconnecter » par visiteur
+        const li = el("li", "");
+        const button = el("button", "chip", "Déconnecter");
+        button.addEventListener("click", () => {
+          if (!window.confirm("Déconnecter « " + visitor.text + " » ? (il peut se reconnecter ; pour l'en empêcher, désactive son compte sur la station)")) return;
+          client.kickListener(visitor.account).catch(fail);
+        });
+        li.appendChild(el("span", "grow", visitor.text)); li.appendChild(el("span", "dim", visitor.detail)); li.appendChild(button);
+        list.appendChild(li);
+      }
+      $("presence-note").textContent = pv.suspended || pv.grace || (pv.people.length ? "" : "Personne d'autre n'est connecté.");
+      $("presence-reopen").hidden = !pv.canReopen;
+    }
+    function renderPresence(v) {
+      const pv = v.presence;
+      lastPresence = pv;
+      if (v.listener) document.documentElement.setAttribute("data-role", "listener");   // commandes inertes, réglages masqués (client.css)
+      else document.documentElement.removeAttribute("data-role");
+      $("listener-badge").hidden = !v.listener;
+      const pill = $("presence");
+      pill.hidden = !pv || !pv.label;
+      if (pv && pv.label) pill.textContent = pv.label;
+      const banner = $("presence-banner");
+      const text = pv ? (pv.suspended || pv.grace) : "";
+      banner.hidden = !text;
+      banner.textContent = text;
+      if (presenceOpen) renderPresenceList();
+    }
+    $("presence").addEventListener("click", () => { presenceOpen = true; renderPresenceList(); $("presence-dialog").hidden = false; });
+    $("presence-close").addEventListener("click", () => { presenceOpen = false; $("presence-dialog").hidden = true; });
+    $("presence-reopen").addEventListener("click", () => client.reopenListeners().catch(fail));
+
     const ui = {
       status(text, kind) { const b = $("status"); b.textContent = text; b.className = "badge" + (kind ? " " + kind : ""); },
       log(text, level) {
@@ -1211,6 +1254,10 @@
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
+        if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
+          renderPresence({ listener: false, presence: null });
+          presenceOpen = false; $("presence-dialog").hidden = true;
+        }
         renderSelcall(value ? client.selcall : null);
         const version = value && client.hello ? versionLabel(client.hello.version) : "";
         $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
@@ -1325,6 +1372,7 @@
         const hint = $("mode-hint");
         hint.hidden = !v.dataModeHint;
         hint.textContent = v.dataModeHint;
+        renderPresence(v);
       },
     };
 

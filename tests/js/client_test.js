@@ -1360,6 +1360,47 @@ test("reconnexion : identifiants refusés = arrêt immédiat, un seul essai (la 
   assert.equal(w.client.losses[0].details.reconnect.outcome, "auth"); assert.equal(w.client._credentials, null);
 });
 
+test("visiteurs : un compte visiteur n'envoie RIEN d'autre que get_state et spectrum_watch", async () => {
+  const w = makeWorld();
+  await w.connected({ useMic: false });
+  w.hello({ role: "listener", pseudo: "Radio-club" });
+  w.state({});
+  for (const cmd of ["toggle", "stop", "set_frequency", "memory_recall", "spectrum_set", "listener_kick", "bug_report"]) {
+    const res = await w.client.send(cmd, {});
+    assert.equal(res.reason, "forbidden", cmd);
+    assert.equal(w.sentCommands(cmd).length, 0, cmd);
+  }
+  w.client._sendRaw({ cmd: "heartbeat" });
+  assert.equal(w.sentCommands("heartbeat").length, 0);
+  const pending = w.client.send("get_state");
+  assert.equal(w.sentCommands("get_state").length, 1);
+  w.answer(true); await pending;
+  assert.equal(w.ui.views.at(-1).listener, true);
+  const op = makeWorld();
+  await op.connected({ useMic: false }); op.hello({ role: "operator" }); op.state({});
+  op.client.send("stop");
+  assert.equal(op.sentCommands("stop").length, 1); assert.equal(op.ui.views.at(-1).listener, false);
+});
+
+test("visiteurs : présence (🎧 N, pseudos ×2, attente de l'opérateur, surcharge, Déconnecter pour l'opérateur seul)", () => {
+  const presence = { operators: 1, listeners: 3, max_listeners: 5, grace_remaining_s: null, suspended: null,
+    people: [{ pseudo: "Kriss", role: "operator", since_s: 4000, count: 1 }, { pseudo: "Club", role: "listener", since_s: 125, count: 2 },
+             { pseudo: "<b>x</b>", role: "listener", since_s: 5, count: 1 }],
+    connections: [{ id: "phone", pseudo: "Kriss", role: "operator", source: "a", since_s: 4000 },
+                  { id: "club1", pseudo: "Club", role: "listener", source: "198.51.100.7", since_s: 125 }] };
+  const op = web.presenceView(presence, "operator");
+  assert.equal(op.label, "🎧 3"); assert.deepEqual(op.people.map((p) => p.text), ["Kriss", "Club ×2", "<b>x</b>"]);
+  assert.deepEqual(op.people.map((p) => p.since), ["1 h 06", "2 min", "5 s"]);
+  assert.deepEqual(op.kick.map((k) => k.account), ["club1"]); assert.match(op.kick[0].detail, /198\.51\.100\.7/);
+  const vis = web.presenceView(Object.assign({}, presence, { connections: undefined }), "listener");
+  assert.deepEqual(vis.kick, []); assert.equal(vis.canReopen, false);
+  assert.equal(web.presenceView(Object.assign({}, presence, { listeners: 0 }), "operator").label, "");
+  assert.match(web.presenceView(Object.assign({}, presence, { grace_remaining_s: 42.4 }), "listener").grace, /dans 42 s/);
+  const hot = web.presenceView(Object.assign({}, presence, { suspended: { message: "Station surchargée (processeur à 87 °C)" } }), "operator");
+  assert.match(hot.suspended, /87 °C/); assert.equal(hot.canReopen, true);
+  assert.equal(web.presenceView(null, "operator"), null);
+});
+
 test("visiteurs : accès refusé (403) avec le message de la station ; « bye » = aucune reconnexion automatique", async () => {
   const w = makeWorld({ postOffer: async () => ({ status: 403, body: { error: "operator_absent", message: "L'opérateur n'est pas connecté à la station." } }) });
   await assert.rejects(() => w.client.connect(lossOpts), /opérateur n'est pas connecté/);

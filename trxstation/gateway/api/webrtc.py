@@ -190,6 +190,7 @@ class PeerManager:
                                      memories=self.memories, layouts=self.layouts, spectrum=self.spectrum,
                                      spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
                                      reports=self.reports, role=role, access=self.access, alert=self.alert,
+                                     kick_listener=self._kick_listener,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session
@@ -265,16 +266,24 @@ class PeerManager:
             log.warning("connexion de %s jamais établie : abandon", client_id)
             await self.close_peer(client_id, peer)
 
-    async def kick(self, client_id: str, reason: str, peer: _Peer | None = None) -> None:
+    async def kick(self, client_id: str, reason: str, peer: _Peer | None = None, message: str = "") -> None:
         """Ferme une connexion en disant pourquoi (message « bye » avant la fermeture)."""
         peer = peer or self.peers.get(client_id)
         if peer is None or peer.closed:
             return
         log.warning("connexion de %s (%s) fermée par la station : %s", client_id, peer.role, reason)
         if peer.session is not None:
-            peer.session.bye(reason)
+            peer.session.bye(reason, message)
             await asyncio.sleep(0.3)                            # le temps que le message parte avant la fermeture
         await self.close_peer(client_id, peer)
+
+    def _kick_listener(self, client_id: str) -> bool:
+        """« Déconnecter » demandé par un OPÉRATEUR : un visiteur connecté seulement."""
+        peer = self.peers.get(client_id)
+        if peer is None or peer.role != LISTENER:
+            return False
+        self._spawn(self.kick(client_id, "kicked", peer))
+        return True
 
     def _listener_mix(self) -> ListenerMix:
         tap = getattr(self.pipeline, "tx_tap", None) or TxTap()        # banc d'essai sans copie : son du poste seul

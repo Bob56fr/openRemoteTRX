@@ -82,7 +82,44 @@
     invalid: "Valeur refusée par le poste.",
     rig_error: "Erreur du poste.",
     forbidden: "Compte visiteur : réception seule, aucune commande vers la station.",
+    unknown_listener: "Ce visiteur n'est plus connecté.",
+    still_overloaded: "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
   };
+
+  // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
+  // refusé ICI, avant d'atteindre la station (qui le refuserait aussi).
+  const LISTENER_COMMANDS = ["get_state", "spectrum_watch"];
+
+  function durationText(seconds) {
+    const s = Math.max(0, Math.round(Number(seconds) || 0));
+    if (s < 60) return s + " s";
+    if (s < 3600) return Math.floor(s / 60) + " min";
+    return Math.floor(s / 3600) + " h " + String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  }
+
+  function presenceView(presence, role) {
+    /* state.presence -> pictogramme, liste, bandeaux. Rien de la station = rien à afficher. */
+    if (!presence || typeof presence !== "object") return null;
+    const listeners = Number(presence.listeners) || 0;
+    const people = (Array.isArray(presence.people) ? presence.people : []).map((p) => ({
+      text: String(p.pseudo || "?").slice(0, 32) + (Number(p.count) > 1 ? " ×" + Number(p.count) : ""),
+      role: p.role === "listener" ? "Visiteur" : "Opérateur", since: durationText(p.since_s) }));
+    const operator = role !== "listener";
+    const kick = operator && Array.isArray(presence.connections)
+      ? presence.connections.filter((c) => c && c.role === "listener").map((c) => ({
+        account: String(c.id || ""), text: String(c.pseudo || c.id || "?").slice(0, 32),
+        detail: String(c.id || "") + " · " + String(c.source || "?") + " · " + durationText(c.since_s) }))
+      : [];
+    const suspended = presence.suspended && typeof presence.suspended === "object" ? presence.suspended : null;
+    const grace = presence.grace_remaining_s;
+    return {
+      count: listeners, label: listeners > 0 ? "🎧 " + listeners : "", people: people, kick: kick,
+      grace: grace === null || grace === undefined ? ""
+        : "Opérateur momentanément déconnecté : fin de l'écoute des visiteurs dans " + Math.max(0, Math.round(grace)) + " s.",
+      suspended: suspended ? String(suspended.message || "Écoute des visiteurs suspendue.").slice(0, 300) : "",
+      canReopen: operator && !!suspended,
+    };
+  }
 
   const CUT_REASONS = {
     tot: "durée maximale d'émission atteinte",
@@ -1029,13 +1066,20 @@
 
     // ---- messages
 
+    isListener() { return !!this.hello && this.hello.role === "listener"; }
+
     _sendRaw(obj) {
+      if (this.isListener() && !LISTENER_COMMANDS.includes(obj.cmd)) return;        // visiteur : rien d'autre ne part
       if (this.dc && this.dc.readyState === "open") this.dc.send(JSON.stringify(obj));
     }
 
     send(cmd, params) {
       return new Promise((resolve, reject) => {
         if (!this.dc || this.dc.readyState !== "open") { reject(new Error("non connecté")); return; }
+        if (this.isListener() && !LISTENER_COMMANDS.includes(cmd)) {                  // visiteur : aucune requête vers la station
+          resolve({ type: "result", ok: false, reason: "forbidden", detail: "compte visiteur" });
+          return;
+        }
         const id = this.nextId++;
         const timeout = this.env.setTimeout(() => { this.pending.delete(id); reject(new Error("pas de réponse de la station")); }, COMMAND_TIMEOUT_MS);
         this.pending.set(id, { resolve: (m) => { this.env.clearTimeout(timeout); resolve(m); },
@@ -1290,6 +1334,7 @@
         rxLevel: audio.rx_db === undefined ? "—" : audio.rx_db + " dBFS", txLevel: audio.tx_db === undefined ? "—" : audio.tx_db + " dBFS",
         txHoles: Number.isInteger(audio.tx_underruns) ? audio.tx_underruns : null,     // trous dans le son envoyé au poste (réseau en retard)
         clients: (this.state && this.state.clients) || [], lastCut: cutText(p.last_cut_reason),
+        listener: this.isListener(), presence: presenceView(this.state && this.state.presence, this.hello && this.hello.role),
         rigConnected: rig.connected !== false,
         dataModeHint: txHint || dataModeHint(rig.mode, caps),
         txBlocked: !!txHint,
@@ -1666,6 +1711,19 @@
       return res;
     }
 
+    async kickListener(account) {
+      /* Opérateur : déconnecter un visiteur (il peut revenir ; pour l'en empêcher, désactiver son compte sur la station). */
+      const res = await this.send("listener_kick", { account: account });
+      if (!res.ok) this.ui.log("Déconnexion du visiteur refusée : " + (REASONS[res.reason] || res.reason), "warn");
+      return res;
+    }
+
+    async reopenListeners() {
+      const res = await this.send("listeners_reopen");
+      this.ui.log(res.ok ? "Écoute des visiteurs rouverte." : (res.detail || REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
+      return res;
+    }
+
     async setSpectrum(name, value) {
       /* Réglage du spectre du poste (mode, span, ref, speed) : refusé par la station pendant l'émission ; relu sur le poste. */
       const res = await this.send("spectrum_set", { name: name, value: value });
@@ -1735,6 +1793,7 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD };
+                indicatorsView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
+                LISTENER_COMMANDS, presenceView, durationText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

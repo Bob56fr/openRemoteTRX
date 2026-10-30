@@ -24,6 +24,7 @@ from .api.access import LISTENER
 
 log = logging.getLogger(__name__)
 KICK_REQUEST = "visitor-kick.json"
+REOPEN_REQUEST = "visitor-reopen.json"     # console : rouvrir l'écoute après une surcharge (acceptée seulement au vert)
 KICK_MAX_AGE_S = 10.0
 
 
@@ -37,6 +38,7 @@ class AccessWatcher:
                  interval_s: float = 1.0, wall: Callable[[], float] = time.time):
         self.access, self.registry, self.manager = access, registry, manager
         self.config_path, self.kick_path = config_path, Path(state_dir) / KICK_REQUEST
+        self.reopen_path = Path(state_dir) / REOPEN_REQUEST
         self.interval_s, self.wall = interval_s, wall
         self._mtime = self._stat()
         self._refused_mtime: float | None = None
@@ -64,22 +66,27 @@ class AccessWatcher:
         self._mtime, self._refused_mtime = mtime, None
         self.registry.update(cfg.clients)
         self.access.reload(cfg.clients, cfg.access)
+        if self.access.guard is not None:                 # seuils de surcharge relus aussi
+            from .api.overload import Limits
+            a = cfg.access
+            self.access.guard.limits = Limits(a.overload_temp_c, a.overload_cpu_pct, a.overload_lag_ms, a.overload_mem_pct)
         log.info("comptes relus : %d opérateur(s), %d visiteur(s) ; visiteurs %s (%d au plus)",
                  sum(c.role != LISTENER for c in cfg.clients), sum(c.role == LISTENER for c in cfg.clients),
                  "ouverts" if cfg.access.max_listeners else "fermés", cfg.access.max_listeners)
         return True
 
-    def take_kick_request(self) -> str | None:
+    def take_kick_request(self, path: Path | None = None) -> str | None:
         """Identifiant du visiteur à déconnecter (demande lue puis effacée), ou None."""
+        path = path or self.kick_path
         try:
-            raw = self.kick_path.read_bytes()
+            raw = path.read_bytes()
         except FileNotFoundError:
             return None
         except OSError as exc:
             log.warning("demande de déconnexion illisible : %s", exc)
             return None
         try:
-            self.kick_path.unlink()
+            path.unlink()
         except OSError as exc:
             log.warning("demande de déconnexion impossible à effacer : %s", exc)
         try:
@@ -95,6 +102,20 @@ class AccessWatcher:
 
     async def step(self) -> None:
         self.check_config()
+        guard = self.access.guard
+        if guard is not None:
+            if self.take_kick_request(self.reopen_path) is not None:
+                refusal = guard.reopen()
+                log.warning("réouverture de l'écoute des visiteurs demandée par la console : %s", refusal or "faite")
+            listeners = [cid for cid, c in self.access.connections.items() if c.role == LISTENER]
+            if guard.step(len(listeners)):
+                message = guard.message()
+                log.error("%s (%d visiteur(s) déconnecté(s))", message, len(listeners))
+                alert = getattr(self.manager, "alert", None)
+                if alert is not None:
+                    alert("TRX distant : visiteurs deconnectes", message)
+                for client_id in listeners:
+                    await self.manager.kick(client_id, "station_overload", message=message)
         wanted = self.take_kick_request()
         if wanted is not None:
             if self.access.role(wanted) == LISTENER and wanted in self.access.connections:

@@ -103,6 +103,11 @@ listeners_need_operator = true   # true : visiteurs admis seulement si un opéra
 operator_grace_s = 60   # opérateur perdu : attente avant de déconnecter les visiteurs (0 à 600 s)
 listeners_outside_bands = false   # false : silence pour les visiteurs hors [[bands]]
 listener_spectrum_fps = 5   # spectre HF des visiteurs : images par seconde au plus (1 à 20)
+# Surcharge : au-delà pendant 10 s, visiteurs déconnectés ; réouverture après 5 min nettement en dessous
+overload_temp_c = 85   # température du processeur (°C)
+overload_cpu_pct = 90   # charge de tous les cœurs (%)
+overload_lag_ms = 100   # retard de la boucle de la passerelle (ms)
+overload_mem_pct = 10   # mémoire libre minimale (%)
 
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]

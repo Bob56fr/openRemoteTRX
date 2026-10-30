@@ -25,17 +25,20 @@
   <header id="top">
     <div class="line1">
       <span id="blk-mode" class="modegrp"><span id="tx-flag" class="txflag" hidden>TX</span>
-      <span id="mode-pill" class="modepill" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)">—</span>
+      <span id="mode-pill" class="modepill listener-off" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)">—</span>
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
       <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)">www.rf-diy.com</a>
       <span id="status" class="badge">déconnecté</span>
+      <button id="presence" class="chip presence" hidden title="Visiteurs en réception seule : touche pour voir la liste">🎧 0</button>
       <span id="version" class="dim version" title="Version de la station" hidden></span>
     </div>
 
     <div id="blk-freq">
-    <div id="freq" class="freq" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
-    <div id="voyants" class="voyants" title="Voyants du poste : allumé = en service"></div>
+    <div id="listener-badge" class="alert listener-badge" hidden>Visiteur — réception seule</div>
+    <div id="presence-banner" class="alert warn" hidden></div>
+    <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
+    <div id="voyants" class="voyants listener-off" title="Voyants du poste : allumé = en service"></div>
     <div id="reconnect" class="reconnect" hidden>
       <div id="reconnect-text" class="reconnect-text">RECONNEXION…</div>
       <div class="reconnect-line"><span id="reconnect-sub" class="dim"></span><button id="reconnect-cancel" class="chip" hidden>Annuler</button></div>
@@ -98,7 +101,7 @@
       </div>
     </div>
 
-    <div class="chips">
+    <div class="chips listener-off">
       <button id="ctl-nr" class="chip" title="Réducteur de bruit" hidden>NR</button>
       <button id="ctl-nb" class="chip" title="Antiparasite (noise blanker)" hidden>NB</button>
       <button id="ctl-preamp" class="chip" title="Préampli : arrêt, puis chaque valeur du poste" hidden>P.AMP</button>
@@ -112,18 +115,18 @@
       <button id="ctl-pwr" class="chip" title="Puissance d'émission : 5, 10, 25, 50, 80, 100 % puis retour au début" hidden>PWR</button>
     </div>
 
-    <div class="pttrow">
+    <div class="pttrow listener-off">
       <button id="ptt" class="ptt" disabled>PTT</button>
       <button id="stop" class="stop" disabled>STOP</button>
     </div>
 
     <div class="subrow">
-      <label id="blk-armed" class="check"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
-      <button id="voice-direct" class="chip voice-direct" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
-      <button id="scr-ind" class="chip scr-ind" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
-      <button id="sel-ind" class="chip sel-ind" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
-      <label id="blk-sql" class="sql">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
-      <label id="blk-clar" class="sql" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
+      <label id="blk-armed" class="check listener-hide"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
+      <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
+      <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
+      <button id="sel-ind" class="chip sel-ind listener-hide" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
+      <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
+      <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
 
     <div class="statusline"><span id="ptt-state" class="ptt-state rx">RÉCEPTION</span><span id="tot" class="note"></span></div>
@@ -205,7 +208,7 @@
       </div>
     </details>
 
-    <details id="sec-tune" open>
+    <details id="sec-tune" class="listener-off" open>
       <summary>Accord</summary>
       <div class="body">
         <div id="bands" class="bands"></div>
@@ -225,7 +228,7 @@
       </div>
     </details>
 
-    <details id="sec-memories" open>
+    <details id="sec-memories" class="listener-off" open>
       <summary>Mémoires <span id="mem-count" class="dim"></span></summary>
       <div class="body"><div id="blk-memories" class="memblock">
         <button id="mem-add-current" disabled>＋ Mémoriser la fréquence actuelle</button>
@@ -254,7 +257,7 @@
         <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
         <div class="row between small"><span>Réception <b id="rx-level">—</b></span><span>Émission <b id="tx-level">—</b></span></div>
         <div class="small" title="Paquets de votre voix arrivés trop tard à la station (réseau) : chacun fait un petit trou dans l'émission. S'il ne bouge pas pendant une coupure, la cause est le traitement du micro.">Trous dans l'émission (réseau), depuis le démarrage de la station : <b id="tx-holes">—</b></div>
-        <div id="beeps-box" class="beeps">
+        <div id="beeps-box" class="beeps listener-hide">
           <div class="dim small">Bips de fin d'émission — produits et ÉMIS par la station, réglage commun à tous les appareils.</div>
           <label class="check"><input id="roger-on" type="checkbox" disabled> Roger bip quand je relâche le PTT</label>
           <div class="row">
@@ -271,7 +274,7 @@
       </div>
     </details>
 
-    <details id="sec-selcall" hidden>
+    <details id="sec-selcall" class="listener-hide" hidden>
       <summary>SELCALL</summary>
       <div class="body">
         <p class="note">Squelch numérique de la station par appel de groupe : armé sur un code, il coupe le son reçu jusqu'à
@@ -321,7 +324,7 @@
       </div>
     </details>
 
-    <details id="sec-voice">
+    <details id="sec-voice" class="listener-hide">
       <summary>Égaliseur paramétrique</summary>
       <div class="body">
         <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
@@ -368,7 +371,7 @@
       </div>
     </details>
 
-    <details id="sec-scrambler">
+    <details id="sec-scrambler" class="listener-hide">
       <summary>Scrambler (voix brouillée)</summary>
       <div class="body">
         <p class="note warn-text">Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un chiffrement :
@@ -420,7 +423,7 @@
             <option value="landscape">Paysage</option>
           </select>
         </label>
-        <label>Catégorie d'appareil (mise en page personnalisée)
+        <label class="listener-hide">Catégorie d'appareil (mise en page personnalisée)
           <select id="device-select">
             <option value="auto">Automatique (selon l'écran)</option>
             <option value="phone">Smartphone</option>
@@ -429,11 +432,11 @@
           </select>
         </label>
         <p id="layout-info" class="note"></p>
-        <button id="layout-factory" disabled>Revenir à l'interface d'usine</button>
+        <button id="layout-factory" class="listener-hide" disabled>Revenir à l'interface d'usine</button>
       </div>
     </details>
 
-    <details id="sec-cluster" hidden>
+    <details id="sec-cluster" class="listener-off" hidden>
       <summary>Cluster DX <span id="cluster-dot" class="cluster-dot"></span></summary>
       <div class="body">
         <div id="cluster-title" class="cluster-title">—</div>
@@ -459,7 +462,7 @@
       </div>
     </details>
 
-    <details id="sec-bug">
+    <details id="sec-bug" class="listener-hide">
       <summary>Signaler un problème</summary>
       <div class="body">
         <p class="note">Décris ce qui s'est passé, puis prépare le rapport : il contient la version, l'appareil, l'état de la liaison et du poste, les dernières pertes de connexion et le journal de la page. Jamais de mot de passe. Tu le relis avant de l'envoyer.</p>
@@ -484,6 +487,15 @@
       <button id="kp-cancel">Annuler</button>
       <button id="kp-ok" class="primary" disabled>OK</button>
     </div>
+  </div>
+</div>
+<div id="presence-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title">Connectés à la station</div>
+    <ul id="presence-list" class="presence-list"></ul>
+    <p id="presence-note" class="note"></p>
+    <div class="row"><button id="presence-reopen" class="chip" hidden>Rouvrir l'écoute des visiteurs</button>
+      <button id="presence-close" class="chip">Fermer</button></div>
   </div>
 </div>
 <div id="ctl-dialog" class="keypad" hidden>
@@ -511,14 +523,14 @@
       <span id="hf-cluster" class="cluster-dot" hidden title="Cluster DX"></span>
       <button id="hf-spots" class="chip" hidden title="Afficher ou masquer les spots du Cluster DX sur le spectre">SPOTS</button>
       <button id="hf-list" class="chip" hidden title="Liste des spots de la bande">LISTE</button>
-      <button id="hf-vfo" class="chip" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)">VFO</button>
+      <button id="hf-vfo" class="chip listener-off" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)">VFO</button>
       <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
       <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)">PLAGE 40 dB</button>
-      <button id="hf-stop" class="stop" title="Coupe l'émission (toujours possible)">STOP</button>
+      <button id="hf-stop" class="stop listener-off" title="Coupe l'émission (toujours possible)">STOP</button>
       <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance">Fermer</button>
     </span>
   </div>
-  <div class="hf-bar hf-rig" title="Réglages du spectre du poste lui-même (refusés pendant l'émission)">
+  <div class="hf-bar hf-rig listener-off" title="Réglages du spectre du poste lui-même (refusés pendant l'émission)">
     <span class="hf-info">Poste :</span>
     <button id="hf-set-mode" class="chip" title="Mode du spectre : centré sur la fréquence ou bornes fixes">CENT</button>
     <button id="hf-set-span" class="chip" title="Largeur affichée (mode centré) : plus étroite = plus de détail">SPAN ?</button>
