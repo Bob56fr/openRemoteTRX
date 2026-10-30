@@ -48,6 +48,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.rfdiy.openremotetrx.logic.BigPtt
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -144,6 +146,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     }
     val mineTx = ptt != null && ptt.mine && ptt.transmitting
     val debounce = remember { Debounce() }
+    // Gros PTT rond (logic.BigPtt) : masqué par défaut, appui long sur le PTT pour l'afficher, STOP pour le masquer
+    var bigPttRequested by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(connected) { if (!connected) bigPttRequested = false }
     // Fréquence demandée : affichée et prise comme base des crans jusqu'à confirmation du poste (page : PENDING_MAX_MS).
     // L'état de la station arrive plusieurs fois par seconde : l'affichage revient seul à la fréquence du poste.
     var pendingHz by remember { mutableStateOf<Long?>(null) }
@@ -181,9 +186,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         return
     }
 
+    val pttEnabled = connected && rig.protocolOk && ui.micAllowed && (mineTx || (ptt?.transmitting != true && rig.armed))
     Column(modifier.fillMaxSize()) {
+      Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // En-tête : station, liaison, sourdine
@@ -537,8 +544,14 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
             }
         }
+        if (BigPtt.visible(bigPttRequested, connected, driving = false)) {      // conduite : écran à part, sans PTT tactile
+            BigPttOverlay(BigPtt.look(ptt, rig.armed, pttEnabled), ptt?.totSeconds, pttEnabled) {
+                if (debounce.pass()) RigHub.toggle()
+            }
+        }
+      }
 
-        // Toujours visibles : armement, PTT (appui simple), STOP
+        // Toujours visibles : armement, PTT (appui simple ; appui long = gros PTT au milieu de l'écran), STOP
         Surface(tonalElevation = 6.dp) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -559,14 +572,19 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val pttEnabled = connected && rig.protocolOk && ui.micAllowed && (mineTx || (ptt?.transmitting != true && rig.armed))
-                    Button(
-                        onClick = { if (debounce.pass()) RigHub.toggle() },
-                        enabled = pttEnabled,
-                        colors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors(),
+                    val canShowBig = BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false)
+                    val pttColors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors()
+                    Surface(
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(2f).height(64.dp),
+                        color = if (pttEnabled) pttColors.containerColor else pttColors.disabledContainerColor,
+                        contentColor = if (pttEnabled) pttColors.contentColor else pttColors.disabledContentColor,
+                        modifier = Modifier.weight(2f).height(64.dp).combinedClickable(
+                            enabled = pttEnabled || canShowBig,
+                            onClick = { if (pttEnabled && debounce.pass()) RigHub.toggle() },
+                            onLongClick = { if (canShowBig) bigPttRequested = true },
+                        ),
                     ) {
+                      Box(contentAlignment = Alignment.Center) {
                         Text(
                             when {
                                 mineTx -> "FIN D'ÉMISSION"
@@ -577,9 +595,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                             },
                             fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
                         )
+                      }
                     }
                     Button(
-                        onClick = { RigHub.stop() },
+                        onClick = { RigHub.stop(); bigPttRequested = false },      // STOP coupe toujours et masque le gros PTT
                         enabled = connected,
                         colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
                         shape = RoundedCornerShape(16.dp),

@@ -51,6 +51,9 @@ object Texts {
         "layout_storage_error" to "La station n'a pas pu enregistrer la mise en page (disque ?).",
         "invalid" to "Valeur refusée par le poste.",
         "rig_error" to "Erreur du poste.",
+        "forbidden" to "Compte visiteur : réception seule, aucune commande vers la station.",
+        "unknown_listener" to "Ce visiteur n'est plus connecté.",
+        "still_overloaded" to "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
     )
 
     val CUTS: Map<String, String> = mapOf(
@@ -90,6 +93,7 @@ object Texts {
         "network" to "Station injoignable",
         "auth" to "Identifiants refusés (ou trop d'essais : attends quelques minutes)",
         "busy" to "Station occupée (trop de connexions)",
+        "refused" to "Accès refusé par la station (compte désactivé ou expiré, visiteurs complets, opérateur absent)",
         "http" to "Réponse inattendue de la station",
         "client_error" to "Erreur dans l'application",
         "pin" to "Empreinte du certificat DIFFÉRENTE : ce n'est peut-être pas ta station, connexion bloquée",
