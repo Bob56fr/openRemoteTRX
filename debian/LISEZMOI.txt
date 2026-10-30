@@ -1,5 +1,5 @@
-TRX distant : installation sur Debian 12 ou 13 (PC avec bureau)
-================================================================
+TRX distant : installation sur Debian 12 ou 13 (PC ou Raspberry Pi)
+====================================================================
 
 1. Décompresse ce zip dans ton dossier Téléchargements (clic droit, « Extraire ici »).
 2. Dans le dossier obtenu, clic droit dans une zone vide, « Ouvrir dans un terminal », puis tape :
@@ -9,6 +9,11 @@ TRX distant : installation sur Debian 12 ou 13 (PC avec bureau)
    et ton mot de passe de session (rien ne s'affiche pendant la frappe : c'est normal).
 3. À la fin, déconnecte-toi puis reconnecte-toi.
 4. Ouvre « TRX Console » depuis le menu des applications et suis l'assistant.
+
+Sans bureau (serveur, Raspberry Pi OS Lite 64 bits), tout par SSH : copie le zip (scp), puis
+       unzip -q trx-remote-debian-*.zip && cd trx-remote-debian-*/ && sudo bash install.sh
+ferme la connexion SSH, reconnecte-toi et tape : trx-console
+Raspberry Pi : Pi 4 (2 Go) au minimum, bloc d'alimentation officiel, ventilation.
 
 Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
 install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.

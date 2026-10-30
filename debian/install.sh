@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-# Installation de TRX distant sur Debian 12 ou 13 (PC avec bureau). Relançable sans danger :
+# Installation de TRX distant sur Debian 12 ou 13 (PC avec ou sans bureau, Raspberry Pi OS 64 bits). Relançable sans danger :
 # une nouvelle exécution répare ou met à jour, sans jamais écraser la configuration.
 #
 #   sudo bash install.sh                  installe ou met à jour (la version d'avant est gardée)
@@ -35,6 +35,10 @@ APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-c
 MIN_FREE_MB=2000
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 TARGET_USER=${SUDO_USER:-}
+HAS_DESKTOP=0      # bureau graphique installé (sinon : TRX Console par SSH ou sur la console texte)
+if compgen -G '/usr/share/xsessions/*.desktop' >/dev/null || compgen -G '/usr/share/wayland-sessions/*.desktop' >/dev/null; then
+  HAS_DESKTOP=1
+fi
 STEP="préparation"
 
 if [[ ! -f $HERE/releases.sh ]]; then
@@ -262,6 +266,20 @@ if [[ -n ${VERSION_ID:-} && ${VERSION_ID%%.*} =~ ^[0-9]+$ && ${VERSION_ID%%.*} -
   fail "${PRETTY_NAME} est trop ancien : Debian 12 ou plus récent est nécessaire."
 fi
 ok "${PRETTY_NAME:-Debian}"
+PI_MODEL=$(tr -d '\0' </proc/device-tree/model 2>/dev/null || true)
+if [[ $PI_MODEL == "Raspberry Pi"* ]]; then
+  ok "$PI_MODEL"
+  case $PI_MODEL in
+    "Raspberry Pi 4"*|"Raspberry Pi 5"*|"Raspberry Pi 400"*) ;;
+    *) warn "modèle jamais essayé, sans doute trop lent pour l'audio WebRTC : Raspberry Pi 4 (2 Go) au minimum" ;;
+  esac
+  MEM_MB=$(awk '/^MemTotal:/ {print int($2 / 1024)}' /proc/meminfo)
+  [[ ${MEM_MB:-0} -ge 1800 ]] || warn "mémoire : ${MEM_MB:-?} Mo ; 2 Go au minimum sont conseillés"
+  THROTTLED=$(vcgencmd get_throttled 2>/dev/null | sed -n 's/^throttled=//p' || true)
+  if [[ $THROTTLED == 0x* ]] && (( THROTTLED & 0x10001 )); then
+    warn "alimentation trop faible détectée (vcgencmd get_throttled = $THROTTLED) : bloc officiel 5,1 V 3 A conseillé"
+  fi
+fi
 ARCH=$(dpkg --print-architecture)
 case $ARCH in
   amd64|arm64) ok "architecture $ARCH" ;;
@@ -435,13 +453,20 @@ start_if_configured
 
 step "8/8 Lanceur TRX Console"
 install_launcher "$HERE/systeme"
-ok "icône « TRX Console » ajoutée au menu des applications"
+if [[ $HAS_DESKTOP -eq 1 ]]; then
+  ok "icône « TRX Console » ajoutée au menu des applications"
+  OPEN_CONSOLE="Ouvre « TRX Console » depuis le menu des applications."
+else
+  ok "pas de bureau : TRX Console se lance par la commande trx-console (SSH ou console texte)"
+  OPEN_CONSOLE="Tape : trx-console"
+fi
 
 printf '\n%s%sInstallation terminée%s (TRX distant %s).\n' "$GREEN" "$BOLD" "$RESET" "$TRX_VERSION"
 if [[ -n $TARGET_USER ]]; then
-  printf '\nÀ faire maintenant :\n  1. Déconnecte-toi puis reconnecte-toi (les nouveaux droits ne valent qu'\''après).\n'
-  printf '  2. Ouvre « TRX Console » depuis le menu des applications.\n'
+  printf '\nÀ faire maintenant :\n  1. Déconnecte-toi puis reconnecte-toi (les nouveaux droits ne valent qu'\''après ;\n'
+  printf '     en SSH : exit, puis nouvelle connexion).\n'
+  printf '  2. %s\n' "$OPEN_CONSOLE"
 else
-  printf '\nOuvre « TRX Console » depuis le menu des applications.\n'
+  printf '\n%s\n' "$OPEN_CONSOLE"
 fi
 printf '\nCompte-rendu complet : %s\n' "$LOG"
