@@ -35,7 +35,8 @@ def key(tmp_path):
 
 def _run(tmp_path, *argv, keys, ask=lambda _p: PASS):
     out = tmp_path / "dist"
-    code = _builder().main(list(argv), out_dir=out, ask=ask, public_keys=keys)
+    code = _builder().main(list(argv), out_dir=out, ask=ask, public_keys=keys,
+                           find_hamlib=lambda: ("4.7.2", "a" * 64))      # jamais de réseau dans les tests
     target = out / f"trx-remote-debian-{VERSION}.zip"
     return code, target, target.with_name(target.name + ".sig")
 

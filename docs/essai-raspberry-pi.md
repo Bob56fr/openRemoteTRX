@@ -1,4 +1,4 @@
-# Essai sur un Raspberry Pi 4 sans bureau, tout par SSH depuis Windows (version 0.76.0)
+# Essai sur un Raspberry Pi 4 sans bureau, tout par SSH depuis Windows (version 0.77.0)
 
 But : savoir si un Raspberry Pi 4 suffit pour faire tourner la station (passerelle avec audio WebRTC, rigctld,
 superviseur, spectre HF, visiteurs) et l'utiliser au quotidien sans écran, sans clavier ni bureau. Aucun Raspberry
@@ -65,7 +65,7 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 
    ```
    python scripts/build_debian_zip.py --sans-signature
-   scp dist\trx-remote-debian-0.76.0.zip bob@<IP du Pi>:
+   scp dist\trx-remote-debian-0.77.0.zip bob@<IP du Pi>:
    ```
 
    Rien d'autre à copier : on part d'une station vierge, sans reprendre la `station.toml` d'une autre station.
@@ -73,7 +73,7 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
 
    ```
    $pi = "bob@<IP du Pi>"
-   ssh -t $pi "sudo apt install -y unzip && unzip -oq trx-remote-debian-0.76.0.zip && cd trx-remote-debian-0.76.0 && time sudo bash install.sh"
+   ssh -t $pi "sudo apt install -y unzip && unzip -oq trx-remote-debian-0.77.0.zip && cd trx-remote-debian-0.77.0 && time sudo bash install.sh"
    ```
 
    `-t` est indispensable : `sudo` demande le mot de passe et `install.sh` pose ses questions au clavier.
@@ -103,7 +103,7 @@ Note chaque écart (texte copié depuis le terminal) : c'est le résultat de l'e
    avant `/usr/bin`, comme sur minix-bzh.
 
    ```
-   ssh -t $pi "cd trx-remote-debian-0.76.0 && time sudo bash compiler-hamlib.sh"
+   ssh -t $pi "cd trx-remote-debian-0.77.0 && time sudo bash compiler-hamlib.sh"
    ssh $pi "rigctld --version; rigctl -l | grep -i 7300"
    ```
 

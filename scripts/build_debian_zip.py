@@ -9,13 +9,19 @@
 Fonctionne sous Windows comme sous Linux. Les fichiers texte passent en fins de ligne
 Linux (LF) : un install.sh en CRLF, tel que Git peut le produire sous Windows, échouerait sous Debian.
 Le zip ne contient ni configuration, ni certificat, ni cache : seulement ce qu'il faut pour installer.
+HAMLIB : à chaque fabrication, la dernière Release publique de Hamlib (GitHub) et son empreinte SHA-256 sont
+écrites dans le compiler-hamlib.sh du zip. Sans réseau : valeurs figées dans debian/compiler-hamlib.sh, avec un
+avertissement pour un zip d'essai, refus pour un paquet signé (Release).
 La signature (module cryptography) utilise la clé créée par scripts/gen_update_key.py, hors du dépôt.
 """
 from __future__ import annotations
 
 import argparse
 import getpass
+import json
+import re
 import sys
+import urllib.request
 import tomllib
 import zipfile
 from collections.abc import Callable
@@ -86,7 +92,66 @@ def _content(path: Path) -> bytes:
     return data
 
 
-def build(root: Path = ROOT, out_dir: Path | None = None) -> Path:
+HAMLIB_SCRIPT = "compiler-hamlib.sh"
+HAMLIB_API = "https://api.github.com/repos/Hamlib/Hamlib/releases/latest"
+HAMLIB_SUMS = "https://github.com/Hamlib/Hamlib/releases/download/{v}/SHA256SUM-{v}"
+HAMLIB_VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+(\.[0-9]+)?$")
+HAMLIB_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+class HamlibLookupError(Exception):
+    pass
+
+
+def _fetch(url: str) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": "openRemoteTRX-build"})
+    with urllib.request.urlopen(request, timeout=20) as answer:         # adresses fixes, en https
+        return answer.read(1_000_000).decode("utf-8", errors="replace")
+
+
+def parse_hamlib_sums(text: str, version_text: str) -> str:
+    """Empreinte de hamlib-<version>.tar.gz dans le fichier SHA256SUM-<version> de la Release."""
+    wanted = f"hamlib-{version_text}.tar.gz"
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[1].lstrip("*") == wanted and HAMLIB_SHA_RE.match(parts[0].lower()):
+            return parts[0].lower()
+    raise HamlibLookupError(f"empreinte de {wanted} absente de SHA256SUM-{version_text}")
+
+
+def latest_hamlib(fetch: Callable[[str], str] = _fetch) -> tuple[str, str]:
+    """(version, sha256) de la dernière Release publique de Hamlib. HamlibLookupError si illisible."""
+    try:
+        tag = str(json.loads(fetch(HAMLIB_API)).get("tag_name", ""))
+        if not HAMLIB_VERSION_RE.match(tag):
+            raise HamlibLookupError(f"numéro de version inattendu : {tag!r}")
+        return tag, parse_hamlib_sums(fetch(HAMLIB_SUMS.format(v=tag)), tag)
+    except HamlibLookupError:
+        raise
+    except (OSError, ValueError, AttributeError) as exc:
+        raise HamlibLookupError(f"GitHub injoignable ou réponse illisible ({exc})") from exc
+
+
+def pinned_hamlib(root: Path = ROOT) -> str:
+    """Version figée dans debian/compiler-hamlib.sh (utilisée sans réseau)."""
+    text = (root / "debian" / HAMLIB_SCRIPT).read_text(encoding="utf-8")
+    found = re.search(r"^HAMLIB_VERSION=(\S+)$", text, re.M)
+    return found.group(1) if found else "?"
+
+
+def with_hamlib(data: bytes, hamlib: tuple[str, str]) -> bytes:
+    """compiler-hamlib.sh avec la version et l'empreinte données (une ligne chacune, sinon erreur)."""
+    version_text, sha = hamlib
+    if not HAMLIB_VERSION_RE.match(version_text) or not HAMLIB_SHA_RE.match(sha):
+        raise ValueError(f"Hamlib {version_text!r} / {sha!r} refusés")
+    text, n1 = re.subn(r"^HAMLIB_VERSION=\S+$", f"HAMLIB_VERSION={version_text}", data.decode("utf-8"), flags=re.M)
+    text, n2 = re.subn(r"^HAMLIB_SHA256=\S+$", f"HAMLIB_SHA256={sha}", text, flags=re.M)
+    if (n1, n2) != (1, 1):
+        raise ValueError(f"{HAMLIB_SCRIPT} : lignes HAMLIB_VERSION / HAMLIB_SHA256 introuvables")
+    return text.encode("utf-8")
+
+
+def build(root: Path = ROOT, out_dir: Path | None = None, hamlib: tuple[str, str] | None = None) -> Path:
     name = f"trx-remote-debian-{version(root)}"
     out_dir = out_dir or root / "dist"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -98,7 +163,10 @@ def build(root: Path = ROOT, out_dir: Path | None = None) -> Path:
             info.create_system = 3                                        # Unix : droits respectés par unzip
             info.external_attr = (0o100755 if arcname.endswith(".sh") else 0o100644) << 16
             info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, _content(source))
+            data = _content(source)
+            if arcname == HAMLIB_SCRIPT and hamlib is not None:
+                data = with_hamlib(data, hamlib)
+            archive.writestr(info, data)
     return target
 
 
@@ -142,13 +210,26 @@ def sign(target: Path, version_text: str, key_path: Path, passphrase: Callable[[
 
 
 def main(argv: list[str] | None = None, *, root: Path = ROOT, out_dir: Path | None = None,
-         ask: Callable[[str], str] = getpass.getpass, public_keys: tuple[str, ...] | None = None) -> int:
+         ask: Callable[[str], str] = getpass.getpass, public_keys: tuple[str, ...] | None = None,
+         find_hamlib: Callable[[], tuple[str, str]] = latest_hamlib) -> int:
     ap = argparse.ArgumentParser(prog="build_debian_zip", description="Paquet d'installation Debian signé")
     ap.add_argument("--sans-signature", action="store_true", help="zip seul, sans .sig (essais locaux)")
     ap.add_argument("--cle", type=Path, default=None, help="clé privée de signature (hors du dépôt)")
     args = ap.parse_args(argv)
+    pinned = pinned_hamlib(root)
     try:
-        target = build(root, out_dir)
+        hamlib: tuple[str, str] | None = find_hamlib()
+        print(f"Hamlib : dernière version publique {hamlib[0]} (SHA-256 {hamlib[1][:12]}…) mise dans {HAMLIB_SCRIPT}")
+        if hamlib[0] != pinned:
+            print(f"  (debian/{HAMLIB_SCRIPT} fige encore {pinned} : à mettre à jour pour les fabrications sans réseau)")
+    except HamlibLookupError as exc:
+        if not args.sans_signature:
+            print(f"Paquet refusé : dernière version de Hamlib introuvable ({exc}).", file=sys.stderr)
+            return 1
+        hamlib = None
+        print(f"ATTENTION : dernière version de Hamlib introuvable ({exc}) ; {pinned} (figée) gardée dans {HAMLIB_SCRIPT}")
+    try:
+        target = build(root, out_dir, hamlib)
     except FileNotFoundError as exc:
         print(f"Paquet impossible : {exc}", file=sys.stderr)
         return 1
