@@ -128,6 +128,11 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("account", account) }
     }
 
+    /** Visiteurs : commutateur « Écoute des visiteurs » de l'OPÉRATEUR (mémorisé sur la station). */
+    data class ListenersOpen(val on: Boolean) : Command("listeners_open") {
+        override fun JsonObjectBuilder.params() { put("on", on) }
+    }
+
     /** Visiteurs : rouvrir l'écoute après une surcharge de la station (acceptée seulement au vert). */
     data object ListenersReopen : Command("listeners_reopen")
 
@@ -143,7 +148,10 @@ sealed class Command(val name: String) {
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
-            "listener_kick", "listeners_reopen",
+            "listener_kick", "listeners_reopen", "listeners_open",
         )
+
+        /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */
+        val LISTENER = setOf("get_state", "spectrum_watch")
     }
 }

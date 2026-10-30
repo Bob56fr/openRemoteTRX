@@ -65,6 +65,10 @@ data class SpectrumCapability(
 data class Hello(
     val protocol: Int,
     @SerialName("client_id") val clientId: String,
+    /** « operator » ou « listener » (visiteur en réception seule, station 0.71.0+) : décidé par la station. */
+    val role: String = "operator",
+    /** Nom montré aux autres connectés (jamais l'identifiant) ; vide sur une station ancienne. */
+    val pseudo: String = "",
     val version: String = "",
     val capabilities: Capabilities? = null,
     @SerialName("tx_modes") val txModes: List<String> = emptyList(),
@@ -78,7 +82,38 @@ data class Hello(
     val features: List<String> = emptyList(),
 ) : ServerMessage {
     fun offers(feature: String): Boolean = feature in features
+    val listener: Boolean get() = role == "listener"
 }
+
+/** Visiteurs (docs/visiteurs-cahier-des-charges.md) : `state.presence`. */
+@Serializable
+data class PresencePerson(val pseudo: String = "", val role: String = "", @SerialName("since_s") val sinceS: Int = 0, val count: Int = 1)
+
+@Serializable
+data class PresenceConnection(
+    val id: String = "", val pseudo: String = "", val role: String = "", val source: String = "",
+    @SerialName("since_s") val sinceS: Int = 0,
+)
+
+@Serializable
+data class PresenceSuspended(
+    val reason: String = "", val message: String = "", @SerialName("since_s") val sinceS: Int = 0,
+    val locked: Boolean = false, @SerialName("reopen_in_s") val reopenInS: Int? = null,
+)
+
+@Serializable
+data class Presence(
+    val operators: Int = 0,
+    val listeners: Int = 0,
+    @SerialName("max_listeners") val maxListeners: Int = 0,
+    /** Commutateur de l'opérateur (station 0.74.0+) ; null = station sans commutateur. */
+    val open: Boolean? = null,
+    val suspended: PresenceSuspended? = null,
+    @SerialName("grace_remaining_s") val graceRemainingS: Double? = null,
+    val people: List<PresencePerson> = emptyList(),
+    /** Pour un OPÉRATEUR seulement : identifiants et origines. */
+    val connections: List<PresenceConnection> = emptyList(),
+)
 
 /** État de l'émission, tel que la station le publie : c'est LUI qui s'affiche, jamais un état supposé. */
 @Serializable
@@ -124,6 +159,7 @@ data class State(
     val audio: JsonObject = JsonObject(emptyMap()),
     val clients: List<String> = emptyList(),
     val spectrum: JsonObject = JsonObject(emptyMap()),
+    val presence: Presence? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */
@@ -147,6 +183,9 @@ data class Beeps(val settings: JsonObject) : ServerMessage
 data class Selcall(val status: JsonObject) : ServerMessage
 
 data class ModuleMessage(val module: String, val data: JsonElement) : ServerMessage
+
+/** La station ferme la connexion (motif et texte) : afficher, et NE PAS se reconnecter tout seul. */
+data class Bye(val reason: String, val message: String) : ServerMessage
 
 /** Type inconnu de cette version de l'application : ignoré (une station plus récente peut en ajouter). */
 data class Unknown(val type: String) : ServerMessage
@@ -183,6 +222,7 @@ object ServerMessages {
                 "beeps" -> Beeps(obj["settings"]?.jsonObject ?: JsonObject(emptyMap()))
                 "selcall" -> Selcall(obj["status"]?.jsonObject ?: JsonObject(emptyMap()))
                 "module" -> ModuleMessage(obj.text("module"), obj["data"] ?: JsonNull)
+                "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 else -> Unknown(type)
             }
         } catch (e: SerializationException) {

@@ -69,16 +69,21 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
         emptyList()
     }
 
-    /** POST /offer ; renvoie le SDP de réponse. 401 => auth, 503 => busy, autre => http. */
+    /** POST /offer ; renvoie le SDP de réponse. 401 => auth, 403 => refused (message de la station), 503 => busy, autre => http. */
     fun offer(clientId: String, password: String, sdp: String): String {
         val body = buildJsonObject {
             put("client_id", clientId); put("password", password); put("sdp", sdp); put("type", "offer")
         }.toString()
         val (status, text) = request("POST", "/offer", body)
+        // 403 / 503 avec {error, message} : accès refusé alors que le mot de passe est juste (visiteurs, station 0.71.0+)
+        val said = try {
+            (Json.parseToJsonElement(text).jsonObject["message"] as? JsonPrimitive)?.contentOrNull?.take(200) ?: ""
+        } catch (e: Exception) { "" }
         when (status) {
             200 -> Unit
             401 -> throw AttemptException("auth")
-            503 -> throw AttemptException("busy")
+            403 -> throw AttemptException("refused", said)
+            503 -> throw AttemptException("busy", said)
             else -> throw AttemptException("http", "HTTP $status")
         }
         val obj = try { Json.parseToJsonElement(text).jsonObject } catch (e: Exception) { throw AttemptException("http", "réponse illisible") }

@@ -450,6 +450,17 @@ class ControlSession:
                 if ok:
                     log.warning("visiteur %s déconnecté par l'opérateur %s", cmd.params["account"], self.client_id)
                 self._result(cmd.id, ok, **({} if ok else {"reason": "unknown_listener"}))
+            elif cmd.name == "listeners_open":          # opérateur : commutateur « Écoute des visiteurs »
+                if self.access is None:
+                    self._result(cmd.id, False, reason="listeners_unavailable")
+                elif cmd.params["on"] and self.access.settings.max_listeners <= 0:
+                    self._result(cmd.id, False, reason="listeners_off",
+                                 detail="écoute des visiteurs fermée sur la station ([access] max_listeners, TRX Console menu 20)")
+                else:
+                    self.access.switch.set(cmd.params["on"])
+                    log.warning("écoute des visiteurs %s par l'opérateur %s", "OUVERTE" if cmd.params["on"] else "fermée",
+                                self.client_id)
+                    self._result(cmd.id, True, open=self.access.switch.open)
             elif cmd.name == "listeners_reopen":
                 guard = getattr(self.access, "guard", None)
                 refusal = guard.reopen() if guard is not None else ""

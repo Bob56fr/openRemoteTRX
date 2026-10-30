@@ -54,6 +54,8 @@ class Loopback:
             self.cfg.clients += [ClientAuth(f"club{i}", password_hash=hash_password(listener_password(i)), role="listener",
                                             pseudo=f"Club {i}") for i in range(1, self._listeners + 1)]
         self.access = None if self._access is None else AccessControl(self.cfg.clients, self.cfg.access)
+        if self.access is not None:
+            self.access.switch.set(True)             # banc d'essai : écoute ouverte par l'opérateur
         self.link = CatLink("127.0.0.1", self.fake.port, poll_fast_s=0.05, slow_every=2, backoff_min_s=0.05,
                             backoff_max_s=0.2, timeout=1.0)
         self.sink = self._sink or RecordingSink()

@@ -63,6 +63,9 @@
                       "invalid": [{"message": {"cmd": "listener_kick"}, "code": "invalid_params"},
                                   {"message": {"cmd": "listener_kick", "account": "club 1"}, "code": "invalid_params"}]},
     "listeners_reopen": {"valid": [{"cmd": "listeners_reopen", "id": 42}], "invalid": []},
+    "listeners_open": {"valid": [{"cmd": "listeners_open", "id": 43, "on": true}, {"cmd": "listeners_open", "on": false}],
+                       "invalid": [{"message": {"cmd": "listeners_open"}, "code": "invalid_params"},
+                                   {"message": {"cmd": "listeners_open", "on": "oui"}, "code": "invalid_params"}]},
     "set_level": {
       "valid": [{"cmd": "set_level", "id": 8, "name": "RFPOWER", "value": 0.25},
                 {"cmd": "set_level", "name": "AGC", "value": 2},

@@ -122,8 +122,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val radio = rig.state?.rig
     val hello = rig.hello
     val connected = rig.status == LinkStatus.CONNECTED
+    // Compte VISITEUR : réception seule, toutes les commandes inertes (la session n'envoie rien, la station refuserait)
+    val listener = rig.listener
     // Réglages du poste : seulement en réception (la station les refuse pendant l'émission, comme la page).
-    val canSet = connected && rig.protocolOk && (rig.state?.ptt?.state ?: "RX") == "RX"
+    val canSet = connected && rig.protocolOk && !listener && (rig.state?.ptt?.state ?: "RX") == "RX"
     val context = LocalContext.current
     val voice by VoiceHub.ui.collectAsState()
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
@@ -162,6 +164,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var bandsDialog by remember { mutableStateOf(false) }
     var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
     var spotsDialog by remember { mutableStateOf(false) }
+    var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
@@ -186,7 +189,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         return
     }
 
-    val pttEnabled = connected && rig.protocolOk && ui.micAllowed && (mineTx || (ptt?.transmitting != true && rig.armed))
+    val pttEnabled = connected && rig.protocolOk && ui.micAllowed && !listener && (mineTx || (ptt?.transmitting != true && rig.armed))
     Column(modifier.fillMaxSize()) {
       Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
@@ -207,10 +210,16 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
+                rig.presence?.takeIf { it.label.isNotEmpty() }?.let { p ->             // 🎧 N : visiteurs connectés
+                    CompactChip(p.label, onClick = { presenceDialog = true })
+                    Spacer(Modifier.width(6.dp))
+                }
                 Text("Muet", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.width(6.dp))
                 Switch(checked = ui.muted, onCheckedChange = { RigHub.setMuted(it) })
             }
+            if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
+            rig.presence?.let { p -> p.suspended.ifEmpty { p.grace }.takeIf { it.isNotEmpty() }?.let { Banner(it, WARN) } }
 
             rig.reconnect?.let { r ->
                 Banner(
@@ -540,6 +549,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             Panel { MicSection() }
             Panel { HeadsetSection(ui.headsetMic) }
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
+            rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
                     }
             }
@@ -555,7 +565,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         Surface(tonalElevation = 6.dp) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk)
+                    Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                     Spacer(Modifier.width(8.dp))
                     Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Égaliseur »)
@@ -572,7 +582,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val canShowBig = BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false)
+                    val canShowBig = !listener && BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false)
                     val pttColors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors()
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -599,7 +609,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
                     Button(
                         onClick = { RigHub.stop(); bigPttRequested = false },      // STOP coupe toujours et masque le gros PTT
-                        enabled = connected,
+                        enabled = connected && !listener,                          // un visiteur ne coupe pas l'opérateur
                         colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.weight(1f).height(64.dp),
@@ -627,6 +637,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             lastMessage = rig.log.lastOrNull()?.text.orEmpty(),
             onDismiss = { selcallDialog = false })
     }
+    if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })

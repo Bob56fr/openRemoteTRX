@@ -15,6 +15,20 @@ from trxstation.gateway.api.overload import (HOLD_S, MAX_PER_HOUR, REOPEN_S, Cpu
 
 from test_api import connect, run, station
 
+
+@pytest.fixture(autouse=True)
+def _listening_open(monkeypatch):
+    """Ces tests portent sur le reste : commutateur de l'opérateur OUVERT (sans fichier). Il est testé à part
+    (test_operator_switch_*), avec un vrai fichier."""
+    from trxstation.gateway.api.access import ListenerSwitch
+    original = ListenerSwitch.__init__
+
+    def init(self, path=None):
+        original(self, path)
+        if path is None:
+            self.open = True
+    monkeypatch.setattr(ListenerSwitch, "__init__", init)
+
 CALM, HOT = Sample(temp_c=50, cpu_pct=20, lag_ms=5, mem_free_pct=60), Sample(temp_c=87, cpu_pct=20, lag_ms=5, mem_free_pct=60)
 
 

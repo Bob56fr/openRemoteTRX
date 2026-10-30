@@ -21,6 +21,20 @@ from trxstation.setup_wizard import dummy_config
 
 from test_api import connect, run, station, until
 
+
+@pytest.fixture(autouse=True)
+def _listening_open(monkeypatch):
+    """Ces tests portent sur le reste : commutateur de l'opérateur OUVERT (sans fichier). Il est testé à part
+    (test_operator_switch_*), avec un vrai fichier."""
+    from trxstation.gateway.api.access import ListenerSwitch
+    original = ListenerSwitch.__init__
+
+    def init(self, path=None):
+        original(self, path)
+        if path is None:
+            self.open = True
+    monkeypatch.setattr(ListenerSwitch, "__init__", init)
+
 EXAMPLES = json.loads((Path(__file__).parent / "protocol" / "commands.json").read_text(encoding="utf-8"))["commands"]
 
 
@@ -459,3 +473,41 @@ def test_webrtc_listeners_admission_whitelist_silence_and_operator_wait(tmp_path
             stop.set()
             await watch
     asyncio.run(asyncio.wait_for(scenario(), 90))
+
+
+# --------------------------------------------------------------------------- commutateur de l'opérateur
+
+def test_operator_switch_is_closed_by_default_remembered_and_closing_disconnects(tmp_path):
+    from trxstation.gateway.api.access import ListenerSwitch
+    path = tmp_path / "listeners.json"
+    access, _ = control(listeners_need_operator=False)
+    access.switch = ListenerSwitch(path)
+    assert access.switch.open is False and access.presence("operator")["open"] is False
+    assert refused(access, "club1") == "listeners_closed"
+    access.switch.set(True)
+    assert ListenerSwitch(path).open is True                                # mémorisé (redémarrage de la station)
+    join(access, "club1")
+    assert access.due() == [] and access.presence("listener")["open"] is True
+    access.switch.set(False)
+    assert access.due() == [("club1", "listeners_closed")] and ListenerSwitch(path).open is False
+    path.write_text("pas du json", encoding="utf-8")
+    assert ListenerSwitch(path).open is False                               # illisible : fermé
+
+
+def test_operator_switch_command_is_refused_when_the_station_closes_listening(tmp_path):
+    from trxstation.gateway.api.access import ListenerSwitch
+
+    async def scenario(fake):
+        async with station(fake) as st:
+            access = AccessControl([ClientAuth("phone", password_hash="x")], Access(max_listeners=0))
+            access.switch = ListenerSwitch(tmp_path / "listeners.json")
+            phone = await connect(st, "phone", access=access)
+            await phone.say(cmd="listeners_open", id=1, on=True)
+            assert phone.result(1)["reason"] == "listeners_off" and access.switch.open is False
+            access.reload(access.accounts.values(), Access(max_listeners=3))
+            await phone.say(cmd="listeners_open", id=2, on=True)
+            assert phone.result(2)["ok"] and phone.result(2)["open"] is True and access.switch.open
+            visitor = await connect(st, "club1", role="listener", access=access)
+            await visitor.say(cmd="listeners_open", id=3, on=False)
+            assert visitor.result(3)["reason"] == "forbidden" and access.switch.open
+    run(scenario)

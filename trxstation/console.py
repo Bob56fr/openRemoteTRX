@@ -795,7 +795,11 @@ class Console:
                                                 if a.listeners_need_operator else "non (écoute possible sans opérateur)"),
                  "  Hors bandes          : " + ("écoute permise" if a.listeners_outside_bands else "silence pour les visiteurs"),
                  "  Comptes visiteurs    : " + (", ".join(self._account_label(c) for c in listeners) or "aucun")]
-        suspended = self._presence().get("suspended")
+        presence = self._presence()
+        if isinstance(presence.get("open"), bool):        # commutateur de l'opérateur (page, application)
+            lines.append("  Commutateur opérateur: " + ("ÉCOUTE OUVERTE" if presence["open"] else
+                                                       "écoute fermée (l'opérateur l'ouvre depuis la page ou l'application)"))
+        suspended = presence.get("suspended")
         if isinstance(suspended, dict):
             lines.append("  ÉCOUTE SUSPENDUE     : " + str(suspended.get("message", ""))[:300])
         connected = [c for c in self._connected() if c.get("role") == "listener"]

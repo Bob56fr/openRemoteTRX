@@ -84,6 +84,8 @@
     forbidden: "Compte visiteur : réception seule, aucune commande vers la station.",
     unknown_listener: "Ce visiteur n'est plus connecté.",
     still_overloaded: "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
+    listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
+    listeners_unavailable: "Cette station ne gère pas les visiteurs.",
   };
 
   // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
@@ -118,6 +120,14 @@
         : "Opérateur momentanément déconnecté : fin de l'écoute des visiteurs dans " + Math.max(0, Math.round(grace)) + " s.",
       suspended: suspended ? String(suspended.message || "Écoute des visiteurs suspendue.").slice(0, 300) : "",
       canReopen: operator && !!suspended,
+      // commutateur de l'opérateur (fin de la rubrique Connexion) ; station 0.74.0+ (champ « open »)
+      switchShown: operator && typeof presence.open === "boolean",
+      switchOn: presence.open === true,
+      switchAvailable: (Number(presence.max_listeners) || 0) > 0,
+      switchNote: (Number(presence.max_listeners) || 0) <= 0
+        ? "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 20)."
+        : presence.open === true ? "Ouverte : " + listeners + " visiteur(s) sur " + Number(presence.max_listeners) + " au plus."
+          : "Fermée : aucun visiteur ne peut se connecter.",
     };
   }
 
@@ -1715,6 +1725,14 @@
       /* Opérateur : déconnecter un visiteur (il peut revenir ; pour l'en empêcher, désactiver son compte sur la station). */
       const res = await this.send("listener_kick", { account: account });
       if (!res.ok) this.ui.log("Déconnexion du visiteur refusée : " + (REASONS[res.reason] || res.reason), "warn");
+      return res;
+    }
+
+    async setListenersOpen(on) {
+      /* Opérateur : commutateur « Écoute des visiteurs » (mémorisé sur la station ; fermer déconnecte les visiteurs). */
+      const res = await this.send("listeners_open", { on: !!on });
+      this.ui.log(res.ok ? (on ? "Écoute des visiteurs ouverte." : "Écoute des visiteurs fermée : visiteurs déconnectés.")
+        : "Écoute des visiteurs : " + (REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
       return res;
     }
 

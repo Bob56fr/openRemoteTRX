@@ -1211,6 +1211,18 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   await kick.click(); await wait();
   assert.deepEqual(sent("listener_kick").map((m) => m.account), ["club1"]);
   await $("presence-close").click(); assert.equal($("presence-dialog").hidden, true);
+  assert.equal($("blk-listeners").hidden, true);                                    // station sans commutateur (avant 0.74.0)
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
+         presence: Object.assign({}, presence, { open: false, listeners: 0 }) });
+  await wait(30);
+  assert.equal($("blk-listeners").hidden, false); assert.equal($("listeners-open").checked, false);
+  assert.match($("listeners-note").textContent, /Fermée/);
+  $("listeners-open").checked = true; await $("listeners-open").dispatch("change", { target: $("listeners-open") }); await wait();
+  assert.deepEqual(sent("listeners_open").map((m) => m.on), [true]);
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
+         presence: Object.assign({}, presence, { open: false, max_listeners: 0, listeners: 0 }) });
+  await wait(30);
+  assert.equal($("listeners-open").disabled, true); assert.match($("listeners-note").textContent, /menu 20/);
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
          presence: Object.assign({}, presence, { suspended: { message: "Station surchargée (processeur à 87 °C)" } }) });
   await wait(30);

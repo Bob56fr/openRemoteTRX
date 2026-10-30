@@ -54,6 +54,8 @@ object Texts {
         "forbidden" to "Compte visiteur : réception seule, aucune commande vers la station.",
         "unknown_listener" to "Ce visiteur n'est plus connecté.",
         "still_overloaded" to "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
+        "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
+        "listeners_unavailable" to "Cette station ne gère pas les visiteurs.",
     )
 
     val CUTS: Map<String, String> = mapOf(

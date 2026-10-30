@@ -152,6 +152,13 @@ object RigHub {
 
     fun releaseLocal() { service?.onRig { session, now -> session.releaseLocal(now) } }
 
+    /** Visiteurs (opérateur seulement) : déconnecter, rouvrir après une surcharge, commutateur « Écoute des visiteurs ». */
+    fun kickListener(account: String) { service?.onRig { session, now -> session.kickListener(now, account) } }
+
+    fun reopenListeners() { service?.onRig { session, now -> session.reopenListeners(now) } }
+
+    fun setListenersOpen(on: Boolean) { service?.onRig { session, now -> session.setListenersOpen(now, on) } }
+
     fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }
 
     fun setMode(mode: String) { service?.onRig { session, now -> session.setMode(now, mode) } }

@@ -82,6 +82,18 @@ class ContractTest {
         assertIs<Beeps>(ServerMessages.decode(messages["beeps"].toString()))
         assertIs<Selcall>(ServerMessages.decode(messages["selcall"].toString()))
         assertEquals("cluster", assertIs<ModuleMessage>(ServerMessages.decode(messages["module"].toString())).module)
+        assertEquals("operator_absent", assertIs<Bye>(ServerMessages.decode(messages["bye"].toString())).reason)
+    }
+
+    @Test
+    fun `visiteurs - role, pseudo et presence de l exemple`() {
+        val hello = assertIs<Hello>(ServerMessages.decode(messages["hello"].toString()))
+        assertEquals("operator", hello.role); assertEquals("Kriss F4ABC", hello.pseudo); assertTrue(!hello.listener)
+        val presence = assertIs<State>(ServerMessages.decode(messages["state"].toString())).presence!!
+        assertEquals(2, presence.listeners); assertEquals(true, presence.open)
+        assertEquals(2, presence.people[1].count); assertEquals("club1", presence.connections[1].id)
+        val old = assertIs<State>(ServerMessages.decode("""{"type":"state","ptt":{"state":"RX"}}"""))
+        assertNull(old.presence)                                         // station d'avant 0.71.0
     }
 
     @Test
@@ -130,6 +142,7 @@ class ContractTest {
             "selcall_calibrate" -> Command.SelcallCalibrate
             "listener_kick" -> Command.ListenerKick(p("account").content)
             "listeners_reopen" -> Command.ListenersReopen
+            "listeners_open" -> Command.ListenersOpen(p("on").boolean)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

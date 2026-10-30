@@ -1184,7 +1184,23 @@
       banner.hidden = !text;
       banner.textContent = text;
       if (presenceOpen) renderPresenceList();
+      const box = $("blk-listeners");                                            // commutateur de l'opérateur
+      box.hidden = !pv || !pv.switchShown;
+      if (pv && pv.switchShown) {
+        $("listeners-open").checked = pv.switchOn;
+        $("listeners-open").disabled = !pv.switchAvailable && !pv.switchOn;
+        $("listeners-note").textContent = pv.switchNote;
+      }
     }
+    $("listeners-open").addEventListener("change", (event) => {
+      const on = !!event.target.checked;
+      if (!on && lastPresence && lastPresence.count > 0
+          && !window.confirm("Fermer l'écoute des visiteurs ? Les " + lastPresence.count + " visiteur(s) connecté(s) seront déconnectés.")) {
+        event.target.checked = true;
+        return;
+      }
+      client.setListenersOpen(on).catch(fail);
+    });
     $("presence").addEventListener("click", () => { presenceOpen = true; renderPresenceList(); $("presence-dialog").hidden = false; });
     $("presence-close").addEventListener("click", () => { presenceOpen = false; $("presence-dialog").hidden = true; });
     $("presence-reopen").addEventListener("click", () => client.reopenListeners().catch(fail));

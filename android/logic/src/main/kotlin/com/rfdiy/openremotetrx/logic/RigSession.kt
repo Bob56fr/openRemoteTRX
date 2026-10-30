@@ -3,6 +3,7 @@
 package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.Beeps
+import com.rfdiy.openremotetrx.protocol.Bye
 import com.rfdiy.openremotetrx.protocol.Command
 import com.rfdiy.openremotetrx.protocol.ErrorMessage
 import com.rfdiy.openremotetrx.protocol.Hello
@@ -57,6 +58,10 @@ data class RigState(
     val recentSpots: List<Spot> = emptyList(),
     /** SELCALL de la station (null : station sans SELCALL). */
     val selcall: SelcallStatus? = null,
+    /** Compte VISITEUR (hello.role) : réception seule, commandes inertes. */
+    val listener: Boolean = false,
+    /** Visiteurs connectés, attente de l'opérateur, surcharge (state.presence) ; null = rien de la station. */
+    val presence: PresenceUi? = null,
     /** Bips de fin d'émission de la station (null : station sans bips). */
     val beeps: BeepSettings? = null,
 )
@@ -110,6 +115,8 @@ class RigSession(
     private var lastReconnectAlert = 0L
     private var lastAttemptError = ""
     private val heartbeat = HeartbeatPolicy()
+    private var bye: Bye? = null                     // « bye » reçu : la fermeture qui suit ne relance pas de reconnexion
+    private var lastForbiddenLog = Long.MIN_VALUE / 2
     private val watch = LinkWatch()
     private val arming = TxArming()
     private var silenceAlerted = false
@@ -160,7 +167,11 @@ class RigSession(
         val r = reconnect
         if (r != null) {
             lastAttemptError = text
-            if (r.attemptFailed(now, authRefused = code == "auth") == ReconnectOutcome.AUTH) giveUp(now, "identifiants refusés par la station")
+            // identifiants refusés, ou accès refusé (visiteurs) : on n'insiste jamais
+            if (r.attemptFailed(now, authRefused = code == "auth" || code == "refused") == ReconnectOutcome.AUTH) {
+                giveUp(now, if (code == "refused") "accès refusé par la station" + (if (detail.isNotBlank()) " ($detail)" else "")
+                            else "identifiants refusés par la station")
+            }
             publish(now)
             return
         }
@@ -176,9 +187,14 @@ class RigSession(
             return
         }
         val mine = mineActive()
+        val farewell = bye
         teardown()
         val title = Texts.loss(code)
-        if (windowS > 0) {
+        if (farewell != null) {                                  // la station a dit pourquoi : pas de reconnexion automatique
+            status = LinkStatus.DISCONNECTED
+            log("La station a fermé la connexion : ${farewell.message.ifBlank { farewell.reason }}", LogLevel.BAD)
+            link.alert(LinkAlert.FAILED)
+        } else if (windowS > 0) {
             reconnect = ReconnectPolicy(windowS, now)
             lastReconnectAlert = now
             lastAttemptError = ""
@@ -231,6 +247,10 @@ class RigSession(
             is Memories -> memories = Radio.sortMemories(msg.items)
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
+            is Bye -> {
+                bye = msg
+                log("La station va fermer la connexion : ${msg.message.ifBlank { msg.reason }}", LogLevel.BAD)
+            }
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
                 Spots.recentOf(msg.data, wall())?.let { recentSpots = it }
@@ -327,7 +347,7 @@ class RigSession(
                 }
                 LinkVerdict.OK -> Unit
             }
-            if (heartbeat.shouldBeat(now, mine)) link.send(Command.Heartbeat.encode())
+            if (!listener && heartbeat.shouldBeat(now, mine)) link.send(Command.Heartbeat.encode())
             if (now - lastPing >= PING_EVERY_MS) {
                 lastPing = now
                 send(now, Command.GetState)
@@ -344,13 +364,18 @@ class RigSession(
     // ------------------------------------------------------------------ actions de l'utilisateur
 
     fun setArmed(now: Long, on: Boolean) {
-        if (on && connected) arming.arm() else arming.disarm()
+        if (on && connected && !listener) arming.arm() else arming.disarm()
         publish(now)
     }
 
     /** Appui sur PTT (toggle) : prise d'émission si armé et libre, fin de SON émission sinon. */
     fun pressPtt(now: Long) {
         if (!connected) return
+        if (listener) {                                          // visiteur : réception seule, aucune émission
+            send(now, Command.Toggle)                            // refusé (et dit) avant de partir
+            publish(now)
+            return
+        }
         val mine = mineActive()
         val ptt = state?.ptt
         when {
@@ -551,7 +576,39 @@ class RigSession(
 
     // ------------------------------------------------------------------ interne
 
+    // ------------------------------------------------------------------ visiteurs (opérateur seulement)
+
+    /** Déconnecter un visiteur (il peut revenir ; pour l'en empêcher : désactiver son compte sur la station). */
+    fun kickListener(now: Long, account: String) {
+        if (!connected) return
+        send(now, Command.ListenerKick(account))
+        publish(now)
+    }
+
+    /** Rouvrir l'écoute suspendue par une surcharge (la station refuse tant qu'elle n'est pas revenue à la normale). */
+    fun reopenListeners(now: Long) {
+        if (!connected) return
+        send(now, Command.ListenersReopen)
+        publish(now)
+    }
+
+    /** Commutateur « Écoute des visiteurs » ; fermer déconnecte les visiteurs présents. */
+    fun setListenersOpen(now: Long, on: Boolean) {
+        if (!connected) return
+        send(now, Command.ListenersOpen(on))
+        publish(now)
+    }
+
+    private val listener: Boolean get() = hello?.listener == true
+
     private fun send(now: Long, command: Command) {
+        if (listener && command.name !in Command.LISTENER) {      // visiteur : rien d'autre ne part vers la station
+            if (now - lastForbiddenLog > 2000) {
+                lastForbiddenLog = now
+                log(Texts.refusal("forbidden", ""), LogLevel.WARN)
+            }
+            return
+        }
         val id = nextId++
         if (link.send(command.encode(id))) pending[id] = Pending(command.name, now)
     }
@@ -585,6 +642,7 @@ class RigSession(
         watch.reset()
         arming.onConnected()
         silenceAlerted = false
+        bye = null
         hello = null
         state = null
         memories = emptyList()
@@ -631,6 +689,8 @@ class RigSession(
             beeps = beeps,
             recentSpots = recentSpots,
             selcall = selcall,
+            listener = listener,
+            presence = PresenceUi.of(state?.presence, listener),
         )
         if (next != snapshot) {
             snapshot = next

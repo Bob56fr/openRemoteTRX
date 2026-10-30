@@ -46,7 +46,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "selcall_calibrate",             # réglage automatique du niveau d'après l'ALC : ÉMISSION d'un ton par paliers ; annuler = stop
             # visiteurs (docs/visiteurs-cahier-des-charges.md) : OPÉRATEURS seulement, n'agissent jamais sur le poste
             "listener_kick",                 # déconnecter un visiteur : account
-            "listeners_reopen")              # rouvrir l'écoute après une surcharge (acceptée seulement au vert)
+            "listeners_reopen",              # rouvrir l'écoute après une surcharge (acceptée seulement au vert)
+            "listeners_open")                # commutateur « Écoute des visiteurs » : on (mémorisé sur la station)
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -210,6 +211,10 @@ def parse_command(raw: str | bytes) -> Command:
         unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db", "send_on_tx_end", "tx_level_dbfs"}
         if unknown or not params:
             raise ProtocolError("invalid_params", "filter_mode, attenuation_db, send_on_tx_end et/ou tx_level_dbfs attendus")
+    elif name == "listeners_open":
+        if not isinstance(data.get("on"), bool):
+            raise ProtocolError("invalid_params", "on doit valoir true ou false")
+        params["on"] = data["on"]
     elif name == "listener_kick":
         account = data.get("account")
         if not isinstance(account, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", account):

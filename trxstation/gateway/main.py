@@ -34,7 +34,7 @@ from ..spectrum.service import SpectrumService
 from ..station_id import ensure_station_id
 from ..supervisor.notify import Notifier
 from .access_watch import AccessWatcher
-from .api.access import OPERATOR, AccessControl, listener_muted
+from .api.access import OPERATOR, AccessControl, ListenerSwitch, listener_muted
 from .api.overload import Limits, LagMeter, OverloadGuard, system_sampler
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
@@ -79,6 +79,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
     access = AccessControl(cfg.clients, cfg.access)       # rôles, quotas, présence de l'opérateur (visiteurs)
+    access.switch = ListenerSwitch(Path(cfg.supervisor.state_dir) / "listeners.json")   # commutateur de l'opérateur
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum,
                                 presence=lambda: access.presence(OPERATOR))
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]

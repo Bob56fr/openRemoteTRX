@@ -13,8 +13,13 @@ enregistré auprès du PttController (session.py).
 """
 from __future__ import annotations
 
+import json
+import logging
+import os
+import tempfile
 import time
 from collections.abc import Callable
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -22,6 +27,7 @@ from ...config import Access, ClientAuth
 from .protocol import COMMANDS
 
 OPERATOR, LISTENER = "operator", "listener"
+log = logging.getLogger(__name__)
 
 # Liste blanche d'un visiteur : relire l'état, recevoir (ou non) les balayages du spectre HF chez lui. Tout le reste
 # est refusé, y compris une commande ajoutée plus tard. LISTENER_REFUSED n'est là que pour le test qui oblige à
@@ -31,7 +37,8 @@ LISTENER_REFUSED = frozenset({
     "toggle", "stop", "heartbeat", "set_frequency", "set_mode", "set_squelch", "set_function", "set_level",
     "set_offset", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
     "spectrum_set", "beeps_set", "local_release", "bug_report", "selcall_activate", "selcall_rearm",
-    "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen"})
+    "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen",
+    "listeners_open"})
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {
@@ -45,7 +52,37 @@ MESSAGES = {
     "too_many_forbidden": "Trop de commandes refusées : connexion fermée.",
     "kicked": "Déconnecté par l'opérateur de la station.",
     "station_overload": "Station surchargée : écoute des visiteurs suspendue pour protéger la station.",
+    "listeners_closed": "L'opérateur a fermé l'écoute des visiteurs.",
 }
+
+
+class ListenerSwitch:
+    """Commutateur « Écoute des visiteurs » de l'OPÉRATEUR (page, application ; demande de l'utilisateur du 2026-10-30) :
+    mémorisé dans state_dir/listeners.json, FERMÉ par défaut et si le fichier est illisible. Il ne fait qu'ouvrir ou
+    fermer ce que station.toml permet ([access] max_listeners)."""
+
+    def __init__(self, path: str | Path | None = None):
+        self.path = Path(path) if path is not None else None
+        self.open = False
+        if self.path is not None:
+            try:
+                self.open = json.loads(self.path.read_text(encoding="utf-8")).get("open") is True
+            except (OSError, ValueError, AttributeError):
+                self.open = False
+
+    def set(self, on: bool) -> None:
+        self.open = bool(on)
+        if self.path is None:
+            return
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".listeners-", suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump({"open": self.open}, handle)
+            from ...status import replace_atomic
+            replace_atomic(tmp, self.path)
+        except OSError as exc:                     # gardé en mémoire : effet immédiat, perdu au redémarrage
+            log.error("commutateur des visiteurs non enregistré : %s", exc)
 HTTP_STATUS = {"listeners_full": 503, "operators_full": 503}     # le reste : 403
 
 
@@ -83,6 +120,7 @@ class AccessControl:
         self._grace: _Grace | None = None
         self._numbers = 0
         self.guard = None                # OverloadGuard (overload.py) : écoute suspendue quand la station souffre
+        self.switch = ListenerSwitch()   # commutateur de l'opérateur (gateway/main : fichier dans state_dir)
         self.reload(clients, settings)
 
     # ------------------------------------------------------------------ comptes
@@ -127,6 +165,8 @@ class AccessControl:
         if role == LISTENER:
             if s.max_listeners <= 0:
                 raise AccessRefused("listeners_off")
+            if not self.switch.open:
+                raise AccessRefused("listeners_closed")
             if self.guard is not None and self.guard.suspended:
                 raise AccessRefused("station_overload", self.guard.message())
             if sum(c.role == LISTENER for c in others) >= s.max_listeners:
@@ -170,6 +210,8 @@ class AccessControl:
                 out += [(cid, "operator_absent") for cid in listeners]
         if self.settings.max_listeners <= 0:            # fonction coupée sur la station
             out += [(cid, "listeners_off") for cid in listeners]
+        elif not self.switch.open:                       # fermée par l'opérateur
+            out += [(cid, "listeners_closed") for cid in listeners]
         seen: set[str] = set()
         return [(cid, reason) for cid, reason in out if not (cid in seen or seen.add(cid))]
 
@@ -208,6 +250,7 @@ class AccessControl:
         remaining = self.grace_remaining()
         out = {"operators": sum(c.role == OPERATOR for c in live), "listeners": sum(c.role == LISTENER for c in live),
                "max_listeners": self.settings.max_listeners,
+               "open": self.switch.open and self.settings.max_listeners > 0,
                "suspended": self.guard.status() if self.guard is not None else None,
                "grace_remaining_s": None if remaining is None else round(remaining),
                "people": list(people.values())}
