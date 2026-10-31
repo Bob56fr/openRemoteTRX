@@ -50,9 +50,6 @@ class RtcLink(
     private val processing: MicProcessing = MicProcessing(echo = true, noise = true),
 ) {
     private val factory: PeerConnectionFactory
-    // Égaliseur et effets de voix (VoiceHub) : après l'annulation d'écho, avant l'encodage Opus. Créé APRÈS le chargement
-    // de la bibliothèque native ; s'il échoue, la liaison marche sans égaliseur (jamais de plantage pour lui).
-    private var voiceFx: ExternalAudioProcessingFactory? = null
     private var generation = 0
     private var pc: PeerConnection? = null
     private var dc: DataChannel? = null
@@ -76,19 +73,8 @@ class RtcLink(
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
             )
             .createAudioDeviceModule()
-        voiceFx = try {
-            ExternalAudioProcessingFactory().apply {
-                setCapturePostProcessing(VoiceHub.processor)
-                setBypassFlagForCapturePost(false)
-                setRenderPreProcessing(VoiceHub.rxProcessor)                // débrouillage du scrambler (réception)
-                setBypassFlagForRenderPre(false)
-            }
-        } catch (e: Throwable) {                                   // UnsatisfiedLinkError compris
-            VoiceHub.unavailable("Égaliseur indisponible sur ce téléphone (${e.javaClass.simpleName}) : voix sans traitement.")
-            null
-        }
         factory = PeerConnectionFactory.builder().setAudioDeviceModule(adm)
-            .apply { voiceFx?.let { setAudioProcessingFactory(it) } }
+            .apply { voiceFx()?.let { setAudioProcessingFactory(it) } }
             .createPeerConnectionFactory()
     }
 
@@ -254,7 +240,7 @@ class RtcLink(
     fun release() {
         close()
         runCatching { factory.dispose() }
-        runCatching { voiceFx?.destroy() }
+        // JAMAIS voiceFx.destroy() : voir voiceFx() plus bas.
     }
 
     private fun closedBy(gen: Int, code: String) {
@@ -284,5 +270,35 @@ class RtcLink(
             override fun onCreateFailure(e: String?) {}
             override fun onSetFailure(e: String?) = cont.resumeWithException(AttemptException("client_error", e ?: "SDP refusé"))
         })
+    }
+
+    private companion object {
+        private var voiceFx: ExternalAudioProcessingFactory? = null
+        private var voiceFxTried = false
+
+        /**
+         * Égaliseur et effets de voix (VoiceHub) : après l'annulation d'écho, avant l'encodage Opus. UN SEUL par processus,
+         * gardé jusqu'à sa fin : le code natif de stream-webrtc (1.3.10) tient un objet GLOBAL que `destroy()` libère sans
+         * l'oublier ; la liaison suivante réutilisait l'objet libéré et la fermeture suivante le libérait deux fois
+         * (SIGABRT dans ExternalAudioProcessingFactory.destroy, relevé par trx-journal-android le 2026-10-30, étape 95).
+         * Appelé APRÈS PeerConnectionFactory.initialize (bibliothèque chargée) ; en cas d'échec, liaison sans égaliseur.
+         */
+        @Synchronized
+        fun voiceFx(): ExternalAudioProcessingFactory? {
+            if (voiceFxTried) return voiceFx
+            voiceFxTried = true
+            voiceFx = try {
+                ExternalAudioProcessingFactory().apply {
+                    setCapturePostProcessing(VoiceHub.processor)
+                    setBypassFlagForCapturePost(false)
+                    setRenderPreProcessing(VoiceHub.rxProcessor)            // débrouillage du scrambler (réception)
+                    setBypassFlagForRenderPre(false)
+                }
+            } catch (e: Throwable) {                               // UnsatisfiedLinkError compris
+                VoiceHub.unavailable("Égaliseur indisponible sur ce téléphone (${e.javaClass.simpleName}) : voix sans traitement.")
+                null
+            }
+            return voiceFx
+        }
     }
 }

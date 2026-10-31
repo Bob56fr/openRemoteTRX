@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trx-station"
-version = "0.79.0"
+version = "0.80.0"
 description = "Passerelle de pilotage à distance d'un TRX radioamateur (côté Raspberry Pi)"
 requires-python = ">=3.11"
 # Cœur en stdlib ; les modules de l'audio, du web et de l'interface sont dans les extras ci-dessous.

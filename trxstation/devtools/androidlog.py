@@ -307,7 +307,7 @@ class Analyzer:
             return
         signal = next((x for x in lines if x.startswith("signal ")), "signal inconnu")
         abort = [x for x in lines if x.startswith("Abort message")]
-        frames = [x.strip() for x in lines if re.match(r"\s*#\d+ pc", x)][:10]
+        frames = native_frames(lines)
         self.add("natif", signal, abort + frames, self._native_time)
 
     def tombstone(self, name: str, text: str) -> None:
@@ -316,9 +316,21 @@ class Analyzer:
             return
         lines = text.splitlines()
         signal = next((x for x in lines if x.startswith("signal ")), "signal inconnu")
-        frames = [x.strip() for x in lines if re.match(r"\s*#\d+ pc", x)][:10]
+        frames = native_frames(lines)
         timestamp = next((x[10:].strip() for x in lines if x.startswith("Timestamp:")), name)
-        self.add("natif", signal, frames, timestamp)
+        abort = [x for x in lines if x.startswith("Abort message")][:1]
+        self.add("natif", signal, abort + frames, timestamp)
+
+
+_NATIVE_FRAME = re.compile(r"\s*#\d+ pc")
+_NOISE_FRAME = re.compile(r"/libart\.so|/libc\.so(?! \(abort)|/libbase\.so|/libutils\.so")
+
+
+def native_frames(lines: list[str], limit: int = 15) -> list[str]:
+    """Pile native utile : sans les étages internes d'Android (interpréteur ART…) qui cachent nos fonctions ; les
+    chemins /data/app/~~…/ (aléatoires) raccourcis."""
+    frames = [x.strip() for x in lines if _NATIVE_FRAME.match(x) and not _NOISE_FRAME.search(x)]
+    return [re.sub(r"/data/app/[^ ]*?/(base\.apk)", r"\1", f) for f in frames[:limit]]
 
 
 # -------------------------------------------------------------------------------------------- lecture des fichiers

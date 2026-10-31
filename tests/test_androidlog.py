@@ -82,6 +82,7 @@ def test_findings_are_classified_and_explained() -> None:
     assert "Reason: Input dispatching timed out" in anr.details
     native, = k["natif"]
     assert native.title.startswith("signal 11") and "WebRTC" in (native.advice or "")
+    assert native.details == ["#00 pc 00000000004a1b2c  /data/app/~~x/lib/arm64/libjingle_peerconnection_so.so"]
     assert len(k["arret"]) == 1
     install = "\n".join(f.title for f in k["installation"])
     assert "DF-DFERH-01" in install and "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in install and "signatures" in install
@@ -89,6 +90,17 @@ def test_findings_are_classified_and_explained() -> None:
     errors, = k["erreur"]                                    # deux lignes identiques : un constat, compté 2 fois
     assert errors.count == 2 and errors.title.startswith("PeerConnection : ICE failed")
     assert 4321 in a.pids and 4500 in a.pids
+
+
+def test_native_frames_hide_android_internals() -> None:
+    lines = ["    #00 pc 07b9f0  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: 8d)",
+             "    #01 pc 45c070  /data/app/~~Fx==/com.rfdiy.openremotetrx-B8==/base.apk!libjingle_peerconnection_so.so (offset 0x1)",
+             "    #04 pc 288270  /apex/com.android.art/lib64/libart.so (art_quick_generic_jni_trampoline+144)",
+             "    #09 pc 45e6a8  /data/app/~~Fx==/com.rfdiy.openremotetrx-B8==/base.apk (offset 0x1) (org.webrtc.ExternalAudioProcessingFactory.destroy+0)"]
+    assert al.native_frames(lines) == [
+        "#00 pc 07b9f0  /apex/com.android.runtime/lib64/bionic/libc.so (abort+160) (BuildId: 8d)",
+        "#01 pc 45c070  base.apk!libjingle_peerconnection_so.so (offset 0x1)",
+        "#09 pc 45e6a8  base.apk (offset 0x1) (org.webrtc.ExternalAudioProcessingFactory.destroy+0)"]
 
 
 def test_report_hides_personal_data() -> None:
@@ -109,7 +121,8 @@ def test_bugreport_zip_with_device_and_tombstone(tmp_path: Path) -> None:
         z.writestr("main_entry.txt", "bugreport-a55-2026-10-30.txt")
         z.writestr("bugreport-a55-2026-10-30.txt", BUGREPORT_HEAD + LOG)
         z.writestr("FS/data/tombstones/tombstone_03", f"Timestamp: 2026-10-30 13:00:00\npid: 9, tid: 9, name: x  >>> {APP} <<<\n"
-                                                      "signal 6 (SIGABRT)\n    #00 pc 0001  libc.so\n")
+                                                      "Abort message: 'double free'\nsignal 6 (SIGABRT)\n"
+                                                      "    #00 pc 0001  libc.so (abort+160)\n")
         z.writestr("FS/data/tombstones/tombstone_04", "pid: 1 >>> com.autre <<<\nsignal 11\n")
     a = al.analyze_file(path)
     text = al.text_report(a, path.name)
@@ -117,6 +130,7 @@ def test_bugreport_zip_with_device_and_tombstone(tmp_path: Path) -> None:
     assert "Application : 0.27.0 (versionCode 31), installée par Play Store" in text
     assert [f.title for f in kinds(a)["natif"]] == ["signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0",
                                                     "signal 6 (SIGABRT)"]
+    assert kinds(a)["natif"][1].details[0] == "Abort message: 'double free'"
 
 
 def test_utf16_file_from_powershell(tmp_path: Path) -> None:
