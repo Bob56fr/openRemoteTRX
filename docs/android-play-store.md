@@ -52,7 +52,9 @@ testeurs sans « Sources inconnues ») ; si la revue de Google le refuse, le ret
 
 Installation qui échoue ou application qui se ferme : la Play Console ne donne AUCUN journal par utilisateur ; le
 testeur suit `https://bob56fr.github.io/openRemoteTRX/android/journaux.html` (`docs/site/android/journaux.html`,
-iframe WordPress `docs/wordpress/android-journaux-iframe.html`) et renvoie le journal par e-mail (jamais en public).
+iframe WordPress `docs/wordpress/android-journaux-iframe.html`) et renvoie le journal par e-mail (jamais en public). L'analyser : `trx-journal-android` (ou
+`python -m trxstation.devtools.androidlog` dans le dépôt) : il trouve le fichier dans Téléchargements ou sur le
+téléphone branché et écrit un rapport HTML sans données personnelles.
 
 Un testeur qui a déjà la version `debug` (même identifiant, autre signature) doit la **désinstaller** d'abord.
 Décision de l'utilisateur (2026-10-30) : le Samsung S25 GARDE la version `debug` (développement par `adb`) ; la
