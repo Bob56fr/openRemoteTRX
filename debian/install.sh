@@ -30,7 +30,7 @@ BACKPORTS_SOURCES=/etc/apt/sources.list.d/trx-remote-backports.sources   # Hamli
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
 GNOME_EXT_DIR=/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com   # indicateur de la barre du haut (lecture seule)
-COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif)
+COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif trx-journal-android)
 APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-config libffi-dev libssl-dev
               libhamlib-utils alsa-utils libportaudio2 ca-certificates)
 MIN_FREE_MB=2000
