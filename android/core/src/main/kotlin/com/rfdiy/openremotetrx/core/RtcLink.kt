@@ -44,8 +44,6 @@ class RtcLink(
     private val onClosed: (String) -> Unit,
     /** Balayage du spectre HF (binaire), sur le fil de WebRTC : à traiter vite (une copie, pas de calcul lourd). */
     private val onSpectrum: (ByteArray) -> Unit = {},
-    /** Micro d'un casque Bluetooth : le son passe alors comme un appel (qualité téléphone, dans le casque). */
-    voiceCall: Boolean = false,
     /** Annulation d'écho et réduction de bruit du micro (profil choisi par l'utilisateur, logic.MicProfiles). */
     private val processing: MicProcessing = MicProcessing(echo = true, noise = true),
 ) {
@@ -66,10 +64,10 @@ class RtcLink(
             .setUseHardwareAcousticEchoCanceler(processing.echo)
             .setUseHardwareNoiseSuppressor(processing.noise)
             // Son de la station joué comme un média : haut-parleur, casque, Bluetooth ou voiture, volume « média ».
-            // Micro du casque Bluetooth choisi : comme un appel, sinon le son partirait sur le haut-parleur du téléphone.
+            // Toujours, même avec le micro du casque (pris en mode appel pendant l'émission seulement, RigService).
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(if (voiceCall) AudioAttributes.USAGE_VOICE_COMMUNICATION else AudioAttributes.USAGE_MEDIA)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()
             )
             .createAudioDeviceModule()

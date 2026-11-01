@@ -177,9 +177,14 @@ fun HeadsetSection(headsetMicState: String) {
         Column {
             Text("Micro du casque Bluetooth", style = MaterialTheme.typography.bodyMedium)
             Text(
-                headsetMicState.ifEmpty { "Son en qualité téléphone dans le casque. Prend effet à la prochaine connexion." },
+                "Pris pendant l'émission seulement (le casque passe en mode appel : parlez après le bip). " +
+                    "Pendant l'émission, le bouton du casque la termine. Sans casque, émission refusée. " +
+                    "Prend effet à la prochaine connexion.",
                 color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
             )
+            if (headsetMicState.isNotEmpty()) {
+                Text(headsetMicState, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
     Text("Android Auto", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))

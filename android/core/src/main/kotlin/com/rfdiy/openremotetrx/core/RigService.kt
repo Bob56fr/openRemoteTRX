@@ -26,6 +26,8 @@ import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.rfdiy.openremotetrx.logic.Format
+import com.rfdiy.openremotetrx.logic.HeadsetMic
+import com.rfdiy.openremotetrx.logic.HeadsetMicStep
 import com.rfdiy.openremotetrx.logic.LinkAlert
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.MediaAction
@@ -55,7 +57,7 @@ import kotlinx.coroutines.launch
  *
  * Réglage « PTT par le bouton du casque ou du volant » (désactivé par défaut) : session média Android qui reçoit
  * Lecture/Pause d'un casque filaire ou Bluetooth et des touches du volant (logic.MediaKeys). Réglage « micro du
- * casque Bluetooth » : appareil de communication choisi pour toute la connexion (son en qualité téléphone).
+ * casque Bluetooth » : casque en mode appel pendant l'émission SEULEMENT (logic.HeadsetMic, étape 96).
  */
 class RigService : Service() {
     private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "rig") }
@@ -75,10 +77,11 @@ class RigService : Service() {
     private var lastNotification = ""
     private var foreground = false
     private var commListener: Any? = null                         // AudioManager.OnCommunicationDeviceChangedListener (Android 12+)
-    private var lastMicFix = 0L
     private var deviceAddedAt: Long? = null                       // fil « rig »
     private var lastMediaKeyAt: Long? = null
     private var headsetMic = false
+    private val headsetCall = HeadsetMic()                        // fil « rig »
+    private var headsetName = ""
     private val devices = object : AudioDeviceCallback() {
         override fun onAudioDevicesAdded(added: Array<out AudioDeviceInfo>?) {
             executor.execute { deviceAddedAt = now() }             // casque ou voiture arrivé : « lecture » automatique ignorée
@@ -107,13 +110,14 @@ class RigService : Service() {
             onMessage = { text -> session.onMessage(now(), text) },
             onClosed = { code -> session.onLinkClosed(now(), code) },
             onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
-            voiceCall = headsetMic,
             processing = processing,
         )
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()
             override fun send(text: String): Boolean = rtc.send(text)
-            override fun setMicOpen(open: Boolean) = rtc.setMicOpen(open)
+            override fun setMicOpen(open: Boolean) {
+                if (headsetMic) headsetStep(headsetCall.micWanted(open, now())) else rtc.setMicOpen(open)
+            }
             override fun close() {
                 attempt?.cancel()
                 attempt = null
@@ -222,6 +226,7 @@ class RigService : Service() {
         ticker = scope.launch {
             while (isActive) {
                 session.tick(now(), online())
+                if (headsetMic) headsetStep(headsetCall.tick(now()))
                 delay(com.rfdiy.openremotetrx.protocol.Protocol.HEARTBEAT_TICK_MS)
             }
         }
@@ -237,7 +242,8 @@ class RigService : Service() {
     private fun onState(state: RigState) {
         RigHub.publish { it.copy(rig = state) }
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
-        if (mine != wasMine) sounds.txBeep(mine)
+        // Micro du casque : bip de prise quand le micro s'ouvre vraiment (casque en mode appel ~1 s plus tard, headsetStep).
+        if (mine != wasMine && !(mine && headsetMic)) sounds.txBeep(mine)
         wasMine = mine
 
         updateNotification(state)
@@ -359,59 +365,99 @@ class RigService : Service() {
         session.pressPtt(t)                                        // journal : motif du refus éventuel
     }
 
-    /** Micro du casque Bluetooth (Android 12+) : appareil de communication pour toute la connexion. */
+    /**
+     * Micro du casque Bluetooth (Android 12+), à la connexion : rien n'est basculé, la réception reste en mode musique
+     * (le bouton du casque y arrive comme Lecture/Pause). On suit seulement l'appareil de communication.
+     */
     private fun useHeadsetMic() {
         val am = getSystemService(AudioManager::class.java) ?: return
         val text = if (Build.VERSION.SDK_INT < 31) {
-            "micro du casque Bluetooth : Android 12 ou plus récent requis (micro du téléphone)"
+            "Android 12 ou plus récent requis : émission refusée tant que ce réglage est actif"
         } else {
-            val device = am.availableCommunicationDevices.firstOrNull {
-                it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
-            }
-            if (device == null) {
-                "aucun casque Bluetooth connecté : micro du téléphone"
-            } else {
-                am.mode = AudioManager.MODE_IN_COMMUNICATION
-                watchCommunicationDevice(am)
-                if (am.setCommunicationDevice(device)) "micro du casque : ${device.productName}" else "casque Bluetooth refusé par Android : micro du téléphone"
-            }
+            watchCommunicationDevice(am)
+            headsetDevice(am)?.let { "casque prêt : ${it.productName} (micro pris pendant l'émission seulement)" }
+                ?: "aucun casque Bluetooth connecté : émission refusée tant que ce réglage est actif"
         }
         RigHub.publish { it.copy(headsetMic = text) }
     }
 
+    @androidx.annotation.RequiresApi(31)
+    private fun headsetDevice(am: AudioManager): AudioDeviceInfo? = am.availableCommunicationDevices.firstOrNull { isHeadset(it) }
+
+    private fun isHeadset(device: AudioDeviceInfo?): Boolean =
+        device?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || device?.type == AudioDeviceInfo.TYPE_BLE_HEADSET
+
     /**
-     * Android peut reprendre l'appareil de communication (son revenu sur le téléphone, essai du 2026-10-29) : on remet
-     * le casque, au plus une fois toutes les 3 s pour ne jamais se battre avec le système, et on le note au journal.
+     * Appareil de communication changé. Pendant l'émission, le casque qui sort du mode appel (son bouton « raccroche »
+     * l'appel virtuel : Android le termine lui-même, relevé sur le S25 le 2026-11-01) = fin d'émission (HeadsetMic).
      */
     @androidx.annotation.RequiresApi(31)
     private fun watchCommunicationDevice(am: AudioManager) {
         if (commListener != null) return
         val listener = AudioManager.OnCommunicationDeviceChangedListener { current ->
-            executor.execute {
-                if (!headsetMic || !foreground) return@execute
-                val bt = current?.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || current?.type == AudioDeviceInfo.TYPE_BLE_HEADSET
-                if (bt) return@execute
-                val t = now()
-                val device = am.availableCommunicationDevices.firstOrNull {
-                    it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO || it.type == AudioDeviceInfo.TYPE_BLE_HEADSET
-                }
-                if (device == null || t - lastMicFix < 3000) {
-                    session.note(t, "Son et micro repassés sur le téléphone (casque " + (if (device == null) "déconnecté" else "repris par Android") + ").", warn = true)
-                    RigHub.publish { it.copy(headsetMic = "son et micro sur le téléphone") }
-                    return@execute
-                }
-                lastMicFix = t
-                am.mode = AudioManager.MODE_IN_COMMUNICATION
-                val ok = am.setCommunicationDevice(device)
-                session.note(t, "Son repassé sur le téléphone : casque " + (if (ok) "rétabli." else "refusé par Android."), warn = !ok)
-            }
+            executor.execute { if (headsetMic && foreground) headsetStep(headsetCall.routed(isHeadset(current))) }
         }
         am.addOnCommunicationDeviceChangedListener(mainExecutor, listener)
         commListener = listener
     }
 
+    /** Sur le fil « rig » : applique une décision de HeadsetMic (logic, testée). */
+    private fun headsetStep(step: HeadsetMicStep) {
+        when (step) {
+            HeadsetMicStep.None -> Unit
+            HeadsetMicStep.Route -> routeToHeadset()
+            HeadsetMicStep.OpenMic -> {
+                rtc.setMicOpen(true)
+                sounds.txBeep(true)                                    // « parlez après le bip » : micro ouvert
+                RigHub.publish { it.copy(headsetMic = "micro du casque : $headsetName (émission)") }
+            }
+            HeadsetMicStep.Release -> {
+                rtc.setMicOpen(false)
+                releaseRoute()
+            }
+            is HeadsetMicStep.Stop -> {
+                rtc.setMicOpen(false)
+                releaseRoute()
+                if (step.failure) sounds.refused()
+                executor.execute { session.stop(now(), step.why) }   // hors du rappel de la session en cours
+            }
+        }
+    }
+
+    /** Casque en mode appel pour l'émission ; le micro ne s'ouvre qu'à la confirmation (headsetStep, OpenMic). */
+    private fun routeToHeadset() {
+        val am = getSystemService(AudioManager::class.java)
+        if (am == null || Build.VERSION.SDK_INT < 31) {
+            headsetStep(headsetCall.routeFailed("Micro du casque : Android 12 ou plus récent requis : retour en réception."))
+            return
+        }
+        val device = headsetDevice(am)
+        if (device == null) {
+            headsetStep(headsetCall.routeFailed("Micro du casque choisi, mais aucun casque Bluetooth connecté : retour en réception."))
+            return
+        }
+        headsetName = device.productName.toString()
+        am.mode = AudioManager.MODE_IN_COMMUNICATION
+        if (!am.setCommunicationDevice(device)) {
+            headsetStep(headsetCall.routeFailed("Android refuse le micro du casque : retour en réception."))
+        } else if (isHeadset(am.communicationDevice)) {
+            headsetStep(headsetCall.routed(true))                  // déjà en place : aucun changement ne sera signalé
+        }
+    }
+
+    /** Casque rendu à la musique (réception). */
+    private fun releaseRoute() {
+        val am = getSystemService(AudioManager::class.java) ?: return
+        runCatching {
+            if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice()
+            am.mode = AudioManager.MODE_NORMAL
+        }
+        if (headsetMic && foreground) useHeadsetMic()             // texte des réglages : prêt ou absent
+    }
+
     private fun releaseHeadsetMic() {
         if (!headsetMic) return
+        headsetCall.reset()
         val am = getSystemService(AudioManager::class.java) ?: return
         if (Build.VERSION.SDK_INT >= 31) (commListener as? AudioManager.OnCommunicationDeviceChangedListener)?.let {
             runCatching { am.removeOnCommunicationDeviceChangedListener(it) }
