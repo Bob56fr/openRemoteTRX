@@ -1,7 +1,7 @@
 # Mesure de TOS (courbe de SWR de l'antenne) — cahier des charges
 
-Version 1 (2026-11-02, étape 103), à relire par l'utilisateur AVANT tout code. Demandé le 2026-11-02 ; décisions de
-l'utilisateur reprises de la conversation du même jour (§ 2). Les points encore ouverts sont au § 13.
+Version 2 (2026-11-02, étape 103) : réponses de l'utilisateur aux questions de la v1 intégrées (§ 13). Demandé le
+2026-11-02 ; décisions de l'utilisateur reprises de la conversation du même jour (§ 2).
 
 ## 1. Objet
 
@@ -18,9 +18,12 @@ C'est une **émission automatique** : elle suit toutes les règles de sécurité
    client, TOT, toute coupure arrête la mesure. Tests de panne obligatoires.
 2. C'est la **passerelle** qui fait la mesure. Le client (page, application) la lance, l'annule et affiche le résultat.
    TRX Console ne la lance jamais (un outil ne peut que couper) ; elle peut afficher la dernière mesure.
-3. **Bandes** : la mesure n'émet que dans les `[[bands]]` de `station.toml`. Pour mesurer en CB (26-28 MHz), sur le
-   45 m (6 620-6 700 kHz et 3 410-3 490 kHz) ou sur les bandes marines HF, l'opérateur les ajoute lui-même à
-   `[[bands]]` : c'est sa responsabilité. Une fenêtre l'avertit quand la plage sort des bandes radioamateur.
+3. **Bandes** : mêmes règles qu'une émission normale. Avec `[safety] enforce_bands = true` (défaut), la mesure n'émet
+   que dans les `[[bands]]` de `station.toml` ; pour mesurer en CB (26-28 MHz), sur le 45 m (6 620-6 700 kHz et
+   3 410-3 490 kHz) ou sur les bandes marines HF, l'opérateur les ajoute lui-même à `[[bands]]`. Avec
+   `enforce_bands = false` (contrôle laissé au poste), AUCUNE bande n'est exigée : l'opérateur peut travailler sur un
+   montage particulier sans émission sur l'air (transpondeur, conversion SHF…) ; c'est sa responsabilité (décision du
+   2026-11-02). Dans tous les cas, une fenêtre l'avertit quand la plage sort des bandes radioamateur.
 4. **Plage par défaut** : la bande où se trouve le poste (table interne : bandes radioamateur, CB, 45 m, marine HF de
    l'appendice 17 de l'UIT). Sinon, l'opérateur choisit une fréquence centrale (par défaut celle du poste) et une
    largeur ; la page affiche alors le calcul de FreqBasse et FreqHaute.
@@ -31,7 +34,7 @@ C'est une **émission automatique** : elle suit toutes les règles de sécurité
 8. **Choix de l'opérateur mémorisés** (puissance, nombre de points, écoute avant émission) dans un fichier d'état
    `state_dir/swr.json`, PAS dans `station.toml` : la passerelle ne doit jamais pouvoir écrire dans le fichier qui
    contient les bandes autorisées.
-9. **Écoute avant chaque point** proposée, désactivée par défaut (souvent inutilisable en HF chargée).
+9. **Pas d'écoute avant émission** : le S-mètre n'est pas pris en compte (S9 de QRM courant sur 80 m) ; option retirée.
 10. **Remise en état** (fréquence, mode, puissance, coupleur, filtre) à la fin, à l'annulation et à toute coupure ;
     l'état remis est RELU sur le poste et montré dans une fenêtre en fin de mesure ET quand l'opérateur quitte la page
     de la mesure, pour qu'il corrige à la main si besoin.
@@ -46,11 +49,11 @@ C'est une **émission automatique** : elle suit toutes les règles de sécurité
 | `station.toml`, `[swr]` (station seulement) | `enabled` | `true` | `false` = mesure absente (fonction non annoncée) |
 | | `max_power_pct` | `50` | plafond de puissance, en % de la puissance du poste ; jamais au-dessus de 50 |
 | | `max_points` | `50` | nombre maximal de points d'une mesure |
-| | `point_tx_s` | `1.2` | durée d'émission d'un point (0,8 à 2 s) |
+| | `point_tx_max_s` | `2.0` | durée d'émission maximale d'un point (plafond de l'étalonnage, § 6 bis) |
 | `state_dir/swr.json` (derniers choix, par compte) | `power_pct` | `15` | puissance demandée (5 % au moins : minimum de l'IC-7300) |
 | | `points` | `11` | nombre de points souhaité |
-| | `listen_first` | `false` | écoute avant chaque point |
 | | `last` | — | dernière mesure (résultat complet, pour l'afficher à nouveau et dans TRX Console) |
+| `state_dir/swr.json` (par modèle Hamlib) | `settle_s` | — | temps de lecture fiable du TOS mesuré au premier usage (§ 6 bis) |
 
 Puissance du poste : `[rig] max_power_w` (déjà dans `station.toml`), sinon la « High power » de la plage d'émission
 de Hamlib (`dump_caps`, « TX ranges » : 100 W pour l'IC-7300MK2). Inconnue des deux : la mesure travaille en % sans
@@ -93,18 +96,31 @@ marine HF (appendice 17 de l'UIT, sous-bandes 4, 6, 8, 12, 16, 18/19, 22, 25/26 
 3. **Préparation** : coupleur arrêté (s'il est lisible et en service), mode FM, puissance demandée (bornée au plafond).
    Chaque réglage est relu ; un réglage qui ne se relit pas comme demandé = annulation et remise en état.
 4. **Pour chaque point** :
-   - QSY sur le point (fréquence relue) ; point hors bande = sauté ;
-   - écoute facultative : S-mètre lu pendant 0,5 s ; au-dessus du seuil (défaut S5) = point « occupé », sauté ;
+   - QSY sur le point (fréquence relue) ; point hors bande (si `enforce_bands`) = sauté ;
    - prise d'émission NORMALE (`_key` du PttController : mêmes vérifications que `toggle`, porte audio fermée) ;
-   - attente de stabilisation 0,4 s, puis lecture du `SWR` et de la puissance (`RFPOWER_METER`) jusqu'à la fin de
-     `point_tx_s` ; valeur retenue = médiane des lectures ;
+   - émission pendant le temps de lecture fiable du poste (`settle_s`, § 6 bis) ; lectures du `SWR` et de la
+     puissance (`RFPOWER_METER`) sur la seconde moitié ; valeur retenue = médiane des lectures ;
    - retour en RX (`T 0`) confirmé avant le point suivant ;
    - progression envoyée au client (point, fréquence, TOS, puissance).
 5. **Fin** (normale, annulée ou coupée) : RX confirmé d'abord, puis remise en état dans l'ordre puissance, mode et
    largeur, fréquence, coupleur, décalages ; chaque valeur est relue ; les écarts sont listés.
-6. **Résultat** : points (fréquence, TOS ou « hors bande » / « occupé » / « non lu »), meilleur point (TOS minimal),
+6. **Résultat** : points (fréquence, TOS ou « hors bande » / « non lu »), meilleur point (TOS minimal),
    plage où TOS < 1,5 et < 2, puissance utilisée, mode utilisé, heure, état remis et écarts. Rangé dans `swr.json`
    (`last`) et envoyé au client.
+
+## 6 bis. Étalonnage du temps de lecture, au premier usage (par modèle de poste)
+
+Le temps nécessaire pour un TOS fiable dépend du poste (probablement 0,5 s ou moins sur l'IC-7300). Au premier usage de
+la mesure avec un modèle de poste (numéro Hamlib absent de `swr.json`), la station le mesure :
+
+1. Une seule prise d'émission sur la fréquence du poste (dans les mêmes conditions qu'un point : FM, puissance choisie,
+   coupleur arrêté, porte audio fermée, toutes les règles du § 7), au plus `point_tx_max_s` (2 s).
+2. Lecture du `SWR` aussi vite que rigctld répond (environ toutes les 50 à 100 ms) ; « stable » = 3 lectures de suite à
+   ±0,05 l'une de l'autre et puissance de sortie lue non nulle.
+3. `settle_s` = instant de la première lecture stable + 0,2 s de marge, borné entre 0,3 s et `point_tx_max_s` ;
+   jamais stable : `point_tx_max_s` et un avertissement (« lecture du TOS instable sur ce poste »).
+4. Rangé dans `swr.json` pour ce modèle ; « Refaire l'étalonnage » dans les réglages de la mesure. L'étalonnage est
+   affiché à l'opérateur (« Étalonnage : 0,6 s par point sur ce poste ») et compté dans la durée annoncée de la mesure.
 
 ## 7. Sécurité (règles d'émission, priorité absolue)
 
@@ -117,42 +133,48 @@ marine HF (appendice 17 de l'UIT, sous-bandes 4, 6, 8, 12, 16, 18/19, 22, 25/26 
 - Annuler (`swr_cancel` ou `stop`) : RX immédiat puis remise en état.
 - Jamais d'émission au démarrage ni à la reconnexion : une mesure interrompue n'est JAMAIS reprise.
 - Porte audio d'émission fermée de bout en bout : rien du micro ne part, même en FM.
-- TOS très élevé : si un point lit un TOS >= 3 (ou si le poste réduit sa puissance par protection), la mesure
-  s'arrête et le signale (« TOS trop élevé à 7 150 kHz : antenne à vérifier ») ; pas de point suivant.
+- TOS élevé : la mesure CONTINUE (une courbe peut avoir une forme surprenante ; les postes se protègent eux-mêmes et
+  15 W ne présentent pas de risque, décision du 2026-11-02) ; un point au-dessus de 5 est marqué « > 5 » ; si le poste
+  réduit sa puissance par protection (puissance lue nettement sous la puissance demandée), le point est marqué
+  « puissance réduite par le poste ».
 - Puissance jamais au-dessus du plafond (`max_power_pct`, 50 % au plus) ; réglée AVANT la première prise, relue.
 - Un seul client mesure à la fois ; une mesure en cours bloque `toggle`, SELCALL et les réglages des autres clients
   (refus « mesure de TOS en cours »).
 - Tests de panne (faux rigctld, modèle factice) : battement perdu en plein point, déconnexion, STOP d'un autre client,
-  TOT, passerelle gelée (superviseur), poste qui ne se relit pas, TOS >= 3, poste utilisé sur place pendant la mesure,
-  remise en état après chacune de ces coupures, jamais de reprise après reconnexion.
+  TOT, passerelle gelée (superviseur), poste qui ne se relit pas, poste utilisé sur place pendant la mesure, coupure
+  pendant l'étalonnage, remise en état après chacune de ces coupures, jamais de reprise après reconnexion.
 
 ## 8. Protocole (à ajouter à `docs/protocole.md`)
 
 - Fonction `swr` dans `hello.features` (station avec `[swr] enabled`, opérateurs seulement).
 - `swr_plan` : `{band?}` ou `{center_hz, width_hz}`, `points` -> réponse `plan` (FreqBasse, FreqHaute, pas, points
   avec « hors bande », avertissement hors radioamateur, puissance en % et en W, mode FM retenu). N'émet rien.
-- `swr_start` : mêmes paramètres + `power_pct`, `listen_first` -> réponse immédiate (acceptée ou refus), puis messages.
+- `swr_start` : mêmes paramètres + `power_pct` -> réponse immédiate (acceptée ou refus), puis messages ; étalonnage
+  d'abord si le modèle n'en a pas (§ 6 bis).
+- `swr_calibrate` : refaire l'étalonnage du temps de lecture (une prise d'émission, mêmes règles).
 - `swr_cancel` : RX immédiat et remise en état.
 - `swr_last` : dernière mesure rangée (pour la réafficher).
-- Message `swr` diffusé au client qui mesure : `state` (`preparing`, `measuring`, `restoring`, `done`, `cancelled`,
-  `cut`), `index`, `total`, point courant, points déjà mesurés, et à la fin `result` (§ 6.6) avec l'état remis.
+- Message `swr` diffusé au client qui mesure : `state` (`preparing`, `calibrating`, `measuring`, `restoring`, `done`,
+  `cancelled`, `cut`), `index`, `total`, point courant, points déjà mesurés, et à la fin `result` (§ 6.6) avec l'état remis.
 - Motifs de refus nouveaux (texte français dans la page et l'application) : `swr_busy`, `swr_no_fm_mode`,
-  `swr_out_of_band`, `swr_too_many_points`, `swr_power_unknown` (si nécessaire), `swr_unreadable`.
+  `swr_out_of_band`, `swr_too_many_points`, `swr_power_unknown` (si nécessaire), `swr_unreadable`, `swr_unstable` (avertissement de l'étalonnage).
 
 ## 9. Affichage (page et application)
 
 - Page de mesure : bande proposée (celle du poste), ou centre + largeur avec le calcul FreqBasse / FreqHaute affiché ;
-  nombre de points (pas retenu et nombre réel affichés) ; puissance en % et en W ; écoute avant émission ; bouton
+  nombre de points (pas retenu et nombre réel affichés) ; puissance en % et en W ; durée estimée (étalonnage) ; bouton
   « Lancer la mesure » (désactivé si non armé) ; bouton « Annuler » toujours visible pendant la mesure, avec STOP.
 - Fenêtre d'avertissement avant le lancement quand la plage sort des bandes radioamateur (« Vous allez émettre hors
   des bandes radioamateur : responsabilité de l'opérateur »).
 - Pendant la mesure : barre de progression, barres qui apparaissent une à une, « ÉMISSION » bien visible.
 - Graphique : barres verticales, vertes jusqu'à 1,5, orange de 1,5 à 2, ROUGES au-dessus de 2 ; grises pour « hors
-  bande » / « occupé » ; axe vertical non linéaire (1 à 2 étiré, 2 à 5 resserré), plafonné à 5 (au-delà : barre
+  bande » ; axe vertical non linéaire (1 à 2 étiré, 2 à 5 resserré), plafonné à 5 (au-delà : barre
   pleine marquée « > 5 ») ; lignes horizontales à 1,2 1,3 1,4 1,5 1,8 et 2 ; fréquences en abscisse ; meilleur point
-  mis en avant.
-- Export image (PNG) : demande du nom de la mesure, en légende sous le graphique avec l'indicatif de station si
-  configuré, la date, la puissance et le mode ; partage par le menu du téléphone (application) ou téléchargement (page).
+  mis en avant ; barres grises pour « hors bande », hachurées pour « puissance réduite par le poste ».
+- Export image (PNG) ANONYME (décision du 2026-11-02) : nom de la mesure demandé à l'opérateur, en légende sous le
+  graphique, avec la date, la puissance et le mode ; PAS d'indicatif ni de nom de station ; en pied, le petit logo et
+  le lien « www.rf-diy.com ». Logo : l'icône de l'application (`docs/play-store/icone-512.png`) en attendant un logo
+  du site fourni par l'utilisateur. Partage par le menu du téléphone (application) ou téléchargement (page).
 - Fenêtre « État du poste remis » à la fin ET en quittant la page de la mesure : fréquence, mode, puissance, coupleur,
   décalages, avec les écarts en rouge (« coupleur : non remis, à rallumer à la main »).
 
@@ -165,7 +187,7 @@ marine HF (appendice 17 de l'UIT, sous-bandes 4, 6, 8, 12, 16, 18/19, 22, 25/26 
 ## 11. Découpage proposé
 
 1. Calculs purs (plage, pas, points, table des bandes, échelle du graphique) + tests, côté station, page et application.
-2. Moteur de mesure dans la passerelle + tests de panne (faux rigctld) + protocole.
+2. Moteur de mesure et étalonnage dans la passerelle + tests de panne (faux rigctld) + protocole.
 3. Page de mesure (web) + export image.
 4. Application (écran, partage de l'image).
 5. TRX Console (dernière mesure), trx-monitor, mode d'emploi.
@@ -176,13 +198,12 @@ marine HF (appendice 17 de l'UIT, sous-bandes 4, 6, 8, 12, 16, 18/19, 22, 25/26 
 - Aucune reprise automatique d'une mesure interrompue.
 - Pas de mesure en BLU ni en CW.
 
-## 13. Questions à l'utilisateur
+## 13. Réponses de l'utilisateur (2026-11-02)
 
-1. **`enforce_bands = false`** (contrôle des bandes laissé au poste) : la mesure exige-t-elle quand même des `[[bands]]`
-   (proposé : OUI, la mesure n'émet que dans `[[bands]]`, quel que soit `enforce_bands`) ?
-2. **Arrêt sur TOS élevé** : arrêter la mesure dès qu'un point lit un TOS >= 3 (proposé), ou seulement le marquer ?
-3. **Durée d'un point** : 1,2 s d'émission par point (proposé), soit environ 2 s par point avec les QSY et une mesure de
-   11 points en ~25 s. Plus court risque une lecture instable sur certains postes.
-4. **Seuil de l'écoute avant émission** : S5 par défaut (proposé) ?
-5. **Indicatif dans la légende de l'image** : en ajouter un (réglage de la page / de l'application), ou seulement le nom
-   de la mesure ?
+1. `enforce_bands = false` : aucune bande exigée (projet sans émission sur l'air possible), responsabilité de l'opérateur.
+2. TOS élevé : on ne s'arrête pas ; les postes sont protégés, sans risque à 15 W.
+3. Durée d'un point : mesurée pour chaque poste au premier usage (§ 6 bis) ; probablement 0,5 s ou moins.
+4. Pas d'écoute avant émission (S9 de QRM courant sur 80 m) : option retirée.
+5. Image anonyme : pas d'indicatif ; petit logo et lien www.rf-diy.com.
+
+Reste à fournir par l'utilisateur (facultatif) : un logo du site rf-diy.com pour le pied de l'image.
