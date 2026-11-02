@@ -123,6 +123,7 @@
 
     <div class="subrow">
       <label id="blk-armed" class="check listener-hide"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
+      <button id="mini-wf-on" class="chip" hidden title="Petit waterfall HF avant les bandes : affiché ou masqué">WF</button>
       <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
       <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
       <button id="sel-ind" class="chip sel-ind listener-hide" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
@@ -216,6 +217,9 @@
     <details id="sec-tune" class="listener-off" open>
       <summary>Accord</summary>
       <div class="body">
+        <div id="blk-miniwf" class="miniwf" hidden title="Petit waterfall HF du poste : touche pour ses réglages">
+          <canvas id="mini-fall" class="mini-fall"></canvas><div id="mini-marker" class="hf-marker" hidden></div><div id="mini-wait" class="hf-wait"></div>
+        </div>
         <div id="bands" class="bands"></div>
         <div id="blk-steps" class="row">
           <button id="step-down" title="Plus bas d'un pas (maintenir pour répéter)">◀</button>
@@ -495,6 +499,19 @@
     </div>
   </div>
 </div>
+<div id="mini-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title">Petit waterfall</div>
+    <p id="mini-span-info" class="note"></p>
+    <div class="dim">Spectre du poste (réception seulement)</div>
+    <div class="row"><button id="mini-set-span" class="chip">—</button><button id="mini-set-mode" class="chip">—</button><button id="mini-set-speed" class="chip">—</button></div>
+    <div class="row"><button id="mini-ref-down" class="chip">REF −</button><span id="mini-ref" class="dim">—</span><button id="mini-ref-up" class="chip">REF +</button></div>
+    <div class="dim">Affichage (navigateur, commun avec le grand spectre)</div>
+    <div class="row"><button id="mini-gain" class="chip">GAIN 0</button><button id="mini-range" class="chip">PLAGE 40 dB</button><button id="mini-hot" class="chip">COUL. S</button></div>
+    <p class="note">Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).</p>
+    <div class="row"><button id="mini-hide" class="chip">Masquer</button><button id="mini-close" class="primary">Fermer</button></div>
+  </div>
+</div>
 <div id="host-dialog" class="keypad" hidden>
   <div class="kp-panel">
     <div class="kp-display ctl-title">Matériel de la station</div>
@@ -539,6 +556,7 @@
       <button id="hf-vfo" class="chip listener-off" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)">VFO</button>
       <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
       <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)">PLAGE 40 dB</button>
+      <button id="hf-hot" class="chip" title="Couleurs selon le niveau S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif) ; éteint = couleurs relatives">COUL. S</button>
       <button id="hf-stop" class="stop listener-off" title="Coupe l'émission (toujours possible)">STOP</button>
       <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance">Fermer</button>
     </span>

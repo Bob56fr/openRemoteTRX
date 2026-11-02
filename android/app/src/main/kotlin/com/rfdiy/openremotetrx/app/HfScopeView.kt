@@ -79,7 +79,8 @@ private class WaterfallBuffer {
     private var floor: Double? = null
     var line = FloatArray(0)                       // dernier balayage, 0..1 dans la fenêtre de couleurs
 
-    fun push(frame: SpectrumFrame, levelMax: Int, rangeDb: Int, gainDb: Int) {
+    /** `hotOffset` : recalage sur le S-mètre (HfScope.sCalibrate) ; null = palette habituelle seulement. */
+    fun push(frame: SpectrumFrame, levelMax: Int, rangeDb: Int, gainDb: Int, hotOffset: Double? = null) {
         if (!HfScope.sameScale(previous, frame) || bitmap == null) {
             width = frame.size
             pixels = IntArray(width * ROWS) { Palette.LUT[0] }
@@ -94,7 +95,7 @@ private class WaterfallBuffer {
         for (x in 0 until width) {
             val t = HfScope.windowT(frame.level(x).toDouble(), win, gainDb)
             line[x] = t
-            pixels[x] = Palette.color(t)
+            pixels[x] = HfScope.hotColor(frame.level(x), hotOffset) ?: Palette.color(t)
         }
         bitmap!!.setPixels(pixels, 0, width, 0, 0, width, ROWS)
     }
@@ -127,14 +128,20 @@ fun HfScopeView(
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var gain by remember { mutableIntStateOf(prefs.getInt("scope_gain", 0).takeIf { it in HfScope.GAINS } ?: 0) }
     var range by remember { mutableIntStateOf(prefs.getInt("scope_range", HfScope.DEFAULT_RANGE_DB).takeIf { it in HfScope.RANGES_DB } ?: HfScope.DEFAULT_RANGE_DB) }
+    var hot by remember { mutableStateOf(prefs.getBoolean("scope_hot", true)) }     // couleurs selon le niveau S
+    var sOffset by remember { mutableStateOf<Double?>(null) }
     val buffer = remember { WaterfallBuffer() }
     var drawn by remember { mutableIntStateOf(0) }
     val levelMax = ui.rig.hello?.spectrum?.levelMax?.takeIf { it > 0 } ?: 160
-    LaunchedEffect(frame) {
-        frame?.let { buffer.push(it, levelMax, range, gain); drawn++ }
-    }
     val settings = HfScope.settings(ui.rig.state)
     val rigHz = ui.rig.state?.rig?.frequencyHz
+    LaunchedEffect(frame) {
+        frame?.let {
+            sOffset = HfScope.sCalibrate(sOffset, it, HfScope.markerFraction(rigHz, it.lowHz, it.highHz),
+                ui.rig.state?.rig?.strengthDb, ui.rig.state?.ptt?.state == "RX")
+            buffer.push(it, levelMax, range, gain, if (hot) sOffset else null); drawn++
+        }
+    }
     val lineColor = MaterialTheme.colorScheme.primary
     val labelPaint = remember { Paint().apply { color = android.graphics.Color.LTGRAY; isAntiAlias = true } }
     var dragX by remember { mutableStateOf(0f) }
@@ -292,6 +299,7 @@ fun HfScopeView(
             CompactChip("REF +", onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
             CompactChip(HfScope.gainLabel(gain), onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() })
             CompactChip(HfScope.rangeLabel(range), onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() })
+            CompactChip("Couleurs S", selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
             if (onClose != null) CompactChip("Fermer", onClick = onClose)
         }
     }
@@ -363,6 +371,102 @@ fun HfScopeView(
                 }
             },
             confirmButton = { TextButton(onClick = { listIds = null }) { Text("Fermer") } },
+        )
+    }
+}
+
+/**
+ * Petit waterfall HF de l'onglet Station (étape 100), juste avant les bandes : ni boutons, ni spots, ni QSY. Repère
+ * de la fréquence du poste ; à son apparition, le spectre DU POSTE passe en mode centré (curseur au milieu), en
+ * réception seulement. Toucher = réglages (ceux du poste, puis ceux de l'affichage, communs avec le grand spectre).
+ */
+@Composable
+fun MiniWaterfall(ui: RigUi, canSet: Boolean, onHide: () -> Unit) {
+    DisposableEffect(Unit) {
+        RigHub.watchSpectrum(true)
+        onDispose { RigHub.watchSpectrum(false) }
+    }
+    val frame by RigHub.spectrum.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
+    var gain by remember { mutableIntStateOf(prefs.getInt("scope_gain", 0).takeIf { it in HfScope.GAINS } ?: 0) }
+    var range by remember { mutableIntStateOf(prefs.getInt("scope_range", HfScope.DEFAULT_RANGE_DB).takeIf { it in HfScope.RANGES_DB } ?: HfScope.DEFAULT_RANGE_DB) }
+    var hot by remember { mutableStateOf(prefs.getBoolean("scope_hot", true)) }
+    var sOffset by remember { mutableStateOf<Double?>(null) }
+    var settingsOpen by remember { mutableStateOf(false) }
+    val buffer = remember { WaterfallBuffer() }
+    var drawn by remember { mutableIntStateOf(0) }
+    val levelMax = ui.rig.hello?.spectrum?.levelMax?.takeIf { it > 0 } ?: 160
+    val settings = HfScope.settings(ui.rig.state)
+    val rigHz = ui.rig.state?.rig?.frequencyHz
+    LaunchedEffect(frame) {
+        frame?.let {
+            sOffset = HfScope.sCalibrate(sOffset, it, HfScope.markerFraction(rigHz, it.lowHz, it.highHz),
+                ui.rig.state?.rig?.strengthDb, ui.rig.state?.ptt?.state == "RX")
+            buffer.push(it, levelMax, range, gain, if (hot) sOffset else null); drawn++
+        }
+    }
+    // Curseur au centre : une seule demande à l'apparition (on peut ensuite repasser en fixe dans les réglages)
+    var centered by remember { mutableStateOf(false) }
+    LaunchedEffect(canSet, settings.mode) {
+        if (!centered && canSet && settings.mode != null) {
+            centered = true
+            if (settings.mode != "center") RigHub.spectrumSet("mode", "center")
+        }
+    }
+    Box(Modifier.fillMaxWidth().height(56.dp).clickable { settingsOpen = true }) {
+        val f = frame
+        Canvas(Modifier.fillMaxWidth().fillMaxHeight()) {
+            drawn.let { }                                       // redessin à chaque balayage
+            drawRect(Color(Palette.LUT[0]))
+            val bmp = buffer.bitmap
+            if (f != null && bmp != null) {
+                drawImage(
+                    bmp.asImageBitmap(), srcOffset = IntOffset.Zero, srcSize = IntSize(bmp.width, minOf(bmp.height, 60)),
+                    dstOffset = IntOffset.Zero, dstSize = IntSize(size.width.toInt(), size.height.toInt()),
+                    filterQuality = FilterQuality.Low,
+                )
+                HfScope.markerFraction(rigHz, f.lowHz, f.highHz)?.let { m ->
+                    val x = m * size.width
+                    drawLine(Color(0xFFE53935), Offset(x, 0f), Offset(x, size.height), strokeWidth = 2f)
+                }
+            }
+        }
+        if (f == null) {
+            Text(HfScope.waitText(ui.rig.state), color = Color.White, style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(Alignment.Center).padding(4.dp))
+        }
+    }
+    if (settingsOpen) {
+        AlertDialog(
+            onDismissRequest = { settingsOpen = false },
+            title = { Text("Petit waterfall") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    frame?.let { Text("Largeur affichée : " + HfScope.spanLabel(it.lowHz, it.highHz), style = MaterialTheme.typography.bodySmall) }
+                    Text("Spectre du poste (réception seulement)", style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CompactChip(HfScope.spanSettingLabel(settings.spanHz), onClick = { RigHub.spectrumSet("span", HfScope.nextSpan(settings.spanHz)) }, enabled = canSet)
+                        CompactChip(HfScope.modeSettingLabel(settings.mode), onClick = { RigHub.spectrumSet("mode", HfScope.nextMode(settings.mode)) }, enabled = canSet)
+                        CompactChip(HfScope.speedSettingLabel(settings.speed), onClick = { RigHub.spectrumSet("speed", HfScope.nextSpeed(settings.speed)) }, enabled = canSet)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CompactChip("REF −", onClick = { HfScope.stepRef(settings.refDb, -1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
+                        Text(HfScope.refLabel(settings.refDb), style = MaterialTheme.typography.labelLarge)
+                        CompactChip("REF +", onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
+                    }
+                    Text("Affichage (téléphone, commun avec le grand spectre)", style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CompactChip(HfScope.gainLabel(gain), onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() })
+                        CompactChip(HfScope.rangeLabel(range), onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() })
+                        CompactChip("Couleurs S", selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
+                    }
+                    Text("Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = { TextButton(onClick = { settingsOpen = false }) { Text("Fermer") } },
+            dismissButton = { TextButton(onClick = { settingsOpen = false; onHide() }) { Text("Masquer") } },
         )
     }
 }

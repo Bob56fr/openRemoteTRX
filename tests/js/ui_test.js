@@ -87,7 +87,7 @@ let offerStatus = 200;
 const offers = [];
 const pcs = [], rafQueue = [], audioContexts = [], sources = [], analysers = [], clipboard = [], oscillators = [], vibrations = [];
 let rigAudioList = [];
-const storage = new Map();
+const storage = new Map([["trx.hf", JSON.stringify({ mini: false })]]);   // petit waterfall masqué : étape à part plus bas
 let landscape = false;
 const windowHandlers = {};
 const mic = { enabled: true, label: "Microphone (Realtek)", stop() {} };
@@ -719,8 +719,8 @@ step("spectre HF : 3e état de la zone, plein écran, échelle en MHz, repère d
   sc().onmessage({ data: frame(2, 14000000, 14200000) });
   assert.equal($("hf-fall").ctx.count("putImageData"), lines + 1);                               // une ligne par balayage
   assert.equal($("hf-range").textContent, "PLAGE 40 dB");
-  await $("hf-gain").click(); assert.equal($("hf-gain").textContent, "GAIN +6"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 40 });
-  await $("hf-range").click(); assert.equal($("hf-range").textContent, "PLAGE 30 dB"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 30 });
+  await $("hf-gain").click(); assert.equal($("hf-gain").textContent, "GAIN +6"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 40, hot: true, mini: false });
+  await $("hf-range").click(); assert.equal($("hf-range").textContent, "PLAGE 30 dB"); assert.deepEqual(JSON.parse(storage.get("trx.hf")), { gain: 6, range: 30, hot: true, mini: false });
   sc().onmessage({ data: frame(3, 14000000, 14200000) });
   const row = $("hf-fall").ctx.lastRow;                                                           // bande fine (2 px CSS), signal clair, bruit sombre
   assert.equal(row.height, 2);
@@ -1028,6 +1028,46 @@ step("pertes de connexion : dernière raison, historique des 10 dernières, rapp
   assert.deepEqual($("loss-select").options.map((o) => o.textContent), ["Aucune perte enregistrée"]);
   assert.equal($("loss-last").hidden, true); assert.equal($("loss-open").hidden, true); assert.equal($("loss-copy").disabled, true);
   assert.equal($("loss-detail").textContent, "Aucune perte de connexion enregistrée."); assert.equal(storage.get("trx.losses"), "[]");
+});
+
+step("petit waterfall HF avant les bandes : bouton WF, mode centré demandé une fois, couleurs S, réglages au toucher", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         spectrum: { source: "civ_port", level_max: 160, max_fps: 10 } });
+  await wait(30);
+  const st = () => send({ type: "state", ptt: { state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" },
+    rig: { connected: true, frequency_hz: 14100000, mode: "USB", passband_hz: 2400, strength_db: 0, functions: {}, levels: {} },
+    audio: {}, clients: ["phone"], spectrum: { state: "ok", code: "", message: "", settings: { mode: "fixed", span: 25000 } } });
+  st(); await wait(30);
+  assert.equal($("mini-wf-on").hidden, false); assert.equal($("blk-miniwf").hidden, true);          // masqué sur ce navigateur
+  const before = sent("spectrum_watch").length;
+  await $("mini-wf-on").click(); await wait(30);
+  assert.equal($("blk-miniwf").hidden, false);
+  assert.equal(sent("spectrum_watch").length, before + 1); assert.equal(sent("spectrum_watch").at(-1).on, true);
+  assert.deepEqual(sent("spectrum_set").map((m) => [m.name, m.value]), [["mode", "center"]]);       // curseur au centre
+  st(); await wait(30);
+  assert.equal(sent("spectrum_set").length, 1);                                                    // une seule fois
+  const buf = new ArrayBuffer(16 + 475), v = new DataView(buf), b = new Uint8Array(buf);
+  b[0] = 1; b[1] = 1; v.setUint32(4, 1, true); v.setUint32(8, 14075000, true); v.setUint32(12, 14125000, true);
+  for (let i = 0; i < 475; i++) b[16 + i] = i === 237 ? 140 : 20;
+  pcs.at(-1).channels.spectrum.onmessage({ data: buf });
+  const row = $("mini-fall").ctx.lastRow;
+  const rgb = (x) => [row.data[x * 4], row.data[x * 4 + 1], row.data[x * 4 + 2]];
+  const peak = rgb(Math.round((237 / 474) * (row.width - 1)));                                      // S9 au repère : jaune-orange
+  assert.ok(peak[0] === 255 && peak[1] >= 140 && peak[1] <= 216 && peak[2] <= 74, "couleur chaude attendue : " + peak);
+  assert.ok(rgb(10)[0] < 200, "bruit : couleurs du thème");
+  assert.equal($("mini-marker").hidden, false); assert.equal($("mini-marker").style.left, "50.00%");
+  await $("blk-miniwf").click();
+  assert.equal($("mini-dialog").hidden, false);
+  await $("mini-hot").click();
+  assert.equal(JSON.parse(storage.get("trx.hf")).hot, false); assert.equal($("hf-hot").className, "chip");
+  await $("mini-hot").click();
+  await $("mini-hide").click(); await wait(30);
+  assert.equal($("mini-dialog").hidden, true); assert.equal($("blk-miniwf").hidden, true);
+  assert.equal(sent("spectrum_watch").at(-1).on, false);                                            // plus rien ne regarde
+  assert.equal(JSON.parse(storage.get("trx.hf")).mini, false);
+  await $("disconnect").click(); await wait();
 });
 
 step("reconnexion automatique : grand texte à la place de la fréquence, sans redemander le mot de passe, annulation, échec, reprise", async () => {

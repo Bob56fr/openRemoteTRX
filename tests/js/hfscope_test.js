@@ -69,9 +69,9 @@ test("même échelle : l'historique du waterfall n'est gardé que si les bords e
 });
 
 test("réglages mémorisés : gain et plage de listes fermées", () => {
-  assert.deepEqual(hf.normalizeSettings({ gain: 6, range: 30 }), { gain: 6, range: 30 });
-  assert.deepEqual(hf.normalizeSettings({ gain: 7, range: 33 }), { gain: 0, range: 40 });
-  assert.deepEqual(hf.normalizeSettings("n'importe quoi"), { gain: 0, range: 40 });
+  assert.deepEqual(hf.normalizeSettings({ gain: 6, range: 30 }), { gain: 6, range: 30, hot: true, mini: true });
+  assert.deepEqual(hf.normalizeSettings({ gain: 7, range: 33, hot: false, mini: false }), { gain: 0, range: 40, hot: false, mini: false });
+  assert.deepEqual(hf.normalizeSettings("n'importe quoi"), { gain: 0, range: 40, hot: true, mini: true });
   assert.equal(hf.nextGain(18), -12); assert.equal(hf.gainLabel(6), "GAIN +6");
   assert.equal(hf.nextRange(20), 80); assert.equal(hf.nextRange(80), 60); assert.equal(hf.rangeLabel(40), "PLAGE 40 dB");
 });
@@ -110,6 +110,23 @@ test("réglages du poste : libellés, cycles et pas du niveau de référence (gr
   assert.equal(hf.stepRef(-14.5, 1), -13.5); assert.equal(hf.stepRef(19.5, 1), 20); assert.equal(hf.stepRef(-20, -1), -20);
   assert.equal(hf.stepRef(0.3, 1), 1.5); assert.equal(hf.stepRef(undefined, 1), null);
   assert.deepEqual(hf.SPANS_HZ, [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000]);
+});
+
+test("couleurs chaudes : recalage sur le S-mètre, jaune S7, orange S9, rouge S9+20", () => {
+  const pts = [10, 10, 60, 100, 60, 10, 10];                                   // signal au milieu, niveau 100
+  assert.equal(hf.levelNear(pts, 0.5), 100); assert.equal(hf.levelNear(pts, 0), 60); assert.equal(hf.levelNear([], 0.5), null);
+  const off = hf.sCalibrate(null, pts, 0.5, 0, true);                          // S9 lu au repère : 100/2 + off = 0
+  assert.equal(off, -50);
+  assert.equal(hf.sCalibrate(off, pts, 0.5, 20, true), -46);                    // lissé (20 %) vers -30
+  assert.equal(hf.sCalibrate(off, pts, 0.5, 20, false), -50);                   // émission : inchangé
+  assert.equal(hf.sCalibrate(null, pts, 0.5, -54, true), null);                 // sous S1 : pas de recalage
+  assert.equal(hf.sCalibrate(off, pts, null, 20, true), -50);                   // repère hors écran
+  assert.equal(hf.hotColor(70, -50), null);                                     // -15 dB : sous S7, couleurs du thème
+  assert.deepEqual(hf.hotColor(76, -50), [255, 216, 74]);                       // S7 : jaune
+  assert.deepEqual(hf.hotColor(100, -50), [255, 140, 26]);                      // S9 : orange
+  assert.deepEqual(hf.hotColor(140, -50), [255, 42, 42]);                       // S9+20 : rouge
+  assert.deepEqual(hf.hotColor(120, -50), [255, 91, 34]);                       // S9+10 : entre orange et rouge
+  assert.equal(hf.hotColor(140, null), null);                                   // sans recalage : rien
 });
 
 test("toucher le spectre : fréquence arrondie au kHz le plus proche", () => {

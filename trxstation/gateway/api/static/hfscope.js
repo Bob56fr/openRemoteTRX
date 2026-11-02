@@ -129,6 +129,43 @@
     return (hz - lowHz) / (highHz - lowHz);
   }
 
+  // ---- couleurs chaudes selon le niveau S (étape 100) : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus
+  // de S9+20. Les niveaux du poste (0..level_max) sont RELATIFS au REF, au préampli et à l'atténuateur : ils sont recalés
+  // sur le S-mètre (dB par rapport à S9, Hamlib STRENGTH) au repère de la fréquence, en réception. Approximatif.
+  const HOT_STOPS = [[-12, [255, 216, 74]], [0, [255, 140, 26]], [20, [255, 42, 42]]];   // S7 jaune, S9 orange, S9+20 rouge
+  const S_CAL_MIN_DB = -48;                          // sous S1 : le S-mètre ne dit rien d'utile, pas de recalage
+  const S_CAL_SMOOTHING = 0.2;
+
+  function levelNear(points, fraction) {
+    /* Niveau le plus fort à ±2 points de `fraction` (le signal écouté, pas le creux voisin) ; null si inconnu. */
+    if (!points || !points.length || !Number.isFinite(fraction)) return null;
+    const c = Math.round(Math.min(1, Math.max(0, fraction)) * (points.length - 1));
+    let best = -Infinity;
+    for (let i = Math.max(0, c - 2); i <= Math.min(points.length - 1, c + 2); i++) best = Math.max(best, points[i]);
+    return best;
+  }
+
+  function sCalibrate(previous, points, fraction, strengthDb, receiving) {
+    /* Décalage (dB) tel que niveau / 2 + décalage = dB par rapport à S9 ; lissé. Inchangé en émission, hors écran,
+       sans S-mètre ou sous S1. null tant qu'aucun recalage n'a pu se faire (couleurs chaudes absentes). */
+    const v = levelNear(points, fraction);
+    if (!receiving || v === null || !Number.isFinite(strengthDb) || strengthDb < S_CAL_MIN_DB) return Number.isFinite(previous) ? previous : null;
+    const measured = strengthDb - v / LEVELS_PER_DB;
+    return Number.isFinite(previous) ? previous + (measured - previous) * S_CAL_SMOOTHING : measured;
+  }
+
+  function hotColor(value, offset) {
+    /* [r, g, b] chaud pour un niveau du poste au-dessus de S7, null en dessous (couleurs du thème) ou sans recalage. */
+    if (!Number.isFinite(offset) || !Number.isFinite(value)) return null;
+    const db = value / LEVELS_PER_DB + offset;
+    if (db < HOT_STOPS[0][0]) return null;
+    for (let i = 1; i < HOT_STOPS.length; i++) {
+      const [d0, c0] = HOT_STOPS[i - 1], [d1, c1] = HOT_STOPS[i];
+      if (db < d1) { const k = (db - d0) / (d1 - d0); return c0.map((c, j) => Math.round(c + (c1[j] - c) * k)); }
+    }
+    return HOT_STOPS[HOT_STOPS.length - 1][1].slice();
+  }
+
   function sameScale(a, b) {
     /* Même échelle de fréquence et même nombre de points : l'historique du waterfall reste valable. */
     return !!(a && b && a.lowHz === b.lowHz && a.highHz === b.highHz && a.points.length === b.points.length);
@@ -144,7 +181,9 @@
 
   function normalizeSettings(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
-    return { gain: GAINS.includes(r.gain) ? r.gain : 0, range: RANGES_DB.includes(r.range) ? r.range : DEFAULT_RANGE_DB };
+    return { gain: GAINS.includes(r.gain) ? r.gain : 0, range: RANGES_DB.includes(r.range) ? r.range : DEFAULT_RANGE_DB,
+             hot: r.hot !== false,                   // couleurs selon le niveau S (étape 100), allumées par défaut
+             mini: r.mini !== false };               // petit waterfall avant les bandes, affiché par défaut
   }
 
   function nextRange(range) {
@@ -229,6 +268,7 @@
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
                 sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
                 SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,
-                refLabel, stepRef, tuneStep, dragSteps, QSY_ROUND_HZ, frequencyAt };
+                refLabel, stepRef, tuneStep, dragSteps, QSY_ROUND_HZ, frequencyAt,
+                HOT_STOPS, levelNear, sCalibrate, hotColor };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxHfScope = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -63,10 +63,20 @@ object RigHub {
 
     fun stopAudioTap() { service?.setAudioSink(null) }
 
-    /** Vue du spectre ouverte ou fermée : la station n'envoie les balayages qu'aux clients qui regardent. */
+    private var spectrumWatchers = 0
+
+    /**
+     * Vue du spectre ouverte ou fermée : la station n'envoie les balayages qu'aux clients qui regardent. Plusieurs vues
+     * peuvent regarder à la fois (petit waterfall de l'onglet Station, grand spectre, liste des spots) : on compte, et
+     * seuls le premier abonnement et le dernier désabonnement partent vers la station (appelé sur le fil principal).
+     */
     fun watchSpectrum(on: Boolean) {
-        if (!on) { _spectrum.value = null; lastSeq = null }
-        service?.onRig { session, now -> session.watchSpectrum(now, on) }
+        val before = spectrumWatchers > 0
+        spectrumWatchers = maxOf(0, spectrumWatchers + if (on) 1 else -1)
+        val now = spectrumWatchers > 0
+        if (now == before) return
+        if (!now) { _spectrum.value = null; lastSeq = null }
+        service?.onRig { session, t -> session.watchSpectrum(t, now) }
     }
 
     /** Réglage du spectre DU POSTE (mode, span, ref, speed) ; refusé par la station hors réception. */

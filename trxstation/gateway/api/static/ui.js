@@ -138,6 +138,9 @@
     const spotBook = sp ? new sp.SpotBook() : null;
     let spotsOn = store.get("trx.spots", "1") !== "0", spotTimer = null, spotCardId = null, spotListIds = null, spotSort = "freq";
     const hfSpecCtx = hfSpec.getContext("2d"), hfFallCtx = hfFall.getContext("2d"), hfGridCtx = hfGrid.getContext("2d");
+    const miniFall = $("mini-fall"), miniCtx = miniFall.getContext("2d");
+    let hfSOffset = null;                             // recalage des niveaux du poste sur le S-mètre (couleurs chaudes)
+    let miniFloor = null, miniLast = null, miniRow = null, miniValues = null, miniWasActive = false;
     let layout = null, profile = null, profileSource = "factory", profileVersion = 0, planKey = "";
 
     // ---- affichage : taille du texte et disposition (portrait par défaut, paysage proposé)
@@ -870,7 +873,10 @@
       if (!hfRow || hfRow.width !== FW || hfRow.height !== L) hfRow = hfFallCtx.createImageData(FW, L);
       hfValues = hfx.interpolateRow(frame.points, FW, hfValues);
       const d = hfRow.data;
+      const hot = hfSettings.hot ? hfSOffset : null;
       for (let x = 0; x < FW; x++) {
+        const c = hfx.hotColor(hfValues[x], hot);                                    // au-dessus de S7 : jaune, orange, rouge
+        if (c) { d[x * 4] = c[0]; d[x * 4 + 1] = c[1]; d[x * 4 + 2] = c[2]; d[x * 4 + 3] = 255; continue; }
         const i = Math.round(hfx.windowT(hfValues[x], win, gain) * 255) * 3;
         d[x * 4] = wf.LUT[i]; d[x * 4 + 1] = wf.LUT[i + 1]; d[x * 4 + 2] = wf.LUT[i + 2]; d[x * 4 + 3] = 255;
       }
@@ -910,7 +916,7 @@
       $("hf-close").hidden = docked;                                             // intégrée : on la retire avec l'interrupteur
       box.hidden = !on;
       setVfo(false);
-      if (on || !recentOpen) client.watchSpectrum(on);                           // balayages reçus seulement vue ouverte (ou liste des spots)
+      syncWatch();                                                               // balayages reçus seulement vue ouverte (ou liste des spots, petit waterfall)
       if (spotBook) spotBook.clear();                                            // la station rejoue les spots à l'ouverture
       closeSpotCard(); closeSpotList(); drawSpots();
       if (spotTimer !== null) { clearInterval(spotTimer); spotTimer = null; }
@@ -1139,6 +1145,16 @@
       hfTexts();
       if (hfLast) { const again = hfLast; hfLast = null; hfDraw(again); }           // nouvelle échelle de couleurs : historique effacé
     });
+    function hotTexts() {
+      $("hf-hot").className = "chip" + (hfSettings.hot ? " on" : ""); $("mini-hot").className = $("hf-hot").className;
+    }
+    function toggleHot() {
+      hfSettings = Object.assign({}, hfSettings, { hot: !hfSettings.hot });
+      store.set("trx.hf", JSON.stringify(hfSettings));
+      hotTexts();
+    }
+    hotTexts();
+    $("hf-hot").addEventListener("click", toggleHot);
     $("hf-gain").addEventListener("click", () => {
       if (!hfx) return;
       hfSettings = Object.assign({}, hfSettings, { gain: hfx.nextGain(hfSettings.gain) });
@@ -1219,6 +1235,103 @@
       }
       client.setListenersOpen(on).catch(fail);
     });
+    // ---- couleurs chaudes et petit waterfall HF avant les bandes (étape 100)
+    function hfCalibrate(frame) {
+      /* Recalage des niveaux du poste sur le S-mètre, au repère de la fréquence, en réception (hfscope.sCalibrate). */
+      if (!hfx || !frame || !frame.points) return;
+      const st = client.state || {}, rig = st.rig || {}, ptt = st.ptt || {};
+      hfSOffset = hfx.sCalibrate(hfSOffset, frame.points, hfx.markerFraction(rig.frequency_hz, frame.lowHz, frame.highHz),
+                                 rig.strength_db, ptt.state === "RX");
+    }
+    function miniActive() {
+      return !!(hfx && hfSettings.mini && connectedFlag && hfx.configured(client.hello));
+    }
+    function syncWatch() {
+      /* Balayages demandés à la station tant qu'une vue en a besoin : grand spectre, liste des spots ou petit waterfall. */
+      const want = !!(hfVisible || recentOpen || miniActive());
+      if (want !== !!client._spectrumWatch) client.watchSpectrum(want);
+    }
+    function miniDraw(frame) {
+      if (!frame || !frame.points || !frame.points.length) return;
+      const ratio = window.devicePixelRatio || 1;
+      const size = hfx.canvasSize(miniFall.clientWidth, miniFall.clientHeight, ratio, frame.points.length, 56);
+      if (miniFall.width !== size.width || miniFall.height !== size.height || !hfx.sameScale(miniLast, frame)) {
+        miniFall.width = size.width; miniFall.height = size.height; miniRow = null; miniValues = null; miniFloor = null;
+        miniCtx.fillStyle = canvasColors["--fond"]; miniCtx.fillRect(0, 0, miniFall.width, miniFall.height);
+      }
+      miniLast = frame;
+      $("mini-wait").hidden = true;
+      const win = hfx.colorWindow(frame.points, hfLevelMax(), hfSettings.range, miniFloor);
+      miniFloor = win.floor;
+      const W = miniFall.width, H = miniFall.height, L = Math.min(hfx.lineHeight(ratio), H);
+      if (H > L) miniCtx.drawImage(miniFall, 0, 0, W, H - L, 0, L, W, H - L);
+      if (!miniRow || miniRow.width !== W || miniRow.height !== L) miniRow = miniCtx.createImageData(W, L);
+      miniValues = hfx.interpolateRow(frame.points, W, miniValues);
+      const d = miniRow.data, hot = hfSettings.hot ? hfSOffset : null;
+      for (let x = 0; x < W; x++) {
+        const c = hfx.hotColor(miniValues[x], hot);
+        if (c) { d[x * 4] = c[0]; d[x * 4 + 1] = c[1]; d[x * 4 + 2] = c[2]; d[x * 4 + 3] = 255; continue; }
+        const i = Math.round(hfx.windowT(miniValues[x], win, hfSettings.gain) * 255) * 3;
+        d[x * 4] = wf.LUT[i]; d[x * 4 + 1] = wf.LUT[i + 1]; d[x * 4 + 2] = wf.LUT[i + 2]; d[x * 4 + 3] = 255;
+      }
+      for (let line = 1; line < L; line++) d.copyWithin(line * W * 4, 0, W * 4);
+      miniCtx.putImageData(miniRow, 0, 0);
+      const rig = (client.state && client.state.rig) || {};
+      const f = hfx.markerFraction(rig.frequency_hz, frame.lowHz, frame.highHz);
+      $("mini-marker").hidden = f === null;
+      if (f !== null) $("mini-marker").style.left = (f * 100).toFixed(2) + "%";
+    }
+    function paintMini(v) {
+      const offered = !!(hfx && v.connected && hfx.configured(client.hello));
+      $("mini-wf-on").hidden = !offered;
+      $("mini-wf-on").className = "chip" + (hfSettings.mini ? " on" : "");
+      const active = miniActive();
+      $("blk-miniwf").hidden = !active;
+      if (active && !miniWasActive) {
+        miniLast = null; $("mini-wait").hidden = false; $("mini-wait").textContent = hfx.waitText(client.state);
+        // Curseur au centre : une seule demande à l'apparition, par un opérateur et en réception (refusé sinon par la station)
+        const sp = (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
+        if (!v.listener && v.pttState === "RX" && sp.mode && sp.mode !== "center") client.setSpectrum("mode", "center").catch(() => {});
+      }
+      miniWasActive = active;
+      syncWatch();
+      if (!$("mini-dialog").hidden) miniTexts(v);
+    }
+    function miniTexts(v) {
+      const sp = (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
+      const enabled = !!(v && v.connected && v.pttState === "RX" && !v.listener);
+      $("mini-span-info").textContent = miniLast ? "Largeur affichée : " + hfx.spanLabel(miniLast.lowHz, miniLast.highHz) : "";
+      $("mini-set-span").textContent = hfx.spanSettingLabel(sp.span); $("mini-set-mode").textContent = hfx.modeSettingLabel(sp.mode);
+      $("mini-set-speed").textContent = hfx.speedSettingLabel(sp.speed); $("mini-ref").textContent = hfx.refLabel(sp.ref);
+      for (const id of ["mini-set-span", "mini-set-mode", "mini-set-speed", "mini-ref-down", "mini-ref-up"]) $(id).disabled = !enabled;
+      $("mini-gain").textContent = hfx.gainLabel(hfSettings.gain); $("mini-range").textContent = hfx.rangeLabel(hfSettings.range);
+      hotTexts();
+    }
+    function setMini(on) {
+      hfSettings = Object.assign({}, hfSettings, { mini: !!on });
+      store.set("trx.hf", JSON.stringify(hfSettings));
+      if (lastView) paintMini(lastView);
+    }
+    const miniSettingsNow = () => (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
+    $("mini-wf-on").addEventListener("click", () => setMini(!hfSettings.mini));
+    $("blk-miniwf").addEventListener("click", () => { $("mini-dialog").hidden = false; miniTexts(lastView); });
+    $("mini-close").addEventListener("click", () => { $("mini-dialog").hidden = true; });
+    $("mini-hide").addEventListener("click", () => { $("mini-dialog").hidden = true; setMini(false); });
+    $("mini-hot").addEventListener("click", toggleHot);
+    $("mini-set-span").addEventListener("click", () => hfSet("span", hfx.nextSpan(miniSettingsNow().span)));
+    $("mini-set-mode").addEventListener("click", () => hfSet("mode", hfx.nextMode(miniSettingsNow().mode)));
+    $("mini-set-speed").addEventListener("click", () => hfSet("speed", hfx.nextSpeed(miniSettingsNow().speed)));
+    $("mini-ref-down").addEventListener("click", () => hfSet("ref", hfx.stepRef(miniSettingsNow().ref, -hfx.REF_UI_STEP)));
+    $("mini-ref-up").addEventListener("click", () => hfSet("ref", hfx.stepRef(miniSettingsNow().ref, hfx.REF_UI_STEP)));
+    $("mini-gain").addEventListener("click", () => {
+      hfSettings = Object.assign({}, hfSettings, { gain: hfx.nextGain(hfSettings.gain) });
+      store.set("trx.hf", JSON.stringify(hfSettings)); hfTexts(); miniTexts(lastView);
+    });
+    $("mini-range").addEventListener("click", () => {
+      hfSettings = Object.assign({}, hfSettings, { range: hfx.nextRange(hfSettings.range) });
+      store.set("trx.hf", JSON.stringify(hfSettings)); hfTexts(); miniTexts(lastView); miniLast = null;
+    });
+
     // ---- santé de la machine de la station (state.host) et synthèse du matériel (host_info), opérateurs seulement
     function paintHost(v) {
       const h = v.connected ? v.host : null;
@@ -1263,7 +1376,9 @@
         while (logList.children.length > 50) logList.removeChild(logList.lastChild);
       },
       spectrum(frame) {
+        hfCalibrate(frame);
         if (hfVisible) hfDraw(frame);
+        if (miniActive()) miniDraw(frame);
       },
       remoteStream(stream, track) {
         const media = stream || new MediaStream([track]);
@@ -1440,6 +1555,7 @@
         hint.textContent = v.dataModeHint;
         renderPresence(v);
         paintHost(v);
+        paintMini(v);
       },
     };
 
@@ -1931,7 +2047,7 @@
     function setRecentOpen(on) {
       if (on === recentOpen) return;
       recentOpen = on;
-      if (!hfVisible) client.watchSpectrum(on);                                   // la vue HF ouverte s'en charge déjà
+      syncWatch();
       renderRecent();
     }
     $("cluster-all").addEventListener("click", () => setRecentOpen(!recentOpen));

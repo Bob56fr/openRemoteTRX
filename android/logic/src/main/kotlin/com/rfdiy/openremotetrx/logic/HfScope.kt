@@ -171,6 +171,44 @@ object HfScope {
         return ((hz - lowHz).toDouble() / (highHz - lowHz)).toFloat()
     }
 
+    // Couleurs chaudes selon le niveau S (étape 100, page : hotColor) : jaune au-dessus de S7, orange au-dessus de S9,
+    // rouge au-dessus de S9+20 ; niveaux du poste RELATIFS au REF, recalés sur le S-mètre au repère, en réception.
+    private val HOT_DB = doubleArrayOf(-12.0, 0.0, 20.0)
+    private val HOT_RGB = arrayOf(intArrayOf(255, 216, 74), intArrayOf(255, 140, 26), intArrayOf(255, 42, 42))
+    private const val S_CAL_MIN_DB = -48.0
+    private const val S_CAL_SMOOTHING = 0.2
+
+    /** Niveau le plus fort à ±2 points de `fraction` ; null si inconnu. */
+    fun levelNear(frame: SpectrumFrame, fraction: Float?): Int? {
+        if (fraction == null || frame.size == 0) return null
+        val c = (fraction.coerceIn(0f, 1f) * (frame.size - 1)).roundToInt()
+        return (maxOf(0, c - 2)..minOf(frame.size - 1, c + 2)).maxOf { frame.level(it) }
+    }
+
+    /** Décalage (dB) : niveau / 2 + décalage = dB par rapport à S9 ; lissé ; inchangé en émission, hors écran ou sous S1. */
+    fun sCalibrate(previous: Double?, frame: SpectrumFrame, fraction: Float?, strengthDb: Double?, receiving: Boolean): Double? {
+        val v = levelNear(frame, fraction)
+        if (!receiving || v == null || strengthDb == null || strengthDb < S_CAL_MIN_DB) return previous
+        val measured = strengthDb - v.toDouble() / LEVELS_PER_DB
+        return if (previous != null) previous + (measured - previous) * S_CAL_SMOOTHING else measured
+    }
+
+    /** Couleur ARGB chaude au-dessus de S7, null en dessous (palette habituelle) ou sans recalage. */
+    fun hotColor(level: Int, offset: Double?): Int? {
+        if (offset == null) return null
+        val db = level.toDouble() / LEVELS_PER_DB + offset
+        if (db < HOT_DB[0]) return null
+        var rgb = HOT_RGB.last()
+        for (i in 1 until HOT_DB.size) {
+            if (db < HOT_DB[i]) {
+                val k = (db - HOT_DB[i - 1]) / (HOT_DB[i] - HOT_DB[i - 1])
+                rgb = IntArray(3) { j -> (HOT_RGB[i - 1][j] + (HOT_RGB[i][j] - HOT_RGB[i - 1][j]) * k).roundToInt() }
+                break
+            }
+        }
+        return (0xFF shl 24) or (rgb[0] shl 16) or (rgb[1] shl 8) or rgb[2]
+    }
+
     /** Même échelle et même nombre de points : l'historique du waterfall reste valable. */
     fun sameScale(a: SpectrumFrame?, b: SpectrumFrame?): Boolean =
         a != null && b != null && a.lowHz == b.lowHz && a.highHz == b.highHz && a.size == b.size

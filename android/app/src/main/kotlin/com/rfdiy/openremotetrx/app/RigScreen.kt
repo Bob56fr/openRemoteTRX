@@ -169,6 +169,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
+    var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
+    fun setMiniWf(on: Boolean) { miniWf = on; prefs.edit().putBoolean("mini_wf", on).apply() }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     var offsetDrag by remember { mutableStateOf<Float?>(null) }
@@ -408,6 +410,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
+            // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
+            if (miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
             Panel {
             // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
             val dots = rig.bandDots(System.currentTimeMillis())
@@ -600,6 +604,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                     Spacer(Modifier.width(8.dp))
                     Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
+                    // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
+                    if (HfScope.configured(hello)) {
+                        CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf)
+                        Spacer(Modifier.width(6.dp))
+                    }
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Égaliseur »)
                     val eqOn = voice.settings.enabled
                     CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
