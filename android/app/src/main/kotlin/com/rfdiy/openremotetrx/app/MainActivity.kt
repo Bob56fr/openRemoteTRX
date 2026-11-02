@@ -12,7 +12,24 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -54,8 +71,11 @@ class MainActivity : ComponentActivity() {
                 colorScheme = Page.scheme,                         // couleurs de la page web (thème par défaut)
                 typography = compactTypography(),
             ) {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    App(store, Modifier.padding(padding))
+                Box(Modifier.fillMaxSize()) {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                        App(store, Modifier.padding(padding))
+                    }
+                    Splash()
                 }
             }
         }
@@ -69,6 +89,27 @@ class MainActivity : ComponentActivity() {
         super.onStop()
         if (isChangingConfigurations) return
         RigHub.leaving(getSharedPreferences("ui", MODE_PRIVATE).getBoolean("keep_tx_background", false))
+    }
+
+    /**
+     * Image d'accueil à l'ouverture de l'application (comme la page web : `splash.webp`, 2 s, un toucher la passe) ;
+     * pas à chaque rotation de l'écran. Rien n'est bloqué derrière : la connexion se prépare pendant ce temps.
+     */
+    @Composable
+    private fun Splash() {
+        var shown by rememberSaveable { mutableStateOf(true) }
+        LaunchedEffect(Unit) { delay(2000); shown = false }
+        AnimatedVisibility(visible = shown, exit = fadeOut()) {
+            Box(
+                Modifier.fillMaxSize().background(Page.FOND_ACCUEIL).clickable { shown = false },
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painterResource(R.drawable.splash), contentDescription = "openremotetrx",
+                    contentScale = ContentScale.Fit, modifier = Modifier.padding(12.dp).clip(RoundedCornerShape(16.dp)),
+                )
+            }
+        }
     }
 
     private fun granted(permission: String) =

@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
  */
 object Page {
     val FOND = Color(0xFF04070B)            // --fond
+    val FOND_ACCUEIL = Color(0xFF06101F)    // --fond-accueil (image d'accueil)
     val PANNEAU = Color(0xFF0B1118)         // --fond-panneau
     val INSTRUMENT = Color(0xFF0E151D)      // --fond-instrument (afficheur)
     val CHAMP = Color(0xFF0F151D)           // --fond-champ
