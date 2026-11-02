@@ -123,6 +123,7 @@ object VoiceHub {
         if (on == tx) return
         tx = on
         processor.dsp?.setTx(on)
+        ReplayHub.onTx(on)                                          // rediffusion : commence à l'émission confirmée
         if (on) {
             recording = false
             stopPlayback()
@@ -274,6 +275,7 @@ object VoiceHub {
         override fun reset(sampleRateHz: Int) = initialize(sampleRateHz, 1)
 
         override fun process(numBands: Int, numFrames: Int, buffer: ByteBuffer) {
+            recordForReplay(numFrames, buffer)
             val want = wanted
             if (want == null) {
                 if (applied != null) { applied = null; scrambler?.set(null, 0) }
@@ -298,6 +300,27 @@ object VoiceHub {
                 // le bloc part tel quel
             }
         }
+
+        private var replayScale = 1f
+        private var replayWork = FloatArray(480)
+
+        /** Rediffusion : copie du son reçu, tel qu'il part vers le haut-parleur, pendant l'enregistrement seulement. */
+        private fun recordForReplay(numFrames: Int, buffer: ByteBuffer) {
+            if (!ReplayHub.ui.value.recording) return
+            try {
+                val fb = buffer.duplicate().order(ByteOrder.nativeOrder()).asFloatBuffer()
+                val n = minOf(numFrames, fb.capacity())
+                if (n <= 0) return
+                if (replayWork.size < n) replayWork = FloatArray(n)
+                fb.position(0)
+                fb.get(replayWork, 0, n)
+                if (replayScale == 1f) for (i in 0 until n) if (abs(replayWork[i]) > 4f) { replayScale = 32768f; break }
+                if (replayScale != 1f) for (i in 0 until n) replayWork[i] /= replayScale
+                ReplayHub.onRx(replayWork, n, rate)
+            } catch (_: RuntimeException) {
+                // un bloc perdu pour l'enregistrement, rien d'autre
+            }
+        }
     }
 
     /** Traitement appelé par WebRTC (fil audio, blocs de 10 ms), échantillons flottants mono. */
@@ -307,8 +330,10 @@ object VoiceHub {
         private var work = FloatArray(480)
         private var seen = 0                                        // blocs vus depuis l'initialisation (journal)
         private var peak = 0f
+        private var rate = 48000
 
         override fun initialize(sampleRateHz: Int, numChannels: Int) {
+            rate = sampleRateHz
             dsp = VoiceDsp(sampleRateHz).also { d ->
                 d.apply(_ui.value.settings)
                 d.scrambleMode = _ui.value.scrambler.let { if (it.tx) it.mode else null }
@@ -342,7 +367,8 @@ object VoiceHub {
                     if (++seen == 500) android.util.Log.i("VoiceHub", "échelle ${if (scale == 1f) "-1..1" else "FloatS16"}, crête brute $peak, bandes $numBands, $numFrames échantillons par bloc")
                 }
                 if (scale != 1f) for (i in 0 until n) work[i] /= scale
-                d.process(work, n)
+                // Rediffusion : l'enregistrement remplace le micro (ni égaliseur ni effets), sinon traitement habituel
+                if (!ReplayHub.fillTx(work, n, rate)) d.process(work, n)
                 if (scale != 1f) for (i in 0 until n) work[i] *= scale
                 fb.position(0)
                 fb.put(work, 0, n)

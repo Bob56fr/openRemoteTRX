@@ -92,7 +92,7 @@ role = "Assistant de configuration : poste, ports, PTT, cartes son, bandes autor
 quand = "Au premier déploiement, ou pour tout reprendre (changement de poste, d'interface audio, de PC)."
 modifie = "<code>station.toml</code> (seulement si tu vas au bout). La station est arrêtée pendant l'assistant puis redémarrée à la demande."
 admin = true
-expert = "<p>Le poste n'est interrogé qu'en lecture. Une configuration importée d'une ancienne station (<code>station.import.toml</code>) sert de point de départ.</p>"
+expert = "<p>Le poste n'est interrogé qu'en lecture. Une configuration importée d'une ancienne station (<code>station.import.toml</code>) sert de point de départ.</p><p>À l'ajout d'un poste, l'assistant demande si la <strong>rediffusion d'enregistrements</strong> est autorisée (application : enregistrer l'audio reçu puis le renvoyer en émission, durée limitée au temps maximal d'émission moins 5 s). Réponse par défaut : non. Rediffuser l'émission d'une station à des tiers est en général interdit au service amateur : n'accepter que si tu en as l'usage et sous ta responsabilité (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
 role = "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou réception, clients connectés, services, matériel, audio, journal."

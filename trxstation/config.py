@@ -146,6 +146,9 @@ class Safety:
     heartbeat_timeout_ms: int = 2000  # sans battement : retour RX
     rig_temp_warn_c: int = 40         # température du poste (TEMP_METER) : avertissement (page, ntfy)
     rig_temp_cut_c: int = 50          # au-delà : émission à distance coupée et refusée jusqu'au retour sous warn
+    # Rediffusion d'un enregistrement de l'audio reçu (application) : ACCORDÉE UNE FOIS par l'assistant, à la demande
+    # expresse de l'opérateur (responsabilité réglementaire : rediffuser une station à des tiers est en général interdit)
+    allow_replay: bool = False
 
 
 TEMP_MIN_C, TEMP_MAX_C = 20, 90      # bornes des seuils de température du poste
@@ -462,6 +465,8 @@ def validate(cfg: Config) -> list[str]:
         p.append("[safety] warn_before_s doit être entre 0 et tot_s")
     if s.heartbeat_interval_ms <= 0 or s.heartbeat_timeout_ms < 2 * s.heartbeat_interval_ms:
         p.append("[safety] heartbeat_timeout_ms doit valoir au moins 2x heartbeat_interval_ms")
+    if not isinstance(s.allow_replay, bool):
+        p.append("[safety] allow_replay doit valoir true ou false")
     if not TEMP_MIN_C <= s.rig_temp_warn_c < s.rig_temp_cut_c <= TEMP_MAX_C:
         p.append(f"[safety] il faut {TEMP_MIN_C} <= rig_temp_warn_c < rig_temp_cut_c <= {TEMP_MAX_C} (°C)")
 
@@ -829,6 +834,7 @@ def render_toml(cfg: Config) -> str:
         f"heartbeat_timeout_ms = {s.heartbeat_timeout_ms}",
         f"rig_temp_warn_c = {s.rig_temp_warn_c}   # température du poste : avertissement (sans effet si le poste ne la donne pas)",
         f"rig_temp_cut_c = {s.rig_temp_cut_c}   # émission à distance coupée, reprise sous rig_temp_warn_c",
+        f"allow_replay = {str(s.allow_replay).lower()}   # rediffusion d'un enregistrement de l'audio reçu (accordée par l'assistant, responsabilité de l'opérateur)",
         "",
         "[supervisor]",
         f"tot_abs_s = {v.tot_abs_s}",

@@ -44,6 +44,7 @@ heartbeat_interval_ms = 500
 heartbeat_timeout_ms = 2000
 rig_temp_warn_c = 40   # température du poste (si Hamlib la donne) : avertissement
 rig_temp_cut_c = 50    # émission à distance coupée, reprise sous rig_temp_warn_c (TRX Console, menu 16)
+allow_replay = false   # rediffusion d'un enregistrement de l'audio reçu (accordée par l'assistant, responsabilité de l'opérateur)
 
 [supervisor]
 tot_abs_s = 135   # TOT absolu (> tot_ceiling_s) : coupe aussi l'émission faite au micro du poste

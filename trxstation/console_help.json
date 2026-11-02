@@ -2,7 +2,7 @@
  "menus": {
   "assistant": {
    "admin": true,
-   "expert": "Le poste n'est interrogé qu'en lecture. Une configuration importée d'une\nancienne station (station.import.toml) sert de point de départ.",
+   "expert": "Le poste n'est interrogé qu'en lecture. Une configuration importée d'une\nancienne station (station.import.toml) sert de point de départ.\n\nÀ l'ajout d'un poste, l'assistant demande si la rediffusion\nd'enregistrements est autorisée (application : enregistrer l'audio reçu puis\nle renvoyer en émission, durée limitée au temps maximal d'émission moins 5\ns). Réponse par défaut : non. Rediffuser l'émission d'une station à des\ntiers est en général interdit au service amateur : n'accepter que si tu en\nas l'usage et sous ta responsabilité ([safety] allow_replay).",
    "modifie": "station.toml (seulement si tu vas au bout). La station est arrêtée pendant\nl'assistant puis redémarrée à la demande.",
    "quand": "Au premier déploiement, ou pour tout reprendre (changement de poste,\nd'interface audio, de PC).",
    "role": "Assistant de configuration : poste, ports, PTT, cartes son, bandes\nautorisées, accès réseau, comptes. Écrit station.toml."

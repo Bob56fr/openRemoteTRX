@@ -61,7 +61,8 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "selcall_calibrate",         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
                      "host",                      # santé de la machine (state.host) et synthèse host_info (0.83.0+)
                      "voice_profiles",            # profils d'égaliseur de l'opérateur rangés sur la station (0.86.0+)
-                     "swr")                       # mesure de TOS de l'antenne (0.90.0+)
+                     "swr",                       # mesure de TOS de l'antenne (0.90.0+)
+                     "replay")                    # rediffusion d'un enregistrement de l'audio reçu (0.91.0+, accordée par l'assistant)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 

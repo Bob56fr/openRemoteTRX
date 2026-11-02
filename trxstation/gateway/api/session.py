@@ -144,6 +144,8 @@ class ControlSession:
                    "spectrum": self.spectrum.capability() if self.spectrum is not None else None,
                    "beeps": self.beeps.config.to_dict() if self.beeps is not None else None,
                    "selcall": self.selcall.status.to_dict() if self.selcall is not None else None,
+                   # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
+                   "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
                    "features": self.features()})
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
         if self.beeps is not None:
@@ -167,8 +169,12 @@ class ControlSession:
                    "presence": self.access is not None,
                    "host": not self.listener,
                    "voice_profiles": self.voices is not None,
-                   "swr": self.swr is not None and self.ctrl.config.swr.enabled}
+                   "swr": self.swr is not None and self.ctrl.config.swr.enabled,
+                   "replay": self._replay_allowed()}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
+
+    def _replay_allowed(self) -> bool:
+        return not self.listener and self.ctrl.config.safety.allow_replay is True
 
     def _state(self) -> dict:
         return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role)

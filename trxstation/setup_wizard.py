@@ -404,6 +404,8 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
     hint = hint_for(cfg.rig.model)                         # poste connu de l'assistant (Yaesu FTDX10/101...)
     if hint is not None and not keep_model:
         apply_rig_hint(cfg, hint, data_modes=lambda: data_modes_for_model(cfg.rig.model, cfg.tools.hamlib_dir))
+    if not keep_model:
+        ask_replay(cfg)
 
     if cfg.rig.model != DUMMY_MODEL:
         cfg.rig.port = choose_cat_port(list_serial_ports(), cfg.rig.port)
@@ -463,6 +465,20 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
     tot = ask("Durée max d'une émission en secondes (TOT)", str(cfg.safety.tot_s))
     cfg.safety.tot_s = int(tot) if tot.isdigit() else cfg.safety.tot_s
     return cfg
+
+
+REPLAY_WARNING = (
+    "\nRediffusion d'un enregistrement (application) : l'opérateur enregistre l'audio REÇU (2 minutes au plus,\n"
+    "limité au temps maximal d'émission) puis le renvoie en émission, par exemple pour faire écouter sa modulation\n"
+    "à un correspondant. RÉGLEMENTATION : rediffuser l'émission d'une station à des tiers est en général INTERDIT\n"
+    "au service amateur ; l'usage reste sous ta seule responsabilité. Désactivée par défaut."
+)
+
+
+def ask_replay(cfg: Config) -> None:
+    """Accordée UNE FOIS, à l'ajout du poste, seulement à la demande expresse de l'opérateur (décision du 2026-11-02)."""
+    print(REPLAY_WARNING)
+    cfg.safety.allow_replay = ask_yes_no("Autoriser la rediffusion d'enregistrements sur ce poste (sous ta responsabilité)", False)
 
 
 def ask_bands(cfg: Config, keep_offer: bool = False) -> None:

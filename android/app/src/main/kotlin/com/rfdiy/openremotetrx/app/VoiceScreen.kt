@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -60,6 +61,10 @@ private val WARN = Page.ALERTE
 fun VoiceTab(
     transmitting: Boolean,
     profiles: List<VoiceProfile>? = null,
+    /** Rediffusion accordée par la station ; `canBroadcast` = émission autorisée et possible (armé, micro, liaison). */
+    replayAllowed: Boolean = false,
+    canBroadcast: Boolean = false,
+    onBroadcast: () -> Unit = {},
     panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
@@ -236,6 +241,8 @@ fun VoiceTab(
 
     if (BuildConfig.SCRAMBLER) ScramblerPanel(ui.scrambler, panel)   // absent de la version Google Play
 
+    if (replayAllowed) ReplayPanel(transmitting, canBroadcast, onBroadcast, panel)
+
     panel {
         Text("Partager les réglages", style = MaterialTheme.typography.titleSmall)
         Text("Format commun avec la page web : la même voix sur le PC et le téléphone.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
@@ -372,3 +379,50 @@ private fun VoiceGraph(s: VoiceSettings) {
         }
     }
 }
+
+/**
+ * Rediffusion d'un enregistrement de l'audio REÇU (accordée sur la station par l'assistant, sous la responsabilité de
+ * l'opérateur) : enregistrer (TOT - 5 s au plus), puis diffuser en émission, comme un appui sur le PTT (« Émission
+ * autorisée » et toutes les règles de la station). Pendant la diffusion, le micro n'est pas entendu et l'enregistrement
+ * passe aussi sur le téléphone ; STOP l'arrête et repasse en réception.
+ */
+@Composable
+private fun ReplayPanel(transmitting: Boolean, canBroadcast: Boolean, onBroadcast: () -> Unit,
+                        panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit) {
+    val context = LocalContext.current
+    val r by com.rfdiy.openremotetrx.core.ReplayHub.ui.collectAsState()
+    fun say(text: String?) { text?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() } }
+    panel {
+        Text("Rediffusion d'un enregistrement", style = MaterialTheme.typography.titleSmall)
+        Text(
+            "Enregistre l'audio reçu (${r.maxS} s au plus), puis renvoie-le en émission. Micro coupé pendant la diffusion, " +
+                "écoute sur le téléphone. Rediffuser une station à des tiers est en général interdit : sous ta responsabilité.",
+            color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
+        )
+        Text(
+            when {
+                r.recording -> "Enregistrement : ${r.recordedS.roundToInt()} / ${r.maxS} s   ${dbText(r.levelDb)}"
+                r.playing -> "Diffusion : ${r.positionS.roundToInt()} / ${r.recordedS.roundToInt()} s"
+                r.pending -> "Émission demandée…"
+                r.recordedS > 0 -> "Enregistré : ${r.recordedS.roundToInt()} s"
+                else -> "Rien d'enregistré."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = { if (r.recording) com.rfdiy.openremotetrx.core.ReplayHub.stopRecording() else say(com.rfdiy.openremotetrx.core.ReplayHub.startRecording()) },
+                enabled = !transmitting && !r.playing && !r.pending,
+            ) { Text(if (r.recording) "Arrêter" else "Enregistrer") }
+            Button(
+                onClick = {
+                    val refused = com.rfdiy.openremotetrx.core.ReplayHub.broadcast()
+                    if (refused == null) onBroadcast() else say(refused)
+                },
+                enabled = canBroadcast && !transmitting && !r.recording && !r.playing && !r.pending && r.recordedS > 0,
+            ) { Text("Diffuser en émission") }
+        }
+        if (!canBroadcast) Text("« Émission autorisée » doit être allumé.", color = WARN, style = MaterialTheme.typography.bodySmall)
+    }
+}
+

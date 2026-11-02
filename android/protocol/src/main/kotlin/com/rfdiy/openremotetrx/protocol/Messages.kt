@@ -79,6 +79,8 @@ data class Hello(
     val beeps: JsonObject? = null,
     /** État du SELCALL de la station (comme le message `selcall`), null si la station ne l'offre pas. */
     val selcall: JsonObject? = null,
+    /** Rediffusion d'un enregistrement de l'audio reçu, accordée sur la station (station 0.91.0+) ; null sinon. */
+    val replay: ReplayInfo? = null,
     val features: List<String> = emptyList(),
 ) : ServerMessage {
     fun offers(feature: String): Boolean = feature in features
@@ -151,6 +153,10 @@ data class RigStatus(
     /** VFO actif tel que Hamlib le nomme (VFOA, VFOB, MEM, Main, Sub) ; null = non lisible (IC-7300MK2). Station 0.65.0+. */
     val vfo: String? = null,
 )
+
+/** Rediffusion permise par la station : durée maximale de l'enregistrement (TOT - 5 s). */
+@Serializable
+data class ReplayInfo(@SerialName("max_s") val maxS: Int = 0)
 
 /** Santé de la machine de la station (station 0.83.0+, opérateurs seulement ; null pour un visiteur). */
 @Serializable

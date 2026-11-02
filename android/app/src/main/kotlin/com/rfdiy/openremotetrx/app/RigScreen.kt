@@ -194,6 +194,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         return
     }
 
+    // Rediffusion : durée permise par la station (null = non accordée) ; diffusion suivie sur l'onglet Station
+    LaunchedEffect(hello?.replay?.maxS, listener) { com.rfdiy.openremotetrx.core.ReplayHub.setMax(if (listener) null else hello?.replay?.maxS) }
+    val replay by com.rfdiy.openremotetrx.core.ReplayHub.ui.collectAsState()
     val pttEnabled = connected && rig.protocolOk && ui.micAllowed && !listener && (mineTx || (ptt?.transmitting != true && rig.armed))
     Column(modifier.fillMaxSize()) {
       Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -240,6 +243,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
             if (!rig.protocolOk) Banner("Version de protocole inconnue : réception et STOP seulement.", WARN)
 
+            if (replay.playing || replay.pending) {
+                Banner(if (replay.playing) "DIFFUSION DE L'ENREGISTREMENT : ${replay.positionS.toInt()} / ${replay.recordedS.toInt()} s — STOP pour arrêter"
+                       else "Diffusion de l'enregistrement : émission demandée…", TX_RED, textColor = Color.White)
+            }
             // Avertissements de l'émission (l'état lui-même est dans l'afficheur)
             if (ptt != null) {
                 if (ptt.totWarning) Banner("Fin du temps d'émission proche (TOT).", WARN)
@@ -508,7 +515,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 if (cv.stale) Text(cv.staleText, color = WARN, style = MaterialTheme.typography.bodySmall)
             } }
                 }
-                Tab.EQ -> VoiceTab(transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles) { content -> Panel(content) }
+                Tab.EQ -> VoiceTab(
+                    transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles,
+                    replayAllowed = hello?.replay != null && !listener, canBroadcast = pttEnabled && !mineTx,
+                    onBroadcast = { tab = Tab.STATION },                           // la diffusion se suit sur l'onglet Station
+                ) { content -> Panel(content) }
                 Tab.REGLAGES -> {
             // Journal
             Panel {
