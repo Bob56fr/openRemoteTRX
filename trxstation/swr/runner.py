@@ -46,6 +46,15 @@ class SwrRunner:
         self.clock, self.sleep = clock, sleep
         self.task: asyncio.Task | None = None
         self.owner: str | None = None
+        self._progress: dict = {}
+
+    def status(self) -> dict:
+        """Pour le fichier d'état de la passerelle (trx-monitor) : mesure en cours, client, étape, point."""
+        if not self.busy:
+            return {"running": False}
+        p = self._progress
+        return {"running": True, "owner": self.owner, "state": p.get("state", "preparing"),
+                "done": sum(1 for x in p.get("points", []) if x.get("swr") is not None), "total": p.get("total", 0)}
 
     @property
     def busy(self) -> bool:
@@ -215,7 +224,9 @@ class SwrRunner:
         saved, reason, detail, warning = None, "done", "", ""
 
         def progress(state: str, index: int | None = None, **extra) -> None:
-            send({"type": "swr", "state": state, "index": index, "total": len(points), "points": points, **extra})
+            message = {"type": "swr", "state": state, "index": index, "total": len(points), "points": points, **extra}
+            self._progress = message
+            send(message)
 
         try:
             progress("preparing")

@@ -28,6 +28,7 @@ class StatusPublisher:
         self.link, self.controller, self.interval_s = link, controller, interval_s
         self.pipeline = pipeline
         self.presence = presence          # () -> dict : connexions (opérateurs, visiteurs) pour la console et trx-monitor
+        self.swr_status = None            # () -> dict : mesure de TOS en cours (branché par gateway/main une fois créée)
         self._seq = 0
         self._stop = asyncio.Event()
         self._failures = 0                # écritures refusées de suite (journal limité : pas une ligne par refus)
@@ -39,7 +40,8 @@ class StatusPublisher:
                              clients=self.controller.clients,
                              audio=self.pipeline.stats() if self.pipeline is not None else {},
                              spectrum=self.spectrum.stats() if self.spectrum is not None else {},
-                             presence=self.presence() if self.presence is not None else {})
+                             presence=self.presence() if self.presence is not None else {},
+                             swr=self.swr_status() if self.swr_status is not None else {})
 
     def stop(self) -> None:
         self._stop.set()

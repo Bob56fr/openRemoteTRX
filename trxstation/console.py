@@ -249,6 +249,7 @@ class Console:
             ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
             ("19", "Appairer un téléphone (application Android : adresse, empreinte, QR code)", self.pairing),
             ("20", "Visiteurs en réception seule (comptes, nombre maximal, connectés)", self.visitors),
+            ("21", "Dernière mesure de TOS de l'antenne (lecture seule)", self.swr_report),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -778,6 +779,39 @@ class Console:
         return True
 
     # ------------------------------------------------------------------ visiteurs (menu 20)
+
+    def swr_report(self) -> None:
+        """Dernière mesure de TOS (state_dir/swr.json) : lecture seule. La console ne lance JAMAIS de mesure (un outil ne
+        peut que couper) : la mesure se lance depuis la page ou l'application."""
+        from .swr.plan import level
+        from .swr.store import SwrStore
+        last = SwrStore(config_state_dir(self.config) / "swr.json").last()
+        if not last or not last.get("points"):
+            self.say("Aucune mesure de TOS rangée sur cette station. Elle se lance depuis la page ou l'application "
+                     "(rubrique « Mesure de TOS »), jamais depuis la console.")
+            return
+        when = time.strftime("%d/%m/%Y %H:%M", time.localtime(last.get("at") or 0))
+        power = f"{last['power_w']} W" if last.get("power_w") else f"{last.get('power_pct')} %"
+        out = [f"\nDernière mesure de TOS : {when}, {power} en {last.get('fm_mode')}",
+               f"  de {last['low_hz'] / 1e6:.3f} à {last['high_hz'] / 1e6:.3f} MHz, pas de {last['step_hz'] // 1000} kHz", ""]
+        marks = {"good": "", "fair": "  (moyen)", "bad": "  ÉLEVÉ"}
+        for p in last["points"]:
+            swr = p.get("swr")
+            if swr is None:
+                text = {"out_of_band": "hors bande", "unread": "non lu"}.get(p.get("status"), p.get("status") or "—")
+                out.append(f"  {p['hz'] / 1e6:9.3f} MHz   {text}")
+            else:
+                bar = "#" * max(1, min(40, round((min(swr, 5.0) - 1) * 10)))
+                out.append(f"  {p['hz'] / 1e6:9.3f} MHz   {swr:4.2f}  {bar}{marks[level(swr)]}"
+                           + ("  (puissance réduite par le poste)" if p.get("status") == "reduced" else ""))
+        best = last.get("best")
+        if best:
+            out.append(f"\n  Meilleur TOS : {best['swr']:.2f} à {best['hz'] / 1e6:.3f} MHz")
+        if last.get("reason") and last["reason"] != "done":
+            out.append(f"  Mesure interrompue : {last.get('detail') or last['reason']}")
+        for diff in last.get("differences") or []:
+            out.append(f"  À CORRIGER À LA MAIN : {diff}")
+        self.say("\n".join(out))
 
     def visitors(self) -> None:
         """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : réglages [access], comptes

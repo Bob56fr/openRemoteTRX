@@ -117,6 +117,11 @@ def _radio_panel(snap: Snapshot) -> Panel:
         label += " ?"
         level = "bad" if state in ACTIVE_STATES else "warn"
     rows = [Row("PTT", label, level)]
+    swr = status.swr if isinstance(getattr(status, "swr", None), dict) else {}
+    if swr.get("running"):                          # mesure de TOS : des émissions courtes vont se succéder
+        steps = {"preparing": "préparation", "calibrating": "étalonnage", "measuring": "mesure", "restoring": "remise en état"}
+        rows.append(Row("Mesure de TOS", f"{steps.get(swr.get('state'), swr.get('state'))} {swr.get('done', 0)}/{swr.get('total', 0)}"
+                        f" ({swr.get('owner') or '?'}) : STOP TX l'arrête", "warn"))
     if state == "TX" and ptt.get("tot_remaining_s") is not None:
         rows.append(Row("TOT", f"{ptt['tot_remaining_s']:.0f} s restantes",
                         "warn" if ptt.get("tot_warning") else "info"))

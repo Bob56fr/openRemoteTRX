@@ -119,6 +119,13 @@
    "quand": "Avant de brancher ou débrancher le poste ou l'interface audio, ou pour\nutiliser un autre logiciel sur le poste.",
    "role": "Arrête la station."
   },
+  "swr_report": {
+   "admin": false,
+   "expert": "Fichier lu : swr.json dans le dossier d'état de la station (derniers choix\nde chaque compte, temps de lecture du TOS étalonné par modèle de poste,\ndernière mesure). Réglages de la station : section [swr] de station.toml\n(menu 14 : enabled, plafond de puissance max_power_pct, max_points,\npoint_tx_max_s). Détail : docs/tos-cahier-des-charges.md.",
+   "modifie": "Rien.",
+   "quand": "Pour retrouver une mesure faite à distance, la comparer avec une nouvelle,\nou vérifier qu'un réglage du poste a bien été remis après une mesure\ninterrompue.",
+   "role": "Affiche la dernière mesure de TOS de l'antenne rangée sur la station : date,\npuissance, mode, plage, et le TOS de chaque point avec une petite barre\n(« ÉLEVÉ » au-dessus de 2), le meilleur point et les réglages du poste qui\nn'auraient pas été remis. Lecture seule : la console ne lance jamais de\nmesure (un outil ne peut que couper une émission) ; la mesure se lance\ndepuis la page ou l'application."
+  },
   "temperature": {
    "admin": true,
    "expert": "Sans effet si le poste ne donne pas sa température par Hamlib (cas de\nl'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce\nmotif.",

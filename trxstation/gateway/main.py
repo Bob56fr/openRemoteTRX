@@ -94,6 +94,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await ctrl.start()
         await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
+        if manager is not None and getattr(manager, "swr", None) is not None:
+            publisher.swr_status = manager.swr.status                           # trx-monitor : mesure de TOS en cours
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre

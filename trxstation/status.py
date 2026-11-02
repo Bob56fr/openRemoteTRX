@@ -50,6 +50,7 @@ class GatewayStatus:
     audio: dict = field(default_factory=dict)   # niveaux et compteurs audio (facultatif)
     spectrum: dict = field(default_factory=dict)  # spectre HF : state (off|waiting|starting|ok|error), code, message, compteurs
     presence: dict = field(default_factory=dict)  # connexions : opérateurs et visiteurs (gateway/api/access.py, vue opérateur)
+    swr: dict = field(default_factory=dict)       # mesure de TOS en cours (swr/runner.py) : running, owner, state, index, total
 
 
 def write_status(path: str | Path, status: GatewayStatus) -> None:
@@ -82,11 +83,13 @@ def read_status(path: str | Path) -> GatewayStatus | None:
                 or not isinstance(rig, dict) or not isinstance(clients, list)):
             return None
         audio, spectrum, presence = data.get("audio", {}), data.get("spectrum", {}), data.get("presence", {})
+        swr = data.get("swr", {})
         return GatewayStatus(pid=pid, seq=seq, written_at=float(data.get("written_at", 0.0)),
                              ptt=ptt, rig=rig, clients=[str(c) for c in clients],
                              audio=audio if isinstance(audio, dict) else {},
                              spectrum=spectrum if isinstance(spectrum, dict) else {},
-                             presence=presence if isinstance(presence, dict) else {})
+                             presence=presence if isinstance(presence, dict) else {},
+                             swr=swr if isinstance(swr, dict) else {})
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

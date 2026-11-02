@@ -198,7 +198,7 @@ la mesure avec un modèle de poste (numéro Hamlib absent de `swr.json`), la sta
 2. Moteur de mesure et étalonnage dans la passerelle + tests de panne (faux rigctld) + protocole. FAIT (étape 109, station 0.90.0).
 3. Page de mesure (web) + export image. FAIT (étape 111, station 0.92.0).
 4. Application (écran, partage de l'image). FAIT (étape 112, application 0.41.0).
-5. TRX Console (dernière mesure), trx-monitor, mode d'emploi.
+5. TRX Console (dernière mesure), trx-monitor, mode d'emploi. FAIT (étape 113, station 0.93.0).
 
 ## 12. Ce qui n'est PAS fait
 
