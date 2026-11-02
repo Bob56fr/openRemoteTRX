@@ -89,6 +89,13 @@
     voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
+    swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
+    swr_unavailable: "Mesure de TOS indisponible sur cette station.",
+    swr_no_fm_mode: "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
+    swr_out_of_band: "Aucun point de la mesure dans les bandes autorisées de la station.",
+    swr_bad_range: "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
+    swr_too_many_points: "Trop de points pour la mesure de TOS.",
+    swr_unreadable: "Réglages du poste non relus : mesure de TOS arrêtée.",
   };
 
   // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
@@ -138,6 +145,9 @@
     tot: "durée maximale d'émission atteinte",
     heartbeat: "perte du signal de vie du client",
     selcall_sent: "appel SELCALL envoyé",
+    swr_point: "point de mesure de TOS terminé",
+    swr_cancel: "mesure de TOS annulée",
+    swr_end: "fin de la mesure de TOS",
     selcall_timeout: "appel SELCALL trop long : coupé",
     selcall_failed: "appel SELCALL en erreur : coupé",
     toggle: "demande d'un client",
@@ -1169,6 +1179,9 @@
         if (msg.settings && typeof msg.settings === "object") { this.beeps = msg.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
       } else if (msg.type === "selcall") {                              // armé ailleurs, ou appel reçu
         if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
+      } else if (msg.type === "swr") {                                  // progression de MA mesure de TOS
+        this.swr = msg;
+        if (this.ui.swr) { try { this.ui.swr(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
       }
     }
 
@@ -1777,6 +1790,25 @@
 
     async deleteVoiceProfile(name) {
       return this._voiceProfilesResult(await this.send("voice_profile_delete", { name: name }));
+    }
+
+    // ---- mesure de TOS (docs/tos-cahier-des-charges.md) : chaque point est une prise d'émission NORMALE de ce client
+    async swrPlan(lowHz, highHz, points, powerPct) {
+      return this.send("swr_plan", { low_hz: lowHz, high_hz: highHz, points: points, power_pct: powerPct });
+    }
+
+    async swrStart(lowHz, highHz, points, powerPct) {
+      const res = await this.send("swr_start", { low_hz: lowHz, high_hz: highHz, points: points, power_pct: powerPct });
+      if (!res.ok) this.ui.log("Mesure de TOS : " + reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
+    async swrCancel() {
+      return this.send("swr_cancel");
+    }
+
+    async swrLast() {
+      return this.send("swr_last");
     }
 
     async hostInfo() {

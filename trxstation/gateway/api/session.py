@@ -35,7 +35,11 @@ log = logging.getLogger(__name__)
 
 
 _hamlib_version: str | None = None                # version de Hamlib (synthèse host_info), lue une fois
-FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0    # visiteur : au-delà, connexion fermée et alerte
+FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0
+# Pendant une mesure de TOS, aucun client ne change les réglages du poste (la mesure les a pris et les remettra) ;
+# STOP et toute coupure restent TOUJOURS possibles (ils arrêtent la mesure).
+SWR_BLOCKED = frozenset({"set_frequency", "set_mode", "set_function", "set_level", "set_offset", "memory_recall",
+                         "spectrum_set", "selcall_send", "selcall_calibrate", "local_release"})    # visiteur : au-delà, connexion fermée et alerte
 
 
 def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
@@ -78,7 +82,7 @@ class ControlSession:
                  spectrum_watch: Callable[[bool], None] | None = None, reports=None,
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
                  alert: Callable[[str, str], None] | None = None,
-                 kick_listener: Callable[[str], bool] | None = None, voices=None):
+                 kick_listener: Callable[[str], bool] | None = None, voices=None, swr=None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
@@ -96,6 +100,7 @@ class ControlSession:
         self.memories = memories
         self.layouts = layouts
         self.voices = None if role == LISTENER else voices   # VoiceProfileStore : profils d'égaliseur du COMPTE (opérateurs)
+        self.swr = None if role == LISTENER else swr         # SwrRunner : mesure de TOS (opérateurs seulement)
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
         self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
@@ -161,7 +166,8 @@ class ControlSession:
                    "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
                    "presence": self.access is not None,
                    "host": not self.listener,
-                   "voice_profiles": self.voices is not None}
+                   "voice_profiles": self.voices is not None,
+                   "swr": self.swr is not None and self.ctrl.config.swr.enabled}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
@@ -195,6 +201,32 @@ class ControlSession:
             await asyncio.sleep(self.state_interval_s)
 
     # ------------------------------------------------------------------ commandes
+
+    async def _swr_command(self, cmd) -> None:
+        """Mesure de TOS (docs/tos-cahier-des-charges.md). swr_start : prises d'émission NORMALES de CE client, une par
+        point (swr/runner.py) ; la progression arrive par les messages « swr » envoyés à CE client seulement."""
+        from ...swr.plan import PlanError
+        if self.swr is None or not self.ctrl.config.swr.enabled:
+            self._result(cmd.id, False, reason="swr_unavailable")
+            return
+        p = cmd.params
+        if cmd.name == "swr_plan":
+            try:
+                plan = self.swr.make_plan(p["low_hz"], p["high_hz"], p["points"], p["power_pct"])
+            except PlanError as exc:
+                self._result(cmd.id, False, reason=exc.code, detail=str(exc))
+            else:
+                self._result(cmd.id, True, plan=plan, choices=self.swr.store.choices(self.client_id))
+        elif cmd.name == "swr_start":
+            plan = await self.swr.start(self.client_id, p["low_hz"], p["high_hz"], p["points"], p["power_pct"], self.send)
+            log.warning("mesure de TOS lancée par %s : %d points, %s %% en %s", self.client_id, len(plan["points"]),
+                        plan["power_pct"], plan["fm_mode"])
+            self._result(cmd.id, True, plan=plan)
+        elif cmd.name == "swr_cancel":
+            await self.swr.cancel(self.client_id)
+            self._result(cmd.id, True)
+        else:                                            # swr_last
+            self._result(cmd.id, True, last=self.swr.store.last(), choices=self.swr.store.choices(self.client_id))
 
     async def _memory_command(self, cmd) -> None:
         if self.memories is None:
@@ -374,6 +406,10 @@ class ControlSession:
             if cmd.name != "heartbeat":                          # battement : ignoré sans réponse, comme pour un non-propriétaire
                 self._forbid(cmd.name, cmd.id)
             return
+        if self.swr is not None and self.swr.busy and (
+                cmd.name in SWR_BLOCKED or (cmd.name == "toggle" and self.ctrl.snapshot().state == "RX")):
+            self._result(cmd.id, False, reason="swr_busy", detail="mesure de TOS en cours : STOP pour l'arrêter")
+            return
         try:
             if cmd.name == "heartbeat":
                 self.ctrl.heartbeat(self.client_id)             # silencieux : 2 par seconde en émission
@@ -475,6 +511,8 @@ class ControlSession:
                     _hamlib_version = await asyncio.to_thread(hamlib_version, self.ctrl.config.tools.hamlib_dir)
                 self._result(cmd.id, True, sections=host_details(shared_monitor(), self.ctrl.config, self.capabilities,
                                                                  _hamlib_version, self.link.state.levels))
+            elif cmd.name.startswith("swr_"):
+                await self._swr_command(cmd)
             elif cmd.name.startswith("voice_profile"):     # opérateur seulement ; un fichier sur la station, rien vers le poste
                 if self.voices is None:
                     self._result(cmd.id, False, reason="voice_profiles_unavailable")

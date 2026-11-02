@@ -285,6 +285,14 @@ class CatLink:
         await self.client.set_func(name, on)
         self._update(functions={**self._state.functions, name: bool(on)})
 
+    async def set_power_exact(self, value: float) -> None:
+        """Puissance quelconque de 0 à 1 (station seulement : mesure de TOS) ; bornée au minimum déclaré par le poste."""
+        caps = self.capabilities
+        low = caps.level_ranges.get("RFPOWER", [0.0])[0] if caps is not None else 0.0
+        value = max(float(low), float(value))
+        await self.client.set_power_exact(value)
+        self._update(levels={**self._state.levels, "RFPOWER": round(value, 3)})
+
     async def set_level(self, name: str, value) -> None:
         """Voir WRITABLE_LEVELS. Plage déclarée par le poste (« Set level ») vérifiée en plus des bornes larges."""
         self._check_known("l", name)

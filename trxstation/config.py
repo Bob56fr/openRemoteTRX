@@ -109,6 +109,15 @@ class Access:
 
 
 @dataclass
+class Swr:
+    """Mesure de TOS (docs/tos-cahier-des-charges.md) : réglages de la STATION seulement (jamais depuis un client)."""
+    enabled: bool = True                # false : mesure absente (fonction « swr » non annoncée)
+    max_power_pct: int = 50             # plafond de puissance en % de la puissance du poste (jamais au-dessus de 50)
+    max_points: int = 50                # points d'une mesure au plus
+    point_tx_max_s: float = 2.0         # émission d'un point au plus (plafond de l'étalonnage du temps de lecture)
+
+
+@dataclass
 class Tools:
     hamlib_dir: str = ""           # dossier d'installation de Hamlib (Windows) ; vide = PATH
 
@@ -376,6 +385,7 @@ class Config:
     cluster: Cluster = field(default_factory=Cluster)
     selcall: Selcall = field(default_factory=Selcall)
     access: Access = field(default_factory=Access)
+    swr: Swr = field(default_factory=Swr)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -426,6 +436,7 @@ def validate(cfg: Config) -> list[str]:
             p.append(f"[[clients]] {client.id} : jeton trop court (16 caractères minimum)")
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
+    p += _swr_problems(cfg.swr)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -585,6 +596,20 @@ def _access_problems(a: Access) -> list[str]:
     return p
 
 
+def _swr_problems(s: Swr) -> list[str]:
+    p = []
+    if not isinstance(s.enabled, bool):
+        p.append("[swr] enabled doit valoir true ou false")
+    for name, low, high in (("max_power_pct", 5, 50), ("max_points", 2, 200)):
+        value = getattr(s, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.append(f"[swr] {name} doit être un entier entre {low} et {high}")
+    value = s.point_tx_max_s
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.5 <= value <= 3.0:
+        p.append("[swr] point_tx_max_s doit être un nombre entre 0.5 et 3")
+    return p
+
+
 def is_loopback(host: str) -> bool:
     try:
         return host == "localhost" or ipaddress.ip_address(host).is_loopback
@@ -662,7 +687,8 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "bands", "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "bands",
+                 "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -681,6 +707,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             cluster=_build_cluster(d.get("cluster", {}), problems),
             selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
             access=_build(Access, d.get("access", {}), "access", problems),
+            swr=_build(Swr, d.get("swr", {}), "swr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -873,6 +900,12 @@ def render_toml(cfg: Config) -> str:
         f"overload_cpu_pct = {ac.overload_cpu_pct}   # charge de tous les cœurs (%)",
         f"overload_lag_ms = {ac.overload_lag_ms}   # retard de la boucle de la passerelle (ms)",
         f"overload_mem_pct = {ac.overload_mem_pct}   # mémoire libre minimale (%)",
+        "",
+        "[swr]   # mesure de TOS de l'antenne (docs/tos-cahier-des-charges.md) ; réglages de la station seulement",
+        f"enabled = {str(cfg.swr.enabled).lower()}   # false : mesure absente",
+        f"max_power_pct = {cfg.swr.max_power_pct}   # plafond de puissance, % de la puissance du poste (5 à 50)",
+        f"max_points = {cfg.swr.max_points}   # points d'une mesure au plus (2 à 200)",
+        f"point_tx_max_s = {cfg.swr.point_tx_max_s}   # émission d'un point au plus, en secondes (0.5 à 3)",
         "",
     ]
     for client in cfg.clients:

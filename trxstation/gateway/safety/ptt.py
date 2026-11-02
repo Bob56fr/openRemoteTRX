@@ -146,6 +146,8 @@ class PttController:
         self._listeners: list[Callable[[PttSnapshot], None]] = []
         self.tail = tail                    # TailPlayer (bips de fin) ou None : aucun bip
         self._tail_task: asyncio.Task | None = None
+        self._reserved_by: str | None = None  # mesure de TOS en cours : seul ce client peut prendre l'émission
+        self.last_cut_request = ""          # motif de la DERNIÈRE coupure demandée, même en réception (mesure de TOS)
         self.local = LocalPresence()        # poste utilisé sur place : PTT à distance refusé (local.py)
         self.thermal = ThermalGuard(config.safety.rig_temp_warn_c, config.safety.rig_temp_cut_c)   # thermal.py
 
@@ -154,6 +156,30 @@ class PttController:
     @property
     def starting(self) -> bool:
         return self._starting
+
+    @property
+    def epoch(self) -> int:
+        """Compteur de coupures : change à CHAQUE coupure (STOP, TOT, battement, déconnexion...). Une mesure de TOS le
+        relit entre ses étapes pour s'arrêter dès qu'une coupure qui n'est pas la sienne a eu lieu."""
+        return self._epoch
+
+    @property
+    def rx_settled(self) -> bool:
+        """RX confirmé ET aucune coupure en cours : les réglages du poste sont de nouveau acceptés."""
+        return self._state is PttState.RX and not self._cut_running()
+
+    def reserve(self, client_id: str) -> None:
+        """Mesure de TOS : entre deux points (RX), aucun AUTRE client ne peut prendre l'émission. Ne donne aucun droit
+        en plus à `client_id` (chaque point reste une prise normale) ; STOP et les coupures restent toujours possibles."""
+        self._reserved_by = client_id
+
+    def release_reservation(self, client_id: str) -> None:
+        if self._reserved_by == client_id:
+            self._reserved_by = None
+
+    @property
+    def reserved_by(self) -> str | None:
+        return self._reserved_by
 
     def snapshot(self, event: str = "") -> PttSnapshot:
         remaining = None
@@ -256,6 +282,7 @@ class PttController:
     async def force_rx(self, reason: str, by: str | None = None) -> None:
         """Coupure. Jamais refusée, idempotente, envoie toujours « PTT off »."""
         log.warning("coupure PTT : %s (demandée par %s)", reason, by or "interne")
+        self.last_cut_request = reason
         self._epoch += 1               # annule toute prise d'émission en préparation
         self._stop_tail()              # un bip de fin en cours s'arrête net
         self._audio_gate(False)        # micro coupé AVANT « PTT off »
@@ -293,6 +320,11 @@ class PttController:
         self._tail_task = task
         self._spawn(self._end_selcall_call(task, epoch, client_id, duration_s + 2.0))
         return snap
+
+    async def key_without_audio(self, client_id: str) -> PttSnapshot:
+        """Prise d'émission NORMALE par `client_id` (mêmes refus que `toggle` : bandes, mode, poste sur place,
+        battements, TOT...), porte audio du client FERMÉE : porteuse de la mesure de TOS (swr/runner.py)."""
+        return await self._key(client_id, open_gate=False)
 
     async def _end_selcall_call(self, task: asyncio.Task, epoch: int, client_id: str, bound_s: float) -> None:
         reason = "selcall_sent"
@@ -405,6 +437,12 @@ class PttController:
             self._require_rx_for_tuning()
             await self.link.set_level(name, value)
 
+    async def set_power_exact(self, value: float) -> None:
+        """Puissance quelconque (0 à 1) réglée par la STATION (mesure de TOS) : même verrou et même refus hors RX confirmé."""
+        async with self._tx_lock:
+            self._require_rx_for_tuning()
+            await self.link.set_power_exact(value)
+
     @contextlib.asynccontextmanager
     async def rig_setting(self):
         """Réglage du poste passé par un autre chemin que rigctld (préréglage de filtre par le port B du spectre) :
@@ -428,6 +466,8 @@ class PttController:
             raise Refused("not_idle")
         if client_id not in self._clients:
             raise Refused("unknown_client")
+        if self._reserved_by is not None and client_id != self._reserved_by:
+            raise Refused("swr_busy", f"mesure de TOS en cours ({self._reserved_by})")
         if self.config.safety.enforce_bands and not self.config.bands:
             raise Refused("tx_disabled", "aucune bande autorisée dans station.toml")
         if not self.link.state.connected:

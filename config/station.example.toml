@@ -110,6 +110,12 @@ overload_cpu_pct = 90   # charge de tous les cœurs (%)
 overload_lag_ms = 100   # retard de la boucle de la passerelle (ms)
 overload_mem_pct = 10   # mémoire libre minimale (%)
 
+[swr]   # mesure de TOS de l'antenne (docs/tos-cahier-des-charges.md) ; réglages de la station seulement
+enabled = true   # false : mesure absente
+max_power_pct = 50   # plafond de puissance, % de la puissance du poste (5 à 50)
+max_points = 50   # points d'une mesure au plus (2 à 200)
+point_tx_max_s = 2.0   # émission d'un point au plus, en secondes (0.5 à 3)
+
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]
 # id = "club1"

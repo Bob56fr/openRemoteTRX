@@ -12,6 +12,7 @@ import kotlin.test.fail
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -149,6 +150,10 @@ class ContractTest {
             "voice_profiles" -> Command.VoiceProfiles
             "voice_profile_save" -> Command.VoiceProfileSave(p("name").content, e["settings"]!!.jsonObject)
             "voice_profile_delete" -> Command.VoiceProfileDelete(p("name").content)
+            "swr_plan" -> Command.SwrPlan(p("low_hz").long, p("high_hz").long, p("points").int, p("power_pct").double)
+            "swr_start" -> Command.SwrStart(p("low_hz").long, p("high_hz").long, p("points").int, p("power_pct").double)
+            "swr_cancel" -> Command.SwrCancel
+            "swr_last" -> Command.SwrLast
             "listeners_open" -> Command.ListenersOpen(p("on").boolean)
             else -> fail("commande sans équivalent dans l'application : $name")
         }

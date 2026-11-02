@@ -596,11 +596,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open)
                         Spacer(Modifier.width(6.dp))
                     }
-                    // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Égaliseur »)
+                    // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Audio »)
                     val eqOn = voice.settings.enabled
                     CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
                         onLongClick = { tab = Tab.EQ })
-                    // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Égaliseur »)
+                    // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
                         Text(
@@ -889,7 +889,7 @@ private fun Banner(text: String, color: Color, big: Boolean = false, textColor: 
 
 /** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
 private enum class Tab(val symbol: String, val label: String) {
-    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), EQ("♫", "Égaliseur"), REGLAGES("⚙", "Réglages"),
+    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), EQ("♫", "Audio"), REGLAGES("⚙", "Réglages"),
 }
 
 /** Barre d'onglets compacte (52 dp) : l'onglet choisi sur fond « sélection », comme les boutons de la page. */

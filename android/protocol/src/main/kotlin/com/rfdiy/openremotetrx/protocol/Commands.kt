@@ -151,6 +151,20 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("name", profile) }
     }
 
+    /** Mesure de TOS (opérateurs, fonction « swr ») : plan affiché avant le lancement, n'émet rien. */
+    data class SwrPlan(val lowHz: Long, val highHz: Long, val points: Int, val powerPct: Double) : Command("swr_plan") {
+        override fun JsonObjectBuilder.params() { put("low_hz", lowHz); put("high_hz", highHz); put("points", points); put("power_pct", powerPct) }
+    }
+
+    /** Lance la mesure : chaque point est une prise d'émission NORMALE de ce téléphone (battements, TOT, STOP). */
+    data class SwrStart(val lowHz: Long, val highHz: Long, val points: Int, val powerPct: Double) : Command("swr_start") {
+        override fun JsonObjectBuilder.params() { put("low_hz", lowHz); put("high_hz", highHz); put("points", points); put("power_pct", powerPct) }
+    }
+
+    data object SwrCancel : Command("swr_cancel")
+
+    data object SwrLast : Command("swr_last")
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -164,7 +178,7 @@ sealed class Command(val name: String) {
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
             "listener_kick", "listeners_reopen", "listeners_open", "host_info",
-            "voice_profiles", "voice_profile_save", "voice_profile_delete",
+            "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

@@ -53,7 +53,7 @@ import kotlin.math.roundToInt
 private val WARN = Page.ALERTE
 
 /**
- * Onglet « Égaliseur » (docs/egaliseur-voix.md) : mêmes réglages que la page, enregistrés sur le téléphone, appliqués
+ * Onglet « Audio » (ex « Égaliseur », docs/egaliseur-voix.md) : mêmes réglages que la page, enregistrés sur le téléphone, appliqués
  * tout de suite à la voix envoyée en émission. Limiteur toujours actif ; effets déconseillés en BLU.
  */
 @Composable

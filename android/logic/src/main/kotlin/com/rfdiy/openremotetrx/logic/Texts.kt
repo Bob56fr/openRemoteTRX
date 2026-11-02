@@ -59,12 +59,22 @@ object Texts {
         "voice_profiles_unavailable" to "Cette station ne range pas les profils d'égaliseur.",
         "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
         "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
+        "swr_busy" to "Mesure de TOS en cours : STOP pour l'arrêter.",
+        "swr_unavailable" to "Mesure de TOS indisponible sur cette station.",
+        "swr_no_fm_mode" to "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
+        "swr_out_of_band" to "Aucun point de la mesure dans les bandes autorisées de la station.",
+        "swr_bad_range" to "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
+        "swr_too_many_points" to "Trop de points pour la mesure de TOS.",
+        "swr_unreadable" to "Réglages du poste non relus : mesure de TOS arrêtée.",
     )
 
     val CUTS: Map<String, String> = mapOf(
         "tot" to "durée maximale d'émission atteinte",
         "heartbeat" to "perte du signal de vie du client",
         "selcall_sent" to "appel SELCALL envoyé",
+        "swr_point" to "point de mesure de TOS terminé",
+        "swr_cancel" to "mesure de TOS annulée",
+        "swr_end" to "fin de la mesure de TOS",
         "selcall_timeout" to "appel SELCALL trop long : coupé",
         "selcall_failed" to "appel SELCALL en erreur : coupé",
         "toggle" to "demande d'un client",

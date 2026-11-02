@@ -243,6 +243,13 @@ class RigctldClient:
             raise ValueError(f"fréquence invalide : {hz!r}")
         await self._command(f"F {hz}")
 
+    async def set_power_exact(self, value: float) -> None:
+        """Puissance d'émission QUELCONQUE de 0 à 1, pour la station seulement (mesure de TOS : 15 %, remise de la puissance
+        réglée à la main). Les clients, eux, n'ont que les paliers POWER_STEPS (set_level, vérifié aussi par le protocole)."""
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ValueError(f"puissance invalide (0 à 1 attendu) : {value!r}")
+        await self._command(f"L RFPOWER {float(value):.3f}")
+
     async def set_level(self, name: str, value) -> None:
         """Réglage d'un niveau de la liste WRITABLE_LEVELS : SQL (0 à 1), AGC et PREAMP (entiers)."""
         if name not in WRITABLE_LEVELS:
