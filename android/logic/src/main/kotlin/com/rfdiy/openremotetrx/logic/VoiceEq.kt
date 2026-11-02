@@ -157,4 +157,62 @@ object VoiceEq {
         b.hz <= BANDS_HZ[0] * 1.5 -> "lowshelf"
         else -> "highshelf"
     }
+
+    /** Gain (dB) d'un biquad à la fréquence f (page : responseDb). */
+    fun responseDb(k: DoubleArray, f: Double, fs: Double): Double {
+        val w = 2 * PI * f / fs
+        val nr = k[0] + k[1] * cos(w) + k[2] * cos(2 * w)
+        val ni = -(k[1] * sin(w) + k[2] * sin(2 * w))
+        val dr = 1 + k[3] * cos(w) + k[4] * cos(2 * w)
+        val di = -(k[3] * sin(w) + k[4] * sin(2 * w))
+        return 10 * kotlin.math.log10((nr * nr + ni * ni) / (dr * dr + di * di))
+    }
+
+    // ---- graphique de l'égaliseur (étape 102, page : curve, curveX, hints)
+    const val CURVE_LOW_HZ = 50.0
+    const val CURVE_HIGH_HZ = 6000.0
+    const val CURVE_MIN_DB = -24.0
+    const val CURVE_MAX_DB = 15.0
+    private const val CURVE_FS = 48000.0
+
+    data class CurvePoint(val hz: Double, val db: Double)
+
+    /** Courbe de toute la chaîne (coupe-bas, coupe-haut, 10 bandes), échelle logarithmique, bornée au graphique. */
+    fun curve(settings: VoiceSettings, points: Int = 120): List<CurvePoint> {
+        val s = validate(settings)
+        val n = maxOf(2, points)
+        val filters = listOf(biquad("highpass", s.highpassHz, 0.707, 0.0, CURVE_FS), biquad("lowpass", s.lowpassHz, 0.707, 0.0, CURVE_FS)) +
+            s.bands.map { biquad(bandType(it), it.hz, it.q, it.gainDb, CURVE_FS) }
+        return (0 until n).map { i ->
+            val hz = CURVE_LOW_HZ * (CURVE_HIGH_HZ / CURVE_LOW_HZ).pow(i.toDouble() / (n - 1))
+            CurvePoint(hz, filters.sumOf { responseDb(it, hz, CURVE_FS) }.coerceIn(CURVE_MIN_DB, CURVE_MAX_DB))
+        }
+    }
+
+    /** Position (0..1) d'une fréquence sur l'axe logarithmique du graphique. */
+    fun curveX(hz: Double): Double = kotlin.math.ln(hz / CURVE_LOW_HZ) / kotlin.math.ln(CURVE_HIGH_HZ / CURVE_LOW_HZ)
+
+    /** Ce que les réglages changent à l'oreille ; mêmes textes que la page (voice.js : hints). */
+    fun hints(settings: VoiceSettings): List<String> {
+        val s = validate(settings)
+        val out = mutableListOf<String>()
+        fun mean(from: Int, to: Int) = s.bands.subList(from, to).sumOf { it.gainDb } / (to - from)
+        val lows = mean(0, 4)
+        val mids = mean(4, 7)
+        val highs = mean(7, 10)
+        if (!s.enabled) out += "Égaliseur éteint : ces réglages ne s'appliquent pas encore."
+        if (lows >= 2) out += "Graves renforcés : voix plus chaude et ronde, moins lisible en DX."
+        else if (lows <= -2) out += "Graves réduits : voix plus légère, moins de ronflement."
+        if (mids >= 2) out += "Médiums renforcés : voix plus présente, un peu nasale."
+        else if (mids <= -2) out += "Médiums creusés : voix plus douce, moins d'énergie."
+        if (highs >= 2) out += "Aigus renforcés : plus de clarté et de punch, idéal en DX."
+        else if (highs <= -2) out += "Aigus réduits : voix plus sombre, moins de sifflantes."
+        if (s.highpassHz >= 200) out += "Coupe-bas à ${Math.round(s.highpassHz)} Hz : la puissance va à la parole."
+        if (s.lowpassHz <= 2700) out += "Coupe-haut à ${Math.round(s.lowpassHz)} Hz : bande étroite, plus de punch, moins de fidélité."
+        if (s.chorus.on) out += "Chorus : voix doublée, effet studio (à éviter en DX)."
+        if (s.reverb.on) out += "Réverbération : effet de salle (à éviter en DX)."
+        if (s.bands.any { kotlin.math.abs(it.gainDb) >= 9 }) out += "Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive."
+        if (out.isEmpty()) out += "Réglage neutre : votre voix part telle quelle."
+        return out
+    }
 }

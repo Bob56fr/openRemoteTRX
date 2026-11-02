@@ -5,7 +5,18 @@ package com.rfdiy.openremotetrx.app
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import com.rfdiy.openremotetrx.core.RigHub
+import com.rfdiy.openremotetrx.logic.VoiceProfile
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
@@ -46,7 +57,11 @@ private val WARN = Page.ALERTE
  * tout de suite à la voix envoyée en émission. Limiteur toujours actif ; effets déconseillés en BLU.
  */
 @Composable
-fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit) {
+fun VoiceTab(
+    transmitting: Boolean,
+    profiles: List<VoiceProfile>? = null,
+    panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit,
+) {
     val context = LocalContext.current
     val ui by VoiceHub.ui.collectAsState()
     val s = ui.settings
@@ -68,6 +83,36 @@ fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.
         }.onSuccess { save(it); say("Réglages importés.") }.onFailure { say("Import refusé : ${it.message}") }
     }
 
+    var naming by remember { mutableStateOf<String?>(null) }       // nom du profil à enregistrer (fenêtre ouverte)
+    var deleting by remember { mutableStateOf<String?>(null) }
+    naming?.let { name ->
+        AlertDialog(
+            onDismissRequest = { naming = null },
+            title = { Text("Enregistrer comme profil") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Égaliseur, chorus et réverbération actuels, rangés sur la station pour ce compte (même nom = remplacé).",
+                        style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(value = name, onValueChange = { naming = it.take(32) }, singleLine = true, label = { Text("Nom") })
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { RigHub.saveVoiceProfile(name, s); naming = null },
+                    enabled = name.isNotBlank()) { Text("Enregistrer") }
+            },
+            dismissButton = { TextButton(onClick = { naming = null }) { Text("Annuler") } },
+        )
+    }
+    deleting?.let { name ->
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Supprimer le profil « $name » ?") },
+            text = { Text("Il disparaît de la station, pour la page et l'application de ce compte.") },
+            confirmButton = { TextButton(onClick = { RigHub.deleteVoiceProfile(name); deleting = null }) { Text("Supprimer") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Annuler") } },
+        )
+    }
+
     panel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = s.enabled, onCheckedChange = { save(s.copy(enabled = it)) })
@@ -82,7 +127,16 @@ fun VoiceTab(transmitting: Boolean, panel: @Composable (@Composable ColumnScope.
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((_, preset) in VoiceEq.PRESETS) CompactChip(preset.first, onClick = { save(preset.second().copy(mic = s.mic)) })
+            // Profils de l'opérateur rangés sur la station, après les trois préréglages ; appui long = supprimer
+            for (p in profiles.orEmpty()) CompactChip("★ " + p.name, onClick = { save(p.voiceSettings()); say("Profil « ${p.name} » appliqué.") },
+                onLongClick = { deleting = p.name })
         }
+        if (profiles != null) {
+            TextButton(onClick = { naming = "" }) { Text("Enregistrer comme profil (sur la station)") }
+        }
+        // Graphique de l'égaliseur : courbe de toute la chaîne (chaud = renforcé, froid = atténué) et conseils
+        VoiceGraph(s)
+        for (hint in VoiceEq.hints(s)) Text("• " + hint, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         if (ui.failed.isNotEmpty()) Text(ui.failed, color = WARN, style = MaterialTheme.typography.bodySmall)
         Text(
             "Limiteur toujours actif (crêtes à ${VoiceEq.LIMIT_DBFS.toInt()} dBFS). Vérifiez l'ALC sur charge fictive après un réglage.",
@@ -264,3 +318,57 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
     }
 }
 
+private val HOT = listOf(intArrayOf(255, 216, 74), intArrayOf(255, 42, 42))
+private val COLD = listOf(intArrayOf(79, 195, 247), intArrayOf(57, 73, 171))
+
+private fun mix(a: IntArray, b: IntArray, k: Double, alpha: Float) =
+    Color((a[0] + (b[0] - a[0]) * k).roundToInt(), (a[1] + (b[1] - a[1]) * k).roundToInt(), (a[2] + (b[2] - a[2]) * k).roundToInt(), (alpha * 255).roundToInt())
+
+/** Graphique « fun » de l'égaliseur (page : drawVoiceGraph) : zone de la parole, parties coupées, courbe colorée, pastilles. */
+@Composable
+private fun VoiceGraph(s: VoiceSettings) {
+    val points = remember(s) { VoiceEq.curve(s, 160) }
+    val label = remember { android.graphics.Paint().apply { color = android.graphics.Color.rgb(138, 155, 181); isAntiAlias = true } }
+    Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+        val w = size.width
+        val h = size.height
+        fun x(hz: Double) = (VoiceEq.curveX(hz) * w).toFloat()
+        fun y(db: Double) = (h * (VoiceEq.CURVE_MAX_DB - db) / (VoiceEq.CURVE_MAX_DB - VoiceEq.CURVE_MIN_DB)).toFloat()
+        drawRect(Page.INSTRUMENT)
+        drawRect(Color(80, 160, 255, 26), Offset(x(300.0), 0f), Size(x(3000.0) - x(300.0), h))          // la parole
+        drawRect(Color(0, 0, 0, 90), Offset.Zero, Size(x(s.highpassHz), h))                              // coupé
+        drawRect(Color(0, 0, 0, 90), Offset(x(s.lowpassHz), 0f), Size(w - x(s.lowpassHz), h))
+        for (db in listOf(12.0, 6.0, -6.0, -12.0, -18.0)) drawLine(Color(0x22FFFFFF), Offset(0f, y(db)), Offset(w, y(db)))
+        for (hz in listOf(100.0, 300.0, 1000.0, 3000.0)) drawLine(Color(0x22FFFFFF), Offset(x(hz), 0f), Offset(x(hz), h))
+        val zero = y(0.0)
+        val step = w / points.size + 1f
+        for (p in points) {
+            val k = minOf(1.0, kotlin.math.abs(p.db) / 12)
+            val c = if (p.db >= 0) mix(HOT[0], HOT[1], k, 0.25f + 0.5f * k.toFloat()) else mix(COLD[0], COLD[1], k, 0.25f + 0.5f * k.toFloat())
+            val top = minOf(y(p.db), zero)
+            drawRect(c, Offset(x(p.hz), top), Size(step, maxOf(1f, kotlin.math.abs(zero - y(p.db)))))
+        }
+        val path = Path()
+        points.forEachIndexed { i, p -> if (i == 0) path.moveTo(x(p.hz), y(p.db)) else path.lineTo(x(p.hz), y(p.db)) }
+        drawPath(path, Color(0xE6FFFFFF), style = Stroke(width = 2.dp.toPx()))
+        s.bands.forEachIndexed { i, b ->
+            val near = points.minBy { kotlin.math.abs(it.hz - b.hz) }
+            drawCircle(Color.hsl((i * 32f) % 360f, 0.85f, 0.6f), 4.5.dp.toPx(), Offset(x(b.hz), y(near.db)))
+        }
+        label.textSize = 11.dp.toPx()
+        for ((hz, t) in listOf(100.0 to "100", 300.0 to "300", 1000.0 to "1 k", 3000.0 to "3 k Hz")) {
+            drawContext.canvas.nativeCanvas.drawText(t, x(hz) + 3.dp.toPx(), h - 4.dp.toPx(), label)
+        }
+        for (db in listOf(12.0, -12.0)) drawContext.canvas.nativeCanvas.drawText((if (db > 0) "+" else "") + db.toInt() + " dB", 3.dp.toPx(), y(db) - 3.dp.toPx(), label)
+        val badges = listOfNotNull(if (s.chorus.on) "♫ chorus" else null, if (s.reverb.on) "≋ réverb" else null)
+        label.color = android.graphics.Color.rgb(255, 216, 74)
+        badges.forEachIndexed { i, t -> drawContext.canvas.nativeCanvas.drawText(t, w - 80.dp.toPx(), (16 + 15 * i).dp.toPx(), label) }
+        label.color = android.graphics.Color.rgb(138, 155, 181)
+        if (!s.enabled) {
+            drawRect(Color(0, 0, 0, 115))
+            label.color = android.graphics.Color.WHITE
+            drawContext.canvas.nativeCanvas.drawText("ÉTEINT", w / 2 - 22.dp.toPx(), h / 2, label)
+            label.color = android.graphics.Color.rgb(138, 155, 181)
+        }
+    }
+}

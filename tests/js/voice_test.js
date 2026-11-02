@@ -196,6 +196,29 @@ test("micro : gain appliqué, porte de bruit réglable (atténue sans couper, ma
   assert.equal(vx.validate({ mic: { gateDb: 0 } }).mic.gateDb, -20);
 });
 
+test("graphique de l'égaliseur : courbe de toute la chaîne, conseils (mêmes valeurs que l'application)", () => {
+  const flat = vx.curve(vx.PRESETS.neutre.make(), 120);
+  assert.equal(flat.length, 120); assert.equal(Math.round(flat[0].hz), 50); assert.equal(Math.round(flat[119].hz), 6000);
+  const at = (c, hz) => c.reduce((best, p) => (Math.abs(p.hz - hz) < Math.abs(best.hz - hz) ? p : best));
+  assert.ok(Math.abs(at(flat, 1000).db) < 0.5, "neutre : plat au milieu");
+  assert.ok(at(flat, 50).db < -6, "coupe-bas à 100 Hz : 50 Hz atténué");
+  assert.ok(at(flat, 6000).db < -6, "coupe-haut à 3 kHz : 6 kHz atténué");
+  const dx = vx.curve(vx.PRESETS.dx.make(), 120);
+  assert.ok(at(dx, 2100).db > 3, "DX : présence vers 2 kHz");
+  assert.ok(Math.min(...dx.map((p) => p.db)) >= vx.CURVE_MIN_DB && Math.max(...dx.map((p) => p.db)) <= vx.CURVE_MAX_DB);
+  assert.equal(vx.curveX(50), 0); assert.equal(vx.curveX(6000), 1);
+  // valeurs de référence partagées avec VoiceEqTest (application) : courbe DX, 120 points
+  assert.deepEqual([0, 30, 60, 90, 119].map((i) => [dx[i].hz.toFixed(1), dx[i].db.toFixed(3)]),
+                   [["50.0", "-24.000"], ["167.2", "-11.156"], ["558.9", "0.476"], ["1868.4", "6.526"], ["6000.0", "-12.863"]]);
+  assert.deepEqual(vx.hints(vx.PRESETS.neutre.make()), ["Réglage neutre : votre voix part telle quelle."]);
+  assert.deepEqual(vx.hints(vx.PRESETS.dx.make()), ["Graves réduits : voix plus légère, moins de ronflement.",
+    "Aigus renforcés : plus de clarté et de punch, idéal en DX.", "Coupe-bas à 250 Hz : la puissance va à la parole."]);
+  const warm = vx.PRESETS.ragchew.make(); warm.enabled = false; warm.reverb.on = true; warm.bands[3].gainDb = 10;
+  assert.deepEqual(vx.hints(warm), ["Égaliseur éteint : ces réglages ne s'appliquent pas encore.",
+    "Graves renforcés : voix plus chaude et ronde, moins lisible en DX.", "Réverbération : effet de salle (à éviter en DX).",
+    "Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive."]);
+});
+
 let failed = 0;
 test("préréglages partagés avec l'application (tests/protocol/voice_presets.json) : identiques à ceux de la page", () => {
   const shared = JSON.parse(fs.readFileSync(path.join(__dirname, "../protocol/voice_presets.json"), "utf-8"));

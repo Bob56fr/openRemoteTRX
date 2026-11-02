@@ -167,6 +167,14 @@ object RigHub {
 
     fun reopenListeners() { service?.onRig { session, now -> session.reopenListeners(now) } }
 
+    /** Profils d'égaliseur de l'opérateur rangés sur la station : la liste revient dans RigState.voiceProfiles. */
+    fun saveVoiceProfile(name: String, settings: com.rfdiy.openremotetrx.logic.VoiceSettings) {
+        val json = com.rfdiy.openremotetrx.logic.VoiceEq.toJson(com.rfdiy.openremotetrx.logic.VoiceEq.validate(settings))
+        service?.onRig { session, now -> session.saveVoiceProfile(now, name, json) }
+    }
+
+    fun deleteVoiceProfile(name: String) { service?.onRig { session, now -> session.deleteVoiceProfile(now, name) } }
+
     /** Synthèse du matériel de la station (opérateurs) : réponse dans RigState.hostSections. */
     fun hostInfo() { service?.onRig { session, now -> session.hostInfo(now) } }
 

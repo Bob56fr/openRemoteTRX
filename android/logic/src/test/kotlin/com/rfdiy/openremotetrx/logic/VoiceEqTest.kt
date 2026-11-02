@@ -134,4 +134,26 @@ class VoiceEqTest {
         val next = sine(1000.0, -20.0, 960).also { dsp.process(it) }
         assertTrue(peak(next, 480) > 0.09)                                          // la voix passe encore
     }
+
+    @Test
+    fun `graphique de l'egaliseur et conseils, memes valeurs que la page`() {
+        val dx = VoiceEq.curve(VoiceEq.PRESETS.getValue("dx").second(), 120)
+        val ref = listOf(0 to (50.0 to -24.000), 30 to (167.2 to -11.156), 60 to (558.9 to 0.476), 90 to (1868.4 to 6.5265), 119 to (6000.0 to -12.863))
+        for ((i, expected) in ref) {
+            kotlin.test.assertEquals(expected.first, dx[i].hz, 0.05)
+            kotlin.test.assertEquals(expected.second, dx[i].db, 0.0006)
+        }
+        kotlin.test.assertEquals(0.0, VoiceEq.curveX(50.0), 1e-9)
+        kotlin.test.assertEquals(1.0, VoiceEq.curveX(6000.0), 1e-9)
+        kotlin.test.assertEquals(listOf("Réglage neutre : votre voix part telle quelle."), VoiceEq.hints(VoiceEq.PRESETS.getValue("neutre").second()))
+        kotlin.test.assertEquals(listOf("Graves réduits : voix plus légère, moins de ronflement.",
+            "Aigus renforcés : plus de clarté et de punch, idéal en DX.", "Coupe-bas à 250 Hz : la puissance va à la parole."),
+            VoiceEq.hints(VoiceEq.PRESETS.getValue("dx").second()))
+        val r = VoiceEq.PRESETS.getValue("ragchew").second()
+        val warm = r.copy(enabled = false, reverb = r.reverb.copy(on = true),
+            bands = r.bands.mapIndexed { i, b -> if (i == 3) b.copy(gainDb = 10.0) else b })
+        kotlin.test.assertEquals(listOf("Égaliseur éteint : ces réglages ne s'appliquent pas encore.",
+            "Graves renforcés : voix plus chaude et ronde, moins lisible en DX.", "Réverbération : effet de salle (à éviter en DX).",
+            "Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive."), VoiceEq.hints(warm))
+    }
 }

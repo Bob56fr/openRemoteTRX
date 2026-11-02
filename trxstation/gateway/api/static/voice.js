@@ -127,6 +127,67 @@
     return band.hz <= BANDS_HZ[0] * 1.5 ? "lowshelf" : "highshelf";
   }
 
+  // ---- graphique de l'égaliseur (étape 102) : courbe de toute la chaîne (coupe-bas, coupe-haut, 10 bandes) et conseils
+  const CURVE_LOW_HZ = 50, CURVE_HIGH_HZ = 6000, CURVE_MIN_DB = -24, CURVE_MAX_DB = 15, CURVE_FS = 48000;
+
+  function curve(settings, points) {
+    /* [{hz, db}] de CURVE_LOW_HZ à CURVE_HIGH_HZ en échelle logarithmique ; gain borné à l'échelle du graphique.
+       Même calcul que l'application (VoiceEq.curve) : mêmes filtres que la chaîne WebAudio (Q 0,707 aux coupures). */
+    const s = validate(settings), n = Math.max(2, points || 120);
+    const filters = [biquad("highpass", s.highpassHz, 0.707, 0, CURVE_FS), biquad("lowpass", s.lowpassHz, 0.707, 0, CURVE_FS)]
+      .concat(s.bands.map((b) => biquad(bandType(b), b.hz, b.q, b.gainDb, CURVE_FS)));
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const hz = CURVE_LOW_HZ * Math.pow(CURVE_HIGH_HZ / CURVE_LOW_HZ, i / (n - 1));
+      const db = filters.reduce((sum, k) => sum + responseDb(k, hz, CURVE_FS), 0);
+      out.push({ hz: hz, db: Math.min(CURVE_MAX_DB, Math.max(CURVE_MIN_DB, db)) });
+    }
+    return out;
+  }
+
+  // Couleurs du graphique (fixes : chaud = renforcé, froid = atténué ; le fond et la grille viennent du thème)
+  const GRAPH = { speech: "rgba(80, 160, 255, 0.10)", cut: "rgba(0, 0, 0, 0.35)", line: "rgba(255, 255, 255, 0.9)",
+                  label: "#8a9bb5", badge: "#ffd84a", off: "rgba(0, 0, 0, 0.45)", offText: "#ffffff" };
+  const HOT_RGB = [[255, 216, 74], [255, 42, 42]], COLD_RGB = [[79, 195, 247], [57, 73, 171]];
+
+  function fillColor(db) {
+    /* Remplissage sous la courbe : jaune -> rouge quand la voix est renforcée, bleu clair -> bleu foncé quand elle est atténuée. */
+    const k = Math.min(1, Math.abs(db) / 12), [a, b] = db >= 0 ? HOT_RGB : COLD_RGB;
+    const c = a.map((v, j) => Math.round(v + (b[j] - v) * k));
+    return "rgba(" + c.join(",") + "," + (0.25 + 0.5 * k).toFixed(2) + ")";
+  }
+
+  function bandColor(i) {
+    return "hsl(" + ((i * 32) % 360) + ", 85%, 60%)";
+  }
+
+  function curveX(hz) {
+    /* Position (0..1) d'une fréquence sur l'axe logarithmique du graphique. */
+    return Math.log(hz / CURVE_LOW_HZ) / Math.log(CURVE_HIGH_HZ / CURVE_LOW_HZ);
+  }
+
+  function hints(settings) {
+    /* Ce que les réglages changent à l'oreille, en quelques mots (graves = 100 à 370 Hz, médiums = 570 à 1 350 Hz,
+       aigus = 2,1 à 5 kHz : moyenne des bandes). Mêmes textes que l'application (VoiceEq.hints). */
+    const s = validate(settings), out = [];
+    const mean = (from, to) => s.bands.slice(from, to).reduce((sum, b) => sum + b.gainDb, 0) / (to - from);
+    const lows = mean(0, 4), mids = mean(4, 7), highs = mean(7, 10);
+    if (!s.enabled) out.push("Égaliseur éteint : ces réglages ne s'appliquent pas encore.");
+    if (lows >= 2) out.push("Graves renforcés : voix plus chaude et ronde, moins lisible en DX.");
+    else if (lows <= -2) out.push("Graves réduits : voix plus légère, moins de ronflement.");
+    if (mids >= 2) out.push("Médiums renforcés : voix plus présente, un peu nasale.");
+    else if (mids <= -2) out.push("Médiums creusés : voix plus douce, moins d'énergie.");
+    if (highs >= 2) out.push("Aigus renforcés : plus de clarté et de punch, idéal en DX.");
+    else if (highs <= -2) out.push("Aigus réduits : voix plus sombre, moins de sifflantes.");
+    if (s.highpassHz >= 200) out.push("Coupe-bas à " + Math.round(s.highpassHz) + " Hz : la puissance va à la parole.");
+    if (s.lowpassHz <= 2700) out.push("Coupe-haut à " + Math.round(s.lowpassHz) + " Hz : bande étroite, plus de punch, moins de fidélité.");
+    if (s.chorus.on) out.push("Chorus : voix doublée, effet studio (à éviter en DX).");
+    if (s.reverb.on) out.push("Réverbération : effet de salle (à éviter en DX).");
+    if (s.bands.some((b) => Math.abs(b.gainDb) >= 9)) out.push("Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive.");
+    if (out.length === 0) out.push("Réglage neutre : votre voix part telle quelle.");
+    return out;
+  }
+
   function impulse(type, seconds, rate, random) {
     /* Réponse impulsionnelle générée (rien à télécharger) : bruit à décroissance exponentielle, deux canaux décorrélés ;
        « plaque » plus brillante, « ressort » avec un battement. */
@@ -387,6 +448,7 @@
   }
 
   const api = { GATE_FLOOR, BANDS_HZ, GAIN_MAX_DB, LIMIT_DBFS, CHORUS_TYPES, REVERB_TYPES, PRESETS, RECORD_MAX_S, defaults, validate, exportJson,
-                importJson, biquad, responseDb, bandType, impulse, limiterCurve, VoiceChain };
+                importJson, biquad, responseDb, bandType, impulse, limiterCurve, VoiceChain,
+                CURVE_LOW_HZ, CURVE_HIGH_HZ, CURVE_MIN_DB, CURVE_MAX_DB, curve, curveX, hints, GRAPH, fillColor, bandColor };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxVoice = api; }
 })(typeof window !== "undefined" ? window : globalThis);

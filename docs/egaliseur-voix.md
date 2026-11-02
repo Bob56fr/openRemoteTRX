@@ -48,6 +48,24 @@ Sécurité : l'écoute de contrôle et la relecture ne sont **jamais** envoyées
 - **Préréglages nommés** (par exemple « DX », « Ragchew », « Neutre ») et réglages enregistrés par client : page en `localStorage`, application en DataStore.
 - Export et import dans un **format JSON commun** à la page et à l'application, pour retrouver la même voix sur les deux.
 
+## 6 bis. Graphique et profils de l'opérateur (étape 102)
+
+- **Graphique** (page : rubrique « Égaliseur paramétrique » ; application : onglet « Égaliseur ») : courbe de TOUTE la chaîne
+  (coupe-bas, coupe-haut, 10 bandes) de 50 Hz à 6 kHz en échelle logarithmique ; remplissage chaud (jaune -> rouge) quand la
+  voix est renforcée, froid (bleu) quand elle est atténuée ; zone bleutée = la parole (300 à 3 000 Hz) ; parties coupées par
+  les filtres assombries ; une pastille de couleur par bande ; « ♫ chorus » et « ≋ réverb » quand ils sont en service ;
+  « ÉTEINT » par-dessus quand l'égaliseur est éteint. Calcul commun : `voice.js curve` / `VoiceEq.curve` (valeurs de
+  référence identiques dans les deux tests).
+- **Conseils** sous le graphique (`hints`) : ce que les réglages changent à l'oreille (graves = moyenne des bandes 100 à
+  370 Hz, médiums = 570 à 1 350 Hz, aigus = 2,1 à 5 kHz ; seuil ±2 dB), coupe-bas haut, coupe-haut bas, effets,
+  gain fort (>= 9 dB) à surveiller à l'ALC.
+- **Profils de l'opérateur** rangés sur la STATION, par compte (`voice_profiles.json` dans le dossier d'état ; commandes
+  `voice_profiles`, `voice_profile_save`, `voice_profile_delete` : `docs/protocole.md`) : affichés après Neutre, DX et
+  Ragchew (page : « ★ nom » dans la liste des préréglages, « Enregistrer comme profil… », « Supprimer ce profil » ;
+  application : puces « ★ nom », appui long = supprimer, « Enregistrer comme profil (sur la station) »). Ils comprennent
+  l'égaliseur, les filtres, le chorus, la réverbération et le réglage du micro ; 10 au plus par compte ; même nom =
+  remplacé. Jamais pour un visiteur. La station borne les réglages comme `validate` ; le client revalide à l'application.
+
 ## 7. Essais
 
 - Page : tests Node de la logique (validation des réglages, construction de la chaîne sur un faux `AudioContext`), puis un vrai Chromium (Playwright).

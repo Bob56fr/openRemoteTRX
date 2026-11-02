@@ -130,7 +130,7 @@ class _Peer:
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
                  ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None,
-                 access=None, muted=None, alert=None):
+                 access=None, muted=None, alert=None, voices=None):
         self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
         self.access = access                    # AccessControl : rôles, quotas, présence ; None = tout client est opérateur
         self.listener_muted = muted             # () -> bool : silence pour les visiteurs (réception hors bandes)
@@ -142,6 +142,7 @@ class PeerManager:
             spectrum.add_listener(self.fanout.publish)
         self.memories = memories
         self.layouts = layouts
+        self.voices = voices                    # VoiceProfileStore : profils d'égaliseur de chaque opérateur
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
@@ -190,7 +191,7 @@ class PeerManager:
                                      memories=self.memories, layouts=self.layouts, spectrum=self.spectrum,
                                      spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
                                      reports=self.reports, role=role, access=self.access, alert=self.alert,
-                                     kick_listener=self._kick_listener,
+                                     kick_listener=self._kick_listener, voices=self.voices,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session

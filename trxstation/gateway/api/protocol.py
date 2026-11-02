@@ -48,14 +48,17 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "listener_kick",                 # déconnecter un visiteur : account
             "listeners_reopen",              # rouvrir l'écoute après une surcharge (acceptée seulement au vert)
             "listeners_open",                # commutateur « Écoute des visiteurs » : on (mémorisé sur la station)
-            "host_info")                     # synthèse du matériel de la station (OPÉRATEURS seulement, sans paramètre)
+            "host_info",                     # synthèse du matériel de la station (OPÉRATEURS seulement, sans paramètre)
+            # profils d'égaliseur de l'opérateur, rangés sur la station (OPÉRATEURS seulement ; n'agissent pas sur le poste)
+            "voice_profiles", "voice_profile_save", "voice_profile_delete")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
 OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall",
                      "selcall_send",              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
                      "selcall_calibrate",         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
-                     "host")                      # santé de la machine (state.host) et synthèse host_info (0.83.0+)
+                     "host",                      # santé de la machine (state.host) et synthèse host_info (0.83.0+)
+                     "voice_profiles")            # profils d'égaliseur de l'opérateur rangés sur la station (0.86.0+)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -217,6 +220,15 @@ def parse_command(raw: str | bytes) -> Command:
         if not isinstance(data.get("on"), bool):
             raise ProtocolError("invalid_params", "on doit valoir true ou false")
         params["on"] = data["on"]
+    elif name in ("voice_profile_save", "voice_profile_delete"):
+        profile = data.get("name")
+        if not isinstance(profile, str) or not 1 <= len(profile.strip()) <= 32 or not profile.strip().isprintable():
+            raise ProtocolError("invalid_params", "name : nom de profil de 1 à 32 caractères imprimables")
+        params["name"] = profile.strip()
+        if name == "voice_profile_save":
+            if not isinstance(data.get("settings"), dict):
+                raise ProtocolError("invalid_params", "settings : réglages de voix (objet JSON)")
+            params["settings"] = data["settings"]
     elif name == "listener_kick":
         account = data.get("account")
         if not isinstance(account, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", account):

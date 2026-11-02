@@ -86,6 +86,9 @@
     still_overloaded: "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
     listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
     listeners_unavailable: "Cette station ne gère pas les visiteurs.",
+    voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
+    voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
+    voice_profile_refused: "Profil d'égaliseur refusé par la station.",
   };
 
   // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
@@ -1754,6 +1757,26 @@
       this.ui.log(res.ok ? (on ? "Écoute des visiteurs ouverte." : "Écoute des visiteurs fermée : visiteurs déconnectés.")
         : "Écoute des visiteurs : " + (REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
       return res;
+    }
+
+    _voiceProfilesResult(res) {
+      /* Liste à jour des profils d'égaliseur de CE compte, ou null si la station refuse (motif dans le journal). */
+      if (res && res.ok && Array.isArray(res.profiles)) { this.voiceProfileList = res.profiles; return res.profiles; }
+      if (res && !res.ok) this.ui.log("Profils de voix : " + (res.detail || REASONS[res.reason] || res.reason), "warn");
+      return null;
+    }
+
+    async voiceProfiles() {
+      /* Profils d'égaliseur de CE compte, rangés sur la station (fonction « voice_profiles »). */
+      return this._voiceProfilesResult(await this.send("voice_profiles"));
+    }
+
+    async saveVoiceProfile(name, settings) {
+      return this._voiceProfilesResult(await this.send("voice_profile_save", { name: name, settings: settings }));
+    }
+
+    async deleteVoiceProfile(name) {
+      return this._voiceProfilesResult(await this.send("voice_profile_delete", { name: name }));
     }
 
     async hostInfo() {

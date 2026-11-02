@@ -508,7 +508,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 if (cv.stale) Text(cv.staleText, color = WARN, style = MaterialTheme.typography.bodySmall)
             } }
                 }
-                Tab.EQ -> VoiceTab(transmitting = ptt?.transmitting == true) { content -> Panel(content) }
+                Tab.EQ -> VoiceTab(transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles) { content -> Panel(content) }
                 Tab.REGLAGES -> {
             // Journal
             Panel {

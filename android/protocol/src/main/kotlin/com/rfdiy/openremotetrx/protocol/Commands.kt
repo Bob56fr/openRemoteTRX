@@ -139,6 +139,18 @@ sealed class Command(val name: String) {
     /** Synthèse du matériel de la station (opérateurs, fonction « host ») : réponse `sections`. */
     data object HostInfo : Command("host_info")
 
+    /** Profils d'égaliseur du compte rangés sur la station (opérateurs, fonction « voice_profiles ») : réponse `profiles`. */
+    data object VoiceProfiles : Command("voice_profiles")
+
+    /** Crée ou remplace (même nom) un profil d'égaliseur ; `settings` : format de VoiceEq.toJson, compact (< 2 048 octets). */
+    data class VoiceProfileSave(val profile: String, val settings: JsonObject) : Command("voice_profile_save") {
+        override fun JsonObjectBuilder.params() { put("name", profile); put("settings", settings) }
+    }
+
+    data class VoiceProfileDelete(val profile: String) : Command("voice_profile_delete") {
+        override fun JsonObjectBuilder.params() { put("name", profile) }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -152,6 +164,7 @@ sealed class Command(val name: String) {
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
             "listener_kick", "listeners_reopen", "listeners_open", "host_info",
+            "voice_profiles", "voice_profile_save", "voice_profile_delete",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

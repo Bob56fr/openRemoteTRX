@@ -300,9 +300,13 @@
         <div class="row">
           <label>Préréglage <select id="voice-preset"></select></label>
           <button id="voice-apply" class="chip">Appliquer</button>
+          <button id="voice-profile-save" class="chip" hidden title="Range les réglages actuels (égaliseur, chorus, réverbération) sur la station, pour ce compte">Enregistrer comme profil…</button>
+          <button id="voice-profile-delete" class="chip" hidden>Supprimer ce profil</button>
           <button id="voice-export" class="chip">Exporter</button>
           <label class="chip">Importer <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
         </div>
+        <canvas id="voice-graph" class="voice-graph" title="Courbe de l'égaliseur : au-dessus de 0 dB renforcé (chaud), en dessous atténué (froid) ; zone bleutée = la parole"></canvas>
+        <ul id="voice-hints" class="voice-hints"></ul>
         <label>Coupe-bas <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
         <label>Coupe-haut <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
         <div id="voice-bands" class="voice-bands"></div>

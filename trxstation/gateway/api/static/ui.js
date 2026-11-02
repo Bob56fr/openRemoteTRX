@@ -1550,6 +1550,7 @@
         renderPresence(v);
         paintHost(v);
         paintMini(v);
+        voiceProfilesSync();
       },
     };
 
@@ -1714,10 +1715,82 @@
       $("voice-record").disabled = !ready || !voiceRaw || typeof MediaRecorder === "undefined";
       $("voice-play").disabled = !ready || !recordBuffer;
       $("voice-record").textContent = recorder ? "Arrêter l'enregistrement" : "Enregistrer";
+      drawVoiceGraph();
+      const hintBox = $("voice-hints");
+      hintBox.textContent = "";
+      for (const hint of vx.hints(s)) hintBox.appendChild(el("li", "", hint));
+    }
+    // ---- graphique « fun » de l'égaliseur (étape 102) : courbe de toute la chaîne, chaud = renforcé, froid = atténué
+    function drawVoiceGraph() {
+      const cv = $("voice-graph");
+      if (!cv || !cv.getContext || !vx) return;
+      const ratio = window.devicePixelRatio || 1;
+      const W = Math.max(1, Math.round((cv.clientWidth || 320) * ratio)), H = Math.max(1, Math.round((cv.clientHeight || 150) * ratio));
+      if (cv.width !== W) cv.width = W;
+      if (cv.height !== H) cv.height = H;
+      const g = cv.getContext("2d"), s = voiceSettings;
+      const yOf = (db) => H * (vx.CURVE_MAX_DB - db) / (vx.CURVE_MAX_DB - vx.CURVE_MIN_DB);
+      const xOf = (hz) => vx.curveX(hz) * (W - 1);
+      g.fillStyle = canvasColors["--fond"]; g.fillRect(0, 0, W, H);
+      g.fillStyle = vx.GRAPH.speech; g.fillRect(xOf(300), 0, xOf(3000) - xOf(300), H);                    // la parole
+      g.fillStyle = vx.GRAPH.cut;                                                                          // coupé par les filtres
+      g.fillRect(0, 0, xOf(s.highpassHz), H); g.fillRect(xOf(s.lowpassHz), 0, W - xOf(s.lowpassHz), H);
+      g.strokeStyle = canvasColors["--spectre-grille"]; g.lineWidth = Math.max(1, ratio);
+      for (const db of [12, 6, -6, -12, -18]) { g.beginPath(); g.moveTo(0, yOf(db)); g.lineTo(W, yOf(db)); g.stroke(); }
+      for (const hz of [100, 300, 1000, 3000]) { g.beginPath(); g.moveTo(xOf(hz), 0); g.lineTo(xOf(hz), H); g.stroke(); }
+      const points = vx.curve(s, Math.min(240, Math.max(60, Math.round(W / 3))));
+      const zero = yOf(0), step = W / points.length + 1;
+      for (const p of points) {                                                                          // remplissage coloré
+        g.fillStyle = vx.fillColor(p.db);
+        const y = yOf(p.db);
+        g.fillRect(xOf(p.hz), Math.min(y, zero), step, Math.max(1, Math.abs(zero - y)));
+      }
+      g.strokeStyle = vx.GRAPH.line; g.lineWidth = 2 * ratio; g.beginPath();
+      points.forEach((p, i) => { if (i === 0) g.moveTo(xOf(p.hz), yOf(p.db)); else g.lineTo(xOf(p.hz), yOf(p.db)); });
+      g.stroke();
+      s.bands.forEach((b, i) => {                                                                        // une pastille par bande
+        const near = points.reduce((best, p) => (Math.abs(p.hz - b.hz) < Math.abs(best.hz - b.hz) ? p : best));
+        g.fillStyle = vx.bandColor(i); g.beginPath(); g.arc(xOf(b.hz), yOf(near.db), 4.5 * ratio, 0, 2 * Math.PI); g.fill();
+      });
+      g.font = Math.round(11 * ratio) + "px sans-serif"; g.fillStyle = cssVar("--texte-secondaire") || vx.GRAPH.label;
+      for (const [hz, label] of [[100, "100"], [300, "300"], [1000, "1 k"], [3000, "3 k Hz"]]) g.fillText(label, xOf(hz) + 3 * ratio, H - 4 * ratio);
+      for (const db of [12, -12]) g.fillText((db > 0 ? "+" : "") + db + " dB", 3 * ratio, yOf(db) - 3 * ratio);
+      const badges = (s.chorus.on ? ["♫ chorus"] : []).concat(s.reverb.on ? ["≋ réverb"] : []);
+      g.fillStyle = vx.GRAPH.badge;
+      badges.forEach((text, i) => g.fillText(text, W - 80 * ratio, (16 + 15 * i) * ratio));
+      if (!s.enabled) { g.fillStyle = vx.GRAPH.off; g.fillRect(0, 0, W, H); g.fillStyle = vx.GRAPH.offText; g.fillText("ÉTEINT", W / 2 - 22 * ratio, H / 2); }
+    }
+    // ---- profils de l'opérateur rangés sur la station (après Neutre, DX, Ragchew)
+    let voiceProfilesFor = null;
+    function voicePresetOptions() {
+      const select = $("voice-preset"), keep = select.value;
+      select.textContent = "";
+      for (const [key, preset] of Object.entries(vx.PRESETS)) select.appendChild(Object.assign(el("option", "", preset.label), { value: key }));
+      const mine = client.voiceProfileList || [];
+      if (mine.length) select.appendChild(Object.assign(el("option", "", "── Mes profils (station) ──"), { value: "", disabled: true }));
+      mine.forEach((p) => select.appendChild(Object.assign(el("option", "", "★ " + p.name), { value: "user:" + p.name })));
+      select.value = [...select.options].some((o) => o.value === keep) ? keep : Object.keys(vx.PRESETS)[0];
+      voiceProfileButtons();
+    }
+    function voiceProfilesOffered() {
+      return !!(client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("voice_profiles") && client.connected);
+    }
+    function voiceProfileButtons() {
+      const offered = voiceProfilesOffered();
+      $("voice-profile-save").hidden = !offered;
+      $("voice-profile-delete").hidden = !offered || !$("voice-preset").value.startsWith("user:");
+    }
+    function voiceProfilesSync() {
+      /* Liste relue une fois par connexion (nouveau « hello »), si la station range des profils. */
+      if (!vx) return;
+      if (!voiceProfilesOffered()) { if (voiceProfilesFor !== null) { voiceProfilesFor = null; client.voiceProfileList = []; voicePresetOptions(); } return; }
+      if (voiceProfilesFor === client.hello) return;
+      voiceProfilesFor = client.hello;
+      client.voiceProfiles().then(() => voicePresetOptions()).catch(() => {});
     }
     const bandRows = [];
     if (vx) {
-      for (const [key, preset] of Object.entries(vx.PRESETS)) $("voice-preset").appendChild(Object.assign(el("option", "", preset.label), { value: key }));
+      voicePresetOptions();
       for (const [key, t] of Object.entries(vx.CHORUS_TYPES)) $("voice-chorus-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
       for (const [key, t] of Object.entries(vx.REVERB_TYPES)) $("voice-reverb-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
       vx.BANDS_HZ.forEach((hz, i) => {
@@ -1756,7 +1829,36 @@
       bind("voice-reverb-mix", (t) => { voiceSettings.reverb.mix = Number(t.value); });
       bind("voice-reverb-time", (t) => { voiceSettings.reverb.seconds = Number(t.value); });
       $("voice-direct").addEventListener("click", () => { voiceSettings.enabled = !voiceSettings.enabled; voiceSave(); });
-      $("voice-apply").addEventListener("click", () => { voiceSettings = vx.PRESETS[$("voice-preset").value].make(); voiceSave(); });
+      $("voice-apply").addEventListener("click", () => {
+        const choice = $("voice-preset").value;
+        if (choice.startsWith("user:")) {
+          const p = (client.voiceProfileList || []).find((x) => "user:" + x.name === choice);
+          if (!p) return;
+          voiceSettings = vx.validate(p.settings);
+          ui.log("Profil « " + p.name + " » appliqué.", "");
+        } else if (vx.PRESETS[choice]) {
+          voiceSettings = vx.PRESETS[choice].make();
+        }
+        voiceSave();
+      });
+      $("voice-preset").addEventListener("change", voiceProfileButtons);
+      $("voice-profile-save").addEventListener("click", () => {
+        const current = $("voice-preset").value.startsWith("user:") ? $("voice-preset").value.slice(5) : "";
+        const name = (window.prompt("Nom du profil (égaliseur, chorus et réverbération actuels, rangés sur la station) :", current) || "").trim();
+        if (!name) return;
+        client.saveVoiceProfile(name, vx.validate(voiceSettings)).then((list) => {
+          if (!list) return;
+          voicePresetOptions(); $("voice-preset").value = "user:" + (list.find((p) => p.name.toLowerCase() === name.toLowerCase()) || { name }).name;
+          voiceProfileButtons(); ui.log("Profil « " + name + " » enregistré sur la station.", "");
+        }).catch(fail);
+      });
+      $("voice-profile-delete").addEventListener("click", () => {
+        const name = $("voice-preset").value.slice(5);
+        if (!name || !window.confirm("Supprimer le profil « " + name + " » de la station ?")) return;
+        client.deleteVoiceProfile(name).then((list) => {
+          if (list) { voicePresetOptions(); ui.log("Profil « " + name + " » supprimé.", ""); }
+        }).catch(fail);
+      });
       $("voice-export").addEventListener("click", () => {
         const link = el("a", "");
         link.href = URL.createObjectURL(new Blob([vx.exportJson(voiceSettings)], { type: "application/json" }));

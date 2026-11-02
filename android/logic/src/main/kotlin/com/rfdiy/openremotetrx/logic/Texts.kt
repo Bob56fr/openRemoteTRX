@@ -56,6 +56,9 @@ object Texts {
         "still_overloaded" to "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
         "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
         "listeners_unavailable" to "Cette station ne gère pas les visiteurs.",
+        "voice_profiles_unavailable" to "Cette station ne range pas les profils d'égaliseur.",
+        "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
+        "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
     )
 
     val CUTS: Map<String, String> = mapOf(

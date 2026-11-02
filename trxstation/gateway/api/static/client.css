@@ -335,6 +335,8 @@ audio { display: none; }
 .hostbar { position: relative; width: .7rem; height: 1.4rem; min-width: 0; padding: 0; margin: 0 .4rem; border: 1px solid var(--bouton-bord); border-radius: 3px; background: var(--fond-champ); overflow: hidden; vertical-align: middle; }
 .hostbar-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--succes); }
 .hostbar.warn .hostbar-fill { background: var(--alerte); } .hostbar.bad .hostbar-fill { background: var(--erreur); }
+.voice-graph { display: block; width: 100%; height: 9.5rem; margin: .4rem 0 .2rem; border-radius: .3rem; background: var(--fond); }
+.voice-hints { margin: 0 0 .5rem; padding-left: 1.1rem; font-size: .85rem; color: var(--texte-secondaire); }
 .miniwf { position: relative; height: 3.5rem; margin-bottom: .4rem; background: var(--fond); border-radius: .25rem; overflow: hidden; cursor: pointer; }
 .miniwf .mini-fall { display: block; width: 100%; height: 100%; }
 .miniwf .hf-wait { font-size: .75rem; }

@@ -68,7 +68,15 @@ data class RigState(
     val host: HostHealth? = null,
     /** Synthèse du matériel (host_info) : null = pas demandée ou en cours ; vide = indisponible. */
     val hostSections: List<HostSection>? = null,
+    /** Profils d'égaliseur du compte rangés sur la station ; null = station sans cette fonction (ou visiteur). */
+    val voiceProfiles: List<VoiceProfile>? = null,
 )
+
+/** Profil d'égaliseur de l'opérateur, rangé sur la station (étape 102) ; `settings` revalidé à l'application. */
+data class VoiceProfile(val name: String, val settings: JsonObject) {
+    /** Réglages du profil, revalidés comme un fichier importé. */
+    fun voiceSettings(): VoiceSettings = VoiceEq.validate(settings)
+}
 
 /**
  * Ce que la session demande à la couche Android (WebRTC). Appelé sur le fil de la session uniquement.
@@ -111,6 +119,7 @@ class RigSession(
     private var recentSpots: List<Spot> = emptyList()
     private var selcall: SelcallStatus? = null
     private var hostSections: List<HostSection>? = null
+    private var voiceProfiles: List<VoiceProfile>? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -283,6 +292,9 @@ class RigSession(
         status = LinkStatus.CONNECTED
         // La station oublie l'abonnement avec la connexion : on le redemande si la vue du spectre est ouverte.
         if (spectrumWanted && msg.spectrum != null && msg.protocol == Protocol.VERSION) send(now, Command.SpectrumWatch(true))
+        // Profils d'égaliseur de ce compte (opérateur) : relus à chaque connexion
+        voiceProfiles = null
+        if (msg.protocol == Protocol.VERSION && !msg.listener && msg.offers("voice_profiles")) send(now, Command.VoiceProfiles)
         arming.onConnected()                                     // toujours désarmé à la connexion
         lastPing = now
         protocolOk = msg.protocol == Protocol.VERSION
@@ -304,6 +316,12 @@ class RigSession(
         val entry = msg.id?.let { pending.remove(it) } ?: return
         if (entry.cmd == "get_state") {
             rttMs = (now - entry.sentAt).toInt()
+            return
+        }
+        if (entry.cmd.startsWith("voice_profile")) {              // liste à jour après lecture, ajout ou suppression
+            if (msg.ok) voiceProfiles = parseVoiceProfiles(msg.raw["profiles"]) ?: voiceProfiles
+            else log("Profils de voix : " + msg.detail.ifEmpty { Texts.refusal(msg.reason, msg.detail) }, LogLevel.WARN)
+            publish(now)
             return
         }
         if (entry.cmd == "host_info") {                         // synthèse du matériel : affichée telle quelle
@@ -602,6 +620,26 @@ class RigSession(
         publish(now)
     }
 
+    /** Profils d'égaliseur (opérateur) : enregistrer (remplace le même nom) ou supprimer ; la liste revient dans `voiceProfiles`. */
+    fun saveVoiceProfile(now: Long, name: String, settings: JsonObject) {
+        if (!connected || listener || voiceProfiles == null) return
+        send(now, Command.VoiceProfileSave(name.trim(), settings))
+        publish(now)
+    }
+
+    fun deleteVoiceProfile(now: Long, name: String) {
+        if (!connected || listener || voiceProfiles == null) return
+        send(now, Command.VoiceProfileDelete(name))
+        publish(now)
+    }
+
+    private fun parseVoiceProfiles(raw: kotlinx.serialization.json.JsonElement?): List<VoiceProfile>? =
+        (raw as? kotlinx.serialization.json.JsonArray)?.mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
+            val name = (obj["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            VoiceProfile(name, obj["settings"] as? JsonObject ?: JsonObject(emptyMap()))
+        }
+
     /** Synthèse du matériel de la station (opérateurs) ; la réponse arrive dans `hostSections`. N'agit sur rien. */
     fun hostInfo(now: Long) {
         if (!connected || listener) return
@@ -671,6 +709,7 @@ class RigSession(
         recentSpots = emptyList()
         selcall = null
         hostSections = null
+        voiceProfiles = null
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -712,6 +751,7 @@ class RigSession(
             presence = PresenceUi.of(state?.presence, listener),
             host = HostHealth.of(state?.host, listener),
             hostSections = hostSections,
+            voiceProfiles = voiceProfiles,
         )
         if (next != snapshot) {
             snapshot = next

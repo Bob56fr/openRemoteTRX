@@ -26,6 +26,7 @@ from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_p
 from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
+from ..voice_profiles import VoiceProfileError
 from ..safety import PttController, Refused
 from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
 from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, ProtocolError, parse_command
@@ -77,7 +78,7 @@ class ControlSession:
                  spectrum_watch: Callable[[bool], None] | None = None, reports=None,
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
                  alert: Callable[[str, str], None] | None = None,
-                 kick_listener: Callable[[str], bool] | None = None):
+                 kick_listener: Callable[[str], bool] | None = None, voices=None):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
@@ -94,6 +95,7 @@ class ControlSession:
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
+        self.voices = None if role == LISTENER else voices   # VoiceProfileStore : profils d'égaliseur du COMPTE (opérateurs)
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
         self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
@@ -158,7 +160,8 @@ class ControlSession:
                    "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
                    "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
                    "presence": self.access is not None,
-                   "host": not self.listener}
+                   "host": not self.listener,
+                   "voice_profiles": self.voices is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
@@ -472,6 +475,24 @@ class ControlSession:
                     _hamlib_version = await asyncio.to_thread(hamlib_version, self.ctrl.config.tools.hamlib_dir)
                 self._result(cmd.id, True, sections=host_details(shared_monitor(), self.ctrl.config, self.capabilities,
                                                                  _hamlib_version, self.link.state.levels))
+            elif cmd.name.startswith("voice_profile"):     # opérateur seulement ; un fichier sur la station, rien vers le poste
+                if self.voices is None:
+                    self._result(cmd.id, False, reason="voice_profiles_unavailable")
+                else:
+                    try:
+                        if cmd.name == "voice_profile_save":
+                            profiles = self.voices.save(self.client_id, cmd.params["name"], cmd.params["settings"])
+                        elif cmd.name == "voice_profile_delete":
+                            profiles = self.voices.delete(self.client_id, cmd.params["name"])
+                        else:
+                            profiles = self.voices.list(self.client_id)
+                    except VoiceProfileError as exc:
+                        log.error("%s", exc)
+                        self._result(cmd.id, False, reason="voice_profiles_storage_error")
+                    except ValueError as exc:
+                        self._result(cmd.id, False, reason="voice_profile_refused", detail=str(exc))
+                    else:
+                        self._result(cmd.id, True, profiles=profiles)
             elif cmd.name == "listeners_reopen":
                 guard = getattr(self.access, "guard", None)
                 refusal = guard.reopen() if guard is not None else ""

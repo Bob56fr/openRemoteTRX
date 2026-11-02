@@ -146,6 +146,9 @@ class ContractTest {
             "listener_kick" -> Command.ListenerKick(p("account").content)
             "listeners_reopen" -> Command.ListenersReopen
             "host_info" -> Command.HostInfo
+            "voice_profiles" -> Command.VoiceProfiles
+            "voice_profile_save" -> Command.VoiceProfileSave(p("name").content, e["settings"]!!.jsonObject)
+            "voice_profile_delete" -> Command.VoiceProfileDelete(p("name").content)
             "listeners_open" -> Command.ListenersOpen(p("on").boolean)
             else -> fail("commande sans équivalent dans l'application : $name")
         }

@@ -41,6 +41,7 @@ from .audio.beeps import BeepStore, TailPlayer
 from .bugreports import ReportStore
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
+from .voice_profiles import VoiceProfileStore
 from .safety import PttController
 from .status import StatusPublisher
 
@@ -187,6 +188,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
             return None, None, None
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
+    voices = VoiceProfileStore(Path(cfg.supervisor.state_dir) / "voice_profiles.json")   # profils d'égaliseur des opérateurs
     try:
         station_id = ensure_station_id(cfg.supervisor.state_dir)    # GUID de la station (créé une seule fois)
     except OSError as exc:                                           # jamais bloquant : la station marche sans
@@ -199,7 +201,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
                           layouts=layouts, spectrum=spectrum, reports=reports, access=access,
                           muted=None if access is None else
                           lambda: listener_muted(access.settings, cfg, link.state.frequency_hz),
-                          alert=notifier.send)
+                          alert=notifier.send, voices=voices)
     registry = ClientRegistry(cfg.clients)
     app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,

@@ -64,6 +64,16 @@
                                   {"message": {"cmd": "listener_kick", "account": "club 1"}, "code": "invalid_params"}]},
     "listeners_reopen": {"valid": [{"cmd": "listeners_reopen", "id": 42}], "invalid": []},
     "host_info": {"valid": [{"cmd": "host_info", "id": 44}, {"cmd": "host_info"}], "invalid": []},
+    "voice_profiles": {"valid": [{"cmd": "voice_profiles", "id": 45}], "invalid": []},
+    "voice_profile_save": {
+      "valid": [{"cmd": "voice_profile_save", "id": 46, "name": "Mon DX", "settings": {"enabled": true, "highpassHz": 250, "lowpassHz": 2800,
+                 "bands": [{"hz": 100, "gainDb": -6, "q": 1.4, "shelf": true}], "chorus": {"on": false}, "reverb": {"on": true, "type": "hall"}}}],
+      "invalid": [{"message": {"cmd": "voice_profile_save", "name": "Mon DX"}, "code": "invalid_params"},
+                  {"message": {"cmd": "voice_profile_save", "name": "", "settings": {}}, "code": "invalid_params"},
+                  {"message": {"cmd": "voice_profile_save", "name": "Mon DX", "settings": [1, 2]}, "code": "invalid_params"}]
+    },
+    "voice_profile_delete": {"valid": [{"cmd": "voice_profile_delete", "id": 47, "name": "Mon DX"}],
+                             "invalid": [{"message": {"cmd": "voice_profile_delete"}, "code": "invalid_params"}]},
     "listeners_open": {"valid": [{"cmd": "listeners_open", "id": 43, "on": true}, {"cmd": "listeners_open", "on": false}],
                        "invalid": [{"message": {"cmd": "listeners_open"}, "code": "invalid_params"},
                                    {"message": {"cmd": "listeners_open", "on": "oui"}, "code": "invalid_params"}]},

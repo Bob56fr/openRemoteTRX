@@ -23,7 +23,7 @@
     "selcall": {"state": "standby", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate", "attenuation_db": 20,
                 "last_call": null, "send_on_tx_end": false, "sending": "", "tx_level_dbfs": -6.0, "calibration": ""},
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
-                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host"]
+                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles"]
   },
   "state": {
     "type": "state",
@@ -42,6 +42,14 @@
                                  {"id": "club1", "pseudo": "Radio-club F6KXX", "role": "listener", "source": "198.51.100.7", "since_s": 600},
                                  {"id": "club2", "pseudo": "Radio-club F6KXX", "role": "listener", "source": "198.51.100.8", "since_s": 420}]},
     "host": {"cpu_pct": 12, "mem_pct": 41, "disk_pct": 37, "temp_c": 46, "throttled": null, "load": 0.487, "level": "ok", "worst": "temp"}
+  },
+  "voice_profiles_result": {
+    "_note": "réponse à voice_profiles, voice_profile_save et voice_profile_delete : profils du COMPTE, dans l'ordre d'enregistrement",
+    "type": "result", "id": 46, "ok": true,
+    "profiles": [{"name": "Mon DX", "settings": {"version": 1, "enabled": true, "highpassHz": 250, "lowpassHz": 2800,
+                  "bands": [{"hz": 100, "gainDb": -6, "q": 1.4, "shelf": true}, {"hz": 160, "gainDb": 0, "q": 1.4, "shelf": false}],
+                  "chorus": {"on": false, "type": "classic", "mix": 30, "rateHz": 0.8, "depthMs": 3},
+                  "reverb": {"on": true, "type": "hall", "mix": 20, "seconds": 0.5}, "mic": {"gainDb": 0, "gateOn": false, "gateDb": -50}}}]
   },
   "host_info_result": {
     "_note": "réponse à host_info (opérateurs seulement) : rubriques de lignes déjà rédigées, affichées telles quelles",

@@ -16,7 +16,7 @@ class FakeCtx {                                                   // contexte de
   count(name) { return this.calls.filter((c) => c === name).length; }
   createImageData(w, h) { return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }; }
 }
-for (const method of ["clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "closePath", "stroke", "fill", "drawImage", "putImageData", "fillText", "save", "restore"]) {
+for (const method of ["clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "closePath", "stroke", "fill", "drawImage", "putImageData", "fillText", "save", "restore", "arc"]) {
   FakeCtx.prototype[method] = function () { this.calls.push(method); if (method === "putImageData") this.lastRow = arguments[0]; };
 }
 
@@ -143,6 +143,7 @@ global.TrxLayout = require(path.join(STATIC, "layout.js"));
 global.TrxTheme = require(path.join(STATIC, "theme.js"));
 global.TrxHfScope = require(path.join(STATIC, "hfscope.js"));
 global.TrxSpots = require(path.join(STATIC, "spots.js"));
+global.TrxVoice = require(path.join(STATIC, "voice.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -615,7 +616,8 @@ step("pas de fréquence : un appui = un pas, maintenu = répétition, relâché 
 
 step("waterfall : bascule par appui ou double appui, boutons, grille en kHz, pics, mesures d'émission en superposition", async () => {
   pcs.at(-1).ontrack({ track: {}, streams: [{}] });                                                                       // l'audio de la station arrive
-  assert.equal(sources.length, 1); assert.equal(analysers.length, 1); assert.equal(analysers[0].fftSize, 4096); assert.equal(sources[0].target, analysers[0]);
+  const rxSources = sources.filter((src) => analysers.includes(src.target));                               // la chaîne du micro (égaliseur) a sa propre source
+  assert.equal(rxSources.length, 1); assert.equal(rxSources[0].target.fftSize, 4096);
   assert.equal($("waterfall").hidden, true); assert.equal($("txzone").hidden, false); assert.equal(rafQueue.length, 0);       // fermé : aucun calcul
   await $("txzone").dispatch("click"); await $("txzone").dispatch("click");                                              // un double appui ne bascule qu'UNE fois
   assert.equal($("waterfall").hidden, false); assert.equal($("txzone").hidden, true); assert.equal(rafQueue.length, 1);
@@ -629,7 +631,7 @@ step("waterfall : bascule par appui ou double appui, boutons, grille en kHz, pic
   assert.equal(row.width, 480); assert.ok(row.data.some((v, i) => i % 4 === 0 && v > 150));                              // la raie de 1 500 Hz est claire
   assert.match($("wf-peakinfo").textContent, /^pic 1\.(49|50|51)$/); assert.ok($("wf-spec").ctx.count("stroke") >= 6);
   assert.ok(rafQueue.length === 1);                                                                                       // la boucle continue
-  assert.ok(analysers[0].reads >= 3);
+  assert.ok(rxSources[0].target.reads >= 3);
   const lines = $("wf-fall").ctx.count("putImageData");
   runFrames([310]); assert.equal($("wf-fall").ctx.count("putImageData"), lines);                                          // image trop proche : pas de nouvelle ligne
   // vitesse : plus rapide = plus de lignes par image
@@ -1067,6 +1069,34 @@ step("petit waterfall HF avant les bandes : bouton WF, mode centré demandé une
   assert.equal($("mini-dialog").hidden, true); assert.equal($("blk-miniwf").hidden, true);
   assert.equal(sent("spectrum_watch").at(-1).on, false);                                            // plus rien ne regarde
   assert.equal(JSON.parse(storage.get("trx.hf")).mini, false);
+  await $("disconnect").click(); await wait();
+});
+
+step("égaliseur : graphique, conseils, profils de l'opérateur rangés sur la station après les préréglages", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode", "voice_profiles"] });
+  await wait(30); state({});
+  await wait(30);
+  assert.equal(sent("voice_profiles").length, 1);                                               // liste relue à la connexion
+  const dxSettings = { enabled: true, highpassHz: 250, lowpassHz: 2800, bands: [], chorus: { on: true }, reverb: { on: false } };
+  answer(true, { profiles: [{ name: "Mon DX", settings: dxSettings }] }, "voice_profiles"); await wait(30);
+  assert.deepEqual($("voice-preset").options.map((o) => o.textContent).slice(-2), ["── Mes profils (station) ──", "★ Mon DX"]);
+  assert.equal($("voice-profile-save").hidden, false); assert.equal($("voice-profile-delete").hidden, true);
+  $("voice-preset").value = "user:Mon DX"; await $("voice-preset").dispatch("change");
+  assert.equal($("voice-profile-delete").hidden, false);
+  await $("voice-apply").click(); await wait(30);
+  assert.equal(JSON.parse(storage.get("trx.voice")).highpassHz, 250);                          // profil appliqué
+  assert.ok($("voice-hints").children.some((li) => /Chorus/.test(li.textContent)));             // conseils
+  assert.ok($("voice-graph").ctx.count("fill") >= 10 && $("voice-graph").ctx.count("stroke") > 0);   // courbe et pastilles
+  globalThis.prompt = () => "Soirée";
+  await $("voice-profile-save").click(); await wait(10);
+  const saved = sent("voice_profile_save").at(-1);
+  assert.equal(saved.name, "Soirée"); assert.equal(saved.settings.highpassHz, 250);
+  assert.ok(JSON.stringify(saved).length < 2048, "message compact sous la limite de la station");
+  answer(true, { profiles: [{ name: "Mon DX", settings: dxSettings }, { name: "Soirée", settings: dxSettings }] }, "voice_profile_save"); await wait(30);
+  assert.equal($("voice-preset").value, "user:Soirée");
   await $("disconnect").click(); await wait();
 });
 
