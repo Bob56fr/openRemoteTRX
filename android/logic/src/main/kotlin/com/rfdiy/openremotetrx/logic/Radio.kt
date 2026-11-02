@@ -113,6 +113,14 @@ object Radio {
 
     fun nudge(hz: Long, step: Long, steps: Int): Long = (hz + step * steps).coerceIn(MIN_HZ, MAX_HZ)
 
+    /** RIT limité à ±500 Hz (étape 97, la station refuse aussi au-delà) ; ΔTX : plage annoncée, 9 999 Hz si inconnue (page : clarifierView). */
+    const val RIT_LIMIT_HZ = 500
+
+    fun clarifierMax(name: String, declared: Int?): Int {
+        val known = declared?.takeIf { it > 0 } ?: 9999
+        return if (name == "RIT") minOf(known, RIT_LIMIT_HZ) else known
+    }
+
     /**
      * Repère du squelch sur l'échelle du S-mètre (page : squelchMarkerFraction) : le squelch (0 à 1) correspond à
      * l'échelle 0-255 du poste, qui est aussi celle du S-mètre (120 = S9, 241 = S9+60 dB). 0 = ouvert : null. INDICATIF.

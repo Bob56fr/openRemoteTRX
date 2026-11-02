@@ -278,6 +278,53 @@
       </div>
     </details>
 
+    <details id="sec-voice" class="listener-hide">
+      <summary>Égaliseur paramétrique</summary>
+      <div class="body">
+        <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
+          Un limiteur reste toujours actif. Réglages gardés par ce navigateur.</p>
+        <div class="voice-mic">
+          <div>Micro (actif même égaliseur éteint)</div>
+          <div class="meter"><span class="mlabel">Mic</span><div class="mtrack voice-level"><div id="voice-gate-mark" class="sqlmark" hidden></div><div id="voice-level-mask" class="mmask"></div></div><span id="voice-level-text" class="mval">—</span></div>
+          <label>Gain du micro <input id="voice-gain" type="range" min="-12" max="20" step="1"><span id="voice-gain-text"></span></label>
+          <label class="check"><input id="voice-gate-on" type="checkbox"> Porte de bruit (atténue le fond entre les phrases)</label>
+          <label>Seuil de la porte <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
+          <p class="note">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
+        </div>
+        <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
+        <div class="row">
+          <label>Préréglage <select id="voice-preset"></select></label>
+          <button id="voice-apply" class="chip">Appliquer</button>
+          <button id="voice-export" class="chip">Exporter</button>
+          <label class="chip">Importer <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
+        </div>
+        <label>Coupe-bas <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
+        <label>Coupe-haut <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
+        <div id="voice-bands" class="voice-bands"></div>
+        <label class="check"><input id="voice-chorus-on" type="checkbox"> Chorus</label>
+        <div class="row">
+          <label>Type <select id="voice-chorus-type"></select></label>
+          <label>Dosage <input id="voice-chorus-mix" type="range" min="0" max="100" step="1"><span id="voice-chorus-mix-text"></span></label>
+          <label>Vitesse <input id="voice-chorus-rate" type="range" min="0.1" max="5" step="0.1"></label>
+          <label>Profondeur <input id="voice-chorus-depth" type="range" min="0.5" max="8" step="0.5"></label>
+        </div>
+        <label class="check"><input id="voice-reverb-on" type="checkbox"> Réverbération</label>
+        <div class="row">
+          <label>Type <select id="voice-reverb-type"></select></label>
+          <label>Dosage <input id="voice-reverb-mix" type="range" min="0" max="100" step="1"><span id="voice-reverb-mix-text"></span></label>
+          <label>Durée <input id="voice-reverb-time" type="range" min="0.2" max="4" step="0.1"><span id="voice-reverb-time-text"></span></label>
+        </div>
+        <p class="note">En BLU, le chorus et la réverbération réduisent la compréhension : à doser avec prudence. Ils sont coupés net au retour en réception.</p>
+        <label class="check"><input id="voice-monitor" type="checkbox" disabled> Écoute de contrôle (CASQUE obligatoire : sur haut-parleur, effet Larsen)</label>
+        <div class="row">
+          <button id="voice-record" class="chip" disabled>Enregistrer</button>
+          <button id="voice-play" class="chip" disabled>Relire</button>
+          <span id="voice-rec-text" class="dim small"></span>
+        </div>
+        <p class="note">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
+      </div>
+    </details>
+
     <details id="sec-selcall" class="listener-hide" hidden>
       <summary>SELCALL</summary>
       <div class="body">
@@ -325,53 +372,6 @@
             <button id="sel-test-save" class="chip">Télécharger</button>
           </div>
         </div>
-      </div>
-    </details>
-
-    <details id="sec-voice" class="listener-hide">
-      <summary>Égaliseur paramétrique</summary>
-      <div class="body">
-        <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
-          Un limiteur reste toujours actif. Réglages gardés par ce navigateur.</p>
-        <div class="voice-mic">
-          <div>Micro (actif même égaliseur éteint)</div>
-          <div class="meter"><span class="mlabel">Mic</span><div class="mtrack voice-level"><div id="voice-gate-mark" class="sqlmark" hidden></div><div id="voice-level-mask" class="mmask"></div></div><span id="voice-level-text" class="mval">—</span></div>
-          <label>Gain du micro <input id="voice-gain" type="range" min="-12" max="20" step="1"><span id="voice-gain-text"></span></label>
-          <label class="check"><input id="voice-gate-on" type="checkbox"> Porte de bruit (atténue le fond entre les phrases)</label>
-          <label>Seuil de la porte <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
-          <p class="note">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
-        </div>
-        <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
-        <div class="row">
-          <label>Préréglage <select id="voice-preset"></select></label>
-          <button id="voice-apply" class="chip">Appliquer</button>
-          <button id="voice-export" class="chip">Exporter</button>
-          <label class="chip">Importer <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
-        </div>
-        <label>Coupe-bas <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
-        <label>Coupe-haut <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
-        <div id="voice-bands" class="voice-bands"></div>
-        <label class="check"><input id="voice-chorus-on" type="checkbox"> Chorus</label>
-        <div class="row">
-          <label>Type <select id="voice-chorus-type"></select></label>
-          <label>Dosage <input id="voice-chorus-mix" type="range" min="0" max="100" step="1"><span id="voice-chorus-mix-text"></span></label>
-          <label>Vitesse <input id="voice-chorus-rate" type="range" min="0.1" max="5" step="0.1"></label>
-          <label>Profondeur <input id="voice-chorus-depth" type="range" min="0.5" max="8" step="0.5"></label>
-        </div>
-        <label class="check"><input id="voice-reverb-on" type="checkbox"> Réverbération</label>
-        <div class="row">
-          <label>Type <select id="voice-reverb-type"></select></label>
-          <label>Dosage <input id="voice-reverb-mix" type="range" min="0" max="100" step="1"><span id="voice-reverb-mix-text"></span></label>
-          <label>Durée <input id="voice-reverb-time" type="range" min="0.2" max="4" step="0.1"><span id="voice-reverb-time-text"></span></label>
-        </div>
-        <p class="note">En BLU, le chorus et la réverbération réduisent la compréhension : à doser avec prudence. Ils sont coupés net au retour en réception.</p>
-        <label class="check"><input id="voice-monitor" type="checkbox" disabled> Écoute de contrôle (CASQUE obligatoire : sur haut-parleur, effet Larsen)</label>
-        <div class="row">
-          <button id="voice-record" class="chip" disabled>Enregistrer</button>
-          <button id="voice-play" class="chip" disabled>Relire</button>
-          <span id="voice-rec-text" class="dim small"></span>
-        </div>
-        <p class="note">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
       </div>
     </details>
 
@@ -543,7 +543,7 @@
     <button id="hf-ref-up" class="chip" title="Niveau de référence +1 dB">REF +</button>
     <button id="hf-set-speed" class="chip" title="Vitesse de balayage du poste">VIT ?</button>
   </div>
-  <div id="hf-plot" class="hf-plot" title="Spectre HF du poste : « Fermer » pour revenir aux graphiques de puissance">
+  <div id="hf-plot" class="hf-plot" title="Spectre HF du poste : toucher = accorder (au kHz) ; « Fermer » pour revenir aux graphiques de puissance">
     <canvas id="hf-spec" class="hf-spec"></canvas>
     <canvas id="hf-fall" class="hf-fall"></canvas>
     <canvas id="hf-grid" class="hf-grid"></canvas>

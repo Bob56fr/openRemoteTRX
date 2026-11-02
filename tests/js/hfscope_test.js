@@ -112,6 +112,14 @@ test("réglages du poste : libellés, cycles et pas du niveau de référence (gr
   assert.deepEqual(hf.SPANS_HZ, [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000]);
 });
 
+test("toucher le spectre : fréquence arrondie au kHz le plus proche", () => {
+  assert.equal(hf.frequencyAt(0.5, 14175000, 14225000), 14200000);
+  assert.equal(hf.frequencyAt(0.3123, 14175000, 14225000), 14191000);     // 14 190 615 Hz -> 14 191 kHz
+  assert.equal(hf.frequencyAt(0.0899, 14175000, 14225000), 14179000);     // 14 179 495 Hz -> 14 179 kHz
+  assert.equal(hf.frequencyAt(-1, 7000000, 7200000), 7000000); assert.equal(hf.frequencyAt(2, 7000000, 7200000), 7200000);
+  assert.equal(hf.frequencyAt(0.5, 7000000, 7000000), null); assert.equal(hf.frequencyAt(NaN, 7000000, 7200000), null);
+});
+
 test("accord au doigt : pas selon la largeur, sens d'un VFO", () => {
   assert.equal(hf.tuneStep(5000), 10); assert.equal(hf.tuneStep(200000), 500); assert.equal(hf.tuneStep(1000000), 1000);
   assert.equal(hf.dragSteps(-95, 475, 200000, 500), 80);                   // spectre tiré à gauche : fréquence qui monte

@@ -116,6 +116,34 @@ def test_offset_refused_while_transmitting_and_applied_in_receive():
     run(scenario)
 
 
+def test_rit_is_limited_to_500_hz_and_xit_keeps_the_rig_range():
+    """Décision de l'utilisateur (étape 97) : RIT à ±500 Hz au plus, même si le poste va jusqu'à ±9 999 Hz."""
+    async def scenario(fake):
+        async with station(fake) as (ctrl, link, gate):
+            await ctrl.set_offset("RIT", -500)
+            assert fake.rit == -500
+            for hz in (501, -1200):
+                try:
+                    await ctrl.set_offset("RIT", hz)
+                except ValueError:
+                    pass
+                else:
+                    raise AssertionError(f"RIT {hz} Hz accepté")
+            assert fake.rit == -500
+            await ctrl.set_offset("XIT", 2000)                                      # ΔTX : plage du poste
+            assert fake.xit == 2000
+    run(scenario)
+
+
+def test_capabilities_announce_the_permitted_rit_range():
+    from pathlib import Path
+    from trxstation.gateway.cat.capabilities import parse_dump_caps
+    text = (Path(__file__).parent / "data" / "dump_caps_ic7300mk2_hamlib472.txt").read_text(encoding="utf-8")
+    caps = parse_dump_caps(text)
+    assert caps.max_rit_hz == 500 and caps.max_xit_hz == 9999                      # poste : ±9,999 kHz pour les deux
+    assert Capabilities().max_rit_hz == 500                                         # descripteur de repli
+
+
 def test_link_publishes_split_and_offsets():
     async def scenario(fake):
         async with station(fake) as (ctrl, link, gate):

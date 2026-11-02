@@ -23,6 +23,7 @@ FALLBACK_MODES = ("USB", "LSB", "FM", "AM")
 # Modes « données » (audio USB émis) : le nom dépend de la version de Hamlib (4.7 : FM-D et AM-D au lieu de PKTFM, PKTAM).
 DATA_MODES = {"USB": ("PKTUSB",), "LSB": ("PKTLSB",), "FM": ("PKTFM", "FM-D"), "AM": ("PKTAM", "AM-D")}
 ALL_DATA_MODES = tuple(name for names in DATA_MODES.values() for name in names)
+RIT_LIMIT_HZ = 500   # décision de l'utilisateur (2026-11-02, étape 97) : RIT réglable à ±500 Hz au plus ; le ΔTX garde la plage du poste
 
 
 def data_mode_for(mode: str | None, available) -> str | None:
@@ -57,7 +58,7 @@ class Capabilities:
     attenuators: tuple[int, ...] = ()  # valeurs d'atténuateur en dB (« Attenuator: 20dB ») ; vide = inconnu
     level_ranges: dict[str, list[float]] = field(default_factory=dict)   # niveau réglable -> [min, max, pas] (« Set level »)
     can_get_split: bool | None = None  # « Can get Split VFO » ; None = non déclaré (la sécurité tente quand même la lecture)
-    max_rit_hz: int = 0                # « Max RIT: -9.999kHz/+9.999kHz » -> 9999 ; 0 = inconnu
+    max_rit_hz: int = RIT_LIMIT_HZ     # plage PERMISE du RIT : « Max RIT » du poste resserré à RIT_LIMIT_HZ (étape 97)
     max_xit_hz: int = 0
 
     def to_dict(self) -> dict:
@@ -158,7 +159,9 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     caps.levels = _names(text, "Get level")
     caps.functions = _names(text, "Get functions")
     caps.can_get_split = _flag(text, "get", "Split VFO")
-    caps.max_rit_hz, caps.max_xit_hz = _max_offset(text, "RIT"), _max_offset(text, "XIT")
+    rit = _max_offset(text, "RIT")
+    caps.max_rit_hz = min(rit, RIT_LIMIT_HZ) if rit else RIT_LIMIT_HZ   # RIT limité à ±500 Hz, même si le poste va plus loin
+    caps.max_xit_hz = _max_offset(text, "XIT")                          # ΔTX : plage du poste (inchangée)
     caps.filters = _bandwidths(text)
     preamp = re.search(r"^Preamp:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
     caps.preamps = tuple(int(v) for v in re.findall(r"\d+", preamp.group(1))) if preamp else ()

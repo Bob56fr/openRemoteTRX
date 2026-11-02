@@ -51,6 +51,8 @@ class HfScopeTest {
         assertEquals(10, HfScope.tuneStep(5_000))
         assertEquals(-10, HfScope.dragSteps(100f, 1000f, 10_000, 100))           // vers la droite : fréquence plus basse
         assertEquals(14_200_000, HfScope.frequencyAt(0.5f, 14_175_000, 14_225_000))
+        assertEquals(14_191_000, HfScope.frequencyAt(0.3123f, 14_175_000, 14_225_000))   // arrondi au kHz (étape 97)
+        assertEquals(14_179_000, HfScope.frequencyAt(0.0899f, 14_175_000, 14_225_000))
         assertEquals("50 kHz", HfScope.spanLabel(14_175_000, 14_225_000))
     }
 

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -255,11 +257,22 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
             Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        Radio.formatIcom(shownHz),
-                        fontSize = 34.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.fillMaxWidth().clickable(enabled = canSet) { entry = true },
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            Radio.formatIcom(shownHz),
+                            fontSize = 34.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false,
+                            modifier = Modifier.weight(1f).clickable(enabled = canSet) { entry = true },
+                        )
+                        // Accord à droite de la fréquence (étape 97, place gagnée pour le petit waterfall) : − et + d'un pas,
+                        // pas dessous (toucher = pas suivant)
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                CompactChip("−", onClick = { tune(-1) }, enabled = canSet)
+                                CompactChip("+", onClick = { tune(1) }, enabled = canSet)
+                            }
+                            CompactChip(stepLabel(step), onClick = { stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size })
+                        }
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleMedium)
                         Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
@@ -295,11 +308,24 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                             }
                         }
                     }
-                    LinearProgressIndicator(
-                        progress = { Radio.sMeterFraction(radio?.strengthDb) },
-                        drawStopIndicator = {},                       // pas de point en bout de barre : il ferait croire à S9+60
-                        modifier = Modifier.fillMaxWidth().height(8.dp),
-                    )
+                    // Repère du squelch (page : barre orange sur le S-mètre) : petit triangle orange au-dessus de la barre,
+                    // suit le curseur pendant le réglage ; absent si le squelch est ouvert (0)
+                    val sqlMark = Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
+                    Box(Modifier.fillMaxWidth().height(15.dp)) {
+                        LinearProgressIndicator(
+                            progress = { Radio.sMeterFraction(radio?.strengthDb) },
+                            drawStopIndicator = {},                       // pas de point en bout de barre : il ferait croire à S9+60
+                            modifier = Modifier.fillMaxWidth().height(8.dp).align(Alignment.BottomStart),
+                        )
+                        if (sqlMark != null) {
+                            Canvas(Modifier.fillMaxSize()) {
+                                val x = sqlMark * size.width
+                                val half = 5.dp.toPx()
+                                val tip = size.height - 8.dp.toPx() + 2.dp.toPx()     // pointe posée sur le haut de la barre
+                                drawPath(Path().apply { moveTo(x - half, 0f); lineTo(x + half, 0f); lineTo(x, tip); close() }, Page.ALERTE)
+                            }
+                        }
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         for (label in listOf("S1", "3", "5", "7", "9", "+20", "+40", "+60")) {
                             Text(label, style = MaterialTheme.typography.labelSmall)
@@ -346,7 +372,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         else -> null
                     }
                     if (clar != null) {
-                        val max = (if (clar == "XIT") hello?.capabilities?.maxXitHz else hello?.capabilities?.maxRitHz)?.takeIf { it > 0 } ?: 9999
+                        val max = Radio.clarifierMax(clar, if (clar == "XIT") hello?.capabilities?.maxXitHz else hello?.capabilities?.maxRitHz)
                         val current = (radio?.offsets?.get(clar) ?: 0).coerceIn(-max, max)
                         val shown = offsetDrag ?: current.toFloat()
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -368,17 +394,6 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
-            Panel {
-            // Accord : pas, crans
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { tune(-1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("−", fontSize = 20.sp) }
-                OutlinedButton(onClick = { stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size }, modifier = Modifier.weight(1.3f)) {
-                    Text("pas ${stepLabel(step)}")
-                }
-                OutlinedButton(onClick = { tune(1) }, enabled = canSet, modifier = Modifier.weight(1f)) { Text("+", fontSize = 20.sp) }
-            }
-
-            }
             Panel {
             // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
             val dots = rig.bandDots(System.currentTimeMillis())

@@ -61,6 +61,11 @@ class SpotsTest {
         assertTrue(Radio.squelchOpen(0.2, 0.0))                          // S9 au-dessus d'un seuil bas
         assertEquals(false, Radio.squelchOpen(null, 0.0))
         assertNull(Radio.squelchMarkerFraction(0.0))
+        // RIT limité à ±500 Hz (étape 97), même si une station plus ancienne annonce 9 999 ; ΔTX : plage annoncée
+        assertEquals(500, Radio.clarifierMax("RIT", 9999))
+        assertEquals(500, Radio.clarifierMax("RIT", null))
+        assertEquals(300, Radio.clarifierMax("RIT", 300))
+        assertEquals(9999, Radio.clarifierMax("XIT", null))
         assertEquals(listOf("11", "20", "40"), Radio.favoriteBands("11, 20,40,20,99").map { it.key })
         assertEquals(Radio.BANDS, Radio.favoriteBands(""))
         assertEquals("11,20", Radio.favoriteBandsText(Radio.favoriteBands("11,20")))

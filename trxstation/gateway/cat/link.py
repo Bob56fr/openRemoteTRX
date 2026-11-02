@@ -14,7 +14,7 @@ import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 
-from .capabilities import Capabilities
+from .capabilities import RIT_LIMIT_HZ, Capabilities
 from .client import (RIG_ENAVAIL, RIG_ENIMPL, CatConnectionError, CatProtocolError,
                      RigctldClient, RigError)
 
@@ -303,10 +303,12 @@ class CatLink:
         self._update(levels={**self._state.levels, name: round(float(value), 3) if decimal else int(value)})
 
     async def set_offset(self, which: str, hz: int) -> None:
-        """Décalage RIT ou XIT (ΔTX). Borne : « Max RIT/XIT » du poste si connu. La sécurité d'émission relit le poste."""
+        """Décalage RIT ou XIT (ΔTX). Borne : « Max RIT/XIT » du poste si connu, RIT à ±500 Hz au plus. La sécurité d'émission relit le poste."""
         self._check_known("f", which)
         caps = self.capabilities
         limit = (caps.max_rit_hz if which == "RIT" else caps.max_xit_hz) if caps is not None else 0
+        if which == "RIT":
+            limit = min(limit or RIT_LIMIT_HZ, RIT_LIMIT_HZ)                 # ±500 Hz même sans descripteur du poste
         if limit and isinstance(hz, int) and not isinstance(hz, bool) and abs(hz) > limit:
             raise ValueError(f"{which} : {hz} Hz hors de la plage du poste (±{limit} Hz)")
         await self.client.set_offset(which, hz)

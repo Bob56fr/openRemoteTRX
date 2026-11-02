@@ -226,11 +226,13 @@ object HfScope {
         return ((-dx * spanHz) / plotWidth / stepHz).roundToInt()
     }
 
-    /** Toucher un point du spectre : fréquence correspondante, arrondie au pas d'accord. */
+    /** Toucher le spectre = accorder (étape 97) : arrondi au kHz le plus proche, centaines de hertz à zéro (page : frequencyAt). */
+    const val QSY_ROUND_HZ = 1000L
+
+    /** Toucher un point du spectre : fréquence correspondante, arrondie au kHz. */
     fun frequencyAt(fraction: Float, lowHz: Long, highHz: Long): Long {
         val span = highHz - lowHz
-        val raw = lowHz + (fraction.coerceIn(0f, 1f) * span).toDouble()
-        val step = tuneStep(span)
-        return Math.round(raw / step) * step
+        val raw = lowHz + (fraction.coerceIn(0f, 1f).toDouble() * span)
+        return Math.round(raw / QSY_ROUND_HZ) * QSY_ROUND_HZ
     }
 }

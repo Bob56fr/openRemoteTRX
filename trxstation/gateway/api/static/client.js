@@ -387,12 +387,15 @@
     return isLandscape && width >= 640 ? "landscape" : "portrait";   // « auto » : paysage seulement si l'écran est assez large
   }
 
+  const RIT_LIMIT_HZ = 500;   // décision de l'utilisateur (étape 97) ; la station refuse aussi au-delà
+
   function clarifierView(fn, rig, caps) {
     /* Curseur du clarifieur : ΔTX (XIT) en service, sinon RIT en service ; null si aucun. Décalage commun aux deux sur l'IC-7300. */
     const name = fn && fn.XIT ? "XIT" : fn && fn.RIT ? "RIT" : null;
     if (!name) return null;
     const declared = caps && (name === "XIT" ? caps.max_xit_hz : caps.max_rit_hz);
-    const max = Number.isInteger(declared) && declared > 0 ? declared : 9999;
+    const known = Number.isInteger(declared) && declared > 0 ? declared : 9999;
+    const max = name === "RIT" ? Math.min(known, RIT_LIMIT_HZ) : known;     // RIT à ±500 Hz au plus (étape 97)
     const offsets = rig && rig.offsets && typeof rig.offsets === "object" ? rig.offsets : {};
     const hz = Number.isFinite(offsets[name]) ? Math.max(-max, Math.min(max, Math.round(offsets[name]))) : 0;
     return { name: name, label: name === "XIT" ? "ΔTX" : "RIT", hz: hz, max: max };

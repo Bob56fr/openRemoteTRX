@@ -1088,7 +1088,9 @@
     $("wf-plot").addEventListener("click", toggleWaterfall);
     // un appui sur le spectre ne ferme JAMAIS la vue HF : seulement le bouton « Fermer » (ou la sortie du plein écran)
     $("hf-vfo").addEventListener("click", () => setVfo(!hfVfo));
+    let hfDragged = false;                                                        // glissement VFO : pas d'accord au relâcher
     $("hf-plot").addEventListener("pointerdown", (ev) => {
+      hfDragged = false;
       if (!hfVfo || frequencyLocked() || !hfLast) return;
       const span = hfLast.highHz - hfLast.lowHz;
       hfDrag = { id: ev.pointerId, startX: ev.clientX, applied: 0, span: span, step: hfx.tuneStep(span),
@@ -1102,8 +1104,18 @@
       const steps = hfx.dragSteps(ev.clientX - hfDrag.startX, hfDrag.width, hfDrag.span, hfDrag.step);
       if (steps !== hfDrag.applied) {
         client.nudgeFrequency(hfDrag.step, steps - hfDrag.applied);               // affichage immédiat, UNE commande après le geste
-        hfDrag.applied = steps;
+        hfDrag.applied = steps; hfDragged = true;
       }
+    });
+    // toucher le spectre = accorder (comme l'application), fréquence arrondie au kHz ; les étiquettes de spots arrêtent le clic
+    $("hf-plot").addEventListener("click", (ev) => {
+      if (hfDragged || frequencyLocked() || !hfLast || !$("hf-plot").getBoundingClientRect) return;
+      const box = $("hf-plot").getBoundingClientRect();
+      const hz = box.width > 0 ? hfx.frequencyAt((ev.clientX - box.left) / box.width, hfLast.lowHz, hfLast.highHz) : null;
+      if (hz === null) return;
+      client.qsy(hz).then((res) => {
+        if (!(res && res.ok)) ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."), "warn");
+      }).catch(fail);
     });
     for (const type of ["pointerup", "pointercancel"]) $("hf-plot").addEventListener(type, () => { hfDrag = null; });
     $("hf-close").addEventListener("click", () => showZone("tx"));

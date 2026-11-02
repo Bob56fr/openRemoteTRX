@@ -202,6 +202,16 @@
     return Math.round((-dxCss * spanHz) / plotWidthCss / stepHz) || 0;
   }
 
+  // Toucher le spectre = accorder (étape 97) : fréquence arrondie au kHz le plus proche, centaines de hertz à zéro
+  const QSY_ROUND_HZ = 1000;
+
+  function frequencyAt(fraction, lowHz, highHz) {
+    /* Fréquence du point touché (0 = bord gauche, 1 = bord droit), arrondie au kHz ; null si l'échelle est inconnue. */
+    if (!Number.isFinite(fraction) || !Number.isFinite(lowHz) || !Number.isFinite(highHz) || !(highHz > lowHz)) return null;
+    const raw = lowHz + Math.min(1, Math.max(0, fraction)) * (highHz - lowHz);
+    return Math.round(raw / QSY_ROUND_HZ) * QSY_ROUND_HZ;
+  }
+
   function nextGain(gain) {
     const i = GAINS.indexOf(gain);
     return GAINS[(i + 1) % GAINS.length];
@@ -219,6 +229,6 @@
                 windowT, interpolateRow, canvasSize, lineHeight, tickStep, mhzLabel, scopeTicks, markerFraction,
                 sameScale, spanLabel, gainLabel, rangeLabel, normalizeSettings, nextGain, nextRange,
                 SPANS_HZ, REF_UI_STEP, modeSettingLabel, nextMode, spanSettingLabel, nextSpan, speedSettingLabel, nextSpeed,
-                refLabel, stepRef, tuneStep, dragSteps };
+                refLabel, stepRef, tuneStep, dragSteps, QSY_ROUND_HZ, frequencyAt };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxHfScope = api; }
 })(typeof window !== "undefined" ? window : globalThis);

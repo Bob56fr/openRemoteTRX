@@ -69,7 +69,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `set_mode` | `mode` (`[A-Za-z0-9-]{1,16}`), `passband` entier 0 à 20 000 (0 = largeur par défaut) | refusé hors RX confirmé |
 | `set_squelch` | `value` nombre 0 à 1 | squelch du poste |
 | `set_function` | `name` parmi `NR NB AIP COMP TUNER ANF MN RIT XIT`, `on` booléen | refusé pendant l'émission ; `XIT` = ΔTX (décale la fréquence d'ÉMISSION) |
-| `set_offset` | `name` `RIT` ou `XIT`, `hz` entier (±99 999, resserré au « Max RIT/XIT » du poste : ±9 999 sur l'IC-7300MK2) | décalage du clarifieur ; refusé pendant l'émission ; sur l'IC-7300 le RIT et le ΔTX partagent le même décalage |
+| `set_offset` | `name` `RIT` ou `XIT`, `hz` entier (±99 999, resserré au « Max RIT/XIT » du poste : ±9 999 sur l'IC-7300MK2 ; RIT : ±500 Hz au plus depuis 0.81.0, `max_rit_hz` du descripteur) | décalage du clarifieur ; refusé pendant l'émission ; sur l'IC-7300 le RIT et le ΔTX partagent le même décalage |
 | `set_level` | `name`, `value` : `RFPOWER` parmi 0.05 0.1 0.25 0.5 0.8 1 ; `AGC` 0-6, `PREAMP` 0-30, `ATT` 0-60 (entiers) ; `NR` 0-1, `NB` 0-10 (nombres) | refusé pendant l'émission ; le squelch passe par `set_squelch` |
 | `memory_save` | `name` (1 à 40 caractères imprimables), `hz`, `mode`, `favorite` booléen, `memory_id` facultatif (`[a-z0-9]{1,16}`, remplace) | `memory` ; message `memories` diffusé à TOUS les clients |
 | `memory_delete` | `memory_id` | `ok` faux + `unknown_memory` si absente |

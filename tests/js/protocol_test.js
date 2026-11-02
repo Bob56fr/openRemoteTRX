@@ -74,7 +74,11 @@ test("clarifieur : ΔTX prioritaire, décalage borné, absent sans RIT ni XIT", 
   assert.equal(web.clarifierView({}, rig, caps), null);
   const x = web.clarifierView({ XIT: true, RIT: true }, Object.assign({}, rig, { offsets: { XIT: 250, RIT: 20 } }), caps);
   assert.deepEqual(x, { name: "XIT", label: "ΔTX", hz: 250, max: 9999 });
-  assert.equal(web.clarifierView({ RIT: true }, Object.assign({}, rig, { offsets: { RIT: 50000 } }), caps).hz, 9999);
+  assert.equal(web.clarifierView({ RIT: true }, Object.assign({}, rig, { offsets: { RIT: 50000 } }), caps).hz, 500);
+  // RIT limité à ±500 Hz (étape 97), même face à une station plus ancienne qui annonce la plage du poste
+  assert.equal(web.clarifierView({ RIT: true }, rig, Object.assign({}, caps, { max_rit_hz: 9999 })).max, 500);
+  assert.equal(web.clarifierView({ RIT: true }, rig, {}).max, 500);
+  assert.equal(web.clarifierView({ XIT: true }, rig, {}).max, 9999);
   assert.equal(web.clarifierText(-1234), "-1230 Hz");
   assert.equal(web.clarifierText(0), "+0 Hz");
 });

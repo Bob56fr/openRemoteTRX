@@ -11,7 +11,7 @@
       "functions": ["NB", "NR", "COMP", "TUNER"], "levels": ["PREAMP", "AGC", "SQL", "STRENGTH", "SWR", "ALC"],
       "complete": true, "filters": {"USB": [3000, 2400, 1800], "PKTUSB": [3000, 1200, 500]},
       "preamps": [10, 20], "attenuators": [20], "level_ranges": {"NR": [0, 1, 0.0667]},
-      "can_get_split": true, "max_rit_hz": 9999, "max_xit_hz": 9999
+      "can_get_split": true, "max_rit_hz": 500, "max_xit_hz": 9999
     },
     "tx_modes": ["PKTUSB", "PKTLSB"], "max_power_w": 100,
     "memories": [{"id": "a1b2c3", "name": "FT8 20 m", "hz": 14074000, "mode": "PKTUSB", "favorite": true}],

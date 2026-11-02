@@ -33,7 +33,7 @@
     },
     "set_offset": {
       "valid": [{"cmd": "set_offset", "id": 21, "name": "XIT", "hz": 250},
-                {"cmd": "set_offset", "name": "RIT", "hz": -1200}],
+                {"cmd": "set_offset", "name": "RIT", "hz": -450}],
       "invalid": [{"message": {"cmd": "set_offset", "name": "SPLIT", "hz": 0}, "code": "invalid_params"},
                   {"message": {"cmd": "set_offset", "name": "XIT", "hz": 12.5}, "code": "invalid_params"},
                   {"message": {"cmd": "set_offset", "name": "XIT", "hz": 200000}, "code": "invalid_params"}]
