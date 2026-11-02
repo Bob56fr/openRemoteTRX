@@ -1140,6 +1140,24 @@ step("mesure de TOS : derniers choix, plan, lancement, progression, graphique, �
   await $("disconnect").click(); await wait();
 });
 
+step("rediffusion : rubrique seulement si la station l'a accordée, durée annoncée, diffusion impossible sans enregistrement", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode"], replay: null });
+  await wait(30); state({}); await wait(30);
+  assert.equal($("sec-replay").hidden, true);                                                   // non accordée : rien
+  await $("disconnect").click(); await wait(); await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode", "replay"], replay: { max_s: 85 } });
+  await wait(30); state({}); await wait(30);
+  assert.equal($("sec-replay").hidden, false); assert.equal($("replay-max").textContent, "85");
+  assert.equal($("replay-send").disabled, true); assert.equal($("replay-status").textContent, "Rien d'enregistré.");
+  assert.equal($("replay-banner").hidden, true);
+  await $("disconnect").click(); await wait();
+});
+
 step("reconnexion automatique : grand texte à la place de la fréquence, sans redemander le mot de passe, annulation, échec, reprise", async () => {
   $("reconnect-select").value = "15"; await $("reconnect-select").dispatch("change", { target: $("reconnect-select") });
   assert.equal(storage.get("trx.reconnect"), "15");

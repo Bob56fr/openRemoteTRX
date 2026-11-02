@@ -1533,6 +1533,75 @@
       $("swr-copy").hidden = !(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem);
     } catch (e) { /* navigateur sans partage ni presse-papiers d'images */ }
 
+    // ---- rediffusion d'un enregistrement de l'audio reçu (accordée par la station : hello.replay ; comme l'application)
+    let replayBuf = null, replayRec = null, replayTimer = null, replayPending = 0, replayPlaying = false;
+    function replayMax() {
+      const r = client.hello && client.hello.replay;
+      return r && r.max_s > 0 && !(lastView && lastView.listener) ? r.max_s : 0;
+    }
+    function replayRender() {
+      const max = replayMax();
+      $("sec-replay").hidden = !max || !vx;
+      $("replay-banner").hidden = !(replayPlaying || replayPending);
+      $("replay-banner").textContent = replayPlaying ? "DIFFUSION DE L'ENREGISTREMENT — STOP pour arrêter" : "Diffusion de l'enregistrement : émission demandée…";
+      if (!max) return;
+      const tx = !!(lastView && lastView.pttState && lastView.pttState !== "RX");
+      const armed = !!(lastView && lastView.armed && lastView.connected);
+      $("replay-max").textContent = String(max);
+      $("replay-record").textContent = replayRec ? "Arrêter" : "Enregistrer";
+      $("replay-record").disabled = tx || replayPlaying || !!replayPending || !rxMedia || typeof MediaRecorder === "undefined";
+      $("replay-send").disabled = !replayBuf || !!replayRec || tx || replayPlaying || !!replayPending || !armed || !voiceChain;
+      $("replay-hint").hidden = armed;
+      $("replay-status").textContent = replayRec ? "Enregistrement en cours (" + max + " s au plus)…"
+        : replayPlaying ? "Diffusion en cours…" : replayPending ? "Émission demandée…"
+        : replayBuf ? "Enregistré : " + replayBuf.duration.toFixed(1).replace(".", ",") + " s" : "Rien d'enregistré.";
+    }
+    function replayOnTx(on) {
+      /* Émission confirmée de CETTE page (client.js -> chaîne de voix) : la diffusion demandée commence ; fin = arrêt net. */
+      if (on) {
+        if (replayRec) replayRec.stop();
+        if (replayPending && Date.now() - replayPending <= 5000 && replayBuf && voiceChain) {
+          replayPending = 0;
+          replayPlaying = voiceChain.replayBuffer(replayBuf, () => {        // fin de l'enregistrement : fin d'émission (STOP)
+            replayPlaying = false; replayRender();
+            client.stop().catch(fail);
+          });
+        }
+      } else {
+        replayPending = 0; replayPlaying = false;
+      }
+      replayRender();
+    }
+    $("replay-record").addEventListener("click", () => {
+      if (replayRec) { replayRec.stop(); return; }
+      if (!rxMedia || typeof MediaRecorder === "undefined" || !replayMax()) return;
+      const chunks = [];
+      try { replayRec = new MediaRecorder(new MediaStream(rxMedia.getAudioTracks())); } catch (e) { replayRec = null; fail(e); return; }
+      replayRec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      replayRec.onstop = () => {
+        replayRec = null;
+        if (replayTimer !== null) { window.clearTimeout(replayTimer); replayTimer = null; }
+        const ctx = voiceCtx;
+        if (ctx && chunks.length) {
+          new Blob(chunks).arrayBuffer().then((data) => ctx.decodeAudioData(data))
+            .then((buffer) => { replayBuf = buffer; replayRender(); })
+            .catch((e) => ui.log("Enregistrement illisible : " + e.message, "warn"));
+        }
+        replayRender();
+      };
+      replayRec.start();
+      replayTimer = window.setTimeout(() => { if (replayRec) replayRec.stop(); }, replayMax() * 1000);   // TOT - 5 s au plus
+      replayRender();
+    });
+    $("replay-send").addEventListener("click", () => {
+      if (!replayBuf || !voiceChain) return;
+      replayPending = Date.now();
+      replayRender();
+      window.setTimeout(() => { if (replayPending && !replayPlaying) { replayPending = 0; replayRender(); } }, 5000);
+      client.pressPtt().catch(fail);                                       // émission NORMALE (mêmes règles que le PTT)
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { /* défilement indisponible */ }   // retour au poste
+    });
+
     // ---- santé de la machine de la station (state.host) et synthèse du matériel (host_info), opérateurs seulement
     function paintHost(v) {
       const h = v.connected ? v.host : null;
@@ -1762,6 +1831,7 @@
         paintMini(v);
         voiceProfilesSync();
         paintSwr(v);
+        replayRender();
       },
     };
 
@@ -2124,6 +2194,7 @@
           setTx(on) {
             chain.setTx(on);
             if (on && recorder) recorder.stop();                       // toute prise d'émission arrête l'enregistrement
+            replayOnTx(on);
             voiceRender();
           },
           close() {

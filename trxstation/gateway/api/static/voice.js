@@ -401,7 +401,7 @@
       on = !!on;
       if (on === this.tx) return;
       this.tx = on;
-      if (on) { this.setMonitor(false); this.stopPlayback(); }
+      if (on) { this.setMonitor(false); this.stopPlayback(); } else this.stopReplay();   // fin d'émission : rediffusion arrêtée net
       this.input.gain.value = on || this.monitoring ? 1 : 0;
       this.toStation.gain.value = on ? 1 : 0;
       if (!on && !this.failed) { try { this._newConvolver(); } catch (e) { this._fail(e); } }
@@ -430,6 +430,36 @@
       return true;
     }
 
+    replayBuffer(buffer, onEnd) {
+      /* Rediffusion d'un enregistrement de l'audio reçu (accordée par la station) : pendant une émission CONFIRMÉE
+         seulement, l'enregistrement REMPLACE le micro (porte d'entrée fermée), sans égaliseur ni effets (directement au
+         limiteur, toujours actif), et passe aussi sur la sortie de l'appareil pour que l'opérateur l'entende. */
+      if (!this.tx || !buffer) return false;
+      this.stopReplay();
+      const src = this.ctx.createBufferSource();
+      src.buffer = buffer;
+      this.input.gain.value = 0;                              // le micro n'est pas entendu
+      src.connect(this.limiter);
+      src.connect(this.ctx.destination);
+      this.replaying = src;
+      src.onended = () => {
+        if (this.replaying !== src) return;
+        this.replaying = null;
+        this.input.gain.value = this.tx || this.monitoring ? 1 : 0;
+        if (onEnd) onEnd();
+      };
+      src.start();
+      return true;
+    }
+
+    stopReplay() {
+      if (!this.replaying) return;
+      const src = this.replaying;
+      this.replaying = null;
+      try { src.onended = null; src.stop(); src.disconnect(); } catch (e) { /* déjà arrêtée */ }
+      this.input.gain.value = this.tx || this.monitoring ? 1 : 0;
+    }
+
     stopPlayback() {
       if (!this.playing) return;
       const src = this.playing;
@@ -439,7 +469,7 @@
     }
 
     close() {
-      this.stopPlayback();
+      this.stopPlayback(); this.stopReplay();
       this.toStation.gain.value = 0; this.monitor.gain.value = 0; this.input.gain.value = 0;
       for (const v of this.voices || []) { try { v.lfo.stop(); } catch (e) { /* déjà arrêté */ } }
       if (this._gateTimer !== null && this.timers) { this.timers.clearInterval(this._gateTimer); this._gateTimer = null; }

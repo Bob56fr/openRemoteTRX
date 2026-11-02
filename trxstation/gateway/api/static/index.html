@@ -38,6 +38,7 @@
     <div id="blk-freq">
     <div id="listener-badge" class="alert listener-badge" hidden>Visiteur — réception seule</div>
     <div id="presence-banner" class="alert warn" hidden></div>
+    <div id="replay-banner" class="alert" hidden></div>
     <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
     <div id="voyants" class="voyants listener-off" title="Voyants du poste : allumé = en service"></div>
     <div id="reconnect" class="reconnect" hidden>
@@ -332,6 +333,16 @@
           <span id="voice-rec-text" class="dim small"></span>
         </div>
         <p class="note">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
+      </div>
+    </details>
+
+    <details id="sec-replay" class="listener-hide" hidden>
+      <summary>Rediffusion d'un enregistrement</summary>
+      <div class="body">
+        <p class="note">Enregistre l'audio reçu (<span id="replay-max">0</span> s au plus), puis renvoie-le en émission. Micro coupé pendant la diffusion, écoute sur cet appareil. Rediffuser une station à des tiers est en général interdit : sous ta responsabilité.</p>
+        <p id="replay-status" class="note">Rien d'enregistré.</p>
+        <div class="row"><button id="replay-record" class="chip">Enregistrer</button><button id="replay-send" class="primary" disabled>Diffuser en émission</button></div>
+        <p id="replay-hint" class="note" hidden>« Émission autorisée » doit être allumé.</p>
       </div>
     </details>
 

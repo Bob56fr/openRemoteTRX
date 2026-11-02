@@ -219,6 +219,28 @@ test("graphique de l'égaliseur : courbe de toute la chaîne, conseils (mêmes v
     "Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive."]);
 });
 
+test("rediffusion : seulement en émission confirmée, remplace le micro, sans égaliseur, écoute locale, fin d'émission = arrêt net", () => {
+  const { ctx, chain: c } = chain(vx.defaults());
+  const buf = ctx.createBuffer(1, 10, 48000);
+  assert.equal(c.replayBuffer(buf), false);                                       // jamais hors émission
+  c.setTx(true);
+  assert.equal(c.input.gain.value, 1);
+  let ended = 0;
+  assert.equal(c.replayBuffer(buf, () => { ended += 1; }), true);
+  const src = ctx.nodes.filter((n) => n.kind === "bufsrc").at(-1);
+  assert.ok(src.started && src.out.has(c.limiter) && src.out.has(ctx.destination));  // au limiteur (sans égaliseur) et à l'écoute
+  assert.ok(!src.out.has(c.input) && !src.out.has(c.head));
+  assert.equal(c.input.gain.value, 0);                                           // micro non entendu
+  assert.equal(c.toStation.gain.value, 1);
+  src.onended();
+  assert.equal(ended, 1); assert.equal(c.input.gain.value, 1);                   // fin de l'enregistrement : rappel
+  assert.equal(c.replayBuffer(buf, () => { ended += 1; }), true);
+  const second = ctx.nodes.filter((n) => n.kind === "bufsrc").at(-1);
+  c.setTx(false);                                                                // STOP ou coupure : arrêt net, sans rappel
+  assert.ok(second.stopped); assert.equal(ended, 1);
+  assert.equal(c.toStation.gain.value, 0); assert.equal(c.input.gain.value, 0);
+});
+
 let failed = 0;
 test("préréglages partagés avec l'application (tests/protocol/voice_presets.json) : identiques à ceux de la page", () => {
   const shared = JSON.parse(fs.readFileSync(path.join(__dirname, "../protocol/voice_presets.json"), "utf-8"));
