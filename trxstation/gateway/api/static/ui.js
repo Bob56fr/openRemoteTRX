@@ -1252,6 +1252,14 @@
       if (miniFall.width !== size.width || miniFall.height !== size.height || !hfx.sameScale(miniLast, frame)) {
         miniFall.width = size.width; miniFall.height = size.height; miniRow = null; miniValues = null; miniFloor = null;
         miniCtx.fillStyle = canvasColors["--fond"]; miniCtx.fillRect(0, 0, miniFall.width, miniFall.height);
+        const axis = $("mini-axis");                                                 // échelle : seulement quand elle change
+        axis.textContent = "";
+        for (const tick of hfx.scopeTicks(frame.lowHz, frame.highHz, 5)) {
+          if (tick.fraction < 0.06 || tick.fraction > 0.94) continue;                 // pas de libellé coupé au bord
+          const label = el("span", "", tick.label);
+          label.style.left = (tick.fraction * 100).toFixed(2) + "%";
+          axis.appendChild(label);
+        }
       }
       miniLast = frame;
       $("mini-wait").hidden = true;

@@ -15,8 +15,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 41
-        versionName = "0.37.0"
+        versionCode = 42
+        versionName = "0.38.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
     }
     // Clé d'envoi Google Play : HORS DU DÉPÔT (docs/android-play-store.md). Fichier android/keystore.properties

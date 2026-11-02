@@ -1060,6 +1060,7 @@ step("petit waterfall HF avant les bandes : bouton WF, mode centré demandé une
   assert.ok(peak[0] === 255 && peak[1] >= 140 && peak[1] <= 216 && peak[2] <= 74, "couleur chaude attendue : " + peak);
   assert.ok(rgb(10)[0] < 200, "bruit : couleurs du thème");
   assert.equal($("mini-marker").hidden, false); assert.equal($("mini-marker").style.left, "50.00%");
+  assert.deepEqual($("mini-axis").children.map((c) => c.textContent), ["14.08", "14.09", "14.10", "14.11", "14.12"]);   // échelle en MHz
   await $("blk-miniwf").click();
   assert.equal($("mini-dialog").hidden, false);
   await $("mini-hot").click();

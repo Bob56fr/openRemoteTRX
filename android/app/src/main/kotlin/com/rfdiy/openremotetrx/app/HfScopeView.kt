@@ -414,7 +414,8 @@ fun MiniWaterfall(ui: RigUi, canSet: Boolean, onHide: () -> Unit) {
             if (settings.mode != "center") RigHub.spectrumSet("mode", "center")
         }
     }
-    Box(Modifier.fillMaxWidth().height(56.dp).clickable { settingsOpen = true }) {
+    val axisPaint = remember { Paint().apply { color = android.graphics.Color.WHITE; isAntiAlias = true; textAlign = Paint.Align.CENTER } }
+    Box(Modifier.fillMaxWidth().height(62.dp).clickable { settingsOpen = true }) {
         val f = frame
         Canvas(Modifier.fillMaxWidth().fillMaxHeight()) {
             drawn.let { }                                       // redessin à chaque balayage
@@ -426,9 +427,19 @@ fun MiniWaterfall(ui: RigUi, canSet: Boolean, onHide: () -> Unit) {
                     dstOffset = IntOffset.Zero, dstSize = IntSize(size.width.toInt(), size.height.toInt()),
                     filterQuality = FilterQuality.Low,
                 )
+                // Échelle de fréquence : bandeau translucide en bas, petite police, pas de libellé coupé au bord
+                val strip = 12.dp.toPx()
+                drawRect(Color(0x99000000), Offset(0f, size.height - strip), androidx.compose.ui.geometry.Size(size.width, strip))
+                axisPaint.textSize = 9.dp.toPx()
+                for (tick in HfScope.ticks(f.lowHz, f.highHz, 5)) {
+                    if (tick.fraction < 0.06f || tick.fraction > 0.94f) continue
+                    val x = tick.fraction * size.width
+                    drawLine(Color(0x99FFFFFF), Offset(x, size.height - strip - 4.dp.toPx()), Offset(x, size.height - strip), strokeWidth = 1f)
+                    drawContext.canvas.nativeCanvas.drawText(tick.label, x, size.height - 3.dp.toPx(), axisPaint)
+                }
                 HfScope.markerFraction(rigHz, f.lowHz, f.highHz)?.let { m ->
                     val x = m * size.width
-                    drawLine(Color(0xFFE53935), Offset(x, 0f), Offset(x, size.height), strokeWidth = 2f)
+                    drawLine(Color(0xFFE53935), Offset(x, 0f), Offset(x, size.height - strip), strokeWidth = 2f)
                 }
             }
         }

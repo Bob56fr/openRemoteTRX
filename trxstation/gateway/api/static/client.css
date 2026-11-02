@@ -340,6 +340,10 @@ audio { display: none; }
 .miniwf { position: relative; height: 3.5rem; margin-bottom: .4rem; background: var(--fond); border-radius: .25rem; overflow: hidden; cursor: pointer; }
 .miniwf .mini-fall { display: block; width: 100%; height: 100%; }
 .miniwf .hf-wait { font-size: .75rem; }
+/* échelle de fréquence du petit waterfall : bandeau translucide en bas, petite police */
+.mini-axis { position: absolute; left: 0; right: 0; bottom: 0; height: .9rem; background: var(--voile); pointer-events: none; }
+.mini-axis span { position: absolute; bottom: .05rem; transform: translateX(-50%); font-size: .62rem; line-height: 1; color: var(--texte); white-space: nowrap; }
+.mini-axis span::before { content: ""; position: absolute; left: 50%; bottom: .7rem; height: .3rem; border-left: 1px solid var(--texte-secondaire); }
 .host-sections { max-height: 60vh; overflow-y: auto; margin: .4rem 0; }
 .host-sections h4 { margin: .6rem 0 .2rem; font-size: .9rem; color: var(--accent); }
 .host-sections table { width: 100%; border-collapse: collapse; font-size: .85rem; }
