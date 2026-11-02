@@ -279,3 +279,11 @@ def test_layout_logic_with_node_and_the_page_loads_it():
     done = subprocess.run([node, str(ROOT / "tests" / "js" / "layout_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert done.returncode == 0, done.stdout + done.stderr
 
+
+def test_swr_calculations_shared_with_the_station_and_the_app():
+    """Mesure de TOS (swr.js) : mêmes plans, bandes et échelle que trxstation/swr/plan.py (tests/protocol/swr_plans.json)."""
+    node = shutil.which("node")
+    if not node:
+        return                                                                          # Node absent : test ignoré
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "swr_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr
