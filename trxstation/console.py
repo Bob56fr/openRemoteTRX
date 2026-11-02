@@ -51,6 +51,7 @@ GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSIO
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
 NOTES_PAGE_LINES = 20             # notes de version : affichées par pages de 20 lignes
 UPDATE_MENU = "10"
+STATUS_FRESH_S = 10               # fichier d'état de la passerelle plus vieux : passerelle arrêtée
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
 
@@ -97,6 +98,37 @@ def set_safety_values(text: str, values: dict[str, int]) -> str:
             lines.insert(start + 1, f"{key} = {value}{newline}")
             end += 1
     return "".join(lines)
+
+
+def address_line(bind: str, port: int, tls: bool, addresses: list[str]) -> str:
+    """En-tête de la console : adresse(s) où joindre la station (page web, application)."""
+    scheme = "https" if tls else "http"
+    if bind in ("", "127.0.0.1", "localhost", "::1"):
+        return f"  Adresse : {scheme}://127.0.0.1:{port} (cette machine seulement)"
+    hosts = addresses if bind in ("0.0.0.0", "::") else [bind]
+    if not hosts:
+        return f"  Adresse : port {port} (adresse IP de la machine introuvable)"
+    return "  Adresse : " + ", ".join(f"{scheme}://{host}:{port}" for host in hosts)
+
+
+def rig_vitals_line(rig: dict | None) -> str:
+    """En-tête de la console : tension d'alimentation et température du poste, telles que la passerelle les publie
+    (aucune connexion de plus à rigctld). `rig` None = passerelle arrêtée. « — » = valeur non fournie par le poste
+    (l'IC-7300MK2 ne donne pas sa température à Hamlib)."""
+    if rig is None:
+        return "  Poste : mesures indisponibles (station arrêtée)"
+    if not rig.get("connected"):
+        return "  Poste : pas de liaison CAT (poste éteint ou débranché ?)"
+    levels = rig.get("levels") if isinstance(rig.get("levels"), dict) else {}
+
+    def number(key: str) -> float | None:
+        value = levels.get(key)
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+    vd, temp = number("VD_METER"), number("TEMP_METER")
+    volts = f"{vd:.1f} V".replace(".", ",") if vd is not None else "—"
+    degrees = f"{round(temp)} °C" if temp is not None else "—"
+    return f"  Poste : alimentation {volts}, température {degrees}"
 
 
 def config_state_dir(config: Path) -> Path:
@@ -185,7 +217,8 @@ class Console:
                  python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
                  previous: Callable[[], str | None] = previous_version, installed: str = __version__,
                  home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
-                 desktop: Callable[[], Path] | None = None, color: bool | None = None) -> None:
+                 desktop: Callable[[], Path] | None = None, color: bool | None = None,
+                 addresses: Callable[[], list[str]] | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
         self.color = color if color is not None else (say is print and sys.stdout.isatty())
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
@@ -194,6 +227,7 @@ class Console:
         self.editor = editor or os.environ.get("VISUAL") or os.environ.get("EDITOR") or shutil.which("nano") or ""
         self.app_dir = app_dir
         self.desktop = desktop
+        self.addresses = addresses
         self.items: list[tuple[str, str, Callable[[], None]]] = [
             ("1", "Diagnostic complet", self.diagnostic),
             ("2", "Assistant de configuration", self.assistant),
@@ -820,17 +854,21 @@ class Console:
 
     def _presence(self) -> dict:
         """`presence` du fichier d'état de la passerelle ; {} si elle est arrêtée."""
+        status = self._gateway_status()
+        return status.presence if status is not None else {}
+
+    def _gateway_status(self):
+        """Fichier d'état de la passerelle (`status.GatewayStatus`) ; None si elle est arrêtée ou l'état illisible."""
         from . import config as cfgmod
         from .status import read_status
         try:
             cfg, _ = cfgmod.load_unchecked(self.config)
             path = Path(cfg.supervisor.status_path)
-            if not path.exists() or time.time() - path.stat().st_mtime > 10:
-                return {}
-            status = read_status(path)
+            if not path.exists() or time.time() - path.stat().st_mtime > STATUS_FRESH_S:
+                return None
+            return read_status(path)
         except (OSError, cfgmod.ConfigError):
-            return {}
-        return status.presence if status is not None else {}
+            return None
 
     def _ask_int(self, question: str, current: int, low: int, high: int) -> int:
         while True:
@@ -1174,13 +1212,35 @@ class Console:
             state = "station PAS ENCORE CONFIGURÉE : commence par le menu 2"
         else:
             state = "station en marche" if self.station_running() else "station arrêtée"
-        line = (f"\n=== TRX Console  -  TRX distant version {self.installed} ===\n  {state}"
-                f"\n  Identifiant de la station : {self.station_id() or 'créé au premier démarrage de la station'}")
+        line = f"\n=== TRX Console  -  TRX distant version {self.installed} ===\n  {state}"
+        if self.config.exists():
+            line += "".join("\n" + extra for extra in self.station_lines())
+        line += f"\n  Identifiant de la station : {self.station_id() or 'créé au premier démarrage de la station'}"
         release = self.offered(self.update_state())
         if release is not None:
             line += self.banner([f"NOUVELLE VERSION {release.version} DISPONIBLE (installée : {self.installed})",
                                  f"Menu {UPDATE_MENU} : voir les changements, puis installer si tu le souhaites"])
         return line
+
+    def station_lines(self) -> list[str]:
+        """Adresse de la station, puis alimentation et température du poste (fichier d'état de la passerelle).
+        Jamais d'exception : l'en-tête s'affiche avant chaque menu."""
+        from . import config as cfgmod
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+        except (cfgmod.ConfigError, OSError):
+            return []
+        n = cfg.network
+        try:
+            if self.addresses is None:
+                from .setup_wizard import local_addresses
+                self.addresses = local_addresses
+            found = self.addresses()
+        except Exception:                               # en-tête : une adresse introuvable ne bloque pas la console
+            found = []
+        status = self._gateway_status()
+        return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found),
+                rig_vitals_line(status.rig if status is not None else None)]
 
     def menu_label(self, key: str, label: str) -> str:
         release = self.offered(self.update_state()) if key == UPDATE_MENU else None

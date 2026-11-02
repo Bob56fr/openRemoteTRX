@@ -303,6 +303,37 @@ def test_header_shows_version_and_station_id(tmp_path, monkeypatch):
     assert ident in con.header()
 
 
+def test_header_lines_for_the_address_and_the_rig_vitals():
+    from trxstation.console import address_line, rig_vitals_line
+    assert address_line("127.0.0.1", 8443, True, ["192.168.1.19"]) == "  Adresse : https://127.0.0.1:8443 (cette machine seulement)"
+    assert address_line("0.0.0.0", 8443, True, ["192.168.1.19", "100.64.0.7"]) ==         "  Adresse : https://192.168.1.19:8443, https://100.64.0.7:8443"
+    assert address_line("100.64.0.7", 8080, False, ["192.168.1.19"]) == "  Adresse : http://100.64.0.7:8080"
+    assert "introuvable" in address_line("0.0.0.0", 8443, True, [])
+    assert rig_vitals_line(None) == "  Poste : mesures indisponibles (station arrêtée)"
+    assert "liaison CAT" in rig_vitals_line({"connected": False, "levels": {"VD_METER": 13.8}})
+    assert rig_vitals_line({"connected": True, "levels": {"VD_METER": 13.84, "TEMP_METER": 41.6}}) ==         "  Poste : alimentation 13,8 V, température 42 °C"
+    # IC-7300MK2 : pas de température sous Hamlib ; valeur absente ou illisible = « — »
+    assert rig_vitals_line({"connected": True, "levels": {"VD_METER": 14.5}}) == "  Poste : alimentation 14,5 V, température —"
+    assert rig_vitals_line({"connected": True, "levels": {"VD_METER": True, "TEMP_METER": "chaud"}}) ==         "  Poste : alimentation —, température —"
+
+
+def test_header_shows_the_rig_vitals_published_by_the_gateway(tmp_path):
+    import time
+    from trxstation.status import GatewayStatus, write_status
+    path = write_config(tmp_path)
+    cfg, _ = cfgmod.load_unchecked(path)
+    con, _, _ = make(tmp_path)
+    con.addresses = lambda: ["192.168.1.19"]
+    assert "mesures indisponibles (station arrêtée)" in con.header()                # aucun fichier d'état
+    write_status(cfg.supervisor.status_path, GatewayStatus(pid=1, seq=1, written_at=time.time(), ptt={"state": "RX"},
+                                                           rig={"connected": True, "levels": {"VD_METER": 13.8}}))
+    header = con.header()
+    assert "alimentation 13,8 V, température —" in header
+    assert "Adresse : " in header and header.index("Adresse") < header.index("Identifiant de la station")
+    con.addresses = lambda: 1 / 0                                                     # jamais d'exception dans l'en-tête
+    assert "Poste : alimentation 13,8 V" in con.header()
+
+
 def test_test_output_is_shown_as_it_comes_with_a_reminder_when_quiet(tmp_path, capsys):
     """Petit PC : les points de pytest s'affichent sans attendre la fin de la ligne, le fichier suit, et un rappel
     « toujours en cours » apparaît quand rien ne bouge (il ne va pas dans le fichier transmis)."""

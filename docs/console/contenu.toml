@@ -220,9 +220,13 @@ expert = "<p>Les autres connectés ne voient jamais l'identifiant d'un compte, s
 titre = "En-tête de la console"
 texte = """
 <p>La première ligne donne la <strong>version installée</strong>, la deuxième l'état (en marche, arrêtée, pas
-encore configurée), la troisième l'<strong>identifiant de la station</strong> : un code unique créé au premier
-démarrage, qui permet de rapprocher plusieurs rapports d'une même station. Il n'est envoyé nulle part
-automatiquement.</p>
+encore configurée). Une fois la station configurée viennent l'<strong>adresse</strong> où la joindre depuis la
+page web ou l'application (adresses IP de la machine et port ; « cette machine seulement » si elle n'écoute qu'en
+local), puis l'<strong>état du poste</strong> : tension d'alimentation et température, telles que la station les
+lit (« — » : valeur que le poste ne fournit pas ; l'IC-7300MK2, par exemple, ne donne pas sa température ;
+« mesures indisponibles » : station arrêtée). La dernière ligne donne l'<strong>identifiant de la station</strong> :
+un code unique créé au premier démarrage, qui permet de rapprocher plusieurs rapports d'une même station. Il n'est
+envoyé nulle part automatiquement.</p>
 """
 
 [[expert]]

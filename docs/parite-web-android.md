@@ -15,6 +15,7 @@ Une ligne par fonction visible. Toute livraison qui ajoute ou modifie une foncti
 | Appel entrant pendant l'émission => STOP | — | absent (navigateur) | fait (A1), à essayer sur le téléphone | perte du focus audio |
 | Opérateur sur place, « Reprendre la main » | fait | fait | fait (A1) | champs dans `state.ptt` depuis 0.52.0 |
 | Alerte de température | fait | fait | fait (A1, bandeau) | |
+| Alimentation et température du poste dans l'afficheur (« 13.8 V · 42 °C », température seulement si le poste la donne ; orange / rouge aux seuils) | fait (`VD_METER`, `TEMP_METER` ; TRX Console : en-tête avec l'adresse, station 0.82.0) | fait (0.82.0, `vitalsView`, bout de la ligne des voyants) | fait (0.31.0, `Controls.vitals`, ligne du mode) | demandé le 2026-11-02 |
 | Fréquence, bandes, clavier | fait | fait | fait (0.3.0) : saisie au clavier, crans −/+ et pas, 14 bandes avec mémoire de bande | mêmes règles (tests : bandes et pas comparés à client.js) ; glisser par chiffre : plus tard |
 | Modes, filtres | fait | fait | modes fait (0.3.0, modes d'émission rappelés ; ordre USB-D, LSB-D, AM-D, FM-D, CW puis les autres depuis 0.3.1) ; filtres à faire (A3) | bande => mode données si `tx_modes` l'exige ; ordre des modes de la page : à aligner si l'utilisateur le veut |
 | S-mètre, Po, SWR, ALC | fait | fait | fait (S-mètre 0.3.0 ; Po, SWR, ALC pendant l'émission, COMP, Vd, température : 0.4.0) | SWR >= 2 et ALC >= 90 % en orange |

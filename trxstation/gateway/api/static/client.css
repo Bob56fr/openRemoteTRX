@@ -292,6 +292,8 @@ audio { display: none; }
 .safe-body .stop { min-height: 3.2rem; }
 /* Voyants de l'afficheur (ATT/P.AMP, RIT, ΔTX, SPLIT, NOTCH, NB, NR) : vert allumé, gris éteint */
 .voyants { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .8rem; font-weight: 700; letter-spacing: .03em; min-height: 1rem; }
+.voyants .vitals { margin-left: auto; font-weight: 400; color: var(--texte-secondaire); white-space: nowrap; }
+.voyants .vitals.warn { color: var(--alerte); font-weight: 700; } .voyants .vitals.hot { color: var(--erreur); font-weight: 700; }
 .voyant { color: var(--texte-secondaire); opacity: .55; }
 .voyant.on { color: var(--succes); opacity: 1; }
 /* « Tout afficher » du Cluster DX : 30 derniers spots */

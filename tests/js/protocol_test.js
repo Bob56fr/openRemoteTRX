@@ -39,6 +39,13 @@ test("voyants comme l'application : ATT ou P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB,
   assert.deepEqual(web.indicatorsView({}, {}, {}, {}), []);                              // rien de publié : aucun voyant
 });
 
+test("alimentation et température du poste au bout des voyants (température seulement si le poste la donne)", () => {
+  assert.deepEqual(web.vitalsView({ VD_METER: 13.84 }, { temp_alert: "" }), { text: "13.8 V", level: "" });
+  assert.deepEqual(web.vitalsView({ VD_METER: 13.8, TEMP_METER: 51.4 }, { temp_alert: "hot" }), { text: "13.8 V · 51 °C", level: "hot" });
+  assert.deepEqual(web.vitalsView({}, null), { text: "", level: "" });
+  assert.equal(web.vitalsView({ VD_METER: "13" }, {}).text, "");
+});
+
 test("voyant du VFO actif : en tête, seulement si la station le lit (Yaesu FTDX10/101 oui, IC-7300MK2 non)", () => {
   const rig = messages.state.rig;
   assert.deepEqual(web.indicatorsView({}, {}, rig, {})[0], { label: "VFO A", on: true });

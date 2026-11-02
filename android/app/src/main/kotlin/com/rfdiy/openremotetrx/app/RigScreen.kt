@@ -278,6 +278,14 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
                         Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleMedium)
                         if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
+                        // Alimentation (et température si le poste la donne), à droite ; orange / rouge aux seuils de la station
+                        val vitals = Controls.vitals(rig.state)
+                        if (vitals.isNotEmpty() && radio?.connected == true) {
+                            Spacer(Modifier.weight(1f))
+                            Text(vitals, style = MaterialTheme.typography.labelLarge,
+                                color = when (ptt?.tempAlert) { "hot" -> TX_RED; "warn" -> Page.ALERTE; else -> Page.TEXTE_2 },
+                                fontWeight = if (ptt?.tempAlert.isNullOrEmpty()) FontWeight.Normal else FontWeight.Bold)
+                        }
                     }
                     // Voyants (comme sur un poste) : vert = actif, gris = éteint
                     val lights = Indicators.of(hello, rig.state)
@@ -439,8 +447,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 }
             }
 
-            // Autres mesures (COMP, Vd, température) en une ligne, s'il y en a ; POWER, SWR, ALC sont dans l'afficheur
-            val others = Controls.meters(rig.state).filterNot { it.key in setOf("PO", "SWR", "ALC") }
+            // Autres mesures (COMP) en une ligne, s'il y en a ; POWER, SWR, ALC, Vd et température sont dans l'afficheur
+            val others = Controls.meters(rig.state).filterNot { it.key in setOf("PO", "SWR", "ALC", "VD", "TEMP") }
             if (others.isNotEmpty()) {
                 Text(others.joinToString("   ") { "${it.label} ${it.text}" }, style = MaterialTheme.typography.bodySmall)
             }
