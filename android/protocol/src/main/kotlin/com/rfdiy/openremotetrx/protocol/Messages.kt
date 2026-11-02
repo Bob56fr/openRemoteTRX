@@ -206,6 +206,9 @@ data class Selcall(val status: JsonObject) : ServerMessage
 
 data class ModuleMessage(val module: String, val data: JsonElement) : ServerMessage
 
+/** Progression de MA mesure de TOS (station 0.90.0+) ; lue par logic/SwrUi. */
+data class SwrMessage(val raw: JsonObject) : ServerMessage
+
 /** La station ferme la connexion (motif et texte) : afficher, et NE PAS se reconnecter tout seul. */
 data class Bye(val reason: String, val message: String) : ServerMessage
 
@@ -245,6 +248,7 @@ object ServerMessages {
                 "selcall" -> Selcall(obj["status"]?.jsonObject ?: JsonObject(emptyMap()))
                 "module" -> ModuleMessage(obj.text("module"), obj["data"] ?: JsonNull)
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
+                "swr" -> SwrMessage(obj)
                 else -> Unknown(type)
             }
         } catch (e: SerializationException) {

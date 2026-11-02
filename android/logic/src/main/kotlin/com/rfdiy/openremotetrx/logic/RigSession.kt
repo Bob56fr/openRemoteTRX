@@ -16,6 +16,7 @@ import com.rfdiy.openremotetrx.protocol.Result
 import com.rfdiy.openremotetrx.protocol.Selcall
 import com.rfdiy.openremotetrx.protocol.ServerMessages
 import com.rfdiy.openremotetrx.protocol.State
+import com.rfdiy.openremotetrx.protocol.SwrMessage
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -70,6 +71,11 @@ data class RigState(
     val hostSections: List<HostSection>? = null,
     /** Profils d'égaliseur du compte rangés sur la station ; null = station sans cette fonction (ou visiteur). */
     val voiceProfiles: List<VoiceProfile>? = null,
+    /** Mesure de TOS : progression de MA mesure (messages « swr »), plan de la station, derniers choix, dernière mesure. */
+    val swr: SwrProgress? = null,
+    val swrPlan: SwrPlanView? = null,
+    val swrChoices: Pair<Double, Int>? = null,
+    val swrLast: SwrResult? = null,
 )
 
 /** Profil d'égaliseur de l'opérateur, rangé sur la station (étape 102) ; `settings` revalidé à l'application. */
@@ -120,6 +126,10 @@ class RigSession(
     private var selcall: SelcallStatus? = null
     private var hostSections: List<HostSection>? = null
     private var voiceProfiles: List<VoiceProfile>? = null
+    private var swr: SwrProgress? = null
+    private var swrPlan: SwrPlanView? = null
+    private var swrChoices: Pair<Double, Int>? = null
+    private var swrLast: SwrResult? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -261,6 +271,11 @@ class RigSession(
             is Memories -> memories = Radio.sortMemories(msg.items)
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
+            is SwrMessage -> {
+                val p = SwrUi.progress(msg.raw)
+                swr = p
+                p.result?.let { if (it.points.any { pt -> pt.swr != null }) swrLast = it }
+            }
             is Bye -> {
                 bye = msg
                 log("La station va fermer la connexion : ${msg.message.ifBlank { msg.reason }}", LogLevel.BAD)
@@ -316,6 +331,22 @@ class RigSession(
         val entry = msg.id?.let { pending.remove(it) } ?: return
         if (entry.cmd == "get_state") {
             rttMs = (now - entry.sentAt).toInt()
+            return
+        }
+        if (entry.cmd.startsWith("swr_")) {                     // mesure de TOS : plan, derniers choix, dernière mesure
+            if (msg.ok) {
+                (msg.raw["plan"] as? JsonObject)?.let { if (entry.cmd == "swr_plan") swrPlan = SwrUi.planView(it) }
+                (msg.raw["choices"] as? JsonObject)?.let { c ->
+                    val power = (c["power_pct"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull()
+                    val points = (c["points"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull()
+                    if (power != null && points != null) swrChoices = power to points
+                }
+                if (entry.cmd == "swr_last") SwrUi.result(msg.raw["last"])?.let { swrLast = it }
+            } else {
+                log("Mesure de TOS : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+                if (entry.cmd == "swr_start") swr = null
+            }
+            publish(now)
             return
         }
         if (entry.cmd.startsWith("voice_profile")) {              // liste à jour après lecture, ajout ou suppression
@@ -620,6 +651,31 @@ class RigSession(
         publish(now)
     }
 
+    // ---- mesure de TOS (opérateur) : chaque point est une prise d'émission NORMALE de ce téléphone (battements envoyés
+    // comme pour le PTT tant que l'émission est la sienne) ; la station décide de tout et coupe à la moindre anomalie
+    fun swrPlan(now: Long, lowHz: Long, highHz: Long, points: Int, powerPct: Double) {
+        if (!connected || listener || hello?.offers("swr") != true) return
+        send(now, Command.SwrPlan(lowHz, highHz, points, powerPct))
+    }
+
+    fun swrStart(now: Long, lowHz: Long, highHz: Long, points: Int, powerPct: Double) {
+        if (!connected || listener || hello?.offers("swr") != true) return
+        if (!arming.armed) { log("Mesure de TOS : « Émission autorisée » d'abord.", LogLevel.WARN); publish(now); return }
+        swr = SwrProgress("preparing", 0, emptyList(), null)
+        send(now, Command.SwrStart(lowHz, highHz, points, powerPct))
+        publish(now)
+    }
+
+    fun swrCancel(now: Long) {
+        if (!connected || listener) return
+        send(now, Command.SwrCancel)
+    }
+
+    fun swrLast(now: Long) {
+        if (!connected || listener || hello?.offers("swr") != true) return
+        send(now, Command.SwrLast)
+    }
+
     /** Profils d'égaliseur (opérateur) : enregistrer (remplace le même nom) ou supprimer ; la liste revient dans `voiceProfiles`. */
     fun saveVoiceProfile(now: Long, name: String, settings: JsonObject) {
         if (!connected || listener || voiceProfiles == null) return
@@ -710,6 +766,7 @@ class RigSession(
         selcall = null
         hostSections = null
         voiceProfiles = null
+        swr = null; swrPlan = null; swrChoices = null; swrLast = null
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -752,6 +809,7 @@ class RigSession(
             host = HostHealth.of(state?.host, listener),
             hostSections = hostSections,
             voiceProfiles = voiceProfiles,
+            swr = swr, swrPlan = swrPlan, swrChoices = swrChoices, swrLast = swrLast,
         )
         if (next != snapshot) {
             snapshot = next

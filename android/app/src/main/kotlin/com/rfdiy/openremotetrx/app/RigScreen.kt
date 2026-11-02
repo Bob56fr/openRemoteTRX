@@ -169,6 +169,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
+    var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
     var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
     fun setMiniWf(on: Boolean) { miniWf = on; prefs.edit().putBoolean("mini_wf", on).apply() }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
@@ -576,6 +577,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             Panel { HeadsetSection(ui.headsetMic) }
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
+            if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
+                OutlinedButton(onClick = { swrOpen = true }) { Text("Mesure de TOS de l'antenne") }
+            }
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
                 OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
             }
@@ -677,6 +681,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             onDismiss = { selcallDialog = false })
     }
     if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
+    if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->

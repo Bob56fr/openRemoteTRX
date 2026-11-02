@@ -175,6 +175,19 @@ object RigHub {
 
     fun deleteVoiceProfile(name: String) { service?.onRig { session, now -> session.deleteVoiceProfile(now, name) } }
 
+    /** Mesure de TOS (opérateur) : plan, lancement, annulation, dernière mesure ; tout revient dans RigState.swr*. */
+    fun swrPlan(lowHz: Long, highHz: Long, points: Int, powerPct: Double) {
+        service?.onRig { session, now -> session.swrPlan(now, lowHz, highHz, points, powerPct) }
+    }
+
+    fun swrStart(lowHz: Long, highHz: Long, points: Int, powerPct: Double) {
+        service?.onRig { session, now -> session.swrStart(now, lowHz, highHz, points, powerPct) }
+    }
+
+    fun swrCancel() { service?.onRig { session, now -> session.swrCancel(now) } }
+
+    fun swrLast() { service?.onRig { session, now -> session.swrLast(now) } }
+
     /** Synthèse du matériel de la station (opérateurs) : réponse dans RigState.hostSections. */
     fun hostInfo() { service?.onRig { session, now -> session.hostInfo(now) } }
 
