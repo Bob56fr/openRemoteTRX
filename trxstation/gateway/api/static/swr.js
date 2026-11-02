@@ -78,7 +78,52 @@
     return swr <= 1.5 ? "good" : swr <= 2 ? "fair" : "bad";
   }
 
-  const api = { NICE_STEPS_HZ, MAX_POINTS, GRID, BANDS, bandAt, isAmateur, rangeFromCenter, niceStep, plan, scaleY, level };
+  // ---- affichage (page) : couleurs du graphique (fixes, lisibles sur fond sombre comme sur l'image exportée) et textes
+  const COLORS = { good: "#35c47a", fair: "#f0a830", bad: "#e5484d", none: "#5a6472", grid: "rgba(255, 255, 255, 0.16)",
+                   gridStrong: "rgba(255, 255, 255, 0.32)", text: "#c9d4e2", title: "#ffffff", background: "#0b1220", accent: "#4fc3f7" };
+
+  function freqLabel(hz) {
+    /* 14.050 (MHz, 3 décimales) ; 5.3575 pour un pas de 500 Hz. */
+    return (hz / 1e6).toFixed(hz % 1000 ? 4 : 3);
+  }
+
+  function swrText(swr) {
+    return swr > SCALE_MAX ? "> 5" : swr.toFixed(2).replace(".", ",");
+  }
+
+  function pointColor(point) {
+    if (!point || point.swr === null || point.swr === undefined) return COLORS.none;
+    return COLORS[level(point.swr)];
+  }
+
+  function restoredLines(result, modeLabel) {
+    /* « État du poste remis » : ce qui a été relu sur le poste, puis les écarts à corriger à la main. */
+    const label = modeLabel || ((m) => m);
+    const r = (result && result.restored) || {}, out = [];
+    if (Number.isFinite(r.frequency_hz)) out.push("Fréquence : " + (r.frequency_hz / 1e6).toFixed(4).replace(".", ",") + " MHz");
+    if (r.mode) out.push("Mode : " + label(r.mode) + (r.passband_hz ? " (" + r.passband_hz + " Hz)" : ""));
+    if (Number.isFinite(r.rfpower)) out.push("Puissance : " + Math.round(r.rfpower * 100) + " %");
+    if (r.tuner !== null && r.tuner !== undefined) out.push("Coupleur : " + (r.tuner ? "en service" : "arrêté"));
+    if (!out.length) out.push("État du poste non relu : vérifie fréquence, mode, puissance et coupleur.");
+    return { lines: out, differences: Array.isArray(result && result.differences) ? result.differences : [] };
+  }
+
+  function legendLines(result, name, modeLabel, when) {
+    /* Pied de l'image exportée (ANONYME : ni indicatif ni station) : nom, date, puissance, mode, meilleur point. */
+    const label = modeLabel || ((m) => m);
+    const lines = [name && String(name).trim() ? String(name).trim() : "Mesure de TOS"];
+    const parts = [];
+    if (when) parts.push(when);
+    if (result) {
+      parts.push((result.power_w ? result.power_w + " W" : Math.round(result.power_pct) + " %") + " en " + label(result.fm_mode || "FM"));
+      if (result.best) parts.push("meilleur TOS " + swrText(result.best.swr) + " à " + freqLabel(result.best.hz) + " MHz");
+    }
+    if (parts.length) lines.push(parts.join(" · "));
+    return lines;
+  }
+
+  const api = { NICE_STEPS_HZ, MAX_POINTS, GRID, BANDS, bandAt, isAmateur, rangeFromCenter, niceStep, plan, scaleY, level,
+                COLORS, freqLabel, swrText, pointColor, restoredLines, legendLines };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TrxSwr = api;
 })(typeof window !== "undefined" ? window : globalThis);

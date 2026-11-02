@@ -36,6 +36,23 @@ test("centre et largeur, bande du poste, échelle et couleurs", () => {
   assert.equal(sw.rangeFromCenter(7100000, 0), null);
 });
 
+test("textes : fréquences, TOS, couleurs, état remis et légende anonyme", () => {
+  assert.equal(sw.freqLabel(14050000), "14.050"); assert.equal(sw.freqLabel(5357500), "5.3575");
+  assert.equal(sw.swrText(1.234), "1,23"); assert.equal(sw.swrText(7), "> 5");
+  assert.equal(sw.pointColor({ swr: 1.4 }), sw.COLORS.good); assert.equal(sw.pointColor({ swr: 1.9 }), sw.COLORS.fair);
+  assert.equal(sw.pointColor({ swr: 2.5 }), sw.COLORS.bad); assert.equal(sw.pointColor({ swr: null, status: "out_of_band" }), sw.COLORS.none);
+  const result = { restored: { frequency_hz: 14074000, mode: "PKTUSB", passband_hz: 3000, rfpower: 1, tuner: true },
+                   differences: ["coupleur : non remis en service, à rallumer à la main"], power_w: 15, power_pct: 15, fm_mode: "FM-D",
+                   best: { hz: 14150000, swr: 1.18 } };
+  const r = sw.restoredLines(result, (m) => (m === "PKTUSB" ? "USB-D" : m));
+  assert.deepEqual(r.lines, ["Fréquence : 14,0740 MHz", "Mode : USB-D (3000 Hz)", "Puissance : 100 %", "Coupleur : en service"]);
+  assert.deepEqual(r.differences, ["coupleur : non remis en service, à rallumer à la main"]);
+  assert.match(sw.restoredLines({}, null).lines[0], /non relu/);
+  assert.deepEqual(sw.legendLines(result, " Dipôle 20 m ", null, "02/11/2026"),
+                   ["Dipôle 20 m", "02/11/2026 · 15 W en FM-D · meilleur TOS 1,18 à 14.150 MHz"]);
+  assert.equal(sw.legendLines(null, "", null, "")[0], "Mesure de TOS");
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (e) { failed++; console.log("ECHEC " + name + "\n      " + (e.stack || e)); }

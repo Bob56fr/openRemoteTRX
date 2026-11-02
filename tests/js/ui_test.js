@@ -16,7 +16,7 @@ class FakeCtx {                                                   // contexte de
   count(name) { return this.calls.filter((c) => c === name).length; }
   createImageData(w, h) { return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }; }
 }
-for (const method of ["clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "closePath", "stroke", "fill", "drawImage", "putImageData", "fillText", "save", "restore", "arc"]) {
+for (const method of ["clearRect", "fillRect", "beginPath", "moveTo", "lineTo", "closePath", "stroke", "fill", "drawImage", "putImageData", "fillText", "save", "restore", "arc", "strokeRect"]) {
   FakeCtx.prototype[method] = function () { this.calls.push(method); if (method === "putImageData") this.lastRow = arguments[0]; };
 }
 
@@ -144,6 +144,7 @@ global.TrxTheme = require(path.join(STATIC, "theme.js"));
 global.TrxHfScope = require(path.join(STATIC, "hfscope.js"));
 global.TrxSpots = require(path.join(STATIC, "spots.js"));
 global.TrxVoice = require(path.join(STATIC, "voice.js"));
+global.TrxSwr = require(path.join(STATIC, "swr.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -1098,6 +1099,44 @@ step("égaliseur : graphique, conseils, profils de l'opérateur rangés sur la s
   assert.ok(JSON.stringify(saved).length < 2048, "message compact sous la limite de la station");
   answer(true, { profiles: [{ name: "Mon DX", settings: dxSettings }, { name: "Soirée", settings: dxSettings }] }, "voice_profile_save"); await wait(30);
   assert.equal($("voice-preset").value, "user:Soirée");
+  await $("disconnect").click(); await wait();
+});
+
+step("mesure de TOS : derniers choix, plan, lancement, progression, graphique, état du poste remis, export", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB", "FM"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode", "swr"] });
+  await wait(30); state({}, { frequency_hz: 14074000 }); await wait(30);
+  assert.equal($("sec-swr").hidden, false);
+  assert.equal(sent("swr_last").length, 1);                                                      // derniers choix relus une fois
+  answer(true, { last: null, choices: { power_pct: 20, points: 8 } }, "swr_last"); await wait(30);
+  assert.equal($("swr-points").value, "8"); assert.equal($("swr-power").value, "20");
+  $("sec-swr").open = true; await $("sec-swr").dispatch("toggle"); await wait(400);
+  assert.match($("swr-band").textContent, /20m : 14\.000 à 14\.350 MHz/);
+  assert.match($("swr-plan").textContent, /14\.000 à 14\.350 MHz, pas de 50 kHz, 8 points/);
+  assert.ok(sent("swr_plan").length >= 1);
+  await $("armed").dispatch("change", { target: Object.assign($("armed"), { checked: true }) }); state({}, { frequency_hz: 14074000 }); await wait(30);
+  await $("swr-start").click(); await wait(10);
+  const start = sent("swr_start").at(-1);
+  assert.deepEqual([start.low_hz, start.high_hz, start.points, start.power_pct], [14000000, 14350000, 8, 20]);
+  answer(true, { plan: {} }, "swr_start"); await wait(10);
+  const pts = [14000000, 14050000, 14100000].map((hz, i) => ({ hz, status: "measured", swr: [1.3, 1.9, 2.6][i], power_w: 20 }));
+  send({ type: "swr", state: "measuring", index: 2, total: 3, points: pts }); await wait(10);
+  assert.equal($("swr-cancel").hidden, false); assert.match($("swr-progress").textContent, /Point 3 sur 3/);
+  assert.ok($("swr-chart").ctx.count("fillRect") >= 4);                                           // fond et barres
+  send({ type: "swr", state: "done", index: null, total: 3, points: pts,
+         result: { points: pts, best: pts[0], reason: "done", detail: "", warning: "", power_w: 20, power_pct: 20, fm_mode: "FM",
+                   restored: { frequency_hz: 14074000, mode: "PKTUSB", passband_hz: 3000, rfpower: 1, tuner: true },
+                   differences: ["coupleur : non remis en service, à rallumer à la main"], at: 1700000000 } });
+  await wait(10);
+  assert.equal($("swr-cancel").hidden, true); assert.equal($("swr-export").hidden, false);
+  assert.equal($("swr-dialog").hidden, false);                                                    // état du poste remis, tout de suite
+  assert.equal($("swr-restored").children[0].textContent, "Fréquence : 14,0740 MHz");
+  assert.match($("swr-differences").children[0].textContent, /coupleur/);
+  assert.match($("swr-summary").textContent, /Meilleur TOS : 1,30 à 14\.000 MHz/);
+  await $("swr-dialog-close").click();
+  assert.equal($("swr-dialog").hidden, true);
   await $("disconnect").click(); await wait();
 });
 

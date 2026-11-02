@@ -402,6 +402,36 @@
       </div>
     </details>
 
+    <details id="sec-swr" class="listener-hide" hidden>
+      <summary>Mesure de TOS</summary>
+      <div class="body">
+        <p class="note">La station émet une courte porteuse FM sur chaque point (prise d'émission normale : « Émission autorisée » allumé, STOP toujours possible), coupleur arrêté, puis remet le poste en état.</p>
+        <div class="row">
+          <label class="check"><input id="swr-use-band" type="radio" name="swr-range" checked> Bande du poste <span id="swr-band" class="dim"></span></label>
+          <label class="check"><input id="swr-use-center" type="radio" name="swr-range"> Centre et largeur</label>
+        </div>
+        <div id="swr-center-row" class="row" hidden>
+          <label>Centre (kHz) <input id="swr-center" inputmode="decimal" size="9"></label>
+          <label>Largeur (kHz) <input id="swr-width" inputmode="decimal" size="7" value="100"></label>
+        </div>
+        <div class="row">
+          <label>Points <input id="swr-points" type="number" min="2" max="50" value="11" size="4"></label>
+          <label class="grow">Puissance <input id="swr-power" type="range" min="5" max="50" step="1" value="15"><span id="swr-power-text"></span></label>
+        </div>
+        <p id="swr-plan" class="note"></p>
+        <div class="row"><button id="swr-start" class="primary" disabled>Lancer la mesure</button><button id="swr-cancel" class="chip" hidden>Annuler</button></div>
+        <p id="swr-progress" class="note"></p>
+        <canvas id="swr-chart" class="swr-chart"></canvas>
+        <p id="swr-summary" class="note"></p>
+        <div id="swr-export" class="row" hidden>
+          <button id="swr-save" class="chip">Enregistrer l'image…</button>
+          <button id="swr-share" class="chip" hidden>Partager</button>
+          <button id="swr-copy" class="chip" hidden>Copier l'image</button>
+          <button id="swr-restored-open" class="chip">État du poste remis</button>
+        </div>
+      </div>
+    </details>
+
     <details id="sec-instruments">
       <summary>Mesures du poste</summary>
       <div class="body">
@@ -517,6 +547,15 @@
     <div class="row"><button id="mini-hide" class="chip">Masquer</button><button id="mini-close" class="primary">Fermer</button></div>
   </div>
 </div>
+<div id="swr-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title">État du poste remis</div>
+    <ul id="swr-restored" class="presence-list"></ul>
+    <ul id="swr-differences" class="presence-list swr-differences"></ul>
+    <p class="note">Si un réglage n'a pas été remis, corrige-le à la main sur le poste ou dans la page.</p>
+    <div class="row"><button id="swr-dialog-close" class="primary">Fermer</button></div>
+  </div>
+</div>
 <div id="host-dialog" class="keypad" hidden>
   <div class="kp-panel">
     <div class="kp-display ctl-title">Matériel de la station</div>
@@ -612,6 +651,7 @@
 <script src="hfscope.js"></script>
 <script src="spots.js"></script>
 <script src="voice.js"></script>
+<script src="swr.js"></script>
 <script src="scrambler.js"></script>
 <script src="selcall.js"></script>
 <script src="layout.js"></script>

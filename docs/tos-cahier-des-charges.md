@@ -196,7 +196,7 @@ la mesure avec un modèle de poste (numéro Hamlib absent de `swr.json`), la sta
 
 1. Calculs purs (plage, pas, points, table des bandes, échelle du graphique) + tests, côté station, page et application. FAIT (étape 108).
 2. Moteur de mesure et étalonnage dans la passerelle + tests de panne (faux rigctld) + protocole. FAIT (étape 109, station 0.90.0).
-3. Page de mesure (web) + export image.
+3. Page de mesure (web) + export image. FAIT (étape 111, station 0.92.0).
 4. Application (écran, partage de l'image).
 5. TRX Console (dernière mesure), trx-monitor, mode d'emploi.
 

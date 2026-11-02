@@ -1334,6 +1334,205 @@
       store.set("trx.hf", JSON.stringify(hfSettings)); hfTexts(); miniTexts(lastView); miniLast = null;
     });
 
+    // ---- mesure de TOS (docs/tos-cahier-des-charges.md) : chaque point est une prise d'émission NORMALE de cette page
+    const sw = root.TrxSwr || null;
+    let swrResult = null, swrRunning = false, swrPlanTimer = null, swrSeenFor = null, swrDialogShownFor = null, swrName = "";
+    function swrOffered() {
+      return !!(sw && client.connected && client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("swr"));
+    }
+    function swrRange() {
+      /* Plage choisie : bande du poste (table de swr.js) ou centre ± largeur/2 ; null si incomplète. */
+      const rig = (client.state && client.state.rig) || {};
+      if ($("swr-use-band").checked) {
+        const b = Number.isFinite(rig.frequency_hz) ? sw.bandAt(rig.frequency_hz) : null;
+        return b ? { lowHz: b.low_hz, highHz: b.high_hz, name: b.name } : null;
+      }
+      const center = Math.round(parseFloat(String($("swr-center").value).replace(",", ".")) * 1000);
+      const width = Math.round(parseFloat(String($("swr-width").value).replace(",", ".")) * 1000);
+      const r = sw.rangeFromCenter(center, width);
+      return r ? Object.assign(r, { name: "" }) : null;
+    }
+    function swrPlanText() {
+      /* Calcul affiché tout de suite (swr.js), complété par le plan de la station (hors bande, watts, durée). */
+      const rig = (client.state && client.state.rig) || {};
+      const b = Number.isFinite(rig.frequency_hz) ? sw.bandAt(rig.frequency_hz) : null;
+      $("swr-band").textContent = b ? "(" + b.name + " : " + sw.freqLabel(b.low_hz) + " à " + sw.freqLabel(b.high_hz) + " MHz)" : "(hors table : centre et largeur)";
+      $("swr-center-row").hidden = $("swr-use-band").checked;
+      if (!$("swr-center").value && Number.isFinite(rig.frequency_hz)) $("swr-center").value = String(Math.round(rig.frequency_hz / 1000));
+      $("swr-power-text").textContent = " " + $("swr-power").value + " %";
+      const range = swrRange(), points = parseInt($("swr-points").value, 10);
+      if (!range) { $("swr-plan").textContent = "Choisis une plage."; $("swr-start").disabled = true; return null; }
+      const p = sw.plan(range.lowHz, range.highHz, points, Number($("swr-points").max) || sw.MAX_POINTS);
+      if (p.error) { $("swr-plan").textContent = web.reasonText(p.error); $("swr-start").disabled = true; return null; }
+      const center = $("swr-use-center").checked
+        ? $("swr-center").value + " kHz ± " + (Number(String($("swr-width").value).replace(",", ".")) / 2) + " kHz = " : "";
+      $("swr-plan").textContent = center + sw.freqLabel(p.lowHz) + " à " + sw.freqLabel(p.highHz) + " MHz, pas de " + (p.stepHz / 1000) +
+        " kHz, " + p.freqs.length + " points" + (p.amateurOnly ? "" : " — HORS des bandes radioamateur");
+      $("swr-start").disabled = swrRunning || !(lastView && lastView.armed && lastView.connected);
+      if (swrPlanTimer !== null) window.clearTimeout(swrPlanTimer);
+      swrPlanTimer = window.setTimeout(() => {                                       // plan de la station (rien n'est émis)
+        client.swrPlan(range.lowHz, range.highHz, points, Number($("swr-power").value)).then((res) => {
+          if (!res || !res.ok || !res.plan) return;
+          const pl = res.plan, skipped = pl.points.filter((x) => x.status === "out_of_band").length;
+          $("swr-plan").textContent += (pl.power_w ? " ; " + pl.power_w + " W" : "") + " en " + web.modeLabel(pl.fm_mode || "FM") +
+            (skipped ? " ; " + skipped + " point(s) hors des bandes de la station, sautés" : "") +
+            " ; environ " + Math.round(pl.estimated_s) + " s" + (pl.calibration_needed ? " (étalonnage du poste compris)" : "");
+          $("swr-power").max = String(pl.max_power_pct);
+        }).catch(() => {});
+      }, 300);
+      return { range: range, plan: p, points: points };
+    }
+    function drawSwrChart(ctx, x0, y0, w, h, points, ratio) {
+      /* Barres verticales : vert <= 1,5, orange <= 2, rouge au-dessus ; échelle non linéaire plafonnée à 5 ; lignes 1,2 à 2. */
+      const axis = 34 * ratio, bottom = 18 * ratio, top = 10 * ratio;
+      const plotX = x0 + axis, plotW = w - axis, plotH = h - bottom - top, baseY = y0 + top + plotH;
+      const yOf = (swr) => baseY - sw.scaleY(swr) * plotH;
+      ctx.font = Math.round(10 * ratio) + "px sans-serif";
+      for (const g of sw.GRID.concat([3, 5])) {
+        ctx.strokeStyle = g === 2 || g === 5 ? sw.COLORS.gridStrong : sw.COLORS.grid; ctx.lineWidth = Math.max(1, ratio);
+        ctx.beginPath(); ctx.moveTo(plotX, yOf(g)); ctx.lineTo(x0 + w, yOf(g)); ctx.stroke();
+        ctx.fillStyle = sw.COLORS.text; ctx.fillText(sw.swrText(g).replace(",00", ""), x0 + 2 * ratio, yOf(g) + 3 * ratio);
+      }
+      const n = points.length || 1, slot = plotW / n, bar = Math.max(2 * ratio, slot * 0.7);
+      const measured = points.filter((p) => p.swr !== null && p.swr !== undefined);
+      const best = measured.length ? measured.reduce((a, b) => (b.swr < a.swr ? b : a)) : null;
+      const every = Math.max(1, Math.ceil(n * 52 * ratio / plotW));
+      points.forEach((p, i) => {
+        const x = plotX + i * slot + (slot - bar) / 2;
+        const hasValue = p.swr !== null && p.swr !== undefined;
+        const yTop = hasValue ? Math.min(baseY - 2 * ratio, yOf(p.swr)) : baseY - 4 * ratio;
+        ctx.globalAlpha = p.status === "reduced" ? 0.5 : 1;
+        ctx.fillStyle = sw.pointColor(p); ctx.fillRect(x, yTop, bar, baseY - yTop);
+        ctx.globalAlpha = 1;
+        if (best && p === best) { ctx.strokeStyle = sw.COLORS.accent; ctx.lineWidth = 2 * ratio; ctx.strokeRect(x, yTop, bar, baseY - yTop); }
+        if (hasValue && n <= 24) { ctx.fillStyle = sw.COLORS.text; ctx.fillText(sw.swrText(p.swr), x, yTop - 3 * ratio); }
+        if (i % every === 0) { ctx.fillStyle = sw.COLORS.text; ctx.fillText(sw.freqLabel(p.hz), x, baseY + 13 * ratio); }
+      });
+    }
+    function paintSwrChart(points) {
+      const cv = $("swr-chart");
+      if (!cv.getContext) return;
+      const ratio = window.devicePixelRatio || 1;
+      cv.width = Math.max(1, Math.round((cv.clientWidth || 600) * ratio)); cv.height = Math.max(1, Math.round((cv.clientHeight || 224) * ratio));
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = sw.COLORS.background; ctx.fillRect(0, 0, cv.width, cv.height);
+      drawSwrChart(ctx, 0, 0, cv.width, cv.height, points || [], ratio);
+    }
+    function showSwrRestored(result) {
+      const r = sw.restoredLines(result, web.modeLabel);
+      $("swr-restored").textContent = ""; $("swr-differences").textContent = "";
+      for (const line of r.lines) $("swr-restored").appendChild(el("li", "", line));
+      for (const line of r.differences) $("swr-differences").appendChild(el("li", "", line));
+      $("swr-dialog").hidden = false;
+    }
+    function swrSummary(result) {
+      const best = result && result.best;
+      const why = result && result.reason !== "done" ? " Mesure interrompue (" + web.cutText(result.detail) + ")." : "";
+      return (best ? "Meilleur TOS : " + sw.swrText(best.swr) + " à " + sw.freqLabel(best.hz) + " MHz." : "Aucun point mesuré.") + why +
+        (result && result.warning === "swr_unstable" ? " Lecture du TOS instable sur ce poste." : "");
+    }
+    function onSwr(msg) {
+      swrRunning = !["done", "cut", "failed", "cancelled"].includes(msg.state);
+      $("swr-cancel").hidden = !swrRunning;
+      const names = { preparing: "Préparation du poste…", calibrating: "Étalonnage du temps de lecture du poste…", restoring: "Remise en état du poste…" };
+      $("swr-progress").textContent = names[msg.state] ||
+        (msg.state === "measuring" ? "Point " + ((msg.points || []).filter((p) => p.swr !== null && p.swr !== undefined).length) + " sur " + msg.total : "");
+      paintSwrChart(msg.points);
+      if (msg.result) {
+        swrResult = msg.result;
+        $("swr-summary").textContent = swrSummary(msg.result);
+        $("swr-export").hidden = false;
+        swrDialogShownFor = msg.result;
+        showSwrRestored(msg.result);                                                  // l'opérateur voit ce qui a été remis
+      }
+      if (lastView) swrPlanText();
+    }
+    function paintSwr(v) {
+      const offered = swrOffered() && !v.listener;
+      $("sec-swr").hidden = !offered;
+      if (!offered) return;
+      if (swrSeenFor !== client.hello) {                                               // une fois par connexion : derniers choix et dernière mesure
+        swrSeenFor = client.hello;
+        client.swrLast().then((res) => {
+          if (!res || !res.ok) return;
+          if (res.choices) { $("swr-points").value = String(res.choices.points); $("swr-power").value = String(res.choices.power_pct); }
+          if (res.last && !swrResult) { swrResult = res.last; paintSwrChart(res.last.points); $("swr-summary").textContent = swrSummary(res.last); $("swr-export").hidden = false; }
+          swrPlanText();
+        }).catch(() => {});
+      }
+      if ($("sec-swr").open) swrPlanText();
+    }
+    async function swrImage() {
+      /* Image ANONYME à partager : graphique, nom de la mesure, date, puissance, mode ; logo et www.rf-diy.com. */
+      if (!swrResult) return null;
+      if (!swrName) swrName = (window.prompt("Nom de la mesure (légende de l'image) :", "") || "").trim();
+      const W = 1200, H = 760, cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = sw.COLORS.background; ctx.fillRect(0, 0, W, H);
+      const legend = sw.legendLines(swrResult, swrName, web.modeLabel, new Date(swrResult.at ? swrResult.at * 1000 : Date.now()).toLocaleString());
+      ctx.fillStyle = sw.COLORS.title; ctx.font = "bold 34px sans-serif"; ctx.fillText(legend[0], 40, 56);
+      drawSwrChart(ctx, 30, 80, W - 60, 520, swrResult.points || [], 2);
+      ctx.fillStyle = sw.COLORS.text; ctx.font = "22px sans-serif";
+      if (legend[1]) ctx.fillText(legend[1], 40, 650);
+      const logo = await new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = "logo-96.png"; });
+      if (logo) ctx.drawImage(logo, 40, 676, 64, 64);
+      ctx.fillStyle = sw.COLORS.accent; ctx.font = "bold 24px sans-serif"; ctx.fillText("www.rf-diy.com", 118, 718);
+      return await new Promise((resolve) => cv.toBlob(resolve, "image/png"));
+    }
+    const swrFileName = () => "tos-" + (swrName || "mesure").replace(/[^\w.-]+/g, "_").slice(0, 40) + ".png";
+    $("swr-use-band").addEventListener("change", swrPlanText);
+    $("swr-use-center").addEventListener("change", swrPlanText);
+    for (const id of ["swr-center", "swr-width", "swr-points", "swr-power"]) $(id).addEventListener("input", swrPlanText);
+    $("sec-swr").addEventListener("toggle", () => {
+      if ($("sec-swr").open) { swrPlanText(); if (swrResult) paintSwrChart(swrResult.points); }
+      else if (swrResult && swrDialogShownFor !== swrResult) { swrDialogShownFor = swrResult; showSwrRestored(swrResult); }   // en quittant la mesure
+    });
+    $("swr-start").addEventListener("click", () => {
+      const p = swrPlanText();
+      if (!p) return;
+      if (!p.plan.amateurOnly && !window.confirm("Cette plage sort des bandes radioamateur : tu vas émettre hors de ces bandes, sous ta seule responsabilité. Continuer ?")) return;
+      swrName = ""; swrResult = null; $("swr-export").hidden = true; $("swr-summary").textContent = "";
+      swrRunning = true; $("swr-start").disabled = true;
+      client.swrStart(p.range.lowHz, p.range.highHz, p.points, Number($("swr-power").value)).then((res) => {
+        if (!res || !res.ok) { swrRunning = false; swrPlanText(); }
+      }).catch((e) => { swrRunning = false; fail(e); });
+    });
+    $("swr-cancel").addEventListener("click", () => client.swrCancel().catch(fail));
+    $("swr-dialog-close").addEventListener("click", () => { $("swr-dialog").hidden = true; });
+    $("swr-restored-open").addEventListener("click", () => { if (swrResult) showSwrRestored(swrResult); });
+    $("swr-save").addEventListener("click", async () => {
+      try {
+        const blob = await swrImage();
+        if (!blob) return;
+        if (window.showSaveFilePicker) {                                               // Chrome, Edge : choix du dossier et du nom
+          const handle = await window.showSaveFilePicker({ suggestedName: swrFileName(), types: [{ description: "Image PNG", accept: { "image/png": [".png"] } }] });
+          const out = await handle.createWritable(); await out.write(blob); await out.close();
+        } else {
+          const link = el("a", ""); link.href = URL.createObjectURL(blob); link.download = swrFileName(); link.click();
+          window.setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+        }
+        ui.log("Image de la mesure enregistrée.", "");
+      } catch (e) { if (!(e && e.name === "AbortError")) fail(e); }
+    });
+    $("swr-share").addEventListener("click", async () => {
+      try {
+        const blob = await swrImage();
+        if (blob) await navigator.share({ files: [new File([blob], swrFileName(), { type: "image/png" })], title: swrName || "Mesure de TOS" });
+      } catch (e) { if (!(e && e.name === "AbortError")) fail(e); }
+    });
+    $("swr-copy").addEventListener("click", async () => {
+      try {
+        const blob = await swrImage();
+        if (blob) { await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]); ui.log("Image copiée.", ""); }
+      } catch (e) { fail(e); }
+    });
+    try {                                                                              // boutons selon ce que sait le navigateur
+      const probe = typeof File !== "undefined" ? new File([""], "x.png", { type: "image/png" }) : null;
+      $("swr-share").hidden = !(probe && navigator.canShare && navigator.canShare({ files: [probe] }));
+      $("swr-copy").hidden = !(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem);
+    } catch (e) { /* navigateur sans partage ni presse-papiers d'images */ }
+
     // ---- santé de la machine de la station (state.host) et synthèse du matériel (host_info), opérateurs seulement
     function paintHost(v) {
       const h = v.connected ? v.host : null;
@@ -1376,6 +1575,9 @@
         const li = el("li", level || "", new Date().toLocaleTimeString() + "  " + text);
         logList.insertBefore(li, logList.firstChild);
         while (logList.children.length > 50) logList.removeChild(logList.lastChild);
+      },
+      swr(msg) {
+        onSwr(msg);
       },
       spectrum(frame) {
         hfCalibrate(frame);
@@ -1559,6 +1761,7 @@
         paintHost(v);
         paintMini(v);
         voiceProfilesSync();
+        paintSwr(v);
       },
     };
 

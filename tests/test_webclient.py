@@ -285,5 +285,9 @@ def test_swr_calculations_shared_with_the_station_and_the_app():
     node = shutil.which("node")
     if not node:
         return                                                                          # Node absent : test ignoré
+    html = (ROOT / "trxstation" / "gateway" / "api" / "static" / "index.html").read_text(encoding="utf-8")
+    assert html.index('src="swr.js"') < html.index('src="ui.js"')
+    server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
+    assert '"/swr.js": ("swr.js", "text/javascript")' in server and '"/logo-96.png"' in server
     done = subprocess.run([node, str(ROOT / "tests" / "js" / "swr_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=60)
     assert done.returncode == 0, done.stdout + done.stderr
