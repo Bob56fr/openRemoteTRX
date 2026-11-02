@@ -172,9 +172,17 @@ la mesure avec un modèle de poste (numéro Hamlib absent de `swr.json`), la sta
   pleine marquée « > 5 ») ; lignes horizontales à 1,2 1,3 1,4 1,5 1,8 et 2 ; fréquences en abscisse ; meilleur point
   mis en avant ; barres grises pour « hors bande », hachurées pour « puissance réduite par le poste ».
 - Export image (PNG) ANONYME (décision du 2026-11-02) : nom de la mesure demandé à l'opérateur, en légende sous le
-  graphique, avec la date, la puissance et le mode ; PAS d'indicatif ni de nom de station ; en pied, le petit logo et
-  le lien « www.rf-diy.com ». Logo : l'icône de l'application (`docs/play-store/icone-512.png`) en attendant un logo
-  du site fourni par l'utilisateur. Partage par le menu du téléphone (application) ou téléchargement (page).
+  graphique, avec la date, la puissance et le mode ; PAS d'indicatif ni de nom de station ; en pied, le petit logo
+  OpenRemoteTRX (fourni par l'utilisateur le 2026-11-02 : `docs/marque/logo-rond.png`, réduit en
+  `static/logo-96.png` pour la page et `res/drawable-nodpi/logo_openremotetrx.png` pour l'application) et le lien
+  « www.rf-diy.com ».
+- Bouton **« Partager »** (demande du 2026-11-02) :
+  - application : feuille de partage d'Android (`Intent.ACTION_SEND`, image PNG par un FileProvider) : WhatsApp,
+    Signal, courriel, réseaux sociaux… au choix de l'opérateur ; aussi « Enregistrer dans Images » ;
+  - page (Windows, Debian) : « Enregistrer l'image… » ouvre le sélecteur de DOSSIER et de nom du système quand le
+    navigateur le permet (`showSaveFilePicker`, Chrome et Edge), sinon téléchargement classique ; « Partager » par
+    `navigator.share` quand le navigateur sait partager un fichier (téléphone, Edge sous Windows), sinon caché ;
+    « Copier l'image » dans le presse-papiers quand c'est possible.
 - Fenêtre « État du poste remis » à la fin ET en quittant la page de la mesure : fréquence, mode, puissance, coupleur,
   décalages, avec les écarts en rouge (« coupleur : non remis, à rallumer à la main »).
 
