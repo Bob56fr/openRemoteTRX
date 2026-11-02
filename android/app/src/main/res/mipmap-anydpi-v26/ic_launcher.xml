@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Icône adaptative de l'application (globe et pylône, fournie par l'utilisateur le 2026-11-02, docs/marque/icone-application.png) :
+     fond bleu nuit, dessin dans la zone sûre ; le lanceur d'Android applique sa forme (rond, carré arrondi...). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

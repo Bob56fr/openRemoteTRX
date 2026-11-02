@@ -6,7 +6,7 @@
     <!-- allowBackup="false" : la liste des stations et les mots de passe chiffrés restent sur ce téléphone. -->
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="openRemoteTRX"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
