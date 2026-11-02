@@ -65,10 +65,13 @@ def test_details_are_written_sections_without_ports(tmp_path):
     from trxstation.setup_wizard import dummy_config
     cfg = dummy_config()
     cfg.rig.port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_IC-7300_13003336-if00"
-    sections = h.host_details(h.HostMonitor(throttled=lambda: None), cfg, None, "4.7.2")
+    sections = h.host_details(h.HostMonitor(throttled=lambda: None), cfg, None, "4.7.2", {"VD_METER": 14.368, "SQL": 0.0})
     titles = [s["title"] for s in sections]
     assert titles == ["Machine", "Charge en ce moment", "Station", "Son"]
     rows = {label: value for s in sections for label, value in s["rows"]}
-    assert rows["Hamlib"] == "4.7.2" and rows["TRX distant"] and rows["Poste"].startswith("modèle Hamlib")
+    assert rows["Hamlib"] == "4.7.2" and rows["TRX distant"]
+    assert rows["Poste"] == f"modèle Hamlib {cfg.rig.model}\nalimentation 14,4 V"                 # modèle, puis tension
+    assert h.rig_vitals_text({"VD_METER": 13.8, "TEMP_METER": 41.6}) == "alimentation 13,8 V, température 42 °C"
+    assert h.rig_vitals_text({"TEMP_METER": True}) == "" and h.rig_vitals_text(None) == ""
     assert all(isinstance(v, str) for v in rows.values())
     assert "13003336" not in str(sections)                               # numéro de série de l'interface : jamais

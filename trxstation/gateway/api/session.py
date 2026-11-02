@@ -471,7 +471,7 @@ class ControlSession:
                 if _hamlib_version is None:              # `rigctld --version` : une fois, hors de la boucle (3 s au plus)
                     _hamlib_version = await asyncio.to_thread(hamlib_version, self.ctrl.config.tools.hamlib_dir)
                 self._result(cmd.id, True, sections=host_details(shared_monitor(), self.ctrl.config, self.capabilities,
-                                                                 _hamlib_version))
+                                                                 _hamlib_version, self.link.state.levels))
             elif cmd.name == "listeners_reopen":
                 guard = getattr(self.access, "guard", None)
                 refusal = guard.reopen() if guard is not None else ""

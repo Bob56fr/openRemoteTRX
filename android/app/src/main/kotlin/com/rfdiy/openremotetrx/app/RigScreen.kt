@@ -203,6 +203,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         ) {
             // En-tête : station, liaison, sourdine
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Santé de la machine de la station (opérateurs) : petit bargraph à gauche du nom, toucher = synthèse du matériel
+                rig.host?.let { h ->
+                    HostBar(h, onClick = { hostDialog = true; RigHub.hostInfo() })
+                    Spacer(Modifier.width(10.dp))
+                }
                 Column(Modifier.weight(1f)) {
                     Text(ui.station?.name ?: "Station", style = MaterialTheme.typography.titleLarge)
                     Text(
@@ -218,11 +223,6 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 rig.presence?.takeIf { it.label.isNotEmpty() }?.let { p ->             // 🎧 N : visiteurs connectés
                     CompactChip(p.label, onClick = { presenceDialog = true })
                     Spacer(Modifier.width(6.dp))
-                }
-                // Santé de la machine de la station (opérateurs) : petit bargraph, toucher = synthèse du matériel
-                rig.host?.let { h ->
-                    HostBar(h, onClick = { hostDialog = true; RigHub.hostInfo() })
-                    Spacer(Modifier.width(10.dp))
                 }
                 Text("Muet", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.width(6.dp))
@@ -273,12 +273,14 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         )
                         // Accord à droite de la fréquence (étape 97, place gagnée pour le petit waterfall) : − et + d'un pas,
                         // pas dessous (toucher = pas suivant)
-                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                CompactChip("−", onClick = { tune(-1) }, enabled = canSet)
-                                CompactChip("+", onClick = { tune(1) }, enabled = canSet)
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TuneKey("−", width = 54.dp, height = 40.dp, fontSize = 24.sp, enabled = canSet) { tune(-1) }
+                                TuneKey("+", width = 54.dp, height = 40.dp, fontSize = 24.sp, enabled = canSet) { tune(1) }
                             }
-                            CompactChip(stepLabel(step), onClick = { stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size })
+                            TuneKey(stepLabel(step), width = 114.dp, height = 32.dp, fontSize = 15.sp) {
+                                stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size
+                            }
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -286,19 +288,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
                         Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleMedium)
                         if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
-                        // Alimentation (et température si le poste la donne), à droite ; orange / rouge aux seuils de la station
-                        val vitals = Controls.vitals(rig.state)
-                        if (vitals.isNotEmpty() && radio?.connected == true) {
-                            Spacer(Modifier.weight(1f))
-                            Text(vitals, style = MaterialTheme.typography.labelLarge,
-                                color = when (ptt?.tempAlert) { "hot" -> TX_RED; "warn" -> Page.ALERTE; else -> Page.TEXTE_2 },
-                                fontWeight = if (ptt?.tempAlert.isNullOrEmpty()) FontWeight.Normal else FontWeight.Bold)
-                        }
                     }
                     // Voyants (comme sur un poste) : vert = actif, gris = éteint
                     val lights = Indicators.of(hello, rig.state)
-                    val sel = rig.selcall
-                    if (lights.isNotEmpty() || sel != null) {
+                    if (lights.isNotEmpty()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             for (light in lights) {
                                 Text(
@@ -309,17 +302,6 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                                         light.on -> SQL_OPEN
                                         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                     },
-                                )
-                            }
-                            // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » ; toucher = panneau
-                            if (sel != null) {
-                                Spacer(Modifier.weight(1f))
-                                Text(
-                                    sel.indicator ?: "SEL", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold,
-                                    color = when { sel.open -> Page.FOND; sel.disabled -> Page.TEXTE_2; else -> Page.ALERTE },
-                                    modifier = Modifier.background(if (sel.open) SQL_OPEN else Color.Transparent, RoundedCornerShape(6.dp))
-                                        .border(1.dp, if (sel.disabled) Page.BORD else if (sel.open) SQL_OPEN else Page.ALERTE, RoundedCornerShape(6.dp))
-                                        .clickable { selcallDialog = true }.padding(horizontal = 6.dp, vertical = 2.dp),
                                 )
                             }
                         }
@@ -607,6 +589,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
                     if (HfScope.configured(hello)) {
                         CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf)
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » (allumé) ; toucher = panneau ; même style que EQ
+                    rig.selcall?.let { sel ->
+                        CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open)
                         Spacer(Modifier.width(6.dp))
                     }
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Égaliseur »)
@@ -957,6 +944,23 @@ private fun MiniDisplay(rig: RigState, shownHz: Long?, mineTx: Boolean) {
                 if (mineTx) "TX" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else if (ptt.transmitting) "TX autre" else "RX",
                 fontWeight = FontWeight.Bold, color = if (ptt.transmitting) TX_RED else Page.SUCCES,
             )
+        }
+    }
+}
+
+/** Touche d'accord de l'afficheur (− / + / pas) : plus grande qu'une puce, même dessin. */
+@Composable
+private fun TuneKey(label: String, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp,
+                    fontSize: androidx.compose.ui.unit.TextUnit, enabled: Boolean = true, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        shape = RoundedCornerShape(8.dp), color = Color.Transparent,
+        border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.7f)),
+        modifier = Modifier.size(width = width, height = height).clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(label, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1,
+                color = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f))
         }
     }
 }

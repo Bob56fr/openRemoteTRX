@@ -292,8 +292,6 @@ audio { display: none; }
 .safe-body .stop { min-height: 3.2rem; }
 /* Voyants de l'afficheur (ATT/P.AMP, RIT, ΔTX, SPLIT, NOTCH, NB, NR) : vert allumé, gris éteint */
 .voyants { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .8rem; font-weight: 700; letter-spacing: .03em; min-height: 1rem; }
-.voyants .vitals { margin-left: auto; font-weight: 400; color: var(--texte-secondaire); white-space: nowrap; }
-.voyants .vitals.warn { color: var(--alerte); font-weight: 700; } .voyants .vitals.hot { color: var(--erreur); font-weight: 700; }
 .voyant { color: var(--texte-secondaire); opacity: .55; }
 .voyant.on { color: var(--succes); opacity: 1; }
 /* « Tout afficher » du Cluster DX : 30 derniers spots */
@@ -343,7 +341,7 @@ audio { display: none; }
 .host-sections { max-height: 60vh; overflow-y: auto; margin: .4rem 0; }
 .host-sections h4 { margin: .6rem 0 .2rem; font-size: .9rem; color: var(--accent); }
 .host-sections table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-.host-sections td { padding: .15rem .3rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.host-sections td { padding: .15rem .3rem; border-bottom: 1px solid var(--ligne); vertical-align: top; white-space: pre-line; }
 .host-sections td:first-child { color: var(--texte-secondaire); white-space: nowrap; }
 .presence-list { list-style: none; margin: .4rem 0; padding: 0; max-height: 50vh; overflow-y: auto; }
 .presence-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--ligne); }

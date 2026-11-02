@@ -328,8 +328,24 @@ def process_memory() -> int | None:
     return int(match.group(1)) * 1024 if match else None
 
 
-def host_details(monitor: HostMonitor, cfg=None, capabilities=None, hamlib_version: str = "") -> list[dict]:
-    """Synthèse du matériel de la station : [{title, rows: [[libellé, valeur], ...]}], déjà rédigée."""
+def rig_vitals_text(levels: dict | None) -> str:
+    """« alimentation 14,4 V, température 42 °C » d'après les niveaux lus par la passerelle ; la température seulement
+    si le poste la donne (pas l'IC-7300MK2) ; "" si rien."""
+    levels = levels if isinstance(levels, dict) else {}
+
+    def number(key: str) -> float | None:
+        value = levels.get(key)
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+    vd, temp = number("VD_METER"), number("TEMP_METER")
+    parts = ([f"alimentation {vd:.1f} V".replace(".", ",")] if vd is not None else []) + \
+            ([f"température {round(temp)} °C"] if temp is not None else [])
+    return ", ".join(parts)
+
+
+def host_details(monitor: HostMonitor, cfg=None, capabilities=None, hamlib_version: str = "",
+                 rig_levels: dict | None = None) -> list[dict]:
+    """Synthèse du matériel de la station : [{title, rows: [[libellé, valeur], ...]}], déjà rédigée. Une valeur peut
+    tenir sur plusieurs lignes (« \\n ») : modèle du poste puis tension et température (`rig_levels`)."""
     summary = monitor.summary()
     mem, used, up, temp = memory(), disk(monitor.disk_path), uptime_s(), read_cpu_temp()
     machine = [["Système", os_name()], ["Machine", machine_model()], ["Processeur", cpu_model()]]
@@ -357,10 +373,13 @@ def host_details(monitor: HostMonitor, cfg=None, capabilities=None, hamlib_versi
     station = [["TRX distant", __version__], ["Python", platform.python_version()]]
     if hamlib_version:
         station.append(["Hamlib", hamlib_version])
+    vitals = rig_vitals_text(rig_levels)
     if capabilities is not None and getattr(capabilities, "model_name", ""):
-        station.append(["Poste", f"{capabilities.manufacturer} {capabilities.model_name} (Hamlib {capabilities.model})".strip()])
-    elif cfg is not None:
-        station.append(["Poste", f"modèle Hamlib {cfg.rig.model}"])
+        rig = f"{capabilities.manufacturer} {capabilities.model_name} (Hamlib {capabilities.model})".strip()
+    else:
+        rig = f"modèle Hamlib {cfg.rig.model}" if cfg is not None else ""
+    if rig:
+        station.append(["Poste", rig + (f"\n{vitals}" if vitals else "")])
     if cfg is not None:
         station.append(["Commande du PTT", {"RIG": "CAT", "NONE": "aucune"}.get(cfg.rig.ptt_type, cfg.rig.ptt_type)])
         station.append(["Spectre HF", "second port du poste" if cfg.spectrum.enabled else "non configuré"])

@@ -574,18 +574,12 @@
     let voyantsKey = "";
     function paintVoyants(v) {
       const list = v.connected ? v.indicators || [] : [];
-      const vitals = v.connected && v.vitals ? v.vitals : { text: "", level: "" };
-      const key = list.map((i) => i.label + (i.on ? "1" : "0")).join("|") + "|" + vitals.text + vitals.level;
+      const key = list.map((i) => i.label + (i.on ? "1" : "0")).join("|");
       if (key === voyantsKey) return;
       voyantsKey = key;
       const box = $("voyants");
       box.textContent = "";
       for (const item of list) box.appendChild(el("span", "voyant" + (item.on ? " on" : "") + (item.alert ? " alert" : ""), item.label));
-      if (vitals.text) {                                                          // alimentation (et température) du poste, à droite
-        const span = el("span", "vitals" + (vitals.level ? " " + vitals.level : ""), vitals.text);
-        span.title = "Tension d'alimentation" + (vitals.text.includes("°C") ? " et température" : "") + " du poste (lues par Hamlib)";
-        box.appendChild(span);
-      }
     }
     function paintModes(v) {                                                          // mode actuel allumé ; verrouillés pendant l'émission
       const current = v.rig ? v.rig.mode : null;

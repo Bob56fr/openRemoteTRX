@@ -64,14 +64,6 @@ class ControlsTest {
     }
 
     @Test
-    fun `alimentation et temperature dans l'afficheur, comme la page`() {
-        assertEquals("13.8 V", Controls.vitals(state("""{"VD_METER":13.84}""")))           // IC-7300MK2 : pas de température
-        assertEquals("13.8 V · 51 °C", Controls.vitals(state("""{"VD_METER":13.8,"TEMP_METER":51.4}""")))
-        assertEquals("", Controls.vitals(state("{}")))
-        assertEquals("", Controls.vitals(null))
-    }
-
-    @Test
     fun `memes paliers de puissance et memes cycles que la page`() {
         val page = File(System.getProperty("trx.repo") ?: "../..", "trxstation/gateway/api/static/client.js").readText()
         val power = Regex("const POWER_STEPS = \\[([\\d., ]+)\\]").find(page)!!.groupValues[1].split(",").map { it.trim().toDouble() }

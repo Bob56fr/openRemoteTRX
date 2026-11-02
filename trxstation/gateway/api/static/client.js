@@ -454,17 +454,6 @@
              title: "Machine de la station : " + (parts.join(", ") || "mesures indisponibles") + ". Touche : synthèse du matériel" };
   }
 
-  function vitalsView(lv, ptt) {
-    /* Alimentation et température du poste au bout des voyants (étape 97) : « 13.8 V · 42 °C ». La température
-       n'apparaît que si le poste la donne (pas l'IC-7300MK2) ; orange / rouge selon les seuils de la station. */
-    lv = lv || {};
-    const parts = [];
-    if (Number.isFinite(lv.VD_METER)) parts.push(Number(lv.VD_METER).toFixed(1) + " V");
-    if (Number.isFinite(lv.TEMP_METER)) parts.push(Math.round(lv.TEMP_METER) + " °C");
-    const level = ptt && (ptt.temp_alert === "warn" || ptt.temp_alert === "hot") ? ptt.temp_alert : "";
-    return { text: parts.join(" · "), level: level };
-  }
-
   function favoriteBands(saved) {
     /* Bandes affichées (réglage du navigateur, « 11,20,40 ») dans l'ordre du plan ; aucune valide = toutes. */
     const keys = String(saved || "").split(",").map((k) => k.trim()).filter(Boolean);
@@ -1363,7 +1352,7 @@
         powerText: power === null ? "—" : Math.round(power * 100) + " %",
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
         clarifier: clarifierView(fn, rig, this._caps()),
-        indicators: indicatorsView(fn, lv, rig, this._caps()), vitals: vitalsView(lv, p),
+        indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
@@ -1848,7 +1837,7 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, vitalsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
+                indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
                 LISTENER_COMMANDS, presenceView, durationText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

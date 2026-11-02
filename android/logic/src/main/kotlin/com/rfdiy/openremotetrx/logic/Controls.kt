@@ -146,18 +146,6 @@ object Controls {
     }
 
     /** Indicateurs d'émission : Po (part de la puissance maximale), SWR, ALC ; puis COMP, Vd, température s'ils existent. */
-    /**
-     * Alimentation et température du poste dans l'afficheur (étape 97, page : vitalsView) : « 13.8 V · 42 °C » ;
-     * température seulement si le poste la donne (pas l'IC-7300MK2) ; "" si rien n'est publié.
-     */
-    fun vitals(state: State?): String {
-        val lv = state?.rig?.levels ?: return ""
-        return listOfNotNull(
-            lv["VD_METER"]?.let { "%.1f V".format(Locale.ROOT, it) },
-            lv["TEMP_METER"]?.let { "${it.roundToInt()} °C" },
-        ).joinToString(" · ")
-    }
-
     fun meters(state: State?): List<Meter> {
         val lv = state?.rig?.levels ?: return emptyList()
         val out = mutableListOf<Meter>()
