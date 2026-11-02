@@ -24,7 +24,7 @@ retour RX forcé, intervention manuelle requise (`trx-supervisor --clear-safe-mo
 
 rigctld INJOIGNABLE PENDANT UNE ÉMISSION : jugé après RIG_LOST_TX_S d'échecs continus (la sonde réessaie déjà une
 fois chaque requête). rigctld 5.0 referme parfois une connexion : une seule lecture ratée relançait rigctld, et trois en
-deux minutes menaient au mode sûr (étape 103). Une fois jugé : « T 0 » tenté à chaque passage, puis l'échelle.
+deux minutes menaient au mode sûr (étape 104). Une fois jugé : « T 0 » tenté à chaque passage, puis l'échelle.
 
 BATTEMENT (`alive_every_h`, 0 = aucun) : message « Station en service » en priorité minimale (sans sonnerie), pour
 distinguer une station vivante derrière un accès coupé d'une station éteinte.

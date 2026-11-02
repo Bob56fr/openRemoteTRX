@@ -37,7 +37,7 @@ class RigctlProbe:
         self.host, self.port, self.timeout, self.sleep = host, port, timeout, sleep
 
     def _query(self, command: str) -> dict[str, str]:
-        """Une requête ; une connexion refusée ou coupée (rigctld en referme parfois une, étape 103) est
+        """Une requête ; une connexion refusée ou coupée (rigctld en referme parfois une, étape 104) est
         réessayée UNE fois. Jamais un délai dépassé (rigctld bloqué : la boucle ne doit pas s'allonger)."""
         try:
             return self._query_once(command)

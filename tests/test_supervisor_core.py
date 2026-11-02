@@ -415,7 +415,7 @@ def test_rigctld_lost_during_tx_is_cut_then_restarted_after_one_second(tmp_path)
 
 
 def test_one_failed_read_during_tx_is_not_a_fault(tmp_path):
-    """Étape 103 : rigctld referme parfois une connexion ; une lecture ratée ne relance plus rien."""
+    """Étape 104 : rigctld referme parfois une connexion ; une lecture ratée ne relance plus rien."""
     w = W(tmp_path)
     w.gateway_transmitting()
     w.run(1)
