@@ -6,6 +6,7 @@ import asyncio
 import os
 import signal
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -98,7 +99,66 @@ def test_probe_reports_unreachable_rigctld():
     assert RigctlProbe("127.0.0.1", 1, timeout=0.5).force_rx() is False
 
 
+class FlakyRigctld:
+    """rigctld minimal : coupe net (RST) les `drops` premières connexions, répond ensuite (« t », « f », « T 0 »)."""
+
+    def __init__(self, drops):
+        self.drops, self.connections = drops, 0
+        self.srv = socket.create_server(("127.0.0.1", 0))
+        self.port = self.srv.getsockname()[1]
+        threading.Thread(target=self._serve, daemon=True).start()
+
+    def _serve(self):
+        while True:
+            try:
+                conn, _ = self.srv.accept()
+            except OSError:
+                return
+            self.connections += 1
+            with conn:
+                if self.connections <= self.drops:
+                    conn.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                    continue                      # fermeture avec RST : « Connection reset by peer »
+                command = conn.recv(100).decode().strip()
+                answers = {"+t": "get_ptt:\nPTT: 0\nRPRT 0\n",
+                           "+f": "get_freq:\nFrequency: 14200000\nRPRT 0\n"}
+                conn.sendall(answers.get(command, "RPRT 0\n").encode())
+
+    def close(self):
+        self.srv.close()
+
+
+def test_probe_retries_once_a_connection_reset_by_rigctld():
+    srv = FlakyRigctld(drops=1)
+    try:
+        r = RigctlProbe("127.0.0.1", srv.port, timeout=1.0, sleep=lambda _: None).read()
+        assert r.ok and r.ptt is False and r.frequency_hz == 14_200_000
+        assert srv.connections == 3                # 1 coupée + « t » + « f »
+    finally:
+        srv.close()
+
+
+def test_probe_reports_rigctld_down_when_it_keeps_resetting():
+    srv = FlakyRigctld(drops=100)
+    try:
+        probe = RigctlProbe("127.0.0.1", srv.port, timeout=1.0, sleep=lambda _: None)
+        r = probe.read()
+        assert not r.ok and r.ptt is None          # injoignable, jamais « PTT illisible » d'un rigctld joignable
+        assert srv.connections == 2                # un seul nouvel essai
+        assert probe.force_rx() is False
+    finally:
+        srv.close()
+
+
 # --------------------------------------------------------------------------- alertes
+
+def test_notifier_quiet_message_has_minimum_priority():
+    sent = []
+    n = Notifier("https://ntfy.sh/x", post=lambda *a: sent.append(a), threaded=False)
+    assert n.send("Station en service", "tout va bien", quiet=True)
+    assert n.send("Problème : x", "y")
+    assert [s[3] for s in sent] == ["min", ""]
+
 
 def test_notifier_rate_limit_and_scheme_check():
     sent, now = [], [0.0]
@@ -298,7 +358,7 @@ def test_frozen_gateway_during_real_transmission_is_cut_by_supervisor(tmp_path):
             def restart_rigctld(self): calls.append("restart_rigctld")
             def reset_usb(self): calls.append("reset_usb")
             def reboot(self): calls.append("reboot")
-            def notify(self, title, message): pass
+            def notify(self, title, message, quiet=False): pass
 
         sup = Supervisor(cfg, read_status=lambda: read_status(status_path), probe_rig=probe.read,
                          actions=Actions(), store=StateStore(tmp_path / "state"), read_temp=lambda: None)

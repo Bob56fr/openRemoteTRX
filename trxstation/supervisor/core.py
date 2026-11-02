@@ -22,6 +22,13 @@ Passerelle muette pendant une émission : coupée si son dernier état connu ét
 redémarrer le Pi. Redémarrages limités par heure ; au-delà, MODE SÛR : passerelle arrêtée,
 retour RX forcé, intervention manuelle requise (`trx-supervisor --clear-safe-mode`).
 
+rigctld INJOIGNABLE PENDANT UNE ÉMISSION : jugé après RIG_LOST_TX_S d'échecs continus (la sonde réessaie déjà une
+fois chaque requête). rigctld 5.0 referme parfois une connexion : une seule lecture ratée relançait rigctld, et trois en
+deux minutes menaient au mode sûr (étape 103). Une fois jugé : « T 0 » tenté à chaque passage, puis l'échelle.
+
+BATTEMENT (`alive_every_h`, 0 = aucun) : message « Station en service » en priorité minimale (sans sonnerie), pour
+distinguer une station vivante derrière un accès coupé d'une station éteinte.
+
 Poste ABSENT (port du poste disparu : éteint ou débranché) sans émission connue : aucune reprise n'y peut rien
 (on ne réinitialise pas un périphérique absent) et rien ne peut émettre. Alerte « rig_absent » seulement, aucune
 action, jamais de mode sûr ; au retour du port, la reprise normale relance rigctld. Si la dernière émission connue
@@ -47,6 +54,7 @@ log = logging.getLogger(__name__)
 
 LADDER = ("restart_gateway", "restart_rigctld", "reset_usb", "reboot")
 STUCK_S = 5.0              # émission non expliquée qui RÉSISTE à « T 0 » depuis ce délai : alors seulement, échelle de reprise
+RIG_LOST_TX_S = 1.0        # rigctld injoignable depuis ce délai pendant une émission : panne (sinon connexion ratée)
 RENOTIFY_S = 600.0
 SAFE_MODE_STOP_EVERY_S = 30.0
 ACTIVE_STATES = ("KEYING", "TX", "UNKEYING")
@@ -60,7 +68,7 @@ class Actions(Protocol):
     def restart_rigctld(self) -> None: ...
     def reset_usb(self) -> None: ...
     def reboot(self) -> None: ...
-    def notify(self, title: str, message: str) -> None: ...
+    def notify(self, title: str, message: str, quiet: bool = False) -> None: ...
 
 
 @dataclass(frozen=True)
@@ -103,6 +111,7 @@ class Supervisor:
         self._notified: dict[str, float] = {}
         self._had_problems = False
         self._last_stop_gateway = -1e9
+        self._next_alive_at = self._started + self.sup.startup_grace_s   # premier battement après le délai de grâce
 
     @property
     def tx_active(self) -> bool:
@@ -135,14 +144,17 @@ class Supervisor:
 
         safe_reason = self.store.safe_mode()
         if safe_reason:
+            self._alive(now, rig, gateway_fresh, safe_reason, ["safe_mode"])
             return self._safe_mode_step(now, rig_tx, gateway_fresh, safe_reason, report)
 
         problems = self._collect(now, rig, rig_tx, gateway_fresh)
         report.problems = [p.name for p in problems]
-        if rig_tx and any(p.tx for p in problems):
+        lost_tx = not rig.ok and self._tx_since is not None      # émission connue, rigctld injoignable
+        if (rig_tx or lost_tx) and any(p.tx for p in problems):
             self._act(report, "force_rx", self.actions.force_rx)   # à chaque passage tant que le poste émet
         self._escalate(now, problems, report)
         self._notify(now, problems)
+        self._alive(now, rig, gateway_fresh, "", report.problems)
         return report
 
     # ------------------------------------------------------------------ détection
@@ -194,9 +206,11 @@ class Supervisor:
         if not rig.ok:
             if self._rig_fail_since is None:
                 self._rig_fail_since = now
+            lost = now - self._rig_fail_since
             if self._tx_since is not None:   # dernier état connu : émission, impossible de couper
-                problems.append(Problem("rigctld_down_during_tx", rig.error, 1, True))
-            elif now - self._rig_fail_since >= s.rigctld_fail_s and not in_grace:
+                if lost >= RIG_LOST_TX_S:    # avant : une connexion ratée, pas une panne (aucune alerte)
+                    problems.append(Problem("rigctld_down_during_tx", f"{rig.error} (depuis {lost:.1f} s)", 1, True))
+            elif lost >= s.rigctld_fail_s and not in_grace:
                 problems.append(Problem("rigctld_down", rig.error, 1, False))
         else:
             self._rig_fail_since = None
@@ -310,11 +324,34 @@ class Supervisor:
 
     # ------------------------------------------------------------------ alertes
 
-    def _notify_text(self, title: str, message: str) -> None:
+    def _notify_text(self, title: str, message: str, quiet: bool = False) -> None:
         try:
-            self.actions.notify(title, message)
+            if quiet:
+                self.actions.notify(title, message, quiet=True)
+            else:
+                self.actions.notify(title, message)
         except Exception:
             log.exception("alerte en erreur")
+
+    def _alive(self, now: float, rig: RigProbe, gateway_fresh: bool, safe_reason: str, problems: list[str]) -> None:
+        every_h = self.sup.alive_every_h
+        if every_h <= 0 or now < self._next_alive_at:
+            return
+        self._next_alive_at = now + every_h * 3600
+        if not rig.ok:
+            radio = "rigctld injoignable"
+        else:
+            radio = {True: "en émission", False: "en réception"}.get(rig.ptt, "PTT illisible")
+            if rig.frequency_hz:
+                radio += f", {rig.frequency_hz / 1e6:.3f} MHz"
+        lines = [
+            f"passerelle : {'en marche' if gateway_fresh else 'muette ou arrêtée'}",
+            f"poste : {radio}",
+            f"mode sûr : {safe_reason or 'non'}",
+            f"problèmes : {', '.join(problems) if problems else 'aucun'}",
+            f"prochain message dans {every_h:g} h",
+        ]
+        self._notify_text("Station en service", "\n".join(lines), quiet=True)
 
     def _notify(self, now: float, problems: list[Problem]) -> None:
         names = {p.name for p in problems}

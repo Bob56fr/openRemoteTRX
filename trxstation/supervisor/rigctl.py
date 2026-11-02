@@ -8,11 +8,19 @@ reste capable de couper l'émission. Il ne sait faire qu'une chose d'actif : « 
 from __future__ import annotations
 
 import socket
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
+
+RETRY_PAUSE_S = 0.05     # avant le second essai d'une connexion refusée ou coupée
 
 
 class RigctlError(Exception):
     pass
+
+
+class _Closed(ConnectionError):
+    """Connexion fermée par rigctld avant la réponse : rigctld injoignable, pas « PTT illisible »."""
 
 
 @dataclass
@@ -24,10 +32,20 @@ class RigProbe:
 
 
 class RigctlProbe:
-    def __init__(self, host: str = "127.0.0.1", port: int = 4532, timeout: float = 1.0):
-        self.host, self.port, self.timeout = host, port, timeout
+    def __init__(self, host: str = "127.0.0.1", port: int = 4532, timeout: float = 1.0,
+                 sleep: Callable[[float], None] = time.sleep):
+        self.host, self.port, self.timeout, self.sleep = host, port, timeout, sleep
 
     def _query(self, command: str) -> dict[str, str]:
+        """Une requête ; une connexion refusée ou coupée (rigctld en referme parfois une, étape 103) est
+        réessayée UNE fois. Jamais un délai dépassé (rigctld bloqué : la boucle ne doit pas s'allonger)."""
+        try:
+            return self._query_once(command)
+        except ConnectionError:              # refusée, coupée (reset) ou fermée sans réponse
+            self.sleep(RETRY_PAUSE_S)
+            return self._query_once(command)
+
+    def _query_once(self, command: str) -> dict[str, str]:
         with socket.create_connection((self.host, self.port), self.timeout) as sock:
             sock.settimeout(self.timeout)
             sock.sendall(f"+{command}\n".encode())
@@ -36,7 +54,7 @@ class RigctlProbe:
             while True:
                 chunk = sock.recv(4096)
                 if not chunk:
-                    raise RigctlError("connexion fermée")
+                    raise _Closed("connexion fermée")
                 buf += chunk
                 lines = buf.decode(errors="replace").splitlines()
                 if lines and lines[-1].startswith("RPRT"):

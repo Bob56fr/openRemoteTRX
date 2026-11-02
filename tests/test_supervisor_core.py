@@ -36,6 +36,7 @@ class World:
         self.boom: set[str] = set()
         self.calls: list[str] = []
         self.alerts: list[str] = []
+        self.alive: list[str] = []                # battements « Station en service » (sans sonnerie)
         self.store = StateStore(tmp_path)
         self.sup = self.make_supervisor()
 
@@ -103,8 +104,11 @@ class World:
     def reboot(self):
         self._record("reboot")
 
-    def notify(self, title, message):
-        self.alerts.append(title)
+    def notify(self, title, message, quiet=False):
+        if quiet:
+            self.alive.append(message)
+        else:
+            self.alerts.append(title)
 
 
 def W(tmp_path, **kw):
@@ -395,13 +399,58 @@ def test_rigctld_down_restarts_rigctld_not_the_gateway(tmp_path):
     assert w.calls == []
 
 
-def test_rigctld_lost_during_tx_is_restarted_immediately(tmp_path):
+def test_rigctld_lost_during_tx_is_cut_then_restarted_after_one_second(tmp_path):
     w = W(tmp_path)
     w.gateway_transmitting()
     w.run(1)
     w.rig = RigProbe(False, error="connexion refusée")
-    reports = w.run(0.25)
-    assert "rigctld_down_during_tx" in reports[0].problems and w.calls == ["restart_rigctld"]
+    reports = w.run(1.0)                          # 4 lectures ratées (0,75 s depuis la première) : pas encore une panne
+    assert w.calls == [] and w.alerts == [] and not any(r.problems for r in reports)
+    reports = w.run(0.25)                         # 1 s depuis la première lecture ratée
+    assert "rigctld_down_during_tx" in reports[0].problems
+    assert w.calls == ["force_rx", "restart_rigctld"]   # « T 0 » tenté d'abord, puis l'échelle
+    assert "Problème : rigctld_down_during_tx" in w.alerts
+    w.run(1)
+    assert w.calls.count("force_rx") == 5 and w.calls.count("restart_rigctld") == 1   # « T 0 » à chaque passage
+
+
+def test_one_failed_read_during_tx_is_not_a_fault(tmp_path):
+    """Étape 103 : rigctld referme parfois une connexion ; une lecture ratée ne relance plus rien."""
+    w = W(tmp_path)
+    w.gateway_transmitting()
+    w.run(1)
+    w.rig = RigProbe(False, error="ConnectionResetError(104, 'Connection reset by peer')")
+    w.run(0.5)
+    w.gateway_transmitting()                      # lecture suivante : le poste émet toujours
+    w.run(5)
+    assert w.calls == [] and w.alerts == []
+
+
+def test_repeated_short_failures_during_tx_never_lead_to_safe_mode(tmp_path):
+    """Le cas du 2026-11-02 : trois connexions ratées en deux minutes d'émissions menaient au mode sûr."""
+    w = W(tmp_path, max_reboots_per_hour=0)
+    for _ in range(6):                            # émissions de 40 s, une connexion ratée dans chacune
+        w.gateway_transmitting()
+        w.run(20)
+        w.rig = RigProbe(False, error="ConnectionResetError(104, 'Connection reset by peer')")
+        w.run(0.5)
+        w.gateway_transmitting()
+        w.run(20)
+        w.gw_state, w.gw_owner = "RX", None       # fin d'émission (toggle)
+        w.rig = RigProbe(True, False, FREQ)
+        w.run(5)
+    assert w.calls == [] and w.alerts == [] and not w.store.safe_mode()
+
+
+def test_rigctld_really_lost_during_tx_still_climbs_to_safe_mode(tmp_path):
+    w = W(tmp_path, max_reboots_per_hour=0)
+    w.gateway_transmitting()
+    w.run(1)
+    w.rig = RigProbe(False, error="connexion refusée")
+    reports = w.run(60)
+    assert w.calls[0] == "force_rx"
+    assert [c for c in w.calls if c != "force_rx"][:3] == ["restart_rigctld", "reset_usb", "stop_gateway"]
+    assert any(r.safe_mode for r in reports) and w.store.safe_mode()
 
 
 def test_startup_grace_period(tmp_path):
@@ -497,6 +546,52 @@ def test_probe_and_status_exceptions_are_contained(tmp_path):
     w.sup.probe_rig, w.sup.read_status = broken_probe, broken_status
     w.run(10)
     assert "rigctld_down" in w.sup.step().problems
+
+
+# --------------------------------------------------------------------------- battement
+
+def test_alive_message_after_grace_then_every_period(tmp_path):
+    w = W(tmp_path, alive_every_h=1.0)
+    w.run(1)
+    assert len(w.alive) == 1 and w.alerts == []
+    text = w.alive[0]
+    assert "passerelle : en marche" in text and "en réception, 14.200 MHz" in text
+    assert "mode sûr : non" in text and "problèmes : aucun" in text and "1 h" in text
+    w.run(3590, dt=5)
+    assert len(w.alive) == 1
+    w.run(15, dt=5)
+    assert len(w.alive) == 2
+
+
+def test_alive_message_waits_for_startup_grace(tmp_path):
+    w = W(tmp_path, alive_every_h=1.0)
+    w.cfg.supervisor.startup_grace_s = 30.0
+    w.sup = w.make_supervisor()
+    w.run(29)
+    assert w.alive == []
+    w.run(2)
+    assert len(w.alive) == 1
+
+
+def test_alive_message_disabled_with_zero(tmp_path):
+    w = W(tmp_path, alive_every_h=0.0)
+    w.run(7300, dt=5)
+    assert w.alive == []
+
+
+def test_alive_message_tells_safe_mode_and_rigctld_down(tmp_path):
+    w = W(tmp_path, alive_every_h=1.0)
+    w.store.set_safe_mode("essai")
+    w.rig = RigProbe(False, error="connexion refusée")
+    w.run(1)
+    assert len(w.alive) == 1
+    assert "mode sûr : essai" in w.alive[0] and "rigctld injoignable" in w.alive[0]
+
+
+def test_alive_message_never_acts(tmp_path):
+    w = W(tmp_path, alive_every_h=0.25)
+    w.run(3700, dt=5)
+    assert len(w.alive) == 5 and w.calls == []
 
 
 # --------------------------------------------------------------------------- configuration

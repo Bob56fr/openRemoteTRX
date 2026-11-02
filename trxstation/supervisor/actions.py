@@ -29,5 +29,5 @@ class SystemActions:
     def reset_usb(self) -> None: self.backend.reset_usb()
     def reboot(self) -> None: self.backend.reboot()
 
-    def notify(self, title: str, message: str) -> None:
-        self.notifier.send(title, message)
+    def notify(self, title: str, message: str, quiet: bool = False) -> None:
+        self.notifier.send(title, message, quiet=quiet)
