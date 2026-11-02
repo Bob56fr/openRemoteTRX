@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WINDOWS = ROOT / "windows"
 BOM = b"\xef\xbb\xbf"
 TOP_FILES = ("installer.cmd", "installer.ps1", "notice-windows.html", "LISEZMOI.txt")
-EXCLUDED_PARTS = {"__pycache__", ".pytest_cache"}
+EXCLUDED_PARTS = {"__pycache__", ".pytest_cache",
+                  "marque", "play-store"}                          # images de présentation (site, Play Store) : inutiles sur une station
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 
 

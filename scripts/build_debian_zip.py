@@ -49,7 +49,8 @@ SYSTEM_FILES = {                                   # dossier systeme/ du zip <- 
     "gnome-extension/status.js": "debian/gnome-extension/status.js",
     "gnome-extension/stylesheet.css": "debian/gnome-extension/stylesheet.css",
 }
-EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "node_modules"}
+EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "node_modules",
+                  "marque", "play-store"}                          # images de présentation (site, Play Store) : inutiles sur une station
 EXCLUDED_SUFFIXES = {".pyc", ".pyo", ".bak", ".wav", ".pem"}
 EXCLUDED_NAMES = {"station.toml", "secrets.toml", "cty.dat",      # configuration et secrets locaux, données téléchargées
                   "deploy_debian.ps1"}                              # script personnel de l'auteur (hors dépôt)
