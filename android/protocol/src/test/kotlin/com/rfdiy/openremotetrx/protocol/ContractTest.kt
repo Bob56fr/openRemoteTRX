@@ -69,6 +69,9 @@ class ContractTest {
         assertEquals(14_074_000L, state.rig.frequencyHz)
         assertEquals(true, state.rig.functions["NB"])
         assertEquals(10.0, state.rig.levels["PREAMP"])
+        assertEquals(0.487, state.host?.load)                                       // santé de la machine (0.83.0+)
+        assertEquals("ok", state.host?.level)
+        assertEquals(46, state.host?.tempC)
     }
 
     @Test
@@ -142,6 +145,7 @@ class ContractTest {
             "selcall_calibrate" -> Command.SelcallCalibrate
             "listener_kick" -> Command.ListenerKick(p("account").content)
             "listeners_reopen" -> Command.ListenersReopen
+            "host_info" -> Command.HostInfo
             "listeners_open" -> Command.ListenersOpen(p("on").boolean)
             else -> fail("commande sans équivalent dans l'application : $name")
         }

@@ -23,7 +23,7 @@
     "selcall": {"state": "standby", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate", "attenuation_db": 20,
                 "last_call": null, "send_on_tx_end": false, "sending": "", "tx_level_dbfs": -6.0, "calibration": ""},
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
-                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate"]
+                 "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host"]
   },
   "state": {
     "type": "state",
@@ -40,7 +40,14 @@
                             {"pseudo": "Radio-club F6KXX", "role": "listener", "since_s": 600, "count": 2}],
                  "connections": [{"id": "phone", "pseudo": "Kriss F4ABC", "role": "operator", "source": "192.0.2.10", "since_s": 1520},
                                  {"id": "club1", "pseudo": "Radio-club F6KXX", "role": "listener", "source": "198.51.100.7", "since_s": 600},
-                                 {"id": "club2", "pseudo": "Radio-club F6KXX", "role": "listener", "source": "198.51.100.8", "since_s": 420}]}
+                                 {"id": "club2", "pseudo": "Radio-club F6KXX", "role": "listener", "source": "198.51.100.8", "since_s": 420}]},
+    "host": {"cpu_pct": 12, "mem_pct": 41, "disk_pct": 37, "temp_c": 46, "throttled": null, "load": 0.487, "level": "ok", "worst": "temp"}
+  },
+  "host_info_result": {
+    "_note": "réponse à host_info (opérateurs seulement) : rubriques de lignes déjà rédigées, affichées telles quelles",
+    "type": "result", "id": 44, "ok": true,
+    "sections": [{"title": "Machine", "rows": [["Système", "Debian GNU/Linux 13 (trixie) (noyau 6.12.48)"], ["Processeur", "Intel(R) N100 (4 cœurs)"]]},
+                 {"title": "Charge en ce moment", "rows": [["Processeur", "12 %"], ["Température du processeur", "46 °C"], ["État", "normal"]]}]
   },
   "state_listener": {
     "_note": "le même message vu par un VISITEUR : propriétaire de l'émission en pseudo, aucune liste d'identifiants, présence sans « connections »",

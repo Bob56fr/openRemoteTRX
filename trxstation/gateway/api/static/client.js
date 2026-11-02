@@ -438,6 +438,22 @@
     return out;
   }
 
+  const HOST_LEVELS = ["ok", "warn", "bad"];
+
+  function hostView(host) {
+    /* Santé de la machine de la station (state.host, opérateurs seulement, station 0.83.0+) : petit bargraph à côté
+       du son ; null = rien à afficher (visiteur, station plus ancienne). Rouge à 90 % de la barre (hostinfo.py). */
+    if (!host || typeof host !== "object" || !Number.isFinite(host.load)) return null;
+    const parts = [];
+    if (Number.isFinite(host.cpu_pct)) parts.push("processeur " + host.cpu_pct + " %");
+    if (Number.isFinite(host.mem_pct)) parts.push("mémoire " + host.mem_pct + " %");
+    if (Number.isFinite(host.disk_pct)) parts.push("disque " + host.disk_pct + " %");
+    if (Number.isFinite(host.temp_c)) parts.push(host.temp_c + " °C");
+    if (host.throttled === true) parts.push("Pi RALENTI (alimentation ou chaleur)");
+    return { fraction: Math.min(1, Math.max(0, host.load)), level: HOST_LEVELS.includes(host.level) ? host.level : "ok",
+             title: "Machine de la station : " + (parts.join(", ") || "mesures indisponibles") + ". Touche : synthèse du matériel" };
+  }
+
   function vitalsView(lv, ptt) {
     /* Alimentation et température du poste au bout des voyants (étape 97) : « 13.8 V · 42 °C ». La température
        n'apparaît que si le poste la donne (pas l'IC-7300MK2) ; orange / rouge selon les seuils de la station. */
@@ -1348,6 +1364,7 @@
         squelch: "SQL" in lv ? lv.SQL : null, squelchMark: "SQL" in lv ? squelchMarkerFraction(lv.SQL) : null,
         clarifier: clarifierView(fn, rig, this._caps()),
         indicators: indicatorsView(fn, lv, rig, this._caps()), vitals: vitalsView(lv, p),
+        host: this.isListener() ? null : hostView(this.state && this.state.host),
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -1750,6 +1767,12 @@
       return res;
     }
 
+    async hostInfo() {
+      /* Synthèse du matériel de la station (opérateurs) : rubriques déjà rédigées par la station, affichées telles quelles. */
+      const res = await this.send("host_info");
+      return res && res.ok && Array.isArray(res.sections) ? res.sections : null;
+    }
+
     async reopenListeners() {
       const res = await this.send("listeners_reopen");
       this.ui.log(res.ok ? "Écoute des visiteurs rouverte." : (res.detail || REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
@@ -1825,7 +1848,7 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, vitalsView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
+                indicatorsView, vitalsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
                 LISTENER_COMMANDS, presenceView, durationText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

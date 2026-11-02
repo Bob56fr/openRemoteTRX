@@ -64,6 +64,10 @@ data class RigState(
     val presence: PresenceUi? = null,
     /** Bips de fin d'émission de la station (null : station sans bips). */
     val beeps: BeepSettings? = null,
+    /** Santé de la machine de la station (state.host) : petit bargraph ; null = visiteur ou station plus ancienne. */
+    val host: HostHealth? = null,
+    /** Synthèse du matériel (host_info) : null = pas demandée ou en cours ; vide = indisponible. */
+    val hostSections: List<HostSection>? = null,
 )
 
 /**
@@ -106,6 +110,7 @@ class RigSession(
     private var beeps: BeepSettings? = null
     private var recentSpots: List<Spot> = emptyList()
     private var selcall: SelcallStatus? = null
+    private var hostSections: List<HostSection>? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -299,6 +304,11 @@ class RigSession(
         val entry = msg.id?.let { pending.remove(it) } ?: return
         if (entry.cmd == "get_state") {
             rttMs = (now - entry.sentAt).toInt()
+            return
+        }
+        if (entry.cmd == "host_info") {                         // synthèse du matériel : affichée telle quelle
+            hostSections = if (msg.ok) HostSection.parse(msg.raw["sections"]).orEmpty() else emptyList()
+            publish(now)
             return
         }
         if (!msg.ok) {
@@ -592,6 +602,14 @@ class RigSession(
         publish(now)
     }
 
+    /** Synthèse du matériel de la station (opérateurs) ; la réponse arrive dans `hostSections`. N'agit sur rien. */
+    fun hostInfo(now: Long) {
+        if (!connected || listener) return
+        hostSections = null
+        send(now, Command.HostInfo)
+        publish(now)
+    }
+
     /** Commutateur « Écoute des visiteurs » ; fermer déconnecte les visiteurs présents. */
     fun setListenersOpen(now: Long, on: Boolean) {
         if (!connected) return
@@ -652,6 +670,7 @@ class RigSession(
         beeps = null
         recentSpots = emptyList()
         selcall = null
+        hostSections = null
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -691,6 +710,8 @@ class RigSession(
             selcall = selcall,
             listener = listener,
             presence = PresenceUi.of(state?.presence, listener),
+            host = HostHealth.of(state?.host, listener),
+            hostSections = hostSections,
         )
         if (next != snapshot) {
             snapshot = next

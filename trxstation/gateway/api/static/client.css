@@ -333,6 +333,15 @@ audio { display: none; }
 [data-role="listener"] .listener-off { pointer-events: none; opacity: .45; filter: grayscale(.6); }
 .listener-badge { text-align: center; font-weight: 600; }
 .presence { margin-left: .4rem; }
+/* santé de la machine de la station (state.host) : petit bargraph vertical, touche = synthèse */
+.hostbar { position: relative; width: .7rem; height: 1.4rem; min-width: 0; padding: 0; margin: 0 .4rem; border: 1px solid var(--bouton-bord); border-radius: 3px; background: var(--fond-champ); overflow: hidden; vertical-align: middle; }
+.hostbar-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--succes); }
+.hostbar.warn .hostbar-fill { background: var(--alerte); } .hostbar.bad .hostbar-fill { background: var(--erreur); }
+.host-sections { max-height: 60vh; overflow-y: auto; margin: .4rem 0; }
+.host-sections h4 { margin: .6rem 0 .2rem; font-size: .9rem; color: var(--accent); }
+.host-sections table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.host-sections td { padding: .15rem .3rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.host-sections td:first-child { color: var(--texte-secondaire); white-space: nowrap; }
 .presence-list { list-style: none; margin: .4rem 0; padding: 0; max-height: 50vh; overflow-y: auto; }
 .presence-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--ligne); }
 .presence-list li .grow { flex: 1; }

@@ -29,6 +29,7 @@
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
       <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)">www.rf-diy.com</a>
+      <button id="host-bar" class="hostbar listener-hide" hidden title="Machine de la station : touche pour la synthèse du matériel"><span id="host-fill" class="hostbar-fill"></span></button>
       <span id="status" class="badge">déconnecté</span>
       <button id="presence" class="chip presence" hidden title="Visiteurs en réception seule : touche pour voir la liste">🎧 0</button>
       <span id="version" class="dim version" title="Version de la station" hidden></span>
@@ -456,6 +457,7 @@
       <div class="body">
         <div id="net" class="note">—</div>
         <div id="diag" class="note">—</div>
+        <div class="row"><button id="host-open" class="chip listener-hide" hidden>Synthèse du matériel de la station</button></div>
         <label>Pertes de connexion (les 10 dernières)<select id="loss-select"></select></label>
         <pre id="loss-detail" class="lossdetail">Aucune perte de connexion enregistrée.</pre>
         <div class="row">
@@ -491,6 +493,13 @@
       <button id="kp-cancel">Annuler</button>
       <button id="kp-ok" class="primary" disabled>OK</button>
     </div>
+  </div>
+</div>
+<div id="host-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title">Matériel de la station</div>
+    <div id="host-sections" class="host-sections"></div>
+    <div class="row"><button id="host-refresh" class="chip">Actualiser</button><button id="host-close" class="chip">Fermer</button></div>
   </div>
 </div>
 <div id="presence-dialog" class="keypad" hidden>

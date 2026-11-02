@@ -152,6 +152,21 @@ data class RigStatus(
     val vfo: String? = null,
 )
 
+/** Santé de la machine de la station (station 0.83.0+, opérateurs seulement ; null pour un visiteur). */
+@Serializable
+data class Host(
+    @SerialName("cpu_pct") val cpuPct: Int? = null,
+    @SerialName("mem_pct") val memPct: Int? = null,
+    @SerialName("disk_pct") val diskPct: Int? = null,
+    @SerialName("temp_c") val tempC: Int? = null,
+    /** Raspberry Pi ralenti EN CE MOMENT (alimentation, chaleur) ; null ailleurs. */
+    val throttled: Boolean? = null,
+    /** 0 à 1 : mesure la plus proche de son seuil rouge (rouge à 0,9). */
+    val load: Double? = null,
+    val level: String = "ok",
+    val worst: String = "",
+)
+
 @Serializable
 data class State(
     val ptt: PttStatus = PttStatus(),
@@ -160,6 +175,7 @@ data class State(
     val clients: List<String> = emptyList(),
     val spectrum: JsonObject = JsonObject(emptyMap()),
     val presence: Presence? = null,
+    val host: Host? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */

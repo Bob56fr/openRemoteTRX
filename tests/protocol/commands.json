@@ -63,6 +63,7 @@
                       "invalid": [{"message": {"cmd": "listener_kick"}, "code": "invalid_params"},
                                   {"message": {"cmd": "listener_kick", "account": "club 1"}, "code": "invalid_params"}]},
     "listeners_reopen": {"valid": [{"cmd": "listeners_reopen", "id": 42}], "invalid": []},
+    "host_info": {"valid": [{"cmd": "host_info", "id": 44}, {"cmd": "host_info"}], "invalid": []},
     "listeners_open": {"valid": [{"cmd": "listeners_open", "id": 43, "on": true}, {"cmd": "listeners_open", "on": false}],
                        "invalid": [{"message": {"cmd": "listeners_open"}, "code": "invalid_params"},
                                    {"message": {"cmd": "listeners_open", "on": "oui"}, "code": "invalid_params"}]},

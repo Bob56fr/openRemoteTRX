@@ -79,7 +79,7 @@ def test_real_hello_and_state_match_the_shared_examples():
             assert set(hello) == set(example)
             assert set(hello["capabilities"]) == set(example["capabilities"])
             assert hello["features"][:len(BASE_FEATURES)] == list(BASE_FEATURES)
-            assert set(hello["features"]) - set(BASE_FEATURES) == {"memories"}          # rien d'autre dans ce banc d'essai
+            assert set(hello["features"]) - set(BASE_FEATURES) == {"memories", "host"}  # rien d'autre dans ce banc d'essai
             example = MESSAGES["state"]
             assert set(state) == set(example)
             for part in ("ptt", "rig"):

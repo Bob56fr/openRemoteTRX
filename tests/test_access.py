@@ -176,6 +176,8 @@ def test_a_listener_never_sees_account_identifiers_and_its_loss_changes_nothing_
             seen = next(m for m in visitor.of_type("state") if m["ptt"]["state"] == "TX")
             assert seen["ptt"]["owner"] == "Kriss F4ABC" and seen["clients"] == []
             assert "connections" not in seen["presence"] and seen["presence"]["listeners"] == 1
+            assert seen["host"] is None and phone.of_type("state")[-1]["host"]["level"] in ("ok", "warn", "bad")  # machine : opérateurs
+            assert "host" not in visitor.of_type("hello")[0]["features"]
             assert '"phone"' not in json.dumps(visitor.messages)                # l'identifiant de l'opérateur ne part jamais
             assert visitor.of_type("hello")[0]["pseudo"] == "Visiteur 2"       # sans pseudo : jamais l'identifiant
             mine = phone.of_type("state")[-1]
@@ -510,4 +512,18 @@ def test_operator_switch_command_is_refused_when_the_station_closes_listening(tm
             visitor = await connect(st, "club1", role="listener", access=access)
             await visitor.say(cmd="listeners_open", id=3, on=False)
             assert visitor.result(3)["reason"] == "forbidden" and access.switch.open
+    run(scenario)
+
+
+def test_host_info_gives_the_operator_a_written_summary_without_serial_or_address():
+    async def scenario(fake):
+        async with station(fake) as st:
+            phone = await connect(st, "phone")
+            await phone.say(cmd="host_info", id=7)
+            result = phone.result(7)
+            assert result["ok"] and [s["title"] for s in result["sections"]][:3] == ["Machine", "Charge en ce moment", "Station"]
+            rows = {label: value for section in result["sections"] for label, value in section["rows"]}
+            assert {"Système", "Processeur", "Disque", "TRX distant"} <= set(rows)
+            text = json.dumps(result, ensure_ascii=False)
+            assert "by-id" not in text and "/dev/" not in text and "COM" not in text      # chemin du port : numéro de série
     run(scenario)

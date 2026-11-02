@@ -1219,6 +1219,38 @@
       }
       client.setListenersOpen(on).catch(fail);
     });
+    // ---- santé de la machine de la station (state.host) et synthèse du matériel (host_info), opérateurs seulement
+    function paintHost(v) {
+      const h = v.connected ? v.host : null;
+      $("host-bar").hidden = $("host-open").hidden = !h;
+      if (!h) return;
+      $("host-bar").className = "hostbar listener-hide" + (h.level !== "ok" ? " " + h.level : "");
+      $("host-fill").style.height = Math.round(h.fraction * 100) + "%";
+      $("host-bar").title = h.title;
+    }
+    function showHostInfo() {
+      const box = $("host-sections");
+      box.textContent = "Lecture…";
+      $("host-dialog").hidden = false;
+      client.hostInfo().then((sections) => {
+        box.textContent = "";
+        if (!sections) { box.textContent = "Synthèse indisponible (station plus ancienne ou déconnectée)."; return; }
+        for (const section of sections) {
+          box.appendChild(el("h4", "", String(section.title || "")));
+          const table = el("table", "");
+          for (const row of Array.isArray(section.rows) ? section.rows : []) {
+            const tr = el("tr", "");
+            tr.appendChild(el("td", "", String(row[0]))); tr.appendChild(el("td", "", String(row[1])));
+            table.appendChild(tr);
+          }
+          box.appendChild(table);
+        }
+      }).catch((err) => { box.textContent = "Synthèse impossible : " + err.message; });
+    }
+    $("host-bar").addEventListener("click", showHostInfo);
+    $("host-open").addEventListener("click", showHostInfo);
+    $("host-refresh").addEventListener("click", showHostInfo);
+    $("host-close").addEventListener("click", () => { $("host-dialog").hidden = true; });
     $("presence").addEventListener("click", () => { presenceOpen = true; renderPresenceList(); $("presence-dialog").hidden = false; });
     $("presence-close").addEventListener("click", () => { presenceOpen = false; $("presence-dialog").hidden = true; });
     $("presence-reopen").addEventListener("click", () => client.reopenListeners().catch(fail));
@@ -1407,6 +1439,7 @@
         hint.hidden = !v.dataModeHint;
         hint.textContent = v.dataModeHint;
         renderPresence(v);
+        paintHost(v);
       },
     };
 

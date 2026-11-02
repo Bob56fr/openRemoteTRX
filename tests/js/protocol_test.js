@@ -39,6 +39,16 @@ test("voyants comme l'application : ATT ou P.AMP n, RIT, ΔTX, SPLIT, NOTCH, NB,
   assert.deepEqual(web.indicatorsView({}, {}, {}, {}), []);                              // rien de publié : aucun voyant
 });
 
+test("santé de la machine de la station : bargraph, niveau, rien pour un visiteur ou une station ancienne", () => {
+  const v = web.hostView(messages.state.host);
+  assert.equal(v.fraction, 0.487); assert.equal(v.level, "ok");
+  assert.match(v.title, /processeur 12 %, mémoire 41 %, disque 37 %, 46 °C/);
+  assert.equal(web.hostView({ load: 1.4, level: "bad", throttled: true }).fraction, 1);
+  assert.match(web.hostView({ load: 1, level: "bad", throttled: true }).title, /Pi RALENTI/);
+  assert.equal(web.hostView({ load: 0.2, level: "rouge" }).level, "ok");
+  assert.equal(web.hostView(null), null); assert.equal(web.hostView({ cpu_pct: 3 }), null);
+});
+
 test("alimentation et température du poste au bout des voyants (température seulement si le poste la donne)", () => {
   assert.deepEqual(web.vitalsView({ VD_METER: 13.84 }, { temp_alert: "" }), { text: "13.8 V", level: "" });
   assert.deepEqual(web.vitalsView({ VD_METER: 13.8, TEMP_METER: 51.4 }, { temp_alert: "hot" }), { text: "13.8 V · 51 °C", level: "hot" });

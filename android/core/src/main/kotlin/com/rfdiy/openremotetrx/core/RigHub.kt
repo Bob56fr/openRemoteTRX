@@ -157,6 +157,9 @@ object RigHub {
 
     fun reopenListeners() { service?.onRig { session, now -> session.reopenListeners(now) } }
 
+    /** Synthèse du matériel de la station (opérateurs) : réponse dans RigState.hostSections. */
+    fun hostInfo() { service?.onRig { session, now -> session.hostInfo(now) } }
+
     fun setListenersOpen(on: Boolean) { service?.onRig { session, now -> session.setListenersOpen(now, on) } }
 
     fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }

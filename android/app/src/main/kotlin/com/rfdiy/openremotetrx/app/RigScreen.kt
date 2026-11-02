@@ -168,6 +168,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var spotsDialog by remember { mutableStateOf(false) }
     var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
+    var hostDialog by remember { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
     var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
     var offsetDrag by remember { mutableStateOf<Float?>(null) }
@@ -215,6 +216,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 rig.presence?.takeIf { it.label.isNotEmpty() }?.let { p ->             // 🎧 N : visiteurs connectés
                     CompactChip(p.label, onClick = { presenceDialog = true })
                     Spacer(Modifier.width(6.dp))
+                }
+                // Santé de la machine de la station (opérateurs) : petit bargraph, toucher = synthèse du matériel
+                rig.host?.let { h ->
+                    HostBar(h, onClick = { hostDialog = true; RigHub.hostInfo() })
+                    Spacer(Modifier.width(10.dp))
                 }
                 Text("Muet", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.width(6.dp))
@@ -573,6 +579,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             Panel { HeadsetSection(ui.headsetMic) }
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
+            if (rig.host != null) {                                         // opérateur, station 0.83.0+
+                OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
+            }
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
                     }
             }
@@ -661,6 +670,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             onDismiss = { selcallDialog = false })
     }
     if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
+    if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })

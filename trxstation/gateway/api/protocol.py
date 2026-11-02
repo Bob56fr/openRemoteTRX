@@ -47,13 +47,15 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             # visiteurs (docs/visiteurs-cahier-des-charges.md) : OPÉRATEURS seulement, n'agissent jamais sur le poste
             "listener_kick",                 # déconnecter un visiteur : account
             "listeners_reopen",              # rouvrir l'écoute après une surcharge (acceptée seulement au vert)
-            "listeners_open")                # commutateur « Écoute des visiteurs » : on (mémorisé sur la station)
+            "listeners_open",                # commutateur « Écoute des visiteurs » : on (mémorisé sur la station)
+            "host_info")                     # synthèse du matériel de la station (OPÉRATEURS seulement, sans paramètre)
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
 OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall",
                      "selcall_send",              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
-                     "selcall_calibrate")         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
+                     "selcall_calibrate",         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
+                     "host")                      # santé de la machine (state.host) et synthèse host_info (0.83.0+)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 

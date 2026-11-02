@@ -21,6 +21,7 @@ from collections import deque
 from collections.abc import Callable
 
 from ... import __version__
+from ...hostinfo import hamlib_version, host_details, shared_monitor
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..bugreports import ReportRefused
 from ..cat import Capabilities, CatConnectionError, CatLink, RigError
@@ -32,6 +33,7 @@ from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, Protoc
 log = logging.getLogger(__name__)
 
 
+_hamlib_version: str | None = None                # version de Hamlib (synthèse host_info), lue une fois
 FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0    # visiteur : au-delà, connexion fermée et alerte
 
 
@@ -61,6 +63,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         "clients": [] if listener else ctrl.clients,             # identifiants : jamais vers un visiteur
         "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},
         "presence": access.presence(role) if access is not None else None,
+        # santé de la machine de la station (petit bargraph) : opérateurs seulement, jamais vers un visiteur
+        "host": None if listener else shared_monitor().summary(),
     }
 
 
@@ -153,7 +157,8 @@ class ControlSession:
                    "selcall": self.selcall is not None,
                    "selcall_send": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
                    "selcall_calibrate": self.selcall is not None and getattr(self.ctrl, "tail", None) is not None,
-                   "presence": self.access is not None}
+                   "presence": self.access is not None,
+                   "host": not self.listener}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _state(self) -> dict:
@@ -461,6 +466,12 @@ class ControlSession:
                     log.warning("écoute des visiteurs %s par l'opérateur %s", "OUVERTE" if cmd.params["on"] else "fermée",
                                 self.client_id)
                     self._result(cmd.id, True, open=self.access.switch.open)
+            elif cmd.name == "host_info":                # opérateur seulement (liste blanche) ; n'agit sur rien
+                global _hamlib_version
+                if _hamlib_version is None:              # `rigctld --version` : une fois, hors de la boucle (3 s au plus)
+                    _hamlib_version = await asyncio.to_thread(hamlib_version, self.ctrl.config.tools.hamlib_dir)
+                self._result(cmd.id, True, sections=host_details(shared_monitor(), self.ctrl.config, self.capabilities,
+                                                                 _hamlib_version))
             elif cmd.name == "listeners_reopen":
                 guard = getattr(self.access, "guard", None)
                 refusal = guard.reopen() if guard is not None else ""

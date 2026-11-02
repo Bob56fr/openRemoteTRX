@@ -136,6 +136,9 @@ sealed class Command(val name: String) {
     /** Visiteurs : rouvrir l'écoute après une surcharge de la station (acceptée seulement au vert). */
     data object ListenersReopen : Command("listeners_reopen")
 
+    /** Synthèse du matériel de la station (opérateurs, fonction « host ») : réponse `sections`. */
+    data object HostInfo : Command("host_info")
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -148,7 +151,7 @@ sealed class Command(val name: String) {
             "set_level", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
             "spectrum_set", "spectrum_watch", "beeps_set", "local_release", "bug_report", "set_offset",
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
-            "listener_kick", "listeners_reopen", "listeners_open",
+            "listener_kick", "listeners_reopen", "listeners_open", "host_info",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

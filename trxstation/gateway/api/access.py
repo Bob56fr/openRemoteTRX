@@ -38,7 +38,7 @@ LISTENER_REFUSED = frozenset({
     "set_offset", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
     "spectrum_set", "beeps_set", "local_release", "bug_report", "selcall_activate", "selcall_rearm",
     "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen",
-    "listeners_open"})
+    "listeners_open", "host_info"})
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {
