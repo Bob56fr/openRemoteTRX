@@ -275,6 +275,7 @@ object VoiceHub {
         override fun reset(sampleRateHz: Int) = initialize(sampleRateHz, 1)
 
         override fun process(numBands: Int, numFrames: Int, buffer: ByteBuffer) {
+            if (SpatialHub.playing) return                          // spatialisation : débrouillage et enregistrement faits par SpatialHub
             recordForReplay(numFrames, buffer)
             val want = wanted
             if (want == null) {

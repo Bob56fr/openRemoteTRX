@@ -130,6 +130,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val canSet = connected && rig.protocolOk && !listener && (rig.state?.ptt?.state ?: "RX") == "RX"
     val context = LocalContext.current
     val voice by VoiceHub.ui.collectAsState()
+    val spatial by com.rfdiy.openremotetrx.core.SpatialHub.ui.collectAsState()
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
     var keepTx by remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
@@ -168,6 +169,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var spotsDialog by remember { mutableStateOf(false) }
     var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
+    var spatialDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
     var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
     var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
@@ -615,6 +617,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     val eqOn = voice.settings.enabled
                     CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
                         onLongClick = { tab = Tab.EQ })
+                    // Spatialisation stéréo de la réception : appui = marche / arrêt, appui long = réglages
+                    Spacer(Modifier.width(6.dp))
+                    val stOn = spatial.settings.on
+                    CompactChip(if (stOn) "ST ●" else "ST", onClick = { com.rfdiy.openremotetrx.core.SpatialHub.setEnabled(context, !stOn) },
+                        selected = stOn && spatial.monoReason.isEmpty(), onLongClick = { spatialDialog = true })
                     // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
@@ -674,6 +681,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         bandsDialog = false
     }
     rig.selcall?.let { st ->
+        if (spatialDialog) SpatialDialog(onDismiss = { spatialDialog = false })
         if (selcallDialog) SelcallDialog(st, connected && rig.protocolOk, armed = rig.armed && ui.micAllowed,
             transmitting = ptt?.transmitting == true || (rig.state?.ptt?.state ?: "RX") != "RX", mine = ptt?.mine == true,
             sendOffered = hello?.offers("selcall_send") == true, calibrateOffered = hello?.offers("selcall_calibrate") == true,

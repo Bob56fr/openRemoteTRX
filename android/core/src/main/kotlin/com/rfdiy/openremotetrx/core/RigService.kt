@@ -112,6 +112,8 @@ class RigService : Service() {
             onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
             processing = processing,
         )
+        SpatialHub.load(this)
+        SpatialHub.attach(rtc) { block -> runCatching { executor.execute(block) } }
         session = RigSession(object : SessionLink {
             override fun startAttempt() = launchAttempt()
             override fun send(text: String): Boolean = rtc.send(text)

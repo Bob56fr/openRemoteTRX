@@ -76,7 +76,7 @@ supprimée (sans objet avec un déphasage constant).
   bouton et met la réception en mono 8/16 kHz). Pendant l'émission, la réception n'est pas écoutée : la spatialisation
   n'y perd rien.
 
-## 7. Application Android (étape à part)
+## 7. Application Android (FAIT, étape 117, application 0.42.0 : piste ci-dessous retenue et essayée sur le S25)
 
 Le crochet actuel de la réception (`setRenderPreProcessing`) ne traite qu'une voie : il ne peut pas produire de
 stéréo. Piste retenue, à prouver d'abord sur le S25 : `AudioTrack.addSink` (stream-webrtc 1.3.10) reçoit le son
