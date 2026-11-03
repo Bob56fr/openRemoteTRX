@@ -127,6 +127,7 @@
       <button id="mini-wf-on" class="chip" hidden title="Petit waterfall HF avant les bandes : affiché ou masqué">WF</button>
       <button id="sel-ind" class="chip sel-ind listener-hide" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
       <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
+      <button id="st-direct" class="chip st-direct" title="Spatialisation stéréo de la réception (casque) : marche / arrêt ; appui long : réglages">ST</button>
       <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
       <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
@@ -282,6 +283,26 @@
           </div>
           <div id="beeps-note" class="dim small"></div>
         </div>
+      </div>
+    </details>
+
+    <details id="sec-spatial">
+      <summary>Spatialisation (stéréo)</summary>
+      <div class="body">
+        <p class="note">Rend l'audio reçu stéréo au casque : confort d'écoute, voix au centre, souffle autour. Traité sur cet appareil
+          seulement : la station n'envoie toujours qu'un son mono. Sans casque (haut-parleur unique, casque Bluetooth en mode appel),
+          cochez « Sortie mono ».</p>
+        <label class="check"><input id="st-on" type="checkbox"> Spatialisation en service</label>
+        <div id="st-presets" class="row"></div>
+        <label>Intensité <input id="st-width" type="range" min="0" max="150" step="1"><span id="st-width-text"></span></label>
+        <label>Présence voix <input id="st-presence" type="range" min="0" max="100" step="1"><span id="st-presence-text"></span></label>
+        <label>Équilibre G/D <input id="st-balance" type="range" min="-100" max="100" step="1"><span id="st-balance-text"></span></label>
+        <div class="row">
+          <button id="st-ab" class="chip" title="Maintenir appuyé : écoute en mono, pour comparer">A/B (maintenir : mono)</button>
+          <label class="check"><input id="st-mono" type="checkbox"> Sortie mono (pas de casque)</label>
+        </div>
+        <div class="meter"><span class="mlabel">G/D</span><div class="mtrack st-corr"><div id="st-corr-mask" class="mmask"></div></div><span id="st-corr-text" class="mval">—</span></div>
+        <div id="st-state" class="note"></div>
       </div>
     </details>
 
@@ -664,6 +685,7 @@
 <script src="voice.js"></script>
 <script src="swr.js"></script>
 <script src="scrambler.js"></script>
+<script src="spatial.js"></script>
 <script src="selcall.js"></script>
 <script src="layout.js"></script>
 <script src="ui.js"></script>

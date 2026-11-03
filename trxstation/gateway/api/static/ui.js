@@ -1656,7 +1656,7 @@
       remoteStream(stream, track) {
         const media = stream || new MediaStream([track]);
         rxMedia = media;
-        audio.srcObject = scrRxStream(media);                                       // débrouillage éventuel (scrambler.js)
+        audio.srcObject = rxStream(media);                                          // débrouillage et spatialisation éventuels
         setupAnalysis(media);
         applyOutput().finally(() => audio.play().catch(() => ui.log("Lecture audio bloquée par le navigateur : touche l'écran.", "warn")));
       },
@@ -2217,7 +2217,7 @@
     // et le décalage sont gardés par le navigateur).
     const sx = root.TrxScrambler || null;
     let scr = sx ? sx.validate(safeJson(store.get("trx.scrambler", "null"))) : null;
-    let scrTxNode = null, scrRx = null;
+    let scrTxNode = null, rxGraph = null;
     const SCR_WARNING = "SCRAMBLER : votre voix devient incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un " +
       "chiffrement : tout possesseur d'un scrambler identique vous entend.\n\nEn bandes radioamateur, le Règlement des " +
       "radiocommunications (UIT, art. 25) et la réglementation nationale interdisent les émissions destinées à masquer le sens " +
@@ -2252,50 +2252,69 @@
       }
       scrRender();
     }
-    function scrRxStop() {
-      if (!scrRx) return;
-      try { scrRx.raw.pause(); scrRx.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
-      if (scrRx.ctx.close) scrRx.ctx.close().catch(() => {});
-      scrRx = null;
+    // ---- chaîne de la réception (Web Audio) : débrouillage du scrambler puis spatialisation (spatial.js), seulement si
+    // l'un des deux est en service ; sinon le flux reçu va tel quel à l'élément audio (comme avant).
+    function rxStop() {
+      if (!rxGraph) return;
+      try { rxGraph.raw.pause(); rxGraph.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
+      if (rxGraph.ctx.close) rxGraph.ctx.close().catch(() => {});
+      rxGraph = null;
     }
-    function scrRxStream(media) {
-      /* Flux à jouer : le flux reçu tel quel, ou débrouillé (AudioWorklet) si la réception débrouillée est en service. */
-      scrRxStop();
-      if (!sx || !scr.rx || !media) return media;
+    function rxStream(media) {
+      /* Flux à jouer : le flux reçu tel quel, ou traité (AudioWorklet) si le débrouillage ou la spatialisation est en service. */
+      rxStop();
+      const wantScr = !!(sx && scr.rx), wantSt = stActive();
+      if (!media || (!wantScr && !wantSt)) return media;
       try {
         const Ctx = window.AudioContext || window.webkitAudioContext;
         const ctx = audioContext48(Ctx);
         // Chrome : un flux WebRTC distant n'arrive à Web Audio que s'il est aussi lu par un élément (ici muet)
         const raw = new Audio(); raw.muted = true; raw.srcObject = media; raw.play().catch(() => {});
         const dest = ctx.createMediaStreamDestination();
-        const state = { ctx, raw, dest, node: null };
-        scrRx = state;
-        scrWorklet(ctx).then(() => {
-          if (scrRx !== state) return;
-          state.node = new AudioWorkletNode(ctx, "trx-scrambler", { processorOptions: Object.assign({ direction: "rx" }, scrMsg()) });
-          ctx.createMediaStreamSource(media).connect(state.node);
-          state.node.connect(dest);
-          scrRender();
+        const state = { ctx, raw, dest, node: null, st: null };
+        rxGraph = state;
+        Promise.all([wantScr ? scrWorklet(ctx) : null, wantSt ? stWorklet(ctx) : null]).then(() => {
+          if (rxGraph !== state) return;
+          let head = ctx.createMediaStreamSource(media);
+          if (wantScr) {
+            state.node = new AudioWorkletNode(ctx, "trx-scrambler", { processorOptions: Object.assign({ direction: "rx" }, scrMsg()) });
+            head.connect(state.node); head = state.node;
+          }
+          if (wantSt) {
+            state.st = new AudioWorkletNode(ctx, "trx-spatial", { outputChannelCount: [2], processorOptions: stParams() });
+            state.st.port.onmessage = (ev) => stStats(ev.data || {});
+            head.connect(state.st); head = state.st;
+          }
+          head.connect(dest);
+          scrRender(); stRender();
         }).catch((err) => {
-          if (scrRx !== state) return;
-          scr.rx = false; scrRxStop(); audio.srcObject = media;
-          ui.log("Débrouillage impossible (" + (err && err.message ? err.message : err) + ") : réception en clair.", "warn");
-          scrRender();
+          if (rxGraph !== state) return;
+          if (wantScr) scr.rx = false;
+          if (wantSt) stFailed = true;
+          rxStop(); audio.srcObject = media;
+          ui.log("Traitement de la réception impossible (" + (err && err.message ? err.message : err) + ") : réception sans débrouillage ni spatialisation.", "warn");
+          scrRender(); stRender();
         });
         if (ctx.resume) ctx.resume().catch(() => {});
+        window.setTimeout(() => {                                                   // contexte gardé en pause par le navigateur
+          if (rxGraph !== state || ctx.state !== "suspended") return;
+          ui.log("Son de la réception en attente du navigateur : touchez l'écran.", "warn");
+          document.addEventListener("pointerdown", () => { if (rxGraph === state && ctx.resume) ctx.resume().catch(() => {}); }, { once: true });
+        }, 1000);
         return dest.stream;
       } catch (err) {
-        scr.rx = false;
-        ui.log("Débrouillage impossible (" + (err && err.message ? err.message : err) + ") : réception en clair.", "warn");
+        if (wantScr) scr.rx = false;
+        if (wantSt) stFailed = true;
+        ui.log("Traitement de la réception impossible (" + (err && err.message ? err.message : err) + ") : réception sans débrouillage ni spatialisation.", "warn");
         return media;
       }
     }
-    function scrApplyRx() {
+    function rxApply() {
       if (rxMedia) {
-        audio.srcObject = scrRxStream(rxMedia);
+        audio.srcObject = rxStream(rxMedia);
         audio.play().catch(() => {});
       }
-      scrRender();
+      scrRender(); stRender();
     }
     function scrRender() {
       if (!sx) return;
@@ -2308,7 +2327,7 @@
       ind.textContent = scr.tx ? "SCRAMBLER" : "DÉBROUILLAGE";
       const txState = !scr.tx ? "émission en clair" : (voiceChain && scrTxNode && voiceChain.scrambler === scrTxNode) ? "émission BROUILLÉE"
         : voiceChain ? "émission brouillée : mise en route…" : "émission brouillée dès la connexion avec le micro";
-      const rxState = !scr.rx ? "réception en clair" : scrRx && scrRx.node ? "réception débrouillée" : "réception débrouillée dès la connexion";
+      const rxState = !scr.rx ? "réception en clair" : rxGraph && rxGraph.node ? "réception débrouillée" : "réception débrouillée dès la connexion";
       $("scr-state").textContent = "État : " + txState + " ; " + rxState + " (mode « " + sx.MODES[scr.mode].label + " »).";
     }
     if (sx) {
@@ -2324,25 +2343,126 @@
         if (ev.target.checked && !confirmOn("Débrouiller la RÉCEPTION ?")) { ev.target.checked = false; return; }
         scr.rx = ev.target.checked;
         ui.log(scr.rx ? "Scrambler : réception débrouillée." : "Scrambler : réception en clair.", "");
-        scrApplyRx();
+        rxApply();
       });
       $("scr-mode").addEventListener("change", (ev) => {
         scr.mode = sx.MODES[ev.target.value] ? ev.target.value : scr.mode;
         scrSave();
         if (scrTxNode) scrTxNode.port.postMessage(scrMsg());
-        if (scrRx && scrRx.node) scrRx.node.port.postMessage(scrMsg());
+        if (rxGraph && rxGraph.node) rxGraph.node.port.postMessage(scrMsg());
         scrRender();
       });
       $("scr-offset").addEventListener("input", (ev) => {
         scr.offsetHz = sx.validate({ mode: scr.mode, offsetHz: parseFloat(ev.target.value) }).offsetHz;
         scrSave();
-        if (scrRx && scrRx.node) scrRx.node.port.postMessage(scrMsg());
+        if (rxGraph && rxGraph.node) rxGraph.node.port.postMessage(scrMsg());
         scrRender();
       });
       $("scr-ind").addEventListener("click", () => { $("sec-scrambler").open = true; $("sec-scrambler").scrollIntoView({ block: "start" }); });
       scrRender();
     } else {
       $("sec-scrambler").hidden = true;
+    }
+
+    // ---- spatialisation stéréo de la réception (spatial.js, docs/spatialisation-cahier-des-charges.md) : traitement de cet
+    // appareil seulement, visiteurs compris ; la station n'en sait rien. Réglages gardés par le navigateur.
+    const spx = root.TrxSpatial || null;
+    let stSet = spx ? spx.validate(safeJson(store.get("trx.spatial", "null"))) : null;
+    let stAb = false, stFailed = false, stCorr = null, stOffTimer = null;
+    function stActive() { return !!(spx && stSet.on && !stSet.monoOut && !stFailed); }
+    function stParams() { return spx.params(stSet, stAb); }
+    function stWorklet(ctx) {
+      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error("AudioWorklet absent de ce navigateur"));
+      if (!ctx.trxSpatial) ctx.trxSpatial = ctx.audioWorklet.addModule("spatial.js");
+      return ctx.trxSpatial;
+    }
+    function stStats(d) {
+      if (typeof d.corr === "number" && Number.isFinite(d.corr)) stCorr = d.corr;
+      stRenderMeter();
+    }
+    function stPost() { if (rxGraph && rxGraph.st) rxGraph.st.port.postMessage(stParams()); }
+    function stSave() { store.set("trx.spatial", JSON.stringify(stSet)); }
+    function stChange(next) {
+      /* Nouveaux réglages : fondu dans le traitement en place ; chaîne refaite seulement si ST entre ou sort. */
+      const before = stActive();
+      if (next.on && !stSet.on) stFailed = false;                                   // nouvel essai à chaque mise en service
+      stSet = spx.validate(next);
+      stSave();
+      const after = stActive();
+      if (stOffTimer !== null) { window.clearTimeout(stOffTimer); stOffTimer = null; }
+      if (before === after) stPost();
+      else if (after) rxApply();
+      else { stPost(); stOffTimer = window.setTimeout(() => { stOffTimer = null; if (!stActive()) rxApply(); }, 80); }   // fondu vers le mono d'abord
+      stRender();
+    }
+    function stRenderMeter() {
+      const live = !!(rxGraph && rxGraph.st) && stCorr !== null;
+      $("st-corr-text").textContent = live ? stCorr.toFixed(2) : "—";
+      $("st-corr-mask").style.width = percentLeft(live ? Math.max(0, Math.min(1, 1 - stCorr)) : 0);
+    }
+    function stRender() {
+      if (!spx) return;
+      const chip = $("st-direct");
+      chip.className = "chip st-direct" + (stActive() ? " on" : "") + (stSet.monoOut ? " dim" : "");
+      chip.textContent = stSet.on && !stSet.monoOut ? "ST ON" : "ST";
+      $("st-on").checked = stSet.on; $("st-mono").checked = stSet.monoOut;
+      for (const b of $("st-presets").children) b.className = "chip" + (b.value === stSet.preset ? " on" : "");
+      $("st-width").value = stSet.width; $("st-width-text").textContent = " " + stSet.width + " %";
+      $("st-presence").value = stSet.presence; $("st-presence-text").textContent = " " + stSet.presence + " %";
+      $("st-balance").value = stSet.balance;
+      $("st-balance-text").textContent = " " + (stSet.balance === 0 ? "centre" : (stSet.balance < 0 ? "G " : "D ") + Math.abs(stSet.balance));
+      const state = stFailed ? "indisponible dans ce navigateur (son mono)" : !stSet.on ? "éteinte (son mono)"
+        : stSet.monoOut ? "sortie mono déclarée : pas d'effet" : stSet.preset === "mono" ? "préréglage Mono (comparaison)"
+        : !rxMedia ? "« " + spx.label(stSet) + " » dès la réception du son" : rxGraph && rxGraph.st ? "« " + spx.label(stSet) + " »" + (stAb ? " — A/B : MONO" : "")
+        : "« " + spx.label(stSet) + " » : mise en route…";
+      $("st-state").textContent = "État : " + state + ".";
+      stRenderMeter();
+    }
+    if (spx) {
+      for (const [key, preset] of Object.entries(spx.PRESETS)) {
+        const b = el("button", "chip", preset.label); b.value = key;
+        b.addEventListener("click", () => stChange(Object.assign(spx.choose(stSet, key), { on: true })));
+        $("st-presets").appendChild(b);
+      }
+      $("st-on").addEventListener("change", (ev) => stChange(Object.assign({}, stSet, { on: ev.target.checked })));
+      $("st-mono").addEventListener("change", (ev) => stChange(Object.assign({}, stSet, { monoOut: ev.target.checked })));
+      for (const key of ["width", "presence", "balance"]) {
+        $("st-" + key).addEventListener("input", (ev) => stChange(Object.assign({}, stSet, { [key]: parseFloat(ev.target.value) })));
+        $("st-" + key).addEventListener("dblclick", () => {                                  // double appui : valeur du préréglage
+          const p = spx.PRESETS[stSet.preset];
+          stChange(Object.assign({}, stSet, { [key]: key === "balance" || !p ? 0 : p[key] }));
+        });
+      }
+      const ab = $("st-ab");
+      ab.addEventListener("pointerdown", () => { stAb = true; stPost(); stRender(); });
+      for (const type of ["pointerup", "pointercancel", "pointerleave"]) ab.addEventListener(type, () => { if (stAb) { stAb = false; stPost(); stRender(); } });
+      ab.addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });
+      // Bouton ST : appui = marche / arrêt ; appui long = rubrique
+      const chip = $("st-direct");
+      let pressTimer = null, longDone = false;
+      const openSection = () => { $("sec-spatial").open = true; $("sec-spatial").scrollIntoView({ block: "start" }); };
+      chip.addEventListener("pointerdown", () => {
+        longDone = false;
+        if (pressTimer !== null) window.clearTimeout(pressTimer);
+        pressTimer = window.setTimeout(() => { pressTimer = null; longDone = true; openSection(); }, 550);
+      });
+      for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+        chip.addEventListener(type, () => { if (pressTimer !== null) { window.clearTimeout(pressTimer); pressTimer = null; } });
+      }
+      chip.addEventListener("click", () => {
+        if (longDone) { longDone = false; return; }
+        if (stSet.monoOut) { openSection(); return; }                                   // sortie mono déclarée : rien à allumer
+        const on = !stSet.on;
+        if (on && store.get("trx.spatial.seen", "") !== "1") {
+          store.set("trx.spatial.seen", "1");
+          ui.log("Spatialisation : mettez un casque pour profiter de l'effet (sur un haut-parleur unique, il ne s'entend pas).", "");
+        }
+        stChange(Object.assign({}, stSet, { on }));
+      });
+      chip.addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });
+      stRender();
+    } else {
+      $("sec-spatial").hidden = true; $("st-direct").hidden = true;
     }
     if (lay) layout = new lay.Layout(document, { store: store, onShown: layoutShown, now: () => performance.now(),
                                                  setTimeout: (fn, ms) => window.setTimeout(fn, ms), clearTimeout: (t) => window.clearTimeout(t) });

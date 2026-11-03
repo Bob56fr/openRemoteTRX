@@ -95,6 +95,20 @@ def test_scrambler_bands_round_trip_and_shared_modes():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+def test_spatial_stereo_dsp_and_shared_presets():
+    """Spatialisation (spatial.js) : 90° du binaural, somme mono, sonie, clics, limiteur, préréglages partagés avec l'application."""
+    node = shutil.which("node")
+    if not node:
+        return
+    html = (ROOT / "trxstation" / "gateway" / "api" / "static" / "index.html").read_text(encoding="utf-8")
+    assert html.index('src="spatial.js"') < html.index('src="ui.js"')
+    assert 'id="st-direct"' in html and 'id="sec-spatial"' in html
+    server = (ROOT / "trxstation" / "gateway" / "api" / "server.py").read_text(encoding="utf-8")
+    assert '"/spatial.js": ("spatial.js", "text/javascript")' in server
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "spatial_test.js")], capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
 def test_page_reads_the_shared_protocol_examples():
     node = shutil.which("node")
     if not node:

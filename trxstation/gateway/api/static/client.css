@@ -310,6 +310,9 @@ audio { display: none; }
 .voice-bands input[type=number]::-webkit-inner-spin-button { display: none; }
 .voice-direct { align-self: center; }
 .voice-direct.on { background: var(--selection-fond); color: var(--selection-texte); border-color: var(--accent); }
+.st-direct { align-self: center; }
+.st-direct.on { background: var(--selection-fond); color: var(--selection-texte); border-color: var(--accent); }
+.st-direct.dim { opacity: .5; }
 #sec-voice .body { grid-template-columns: minmax(0, 1fr); }
 #sec-voice .row { flex-wrap: wrap; }
 .voice-mic { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
