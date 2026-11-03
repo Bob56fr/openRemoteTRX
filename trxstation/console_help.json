@@ -30,7 +30,7 @@
   },
   "edit_config": {
    "admin": true,
-   "expert": "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les\ncopies de sauvegarde s'appellent\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.",
+   "expert": "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les\ncopies de sauvegarde s'appellent\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nNotice de TOUS les réglages (rôle, valeur par défaut, bornes, sécurité, menu\nqui les modifie) : https://bob56fr.github.io/openRemoteTRX/station-toml/,\naussi sur le site rf-diy.com.",
    "modifie": "station.toml, seulement si la copie est valide : elle est vérifiée, les\ndifférences sont montrées, une confirmation est demandée et l'ancienne\nversion est gardée à côté. Une configuration invalide n'est jamais écrite.",
    "quand": "Pour un réglage précis sans relancer tout l'assistant.",
    "role": "Modifie station.toml dans l'éditeur nano, sur une copie."

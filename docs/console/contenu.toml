@@ -170,7 +170,7 @@ role = "Modifie <code>station.toml</code> dans l'éditeur nano, sur une copie."
 quand = "Pour un réglage précis sans relancer tout l'assistant."
 modifie = "<code>station.toml</code>, seulement si la copie est valide : elle est vérifiée, les différences sont montrées, une confirmation est demandée et l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite."
 admin = true
-expert = "<p>Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les copies de sauvegarde s'appellent <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p>"
+expert = "<p>Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les copies de sauvegarde s'appellent <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p><p>Notice de TOUS les réglages (rôle, valeur par défaut, bornes, sécurité, menu qui les modifie) : <code>https://bob56fr.github.io/openRemoteTRX/station-toml/</code>, aussi sur le site rf-diy.com.</p>"
 
 [menus.expert]
 role = "Menu expert : lance toute la suite de tests automatiques du logiciel sur la station."

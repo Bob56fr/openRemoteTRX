@@ -1,0 +1,709 @@
+# Notice des réglages de station.toml (page publique, thème sombre, iframe du site rf-diy.com).
+# La LISTE des réglages et leurs valeurs par défaut viennent du code (trxstation/config.py) ; les explications d'ici.
+# Un réglage sans explication, ou une explication sans réglage, arrête scripts/build_station_toml_doc.py et les tests.
+# Contenu public : exemples génériques seulement, jamais d'adresse IP réelle, de nom de machine, d'identifiant ni de clé.
+#
+# [reglages."section.cle"] : role (obligatoire), niveau = "courant" | "expert", et au besoin : bornes, securite,
+# exemple, defaut (remplace la valeur du code quand elle dépend du système), depuis (version d'apparition).
+
+[page]
+titre = "Réglages de la station : station.toml"
+intro = """
+<p><code>station.toml</code> est le fichier de configuration de la station : le poste, les cartes son, le réseau, les
+sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie
+ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le <strong>vérifie</strong>
+à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.</p>
+"""
+lecture = """
+<p><strong>Débutant</strong> : seuls les réglages <span class="courant">courant</span> vous concernent ; l'assistant les règle
+pour vous. Les réglages <span class="pro">expert</span> ont des valeurs par défaut sûres : n'y touchez qu'en connaissance
+de cause. Emplacement du fichier : <code>/etc/trx-remote/station.toml</code> (Debian, Raspberry Pi),
+<code>C:\\ProgramData\\trx-remote\\station.toml</code> (Windows).</p>
+"""
+
+# ---------------------------------------------------------------- sections
+
+[sections.racine]
+titre = "En-tête du fichier"
+intro = "<p>Deux numéros gérés par la station elle-même.</p>"
+ou = "Rien à faire : écrits par la station."
+relu = "redemarrage"
+
+[sections.rig]
+titre = "Le poste [rig]"
+intro = "<p>Le transceiver piloté par Hamlib : modèle, liaison CAT, commande du PTT, modes et puissance.</p>"
+ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+relu = "redemarrage"
+
+[sections.audio]
+titre = "Le son [audio]"
+intro = "<p>Les deux sens audio entre la station et le poste (interface son type Digirig, SignaLink, ou carte USB du poste).</p>"
+ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+relu = "redemarrage"
+
+[sections.tools]
+titre = "Outils [tools]"
+intro = "<p>Où trouver Hamlib quand il n'est pas dans le chemin du système.</p>"
+ou = "Assistant (menu 2) ou menu 14."
+relu = "redemarrage"
+
+[sections.network]
+titre = "Réseau [network]"
+intro = "<p>Comment la page web et l'application joignent la station. Voir aussi le guide d'accès distant (VPN ou port exposé avec HTTPS).</p>"
+ou = "Assistant (menu 2), appairage d'un téléphone (menu 19), ou menu 14."
+relu = "redemarrage"
+
+[sections.safety]
+titre = "Sécurités d'émission [safety]"
+intro = "<p>Les règles que la station applique à TOUTE émission demandée à distance, indépendamment de la page et de l'application.</p>"
+ou = "Menu 14 ; seuils de température : menu 16 ; rediffusion : assistant (menu 2)."
+relu = "redemarrage"
+
+[sections.bands]
+titre = "Bandes autorisées [[bands]]"
+intro = """
+<p>Une entrée par bande où l'émission est permise. <strong>Liste vide = réception seule.</strong> Les bandes proposées
+par l'assistant (IARU Région 1) sont un point de départ : vérifiez-les pour votre licence et votre pays.</p>
+"""
+ou = "Assistant (menu 2) ou menu 14."
+relu = "redemarrage"
+
+[sections.clients]
+titre = "Comptes [[clients]]"
+intro = "<p>Une entrée par compte qui peut se connecter : opérateurs (contrôle complet) et visiteurs (écoute seule).</p>"
+ou = "Assistant (menu 2), visiteurs (menu 20), commande <code>trx-setup --add-client</code>."
+relu = "chaud"
+
+[sections.access]
+titre = "Visiteurs en réception seule [access]"
+intro = "<p>Des comptes qui écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste.</p>"
+ou = "Menu 20."
+relu = "chaud"
+
+[sections.swr]
+titre = "Mesure de TOS [swr]"
+intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 21.</p>"
+ou = "Menu 14."
+relu = "redemarrage"
+
+[sections.spectrum]
+titre = "Spectre HF du poste [spectrum]"
+intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
+ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+relu = "redemarrage"
+
+[sections.selcall]
+titre = "SELCALL [selcall]"
+intro = "<p>Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.</p>"
+ou = "Menu 14 ; le code et les options se règlent depuis la page ou l'application."
+relu = "redemarrage"
+
+[sections.cluster]
+titre = "Cluster DX [cluster]"
+intro = "<p>Les spots des clusters DX, du RBN et des cibistes, affichés sur le spectre et en liste.</p>"
+ou = "Menu 14 ; mots de passe des sources : fichier <code>secrets.toml</code> (jamais ici)."
+relu = "redemarrage"
+
+[sections."cluster.source"]
+titre = "Sources du Cluster DX [[cluster.source]]"
+intro = "<p>Une entrée par source de spots (cluster telnet, RBN, site web).</p>"
+ou = "Menu 14."
+relu = "redemarrage"
+
+[sections.supervisor]
+titre = "Superviseur [supervisor]"
+intro = """
+<p>La seconde couche de sécurité, indépendante de la passerelle : elle surveille l'émission, rigctld et la machine, coupe
+l'émission en cas de doute et relance ce qui ne répond plus.</p>
+"""
+ou = "Menu 14."
+relu = "redemarrage"
+
+[sections.modules]
+titre = "Modules [modules]"
+intro = "<p>Programmes complémentaires lancés à côté de la station (Cluster DX…), reliés par un bus local.</p>"
+ou = "Menu 14."
+relu = "redemarrage"
+
+[sections.update]
+titre = "Mises à jour [update]"
+intro = "<p>Recherche des nouvelles versions publiées (rien n'est installé sans votre accord).</p>"
+ou = "Menu 14 ; installation : menu 10."
+relu = "redemarrage"
+
+# ---------------------------------------------------------------- racine
+
+[reglages."racine.schema_version"]
+role = "Version du format du fichier. La station la met à jour elle-même lors d'une migration."
+niveau = "expert"
+
+[reglages."racine.config_revision"]
+role = "Compteur incrémenté à chaque enregistrement par TRX Console : permet de savoir quelle version du fichier est en service."
+niveau = "expert"
+
+# ---------------------------------------------------------------- rig
+
+[reglages."rig.model"]
+role = "Numéro du modèle du poste dans Hamlib (liste : <code>rigctl -l</code>). 1 = poste factice, pour essayer sans matériel."
+niveau = "courant"
+exemple = "IC-7300MK2 : 3094 (Hamlib 4.7)."
+
+[reglages."rig.port"]
+role = "Port série de la liaison CAT. Sous Linux, préférez le nom stable <code>/dev/serial/by-id/…</code> (il ne change pas d'un redémarrage à l'autre)."
+niveau = "courant"
+exemple = "Windows : <code>COM8</code> ; Linux : <code>/dev/serial/by-id/usb-Silicon_Labs_…-if00-port0</code>."
+
+[reglages."rig.speed"]
+role = "Débit série de la liaison CAT. Vide : le débit par défaut de Hamlib pour ce modèle. Doit être identique au réglage du poste."
+niveau = "courant"
+exemple = "19200, 115200."
+
+[reglages."rig.ptt_type"]
+role = "Comment la station passe le poste en émission : <code>RIG</code> (commande CAT), <code>RTS</code> ou <code>DTR</code> (ligne d'un port série), <code>GPIO</code> / <code>GPION</code> (broche du Raspberry Pi), <code>NONE</code> (aucune : réception seule)."
+niveau = "courant"
+securite = "La station relit l'état du PTT après chaque commande ; avec <code>NONE</code>, aucune émission n'est possible."
+
+[reglages."rig.ptt_port"]
+role = "Port de la commande PTT quand elle n'est pas sur le port CAT (RTS ou DTR d'un autre port). Vide : le port CAT."
+niveau = "expert"
+
+[reglages."rig.extra_conf"]
+role = "Options supplémentaires passées à rigctld (<code>-C nom=valeur</code>), pour un poste qui en a besoin."
+niveau = "expert"
+exemple = "[\"civaddr=0x94\"]"
+
+[reglages."rig.tx_modes"]
+role = "Modes dans lesquels l'émission est permise ; vide = tous. Sur les Icom, l'audio de la carte son USB n'est émis qu'en modes données (USB-D, LSB-D, FM-D…) : dans un autre mode, le poste modulerait avec son propre micro."
+niveau = "courant"
+securite = "Une demande d'émission dans un mode absent de la liste est refusée. La mesure de TOS utilise le premier mode FM permis ici (FM, PKTFM ou FM-D)."
+exemple = "Icom : [\"PKTUSB\", \"PKTLSB\", \"FM-D\", \"AM-D\"]."
+
+[reglages."rig.max_power_w"]
+role = "Puissance maximale du poste en watts. 0 : inconnue, la page et l'application affichent des pourcentages au lieu de watts."
+niveau = "courant"
+exemple = "100 pour un poste de 100 W."
+
+# ---------------------------------------------------------------- audio
+
+[reglages."audio.capture_device"]
+role = "Carte son qui reçoit l'audio du poste (le son entendu à distance). Vide : la carte par défaut du système."
+niveau = "courant"
+exemple = "Linux : <code>plughw:CARD=CODEC,DEV=0</code> ; Windows : <code>Microphone (USB Audio CODEC)</code>."
+
+[reglages."audio.playback_device"]
+role = "Carte son qui envoie l'audio vers le poste (votre voix en émission). Vide : la carte par défaut du système."
+niveau = "courant"
+
+[reglages."audio.sample_rate"]
+role = "Fréquence d'échantillonnage. Seule la valeur 48 000 est gérée (codec Opus)."
+niveau = "expert"
+bornes = "48000 uniquement."
+
+[reglages."audio.rx_gain_db"]
+role = "Gain appliqué au son reçu, en dB (négatif = moins fort)."
+niveau = "courant"
+
+[reglages."audio.tx_gain_db"]
+role = "Gain appliqué au son envoyé au poste, en dB."
+niveau = "courant"
+securite = "Un excès sature l'émetteur : réglez-le sur charge fictive en surveillant l'ALC."
+
+# ---------------------------------------------------------------- tools
+
+[reglages."tools.hamlib_dir"]
+role = "Dossier d'installation de Hamlib sous Windows (celui qui contient <code>bin\\rigctld.exe</code>). Vide : Hamlib doit être dans le PATH."
+niveau = "courant"
+exemple = "<code>C:\\Program Files\\hamlib-w64-4.7.2</code>"
+
+# ---------------------------------------------------------------- network
+
+[reglages."network.rigctld_host"]
+role = "Adresse d'écoute de rigctld, le service Hamlib qui parle au poste."
+niveau = "expert"
+securite = "rigctld n'a AUCUNE authentification : il doit écouter en local seulement (127.0.0.1). La station refuse toute autre valeur."
+
+[reglages."network.rigctld_port"]
+role = "Port local de rigctld."
+niveau = "expert"
+
+[reglages."network.gateway_bind"]
+role = "Adresse d'écoute de la station pour la page et l'application. <code>127.0.0.1</code> : cette machine seulement ; l'adresse de la machine sur votre VPN ; ou <code>0.0.0.0</code> : toutes ses adresses."
+niveau = "courant"
+securite = "Hors de la machine, HTTPS est exigé (<code>tls_cert</code>, <code>tls_key</code>), sauf <code>allow_insecure_http</code> dans un VPN."
+
+[reglages."network.gateway_port"]
+role = "Port de la station pour la page web et l'application."
+niveau = "courant"
+
+[reglages."network.web_client"]
+role = "Sert la page web de contrôle sur le même port que l'application. false : application seulement."
+niveau = "expert"
+
+[reglages."network.tls_cert"]
+role = "Certificat HTTPS de la station (fichier PEM). L'assistant en génère un ; son empreinte sert à l'appairage du téléphone (menu 19)."
+niveau = "courant"
+
+[reglages."network.tls_key"]
+role = "Clé privée du certificat HTTPS."
+niveau = "courant"
+securite = "Fichier secret : il ne doit être lisible que par la station."
+
+[reglages."network.allow_insecure_http"]
+role = "Autorise l'écoute hors de la machine SANS HTTPS. À n'accepter que dans un VPN qui chiffre déjà tout."
+niveau = "expert"
+securite = "Sur Internet sans VPN, mots de passe et audio passeraient en clair : laissez false."
+
+[reglages."network.trusted_proxies"]
+role = "Adresses (ou plages) des relais de confiance devant la station, dont l'en-tête X-Forwarded-For est cru pour connaître l'adresse réelle du client."
+niveau = "expert"
+
+[reglages."network.ice_servers"]
+role = "Serveurs STUN/TURN pour établir l'audio (WebRTC) à travers Internet. [] : réseau local ou VPN seulement."
+niveau = "expert"
+
+# ---------------------------------------------------------------- safety
+
+[reglages."safety.tot_s"]
+role = "Temps maximal d'une émission (TOT) en secondes : au-delà, la station repasse en réception, avec un bip d'avertissement avant."
+niveau = "courant"
+bornes = "Au-dessus de 0 et au plus <code>tot_ceiling_s</code>."
+securite = "Limite aussi la durée d'un enregistrement rediffusé (TOT moins 5 s)."
+
+[reglages."safety.tot_ceiling_s"]
+role = "Plafond du TOT : la valeur de <code>tot_s</code> ne peut pas le dépasser."
+niveau = "courant"
+securite = "Le superviseur coupe de son côté au-delà de <code>[supervisor] tot_abs_s</code>, qui doit rester plus grand."
+
+[reglages."safety.enforce_bands"]
+role = "true : la station refuse d'émettre hors des <code>[[bands]]</code>. false : c'est le poste qui l'interdit (par exemple le « TX limit » des Icom) ; la responsabilité vous revient."
+niveau = "courant"
+securite = "Avec true et une liste de bandes vide, aucune émission n'est possible (réception seule)."
+
+[reglages."safety.warn_before_s"]
+role = "Secondes avant la fin du TOT où l'avertissement est donné."
+niveau = "expert"
+bornes = "Entre 0 et <code>tot_s</code>."
+
+[reglages."safety.heartbeat_interval_ms"]
+role = "Cadence attendue des battements du téléphone ou de la page pendant une émission (preuve que le client est toujours là)."
+niveau = "expert"
+
+[reglages."safety.heartbeat_timeout_ms"]
+role = "Sans battement depuis ce délai, la station repasse en réception (client perdu, réseau coupé)."
+niveau = "expert"
+securite = "Ne l'augmentez pas sans raison : c'est ce qui coupe une émission dont le client a disparu."
+
+[reglages."safety.rig_temp_warn_c"]
+role = "Température du poste (si Hamlib la donne) à partir de laquelle un avertissement est affiché et envoyé."
+niveau = "courant"
+bornes = "Entre 20 et 90 °C, plus petit que <code>rig_temp_cut_c</code>."
+
+[reglages."safety.rig_temp_cut_c"]
+role = "Au-delà, l'émission à distance est coupée et refusée jusqu'au retour sous <code>rig_temp_warn_c</code>."
+niveau = "courant"
+
+[reglages."safety.allow_replay"]
+role = "Autorise la rediffusion d'un enregistrement de l'audio reçu (page et application) : enregistrer un correspondant puis le renvoyer en émission. Demandé par l'assistant à l'ajout du poste ; refusé par défaut."
+niveau = "courant"
+securite = "Rediffuser l'émission d'une station à des tiers est en général INTERDIT au service amateur : n'activez qu'en connaissance de cause, sous votre responsabilité."
+depuis = "0.91.0"
+
+# ---------------------------------------------------------------- bands
+
+[reglages."bands.name"]
+role = "Nom de la bande, affiché dans les messages."
+niveau = "courant"
+exemple = "\"40m\""
+
+[reglages."bands.low_mhz"]
+role = "Limite basse de la bande, en MHz."
+niveau = "courant"
+exemple = "7.000"
+
+[reglages."bands.high_mhz"]
+role = "Limite haute de la bande, en MHz."
+niveau = "courant"
+exemple = "7.200"
+
+# ---------------------------------------------------------------- clients
+
+[reglages."clients.id"]
+role = "Identifiant de connexion du compte, saisi dans la page ou l'application."
+niveau = "courant"
+exemple = "\"telephone\", \"voiture\""
+
+[reglages."clients.token"]
+role = "Ancien secret en clair (anciennes versions). Toujours accepté, mais à remplacer par un mot de passe (<code>password_hash</code>)."
+niveau = "expert"
+securite = "Un secret en clair dans le fichier est lisible par qui lit le fichier : remplacez-le."
+
+[reglages."clients.password_hash"]
+role = "Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 20 ou <code>trx-setup --set-password</code>."
+niveau = "courant"
+
+[reglages."clients.role"]
+role = "<code>operator</code> : contrôle complet ; <code>listener</code> : visiteur en écoute seule, aucune commande vers le poste."
+niveau = "courant"
+
+[reglages."clients.pseudo"]
+role = "Nom montré aux autres connectés à la place de l'identifiant (plusieurs comptes peuvent porter le même)."
+niveau = "courant"
+
+[reglages."clients.enabled"]
+role = "false : connexion refusée, et une connexion en cours est fermée."
+niveau = "courant"
+
+[reglages."clients.expires"]
+role = "Date de fin du compte (AAAA-MM-JJ, heure de la station) ; vide : jamais."
+niveau = "courant"
+
+# ---------------------------------------------------------------- access
+
+[reglages."access.max_listeners"]
+role = "Nombre de visiteurs connectés en même temps ; 0 : écoute des visiteurs fermée sur la station. Sinon, l'opérateur ouvre ou ferme l'écoute depuis sa page ou l'application."
+niveau = "courant"
+bornes = "0 à 20."
+
+[reglages."access.max_operators"]
+role = "Nombre de connexions opérateur en même temps (quota à part : un visiteur ne prend jamais la place d'un opérateur)."
+niveau = "expert"
+bornes = "1 à 8."
+
+[reglages."access.listeners_need_operator"]
+role = "true : visiteurs admis seulement si un opérateur est connecté à distance."
+niveau = "courant"
+
+[reglages."access.operator_grace_s"]
+role = "Après la perte du dernier opérateur, attente avant de déconnecter les visiteurs."
+niveau = "expert"
+bornes = "0 à 600 s."
+
+[reglages."access.listeners_outside_bands"]
+role = "false : silence pour les visiteurs quand la réception sort des bandes de la station."
+niveau = "courant"
+
+[reglages."access.listener_spectrum_fps"]
+role = "Cadence maximale du spectre HF envoyé aux visiteurs (images par seconde) ; l'opérateur garde la sienne."
+niveau = "expert"
+bornes = "1 à 20."
+
+[reglages."access.overload_temp_c"]
+role = "Protection de la station : température du processeur au-delà de laquelle (pendant 10 s) les visiteurs sont déconnectés."
+niveau = "expert"
+bornes = "50 à 105 °C."
+
+[reglages."access.overload_cpu_pct"]
+role = "Même protection : charge du processeur (tous cœurs) en %."
+niveau = "expert"
+bornes = "50 à 100 %."
+
+[reglages."access.overload_lag_ms"]
+role = "Même protection : retard de la boucle de la station, en millisecondes."
+niveau = "expert"
+bornes = "20 à 2000 ms."
+
+[reglages."access.overload_mem_pct"]
+role = "Même protection : mémoire libre minimale, en %."
+niveau = "expert"
+bornes = "1 à 50 %."
+
+# ---------------------------------------------------------------- swr
+
+[reglages."swr.enabled"]
+role = "false : la mesure de TOS n'est pas proposée."
+niveau = "courant"
+depuis = "0.90.0"
+
+[reglages."swr.max_power_pct"]
+role = "Plafond de puissance de la mesure, en % de la puissance du poste. L'opérateur choisit la puissance (15 % par défaut) sous ce plafond."
+niveau = "courant"
+bornes = "5 à 50 %."
+securite = "Jamais au-dessus de 50 % : quelques watts suffisent pour mesurer."
+depuis = "0.90.0"
+
+[reglages."swr.max_points"]
+role = "Nombre maximal de points d'une mesure."
+niveau = "expert"
+bornes = "2 à 200."
+depuis = "0.90.0"
+
+[reglages."swr.point_tx_max_s"]
+role = "Durée maximale de l'émission d'un point. Le temps réel est étalonné au premier usage pour chaque modèle de poste, sans dépasser cette valeur."
+niveau = "expert"
+bornes = "0,5 à 3 s."
+depuis = "0.90.0"
+
+# ---------------------------------------------------------------- spectrum
+
+[reglages."spectrum.enabled"]
+role = "Spectre et waterfall HF du poste dans la page et l'application. false : pas de spectre HF (un seul port vers le poste)."
+niveau = "courant"
+
+[reglages."spectrum.source"]
+role = "<code>civ_port</code> : second port série du poste réglé en CI-V (Icom, recommandé) ; <code>rigctld</code> : flux de Hamlib 4.6+ (déconseillé sous Windows)."
+niveau = "courant"
+
+[reglages."spectrum.data_port"]
+role = "Source rigctld : port UDP local de la diffusion du spectre."
+niveau = "expert"
+
+[reglages."spectrum.max_fps"]
+role = "Cadence maximale du spectre envoyé aux clients (images par seconde)."
+niveau = "expert"
+
+[reglages."spectrum.port"]
+role = "Source civ_port : second port série du poste."
+niveau = "courant"
+securite = "Jamais le port CAT ni le port PTT. Sur l'IC-7300, régler « USB SEND » et « USB Keying » sur OFF pour ce port : sinon il pourrait mettre le poste en émission."
+exemple = "Windows : <code>COM7</code> ; Linux : <code>/dev/serial/by-id/…-if02-port0</code>."
+
+[reglages."spectrum.civ_address"]
+role = "Source civ_port : adresse CI-V du poste, en hexadécimal (revérifiée à chaque ouverture)."
+niveau = "courant"
+exemple = "IC-7300MK2 : B6."
+
+[reglages."spectrum.baud"]
+role = "Source civ_port : débit du second port (identique au réglage du poste)."
+niveau = "courant"
+bornes = "9600, 19200, 38400, 57600 ou 115200."
+
+# ---------------------------------------------------------------- selcall
+
+[reglages."selcall.enabled"]
+role = "Fonction SELCALL disponible sur cette station."
+niveau = "courant"
+
+[reglages."selcall.send_on_tx_end"]
+role = "Trame SELCALL émise en fin d'émission, à la place du roger bip (seulement si le temps d'émission restant la contient)."
+niveau = "courant"
+
+[reglages."selcall.manual_repeat"]
+role = "Appel manuel : nombre d'émissions de la trame."
+niveau = "expert"
+bornes = "1 à 5."
+
+[reglages."selcall.manual_gap_ms"]
+role = "Appel manuel : silence entre deux trames, en millisecondes."
+niveau = "expert"
+
+[reglages."selcall.filter_mode"]
+role = "Ce que deviennent les tonalités SELCALL dans le son reçu : <code>mute</code> (coupées), <code>attenuate</code> (atténuées), <code>chime</code> (remplacées par un carillon)."
+niveau = "expert"
+
+[reglages."selcall.attenuation_db"]
+role = "Mode attenuate : atténuation des tonalités, en dB."
+niveau = "expert"
+
+[reglages."selcall.audio_delay_ms"]
+role = "Retard du son reçu pour que les tonalités soient filtrées avant d'être entendues."
+niveau = "expert"
+bornes = "250 à 1000 ms."
+
+[reglages."selcall.tx_level_dbfs"]
+role = "Niveau de la trame émise, sous le seuil de l'ALC (réglable automatiquement depuis la page ou l'application)."
+niveau = "expert"
+
+[reglages."selcall.notify_on_call"]
+role = "Notification (ntfy) quand un appel ouvre le squelch."
+niveau = "courant"
+
+[reglages."selcall.history_size"]
+role = "Nombre de derniers codes gardés."
+niveau = "expert"
+
+# ---------------------------------------------------------------- cluster
+
+[reglages."cluster.enabled"]
+role = "Module Cluster DX (spots des clusters, du RBN et des cibistes)."
+niveau = "courant"
+
+[reglages."cluster.call"]
+role = "VOTRE indicatif radioamateur, seul envoyé aux clusters et au RBN. Vide : le module refuse de démarrer."
+niveau = "courant"
+
+[reglages."cluster.cb_call"]
+role = "Votre indicatif de cibiste (sources CB) ; aujourd'hui envoyé nulle part."
+niveau = "expert"
+
+[reglages."cluster.modes"]
+role = "Modes suivis (CW, SSB, AM, FM, FREEDV) ; vide : tous. Jamais les modes numériques."
+niveau = "courant"
+
+[reglages."cluster.bands"]
+role = "Bandes suivies ; vide : toutes."
+niveau = "courant"
+
+[reglages."cluster.continents"]
+role = "Continent du SPOTTEUR (celui qui annonce) ; vide : tous."
+niveau = "expert"
+
+[reglages."cluster.blacklist"]
+role = "Indicatifs ignorés ; <code>XX*</code> désigne un préfixe."
+niveau = "expert"
+
+[reglages."cluster.ttl_min"]
+role = "Durée de vie des spots des clusters et des cibistes, en minutes."
+niveau = "expert"
+
+[reglages."cluster.rbn_ttl_min"]
+role = "Durée de vie des spots du RBN, en minutes."
+niveau = "expert"
+
+[reglages."cluster.cty_update"]
+role = "Mise à jour hebdomadaire de la liste des pays des indicatifs (cty.dat)."
+niveau = "expert"
+
+[reglages."cluster.source"]
+role = "Les sources de spots : voir la section suivante."
+niveau = "expert"
+
+# ---------------------------------------------------------------- cluster.source
+
+[reglages."cluster.source.name"]
+role = "Nom de la source, affiché dans l'état des flux."
+niveau = "expert"
+
+[reglages."cluster.source.type"]
+role = "<code>telnet</code> (cluster DX), <code>rbn</code> (Reverse Beacon Network), <code>web</code> (site, cibistes)."
+niveau = "expert"
+
+[reglages."cluster.source.host"]
+role = "telnet, rbn : nom du serveur."
+niveau = "expert"
+
+[reglages."cluster.source.port"]
+role = "telnet, rbn : port du serveur."
+niveau = "expert"
+
+[reglages."cluster.source.url"]
+role = "web : adresse de la page (https seulement)."
+niveau = "expert"
+
+[reglages."cluster.source.call"]
+role = "Indicatif propre à cette source ; vide : <code>[cluster] call</code>."
+niveau = "expert"
+
+[reglages."cluster.source.secret"]
+role = "NOM d'un mot de passe rangé dans <code>secrets.toml</code> (jamais le mot de passe lui-même) ; vide : aucun."
+niveau = "expert"
+
+[reglages."cluster.source.priority"]
+role = "Clusters telnet : 1 = principal, puis secours dans l'ordre."
+niveau = "expert"
+
+[reglages."cluster.source.enabled"]
+role = "false : source ignorée."
+niveau = "expert"
+
+# ---------------------------------------------------------------- supervisor
+
+[reglages."supervisor.tot_abs_s"]
+role = "TOT absolu du superviseur : au-delà, il coupe l'émission lui-même, même si la passerelle ne le fait pas. Coupe aussi une émission faite au micro du poste."
+niveau = "courant"
+securite = "Doit rester strictement plus grand que <code>[safety] tot_ceiling_s</code>."
+
+[reglages."supervisor.poll_interval_s"]
+role = "Cadence de surveillance au repos (plus rapide pendant une émission)."
+niveau = "expert"
+
+[reglages."supervisor.max_reboots_per_hour"]
+role = "Redémarrages de la machine permis par heure ; au-delà, mode sûr (réception, accès coupé)."
+niveau = "expert"
+
+[reglages."supervisor.notify_url"]
+role = "Adresse de notification ntfy pour les alertes de la station (facultatif)."
+niveau = "courant"
+exemple = "<code>https://ntfy.sh/mon-sujet-secret</code>"
+securite = "Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes."
+
+[reglages."supervisor.status_path"]
+role = "Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et TRX Console."
+niveau = "expert"
+defaut = "<code>/run/trx-remote/gateway-status.json</code> (Linux) ; <code>C:\\ProgramData\\trx-remote\\run\\gateway-status.json</code> (Windows)."
+
+[reglages."supervisor.state_dir"]
+role = "Dossier d'état de la station : mode sûr, mémoires, profils, mesures de TOS, identifiant de station."
+niveau = "expert"
+defaut = "<code>/var/lib/trx-remote</code> (Linux) ; <code>C:\\ProgramData\\trx-remote\\state</code> (Windows)."
+
+[reglages."supervisor.service_mode"]
+role = "<code>auto</code>, <code>systemd</code> (Linux : services du système) ou <code>managed</code> (le superviseur lance lui-même les processus, Windows)."
+niveau = "expert"
+
+[reglages."supervisor.instance_lock_port"]
+role = "Port local réservé pour garantir qu'un seul superviseur tourne."
+niveau = "expert"
+
+[reglages."supervisor.stale_after_s"]
+role = "Passerelle jugée muette si son fichier d'état ne change plus depuis ce délai."
+niveau = "expert"
+
+[reglages."supervisor.startup_grace_s"]
+role = "Délai de grâce au démarrage, le temps que la passerelle et rigctld soient prêts."
+niveau = "expert"
+
+[reglages."supervisor.mismatch_grace_s"]
+role = "Tolérance avant de juger une émission « inexpliquée » (poste en émission sans client)."
+niveau = "expert"
+
+[reglages."supervisor.rigctld_fail_s"]
+role = "rigctld injoignable depuis ce délai : il est redémarré."
+niveau = "expert"
+
+[reglages."supervisor.recovery_wait_s"]
+role = "Attente entre deux niveaux de l'échelle de reprise (relances, reset USB, mode sûr)."
+niveau = "expert"
+
+[reglages."supervisor.healthy_reset_s"]
+role = "Durée sans problème avant de repartir du premier niveau de l'échelle de reprise."
+niveau = "expert"
+
+[reglages."supervisor.temp_alert_c"]
+role = "Température de la machine au-delà de laquelle une alerte est envoyée (sans autre action)."
+niveau = "expert"
+
+[reglages."supervisor.alive_every_h"]
+role = "Message « Station en service » envoyé par <code>notify_url</code> toutes les N heures (priorité minimale) ; 0 : aucun."
+niveau = "courant"
+
+[reglages."supervisor.allow_local_tx"]
+role = "true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes."
+niveau = "courant"
+securite = "false : toute émission non demandée par la station est coupée."
+
+[reglages."supervisor.gateway_unit"]
+role = "Linux : nom du service systemd de la passerelle."
+niveau = "expert"
+
+[reglages."supervisor.rigctld_unit"]
+role = "Linux : nom du service systemd de rigctld."
+niveau = "expert"
+
+# ---------------------------------------------------------------- modules
+
+[reglages."modules.run"]
+role = "Modules à faire tourner ; vide : aucun (pas de bus)."
+niveau = "expert"
+exemple = "[\"cluster\"]"
+
+[reglages."modules.bus_port"]
+role = "Port de l'API interne des modules, en local seulement."
+niveau = "expert"
+
+[reglages."modules.run_as"]
+role = "Linux : compte sous lequel tournent les modules (jamais root)."
+niveau = "expert"
+
+[reglages."modules.extra_dir"]
+role = "Dossier de modules supplémentaires ; vide : modules fournis seulement."
+niveau = "expert"
+
+# ---------------------------------------------------------------- update
+
+[reglages."update.enabled"]
+role = "Cherche une nouvelle version au démarrage puis toutes les 24 h ; la console l'annonce, rien n'est installé sans votre accord."
+niveau = "courant"
+
+[reglages."update.allow_prerelease"]
+role = "true : propose aussi les pré-versions (versions d'essai)."
+niveau = "expert"
