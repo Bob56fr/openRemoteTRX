@@ -18,7 +18,7 @@ immédiatement audible. Objectif réaliste : **confort et préférence d'écoute
 - Android Auto : toujours mono (bypass).
 - iOS : hors périmètre (aucune application).
 
-Chaîne de la page : flux reçu → débrouillage du scrambler (s'il est en service) → **spatialisation** → limiteur
+Chaîne de la page : flux reçu → débrouillage du scrambler OU **spatialisation** (exclusifs, étape 118) → limiteur
 stéréo (toujours actif quand ST est en service) → élément audio (volume, sourdine, sortie inchangés).
 
 ## 3. Moteurs (V1)
@@ -111,6 +111,6 @@ Automatique (`tests/js/spatial_test.js`, puis tests Kotlin) :
 Sur l'appareil :
 - [ ] Casque filaire puis Bluetooth A2DP : effet audible, A/B sans clic, latence non perçue.
 - [ ] Émission puis retour en réception avec le casque Bluetooth : PTT du casque inchangé (étape 96).
-- [ ] Débrouillage du scrambler + ST ensemble.
+- [ ] Débrouillage du scrambler et ST EXCLUSIFS (décision de l'utilisateur, étape 118) : mettre l'un en service coupe l'autre.
 - [ ] Visiteur : ST disponible, rien envoyé à la station.
 - [ ] Écoute comparée A/B en BLU, CW, signal faible (préférence notée).

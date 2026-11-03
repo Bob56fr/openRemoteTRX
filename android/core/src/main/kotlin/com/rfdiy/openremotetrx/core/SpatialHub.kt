@@ -9,8 +9,6 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
-import com.rfdiy.openremotetrx.logic.Scrambler
-import com.rfdiy.openremotetrx.logic.ScramblerSettings
 import com.rfdiy.openremotetrx.logic.Spatial
 import com.rfdiy.openremotetrx.logic.SpatialSettings
 import com.rfdiy.openremotetrx.logic.Spatials
@@ -40,7 +38,7 @@ data class SpatialUi(
  *
  * Le crochet de la réception de WebRTC (« render pre-processing ») ne traite qu'une voie : il ne peut pas produire de
  * stéréo. Quand ST est en service, le son reçu est donc pris par une `AudioTrackSink` (avant le volume de la piste),
- * débrouillé si le scrambler le demande, spatialisé, puis joué par un `AudioTrack` stéréo de l'application (mêmes
+ * spatialisé (jamais avec le débrouillage du scrambler : exclusifs), puis joué par un `AudioTrack` stéréo de l'application (mêmes
  * attributs « média » que WebRTC) ; la piste de WebRTC est mise au volume 0. Sinon rien ne change.
  * Mono imposé : sortie mono (casque en mode appel, haut-parleur unique), voiture (Android Auto), case « Sortie mono ».
  * Pendant l'émission, le chemin n'est jamais changé (le casque Bluetooth passe alors en mode appel, étape 96).
@@ -80,6 +78,12 @@ object SpatialHub {
         context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).edit().putString(PREF, Spatials.toJson(s).toString()).apply()
         val wasOn = _ui.value.settings.on
         _ui.value = _ui.value.copy(settings = s, failed = if (s.on && !wasOn) "" else _ui.value.failed)
+        // Débrouillage du scrambler et spatialisation : exclusifs (décision de l'utilisateur du 2026-11-03)
+        val scr = VoiceHub.ui.value.scrambler
+        if (s.on && !wasOn && scr.rx) {
+            VoiceHub.setScrambler(context, scr.copy(rx = false))
+            RigHub.service?.onRig { session, now -> session.note(now, "Spatialisation ST en service : débrouillage du scrambler coupé.") }
+        }
         apply()
     }
 
@@ -141,7 +145,7 @@ object SpatialHub {
 
     internal fun publishCorrelation(c: Double) { _ui.value = _ui.value.copy(correlation = c) }
 
-    /** Sortie stéréo de l'application : son reçu -> débrouillage éventuel -> spatialisation -> AudioTrack stéréo. */
+    /** Sortie stéréo de l'application : son reçu -> spatialisation -> AudioTrack stéréo. */
     internal class StereoOut {
         companion object {
             val ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
@@ -158,8 +162,6 @@ object SpatialHub {
         @Volatile private var track: AudioTrack? = null
         @Volatile private var spatial: Spatial? = null
         @Volatile private var wanted = Spatials.params(SpatialSettings())
-        private var scrambler: Scrambler? = null
-        private var scrApplied: ScramblerSettings? = null
         private var mono = FloatArray(0)
         private var stereo = FloatArray(0)
         private var dropped = 0L
@@ -184,7 +186,6 @@ object SpatialHub {
                     .build()
                 if (t.state != AudioTrack.STATE_INITIALIZED) { t.release(); return "Sortie stéréo indisponible sur ce téléphone." }
                 spatial = Spatial(RATE, wanted).also { it.startDry() }
-                scrambler = null; scrApplied = null
                 val prefill = FloatArray(RATE / 50 * 2)                      // 20 ms de silence : marge contre les trous
                 t.write(prefill, 0, prefill.size, AudioTrack.WRITE_NON_BLOCKING)
                 t.play()
@@ -221,13 +222,6 @@ object SpatialHub {
                     mono[f] = sum / channels / 32768f
                 }
                 if (muted) mono.fill(0f, 0, frames)
-                // Débrouillage du scrambler (le crochet de WebRTC est muet quand ST joue)
-                val scr = VoiceHub.rxProcessor.wanted
-                if (scr != null) {
-                    val s = scrambler ?: Scrambler(RATE, tx = false).also { scrambler = it }
-                    if (scr != scrApplied) { scrApplied = scr; s.set(scr.mode, scr.offsetHz) }
-                    s.process(mono, frames)
-                } else if (scrApplied != null) { scrApplied = null; scrambler?.set(null, 0) }
                 if (ReplayHub.ui.value.recording) ReplayHub.onRx(mono, frames, RATE)
                 for (f in 0 until frames) sumSq += mono[f] * mono[f]
                 sp.process(mono, frames, stereo)

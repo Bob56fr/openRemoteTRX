@@ -603,6 +603,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                     Spacer(Modifier.width(8.dp))
                     Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
+                }
+                // Boutons du client sur leur propre ligne (WF, SEL, EQ, ST, voyant du scrambler)
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
                     if (HfScope.configured(hello)) {
                         CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf)

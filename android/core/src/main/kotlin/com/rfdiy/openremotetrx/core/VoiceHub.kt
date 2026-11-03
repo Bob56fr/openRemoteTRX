@@ -79,6 +79,11 @@ object VoiceHub {
         val before = _ui.value.scrambler
         _ui.value = _ui.value.copy(scrambler = s)
         applyScrambler()
+        // Débrouillage et spatialisation ST : exclusifs (décision de l'utilisateur du 2026-11-03)
+        if (s.rx && !before.rx && SpatialHub.ui.value.settings.on) {
+            SpatialHub.setEnabled(context, false)
+            RigHub.service?.onRig { session, now -> session.note(now, "Débrouillage en service : spatialisation ST coupée.") }
+        }
         if (before.tx != s.tx || before.rx != s.rx) {
             val text = "Scrambler : émission " + (if (s.tx) "BROUILLÉE" else "en clair") + ", réception " + (if (s.rx) "débrouillée" else "en clair") +
                 " (mode « ${Scramblers.MODES.getValue(s.mode).label} »)."

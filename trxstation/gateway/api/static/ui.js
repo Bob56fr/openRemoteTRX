@@ -2343,6 +2343,10 @@
         if (ev.target.checked && !confirmOn("Débrouiller la RÉCEPTION ?")) { ev.target.checked = false; return; }
         scr.rx = ev.target.checked;
         ui.log(scr.rx ? "Scrambler : réception débrouillée." : "Scrambler : réception en clair.", "");
+        if (scr.rx && spx && stSet.on) {                                            // débrouillage et ST exclusifs (2026-11-03)
+          stSet = spx.validate(Object.assign({}, stSet, { on: false })); stSave(); stRender();
+          ui.log("Débrouillage en service : spatialisation ST coupée.", "");
+        }
         rxApply();
       });
       $("scr-mode").addEventListener("change", (ev) => {
@@ -2385,7 +2389,14 @@
     function stChange(next) {
       /* Nouveaux réglages : fondu dans le traitement en place ; chaîne refaite seulement si ST entre ou sort. */
       const before = stActive();
-      if (next.on && !stSet.on) stFailed = false;                                   // nouvel essai à chaque mise en service
+      if (next.on && !stSet.on) {
+        stFailed = false;                                                           // nouvel essai à chaque mise en service
+        if (sx && scr.rx) {                                                         // débrouillage et ST exclusifs (2026-11-03)
+          scr.rx = false; scrRender();
+          ui.log("Spatialisation ST en service : débrouillage du scrambler coupé.", "");
+          if (!before) { stSet = spx.validate(next); stSave(); rxApply(); return; }  // chaîne refaite sans le débrouillage
+        }
+      }
       stSet = spx.validate(next);
       stSave();
       const after = stActive();
