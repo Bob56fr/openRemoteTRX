@@ -27,6 +27,7 @@ class RigAutoService : MediaBrowserService() {
 
     override fun onDestroy() {
         RigHub.carConnected(false)
+        SpatialHub.setCar(false)
         RigMedia.onBrowseChanged = null
         RigMedia.release(RigMedia.USER_CAR)
         super.onDestroy()
@@ -34,7 +35,7 @@ class RigAutoService : MediaBrowserService() {
 
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         if (clientPackageName !in Car.BROWSE_CALLERS && clientPackageName != packageName) return null
-        if (clientPackageName == AUTO) RigHub.carConnected(true)          // Android Auto : mode conduite automatique
+        if (clientPackageName == AUTO) { RigHub.carConnected(true); SpatialHub.setCar(true) }          // Android Auto : mode conduite automatique
         return BrowserRoot(ROOT, null)
     }
 

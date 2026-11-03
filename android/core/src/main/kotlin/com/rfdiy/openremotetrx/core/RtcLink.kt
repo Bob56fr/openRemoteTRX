@@ -56,6 +56,7 @@ class RtcLink(
     private var micTrack: AudioTrack? = null
     private var remoteTrack: AudioTrack? = null
     private var sink: AudioTrackSink? = null                       // waterfall audio : gardée d'une connexion à l'autre
+    private var stereo: AudioTrackSink? = null                     // spatialisation (SpatialHub) : idem
     private var muted = false
 
     init {
@@ -118,6 +119,7 @@ class RtcLink(
                     remoteTrack = track
                     track.setEnabled(!muted)
                     sink?.let { track.addSink(it) }
+                    stereo?.let { track.addSink(it); track.setVolume(0.0) }
                 }
             }
         }) ?: throw AttemptException("client_error", "WebRTC indisponible")
@@ -201,11 +203,27 @@ class RtcLink(
     fun setMicOpen(open: Boolean) {
         micTrack?.setEnabled(open)
         VoiceHub.setTx(open)                                        // traîne coupée, relecture arrêtée à la prise
+        SpatialHub.setTx(open)
+    }
+
+    /**
+     * Spatialisation : le son reçu part vers la sortie stéréo de l'application (`value`), la piste de WebRTC est mise
+     * au volume 0 ; null = retour au son de WebRTC.
+     */
+    fun useStereo(value: AudioTrackSink?) {
+        stereo?.let { old -> remoteTrack?.let { runCatching { it.removeSink(old) } } }
+        stereo = value
+        remoteTrack?.let { t ->
+            runCatching {
+                if (value != null) { t.addSink(value); t.setVolume(0.0) } else t.setVolume(1.0)
+            }
+        }
     }
 
     /** Sourdine de la réception (le volume se règle par les touches « média » du téléphone). */
     fun setMuted(value: Boolean) {
         muted = value
+        SpatialHub.setMuted(value)
         remoteTrack?.setEnabled(!value)
     }
 
@@ -221,11 +239,13 @@ class RtcLink(
         generation++
         micTrack?.setEnabled(false)
         VoiceHub.setTx(false)
+        SpatialHub.setTx(false)
         dc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         dc = null
         sc?.let { d -> runCatching { d.unregisterObserver(); d.close(); d.dispose() } }
         sc = null
         sink?.let { s -> remoteTrack?.let { runCatching { it.removeSink(s) } } }   // avant de libérer la piste
+        stereo?.let { s -> remoteTrack?.let { runCatching { it.removeSink(s) } } }
         pc?.let { p -> runCatching { p.close(); p.dispose() } }
         pc = null
         micTrack?.let { t -> runCatching { t.dispose() } }
@@ -237,6 +257,7 @@ class RtcLink(
 
     fun release() {
         close()
+        SpatialHub.detach(this)
         runCatching { factory.dispose() }
         // JAMAIS voiceFx.destroy() : voir voiceFx() plus bas.
     }
