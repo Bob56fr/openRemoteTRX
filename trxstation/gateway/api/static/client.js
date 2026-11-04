@@ -492,6 +492,24 @@
              noiseSuppression: p.noise === null ? c.noise === true : p.noise, autoGainControl: false };
   }
 
+  function micErrorText(err) {
+    /* Refus de getUserMedia expliqué (Windows surtout). Micro USB sur le pilote Intel de déchargement audio USB
+       (AT2020USB-XP, relevé dans Breizh Audio Box) : un logiciel qui l'ouvre en WASAPI exclusif le laisse bloqué
+       jusqu'au débranchement, et tout autre logiciel, navigateur compris, reçoit alors NotReadableError. */
+    const name = err && err.name ? err.name : String(err);
+    const why = {
+      NotReadableError: "le micro est occupé ou bloqué par son pilote : fermez le logiciel qui l'utilise peut-être en mode exclusif " +
+        "(logiciel audio, Breizh Audio Box…) ; s'il reste bloqué, débranchez puis rebranchez le micro et reconnectez-vous",
+      AbortError: "le micro n'a pas démarré : débranchez puis rebranchez-le et reconnectez-vous",
+      NotAllowedError: "accès refusé : autorisez le micro pour cette page (cadenas de la barre d'adresse) et, sous Windows, " +
+        "dans Paramètres > Confidentialité > Microphone (« Autoriser les applications de bureau »)",
+      SecurityError: "accès refusé par le navigateur (page HTTPS exigée)",
+      NotFoundError: "aucun micro trouvé : vérifiez qu'il est branché et activé dans les paramètres de son de Windows",
+      OverconstrainedError: "le micro choisi n'existe plus (débranché ou renommé) : choisissez-le de nouveau dans la liste",
+    }[name];
+    return "Micro refusé ou absent (" + name + ")" + (why ? " : " + why : "") + ". Réception seule.";
+  }
+
   function clarifierText(hz) {
     return (hz >= 0 ? "+" : "") + Math.round(hz / 10) * 10 + " Hz";
   }
@@ -865,7 +883,7 @@
                 this.ui.log("Micro utilisé : " + label + ".", "");
               }
             } catch (err) {
-              this.ui.log("Micro refusé ou absent (" + (err && err.name ? err.name : err) + ") : réception seule.", "warn");
+              this.ui.log(micErrorText(err), "warn");
             }
           }
         }
@@ -1892,7 +1910,7 @@
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, ALC_OVERLOAD,
+                indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
                 LISTENER_COMMANDS, presenceView, durationText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -67,6 +67,15 @@ test("profils du micro : contrôle automatique de gain toujours coupé ; casque 
   assert.deepEqual(web.micConstraints("custom", { echo: false, noise: true }), { echoCancellation: false, noiseSuppression: true, autoGainControl: false });
 });
 
+test("refus du micro expliqué : micro bloqué par son pilote (AT2020USB-XP), accès refusé, micro disparu", () => {
+  const busy = web.micErrorText({ name: "NotReadableError" });
+  assert.match(busy, /NotReadableError/); assert.match(busy, /exclusif/); assert.match(busy, /débranchez/); assert.match(busy, /Réception seule\.$/);
+  assert.match(web.micErrorText({ name: "NotAllowedError" }), /Confidentialité > Microphone/);
+  assert.match(web.micErrorText({ name: "OverconstrainedError" }), /dans la liste/);
+  assert.equal(web.micErrorText({ name: "Bizarre" }), "Micro refusé ou absent (Bizarre). Réception seule.");
+  assert.equal(web.micErrorText("texte"), "Micro refusé ou absent (texte). Réception seule.");
+});
+
 test("voyant OVERLOAD ALC : à partir du seuil commun, pendant toute émission", () => {
   assert.equal(web.ALC_OVERLOAD, 0.5);
   const over = web.indicatorsView({}, { ALC: 0.6 }, {}, {});

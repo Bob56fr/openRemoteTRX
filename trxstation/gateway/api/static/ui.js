@@ -2189,6 +2189,23 @@
         voiceChain = chain; voiceCtx = ctx; voiceRaw = stream.getAudioTracks()[0] || null;
         voiceRender();
         scrApplyTx();                                                  // scrambler d'émission en service : inséré tout de suite
+        // Micro muet malgré l'ouverture (pilote USB bloqué, micro coupé dans Windows) : silence NUMÉRIQUE (que des zéros)
+        // pendant 3 s de contexte audio en marche => un seul avertissement (même contrôle que Breizh Audio Box)
+        let zeroMs = 0, watchMs = 0;
+        const silenceWatch = window.setInterval(() => {
+          if (voiceChain !== chain) { window.clearInterval(silenceWatch); return; }
+          if (ctx.state !== "running") return;
+          watchMs += 500;
+          zeroMs = chain.micLevelDb() <= -120 ? zeroMs + 500 : 0;
+          if (zeroMs >= 3000) {
+            window.clearInterval(silenceWatch);
+            ui.log("Le micro ne livre que du silence numérique : micro coupé (bouton muet, volume à 0 dans Windows) ou pilote bloqué " +
+                   "(débranchez puis rebranchez le micro, puis reconnectez-vous).", "warn");
+          } else if (watchMs >= 10000) window.clearInterval(silenceWatch);
+        }, 500);
+        if (voiceRaw) voiceRaw.addEventListener("ended", () => {
+          if (voiceChain === chain) ui.log("Le micro s'est arrêté (débranché ou pilote bloqué) : plus de voix envoyée, reconnectez-vous.", "bad");
+        });
         return {
           track: chain.track, stream: chain.stream,
           setTx(on) {
