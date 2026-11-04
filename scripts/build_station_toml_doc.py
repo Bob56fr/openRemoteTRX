@@ -38,7 +38,7 @@ FOLDER = "station-toml"
 SECTIONS: list[tuple[str, type | None, bool]] = [
     ("rig", cfgmod.Rig, False), ("audio", cfgmod.Audio, False), ("network", cfgmod.Network, False),
     ("safety", cfgmod.Safety, False), ("bands", cfgmod.Band, True), ("clients", cfgmod.ClientAuth, True),
-    ("access", cfgmod.Access, False), ("swr", cfgmod.Swr, False), ("spectrum", cfgmod.Spectrum, False),
+    ("access", cfgmod.Access, False), ("swr", cfgmod.Swr, False), ("breizh", cfgmod.Breizh, False), ("spectrum", cfgmod.Spectrum, False),
     ("selcall", cfgmod.Selcall, False), ("cluster", cfgmod.Cluster, False), ("cluster.source", cfgmod.ClusterSource, True),
     ("supervisor", cfgmod.Supervisor, False), ("modules", cfgmod.Modules, False), ("update", cfgmod.Update, False),
     ("tools", cfgmod.Tools, False), ("racine", None, False),

@@ -328,6 +328,14 @@ pas en Python échantillon par échantillon. À mesurer sur le Raspberry Pi 4 (`
 Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coupé) peut commencer dès le lot 1 livré
 (vecteurs + `breizh_probe.py`).
 
+## 12 bis. Réalisation
+
+- Lot 1 FAIT (étape 120, station 0.99.0) : `trxstation/breizh/protocol.py`, `keyfile.py`, `vectors.py` ;
+  `[breizh]` dans `config.py` ; `tests/protocol/breizh_vectors.json` ; `devtools/fake_breizh.py`,
+  `devtools/breizh_probe.py` ; notice de station.toml. Pour la conversation de Breizh : ce document (§ 5), les vecteurs,
+  et `python -m trxstation.devtools.breizh_probe --host <PC de Breizh> --key <clé>` comme fausse station.
+  Session (64 bits) en HEXADÉCIMAL dans les vecteurs : un nombre JSON perdrait des chiffres en JavaScript.
+
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)
 
 1. Blocs de **480 échantillons** (10 ms) au lieu de 256.

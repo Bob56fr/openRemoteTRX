@@ -86,6 +86,12 @@ intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'applicati
 ou = "Menu 14."
 relu = "redemarrage"
 
+[sections.breizh]
+titre = "Breizh Audio Box dans l'émission [breizh]"
+intro = "<p>Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.</p>"
+ou = "Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
+relu = "redemarrage"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -432,6 +438,57 @@ role = "Durée maximale de l'émission d'un point. Le temps réel est étalonné
 niveau = "expert"
 bornes = "0,5 à 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- breizh
+
+[reglages."breizh.enabled"]
+role = "true : le son du micro de l'opérateur passe par Breizh Audio Box pendant l'émission, quand Breizh répond."
+niveau = "courant"
+securite = "Breizh ne peut jamais déclencher ni prolonger une émission : la station garde le PTT, la porte audio d'émission et son limiteur."
+depuis = "0.99.0"
+
+[reglages."breizh.host"]
+role = "Adresse IP du PC où tourne Breizh Audio Box (127.0.0.1 si c'est le même PC)."
+niveau = "courant"
+bornes = "Adresse IP privée seulement (RFC 1918 : 10/8, 172.16/12, 192.168/16 ; lien local 169.254/16 ; locale 127/8 ; IPv6 fd00::/8, fe80::/10). Ni nom d'hôte ni adresse publique."
+securite = "Le son du micro n'est pas chiffré : une adresse publique est refusée."
+depuis = "0.99.0"
+
+[reglages."breizh.port"]
+role = "Port UDP sur lequel Breizh attend la station (le même que dans l'onglet « OpenRemoteTRX » de Breizh)."
+niveau = "expert"
+bornes = "1024 à 65535."
+depuis = "0.99.0"
+
+[reglages."breizh.key_file"]
+role = "Fichier de la clé d'appairage partagée avec Breizh. Vide : <code>breizh.key</code> à côté de station.toml. La clé n'est jamais écrite dans station.toml."
+niveau = "expert"
+securite = "Fichier refusé s'il est lisible par tous les comptes."
+depuis = "0.99.0"
+
+[reglages."breizh.block_timeout_ms"]
+role = "Délai au-delà duquel un bloc de son (10 ms) qui n'est pas revenu de Breizh part sans traitement, à gain réduit."
+niveau = "expert"
+bornes = "15 à 100 ms."
+depuis = "0.99.0"
+
+[reglages."breizh.lost_ms"]
+role = "Sans aucun retour de Breizh pendant ce délai, l'émission continue en direct jusqu'à sa fin (repli)."
+niveau = "expert"
+bornes = "50 à 500 ms, plus grand que block_timeout_ms."
+depuis = "0.99.0"
+
+[reglages."breizh.fallback_gain_db"]
+role = "Gain du son direct pendant un repli (Breizh perdu), pour ne pas surmoduler un son prévu pour être traité."
+niveau = "expert"
+bornes = "-20 à 0 dB."
+depuis = "0.99.0"
+
+[reglages."breizh.reactivate_after_s"]
+role = "Après un repli, durée pendant laquelle Breizh doit répondre sans faute avant d'être repris automatiquement (jamais pendant une émission). 0 : seulement quand l'opérateur le demande."
+niveau = "expert"
+bornes = "0, ou 30 à 3600 s."
+depuis = "0.99.0"
 
 # ---------------------------------------------------------------- spectrum
 

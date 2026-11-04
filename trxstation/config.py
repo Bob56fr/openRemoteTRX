@@ -117,6 +117,28 @@ class Swr:
     point_tx_max_s: float = 2.0         # émission d'un point au plus (plafond de l'étalonnage du temps de lecture)
 
 
+BREIZH_DEFAULT_PORT = 47100
+BREIZH_KEY_FILE = "breizh.key"     # à côté de station.toml quand key_file est vide
+# Réseaux admis pour [breizh] host : le micro circule EN CLAIR, jamais vers une adresse publique.
+BREIZH_NETWORKS = tuple(ipaddress.ip_network(n) for n in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "127.0.0.0/8",
+    "fd00::/8", "fe80::/10", "::1/128"))
+
+
+@dataclass
+class Breizh:
+    """Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md). Réglages de la station ;
+    la clé d'appairage est dans un fichier à part (key_file), le volume retour dans state_dir/breizh.json."""
+    enabled: bool = False             # fonction disponible sur cette station
+    host: str = ""                    # adresse IP PRIVÉE du PC de Breizh (pas de nom d'hôte)
+    port: int = BREIZH_DEFAULT_PORT   # port UDP de Breizh
+    key_file: str = ""                # clé d'appairage ; vide = breizh.key à côté de station.toml
+    block_timeout_ms: int = 40        # bloc pas revenu à temps : il part « sec » à fallback_gain_db
+    lost_ms: int = 100                # aucun retour valable pendant ce délai : repli en direct
+    fallback_gain_db: float = -6.0    # gain du son direct en repli
+    reactivate_after_s: int = 60      # stabilité exigée avant le retour automatique (0 = seulement à la main)
+
+
 @dataclass
 class Tools:
     hamlib_dir: str = ""           # dossier d'installation de Hamlib (Windows) ; vide = PATH
@@ -389,6 +411,7 @@ class Config:
     selcall: Selcall = field(default_factory=Selcall)
     access: Access = field(default_factory=Access)
     swr: Swr = field(default_factory=Swr)
+    breizh: Breizh = field(default_factory=Breizh)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -440,6 +463,7 @@ def validate(cfg: Config) -> list[str]:
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
     p += _swr_problems(cfg.swr)
+    p += _breizh_problems(cfg.breizh, cfg)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -615,6 +639,53 @@ def _swr_problems(s: Swr) -> list[str]:
     return p
 
 
+def breizh_host_allowed(host: str) -> bool:
+    """Adresse IP privée, de lien local ou locale (jamais un nom : pas de DNS dans le chemin du son)."""
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(address in net for net in BREIZH_NETWORKS if net.version == address.version)
+
+
+def _breizh_problems(b: Breizh, cfg: Config) -> list[str]:
+    p = []
+    if not isinstance(b.enabled, bool):
+        p.append("[breizh] enabled doit valoir true ou false")
+    if not isinstance(b.host, str) or (b.host and not breizh_host_allowed(b.host)):
+        p.append("[breizh] host : adresse IP privée du PC de Breizh attendue (10.x, 172.16-31.x, 192.168.x, "
+                 "169.254.x, 127.x, fd00::/8, fe80::/10) ; ni nom d'hôte ni adresse publique (le micro circule en clair)")
+    elif b.enabled is True and not b.host:
+        p.append("[breizh] host : adresse du PC de Breizh requise (ou enabled = false)")
+    if not isinstance(b.key_file, str):
+        p.append("[breizh] key_file doit être un chemin")
+    ints = {"port": (1024, 65535), "block_timeout_ms": (15, 100), "lost_ms": (50, 500)}
+    for name, (low, high) in ints.items():
+        value = getattr(b, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.append(f"[breizh] {name} doit être un entier entre {low} et {high}")
+    if (isinstance(b.block_timeout_ms, int) and isinstance(b.lost_ms, int)
+            and not isinstance(b.lost_ms, bool) and b.lost_ms <= b.block_timeout_ms):
+        p.append("[breizh] lost_ms doit être plus grand que block_timeout_ms")
+    value = b.fallback_gain_db
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not -20 <= value <= 0:
+        p.append("[breizh] fallback_gain_db doit être un nombre entre -20 et 0 dB")
+    value = b.reactivate_after_s
+    if isinstance(value, bool) or not isinstance(value, int) or not (value == 0 or 30 <= value <= 3600):
+        p.append("[breizh] reactivate_after_s doit valoir 0 (seulement à la main) ou un entier entre 30 et 3600")
+    if isinstance(b.host, str) and b.host and is_loopback(b.host) and b.port in (
+            cfg.network.gateway_port, cfg.network.rigctld_port, cfg.modules.bus_port, cfg.supervisor.instance_lock_port):
+        p.append("[breizh] port : déjà pris sur cette machine (passerelle, rigctld, bus des modules ou superviseur)")
+    return p
+
+
+def breizh_key_path(cfg: Config, config_path: str | Path) -> Path:
+    """Fichier de la clé d'appairage : key_file (relatif = à côté de station.toml), sinon breizh.key."""
+    name = cfg.breizh.key_file or BREIZH_KEY_FILE
+    path = Path(name)
+    return path if path.is_absolute() else Path(config_path).parent / path
+
+
 def is_loopback(host: str) -> bool:
     try:
         return host == "localhost" or ipaddress.ip_address(host).is_loopback
@@ -692,8 +763,8 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "bands",
-                 "clients"}
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
+                 "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -713,6 +784,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
             access=_build(Access, d.get("access", {}), "access", problems),
             swr=_build(Swr, d.get("swr", {}), "swr", problems),
+            breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -912,6 +984,16 @@ def render_toml(cfg: Config) -> str:
         f"max_power_pct = {cfg.swr.max_power_pct}   # plafond de puissance, % de la puissance du poste (5 à 50)",
         f"max_points = {cfg.swr.max_points}   # points d'une mesure au plus (2 à 200)",
         f"point_tx_max_s = {cfg.swr.point_tx_max_s}   # émission d'un point au plus, en secondes (0.5 à 3)",
+        "",
+        "[breizh]   # Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md) ; le micro circule EN CLAIR sur le réseau local",
+        f"enabled = {str(cfg.breizh.enabled).lower()}",
+        f"host = {_s(cfg.breizh.host)}   # adresse IP PRIVÉE du PC de Breizh",
+        f"port = {cfg.breizh.port}   # port UDP de Breizh (1024 à 65535)",
+        f"key_file = {_s(cfg.breizh.key_file)}   # clé d'appairage ; vide = {BREIZH_KEY_FILE} à côté de ce fichier",
+        f"block_timeout_ms = {cfg.breizh.block_timeout_ms}   # bloc pas revenu à temps : part sans traitement (15 à 100 ms)",
+        f"lost_ms = {cfg.breizh.lost_ms}   # sans retour pendant ce délai : repli en direct (50 à 500 ms, > block_timeout_ms)",
+        f"fallback_gain_db = {cfg.breizh.fallback_gain_db}   # gain du son direct en repli (-20 à 0 dB)",
+        f"reactivate_after_s = {cfg.breizh.reactivate_after_s}   # stabilité avant le retour automatique (0 = à la main, 30 à 3600 s)",
         "",
     ]
     for client in cfg.clients:

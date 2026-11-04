@@ -117,6 +117,16 @@ max_power_pct = 50   # plafond de puissance, % de la puissance du poste (5 à 50
 max_points = 50   # points d'une mesure au plus (2 à 200)
 point_tx_max_s = 2.0   # émission d'un point au plus, en secondes (0.5 à 3)
 
+[breizh]   # Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md) ; le micro circule EN CLAIR sur le réseau local
+enabled = false
+host = ""   # adresse IP PRIVÉE du PC de Breizh
+port = 47100   # port UDP de Breizh (1024 à 65535)
+key_file = ""   # clé d'appairage ; vide = breizh.key à côté de ce fichier
+block_timeout_ms = 40   # bloc pas revenu à temps : part sans traitement (15 à 100 ms)
+lost_ms = 100   # sans retour pendant ce délai : repli en direct (50 à 500 ms, > block_timeout_ms)
+fallback_gain_db = -6.0   # gain du son direct en repli (-20 à 0 dB)
+reactivate_after_s = 60   # stabilité avant le retour automatique (0 = à la main, 30 à 3600 s)
+
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]
 # id = "club1"

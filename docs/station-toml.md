@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.98.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.99.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -135,6 +135,23 @@ Se modifie : Menu 14. (au redémarrage).
 | `max_power_pct` | courant | `50` | Plafond de puissance de la mesure, en % de la puissance du poste. L'opérateur choisit la puissance (15 % par défaut) sous ce plafond. Valeurs : 5 à 50 %. **Sécurité** : Jamais au-dessus de 50 % : quelques watts suffisent pour mesurer. (depuis 0.90.0) |
 | `max_points` | expert | `50` | Nombre maximal de points d'une mesure. Valeurs : 2 à 200. (depuis 0.90.0) |
 | `point_tx_max_s` | expert | `2.0` | Durée maximale de l'émission d'un point. Le temps réel est étalonné au premier usage pour chaque modèle de poste, sans dépasser cette valeur. Valeurs : 0,5 à 3 s. (depuis 0.90.0) |
+
+## Breizh Audio Box dans l'émission [breizh]
+
+Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.
+
+Se modifie : Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : le son du micro de l'opérateur passe par Breizh Audio Box pendant l'émission, quand Breizh répond. **Sécurité** : Breizh ne peut jamais déclencher ni prolonger une émission : la station garde le PTT, la porte audio d'émission et son limiteur. (depuis 0.99.0) |
+| `host` | courant | `""` | Adresse IP du PC où tourne Breizh Audio Box (127.0.0.1 si c'est le même PC). Valeurs : Adresse IP privée seulement (RFC 1918 : 10/8, 172.16/12, 192.168/16 ; lien local 169.254/16 ; locale 127/8 ; IPv6 fd00::/8, fe80::/10). Ni nom d'hôte ni adresse publique. **Sécurité** : Le son du micro n'est pas chiffré : une adresse publique est refusée. (depuis 0.99.0) |
+| `port` | expert | `47100` | Port UDP sur lequel Breizh attend la station (le même que dans l'onglet « OpenRemoteTRX » de Breizh). Valeurs : 1024 à 65535. (depuis 0.99.0) |
+| `key_file` | expert | `""` | Fichier de la clé d'appairage partagée avec Breizh. Vide : `breizh.key` à côté de station.toml. La clé n'est jamais écrite dans station.toml. **Sécurité** : Fichier refusé s'il est lisible par tous les comptes. (depuis 0.99.0) |
+| `block_timeout_ms` | expert | `40` | Délai au-delà duquel un bloc de son (10 ms) qui n'est pas revenu de Breizh part sans traitement, à gain réduit. Valeurs : 15 à 100 ms. (depuis 0.99.0) |
+| `lost_ms` | expert | `100` | Sans aucun retour de Breizh pendant ce délai, l'émission continue en direct jusqu'à sa fin (repli). Valeurs : 50 à 500 ms, plus grand que block_timeout_ms. (depuis 0.99.0) |
+| `fallback_gain_db` | expert | `-6.0` | Gain du son direct pendant un repli (Breizh perdu), pour ne pas surmoduler un son prévu pour être traité. Valeurs : -20 à 0 dB. (depuis 0.99.0) |
+| `reactivate_after_s` | expert | `60` | Après un repli, durée pendant laquelle Breizh doit répondre sans faute avant d'être repris automatiquement (jamais pendant une émission). 0 : seulement quand l'opérateur le demande. Valeurs : 0, ou 30 à 3600 s. (depuis 0.99.0) |
 
 ## Spectre HF du poste [spectrum]
 
