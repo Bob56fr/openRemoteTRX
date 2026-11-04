@@ -129,6 +129,7 @@
       <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
       <button id="st-direct" class="chip st-direct" title="Spatialisation stéréo de la réception (casque) : marche / arrêt ; appui long : réglages">ST</button>
       <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
+      <button id="bzh-ind" class="chip bzh-ind listener-hide" hidden title="Breizh Audio Box : touche pour ouvrir sa rubrique">BZH</button>
       <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
@@ -319,6 +320,8 @@
           <label>Seuil de la porte <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
           <p class="note">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
         </div>
+        <p id="voice-breizh" class="note warn-text" hidden>Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés
+          pendant les émissions qui passent par Breizh (le limiteur reste).</p>
         <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
         <div class="row">
           <label>Préréglage <select id="voice-preset"></select></label>
@@ -414,6 +417,23 @@
             <button id="sel-test-save" class="chip">Télécharger</button>
           </div>
         </div>
+      </div>
+    </details>
+
+    <details id="sec-breizh" class="listener-hide" hidden>
+      <summary>Breizh Audio Box</summary>
+      <div class="body">
+        <p class="note">Votre voix passe par Breizh Audio Box, sur un PC du réseau local de la station, avant d'aller au poste. La station
+          garde le PTT, le TOT et son limiteur : si Breizh ne répond plus, l'émission continue en direct, à gain réduit. Le son du micro
+          circule en clair sur ce réseau local.</p>
+        <p id="bzh-state" class="bzh-state"></p>
+        <p id="bzh-details" class="note"></p>
+        <label class="grow">Volume retour <input id="bzh-gain" type="range" min="-20" max="6" step="0.5" value="0"><span id="bzh-gain-text"></span></label>
+        <label class="check"><input id="bzh-bypass" type="checkbox"> Direct : ignorer Breizh (à la prochaine émission)</label>
+        <div class="row"><button id="bzh-reactivate" class="chip" hidden>Réactiver Breizh</button><button id="bzh-log-refresh" class="chip">Relire le journal</button></div>
+        <p class="note">Les réglages s'appliquent à la prochaine émission, jamais pendant. Égaliseur, chorus, réverbération et scrambler de
+          cet appareil sont coupés quand la voix passe par Breizh.</p>
+        <ol id="bzh-log" class="bzh-log"></ol>
       </div>
     </details>
 

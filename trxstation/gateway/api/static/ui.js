@@ -1702,6 +1702,7 @@
       spots(data) { onSpots(data); },
       beeps(settings) { renderBeeps(settings); },
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
+      breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
       clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
@@ -1710,6 +1711,7 @@
         connectedFlag = value;
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
+          bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
         renderSelcall(value ? client.selcall : null);
@@ -1828,6 +1830,7 @@
         hint.textContent = v.dataModeHint;
         renderPresence(v);
         paintHost(v);
+        bzhRender(v);
         paintMini(v);
         voiceProfilesSync();
         paintSwr(v);
@@ -2209,6 +2212,7 @@
         return {
           track: chain.track, stream: chain.stream,
           setTx(on) {
+            if (on) chain.setExternal(client.breizhEffectsOff());        // voix par Breizh : égaliseur et effets coupés (limiteur gardé)
             chain.setTx(on);
             if (on && recorder) recorder.stop();                       // toute prise d'émission arrête l'enregistrement
             replayOnTx(on);
@@ -2351,6 +2355,11 @@
       for (const [key, m] of Object.entries(sx.MODES)) $("scr-mode").appendChild(Object.assign(el("option", "", m.label), { value: key }));
       const confirmOn = (what) => window.confirm(SCR_WARNING + "\n\n" + what);
       $("scr-tx").addEventListener("change", (ev) => {
+        if (ev.target.checked && client.breizhEffectsOff()) {                      // Breizh et scrambler d'émission exclusifs
+          ev.target.checked = false;
+          ui.log("Breizh Audio Box en service : scrambler d'émission impossible (exclusifs). Choisissez « Direct » dans la rubrique Breizh pour brouiller.", "warn");
+          return;
+        }
         if (ev.target.checked && !confirmOn("Brouiller VOTRE ÉMISSION ?")) { ev.target.checked = false; return; }
         scr.tx = ev.target.checked;
         ui.log(scr.tx ? "Scrambler : émission brouillée (mode « " + sx.MODES[scr.mode].label + " »)." : "Scrambler : émission en clair.", scr.tx ? "warn" : "");
@@ -2384,6 +2393,65 @@
     } else {
       $("sec-scrambler").hidden = true;
     }
+
+    // ---- Breizh Audio Box (station 0.100.0+, fonction « breizh », opérateurs) : la voix passe par Breizh sur le réseau local
+    // de la station ; état, volume retour, « Direct », réactivation après un repli, journal. Réglages pris à la PROCHAINE
+    // émission. Égaliseur, chorus, réverbération et scrambler d'émission de cette page coupés quand la voix part par Breizh.
+    let bzhLogLoaded = false;
+    const BZH_WARN_EVENTS = ["fallback", "lost", "refused"];
+    function bzhOffered() {
+      return !!(client.connected && client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("breizh"));
+    }
+    function bzhLogRender() {
+      const list = $("bzh-log");
+      list.textContent = "";
+      for (const e of (client.breizhEvents || []).slice().reverse()) {             // le plus récent en tête
+        const when = e.t ? e.t.replace("T", " ").replace("Z", " UTC") + " : " : "";
+        list.appendChild(el("li", BZH_WARN_EVENTS.includes(e.event) ? "warn" : "", when + e.detail));
+      }
+    }
+    function bzhLoadLog() { client.breizhLog().then(bzhLogRender).catch(fail); }
+    function bzhRender(v) {
+      const b = v && v.connected && bzhOffered() ? v.breizh : null;
+      $("sec-breizh").hidden = !b; $("bzh-ind").hidden = !b;
+      if (!b) { bzhLogLoaded = false; $("voice-breizh").hidden = true; return; }
+      $("bzh-ind").className = "chip bzh-ind listener-hide" + (b.level !== "off" ? " " + b.level : "");
+      $("bzh-ind").title = "Breizh Audio Box : " + b.text + ". Touche : sa rubrique";
+      $("bzh-state").className = "bzh-state" + (b.level !== "off" ? " " + b.level : "");
+      $("bzh-state").textContent = b.text;
+      $("bzh-details").textContent = b.details;
+      if (document.activeElement !== $("bzh-gain")) $("bzh-gain").value = String(b.returnGainDb);
+      $("bzh-gain-text").textContent = " " + b.returnGainText;
+      $("bzh-bypass").checked = b.bypass;
+      $("bzh-reactivate").hidden = !b.canReactivate;
+      $("voice-breizh").hidden = !b.effectsOff;
+      if (voiceChain && !voiceTx()) voiceChain.setExternal(b.effectsOff);         // écoute de contrôle = ce qui partira
+      if (b.effectsOff && sx && scr.tx) {                                          // Breizh et scrambler d'émission exclusifs
+        scr.tx = false;
+        ui.log("Breizh Audio Box en service : scrambler d'émission coupé (exclusifs).", "warn");
+        scrApplyTx();
+      }
+      if (!bzhLogLoaded) { bzhLogLoaded = true; bzhLoadLog(); }
+    }
+    function bzhSet(changes) {
+      client.breizhSet(changes).then((res) => {
+        if (res && !res.ok) ui.log("Breizh : " + web.reasonText(res.reason, res.detail), "warn");
+      }).catch(fail);
+    }
+    $("bzh-gain").addEventListener("input", (ev) => {
+      const g = Number(ev.target.value);
+      $("bzh-gain-text").textContent = " " + (g > 0 ? "+" : g < 0 ? "−" : "") + String(Math.abs(g)).replace(".", ",") + " dB";
+    });
+    $("bzh-gain").addEventListener("change", (ev) => bzhSet({ return_gain_db: Number(ev.target.value) }));
+    $("bzh-bypass").addEventListener("change", (ev) => bzhSet({ bypass: !!ev.target.checked }));
+    $("bzh-reactivate").addEventListener("click", () => {
+      client.breizhReactivate().then((res) => {
+        if (!res || !res.ok) { ui.log("Breizh : " + web.reasonText(res && res.reason, res && res.detail), "warn"); return; }
+        ui.log(res.pending ? "Breizh sera repris dès qu'il répondra (à la prochaine émission)." : "Breizh repris : la prochaine émission passera par Breizh.", "");
+      }).catch(fail);
+    });
+    $("bzh-log-refresh").addEventListener("click", bzhLoadLog);
+    $("bzh-ind").addEventListener("click", () => { $("sec-breizh").open = true; $("sec-breizh").scrollIntoView({ block: "start" }); });
 
     // ---- spatialisation stéréo de la réception (spatial.js, docs/spatialisation-cahier-des-charges.md) : traitement de cet
     // appareil seulement, visiteurs compris ; la station n'en sait rien. Réglages gardés par le navigateur.

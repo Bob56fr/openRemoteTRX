@@ -232,6 +232,7 @@
       this.settings = validate(settings);
       this.tx = false; this.monitoring = false; this.playing = null;
       this.failed = false;
+      this.external = false;                                // voix traitée par Breizh Audio Box : égaliseur et effets coupés
       // Micro : gain, mesure du niveau (jamais envoyée), porte de bruit réglable
       this.pre = ctx.createGain();
       this.tap = ctx.createAnalyser(); this.tap.fftSize = 1024;
@@ -360,7 +361,7 @@
       const s = this.settings;
       this.pre.gain.value = Math.pow(10, s.mic.gainDb / 20);
       this._syncGateTimer();
-      const on = s.enabled && !this.failed;
+      const on = s.enabled && !this.failed && !this.external;
       this.bypass.gain.value = on ? 0 : 1;
       this.processed.gain.value = on ? 1 : 0;
       if (this.failed) return;
@@ -386,6 +387,16 @@
       } catch (e) {
         this._fail(e);
       }
+    }
+
+    setExternal(on) {
+      /* Voix traitée par Breizh Audio Box (station 0.100.0+) : égaliseur, chorus et réverbération contournés ; gain du
+         micro, porte de bruit et limiteur gardés. Fixé à l'ouverture du micro, jamais pendant l'émission. */
+      on = !!on;
+      if (on === this.external || this.tx) return this.external;
+      this.external = on;
+      this.apply(this.settings);
+      return on;
     }
 
     setScrambler(node) {

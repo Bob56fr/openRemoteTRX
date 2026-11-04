@@ -1602,6 +1602,53 @@ test("sons de liaison : pendant SON émission, 1,5 s de silence de la station = 
   assert.deepEqual(other.ui.alerts, []);
 });
 
+test("Breizh : vue de state.breizh (textes, voyant, réactivation, effets coupés)", () => {
+  assert.equal(web.breizhView(null), null); assert.equal(web.breizhView({}), null);
+  const ready = web.breizhView({ state: "ready", route: "breizh", bypass: false, return_gain_db: -3.5, rtt_ms: 4, late: 0, lost: 0,
+                                 peer: "Breizh 0.10.0", reactivate_in_s: null });
+  assert.equal(ready.level, "ok"); assert.equal(ready.effectsOff, true); assert.equal(ready.canReactivate, false);
+  assert.equal(ready.returnGainText, "−3,5 dB"); assert.equal(ready.details, "Breizh 0.10.0 · aller-retour 4 ms");
+  const fallback = web.breizhView({ state: "fallback", route: "direct", bypass: false, return_gain_db: 6, rtt_ms: null, late: 3, lost: 1,
+                                    peer: "", reactivate_in_s: 12 });
+  assert.equal(fallback.level, "warn"); assert.equal(fallback.effectsOff, false); assert.equal(fallback.canReactivate, true);
+  assert.equal(fallback.returnGainText, "+6 dB"); assert.equal(fallback.details, "3 bloc(s) partis sans traitement · retour de Breizh dans 12 s");
+  const direct = web.breizhView({ state: "ready", route: "direct", bypass: true, return_gain_db: 0 });
+  assert.equal(direct.level, "off"); assert.equal(direct.effectsOff, false); assert.match(direct.text, /« Direct » choisi/);
+  assert.equal(web.breizhView({ state: "inconnu", route: "x" }).text, web.BREIZH_STATES.connecting);
+  assert.equal(web.breizhView({ state: "refused", route: "direct" }).canReactivate, true);
+  for (const key of ["connecting", "ready", "active", "fallback", "refused"]) assert.ok(web.BREIZH_STATES[key]);
+});
+
+test("Breizh : événements, alerte du repli pendant MON émission, journal, commandes, effets coupés", async () => {
+  const w = makeWorld();
+  const events = [];
+  w.ui.breizhEvent = (entry, alarm) => events.push([entry.event, alarm]);
+  await w.connected();
+  const bzh = (breizh, ptt) => w.dc().onmessage({ data: JSON.stringify({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: { connected: true, frequency_hz: 14200000, mode: "USB", passband_hz: 2400, strength_db: -12 },
+    audio: {}, clients: ["phone"], breizh: Object.assign({ state: "ready", route: "breizh", bypass: false, return_gain_db: 0 }, breizh || {}) }) });
+  bzh();
+  assert.equal(w.client.breizhEffectsOff(), true); assert.equal(w.client.view().breizh.level, "ok");
+  bzh({ bypass: true, route: "direct" });
+  assert.equal(w.client.breizhEffectsOff(), false);
+  w.dc().onmessage({ data: JSON.stringify({ type: "breizh_event", t: "2026-11-04T10:00:00Z", event: "lost", detail: "Breizh ne répond plus" }) });
+  bzh({}, { state: "TX", owner: "phone" });
+  w.dc().onmessage({ data: JSON.stringify({ type: "breizh_event", t: "2026-11-04T10:00:01Z", event: "fallback", detail: "repli" }) });
+  w.dc().onmessage({ data: JSON.stringify({ type: "breizh_event", event: 5, detail: "mal formé" }) });     // ignoré
+  assert.deepEqual(events, [["lost", false], ["fallback", true]]);
+  assert.equal(w.client.breizhEvents.length, 2);
+  const breizhLogs = w.ui.logs.filter((l) => l[0].startsWith("Breizh Audio Box : "));
+  assert.deepEqual(breizhLogs.map((l) => l[1]), ["warn", "bad"]);
+  const done = w.client.breizhLog();
+  w.answer(true, { entries: [{ t: "x", event: "connected", detail: "joint" }] });
+  assert.deepEqual((await done).map((e) => e.event), ["connected"]);
+  w.client.breizhSet({ bypass: false }); w.client.breizhReactivate();
+  assert.equal(w.sentCommands("breizh_set")[0].bypass, false); assert.equal(w.sentCommands("breizh_reactivate").length, 1);
+  w.hello();                                                                     // nouvelle connexion : journal vidé
+  assert.deepEqual(w.client.breizhEvents, []);
+});
+
 test("sons de liaison : une interface dont le son plante ne gêne jamais la liaison", async () => {
   const net = flaky(), w = makeWorld({ postOffer: net.postOffer });
   w.ui.linkAlert = () => { throw new Error("AudioContext cassé"); };

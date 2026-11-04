@@ -111,6 +111,22 @@ test("éteint : contournement (limiteur seul) ; allumé : chaîne traitée", () 
   assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [0, 1]);
 });
 
+test("Breizh : égaliseur et effets contournés, limiteur gardé, jamais changé pendant l'émission", () => {
+  const { chain: c } = chain(vx.PRESETS.dx.make());
+  assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [0, 1]);
+  assert.equal(c.setExternal(true), true);
+  assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [1, 0]);
+  assert.ok(c.tail.out.has(c.limiter));                                             // le limiteur reste en bout de chaîne
+  c.apply(vx.PRESETS.dx.make());                                                     // un réglage ne rallume pas les effets
+  assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [1, 0]);
+  c.setTx(true);
+  assert.equal(c.setExternal(false), true);                                          // refusé en émission
+  assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [1, 0]);
+  c.setTx(false);
+  assert.equal(c.setExternal(false), false);
+  assert.deepEqual([c.bypass.gain.value, c.processed.gain.value], [0, 1]);
+});
+
 test("erreur dans la chaîne : contournement signalé, jamais de silence", () => {
   const { ctx, chain: c } = chain(vx.PRESETS.dx.make(), "convolver");
   assert.equal(c.failed, true);

@@ -1158,6 +1158,55 @@ step("rediffusion : rubrique seulement si la station l'a accordée, durée annon
   await $("disconnect").click(); await wait();
 });
 
+step("Breizh Audio Box : rubrique et voyant seulement si annoncé, état, volume retour, « Direct », repli, journal", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode"] });
+  await wait(30); state({}); await wait(30);
+  assert.equal($("sec-breizh").hidden, true); assert.equal($("bzh-ind").hidden, true);              // station sans Breizh : rien
+  await $("disconnect").click(); await wait(); await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode", "breizh"] });
+  await wait(30);
+  const bzhState = (breizh, ptt) => send({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: { connected: true, frequency_hz: 14200000, mode: "USB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} },
+    audio: { rx_db: -23, tx_db: -90, gate_open: false }, clients: ["phone"],
+    breizh: Object.assign({ state: "ready", route: "breizh", bypass: false, return_gain_db: 0, rtt_ms: 3, late: 0, lost: 0,
+                            peer: "Breizh 0.10.0", reactivate_in_s: null }, breizh || {}) });
+  bzhState(); await wait(30);
+  assert.equal($("sec-breizh").hidden, false); assert.equal($("bzh-ind").hidden, false);
+  assert.match($("bzh-ind").className, /\bok\b/); assert.match($("bzh-state").textContent, /prochaines émissions par Breizh/);
+  assert.match($("bzh-details").textContent, /Breizh 0\.10\.0 · aller-retour 3 ms/);
+  assert.equal($("voice-breizh").hidden, false);                                                    // égaliseur : bandeau
+  assert.equal(sent("breizh_log").length, 1);                                                       // journal relu à l'ouverture
+  answer(true, { entries: [{ t: "2026-11-04T10:00:00Z", event: "connected", detail: "Breizh 0.10.0 joint" }] }, "breizh_log");
+  await wait(30);
+  assert.equal($("bzh-log").children.length, 1);
+  assert.match($("bzh-log").children[0].textContent, /2026-11-04 10:00:00 UTC : Breizh 0\.10\.0 joint/);
+  $("bzh-gain").value = "-3.5"; await $("bzh-gain").dispatch("input");
+  assert.equal($("bzh-gain-text").textContent, " −3,5 dB");
+  await $("bzh-gain").dispatch("change");
+  assert.equal(sent("breizh_set").pop().return_gain_db, -3.5);
+  $("bzh-bypass").checked = true; await $("bzh-bypass").dispatch("change");
+  assert.equal(sent("breizh_set").pop().bypass, true);
+  bzhState({ bypass: true, route: "direct" }); await wait(30);
+  assert.doesNotMatch($("bzh-ind").className, /\b(ok|warn)\b/); assert.match($("bzh-state").textContent, /« Direct » choisi/);
+  assert.equal($("voice-breizh").hidden, true);
+  bzhState({ state: "fallback", route: "direct", reactivate_in_s: 42 }); await wait(30);              // repli
+  assert.match($("bzh-ind").className, /\bwarn\b/); assert.equal($("bzh-reactivate").hidden, false);
+  assert.match($("bzh-details").textContent, /retour de Breizh dans 42 s/);
+  send({ type: "breizh_event", t: "2026-11-04T10:12:03Z", event: "fallback", detail: "Breizh ne répond plus depuis 100 ms" });
+  await wait(30);
+  assert.equal($("bzh-log").children.length, 2); assert.equal($("bzh-log").children[0].className, "warn");   // le plus récent en tête
+  await $("bzh-reactivate").click();
+  assert.equal(sent("breizh_reactivate").length, 1);
+  await $("disconnect").click(); await wait();
+  assert.equal($("sec-breizh").hidden, true); assert.equal($("bzh-ind").hidden, true);
+});
+
 step("reconnexion automatique : grand texte à la place de la fréquence, sans redemander le mot de passe, annulation, échec, reprise", async () => {
   $("reconnect-select").value = "15"; await $("reconnect-select").dispatch("change", { target: $("reconnect-select") });
   assert.equal(storage.get("trx.reconnect"), "15");

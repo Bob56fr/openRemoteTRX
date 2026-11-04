@@ -348,6 +348,11 @@ Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coup�
   signe de vie (Breizh lent n'est pas Breizh perdu : pas de repli, blocs secs) ; clé illisible au démarrage = station
   SANS Breizh (journal d'erreur), jamais d'arrêt de la passerelle.
 
+- Lot 3 FAIT (étape 122, station 0.101.0) : page web (voyant BZH, rubrique, volume retour, « Direct », réactivation,
+  journal, égaliseur et effets coupés par `VoiceChain.setExternal` quand la route est Breizh, scrambler d'émission exclu,
+  bip court de la page au repli pendant SON émission). Textes communs dans `client.js` (`BREIZH_STATES`, `breizhView`)
+  pour l'application.
+
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)
 
 1. Blocs de **480 échantillons** (10 ms) au lieu de 256.

@@ -469,6 +469,38 @@
              title: "Machine de la station : " + (parts.join(", ") || "mesures indisponibles") + ". Touche : synthèse du matériel" };
   }
 
+  // Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md, station 0.100.0+) : textes communs
+  // à la page et à l'application ; voyant BZH vert (prêt, émission par Breizh), orange (repli), gris (autre, « Direct »).
+  const BREIZH_STATES = {
+    connecting: "recherche de Breizh…",
+    ready: "prêt : prochaines émissions par Breizh",
+    active: "émission par Breizh",
+    fallback: "REPLI : Breizh ne répond plus, émissions en direct",
+    refused: "liaison refusée par Breizh (voir le journal)",
+  };
+  const BREIZH_EVENTS_MAX = 50;
+
+  function breizhView(b) {
+    /* state.breizh (opérateurs, station avec [breizh] enabled) ; null = rien à afficher. */
+    if (!b || typeof b !== "object" || typeof b.state !== "string") return null;
+    const bypass = b.bypass === true, state = BREIZH_STATES[b.state] ? b.state : "connecting";
+    const level = bypass ? "off" : state === "ready" || state === "active" ? "ok" : state === "fallback" ? "warn" : "off";
+    const gain = Number.isFinite(b.return_gain_db) ? b.return_gain_db : 0;
+    const details = [];
+    if (b.peer) details.push(String(b.peer).slice(0, 64));
+    if (Number.isFinite(b.rtt_ms)) details.push("aller-retour " + b.rtt_ms + " ms");
+    if (Number.isFinite(b.late) && b.late > 0) details.push(b.late + " bloc(s) partis sans traitement");
+    if (Number.isFinite(b.reactivate_in_s)) details.push("retour de Breizh dans " + b.reactivate_in_s + " s");
+    return {
+      state: state, route: b.route === "breizh" ? "breizh" : "direct", bypass: bypass, level: level,
+      text: bypass ? "« Direct » choisi : Breizh ignoré (" + BREIZH_STATES[state] + ")" : BREIZH_STATES[state],
+      details: details.join(" · "), returnGainDb: gain,
+      returnGainText: (gain > 0 ? "+" : gain < 0 ? "−" : "") + String(Math.abs(gain)).replace(".", ",") + " dB",
+      canReactivate: !bypass && (state === "fallback" || state === "refused"),
+      effectsOff: b.route === "breizh",           // égaliseur, chorus, réverbération coupés ; limiteur gardé ; scrambler exclu
+    };
+  }
+
   function favoriteBands(saved) {
     /* Bandes affichées (réglage du navigateur, « 11,20,40 ») dans l'ordre du plan ; aucune valide = toutes. */
     const keys = String(saved || "").split(",").map((k) => k.trim()).filter(Boolean);
@@ -1176,6 +1208,7 @@
         if (this.ui.beeps) this.ui.beeps(this.beeps);
         this.selcall = msg.selcall && typeof msg.selcall === "object" ? msg.selcall : null;   // null : station sans SELCALL
         if (this.ui.selcall) this.ui.selcall(this.selcall, false);
+        this.breizhEvents = [];                                          // journal de Breizh : relu sur la station à l'ouverture
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -1199,6 +1232,8 @@
         if (msg.settings && typeof msg.settings === "object") { this.beeps = msg.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
       } else if (msg.type === "selcall") {                              // armé ailleurs, ou appel reçu
         if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
+      } else if (msg.type === "breizh_event") {                         // liaison avec Breizh Audio Box (opérateurs)
+        this._onBreizhEvent(msg);
       } else if (msg.type === "swr") {                                  // progression de MA mesure de TOS
         this.swr = msg;
         if (this.ui.swr) { try { this.ui.swr(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
@@ -1254,6 +1289,23 @@
     }
 
     // ---- SELCALL : squelch numérique de la station (n'agit que sur le son reçu, jamais sur l'émission)
+
+    _onBreizhEvent(msg) {
+      /* Journal de la liaison ; un repli pendant MON émission = alerte (bip court de la page, jamais de la station). */
+      if (typeof msg.event !== "string" || typeof msg.detail !== "string") return;
+      const entry = { t: typeof msg.t === "string" ? msg.t : "", event: msg.event, detail: msg.detail.slice(0, 300) };
+      this.breizhEvents = (this.breizhEvents || []).concat([entry]).slice(-BREIZH_EVENTS_MAX);
+      const alarm = entry.event === "fallback" && this._mineActive();
+      const level = ["fallback", "lost", "refused"].includes(entry.event) ? (alarm ? "bad" : "warn") : "";
+      this.ui.log("Breizh Audio Box : " + entry.detail, level);
+      if (this.ui.breizhEvent) { try { this.ui.breizhEvent(entry, alarm); } catch (e) { /* affichage seulement */ } }
+    }
+
+    breizhEffectsOff() {
+      /* Vrai si la voix part par Breizh : la page coupe égaliseur, chorus et réverbération (limiteur gardé). */
+      const v = this.isListener() ? null : breizhView(this.state && this.state.breizh);
+      return !!(v && v.effectsOff);
+    }
 
     _setSelcall(status) {
       const before = this.selcall;
@@ -1390,6 +1442,7 @@
         clarifier: clarifierView(fn, rig, this._caps()),
         indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),
+        breizh: this.isListener() ? null : breizhView(this.state && this.state.breizh),
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -1841,8 +1894,10 @@
     }
 
     async breizhLog() {
+      /* Journal rangé sur la station (50 derniers) : remplace celui de la page. */
       const res = await this.send("breizh_log");
-      return res && res.ok && Array.isArray(res.entries) ? res.entries : [];
+      if (res && res.ok && Array.isArray(res.entries)) this.breizhEvents = res.entries.slice(-BREIZH_EVENTS_MAX);
+      return this.breizhEvents || [];
     }
 
     async hostInfo() {
@@ -1927,6 +1982,6 @@
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
                 indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
-                LISTENER_COMMANDS, presenceView, durationText };
+                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);
