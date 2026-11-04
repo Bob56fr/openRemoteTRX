@@ -155,6 +155,10 @@ refuse la liaison (journal « version de Breizh incompatible »).
   HELLO_ACK valable (même `session`, étiquette juste, `cat_off` vrai, `proto` 1, `latency_ms` ≤ 50).
 - **Clé de session** = HMAC-SHA256(clé d'appairage, `"ORTB1 session"` ‖ `session` (8 octets) ‖ `nonce_s` ‖ `nonce_b`).
   Un paquet d'une ancienne session ne passe donc jamais.
+- **HELLO répété** (précision du 2026-11-04, lot 2, sans changement de format) : la station renvoie le MÊME HELLO (même
+  `session`, même `nonce_s`) toutes les 2 s tant qu'elle n'a pas de réponse. Breizh répond à un HELLO de la session
+  qu'il sert déjà par le MÊME HELLO_ACK (même `nonce_b`, idéalement les mêmes octets), sans changer sa clé de session ;
+  un nouveau `session` = une nouvelle session. La station ignore un HELLO_ACK de sa session une fois celle-ci ouverte.
 - **Rejeu** : chaque côté jette un paquet dont `seq` n'est pas STRICTEMENT supérieur au dernier accepté (un paquet
   désordonné est perdu : acceptable sur un réseau local). La station n'accepte un AUDIO_RET que si `ref` est un bloc
   ENVOYÉ, pas encore répondu, pas expiré ; chaque bloc n'est accepté qu'UNE fois.
@@ -335,6 +339,14 @@ Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coup�
   `devtools/breizh_probe.py` ; notice de station.toml. Pour la conversation de Breizh : ce document (§ 5), les vecteurs,
   et `python -m trxstation.devtools.breizh_probe --host <PC de Breizh> --key <clé>` comme fausse station.
   Session (64 bits) en HEXADÉCIMAL dans les vecteurs : un nombre JSON perdrait des chiffres en JavaScript.
+
+- Lot 2 FAIT (étape 121, station 0.100.0) : `breizh/link.py` (session, PING, états, réactivation), `breizh/store.py`
+  (volume retour, « Direct », journal), `gateway/audio/route.py` (porte d'entrée, blocs dans l'ordre, remplacement,
+  repli), `gateway/audio/limiter.py` (limiteur final, les deux routes), époque de la porte (`gate.py`), `state.breizh`,
+  `breizh_set` / `breizh_reactivate` / `breizh_log`, `breizh_event`, fichier d'état et trx-monitor ; tests de panne
+  `tests/test_breizh_route.py`. Choix faits en codant : un retour AUTHENTIQUE arrivé après son remplacement compte comme
+  signe de vie (Breizh lent n'est pas Breizh perdu : pas de repli, blocs secs) ; clé illisible au démarrage = station
+  SANS Breizh (journal d'erreur), jamais d'arrêt de la passerelle.
 
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)
 

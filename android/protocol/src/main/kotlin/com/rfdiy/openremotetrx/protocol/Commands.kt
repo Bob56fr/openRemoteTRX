@@ -165,6 +165,21 @@ sealed class Command(val name: String) {
 
     data object SwrLast : Command("swr_last")
 
+    /** Breizh Audio Box (opérateurs, fonction « breizh ») : volume retour (−20 à +6 dB, pas de 0,5) et/ou « Direct ».
+     *  Pris à la PROCHAINE émission ; au moins un des deux. */
+    data class BreizhSet(val returnGainDb: Double? = null, val bypass: Boolean? = null) : Command("breizh_set") {
+        override fun JsonObjectBuilder.params() {
+            if (returnGainDb != null) put("return_gain_db", returnGainDb)
+            if (bypass != null) put("bypass", bypass)
+        }
+    }
+
+    /** Reprendre Breizh après un repli (à la prochaine émission) : réponse `pending`. */
+    data object BreizhReactivate : Command("breizh_reactivate")
+
+    /** Journal de la liaison avec Breizh : réponse `entries` (50 derniers événements). */
+    data object BreizhLog : Command("breizh_log")
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -179,6 +194,7 @@ sealed class Command(val name: String) {
             "selcall_activate", "selcall_rearm", "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate",
             "listener_kick", "listeners_reopen", "listeners_open", "host_info",
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
+            "breizh_set", "breizh_reactivate", "breizh_log",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

@@ -61,6 +61,8 @@ object Texts {
         "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
         "swr_busy" to "Mesure de TOS en cours : STOP pour l'arrêter.",
         "swr_unavailable" to "Mesure de TOS indisponible sur cette station.",
+        "breizh_unavailable" to "Breizh Audio Box n'est pas utilisé par cette station.",
+        "breizh_storage_error" to "Réglage de Breizh non enregistré sur la station (disque ?).",
         "swr_no_fm_mode" to "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
         "swr_out_of_band" to "Aucun point de la mesure dans les bandes autorisées de la station.",
         "swr_bad_range" to "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",

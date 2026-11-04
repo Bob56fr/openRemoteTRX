@@ -80,12 +80,15 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open, tail=tail)
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
+    breizh_link = _start_breizh(cfg, pipeline, config_path)              # [breizh] enabled = false : rien
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
     access = AccessControl(cfg.clients, cfg.access)       # rôles, quotas, présence de l'opérateur (visiteurs)
     access.switch = ListenerSwitch(Path(cfg.supervisor.state_dir) / "listeners.json")   # commutateur de l'opérateur
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum,
                                 presence=lambda: access.presence(OPERATOR))
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]
+    if breizh_link is not None:
+        tasks.append(asyncio.create_task(breizh_link.run(stop)))
     if parent_pid is not None:
         tasks.append(asyncio.create_task(_watch_parent(parent_pid, stop)))
     manager = runner = None
@@ -148,6 +151,30 @@ def _start_selcall(cfg: Config, pipeline: AudioPipeline, ctrl, link):
     pipeline.hub.processor = receiver.process
     log.info("SELCALL en service : état %s%s", store.status.state, f" (code {store.status.code})" if store.status.code else "")
     return receiver
+
+
+def _start_breizh(cfg: Config, pipeline: AudioPipeline, config_path: Path | None):
+    """Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md). Clé illisible : la station
+    continue SANS Breizh (jamais de sortie : le superviseur relancerait la passerelle en boucle). Retourne la liaison."""
+    b = cfg.breizh
+    if b.enabled is not True:
+        return None
+    from ..breizh.keyfile import KeyFileError, read_key
+    from ..breizh.link import BreizhLink
+    from ..breizh.store import BreizhStore
+    from .audio.route import TxRoute
+
+    try:
+        key = read_key(cfgmod.breizh_key_path(cfg, config_path or default_config_path()))
+    except KeyFileError as exc:
+        log.error("Breizh Audio Box NON utilisé (émissions en direct) : %s", exc)
+        return None
+    store = BreizhStore(cfg.supervisor.state_dir)
+    link = BreizhLink(b.host, b.port, key, reactivate_after_s=b.reactivate_after_s, station_version=__version__,
+                      notify=store.event)
+    pipeline.route = TxRoute(pipeline.gate, link, b, store)
+    log.info("Breizh Audio Box : liaison avec %s:%s (le micro circule en clair sur le réseau local)", b.host, b.port)
+    return link
 
 
 def bind_hint(host: str) -> str:

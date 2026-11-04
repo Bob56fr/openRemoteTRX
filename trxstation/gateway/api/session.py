@@ -70,6 +70,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         "presence": access.presence(role) if access is not None else None,
         # santé de la machine de la station (petit bargraph) : opérateurs seulement, jamais vers un visiteur
         "host": None if listener else shared_monitor().summary(),
+        # Breizh Audio Box : opérateurs seulement, et seulement si la station l'emploie ([breizh] enabled)
+        **({} if listener or getattr(pipeline, "route", None) is None else {"breizh": pipeline.route.snapshot()}),
     }
 
 
@@ -104,6 +106,8 @@ class ControlSession:
         self._memories_listener = lambda items: self.send({"type": "memories", "items": items})
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
         self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
+        self._breizh_listener = lambda entry: self.send({"type": "breizh_event", **entry})
+        self.breizh = None if role == LISTENER else getattr(pipeline, "route", None)   # TxRoute ou None
         receiver = getattr(pipeline, "selcall", None)
         self.selcall = getattr(receiver, "store", None)   # SELCALL (selcall/receiver.py) ou None : [selcall] enabled = false
         tail = getattr(ctrl, "tail", None)
@@ -154,6 +158,8 @@ class ControlSession:
             self.selcall.add_listener(self._selcall_listener)         # armé ailleurs, ou appel reçu : affiché ici
         if self.memories:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
+        if self.breizh is not None:
+            self.breizh.store.add_listener(self._breizh_listener)     # repli, retour, refus : prévenir l'opérateur
         self.send(self._state())
         self._state_task = asyncio.get_running_loop().create_task(self._state_loop())
 
@@ -170,7 +176,8 @@ class ControlSession:
                    "host": not self.listener,
                    "voice_profiles": self.voices is not None,
                    "swr": self.swr is not None and self.ctrl.config.swr.enabled,
-                   "replay": self._replay_allowed()}
+                   "replay": self._replay_allowed(),
+                   "breizh": self.breizh is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
@@ -190,6 +197,8 @@ class ControlSession:
             self.beeps.remove_listener(self._beeps_listener)
         if self.selcall is not None:
             self.selcall.remove_listener(self._selcall_listener)    # la déconnexion ne change PAS l'état du SELCALL
+        if self.breizh is not None:
+            self.breizh.store.remove_listener(self._breizh_listener)
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
@@ -233,6 +242,32 @@ class ControlSession:
             self._result(cmd.id, True)
         else:                                            # swr_last
             self._result(cmd.id, True, last=self.swr.store.last(), choices=self.swr.store.choices(self.client_id))
+
+    def _breizh_command(self, cmd) -> None:
+        """Breizh Audio Box : réglages de la route du micro, jamais d'effet sur le PTT ; pris à la PROCHAINE émission."""
+        route = self.breizh
+        if route is None:
+            self._result(cmd.id, False, reason="breizh_unavailable")
+            return
+        if cmd.name == "breizh_log":
+            self._result(cmd.id, True, entries=route.store.last(50))
+        elif cmd.name == "breizh_reactivate":
+            pending = route.link.reactivate()
+            log.warning("Breizh : réactivation demandée par %s", self.client_id)
+            self._result(cmd.id, True, pending=pending, breizh=route.snapshot())
+        else:                                            # breizh_set
+            before = route.store.settings.bypass
+            try:
+                settings = route.store.update(**cmd.params)
+            except OSError as exc:
+                log.error("réglages de Breizh non enregistrés : %s", exc)
+                self._result(cmd.id, False, reason="breizh_storage_error")
+                return
+            if settings.bypass != before:
+                route.store.event("bypass" if settings.bypass else "unbypass",
+                                  f"« Direct » {'choisi' if settings.bypass else 'quitté'} par {self.client_id} "
+                                  "(à la prochaine émission)")
+            self._result(cmd.id, True, breizh=route.snapshot())
 
     async def _memory_command(self, cmd) -> None:
         if self.memories is None:
@@ -519,6 +554,8 @@ class ControlSession:
                                                                  _hamlib_version, self.link.state.levels))
             elif cmd.name.startswith("swr_"):
                 await self._swr_command(cmd)
+            elif cmd.name.startswith("breizh_"):
+                self._breizh_command(cmd)
             elif cmd.name.startswith("voice_profile"):     # opérateur seulement ; un fichier sur la station, rien vers le poste
                 if self.voices is None:
                     self._result(cmd.id, False, reason="voice_profiles_unavailable")

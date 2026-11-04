@@ -145,6 +145,20 @@ def test_audio_panel():
     assert [pn.key for pn in build_panels(snap(st))] == ["radio", "audio", "connexion", "sante", "materiel"]
 
 
+def test_audio_panel_breizh_row():
+    st = status()
+    st.audio = {"rx_db": -30, "tx_db": -90, "gate_open": False}
+    assert not [r for r in panel(snap(st), "audio").rows if r.label == "Breizh"]          # station sans Breizh
+    st.breizh = {"state": "ready", "route": "breizh", "bypass": False, "rtt_ms": 3, "late": 0, "lost": 0,
+                 "reactivate_in_s": None}
+    r = row(panel(snap(st), "audio"), "Breizh")
+    assert r.level == "ok" and "prêt" in r.text and "aller-retour 3 ms" in r.text
+    st.breizh.update(state="fallback", route="direct", late=7, reactivate_in_s=42)
+    r = row(panel(snap(st), "audio"), "Breizh")
+    assert r.level == "bad" and "REPLI" in r.text and "7 bloc(s)" in r.text and "retour dans 42 s" in r.text
+    assert row(panel(snap(st, fresh=False), "audio"), "Breizh").level == "dim"
+
+
 # --------------------------------------------------------------------------- journal
 
 def test_event_log_reports_changes_only():

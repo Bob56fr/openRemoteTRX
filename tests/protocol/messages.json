@@ -88,5 +88,13 @@
                     "error": "listeners_full", "message": "Nombre maximal de visiteurs atteint."},
   "selcall": {"type": "selcall", "status": {"state": "open", "code": "4721", "history": ["4721", "1234"], "filter_mode": "attenuate",
               "attenuation_db": 20, "last_call": {"code": "4721", "delta_hz": -42.5, "snr_db": 11.3, "at": 1761753600.25},
-              "send_on_tx_end": true, "sending": "2/3", "tx_level_dbfs": -18.5, "calibration": ""}}
+              "send_on_tx_end": true, "sending": "2/3", "tx_level_dbfs": -18.5, "calibration": ""}},
+  "state_breizh": {"_note": "champ « breizh » de state (opérateurs, station avec [breizh] enabled) ; absent sinon",
+                   "breizh": {"state": "ready", "route": "breizh", "bypass": false, "return_gain_db": 0.0, "rtt_ms": 3,
+                              "late": 0, "lost": 0, "peer": "Breizh 2.1.0", "reactivate_in_s": null}},
+  "breizh_event": {"type": "breizh_event", "t": "2026-11-04T10:12:03Z", "event": "fallback",
+                   "detail": "Breizh ne répond plus depuis 100 ms : fin de l'émission en direct, gain -6 dB"},
+  "breizh_log_result": {"type": "result", "id": 63, "ok": true,
+                        "entries": [{"t": "2026-11-04T10:00:00Z", "event": "connected", "detail": "Breizh 2.1.0 joint (traitement annoncé : 5 ms)"},
+                                    {"t": "2026-11-04T10:12:03Z", "event": "fallback", "detail": "Breizh ne répond plus depuis 100 ms : fin de l'émission en direct, gain -6 dB"}]}
 }

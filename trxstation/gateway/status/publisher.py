@@ -41,7 +41,9 @@ class StatusPublisher:
                              audio=self.pipeline.stats() if self.pipeline is not None else {},
                              spectrum=self.spectrum.stats() if self.spectrum is not None else {},
                              presence=self.presence() if self.presence is not None else {},
-                             swr=self.swr_status() if self.swr_status is not None else {})
+                             swr=self.swr_status() if self.swr_status is not None else {},
+                             breizh=self.pipeline.route.snapshot()
+                             if getattr(self.pipeline, "route", None) is not None else {})
 
     def stop(self) -> None:
         self._stop.set()

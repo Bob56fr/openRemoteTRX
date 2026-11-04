@@ -73,6 +73,16 @@
                   "invalid": [{"message": {"cmd": "swr_start", "low_hz": "14000000", "high_hz": 14350000, "points": 11, "power_pct": 15}, "code": "invalid_params"}]},
     "swr_cancel": {"valid": [{"cmd": "swr_cancel", "id": 50}], "invalid": []},
     "swr_last": {"valid": [{"cmd": "swr_last", "id": 51}], "invalid": []},
+    "breizh_set": {
+      "valid": [{"cmd": "breizh_set", "id": 60, "return_gain_db": -3.5}, {"cmd": "breizh_set", "bypass": true},
+                {"cmd": "breizh_set", "id": 61, "return_gain_db": 6.0, "bypass": false}],
+      "invalid": [{"message": {"cmd": "breizh_set"}, "code": "invalid_params"},
+                  {"message": {"cmd": "breizh_set", "return_gain_db": 7}, "code": "invalid_params"},
+                  {"message": {"cmd": "breizh_set", "return_gain_db": -3.3}, "code": "invalid_params"},
+                  {"message": {"cmd": "breizh_set", "bypass": "oui"}, "code": "invalid_params"},
+                  {"message": {"cmd": "breizh_set", "bypass": true, "host": "192.0.2.1"}, "code": "invalid_params"}]},
+    "breizh_reactivate": {"valid": [{"cmd": "breizh_reactivate", "id": 62}], "invalid": []},
+    "breizh_log": {"valid": [{"cmd": "breizh_log", "id": 63}], "invalid": []},
     "voice_profile_save": {
       "valid": [{"cmd": "voice_profile_save", "id": 46, "name": "Mon DX", "settings": {"enabled": true, "highpassHz": 250, "lowpassHz": 2800,
                  "bands": [{"hz": 100, "gainDb": -6, "q": 1.4, "shelf": true}], "chorus": {"on": false}, "reverb": {"on": true, "type": "hall"}}}],

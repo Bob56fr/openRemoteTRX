@@ -50,6 +50,8 @@ class FakeBreizh(asyncio.DatagramProtocol):
         self.seq = 0
         self.session_started = 0.0
         self.sent_rets: deque[bytes] = deque(maxlen=20)
+        self._last_ack = b""
+        self.paused = False
         self.stats = {"hello": 0, "audio": 0, "returned": 0, "ping": 0, "rejected": 0, "replayed": 0, "foreign": 0}
 
     # -- asyncio
@@ -57,6 +59,8 @@ class FakeBreizh(asyncio.DatagramProtocol):
         self.transport = transport
 
     def datagram_received(self, data: bytes, addr) -> None:
+        if self.paused:                                       # Breizh figé (tests) : plus rien, même pas les PONG
+            return
         if self.station is not None and addr[0] != self.station:
             self.stats["foreign"] += 1
             return
@@ -81,10 +85,14 @@ class FakeBreizh(asyncio.DatagramProtocol):
             self._audio(packet)
         elif packet.type == p.Type.BYE:
             self.session = self.session_key = self.peer = None
+            self._last_ack = b""
 
     # -- messages
     def _hello(self, packet: p.Packet, addr) -> None:
         self.stats["hello"] += 1
+        if packet.session == self.session and addr == self.peer and self._last_ack:
+            self.transport.sendto(self._last_ack, addr)        # HELLO répété : le MÊME HELLO_ACK (§ 5.4)
+            return
         try:
             hello = p.parse_hello(packet.payload)
         except p.PacketError as exc:
@@ -103,7 +111,7 @@ class FakeBreizh(asyncio.DatagramProtocol):
         payload = p.hello_ack_payload(nonce, self.version, cat_off=self.mode != "cat_on", latency_ms=self.latency_ms,
                                       proto=2 if self.mode == "proto2" else p.PROTO)
         self.seq += 1
-        self._send_raw(p.Packet(p.Type.HELLO_ACK, packet.session, self.seq, 0, payload), self.key, addr)
+        self._last_ack = self._send_raw(p.Packet(p.Type.HELLO_ACK, packet.session, self.seq, 0, payload), self.key, addr)
 
     def _audio(self, packet: p.Packet) -> None:
         self.stats["audio"] += 1

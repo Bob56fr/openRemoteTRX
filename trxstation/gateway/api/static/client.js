@@ -91,6 +91,8 @@
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
     swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
     swr_unavailable: "Mesure de TOS indisponible sur cette station.",
+    breizh_unavailable: "Breizh Audio Box n'est pas utilisé par cette station.",
+    breizh_storage_error: "Réglage de Breizh non enregistré sur la station (disque ?).",
     swr_no_fm_mode: "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
     swr_out_of_band: "Aucun point de la mesure dans les bandes autorisées de la station.",
     swr_bad_range: "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
@@ -1827,6 +1829,20 @@
 
     async swrLast() {
       return this.send("swr_last");
+    }
+
+    /* Breizh Audio Box (fonction « breizh », opérateurs) : réglages pris à la PROCHAINE émission (écran : lot 3 Breizh). */
+    async breizhSet(changes) {
+      return this.send("breizh_set", changes);
+    }
+
+    async breizhReactivate() {
+      return this.send("breizh_reactivate");
+    }
+
+    async breizhLog() {
+      const res = await this.send("breizh_log");
+      return res && res.ok && Array.isArray(res.entries) ? res.entries : [];
     }
 
     async hostInfo() {

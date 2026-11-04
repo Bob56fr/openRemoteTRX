@@ -29,6 +29,12 @@ class AudioPipeline:
         self.gate = TxAudioGate(self.tx_sink, self.tx_meter, cfg.tx_gain_db, owner_provider)
         self._task: asyncio.Task | None = None
         self.selcall = None                       # SelcallReceiver si [selcall] enabled (gateway/main)
+        self.route = None                         # TxRoute si [breizh] enabled (gateway/main) : micro -> Breizh -> porte
+
+    @property
+    def tx_input(self):
+        """Entrée du micro des clients (push) : la route de Breizh si elle existe, sinon la porte directement."""
+        return self.route if self.route is not None else self.gate
 
     async def start(self) -> None:
         await self.source.start()
@@ -51,5 +57,6 @@ class AudioPipeline:
                 "rx_frames": self.hub.frames,              # trames capturées sur la carte son du poste
                 "tx_frames": self.gate.passed,             # trames du micro d'un client passées au poste (porte ouverte)
                 "tx_dropped_closed": self.gate.dropped_closed,   # trames jetées porte fermée (normal en réception)
+                "tx_dropped_stale": self.gate.dropped_stale,     # son revenu de Breizh après la coupure : jeté
                 "tx_underruns": getattr(self.sink, "underruns", 0),   # trous dans le son envoyé au poste (réseau en retard)
                 "tx_overruns": getattr(self.sink, "overruns", 0)}     # son jeté car arrivé trop tard

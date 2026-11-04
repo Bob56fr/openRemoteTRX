@@ -245,8 +245,29 @@ def _audio_panel(snap: Snapshot) -> Panel:
         Row("Trames", f"capturées {audio.get('rx_frames', 0)} · micro passées au poste {audio.get('tx_frames', 0)}", "dim"),
         Row("Pertes", f"RX {audio.get('rx_dropped', 0)}, TX hors propriétaire {audio.get('tx_dropped_not_owner', 0)}",
             "warn" if audio.get("rx_dropped", 0) or audio.get("tx_dropped_not_owner", 0) else "dim"),
+        *_breizh_rows(snap),
         *_spectrum_rows(snap),
     ))
+
+
+BREIZH_LABELS = {"connecting": ("recherche…", "warn"), "ready": ("prêt", "ok"), "active": ("ÉMISSION par Breizh", "ok"),
+                 "fallback": ("REPLI : émission en direct", "bad"), "refused": ("liaison refusée", "bad")}
+
+
+def _breizh_rows(snap: Snapshot) -> tuple[Row, ...]:
+    """Breizh Audio Box ([breizh] enabled) : état, route de la prochaine émission, aller-retour, blocs remplacés."""
+    breizh = getattr(snap.status, "breizh", None) if snap.status is not None else None
+    if not isinstance(breizh, dict) or not breizh:
+        return ()
+    label, level = BREIZH_LABELS.get(breizh.get("state"), (str(breizh.get("state")), "warn"))
+    details = [f"route {breizh.get('route')}" + (" (« Direct » choisi)" if breizh.get("bypass") else "")]
+    if breizh.get("rtt_ms") is not None:
+        details.append(f"aller-retour {breizh['rtt_ms']} ms")
+    if breizh.get("late"):
+        details.append(f"{breizh['late']} bloc(s) en retard")
+    if breizh.get("reactivate_in_s") is not None:
+        details.append(f"retour dans {breizh['reactivate_in_s']} s")
+    return (Row("Breizh", f"{label} · {' · '.join(details)}", level if snap.gateway_fresh else "dim"),)
 
 
 def build_panels(snap: Snapshot) -> list[Panel]:

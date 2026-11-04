@@ -93,7 +93,8 @@ class RxTrack(MediaStreamTrack):
 
 
 async def receive_tx_audio(track, client_id: str, gate) -> None:
-    """Micro d'un client -> porte d'émission. Consomme toujours la piste (sinon elle s'engorge)."""
+    """Micro d'un client -> porte d'émission (ou route de Breizh devant elle : même `push`). Consomme toujours la piste
+    (sinon elle s'engorge)."""
     resampler = av.AudioResampler(format="s16", layout="mono", rate=SAMPLE_RATE)
     assembler = FrameAssembler()
     try:
@@ -211,7 +212,8 @@ class PeerManager:
         def on_track(track) -> None:
             if track.kind == "audio" and peer.tx_task is None:
                 peer.tx_task = self._spawn(drain_audio(track) if role == LISTENER
-                                           else receive_tx_audio(track, client_id, self.pipeline.gate))
+                                           else receive_tx_audio(track, client_id, getattr(self.pipeline, "tx_input",
+                                                                                            self.pipeline.gate)))
 
         @pc.on("connectionstatechange")
         async def on_state() -> None:
