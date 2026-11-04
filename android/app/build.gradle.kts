@@ -15,7 +15,7 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 47
+        versionCode = 48
         versionName = "0.43.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
     }
