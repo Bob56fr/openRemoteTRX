@@ -142,6 +142,8 @@ fun VoiceTab(
         // Graphique de l'égaliseur : courbe de toute la chaîne (chaud = renforcé, froid = atténué) et conseils
         VoiceGraph(s)
         for (hint in VoiceEq.hints(s)) Text("• " + hint, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        if (ui.breizh) Text("Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés pendant les émissions qui " +
+            "passent par Breizh (le limiteur reste).", color = WARN, style = MaterialTheme.typography.bodySmall)
         if (ui.failed.isNotEmpty()) Text(ui.failed, color = WARN, style = MaterialTheme.typography.bodySmall)
         Text(
             "Limiteur toujours actif (crêtes à ${VoiceEq.LIMIT_DBFS.toInt()} dBFS). Vérifiez l'ALC sur charge fictive après un réglage.",
@@ -288,7 +290,8 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
     val context = LocalContext.current
     var asking by remember { mutableStateOf<ScramblerSettings?>(null) }
     fun change(next: ScramblerSettings) {
-        if ((next.tx && !scr.tx) || (next.rx && !scr.rx)) asking = next else VoiceHub.setScrambler(context, next)
+        val refusedByBreizh = next.tx && !scr.tx && VoiceHub.ui.value.breizh      // refusé par VoiceHub (message) : pas de confirmation
+        if (!refusedByBreizh && ((next.tx && !scr.tx) || (next.rx && !scr.rx))) asking = next else VoiceHub.setScrambler(context, next)
     }
     panel {
         Text("Scrambler (voix brouillée)", style = MaterialTheme.typography.titleSmall)

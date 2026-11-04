@@ -3,6 +3,7 @@
 package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.Beeps
+import com.rfdiy.openremotetrx.protocol.BreizhEvent
 import com.rfdiy.openremotetrx.protocol.Bye
 import com.rfdiy.openremotetrx.protocol.Command
 import com.rfdiy.openremotetrx.protocol.ErrorMessage
@@ -24,7 +25,9 @@ import kotlinx.serialization.json.contentOrNull
 enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 
 /** Sons de liaison (mêmes notes que la page) : perdue, rétablie, perdue pour de bon. */
-enum class LinkAlert { LOST, RESTORED, FAILED, SELCALL_CALL }
+enum class LinkAlert { LOST, RESTORED, FAILED, SELCALL_CALL,
+    /** Breizh Audio Box perdu pendant MON émission : repli en direct (bip court du téléphone, jamais de la station). */
+    BREIZH_FALLBACK }
 
 enum class LogLevel { INFO, WARN, BAD }
 
@@ -76,6 +79,10 @@ data class RigState(
     val swrPlan: SwrPlanView? = null,
     val swrChoices: Pair<Double, Int>? = null,
     val swrLast: SwrResult? = null,
+    /** Breizh Audio Box (state.breizh) : null = station sans Breizh, ou visiteur. */
+    val breizh: BreizhView? = null,
+    /** Journal de la liaison avec Breizh (relu à la connexion, complété par breizh_event), le plus ancien en tête. */
+    val breizhEvents: List<BreizhEntry> = emptyList(),
 )
 
 /** Profil d'égaliseur de l'opérateur, rangé sur la station (étape 102) ; `settings` revalidé à l'application. */
@@ -130,6 +137,7 @@ class RigSession(
     private var swrPlan: SwrPlanView? = null
     private var swrChoices: Pair<Double, Int>? = null
     private var swrLast: SwrResult? = null
+    private var breizhEvents: List<BreizhEntry> = emptyList()
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -271,6 +279,7 @@ class RigSession(
             is Memories -> memories = Radio.sortMemories(msg.items)
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
+            is BreizhEvent -> onBreizhEvent(msg)
             is SwrMessage -> {
                 val p = SwrUi.progress(msg.raw)
                 swr = p
@@ -310,6 +319,9 @@ class RigSession(
         // Profils d'égaliseur de ce compte (opérateur) : relus à chaque connexion
         voiceProfiles = null
         if (msg.protocol == Protocol.VERSION && !msg.listener && msg.offers("voice_profiles")) send(now, Command.VoiceProfiles)
+        // Journal de la liaison avec Breizh Audio Box : relu sur la station à chaque connexion
+        breizhEvents = emptyList()
+        if (msg.protocol == Protocol.VERSION && !msg.listener && msg.offers("breizh")) send(now, Command.BreizhLog)
         arming.onConnected()                                     // toujours désarmé à la connexion
         lastPing = now
         protocolOk = msg.protocol == Protocol.VERSION
@@ -355,6 +367,25 @@ class RigSession(
             publish(now)
             return
         }
+        if (entry.cmd.startsWith("breizh_")) {                  // Breizh Audio Box : journal, réactivation, réglages
+            if (!msg.ok) {
+                log("Breizh : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+            } else if (entry.cmd == "breizh_log") {
+                (msg.raw["entries"] as? kotlinx.serialization.json.JsonArray)?.let { list ->
+                    breizhEvents = list.mapNotNull { item ->
+                        val o = item as? JsonObject ?: return@mapNotNull null
+                        fun f(k: String) = (o[k] as? JsonPrimitive)?.contentOrNull
+                        val event = f("event") ?: return@mapNotNull null
+                        BreizhEntry(f("t").orEmpty(), event, f("detail").orEmpty().take(300))
+                    }.takeLast(Breizhs.EVENTS_MAX)
+                }
+            } else if (entry.cmd == "breizh_reactivate") {
+                val pending = (msg.raw["pending"] as? JsonPrimitive)?.contentOrNull == "true"
+                log(if (pending) "Breizh sera repris dès qu'il répondra (à la prochaine émission)." else "Breizh repris : la prochaine émission passera par Breizh.", LogLevel.INFO)
+            }
+            publish(now)
+            return
+        }
         if (entry.cmd == "host_info") {                         // synthèse du matériel : affichée telle quelle
             hostSections = if (msg.ok) HostSection.parse(msg.raw["sections"]).orEmpty() else emptyList()
             publish(now)
@@ -364,6 +395,15 @@ class RigSession(
             if (entry.cmd == "toggle") heartbeat.cancelGrace()
             log(Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
         }
+    }
+
+    private fun onBreizhEvent(msg: BreizhEvent) {
+        if (msg.event.isEmpty() || msg.detail.isEmpty()) return
+        val entry = BreizhEntry.of(msg)
+        breizhEvents = (breizhEvents + entry).takeLast(Breizhs.EVENTS_MAX)
+        val alarm = entry.event == "fallback" && mineActive()
+        log("Breizh Audio Box : " + entry.detail, if (alarm) LogLevel.BAD else if (entry.warn) LogLevel.WARN else LogLevel.INFO)
+        if (alarm) link.alert(LinkAlert.BREIZH_FALLBACK)
     }
 
     private fun afterState() {
@@ -711,6 +751,26 @@ class RigSession(
         publish(now)
     }
 
+    // ---- Breizh Audio Box (opérateur, fonction « breizh ») : réglages pris à la PROCHAINE émission, jamais pendant
+    private fun breizhOffered() = connected && protocolOk && !listener && hello?.offers("breizh") == true
+
+    /** Volume retour (−20 à +6 dB, pas de 0,5) et/ou « Direct ». */
+    fun breizhSet(now: Long, returnGainDb: Double? = null, bypass: Boolean? = null) {
+        if (!breizhOffered() || (returnGainDb == null && bypass == null)) return
+        send(now, Command.BreizhSet(returnGainDb?.let { Breizhs.snapGain(it) }, bypass))
+        publish(now)
+    }
+
+    fun breizhReactivate(now: Long) {
+        if (!breizhOffered()) return
+        send(now, Command.BreizhReactivate)
+    }
+
+    fun breizhLog(now: Long) {
+        if (!breizhOffered()) return
+        send(now, Command.BreizhLog)
+    }
+
     private val listener: Boolean get() = hello?.listener == true
 
     private fun send(now: Long, command: Command) {
@@ -767,6 +827,7 @@ class RigSession(
         hostSections = null
         voiceProfiles = null
         swr = null; swrPlan = null; swrChoices = null; swrLast = null
+        breizhEvents = emptyList()
         protocolOk = true
         pending.clear()
         rttMs = null
@@ -810,6 +871,8 @@ class RigSession(
             hostSections = hostSections,
             voiceProfiles = voiceProfiles,
             swr = swr, swrPlan = swrPlan, swrChoices = swrChoices, swrLast = swrLast,
+            breizh = if (listener) null else Breizhs.view(state?.breizh),
+            breizhEvents = if (listener) emptyList() else breizhEvents,
         )
         if (next != snapshot) {
             snapshot = next

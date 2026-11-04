@@ -173,6 +173,22 @@ data class Host(
     val worst: String = "",
 )
 
+/** Breizh Audio Box dans la chaîne d'émission (station 0.100.0+, opérateurs, docs/protocole.md § 14) ; absent sinon. */
+@Serializable
+data class BreizhStatus(
+    /** connecting, ready, active (émission par Breizh), fallback (repli), refused. */
+    val state: String = "connecting",
+    /** Route de l'émission EN COURS, sinon de la prochaine : « breizh » ou « direct ». */
+    val route: String = "direct",
+    val bypass: Boolean = false,
+    @SerialName("return_gain_db") val returnGainDb: Double = 0.0,
+    @SerialName("rtt_ms") val rttMs: Int? = null,
+    val late: Int = 0,
+    val lost: Int = 0,
+    val peer: String = "",
+    @SerialName("reactivate_in_s") val reactivateInS: Int? = null,
+)
+
 @Serializable
 data class State(
     val ptt: PttStatus = PttStatus(),
@@ -182,6 +198,7 @@ data class State(
     val spectrum: JsonObject = JsonObject(emptyMap()),
     val presence: Presence? = null,
     val host: Host? = null,
+    val breizh: BreizhStatus? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */
@@ -205,6 +222,9 @@ data class Beeps(val settings: JsonObject) : ServerMessage
 data class Selcall(val status: JsonObject) : ServerMessage
 
 data class ModuleMessage(val module: String, val data: JsonElement) : ServerMessage
+
+/** Événement de la liaison avec Breizh Audio Box (station 0.100.0+, opérateurs) : `detail` = texte à afficher. */
+data class BreizhEvent(val t: String, val event: String, val detail: String) : ServerMessage
 
 /** Progression de MA mesure de TOS (station 0.90.0+) ; lue par logic/SwrUi. */
 data class SwrMessage(val raw: JsonObject) : ServerMessage
@@ -249,6 +269,7 @@ object ServerMessages {
                 "module" -> ModuleMessage(obj.text("module"), obj["data"] ?: JsonNull)
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 "swr" -> SwrMessage(obj)
+                "breizh_event" -> BreizhEvent(obj.text("t"), obj.text("event"), obj.text("detail"))
                 else -> Unknown(type)
             }
         } catch (e: SerializationException) {

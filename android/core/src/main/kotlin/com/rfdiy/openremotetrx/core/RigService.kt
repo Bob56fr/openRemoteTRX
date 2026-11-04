@@ -243,6 +243,7 @@ class RigService : Service() {
     /** Sur le fil « rig » : publie l'état, bips d'émission, notification ; fin du service si déconnecté. */
     private fun onState(state: RigState) {
         RigHub.publish { it.copy(rig = state) }
+        VoiceHub.setBreizhRoute(state.breizh?.effectsOff == true)          // voix par Breizh : égaliseur et effets coupés
         val mine = state.ptt?.let { it.mine && it.transmitting } ?: false
         // Micro du casque : bip de prise quand le micro s'ouvre vraiment (casque en mode appel ~1 s plus tard, headsetStep).
         if (mine != wasMine && !(mine && headsetMic)) sounds.txBeep(mine)

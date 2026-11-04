@@ -353,6 +353,10 @@ Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coup�
   bip court de la page au repli pendant SON émission). Textes communs dans `client.js` (`BREIZH_STATES`, `breizhView`)
   pour l'application.
 
+- Lot 4 FAIT (étape 123, application 0.44.0) : mêmes fonctions que la page (voyant BZH, fenêtre Breizh, volume retour,
+  « Direct », réactivation, journal, `VoiceDsp.external`, scrambler d'émission exclu, bip du repli pendant SON émission) ;
+  textes `Breizhs.STATES` comparés à `BREIZH_STATES` de client.js.
+
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)
 
 1. Blocs de **480 échantillons** (10 ms) au lieu de 256.

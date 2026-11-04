@@ -37,6 +37,8 @@ data class VoiceUi(
     val failed: String = "",
     /** Scrambler : tx et rx toujours éteints au démarrage (jamais enregistrés), mode et décalage gardés. */
     val scrambler: ScramblerSettings = ScramblerSettings(),
+    /** Voix par Breizh Audio Box (state.breizh.route) : égaliseur et effets coupés, scrambler d'émission exclu. */
+    val breizh: Boolean = false,
 )
 
 /**
@@ -73,7 +75,13 @@ object VoiceHub {
      * limiteur, `rx` débrouille la réception avant le haut-parleur. La confirmation est demandée par l'écran.
      */
     fun setScrambler(context: Context, settings: ScramblerSettings) {
-        val s = Scramblers.validate(settings.mode, settings.offsetHz).copy(tx = settings.tx, rx = settings.rx)
+        var s = Scramblers.validate(settings.mode, settings.offsetHz).copy(tx = settings.tx, rx = settings.rx)
+        if (s.tx && !_ui.value.scrambler.tx && _ui.value.breizh) {               // Breizh et scrambler d'émission exclusifs
+            s = s.copy(tx = false)
+            RigHub.service?.onRig { session, now ->
+                session.note(now, "Breizh Audio Box en service : scrambler d'émission impossible (exclusifs). Choisissez « Direct » dans Breizh pour brouiller.", warn = true)
+            }
+        }
         context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).edit()
             .putString(PREF_SCR_MODE, s.mode).putInt(PREF_SCR_OFFSET, s.offsetHz).apply()
         val before = _ui.value.scrambler
@@ -123,9 +131,26 @@ object VoiceHub {
     /** Bouton marche/arrêt d'accès direct. */
     fun setEnabled(context: Context, on: Boolean) = save(context, _ui.value.settings.copy(enabled = on))
 
+    /**
+     * Route de la voix annoncée par la station (state.breizh.route == « breizh »). Hors émission : appliquée tout de suite
+     * (la relecture correspond à ce qui partira) ; en émission : prise à la prochaine ouverture du micro seulement.
+     * Breizh devient la route : scrambler d'émission coupé (exclusifs, décision 6 du cahier des charges de Breizh).
+     */
+    internal fun setBreizhRoute(on: Boolean) {
+        val before = _ui.value
+        if (on == before.breizh) return
+        if (!tx) processor.dsp?.external = on
+        _ui.value = before.copy(breizh = on, scrambler = if (on) before.scrambler.copy(tx = false) else before.scrambler)
+        if (on && before.scrambler.tx) {
+            applyScrambler()
+            RigHub.service?.onRig { session, now -> session.note(now, "Breizh Audio Box en service : scrambler d'émission coupé (exclusifs).", warn = true) }
+        }
+    }
+
     /** Émission confirmée (piste micro ouverte) ou non : traîne coupée ; prise => enregistrement et relecture arrêtés. */
     internal fun setTx(on: Boolean) {
         if (on == tx) return
+        if (on) processor.dsp?.external = _ui.value.breizh                // fixé à l'ouverture du micro, jamais pendant
         tx = on
         processor.dsp?.setTx(on)
         ReplayHub.onTx(on)                                          // rediffusion : commence à l'émission confirmée
@@ -343,6 +368,7 @@ object VoiceHub {
             dsp = VoiceDsp(sampleRateHz).also { d ->
                 d.apply(_ui.value.settings)
                 d.scrambleMode = _ui.value.scrambler.let { if (it.tx) it.mode else null }
+                d.external = _ui.value.breizh
                 d.onFail = { text ->
                     _ui.value = _ui.value.copy(failed = text)
                     RigHub.service?.onRig { s, now -> s.note(now, text, warn = true) }

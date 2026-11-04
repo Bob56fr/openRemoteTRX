@@ -31,6 +31,8 @@ class LinkSounds(private val context: Context) {
         ),
         // SELCALL : appel du groupe reçu, le son de la station revient (même carillon que la page)
         LinkAlert.SELCALL_CALL to Alert(listOf(Triple(880, 120, 40), Triple(1320, 160, 0)), longArrayOf(0, 100, 60, 160)),
+        // Breizh Audio Box perdu pendant MON émission : la fin part en direct (même bip court que la page)
+        LinkAlert.BREIZH_FALLBACK to Alert(listOf(Triple(660, 120, 60), Triple(440, 200, 0)), longArrayOf(0, 120, 60, 200)),
     )
 
     /** Bips d'émission (E6) : aigu à la prise, grave à la fin. */

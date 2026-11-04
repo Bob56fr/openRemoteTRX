@@ -47,6 +47,12 @@ class VoiceDsp(private val rate: Int) {
 
     fun apply(settings: VoiceSettings) { wanted = settings }
 
+    /**
+     * Voix traitée par Breizh Audio Box (station 0.100.0+) : égaliseur, chorus et réverbération contournés ; gain du micro,
+     * porte de bruit et limiteur gardés. Posé à l'ouverture du micro (VoiceHub), jamais changé pendant l'émission.
+     */
+    @Volatile var external = false
+
     /** Prise ou fin d'émission : traîne du chorus et de la réverbération coupée net (rien ne prolonge une émission). */
     fun setTx(@Suppress("UNUSED_PARAMETER") on: Boolean) { resetWanted = true }
 
@@ -76,7 +82,7 @@ class VoiceDsp(private val rate: Int) {
         if (gateOn && micLevelDb >= set.mic.gateDb) gateOpenUntil = clock + (GATE_HOLD_S * rate).toLong()
         val target = if (!gateOn || clock < gateOpenUntil) 1.0 else GATE_FLOOR
         clock += n
-        val on = set.enabled && !failed
+        val on = set.enabled && !failed && !external
         try {
             for (i in 0 until n) {
                 gate = target + (gate - target) * (if (target > gate) gateUp else gateDown)

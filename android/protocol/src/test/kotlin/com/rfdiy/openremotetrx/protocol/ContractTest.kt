@@ -112,6 +112,19 @@ class ContractTest {
     }
 
     /** Construit la commande de l'application qui correspond à un exemple (les paramètres sont relus de l'exemple). */
+    @Test
+    fun `Breizh - etat et evenement d exemple`() {
+        val wrapped = buildString {
+            append("{\"type\":\"state\",\"breizh\":"); append(messages["state_breizh"]!!.jsonObject["breizh"].toString()); append("}")
+        }
+        val b = assertIs<State>(ServerMessages.decode(wrapped)).breizh!!
+        assertEquals("ready", b.state); assertEquals("breizh", b.route); assertEquals(3, b.rttMs); assertEquals("Breizh 2.1.0", b.peer)
+        assertNull(b.reactivateInS)
+        assertNull(assertIs<State>(ServerMessages.decode(messages["state"].toString())).breizh)    // station sans Breizh
+        val e = assertIs<BreizhEvent>(ServerMessages.decode(messages["breizh_event"].toString()))
+        assertEquals("fallback", e.event); assertTrue(e.detail.startsWith("Breizh ne répond plus"))
+    }
+
     private fun fromExample(name: String, e: JsonObject): Command {
         fun p(key: String) = e[key]!!.jsonPrimitive
         return when (name) {

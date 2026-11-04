@@ -50,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import com.rfdiy.openremotetrx.logic.BigPtt
+import com.rfdiy.openremotetrx.logic.BreizhLevel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
@@ -170,6 +171,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var presenceDialog by remember { mutableStateOf(false) }
     var selcallDialog by remember { mutableStateOf(false) }
     var spatialDialog by remember { mutableStateOf(false) }
+    var breizhDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
     var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
     var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
@@ -625,6 +627,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     val stOn = spatial.settings.on
                     CompactChip(if (stOn) "ST ●" else "ST", onClick = { com.rfdiy.openremotetrx.core.SpatialHub.setEnabled(context, !stOn) },
                         selected = stOn && spatial.monoReason.isEmpty(), onLongClick = { spatialDialog = true })
+                    // Breizh Audio Box (station qui l'emploie) : voyant BZH vert / orange / gris ; toucher = sa fenêtre
+                    rig.breizh?.let { bzh ->
+                        Spacer(Modifier.width(6.dp))
+                        CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level))
+                    }
                     // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
@@ -692,6 +699,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             onDismiss = { selcallDialog = false })
     }
     if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
+    if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })

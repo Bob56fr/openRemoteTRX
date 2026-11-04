@@ -193,6 +193,15 @@ object RigHub {
 
     fun setListenersOpen(on: Boolean) { service?.onRig { session, now -> session.setListenersOpen(now, on) } }
 
+    /** Breizh Audio Box (opérateur) : volume retour et/ou « Direct », pris à la prochaine émission. */
+    fun breizhSet(returnGainDb: Double? = null, bypass: Boolean? = null) {
+        service?.onRig { session, now -> session.breizhSet(now, returnGainDb, bypass) }
+    }
+
+    fun breizhReactivate() { service?.onRig { session, now -> session.breizhReactivate(now) } }
+
+    fun breizhLog() { service?.onRig { session, now -> session.breizhLog(now) } }
+
     fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }
 
     fun setMode(mode: String) { service?.onRig { session, now -> session.setMode(now, mode) } }
