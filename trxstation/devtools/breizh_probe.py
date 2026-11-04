@@ -212,6 +212,8 @@ async def _main(args) -> int:
         rtts = await probe.ping(args.pings)
         got = [r for r in rtts if r is not None]
         print(f"PING : {len(got)}/{len(rtts)} réponses" + (f", aller-retour {min(got):.1f} à {max(got):.1f} ms" if got else ""))
+        if args.sans_son:                                     # TRX Console : liaison seule, aucun son envoyé
+            return 0 if len(got) == len(rtts) else 1
         report = await probe.tone(args.seconds)
         print(f"Son : {report['returned']}/{report['sent']} blocs revenus, {report['lost']} perdus, "
               f"{report['late']} en retard (> 40 ms), aller-retour médian {report['rtt_ms_median']} ms, "
@@ -242,6 +244,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--seconds", type=float, default=3.0, help="durée du son de test")
     ap.add_argument("--pings", type=int, default=5)
     ap.add_argument("--timeout", type=float, default=5.0)
+    ap.add_argument("--sans-son", action="store_true", help="liaison et PING seulement, aucun son (TRX Console, menu 22)")
     args = ap.parse_args(argv)
     sys.exit(asyncio.run(_main(args)))
 

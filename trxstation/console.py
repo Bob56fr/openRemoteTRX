@@ -250,6 +250,7 @@ class Console:
             ("19", "Appairer un téléphone (application Android : adresse, empreinte, QR code)", self.pairing),
             ("20", "Visiteurs en réception seule (comptes, nombre maximal, connectés)", self.visitors),
             ("21", "Dernière mesure de TOS de l'antenne (lecture seule)", self.swr_report),
+            ("22", "Breizh Audio Box (clé d'appairage, adresse, essai de la liaison, journal)", self.breizh),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -909,7 +910,7 @@ class Console:
             answer = self.ask(f"{question} ({low} à {high}, Entrée = {current}) : ").strip()
             if not answer:
                 return current
-            if re.fullmatch(r"\d{1,4}", answer) and low <= int(answer) <= high:
+            if re.fullmatch(r"\d{1,5}", answer) and low <= int(answer) <= high:
                 return int(answer)
             self.say(f"Un nombre entier de {low} à {high}.")
 
@@ -1063,7 +1064,8 @@ class Console:
         account.pseudo = pseudo
         return True
 
-    def _save_accounts(self, original: bytes, cfg) -> None:
+    def _save_accounts(self, original: bytes, cfg, live: bool = True) -> None:
+        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 14 ; `live` : relu sans redémarrer."""
         from . import config as cfgmod
         edited = cfgmod.render_toml(cfg).encode("utf-8")
         if edited == original:
@@ -1080,7 +1082,7 @@ class Console:
                 self.say("Changement REFUSÉ :\n  - " + "\n  - ".join(exc.problems))
                 return
             self.say("(station.toml est réécrit dans sa forme standard.)")
-            self._save_config(original, edited, draft, live=True)
+            self._save_config(original, edited, draft, live=live)
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
@@ -1125,6 +1127,185 @@ class Console:
             shutil.rmtree(work, ignore_errors=True)
         self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
                  "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
+
+    # ------------------------------------------------------------------ Breizh Audio Box (menu 22)
+
+    BREIZH_STATES = {"connecting": "recherche de Breizh…", "ready": "prêt : prochaines émissions par Breizh",
+                     "active": "ÉMISSION par Breizh", "fallback": "REPLI : Breizh ne répond plus, émissions en direct",
+                     "refused": "liaison refusée par Breizh (voir le journal)"}
+
+    def breizh(self) -> None:
+        """Breizh Audio Box (docs/breizh-cahier-des-charges.md) : clé d'appairage (breizh.key, à côté de station.toml,
+        créée ici et montrée UNE fois), adresse et port de Breizh et activation ([breizh] de station.toml, chemin validé
+        du menu 14), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say("Configure d'abord la station (menu 2).")
+            return
+        while True:
+            try:
+                original = self.config.read_bytes()
+                cfg, _ = cfgmod.load_unchecked(self.config)
+            except (OSError, cfgmod.ConfigError) as exc:
+                self.say(f"Lecture de {self.config} impossible ({exc}).")
+                return
+            self.say(self._breizh_summary(cfg))
+            choice = self.ask("\n  1) Créer ou remplacer la clé d'appairage (à recopier dans Breizh)\n"
+                              "  2) Adresse et port de Breizh, activer ou désactiver\n"
+                              "  3) Essai de la liaison (sans son)\n"
+                              "  4) Journal de la liaison\n"
+                              "Choix (Entrée = retour) : ").strip()
+            if not choice:
+                return
+            if choice == "1":
+                self._breizh_new_key(cfg)
+            elif choice == "2":
+                if self._breizh_settings(cfg):
+                    self._save_accounts(original, cfg, live=False)
+            elif choice == "3":
+                self._breizh_probe(cfg)
+            elif choice == "4":
+                self._breizh_journal(cfg, 20)
+            else:
+                self.say("Choix inconnu.")
+
+    def _breizh_key_state(self, cfg) -> str:
+        """« présente », ou le problème (absente, illisible, droits trop larges). Jamais la clé elle-même."""
+        from .breizh.keyfile import KeyFileError, read_key
+        from .config import breizh_key_path
+        path = breizh_key_path(cfg, self.config)
+        if not path.exists():
+            return "ABSENTE (choix 1)"
+        try:
+            read_key(path)
+        except KeyFileError as exc:
+            if " illisible (" in str(exc):                     # droits root:trx : le compte de bureau ne la lit pas
+                return f"présente ({path} ; lue par la station, pas par ce compte)"
+            return f"PROBLÈME : {exc}"
+        return f"présente ({path})"
+
+    def _breizh_summary(self, cfg) -> str:
+        b = cfg.breizh
+        lines = ["\nBreizh Audio Box : la voix de l'opérateur passe par Breizh (autre PC du réseau local) avant le poste ;",
+                 "la station garde le PTT, le TOT et son limiteur, et repasse en direct si Breizh ne répond plus.",
+                 f"  En service            : {'oui' if b.enabled else 'non'}",
+                 f"  PC de Breizh          : {b.host or '(adresse à régler, choix 2)'} port UDP {b.port}",
+                 f"  Clé d'appairage       : {self._breizh_key_state(cfg)}"]
+        status = self._gateway_status()
+        live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
+        if live:
+            details = [f"route {live.get('route')}" + (" (« Direct » choisi)" if live.get("bypass") else "")]
+            if live.get("peer"):
+                details.append(str(live["peer"])[:64])
+            if live.get("rtt_ms") is not None:
+                details.append(f"aller-retour {live['rtt_ms']} ms")
+            lines.append(f"  Liaison maintenant    : {self.BREIZH_STATES.get(live.get('state'), live.get('state'))} · "
+                         + " · ".join(details))
+        elif b.enabled:
+            lines.append("  Liaison maintenant    : passerelle arrêtée, ou clé illisible au démarrage (voir le journal, menu 7)")
+        for entry in self._breizh_entries(cfg)[-3:]:
+            lines.append(f"  Journal               : {entry}")
+        return "\n".join(lines)
+
+    def _breizh_entries(self, cfg) -> list[str]:
+        from .breizh.store import BreizhStore
+        try:
+            store = BreizhStore(cfg.supervisor.state_dir)
+        except OSError:
+            return []
+        return [(e.get("t", "").replace("T", " ").replace("Z", " UTC") + " : " if e.get("t") else "") + str(e.get("detail", ""))
+                for e in store.last(50)]
+
+    def _breizh_journal(self, cfg, count: int) -> None:
+        entries = self._breizh_entries(cfg)[-count:]
+        self.say("\n".join(["\nJournal de la liaison avec Breizh (le plus récent en bas) :"]
+                           + ["  " + e for e in entries]) if entries else "Journal vide : la passerelle n'a encore rien noté.")
+
+    def _breizh_new_key(self, cfg) -> None:
+        """Nouvelle clé de 32 octets, écrite avec les droits de station.toml (jamais lisible par tous) et montrée UNE fois."""
+        from .breizh.protocol import key_to_text, new_key
+        from .config import breizh_key_path
+        path = breizh_key_path(cfg, self.config)
+        if path.exists() and not self.yes("Une clé existe déjà : la remplacer oblige à recopier la nouvelle dans Breizh. "
+                                          "Remplacer", False):
+            return
+        key = new_key()
+        work = Path(tempfile.mkdtemp(prefix="trx-breizh-"))
+        try:
+            draft = work / "breizh.key"
+            draft.write_text(key_to_text(key) + "\n", encoding="utf-8")
+            if os.name == "posix":
+                os.chmod(draft, 0o600)
+                st = self.config.stat()
+                mode = (st.st_mode & 0o660) or 0o600                     # jamais lisible par les autres comptes
+                code = self.runner.run(["install", "-m", f"{mode:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
+                                        str(draft), str(path)], admin=True)
+            else:
+                from .breizh.keyfile import write_key
+                try:
+                    write_key(path, key)
+                    code = 0
+                except OSError as exc:
+                    self.say(f"Écriture impossible ({exc}) : relance TRX Console en administrateur.")
+                    code = 1
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        if code != 0:
+            self.say(f"Clé NON enregistrée (code {code}).")
+            return
+        try:
+            if self.addresses is None:
+                from .setup_wizard import local_addresses
+                self.addresses = local_addresses
+            found = self.addresses()
+        except Exception:                                   # adresse introuvable : texte générique
+            found = []
+        self.say("\nClé d'appairage enregistrée. À recopier MAINTENANT dans l'onglet « OpenRemoteTRX » des réglages de Breizh"
+                 " (elle n'est plus jamais affichée ; perdue : en créer une nouvelle) :\n\n"
+                 f"    {key_to_text(key)}\n\n"
+                 f"Dans Breizh : adresse de cette station = {', '.join(found) or 'son adresse IP sur le réseau local'}, "
+                 f"port UDP = {cfg.breizh.port}, puis activer le mode OpenRemoteTRX (cela coupe le CAT de Breizh).\n"
+                 f"Sur le PC de Breizh, le pare-feu doit laisser entrer l'UDP {cfg.breizh.port} depuis cette station.")
+        if cfg.breizh.enabled and self.station_running() and self.yes("Redémarrer la station pour qu'elle prenne la nouvelle clé"):
+            self.start()
+
+    def _breizh_settings(self, cfg) -> bool:
+        """Adresse IP PRIVÉE de Breizh, port, activation. Vrai si quelque chose a changé."""
+        from .config import breizh_host_allowed
+        b = cfg.breizh
+        before = (b.enabled, b.host, b.port)
+        while True:
+            answer = self.ask(f"Adresse IP du PC de Breizh (127.0.0.1 = ce PC ; Entrée = {b.host or 'aucune'}) : ").strip()
+            if not answer or breizh_host_allowed(answer):
+                b.host = answer or b.host
+                break
+            self.say("Adresse IP PRIVÉE attendue (192.168.x.y, 10.x.y.z, 172.16 à 31.x.y, 127.0.0.1…) : ni nom ni adresse "
+                     "publique, le son du micro circule en clair.")
+        b.port = self._ask_int("Port UDP de Breizh", b.port, 1024, 65535)
+        b.enabled = self._ask_yes("Faire passer la voix par Breizh", b.enabled)
+        if b.enabled and not b.host:
+            self.say("Sans adresse, Breizh ne peut pas être activé.")
+            b.enabled = False
+        if b.enabled and self._breizh_key_state(cfg).startswith("ABSENTE"):
+            self.say("Attention : pas encore de clé d'appairage (choix 1) : la station démarrera SANS Breizh.")
+        return (b.enabled, b.host, b.port) != before
+
+    def _breizh_probe(self, cfg) -> None:
+        """Essai par la fausse station (HELLO puis 5 PING, aucun son), lancé en administrateur pour lire la clé."""
+        from .config import breizh_key_path
+        b = cfg.breizh
+        if not b.host:
+            self.say("Règle d'abord l'adresse de Breizh (choix 2).")
+            return
+        path = breizh_key_path(cfg, self.config)
+        if not path.exists():
+            self.say("Crée d'abord la clé d'appairage (choix 1).")
+            return
+        if b.enabled and self.station_running():
+            self.say("La station est en marche avec Breizh : Breizh répondra sans doute « occupé » (il sert déjà sa passerelle) ; "
+                     "l'état de la liaison est affiché plus haut.")
+        self.runner.run(self.module("trxstation.devtools.breizh_probe", "--host", b.host, "--port", str(b.port),
+                                    "--key-file", str(path), "--sans-son"), admin=os.name == "posix")
 
     def temperature(self) -> None:
         """Seuils de température du poste ([safety] rig_temp_warn_c, rig_temp_cut_c), écrits dans station.toml par

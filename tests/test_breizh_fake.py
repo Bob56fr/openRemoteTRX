@@ -137,3 +137,21 @@ def test_probe_ignores_packets_from_another_address():
             pt.close()
             ft.close()
     run(go())
+
+
+def test_probe_without_sound_for_the_console(capsys):
+    """TRX Console, menu 22 : liaison et PING seulement (aucun bloc de son envoyé)."""
+    import argparse
+
+    async def go():
+        ft, fake = await fake_breizh.serve(KEY, "127.0.0.1", 0)
+        try:
+            args = argparse.Namespace(key=p.key_to_text(KEY), key_file=None, host="127.0.0.1",
+                                      port=ft.get_extra_info("sockname")[1], timeout=2.0, pings=3, seconds=3.0, sans_son=True)
+            code = await probe_mod._main(args)
+            return code, fake.stats["audio"]
+        finally:
+            ft.close()
+    code, audio = run(go())
+    out = capsys.readouterr().out
+    assert code == 0 and audio == 0 and "PING : 3/3" in out and "Son :" not in out

@@ -7,6 +7,13 @@
    "quand": "Au premier déploiement, ou pour tout reprendre (changement de poste,\nd'interface audio, de PC).",
    "role": "Assistant de configuration : poste, ports, PTT, cartes son, bandes\nautorisées, accès réseau, comptes. Écrit station.toml."
   },
+  "breizh": {
+   "admin": true,
+   "expert": "Sécurité : Breizh ne peut jamais faire émettre la station ; elle garde le\nPTT, le TOT, la porte audio et son limiteur, et passe en direct à gain\nréduit (−6 dB par défaut) si Breizh ne répond plus pendant 100 ms, sans\ncouper l'émission. Le mode OpenRemoteTRX de Breizh coupe son CAT. Le son du\nmicro circule en clair sur le réseau local : seule une adresse IP privée est\nacceptée. Sur le PC de Breizh, le pare-feu doit laisser entrer l'UDP du port\nchoisi (47100 par défaut). L'essai envoie un appel et cinq PING, jamais de\nson ; si la station est en marche avec Breizh activé, Breizh répond\n« occupé » (il sert déjà la passerelle) : c'est normal, l'état est en tête\ndu menu. Réglages fins (délais, gain de repli, retour automatique) :\n[breizh], menu 14 et la notice de station.toml. Détail :\ndocs/breizh-cahier-des-charges.md.",
+   "modifie": "La clé : fichier breizh.key à côté de station.toml (jamais dedans), avec les\ndroits de la configuration. L'adresse, le port et l'activation : section\n[breizh] de station.toml, par le même chemin vérifié que le menu 14\n(différences montrées, confirmation, ancienne version gardée) ; la station\nles prend au redémarrage (proposé). L'essai et le journal ne modifient rien.",
+   "quand": "À la mise en place de Breizh, après une réinstallation de Breizh (nouvelle\nclé), quand la page ou l'application signalent un repli, ou pour vérifier la\nliaison avant une émission.",
+   "role": "Relie la station à Breizh Audio Box, le traitement de la voix qui tourne sur\nun PC du même réseau local : la voix de l'opérateur passe par Breizh avant\nd'aller au poste. On y crée la clé d'appairage (montrée une seule fois, à\nrecopier dans l'onglet « OpenRemoteTRX » des réglages de Breizh avec\nl'adresse de la station et le port), on règle l'adresse IP et le port UDP du\nPC de Breizh, on active ou désactive le passage par Breizh, on fait un essai\nde la liaison sans son et on lit le journal (connexions, replis, refus).\nL'état de la liaison en ce moment (prêt, émission par Breizh, repli, refus,\naller-retour) s'affiche en tête."
+  },
   "clear_safe_mode": {
    "admin": true,
    "expert": "Le mode sûr survit aux redémarrages et aux corrections : il faut le lever\nexplicitement ici.",

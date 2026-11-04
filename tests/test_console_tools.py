@@ -412,3 +412,70 @@ def test_visitors_menu_kick_writes_a_request_for_a_connected_listener_only(tmp_p
     assert any("Radio-club (club1, b, 2 min)" in line for line in out)
     request = json.loads((state / KICK_REQUEST).read_text(encoding="utf-8"))
     assert request["id"] == "club1" and abs(request["at"] - time.time()) < 5
+
+
+# --------------------------------------------------------------------------- menu 22 : Breizh Audio Box
+
+def test_breizh_menu_creates_the_key_shows_it_once_and_never_again(tmp_path):
+    from trxstation.breizh.keyfile import read_key
+    from trxstation.breizh.protocol import key_to_text
+    write_config(tmp_path)
+    con, fake, out = make(tmp_path, answers=["1", ""])
+    con.addresses = lambda: ["192.0.2.10"]
+    con.breizh()
+    key_file = tmp_path / "etc" / "breizh.key"
+    text = key_to_text(read_key(key_file))
+    shown = "\n".join(out)
+    assert text in shown and "192.0.2.10" in shown and "port UDP = 47100" in shown and "pare-feu" in shown
+    assert shown.count(text) == 1                                              # montrée une seule fois
+    con, fake, out = make(tmp_path, answers=["1", "n", ""])                   # remplacement refusé : clé inchangée
+    con.breizh()
+    assert key_to_text(read_key(key_file)) == text and text not in "\n".join(out)
+    assert any("présente" in line for line in out)
+
+
+def test_breizh_menu_settings_refuse_a_public_address_and_go_through_the_validated_path(tmp_path):
+    path = write_config(tmp_path)
+    con, fake, out = make(tmp_path, answers=["2", "8.8.8.8", "breizh.local", "192.168.1.50", "47200", "o", "o", ""])
+    con.breizh()
+    b = cfgmod.load(path).breizh
+    assert b.enabled is True and b.host == "192.168.1.50" and b.port == 47200
+    text = "\n".join(out)
+    assert text.count("Adresse IP PRIVÉE attendue") == 2 and "pas encore de clé" in text
+    assert "prochain démarrage" in text and any(c[0] == "install" for c in fake.admin_commands())
+
+
+def test_breizh_menu_probe_runs_the_fake_station_without_sound(tmp_path):
+    path = write_config(tmp_path)
+    con, fake, out = make(tmp_path, answers=["3", ""])
+    con.breizh()
+    assert any("adresse de Breizh" in line for line in out) and not fake.calls
+    cfg = cfgmod.load(path)
+    cfg.breizh.host = "192.168.1.50"
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    (tmp_path / "etc" / "breizh.key").write_text("x" * 43 + "\n", encoding="utf-8")
+    con, fake, out = make(tmp_path, answers=["3", ""])
+    con.breizh()
+    cmd = fake.calls[-1][0]
+    assert cmd[:3] == ["py", "-m", "trxstation.devtools.breizh_probe"] and "--sans-son" in cmd
+    assert cmd[cmd.index("--host") + 1] == "192.168.1.50" and cmd[cmd.index("--key-file") + 1].endswith("breizh.key")
+
+
+def test_breizh_menu_shows_the_live_link_and_the_journal(tmp_path):
+    import time
+    from trxstation.breizh.store import BreizhStore
+    from trxstation.status import GatewayStatus, write_status
+    path = write_config(tmp_path)
+    state = tmp_path / "state"
+    cfg = cfgmod.load(path)
+    cfg.supervisor.state_dir, cfg.supervisor.status_path = str(state), str(state / "status.json")
+    cfg.breizh.enabled, cfg.breizh.host = True, "192.168.1.50"
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    BreizhStore(state).event("connected", "Breizh 0.10.0 joint (traitement annoncé : 12 ms)")
+    write_status(state / "status.json", GatewayStatus(pid=1, seq=1, written_at=time.time(), ptt={"state": "RX"}, rig={},
+                 breizh={"state": "ready", "route": "breizh", "bypass": False, "rtt_ms": 2, "peer": "Breizh 0.10.0"}))
+    con, fake, out = make(tmp_path, answers=["4", ""])
+    con.breizh()
+    text = "\n".join(out)
+    assert "prêt : prochaines émissions par Breizh · route breizh · Breizh 0.10.0 · aller-retour 2 ms" in text
+    assert text.count("Breizh 0.10.0 joint") >= 2                              # résumé (3 dernières) et journal

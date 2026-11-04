@@ -357,6 +357,10 @@ Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coup�
   « Direct », réactivation, journal, `VoiceDsp.external`, scrambler d'émission exclu, bip du repli pendant SON émission) ;
   textes `Breizhs.STATES` comparés à `BREIZH_STATES` de client.js.
 
+- Lot 5 FAIT (étape 124, station 0.102.0) : TRX Console menu 22 (clé d'appairage créée et montrée une fois, adresse /
+  port / activation par le chemin validé du menu 14, essai sans son par `breizh_probe --sans-son`, état et journal), mode
+  d'emploi (`[menus.breizh]`). Tous les lots du § 12 sont faits ; reste l'essai réel avec Breizh.
+
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)
 
 1. Blocs de **480 échantillons** (10 ms) au lieu de 256.
