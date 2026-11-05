@@ -1181,6 +1181,9 @@ step("Breizh Audio Box : rubrique et voyant seulement si annoncé, état, volume
   assert.match($("bzh-ind").className, /\bok\b/); assert.match($("bzh-state").textContent, /prochaines émissions par Breizh/);
   assert.match($("bzh-details").textContent, /Breizh 0\.10\.0 · aller-retour 3 ms/);
   assert.equal($("voice-breizh").hidden, false);                                                    // égaliseur : bandeau
+  assert.equal($("voice-on").disabled, true); assert.equal($("voice-direct").disabled, true);       // effets grisés
+  assert.equal($("voice-hp").disabled, true); assert.equal($("voice-reverb-on").disabled, true);
+  assert.equal($("voice-gain").disabled, false);                                                    // gain du micro : toujours actif
   assert.equal(sent("breizh_log").length, 1);                                                       // journal relu à l'ouverture
   answer(true, { entries: [{ t: "2026-11-04T10:00:00Z", event: "connected", detail: "Breizh 0.10.0 joint" }] }, "breizh_log");
   await wait(30);
@@ -1195,6 +1198,7 @@ step("Breizh Audio Box : rubrique et voyant seulement si annoncé, état, volume
   bzhState({ bypass: true, route: "direct" }); await wait(30);
   assert.doesNotMatch($("bzh-ind").className, /\b(ok|warn)\b/); assert.match($("bzh-state").textContent, /« Direct » choisi/);
   assert.equal($("voice-breizh").hidden, true);
+  assert.equal($("voice-on").disabled, false); assert.equal($("voice-direct").disabled, false);     // « Direct » : effets de nouveau réglables
   bzhState({ state: "fallback", route: "direct", reactivate_in_s: 42 }); await wait(30);              // repli
   assert.match($("bzh-ind").className, /\bwarn\b/); assert.equal($("bzh-reactivate").hidden, false);
   assert.match($("bzh-details").textContent, /retour de Breizh dans 42 s/);

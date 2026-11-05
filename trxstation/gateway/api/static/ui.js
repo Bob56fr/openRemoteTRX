@@ -1966,6 +1966,10 @@
     let voiceChain = null, voiceCtx = null, voiceRaw = null, recorder = null, recordTimer = null, recordBuffer = null;
     function voiceSave() { store.set("trx.voice", JSON.stringify(voiceSettings)); if (voiceChain) voiceChain.apply(voiceSettings); voiceRender(); }
     function voiceTx() { return !!(lastView && lastView.mine && lastView.pttState && lastView.pttState !== "RX"); }
+    const VOICE_FX_IDS = ["voice-on", "voice-preset", "voice-apply", "voice-hp", "voice-lp", "voice-chorus-on", "voice-chorus-type",
+                          "voice-chorus-mix", "voice-chorus-rate", "voice-chorus-depth", "voice-reverb-on", "voice-reverb-type",
+                          "voice-reverb-mix", "voice-reverb-time"];
+    let voiceBzh = false;                                                   // dernier état rendu (Breizh coupe les effets)
     function voiceRender() {
       if (!vx) return;
       const s = voiceSettings;
@@ -1976,9 +1980,15 @@
       const mark = $("voice-gate-mark");
       mark.hidden = !s.mic.gateOn;
       mark.style.left = Math.round((s.mic.gateDb + 80) / 80 * 100) + "%";
-      $("voice-direct").className = "chip voice-direct" + (s.enabled ? " on" : "");
-      $("voice-direct").textContent = s.enabled ? "EQ ON" : "EQ";
-      $("voice-on").checked = s.enabled;
+      // Voix par Breizh Audio Box : égaliseur et effets contournés => leurs commandes grisées (réglages gardés pour le
+      // retour en direct : « Direct » ou repli) ; gain du micro et porte de bruit restent actifs
+      const bzh = client.breizhEffectsOff(), on = s.enabled && !bzh;
+      $("voice-direct").className = "chip voice-direct" + (on ? " on" : "");
+      $("voice-direct").textContent = on ? "EQ ON" : "EQ";
+      $("voice-direct").disabled = bzh;
+      $("voice-on").checked = on;
+      for (const id of VOICE_FX_IDS) $(id).disabled = bzh;
+      for (const row of bandRows) row.gain.disabled = row.hz.disabled = row.q.disabled = bzh;
       $("voice-hp").value = s.highpassHz; $("voice-hp-text").textContent = " " + s.highpassHz + " Hz";
       $("voice-lp").value = s.lowpassHz; $("voice-lp-text").textContent = " " + s.lowpassHz + " Hz";
       s.bands.forEach((b, i) => {
@@ -2414,7 +2424,7 @@
     function bzhRender(v) {
       const b = v && v.connected && bzhOffered() ? v.breizh : null;
       $("sec-breizh").hidden = !b; $("bzh-ind").hidden = !b;
-      if (!b) { bzhLogLoaded = false; $("voice-breizh").hidden = true; return; }
+      if (!b) { bzhLogLoaded = false; $("voice-breizh").hidden = true; bzhControls(false); return; }
       $("bzh-ind").className = "chip bzh-ind listener-hide" + (b.level !== "off" ? " " + b.level : "");
       $("bzh-ind").title = "Breizh Audio Box : " + b.text + ". Touche : sa rubrique";
       $("bzh-state").className = "bzh-state" + (b.level !== "off" ? " " + b.level : "");
@@ -2426,12 +2436,18 @@
       $("bzh-reactivate").hidden = !b.canReactivate;
       $("voice-breizh").hidden = !b.effectsOff;
       if (voiceChain && !voiceTx()) voiceChain.setExternal(b.effectsOff);         // écoute de contrôle = ce qui partira
+      bzhControls(b.effectsOff);
       if (b.effectsOff && sx && scr.tx) {                                          // Breizh et scrambler d'émission exclusifs
         scr.tx = false;
         ui.log("Breizh Audio Box en service : scrambler d'émission coupé (exclusifs).", "warn");
         scrApplyTx();
       }
       if (!bzhLogLoaded) { bzhLogLoaded = true; bzhLoadLog(); }
+    }
+    function bzhControls(effectsOff) {
+      /* Commandes de l'égaliseur, des effets et du scrambler d'émission grisées tant que la voix passe par Breizh. */
+      if (sx) $("scr-tx").disabled = effectsOff;
+      if (effectsOff !== voiceBzh) { voiceBzh = effectsOff; voiceRender(); }
     }
     function bzhSet(changes) {
       client.breizhSet(changes).then((res) => {

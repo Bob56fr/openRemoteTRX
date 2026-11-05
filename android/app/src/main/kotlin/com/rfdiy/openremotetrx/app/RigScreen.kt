@@ -619,9 +619,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         Spacer(Modifier.width(6.dp))
                     }
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Audio »)
-                    val eqOn = voice.settings.enabled
-                    CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !eqOn) }, selected = eqOn,
-                        onLongClick = { tab = Tab.EQ })
+                    val eqOn = voice.settings.enabled && !voice.breizh          // voix par Breizh : EQ coupé, bouton grisé
+                    CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !voice.settings.enabled) }, selected = eqOn,
+                        onLongClick = { tab = Tab.EQ }, enabled = !voice.breizh)
                     // Spatialisation stéréo de la réception : appui = marche / arrêt, appui long = réglages
                     Spacer(Modifier.width(6.dp))
                     val stOn = spatial.settings.on

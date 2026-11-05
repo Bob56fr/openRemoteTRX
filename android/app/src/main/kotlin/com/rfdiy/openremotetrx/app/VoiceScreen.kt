@@ -118,23 +118,33 @@ fun VoiceTab(
         )
     }
 
+    // Voix par Breizh Audio Box : égaliseur et effets contournés par le traitement => leurs commandes sont grisées (réglages
+    // gardés pour le retour en direct : « Direct » ou repli) ; gain du micro et porte de bruit restent actifs
+    val fx = !ui.breizh
     panel {
+        if (ui.breizh) Text("Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés et non modifiables tant " +
+            "que la voix passe par Breizh (réglages gardés pour le retour en direct). Gain du micro, porte de bruit et limiteur restent actifs.",
+            color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.enabled, onCheckedChange = { save(s.copy(enabled = it)) })
+            Switch(checked = s.enabled && fx, onCheckedChange = { save(s.copy(enabled = it)) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text("Égaliseur et effets de voix", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    if (s.enabled) "Allumé : appliqué à votre voix en émission." else "Éteint : voix envoyée telle quelle (limiteur seul).",
+                    when {
+                        !fx -> "Coupé : la voix passe par Breizh Audio Box."
+                        s.enabled -> "Allumé : appliqué à votre voix en émission."
+                        else -> "Éteint : voix envoyée telle quelle (limiteur seul)."
+                    },
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            for ((_, preset) in VoiceEq.PRESETS) CompactChip(preset.first, onClick = { save(preset.second().copy(mic = s.mic)) })
+            for ((_, preset) in VoiceEq.PRESETS) CompactChip(preset.first, onClick = { save(preset.second().copy(mic = s.mic)) }, enabled = fx)
             // Profils de l'opérateur rangés sur la station, après les trois préréglages ; appui long = supprimer
             for (p in profiles.orEmpty()) CompactChip("★ " + p.name, onClick = { save(p.voiceSettings()); say("Profil « ${p.name} » appliqué.") },
-                onLongClick = { deleting = p.name })
+                onLongClick = { deleting = p.name }, enabled = fx)
         }
         if (profiles != null) {
             TextButton(onClick = { naming = "" }) { Text("Enregistrer comme profil (sur la station)") }
@@ -142,8 +152,6 @@ fun VoiceTab(
         // Graphique de l'égaliseur : courbe de toute la chaîne (chaud = renforcé, froid = atténué) et conseils
         VoiceGraph(s)
         for (hint in VoiceEq.hints(s)) Text("• " + hint, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
-        if (ui.breizh) Text("Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés pendant les émissions qui " +
-            "passent par Breizh (le limiteur reste).", color = WARN, style = MaterialTheme.typography.bodySmall)
         if (ui.failed.isNotEmpty()) Text(ui.failed, color = WARN, style = MaterialTheme.typography.bodySmall)
         Text(
             "Limiteur toujours actif (crêtes à ${VoiceEq.LIMIT_DBFS.toInt()} dBFS). Vérifiez l'ALC sur charge fictive après un réglage.",
@@ -168,21 +176,21 @@ fun VoiceTab(
 
     panel {
         Text("Filtres et égaliseur 10 bandes", style = MaterialTheme.typography.titleSmall)
-        SliderRow("Coupe-bas", s.highpassHz, 20.0..1000.0, 10.0, "Hz") { save(s.copy(highpassHz = it)) }
-        SliderRow("Coupe-haut", s.lowpassHz, 1500.0..8000.0, 50.0, "Hz") { save(s.copy(lowpassHz = it)) }
+        SliderRow("Coupe-bas", s.highpassHz, 20.0..1000.0, 10.0, "Hz", enabled = fx) { save(s.copy(highpassHz = it)) }
+        SliderRow("Coupe-haut", s.lowpassHz, 1500.0..8000.0, 50.0, "Hz", enabled = fx) { save(s.copy(lowpassHz = it)) }
         var details by remember { mutableStateOf(false) }
         s.bands.forEachIndexed { i, b ->
             val name = (if (b.hz >= 1000) String.format(Locale.FRANCE, "%.2f kHz", b.hz / 1000) else "${b.hz.roundToInt()} Hz") +
                 if (b.shelf) " (plateau)" else ""
-            SliderRow(name, b.gainDb, -VoiceEq.GAIN_MAX_DB..VoiceEq.GAIN_MAX_DB, 0.5, "dB") { v ->
+            SliderRow(name, b.gainDb, -VoiceEq.GAIN_MAX_DB..VoiceEq.GAIN_MAX_DB, 0.5, "dB", enabled = fx) { v ->
                 save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(gainDb = v) else x }))
             }
             if (details) {
                 val base = VoiceEq.BANDS_HZ[i]
-                SliderRow("   fréquence", b.hz, base / 1.5..base * 1.5, 5.0, "Hz") { v ->
+                SliderRow("   fréquence", b.hz, base / 1.5..base * 1.5, 5.0, "Hz", enabled = fx) { v ->
                     save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(hz = v) else x }))
                 }
-                SliderRow("   largeur Q", b.q, VoiceEq.Q_MIN..VoiceEq.Q_MAX, 0.1, "") { v ->
+                SliderRow("   largeur Q", b.q, VoiceEq.Q_MIN..VoiceEq.Q_MAX, 0.1, "", enabled = fx) { v ->
                     save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(q = v) else x }))
                 }
             }
@@ -195,20 +203,20 @@ fun VoiceTab(
         Text("Déconseillés en BLU : ils réduisent la compréhension. Coupés net à la fin de chaque émission.",
             color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.chorus.on, onCheckedChange = { save(s.copy(chorus = s.chorus.copy(on = it))) })
+            Switch(checked = s.chorus.on, onCheckedChange = { save(s.copy(chorus = s.chorus.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Text("Chorus", style = MaterialTheme.typography.bodyMedium)
         }
         if (s.chorus.on) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for ((key, t) in VoiceEq.CHORUS_TYPES) CompactChip(t.label, onClick = { save(s.copy(chorus = s.chorus.copy(type = key))) }, selected = s.chorus.type == key)
+                for ((key, t) in VoiceEq.CHORUS_TYPES) CompactChip(t.label, onClick = { save(s.copy(chorus = s.chorus.copy(type = key))) }, selected = s.chorus.type == key, enabled = fx)
             }
-            SliderRow("Dosage", s.chorus.mix, 0.0..100.0, 5.0, "%") { save(s.copy(chorus = s.chorus.copy(mix = it))) }
-            SliderRow("Vitesse", s.chorus.rateHz, 0.1..5.0, 0.1, "Hz") { save(s.copy(chorus = s.chorus.copy(rateHz = it))) }
-            SliderRow("Profondeur", s.chorus.depthMs, 0.5..8.0, 0.5, "ms") { save(s.copy(chorus = s.chorus.copy(depthMs = it))) }
+            SliderRow("Dosage", s.chorus.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(chorus = s.chorus.copy(mix = it))) }
+            SliderRow("Vitesse", s.chorus.rateHz, 0.1..5.0, 0.1, "Hz", enabled = fx) { save(s.copy(chorus = s.chorus.copy(rateHz = it))) }
+            SliderRow("Profondeur", s.chorus.depthMs, 0.5..8.0, 0.5, "ms", enabled = fx) { save(s.copy(chorus = s.chorus.copy(depthMs = it))) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.reverb.on, onCheckedChange = { save(s.copy(reverb = s.reverb.copy(on = it))) })
+            Switch(checked = s.reverb.on, onCheckedChange = { save(s.copy(reverb = s.reverb.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Text("Réverbération", style = MaterialTheme.typography.bodyMedium)
         }
@@ -216,10 +224,10 @@ fun VoiceTab(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for ((key, t) in VoiceEq.REVERB_TYPES) CompactChip(t.label, onClick = {
                     save(s.copy(reverb = s.reverb.copy(type = key, seconds = t.seconds)))
-                }, selected = s.reverb.type == key)
+                }, selected = s.reverb.type == key, enabled = fx)
             }
-            SliderRow("Dosage", s.reverb.mix, 0.0..100.0, 5.0, "%") { save(s.copy(reverb = s.reverb.copy(mix = it))) }
-            SliderRow("Durée", s.reverb.seconds, 0.2..4.0, 0.1, "s") { save(s.copy(reverb = s.reverb.copy(seconds = it))) }
+            SliderRow("Dosage", s.reverb.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(reverb = s.reverb.copy(mix = it))) }
+            SliderRow("Durée", s.reverb.seconds, 0.2..4.0, 0.1, "s", enabled = fx) { save(s.copy(reverb = s.reverb.copy(seconds = it))) }
         }
     }
 
@@ -260,7 +268,8 @@ private fun dbText(db: Double) = if (db <= -119) "—" else "${db.roundToInt()} 
 
 /** Curseur avec sa valeur ; la valeur n'est enregistrée qu'au relâchement (pas d'écriture à chaque pixel). */
 @Composable
-private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRange<Double>, step: Double, unit: String, onDone: (Double) -> Unit) {
+private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRange<Double>, step: Double, unit: String,
+                      enabled: Boolean = true, onDone: (Double) -> Unit) {
     var drag by remember { mutableStateOf<Float?>(null) }
     val shown = drag ?: value.toFloat()
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -268,7 +277,7 @@ private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRa
         Slider(
             value = shown, onValueChange = { drag = it },
             onValueChangeFinished = { drag?.let { v -> onDone((Math.round(v / step) * step).coerceIn(range.start, range.endInclusive)) }; drag = null },
-            valueRange = range.start.toFloat()..range.endInclusive.toFloat(), modifier = Modifier.weight(1f),
+            valueRange = range.start.toFloat()..range.endInclusive.toFloat(), modifier = Modifier.weight(1f), enabled = enabled,
         )
         val v = Math.round(shown / step) * step
         Text(
@@ -298,9 +307,11 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
         Text("Désactivé à chaque démarrage. Même mode des deux côtés ; retard ajouté : environ 43 ms. Les tonalités SELCALL et les " +
             "bips de la station ne sont pas brouillés.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) })
+            val breizh = VoiceHub.ui.value.breizh                         // Breizh et scrambler d'émission exclusifs
+            Switch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) }, enabled = !breizh)
             Spacer(Modifier.width(8.dp))
-            Text("Brouiller mon émission", style = MaterialTheme.typography.bodyMedium, color = if (scr.tx) WARN else Page.TEXTE)
+            Text(if (breizh) "Brouiller mon émission (impossible : la voix passe par Breizh)" else "Brouiller mon émission",
+                style = MaterialTheme.typography.bodyMedium, color = if (scr.tx) WARN else if (breizh) Page.TEXTE_2 else Page.TEXTE)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = scr.rx, onCheckedChange = { change(scr.copy(rx = it)) })
