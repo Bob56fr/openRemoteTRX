@@ -461,6 +461,23 @@ def test_breizh_menu_probe_runs_the_fake_station_without_sound(tmp_path):
     assert cmd[cmd.index("--host") + 1] == "192.168.1.50" and cmd[cmd.index("--key-file") + 1].endswith("breizh.key")
 
 
+def test_breizh_menu_probe_is_not_run_while_the_station_link_is_in_service(tmp_path):
+    import time
+    from trxstation.status import GatewayStatus, write_status
+    path = write_config(tmp_path)
+    state = tmp_path / "state"
+    cfg = cfgmod.load(path)
+    cfg.supervisor.state_dir, cfg.supervisor.status_path = str(state), str(state / "status.json")
+    cfg.breizh.enabled, cfg.breizh.host = True, "192.168.1.50"
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    (tmp_path / "etc" / "breizh.key").write_text("x" * 43 + "\n", encoding="utf-8")
+    write_status(state / "status.json", GatewayStatus(pid=1, seq=1, written_at=time.time(), ptt={"state": "RX"}, rig={},
+                 breizh={"state": "ready", "route": "breizh", "rtt_ms": 20, "peer": "Breizh 0.10.0"}))
+    con, fake, out = make(tmp_path, answers=["3", ""])
+    con.breizh()
+    assert not fake.calls and any("EN SERVICE (Breizh 0.10.0, aller-retour 20 ms) : essai inutile" in line for line in out)
+
+
 def test_breizh_menu_shows_the_live_link_and_the_journal(tmp_path):
     import time
     from trxstation.breizh.store import BreizhStore

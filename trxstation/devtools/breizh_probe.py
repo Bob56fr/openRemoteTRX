@@ -183,7 +183,8 @@ def _error_text(payload: bytes) -> str:
     except p.PacketError:
         return "motif inconnu"
     return {"proto": "version de protocole différente", "format": "format du son refusé",
-            "mode_off": "mode OpenRemoteTRX non activé dans Breizh", "busy": "Breizh sert déjà une autre station"}[code]
+            "mode_off": "mode OpenRemoteTRX non activé dans Breizh", "busy": "Breizh sert déjà une autre station (si c'est la passerelle de cette station, la liaison est en "
+                     "service : c'est normal)"}[code]
 
 
 def _gain_db(sent: list[bytes], returns: dict[int, tuple[float, bytes]]) -> float | None:

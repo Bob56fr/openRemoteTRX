@@ -1301,9 +1301,13 @@ class Console:
         if not path.exists():
             self.say("Crée d'abord la clé d'appairage (choix 1).")
             return
-        if b.enabled and self.station_running():
-            self.say("La station est en marche avec Breizh : Breizh répondra sans doute « occupé » (il sert déjà sa passerelle) ; "
-                     "l'état de la liaison est affiché plus haut.")
+        status = self._gateway_status()
+        live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
+        if live.get("state") in ("ready", "active", "fallback") and live.get("peer"):
+            self.say(f"La liaison de la station avec Breizh est EN SERVICE ({live.get('peer')}, aller-retour "
+                     f"{live.get('rtt_ms')} ms) : essai inutile. Breizh ne sert qu'une station à la fois et répondrait "
+                     "« occupé » à l'essai. L'essai sert quand la station est arrêtée ou que Breizh n'y est pas activé.")
+            return
         self.runner.run(self.module("trxstation.devtools.breizh_probe", "--host", b.host, "--port", str(b.port),
                                     "--key-file", str(path), "--sans-son"), admin=os.name == "posix")
 
