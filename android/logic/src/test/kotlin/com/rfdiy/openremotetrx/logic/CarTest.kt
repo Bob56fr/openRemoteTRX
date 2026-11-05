@@ -39,12 +39,12 @@ class CarTest {
     fun `reception non armee - STOP et Autoriser, jamais EMETTRE`() {
         val s = Car.screen(rig(ptt(false, false), armed = false), "Maison", muted = false, micAllowed = true)
         assertEquals("40 mètres", s.title)                          // F1 : nom de la mémoire en titre
-        assertEquals("7 100,00 kHz LSB · S7 · émission non autorisée · Maison", s.secondary)
-        assertEquals("", s.subtitle)                                // F3 : aucun réglage actif publié
+        assertEquals("7 100,00 kHz LSB · émission non autorisée · Maison", s.secondary)
+        assertEquals("S7 M:1", s.subtitle)                          // niveau et rang dans Mémoires ; aucun réglage publié
         val off = Car.screen(rig(ptt(false, false), armed = false, hz = 7_150_000), "Maison", false, true)
         assertEquals("7 150,00 kHz LSB", off.title)                // hors mémoire : fréquence et mode
-        assertEquals("S7 · émission non autorisée · Maison", off.secondary)
-        assertEquals(listOf(CarAction.STOP, CarAction.ARM), ids(s))
+        assertEquals("S7 VFO", off.subtitle)                        // hors mémoire : VFO
+        assertEquals(listOf(CarAction.ARM, CarAction.STOP), ids(s))   // cadenas à la place du micro
     }
 
     private fun lock(s: CarScreen) = s.buttons.single { it.icon.name.startsWith("LOCK") }
@@ -83,9 +83,9 @@ class CarTest {
 
     @Test
     fun `autre client en emission ou reception seule - STOP seulement`() {
-        assertEquals(listOf(CarAction.STOP, CarAction.DISARM), ids(Car.screen(rig(ptt(true, false), true), "M", false, true)))
+        assertEquals(listOf(CarAction.DISARM, CarAction.STOP), ids(Car.screen(rig(ptt(true, false), true), "M", false, true)))
         val rx = Car.screen(rig(ptt(false, false), true), "M", muted = true, micAllowed = false)
-        assertEquals(listOf(CarAction.STOP, CarAction.LOCK_INFO), ids(rx))
+        assertEquals(listOf(CarAction.LOCK_INFO, CarAction.STOP), ids(rx))
         assertFalse(rx.playing)
         assertTrue("réception seule" in rx.secondary && "muet" in rx.secondary)
         assertTrue(CarAction.RELEASE_LOCAL in ids(Car.screen(rig(ptt(false, false, canRelease = true), false), "M", false, true)))

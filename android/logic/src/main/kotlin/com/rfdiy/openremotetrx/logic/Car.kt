@@ -22,6 +22,9 @@ enum class CarAction(val id: String) {
     RELEASE_LOCAL("release_local"),
     /** Cadenas sans effet (en émission, réception seule, liaison perdue) : montre l'état, ne commande rien. */
     LOCK_INFO("lock_info"),
+    /** Mémoire favorite précédente / suivante (F1) : boutons à nous, À DROITE (demande de l'utilisateur). */
+    MEM_PREV("mem_prev"),
+    MEM_NEXT("mem_next"),
     ;
 
     /** Prend l'émission ou l'autorise : réservé à l'écran de la voiture et à l'application elle-même. */
@@ -33,7 +36,7 @@ enum class CarAction(val id: String) {
 }
 
 /** Pictogramme d'un bouton de la voiture ; le cadenas suit l'état réel de « Émission autorisée » (F6). */
-enum class CarIcon { PTT, STOP, HAND, LOCK_CLOSED, LOCK_OPEN, LOCK_TX, LOCK_UNKNOWN }
+enum class CarIcon { PTT, STOP, HAND, LOCK_CLOSED, LOCK_OPEN, LOCK_TX, LOCK_UNKNOWN, MEM_PREV, MEM_NEXT }
 
 /** `label` sert aussi de texte d'accessibilité : il dit l'ÉTAT montré par le pictogramme. */
 data class CarButton(val action: CarAction, val label: String, val icon: CarIcon = defaultIcon(action))
@@ -45,6 +48,8 @@ private fun defaultIcon(action: CarAction): CarIcon = when (action) {
     CarAction.ARM -> CarIcon.LOCK_CLOSED
     CarAction.DISARM -> CarIcon.LOCK_OPEN
     CarAction.LOCK_INFO -> CarIcon.LOCK_UNKNOWN
+    CarAction.MEM_PREV -> CarIcon.MEM_PREV
+    CarAction.MEM_NEXT -> CarIcon.MEM_NEXT
 }
 
 /** Ce que montre l'écran de la voiture : texte seulement (aucun graphique, aucune saisie). */
@@ -123,7 +128,6 @@ object Car {
         }
         val parts = buildList {
             if ((mine || memory != null) && tuning.isNotEmpty()) add(tuning)
-            if (!mine) r?.strengthDb?.let { add(Format.sMeter(it)) }
             ptt?.local?.let { add("poste utilisé sur place") }
             if (!micAllowed) add("réception seule")
             else if (!rig.armed && !mine) add("émission non autorisée")
@@ -150,9 +154,36 @@ object Car {
             if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, "Reprendre la main"))
         }
         val canSkip = !rig.listener && Favorites.list(rig.memories).isNotEmpty()
-        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq), playing = !muted, connecting = false,
-            connected = true, buttons = buttons, error = notice, secondary = parts.joinToString(" · "), canSkip = canSkip)
+        // En tête du sous-titre (la voiture n'affiche pas la ligne secondaire) : niveau, puis rang de la mémoire dans la
+        // liste Mémoires (« M:12 ») ou le VFO (demande de l'utilisateur).
+        val place = memoryRank(rig.memories, memory)?.let { "M:$it" } ?: Indicators.vfoLabel(r?.vfo).ifEmpty { "VFO" }
+        val lead = listOfNotNull(if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }, place).joinToString(" ")
+        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, lead), playing = !muted, connecting = false,
+            connected = true, buttons = arrange(buttons, canSkip), error = notice, secondary = parts.joinToString(" · "),
+            canSkip = canSkip)
     }
+
+    /**
+     * Ordre des boutons (demande de l'utilisateur) : micro et STOP À GAUCHE (côté conducteur), mémoires à droite.
+     * Relevé au DHU (2026-11-05) : après Lecture, les deux premières actions à gauche, les deux suivantes à droite, le
+     * reste dans le menu « ⋯ ». Sans micro (émission non autorisée), le cadenas prend SA place : on autorise là où l'on
+     * émettra ensuite ; une fois l'émission autorisée, le cadenas passe après les mémoires (menu « ⋯ »).
+     */
+    fun arrange(buttons: List<CarButton>, canSkip: Boolean): List<CarButton> {
+        val ptt = buttons.filter { it.action == CarAction.PTT }.ifEmpty { buttons.filter { it.icon.name.startsWith("LOCK") } }
+        val stop = buttons.filter { it.action == CarAction.STOP }
+        val rest = buttons - (ptt + stop).toSet()
+        val mem = if (canSkip) listOf(CarButton(CarAction.MEM_PREV, "Mémoire précédente"), CarButton(CarAction.MEM_NEXT, "Mémoire suivante")) else emptyList()
+        return order(ptt, stop, mem, rest)
+    }
+
+    /** Ordre retenu au DHU ; une seule fonction à changer si Android Auto range autrement. */
+    private fun order(ptt: List<CarButton>, stop: List<CarButton>, mem: List<CarButton>, rest: List<CarButton>) =
+        ptt + stop + mem + rest
+
+    /** Rang (à partir de 1) de la mémoire dans la liste Mémoires de l'application (favorites d'abord, puis fréquence). */
+    fun memoryRank(memories: List<Memory>, memory: Memory?): Int? =
+        memory?.let { m -> memories.indexOfFirst { it.id == m.id }.takeIf { it >= 0 }?.plus(1) }
 
     /** Longueur maximale du sous-titre des réglages (F3). */
     const val SETTINGS_MAX = 40
@@ -160,12 +191,14 @@ object Car {
     /**
      * Réglages ACTIFS du poste (F3), ordre fixe : préampli (ou ATT), NB, NR, puissance, EQ du téléphone. Un réglage coupé
      * ou que la station ne publie pas (poste qui ne le gère pas) est omis. Trop long : séparateurs resserrés, puis coupé.
+     * `lead` (niveau et mémoire / VFO) passe en tête, jamais abrégé.
      */
-    fun settings(hello: Hello?, state: State?, eq: Boolean): String {
+    fun settings(hello: Hello?, state: State?, eq: Boolean, lead: String = ""): String {
         val rig = state?.rig
         val lv = rig?.levels.orEmpty()
         val fn = rig?.functions.orEmpty()
         val items = buildList {
+            if (lead.isNotEmpty()) add(lead)
             val att = lv["ATT"] ?: 0.0
             val preamp = lv["PREAMP"] ?: 0.0
             when {
@@ -182,7 +215,7 @@ object Car {
         }
         val full = items.joinToString(" · ")
         if (full.length <= SETTINGS_MAX) return full
-        val tight = items.joinToString("·") { it.replace(" ", "") }
+        val tight = items.joinToString("·") { if (it == lead) it else it.replace(" ", "") }
         return if (tight.length <= SETTINGS_MAX) tight else tight.take(SETTINGS_MAX - 1) + "…"
     }
 

@@ -69,6 +69,19 @@ class FavoritesTest {
         assertEquals("QSO 20", Car.screen(withFav, "M", false, true, preview = b).title)   // choisi au volant, pas encore envoyé
     }
 
+    @Test
+    fun `micro et STOP en tete (gauche), memoires ensuite (droite), cadenas apres`() {
+        val tx = ServerMessages.decode("""{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"frequency_hz":7100000,"mode":"LSB"}}""") as State
+        val armed = RigState(status = LinkStatus.CONNECTED, state = tx, memories = all, armed = true)
+        val ids = Car.screen(armed, "M", false, true).buttons.map { it.action }
+        assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.MEM_PREV, CarAction.MEM_NEXT, CarAction.DISARM), ids)
+        assertFalse(CarAction.MEM_NEXT.takesTransmission)
+        val none = Car.screen(armed.copy(memories = listOf(plain)), "M", false, true).buttons.map { it.action }
+        assertFalse(CarAction.MEM_NEXT in none)                             // aucun favori : pas de bouton mémoire
+        assertEquals(3, Car.memoryRank(all, a))
+        assertNull(Car.memoryRank(all, null))
+    }
+
     private fun state(levels: String, functions: String) = ServerMessages.decode(
         """{"type":"state","ptt":{"state":"RX"},"rig":{"connected":true,"frequency_hz":14195000,"mode":"USB","levels":{$levels},"functions":{$functions}}}""",
     ) as State

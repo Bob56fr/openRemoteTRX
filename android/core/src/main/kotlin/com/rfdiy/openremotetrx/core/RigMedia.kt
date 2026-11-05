@@ -172,11 +172,12 @@ internal object RigMedia {
             sc.playing || ptt -> PlaybackState.STATE_PLAYING
             else -> PlaybackState.STATE_PAUSED
         }
-        val skip = if (sc.canSkip && sc.connected) PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS else 0L
+        // Mémoires : boutons à nous (placés à droite), pas les Suivant / Précédent standard ; les touches du volant arrivent
+        // quand même (onMediaButtonEvent).
         val b = PlaybackState.Builder()
             .setActions(
                 PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_STOP or
-                    PlaybackState.ACTION_PLAY_FROM_MEDIA_ID or PlaybackState.ACTION_PLAY_FROM_SEARCH or skip,
+                    PlaybackState.ACTION_PLAY_FROM_MEDIA_ID or PlaybackState.ACTION_PLAY_FROM_SEARCH,
             )
             .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
         if (state == PlaybackState.STATE_ERROR) b.setErrorMessage(sc.error)
@@ -194,6 +195,8 @@ internal object RigMedia {
         CarIcon.LOCK_OPEN -> R.drawable.ic_car_lock_open
         CarIcon.LOCK_TX -> R.drawable.ic_car_lock_tx
         CarIcon.LOCK_UNKNOWN -> R.drawable.ic_car_lock_unknown
+        CarIcon.MEM_PREV -> R.drawable.ic_car_mem_prev
+        CarIcon.MEM_NEXT -> R.drawable.ic_car_mem_next
     }
 
     /**
@@ -232,6 +235,18 @@ internal object RigMedia {
         }
     }
 
+    /** Touche d'un événement média À L'APPUI seulement (le relâchement est consommé sans effet), -1 sinon. */
+    private fun mediaKey(intent: Intent): Int {
+        val event = if (android.os.Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, android.view.KeyEvent::class.java)
+        } else {
+            @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+        } ?: return -1
+        val code = event.keyCode
+        if (code != android.view.KeyEvent.KEYCODE_MEDIA_NEXT && code != android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS) return -1
+        return if (event.action == android.view.KeyEvent.ACTION_DOWN && event.repeatCount == 0) code else 0
+    }
+
     private const val SKIP_DELAY_MS = 300L
     private const val TEXT_PERIOD_MS = 1000L
 
@@ -254,6 +269,11 @@ internal object RigMedia {
 
     private class Callback : MediaSession.Callback() {
         override fun onMediaButtonEvent(intent: Intent): Boolean {
+            when (mediaKey(intent)) {                                      // volant : mémoires favorites (F1)
+                android.view.KeyEvent.KEYCODE_MEDIA_NEXT -> return true.also { skip(forward = true) }
+                android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS -> return true.also { skip(forward = false) }
+                0 -> return true                                           // relâchement : déjà traité à l'appui
+            }
             if (buttonsPtt()) {
                 RigHub.service?.let { if (it.mediaButton(intent)) return true }
             }
@@ -291,6 +311,8 @@ internal object RigMedia {
                 CarAction.DISARM -> RigHub.setArmed(false)
                 CarAction.RELEASE_LOCAL -> RigHub.releaseLocal()
                 CarAction.LOCK_INFO -> note(lockInfo(), warn = false)
+                CarAction.MEM_PREV -> skip(forward = false)
+                CarAction.MEM_NEXT -> skip(forward = true)
             }
         }
 

@@ -103,30 +103,36 @@ désinstallation de l'application (pas lors d'une mise à jour).
 
 ## 4. Favoris au volant (F1)
 
-- Suivant / Précédent (touches du volant ou de l'écran) font défiler les MÉMOIRES FAVORITES (★, décision de
-  l'utilisateur), par fréquence, en boucle. Depuis une fréquence qui n'est pas un favori : Suivant = premier favori
+- Touches Suivant / Précédent du volant et boutons ◀★ / ★▶ de l'écran font défiler les MÉMOIRES FAVORITES (★,
+  décision de l'utilisateur), par fréquence, en boucle. Depuis une fréquence qui n'est pas un favori : Suivant = premier favori
   au-dessus, Précédent = premier en dessous.
 - Appuis regroupés : le favori choisi s'affiche aussitôt en titre ; seul le dernier part vers la station, 300 ms après
   le dernier appui (`logic/Favorites.kt`, `FavoriteStepper`).
 - En émission (la sienne ou celle d'un autre) : refusé, « Changement refusé : émission en cours » dans le journal ; la
   station refuse aussi (`tx_active`). Hors liaison : touche sans effet, sans erreur. Visiteur : aucune touche.
-- Aucun favori : boutons Suivant / Précédent masqués.
+- Aucun favori : boutons ◀★ / ★▶ masqués.
+- Disposition (demande de l'utilisateur, étape 129, vue au DHU) : micro (ou cadenas tant que l'émission n'est pas
+  autorisée) et STOP À GAUCHE, côté conducteur ; ◀★ et ★▶ À DROITE. Android Auto range lui-même les actions : après
+  Lecture, les deux premières à gauche, les deux suivantes à droite, le reste dans le menu « ⋯ » (cadenas une fois
+  l'émission autorisée). Les mémoires sont donc des actions de l'application, pas les Suivant / Précédent standard ; les
+  touches du volant sont lues directement (`onMediaButtonEvent`, KEYCODE_MEDIA_NEXT / PREVIOUS).
 - Parcourir > Favoris (en tête) : les mêmes favoris, avec leur pochette en icône ; un appui cale le poste.
 - Lecture / Pause garde sa fonction (son muet ou audible ; PTT seulement avec le réglage « PTT par le bouton ») ;
   Suivant / Précédent ne commandent JAMAIS l'émission.
 - DHU (pas de volant) : console du DHU, `keycode media_next` / `keycode media_previous`.
-- À VÉRIFIER au DHU et en voiture : Suivant / Précédent prennent deux places du lecteur ; ÉMETTRE et STOP doivent
-  rester visibles sans passer par le menu « ⋯ ».
 
 ## 5. Écran de lecture (F3)
 
 | Champ | Contenu | Exemple |
 |---|---|---|
 | Titre | nom de la mémoire (ou du favori choisi), sinon fréquence et mode ; « ÉMISSION EN COURS 1:05 » en émission | `QSO 20` |
-| Sous-titre | réglages ACTIFS seulement, ordre fixe : préampli (ou ATT), NB, NR, puissance au watt, EQ du téléphone | `P.AMP1 · NB · NR · 50 W · EQ` |
-| Ligne secondaire (si la voiture l'affiche) | fréquence si le titre est un nom, S-mètre, poste utilisé sur place, réception seule / émission non autorisée, muet, SELCALL ouvert, station | `14 195,00 kHz USB · S7 · Maison` |
+| Sous-titre | niveau et place (`M:7` = rang dans la liste Mémoires de l'application, sinon `VFO` ou le VFO lu), puis réglages ACTIFS seulement, ordre fixe : préampli (ou ATT), NB, NR, puissance au watt, EQ du téléphone | `S7 M:7 · P.AMP1 · NB · 50 W · EQ` |
+| Ligne secondaire (le DHU ne l'affiche PAS) | fréquence si le titre est un nom, poste utilisé sur place, réception seule / émission non autorisée, muet, SELCALL ouvert, station | `14 195,00 kHz USB · S7 · Maison` |
 
 Un réglage que la station ne publie pas (poste qui ne le gère pas) n'apparaît jamais. Puissance en % si la station
 ne connaît pas la puissance maximale. « EQ » = égaliseur de la voix ÉMISE en service, absent quand la voix passe par
 Breizh. Sous-titre limité à 40 caractères (séparateurs resserrés, puis coupé). Texte mis à jour au plus une fois par
 seconde ; boutons, cadenas et état d'émission aussitôt.
+
+`M:7` n'est pas un numéro de mémoire du poste : la station identifie ses mémoires par un code, et l'IC-7300MK2 ne dit
+pas sur quelle mémoire interne il est (`get_vfo` illisible). Le rang change si l'on ajoute ou retire des mémoires.
