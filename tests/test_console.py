@@ -156,3 +156,32 @@ def test_loop_offers_h_and_returns_to_the_menu(tmp_path):
     assert con.loop() == 0
     text = "\n".join(out)
     assert "h) Aide sur un menu" in text and "Menu 2 : Assistant de configuration" in text and fake.calls == []
+
+
+def test_diagnostic_shows_breizh_and_visitors_without_secrets(tmp_path, monkeypatch):
+    """Menu 1 : Breizh (activé + état de la liaison), écoute des visiteurs, comptes visiteurs ; jamais clé ni mot de passe."""
+    import trxstation.console as consolemod
+    monkeypatch.setattr(consolemod, "run_all", lambda path: [])
+    monkeypatch.setattr(consolemod, "format_checks", lambda checks, color: "Bilan")
+    cfg = dummy_config()
+    cfg.breizh.enabled, cfg.breizh.host = True, "192.168.1.50"
+    cfg.access.max_listeners = 3
+    cfg.clients.append(cfgmod.ClientAuth(id="bob", password_hash="scrypt$secret", role="listener", pseudo="Bob",
+                                         enabled=False))
+    cfg.clients.append(cfgmod.ClientAuth(id="ann", password_hash="scrypt$secret", role="listener", pseudo="Ann",
+                                         expires="2020-01-01"))
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con, fake, out = console(tmp_path)
+    monkeypatch.setattr(con, "_gateway_status", lambda: None)
+    con.diagnostic()
+    text = out[-1]
+    assert "Breizh Audio Box : activé (192.168.1.50 port" in text and "passerelle arrêtée" in text
+    assert "écoute OUVERTE, 3 au plus" in text
+    assert "bob « Bob » (désactivé)" in text and "ann « Ann » (jusqu'au 2020-01-01) EXPIRÉ" in text
+    assert "secret" not in text
+
+    cfg.breizh.enabled, cfg.access.max_listeners = False, 0
+    cfg.clients = [c for c in cfg.clients if c.role != "listener"]
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con.diagnostic()
+    assert "Breizh Audio Box : désactivé" in out[-1] and "écoute FERMÉE" in out[-1] and "visiteurs: aucun" in out[-1]

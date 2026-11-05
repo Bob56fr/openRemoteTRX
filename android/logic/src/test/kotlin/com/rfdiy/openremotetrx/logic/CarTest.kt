@@ -27,10 +27,11 @@ class CarTest {
     private fun ids(s: CarScreen) = s.buttons.map { it.action }
 
     @Test
-    fun `deconnecte - aucun bouton, invitation a choisir une station`() {
+    fun `deconnecte - seulement le cadenas barre, invitation a choisir une station`() {
         val s = Car.screen(RigState(), null, muted = false, micAllowed = true)
         assertEquals("Déconnecté", s.title)
-        assertTrue(s.buttons.isEmpty() && !s.connected)
+        assertEquals(listOf(Car.LOCK_UNKNOWN), s.buttons)
+        assertFalse(s.connected)
         assertEquals("Ouvrez l'application", Car.screen(RigState(), null, false, true, "Ouvrez l'application").error)
     }
 
@@ -42,20 +43,45 @@ class CarTest {
         assertEquals(listOf(CarAction.STOP, CarAction.ARM), ids(s))
     }
 
+    private fun lock(s: CarScreen) = s.buttons.single { it.icon.name.startsWith("LOCK") }
+
+    @Test
+    fun `cadenas - quatre etats distincts, pictogramme et libelle suivent l etat relu`() {
+        val closed = lock(Car.screen(rig(ptt(false, false), armed = false), "M", false, true))
+        assertEquals(CarButton(CarAction.ARM, "Émission verrouillée", CarIcon.LOCK_CLOSED), closed)
+        val open = lock(Car.screen(rig(ptt(false, false), armed = true), "M", false, true))
+        assertEquals(CarButton(CarAction.DISARM, "Émission autorisée", CarIcon.LOCK_OPEN), open)
+        val tx = lock(Car.screen(rig(ptt(true, true, tot = 30), armed = true), "M", false, true))
+        assertEquals(CarButton(CarAction.LOCK_INFO, "En émission", CarIcon.LOCK_TX), tx)
+        val lost = RigState(status = LinkStatus.RECONNECTING, armed = true)
+        assertEquals(CarIcon.LOCK_UNKNOWN, lock(Car.screen(lost, "M", false, true)).icon)
+        assertEquals(CarIcon.LOCK_UNKNOWN, lock(Car.screen(RigState(status = LinkStatus.CONNECTING), "M", false, true)).icon)
+        // Non-régression (étape 127) : ouvert et fermé n'ont plus le même pictogramme.
+        assertTrue(closed.icon != open.icon)
+    }
+
+    @Test
+    fun `cadenas sans effet - ne prend jamais l emission`() {
+        assertFalse(CarAction.LOCK_INFO.takesTransmission)
+        assertTrue(Car.allowed(CarAction.LOCK_INFO, null, mine = false))
+        val rx = Car.screen(rig(ptt(false, false), true), "M", muted = false, micAllowed = false)
+        assertEquals(CarButton(CarAction.LOCK_INFO, "Réception seule", CarIcon.LOCK_CLOSED), lock(rx))
+    }
+
     @Test
     fun `armee - EMETTRE, en emission - FIN D'EMISSION et STOP, etat explicite`() {
         assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.DISARM), ids(Car.screen(rig(ptt(false, false), true), "M", false, true)))
         val tx = Car.screen(rig(ptt(true, true, tot = 65), true), "M", false, true)
         assertEquals("ÉMISSION EN COURS 1:05", tx.title)
         assertEquals("FIN D'ÉMISSION", tx.buttons.first().label)
-        assertEquals(listOf(CarAction.PTT, CarAction.STOP), ids(tx))
+        assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.LOCK_INFO), ids(tx))
     }
 
     @Test
     fun `autre client en emission ou reception seule - STOP seulement`() {
         assertEquals(listOf(CarAction.STOP, CarAction.DISARM), ids(Car.screen(rig(ptt(true, false), true), "M", false, true)))
         val rx = Car.screen(rig(ptt(false, false), true), "M", muted = true, micAllowed = false)
-        assertEquals(listOf(CarAction.STOP), ids(rx))
+        assertEquals(listOf(CarAction.STOP, CarAction.LOCK_INFO), ids(rx))
         assertFalse(rx.playing)
         assertTrue("réception seule" in rx.subtitle && "muet" in rx.subtitle)
         assertTrue(CarAction.RELEASE_LOCAL in ids(Car.screen(rig(ptt(false, false, canRelease = true), false), "M", false, true)))

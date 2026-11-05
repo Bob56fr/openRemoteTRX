@@ -33,7 +33,7 @@
    "expert": "Même résultat sans le menu : trx-console --diagnostic (code de sortie\ndifférent de 0 en cas d'échec, utilisable dans un script).",
    "modifie": "Rien. Aucune commande au poste, aucune émission.",
    "quand": "Après l'installation, après chaque changement, et en premier réflexe dès que\nquelque chose ne va pas.",
-   "role": "Contrôle complet de la station, en lecture seule : système, logiciels,\nconfiguration, matériel (ports série, cartes son), services, spectre HF,\nCluster DX, accès réseau et mises à jour."
+   "role": "Contrôle complet de la station, en lecture seule : système, logiciels,\nconfiguration, matériel (ports série, cartes son), services, spectre HF,\nCluster DX, accès réseau et mises à jour. En fin de bilan, trois lignes\n« Modes de la station » : Breizh Audio Box (activé ou non, état de la\nliaison), écoute des visiteurs (ouverte ou fermée, nombre maximal) et\ncomptes visiteurs (pseudo, désactivé, expiré), sans aucun secret."
   },
   "edit_config": {
    "admin": true,

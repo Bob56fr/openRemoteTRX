@@ -494,16 +494,18 @@ class RigService : Service() {
         wifiLock = null
     }
 
-    private fun requestFocus() {
-        if (focus != null) return
-        val am = getSystemService(AudioManager::class.java) ?: return
+    /** Vrai si le focus est tenu (déjà, ou accordé à l'instant). */
+    private fun requestFocus(): Boolean {
+        if (focus != null) return true
+        val am = getSystemService(AudioManager::class.java) ?: return false
         val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
             .setWillPauseWhenDucked(false)
             .setOnAudioFocusChangeListener { change -> executor.execute { onFocus(change) } }
             .build()
+        if (am.requestAudioFocus(req) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) return false   // appel en cours : plus tard
         focus = req
-        am.requestAudioFocus(req)
+        return true
     }
 
     private fun abandonFocus() {
@@ -512,10 +514,31 @@ class RigService : Service() {
         focus = null
     }
 
+    /**
+     * Lecture demandée (écran de la voiture, Lecture / Pause) ou voiture connectée : reprendre le son. Sans cela, une perte
+     * du focus jamais rendue par Android (assistant, guidage, appel par la voiture) laissait la réception muette jusqu'à
+     * la relance de l'application (essai Android Auto du 2026-11-05).
+     */
+    internal fun regainAudio() {
+        executor.execute {
+            if (!foreground) return@execute
+            if (!focusLost && focus != null) return@execute
+            abandonFocus()
+            if (!requestFocus()) {
+                session.note(now(), "Son occupé par un appel ou une autre application : réception muette en attendant.")
+                return@execute
+            }
+            if (focusLost) session.note(now(), "Son repris (lecture demandée).", false)
+            focusLost = false
+            applyMute()
+        }
+    }
+
     /** E5 : focus perdu (appel entrant, autre application) pendant SON émission => STOP ; réception muette. */
     private fun onFocus(change: Int) {
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (change == AudioManager.AUDIOFOCUS_LOSS) focus = null     // demande morte : la prochaine lecture la refait
                 if (session.snapshot.ptt?.let { it.mine && it.transmitting } == true) session.stop(now(), "Son pris par un appel ou une autre application : retour en réception.")
                 // Appel (perte passagère) : réception muette jusqu'au retour du son. Perte définitive (autre application de
                 // musique) : la réception continue, sinon elle resterait muette sans raison visible (essai du 2026-10-29).

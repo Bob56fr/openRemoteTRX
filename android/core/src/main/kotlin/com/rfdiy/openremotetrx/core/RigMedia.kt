@@ -11,9 +11,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.core.content.ContextCompat
+import com.rfdiy.openremotetrx.logic.Artwork
 import com.rfdiy.openremotetrx.logic.Car
 import com.rfdiy.openremotetrx.logic.CarAction
+import com.rfdiy.openremotetrx.logic.CarIcon
 import com.rfdiy.openremotetrx.logic.CarScreen
+import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Voice
 import com.rfdiy.openremotetrx.logic.VoiceAction
 import kotlinx.coroutines.CoroutineScope
@@ -31,8 +34,10 @@ import kotlinx.coroutines.launch
  * - Lecture / Pause (écran de la voiture, touches du volant si le PTT au volant est désactivé) : réception audible ou
  *   muette. Arrêt : STOP de l'émission (ne fait que couper).
  * - Touches du volant ou du casque avec le réglage « PTT par le bouton » : PTT toggle (RigService.onMediaKey).
- * - Actions personnalisées (logic.Car) : PTT, STOP, autoriser l'émission, reprendre la main. PRENDRE l'émission
- *   n'est permis qu'à Android Auto et à l'application (appelant vérifié) ; couper est permis à tous.
+ * - Actions personnalisées (logic.Car) : PTT, STOP, cadenas « Émission autorisée » (pictogramme = état relu dans la
+ *   session, F6), reprendre la main. PRENDRE l'émission n'est permis qu'à Android Auto et à l'application (appelant
+ *   vérifié) ; couper est permis à tous.
+ * - Pochette (F5) : image de la bande du poste (ArtworkProvider), jamais de donnée dynamique dessinée dedans.
  * - Parcourir : stations, mémoires, bandes (RigAutoService) ; recherche vocale : mémoire, bande, fréquence, jamais
  *   l'émission.
  */
@@ -56,6 +61,7 @@ internal object RigMedia {
     fun acquire(context: Context, user: String) {
         app = context.applicationContext
         users += user
+        runCatching { ArtworkProvider.userDir(app) }                   // crée le dossier des pochettes, visible depuis le PC
         if (session != null) {
             refresh(force = true)
             return
@@ -99,11 +105,15 @@ internal object RigMedia {
         val ui = RigHub.ui.value
         val sc = screen()
         val ptt = buttonsPtt()
-        val key = "$sc|$ptt"
+        val art = Artwork.key(ui.rig.status == LinkStatus.CONNECTED, ui.rig.state?.rig?.frequencyHz)
+        val key = "$sc|$ptt|$art"
         if (key != lastKey || force) {
             lastKey = key
+            val artUri = ArtworkProvider.uri(app, art).toString()
             s.setMetadata(
                 MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, artUri)
+                    .putString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI, artUri)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, sc.title)
                     .putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE, sc.title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, sc.subtitle)
@@ -138,16 +148,29 @@ internal object RigMedia {
             .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
         if (state == PlaybackState.STATE_ERROR) b.setErrorMessage(sc.error)
         for (button in sc.buttons) {
-            b.addCustomAction(PlaybackState.CustomAction.Builder(button.action.id, button.label, icon(button.action)).build())
+            b.addCustomAction(PlaybackState.CustomAction.Builder(button.action.id, button.label, icon(button.icon)).build())
         }
         return b.build()
     }
 
-    private fun icon(action: CarAction): Int = when (action) {
-        CarAction.PTT -> R.drawable.ic_car_ptt
-        CarAction.STOP -> R.drawable.ic_car_stop
-        CarAction.ARM, CarAction.DISARM -> R.drawable.ic_car_arm
-        CarAction.RELEASE_LOCAL -> R.drawable.ic_car_hand
+    private fun icon(icon: CarIcon): Int = when (icon) {
+        CarIcon.PTT -> R.drawable.ic_car_ptt
+        CarIcon.STOP -> R.drawable.ic_car_stop
+        CarIcon.HAND -> R.drawable.ic_car_hand
+        CarIcon.LOCK_CLOSED -> R.drawable.ic_car_lock_closed
+        CarIcon.LOCK_OPEN -> R.drawable.ic_car_lock_open
+        CarIcon.LOCK_TX -> R.drawable.ic_car_lock_tx
+        CarIcon.LOCK_UNKNOWN -> R.drawable.ic_car_lock_unknown
+    }
+
+    /** Cadenas sans effet : pourquoi. */
+    private fun lockInfo(): String {
+        val rig = RigHub.ui.value.rig
+        return when {
+            rig.status != LinkStatus.CONNECTED -> "Voiture : état d'émission inconnu (station non connectée)."
+            rig.ptt?.let { it.mine && it.transmitting } == true -> "Voiture : en émission ; FIN D'ÉMISSION par le bouton micro, ou STOP."
+            else -> "Voiture : réception seule, l'émission est impossible depuis ce téléphone."
+        }
     }
 
     /** Paquet de l'application qui envoie la commande en cours (null si Android ne le dit pas). */
@@ -165,7 +188,10 @@ internal object RigMedia {
             return super.onMediaButtonEvent(intent)                 // Lecture/Pause -> réception audible ou muette
         }
 
-        override fun onPlay() = RigHub.setMuted(false)
+        override fun onPlay() {
+            RigHub.service?.regainAudio()                              // son repris à une autre source (voiture, appel)
+            RigHub.setMuted(false)
+        }
 
         override fun onPause() = RigHub.setMuted(true)
 
@@ -188,6 +214,7 @@ internal object RigMedia {
                 CarAction.ARM -> RigHub.setArmed(true)
                 CarAction.DISARM -> RigHub.setArmed(false)
                 CarAction.RELEASE_LOCAL -> RigHub.releaseLocal()
+                CarAction.LOCK_INFO -> note(lockInfo(), warn = false)
             }
         }
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- État d'émission inconnu (liaison absente ou perdue) : cadenas barré. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="1.6" android:pathData="M8,10.8V7a4,4 0,0 1,8 0v3.8M6,10.8h12v10.4H6z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:pathData="M3,3L21,21" />
+</vector>

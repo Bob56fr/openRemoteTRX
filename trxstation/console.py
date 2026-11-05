@@ -284,6 +284,40 @@ class Console:
     def diagnostic(self) -> None:
         self.say("Diagnostic en cours (lecture seule, aucune émission)...")
         self.say(format_checks(run_all(path=self.config), color=sys.stdout.isatty()))
+        extras = self._diagnostic_modes()
+        if extras:
+            self.say(extras)
+
+    def _diagnostic_modes(self) -> str:
+        """Breizh Audio Box et visiteurs en trois lignes (lecture seule, aucun secret : ni clé ni mot de passe)."""
+        from datetime import date
+
+        from . import config as cfgmod
+        if not self.config.exists():
+            return ""
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+        except (OSError, cfgmod.ConfigError):
+            return ""                                   # déjà signalé par le diagnostic
+        b, a = cfg.breizh, cfg.access
+        breizh = "activé" if b.enabled else "désactivé"
+        if b.enabled:
+            status = self._gateway_status()
+            live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
+            state = self.BREIZH_STATES.get(live.get("state"), live.get("state")) if live else "passerelle arrêtée"
+            breizh += f" ({b.host or 'adresse à régler'} port {b.port}) · liaison : {state}"
+        today = date.today()
+        accounts = []
+        for c in (c for c in cfg.clients if c.role == "listener"):
+            label = self._account_label(c)
+            accounts.append(label + (" EXPIRÉ" if c.expired(today) else ""))
+        return "\n".join([
+            "\nModes de la station :",
+            f"  Breizh Audio Box : {breizh}",
+            "  Visiteurs        : " + (f"écoute OUVERTE, {a.max_listeners} au plus" if a.max_listeners
+                                       else "écoute FERMÉE (max_listeners = 0)"),
+            "  Comptes visiteurs: " + (", ".join(accounts) or "aucun"),
+        ])
 
     def assistant(self) -> None:
         stopped = self.stop_for_exclusive_use("l'assistant")

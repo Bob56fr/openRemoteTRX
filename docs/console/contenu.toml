@@ -81,7 +81,7 @@ le compte créé par l'assistant. Pour l'accès depuis l'extérieur, voir la doc
 # demandé : sudo), expert (facultatif : détails pour le dépannage).
 
 [menus.diagnostic]
-role = "Contrôle complet de la station, en lecture seule : système, logiciels, configuration, matériel (ports série, cartes son), services, spectre HF, Cluster DX, accès réseau et mises à jour."
+role = "Contrôle complet de la station, en lecture seule : système, logiciels, configuration, matériel (ports série, cartes son), services, spectre HF, Cluster DX, accès réseau et mises à jour. En fin de bilan, trois lignes « Modes de la station » : Breizh Audio Box (activé ou non, état de la liaison), écoute des visiteurs (ouverte ou fermée, nombre maximal) et comptes visiteurs (pseudo, désactivé, expiré), sans aucun secret."
 quand = "Après l'installation, après chaque changement, et en premier réflexe dès que quelque chose ne va pas."
 modifie = "Rien. Aucune commande au poste, aucune émission."
 admin = false

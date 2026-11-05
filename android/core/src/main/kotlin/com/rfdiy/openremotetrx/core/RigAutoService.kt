@@ -6,6 +6,7 @@ import android.media.MediaDescription
 import android.media.browse.MediaBrowser
 import android.os.Bundle
 import android.service.media.MediaBrowserService
+import com.rfdiy.openremotetrx.logic.Artwork
 import com.rfdiy.openremotetrx.logic.Car
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Radio
@@ -35,7 +36,11 @@ class RigAutoService : MediaBrowserService() {
 
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         if (clientPackageName !in Car.BROWSE_CALLERS && clientPackageName != packageName) return null
-        if (clientPackageName == AUTO) { RigHub.carConnected(true); SpatialHub.setCar(true) }          // Android Auto : mode conduite automatique
+        if (clientPackageName == AUTO) {                                // Android Auto : mode conduite automatique
+            RigHub.carConnected(true)
+            SpatialHub.setCar(true)
+            RigHub.service?.regainAudio()                                // son repris s'il était resté muet
+        }
         return BrowserRoot(ROOT, null)
     }
 
@@ -56,9 +61,10 @@ class RigAutoService : MediaBrowserService() {
                 if (ui.rig.status != LinkStatus.DISCONNECTED) add(playable("$DISCONNECT:", "Déconnecter", ui.station?.name ?: ""))
             }
             MEMORIES -> if (!connected) emptyList() else ui.rig.memories.map { m ->
-                playable("$MEMORY:${m.id}", (if (m.favorite) "★ " else "") + m.name, "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}")
+                playable("$MEMORY:${m.id}", (if (m.favorite) "★ " else "") + m.name, "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}",
+                    Artwork.key(true, m.hz))
             }
-            BANDS -> if (!connected) emptyList() else Radio.BANDS.map { b -> playable("$BAND:${b.key}", "${b.key} m", Car.frequency(b.start) ?: "") }
+            BANDS -> if (!connected) emptyList() else Radio.BANDS.map { b -> playable("$BAND:${b.key}", "${b.key} m", Car.frequency(b.start) ?: "", Artwork.bandKey(b.key)) }
             else -> emptyList()
         }
         result.sendResult(items.toMutableList())
@@ -67,8 +73,13 @@ class RigAutoService : MediaBrowserService() {
     private fun folder(id: String, title: String, subtitle: String) =
         MediaBrowser.MediaItem(MediaDescription.Builder().setMediaId(id).setTitle(title).setSubtitle(subtitle).build(), MediaBrowser.MediaItem.FLAG_BROWSABLE)
 
-    private fun playable(id: String, title: String, subtitle: String) =
-        MediaBrowser.MediaItem(MediaDescription.Builder().setMediaId(id).setTitle(title).setSubtitle(subtitle).build(), MediaBrowser.MediaItem.FLAG_PLAYABLE)
+    /** `art` : clé de la pochette servant d'icône (Artwork), aucune si null. */
+    private fun playable(id: String, title: String, subtitle: String, art: String? = null) =
+        MediaBrowser.MediaItem(
+            MediaDescription.Builder().setMediaId(id).setTitle(title).setSubtitle(subtitle)
+                .apply { art?.let { setIconUri(ArtworkProvider.uri(this@RigAutoService, it)) } }.build(),
+            MediaBrowser.MediaItem.FLAG_PLAYABLE,
+        )
 
     companion object {
         const val AUTO = "com.google.android.projection.gearhead"

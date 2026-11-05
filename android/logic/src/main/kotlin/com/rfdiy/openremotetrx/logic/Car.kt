@@ -17,6 +17,8 @@ enum class CarAction(val id: String) {
     DISARM("disarm"),
     /** « Reprendre la main » après une action sur le poste (jamais pendant une émission locale : la station refuse). */
     RELEASE_LOCAL("release_local"),
+    /** Cadenas sans effet (en émission, réception seule, liaison perdue) : montre l'état, ne commande rien. */
+    LOCK_INFO("lock_info"),
     ;
 
     /** Prend l'émission ou l'autorise : réservé à l'écran de la voiture et à l'application elle-même. */
@@ -27,7 +29,20 @@ enum class CarAction(val id: String) {
     }
 }
 
-data class CarButton(val action: CarAction, val label: String)
+/** Pictogramme d'un bouton de la voiture ; le cadenas suit l'état réel de « Émission autorisée » (F6). */
+enum class CarIcon { PTT, STOP, HAND, LOCK_CLOSED, LOCK_OPEN, LOCK_TX, LOCK_UNKNOWN }
+
+/** `label` sert aussi de texte d'accessibilité : il dit l'ÉTAT montré par le pictogramme. */
+data class CarButton(val action: CarAction, val label: String, val icon: CarIcon = defaultIcon(action))
+
+private fun defaultIcon(action: CarAction): CarIcon = when (action) {
+    CarAction.PTT -> CarIcon.PTT
+    CarAction.STOP -> CarIcon.STOP
+    CarAction.RELEASE_LOCAL -> CarIcon.HAND
+    CarAction.ARM -> CarIcon.LOCK_CLOSED
+    CarAction.DISARM -> CarIcon.LOCK_OPEN
+    CarAction.LOCK_INFO -> CarIcon.LOCK_UNKNOWN
+}
 
 /** Ce que montre l'écran de la voiture : texte seulement (aucun graphique, aucune saisie). */
 data class CarScreen(
@@ -63,18 +78,21 @@ object Car {
         else -> caller != null && caller in TX_CALLERS
     }
 
+    /** Cadenas d'une liaison absente ou perdue : état d'émission inconnu. */
+    val LOCK_UNKNOWN = CarButton(CarAction.LOCK_INFO, "État d'émission inconnu", CarIcon.LOCK_UNKNOWN)
+
     fun screen(rig: RigState, station: String?, muted: Boolean, micAllowed: Boolean, notice: String = ""): CarScreen {
         val name = station ?: "openRemoteTRX"
         val ptt = rig.ptt
         when (rig.status) {
             LinkStatus.DISCONNECTED -> return CarScreen(
                 "Déconnecté", if (notice.isNotEmpty()) notice else "Choisir une station : Parcourir > Stations",
-                playing = false, connecting = false, connected = false, buttons = emptyList(), error = notice,
+                playing = false, connecting = false, connected = false, buttons = listOf(LOCK_UNKNOWN), error = notice,
             )
-            LinkStatus.CONNECTING -> return CarScreen("Connexion…", name, false, connecting = true, connected = false, buttons = emptyList())
+            LinkStatus.CONNECTING -> return CarScreen("Connexion…", name, false, connecting = true, connected = false, buttons = listOf(LOCK_UNKNOWN))
             LinkStatus.RECONNECTING -> return CarScreen(
                 "Reconnexion…" + (rig.reconnect?.let { " ${it.remainingS} s" } ?: ""), "$name — réception seule au retour",
-                playing = false, connecting = true, connected = false, buttons = emptyList(),
+                playing = false, connecting = true, connected = false, buttons = listOf(LOCK_UNKNOWN),
             )
             LinkStatus.CONNECTED -> Unit
         }
@@ -105,9 +123,12 @@ object Car {
                 }
             }
             add(CarButton(CarAction.STOP, "STOP"))
-            if (micAllowed && rig.protocolOk && !mine) {
-                if (rig.armed) add(CarButton(CarAction.DISARM, "Interdire l'émission"))
-                else add(CarButton(CarAction.ARM, "Autoriser l'émission"))
+            // Cadenas = état actuel (pictogramme et libellé) ; un appui le bascule, l'icône suit l'état relu (jamais supposé).
+            when {
+                !micAllowed || !rig.protocolOk -> add(CarButton(CarAction.LOCK_INFO, "Réception seule", CarIcon.LOCK_CLOSED))
+                mine -> add(CarButton(CarAction.LOCK_INFO, "En émission", CarIcon.LOCK_TX))
+                rig.armed -> add(CarButton(CarAction.DISARM, "Émission autorisée", CarIcon.LOCK_OPEN))
+                else -> add(CarButton(CarAction.ARM, "Émission verrouillée", CarIcon.LOCK_CLOSED))
             }
             if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, "Reprendre la main"))
         }
