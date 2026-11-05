@@ -65,10 +65,10 @@ class FavoritesTest {
         assertTrue(Car.screen(withFav, "M", false, true).canSkip)
         assertFalse(Car.screen(withFav.copy(memories = listOf(plain)), "M", false, true).canSkip)
         assertFalse(Car.screen(withFav.copy(listener = true), "M", false, true).canSkip)
-        assertEquals("7.100.00", Car.screen(withFav, "M", false, true, preview = null).title)
+        assertEquals("7.100.00 LSB", Car.screen(withFav, "M", false, true, preview = null).title)
         assertEquals("M: Réseau 40", Car.screen(withFav, "M", false, true).subtitle)
         val chosen = Car.screen(withFav, "M", false, true, preview = b)    // choisi au volant, pas encore envoyé
-        assertEquals("14.195.00", chosen.title)
+        assertEquals("14.195.00 USB", chosen.title)                 // fréquence ET mode du favori choisi
         assertEquals("M: QSO 20", chosen.subtitle)
         assertEquals("27.430.00", Car.carFrequency(27_430_000))
         assertEquals("6.660.00", Car.carFrequency(6_660_000))
@@ -101,6 +101,8 @@ class FavoritesTest {
         assertEquals("S4  VFO  NB NR  100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"NB":true,"NR":true"""), false, listOf("S4", "VFO")))
         assertEquals("NB NR  Preamp 100w EQ", Car.settings(hello(100), s, eq = true))
         assertEquals("NR  ATT 47w", Car.settings(hello(100), state(""""PREAMP":10,"ATT":12,"RFPOWER":0.474""", """"NB":false,"NR":true"""), false))
+        assertEquals("NB RIT XIT  100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"NB":true,"NR":false,"RIT":true,"XIT":true"""), false))
+        assertEquals("100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"RIT":false,"XIT":false"""), false))   // coupés : absents
         assertEquals("Preamp2", Car.settings(hello(100), state(""""PREAMP":20""", ""), false))
         assertEquals("50%", Car.settings(hello(0), state(""""RFPOWER":0.5""", ""), false))   // puissance maxi inconnue
         assertEquals("", Car.settings(hello(100), state("", ""), false))                       // rien de publié : rien

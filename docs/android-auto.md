@@ -143,19 +143,19 @@ Remplace le tableau du § 5 pour le titre et le sous-titre. Seules les mémoires
 (Parcourir > Favoris ; l'ancien dossier « Mémoires » est retiré ; la recherche vocale ne cherche que les favoris).
 
 ```
-27.430.00
+27.430.00 USB
 S3  M: 430  NB NR  Preamp 100w
 ```
 ```
-6.660.00
-S4  VFO  NB NR  100w
+6.660.00 LSB
+S4  VFO  NB NR RIT  100w
 ```
 
-- Titre : TOUJOURS la fréquence, `MHz.kHz.10 Hz` (`27.430.00`) ; celle du favori choisi au volant pendant les 300 ms
-  d'attente ; en émission : `27.430.00 ÉMISSION 1:05` (sécurité : l'émission doit se voir).
+- Titre : TOUJOURS la fréquence `MHz.kHz.10 Hz` et le mode (`27.430.00 USB`, étape 131) ; ceux du favori choisi au
+  volant pendant les 300 ms d'attente ; en émission : `27.430.00 USB ÉMISSION 1:05` (l'émission doit se voir).
 - Sous-titre, groupes séparés par deux espaces : niveau (`S3`, absent en émission) ; `M: <nom du favori>` (12 caractères
-  au plus) ou `VFO` ; `NB NR` actifs ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, puissance `100w` (`50%` si la
+  au plus) ou `VFO` ; `NB NR RIT XIT` actifs (RIT et XIT/ΔTX seulement s'ils sont en service sur le poste, étape 131) ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, puissance `100w` (`50%` si la
   station ne connaît pas la puissance maximale), `EQ` (égaliseur de la voix émise en service). Seulement ce qui est actif
   et publié par la station ; 40 caractères au plus (un seul espace entre groupes, puis coupé).
-- Le mode n'est plus affiché (absent des exemples de l'utilisateur) ; il reste dans la ligne secondaire, que le DHU
-  n'affiche pas.
+- Fond de l'écran : Android Auto le fabrique LUI-MÊME à partir de la pochette (image floutée) ; aucune API ne permet
+  une image de fond séparée. Pour le changer : changer la pochette (§ 3).

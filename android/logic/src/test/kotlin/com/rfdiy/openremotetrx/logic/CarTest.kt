@@ -38,7 +38,7 @@ class CarTest {
     @Test
     fun `reception non armee - STOP et Autoriser, jamais EMETTRE`() {
         val s = Car.screen(rig(ptt(false, false), armed = false), "Maison", muted = false, micAllowed = true)
-        assertEquals("7.100.00", s.title)                           // toujours la fréquence (format de l'utilisateur)
+        assertEquals("7.100.00 LSB", s.title)                           // toujours la fréquence (format de l'utilisateur)
         assertEquals("S7  VFO", s.subtitle)                         // mémoire NON favorite : VFO ; aucun réglage publié
         assertEquals("LSB · émission non autorisée · Maison", s.secondary)
         val fav = Car.screen(rig(ptt(false, false), armed = false).let { it.copy(memories = it.memories.map { m -> m.copy(favorite = true) }) },
@@ -76,7 +76,7 @@ class CarTest {
     fun `armee - EMETTRE, en emission - FIN D'EMISSION et STOP, etat explicite`() {
         assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.DISARM), ids(Car.screen(rig(ptt(false, false), true), "M", false, true)))
         val tx = Car.screen(rig(ptt(true, true, tot = 65), true), "M", false, true)
-        assertEquals("7.100.00 ÉMISSION 1:05", tx.title)
+        assertEquals("7.100.00 LSB ÉMISSION 1:05", tx.title)
         assertEquals("FIN D'ÉMISSION", tx.buttons.first().label)
         assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.LOCK_INFO), ids(tx))
     }

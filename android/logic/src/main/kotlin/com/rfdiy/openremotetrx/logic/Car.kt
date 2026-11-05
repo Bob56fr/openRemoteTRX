@@ -121,8 +121,10 @@ object Car {
         // Seules les mémoires FAVORITES existent sur la voiture (demande de l'utilisateur).
         val favorites = Favorites.list(rig.memories)
         val memory = preview ?: memoryAt(favorites, r?.frequencyHz, r?.mode)
-        // Titre : TOUJOURS la fréquence (celle du favori choisi au volant, pas encore envoyé) ; en émission, l'état en plus.
-        val freq = carFrequency(preview?.hz ?: r?.frequencyHz).orEmpty()
+        // Titre : TOUJOURS la fréquence et le mode (ceux du favori choisi au volant, pas encore envoyé) ; en émission, l'état
+        // en plus.
+        val freq = listOfNotNull(carFrequency(preview?.hz ?: r?.frequencyHz), (preview?.mode ?: r?.mode)?.let { Radio.modeLabel(it) })
+            .joinToString(" ")
         val title = when {
             mine -> "$freq ÉMISSION" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
             ptt?.transmitting == true -> "$freq Émission : ${ptt.label}"
@@ -189,7 +191,7 @@ object Car {
 
     /**
      * Sous-titre (F3, format de l'utilisateur) : groupes séparés par deux espaces, mots d'un groupe par un espace.
-     * `lead` (niveau, « M: nom » ou « VFO ») d'abord ; puis NB NR ; puis préampli (« Preamp », « Preamp2 ») ou ATT,
+     * `lead` (niveau, « M: nom » ou « VFO ») d'abord ; puis NB NR RIT XIT ; puis préampli (« Preamp », « Preamp2 ») ou ATT,
      * puissance (« 100w », « 50% » si la station ne connaît pas la puissance maximale), EQ du téléphone. Seulement ce qui
      * est ACTIF et publié par la station (un poste qui ne le gère pas ne le montre jamais). Trop long : un espace entre
      * les groupes, puis coupé.
@@ -198,7 +200,8 @@ object Car {
         val rig = state?.rig
         val lv = rig?.levels.orEmpty()
         val fn = rig?.functions.orEmpty()
-        val functions = listOfNotNull("NB".takeIf { fn["NB"] == true }, "NR".takeIf { fn["NR"] == true })
+        // RIT et XIT (ΔTX) seulement s'ils sont actifs sur le poste (demande de l'utilisateur)
+        val functions = listOf("NB", "NR", "RIT", "XIT").filter { fn[it] == true }
         val levels = buildList {
             val att = lv["ATT"] ?: 0.0
             val preamp = lv["PREAMP"] ?: 0.0
