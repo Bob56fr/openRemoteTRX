@@ -18,6 +18,7 @@ kotlin {
 dependencies {
     api(project(":protocol"))
     implementation(libs.serialization.json)
+    implementation(libs.zxing.core)                                  // QR code d'appairage lu dans une image (QrImage)
     testImplementation(kotlin("test"))
 }
 

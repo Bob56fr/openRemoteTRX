@@ -2,7 +2,13 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.app
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +45,10 @@ import com.rfdiy.openremotetrx.protocol.Fingerprint
 import com.rfdiy.openremotetrx.protocol.PairingCode
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.core.StationAccount
+import com.rfdiy.openremotetrx.logic.QrImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.rfdiy.openremotetrx.protocol.StationAddress
 
 private val WINDOWS = listOf(0, 30, 60, 120, 300)
@@ -78,14 +89,14 @@ fun StationScreen(
     }
 
     // QR code du menu 19 de TRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
+    // Lu par l'appareil photo, ou dans une image de la bibliothèque (photo, capture d'écran reçue par message…).
     var notice by remember { mutableStateOf("") }
-    val scan = rememberLauncherForActivityResult(ScanContract()) { result ->
-        val text = result.contents ?: return@rememberLauncherForActivityResult
+    fun applyPairing(text: String) {
         val pairing = PairingCode.parse(text)
         if (pairing == null) {
             notice = ""
             error = "Ce QR code n'est pas un QR code d'appairage openRemoteTRX (TRX Console, menu 19)."
-            return@rememberLauncherForActivityResult
+            return
         }
         val known = accounts.firstOrNull { it.url == pairing.url && (pairing.user.isEmpty() || it.user == pairing.user) }
         select(known)
@@ -98,6 +109,24 @@ fun StationScreen(
         address = pairing.url
         if (pairing.user.isNotEmpty()) user = pairing.user
         fingerprint = pairing.fingerprint
+    }
+    val scan = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let { applyPairing(it) }
+    }
+    val scope = rememberCoroutineScope()
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        notice = "Lecture de l'image…"
+        error = ""
+        scope.launch {
+            val text = withContext(Dispatchers.Default) { qrFromImage(context, uri) }
+            if (text == null) {
+                notice = ""
+                error = "Aucun QR code trouvé dans cette image : recadre-la sur le QR code (net, entier, sans reflet) ou scanne-le."
+            } else {
+                applyPairing(text)
+            }
+        }
     }
 
     Column(
@@ -118,6 +147,9 @@ fun StationScreen(
                     .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
             )
         }) { Text("Scanner le QR code de la station") }
+        OutlinedButton(onClick = {
+            pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }) { Text("Lire le QR code depuis une image") }
         if (notice.isNotEmpty()) Text(notice, color = MaterialTheme.colorScheme.primary)
         if (accounts.isNotEmpty()) {
             Text("Stations", style = MaterialTheme.typography.titleMedium)
@@ -189,3 +221,23 @@ fun StationScreen(
         }
     }
 }
+
+/** Plus grand côté décodé : une photo de 50 Mpx est réduite (mémoire, temps) ; un QR code reste lisible bien en dessous. */
+private const val QR_IMAGE_MAX = 2000
+
+/** Texte du QR code d'une image de la bibliothèque, null si illisible ou sans QR code. Hors du fil principal. */
+private fun qrFromImage(context: Context, uri: Uri): String? = runCatching {
+    val source = ImageDecoder.createSource(context.contentResolver, uri)
+    val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE                      // pixels lisibles (getPixels)
+        val big = maxOf(info.size.width, info.size.height)
+        if (big > QR_IMAGE_MAX) {
+            val k = QR_IMAGE_MAX.toFloat() / big
+            decoder.setTargetSize((info.size.width * k).toInt().coerceAtLeast(1), (info.size.height * k).toInt().coerceAtLeast(1))
+        }
+    }
+    val argb = if (bitmap.config == Bitmap.Config.ARGB_8888) bitmap else bitmap.copy(Bitmap.Config.ARGB_8888, false)
+    val px = IntArray(argb.width * argb.height)
+    argb.getPixels(px, 0, argb.width, 0, 0, argb.width, argb.height)
+    QrImage.decode(argb.width, argb.height, px)
+}.getOrNull()
