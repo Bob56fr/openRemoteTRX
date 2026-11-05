@@ -192,7 +192,7 @@ object Car {
     /**
      * Sous-titre (F3, format de l'utilisateur) : groupes séparés par deux espaces, mots d'un groupe par un espace.
      * `lead` (niveau, « M: nom » ou « VFO ») d'abord ; puis NB NR RIT XIT ; puis préampli (« Preamp », « Preamp2 ») ou ATT,
-     * puissance (« 100w », « 50% » si la station ne connaît pas la puissance maximale), EQ du téléphone. Seulement ce qui
+     * TUNER, puissance (« 100w », « 50% » si la station ne connaît pas la puissance maximale), EQ du téléphone. Seulement ce qui
      * est ACTIF et publié par la station (un poste qui ne le gère pas ne le montre jamais). Trop long : un espace entre
      * les groupes, puis coupé.
      */
@@ -209,6 +209,7 @@ object Car {
                 att > 0 -> add("ATT")
                 preamp > 0 -> add("Preamp" + Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty()).let { if (it > 1) "$it" else "" })
             }
+            if (fn["TUNER"] == true) add("TUNER")                     // coupleur en service : juste avant la puissance
             lv["RFPOWER"]?.takeIf { it > 0 }?.let { f ->
                 val max = hello?.maxPowerW ?: 0
                 add(if (max > 0) "${(f * max).roundToInt()}w" else "${(f * 100).roundToInt()}%")

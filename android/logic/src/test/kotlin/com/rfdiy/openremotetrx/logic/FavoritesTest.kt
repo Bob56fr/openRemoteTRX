@@ -103,6 +103,8 @@ class FavoritesTest {
         assertEquals("NR  ATT 47w", Car.settings(hello(100), state(""""PREAMP":10,"ATT":12,"RFPOWER":0.474""", """"NB":false,"NR":true"""), false))
         assertEquals("NB RIT XIT  100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"NB":true,"NR":false,"RIT":true,"XIT":true"""), false))
         assertEquals("100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"RIT":false,"XIT":false"""), false))   // coupés : absents
+        assertEquals("NR  Preamp TUNER 100w", Car.settings(hello(100), state(""""PREAMP":10,"RFPOWER":1.0""", """"NR":true,"TUNER":true"""), false))
+        assertEquals("Preamp 100w", Car.settings(hello(100), state(""""PREAMP":10,"RFPOWER":1.0""", """"TUNER":false"""), false))
         assertEquals("Preamp2", Car.settings(hello(100), state(""""PREAMP":20""", ""), false))
         assertEquals("50%", Car.settings(hello(0), state(""""RFPOWER":0.5""", ""), false))   // puissance maxi inconnue
         assertEquals("", Car.settings(hello(100), state("", ""), false))                       // rien de publié : rien

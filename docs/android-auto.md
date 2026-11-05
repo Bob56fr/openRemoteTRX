@@ -154,7 +154,7 @@ S4  VFO  NB NR RIT  100w
 - Titre : TOUJOURS la fréquence `MHz.kHz.10 Hz` et le mode (`27.430.00 USB`, étape 131) ; ceux du favori choisi au
   volant pendant les 300 ms d'attente ; en émission : `27.430.00 USB ÉMISSION 1:05` (l'émission doit se voir).
 - Sous-titre, groupes séparés par deux espaces : niveau (`S3`, absent en émission) ; `M: <nom du favori>` (12 caractères
-  au plus) ou `VFO` ; `NB NR RIT XIT` actifs (RIT et XIT/ΔTX seulement s'ils sont en service sur le poste, étape 131) ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, puissance `100w` (`50%` si la
+  au plus) ou `VFO` ; `NB NR RIT XIT` actifs (RIT et XIT/ΔTX seulement s'ils sont en service sur le poste, étape 131) ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, `TUNER` (coupleur en service, juste avant la puissance, étape 132), puissance `100w` (`50%` si la
   station ne connaît pas la puissance maximale), `EQ` (égaliseur de la voix émise en service). Seulement ce qui est actif
   et publié par la station ; 40 caractères au plus (un seul espace entre groupes, puis coupé).
 - Fond de l'écran : Android Auto le fabrique LUI-MÊME à partir de la pochette (image floutée) ; aucune API ne permet
