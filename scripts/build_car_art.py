@@ -5,7 +5,8 @@
     python scripts/build_car_art.py
 
 Source : docs/marque/logo-rond.png. Sortie : android/core/src/main/assets/pochettes/<clé>.jpg, 512 x 512 px.
-`logo` = le logo seul ; une image par bande (logo assombri et nom de la bande) ; `hors_bande`. Les clés sont celles de
+`logo` = le logo seul ; une image par bande (logo réduit en haut, nom de la bande dans un bandeau SOUS l'image,
+demande de l'utilisateur) ; `hors_bande`. Les clés sont celles de
 logic/Artwork.kt (le test Kotlin ArtworkTest vérifie que chaque clé a son image). Texte FIXE seulement : aucune
 fréquence ni mesure (règles de Google). L'utilisateur remplace une image en déposant `<clé>.png` ou `<clé>.jpg`
 dans le dossier `pochettes` de l'application (docs/android-auto.md).
@@ -14,20 +15,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "docs" / "marque" / "logo-rond.png"
 OUT = ROOT / "android" / "core" / "src" / "main" / "assets" / "pochettes"
 SIZE = 512
 
-# Clé -> (texte principal, ligne du dessous). Même ordre que Radio.BANDS + VHF/UHF (Artwork.kt).
+LOGO_SIZE = 384                     # logo réduit en haut ; le bandeau du texte occupe le bas
+BACKGROUND = (8, 12, 22)            # fond sombre du logo
+
+# Clé -> (texte principal, précision en plus petit). Même ordre que Radio.BANDS + VHF/UHF (Artwork.kt).
 BANDS = {
     "160m": ("160 m", ""), "85m": ("85 m", "écoute"), "80m": ("80 m", ""), "60m": ("60 m", ""),
     "45m": ("45 m", "écoute"), "40m": ("40 m", ""), "30m": ("30 m", ""), "20m": ("20 m", ""),
     "17m": ("17 m", ""), "15m": ("15 m", ""), "12m": ("12 m", ""), "11m": ("11 m", "CB"),
     "10m": ("10 m", ""), "6m": ("6 m", ""), "2m": ("2 m", ""), "70cm": ("70 cm", ""),
-    "hors_bande": ("Hors", "bande"),
+    "hors_bande": ("Hors bande", ""),
 }
 
 
@@ -40,26 +44,30 @@ def font(size: int) -> ImageFont.FreeTypeFont:
     raise SystemExit("Aucune police grasse trouvée (Segoe UI, Arial ou DejaVu Sans).")
 
 
-def centered(draw: ImageDraw.ImageDraw, y: int, text: str, f: ImageFont.FreeTypeFont) -> None:
-    box = draw.textbbox((0, 0), text, font=f)
-    x = (SIZE - (box[2] - box[0])) // 2 - box[0]
-    draw.text((x, y), text, font=f, fill=(255, 255, 255), stroke_width=6, stroke_fill=(0, 20, 60))
+def caption(draw: ImageDraw.ImageDraw, main: str, sub: str) -> None:
+    """Texte centré dans le bandeau sous le logo : principal en grand, précision en plus petit sur la même ligne ;
+    taille réduite tant que la ligne ne tient pas dans l'image (marges de 24 px)."""
+    for size in range(96, 40, -4):
+        parts = [(main, font(size), (255, 255, 255))] + ([("  " + sub, font(size * 52 // 96), (120, 180, 255))] if sub else [])
+        widths = [draw.textbbox((0, 0), t, font=f)[2] for t, f, _ in parts]
+        if sum(widths) <= SIZE - 48:
+            break
+    x = (SIZE - sum(widths)) // 2
+    baseline = LOGO_SIZE + (SIZE - LOGO_SIZE) // 2 + 34          # même ligne de base pour les deux tailles
+    for (text, f, color), w in zip(parts, widths):
+        draw.text((x, baseline), text, font=f, fill=color, anchor="ls")
+        x += w
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     logo = Image.open(SOURCE).convert("RGB").resize((SIZE, SIZE), Image.LANCZOS)
     logo.save(OUT / "logo.jpg", quality=85, optimize=True)
-    dim = ImageEnhance.Brightness(logo).enhance(0.35)
-    big, small = font(150), font(64)
+    small_logo = logo.resize((LOGO_SIZE, LOGO_SIZE), Image.LANCZOS)
     for key, (main_text, sub) in BANDS.items():
-        img = dim.copy()
-        d = ImageDraw.Draw(img)
-        if sub:
-            centered(d, 120, main_text, big)
-            centered(d, 300, sub, small)
-        else:
-            centered(d, 160, main_text, big)
+        img = Image.new("RGB", (SIZE, SIZE), BACKGROUND)
+        img.paste(small_logo, ((SIZE - LOGO_SIZE) // 2, 0))
+        caption(ImageDraw.Draw(img), main_text, sub)
         img.save(OUT / f"{key}.jpg", quality=85, optimize=True)
     print(f"{len(BANDS) + 1} pochettes écrites dans {OUT.relative_to(ROOT)}")
 

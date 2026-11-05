@@ -16,6 +16,7 @@ import com.rfdiy.openremotetrx.logic.Car
 import com.rfdiy.openremotetrx.logic.CarAction
 import com.rfdiy.openremotetrx.logic.CarIcon
 import com.rfdiy.openremotetrx.logic.CarScreen
+import com.rfdiy.openremotetrx.logic.FavoriteStepper
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Voice
 import com.rfdiy.openremotetrx.logic.VoiceAction
@@ -38,7 +39,11 @@ import kotlinx.coroutines.launch
  *   session, F6), reprendre la main. PRENDRE l'émission n'est permis qu'à Android Auto et à l'application (appelant
  *   vérifié) ; couper est permis à tous.
  * - Pochette (F5) : image de la bande du poste (ArtworkProvider), jamais de donnée dynamique dessinée dedans.
- * - Parcourir : stations, mémoires, bandes (RigAutoService) ; recherche vocale : mémoire, bande, fréquence, jamais
+ * - Suivant / Précédent (volant, écran) : mémoires favorites en boucle (F1), appuis regroupés (300 ms), refusé en
+ *   émission ; masqués sans favori.
+ * - Sous-titre : réglages actifs du poste (F3) ; texte mis à jour au plus une fois par seconde, boutons et état du
+ *   lecteur (émission, cadenas) aussitôt.
+ * - Parcourir : favoris, stations, mémoires, bandes (RigAutoService) ; recherche vocale : mémoire, bande, fréquence, jamais
  *   l'émission.
  */
 internal object RigMedia {
@@ -47,6 +52,10 @@ internal object RigMedia {
     private var scope: CoroutineScope? = null
     private val users = mutableSetOf<String>()
     private var lastKey = ""
+    private var lastUrgent = ""
+    private var lastPublishMs = 0L
+    private var delayedRefresh = false
+    private val stepper = FavoriteStepper(SKIP_DELAY_MS)
     private var lastMemories: List<String> = emptyList()
     private var lastStatus: Any? = null
     /** Appelé quand la liste des mémoires ou l'état de la liaison change (la voiture relit Parcourir). */
@@ -71,6 +80,7 @@ internal object RigMedia {
         session = s
         scope = CoroutineScope(SupervisorJob() + ContextCompat.getMainExecutor(app).asCoroutineDispatcher()).also { sc ->
             sc.launch { RigHub.ui.collect { refresh() } }
+            sc.launch { VoiceHub.ui.collect { refresh() } }              // EQ du sous-titre
         }
         refresh(force = true)
         s.isActive = true
@@ -87,6 +97,8 @@ internal object RigMedia {
         session?.let { runCatching { it.isActive = false; it.release() } }
         session = null
         lastKey = ""
+        lastUrgent = ""
+        stepper.cancel()
     }
 
     fun has(user: String) = user in users
@@ -96,10 +108,18 @@ internal object RigMedia {
 
     private fun screen(): CarScreen {
         val ui = RigHub.ui.value
-        return Car.screen(ui.rig, ui.station?.name, ui.muted, ui.micAllowed, ui.carNotice)
+        val voice = VoiceHub.ui.value
+        return Car.screen(
+            ui.rig, ui.station?.name, ui.muted, ui.micAllowed, ui.carNotice,
+            eq = voice.settings.enabled && !voice.breizh, preview = stepper.pending, selcallOpen = ui.rig.selcall?.state == "open",
+        )
     }
 
-    /** Titre, sous-titre, état du lecteur et boutons, seulement s'ils ont changé. */
+    /**
+     * Titre, sous-titre, état du lecteur et boutons, seulement s'ils ont changé. Boutons, état du lecteur et pochette :
+     * aussitôt (sécurité : l'émission se voit tout de suite) ; texte seul : au plus une fois par seconde (F3, règles de
+     * Google contre le scintillement).
+     */
     fun refresh(force: Boolean = false) {
         val s = session ?: return
         val ui = RigHub.ui.value
@@ -107,8 +127,18 @@ internal object RigMedia {
         val ptt = buttonsPtt()
         val art = Artwork.key(ui.rig.status == LinkStatus.CONNECTED, ui.rig.state?.rig?.frequencyHz)
         val key = "$sc|$ptt|$art"
-        if (key != lastKey || force) {
+        val urgent = "${sc.buttons}|${sc.playing}|${sc.connected}|${sc.connecting}|${sc.canSkip}|${sc.error}|$ptt|$art|" +
+            "${ui.rig.ptt?.transmitting}|${stepper.pending?.id}"
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (key != lastKey && urgent == lastUrgent && !force && now - lastPublishMs < TEXT_PERIOD_MS) {
+            if (!delayedRefresh) {
+                delayedRefresh = true
+                main.postDelayed({ delayedRefresh = false; refresh() }, TEXT_PERIOD_MS - (now - lastPublishMs))
+            }
+        } else if (key != lastKey || force) {
             lastKey = key
+            lastUrgent = urgent
+            lastPublishMs = now
             val artUri = ArtworkProvider.uri(app, art).toString()
             s.setMetadata(
                 MediaMetadata.Builder()
@@ -118,6 +148,8 @@ internal object RigMedia {
                     .putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE, sc.title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, sc.subtitle)
                     .putString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE, sc.subtitle)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, sc.secondary)
+                    .putString(MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION, sc.secondary)
                     .putLong(MediaMetadata.METADATA_KEY_DURATION, -1)
                     .build(),
             )
@@ -140,10 +172,11 @@ internal object RigMedia {
             sc.playing || ptt -> PlaybackState.STATE_PLAYING
             else -> PlaybackState.STATE_PAUSED
         }
+        val skip = if (sc.canSkip && sc.connected) PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS else 0L
         val b = PlaybackState.Builder()
             .setActions(
                 PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_STOP or
-                    PlaybackState.ACTION_PLAY_FROM_MEDIA_ID or PlaybackState.ACTION_PLAY_FROM_SEARCH,
+                    PlaybackState.ACTION_PLAY_FROM_MEDIA_ID or PlaybackState.ACTION_PLAY_FROM_SEARCH or skip,
             )
             .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
         if (state == PlaybackState.STATE_ERROR) b.setErrorMessage(sc.error)
@@ -162,6 +195,45 @@ internal object RigMedia {
         CarIcon.LOCK_TX -> R.drawable.ic_car_lock_tx
         CarIcon.LOCK_UNKNOWN -> R.drawable.ic_car_lock_unknown
     }
+
+    /**
+     * Suivant / Précédent (F1). Hors liaison : rien, sans erreur. En émission (la sienne ou une autre) : refusé, rien
+     * n'attend. Sinon le favori choisi s'affiche en titre et part vers la station 300 ms après le dernier appui.
+     */
+    private fun skip(forward: Boolean) {
+        val rig = RigHub.ui.value.rig
+        if (rig.status != LinkStatus.CONNECTED || rig.listener) return
+        if (rig.ptt?.transmitting == true) {
+            stepper.cancel()
+            note("Changement refusé : émission en cours")
+            return
+        }
+        val r = rig.state?.rig
+        val current = Car.memoryAt(rig.memories, r?.frequencyHz, r?.mode)
+        stepper.press(android.os.SystemClock.elapsedRealtime(), forward, rig.memories, current, r?.frequencyHz) ?: return
+        refresh(force = true)
+        main.removeCallbacks(sendFavorite)
+        main.postDelayed(sendFavorite, SKIP_DELAY_MS)
+    }
+
+    private val sendFavorite: Runnable = object : Runnable {
+        override fun run() {
+            val now = android.os.SystemClock.elapsedRealtime()
+            val wait = stepper.remainingMs(now) ?: return
+            if (wait > 0) { main.postDelayed(this, wait); return }    // minuterie sortie trop tôt : réarmée
+            val m = stepper.take(now) ?: return
+            val rig = RigHub.ui.value.rig
+            when {
+                rig.status != LinkStatus.CONNECTED -> Unit
+                rig.ptt?.transmitting == true -> note("Changement refusé : émission en cours")
+                else -> RigHub.recallMemory(m.id)
+            }
+            refresh(force = true)
+        }
+    }
+
+    private const val SKIP_DELAY_MS = 300L
+    private const val TEXT_PERIOD_MS = 1000L
 
     /** Cadenas sans effet : pourquoi. */
     private fun lockInfo(): String {
@@ -187,6 +259,10 @@ internal object RigMedia {
             }
             return super.onMediaButtonEvent(intent)                 // Lecture/Pause -> réception audible ou muette
         }
+
+        override fun onSkipToNext() = skip(forward = true)
+
+        override fun onSkipToPrevious() = skip(forward = false)
 
         override fun onPlay() {
             RigHub.service?.regainAudio()                              // son repris à une autre source (voiture, appel)

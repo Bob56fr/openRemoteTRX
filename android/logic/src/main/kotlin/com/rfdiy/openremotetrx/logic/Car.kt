@@ -2,9 +2,12 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.logic
 
+import com.rfdiy.openremotetrx.protocol.Hello
 import com.rfdiy.openremotetrx.protocol.Memory
+import com.rfdiy.openremotetrx.protocol.State
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Action personnalisée de l'écran de la voiture (lot A2). Le PTT reste un toggle (E1), la station décide (E2). */
 enum class CarAction(val id: String) {
@@ -47,6 +50,7 @@ private fun defaultIcon(action: CarAction): CarIcon = when (action) {
 /** Ce que montre l'écran de la voiture : texte seulement (aucun graphique, aucune saisie). */
 data class CarScreen(
     val title: String,
+    /** Réglages actifs du poste (F3), ou l'invitation / la station hors liaison. */
     val subtitle: String,
     /** Lecteur « en lecture » : réception audible (pause = réception muette). */
     val playing: Boolean,
@@ -55,6 +59,10 @@ data class CarScreen(
     val buttons: List<CarButton>,
     /** Message d'erreur à afficher (connexion impossible depuis la voiture…), vide sinon. */
     val error: String = "",
+    /** Ligne secondaire (champ « album ») : fréquence si le titre est un nom, S-mètre, état de l'émission, station. */
+    val secondary: String = "",
+    /** Suivant / Précédent du volant permis (F1) : connecté, opérateur, au moins une mémoire favorite. */
+    val canSkip: Boolean = false,
 )
 
 /**
@@ -81,7 +89,14 @@ object Car {
     /** Cadenas d'une liaison absente ou perdue : état d'émission inconnu. */
     val LOCK_UNKNOWN = CarButton(CarAction.LOCK_INFO, "État d'émission inconnu", CarIcon.LOCK_UNKNOWN)
 
-    fun screen(rig: RigState, station: String?, muted: Boolean, micAllowed: Boolean, notice: String = ""): CarScreen {
+    /**
+     * `eq` : égaliseur de la voix émise en service (F3) ; `preview` : favori choisi au volant, pas encore envoyé (F1,
+     * regroupement des appuis) ; `selcallOpen` : SELCALL de la station ouvert.
+     */
+    fun screen(
+        rig: RigState, station: String?, muted: Boolean, micAllowed: Boolean, notice: String = "",
+        eq: Boolean = false, preview: Memory? = null, selcallOpen: Boolean = false,
+    ): CarScreen {
         val name = station ?: "openRemoteTRX"
         val ptt = rig.ptt
         when (rig.status) {
@@ -98,20 +113,22 @@ object Car {
         }
         val r = rig.state?.rig
         val mine = ptt?.mine == true && ptt.transmitting
+        val tuning = listOfNotNull(frequency(r?.frequencyHz), r?.mode?.let { Radio.modeLabel(it) }).joinToString(" ")
+        val memory = preview ?: memoryAt(rig.memories, r?.frequencyHz, r?.mode)
         val title = when {
             mine -> "ÉMISSION EN COURS" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
             ptt?.transmitting == true -> "Émission : ${ptt.label}"
-            else -> listOf(frequency(r?.frequencyHz), r?.mode?.let { Radio.modeLabel(it) }).filterNotNull().joinToString(" ")
+            memory != null -> memory.name
+            else -> tuning
         }
-        val memory = memoryAt(rig.memories, r?.frequencyHz, r?.mode)
         val parts = buildList {
-            if (mine) add(listOfNotNull(frequency(r?.frequencyHz), r?.mode?.let { Radio.modeLabel(it) }).joinToString(" "))
-            else r?.strengthDb?.let { add(Format.sMeter(it)) }
-            memory?.let { add(it.name) }
+            if ((mine || memory != null) && tuning.isNotEmpty()) add(tuning)
+            if (!mine) r?.strengthDb?.let { add(Format.sMeter(it)) }
             ptt?.local?.let { add("poste utilisé sur place") }
             if (!micAllowed) add("réception seule")
             else if (!rig.armed && !mine) add("émission non autorisée")
             if (muted) add("muet")
+            if (selcallOpen) add("SELCALL ouvert")
             add(name)
         }
         val buttons = buildList {
@@ -132,8 +149,41 @@ object Car {
             }
             if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, "Reprendre la main"))
         }
-        return CarScreen(title.ifEmpty { name }, parts.joinToString(" · "), playing = !muted, connecting = false,
-            connected = true, buttons = buttons, error = notice)
+        val canSkip = !rig.listener && Favorites.list(rig.memories).isNotEmpty()
+        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq), playing = !muted, connecting = false,
+            connected = true, buttons = buttons, error = notice, secondary = parts.joinToString(" · "), canSkip = canSkip)
+    }
+
+    /** Longueur maximale du sous-titre des réglages (F3). */
+    const val SETTINGS_MAX = 40
+
+    /**
+     * Réglages ACTIFS du poste (F3), ordre fixe : préampli (ou ATT), NB, NR, puissance, EQ du téléphone. Un réglage coupé
+     * ou que la station ne publie pas (poste qui ne le gère pas) est omis. Trop long : séparateurs resserrés, puis coupé.
+     */
+    fun settings(hello: Hello?, state: State?, eq: Boolean): String {
+        val rig = state?.rig
+        val lv = rig?.levels.orEmpty()
+        val fn = rig?.functions.orEmpty()
+        val items = buildList {
+            val att = lv["ATT"] ?: 0.0
+            val preamp = lv["PREAMP"] ?: 0.0
+            when {
+                att > 0 -> add("ATT")
+                preamp > 0 -> add("P.AMP${Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty())}")
+            }
+            if (fn["NB"] == true) add("NB")
+            if (fn["NR"] == true) add("NR")
+            lv["RFPOWER"]?.takeIf { it > 0 }?.let { f ->
+                val max = hello?.maxPowerW ?: 0
+                add(if (max > 0) "${(f * max).roundToInt()} W" else "${(f * 100).roundToInt()} %")
+            }
+            if (eq) add("EQ")
+        }
+        val full = items.joinToString(" · ")
+        if (full.length <= SETTINGS_MAX) return full
+        val tight = items.joinToString("·") { it.replace(" ", "") }
+        return if (tight.length <= SETTINGS_MAX) tight else tight.take(SETTINGS_MAX - 1) + "…"
     }
 
     /** 14074000 -> « 14 074,00 kHz » (lisible d'un coup d'œil). */

@@ -8,13 +8,14 @@ import android.os.Bundle
 import android.service.media.MediaBrowserService
 import com.rfdiy.openremotetrx.logic.Artwork
 import com.rfdiy.openremotetrx.logic.Car
+import com.rfdiy.openremotetrx.logic.Favorites
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Radio
 
 /**
  * Android Auto (lot A2) : lecteur standard (toutes les voitures compatibles, filaire ou sans fil, aucun code propre à
  * une voiture). Ne possède ni la connexion ni l'état : il prête la session média commune (RigMedia) et liste ce que
- * l'on peut choisir sans rien saisir (stations, mémoires de la station, bandes).
+ * l'on peut choisir sans rien saisir (favoris, stations, mémoires de la station, bandes).
  *
  * Seuls Android Auto, Android Automotive, l'interface système et l'application elle-même peuvent s'y connecter.
  */
@@ -23,7 +24,7 @@ class RigAutoService : MediaBrowserService() {
         super.onCreate()
         RigMedia.acquire(this, RigMedia.USER_CAR)
         sessionToken = RigMedia.token
-        RigMedia.onBrowseChanged = { listOf(ROOT, STATIONS, MEMORIES).forEach { runCatching { notifyChildrenChanged(it) } } }
+        RigMedia.onBrowseChanged = { listOf(ROOT, FAVORITES, STATIONS, MEMORIES).forEach { runCatching { notifyChildrenChanged(it) } } }
     }
 
     override fun onDestroy() {
@@ -48,7 +49,10 @@ class RigAutoService : MediaBrowserService() {
         val ui = RigHub.ui.value
         val connected = ui.rig.status == LinkStatus.CONNECTED
         val items: List<MediaBrowser.MediaItem> = when (parentId) {
-            ROOT -> listOf(
+            ROOT -> listOfNotNull(
+                Favorites.list(ui.rig.memories).takeIf { connected && it.isNotEmpty() }?.let {
+                    folder(FAVORITES, "Favoris", "${it.size} favoris : Suivant / Précédent au volant")
+                },
                 folder(STATIONS, "Stations", ui.station?.name?.let { "Connecté : $it" } ?: "Se connecter"),
                 folder(MEMORIES, "Mémoires", if (connected) "${ui.rig.memories.size} mémoires" else "Station non connectée"),
                 folder(BANDS, "Bandes", "Dernière fréquence de la bande"),
@@ -59,6 +63,9 @@ class RigAutoService : MediaBrowserService() {
                     add(playable("$STATION:${account.id}", account.name, if (current) "connectée" else account.url))
                 }
                 if (ui.rig.status != LinkStatus.DISCONNECTED) add(playable("$DISCONNECT:", "Déconnecter", ui.station?.name ?: ""))
+            }
+            FAVORITES -> if (!connected) emptyList() else Favorites.list(ui.rig.memories).map { m ->
+                playable("$MEMORY:${m.id}", "★ ${m.name}", "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}", Artwork.key(true, m.hz))
             }
             MEMORIES -> if (!connected) emptyList() else ui.rig.memories.map { m ->
                 playable("$MEMORY:${m.id}", (if (m.favorite) "★ " else "") + m.name, "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}",
@@ -84,6 +91,7 @@ class RigAutoService : MediaBrowserService() {
     companion object {
         const val AUTO = "com.google.android.projection.gearhead"
         const val ROOT = "root"
+        const val FAVORITES = "favorites"
         const val STATIONS = "stations"
         const val MEMORIES = "memories"
         const val BANDS = "bands"

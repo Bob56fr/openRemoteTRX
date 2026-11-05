@@ -38,8 +38,12 @@ class CarTest {
     @Test
     fun `reception non armee - STOP et Autoriser, jamais EMETTRE`() {
         val s = Car.screen(rig(ptt(false, false), armed = false), "Maison", muted = false, micAllowed = true)
-        assertEquals("7 100,00 kHz LSB", s.title)
-        assertEquals("S7 · 40 mètres · émission non autorisée · Maison", s.subtitle)
+        assertEquals("40 mètres", s.title)                          // F1 : nom de la mémoire en titre
+        assertEquals("7 100,00 kHz LSB · S7 · émission non autorisée · Maison", s.secondary)
+        assertEquals("", s.subtitle)                                // F3 : aucun réglage actif publié
+        val off = Car.screen(rig(ptt(false, false), armed = false, hz = 7_150_000), "Maison", false, true)
+        assertEquals("7 150,00 kHz LSB", off.title)                // hors mémoire : fréquence et mode
+        assertEquals("S7 · émission non autorisée · Maison", off.secondary)
         assertEquals(listOf(CarAction.STOP, CarAction.ARM), ids(s))
     }
 
@@ -83,7 +87,7 @@ class CarTest {
         val rx = Car.screen(rig(ptt(false, false), true), "M", muted = true, micAllowed = false)
         assertEquals(listOf(CarAction.STOP, CarAction.LOCK_INFO), ids(rx))
         assertFalse(rx.playing)
-        assertTrue("réception seule" in rx.subtitle && "muet" in rx.subtitle)
+        assertTrue("réception seule" in rx.secondary && "muet" in rx.secondary)
         assertTrue(CarAction.RELEASE_LOCAL in ids(Car.screen(rig(ptt(false, false, canRelease = true), false), "M", false, true)))
     }
 
