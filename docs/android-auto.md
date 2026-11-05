@@ -136,3 +136,26 @@ seconde ; boutons, cadenas et état d'émission aussitôt.
 
 `M:7` n'est pas un numéro de mémoire du poste : la station identifie ses mémoires par un code, et l'IC-7300MK2 ne dit
 pas sur quelle mémoire interne il est (`get_vfo` illisible). Le rang change si l'on ajoute ou retire des mémoires.
+
+## 6. Format de l'écran (demande de l'utilisateur, étape 130)
+
+Remplace le tableau du § 5 pour le titre et le sous-titre. Seules les mémoires FAVORITES existent sur la voiture
+(Parcourir > Favoris ; l'ancien dossier « Mémoires » est retiré ; la recherche vocale ne cherche que les favoris).
+
+```
+27.430.00
+S3  M: 430  NB NR  Preamp 100w
+```
+```
+6.660.00
+S4  VFO  NB NR  100w
+```
+
+- Titre : TOUJOURS la fréquence, `MHz.kHz.10 Hz` (`27.430.00`) ; celle du favori choisi au volant pendant les 300 ms
+  d'attente ; en émission : `27.430.00 ÉMISSION 1:05` (sécurité : l'émission doit se voir).
+- Sous-titre, groupes séparés par deux espaces : niveau (`S3`, absent en émission) ; `M: <nom du favori>` (12 caractères
+  au plus) ou `VFO` ; `NB NR` actifs ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, puissance `100w` (`50%` si la
+  station ne connaît pas la puissance maximale), `EQ` (égaliseur de la voix émise en service). Seulement ce qui est actif
+  et publié par la station ; 40 caractères au plus (un seul espace entre groupes, puis coupé).
+- Le mode n'est plus affiché (absent des exemples de l'utilisateur) ; il reste dans la ligne secondaire, que le DHU
+  n'affiche pas.

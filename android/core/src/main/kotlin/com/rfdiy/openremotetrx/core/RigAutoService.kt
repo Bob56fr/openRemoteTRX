@@ -24,7 +24,7 @@ class RigAutoService : MediaBrowserService() {
         super.onCreate()
         RigMedia.acquire(this, RigMedia.USER_CAR)
         sessionToken = RigMedia.token
-        RigMedia.onBrowseChanged = { listOf(ROOT, FAVORITES, STATIONS, MEMORIES).forEach { runCatching { notifyChildrenChanged(it) } } }
+        RigMedia.onBrowseChanged = { listOf(ROOT, FAVORITES, STATIONS).forEach { runCatching { notifyChildrenChanged(it) } } }
     }
 
     override fun onDestroy() {
@@ -49,12 +49,10 @@ class RigAutoService : MediaBrowserService() {
         val ui = RigHub.ui.value
         val connected = ui.rig.status == LinkStatus.CONNECTED
         val items: List<MediaBrowser.MediaItem> = when (parentId) {
-            ROOT -> listOfNotNull(
-                Favorites.list(ui.rig.memories).takeIf { connected && it.isNotEmpty() }?.let {
-                    folder(FAVORITES, "Favoris", "${it.size} favoris : Suivant / Précédent au volant")
-                },
+            // Seules les mémoires FAVORITES existent sur la voiture (demande de l'utilisateur).
+            ROOT -> listOf(
+                folder(FAVORITES, "Favoris", if (connected) "${Favorites.list(ui.rig.memories).size} favoris : ◀★ ★▶ ou volant" else "Station non connectée"),
                 folder(STATIONS, "Stations", ui.station?.name?.let { "Connecté : $it" } ?: "Se connecter"),
-                folder(MEMORIES, "Mémoires", if (connected) "${ui.rig.memories.size} mémoires" else "Station non connectée"),
                 folder(BANDS, "Bandes", "Dernière fréquence de la bande"),
             )
             STATIONS -> buildList {
@@ -66,10 +64,6 @@ class RigAutoService : MediaBrowserService() {
             }
             FAVORITES -> if (!connected) emptyList() else Favorites.list(ui.rig.memories).map { m ->
                 playable("$MEMORY:${m.id}", "★ ${m.name}", "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}", Artwork.key(true, m.hz))
-            }
-            MEMORIES -> if (!connected) emptyList() else ui.rig.memories.map { m ->
-                playable("$MEMORY:${m.id}", (if (m.favorite) "★ " else "") + m.name, "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}",
-                    Artwork.key(true, m.hz))
             }
             BANDS -> if (!connected) emptyList() else Radio.BANDS.map { b -> playable("$BAND:${b.key}", "${b.key} m", Car.frequency(b.start) ?: "", Artwork.bandKey(b.key)) }
             else -> emptyList()
@@ -93,7 +87,6 @@ class RigAutoService : MediaBrowserService() {
         const val ROOT = "root"
         const val FAVORITES = "favorites"
         const val STATIONS = "stations"
-        const val MEMORIES = "memories"
         const val BANDS = "bands"
         const val STATION = "station"
         const val MEMORY = "memory"

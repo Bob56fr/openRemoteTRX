@@ -118,16 +118,18 @@ object Car {
         }
         val r = rig.state?.rig
         val mine = ptt?.mine == true && ptt.transmitting
-        val tuning = listOfNotNull(frequency(r?.frequencyHz), r?.mode?.let { Radio.modeLabel(it) }).joinToString(" ")
-        val memory = preview ?: memoryAt(rig.memories, r?.frequencyHz, r?.mode)
+        // Seules les mémoires FAVORITES existent sur la voiture (demande de l'utilisateur).
+        val favorites = Favorites.list(rig.memories)
+        val memory = preview ?: memoryAt(favorites, r?.frequencyHz, r?.mode)
+        // Titre : TOUJOURS la fréquence (celle du favori choisi au volant, pas encore envoyé) ; en émission, l'état en plus.
+        val freq = carFrequency(preview?.hz ?: r?.frequencyHz).orEmpty()
         val title = when {
-            mine -> "ÉMISSION EN COURS" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
-            ptt?.transmitting == true -> "Émission : ${ptt.label}"
-            memory != null -> memory.name
-            else -> tuning
-        }
+            mine -> "$freq ÉMISSION" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
+            ptt?.transmitting == true -> "$freq Émission : ${ptt.label}"
+            else -> freq
+        }.trim()
         val parts = buildList {
-            if ((mine || memory != null) && tuning.isNotEmpty()) add(tuning)
+            r?.mode?.let { add(Radio.modeLabel(it)) }
             ptt?.local?.let { add("poste utilisé sur place") }
             if (!micAllowed) add("réception seule")
             else if (!rig.armed && !mine) add("émission non autorisée")
@@ -153,12 +155,12 @@ object Car {
             }
             if (ptt?.canReleaseLocal == true) add(CarButton(CarAction.RELEASE_LOCAL, "Reprendre la main"))
         }
-        val canSkip = !rig.listener && Favorites.list(rig.memories).isNotEmpty()
-        // En tête du sous-titre (la voiture n'affiche pas la ligne secondaire) : niveau, puis rang de la mémoire dans la
-        // liste Mémoires (« M:12 ») ou le VFO (demande de l'utilisateur).
-        val place = memoryRank(rig.memories, memory)?.let { "M:$it" } ?: Indicators.vfoLabel(r?.vfo).ifEmpty { "VFO" }
-        val lead = listOfNotNull(if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }, place).joinToString(" ")
-        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, lead), playing = !muted, connecting = false,
+        val canSkip = !rig.listener && favorites.isNotEmpty()
+        // Sous-titre (la voiture n'affiche pas la ligne secondaire) : niveau, puis « M: <nom du favori> » ou « VFO », puis
+        // les réglages (exemples de l'utilisateur : « S3  M: 430  NB NR  Preamp 100w », « S4  VFO  NB NR  100w »).
+        val place = memory?.let { "M: ${it.name.take(NAME_MAX)}" } ?: "VFO"
+        val signal = if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }
+        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, listOfNotNull(signal, place)), playing = !muted, connecting = false,
             connected = true, buttons = arrange(buttons, canSkip), error = notice, secondary = parts.joinToString(" · "),
             canSkip = canSkip)
     }
@@ -181,42 +183,46 @@ object Car {
     private fun order(ptt: List<CarButton>, stop: List<CarButton>, mem: List<CarButton>, rest: List<CarButton>) =
         ptt + stop + mem + rest
 
-    /** Rang (à partir de 1) de la mémoire dans la liste Mémoires de l'application (favorites d'abord, puis fréquence). */
-    fun memoryRank(memories: List<Memory>, memory: Memory?): Int? =
-        memory?.let { m -> memories.indexOfFirst { it.id == m.id }.takeIf { it >= 0 }?.plus(1) }
-
-    /** Longueur maximale du sous-titre des réglages (F3). */
+    /** Longueur maximale du sous-titre (F3) et du nom de mémoire qu'il montre. */
     const val SETTINGS_MAX = 40
+    const val NAME_MAX = 12
 
     /**
-     * Réglages ACTIFS du poste (F3), ordre fixe : préampli (ou ATT), NB, NR, puissance, EQ du téléphone. Un réglage coupé
-     * ou que la station ne publie pas (poste qui ne le gère pas) est omis. Trop long : séparateurs resserrés, puis coupé.
-     * `lead` (niveau et mémoire / VFO) passe en tête, jamais abrégé.
+     * Sous-titre (F3, format de l'utilisateur) : groupes séparés par deux espaces, mots d'un groupe par un espace.
+     * `lead` (niveau, « M: nom » ou « VFO ») d'abord ; puis NB NR ; puis préampli (« Preamp », « Preamp2 ») ou ATT,
+     * puissance (« 100w », « 50% » si la station ne connaît pas la puissance maximale), EQ du téléphone. Seulement ce qui
+     * est ACTIF et publié par la station (un poste qui ne le gère pas ne le montre jamais). Trop long : un espace entre
+     * les groupes, puis coupé.
      */
-    fun settings(hello: Hello?, state: State?, eq: Boolean, lead: String = ""): String {
+    fun settings(hello: Hello?, state: State?, eq: Boolean, lead: List<String> = emptyList()): String {
         val rig = state?.rig
         val lv = rig?.levels.orEmpty()
         val fn = rig?.functions.orEmpty()
-        val items = buildList {
-            if (lead.isNotEmpty()) add(lead)
+        val functions = listOfNotNull("NB".takeIf { fn["NB"] == true }, "NR".takeIf { fn["NR"] == true })
+        val levels = buildList {
             val att = lv["ATT"] ?: 0.0
             val preamp = lv["PREAMP"] ?: 0.0
             when {
                 att > 0 -> add("ATT")
-                preamp > 0 -> add("P.AMP${Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty())}")
+                preamp > 0 -> add("Preamp" + Indicators.preampNumber(preamp, hello?.capabilities?.preamps.orEmpty()).let { if (it > 1) "$it" else "" })
             }
-            if (fn["NB"] == true) add("NB")
-            if (fn["NR"] == true) add("NR")
             lv["RFPOWER"]?.takeIf { it > 0 }?.let { f ->
                 val max = hello?.maxPowerW ?: 0
-                add(if (max > 0) "${(f * max).roundToInt()} W" else "${(f * 100).roundToInt()} %")
+                add(if (max > 0) "${(f * max).roundToInt()}w" else "${(f * 100).roundToInt()}%")
             }
             if (eq) add("EQ")
         }
-        val full = items.joinToString(" · ")
+        val groups = (lead + listOf(functions.joinToString(" "), levels.joinToString(" "))).filter { it.isNotEmpty() }
+        val full = groups.joinToString("  ")
         if (full.length <= SETTINGS_MAX) return full
-        val tight = items.joinToString("·") { if (it == lead) it else it.replace(" ", "") }
+        val tight = groups.joinToString(" ")
         return if (tight.length <= SETTINGS_MAX) tight else tight.take(SETTINGS_MAX - 1) + "…"
+    }
+
+    /** Fréquence de la voiture (format de l'utilisateur) : 27430000 -> « 27.430.00 », 6660000 -> « 6.660.00 ». */
+    fun carFrequency(hz: Long?): String? {
+        if (hz == null || hz < 0) return null
+        return String.format(Locale.ROOT, "%d.%03d.%02d", hz / 1_000_000, (hz / 1000) % 1000, (hz % 1000) / 10)
     }
 
     /** 14074000 -> « 14 074,00 kHz » (lisible d'un coup d'œil). */

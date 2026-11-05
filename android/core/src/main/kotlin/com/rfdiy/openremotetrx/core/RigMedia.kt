@@ -17,6 +17,7 @@ import com.rfdiy.openremotetrx.logic.CarAction
 import com.rfdiy.openremotetrx.logic.CarIcon
 import com.rfdiy.openremotetrx.logic.CarScreen
 import com.rfdiy.openremotetrx.logic.FavoriteStepper
+import com.rfdiy.openremotetrx.logic.Favorites
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Voice
 import com.rfdiy.openremotetrx.logic.VoiceAction
@@ -212,7 +213,7 @@ internal object RigMedia {
             return
         }
         val r = rig.state?.rig
-        val current = Car.memoryAt(rig.memories, r?.frequencyHz, r?.mode)
+        val current = Car.memoryAt(Favorites.list(rig.memories), r?.frequencyHz, r?.mode)
         stepper.press(android.os.SystemClock.elapsedRealtime(), forward, rig.memories, current, r?.frequencyHz) ?: return
         refresh(force = true)
         main.removeCallbacks(sendFavorite)
@@ -327,7 +328,7 @@ internal object RigMedia {
         }
 
         override fun onPlayFromSearch(query: String?, extras: Bundle?) {
-            when (val v = Voice.parse(query, RigHub.ui.value.rig.memories)) {
+            when (val v = Voice.parse(query, Favorites.list(RigHub.ui.value.rig.memories))) {   // favorites seulement sur la voiture
                 VoiceAction.Listen -> RigHub.setMuted(false)
                 is VoiceAction.RecallMemory -> RigHub.recallMemory(v.memory.id)
                 is VoiceAction.SelectBand -> RigHub.selectBand(v.key)

@@ -38,12 +38,12 @@ class CarTest {
     @Test
     fun `reception non armee - STOP et Autoriser, jamais EMETTRE`() {
         val s = Car.screen(rig(ptt(false, false), armed = false), "Maison", muted = false, micAllowed = true)
-        assertEquals("40 mètres", s.title)                          // F1 : nom de la mémoire en titre
-        assertEquals("7 100,00 kHz LSB · émission non autorisée · Maison", s.secondary)
-        assertEquals("S7 M:1", s.subtitle)                          // niveau et rang dans Mémoires ; aucun réglage publié
-        val off = Car.screen(rig(ptt(false, false), armed = false, hz = 7_150_000), "Maison", false, true)
-        assertEquals("7 150,00 kHz LSB", off.title)                // hors mémoire : fréquence et mode
-        assertEquals("S7 VFO", off.subtitle)                        // hors mémoire : VFO
+        assertEquals("7.100.00", s.title)                           // toujours la fréquence (format de l'utilisateur)
+        assertEquals("S7  VFO", s.subtitle)                         // mémoire NON favorite : VFO ; aucun réglage publié
+        assertEquals("LSB · émission non autorisée · Maison", s.secondary)
+        val fav = Car.screen(rig(ptt(false, false), armed = false).let { it.copy(memories = it.memories.map { m -> m.copy(favorite = true) }) },
+            "Maison", false, true)
+        assertEquals("S7  M: 40 mètres", fav.subtitle)              // favori : son nom, pas son rang
         assertEquals(listOf(CarAction.ARM, CarAction.STOP), ids(s))   // cadenas à la place du micro
     }
 
@@ -76,7 +76,7 @@ class CarTest {
     fun `armee - EMETTRE, en emission - FIN D'EMISSION et STOP, etat explicite`() {
         assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.DISARM), ids(Car.screen(rig(ptt(false, false), true), "M", false, true)))
         val tx = Car.screen(rig(ptt(true, true, tot = 65), true), "M", false, true)
-        assertEquals("ÉMISSION EN COURS 1:05", tx.title)
+        assertEquals("7.100.00 ÉMISSION 1:05", tx.title)
         assertEquals("FIN D'ÉMISSION", tx.buttons.first().label)
         assertEquals(listOf(CarAction.PTT, CarAction.STOP, CarAction.LOCK_INFO), ids(tx))
     }

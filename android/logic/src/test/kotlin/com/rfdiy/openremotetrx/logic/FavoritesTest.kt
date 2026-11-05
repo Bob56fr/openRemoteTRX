@@ -65,8 +65,14 @@ class FavoritesTest {
         assertTrue(Car.screen(withFav, "M", false, true).canSkip)
         assertFalse(Car.screen(withFav.copy(memories = listOf(plain)), "M", false, true).canSkip)
         assertFalse(Car.screen(withFav.copy(listener = true), "M", false, true).canSkip)
-        assertEquals("Réseau 40", Car.screen(withFav, "M", false, true, preview = null).title)
-        assertEquals("QSO 20", Car.screen(withFav, "M", false, true, preview = b).title)   // choisi au volant, pas encore envoyé
+        assertEquals("7.100.00", Car.screen(withFav, "M", false, true, preview = null).title)
+        assertEquals("M: Réseau 40", Car.screen(withFav, "M", false, true).subtitle)
+        val chosen = Car.screen(withFav, "M", false, true, preview = b)    // choisi au volant, pas encore envoyé
+        assertEquals("14.195.00", chosen.title)
+        assertEquals("M: QSO 20", chosen.subtitle)
+        assertEquals("27.430.00", Car.carFrequency(27_430_000))
+        assertEquals("6.660.00", Car.carFrequency(6_660_000))
+        assertEquals("145.600.00", Car.carFrequency(145_600_000))
     }
 
     @Test
@@ -78,8 +84,6 @@ class FavoritesTest {
         assertFalse(CarAction.MEM_NEXT.takesTransmission)
         val none = Car.screen(armed.copy(memories = listOf(plain)), "M", false, true).buttons.map { it.action }
         assertFalse(CarAction.MEM_NEXT in none)                             // aucun favori : pas de bouton mémoire
-        assertEquals(3, Car.memoryRank(all, a))
-        assertNull(Car.memoryRank(all, null))
     }
 
     private fun state(levels: String, functions: String) = ServerMessages.decode(
@@ -91,12 +95,14 @@ class FavoritesTest {
     ) as Hello
 
     @Test
-    fun `sous-titre - reglages actifs seulement, ordre fixe, puissance au watt`() {
-        val s = state(""""PREAMP":10,"ATT":0,"RFPOWER":0.5""", """"NB":true,"NR":true""")
-        assertEquals("P.AMP1 · NB · NR · 50 W · EQ", Car.settings(hello(100), s, eq = true))
-        assertEquals("P.AMP1 · NB · NR · 50 W", Car.settings(hello(100), s, eq = false))
-        assertEquals("ATT · NR · 47 W", Car.settings(hello(100), state(""""PREAMP":10,"ATT":12,"RFPOWER":0.474""", """"NB":false,"NR":true"""), false))
-        assertEquals("50 %", Car.settings(hello(0), state(""""RFPOWER":0.5""", ""), false))   // puissance maxi inconnue
+    fun `sous-titre - format de l'utilisateur, reglages actifs seulement`() {
+        val s = state(""""PREAMP":10,"ATT":0,"RFPOWER":1.0""", """"NB":true,"NR":true""")
+        assertEquals("S3  M: 430  NB NR  Preamp 100w", Car.settings(hello(100), s, eq = false, lead = listOf("S3", "M: 430")))
+        assertEquals("S4  VFO  NB NR  100w", Car.settings(hello(100), state(""""RFPOWER":1.0""", """"NB":true,"NR":true"""), false, listOf("S4", "VFO")))
+        assertEquals("NB NR  Preamp 100w EQ", Car.settings(hello(100), s, eq = true))
+        assertEquals("NR  ATT 47w", Car.settings(hello(100), state(""""PREAMP":10,"ATT":12,"RFPOWER":0.474""", """"NB":false,"NR":true"""), false))
+        assertEquals("Preamp2", Car.settings(hello(100), state(""""PREAMP":20""", ""), false))
+        assertEquals("50%", Car.settings(hello(0), state(""""RFPOWER":0.5""", ""), false))   // puissance maxi inconnue
         assertEquals("", Car.settings(hello(100), state("", ""), false))                       // rien de publié : rien
         assertEquals("EQ", Car.settings(null, null, true))
     }
