@@ -444,16 +444,22 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
   dans les autres sections (`notify_url` intact : un test l'impose).
 - Notice publique `docs/station-toml/contenu.toml` mise à jour (convention du dépôt).
 
-### 12.2 Superviseur (EF9)
+### 12.2 Alertes (EF9)
 
-- Il lit `net` dans le fichier d'état et envoie l'alerte ntfy :
+Décision technique du lot 2a (étape 137) : les alertes partent de la PASSERELLE, par le même `notify_url` que celles des
+visiteurs, et non du superviseur : c'est elle qui sait quand une coupure est close et diagnostiquée. Le superviseur
+n'est pas modifié (une passerelle arrêtée est déjà signalée par lui).
+
+- La passerelle envoie l'alerte ntfy :
   - coupure close plus longue que `alert_outage_s` ;
   - perte sur 60 s au-dessus de `loss_alert_pct` ;
   - profil partagé (§ 8).
 - Message : durée, tronçon probable, appareil (type et système, jamais l'identifiant).
 - Au plus une alerte par `alert_cooldown_s`, toutes causes confondues ; le profil partagé a son propre délai de 24 h.
-- Le superviseur ne fait rien d'autre. Une sonde muette n'est pas une panne de la station (pas de reprise, pas de
-  mode sûr). Le module est relancé comme tout module.
+- La perte sur 60 s n'alerte pas pendant une coupure ni dans la minute qui suit (déjà alertée comme coupure), et
+  une seule fois jusqu'au retour sous le palier orange.
+- Une sonde muette n'est pas une panne de la station (pas de reprise, pas de mode sûr). Le module des sondes est
+  relancé comme tout module.
 
 ### 12.3 TRX Console et `trx-netreport`
 
@@ -499,7 +505,8 @@ Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opé
 | Lot | Contenu | Où |
 |---|---|---|
 | 1 | Calculs (§ 4.4, 4.5, 7, 8.3), vecteurs partagés, protocole (§ 11) dans `protocole.md` et `tests/protocol/` | Python, client.js, Kotlin `:logic` |
-| 2 | Station : `net_ping`/`net_pong`, `state.net`, `device`, D1/D2, journal, heures, coupures, diagnostic, `net_*`, module des sondes, `[netprobe]`, superviseur et ntfy | passerelle, module, superviseur |
+| 2a | FAIT (étape 137, station 0.106.0) : passerelle (`net_ping`/`net_pong`, `state.net`, `device`, D1/D2/D3, journal, heures, coupures, diagnostic sans les sondes, `net_*`, `[netprobe]`, alertes ntfy) ; partie protocole de la page (battements, résumés de 10 s, remise après une coupure, sans affichage) ; classes des commandes de l'application | passerelle, page, application |
+| 2b | Module des sondes de la station (box, Internet : ICMP sinon TCP), faits `lan_probe_down` / `internet_probe_down` du diagnostic, `net_export` (zip anonyme) | module, passerelle |
 | 3 | Page : battement, getStats, `/health`, backlog, indicateur, accordéon, vue 30 jours, effacement, export | page |
 | 4 | trx-monitor (ligne et panneau), TRX Console menu 23, `trx-netreport`, aide du menu 19 | station |
 | 5 | Application : comme la page (pastille, panneau, écran des statistiques et des seuils, export partagé), « Liaison faible » en Android Auto et en mode conduite | Android |

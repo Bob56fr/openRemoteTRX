@@ -52,6 +52,7 @@ class GatewayStatus:
     presence: dict = field(default_factory=dict)  # connexions : opérateurs et visiteurs (gateway/api/access.py, vue opérateur)
     swr: dict = field(default_factory=dict)       # mesure de TOS en cours (swr/runner.py) : running, owner, state, index, total
     breizh: dict = field(default_factory=dict)    # Breizh Audio Box (gateway/audio/route.py) : state, route, rtt_ms, late, lost
+    net: dict = field(default_factory=dict)       # sonde réseau (netprobe/probe.py) : clients, profil VPN partagé, dernière coupure
 
 
 def write_status(path: str | Path, status: GatewayStatus) -> None:
@@ -84,14 +85,15 @@ def read_status(path: str | Path) -> GatewayStatus | None:
                 or not isinstance(rig, dict) or not isinstance(clients, list)):
             return None
         audio, spectrum, presence = data.get("audio", {}), data.get("spectrum", {}), data.get("presence", {})
-        swr, breizh = data.get("swr", {}), data.get("breizh", {})
+        swr, breizh, net = data.get("swr", {}), data.get("breizh", {}), data.get("net", {})
         return GatewayStatus(pid=pid, seq=seq, written_at=float(data.get("written_at", 0.0)),
                              ptt=ptt, rig=rig, clients=[str(c) for c in clients],
                              audio=audio if isinstance(audio, dict) else {},
                              spectrum=spectrum if isinstance(spectrum, dict) else {},
                              presence=presence if isinstance(presence, dict) else {},
                              swr=swr if isinstance(swr, dict) else {},
-                             breizh=breizh if isinstance(breizh, dict) else {})
+                             breizh=breizh if isinstance(breizh, dict) else {},
+                             net=net if isinstance(net, dict) else {})
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

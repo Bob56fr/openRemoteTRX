@@ -131,7 +131,7 @@ class _Peer:
 class PeerManager:
     def __init__(self, ctrl, link, pipeline, capabilities, *, max_peers: int = 4, peer_timeout_s: float = 20.0,
                  ice_servers: list[str] | None = None, memories=None, layouts=None, spectrum=None, reports=None,
-                 access=None, muted=None, alert=None, voices=None, swr=None):
+                 access=None, muted=None, alert=None, voices=None, swr=None, netprobe=None):
         self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
         self.access = access                    # AccessControl : rôles, quotas, présence ; None = tout client est opérateur
         self.listener_muted = muted             # () -> bool : silence pour les visiteurs (réception hors bandes)
@@ -145,6 +145,7 @@ class PeerManager:
         self.layouts = layouts
         self.voices = voices                    # VoiceProfileStore : profils d'égaliseur de chaque opérateur
         self.swr = swr                          # SwrRunner : mesure de TOS (une seule à la fois, toutes sessions confondues)
+        self.netprobe = netprobe                # NetProbeHub : sonde de qualité réseau ([netprobe] enabled), sinon None
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
@@ -157,7 +158,8 @@ class PeerManager:
         task.add_done_callback(self._tasks.discard)
         return task
 
-    async def handle_offer(self, client_id: str, sdp: str, sdp_type: str, source: str = "") -> dict:
+    async def handle_offer(self, client_id: str, sdp: str, sdp_type: str, source: str = "", device: str = "",
+                           agent: str = "") -> dict:
         """AccessRefused (access.py) : compte désactivé, quota atteint, opérateur absent..."""
         await self.close_peer(client_id)                        # reconnexion : l'ancienne connexion est remplacée
         if self.access is not None:
@@ -194,6 +196,7 @@ class PeerManager:
                                      spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
                                      reports=self.reports, role=role, access=self.access, alert=self.alert,
                                      kick_listener=self._kick_listener, voices=self.voices, swr=self.swr,
+                                     netprobe=self.netprobe, device=device, agent=agent, source=source,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             peer.session = session

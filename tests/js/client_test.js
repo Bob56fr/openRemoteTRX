@@ -312,7 +312,8 @@ test("connexion avec micro : micro fermé, mot de passe envoyé une seule fois",
   const w = makeWorld();
   await w.connected();
   assert.equal(w.env.offers.length, 1);
-  assert.deepEqual(Object.keys(w.env.offers[0]).sort(), ["client_id", "password", "sdp", "type"]);
+  assert.deepEqual(Object.keys(w.env.offers[0]).sort(), ["agent", "client_id", "device", "password", "sdp", "type"]);
+  assert.match(w.env.offers[0].device, /^[0-9a-f]{32}$/); assert.equal(w.env.offers[0].agent, "page");   // sonde réseau
   assert.equal(w.env.offers[0].password, "mot de passe de test"); assert.equal(JSON.stringify(w.env.offers[0]).includes("token"), false);
   assert.equal(w.pc().dc.label, "control"); assert.equal(w.pc().tracks.length, 1);
   assert.equal(w.mic.enabled, false);                                       // fermé tant que l'émission n'est pas confirmée
@@ -1647,6 +1648,67 @@ test("Breizh : événements, alerte du repli pendant MON émission, journal, com
   assert.equal(w.sentCommands("breizh_set")[0].bypass, false); assert.equal(w.sentCommands("breizh_reactivate").length, 1);
   w.hello();                                                                     // nouvelle connexion : journal vidé
   assert.deepEqual(w.client.breizhEvents, []);
+});
+
+test("sonde réseau : rien sans la fonction « netprobe », appareil gardé d'une connexion à l'autre", async () => {
+  const w = makeWorld();
+  await w.connected();
+  for (let i = 0; i < 12; i++) { w.env.advance(1000); w.state(); w.env.tick(); }   // la station parle : pas de « silence »
+  assert.equal(w.sentCommands("net_ping").length, 0); assert.equal(w.sentCommands("net_report").length, 0);
+  w.dc().onmessage({ data: JSON.stringify({ type: "net_ping", seq: 3, t: 500 }) });   // une station plus récente : écho quand même
+  assert.equal(w.sentCommands("net_pong")[0].seq, 3);
+  const device = w.env.offers[0].device;
+  await w.connected();
+  assert.equal(w.env.offers[1].device, device);                                    // même appareil : rangé dans le stockage
+  assert.equal(w.client.netView(), null);
+});
+
+test("sonde réseau : battements, échos, résumés de 10 s, remise après une coupure, commandes", async () => {
+  const w = makeWorld();
+  await w.client.connect({ clientId: "phone", password: "mot de passe de test", useMic: false });
+  w.hello({ features: ["ptt", "netprobe"], role: "operator" });
+  for (let i = 0; i < 12; i++) {
+    w.env.advance(1000); w.env.tick();
+    const ping = w.sentCommands("net_ping").at(-1);
+    w.env.advance(40);
+    w.dc().onmessage({ data: JSON.stringify({ type: "net_pong", seq: ping.seq, t: ping.t, tr: 1 }) });
+  }
+  const pings = w.sentCommands("net_ping");
+  assert.ok(pings.length >= 11 && pings.length <= 13); assert.ok(Number.isInteger(pings[0].t));
+  assert.equal(typeof pings[0].w, "number"); assert.equal(pings[1].w, undefined);   // heure du client : une fois par minute
+  const reports = w.sentCommands("net_report");
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].report.loss_pct, 0); assert.equal(reports[0].report.rtt_mean_ms, 40);
+  assert.equal(reports[0].report.health_ok, 0); assert.equal(reports[0].report.ice, null);
+  w.dc().onmessage({ data: JSON.stringify({ type: "net_ping", seq: 9, t: 777 }) });
+  assert.deepEqual(w.sentCommands("net_pong").at(-1), { cmd: "net_pong", seq: 9, t: 777, tr: w.env.now() });
+  w.dc().onmessage({ data: JSON.stringify({ type: "net_event", event: "outage", outage: { diagnosis: "vpn_shared" } }) });
+  assert.equal(w.client.netEvents[0].outage.diagnosis, "vpn_shared");
+  w.state();
+  for (const p of [w.client.netStats(7), w.client.netClear(), w.client.netVpnIgnore("192.168.27.2"),
+                   w.client.netThresholds({ net_type: "4g", reset: true })]) p.catch(() => {});   // sans réponse ici
+  assert.equal(w.sentCommands("net_stats")[0].days, 7); assert.equal(w.sentCommands("net_clear").length, 1);
+  assert.equal(w.sentCommands("net_vpn_ignore")[0].address, "192.168.27.2");
+  assert.equal(w.sentCommands("net_thresholds")[0].reset, true);
+  // coupure puis reconnexion : les résumés d'avant la perte sont remis à la station
+  w.client.disconnect(true);
+  await w.client.connect({ clientId: "phone", password: "mot de passe de test", useMic: false }, true);
+  w.hello({ features: ["ptt", "netprobe"], role: "operator" });
+  const backlog = w.sentCommands("net_backlog");
+  assert.equal(backlog.length, 1); assert.equal(backlog[0].reports.length, 1);
+  assert.equal(Object.keys(backlog[0])[0], "cmd");                                 // « cmd » en premier : message long admis
+});
+
+test("sonde réseau : un visiteur mesure son lien mais ne remet rien", async () => {
+  const w = makeWorld();
+  await w.client.connect({ clientId: "club1", password: "mot de passe de test", useMic: false });
+  w.hello({ features: ["netprobe"], role: "listener" });
+  for (let i = 0; i < 11; i++) { w.env.advance(1000); w.state(); w.env.tick(); }
+  assert.equal(w.sentCommands("net_ping").length, 11); assert.equal(w.sentCommands("net_report").length, 1);
+  w.client.disconnect(true);
+  await w.client.connect({ clientId: "club1", password: "mot de passe de test", useMic: false }, true);
+  w.hello({ features: ["netprobe"], role: "listener" });
+  assert.equal(w.sentCommands("net_backlog").length, 0);
 });
 
 test("sons de liaison : une interface dont le son plante ne gêne jamais la liaison", async () => {

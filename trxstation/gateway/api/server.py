@@ -19,6 +19,7 @@ from pathlib import Path
 from aiohttp import web
 
 from .access import AccessRefused
+from ...netprobe.report import clean_agent, clean_device
 from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
 from .webrtc import PeerLimitError, PeerManager
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
 WEB_FILES = {"/": ("index.html", "text/html"), "/client.js": ("client.js", "text/javascript"),
              "/client.css": ("client.css", "text/css"), "/ui.js": ("ui.js", "text/javascript"),
-             "/waterfall.js": ("waterfall.js", "text/javascript"), "/layout.js": ("layout.js", "text/javascript"), "/theme.js": ("theme.js", "text/javascript"), "/hfscope.js": ("hfscope.js", "text/javascript"), "/spots.js": ("spots.js", "text/javascript"), "/voice.js": ("voice.js", "text/javascript"), "/swr.js": ("swr.js", "text/javascript"), "/selcall.js": ("selcall.js", "text/javascript"), "/scrambler.js": ("scrambler.js", "text/javascript"), "/spatial.js": ("spatial.js", "text/javascript"), "/splash.webp": ("splash.webp", "image/webp"),
+             "/waterfall.js": ("waterfall.js", "text/javascript"), "/layout.js": ("layout.js", "text/javascript"), "/theme.js": ("theme.js", "text/javascript"), "/hfscope.js": ("hfscope.js", "text/javascript"), "/spots.js": ("spots.js", "text/javascript"), "/voice.js": ("voice.js", "text/javascript"), "/swr.js": ("swr.js", "text/javascript"), "/netprobe.js": ("netprobe.js", "text/javascript"), "/selcall.js": ("selcall.js", "text/javascript"), "/scrambler.js": ("scrambler.js", "text/javascript"), "/spatial.js": ("spatial.js", "text/javascript"), "/splash.webp": ("splash.webp", "image/webp"),
              "/logo-96.png": ("logo-96.png", "image/png")}   # logo OpenRemoteTRX (pied de l'image d'une mesure de TOS)
 SECURITY_HEADERS = {
     # aucune ressource externe, aucun script ni style en ligne : une page injectée ne pourrait pas lire le jeton
@@ -64,7 +65,10 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
             log.warning("connexion refusée pour « %s » depuis %s", client_id[:32], source[:64])
             return web.json_response({"error": "unauthorized"}, status=401)    # même réponse quelle que soit la cause
         try:
-            return web.json_response(await manager.handle_offer(client_id, sdp, sdp_type, source=source))
+            # device : identifiant tiré au hasard par le client, agent : « page Windows »... (sonde réseau, facultatifs)
+            return web.json_response(await manager.handle_offer(client_id, sdp, sdp_type, source=source,
+                                                                device=clean_device(data.get("device")),
+                                                                agent=clean_agent(data.get("agent"))))
         except AccessRefused as exc:
             log.warning("connexion de « %s » depuis %s refusée : %s", client_id[:32], source[:64], exc.reason)
             return web.json_response({"error": exc.reason, "message": exc.message}, status=exc.status)

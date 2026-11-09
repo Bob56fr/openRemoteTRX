@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from ...layout.catalog import MAX_PROFILE_BYTES
 from ..cat.client import FLOAT_LEVELS, INT_LEVELS, OFFSET_MAX_HZ, POWER_STEPS, WRITABLE_FUNCS
 from ..memories import ID_RE, validate_fields
+from ...netprobe.report import (EPOCH_MAX_MS, EPOCH_MIN_MS, ReportInvalid, clean_address, clean_backlog, clean_device,
+                                clean_report, clean_thresholds)
 
 PROTOCOL_VERSION = 1
 MAX_MESSAGE_BYTES = 2048
@@ -32,7 +34,11 @@ LAYOUT_SAVE_PREFIX = '{"cmd":"layout_save"'
 BUG_REPORT_PREFIX = '{"cmd":"bug_report"'
 MAX_BUG_REPORT_CHARS = 30_000
 MAX_BUG_MESSAGE_BYTES = 60_000                               # sous la taille maximale d'un message du canal (aiortc : 64 ko)
-LARGE_MESSAGES = {LAYOUT_SAVE_PREFIX: MAX_LAYOUT_MESSAGE_BYTES, BUG_REPORT_PREFIX: MAX_BUG_MESSAGE_BYTES}
+# Et pour les 10 dernières minutes de mesures réseau remises par un client après une coupure (sonde réseau).
+NET_BACKLOG_PREFIX = '{"cmd":"net_backlog"'
+MAX_NET_BACKLOG_BYTES = 60_000
+LARGE_MESSAGES = {LAYOUT_SAVE_PREFIX: MAX_LAYOUT_MESSAGE_BYTES, BUG_REPORT_PREFIX: MAX_BUG_MESSAGE_BYTES,
+                  NET_BACKLOG_PREFIX: MAX_NET_BACKLOG_BYTES}
 MODE_RE = re.compile(r"^[A-Za-z0-9\-]{1,16}$")
 COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_state",
             "set_squelch", "set_function", "set_level", "memory_save", "memory_delete", "memory_recall",
@@ -56,7 +62,12 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             # Breizh Audio Box (docs/breizh-cahier-des-charges.md) : OPÉRATEURS ; n'agissent que sur la route du micro
             "breizh_set",                    # volume retour (return_gain_db) et/ou « Direct » (bypass), prochaine émission
             "breizh_reactivate",             # reprendre Breizh après un repli (à la prochaine émission)
-            "breizh_log")                    # journal de la liaison (50 derniers événements)
+            "breizh_log",                    # journal de la liaison (50 derniers événements)
+            # sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesurent, n'agissent JAMAIS sur le poste ;
+            # net_ping / net_pong / net_report : sans réponse « result », admis pour un visiteur (son propre lien)
+            "net_ping", "net_pong", "net_report",
+            "net_backlog",                   # 10 dernières minutes du client après une coupure (opérateurs)
+            "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore")   # statistiques, effacement, seuils (opérateurs)
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -67,7 +78,8 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "voice_profiles",            # profils d'égaliseur de l'opérateur rangés sur la station (0.86.0+)
                      "swr",                       # mesure de TOS de l'antenne (0.90.0+)
                      "replay",                    # rediffusion d'un enregistrement de l'audio reçu (0.91.0+, accordée par l'assistant)
-                     "breizh")                    # Breizh Audio Box dans la chaîne d'émission (0.100.0+, [breizh] enabled)
+                     "breizh",                    # Breizh Audio Box dans la chaîne d'émission (0.100.0+, [breizh] enabled)
+                     "netprobe")                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -265,6 +277,31 @@ def parse_command(raw: str | bytes) -> Command:
         if not isinstance(account, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", account):
             raise ProtocolError("invalid_params", "account : identifiant d'un compte visiteur")
         params["account"] = account
+    elif name in ("net_ping", "net_pong"):
+        params["seq"] = _int(data.get("seq"), "seq", 0, 2**31 - 1)
+        params["t"] = _int(data.get("t"), "t", 0, 2**53)
+        if name == "net_pong":
+            params["tr"] = _int(data.get("tr"), "tr", 0, 2**53)
+        elif data.get("w") is not None:
+            params["w"] = _int(data.get("w"), "w", EPOCH_MIN_MS, EPOCH_MAX_MS)
+    elif name.startswith("net_") and name not in ("net_clear",):
+        try:
+            if name == "net_report":
+                params["report"] = clean_report(data.get("report"))
+            elif name == "net_backlog":
+                params["reports"] = clean_backlog(data.get("reports"))
+            elif name == "net_stats":
+                params["days"] = _int(data.get("days", 30), "days", 1, 90)
+                device = data.get("device", "")
+                if device != "" and not clean_device(device):
+                    raise ReportInvalid("device : identifiant d'appareil (32 caractères hexadécimaux) ou vide")
+                params["device"] = device
+            elif name == "net_thresholds":
+                params.update(clean_thresholds(data))
+            elif name == "net_vpn_ignore":
+                params["address"] = clean_address(data.get("address"))
+        except ReportInvalid as exc:
+            raise ProtocolError("invalid_params", str(exc)) from None
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

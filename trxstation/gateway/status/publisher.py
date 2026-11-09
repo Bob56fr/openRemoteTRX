@@ -29,6 +29,7 @@ class StatusPublisher:
         self.pipeline = pipeline
         self.presence = presence          # () -> dict : connexions (opérateurs, visiteurs) pour la console et trx-monitor
         self.swr_status = None            # () -> dict : mesure de TOS en cours (branché par gateway/main une fois créée)
+        self.net_status = None            # () -> dict : sonde réseau (NetProbeHub.summary), branchée par gateway/main
         self._seq = 0
         self._stop = asyncio.Event()
         self._failures = 0                # écritures refusées de suite (journal limité : pas une ligne par refus)
@@ -43,7 +44,17 @@ class StatusPublisher:
                              presence=self.presence() if self.presence is not None else {},
                              swr=self.swr_status() if self.swr_status is not None else {},
                              breizh=self.pipeline.route.snapshot()
-                             if getattr(self.pipeline, "route", None) is not None else {})
+                             if getattr(self.pipeline, "route", None) is not None else {},
+                             net=self._net())
+
+    def _net(self) -> dict:
+        if self.net_status is None:
+            return {}
+        try:
+            return self.net_status()
+        except Exception:                 # la sonde ne doit jamais empêcher l'écriture de l'état (superviseur)
+            log.exception("état de la sonde réseau")
+            return {}
 
     def stop(self) -> None:
         self._stop.set()

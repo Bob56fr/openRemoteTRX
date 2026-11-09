@@ -2,6 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.protocol
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -180,6 +181,46 @@ sealed class Command(val name: String) {
     /** Journal de la liaison avec Breizh : réponse `entries` (50 derniers événements). */
     data object BreizhLog : Command("breizh_log")
 
+    /** Sonde de qualité réseau (fonction « netprobe », docs/protocole.md § 15) : mesure et affiche, n'agit jamais sur
+     *  l'émission. net_ping / net_pong / net_report : sans réponse. `t`, `tr` : horloge monotone en ms ; `w` : heure Unix. */
+    data class NetPing(val seq: Int, val t: Long, val w: Long? = null) : Command("net_ping") {
+        override fun JsonObjectBuilder.params() { put("seq", seq); put("t", t); if (w != null) put("w", w) }
+    }
+
+    data class NetPong(val seq: Int, val t: Long, val tr: Long) : Command("net_pong") {
+        override fun JsonObjectBuilder.params() { put("seq", seq); put("t", t); put("tr", tr) }
+    }
+
+    /** Résumé de 10 s (champs : docs/protocole.md § 15). */
+    data class NetReport(val report: JsonObject) : Command("net_report") {
+        override fun JsonObjectBuilder.params() { put("report", report) }
+    }
+
+    /** 10 dernières minutes après une reconnexion (opérateurs ; message long reconnu à son début). */
+    data class NetBacklog(val reports: JsonArray) : Command("net_backlog") {
+        override fun JsonObjectBuilder.params() { put("reports", reports) }
+    }
+
+    data class NetStats(val days: Int = 30, val device: String? = null) : Command("net_stats") {
+        override fun JsonObjectBuilder.params() { put("days", days); if (device != null) put("device", device) }
+    }
+
+    data object NetClear : Command("net_clear")
+
+    /** Seuils de l'indicateur choisis pour un type de réseau, ou `reset` = retour aux valeurs de station.toml. */
+    data class NetThresholds(val netType: String, val rttWarn: Number? = null, val rttAlert: Number? = null,
+                             val lossWarn: Number? = null, val lossAlert: Number? = null, val reset: Boolean = false) : Command("net_thresholds") {
+        override fun JsonObjectBuilder.params() {
+            put("net_type", netType)
+            if (reset) { put("reset", true); return }
+            put("rtt_warn", rttWarn); put("rtt_alert", rttAlert); put("loss_warn", lossWarn); put("loss_alert", lossAlert)
+        }
+    }
+
+    data class NetVpnIgnore(val address: String) : Command("net_vpn_ignore") {
+        override fun JsonObjectBuilder.params() { put("address", address) }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -195,9 +236,10 @@ sealed class Command(val name: String) {
             "listener_kick", "listeners_reopen", "listeners_open", "host_info",
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
             "breizh_set", "breizh_reactivate", "breizh_log",
+            "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */
-        val LISTENER = setOf("get_state", "spectrum_watch")
+        val LISTENER = setOf("get_state", "spectrum_watch", "net_ping", "net_pong", "net_report")
     }
 }

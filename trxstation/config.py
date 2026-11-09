@@ -9,6 +9,7 @@ Principe de conception : en cas de doute, on refuse d'émettre.
 from __future__ import annotations
 
 import ipaddress
+import math
 import json
 import re
 import tomllib
@@ -115,6 +116,30 @@ class Swr:
     max_power_pct: int = 50             # plafond de puissance en % de la puissance du poste (jamais au-dessus de 50)
     max_points: int = 50                # points d'une mesure au plus
     point_tx_max_s: float = 2.0         # émission d'un point au plus (plafond de l'étalonnage du temps de lecture)
+
+
+@dataclass
+class Netprobe:
+    """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesure et affiche, n'agit JAMAIS sur l'émission.
+    Seuils de l'indicateur = valeurs de DÉPART ; ceux choisis par l'opérateur (state_dir/netprobe/seuils.json) priment."""
+    enabled: bool = True                # false : aucune mesure (fonction « netprobe » non annoncée)
+    heartbeat_interval_s: float = 1.0   # période du battement réseau (0.5 à 10 s)
+    outage_missed_beats: int = 3        # battements sans écho pour déclarer une coupure (2 à 20)
+    lan_target: str = "auto"            # box à sonder (auto = passerelle par défaut) : sondes de la station
+    internet_target: str = "1.1.1.1"    # cible Internet des sondes ; "" = aucune
+    loss_warn_pct: float = 2.0          # perte sur 60 s : palier orange
+    loss_alert_pct: float = 10.0        # palier rouge
+    rtt_warn_ms: int = 250              # aller-retour p95 sur 60 s : palier orange
+    rtt_alert_ms: int = 600             # palier rouge
+    alert_outage_s: int = 10            # coupure plus longue : alerte ntfy (0 = aucune)
+    alert_cooldown_s: int = 300         # délai minimal entre deux alertes de la sonde
+    log_retention_days: int = 7         # résumés de 10 s
+    stats_retention_days: int = 30      # coupures et résumés horaires
+    vpn_shared_warn: bool = True        # avertir quand deux appareils semblent partager un profil VPN
+    rsrp_warn_dbm: int = -105           # signal 4G/5G (application) : palier orange
+    rsrp_alert_dbm: int = -115          # palier rouge
+    sinr_warn_db: int = 3               # rapport signal/bruit : palier orange
+    sinr_alert_db: int = 0              # palier rouge
 
 
 BREIZH_DEFAULT_PORT = 47100
@@ -412,6 +437,7 @@ class Config:
     access: Access = field(default_factory=Access)
     swr: Swr = field(default_factory=Swr)
     breizh: Breizh = field(default_factory=Breizh)
+    netprobe: Netprobe = field(default_factory=Netprobe)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -463,6 +489,7 @@ def validate(cfg: Config) -> list[str]:
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
     p += _swr_problems(cfg.swr)
+    p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
@@ -639,6 +666,50 @@ def _swr_problems(s: Swr) -> list[str]:
     return p
 
 
+def _number(value) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
+
+
+def _ip_text(value: str) -> bool:
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _netprobe_problems(n: Netprobe) -> list[str]:
+    p = []
+    for name in ("enabled", "vpn_shared_warn"):
+        if not isinstance(getattr(n, name), bool):
+            p.append(f"[netprobe] {name} doit valoir true ou false")
+    if not _number(n.heartbeat_interval_s) or not 0.5 <= n.heartbeat_interval_s <= 10:
+        p.append("[netprobe] heartbeat_interval_s doit être un nombre entre 0.5 et 10")
+    for name, low, high in (("outage_missed_beats", 2, 20), ("rtt_warn_ms", 20, 5000), ("rtt_alert_ms", 20, 5000),
+                            ("alert_outage_s", 0, 3600), ("alert_cooldown_s", 30, 86400),
+                            ("log_retention_days", 1, 30), ("stats_retention_days", 7, 90),
+                            ("rsrp_warn_dbm", -140, -40), ("rsrp_alert_dbm", -140, -40),
+                            ("sinr_warn_db", -20, 30), ("sinr_alert_db", -20, 30)):
+        value = getattr(n, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.append(f"[netprobe] {name} doit être un entier entre {low} et {high}")
+    for name in ("loss_warn_pct", "loss_alert_pct"):
+        value = getattr(n, name)
+        if not _number(value) or not 0.1 <= value <= 100:
+            p.append(f"[netprobe] {name} doit être un nombre entre 0.1 et 100")
+    if not p:
+        for warn, alert in (("loss_warn_pct", "loss_alert_pct"), ("rtt_warn_ms", "rtt_alert_ms")):
+            if getattr(n, warn) >= getattr(n, alert):
+                p.append(f"[netprobe] {warn} doit être plus petit que {alert}")
+        if n.rsrp_alert_dbm >= n.rsrp_warn_dbm or n.sinr_alert_db >= n.sinr_warn_db:
+            p.append("[netprobe] les seuils d'alerte du signal doivent être plus bas que ceux d'avertissement")
+    if not isinstance(n.lan_target, str) or (n.lan_target != "auto" and not _ip_text(n.lan_target)):
+        p.append('[netprobe] lan_target : adresse IP attendue (ou "auto")')
+    if not isinstance(n.internet_target, str) or (n.internet_target and not _ip_text(n.internet_target)):
+        p.append('[netprobe] internet_target : adresse IP attendue (ou "" : aucune)')
+    return p
+
+
 def breizh_host_allowed(host: str) -> bool:
     """Adresse IP privée, de lien local ou locale (jamais un nom : pas de DNS dans le chemin du son)."""
     try:
@@ -764,7 +835,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "bands", "clients"}
+                 "netprobe", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -785,6 +856,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             access=_build(Access, d.get("access", {}), "access", problems),
             swr=_build(Swr, d.get("swr", {}), "swr", problems),
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
+            netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -855,6 +927,7 @@ def _render_cluster(c: Cluster) -> list[str]:
 
 def render_toml(cfg: Config) -> str:
     r, a, n, s, v = cfg.rig, cfg.audio, cfg.network, cfg.safety, cfg.supervisor
+    np = cfg.netprobe
     lines = [
         "# station.toml : source de vérité de la station (générée par trx-setup).",
         "# Les clés de [rig], [network], [bands], le plafond du TOT et [supervisor] ne se",
@@ -994,6 +1067,27 @@ def render_toml(cfg: Config) -> str:
         f"lost_ms = {cfg.breizh.lost_ms}   # sans retour pendant ce délai : repli en direct (50 à 500 ms, > block_timeout_ms)",
         f"fallback_gain_db = {cfg.breizh.fallback_gain_db}   # gain du son direct en repli (-20 à 0 dB)",
         f"reactivate_after_s = {cfg.breizh.reactivate_after_s}   # stabilité avant le retour automatique (0 = à la main, 30 à 3600 s)",
+        "",
+        "[netprobe]   # sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesure et affiche, n'agit jamais sur l'émission",
+        f"enabled = {str(np.enabled).lower()}",
+        f"heartbeat_interval_s = {np.heartbeat_interval_s}   # battement réseau (0.5 à 10 s)",
+        f"outage_missed_beats = {np.outage_missed_beats}   # battements sans écho = coupure (2 à 20)",
+        f"lan_target = {_s(np.lan_target)}   # box à sonder ; auto = passerelle par défaut",
+        f'internet_target = {_s(np.internet_target)}   # cible Internet ; "" = aucune',
+        "# Seuils de DÉPART de l'indicateur ; ceux choisis dans la page ou l'application (statistiques) priment",
+        f"loss_warn_pct = {np.loss_warn_pct}   # perte sur 60 s : orange (%)",
+        f"loss_alert_pct = {np.loss_alert_pct}   # perte sur 60 s : rouge (%)",
+        f"rtt_warn_ms = {np.rtt_warn_ms}   # aller-retour p95 sur 60 s : orange (ms)",
+        f"rtt_alert_ms = {np.rtt_alert_ms}   # aller-retour p95 sur 60 s : rouge (ms)",
+        f"alert_outage_s = {np.alert_outage_s}   # coupure plus longue : alerte par notify_url (0 = aucune)",
+        f"alert_cooldown_s = {np.alert_cooldown_s}   # délai minimal entre deux alertes de la sonde (s)",
+        f"log_retention_days = {np.log_retention_days}   # résumés de 10 s (1 à 30 jours)",
+        f"stats_retention_days = {np.stats_retention_days}   # coupures et statistiques (7 à 90 jours)",
+        f"vpn_shared_warn = {str(np.vpn_shared_warn).lower()}   # avertir quand deux appareils semblent partager un profil VPN",
+        f"rsrp_warn_dbm = {np.rsrp_warn_dbm}   # signal 4G/5G de l'application : orange (dBm)",
+        f"rsrp_alert_dbm = {np.rsrp_alert_dbm}   # rouge (dBm)",
+        f"sinr_warn_db = {np.sinr_warn_db}   # rapport signal/bruit : orange (dB)",
+        f"sinr_alert_db = {np.sinr_alert_db}   # rouge (dB)",
         "",
     ]
     for client in cfg.clients:

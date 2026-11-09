@@ -127,6 +127,27 @@ lost_ms = 100   # sans retour pendant ce délai : repli en direct (50 à 500 ms,
 fallback_gain_db = -6.0   # gain du son direct en repli (-20 à 0 dB)
 reactivate_after_s = 60   # stabilité avant le retour automatique (0 = à la main, 30 à 3600 s)
 
+[netprobe]   # sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesure et affiche, n'agit jamais sur l'émission
+enabled = true
+heartbeat_interval_s = 1.0   # battement réseau (0.5 à 10 s)
+outage_missed_beats = 3   # battements sans écho = coupure (2 à 20)
+lan_target = "auto"   # box à sonder ; auto = passerelle par défaut
+internet_target = "1.1.1.1"   # cible Internet ; "" = aucune
+# Seuils de DÉPART de l'indicateur ; ceux choisis dans la page ou l'application (statistiques) priment
+loss_warn_pct = 2.0   # perte sur 60 s : orange (%)
+loss_alert_pct = 10.0   # perte sur 60 s : rouge (%)
+rtt_warn_ms = 250   # aller-retour p95 sur 60 s : orange (ms)
+rtt_alert_ms = 600   # aller-retour p95 sur 60 s : rouge (ms)
+alert_outage_s = 10   # coupure plus longue : alerte par notify_url (0 = aucune)
+alert_cooldown_s = 300   # délai minimal entre deux alertes de la sonde (s)
+log_retention_days = 7   # résumés de 10 s (1 à 30 jours)
+stats_retention_days = 30   # coupures et statistiques (7 à 90 jours)
+vpn_shared_warn = true   # avertir quand deux appareils semblent partager un profil VPN
+rsrp_warn_dbm = -105   # signal 4G/5G de l'application : orange (dBm)
+rsrp_alert_dbm = -115   # rouge (dBm)
+sinr_warn_db = 3   # rapport signal/bruit : orange (dB)
+sinr_alert_db = 0   # rouge (dB)
+
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]
 # id = "club1"

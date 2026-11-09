@@ -271,7 +271,7 @@ def test_reconnect_banner_replaces_the_frequency_area_and_the_duration_is_adjust
 def test_the_password_is_never_written_to_any_storage():
     stored = re.findall(r'(?:storage|store)\.set\(\s*"([^"]+)"', LOGIC + UI)
     assert stored and not any("pass" in key.lower() or "secret" in key.lower() for key in stored), stored
-    assert re.findall(r'storage\.set\("([^"]+)"', LOGIC) and set(re.findall(r'storage\.set\("([^"]+)"', LOGIC)) <= {"trx.bands", "trx.losses"}
+    assert re.findall(r'storage\.set\("([^"]+)"', LOGIC) and set(re.findall(r'storage\.set\("([^"]+)"', LOGIC)) <= {"trx.bands", "trx.losses", "trx.device"}
     assert "localStorage.setItem" in UI and "password" not in UI[UI.index("const store = {"):UI.index("const el = ")]    # le magasin du navigateur ne manipule jamais le mot de passe
     assert 'client.disconnect()' in UI and "this._credentials = null" in LOGIC                                         # oublié à la déconnexion voulue
 

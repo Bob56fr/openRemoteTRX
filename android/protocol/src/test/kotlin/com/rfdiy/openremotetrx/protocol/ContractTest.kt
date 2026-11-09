@@ -172,6 +172,18 @@ class ContractTest {
                                               e["bypass"]?.jsonPrimitive?.boolean)
             "breizh_reactivate" -> Command.BreizhReactivate
             "breizh_log" -> Command.BreizhLog
+            "net_ping" -> Command.NetPing(p("seq").int, p("t").long, e["w"]?.jsonPrimitive?.long)
+            "net_pong" -> Command.NetPong(p("seq").int, p("t").long, p("tr").long)
+            "net_report" -> Command.NetReport(e["report"]!!.jsonObject)
+            "net_backlog" -> Command.NetBacklog(e["reports"]!!.jsonArray)
+            "net_stats" -> Command.NetStats(e["days"]?.jsonPrimitive?.int ?: 30, e["device"]?.jsonPrimitive?.content)
+            "net_clear" -> Command.NetClear
+            "net_thresholds" -> {
+                fun n(key: String): Number? = e[key]?.jsonPrimitive?.let { it.intOrNull ?: it.double }
+                Command.NetThresholds(p("net_type").content, n("rtt_warn"), n("rtt_alert"), n("loss_warn"), n("loss_alert"),
+                                      e["reset"]?.jsonPrimitive?.boolean ?: false)
+            }
+            "net_vpn_ignore" -> Command.NetVpnIgnore(p("address").content)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

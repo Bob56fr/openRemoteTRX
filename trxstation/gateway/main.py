@@ -99,6 +99,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
         if manager is not None and getattr(manager, "swr", None) is not None:
             publisher.swr_status = manager.swr.status                           # trx-monitor : mesure de TOS en cours
+        if manager is not None and getattr(manager, "netprobe", None) is not None:
+            publisher.net_status = manager.netprobe.summary                     # trx-monitor : qualité des liaisons
+            tasks.append(asyncio.create_task(manager.netprobe.run(stop)))
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
@@ -229,11 +232,19 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
                           station_id=station_id)
     notifier = Notifier(cfg.supervisor.notify_url)
+    netprobe = None
+    if cfg.netprobe.enabled:                       # sonde de qualité réseau : mesure et affiche, n'agit jamais sur l'émission
+        from ..netprobe.probe import NetProbeHub
+
+        def tx_counter():
+            stats = pipeline.stats()
+            return ctrl.snapshot().owner, stats.get("tx_underruns", 0) + stats.get("tx_overruns", 0)
+        netprobe = NetProbeHub(cfg.netprobe, cfg.supervisor.state_dir, alert=notifier.send, tx_counter=tx_counter)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
                           layouts=layouts, spectrum=spectrum, reports=reports, access=access,
                           muted=None if access is None else
                           lambda: listener_muted(access.settings, cfg, link.state.frequency_hz),
-                          alert=notifier.send, voices=voices, swr=swr)
+                          alert=notifier.send, voices=voices, swr=swr, netprobe=netprobe)
     registry = ClientRegistry(cfg.clients)
     app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,

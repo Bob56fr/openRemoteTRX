@@ -92,6 +92,12 @@ intro = "<p>Le son du micro passe par Breizh Audio Box (traitement de la voix) s
 ou = "Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
 relu = "redemarrage"
 
+[sections.netprobe]
+titre = "Sonde de qualité réseau [netprobe]"
+intro = "<p>La station mesure en continu la liaison avec chaque téléphone ou navigateur connecté (pertes, temps aller-retour, gigue, coupures) et dit après une coupure quel tronçon a probablement lâché. Un petit indicateur l'affiche ; les statistiques des 30 derniers jours, l'effacement et l'export sont dans la page et l'application. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission.</p>"
+ou = "Menu 14. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici."
+relu = "redemarrage"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -489,6 +495,113 @@ role = "Après un repli, durée pendant laquelle Breizh doit répondre sans faut
 niveau = "expert"
 bornes = "0, ou 30 à 3600 s."
 depuis = "0.99.0"
+
+# ---------------------------------------------------------------- netprobe
+
+[reglages."netprobe.enabled"]
+role = "true : la station mesure la qualité de la liaison avec chaque client (battement réseau d'une seconde dans les deux sens, quelques dizaines d'octets)."
+niveau = "courant"
+securite = "La sonde ne fait que mesurer et afficher : elle ne coupe ni ne déclenche jamais une émission."
+depuis = "0.106.0"
+
+[reglages."netprobe.heartbeat_interval_s"]
+role = "Période du battement réseau entre la station et chaque client."
+niveau = "expert"
+bornes = "0,5 à 10 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.outage_missed_beats"]
+role = "Nombre de battements sans écho qui font déclarer une coupure."
+niveau = "expert"
+bornes = "2 à 20."
+depuis = "0.106.0"
+
+[reglages."netprobe.lan_target"]
+role = "Box (passerelle du réseau local) que la station sonde pour savoir si une coupure vient de son propre réseau. auto : la passerelle par défaut de la machine."
+niveau = "expert"
+depuis = "0.106.0"
+
+[reglages."netprobe.internet_target"]
+role = "Adresse sur Internet que la station sonde pour savoir si une coupure vient de la connexion de la box. Vide : aucune sonde Internet."
+niveau = "expert"
+depuis = "0.106.0"
+
+[reglages."netprobe.loss_warn_pct"]
+role = "Perte de battements sur 60 s à partir de laquelle l'indicateur passe à l'orange (valeur de départ)."
+niveau = "expert"
+bornes = "0,1 à 100 %, plus petit que loss_alert_pct."
+depuis = "0.106.0"
+
+[reglages."netprobe.loss_alert_pct"]
+role = "Perte de battements sur 60 s à partir de laquelle l'indicateur passe au rouge (valeur de départ)."
+niveau = "expert"
+bornes = "0,1 à 100 %."
+depuis = "0.106.0"
+
+[reglages."netprobe.rtt_warn_ms"]
+role = "Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe à l'orange. Valeur de départ : la rubrique « Seuils » des statistiques propose des valeurs d'après vos mesures."
+niveau = "expert"
+bornes = "20 à 5 000 ms, plus petit que rtt_alert_ms."
+depuis = "0.106.0"
+
+[reglages."netprobe.rtt_alert_ms"]
+role = "Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe au rouge (valeur de départ)."
+niveau = "expert"
+bornes = "20 à 5 000 ms."
+depuis = "0.106.0"
+
+[reglages."netprobe.alert_outage_s"]
+role = "Une coupure plus longue envoie une alerte par l'adresse de notification de [supervisor] (notify_url). 0 : aucune alerte de coupure."
+niveau = "courant"
+bornes = "0 à 3 600 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.alert_cooldown_s"]
+role = "Délai minimal entre deux alertes de la sonde (coupure, perte)."
+niveau = "expert"
+bornes = "30 à 86 400 s."
+depuis = "0.106.0"
+
+[reglages."netprobe.log_retention_days"]
+role = "Durée de conservation des mesures détaillées (résumés de 10 s)."
+niveau = "expert"
+bornes = "1 à 30 jours."
+depuis = "0.106.0"
+
+[reglages."netprobe.stats_retention_days"]
+role = "Durée de conservation des coupures et des statistiques horaires (vue des 30 derniers jours)."
+niveau = "expert"
+bornes = "7 à 90 jours."
+depuis = "0.106.0"
+
+[reglages."netprobe.vpn_shared_warn"]
+role = "true : avertit quand deux appareils semblent partager le même profil VPN (même adresse privée, ou coupures très régulières), cause connue de coupures toutes les 15 à 30 s."
+niveau = "courant"
+depuis = "0.106.0"
+
+[reglages."netprobe.rsrp_warn_dbm"]
+role = "Signal 4G/5G mesuré par l'application (RSRP) sous lequel l'indicateur passe à l'orange."
+niveau = "expert"
+bornes = "-140 à -40 dBm, au-dessus de rsrp_alert_dbm."
+depuis = "0.106.0"
+
+[reglages."netprobe.rsrp_alert_dbm"]
+role = "Signal 4G/5G (RSRP) sous lequel l'indicateur passe au rouge."
+niveau = "expert"
+bornes = "-140 à -40 dBm."
+depuis = "0.106.0"
+
+[reglages."netprobe.sinr_warn_db"]
+role = "Rapport signal/bruit 4G/5G mesuré par l'application sous lequel l'indicateur passe à l'orange."
+niveau = "expert"
+bornes = "-20 à 30 dB, au-dessus de sinr_alert_db."
+depuis = "0.106.0"
+
+[reglages."netprobe.sinr_alert_db"]
+role = "Rapport signal/bruit 4G/5G sous lequel l'indicateur passe au rouge."
+niveau = "expert"
+bornes = "-20 à 30 dB."
+depuis = "0.106.0"
 
 # ---------------------------------------------------------------- spectrum
 

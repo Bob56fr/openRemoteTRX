@@ -43,7 +43,7 @@ SWR_BLOCKED = frozenset({"set_frequency", "set_mode", "set_function", "set_level
 
 
 def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
-                role: str = OPERATOR) -> dict:
+                role: str = OPERATOR, net: dict | None = None) -> dict:
     """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients.
     `access` (AccessControl, facultatif) : présence ; pour un visiteur, pseudos à la place des identifiants."""
     rig, ptt = link.state, ctrl.snapshot()
@@ -72,6 +72,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         "host": None if listener else shared_monitor().summary(),
         # Breizh Audio Box : opérateurs seulement, et seulement si la station l'emploie ([breizh] enabled)
         **({} if listener or getattr(pipeline, "route", None) is None else {"breizh": pipeline.route.snapshot()}),
+        # sonde de qualité réseau : la liaison de CE client (docs/netprobe-cahier-des-charges.md), si la station l'a
+        **({} if net is None else {"net": net}),
     }
 
 
@@ -84,7 +86,8 @@ class ControlSession:
                  spectrum_watch: Callable[[bool], None] | None = None, reports=None,
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
                  alert: Callable[[str, str], None] | None = None,
-                 kick_listener: Callable[[str], bool] | None = None, voices=None, swr=None):
+                 kick_listener: Callable[[str], bool] | None = None, voices=None, swr=None,
+                 netprobe=None, device: str = "", agent: str = "", source: str = ""):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
@@ -116,6 +119,9 @@ class ControlSession:
             self.beeps = None                    # réglage de la station : rien vers un visiteur
             self.selcall = None                  # code de groupe : jamais vers un visiteur (hello, messages, fonctions) ;
                                                  # le squelch s'applique quand même au son qu'il reçoit
+        self.netprobe = netprobe                 # NetProbeHub (netprobe/probe.py) ou None : [netprobe] enabled = false
+        self.probe = None                        # ClientProbe de CETTE connexion (ouverte au démarrage)
+        self.device, self.agent, self.source = device, agent, source   # appareil (aléatoire), « page Windows »..., adresse
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
         self._times: deque[float] = deque()
         self._state_task: asyncio.Task | None = None
@@ -160,6 +166,11 @@ class ControlSession:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         if self.breizh is not None:
             self.breizh.store.add_listener(self._breizh_listener)     # repli, retour, refus : prévenir l'opérateur
+        if self.netprobe is not None:
+            try:
+                self.probe = self.netprobe.open(self.client_id, self.role, self.device, self.agent, self.source, self.send)
+            except Exception:                            # la sonde ne doit jamais empêcher une connexion
+                log.exception("sonde réseau de %s non ouverte", self.client_id)
         self.send(self._state())
         self._state_task = asyncio.get_running_loop().create_task(self._state_loop())
 
@@ -177,14 +188,21 @@ class ControlSession:
                    "voice_profiles": self.voices is not None,
                    "swr": self.swr is not None and self.ctrl.config.swr.enabled,
                    "replay": self._replay_allowed(),
-                   "breizh": self.breizh is not None}
+                   "breizh": self.breizh is not None,
+                   "netprobe": self.netprobe is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
         return not self.listener and self.ctrl.config.safety.allow_replay is True
 
     def _state(self) -> dict:
-        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role)
+        net = None
+        if self.probe is not None:
+            try:
+                net = self.probe.state()
+            except Exception:
+                log.exception("état de la sonde réseau de %s", self.client_id)
+        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net)
 
     async def close(self) -> None:
         """Idempotent. Désenregistre le client : coupe l'émission s'il en était propriétaire."""
@@ -199,6 +217,11 @@ class ControlSession:
             self.selcall.remove_listener(self._selcall_listener)    # la déconnexion ne change PAS l'état du SELCALL
         if self.breizh is not None:
             self.breizh.store.remove_listener(self._breizh_listener)
+        if self.probe is not None:
+            try:
+                self.netprobe.close(self.probe)
+            except Exception:
+                log.exception("sonde réseau de %s non fermée", self.client_id)
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
@@ -395,6 +418,39 @@ class ControlSession:
         log.info("SELCALL : %s par %s -> %s", cmd.name, self.client_id, status.state)
         self._result(cmd.id, True, status=status.to_dict())
 
+    def _net_command(self, cmd) -> None:
+        """Sonde de qualité réseau. net_ping / net_pong / net_report : sans réponse (fréquents) ; les autres : `result`.
+        Toute erreur reste ici : la sonde ne gêne jamais la session ni l'émission."""
+        silent = cmd.name in ("net_ping", "net_pong", "net_report")
+        if self.probe is None:
+            if not silent:
+                self._result(cmd.id, False, reason="netprobe_unavailable")
+            return
+        try:
+            if cmd.name == "net_ping":
+                self.probe.on_ping(cmd.params)
+            elif cmd.name == "net_pong":
+                self.probe.on_pong(cmd.params)
+            elif cmd.name == "net_report":
+                self.probe.on_report(cmd.params["report"])
+            elif cmd.name == "net_backlog":
+                self.probe.on_backlog(cmd.params["reports"])
+                self._result(cmd.id, True, count=len(cmd.params["reports"]))
+            elif cmd.name == "net_stats":
+                self._result(cmd.id, True, stats=self.netprobe.stats(cmd.params["days"], cmd.params["device"]))
+            elif cmd.name == "net_clear":
+                self.netprobe.clear(self.client_id)
+                self._result(cmd.id, True)
+            elif cmd.name == "net_thresholds":
+                self._result(cmd.id, True, thresholds=self.netprobe.set_thresholds(cmd.params))
+            elif cmd.name == "net_vpn_ignore":
+                self.netprobe.vpn.ignore(cmd.params["address"])
+                self._result(cmd.id, True)
+        except Exception:
+            log.exception("sonde réseau : commande %s de %s", cmd.name, self.client_id)
+            if not silent:
+                self._result(cmd.id, False, reason="netprobe_error")
+
     def bye(self, reason: str, message: str = "") -> None:
         """Dernier message avant que la station ferme cette connexion : le client affiche le motif et ne se
         reconnecte pas tout seul."""
@@ -450,6 +506,9 @@ class ControlSession:
         if self.swr is not None and self.swr.busy and (
                 cmd.name in SWR_BLOCKED or (cmd.name == "toggle" and self.ctrl.snapshot().state == "RX")):
             self._result(cmd.id, False, reason="swr_busy", detail="mesure de TOS en cours : STOP pour l'arrêter")
+            return
+        if cmd.name.startswith("net_"):
+            self._net_command(cmd)                               # sonde réseau : n'agit JAMAIS sur le poste
             return
         try:
             if cmd.name == "heartbeat":

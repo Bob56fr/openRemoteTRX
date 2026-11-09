@@ -45,6 +45,15 @@
         set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* stockage indisponible */ } },
       },
       epoch: () => Date.now(),
+      // sonde réseau : appareil tiré au hasard, nom affiché à l'opérateur, type de réseau quand le navigateur le dit
+      randomBytes: (n) => crypto.getRandomValues(new Uint8Array(n)),
+      agent: "page " + (/Android/i.test(navigator.userAgent) ? "Android" : /iPhone|iPad/i.test(navigator.userAgent) ? "iOS"
+        : /Windows/i.test(navigator.userAgent) ? "Windows" : /Mac/i.test(navigator.userAgent) ? "Mac"
+        : /Linux/i.test(navigator.userAgent) ? "Linux" : "navigateur"),
+      netType: () => {
+        const c = navigator.connection;
+        return c && typeof c.type === "string" ? ({ wifi: "wifi", cellular: "mobile", ethernet: "lan" }[c.type] || null) : null;
+      },
       isOnline: () => (typeof navigator.onLine === "boolean" ? navigator.onLine : null),
       isVisible: () => !document.hidden,
       setInterval: (f, ms) => window.setInterval(f, ms), clearInterval: (id) => window.clearInterval(id),

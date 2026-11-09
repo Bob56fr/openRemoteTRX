@@ -32,14 +32,16 @@ log = logging.getLogger(__name__)
 # Liste blanche d'un visiteur : relire l'état, recevoir (ou non) les balayages du spectre HF chez lui. Tout le reste
 # est refusé, y compris une commande ajoutée plus tard. LISTENER_REFUSED n'est là que pour le test qui oblige à
 # classer chaque nouvelle commande (tests/test_access.py) : le refus ne dépend PAS de cette liste.
-LISTENER_COMMANDS = frozenset({"get_state", "spectrum_watch"})
+# net_ping / net_pong / net_report : sonde réseau, la qualité de SON lien (rien n'est enregistré pour un visiteur)
+LISTENER_COMMANDS = frozenset({"get_state", "spectrum_watch", "net_ping", "net_pong", "net_report"})
 LISTENER_REFUSED = frozenset({
     "toggle", "stop", "heartbeat", "set_frequency", "set_mode", "set_squelch", "set_function", "set_level",
     "set_offset", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",
     "spectrum_set", "beeps_set", "local_release", "bug_report", "selcall_activate", "selcall_rearm",
     "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen",
     "listeners_open", "host_info", "voice_profiles", "voice_profile_save", "voice_profile_delete",
-    "swr_plan", "swr_start", "swr_cancel", "swr_last", "breizh_set", "breizh_reactivate", "breizh_log"})
+    "swr_plan", "swr_start", "swr_cancel", "swr_last", "breizh_set", "breizh_reactivate", "breizh_log",
+    "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore"})
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {

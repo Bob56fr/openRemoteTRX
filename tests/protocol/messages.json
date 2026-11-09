@@ -96,5 +96,9 @@
                    "detail": "Breizh ne répond plus depuis 100 ms : fin de l'émission en direct, gain -6 dB"},
   "breizh_log_result": {"type": "result", "id": 63, "ok": true,
                         "entries": [{"t": "2026-11-04T10:00:00Z", "event": "connected", "detail": "Breizh 2.1.0 joint (traitement annoncé : 5 ms)"},
-                                    {"t": "2026-11-04T10:12:03Z", "event": "fallback", "detail": "Breizh ne répond plus depuis 100 ms : fin de l'émission en direct, gain -6 dB"}]}
+                                    {"t": "2026-11-04T10:12:03Z", "event": "fallback", "detail": "Breizh ne répond plus depuis 100 ms : fin de l'émission en direct, gain -6 dB"}]},
+  "state_net": {"type": "state", "net": {"level": "orange", "loss_pct": 3.3, "loss_pct_10": 0.0, "rtt_ms": 180, "rtt_mean_ms": 95.4, "jitter_ms": 12.1, "late": 0, "out_of_order": 0, "outage": false, "outage_s": null, "last_outage": {"ago_s": 75, "duration_s": 6, "diagnosis": "mobile_or_tunnel"}, "net_type": "4g", "thresholds": {"rtt_warn": 250, "rtt_alert": 600, "loss_warn": 2.0, "loss_alert": 10.0}, "vpn": [{"address": "192.168.27.2", "kind": "same_time", "agents": ["page Windows", "android 0.53.0"], "since_ms": 1762700000000, "period_ms": null}]}},
+  "net_ping": {"type": "net_ping", "seq": 12, "t": 845120},
+  "net_pong": {"type": "net_pong", "seq": 41, "t": 123456, "tr": 845155},
+  "net_event": [{"type": "net_event", "event": "outage", "outage": {"start_ms": 1762700000000, "end_ms": 1762700006000, "duration_ms": 6000, "diagnosis": "vpn_shared", "basis": ["backlog", "regular_pattern"], "agent": "android 0.53.0", "net_type": "4g", "kind": "in_session"}}, {"type": "net_event", "event": "vpn_shared", "warning": {"address": "192.168.27.2", "kind": "same_time", "agents": ["page Windows", "android 0.53.0"], "since_ms": 1762700000000, "period_ms": null}}]
 }

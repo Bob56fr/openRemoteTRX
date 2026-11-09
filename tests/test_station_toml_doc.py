@@ -47,7 +47,7 @@ def test_page_is_public_self_contained_and_reports_its_height():
     assert set(re.findall(r'href="(https?://[^"]+)"', page)) <= {doc.base.REPO_URL, doc.base.SITE_URL}
     assert "trx-doc-height" in page
     ips = set(re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", page))
-    assert ips <= {"127.0.0.1", "0.0.0.0"}, ips                                         # aucune adresse réelle
+    assert ips <= {"127.0.0.1", "0.0.0.0", "1.1.1.1"}, ips     # aucune adresse réelle ; 1.1.1.1 : cible Internet par défaut de [netprobe]
     for private in ("minix", "bob@", "192.168.", "Bob56fr/openRemoteTRX/blob"):
         assert private not in page.replace(doc.base.REPO_URL, "")
     for section, cls, _ in doc.SECTIONS:

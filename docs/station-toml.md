@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.105.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.106.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -152,6 +152,33 @@ Se modifie : Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier `b
 | `lost_ms` | expert | `100` | Sans aucun retour de Breizh pendant ce délai, l'émission continue en direct jusqu'à sa fin (repli). Valeurs : 50 à 500 ms, plus grand que block_timeout_ms. (depuis 0.99.0) |
 | `fallback_gain_db` | expert | `-6.0` | Gain du son direct pendant un repli (Breizh perdu), pour ne pas surmoduler un son prévu pour être traité. Valeurs : -20 à 0 dB. (depuis 0.99.0) |
 | `reactivate_after_s` | expert | `60` | Après un repli, durée pendant laquelle Breizh doit répondre sans faute avant d'être repris automatiquement (jamais pendant une émission). 0 : seulement quand l'opérateur le demande. Valeurs : 0, ou 30 à 3600 s. (depuis 0.99.0) |
+
+## Sonde de qualité réseau [netprobe]
+
+La station mesure en continu la liaison avec chaque téléphone ou navigateur connecté (pertes, temps aller-retour, gigue, coupures) et dit après une coupure quel tronçon a probablement lâché. Un petit indicateur l'affiche ; les statistiques des 30 derniers jours, l'effacement et l'export sont dans la page et l'application. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission.
+
+Se modifie : Menu 14. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `true` | true : la station mesure la qualité de la liaison avec chaque client (battement réseau d'une seconde dans les deux sens, quelques dizaines d'octets). **Sécurité** : La sonde ne fait que mesurer et afficher : elle ne coupe ni ne déclenche jamais une émission. (depuis 0.106.0) |
+| `heartbeat_interval_s` | expert | `1.0` | Période du battement réseau entre la station et chaque client. Valeurs : 0,5 à 10 s. (depuis 0.106.0) |
+| `outage_missed_beats` | expert | `3` | Nombre de battements sans écho qui font déclarer une coupure. Valeurs : 2 à 20. (depuis 0.106.0) |
+| `lan_target` | expert | `"auto"` | Box (passerelle du réseau local) que la station sonde pour savoir si une coupure vient de son propre réseau. auto : la passerelle par défaut de la machine. (depuis 0.106.0) |
+| `internet_target` | expert | `"1.1.1.1"` | Adresse sur Internet que la station sonde pour savoir si une coupure vient de la connexion de la box. Vide : aucune sonde Internet. (depuis 0.106.0) |
+| `loss_warn_pct` | expert | `2.0` | Perte de battements sur 60 s à partir de laquelle l'indicateur passe à l'orange (valeur de départ). Valeurs : 0,1 à 100 %, plus petit que loss_alert_pct. (depuis 0.106.0) |
+| `loss_alert_pct` | expert | `10.0` | Perte de battements sur 60 s à partir de laquelle l'indicateur passe au rouge (valeur de départ). Valeurs : 0,1 à 100 %. (depuis 0.106.0) |
+| `rtt_warn_ms` | expert | `250` | Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe à l'orange. Valeur de départ : la rubrique « Seuils » des statistiques propose des valeurs d'après vos mesures. Valeurs : 20 à 5 000 ms, plus petit que rtt_alert_ms. (depuis 0.106.0) |
+| `rtt_alert_ms` | expert | `600` | Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe au rouge (valeur de départ). Valeurs : 20 à 5 000 ms. (depuis 0.106.0) |
+| `alert_outage_s` | courant | `10` | Une coupure plus longue envoie une alerte par l'adresse de notification de [supervisor] (notify_url). 0 : aucune alerte de coupure. Valeurs : 0 à 3 600 s. (depuis 0.106.0) |
+| `alert_cooldown_s` | expert | `300` | Délai minimal entre deux alertes de la sonde (coupure, perte). Valeurs : 30 à 86 400 s. (depuis 0.106.0) |
+| `log_retention_days` | expert | `7` | Durée de conservation des mesures détaillées (résumés de 10 s). Valeurs : 1 à 30 jours. (depuis 0.106.0) |
+| `stats_retention_days` | expert | `30` | Durée de conservation des coupures et des statistiques horaires (vue des 30 derniers jours). Valeurs : 7 à 90 jours. (depuis 0.106.0) |
+| `vpn_shared_warn` | courant | `true` | true : avertit quand deux appareils semblent partager le même profil VPN (même adresse privée, ou coupures très régulières), cause connue de coupures toutes les 15 à 30 s. (depuis 0.106.0) |
+| `rsrp_warn_dbm` | expert | `-105` | Signal 4G/5G mesuré par l'application (RSRP) sous lequel l'indicateur passe à l'orange. Valeurs : -140 à -40 dBm, au-dessus de rsrp_alert_dbm. (depuis 0.106.0) |
+| `rsrp_alert_dbm` | expert | `-115` | Signal 4G/5G (RSRP) sous lequel l'indicateur passe au rouge. Valeurs : -140 à -40 dBm. (depuis 0.106.0) |
+| `sinr_warn_db` | expert | `3` | Rapport signal/bruit 4G/5G mesuré par l'application sous lequel l'indicateur passe à l'orange. Valeurs : -20 à 30 dB, au-dessus de sinr_alert_db. (depuis 0.106.0) |
+| `sinr_alert_db` | expert | `0` | Rapport signal/bruit 4G/5G sous lequel l'indicateur passe au rouge. Valeurs : -20 à 30 dB. (depuis 0.106.0) |
 
 ## Spectre HF du poste [spectrum]
 

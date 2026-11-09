@@ -36,6 +36,15 @@
   const LINK_ALERT_REPEAT_MS = 3000;     // son « liaison perdue » répété tant que la reconnexion dure
   const TX_SILENCE_MS = 1500;            // pendant SON émission, plus rien de la station depuis ce délai : alerte tout de suite
   const ACTIVE_STATES = ["KEYING", "TX", "UNKEYING"];
+  // Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md) : mesure et affiche, n'agit jamais sur l'émission
+  const NET_PING_EVERY_MS = 1000;        // battement réseau vers la station
+  const NET_REPORT_EVERY_MS = 10000;     // résumé de 10 s envoyé à la station
+  const NET_CLOCK_EVERY_MS = 60000;      // heure du client jointe au battement (recalage des résumés)
+  const NET_KEEP_BEATS_MS = 70000;
+  const NET_KEEP_REPORTS = 60;           // 10 minutes de résumés gardés en mémoire (remis après une coupure)
+  const NET_BACKLOG_BEFORE_MS = 30000;   // résumés remis : ceux des 30 s avant la perte et ceux jamais partis
+  const NET_EVENTS_MAX = 20;
+  const NP = root.TrxNetProbe || (typeof require === "function" ? require("./netprobe.js") : null);
 
   const REASONS = {
     spectrum_unavailable: "Spectre HF indisponible pour le moment.",
@@ -93,6 +102,8 @@
     swr_unavailable: "Mesure de TOS indisponible sur cette station.",
     breizh_unavailable: "Breizh Audio Box n'est pas utilisé par cette station.",
     breizh_storage_error: "Réglage de Breizh non enregistré sur la station (disque ?).",
+    netprobe_unavailable: "Sonde de qualité réseau absente de cette station.",
+    netprobe_error: "Sonde de qualité réseau : erreur sur la station (voir son journal).",
     swr_no_fm_mode: "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
     swr_out_of_band: "Aucun point de la mesure dans les bandes autorisées de la station.",
     swr_bad_range: "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
@@ -102,7 +113,19 @@
 
   // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
   // refusé ICI, avant d'atteindre la station (qui le refuserait aussi).
-  const LISTENER_COMMANDS = ["get_state", "spectrum_watch"];
+  const LISTENER_COMMANDS = ["get_state", "spectrum_watch", "net_ping", "net_pong", "net_report"];
+
+  function loadDevice(storage, env) {
+    /* Identifiant d'appareil tiré au hasard UNE fois (128 bits), sans rien de personnel : relie une reconnexion à la
+       coupure qui l'a précédée et repère un profil VPN partagé (sonde réseau). */
+    let id = null;
+    try { id = storage.get("trx.device"); } catch (e) { /* stockage indisponible */ }
+    if (typeof id === "string" && /^[0-9a-f]{32}$/.test(id)) return id;
+    const bytes = env.randomBytes ? env.randomBytes(16) : Array.from({ length: 16 }, () => Math.floor(Math.random() * 256));
+    id = Array.from(bytes, (b) => (b & 255).toString(16).padStart(2, "0")).join("");
+    try { storage.set("trx.device", id); } catch (e) { /* identifiant de session : la page marche sans */ }
+    return id;
+  }
 
   function durationText(seconds) {
     const s = Math.max(0, Math.round(Number(seconds) || 0));
@@ -836,6 +859,8 @@
       this.storage = env.storage || { get() { return null; }, set() {} };
       this.bandMemory = loadBandMemory(this.storage); this._bandSeen = ""; this._bandSince = 0;
       this.losses = loadLosses(this.storage);
+      this.device = loadDevice(this.storage, env);
+      this.net = null; this.netReports = []; this.netEvents = []; this.netLostAt = 0;   // sonde réseau (fonction « netprobe »)
       this.connectedAt = 0; this.lastMessageAt = 0; this.lastRttMs = null; this.pingFailures = 0; this._helloTimer = null;
       this.autoWindowS = 0; this._credentials = null; this.reconnecting = null; this._reconnectTimer = null; this._token = null;
       this.recentLogs = [];
@@ -946,7 +971,8 @@
         try {
           res = await this.env.postOffer({
             client_id: opts.clientId, password: opts.password,
-            sdp: pc.localDescription.sdp, type: pc.localDescription.type });
+            sdp: pc.localDescription.sdp, type: pc.localDescription.type,
+            device: this.device, agent: this.env.agent || "page" });
         } catch (netErr) {
           throw Object.assign(new Error("La station est injoignable (réseau, VPN ou adresse incorrecte)."), { code: "network", detail: String(netErr && netErr.message || netErr) });
         }
@@ -979,6 +1005,7 @@
       if (this._helloTimer !== null) { this.env.clearTimeout(this._helloTimer); this._helloTimer = null; }
       if (this._nudgeTimer !== null) { this.env.clearTimeout(this._nudgeTimer); this._nudgeTimer = null; }
       this.pendingHz = null;
+      if (this.net) { this.net = null; this.netLostAt = this._epoch(); }   // les résumés restent : remis à la reconnexion
       for (const entry of this.pending.values()) { entry.reject(new Error("déconnecté")); }
       this.pending.clear();
       this._releaseWakeLock();
@@ -1209,6 +1236,7 @@
         this.selcall = msg.selcall && typeof msg.selcall === "object" ? msg.selcall : null;   // null : station sans SELCALL
         if (this.ui.selcall) this.ui.selcall(this.selcall, false);
         this.breizhEvents = [];                                          // journal de Breizh : relu sur la station à l'ouverture
+        this._netStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -1234,6 +1262,13 @@
         if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
       } else if (msg.type === "breizh_event") {                         // liaison avec Breizh Audio Box (opérateurs)
         this._onBreizhEvent(msg);
+      } else if (msg.type === "net_ping") {                             // sonde réseau : écho immédiat, sans file d'attente
+        if (Number.isInteger(msg.seq) && Number.isInteger(msg.t)) this._sendRaw({ cmd: "net_pong", seq: msg.seq, t: msg.t, tr: Math.round(this.env.now()) });
+      } else if (msg.type === "net_pong") {
+        this._netPong(msg);
+      } else if (msg.type === "net_event") {                            // coupure diagnostiquée, profil VPN partagé (opérateurs)
+        this.netEvents = this.netEvents.concat([msg]).slice(-NET_EVENTS_MAX);
+        if (this.ui.netEvent) { try { this.ui.netEvent(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
       } else if (msg.type === "swr") {                                  // progression de MA mesure de TOS
         this.swr = msg;
         if (this.ui.swr) { try { this.ui.swr(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
@@ -1501,6 +1536,7 @@
         this._linkAlert("lost");
       }
       if (this._mineActive() || now < this.hbUntil) this._sendRaw({ cmd: "heartbeat" });
+      this._netTick(now);
       if (now - this.lastPing >= PING_EVERY_MS) {
         this.lastPing = now;
         this.send("get_state").then(() => { this.pingFailures = 0; this.lastRttMs = Math.round(this.env.now() - now); this.ui.rtt(this.lastRttMs); })
@@ -1882,6 +1918,78 @@
 
     async swrLast() {
       return this.send("swr_last");
+    }
+
+    // ---- sonde de qualité réseau (fonction « netprobe ») : mesure et affiche, n'agit jamais sur l'émission
+
+    _netStart(hello) {
+      const offered = NP && Array.isArray(hello.features) && hello.features.includes("netprobe");
+      if (!offered) { this.net = null; return; }
+      const now = this.env.now();
+      this.net = { seq: 0, beats: [], nextPing: now, nextReport: now + NET_REPORT_EVERY_MS, nextClock: now };
+      const since = this.netLostAt - NET_BACKLOG_BEFORE_MS;              // reconnexion : les 10 dernières minutes utiles
+      const backlog = this.netReports.filter((r) => !r.sent || r.report.t >= since).map((r) => r.report);
+      this.netReports.forEach((r) => { r.sent = true; });
+      if (backlog.length && hello.role !== "listener") this.send("net_backlog", { reports: backlog }).catch(() => {});
+    }
+
+    _netTick(now) {
+      const net = this.net;
+      if (!net) return;
+      if (now >= net.nextPing) {
+        net.seq += 1;
+        const t = Math.round(now), ping = { cmd: "net_ping", seq: net.seq, t: t };
+        if (now >= net.nextClock) { ping.w = this._epoch(); net.nextClock = now + NET_CLOCK_EVERY_MS; }
+        net.beats.push({ seq: net.seq, sentMs: t, pongMs: null });
+        while (net.beats.length && now - net.beats[0].sentMs > NET_KEEP_BEATS_MS) net.beats.shift();
+        net.nextPing = now + NET_PING_EVERY_MS;
+        this._sendRaw(ping);
+      }
+      if (now >= net.nextReport) {
+        net.nextReport = now + NET_REPORT_EVERY_MS;
+        const report = this._netReport(now);
+        const open = !!(this.dc && this.dc.readyState === "open");
+        this.netReports = this.netReports.concat([{ report: report, sent: open }]).slice(-NET_KEEP_REPORTS);
+        this._sendRaw({ cmd: "net_report", report: report });
+      }
+    }
+
+    _netPong(msg) {
+      if (!this.net) return;
+      const beat = this.net.beats.find((b) => b.seq === msg.seq);
+      if (beat && beat.sentMs === msg.t && beat.pongMs === null) beat.pongMs = Math.round(this.env.now());
+    }
+
+    _netReport(now) {
+      /* Résumé de 10 s (docs/protocole.md § 15) ; /health, getStats et la radio s'y ajoutent avec l'affichage (lot 3). */
+      const s = NP.windowStats(this.net.beats, Math.round(now), NET_REPORT_EVERY_MS);
+      const ice = this.pc && typeof this.pc.iceConnectionState === "string" ? this.pc.iceConnectionState : null;
+      const netType = this.env.netType ? this.env.netType() : null;
+      return { t: this._epoch(), net_type: netType || null, loss_pct: s.loss_pct, rtt_mean_ms: s.rtt_mean_ms,
+               rtt_p95_ms: s.rtt_p95_ms, jitter_ms: s.jitter_ms, health_ok: 0, health_fail: 0, degraded: false,
+               ice: ["new", "checking", "connected", "completed", "disconnected", "failed", "closed"].includes(ice) ? ice : null };
+    }
+
+    netView() {
+      /* Liaison de CE client vue par la station (state.net), ou null : station sans sonde. */
+      return this.state && this.state.net && typeof this.state.net === "object" ? this.state.net : null;
+    }
+
+    async netStats(days, device) {
+      return this.send("net_stats", { days: days || 30, device: device || "" });
+    }
+
+    async netClear() {
+      return this.send("net_clear");
+    }
+
+    async netThresholds(values) {
+      /* values : {net_type, rtt_warn, rtt_alert, loss_warn, loss_alert} ou {net_type, reset: true}. */
+      return this.send("net_thresholds", values);
+    }
+
+    async netVpnIgnore(address) {
+      return this.send("net_vpn_ignore", { address: address });
     }
 
     /* Breizh Audio Box (fonction « breizh », opérateurs) : réglages pris à la PROCHAINE émission (écran : lot 3 Breizh). */
