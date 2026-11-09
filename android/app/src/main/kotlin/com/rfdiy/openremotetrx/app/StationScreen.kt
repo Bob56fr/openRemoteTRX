@@ -33,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -137,19 +138,24 @@ fun StationScreen(
             Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
             Text("version $version", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
-        OutlinedButton(onClick = {
-            scan.launch(
-                ScanOptions()
-                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt("QR code du menu 19 de TRX Console")
-                    .setBeepEnabled(false)
-                    .setOrientationLocked(false)
-                    .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
-            )
-        }) { Text("Scanner le QR code de la station") }
-        OutlinedButton(onClick = {
-            pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }) { Text("Lire le QR code depuis une image") }
+        // Tablette ou grande fenêtre (≥ 840 dp) : boutons QR côte à côte, champs sur deux colonnes, sans défilement
+        val wide = LocalConfiguration.current.screenWidthDp >= com.rfdiy.openremotetrx.logic.ScreenLayouts.WIDE_MIN_DP
+        val qrButtons: @Composable () -> Unit = {
+            OutlinedButton(onClick = {
+                scan.launch(
+                    ScanOptions()
+                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                        .setPrompt("QR code du menu 19 de TRX Console")
+                        .setBeepEnabled(false)
+                        .setOrientationLocked(false)
+                        .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
+                )
+            }) { Text("Scanner le QR code de la station") }
+            OutlinedButton(onClick = {
+                pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }) { Text("Lire le QR code depuis une image") }
+        }
+        if (wide) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { qrButtons() } else qrButtons()
         if (notice.isNotEmpty()) Text(notice, color = MaterialTheme.colorScheme.primary)
         if (accounts.isNotEmpty()) {
             Text("Stations", style = MaterialTheme.typography.titleMedium)
@@ -158,66 +164,79 @@ fun StationScreen(
                 FilterChip(selected = editing == null, onClick = { select(null) }, label = { Text("+ Nouvelle") })
             }
         }
-        OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
-            address, { address = it }, label = { Text("Adresse (ex. 192.168.1.10:8443)") }, singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedTextField(user, { user = it }, label = { Text("Identifiant") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
-            password, { password = it; onTyped(it) }, label = { Text("Mot de passe") }, singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(keepPassword, { keepPassword = it })
-            Text("Mémoriser le mot de passe (chiffré sur ce téléphone)")
+        val identity: @Composable () -> Unit = {
+            OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                address, { address = it }, label = { Text("Adresse (ex. 192.168.1.10:8443)") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(user, { user = it }, label = { Text("Identifiant") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                password, { password = it; onTyped(it) }, label = { Text("Mot de passe") }, singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(keepPassword, { keepPassword = it })
+                Text("Mémoriser le mot de passe (chiffré sur cet appareil)")
+            }
         }
-        OutlinedTextField(
-            fingerprint, { fingerprint = it }, label = { Text("Empreinte du certificat (TRX Console, menu 19)") },
-            supportingText = { Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.") },
-            minLines = 2, modifier = Modifier.fillMaxWidth(),
-        )
-        Text("Reconnexion automatique après une coupure", style = MaterialTheme.typography.titleSmall)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (w in WINDOWS) FilterChip(selected = window == w, onClick = { window = w }, label = { Text(if (w == 0) "non" else "$w s") })
-        }
-        if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = {
-                val url = StationAddress.normalize(address)
-                val pin = if (fingerprint.isBlank()) "" else Fingerprint.normalize(fingerprint)
-                error = when {
-                    name.isBlank() -> "Donne un nom à la station."
-                    url == null -> "Adresse invalide : hôte ou IP, port facultatif (8443), HTTPS uniquement."
-                    user.isBlank() -> "Identifiant manquant."
-                    password.isEmpty() -> "Mot de passe manquant."
-                    pin == null -> "Empreinte invalide : 32 octets en hexadécimal (AB:CD:…)."
-                    else -> ""
-                }
-                if (error.isEmpty()) {
-                    val base = editing ?: StationAccount(name = name.trim(), url = url!!, user = user.trim())
-                    val account = store.save(
-                        base.copy(name = name.trim(), url = url!!, user = user.trim(), fingerprint = pin!!, reconnectWindowS = window),
-                        if (keepPassword) password else "",
-                    )
-                    store.lastId = account.id
+        val security: @Composable () -> Unit = {
+            OutlinedTextField(
+                fingerprint, { fingerprint = it }, label = { Text("Empreinte du certificat (TRX Console, menu 19)") },
+                supportingText = { Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.") },
+                minLines = 2, modifier = Modifier.fillMaxWidth(),
+            )
+            Text("Reconnexion automatique après une coupure", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (w in WINDOWS) FilterChip(selected = window == w, onClick = { window = w }, label = { Text(if (w == 0) "non" else "$w s") })
+            }
+            if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    val url = StationAddress.normalize(address)
+                    val pin = if (fingerprint.isBlank()) "" else Fingerprint.normalize(fingerprint)
+                    error = when {
+                        name.isBlank() -> "Donne un nom à la station."
+                        url == null -> "Adresse invalide : hôte ou IP, port facultatif (8443), HTTPS uniquement."
+                        user.isBlank() -> "Identifiant manquant."
+                        password.isEmpty() -> "Mot de passe manquant."
+                        pin == null -> "Empreinte invalide : 32 octets en hexadécimal (AB:CD:…)."
+                        else -> ""
+                    }
+                    if (error.isEmpty()) {
+                        val base = editing ?: StationAccount(name = name.trim(), url = url!!, user = user.trim())
+                        val account = store.save(
+                            base.copy(name = name.trim(), url = url!!, user = user.trim(), fingerprint = pin!!, reconnectWindowS = window),
+                            if (keepPassword) password else "",
+                        )
+                        store.lastId = account.id
+                        accounts = store.list()
+                        editing = account
+                        onConnect(account, password)
+                    }
+                }) { Text("Connecter") }
+                val current = editing
+                if (current != null) OutlinedButton(onClick = {
+                    store.delete(current.id)
                     accounts = store.list()
-                    editing = account
-                    onConnect(account, password)
-                }
-            }) { Text("Connecter") }
-            val current = editing
-            if (current != null) OutlinedButton(onClick = {
-                store.delete(current.id)
-                accounts = store.list()
-                select(accounts.firstOrNull())
-            }) { Text("Supprimer") }
+                    select(accounts.firstOrNull())
+                }) { Text("Supprimer") }
+            }
+            val last = ui.rig.log.lastOrNull()
+            if (last != null) {
+                Text("Dernier message", style = MaterialTheme.typography.titleSmall)
+                Text(last.text, style = MaterialTheme.typography.bodyMedium)
+            }
         }
-        val last = ui.rig.log.lastOrNull()
-        if (last != null) {
-            Text("Dernier message", style = MaterialTheme.typography.titleSmall)
-            Text(last.text, style = MaterialTheme.typography.bodyMedium)
+        if (wide) {
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) { identity() }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) { security() }
+            }
+        } else {
+            identity()
+            security()
         }
     }
 }
