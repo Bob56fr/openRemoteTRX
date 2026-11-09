@@ -95,6 +95,7 @@ Fait et essayé dans l'émulateur (Android 17) contre une vraie passerelle et le
   - Touches du volant : PTT seulement avec le réglage « PTT par le bouton » (désactivé par défaut) ; sinon Lecture/Pause.
 
 ### Lot A3 (étape Android 11) — interface smartphone complète
+- LOT A3 TERMINÉ (étape 147, application 0.56.0) : le dernier manque était « Signaler un problème » (Réglages, même texte que la page, relu avant l'envoi, modèle du téléphone et version d'Android). Le reste a été livré au fil des étapes 54 à 96 (matrice `parite-web-android.md`).
 - S-mètre, fréquence (glisser par chiffre, clavier, bandes), modes et filtres permis par les capacités, mémoires (créer, rappeler, favoris), fonctions du poste (NR NB P.AMP IP+ AGC COMP FIL TUNER, ATT, Notch selon capacités), puissance, squelch.
 - Mode conduite : interface réduite, PTT tactile désactivé en roulant (vitesse ou connexion voiture), seulement voix, voiture, volant ou bouton Bluetooth. FAIT (étape 82, application 0.24.0) : écran réduit (état RX/TX, fréquence, mode, S-mètre, STOP et sourdine en très grand), AUCUN PTT tactile ; en service par le réglage ou automatiquement quand Android Auto ouvre le lecteur ou que le téléphone passe en mode voiture (réglage « automatique », activé par défaut) ; « Je suis passager » (appui long) le lève jusqu'à la déconnexion de la voiture. Vitesse (GPS) non utilisée (autorisation de localisation évitée). La voix ne fait jamais émettre.
 - Bips de fin (`beeps_set`), « Reprendre la main », rapport de problème (`bug_report`).

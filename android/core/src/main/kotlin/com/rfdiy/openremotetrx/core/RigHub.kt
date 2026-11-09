@@ -238,6 +238,15 @@ object RigHub {
     internal fun offerNetExport(name: String, bytes: ByteArray) { _netExport.value = name to bytes }
     fun netExportTaken() { _netExport.value = null }
 
+    /** « Signaler un problème » (lot A3) : texte préparé par la session, montré à l'utilisateur, puis envoyé tel quel. */
+    private val _problemText = MutableStateFlow<String?>(null)
+    val problemText: StateFlow<String?> = _problemText.asStateFlow()
+    fun prepareProblemReport(description: String, device: String, screen: String) {
+        service?.onRig { session, now -> _problemText.value = session.problemReport(now, description, device, screen) }
+    }
+    fun problemReportClosed() { _problemText.value = null }
+    fun sendProblemReport(text: String) { service?.onRig { session, now -> session.sendProblemReport(now, text) } }
+
     fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }
 
     fun setMode(mode: String) { service?.onRig { session, now -> session.setMode(now, mode) } }

@@ -422,6 +422,17 @@ class RigSession(
             publish(now)
             return
         }
+        if (entry.cmd == "bug_report") {
+            if (msg.ok) {
+                val name = (msg.raw["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                log("Rapport envoyé à la station" + (if (name.isNotEmpty()) " ($name)" else "") +
+                    " : il sera joint au rapport de dépannage (TRX Console, menu 8).", LogLevel.INFO)
+            } else {
+                log("Rapport non envoyé : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+            }
+            publish(now)
+            return
+        }
         if (entry.cmd == "host_info") {                         // synthèse du matériel : affichée telle quelle
             hostSections = if (msg.ok) HostSection.parse(msg.raw["sections"]).orEmpty() else emptyList()
             publish(now)
@@ -608,6 +619,17 @@ class RigSession(
     fun releaseLocal(now: Long) {
         if (!connected) return
         send(now, Command.LocalRelease)
+        publish(now)
+    }
+
+    /** « Signaler un problème » : texte complet, montré AVANT l'envoi (même format que la page). */
+    fun problemReport(now: Long, description: String, device: String, screen: String): String =
+        ProblemReport.format(ProblemReport.Input(now, description, hello, state, connected, device, screen, rttMs, log.toList()))
+
+    /** Envoi du texte RELU par l'utilisateur ; la station le range et le joint au rapport de dépannage (menu 8). */
+    fun sendProblemReport(now: Long, text: String) {
+        if (!connected || hello?.offers("bug_report") != true) return
+        send(now, Command.BugReport(text.take(ProblemReport.MAX_CHARS)))
         publish(now)
     }
 

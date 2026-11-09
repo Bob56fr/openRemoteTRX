@@ -173,6 +173,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var spatialDialog by remember { mutableStateOf(false) }
     var breizhDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
+    var reportOpen by remember { mutableStateOf(false) }                     // « Signaler un problème » (lot A3)
     var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
     var netOpen by rememberSaveable { mutableStateOf(false) }                // écran « Qualité du réseau »
     var netDialog by remember { mutableStateOf(false) }                      // détail de la liaison
@@ -597,6 +598,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
                 OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
             }
+            if (hello?.offers("bug_report") == true && !listener && connected) {   // comme la page ; jamais un visiteur
+                OutlinedButton(onClick = { reportOpen = true }) { Text("Signaler un problème") }
+            }
             OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
                     }
             }
@@ -713,6 +717,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (netOpen) NetScreen(rig) { netOpen = false }
     if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, radio = ui.radio?.text(), onStats = { netDialog = false; netOpen = true }) { netDialog = false } }
+    if (reportOpen) ProblemReportDialog { reportOpen = false }
     if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
