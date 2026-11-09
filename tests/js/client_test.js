@@ -1725,6 +1725,27 @@ test("sonde réseau : /health toutes les 5 s, trous du son reçu, résumés pend
   assert.ok(backlog.some((r) => r.health_fail > 0 && r.health_ok === 0));
 });
 
+test("sonde réseau : export reçu par morceaux et assemblé", async () => {
+  const w = makeWorld();
+  await w.connected();
+  const zip = Buffer.from("PK\u0003\u0004 faux zip de 40 octets pour l'essai.....");
+  const parts = [zip.subarray(0, 25), zip.subarray(25)];
+  const done = w.client.netExport();
+  for (let i = 0; i < 2; i++) {
+    await nextTick();
+    w.answer(true, { name: "openremotetrx-reseau-20261109-1200.zip", part: i, parts: 2, size: zip.length,
+                     data: parts[i].toString("base64") });
+  }
+  const res = await done;
+  assert.equal(res.name, "openremotetrx-reseau-20261109-1200.zip");
+  assert.deepEqual(Buffer.from(res.bytes), zip);
+  assert.deepEqual(w.sentCommands("net_export").map((m) => m.part), [0, 1]);
+  const refused = w.client.netExport();
+  await nextTick();
+  w.answer(false, { reason: "netprobe_unavailable" });
+  assert.match((await refused).error, /absente/);
+});
+
 test("sonde réseau : un visiteur mesure son lien mais ne remet rien", async () => {
   const w = makeWorld();
   await w.client.connect({ clientId: "club1", password: "mot de passe de test", useMic: false });

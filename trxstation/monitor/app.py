@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Interface Textual de trx-monitor. Couche mince : tout le contenu vient de model.py.
 
-Touches : s = STOP TX (coupe l'émission), q = quitter.
+Touches : s = STOP TX (coupe l'émission), n = détail du réseau, q = quitter.
 """
 from __future__ import annotations
 
@@ -40,17 +40,19 @@ class MonitorApp(App):
     #flash { height: 1; padding: 0 1; }
     #log { height: 1fr; border: round $secondary; }
     """
-    BINDINGS = [Binding("s", "stop_tx", "STOP TX", priority=True), Binding("q", "quit", "Quitter")]
+    BINDINGS = [Binding("s", "stop_tx", "STOP TX", priority=True), Binding("n", "net_detail", "Réseau (détail)"),
+                Binding("q", "quit", "Quitter")]
 
     def __init__(self, source: StatusSource, stop_tx: Callable[[], tuple[bool, str]], interval_s: float = 0.25):
         super().__init__()
         self.source, self.stop_tx, self.interval_s = source, stop_tx, interval_s
         self.events = EventLog()
+        self.net_detail = False
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Container(id="top"):
-            for key in ("radio", "audio", "connexion", "sante", "materiel"):
+            for key in ("radio", "audio", "connexion", "sante", "materiel", "reseau"):
                 yield Static("", id=key, classes="panel")
         yield Static("", id="flash")
         yield RichLog(id="log", wrap=True, markup=False)
@@ -62,13 +64,17 @@ class MonitorApp(App):
 
     def refresh_view(self) -> None:
         snapshot: Snapshot = self.source.poll()
-        for panel in build_panels(snapshot):
+        for panel in build_panels(snapshot, self.net_detail):
             widget = self.query_one(f"#{panel.key}", Static)
             widget.border_title = panel.title
             widget.update(render_markup(panel))
         log = self.query_one("#log", RichLog)
         for line in self.events.observe(snapshot):
             log.write(line)
+
+    def action_net_detail(self) -> None:
+        self.net_detail = not self.net_detail
+        self.refresh_view()
 
     async def action_stop_tx(self) -> None:
         ok, message = await asyncio.to_thread(self.stop_tx)   # I/O réseau : hors de la boucle d'affichage

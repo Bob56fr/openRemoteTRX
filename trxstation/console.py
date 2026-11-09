@@ -251,6 +251,7 @@ class Console:
             ("20", "Visiteurs en réception seule (comptes, nombre maximal, connectés)", self.visitors),
             ("21", "Dernière mesure de TOS de l'antenne (lecture seule)", self.swr_report),
             ("22", "Breizh Audio Box (clé d'appairage, adresse, essai de la liaison, journal)", self.breizh),
+            ("23", "Qualité du réseau (liaisons, coupures, statistiques, export, effacement)", self.network),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -1161,6 +1162,96 @@ class Console:
             shutil.rmtree(work, ignore_errors=True)
         self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
                  "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
+
+    # ------------------------------------------------------------------ qualité du réseau (menu 23)
+
+    def network(self) -> None:
+        """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 12.3) : liaisons en ce moment (fichier d'état),
+        synthèses 24 h et 30 jours, export anonyme sur le Bureau, « Tout effacer ». Lecture seule sauf l'effacement ;
+        rien ici ne touche à l'émission. Les seuils de l'indicateur se règlent dans la page ou l'application."""
+        from .monitor.model import Snapshot, _reseau_panel, render_plain
+        from .netprobe.export import report_text, store_of
+        state_dir = config_state_dir(self.config)
+        while True:
+            st = self._gateway_status()
+            if st is None:
+                self.say("\nStation arrêtée : pas de liaison en cours à montrer.")
+            else:
+                panel = _reseau_panel(Snapshot(status=st, gateway_fresh=True, stale_s=0.0, safe_mode=None), detail=True)
+                self.say("\n" + render_plain([panel]).rstrip())
+            choice = self.ask("\n  1) Synthèse des 24 dernières heures\n"
+                              "  2) Synthèse des 30 derniers jours\n"
+                              "  3) Export anonyme sur le Bureau (pour l'équipe de développement)\n"
+                              "  4) Tout effacer (historique réseau ; les seuils choisis sont gardés)\n"
+                              "Choix (Entrée = retour) : ").strip()
+            if not choice:
+                return
+            store = store_of(state_dir)
+            if choice in ("1", "2"):
+                if not store.folder.is_dir():
+                    self.say("Aucune mesure encore : la sonde enregistre dès qu'un téléphone ou une page est connecté.")
+                    continue
+                self.say("\n" + report_text(store.stats(1 if choice == "1" else 30, "", {})))
+            elif choice == "3":
+                self._network_export(store, state_dir)
+            elif choice == "4":
+                self._network_clear(state_dir)
+            else:
+                self.say("Choix inconnu.")
+
+    def _network_export(self, store, state_dir: Path) -> None:
+        from dataclasses import asdict
+
+        from . import __version__
+        from . import config as cfgmod
+        from .netprobe.export import build_export, export_name
+        from .report import desktop_dir
+        from .station_id import read_station_id
+        if not store.folder.is_dir():
+            self.say("Aucune mesure à exporter.")
+            return
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            settings = asdict(cfg.netprobe)
+        except (cfgmod.ConfigError, OSError):
+            settings = {}
+        folder = self.desktop() if self.desktop else desktop_dir()
+        target = folder / export_name()
+        try:
+            target.write_bytes(build_export(store, 30, version=__version__, station_id=read_station_id(state_dir) or "",
+                                            settings=settings))
+        except OSError as exc:
+            self.say(f"Export impossible : {exc}")
+            return
+        self.say(f"Export anonyme créé : {target}\nSans compte, adresse IP ni position : joins-le à ton message pour "
+                 "l'équipe de développement.")
+
+    def _network_clear(self, state_dir: Path) -> None:
+        from .gateway.access_watch import kick_request
+        from .netprobe.probe import CLEAR_REQUEST
+        answer = self.ask("Effacer tout l'historique réseau (coupures, statistiques, appareils vus) ? "
+                          "Tape EFFACER pour confirmer : ").strip()
+        if answer != "EFFACER":
+            self.say("Rien n'a été effacé.")
+            return
+        if self._gateway_status() is not None:          # station en marche : c'est elle qui efface (mémoire comprise)
+            work = Path(tempfile.mkdtemp(prefix="trx-net-"))
+            try:
+                request = work / CLEAR_REQUEST
+                request.write_bytes(kick_request("console"))
+                code = self.runner.run(["install", "-m", "0644", str(request), str(state_dir / CLEAR_REQUEST)], admin=True)
+            finally:
+                shutil.rmtree(work, ignore_errors=True)
+            self.say("Demande envoyée : l'historique est effacé dans la seconde." if code == 0
+                     else f"Demande impossible (code {code}).")
+            return
+        folder = state_dir / "netprobe"
+        if not folder.is_dir():
+            self.say("Aucun historique à effacer.")
+            return
+        code = self.runner.run(["find", str(folder), "-maxdepth", "1", "-type", "f", "!", "-name", "seuils.json",
+                                "-delete"], admin=True)
+        self.say("Historique réseau effacé (seuils choisis gardés)." if code == 0 else f"Effacement impossible (code {code}).")
 
     # ------------------------------------------------------------------ Breizh Audio Box (menu 22)
 

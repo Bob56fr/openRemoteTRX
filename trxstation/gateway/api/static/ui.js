@@ -1865,6 +1865,17 @@
     $("net-device").addEventListener("change", loadNetStats);
     $("sec-net").addEventListener("toggle", () => { if ($("sec-net").open) loadNetStats(); });
     $("net-clear").addEventListener("click", () => { $("net-clear-confirm").hidden = !$("net-clear-confirm").hidden; });
+    $("net-export").addEventListener("click", () => {
+      $("net-status").textContent = "Export en cours…";
+      client.netExport().then((res) => {
+        if (res.error) { $("net-status").textContent = "Export impossible : " + res.error; return; }
+        const link = el("a", "");
+        link.href = URL.createObjectURL(new Blob([res.bytes], { type: "application/zip" }));
+        link.download = res.name;
+        link.click();
+        $("net-status").textContent = "Export enregistré : " + res.name + " (anonyme : à joindre à un message pour l'équipe de développement).";
+      }).catch((err) => { $("net-status").textContent = "Export impossible : " + err.message; });
+    });
     $("net-clear-confirm").addEventListener("click", () => {
       $("net-clear-confirm").hidden = true;
       client.netClear().then((res) => {

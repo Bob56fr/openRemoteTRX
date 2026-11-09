@@ -270,8 +270,76 @@ def _breizh_rows(snap: Snapshot) -> tuple[Row, ...]:
     return (Row("Breizh", f"{label} · {' · '.join(details)}", level if snap.gateway_fresh else "dim"),)
 
 
-def build_panels(snap: Snapshot) -> list[Panel]:
-    return [_radio_panel(snap), _audio_panel(snap), _connexion_panel(snap), _sante_panel(snap), _materiel_panel(snap)]
+NET_LEVELS = {"green": ("BONNE", "ok"), "orange": ("MOYENNE", "warn"), "red": ("FAIBLE", "bad"), "gray": ("mesure…", "dim")}
+NET_TYPES = {"lan": "réseau local", "wifi": "Wi-Fi", "4g": "4G", "5g": "5G", "mobile": "mobile", "unknown": "réseau ?"}
+NET_DIAGNOSES = {
+    "app_station": "application ou machine de la station", "lan": "réseau local ou machine de la station",
+    "box_internet": "connexion Internet de la box", "webrtc": "WebRTC ou passerelle", "phone_radio": "radio du téléphone",
+    "vpn_shared": "profil VPN probablement partagé", "mobile_or_tunnel": "téléphone, réseau mobile ou tunnel",
+    "unknown": "indéterminé",
+}
+
+
+def _short(seconds: float) -> str:
+    s = int(round(seconds))
+    return f"{s} s" if s < 60 else f"{s // 60} min {s % 60:02d} s" if s < 3600 else f"{s // 3600} h {s % 3600 // 60:02d}"
+
+
+def _value(v, unit: str) -> str:
+    return "—" if v is None else f"{v:g} {unit}"
+
+
+def _reseau_panel(snap: Snapshot, detail: bool = False) -> Panel:
+    """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 9.4) : une ligne par client, les sondes de la
+    station, la dernière coupure, les avertissements de profil VPN partagé. `detail` (touche n) : tout le détail."""
+    net = getattr(snap.status, "net", None) if snap.status is not None else None
+    if not isinstance(net, dict) or not net:
+        return Panel("reseau", "Réseau", (Row("Sonde", "absente (station plus ancienne ou [netprobe] enabled = false)", "dim"),))
+    dim = not snap.gateway_fresh
+    rows: list[Row] = []
+    for c in net.get("clients") or []:
+        if not isinstance(c, dict):
+            continue
+        label, level = NET_LEVELS.get(c.get("level"), ("?", "warn"))
+        if c.get("outage"):
+            label, level = "COUPURE", "bad"
+        who = str(c.get("id", "?")) + (" (visiteur)" if c.get("role") == "listener" else "")
+        text = f"{label} · {NET_TYPES.get(c.get('net_type'), c.get('net_type') or '?')} · perte {_value(c.get('loss_pct'), '%')}" \
+               f" · {_value(c.get('rtt_ms'), 'ms')}" + (f" · {c['agent']}" if c.get("agent") else "")
+        rows.append(Row(who, text, "dim" if dim else level))
+    if not rows:
+        rows.append(Row("Clients", "aucun connecté", "dim"))
+    for name, title in (("lan", "Box"), ("internet", "Internet")):
+        p = (net.get("probes") or {}).get(name)
+        if not isinstance(p, dict):
+            continue
+        ok = p.get("ok")
+        state = "NE RÉPOND PAS" if ok is False else "répond" if ok else "—"
+        text = f"{state} · {'TCP' if p.get('method') == 'tcp' else 'ping'} · {_value(p.get('rtt_ms'), 'ms')}"
+        if detail:
+            text += f" · perte {_value(p.get('loss_pct'), '%')} · {p.get('address', '?')}"
+        rows.append(Row(title, text, "dim" if dim else ("bad" if ok is False else "ok" if ok else "dim")))
+    last = net.get("last_outage")
+    if isinstance(last, dict) and last.get("end_ms"):
+        when = time.strftime("%H:%M:%S", time.localtime(last["end_ms"] / 1000))
+        text = f"{_short((last.get('duration_ms') or 0) / 1000)}, fin à {when} — " \
+               f"{NET_DIAGNOSES.get(last.get('diagnosis'), 'diagnostic en cours')}" + (f" ({last['agent']})" if last.get("agent") else "")
+        if detail and last.get("basis"):
+            text += " ; d'après : " + ", ".join(str(b) for b in last["basis"])
+        rows.append(Row("Dernière coupure", text, "warn"))
+    for w in net.get("vpn") or []:
+        if isinstance(w, dict):
+            agents = " / ".join(str(a) for a in w.get("agents") or [])
+            rows.append(Row("PROFIL VPN", f"probablement partagé : {agents} ({w.get('address', '?')})"
+                            + (" — un profil par appareil" if detail else ""), "bad"))
+    if not detail:
+        rows.append(Row("Détail", "touche n", "dim"))
+    return Panel("reseau", "Réseau" + (" (détail)" if detail else ""), tuple(rows))
+
+
+def build_panels(snap: Snapshot, net_detail: bool = False) -> list[Panel]:
+    return [_radio_panel(snap), _audio_panel(snap), _connexion_panel(snap), _sante_panel(snap), _materiel_panel(snap),
+            _reseau_panel(snap, net_detail)]
 
 
 def render_plain(panels: list[Panel]) -> str:
@@ -306,6 +374,10 @@ class EventLog:
             "fault": "" if st is None else str(st.ptt.get("fault") or ""),
             "rig": None if st is None else bool(st.rig.get("connected")),
             "safe": snap.safe_mode,
+            "net_outage": None if st is None else ((getattr(st, "net", None) or {}).get("last_outage") or {}).get("end_ms"),
+            "net_last": None if st is None else (getattr(st, "net", None) or {}).get("last_outage"),
+            "vpn": () if st is None else tuple(sorted(str(w.get("address")) for w in (getattr(st, "net", None) or {}).get("vpn") or []
+                                                      if isinstance(w, dict))),
         }
 
     def observe(self, snap: Snapshot) -> list[str]:
@@ -331,6 +403,13 @@ class EventLog:
                 new.append(f"DÉFAUT PTT : {now['fault']}" if now["fault"] else "défaut PTT effacé")
             if now["safe"] != prev["safe"]:
                 new.append(f"MODE SÛR ACTIVÉ : {now['safe']}" if now["safe"] else "mode sûr désactivé")
+            if now["net_outage"] and now["net_outage"] != prev["net_outage"]:
+                o = now["net_last"] or {}
+                new.append(f"coupure réseau de {_short((o.get('duration_ms') or 0) / 1000)}"
+                           + (f" ({o['agent']})" if o.get("agent") else "")
+                           + f" : {NET_DIAGNOSES.get(o.get('diagnosis'), 'indéterminé')}")
+            for address in sorted(set(now["vpn"]) - set(prev["vpn"])):
+                new.append(f"PROFIL VPN PROBABLEMENT PARTAGÉ ({address}) : un profil par appareil")
         stamped = [f"{self.now_text()}  {text}" for text in new]
         self.lines.extend(stamped)
         return stamped

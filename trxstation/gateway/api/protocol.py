@@ -67,7 +67,8 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             # net_ping / net_pong / net_report : sans réponse « result », admis pour un visiteur (son propre lien)
             "net_ping", "net_pong", "net_report",
             "net_backlog",                   # 10 dernières minutes du client après une coupure (opérateurs)
-            "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore")   # statistiques, effacement, seuils (opérateurs)
+            "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",   # statistiques, effacement, seuils (opérateurs)
+            "net_export")                    # export anonyme (zip) par morceaux : part (opérateurs)
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -300,6 +301,8 @@ def parse_command(raw: str | bytes) -> Command:
                 params.update(clean_thresholds(data))
             elif name == "net_vpn_ignore":
                 params["address"] = clean_address(data.get("address"))
+            elif name == "net_export":
+                params["part"] = _int(data.get("part", 0), "part", 0, 99)
         except ReportInvalid as exc:
             raise ProtocolError("invalid_params", str(exc)) from None
     elif name == "layout_save":

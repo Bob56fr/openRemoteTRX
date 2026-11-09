@@ -151,7 +151,8 @@
     "net_stats": {"valid": [{"cmd": "net_stats", "id": 71, "days": 30}, {"cmd": "net_stats", "id": 72, "days": 7, "device": "0123456789abcdef0123456789abcdef"}], "invalid": [{"message": {"cmd": "net_stats", "days": 365}, "code": "invalid_params"}, {"message": {"cmd": "net_stats", "device": "../../etc"}, "code": "invalid_params"}]},
     "net_clear": {"valid": [{"cmd": "net_clear", "id": 73}], "invalid": []},
     "net_thresholds": {"valid": [{"cmd": "net_thresholds", "id": 74, "net_type": "4g", "rtt_warn": 300, "rtt_alert": 700, "loss_warn": 2, "loss_alert": 10}, {"cmd": "net_thresholds", "id": 75, "net_type": "wifi", "reset": true}], "invalid": [{"message": {"cmd": "net_thresholds", "net_type": "4g", "rtt_warn": 700, "rtt_alert": 300, "loss_warn": 2, "loss_alert": 10}, "code": "invalid_params"}, {"message": {"cmd": "net_thresholds", "net_type": "satellite", "reset": true}, "code": "invalid_params"}]},
-    "net_vpn_ignore": {"valid": [{"cmd": "net_vpn_ignore", "id": 76, "address": "192.168.27.2"}], "invalid": [{"message": {"cmd": "net_vpn_ignore", "address": "box.local"}, "code": "invalid_params"}]}
+    "net_vpn_ignore": {"valid": [{"cmd": "net_vpn_ignore", "id": 76, "address": "192.168.27.2"}], "invalid": [{"message": {"cmd": "net_vpn_ignore", "address": "box.local"}, "code": "invalid_params"}]},
+    "net_export": {"valid": [{"cmd": "net_export", "id": 77, "part": 0}, {"cmd": "net_export", "id": 78, "part": 3}], "invalid": [{"message": {"cmd": "net_export", "part": 100}, "code": "invalid_params"}]}
   },
   "rejected": [
     {"raw": "pas du json", "code": "bad_json"},

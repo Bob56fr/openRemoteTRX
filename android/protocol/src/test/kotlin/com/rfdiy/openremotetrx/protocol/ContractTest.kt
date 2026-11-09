@@ -184,6 +184,7 @@ class ContractTest {
                                       e["reset"]?.jsonPrimitive?.boolean ?: false)
             }
             "net_vpn_ignore" -> Command.NetVpnIgnore(p("address").content)
+            "net_export" -> Command.NetExport(p("part").int)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

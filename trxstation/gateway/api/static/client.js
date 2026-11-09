@@ -517,6 +517,11 @@
     return Math.floor(s / 3600) + " h " + String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   }
 
+  function decodeBase64(text) {
+    if (typeof atob === "function") return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+    return new Uint8Array(Buffer.from(text, "base64"));                // Node (tests)
+  }
+
   function netNumber(v, unit) { return Number.isFinite(v) ? String(v).replace(".", ",") + " " + unit : "—"; }
 
   function vpnText(w) {
@@ -2145,6 +2150,23 @@
 
     async netVpnIgnore(address) {
       return this.send("net_vpn_ignore", { address: address });
+    }
+
+    async netExport() {
+      /* Export ANONYME des 30 derniers jours (zip fabriqué par la station), reçu par morceaux : {name, bytes} ou {error}. */
+      const parts = [];
+      let first = null;
+      for (let i = 0; first === null || i < first.parts; i++) {
+        const res = await this.send("net_export", { part: i });
+        if (!res || !res.ok || typeof res.data !== "string") return { error: reasonText(res && res.reason, res && res.detail) };
+        if (first === null) first = res;
+        parts.push(decodeBase64(res.data));
+        if (i >= 99) break;
+      }
+      const bytes = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+      let at = 0;
+      for (const p of parts) { bytes.set(p, at); at += p.length; }
+      return { name: String(first.name || "openremotetrx-reseau.zip").replace(/[^\w.-]/g, "_"), bytes: bytes };
     }
 
     /* Breizh Audio Box (fonction « breizh », opérateurs) : réglages pris à la PROCHAINE émission (écran : lot 3 Breizh). */

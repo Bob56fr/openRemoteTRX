@@ -41,7 +41,7 @@ LISTENER_REFUSED = frozenset({
     "selcall_deactivate", "selcall_options", "selcall_send", "selcall_calibrate", "listener_kick", "listeners_reopen",
     "listeners_open", "host_info", "voice_profiles", "voice_profile_save", "voice_profile_delete",
     "swr_plan", "swr_start", "swr_cancel", "swr_last", "breizh_set", "breizh_reactivate", "breizh_log",
-    "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore"})
+    "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore", "net_export"})
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {

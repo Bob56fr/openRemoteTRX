@@ -476,3 +476,49 @@ def test_probes_run_until_stopped():
         await asyncio.wait_for(task, 2)
     asyncio.run(main())
     assert probes.targets["lan"].seq >= 1
+
+
+def test_console_clear_request_and_export(tmp_path):
+    from trxstation.gateway.access_watch import kick_request
+    from trxstation.netprobe.probe import CLEAR_REQUEST
+    import io
+    import zipfile
+    clock = Clock()
+    hub, _ = make_hub(tmp_path, clock)
+    peer = Peer(hub, clock)
+    peer.run(12)
+    peer.answer = False
+    peer.run(5)
+    peer.answer = True
+    peer.run(17)
+    assert hub.store.outages()
+    name, blob = hub.export()
+    assert name.startswith("openremotetrx-reseau-") and zipfile.is_zipfile(io.BytesIO(blob))
+    (tmp_path / CLEAR_REQUEST).write_bytes(kick_request("console", now=(clock.wall - 60_000) / 1000))   # trop ancienne
+    peer.run(2)
+    assert hub.store.outages() and not (tmp_path / CLEAR_REQUEST).exists()
+    (tmp_path / CLEAR_REQUEST).write_bytes(kick_request("console", now=clock.wall / 1000))
+    peer.run(2)
+    assert hub.store.outages() == [] and not (tmp_path / CLEAR_REQUEST).exists()
+
+
+def test_session_sends_the_export_in_parts(tmp_path):
+    import base64
+    import io
+    import zipfile
+
+    async def scenario(fake):
+        async with station(fake) as st:
+            hub = NetProbeHub(Netprobe(), tmp_path)
+            phone = await connect(st, "phone", netprobe=hub, device="a" * 32, agent="page", source="192.168.1.20")
+            await phone.say(cmd="net_export", id=1, part=0)
+            first = phone.result(1)
+            assert first["ok"] and first["parts"] >= 1 and first["name"].endswith(".zip")
+            data = base64.b64decode(first["data"])
+            for i in range(1, first["parts"]):
+                await phone.say(cmd="net_export", id=10 + i, part=i)
+                data += base64.b64decode(phone.result(10 + i)["data"])
+            assert len(data) == first["size"] and zipfile.is_zipfile(io.BytesIO(data))
+            await phone.say(cmd="net_export", id=2, part=first["parts"])
+            assert phone.result(2)["ok"] is False
+    run(scenario)

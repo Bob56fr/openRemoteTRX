@@ -13,9 +13,11 @@ murale ; les dates des résumés du client sont recalées sur celle de la statio
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from collections import deque
+from dataclasses import asdict
 from pathlib import Path
 
 from . import calc
@@ -27,6 +29,8 @@ WINDOW_MS = 10_000
 KEEP_BEATS_MS = 70_000                 # fenêtre de 60 s + 5 s d'écho tardif + marge
 KEEP_REPORTS_MS = 900_000              # 15 min de résumés du client (diagnostic après coup)
 DIAGNOSE_AFTER_MS = 15_000             # attente des résumés du client avant de conclure (un résumé toutes les 10 s)
+CLEAR_REQUEST = "netprobe-clear.json"   # « Tout effacer » demandé par TRX Console (menu 23), écrit par sudo
+CLEAR_MAX_AGE_S = 10.0
 RECONNECT_LINK_MS = 1_800_000          # une reconnexion du même appareil dans les 30 min clôt une coupure « déconnexion »
 REPORT_FRESH_MS = 30_000               # signal radio pris en compte dans le niveau s'il date de moins de 30 s
 SKEW_WARN_MS = 1_000                   # écart d'horloge client / station signalé dans le journal
@@ -47,7 +51,9 @@ class NetProbeHub:
         l'émission, trous + son jeté du son d'émission), pour reconnaître une fenêtre au son dégradé."""
         self.cfg, self.alert, self.tx_counter = cfg, alert, tx_counter
         self.mono_ms, self.wall_ms = mono_ms, wall_ms
-        self.store = NetStore(Path(state_dir) / "netprobe", cfg.log_retention_days, cfg.stats_retention_days, wall_ms)
+        self.state_dir = Path(state_dir)
+        self.store = NetStore(self.state_dir / "netprobe", cfg.log_retention_days, cfg.stats_retention_days, wall_ms)
+        self._next_clear_check = 0
         self.vpn = VpnWatch(self.store, cfg.vpn_shared_warn, self._alert_now, wall_ms)
         self.connections: list[ClientProbe] = []
         self.reports: dict[str, deque] = {}        # appareil -> (date station, résumé) des 15 dernières minutes
@@ -202,7 +208,36 @@ class NetProbeHub:
                     self.store.log({"ts": self.wall_ms(), "src": "sonde", "kind": "mesure", **snap})
             except Exception:
                 log.exception("journal des sondes de la station")
+        if now >= self._next_clear_check:
+            self._next_clear_check = now + 1000
+            self._console_clear()
         self.store.prune()
+
+    def _console_clear(self) -> None:
+        """Demande « Tout effacer » de la console : prise une fois, ignorée si elle a plus de 10 s."""
+        path = self.state_dir / CLEAR_REQUEST
+        if not path.exists():
+            return
+        try:
+            raw = path.read_bytes()
+            path.unlink()
+            at = float(json.loads(raw)["at"])
+        except (OSError, ValueError, KeyError, TypeError):
+            log.warning("demande d'effacement de l'historique réseau illisible : ignorée")
+            return
+        if abs(self.wall_ms() / 1000 - at) <= CLEAR_MAX_AGE_S:
+            self.clear("TRX Console")
+        else:
+            log.warning("demande d'effacement de l'historique réseau trop ancienne : ignorée")
+
+    def export(self) -> tuple[str, bytes]:
+        """Export anonyme (zip) des 30 derniers jours : (nom de fichier, contenu)."""
+        from .. import __version__
+        from ..station_id import read_station_id
+        from .export import build_export, export_name
+        return export_name(self.wall_ms() / 1000), build_export(
+            self.store, 30, version=__version__, station_id=read_station_id(self.state_dir) or "",
+            settings=asdict(self.cfg))
 
     async def run(self, stop: asyncio.Event, every_s: float = 0.25) -> None:
         while not stop.is_set():

@@ -142,7 +142,7 @@ def test_audio_panel():
     assert row(p, "Émission").level == "bad" and row(p, "Pertes").level == "warn"
     p = panel(snap(st, fresh=False), "audio")
     assert row(p, "Réception").level == "dim"                                       # donnée périmée : grisée
-    assert [pn.key for pn in build_panels(snap(st))] == ["radio", "audio", "connexion", "sante", "materiel"]
+    assert [pn.key for pn in build_panels(snap(st))] == ["radio", "audio", "connexion", "sante", "materiel", "reseau"]
 
 
 def test_audio_panel_breizh_row():
@@ -380,3 +380,34 @@ def test_connexion_panel_lists_operators_and_listeners_read_only():
     closed = panel(snap(replace(status(), presence={"listeners": 0, "max_listeners": 0, "connections": []})), "connexion")
     assert row(closed, "Visiteurs").text == "écoute fermée"
     assert not [r for r in panel(snap(status()), "connexion").rows if r.label == "Visiteurs"]    # ancienne passerelle : rien
+
+
+def test_network_panel_and_events():
+    """Sonde de qualité réseau : une ligne par client, sondes, dernière coupure, profil VPN ; touche n = détail."""
+    from dataclasses import replace
+    assert panel(snap(status()), "reseau").rows[0].text.startswith("absente")
+    net = {"enabled": True,
+           "clients": [{"id": "phone", "role": "operator", "agent": "android 0.53.0", "net_type": "4g", "level": "orange",
+                        "loss_pct": 3.3, "rtt_ms": 180, "outage": False},
+                       {"id": "club1", "role": "listener", "agent": "", "net_type": None, "level": "green",
+                        "loss_pct": 0.0, "rtt_ms": 40, "outage": True}],
+           "probes": {"lan": {"address": "192.168.1.254", "method": "icmp", "ok": True, "loss_pct": 0.0, "rtt_ms": 2},
+                      "internet": {"address": "1.1.1.1", "method": "tcp", "ok": False, "loss_pct": 60.0, "rtt_ms": None}},
+           "vpn": [{"address": "192.168.27.2", "kind": "same_time", "agents": ["page Windows", "android"]}],
+           "last_outage": {"end_ms": 1_762_700_006_000, "duration_ms": 6000, "diagnosis": "vpn_shared",
+                           "basis": ["regular_pattern"], "agent": "android"}}
+    st = replace(status(), net=net)
+    rows = {r.label: r for r in panel(snap(st), "reseau").rows}
+    assert rows["phone"].level == "warn" and "MOYENNE · 4G · perte 3.3 % · 180 ms · android 0.53.0" == rows["phone"].text
+    assert rows["club1 (visiteur)"].text.startswith("COUPURE") and rows["club1 (visiteur)"].level == "bad"
+    assert rows["Box"].text == "répond · ping · 2 ms" and rows["Internet"].level == "bad"
+    assert "profil VPN probablement partagé" in rows["Dernière coupure"].text and rows["PROFIL VPN"].level == "bad"
+    assert "192.168.1.254" not in rows["Box"].text
+    detail = {r.label: r for r in build_panels(snap(st), net_detail=True)[-1].rows}
+    assert "192.168.1.254" in detail["Box"].text and "regular_pattern" in detail["Dernière coupure"].text
+    log = EventLog(now_text=lambda: "12:00:00")
+    log.observe(snap(status()))
+    lines = log.observe(snap(st))
+    assert any("coupure réseau de 6 s (android) : profil VPN" in line for line in lines)
+    assert any("PROFIL VPN PROBABLEMENT PARTAGÉ (192.168.27.2)" in line for line in lines)
+    assert log.observe(snap(st)) == []                                       # rien de neuf : aucune ligne

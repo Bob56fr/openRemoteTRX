@@ -14,6 +14,7 @@ Rien ici ne dépend d'un transport : `send` est une fonction fournie par la couc
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import time
@@ -121,6 +122,7 @@ class ControlSession:
                                                  # le squelch s'applique quand même au son qu'il reçoit
         self.netprobe = netprobe                 # NetProbeHub (netprobe/probe.py) ou None : [netprobe] enabled = false
         self.probe = None                        # ClientProbe de CETTE connexion (ouverte au démarrage)
+        self._net_export: tuple[str, bytes] | None = None   # dernier export fabriqué (envoyé par morceaux)
         self.device, self.agent, self.source = device, agent, source   # appareil (aléatoire), « page Windows »..., adresse
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
         self._times: deque[float] = deque()
@@ -446,6 +448,18 @@ class ControlSession:
             elif cmd.name == "net_vpn_ignore":
                 self.netprobe.vpn.ignore(cmd.params["address"])
                 self._result(cmd.id, True)
+            elif cmd.name == "net_export":                      # zip anonyme, par morceaux de 36 ko (base64 : 48 ko)
+                part = cmd.params["part"]
+                if part == 0 or self._net_export is None:
+                    self._net_export = self.netprobe.export()
+                name, blob = self._net_export
+                chunk = 36_000
+                parts = max(1, -(-len(blob) // chunk))
+                if part >= parts:
+                    self._result(cmd.id, False, reason="invalid", detail=f"{parts} morceau(x) seulement")
+                else:
+                    self._result(cmd.id, True, name=name, part=part, parts=parts, size=len(blob),
+                                 data=base64.b64encode(blob[part * chunk:(part + 1) * chunk]).decode("ascii"))
         except Exception:
             log.exception("sonde réseau : commande %s de %s", cmd.name, self.client_id)
             if not silent:

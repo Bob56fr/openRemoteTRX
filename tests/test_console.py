@@ -185,3 +185,31 @@ def test_diagnostic_shows_breizh_and_visitors_without_secrets(tmp_path, monkeypa
     (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
     con.diagnostic()
     assert "Breizh Audio Box : désactivé" in out[-1] and "écoute FERMÉE" in out[-1] and "visiteurs: aucun" in out[-1]
+
+
+def test_network_menu_reports_exports_and_clears(tmp_path):
+    """Menu 23 : synthèses, export anonyme sur le Bureau, « Tout effacer » (station arrêtée : find -delete par sudo)."""
+    import zipfile
+
+    from trxstation.netprobe.store import NetStore
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path / "etat")
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con, fake, out = console(tmp_path, ["1", "2", "3", "4", "non", "4", "EFFACER", ""])
+    con.network()
+    assert any("Aucune mesure encore" in line for line in out)
+    store = NetStore(tmp_path / "etat" / "netprobe")
+    store.add_outage({"start_ms": store.wall_ms() - 9000, "end_ms": store.wall_ms() - 3000, "duration_ms": 6000,
+                      "device": "a" * 32, "agent": "android", "diagnosis": "lan", "basis": [], "kind": "in_session"})
+    desktop = tmp_path / "Bureau"
+    desktop.mkdir()
+    con, fake, out = console(tmp_path, ["2", "3", "4", "non", "4", "EFFACER", ""])
+    con.desktop = lambda: desktop
+    con.network()
+    text = "\n".join(out)
+    assert "Station arrêtée" in text and "30 derniers jours" in text and "réseau local ou machine de la station" in text
+    exports = list(desktop.glob("openremotetrx-reseau-*.zip"))
+    assert len(exports) == 1 and zipfile.is_zipfile(exports[0])
+    assert "Rien n'a été effacé." in text
+    clear = [c for c in fake.calls if c[0][0] == "find"]
+    assert len(clear) == 1 and clear[0][1] is True and "seuils.json" in clear[0][0]
