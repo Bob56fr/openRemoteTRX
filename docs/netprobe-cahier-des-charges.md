@@ -116,10 +116,12 @@ résultat : réussite, durée ou échec. Interprétation :
 Sur des fenêtres glissantes de 10 s et 60 s, des deux côtés :
 - perte en % (numéros manquants sur les numéros attendus) ;
 - temps aller-retour : moyenne, p95, maximum ;
-- gigue (RFC 3550, sur le temps de transit relatif) ;
+- gigue : formule de la RFC 3550 (J += (|D| − J) / 16) appliquée aux allers-retours successifs, dans l'ordre des
+  numéros : elle ne dépend que de l'horloge de l'émetteur (lot 1) ;
 - nombre de numéros reçus hors séquence.
 
-Un `net_pong` qui arrive après 5 s compte comme perdu ET est noté « tardif ». Les calculs sont communs à trois
+Un battement sans écho depuis moins de 5 s est EN ATTENTE (ni reçu ni perdu) ; un `net_pong` qui arrive après 5 s
+compte comme perdu ET est noté « tardif ». Aller-retour p95 : rang le plus proche. Les calculs sont communs à trois
 codes : Python (station), `client.js` (page) et Kotlin (`:logic`). Ils sont figés par des vecteurs partagés
 `tests/protocol/netprobe_vectors.json` (séquences connues et résultats attendus), comme pour la mesure de TOS.
 
@@ -324,7 +326,8 @@ couleur et les alertes. On peut donc les essayer sans risque, en trois temps.
 2. **Garder un histogramme par type de réseau.** Chaque résumé horaire (`heures.jsonl`) range les fenêtres de 10 s
    dans des cases :
    - aller-retour p95 : 0-50, 50-100, 100-150, 150-200, 250, 300, 400, 600, 800, 1 000, + ms ;
-   - perte : 0, 0-1, 1-2, 2-5, 5-10, 10-20, + %.
+   - perte : moins de 0,5 (≈ 0), 0,5-1, 1-2, 2-5, 5-10, 10-20, + % (lot 1 : des cases demi-ouvertes comme
+     l'aller-retour, pour que le bas d'une case soit un seuil utilisable).
 
    Chaque case compte les fenêtres, et parmi elles celles « son dégradé ». Types de réseau : réseau local, Wi-Fi,
    4G, 5G, inconnu (page sans `navigator.connection`). Environ 200 octets par heure et par type : négligeable.
@@ -480,7 +483,7 @@ Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opé
   - Android ne le donne qu'avec `ACCESS_FINE_LOCATION` ;
   - écran éteint, il exige en plus le type `location` du service de premier plan, que Google Play fait justifier.
 
-  Proposition :
+  Décision de l'utilisateur (2026-11-09) :
   - version installée à la main seulement, option désactivée par défaut, autorisation demandée à l'activation ;
   - aucune position n'est lue : l'autorisation ne sert qu'à l'identifiant de la cellule ;
   - version Google Play : sans cette option, comme pour le scrambler.
@@ -525,7 +528,7 @@ ne changent qu'après ces essais.
 
 1. EF12 (conseil sur l'opérateur, données de l'ARCEP) : **retirée**, trop de ressources (§ 2.6).
 2. Position : **retirée** partout (§ 2.7). Le changement de cellule, qui exige l'autorisation de localisation sans
-   lire de position, reste proposé hors Google Play (§ 13) : à confirmer par l'utilisateur.
+   lire de position, existe hors Google Play seulement (§ 13) : confirmé par l'utilisateur.
 3. Android Auto et mode conduite : **« Liaison faible »** quand le lien est rouge (§ 9.3).
 4. Seuils : pas d'avis a priori ; ils sont **réglés d'après les mesures** (§ 9.6). Valeurs de départ
    250 / 600 ms et 2 / 10 %, revues après 7 jours d'essais en 4G, 5G et Wi-Fi.

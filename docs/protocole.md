@@ -195,3 +195,16 @@ Cahier des charges : [`docs/breizh-cahier-des-charges.md`](breizh-cahier-des-cha
 - Route fixée à la prise : seul le passage `breizh` -> `direct` (repli, `breizh_event fallback`) arrive pendant une
   émission ; le repli ne coupe JAMAIS l'émission.
 - Exemples : `state_breizh`, `breizh_event`, `breizh_log_result` de [`tests/protocol/messages.json`](../tests/protocol/messages.json).
+
+## 15. Sonde de qualité réseau (PRÉVUE : calculs faits, messages pas encore acceptés par la station)
+
+Cahier des charges : [`docs/netprobe-cahier-des-charges.md`](netprobe-cahier-des-charges.md) (§ 4 et § 11). Étape 136 (lot 1) : seuls les CALCULS existent, identiques dans la station (`trxstation/netprobe/calc.py`), la page (`static/netprobe.js`, pas encore chargé) et l'application (`logic/NetProbe.kt`), figés par [`tests/protocol/netprobe_vectors.json`](../tests/protocol/netprobe_vectors.json). Les messages ci-dessous seront acceptés à partir du lot 2 et annoncés par la fonction `netprobe` de `hello.features` ; un client ne les envoie JAMAIS avant de la voir.
+
+- **Battement réseau**, distinct du battement d'émission (`heartbeat`, § 5, inchangé), dans les deux sens, toutes les `[netprobe] heartbeat_interval_s` (1 s) :
+  - client -> station `{"cmd":"net_ping","seq":N,"t":T}` ; la station répond aussitôt `{"type":"net_pong","seq":N,"t":T,"tr":R}` ;
+  - station -> client `{"type":"net_ping","seq":N,"t":T}` ; le client répond aussitôt `{"cmd":"net_pong","seq":N,"t":T,"tr":R}`, sans `result`.
+  - `T`, `R` : horloges MONOTONES en ms de l'émetteur et du répondeur. L'aller-retour se mesure sur l'horloge de l'émetteur seul ; les deux horloges ne sont jamais comparées.
+- **Indicateurs** (fenêtres de 10 s et 60 s) : un battement sans écho depuis moins de 5 s est en attente ; sans écho depuis 5 s, ou avec un écho arrivé après 5 s (« tardif »), il est perdu. Perte en % au dixième ; aller-retour moyen, p95 (rang le plus proche), max ; gigue = formule de la RFC 3550 sur les allers-retours successifs ; hors séquence = échos arrivés après un écho de numéro plus grand.
+- **Coupure** : `[netprobe] outage_missed_beats` (3) battements envoyés depuis le dernier écho, chacun sans réponse depuis au moins un intervalle ; elle commence à l'envoi du premier d'entre eux et finit au premier écho reçu, quel que soit son numéro.
+- **Niveau** de l'indicateur : `gray` (moins de 10 s de mesures), `green`, `orange`, `red` ; diagnostic d'une coupure : `app_station`, `lan`, `box_internet`, `webrtc`, `phone_radio`, `vpn_shared`, `mobile_or_tunnel`, `unknown`.
+- Autres messages prévus (lots 2 à 5) : `net_report`, `net_backlog`, `net_stats`, `net_thresholds`, `net_clear`, `net_export`, `state.net`, `net_event`, champ `device` de `POST /offer` (cahier § 11).
