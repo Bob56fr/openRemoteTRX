@@ -108,10 +108,10 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 
 /** Onglet Spectre : afficheur réduit, spectre HF du poste, spectre du son reçu. */
 @Composable
-internal fun RigScope.SpectreTab() {
-            MiniDisplay(rig, shownHz, mineTx)
+internal fun RigScope.SpectreTab(mini: Boolean = true, hf: Boolean = true) {
+            if (mini) MiniDisplay(rig, shownHz, mineTx)
             // Spectre HF du poste (second port CI-V) ; plein écran : tourner le téléphone
-            if (HfScope.configured(hello)) Panel { HfScopeView(ui, canSet, onTune = { go(it) }, onClose = null) }
+            if (hf && HfScope.configured(hello)) Panel { HfScopeView(ui, canSet, onTune = { go(it) }, onClose = null) }
             // Spectre du son reçu (calculé sur le téléphone, seulement pendant l'affichage)
             Panel {
                 if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })

@@ -93,6 +93,8 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.ScreenLayout
+import com.rfdiy.openremotetrx.logic.ScreenLayouts
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -219,7 +221,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     }
 
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
-    if (landscape && HfScope.configured(hello) && rig.status != LinkStatus.DISCONNECTED) {
+    val config = LocalConfiguration.current
+    val wide = ScreenLayouts.of(config.screenWidthDp, config.screenHeightDp) == ScreenLayout.WIDE   // tablette (lot A5)
+    if (landscape && !wide && HfScope.configured(hello) && rig.status != LinkStatus.DISCONNECTED) {
         LandscapeScope(ui, canSet, onTune = { go(it) }, modifier)
         return
     }
@@ -228,79 +232,18 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     LaunchedEffect(hello?.replay?.maxS, listener) { com.rfdiy.openremotetrx.core.ReplayHub.setMax(if (listener) null else hello?.replay?.maxS) }
     val replay by com.rfdiy.openremotetrx.core.ReplayHub.ui.collectAsState()
     val pttEnabled = connected && rig.protocolOk && ui.micAllowed && !listener && (mineTx || (ptt?.transmitting != true && rig.armed))
+    if (wide) {
+        scope.TabletLayout(modifier, replay, driving, pttEnabled, voice, spatial, debounce, context)
+        scope.RigDialogsHost()
+        return
+    }
     Column(modifier.fillMaxSize()) {
       Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // En-tête : station, liaison, sourdine
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Santé de la machine de la station (opérateurs) : petit bargraph à gauche du nom, toucher = synthèse du matériel
-                rig.host?.let { h ->
-                    HostBar(h, onClick = { hostDialog = true; RigHub.hostInfo() })
-                    Spacer(Modifier.width(10.dp))
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(ui.station?.name ?: "Station", style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        when (rig.status) {
-                            LinkStatus.CONNECTED -> "Connecté" + (rig.rttMs?.let { " · $it ms" } ?: "")
-                            LinkStatus.CONNECTING -> "Connexion…"
-                            LinkStatus.RECONNECTING -> "Reconnexion…"
-                            LinkStatus.DISCONNECTED -> "Déconnecté"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
-                rig.net?.let { n ->                                                     // sonde réseau : pastille, toucher = détail
-                    NetChip(n, onClick = { netDialog = true })
-                    Spacer(Modifier.width(6.dp))
-                }
-                rig.presence?.takeIf { it.label.isNotEmpty() }?.let { p ->             // 🎧 N : visiteurs connectés
-                    CompactChip(p.label, onClick = { presenceDialog = true })
-                    Spacer(Modifier.width(6.dp))
-                }
-                Text("Muet", style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.width(6.dp))
-                Switch(checked = ui.muted, onCheckedChange = { RigHub.setMuted(it) })
-            }
-            if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
-            rig.presence?.let { p -> p.suspended.ifEmpty { p.grace }.takeIf { it.isNotEmpty() }?.let { Banner(it, WARN) } }
-
-            rig.reconnect?.let { r ->
-                Banner(
-                    "LIAISON PERDUE : reconnexion encore ${r.remainingS} s (essai ${r.attempts})" +
-                        (if (r.lastError.isNotEmpty()) "\n${r.lastError}" else "") + "\nL'émission éventuelle est coupée par la station.",
-                    TX_RED,
-                )
-            }
-            if (!rig.protocolOk) Banner("Version de protocole inconnue : réception et STOP seulement.", WARN)
-
-            if (replay.playing || replay.pending) {
-                Banner(if (replay.playing) "DIFFUSION DE L'ENREGISTREMENT : ${replay.positionS.toInt()} / ${replay.recordedS.toInt()} s — STOP pour arrêter"
-                       else "Diffusion de l'enregistrement : émission demandée…", TX_RED, textColor = Color.White)
-            }
-            // Avertissements de l'émission (l'état lui-même est dans l'afficheur)
-            if (ptt != null) {
-                if (ptt.totWarning) Banner("Fin du temps d'émission proche (TOT).", WARN)
-                ptt.local?.let { local ->
-                    Banner(local, WARN)
-                    if (ptt.canReleaseLocal) OutlinedButton(onClick = { RigHub.releaseLocal() }) { Text("Reprendre la main") }
-                }
-                when (ptt.tempAlert) {
-                    "hot" -> Banner("Poste TROP CHAUD : émission refusée.", TX_RED)
-                    "warn" -> Banner("Poste chaud : surveille la température.", WARN)
-                }
-                if (ptt.fault.isNotEmpty()) Banner("DÉFAUT à la station (${ptt.fault}) : intervention nécessaire.", TX_RED)
-                if (ptt.lastCut.isNotEmpty() && !ptt.transmitting) Text("Dernière coupure : ${ptt.lastCut}", style = MaterialTheme.typography.bodySmall)
-            }
-
-            if (driving == DrivingReason.PASSENGER) Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Voiture connectée : mode passager (PTT de l'écran permis).", color = WARN, style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(1f))
-                TextButton(onClick = { RigHub.setPassenger(false) }) { Text("Mode conduite") }
-            }
+            scope.HeaderAndBanners(replay, driving)
             when (tab) {
                 Tab.STATION -> {
                     scope.StationTab()
@@ -321,122 +264,12 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     }
             }
         }
-        if (BigPtt.visible(bigPttRequested, connected, driving = false)) {      // conduite : écran à part, sans PTT tactile
-            BigPttOverlay(BigPtt.look(ptt, rig.armed, pttEnabled), ptt?.totSeconds, pttEnabled) {
-                if (debounce.pass()) RigHub.toggle()
-            }
-        }
+        scope.BigPttLayer(pttEnabled, debounce)
       }
 
-        // Toujours visibles : armement, PTT (appui simple ; appui long = gros PTT au milieu de l'écran), STOP
-        Surface(tonalElevation = 6.dp) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
-                }
-                // Boutons du client sur leur propre ligne (WF, SEL, EQ, ST, voyant du scrambler)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
-                    if (HfScope.configured(hello)) {
-                        CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf)
-                        Spacer(Modifier.width(6.dp))
-                    }
-                    // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » (allumé) ; toucher = panneau ; même style que EQ
-                    rig.selcall?.let { sel ->
-                        CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open)
-                        Spacer(Modifier.width(6.dp))
-                    }
-                    // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Audio »)
-                    val eqOn = voice.settings.enabled && !voice.breizh          // voix par Breizh : EQ coupé, bouton grisé
-                    CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !voice.settings.enabled) }, selected = eqOn,
-                        onLongClick = { tab = Tab.EQ }, enabled = !voice.breizh)
-                    // Spatialisation stéréo de la réception : appui = marche / arrêt, appui long = réglages
-                    Spacer(Modifier.width(6.dp))
-                    val stOn = spatial.settings.on
-                    CompactChip(if (stOn) "ST ●" else "ST", onClick = { com.rfdiy.openremotetrx.core.SpatialHub.setEnabled(context, !stOn) },
-                        selected = stOn && spatial.monoReason.isEmpty(), onLongClick = { spatialDialog = true })
-                    // Breizh Audio Box (station qui l'emploie) : voyant BZH vert / orange / gris ; toucher = sa fenêtre
-                    rig.breizh?.let { bzh ->
-                        Spacer(Modifier.width(6.dp))
-                        CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level))
-                    }
-                    // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
-                    if (voice.scrambler.tx || voice.scrambler.rx) {
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            if (voice.scrambler.tx) "SCRAMBLER" else "DÉBROUILL.", color = TX_RED, fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium, modifier = Modifier.clickable { tab = Tab.EQ },
-                        )
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val canShowBig = !listener && BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false)
-                    val pttColors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors()
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (pttEnabled) pttColors.containerColor else pttColors.disabledContainerColor,
-                        contentColor = if (pttEnabled) pttColors.contentColor else pttColors.disabledContentColor,
-                        modifier = Modifier.weight(2f).height(64.dp).combinedClickable(
-                            enabled = pttEnabled || canShowBig,
-                            onClick = { if (pttEnabled && debounce.pass()) RigHub.toggle() },
-                            onLongClick = { if (canShowBig) bigPttRequested = true },
-                        ),
-                    ) {
-                      Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            when {
-                                mineTx -> "FIN D'ÉMISSION"
-                                ptt?.mine == true -> "COUPURE…"
-                                ptt?.other == true -> "Autre client en émission"
-                                !rig.armed -> "PTT\n(autoriser d'abord)"
-                                else -> "ÉMETTRE"
-                            },
-                            fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                        )
-                      }
-                    }
-                    Button(
-                        onClick = { RigHub.stop(); bigPttRequested = false },      // STOP coupe toujours et masque le gros PTT
-                        enabled = connected && !listener,                          // un visiteur ne coupe pas l'opérateur
-                        colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(64.dp),
-                    ) { Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-                }
-            }
-        }
+        scope.ControlBar(pttEnabled, voice, spatial, debounce, context)
         TabBar(tab) { tab = it }
     }
 
-    if (entry) FrequencyDialog(shownHz, onDismiss = { entry = false }) { hz ->
-        entry = false
-        go(hz)
-    }
-    if (levelsDialog) LevelsDialog(levelRanges(hello, radio?.levels), radio?.levels.orEmpty(), canSet) { levelsDialog = false }
-    if (bandsDialog) BandsDialog(Radio.favoriteBands(bandsPref), onDismiss = { bandsDialog = false }) { chosen ->
-        bandsPref = Radio.favoriteBandsText(chosen)
-        prefs.edit().putString("bands", bandsPref).apply()
-        bandsDialog = false
-    }
-    rig.selcall?.let { st ->
-        if (spatialDialog) SpatialDialog(onDismiss = { spatialDialog = false })
-        if (selcallDialog) SelcallDialog(st, connected && rig.protocolOk, armed = rig.armed && ui.micAllowed,
-            transmitting = ptt?.transmitting == true || (rig.state?.ptt?.state ?: "RX") != "RX", mine = ptt?.mine == true,
-            sendOffered = hello?.offers("selcall_send") == true, calibrateOffered = hello?.offers("selcall_calibrate") == true,
-            lastMessage = rig.log.lastOrNull()?.text.orEmpty(),
-            onDismiss = { selcallDialog = false })
-    }
-    if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
-    if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
-    if (swrOpen) SwrScreen(rig) { swrOpen = false }
-    if (netOpen) NetScreen(rig) { netOpen = false }
-    if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, radio = ui.radio?.text(), onStats = { netDialog = false; netOpen = true }) { netDialog = false } }
-    if (reportOpen) ProblemReportDialog { reportOpen = false }
-    if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
-    if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
-    memoryDialog?.let { edit ->
-        MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
-    }
+    scope.RigDialogsHost()
 }

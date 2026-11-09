@@ -108,8 +108,8 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 
 /** Onglet Mémoires : mémoires partagées de la station et Cluster DX. */
 @Composable
-internal fun RigScope.MemoriesTab() {
-            MiniDisplay(rig, shownHz, mineTx)
+internal fun RigScope.MemoriesTab(mini: Boolean = true) {
+            if (mini) MiniDisplay(rig, shownHz, mineTx)
             // Mémoires partagées de la station
             if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {

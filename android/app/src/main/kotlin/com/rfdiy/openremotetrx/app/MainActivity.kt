@@ -61,6 +61,18 @@ private fun compactTypography(factor: Float = 0.85f): Typography {
 }
 
 class MainActivity : ComponentActivity() {
+    /**
+     * Clavier physique (tablette, housse-clavier, ChromeOS ; lot A5) : Échap = STOP, comme le bouton (couper est toujours
+     * permis ; la session n'envoie rien sans liaison). AUCUNE touche ne fait émettre (décision de l'utilisateur, 2026-11-09).
+     */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_ESCAPE) {
+            RigHub.stop()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

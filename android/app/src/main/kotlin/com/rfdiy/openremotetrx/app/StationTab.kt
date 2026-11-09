@@ -108,7 +108,7 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 
 /** Onglet Station : afficheur, squelch, clarifieur, petit waterfall, bandes, modes, fonctions du poste. */
 @Composable
-internal fun RigScope.StationTab() {
+internal fun RigScope.StationTab(miniWaterfall: Boolean = true) {
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
             Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -240,7 +240,7 @@ internal fun RigScope.StationTab() {
             }
 
             // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
-            if (miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
+            if (miniWaterfall && miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
             Panel {
             // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
             val dots = rig.bandDots(System.currentTimeMillis())
