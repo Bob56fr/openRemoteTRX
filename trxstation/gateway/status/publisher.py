@@ -45,7 +45,7 @@ class StatusPublisher:
                              swr=self.swr_status() if self.swr_status is not None else {},
                              breizh=self.pipeline.route.snapshot()
                              if getattr(self.pipeline, "route", None) is not None else {},
-                             net=self._net())
+                             net=self._net(), selcall=self._selcall())
 
     def _net(self) -> dict:
         if self.net_status is None:
@@ -54,6 +54,16 @@ class StatusPublisher:
             return self.net_status()
         except Exception:                 # la sonde ne doit jamais empêcher l'écriture de l'état (superviseur)
             log.exception("état de la sonde réseau")
+            return {}
+
+    def _selcall(self) -> dict:
+        receiver = getattr(self.pipeline, "selcall", None)
+        if receiver is None:              # [selcall] enabled = false
+            return {}
+        try:
+            return receiver.summary()
+        except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
+            log.exception("état SELCALL")
             return {}
 
     def stop(self) -> None:

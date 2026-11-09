@@ -112,10 +112,11 @@ class HwTest:
                  tx_levels_db: tuple[float, ...] = (-40.0, -30.0, -24.0), cat_timeout_s: float = 10.0,
                  record_wav: str = "hwtest_rx.wav", cycles: int = 3, capabilities: Capabilities | None = None,
                  only_rig_unkey: bool = False, rx_only: bool = False, scope_opener: Callable | None = None,
-                 scope_measure_s: float = 3.0):
+                 scope_measure_s: float = 3.0, selcall_listen_s: float = 20.0):
         self.cfg, self.ask, self.out = cfg, ask, out
         self.only_rig_unkey, self.rx_only = only_rig_unkey, rx_only
         self.scope_opener, self.scope_measure_s = scope_opener, scope_measure_s
+        self.selcall_listen_s = selcall_listen_s
         self.tot_s, self.hold_s, self.tx_seconds, self.rx_listen_s = tot_s, hold_s, tx_seconds, rx_listen_s
         self.tx_levels_db, self.cat_timeout_s, self.record_wav, self.cycles = tx_levels_db, cat_timeout_s, record_wav, cycles
         self.results: list[StageResult] = []
@@ -266,6 +267,91 @@ class HwTest:
             return self.record("Audio RX", True, f"ATTENTION saturation (crête {peak:.0f} dBFS) : baisse le niveau de sortie USB du poste ou rx_gain_db")
         hint = f" ; suggestion rx_gain_db ≈ {max(-40, min(20, round(-30 - mean)))}" if abs(mean + 30) > 10 else ""
         return self.record("Audio RX", True, f"moyen {mean:.0f} dBFS, crête {peak:.0f} dBFS{hint}")
+
+    # ------------------------------------------------------------------ SELCALL en réception (facultatif)
+
+    SELCALL_OFFSETS_HZ = (0, 300, -300)        # docs/selcall-cahier-des-charges.md § 12 : tolérance ±300 Hz
+
+    async def _selcall_listen(self, code: str) -> list:
+        """Écoute jusqu'à une trame valide du `code` (ou la fin du délai) ; retourne toutes les trames décodées."""
+        from ..selcall.receiver import SelcallReceiver, SelcallStore      # numpy : seulement pour cette étape
+        store = SelcallStore(None)
+        store.activate(code)
+        frames: list = []
+        receiver = SelcallReceiver(store, on_frame=lambda frame, _opened: frames.append(frame))
+        queue = self.pipeline.hub.subscribe(maxsize=500)
+        try:
+            end = time.monotonic() + self.selcall_listen_s
+            while time.monotonic() < end and not any(f.valid and f.code == code for f in frames):
+                try:
+                    pcm = await asyncio.wait_for(queue.get(), 1.0)
+                except asyncio.TimeoutError:
+                    continue
+                receiver.process(pcm)
+        finally:
+            self.pipeline.hub.unsubscribe(queue)
+        return frames
+
+    async def _set_rit(self, hz: int) -> bool:
+        try:
+            await self.ctrl.set_offset("RIT", hz)
+            await self.ctrl.set_function("RIT", hz != 0)
+            return True
+        except Exception as exc:
+            self.say(f"  RIT refusé par le poste ({exc}) : décale la SOURCE de {hz:+d} Hz à la main.")
+            return False
+
+    async def stage_selcall_rx(self) -> bool:
+        """Essai réel guidé du SELCALL (réception seule) : trame jouée par un second poste ou un fichier, décodage
+        relevé, puis RIT à +300 et -300 Hz. Le RIT d'origine est TOUJOURS remis (sur l'IC-7300 il partage son
+        décalage avec le ΔTX : un décalage oublié déplacerait les émissions des étapes suivantes)."""
+        from ..selcall import protocol as sp
+        self.say("\n--- SELCALL en réception (facultatif ; aucune émission) ---")
+        answer = await self.prompt("  As-tu une source de trame SELCALL (second poste, fichier joué près du micro d'un autre poste) ? [o/N] : ")
+        if answer.lower() not in ("o", "oui"):
+            return self.record("SELCALL", None, "ignoré")
+        try:
+            code = sp.validate_code(await self.prompt("  Code que la source va envoyer : "))
+        except sp.CodeError as exc:
+            return self.record("SELCALL", None, f"ignoré ({exc})")
+        try:                                       # RIT d'origine relu SUR LE POSTE (l'état suivi ne le contient pas toujours)
+            rit0 = await self.link.client.get_offset("RIT")
+            fn0 = await self.link.client.get_func("RIT")
+        except Exception as exc:                   # illisible : on ne le touche pas, décalage de la source à la main
+            self.say(f"  RIT du poste illisible ({exc}) : il ne sera pas modifié.")
+            rit0 = fn0 = None
+        details, ok, touched = [], True, False
+        try:
+            for offset in self.SELCALL_OFFSETS_HZ:
+                if offset:
+                    if await self.prompt(f"  Essai avec un décalage de {offset:+d} Hz ? [O/n] : ") in ("n", "N", "non"):
+                        details.append(f"{offset:+d} Hz ignoré")
+                        continue
+                    if rit0 is None:
+                        self.say(f"  Décale la SOURCE de {offset:+d} Hz à la main.")
+                    else:
+                        touched = True
+                        await self._set_rit(offset)
+                self.say(f"  Fais envoyer la trame {code} maintenant ({self.selcall_listen_s:.0f} s d'écoute)…")
+                frames = await self._selcall_listen(code)
+                good = [f for f in frames if f.valid and f.code == code]
+                others = [f.code or f.reason for f in frames if not (f.valid and f.code == code)]
+                label = f"{offset:+d} Hz" if offset else "sans décalage"
+                if good:
+                    f = good[0]
+                    details.append(f"{label} : décodé (Δ {f.delta_hz:+.0f} Hz, S/B {f.snr_db:.0f} dB)")
+                else:
+                    ok = False
+                    details.append(f"{label} : RIEN" + (f" (trames : {', '.join(map(str, others[:3]))})" if others else ""))
+                self.say("  " + details[-1])
+        finally:
+            if touched:
+                try:
+                    await self.ctrl.set_offset("RIT", rit0)
+                    await self.ctrl.set_function("RIT", fn0)
+                except Exception as exc:
+                    self.say(f"  ATTENTION : RIT non remis ({exc}) : remets le RIT / ΔTX du poste à {rit0} Hz À LA MAIN.")
+        return self.record("SELCALL", ok, " ; ".join(details))
 
     # ------------------------------------------------------------------ étape 3 : accord
 
@@ -683,6 +769,8 @@ class HwTest:
                 await self.stage_tuning()
                 await self.stage_filters()
                 await self.stage_scope_screen()
+                if self.cfg.selcall.enabled:                 # proposé seulement à qui utilise SELCALL
+                    await self.stage_selcall_rx()
             if self.rx_only:
                 return self.results
             await self.stage_band()

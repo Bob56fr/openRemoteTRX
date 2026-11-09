@@ -208,6 +208,27 @@ class SelcallStore:
         return False
 
 
+def open_alert(send: Callable[[str, str], object], state: str) -> Callable[[SelcallStatus], None]:
+    """Écouteur du store : une alerte ntfy quand un appel OUVRE le squelch (passage en OUVERT), jamais le code
+    (décision de l'utilisateur, 2026-11-09 : une rubrique ntfy publique se devine). Le Notifier limite déjà à une
+    alerte par minute pour un même titre."""
+    previous = {"state": state}                    # état au démarrage : un OUVERT relu n'alerte pas
+
+    def listener(status: SelcallStatus) -> None:
+        was, previous["state"] = previous["state"], status.state
+        if status.state != OPEN or was == OPEN:
+            return
+        call = status.last_call or {}
+        details = []
+        if isinstance(call.get("delta_hz"), (int, float)):
+            details.append(f"décalage {call['delta_hz']:+.0f} Hz")
+        if isinstance(call.get("snr_db"), (int, float)):
+            details.append(f"S/B {call['snr_db']:.0f} dB")
+        send("SELCALL", "Appel reçu : squelch ouvert" + (f" ({', '.join(details)})" if details else "") + ".")
+
+    return listener
+
+
 def _level_ok(value) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and -30 <= value <= -1
 
@@ -244,6 +265,14 @@ class SelcallReceiver:
         self._fir = _lowpass()
         self._restart()
         self.frames_rejected = 0
+        self.frames_valid = 0
+
+    def summary(self) -> dict:
+        """Résumé pour le fichier d'état (trx-monitor, lecture LOCALE seulement : le code y figure)."""
+        s = self.store.status
+        return {"state": s.state, "code": s.code, "last_call": s.last_call, "sending": s.sending,
+                "send_on_tx_end": s.send_on_tx_end, "filter_mode": s.filter_mode,
+                "frames_valid": self.frames_valid, "frames_rejected": self.frames_rejected}
 
     def _restart(self) -> None:
         self.decoder = SelcallDecoder()
@@ -310,6 +339,7 @@ class SelcallReceiver:
             self._intervals.append([frame.start_s, frame.end_s + HOLD_AFTER_S])
         opened = False
         if frame.valid:
+            self.frames_valid += 1
             log.info("SELCALL : trame %s (Δ %+.1f Hz, SNR %.1f dB)", frame.code, frame.delta_hz, frame.snr_db)
             opened = self.store.call_received(frame, self.clock())
         else:

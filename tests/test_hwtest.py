@@ -491,3 +491,45 @@ def test_rig_side_unkey_needs_the_confirmation_word_and_never_asks_while_transmi
 def test_rig_unkey_option_on_the_command_line(tmp_path):
     code, err = cli(["--config", str(tmp_path / "absent.toml"), "--coupure-poste"])
     assert code == 2                                                                    # configuration absente : refus net
+
+
+def _selcall_wav(path, code="4721"):
+    import numpy as np
+    from trxstation.selcall import signal as sg
+    x = np.concatenate([np.zeros(48000 // 5), sg.synthesize(code, rate=48000), np.zeros(48000 // 5)])
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1), w.setsampwidth(2), w.setframerate(48000)
+        w.writeframes((np.clip(x, -1, 1) * 32767).astype("<i2").tobytes())
+
+
+def test_selcall_reception_stage_decodes_and_always_restores_the_rit(tmp_path):
+    _selcall_wav(tmp_path / "selcall.wav")
+
+    async def scenario(hw, fake, out, prompts):
+        hw.cfg.selcall.enabled = True
+        fake.rit, fake.funcs["RIT"] = 120, 1                                          # RIT d'origine de l'opérateur
+        results = await hw.run()
+        r = [x for x in results if x.name == "SELCALL"][0]
+        assert r.ok, r.detail
+        assert r.detail.count("décodé") == 3 and "+300 Hz" in r.detail and "-300 Hz" in r.detail
+        assert fake.rit == 120 and fake.funcs["RIT"] == 1                              # remis tel quel
+        assert 1 not in fake.ptt_commands                                              # aucune émission
+    run(tmp_path, scenario, rx_only=True, capture=f"file:{tmp_path / 'selcall.wav'}",
+        answers={"source de trame SELCALL": "o", "Code que la source": "4721"}, selcall_listen_s=8.0)
+
+
+def test_selcall_reception_stage_is_offered_only_when_selcall_is_enabled(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        await hw.run()
+        assert not any("SELCALL" in p for p in prompts)
+    run(tmp_path, scenario, rx_only=True)
+
+
+def test_selcall_reception_stage_reports_silence_as_a_failure(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        hw.cfg.selcall.enabled = True
+        results = await hw.run()
+        r = [x for x in results if x.name == "SELCALL"][0]
+        assert r.ok is False and "RIEN" in r.detail and fake.rit == 0
+    run(tmp_path, scenario, rx_only=True,
+        answers={"source de trame SELCALL": "o", "Code que la source": "4721", "décalage": "n"}, selcall_listen_s=1.0)

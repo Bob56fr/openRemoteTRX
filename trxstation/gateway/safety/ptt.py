@@ -385,7 +385,7 @@ class PttController:
             log.error("bip de fin trop long : coupure sans attendre")
         except asyncio.CancelledError:
             if task.cancelled():
-                pass                                  # interrompu par une coupure (force_rx)
+                log.info("bip %s interrompu par une coupure", kind)   # force_rx (SELCALL : trame annulée)
             else:
                 # C'est l'appelant qui est annulé (fermeture de connexion, arrêt d'une tâche) : le chien de
                 # garde ne surveille plus (état UNKEYING), la coupure part donc quand même, en tâche à part.

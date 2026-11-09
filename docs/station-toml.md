@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.112.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.113.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -212,7 +212,7 @@ Se modifie : Menu 14 ; le code et les options se règlent depuis la page ou l'ap
 | `attenuation_db` | expert | `20` | Mode attenuate : atténuation des tonalités, en dB. |
 | `audio_delay_ms` | expert | `500` | Retard du son reçu pour que les tonalités soient filtrées avant d'être entendues. Valeurs : 250 à 1000 ms. |
 | `tx_level_dbfs` | expert | `-6.0` | Niveau de la trame émise, sous le seuil de l'ALC (réglable automatiquement depuis la page ou l'application). |
-| `notify_on_call` | courant | `true` | Notification (ntfy) quand un appel ouvre le squelch. |
+| `notify_on_call` | courant | `true` | Alerte ntfy (URL `notify_url` du superviseur), envoyée par la passerelle quand un appel ouvre le squelch, une par minute au plus. Le code SELCALL n'y figure jamais (une rubrique ntfy publique se devine). |
 | `history_size` | expert | `10` | Nombre de derniers codes gardés. |
 
 ## Cluster DX [cluster]

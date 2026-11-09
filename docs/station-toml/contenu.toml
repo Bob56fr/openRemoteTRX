@@ -674,7 +674,7 @@ role = "Niveau de la trame émise, sous le seuil de l'ALC (réglable automatique
 niveau = "expert"
 
 [reglages."selcall.notify_on_call"]
-role = "Notification (ntfy) quand un appel ouvre le squelch."
+role = "Alerte ntfy (URL `notify_url` du superviseur), envoyée par la passerelle quand un appel ouvre le squelch, une par minute au plus. Le code SELCALL n'y figure jamais (une rubrique ntfy publique se devine)."
 niveau = "courant"
 
 [reglages."selcall.history_size"]

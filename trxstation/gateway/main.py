@@ -99,6 +99,10 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
         if manager is not None and getattr(manager, "swr", None) is not None:
             publisher.swr_status = manager.swr.status                           # trx-monitor : mesure de TOS en cours
+        selcall = getattr(pipeline, "selcall", None)
+        if manager is not None and selcall is not None and cfg.selcall.notify_on_call and manager.alert is not None:
+            from ..selcall.receiver import open_alert
+            selcall.store.add_listener(open_alert(manager.alert, selcall.store.status.state))   # ntfy, sans le code
         if manager is not None and getattr(manager, "netprobe", None) is not None:
             publisher.net_status = manager.netprobe.summary                     # trx-monitor : qualité des liaisons
             tasks.append(asyncio.create_task(manager.netprobe.run(stop)))

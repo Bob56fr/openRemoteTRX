@@ -307,7 +307,7 @@ class Selcall:
     attenuation_db: int = 20          # mode attenuate
     audio_delay_ms: int = 500         # retard de l'audio reçu (250 à 1 000 ms) : les tons sont filtrés avant d'être entendus
     tx_level_dbfs: float = -6.0       # niveau de la trame émise (sous le seuil d'ALC)
-    notify_on_call: bool = True       # notification ntfy du superviseur à l'ouverture
+    notify_on_call: bool = True       # alerte ntfy (passerelle) quand un appel ouvre le squelch, sans le code
     history_size: int = 10            # derniers codes gardés
 
 

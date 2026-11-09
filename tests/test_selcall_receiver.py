@@ -278,3 +278,40 @@ def test_selcall_commands_are_refused_when_the_station_has_no_selcall():
             assert phone.result(1) == {"type": "result", "id": 1, "ok": False, "reason": "selcall_unavailable"}
 
     run(scenario)
+
+
+# ------------------------------------------------------------------ supervision (lot 5)
+
+
+def test_summary_counts_frames_for_the_status_file(tmp_path):
+    store, receiver, _ = make(tmp_path, state=rc.STANDBY)
+    rng = np.random.default_rng(3)
+    run(receiver, np.concatenate([frame48("4721", 120.0), noise(rng, RATE, 0.002)]))
+    s = receiver.summary()
+    assert s["state"] == rc.OPEN and s["code"] == "4721" and s["frames_valid"] == 1 and s["frames_rejected"] == 0
+    assert s["last_call"]["code"] == "4721" and abs(s["last_call"]["delta_hz"] - 120) < 30
+    json.dumps(s)                                                                    # écrit tel quel dans le fichier d'état
+
+
+def test_ntfy_alert_on_opening_only_and_never_with_the_code(tmp_path):
+    store, receiver, _ = make(tmp_path, state=rc.STANDBY)
+    sent = []
+    store.add_listener(rc.open_alert(lambda title, message: sent.append((title, message)), store.status.state))
+    run(receiver, np.concatenate([frame48("4721"), np.zeros(RATE // 2)]))
+    assert len(sent) == 1 and sent[0][0] == "SELCALL" and "squelch ouvert" in sent[0][1]
+    assert "4721" not in sent[0][1]                                                  # décision du 2026-11-09
+    store.set_options(attenuation_db=10)                                             # reste OUVERT : pas de 2e alerte
+    run(receiver, np.concatenate([frame48("4721"), np.zeros(RATE // 2)]))           # déjà ouvert
+    store.deactivate()
+    assert len(sent) == 1
+    store.activate("4721")
+    run(receiver, np.concatenate([frame48("4721"), np.zeros(RATE // 2)]))
+    assert len(sent) == 2                                                            # nouvelle ouverture après réarmement
+
+
+def test_no_alert_for_a_squelch_already_open_at_start(tmp_path):
+    store, _, _ = make(tmp_path, state=rc.OPEN)
+    sent = []
+    store.add_listener(rc.open_alert(lambda *a: sent.append(a), store.status.state))
+    store.set_options(attenuation_db=10)                                             # relu OUVERT au démarrage
+    assert sent == []

@@ -246,8 +246,38 @@ def _audio_panel(snap: Snapshot) -> Panel:
         Row("Pertes", f"RX {audio.get('rx_dropped', 0)}, TX hors propriétaire {audio.get('tx_dropped_not_owner', 0)}",
             "warn" if audio.get("rx_dropped", 0) or audio.get("tx_dropped_not_owner", 0) else "dim"),
         *_breizh_rows(snap),
+        *_selcall_rows(snap),
         *_spectrum_rows(snap),
     ))
+
+
+SELCALL_LABELS = {"disabled": ("désactivé", "dim"), "standby": ("veille", "info"), "open": ("OUVERT (appel reçu)", "warn")}
+
+
+def _selcall_rows(snap: Snapshot) -> tuple[Row, ...]:
+    """SELCALL ([selcall] enabled) : état et code armé, envoi en cours, dernier appel (code, Δ, S/B), trames décodées
+    et rejetées (docs/selcall-cahier-des-charges.md § 11). Affichage local : le code y figure."""
+    sc = getattr(snap.status, "selcall", None) if snap.status is not None else None
+    if not isinstance(sc, dict) or not sc:
+        return ()
+    label, level = SELCALL_LABELS.get(sc.get("state"), (str(sc.get("state")), "warn"))
+    text = label + (f" · code {sc['code']}" if sc.get("code") and sc.get("state") != "disabled" else "")
+    if sc.get("sending"):
+        text += f" · ENVOI {sc['sending']}"
+        level = "bad"
+    rows = [Row("SELCALL", text, level if snap.gateway_fresh else "dim")]
+    call, details = sc.get("last_call"), []
+    if isinstance(call, dict) and call.get("code"):
+        details.append(f"dernier appel {call['code']}")
+        if isinstance(call.get("delta_hz"), (int, float)):
+            details.append(f"Δ {call['delta_hz']:+.0f} Hz")
+        if isinstance(call.get("snr_db"), (int, float)):
+            details.append(f"S/B {call['snr_db']:.0f} dB")
+        if isinstance(call.get("at"), (int, float)):
+            details.append(time.strftime("%H:%M:%S", time.localtime(call["at"])))
+    details.append(f"trames {sc.get('frames_valid', 0)} · rejetées {sc.get('frames_rejected', 0)}")
+    rows.append(Row("Appels", " · ".join(details), "dim"))
+    return tuple(rows)
 
 
 BREIZH_LABELS = {"connecting": ("recherche…", "warn"), "ready": ("prêt", "ok"), "active": ("ÉMISSION par Breizh", "ok"),

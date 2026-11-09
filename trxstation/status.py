@@ -53,6 +53,7 @@ class GatewayStatus:
     swr: dict = field(default_factory=dict)       # mesure de TOS en cours (swr/runner.py) : running, owner, state, index, total
     breizh: dict = field(default_factory=dict)    # Breizh Audio Box (gateway/audio/route.py) : state, route, rtt_ms, late, lost
     net: dict = field(default_factory=dict)       # sonde réseau (netprobe/probe.py) : clients, profil VPN partagé, dernière coupure
+    selcall: dict = field(default_factory=dict)   # SELCALL (selcall/receiver.py summary) : état, code, dernier appel, trames
 
 
 def write_status(path: str | Path, status: GatewayStatus) -> None:
@@ -86,6 +87,7 @@ def read_status(path: str | Path) -> GatewayStatus | None:
             return None
         audio, spectrum, presence = data.get("audio", {}), data.get("spectrum", {}), data.get("presence", {})
         swr, breizh, net = data.get("swr", {}), data.get("breizh", {}), data.get("net", {})
+        selcall = data.get("selcall", {})
         return GatewayStatus(pid=pid, seq=seq, written_at=float(data.get("written_at", 0.0)),
                              ptt=ptt, rig=rig, clients=[str(c) for c in clients],
                              audio=audio if isinstance(audio, dict) else {},
@@ -93,7 +95,8 @@ def read_status(path: str | Path) -> GatewayStatus | None:
                              presence=presence if isinstance(presence, dict) else {},
                              swr=swr if isinstance(swr, dict) else {},
                              breizh=breizh if isinstance(breizh, dict) else {},
-                             net=net if isinstance(net, dict) else {})
+                             net=net if isinstance(net, dict) else {},
+                             selcall=selcall if isinstance(selcall, dict) else {})
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

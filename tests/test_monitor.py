@@ -414,3 +414,21 @@ def test_network_panel_and_events():
     assert any("coupure réseau de 6 s (android) : profil VPN" in line for line in lines)
     assert any("PROFIL VPN PROBABLEMENT PARTAGÉ (192.168.27.2)" in line for line in lines)
     assert log.observe(snap(st)) == []                                       # rien de neuf : aucune ligne
+
+
+def test_audio_panel_selcall_rows():
+    st = status()
+    st.audio = {"rx_db": -30, "tx_db": -90, "gate_open": False}
+    assert not [r for r in panel(snap(st), "audio").rows if r.label == "SELCALL"]         # fonction absente
+    st.selcall = {"state": "standby", "code": "4721", "last_call": None, "sending": "", "frames_valid": 0,
+                  "frames_rejected": 3}
+    p = panel(snap(st), "audio")
+    assert row(p, "SELCALL").text == "veille · code 4721" and row(p, "SELCALL").level == "info"
+    assert "rejetées 3" in row(p, "Appels").text
+    st.selcall.update(state="open", last_call={"code": "4721", "delta_hz": -42.4, "snr_db": 14.2, "at": 0.0})
+    p = panel(snap(st), "audio")
+    assert row(p, "SELCALL").level == "warn" and "OUVERT" in row(p, "SELCALL").text
+    assert "dernier appel 4721" in row(p, "Appels").text and "Δ -42 Hz" in row(p, "Appels").text
+    st.selcall.update(sending="2/3")
+    assert row(panel(snap(st), "audio"), "SELCALL").level == "bad"
+    assert row(panel(snap(st, fresh=False), "audio"), "SELCALL").level == "dim"

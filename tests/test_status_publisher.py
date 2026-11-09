@@ -97,3 +97,22 @@ def test_publisher_includes_audio_stats_when_a_pipeline_is_given(tmp_path):
             await asyncio.wait_for(task, 2)
             await pipeline.stop()
     run(scenario)
+
+
+def test_publisher_includes_selcall_summary_and_survives_its_errors(tmp_path):
+    from types import SimpleNamespace
+
+    async def scenario(fake):
+        path = tmp_path / "status.json"
+        link = CatLink("127.0.0.1", fake.port, timeout=0.5)
+        ctrl = PttController(link, dummy_config())
+        summary = {"state": "standby", "code": "4721", "frames_valid": 2, "frames_rejected": 1}
+        receiver = SimpleNamespace(summary=lambda: summary)
+        pipeline = SimpleNamespace(stats=lambda: {}, selcall=receiver, route=None)
+        publisher = StatusPublisher(path, link, ctrl, pipeline=pipeline)
+        assert publisher.write_once() and read_status(path).selcall == summary
+        receiver.summary = lambda: 1 / 0                                    # résumé en erreur : l'état s'écrit quand même
+        assert publisher.write_once() and read_status(path).selcall == {}
+        pipeline.selcall = None                                             # [selcall] enabled = false
+        assert publisher.write_once() and read_status(path).selcall == {}
+    run(scenario)

@@ -222,6 +222,18 @@ Suivre les conventions de l'API client existante. Les noms ci-dessous sont indic
 - **trx-monitor** affiche l'état SELCALL, le code armé, le dernier appel reçu (code, Δ, SNR) et le compteur de trames rejetées.
 - **Logs** : chaque trame décodée, chaque changement d'état et chaque annulation d'envoi en fin d'émission.
 
+**Réalisé au lot 5 (étape 144, station 0.113.0)** :
+- fichier d'état : champ `selcall` (`SelcallReceiver.summary` : `state`, `code`, `last_call`, `sending`, `send_on_tx_end`,
+  `filter_mode`, `frames_valid`, `frames_rejected`) ; lecture LOCALE seulement, le code y figure ;
+- trx-monitor, panneau Audio : lignes « SELCALL » (état, code, envoi en cours) et « Appels » (dernier appel, Δ, S/B, heure,
+  trames décodées et rejetées) ;
+- ntfy : alerte « SELCALL » de la PASSERELLE au passage en OUVERT (`notify_on_call`), SANS le code (décision de l'utilisateur,
+  2026-11-09), une par minute au plus ; un état OUVERT relu au démarrage n'alerte pas ;
+- journaux : en plus des trames et des changements d'état, « bip selcall interrompu par une coupure » ;
+- trx-hwtest : étape « SELCALL » (réception seule, proposée si `[selcall] enabled`) : code saisi, trame jouée par la source,
+  décodage relevé sans décalage puis RIT +300 / -300 Hz ; le RIT d'origine est relu sur le poste et TOUJOURS remis (sur
+  l'IC-7300 il partage son décalage avec le ΔTX) ; RIT illisible = décalage de la source à la main.
+
 ## 12. Tests
 
 **Module générateur** (réutilisé pour l'émission et pour les tests) produisant des WAV synthétiques. Matrice pytest :
