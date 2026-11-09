@@ -1,14 +1,17 @@
 # Sonde de qualité réseau — cahier des charges
 
-Version 2 (2026-11-09, étape 134), à valider par l'utilisateur avant tout code. Elle reprend le cahier de l'utilisateur
-du 2026-11-09 (« Sonde de qualité réseau openRemoteTRX », exigences EF1 à EF12) et ajoute :
+Version 3 (2026-11-09, étape 135) : réponses de l'utilisateur aux questions de la v2 intégrées (§ 15) : EF12 et la
+position retirés, « Liaison faible » en Android Auto, seuils réglés d'après les mesures (§ 9.6).
+
+Version 2 (2026-11-09, étape 134). Elle reprend le cahier de l'utilisateur du 2026-11-09 (« Sonde de qualité réseau
+openRemoteTRX », exigences EF1 à EF11 ; EF12 retirée en v3) et ajoute :
 - ce que le code existant change à ce cahier (§ 3) ;
 - l'affichage discret et le détail sur les trois interfaces (§ 9) ;
 - la vue des 30 derniers jours, l'effacement et l'export pour l'équipe de développement (§ 10) ;
 - la détection d'un profil VPN partagé par deux appareils (§ 8), décision de l'utilisateur du 2026-11-09 après la
   cause trouvée des coupures (PC et S25 sur le même profil WireGuard).
 
-Les questions encore ouvertes sont au § 15.
+Les réponses de l'utilisateur aux questions de la v2 sont au § 15.
 
 ## 1. Objet
 
@@ -28,13 +31,22 @@ coupures d'émission restent celles des règles de sécurité : battement d'émi
 
 ## 2. Décisions
 
-1. Le cahier de l'utilisateur est la base (EF1 à EF12, `[netprobe]`, tests, essais).
+1. Le cahier de l'utilisateur est la base (EF1 à EF11, `[netprobe]`, tests, essais ; EF12 retirée en v3).
 2. 2026-11-09 : indicateur discret sur la page, dans l'application et dans trx-monitor. L'opérateur ouvre le détail
    par un bouton ou un accordéon selon l'interface.
 3. 2026-11-09 : une vue des 30 derniers jours, un bouton « Tout effacer » et un export à transmettre à l'équipe de
    développement.
 4. 2026-11-09 : la détection d'un profil VPN partagé est intégrée à ce cahier, pas livrée à part.
 5. Rien n'est propre à WireGuard ni à la Freebox : chaque utilisateur choisit son VPN (CLAUDE.md).
+6. 2026-11-09 (v3) : **EF12 retirée** (conseil sur l'opérateur, données de l'ARCEP) : trop de ressources. Partent
+   avec elle : clés `operator_advice`, `arcep_refresh_days`, `advice_min_outages`, mesure de la seconde SIM, relevé
+   des cellules des AUTRES opérateurs (elles ne servaient qu'à EF12).
+7. 2026-11-09 (v3) : **position retirée** (`FusedLocationProviderClient`, situer les coupures sur la route) : ni
+   dans la version Google Play ni dans la version installée à la main. Aucune position n'est relevée, journalisée
+   ni exportée.
+8. 2026-11-09 (v3) : Android Auto et mode conduite affichent « Liaison faible » quand le lien est mauvais (§ 9.3).
+9. 2026-11-09 (v3) : pas de seuils figés au jugé. La station enregistre de quoi les essayer après coup et propose
+   des valeurs d'après l'usage réel et le réseau de l'opérateur (§ 9.6).
 
 ## 3. Ce que le code existant change au cahier de l'utilisateur
 
@@ -242,7 +254,8 @@ serait propre à un VPN : c'est écarté. La station repère donc les **effets**
 
 ### 9.1 Niveau de l'indicateur
 
-C'est le plus mauvais de :
+C'est le plus mauvais de (seuils EN SERVICE pour le type de réseau du client : choisis par l'opérateur, sinon ceux de
+`station.toml`, § 9.6) :
 - perte sur 60 s : vert < `loss_warn_pct` ≤ orange < `loss_alert_pct` ≤ rouge ;
 - aller-retour p95 sur 60 s : mêmes paliers avec `rtt_warn_ms` / `rtt_alert_ms` ;
 - coupure en cours : rouge ; coupure dans les 2 dernières minutes : au moins orange ;
@@ -270,7 +283,13 @@ ne pas reposer sur la seule couleur.
 - **Détail** : un toucher ouvre un **panneau en bas d'écran** avec le même contenu que la page, plus la radio
   (RSRP/RSRQ/SINR ou RSSI Wi-Fi, niveau 0-4, cellule changée il y a…) et le lien vers l'écran plein écran des
   statistiques (§ 10).
-- Mode conduite et Android Auto : AUCUN indicateur (question 3 du § 15).
+- **Mode conduite et Android Auto** : pas d'indicateur permanent. Quand le niveau est ROUGE (coupure en cours ou
+  seuils d'alerte), « Liaison faible » s'affiche :
+  - en Android Auto : en tête du sous-titre, avant le S-mètre ;
+  - en mode conduite : une ligne de texte sous la fréquence.
+
+  Il disparaît après 10 s revenues au vert ou à l'orange, sans bip ni annonce vocale. Le titre (fréquence et mode)
+  ne change pas.
 
 ### 9.4 trx-monitor
 
@@ -287,6 +306,46 @@ ne pas reposer sur la seule couleur.
 Un visiteur voit l'indicateur et le détail de SON lien (calculés de son côté et par ses `net_pong`). Il ne voit
 jamais les sondes de la station, les autres clients, les statistiques de 30 jours, l'export, les avertissements de
 profil partagé ni « Tout effacer ».
+
+### 9.6 Seuils réglés d'après les mesures
+
+Personne ne sait d'avance quel aller-retour ou quelle perte gênent vraiment l'écoute et l'émission avec un réseau
+mobile donné. Les seuils de l'indicateur n'ont AUCUN effet sur la sécurité ni sur la liaison : seulement sur la
+couleur et les alertes. On peut donc les essayer sans risque, en trois temps.
+
+1. **Mesurer ce qui s'entend.** En plus de la perte et de l'aller-retour, chaque résumé de 10 s garde ce qui dégrade
+   le son pour de vrai :
+   - côté client : `concealmentEvents` et `concealedSamples` de getStats (trous masqués par le décodeur), vidages de
+     la réserve de gigue ;
+   - côté station : `tx_underruns` et `tx_overruns` (son d'émission en retard ou jeté).
+
+   Un résumé est « son dégradé » s'il y a eu au moins un trou audible (seuil d'environ 1 % d'échantillons masqués,
+   affiné aux essais).
+2. **Garder un histogramme par type de réseau.** Chaque résumé horaire (`heures.jsonl`) range les fenêtres de 10 s
+   dans des cases :
+   - aller-retour p95 : 0-50, 50-100, 100-150, 150-200, 250, 300, 400, 600, 800, 1 000, + ms ;
+   - perte : 0, 0-1, 1-2, 2-5, 5-10, 10-20, + %.
+
+   Chaque case compte les fenêtres, et parmi elles celles « son dégradé ». Types de réseau : réseau local, Wi-Fi,
+   4G, 5G, inconnu (page sans `navigator.connection`). Environ 200 octets par heure et par type : négligeable.
+3. **Essayer et proposer.** La vue des statistiques (§ 10.1) a une rubrique « Seuils » (opérateur) :
+   - pour chaque type de réseau, deux curseurs (orange, rouge) pour l'aller-retour et pour la perte ;
+   - en les déplaçant, la page recalcule sur les 30 jours enregistrés, SANS rien changer sur la station : « orange
+     X % du temps, rouge Y % ; le son a été dégradé dans Z % des fenêtres rouges et W % des fenêtres vertes » ;
+   - une valeur PROPOSÉE par type de réseau, dès 7 jours et 2 000 fenêtres de ce type :
+     - orange = début des cases où le son est dégradé dans plus de 5 % des fenêtres ;
+     - rouge = au-delà de 25 % ;
+     - jamais en dessous du p75 habituel de ce réseau, pour qu'un réseau bon mais lent ne reste pas orange en
+       permanence.
+
+   Appliquer : la passerelle ne peut pas écrire `station.toml`. Les seuils choisis par l'opérateur sont rangés dans
+   `state_dir/netprobe/seuils.json`, comme les choix de la mesure de TOS. Ils PRIMENT sur ceux de `station.toml`,
+   qui restent les valeurs de départ. « Revenir aux valeurs de station.toml » les efface. « Tout effacer » efface
+   l'historique, PAS les seuils choisis.
+
+**Valeurs de départ** (`station.toml`, en attendant les mesures) : aller-retour 250 / 600 ms, perte 2 / 10 %, les
+mêmes pour tous les réseaux. Les essais réels (§ 14) comparent 4G, 5G et Wi-Fi sur au moins 7 jours avant de changer
+ces défauts dans le code.
 
 ## 10. Statistiques des 30 derniers jours, effacement, export
 
@@ -305,6 +364,7 @@ Contenu :
 5. **Tendance** : aller-retour p95 et perte par jour (lignes).
 6. **Par réseau** (application) : coupures et qualité en 4G, 5G et Wi-Fi.
 7. **Liste des dernières coupures** : date, durée, tronçon, ce qui l'appuie.
+8. **Seuils** : histogrammes par type de réseau, curseurs d'essai, valeurs proposées, « Appliquer » (§ 9.6).
 
 Les données viennent de `heures.jsonl` et `coupures.jsonl` par la commande `net_stats` (§ 11), au plus 60 ko par
 réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le client.
@@ -329,10 +389,10 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
 - **Anonyme par défaut** (même principe que `trx-journal-android`) :
   - adresses IP remplacées par des repères (`privée-A`, `publique-B`) ;
   - identifiants d'appareils remplacés par `appareil-1`, `-2` ;
-  - pas de nom de compte, d'identifiant de cellule ni de position ;
+  - pas de nom de compte ni d'identifiant de cellule (aucune position n'existe : § 2.7) ;
   - l'identifiant de station est gardé (`station-id`, déjà prévu pour la collecte).
-- Deux cases, décochées par défaut : « joindre les identifiants de cellules » et « joindre les positions » (si elles
-  existent, EF11).
+- Une case, décochée par défaut : « joindre les identifiants de cellules » (s'ils existent, § 13).
+- Les histogrammes et les seuils choisis (§ 9.6) sont toujours joints : ils aident l'équipe à choisir les défauts.
 - Le fichier est fabriqué par la station. Le client le reçoit en morceaux de 48 ko (`net_export`), au plus 2 Mo.
 - Envoi : par l'utilisateur (courriel, forum). Plus tard, pièce jointe du rapport de problème quand sa réception
   (étape 2 du signalement) existera.
@@ -345,7 +405,8 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
 | `net_pong` | les deux | écho, `seq`, `t`, `tr` ; aucune réponse | tous |
 | `net_report` | client → station | résumé de 10 s (getStats, `/health`, réseau, radio) | tous (visiteur : non journalisé) |
 | `net_backlog` | client → station | 10 dernières minutes après une coupure, 60 ko au plus | opérateurs |
-| `net_stats` | client → station | statistiques (période, appareil, page) | opérateurs |
+| `net_stats` | client → station | statistiques (période, appareil, page), histogrammes compris | opérateurs |
+| `net_thresholds` | client → station | appliquer les seuils choisis par type de réseau, ou revenir à ceux de station.toml | opérateurs |
 | `net_clear` | client → station | tout effacer | opérateurs |
 | `net_export` | client → station | export par morceaux (`part`) | opérateurs |
 | `state.net` | station → client | niveau, indicateurs 10 s / 60 s, sondes (opérateurs), dernière coupure, avertissement | tous (réduit pour un visiteur) |
@@ -366,8 +427,8 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
 | `outage_missed_beats` | `3` | Battements perdus pour déclarer une coupure (2 à 20) |
 | `lan_target` | `"auto"` | Box à sonder (`auto` = passerelle par défaut) |
 | `internet_target` | `"1.1.1.1"` | Cible Internet ; `""` = pas de sonde Internet |
-| `loss_warn_pct` / `loss_alert_pct` | `2` / `10` | Paliers de perte sur 60 s |
-| `rtt_warn_ms` / `rtt_alert_ms` | `150` / `400` | Paliers d'aller-retour p95 |
+| `loss_warn_pct` / `loss_alert_pct` | `2` / `10` | Paliers de départ de la perte sur 60 s (§ 9.6) |
+| `rtt_warn_ms` / `rtt_alert_ms` | `250` / `600` | Paliers de départ de l'aller-retour p95 (cahier de l'utilisateur : 150 / 400 ; § 9.6) |
 | `alert_outage_s` | `10` | Coupure qui déclenche une alerte ntfy ; `0` = aucune |
 | `alert_cooldown_s` | `300` | Délai minimal entre deux alertes |
 | `log_retention_days` | `7` | Résumés de 10 s |
@@ -375,7 +436,6 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
 | `vpn_shared_warn` | `true` | Détection du profil partagé (§ 8) |
 | `rsrp_warn_dbm` / `rsrp_alert_dbm` | `-105` / `-115` | Paliers du signal 4G/5G |
 | `sinr_warn_db` / `sinr_alert_db` | `3` / `0` | Paliers du rapport signal/bruit |
-| `operator_advice`, `arcep_refresh_days`, `advice_min_outages` | `false`, `30`, `10` | EF12, si gardé (§ 15) |
 
 - Défauts sans rien toucher. Une `station.toml` existante sans `[netprobe]` prend les défauts. Rien n'est réécrit
   dans les autres sections (`notify_url` intact : un test l'impose).
@@ -398,28 +458,37 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
   - synthèse 24 h et 30 jours ;
   - dernières coupures ;
   - avertissements de profil partagé ;
+  - seuils en service par type de réseau et valeurs proposées (§ 9.6, lecture seule : on applique depuis la page ou
+    l'application) ;
   - export (chemin proposé sur le Bureau) ;
   - « Tout effacer » (confirmation en tapant `EFFACER`) ;
   - aide `h 23`.
 - `trx-netreport [--jours N] [--export FICHIER]` : résumé lisible (EF10). Ajouté à `[project.scripts]`, à la liste
   `COMMANDS` d'`install.sh` et au mode d'emploi de la console.
 
-## 13. Application Android : radio (EF11) et seconde SIM
+## 13. Application Android : radio (EF11)
 
-Reprise d'EF11 telle quelle, avec ces précisions :
-- **Permissions.**
-  - `READ_PHONE_STATE` pour les écouteurs de téléphonie si la version d'Android l'exige (à vérifier au lot 6
-    API par API).
-  - `ACCESS_FINE_LOCATION` pour l'identité des cellules et la position, demandée seulement quand l'opérateur active
-    l'option.
-  - Sans ces permissions : type de réseau, niveau 0-4 et Wi-Fi seulement, sans gêner le reste.
-- **Écran éteint.** Le service de premier plan existant (`microphone|mediaPlayback`) garde les mesures radio. La
-  POSITION écran éteint exige le type `location` (et `FOREGROUND_SERVICE_LOCATION`), déclaré seulement si l'option
-  existe dans la version (question 2 du § 15).
-- **Position.** Option désactivée par défaut, accord explicite, enregistrée sur la station seulement, effacée par
-  « Tout effacer », absente de l'export sauf case cochée.
-- **Cellules des autres opérateurs** relevées (MCC-MNC, technologie, bande, niveaux), jamais de balayage réseau.
-- **Seconde SIM** (`createForSubscriptionId`) : mesurée si présente, utile à EF12 seulement.
+Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opérateurs (§ 2.6 et 2.7) :
+- **Relevé de base, sans autorisation de localisation**, dans TOUTES les versions, Google Play comprise :
+  - type de réseau (LTE, 5G NSA, 5G SA) ;
+  - RSRP / RSRQ / RSSNR (4G), SS-RSRP / SS-RSRQ / SS-SINR (5G), niveau 0-4 ;
+  - bascule Wi-Fi ↔ mobile, changement d'adresse, réseau validé, débits estimés ;
+  - RSSI, bande et débit du Wi-Fi.
+
+  `READ_PHONE_STATE` seulement si la version d'Android l'exige pour ces écouteurs (à vérifier au lot 6, API par API).
+- **Changement de cellule** (handover, identifiant de cellule, timing advance de la cellule SERVANTE) :
+  - Android ne le donne qu'avec `ACCESS_FINE_LOCATION` ;
+  - écran éteint, il exige en plus le type `location` du service de premier plan, que Google Play fait justifier.
+
+  Proposition :
+  - version installée à la main seulement, option désactivée par défaut, autorisation demandée à l'activation ;
+  - aucune position n'est lue : l'autorisation ne sert qu'à l'identifiant de la cellule ;
+  - version Google Play : sans cette option, comme pour le scrambler.
+
+  Sans elle, la règle 5 du § 7 s'appuie sur le signal faible et les bascules de réseau seulement.
+- **Écran éteint** : le service de premier plan existant (`microphone|mediaPlayback`) garde le relevé de base tant
+  qu'une session est ouverte.
+- Champs absents envoyés à `null`, absence gérée partout. Jamais de balayage réseau.
 - **Calculs** dans `:logic` (tests sur la JVM). L'accès aux API Android reste dans `:core`.
 
 ## 14. Découpage en lots (une étape par lot, chaque lot validé avant le suivant)
@@ -430,9 +499,10 @@ Reprise d'EF11 telle quelle, avec ces précisions :
 | 2 | Station : `net_ping`/`net_pong`, `state.net`, `device`, D1/D2, journal, heures, coupures, diagnostic, `net_*`, module des sondes, `[netprobe]`, superviseur et ntfy | passerelle, module, superviseur |
 | 3 | Page : battement, getStats, `/health`, backlog, indicateur, accordéon, vue 30 jours, effacement, export | page |
 | 4 | trx-monitor (ligne et panneau), TRX Console menu 23, `trx-netreport`, aide du menu 19 | station |
-| 5 | Application : comme la page (pastille, panneau, écran des statistiques, export partagé) | Android |
-| 6 | Application : radio EF11, permissions, cellules, seconde SIM | Android |
-| 7 | EF12 conseil sur l'opérateur (ARCEP), si gardé | à décider (§ 15) |
+| 5 | Application : comme la page (pastille, panneau, écran des statistiques et des seuils, export partagé), « Liaison faible » en Android Auto et en mode conduite | Android |
+| 6 | Application : radio EF11 (relevé de base ; changement de cellule hors Google Play) | Android |
+
+Les seuils et histogrammes (§ 9.6) sont livrés avec les lots 2 (station), 3 (page) et 5 (application).
 
 **Tests** (au fil des lots) :
 - les tests automatiques du cahier de l'utilisateur ;
@@ -447,20 +517,15 @@ Reprise d'EF11 telle quelle, avec ces précisions :
 
 **Essais réels** : ceux du cahier de l'utilisateur, plus un essai D1 (PC et téléphone sur le même profil WireGuard,
 les deux connectés à la station : avertissement attendu) et un essai D3 (PC dans le VPN sans ouvrir la page, téléphone
-connecté : « profil probablement partagé » attendu).
+connecté : « profil probablement partagé » attendu). Pour les seuils (§ 9.6) : au moins 7 jours d'usage normal en
+4G, en 5G et en Wi-Fi, puis comparaison des valeurs proposées avec le ressenti de l'opérateur. Les défauts du code
+ne changent qu'après ces essais.
 
-## 15. Questions ouvertes
+## 15. Réponses de l'utilisateur aux questions de la v2 (2026-11-09)
 
-1. **EF12 (conseil sur l'opérateur, données de l'ARCEP)** : à reporter après les essais des lots 1 à 6, ou à
-   abandonner ?
-   - Avis : les cartes de couverture font plusieurs centaines de Mo par opérateur, trop pour un Pi, et ce sont des
-     simulations.
-   - Il faut des positions, donc des trajets enregistrés.
-   - Si on le garde, il vaut mieux l'analyser hors station (sur le PC, à partir de l'export) que sur la station.
-2. **Position et Google Play** : la version Google Play porte-t-elle l'option de position ? La déclarer impose une
-   justification à Google. Avis : l'exclure de la version Google Play, comme le scrambler, et la garder dans la
-   version installée à la main.
-3. **Android Auto et mode conduite** : aucun indicateur (avis : rien de plus à regarder en roulant), ou un mot dans
-   le sous-titre seulement en cas de coupure (« Liaison faible ») ?
-4. **Seuils** : les paliers d'aller-retour (150 / 400 ms) sont ceux du cahier. En 4G à travers un VPN, 150 ms est
-   souvent dépassé sans gêne audible. Garder, ou passer à 250 / 600 ms ?
+1. EF12 (conseil sur l'opérateur, données de l'ARCEP) : **retirée**, trop de ressources (§ 2.6).
+2. Position : **retirée** partout (§ 2.7). Le changement de cellule, qui exige l'autorisation de localisation sans
+   lire de position, reste proposé hors Google Play (§ 13) : à confirmer par l'utilisateur.
+3. Android Auto et mode conduite : **« Liaison faible »** quand le lien est rouge (§ 9.3).
+4. Seuils : pas d'avis a priori ; ils sont **réglés d'après les mesures** (§ 9.6). Valeurs de départ
+   250 / 600 ms et 2 / 10 %, revues après 7 jours d'essais en 4G, 5G et Wi-Fi.
