@@ -96,23 +96,15 @@ import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
+import android.content.SharedPreferences
+import androidx.compose.runtime.MutableLongState
+import androidx.compose.runtime.MutableState
 
 private val TX_RED = Page.TX                     // couleurs de la page web (client.css)
 private val WARN = Page.ALERTE
 private val SQL_OPEN = Page.SUCCES
 private val HEALTH = mapOf("green" to Page.SUCCES, "orange" to Page.ALERTE, "red" to Page.TX, "off" to Page.TEXTE_2)
 private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX)    // pastilles des bandes (page : lvl1..3)
-
-/** Anti-rebond du PTT : Android peut livrer un « clic fantôme » juste après un appui (CLAUDE.md, page web). */
-private class Debounce(private val ms: Long = 600) {
-    private var last = 0L
-    fun pass(): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        if (now - last < ms) return false
-        last = now
-        return true
-    }
-}
 
 /**
  * Station connectée. Tout ce qui s'affiche vient de l'état publié par la station (RigUi.rig) : l'émission n'est
@@ -133,11 +125,15 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val voice by VoiceHub.ui.collectAsState()
     val spatial by com.rfdiy.openremotetrx.core.SpatialHub.ui.collectAsState()
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
-    var keepScreenOn by remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
-    var keepTx by remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
+    val keepScreenOnS = remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
+    var keepScreenOn by keepScreenOnS
+    val keepTxS = remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
+    var keepTx by keepTxS
     // Mode conduite (logic.Driving) : réglage, ou automatique quand une voiture est connectée (Android Auto, mode voiture)
-    var drivingManual by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING, false)) }
-    var drivingAuto by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING_AUTO, true)) }
+    val drivingManualS = remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING, false)) }
+    var drivingManual by drivingManualS
+    val drivingAutoS = remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_DRIVING_AUTO, true)) }
+    var drivingAuto by drivingAutoS
     val carMode = (LocalConfiguration.current.uiMode and Configuration.UI_MODE_TYPE_MASK) == Configuration.UI_MODE_TYPE_CAR
     val driving = Driving.reason(drivingManual, drivingAuto, ui.carConnected || carMode, ui.passenger)
     if (Driving.active(driving)) {
@@ -153,38 +149,64 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val mineTx = ptt != null && ptt.mine && ptt.transmitting
     val debounce = remember { Debounce() }
     // Gros PTT rond (logic.BigPtt) : masqué par défaut, appui long sur le PTT pour l'afficher, STOP pour le masquer
-    var bigPttRequested by rememberSaveable { mutableStateOf(false) }
+    val bigPttRequestedS = rememberSaveable { mutableStateOf(false) }
+    var bigPttRequested by bigPttRequestedS
     LaunchedEffect(connected) { if (!connected) bigPttRequested = false }
     // Fréquence demandée : affichée et prise comme base des crans jusqu'à confirmation du poste (page : PENDING_MAX_MS).
     // L'état de la station arrive plusieurs fois par seconde : l'affichage revient seul à la fréquence du poste.
-    var pendingHz by remember { mutableStateOf<Long?>(null) }
-    var pendingAt by remember { mutableLongStateOf(0L) }
-    var stepIndex by rememberSaveable { mutableStateOf(Radio.STEPS_HZ.indexOf(1000L)) }
-    var entry by remember { mutableStateOf(false) }
-    var showLog by rememberSaveable { mutableStateOf(false) }
-    var levelsDialog by remember { mutableStateOf(false) }
-    var showWaterfall by rememberSaveable { mutableStateOf(false) }
-    var bandsPref by remember { mutableStateOf(prefs.getString("bands", "") ?: "") }
-    var bandsDialog by remember { mutableStateOf(false) }
-    var memoryDialog by remember { mutableStateOf<MemoryEdit?>(null) }
-    var spotsDialog by remember { mutableStateOf(false) }
-    var presenceDialog by remember { mutableStateOf(false) }
-    var selcallDialog by remember { mutableStateOf(false) }
-    var spatialDialog by remember { mutableStateOf(false) }
-    var breizhDialog by remember { mutableStateOf(false) }
-    var hostDialog by remember { mutableStateOf(false) }
-    var reportOpen by remember { mutableStateOf(false) }                     // « Signaler un problème » (lot A3)
-    var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
-    var netOpen by rememberSaveable { mutableStateOf(false) }                // écran « Qualité du réseau »
-    var netDialog by remember { mutableStateOf(false) }                      // détail de la liaison
-    var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
+    val pendingHzS = remember { mutableStateOf<Long?>(null) }
+    var pendingHz by pendingHzS
+    val pendingAtS = remember { mutableLongStateOf(0L) }
+    var pendingAt by pendingAtS
+    val stepIndexS = rememberSaveable { mutableStateOf(Radio.STEPS_HZ.indexOf(1000L)) }
+    var stepIndex by stepIndexS
+    val entryS = remember { mutableStateOf(false) }
+    var entry by entryS
+    val showLogS = rememberSaveable { mutableStateOf(false) }
+    var showLog by showLogS
+    val levelsDialogS = remember { mutableStateOf(false) }
+    var levelsDialog by levelsDialogS
+    val showWaterfallS = rememberSaveable { mutableStateOf(false) }
+    var showWaterfall by showWaterfallS
+    val bandsPrefS = remember { mutableStateOf(prefs.getString("bands", "") ?: "") }
+    var bandsPref by bandsPrefS
+    val bandsDialogS = remember { mutableStateOf(false) }
+    var bandsDialog by bandsDialogS
+    val memoryDialogS = remember { mutableStateOf<MemoryEdit?>(null) }
+    var memoryDialog by memoryDialogS
+    val spotsDialogS = remember { mutableStateOf(false) }
+    var spotsDialog by spotsDialogS
+    val presenceDialogS = remember { mutableStateOf(false) }
+    var presenceDialog by presenceDialogS
+    val selcallDialogS = remember { mutableStateOf(false) }
+    var selcallDialog by selcallDialogS
+    val spatialDialogS = remember { mutableStateOf(false) }
+    var spatialDialog by spatialDialogS
+    val breizhDialogS = remember { mutableStateOf(false) }
+    var breizhDialog by breizhDialogS
+    val hostDialogS = remember { mutableStateOf(false) }
+    var hostDialog by hostDialogS
+    val reportOpenS = remember { mutableStateOf(false) }                     // « Signaler un problème » (lot A3)
+    var reportOpen by reportOpenS
+    val swrOpenS = rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
+    var swrOpen by swrOpenS
+    val netOpenS = rememberSaveable { mutableStateOf(false) }                // écran « Qualité du réseau »
+    var netOpen by netOpenS
+    val netDialogS = remember { mutableStateOf(false) }                      // détail de la liaison
+    var netDialog by netDialogS
+    val miniWfS = remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
+    var miniWf by miniWfS
     fun setMiniWf(on: Boolean) { miniWf = on; prefs.edit().putBoolean("mini_wf", on).apply() }
-    var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
-    var squelchDrag by remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
-    var offsetDrag by remember { mutableStateOf<Float?>(null) }
+    val tabS = rememberSaveable { mutableStateOf(Tab.STATION) }
+    var tab by tabS
+    val squelchDragS = remember { mutableStateOf<Float?>(null) }        // valeur suivie pendant que le doigt règle
+    var squelchDrag by squelchDragS
+    val offsetDragS = remember { mutableStateOf<Float?>(null) }
+    var offsetDrag by offsetDragS
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
     val shownHz = pendingLive ?: radio?.frequencyHz
     val step = Radio.STEPS_HZ[stepIndex]
+    val scope = RigScope(ui, prefs, onDisconnect, keepScreenOnS, keepTxS, drivingManualS, drivingAutoS, bigPttRequestedS, pendingHzS, pendingAtS, stepIndexS, entryS, showLogS, levelsDialogS, showWaterfallS, bandsPrefS, bandsDialogS, memoryDialogS, spotsDialogS, presenceDialogS, selcallDialogS, spatialDialogS, breizhDialogS, hostDialogS, reportOpenS, swrOpenS, netOpenS, netDialogS, miniWfS, tabS, squelchDragS, offsetDragS)
 
     fun go(hz: Long) {
         pendingHz = hz
@@ -281,251 +303,13 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
             when (tab) {
                 Tab.STATION -> {
-            // Afficheur : fréquence (toucher = saisie), mode, S-mètre
-            Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            Radio.formatIcom(shownHz),
-                            fontSize = 34.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false,
-                            modifier = Modifier.weight(1f).clickable(enabled = canSet) { entry = true },
-                        )
-                        // Accord à droite de la fréquence (étape 97, place gagnée pour le petit waterfall) : − et + d'un pas,
-                        // pas dessous (toucher = pas suivant)
-                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                TuneKey("−", width = 54.dp, height = 40.dp, fontSize = 24.sp, enabled = canSet) { tune(-1) }
-                                TuneKey("+", width = 54.dp, height = 40.dp, fontSize = 24.sp, enabled = canSet) { tune(1) }
-                            }
-                            TuneKey(stepLabel(step), width = 114.dp, height = 32.dp, fontSize = 15.sp) {
-                                stepIndex = (stepIndex + 1) % Radio.STEPS_HZ.size
-                            }
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleMedium)
-                        Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
-                        Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleMedium)
-                        if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
-                    }
-                    // Voyants (comme sur un poste) : vert = actif, gris = éteint
-                    val lights = Indicators.of(hello, rig.state)
-                    if (lights.isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            for (light in lights) {
-                                Text(
-                                    light.label, style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = if (light.on) FontWeight.Bold else FontWeight.Normal,
-                                    color = when {
-                                        light.alert -> TX_RED                                   // OVERLOAD ALC
-                                        light.on -> SQL_OPEN
-                                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                    // Repère du squelch (page : barre orange sur le S-mètre) : petit triangle orange au-dessus de la barre,
-                    // suit le curseur pendant le réglage ; absent si le squelch est ouvert (0)
-                    val sqlMark = Radio.squelchMarkerFraction(squelchDrag?.toDouble() ?: radio?.levels?.get("SQL"))
-                    Box(Modifier.fillMaxWidth().height(15.dp)) {
-                        LinearProgressIndicator(
-                            progress = { Radio.sMeterFraction(radio?.strengthDb) },
-                            drawStopIndicator = {},                       // pas de point en bout de barre : il ferait croire à S9+60
-                            modifier = Modifier.fillMaxWidth().height(8.dp).align(Alignment.BottomStart),
-                        )
-                        if (sqlMark != null) {
-                            Canvas(Modifier.fillMaxSize()) {
-                                val x = sqlMark * size.width
-                                val half = 5.dp.toPx()
-                                val tip = size.height - 8.dp.toPx() + 2.dp.toPx()     // pointe posée sur le haut de la barre
-                                drawPath(Path().apply { moveTo(x - half, 0f); lineTo(x + half, 0f); lineTo(x, tip); close() }, Page.ALERTE)
-                            }
-                        }
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        for (label in listOf("S1", "3", "5", "7", "9", "+20", "+40", "+60")) {
-                            Text(label, style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    // Bargraphs POWER, SWR, ALC toujours visibles (comme sur un poste ; à zéro en réception)
-                    for (m in Indicators.txMeters(rig.state)) {
-                        MeterRow(m, warn = (m.key == "SWR" && m.fraction >= 0.5f) || (m.key == "ALC" && m.fraction >= 0.9f))
-                    }
-                    // État de l'émission (station), bien visible dans l'afficheur, au-dessus du squelch
-                    if (ptt != null) {
-                        Banner(
-                            when {
-                                mineTx -> "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " — coupure dans ${Format.duration(it)}" } ?: "")
-                                ptt.other -> "${ptt.label} : autre client (${rig.state?.ptt?.owner ?: "?"})"
-                                else -> ptt.label
-                            },
-                            if (ptt.transmitting) TX_RED else Page.SELECTION, big = true,
-                            textColor = Color.White,
-                        )
-                    }
-                    radio?.levels?.get("SQL")?.let { sql ->
-                        // Squelch : une seule commande à la fin du geste (page : pas une par pixel)
-                        val shown = squelchDrag ?: sql.toFloat()
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Vert : squelch ouvert (le son passe ; estimation par le S-mètre, la station ne donne pas le DCD)
-                            Text("SQL", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp),
-                                color = if (Radio.squelchOpen(sql, radio.strengthDb)) SQL_OPEN else Color.Unspecified,
-                                fontWeight = if (Radio.squelchOpen(sql, radio.strengthDb)) FontWeight.Bold else FontWeight.Normal)
-                            Slider(
-                                value = shown, onValueChange = { squelchDrag = it }, enabled = canSet,
-                                onValueChangeFinished = { squelchDrag?.let { RigHub.setSquelch(it.toDouble()) }; squelchDrag = null },
-                                modifier = Modifier.weight(1f),
-                            )
-                            val percent = (shown * 100).roundToInt()
-                            Text(if (percent == 0) "ouvert" else "$percent %", style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
-                        }
-                    }
-                    // Clarifieur : ΔTX (XIT) ou RIT en service => curseur du décalage (commun aux deux sur l'IC-7300), pas de 10 Hz
-                    val clar = when {
-                        radio?.functions?.get("XIT") == true -> "XIT"
-                        radio?.functions?.get("RIT") == true -> "RIT"
-                        else -> null
-                    }
-                    if (clar != null) {
-                        val max = Radio.clarifierMax(clar, if (clar == "XIT") hello?.capabilities?.maxXitHz else hello?.capabilities?.maxRitHz)
-                        val current = (radio?.offsets?.get(clar) ?: 0).coerceIn(-max, max)
-                        val shown = offsetDrag ?: current.toFloat()
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (clar == "XIT") "ΔTX" else "RIT", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(36.dp))
-                            Slider(
-                                value = shown, onValueChange = { offsetDrag = it }, enabled = canSet,
-                                valueRange = -max.toFloat()..max.toFloat(),
-                                onValueChangeFinished = { offsetDrag?.let { RigHub.setOffset(clar, it.roundToInt()) }; offsetDrag = null },
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                (if (shown >= 0) "+" else "") + (Math.round(shown / 10.0) * 10) + " Hz",
-                                style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(72.dp).clickable(enabled = canSet) {
-                                    RigHub.setOffset(clar, 0)                                       // toucher la valeur : remise à zéro
-                                }, textAlign = TextAlign.End,
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
-            if (miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
-            Panel {
-            // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
-            val dots = rig.bandDots(System.currentTimeMillis())
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                val current = Radio.bandOf(radio?.frequencyHz)?.key
-                for (band in Radio.favoriteBands(bandsPref)) {
-                    CompactChip(band.key, onClick = { RigHub.selectBand(band.key) }, enabled = canSet, selected = band.key == current,
-                        dot = dots[band.key]?.let { DOT_COLORS[it.level] })
-                }
-                CompactChip("✎", onClick = { bandsDialog = true })
-            }
-
-            }
-            Panel {
-            // Modes du poste (émission : seulement ceux de tx_modes s'ils sont imposés)
-            val modes = Radio.orderModes(hello?.capabilities?.modes.orEmpty())
-            if (modes.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    for (mode in modes) {
-                        CompactChip(Radio.modeLabel(mode), onClick = { RigHub.setMode(mode) }, enabled = canSet, selected = mode == radio?.mode)
-                    }
-                }
-                if (hello?.txModes?.isNotEmpty() == true) {
-                    Text("Émission permise en : " + hello.txModes.joinToString(", ") { Radio.modeLabel(it) },
-                        style = MaterialTheme.typography.bodySmall)
-                }
-            }
-
-            }
-            Panel {
-
-            // Fonctions du poste (comme la page) : verrouillées pendant l'émission
-            val chips = Controls.chips(hello, rig.state)
-            if (chips.isNotEmpty()) {
-                // Appui : marche / arrêt (comme la page) ; appui LONG sur NR ou NB : niveaux de NR et NB (fenêtre)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    for (chip in chips) {
-                        CompactChip(
-                            chip.label, onClick = { RigHub.pressControl(chip.key) }, enabled = canSet, selected = chip.on,
-                            onLongClick = if (chip.key == "NR" || chip.key == "NB") ({ levelsDialog = true }) else null,
-                        )
-                    }
-                }
-            }
-
-            // Autres mesures (COMP) en une ligne, s'il y en a ; POWER, SWR, ALC, Vd et température sont dans l'afficheur
-            val others = Controls.meters(rig.state).filterNot { it.key in setOf("PO", "SWR", "ALC", "VD", "TEMP") }
-            if (others.isNotEmpty()) {
-                Text(others.joinToString("   ") { "${it.label} ${it.text}" }, style = MaterialTheme.typography.bodySmall)
-            }
-
-            }
+                    scope.StationTab()
                 }
                 Tab.SPECTRE -> {
-            MiniDisplay(rig, shownHz, mineTx)
-            // Spectre HF du poste (second port CI-V) ; plein écran : tourner le téléphone
-            if (HfScope.configured(hello)) Panel { HfScopeView(ui, canSet, onTune = { go(it) }, onClose = null) }
-            // Spectre du son reçu (calculé sur le téléphone, seulement pendant l'affichage)
-            Panel {
-                if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })
-                else OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Spectre audio") }
-            }
+                    scope.SpectreTab()
                 }
                 Tab.MEMOIRES -> {
-            MiniDisplay(rig, shownHz, mineTx)
-            // Mémoires partagées de la station
-            if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) Panel {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Mémoires", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { memoryDialog = MemoryEdit(null, "", shownHz, radio?.mode, false) }, enabled = connected) {
-                        Text("+ Mémoriser ici")
-                    }
-                }
-                // Lignes de 40 dp (assez pour le doigt) : ★ favori, nom + fréquence = rappel, ✎ = modifier ; bloc sans
-                // l'espacement de l'écran (sinon 8 dp de plus de chaque côté du séparateur)
-                Column { for (m in rig.memories) {
-                    Row(Modifier.height(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier.size(40.dp).clickable(enabled = connected) { RigHub.saveMemory(m.name, m.hz, m.mode, !m.favorite, m.id) },
-                            contentAlignment = Alignment.Center,
-                        ) { Text(if (m.favorite) "★" else "☆", color = MaterialTheme.colorScheme.primary) }
-                        Row(
-                            Modifier.weight(1f).fillMaxHeight().clickable(enabled = canSet) { RigHub.recallMemory(m.id) },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(m.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                            Text("${Radio.formatIcom(m.hz)}  ${Radio.modeLabel(m.mode)}", fontFamily = FontFamily.Monospace,
-                                style = MaterialTheme.typography.bodyMedium)
-                        }
-                        Box(
-                            Modifier.size(40.dp).clickable(enabled = connected) { memoryDialog = MemoryEdit(m.id, m.name, m.hz, m.mode, m.favorite) },
-                            contentAlignment = Alignment.Center,
-                        ) { Text("✎") }
-                    }
-                    HorizontalDivider()
-                } }
-            }
-
-            // Cluster DX : état des flux reçus par la station (comme la page)
-            rig.clusterView(System.currentTimeMillis())?.let { cv -> Panel {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.size(10.dp).background(HEALTH[cv.health] ?: Page.TEXTE_2, CircleShape))
-                    Text("Cluster DX : " + cv.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { spotsDialog = true }) { Text("Tout afficher") }
-                }
-                for (line in cv.lines) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Box(Modifier.size(8.dp).background(HEALTH[line.dot] ?: Color.Transparent, CircleShape))
-                        Text(line.text, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-                if (cv.stale) Text(cv.staleText, color = WARN, style = MaterialTheme.typography.bodySmall)
-            } }
+                    scope.MemoriesTab()
                 }
                 Tab.EQ -> VoiceTab(
                     transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles,
@@ -533,75 +317,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     onBroadcast = { tab = Tab.STATION },                           // la diffusion se suit sur l'onglet Station
                 ) { content -> Panel(content) }
                 Tab.REGLAGES -> {
-            // Journal
-            Panel {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Journal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                TextButton(onClick = { showLog = !showLog }) { Text(if (showLog) "Réduire" else "Tout voir") }
-            }
-            for (line in rig.log.asReversed().take(if (showLog) 60 else 3)) {
-                Text(
-                    line.text, style = MaterialTheme.typography.bodySmall,
-                    color = when (line.level) {
-                        LogLevel.BAD -> MaterialTheme.colorScheme.error
-                        LogLevel.WARN -> WARN
-                        LogLevel.INFO -> MaterialTheme.colorScheme.onSurface
-                    },
-                )
-            }
-            }
-            Panel {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepScreenOn, onCheckedChange = {
-                    keepScreenOn = it
-                    prefs.edit().putBoolean("keep_screen_on", it).apply()
-                })
-                Spacer(Modifier.width(8.dp))
-                Text("Écran toujours allumé pendant la connexion", style = MaterialTheme.typography.bodyMedium)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepTx, onCheckedChange = {
-                    keepTx = it
-                    prefs.edit().putBoolean("keep_tx_background", it).apply()
-                })
-                Spacer(Modifier.width(8.dp))
-                Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = drivingManual, onCheckedChange = {
-                    drivingManual = it
-                    prefs.edit().putBoolean(RigHub.PREF_DRIVING, it).apply()
-                })
-                Spacer(Modifier.width(8.dp))
-                Text("Mode conduite (écran réduit, PTT tactile désactivé)", style = MaterialTheme.typography.bodyMedium)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = drivingAuto, onCheckedChange = {
-                    drivingAuto = it
-                    prefs.edit().putBoolean(RigHub.PREF_DRIVING_AUTO, it).apply()
-                })
-                Spacer(Modifier.width(8.dp))
-                Text("Mode conduite automatique quand une voiture est connectée (Android Auto)", style = MaterialTheme.typography.bodyMedium)
-            }
-            }
-            Panel { MicSection() }
-            Panel { HeadsetSection(ui.headsetMic) }
-            if (BuildConfig.CELL_INFO && rig.net != null) Panel { NetCellsSection() }   // absent de la version Google Play
-            Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
-            rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
-            if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
-                OutlinedButton(onClick = { swrOpen = true }) { Text("Mesure de TOS de l'antenne") }
-            }
-            if (rig.net != null && !listener) {                             // sonde réseau (opérateur, station 0.106.0+)
-                OutlinedButton(onClick = { netOpen = true }) { Text("Qualité du réseau (30 jours)") }
-            }
-            if (rig.host != null) {                                         // opérateur, station 0.83.0+
-                OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
-            }
-            if (hello?.offers("bug_report") == true && !listener && connected) {   // comme la page ; jamais un visiteur
-                OutlinedButton(onClick = { reportOpen = true }) { Text("Signaler un problème") }
-            }
-            OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
+                    scope.SettingsTab()
                     }
             }
         }
@@ -722,297 +438,5 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
-    }
-}
-
-/** Mémoire en cours de création (`id` null) ou de modification. */
-private data class MemoryEdit(val id: String?, val name: String, val hz: Long?, val mode: String?, val favorite: Boolean)
-
-/** Niveaux réglables (NR, NB) : plage [min, max, pas] déclarée par le poste ET valeur lue (page : levelRange). */
-private fun levelRanges(hello: Hello?, levels: Map<String, Double>?): Map<String, List<Double>> =
-    listOf("NR", "NB").mapNotNull { name ->
-        val range = hello?.capabilities?.levelRanges?.get(name)
-        if (range != null && range.size == 3 && range[1] > range[0] && levels?.containsKey(name) == true) name to range else null
-    }.toMap()
-
-private fun levelText(value: Double, range: List<Double>): String =
-    if (range[2] > 0) "${((value - range[0]) / range[2]).roundToInt()} / ${((range[1] - range[0]) / range[2]).roundToInt()}"
-    else String.format(Locale.ROOT, "%.2f", value)
-
-/** Fenêtre des niveaux NR / NB : une commande à la fin de chaque geste ; verrouillée pendant l'émission. */
-@Composable
-private fun LevelsDialog(ranges: Map<String, List<Double>>, levels: Map<String, Double>, enabled: Boolean, onDismiss: () -> Unit) {
-    val dragging = remember { mutableStateMapOf<String, Float>() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Niveaux du poste") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                for ((name, range) in ranges) {
-                    val value = dragging[name] ?: (levels[name] ?: range[0]).toFloat()
-                    val steps = if (range[2] > 0) (((range[1] - range[0]) / range[2]).roundToInt() - 1).coerceAtLeast(0) else 0
-                    Text("${if (name == "NR") "Réducteur de bruit (NR)" else "Antiparasite (NB)"} : ${levelText(value.toDouble(), range)}")
-                    Slider(
-                        value = value, onValueChange = { dragging[name] = it }, enabled = enabled,
-                        valueRange = range[0].toFloat()..range[1].toFloat(), steps = steps,
-                        onValueChangeFinished = { dragging.remove(name)?.let { RigHub.setLevel(name, it.toDouble()) } },
-                    )
-                }
-                if (ranges.isEmpty()) Text("Le poste ne déclare pas de niveau réglable pour NR ni NB.")
-                if (!enabled) Text("Réglages verrouillés pendant l'émission.", color = WARN)
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
-    )
-}
-
-/** Création ou modification d'une mémoire partagée ; suppression confirmée en deux temps (comme la page). */
-@Composable
-private fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf(edit.name) }
-    var freq by remember { mutableStateOf(edit.hz?.let { Radio.formatIcom(it) } ?: "") }
-    var mode by remember { mutableStateOf(edit.mode ?: modes.firstOrNull() ?: "") }
-    var favorite by remember { mutableStateOf(edit.favorite) }
-    var deleteArmed by remember { mutableStateOf(false) }
-    val hz = Radio.parseFrequencyEntry(freq)
-    val nameOk = name.isNotBlank() && name.trim().length <= RigSession.MEMORY_NAME_MAX
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (edit.id == null) "Nouvelle mémoire" else "Mémoire") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true)
-                OutlinedTextField(
-                    freq, { freq = it }, label = { Text("Fréquence (7074 kHz, 14.205 MHz)") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text(hz?.let { Format.frequency(it) } ?: "Fréquence invalide") },
-                )
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    for (m in modes.ifEmpty { listOfNotNull(edit.mode) }) {
-                        FilterChip(selected = m == mode, onClick = { mode = m }, label = { Text(Radio.modeLabel(m)) })
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = favorite, onCheckedChange = { favorite = it })
-                    Spacer(Modifier.width(8.dp))
-                    Text("Favorite (en tête de liste)")
-                }
-                if (edit.id != null) {
-                    TextButton(onClick = {
-                        if (deleteArmed) { RigHub.deleteMemory(edit.id); onDismiss() } else deleteArmed = true
-                    }) { Text(if (deleteArmed) "Confirmer la suppression" else "Supprimer", color = MaterialTheme.colorScheme.error) }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                RigHub.saveMemory(name.trim(), hz!!, mode, favorite, edit.id)
-                onDismiss()
-            }, enabled = nameOk && hz != null && mode.isNotEmpty()) { Text("Enregistrer") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
-    )
-}
-
-private fun stepLabel(hz: Long): String = when {
-    hz >= 1000 && hz % 1000 == 0L -> "${hz / 1000} kHz"
-    hz >= 1000 -> "%.1f kHz".format(hz / 1000.0).replace('.', ',')
-    else -> "$hz Hz"
-}
-
-/** Saisie au clavier, mêmes formats que la page : 7074 (kHz), 14.205 (MHz), 7.074.00 (format du poste). */
-@Composable
-private fun FrequencyDialog(current: Long?, onDismiss: () -> Unit, onSet: (Long) -> Unit) {
-    var text by remember { mutableStateOf("") }
-    val parsed = Radio.parseFrequencyEntry(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Fréquence") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Actuelle : ${Radio.formatIcom(current)}", style = MaterialTheme.typography.bodySmall)
-                OutlinedTextField(
-                    text, { text = it }, singleLine = true, label = { Text("7074 (kHz) ou 14.205 (MHz)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                )
-                Text(
-                    if (text.isBlank()) "" else parsed?.let { "= ${Format.frequency(it)}" } ?: "Fréquence invalide",
-                    color = if (parsed == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                )
-            }
-        },
-        confirmButton = { TextButton(onClick = { parsed?.let(onSet) }, enabled = parsed != null) { Text("Aller") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
-    )
-}
-
-/**
- * Bandes affichées : cocher, ordonner (↑ ↓). Réglage de CE téléphone (la page a le sien). Aucune cochée = toutes.
- */
-@Composable
-private fun BandsDialog(current: List<Band>, onDismiss: () -> Unit, onSave: (List<Band>) -> Unit) {
-    val order = remember { mutableStateListOf<Band>().apply { addAll(current); addAll(Radio.BANDS.filterNot { it in current }) } }
-    val checked = remember { mutableStateMapOf<String, Boolean>().apply { for (b in Radio.BANDS) put(b.key, b in current && current.size < Radio.BANDS.size) } }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Bandes affichées") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text("Cochez vos bandes et mettez-les dans l'ordre voulu. Aucune cochée : toutes.", style = MaterialTheme.typography.bodySmall)
-                for ((i, band) in order.withIndex()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = checked[band.key] == true, onCheckedChange = { checked[band.key] = it })
-                        Text("${band.key} m", modifier = Modifier.weight(1f))
-                        TextButton(onClick = { if (i > 0) { order.removeAt(i); order.add(i - 1, band) } }, enabled = i > 0) { Text("↑") }
-                        TextButton(onClick = { if (i < order.size - 1) { order.removeAt(i); order.add(i + 1, band) } }, enabled = i < order.size - 1) { Text("↓") }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSave(order.filter { checked[it.key] == true }) }) { Text("Enregistrer") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
-    )
-}
-
-/**
- * Paysage : spectre HF du poste en plein écran avec les spots du Cluster DX. En haut, toujours : fréquence, mode,
- * état de l'émission (celui de la station) et STOP. Pour émettre, revenir en portrait (PTT et « Émission autorisée »).
- */
-@Composable
-private fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, modifier: Modifier) {
-    val rig = ui.rig
-    val ptt = rig.ptt
-    val radio = rig.state?.rig
-    val screenH = LocalConfiguration.current.screenHeightDp.dp
-    Column(modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(Radio.formatIcom(radio?.frequencyHz), fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-            Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleSmall)
-            Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.weight(1f))
-            rig.reconnect?.let { Text("LIAISON PERDUE : reconnexion…", color = TX_RED, fontWeight = FontWeight.Bold) }
-            if (ptt != null) {
-                Text(
-                    if (ptt.mine && ptt.transmitting) "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else ptt.label,
-                    color = if (ptt.transmitting) Color.White else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.background(if (ptt.transmitting) TX_RED else Color.Transparent, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                )
-            }
-            Button(
-                onClick = { RigHub.stop() }, enabled = rig.status == LinkStatus.CONNECTED,
-                colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
-                modifier = Modifier.height(40.dp),
-            ) { Text("STOP", fontWeight = FontWeight.Bold) }
-        }
-        HfScopeView(
-            ui, canSet, onTune, onClose = null,
-            plotModifier = Modifier.fillMaxWidth().height((screenH - 150.dp).coerceAtLeast(120.dp)),
-        )
-    }
-}
-
-/** Indicateur : libellé, barre, valeur (orange si SWR >= 2 ou ALC >= 90 %). */
-@Composable
-private fun MeterRow(meter: Meter, warn: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(meter.label, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp))
-        LinearProgressIndicator(
-            progress = { meter.fraction },
-            drawStopIndicator = {},
-            color = if (warn) WARN else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f).height(6.dp),
-        )
-        Text(meter.text, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(48.dp), textAlign = TextAlign.End)
-    }
-}
-
-@Composable
-private fun Banner(text: String, color: Color, big: Boolean = false, textColor: Color = Color.White) {
-    Text(
-        text,
-        color = textColor,
-        fontSize = if (big) 17.sp else 13.sp,
-        fontWeight = if (big) FontWeight.Bold else FontWeight.Normal,
-        modifier = Modifier.fillMaxWidth().background(color, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 8.dp),
-    )
-}
-
-/** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
-private enum class Tab(val symbol: String, val label: String) {
-    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), EQ("♫", "Audio"), REGLAGES("⚙", "Réglages"),
-}
-
-/** Barre d'onglets compacte (52 dp) : l'onglet choisi sur fond « sélection », comme les boutons de la page. */
-@Composable
-private fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Page.PANNEAU).padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        for (item in Tab.entries) {
-            val on = item == current
-            Column(
-                Modifier.weight(1f).height(48.dp).background(if (on) Page.SELECTION else Color.Transparent, RoundedCornerShape(12.dp))
-                    .clickable { onSelect(item) },
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
-            ) {
-                Text(item.symbol, fontSize = 16.sp, color = if (on) Page.MESURE else Page.TEXTE_2)
-                Text(item.label, style = MaterialTheme.typography.labelSmall, color = if (on) Page.TEXTE else Page.TEXTE_2,
-                    fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
-            }
-        }
-    }
-}
-
-/** Carte d'une rubrique (page : panneaux arrondis à liseré fin). */
-@Composable
-private fun Panel(content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(14.dp), color = Page.PANNEAU, contentColor = Page.TEXTE,
-        border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
-    }
-}
-
-/** Afficheur réduit en tête des autres onglets : fréquence, mode, S-mètre, état de l'émission (celui de la station). */
-@Composable
-private fun MiniDisplay(rig: RigState, shownHz: Long?, mineTx: Boolean) {
-    val radio = rig.state?.rig
-    val ptt = rig.ptt
-    Surface(
-        shape = RoundedCornerShape(14.dp), color = if (ptt?.transmitting == true) Page.TX_FOND else Page.INSTRUMENT,
-        contentColor = Page.TEXTE, border = BorderStroke(1.dp, if (ptt?.transmitting == true) TX_RED else Page.LIGNE),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(Radio.formatIcom(shownHz), fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-            Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.labelLarge)
-            Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            if (ptt != null) Text(
-                if (mineTx) "TX" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else if (ptt.transmitting) "TX autre" else "RX",
-                fontWeight = FontWeight.Bold, color = if (ptt.transmitting) TX_RED else Page.SUCCES,
-            )
-        }
-    }
-}
-
-/** Touche d'accord de l'afficheur (− / + / pas) : plus grande qu'une puce, même dessin. */
-@Composable
-private fun TuneKey(label: String, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp,
-                    fontSize: androidx.compose.ui.unit.TextUnit, enabled: Boolean = true, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Surface(
-        shape = RoundedCornerShape(8.dp), color = Color.Transparent,
-        border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.7f)),
-        modifier = Modifier.size(width = width, height = height).clickable(enabled = enabled, onClick = onClick),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(label, fontSize = fontSize, fontWeight = FontWeight.Bold, maxLines = 1,
-                color = if (enabled) colors.onSurface else colors.onSurface.copy(alpha = 0.38f))
-        }
     }
 }

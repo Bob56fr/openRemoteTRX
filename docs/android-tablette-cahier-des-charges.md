@@ -88,3 +88,5 @@ Elle convient à une tablette en paysage. Pour l'adapter :
 - Usage principal : tablette posée au salon (mode station), ou tenue en main ?
 - Faut-il garder les onglets du téléphone dans l'interface tablette (même habitude), ou passer au rail de navigation proposé ?
 - Raccourci clavier Échap = STOP : oui ou non ?
+
+**Préalable FAIT (étape 148, application 0.56.1)** : `RigScreen.kt` découpé (onglets `StationTab`, `SpectreTab`, `MemoriesTab`, `SettingsTab` sur `RigScope`, `RigDialogs.kt`, `RigWidgets.kt`), sans changement visible.
