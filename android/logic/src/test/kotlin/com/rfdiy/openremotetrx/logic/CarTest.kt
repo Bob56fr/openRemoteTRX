@@ -56,6 +56,27 @@ class CarTest {
         assertEquals("S7  VFO", Car.screen(rig(ptt(false, false), armed = false).copy(net = orange), "Maison", false, true).subtitle)
     }
 
+    @Test
+    fun `selcall - ouvert ou envoi en tete, veille en fin, desactive absent, jamais delta ni SB`() {
+        val base = rig(ptt(false, false), armed = false)
+        fun sel(state: String, sending: String = "") =
+            SelcallStatus(state, "4721", emptyList(), "attenuate", 20, SelcallCall("4721", -42.0, 14.0, 0.0), sending = sending)
+        fun sub(s: SelcallStatus?) = Car.screen(base, "Maison", muted = false, micAllowed = true, selcall = s).subtitle
+        assertEquals("S7  VFO", sub(null))
+        assertEquals("S7  VFO", sub(sel(SelcallStatus.DISABLED)))
+        assertEquals("S7  VFO  SEL 4721", sub(sel(SelcallStatus.STANDBY)))
+        assertEquals("SEL OUVERT  S7  VFO", sub(sel(SelcallStatus.OPEN)))
+        assertEquals("SEL 2/3  S7  VFO", sub(sel(SelcallStatus.STANDBY, "2/3")))
+        assertEquals("SEL ENVOI  S7  VFO", sub(sel(SelcallStatus.STANDBY, "réglage -20 dBFS : ALC 5 %")))
+        val weak = NetUi.view((ServerMessages.decode("""{"type":"state","net":{"level":"red","outage":true}}""") as State).net)
+        assertEquals("Liaison faible  SEL OUVERT  S7  VFO",
+            Car.screen(base.copy(net = weak), "Maison", false, true, selcall = sel(SelcallStatus.OPEN)).subtitle)
+        assertFalse(sub(sel(SelcallStatus.OPEN)).contains("42") || sub(sel(SelcallStatus.OPEN)).contains("14"))
+        // trop long : la veille (en fin) est coupée la première, jamais la tête
+        val long = Car.settings(null, null, eq = true, listOf("S9+20", "M: 40 mètres et +"), listOf("SEL 4721"))
+        assertTrue(long.length <= Car.SETTINGS_MAX && long.startsWith("S9+20"))
+    }
+
     private fun lock(s: CarScreen) = s.buttons.single { it.icon.name.startsWith("LOCK") }
 
     @Test

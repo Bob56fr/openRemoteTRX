@@ -216,6 +216,7 @@ Suivre les conventions de l'API client existante. Les noms ci-dessous sont indic
 - **Aucune commande SELCALL** sur l'écran voiture. Toute action d'émission reste sur le téléphone, conformément à la décision sur le PTT.
 - **Information minimale**, conforme aux règles Google : pas de Δ ni de SNR.
 - À réaliser lors du développement de l'app Android, à partir de l'événement `selcall.state`.
+- **Réalisé au lot 6 (étape 145, application 0.55.0)** : sous-titre de la voiture, `SEL OUVERT` / `SEL 2/3` en tête, `SEL 4721` (veille) en fin, rien si désactivé (choix de l'utilisateur, 2026-11-09 : un « désactivé » n'apprend rien au conducteur) ; `docs/android-auto.md` § 6.
 
 ## 11. Supervision
 

@@ -157,5 +157,9 @@ S4  VFO  NB NR RIT  100w
   au plus) ou `VFO` ; `NB NR RIT XIT` actifs (RIT et XIT/ΔTX seulement s'ils sont en service sur le poste, étape 131) ; `Preamp` (`Preamp2` pour le 2e préampli) ou `ATT`, `TUNER` (coupleur en service, juste avant la puissance, étape 132), puissance `100w` (`50%` si la
   station ne connaît pas la puissance maximale), `EQ` (égaliseur de la voix émise en service). Seulement ce qui est actif
   et publié par la station ; 40 caractères au plus (un seul espace entre groupes, puis coupé).
+- SELCALL (lot 6 du cahier SELCALL, étape 145, application 0.55.0 ; affichage seul, aucune commande) : `SEL OUVERT`
+  (appel reçu) ou `SEL 2/3` (appel manuel en cours ; `SEL ENVOI` pendant un réglage) en TÊTE du sous-titre, après
+  `Liaison faible` ; veille `SEL 4721` en FIN (coupé le premier si la ligne est trop longue) ; désactivé : rien. Jamais
+  de décalage ni de S/B.
 - Fond de l'écran : Android Auto le fabrique LUI-MÊME à partir de la pochette (image floutée) ; aucune API ne permet
   une image de fond séparée. Pour le changer : changer la pochette (§ 3).

@@ -112,7 +112,7 @@ internal object RigMedia {
         val voice = VoiceHub.ui.value
         return Car.screen(
             ui.rig, ui.station?.name, ui.muted, ui.micAllowed, ui.carNotice,
-            eq = voice.settings.enabled && !voice.breizh, preview = stepper.pending, selcallOpen = ui.rig.selcall?.state == "open",
+            eq = voice.settings.enabled && !voice.breizh, preview = stepper.pending, selcall = ui.rig.selcall,
         )
     }
 

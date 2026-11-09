@@ -96,11 +96,11 @@ object Car {
 
     /**
      * `eq` : égaliseur de la voix émise en service (F3) ; `preview` : favori choisi au volant, pas encore envoyé (F1,
-     * regroupement des appuis) ; `selcallOpen` : SELCALL de la station ouvert.
+     * regroupement des appuis) ; `selcall` : état SELCALL de la station (lot 6 : affichage seul, jamais de commande).
      */
     fun screen(
         rig: RigState, station: String?, muted: Boolean, micAllowed: Boolean, notice: String = "",
-        eq: Boolean = false, preview: Memory? = null, selcallOpen: Boolean = false,
+        eq: Boolean = false, preview: Memory? = null, selcall: SelcallStatus? = null,
     ): CarScreen {
         val name = station ?: "openRemoteTRX"
         val ptt = rig.ptt
@@ -136,7 +136,7 @@ object Car {
             if (!micAllowed) add("réception seule")
             else if (!rig.armed && !mine) add("émission non autorisée")
             if (muted) add("muet")
-            if (selcallOpen) add("SELCALL ouvert")
+            if (selcall?.open == true) add("SELCALL ouvert")
             add(name)
         }
         val buttons = buildList {
@@ -164,7 +164,10 @@ object Car {
         val signal = if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }
         // Sonde réseau : liaison rouge = « Liaison faible » en TÊTE du sous-titre (cahier § 9.3), sans bip ni voix
         val weak = if (rig.net?.weak == true) WEAK_LINK else null
-        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, listOfNotNull(weak, signal, place)), playing = !muted, connecting = false,
+        val (selHead, selTail) = selcallParts(selcall)
+        return CarScreen(title.ifEmpty { name },
+            settings(rig.hello, rig.state, eq, listOfNotNull(weak, selHead, signal, place), listOfNotNull(selTail)),
+            playing = !muted, connecting = false,
             connected = true, buttons = arrange(buttons, canSkip), error = notice, secondary = parts.joinToString(" · "),
             canSkip = canSkip)
     }
@@ -187,6 +190,21 @@ object Car {
     private fun order(ptt: List<CarButton>, stop: List<CarButton>, mem: List<CarButton>, rest: List<CarButton>) =
         ptt + stop + mem + rest
 
+    private val SENDING_STEP = Regex("""^\d+/\d+$""")
+
+    /**
+     * SELCALL dans le sous-titre (cahier § 10.2, lot 6 ; choix de l'utilisateur du 2026-11-09 : selon l'importance).
+     * Retourne (tête, fin) : envoi en cours « SEL 2/3 » (réglage : « SEL ENVOI ») ou « SEL OUVERT » en TÊTE ; veille
+     * « SEL 4721 » en FIN (coupé en premier si le sous-titre est trop long) ; désactivé : rien. Jamais de Δ ni de S/B.
+     */
+    fun selcallParts(s: SelcallStatus?): Pair<String?, String?> = when {
+        s == null -> null to null
+        s.sending.isNotEmpty() -> "SEL " + (if (SENDING_STEP.matches(s.sending)) s.sending else "ENVOI") to null
+        s.open -> "SEL OUVERT" to null
+        s.state == SelcallStatus.STANDBY && s.code.isNotEmpty() -> null to "SEL ${s.code}"
+        else -> null to null
+    }
+
     /** Longueur maximale du sous-titre (F3) et du nom de mémoire qu'il montre. */
     const val SETTINGS_MAX = 40
     /** Sonde réseau : liaison rouge (coupure en cours ou seuils d'alerte), en Android Auto et en mode conduite. */
@@ -200,7 +218,7 @@ object Car {
      * est ACTIF et publié par la station (un poste qui ne le gère pas ne le montre jamais). Trop long : un espace entre
      * les groupes, puis coupé.
      */
-    fun settings(hello: Hello?, state: State?, eq: Boolean, lead: List<String> = emptyList()): String {
+    fun settings(hello: Hello?, state: State?, eq: Boolean, lead: List<String> = emptyList(), tail: List<String> = emptyList()): String {
         val rig = state?.rig
         val lv = rig?.levels.orEmpty()
         val fn = rig?.functions.orEmpty()
@@ -220,7 +238,7 @@ object Car {
             }
             if (eq) add("EQ")
         }
-        val groups = (lead + listOf(functions.joinToString(" "), levels.joinToString(" "))).filter { it.isNotEmpty() }
+        val groups = (lead + listOf(functions.joinToString(" "), levels.joinToString(" ")) + tail).filter { it.isNotEmpty() }
         val full = groups.joinToString("  ")
         if (full.length <= SETTINGS_MAX) return full
         val tight = groups.joinToString(" ")
