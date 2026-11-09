@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
+﻿# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 # Installation de TRX distant sous Windows 10 / 11 (lancée par installer.cmd).
 #   installer.cmd                 installe ou met à jour (la configuration est conservée)
@@ -22,6 +22,8 @@ $DataDir = Join-Path $env:ProgramData "trx-remote"
 $Config = Join-Path $DataDir "station.toml"
 $LogDir = Join-Path $DataDir "logs"
 $MenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant"
+# Indicateur près de l'horloge (trxstation/tray, lecture seule) : raccourci du dossier Démarrage de la session.
+$TrayStartup = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\TRX distant - indicateur.lnk"
 $FirewallGroup = "TRX distant"
 $MinPython = [version]"3.11"
 $HamlibPage = "https://github.com/Hamlib/Hamlib/releases"
@@ -187,6 +189,12 @@ function Install-Commands {
     $wanted = if ($clean) { "$clean;$BinDir" } else { $BinDir }
     if ($wanted -ne $current) { Set-UserPath $wanted }
 }
+# L'indicateur tient ouverts les fichiers de SA version : arrêté avant de remplacer ou d'effacer une version.
+function Stop-Tray {
+    Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe' OR Name = 'python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match 'trxstation\.tray' } |
+        ForEach-Object { Invoke-CimMethod -InputObject $_ -MethodName Terminate -ErrorAction SilentlyContinue | Out-Null }
+}
 function Remove-Commands {
     $current = Get-UserPath
     $clean = Without-BinDir $current
@@ -203,6 +211,8 @@ if ($Desinstaller) {
     Get-NetFirewallRule -Group $FirewallGroup -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
     Remove-Commands
+    Stop-Tray
+    if (Test-Path -LiteralPath $TrayStartup) { Remove-Item -LiteralPath $TrayStartup -Force }
     if (Test-Path -LiteralPath $Base) { Remove-Item -LiteralPath $Base -Recurse -Force }
     Ok "logiciel, tâche de démarrage, règles du pare-feu, raccourcis et commandes (PATH) retirés"
     if (Test-Path -LiteralPath $DataDir) {
@@ -267,6 +277,7 @@ if (-not $Essai -and (Station-Running)) {
     Say "  La station tourne : elle est arrêtée pendant l'installation (le poste est remis en réception)."
     Stop-Station
 }
+if (-not $Essai) { Stop-Tray }
 Ok "aucune station en marche pendant l'installation"
 
 # ------------------------------------------------------------------ 3. logiciel et modules Python
@@ -280,9 +291,9 @@ Copy-Item -Path (Join-Path $Here "app") -Destination $Release -Recurse
 if ($LASTEXITCODE -ne 0) { Fail "création de l'environnement Python impossible." }
 $VenvPy = Venv-Python $Release
 & $VenvPy -m pip install --disable-pip-version-check --upgrade pip | Out-Host
-& $VenvPy -m pip install --disable-pip-version-check "$(Join-Path $Release 'app')[station]" | Out-Host
+& $VenvPy -m pip install --disable-pip-version-check "$(Join-Path $Release 'app')[station,tray]" | Out-Host
 if ($LASTEXITCODE -ne 0) { Fail "installation des modules Python impossible (Internet ? pare-feu d'entreprise ?)." }
-& $VenvPy -c "import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial; print('modules OK')"
+& $VenvPy -c "import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial, pystray, PIL; print('modules OK')"
 if ($LASTEXITCODE -ne 0) { Fail "modules Python incomplets." }
 Ok "TRX distant $Version installé dans $Release"
 
@@ -365,6 +376,21 @@ New-Shortcut "8 - Mode d'emploi Windows" (Join-Path $Current "notice-windows.htm
 New-Shortcut "9 - Désinstaller" $ps "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller" "Retire TRX distant" $env:TEMP
 Ok "raccourcis dans le menu Démarrer > TRX distant"
 Install-Commands
+New-Shortcut "10 - Indicateur près de l'horloge" $pythonw "-m trxstation.tray" "Voyant de la station près de l'horloge (lecture seule)" $DataDir
+if (Ask-Yes "Afficher l'indicateur de la station près de l'horloge à chaque ouverture de session" $true) {
+    $link = (New-Object -ComObject WScript.Shell).CreateShortcut($TrayStartup)
+    $link.TargetPath = $pythonw
+    $link.Arguments = "-m trxstation.tray"
+    $link.Description = "TRX distant : indicateur près de l'horloge (lecture seule)"
+    $link.WorkingDirectory = $DataDir
+    $link.Save()
+    # Lancé par l'Explorateur : sous TON compte, sans les droits administrateur de l'installation.
+    Start-Process explorer.exe -ArgumentList "`"$TrayStartup`""
+    Ok "indicateur près de l'horloge (s'il est caché dans « ^ », glisse-le à côté de l'horloge)"
+} elseif (Test-Path -LiteralPath $TrayStartup) {
+    Remove-Item -LiteralPath $TrayStartup -Force
+    Say "  Indicateur non lancé à l'ouverture de session (menu Démarrer > TRX distant > « 10 - Indicateur près de l'horloge »)."
+}
 Ok "commandes $($Commands -join ', ') lançables depuis un NOUVEAU terminal (dossier $BinDir ajouté à ton PATH)"
 foreach ($file in @("notice-windows.html", "installer.cmd", "installer.ps1", "VERSION", "LICENSE")) {
     Copy-Item -LiteralPath (Join-Path $Here $file) -Destination $Release -Force

@@ -48,7 +48,7 @@ def test_installer_respects_the_safety_and_privacy_rules():
     assert "/inheritance:r" in ps                                                   # configuration réservée au compte
     assert "-RunLevel Limited" in ps                                                # la station ne tourne pas en administrateur
     assert "WindowsApps" in ps                                                      # jamais l'alias Python du Microsoft Store
-    assert "[station]" in ps
+    assert "[station,tray]" in ps and "pystray, PIL" in ps                       # indicateur près de l'horloge
     for forbidden in ("Invoke-Expression", "iex ", "DownloadString", "Set-ExecutionPolicy"):
         assert forbidden not in ps, forbidden
 
@@ -57,7 +57,7 @@ def test_notice_describes_every_shortcut_created():
     ps = (WIN / "installer.ps1").read_text(encoding="utf-8")
     notice = (WIN / "notice-windows.html").read_text(encoding="utf-8")
     shortcuts = re.findall(r'New-Shortcut "([^"]+)"', ps)
-    assert len(shortcuts) == 9
+    assert len(shortcuts) == 10
     for name in shortcuts:
         assert name in notice, name
     assert notice.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
@@ -140,3 +140,12 @@ Write-Output "BIN=$(Test-Path -LiteralPath $BinDir)"
     assert out["ABSENT"] == "9009"                                           # version active sans la commande
     assert out["RETIRE"] == r"%SystemRoot%\system32;C:\Autre"
     assert out["BIN"] == "False"
+
+
+def test_tray_indicator_is_stopped_before_replacing_files_and_removed_on_uninstall():
+    ps = (WIN / "installer.ps1").read_text(encoding="utf-8-sig")
+    uninstall = ps.split("# ------------------------------------------------------------------ désinstallation", 1)[1].split("exit 0", 1)[0]
+    assert "Stop-Tray" in uninstall and "$TrayStartup" in uninstall
+    assert ps.index("{ Stop-Tray }") < ps.index("Remove-Item -LiteralPath $Release")   # avant de remplacer la version
+    assert 'Start-Process explorer.exe' in ps                                         # lancé sans les droits administrateur
+    assert "Startup" in ps and "-m trxstation.tray" in ps

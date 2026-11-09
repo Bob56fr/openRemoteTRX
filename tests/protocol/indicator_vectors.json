@@ -1,0 +1,2404 @@
+[
+ {
+  "name": "réception normale",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "version": "0.113.0",
+   "stationId": "46bf1040-41ed-419d-8344-e3b6e2c08a51\n"
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    },
+    {
+     "key": "Version",
+     "text": "0.113.0",
+     "level": "info"
+    },
+    {
+     "key": "Identifiant",
+     "text": "46bf1040-41ed-419d-8344-e3b6e2c08a51",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "émission avec TOT",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [
+     "phone"
+    ],
+    "ptt": {
+     "state": "TX",
+     "owner": "phone",
+     "tot_remaining_s": 72.4,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX 1:12",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "ÉMISSION par phone, coupure automatique dans 1:12",
+     "level": "bad"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "phone",
+     "level": "ok"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "émission, TOT à un demi",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "TX",
+     "owner": "phone",
+     "tot_remaining_s": 72.5,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX 1:13",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "ÉMISSION par phone, coupure automatique dans 1:13",
+     "level": "bad"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "émission sans TOT",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "TX",
+     "owner": "pc",
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "ÉMISSION par pc",
+     "level": "bad"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "prise d'émission",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "KEYING",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "prise d'émission en cours",
+     "level": "warn"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "coupure en cours",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "UNKEYING",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "coupure en cours",
+     "level": "warn"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "station arrêtée",
+  "input": {
+   "status": null,
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "off",
+   "label": "TRX arrêtée",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "arrêtée (TRX Console, menu 5 pour la démarrer)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "passerelle muette",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175487.5
+  },
+  "expect": {
+   "level": "stale",
+   "label": "TRX ?",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "ne répond plus depuis 30 s",
+     "level": "warn"
+    }
+   ]
+  }
+ },
+ {
+  "name": "vieux fichier",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793176057.5
+  },
+  "expect": {
+   "level": "off",
+   "label": "TRX arrêtée",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "arrêtée",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "mode sûr prioritaire",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "TX",
+     "owner": "phone",
+     "tot_remaining_s": 10,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "safeMode": "pannes répétées\n"
+  },
+  "expect": {
+   "level": "safe",
+   "label": "MODE SÛR",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "MODE SÛR : pannes répétées (TRX Console, menu 9)",
+     "level": "bad"
+    },
+    {
+     "key": "Émission",
+     "text": "ÉMISSION par phone, coupure automatique dans 0:10",
+     "level": "bad"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "mode sûr, station arrêtée",
+  "input": {
+   "status": null,
+   "nowS": 1793175457.5,
+   "safeMode": "pannes"
+  },
+  "expect": {
+   "level": "safe",
+   "label": "MODE SÛR",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "MODE SÛR : pannes (TRX Console, menu 9)",
+     "level": "bad"
+    },
+    {
+     "key": "Station",
+     "text": "arrêtée (TRX Console, menu 5 pour la démarrer)",
+     "level": "bad"
+    }
+   ]
+  }
+ },
+ {
+  "name": "liaison perdue",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": false,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "connexion refusée",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "TRX",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Poste",
+     "text": "liaison perdue (connexion refusée) : poste éteint ou débranché ?",
+     "level": "bad"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "sur place",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": 95,
+     "local_reason": "frequency",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Sur place",
+     "text": "fréquence changée sur le poste : PTT à distance bloqué encore 1:35",
+     "level": "warn"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "sur place, émission locale",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": 0,
+     "local_reason": "tx",
+     "local_tx": true,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Sur place",
+     "text": "émission au micro du poste : PTT à distance bloqué pendant l'émission locale",
+     "level": "warn"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "poste chaud",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "warn",
+     "temp_c": 44.5
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Température",
+     "text": "poste chaud (45 °C)",
+     "level": "warn"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "poste trop chaud",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "hot",
+     "temp_c": 52
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Température",
+     "text": "POSTE TROP CHAUD (52 °C) : émission coupée",
+     "level": "bad"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "température normale",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": 31.5
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Température",
+     "text": "32 °C",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "défaut",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "unkey_failed",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Défaut",
+     "text": "unkey_failed : intervention sur la station requise",
+     "level": "bad"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "dernière coupure",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "tot",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Dernière coupure",
+     "text": "durée maximale d'émission atteinte",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "coupure inconnue",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "autre_raison",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Dernière coupure",
+     "text": "autre_raison",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "filtre 2,25 kHz et tension 12,25 V",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 2250,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 12.25
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 2.3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "12.3 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "filtre 500 Hz, tension basse",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "CW",
+     "passband_hz": 500,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 11.95
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 CW",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz CW, filtre 500 Hz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "11.9 V",
+     "level": "warn"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "spectre entier, en panne, en attente",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "error",
+     "message": "port COM7 absent"
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "en panne : port COM7 absent",
+     "level": "warn"
+    }
+   ]
+  }
+ },
+ {
+  "name": "spectre fps entier",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "spectre en attente",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "waiting"
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "en attente de la réception",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "cluster rouge",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "cluster": {
+    "enabled": true,
+    "health": "red"
+   }
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    },
+    {
+     "key": "Cluster DX",
+     "text": "aucune source connectée",
+     "level": "bad"
+    }
+   ]
+  }
+ },
+ {
+  "name": "cluster vert",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "cluster": {
+    "enabled": true,
+    "health": "green"
+   }
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    },
+    {
+     "key": "Cluster DX",
+     "text": "toutes les sources connectées",
+     "level": "ok"
+    }
+   ]
+  }
+ },
+ {
+  "name": "cluster désactivé",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "cluster": {
+    "enabled": false,
+    "health": "red"
+   }
+  },
+  "expect": {
+   "level": "ok",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "mise à jour",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5,
+   "update": {
+    "release": {
+     "version": "0.114.0"
+    }
+   }
+  },
+  "expect": {
+   "level": "warn",
+   "label": "7.195 LSB-D",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    },
+    {
+     "key": "Mise à jour",
+     "text": "version 0.114.0 disponible (TRX Console, menu 10)",
+     "level": "warn"
+    }
+   ]
+  }
+ },
+ {
+  "name": "fréquence 145,6 MHz FM",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 145600000,
+     "mode": "FM",
+     "passband_hz": 15000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "145.600 FM",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Fréquence",
+     "text": "145.600.000 MHz FM, filtre 15 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "contenu hostile",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "TX",
+     "owner": "a\u001b[31mxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": 7195000,
+     "mode": "PKTLSB",
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     }
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "tx",
+   "label": "TX",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "ÉMISSION par a [31mxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "level": "bad"
+    },
+    {
+     "key": "Fréquence",
+     "text": "7.195.000 MHz LSB-D, filtre 3 kHz",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "état non objet",
+  "input": {
+   "status": "pas un objet",
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "off",
+   "label": "TRX arrêtée",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "arrêtée (TRX Console, menu 5 pour la démarrer)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "entrée nulle",
+  "input": null,
+  "expect": {
+   "level": "off",
+   "label": "TRX arrêtée",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "arrêtée (TRX Console, menu 5 pour la démarrer)",
+     "level": "info"
+    }
+   ]
+  }
+ }
+]

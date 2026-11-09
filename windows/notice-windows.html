@@ -122,6 +122,7 @@ réseau. L'adresse du PC est affichée par le diagnostic (« Adresses de ce PC �
 <tr><td>6 - Essai du poste</td><td>Essai guidé, station arrêtée.</td></tr>
 <tr><td>7 - Journaux de la station</td><td><code>C:\ProgramData\trx-remote\logs</code> : superviseur, passerelle, rigctld.</td></tr>
 <tr><td>8 - Mode d'emploi Windows</td><td>Cette notice.</td></tr>
+<tr><td>10 - Indicateur près de l'horloge</td><td>Voyant de la station près de l'horloge (lecture seule) : gris = arrêtée, vert = en marche, <strong>rouge = émission</strong>, orange = à surveiller, violet = mode sûr. Survol : fréquence ou temps d'émission restant ; clic droit : détail, page web, tableau de bord, journaux. Il ne commande jamais la station (STOP TX : tableau de bord). Lancé à chaque ouverture de session si tu l'as demandé à l'installation. Windows le range d'abord dans « ^ » (icônes cachées) : glisse-le à côté de l'horloge.</td></tr>
 <tr><td>9 - Désinstaller</td><td>Retire le logiciel et les commandes du PATH ; la configuration est gardée sauf si tu demandes de l'effacer.</td></tr>
 </table>
 <p><strong>Commandes</strong> : dans un terminal ouvert APRÈS l'installation (Invite de commandes ou PowerShell), <code>trx-console</code>, <code>trx-setup</code>, <code>trx-monitor</code>, <code>trx-hwtest</code>, <code>trx-qualif</code>, <code>trx-journal-android</code> et <code>trx-netreport</code> se lancent depuis n'importe quel dossier (dossier <code>%LOCALAPPDATA%\Programs\TRX distant\bin</code> ajouté au PATH de ton compte, retiré à la désinstallation). Elles prennent la configuration <code>C:\ProgramData	rx-remote\station.toml</code> sans option. Après Ctrl+C, Windows peut demander « Terminer le programme de commandes (O/N) ? » : réponds O.</p>
@@ -153,7 +154,7 @@ et le compte-rendu d'installation <code>%TEMP%\trx-remote-install.log</code>. Au
 <ul>
 <li>Les raccourcis du menu Démarrer remplacent les menus d'installation et de services de TRX Console, propres à Debian.</li>
 <li>Pas de mise à jour par Internet ni de vérification de signature : on installe le nouveau zip à la main.</li>
-<li>Pas d'indicateur dans la barre des tâches pour l'instant (prévu : icône près de l'horloge).</li>
+<li>L'indicateur près de l'horloge n'affiche pas de texte (Windows ne le permet pas) : la fréquence et le temps d'émission restant sont dans l'infobulle.</li>
 <li>Pas de réinitialisation automatique du port USB par le superviseur : en cas de panne répétée, rebranche le câble.</li>
 <li>La station tourne sous ton compte, à l'ouverture de ta session : le PC doit rester allumé avec ta session ouverte (verrouillée si tu veux).</li>
 </ul>

@@ -85,6 +85,12 @@ async function main() {
                  "durée maximale d'émission atteinte");
   });
 
+  test("exemples communs avec l'indicateur Windows (tests/protocol/indicator_vectors.json)", () => {
+    const vectors = JSON.parse(require("node:fs").readFileSync(path.join(__dirname, "../protocol/indicator_vectors.json"), "utf8"));
+    assert.ok(vectors.length >= 30);
+    for (const v of vectors) assert.deepEqual(ind.summarize(v.input), v.expect, v.name);
+  });
+
   for (const [name, fn] of tests) {
     try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }
   }
