@@ -79,11 +79,14 @@
       },
       collectStats: async (pc) => {
         const stats = await pc.getStats();
-        let jitter = null, lost = null, received = null, rtt = null, rxLevel = null, micLevel = null, sent = null;
+        let jitter = null, lost = null, received = null, rtt = null, rxLevel = null, micLevel = null, sent = null, conceal = null;
         stats.forEach((r) => {
           if (r.type === "inbound-rtp" && r.kind === "audio") {
             jitter = r.jitter; lost = r.packetsLost; received = r.packetsReceived;
             if (typeof r.audioLevel === "number") rxLevel = r.audioLevel;
+            if (typeof r.concealedSamples === "number" && typeof r.totalSamplesReceived === "number") {
+              conceal = { concealed: r.concealedSamples, total: r.totalSamplesReceived };   // sonde réseau : trous audibles
+            }
           }
           if (r.type === "outbound-rtp" && r.kind === "audio") sent = r.packetsSent;
           if (r.type === "media-source" && r.kind === "audio" && typeof r.audioLevel === "number") micLevel = r.audioLevel;
@@ -97,7 +100,13 @@
         const diag = [];
         if (received !== null) diag.push("son reçu : " + received + " paquets" + (rxLevel !== null ? ", niveau " + pct(rxLevel) : ""));
         if (sent !== null) diag.push("micro : " + sent + " paquets envoyés" + (micLevel !== null ? ", niveau capté " + pct(micLevel) : ""));
-        return { net: net.join(" · "), diag: diag.join(" · ") };
+        return { net: net.join(" · "), diag: diag.join(" · "), conceal: conceal };
+      },
+      health: async () => {                                  // sonde réseau : second chemin (HTTPS, hors WebRTC)
+        try {
+          const response = await fetch("health", { cache: "no-store", signal: AbortSignal.timeout(3000) });
+          return response.ok;
+        } catch (e) { return false; }
       },
     };
   }
@@ -1647,6 +1656,223 @@
     $("presence-close").addEventListener("click", () => { presenceOpen = false; $("presence-dialog").hidden = true; });
     $("presence-reopen").addEventListener("click", () => client.reopenListeners().catch(fail));
 
+    // ---- sonde de qualité réseau : indicateur de l'en-tête, détail (accordéon), statistiques et seuils (opérateurs)
+    const np = root.TrxNetProbe || null;
+    let netOpen = store.get("trx.netOpen", "0") === "1";
+    let netLast = null, netKey = "", netModel = null;
+    function netRows(table, rows, badFirst) {
+      table.textContent = "";
+      rows.forEach((row, i) => {
+        const tr = el("tr", badFirst && i === 0 ? "bad" : "");
+        tr.appendChild(el("td", "", String(row[0]))); tr.appendChild(el("td", "", String(row[1])));
+        table.appendChild(tr);
+      });
+    }
+    function paintNetDetail(n) {
+      $("net-detail").hidden = !(n && netOpen);
+      if (!n || !netOpen) return;
+      const key = JSON.stringify([n.rows, n.probes, n.vpn, n.thresholds]);
+      if (key === netKey) return;                                          // rien de changé : boutons gardés sous le doigt
+      netKey = key;
+      netRows($("net-rows"), n.probes.length ? n.rows.concat([["Sondes de la station", ""]], n.probes) : n.rows, n.outage);
+      const box = $("net-vpn");
+      box.textContent = "";
+      for (const w of n.vpn) {
+        const div = el("div", "alert warn", w.text + " ");
+        const skip = el("button", "chip", "Ignorer pour cette adresse");
+        skip.addEventListener("click", () => client.netVpnIgnore(w.address).catch(fail));
+        div.appendChild(skip);
+        box.appendChild(div);
+      }
+      $("net-thresholds").textContent = n.thresholds;
+    }
+    function paintNet(v) {
+      const n = v.connected ? v.net : null;
+      netLast = n;
+      const bar = $("net-bar");
+      bar.hidden = !n;
+      $("sec-net").hidden = !n || client.isListener();
+      if (!n) { $("net-detail").hidden = true; netKey = ""; return; }
+      bar.className = "netbar " + n.level + (n.outage ? " outage" : "");
+      Array.from(bar.children).forEach((b, i) => { b.className = i < n.bars ? "on" : ""; });
+      bar.title = n.title;
+      paintNetDetail(n);
+    }
+    function setNetOpen(on) {
+      netOpen = on;
+      store.set("trx.netOpen", on ? "1" : "0");
+      netKey = "";
+      paintNetDetail(netLast);
+    }
+    for (let i = 0; i < 3; i++) $("net-bar").appendChild(el("i", ""));      // trois barres : niveau lisible sans la couleur
+    $("net-bar").addEventListener("click", () => setNetOpen(!netOpen));
+    $("net-detail-close").addEventListener("click", () => setNetOpen(false));
+    $("net-stats-open").addEventListener("click", () => {
+      $("sec-net").open = true;
+      $("sec-net").scrollIntoView({ block: "start" });
+      loadNetStats();
+    });
+
+    function netBarRow(box, label, fraction, value, title) {
+      const row = el("div", "nb-row");
+      row.title = title || "";
+      row.appendChild(el("span", "nb-label", label));
+      const track = el("div", "nb-track"), fill = el("div", "nb-fill");
+      fill.style.width = Math.round(Math.max(0, Math.min(1, fraction)) * 100) + "%";
+      track.appendChild(fill);
+      const right = el("div", "");
+      right.appendChild(track);
+      right.appendChild(el("span", "nb-value", value));
+      row.appendChild(right);
+      box.appendChild(row);
+    }
+    function renderNetStats(m) {
+      $("net-view").hidden = !m;
+      if (!m) return;
+      netRows($("net-summary"), m.summary);
+      const days = $("net-days-chart");
+      days.textContent = "";
+      if (!m.days.length) days.appendChild(el("p", "note", "Aucune mesure sur la période."));
+      for (const d of m.days) netBarRow(days, d.date, d.fraction, d.short, d.date + " : " + d.outages + " coupure(s), " + d.detail);
+      const heat = $("net-heat");
+      heat.textContent = "";
+      heat.appendChild(el("b", "", ""));
+      for (let h = 0; h < 24; h++) heat.appendChild(el("b", "", h % 6 === 0 ? String(h) : ""));
+      for (const d of m.days) {
+        heat.appendChild(el("b", "", d.date.slice(5)));
+        d.hours.forEach((cell, h) => {
+          const c = el("span", cell.n ? "" : "zero");
+          if (cell.n) c.style.opacity = String(0.25 + 0.75 * cell.fraction);
+          c.title = d.date + " " + h + " h : " + cell.n + " coupure(s)";
+          heat.appendChild(c);
+        });
+      }
+      const diag = $("net-diag");
+      diag.textContent = "";
+      if (!m.diagnoses.length) diag.appendChild(el("p", "note", "Aucune coupure."));
+      for (const d of m.diagnoses) netBarRow(diag, d.label, d.fraction, d.count + " (" + Math.round(d.fraction * 100) + " %)", d.label);
+      netRows($("net-types"), m.types.length ? m.types : [["—", "aucune mesure"]]);
+      const list = $("net-outages");
+      list.textContent = "";
+      for (const o of m.outages) {
+        list.appendChild(el("li", "", new Date(o.when).toLocaleString() + " — " + o.duration + " — " + o.diagnosis +
+          (o.agent ? " — " + o.agent : "") + (o.net ? " (" + o.net + ")" : "") + " — " + o.kind + (o.basis ? " ; d'après : " + o.basis : "")));
+      }
+      if (!m.outages.length) list.appendChild(el("li", "", "Aucune coupure sur la période."));
+      const select = $("net-device"), keep = select.value;
+      select.textContent = "";
+      select.appendChild(el("option", "", "tous"));
+      select.firstChild.value = "";
+      for (const d of m.devices) {
+        const o = el("option", "", (d.agent || "appareil") + " (" + String(d.device).slice(0, 4) + ")");
+        o.value = d.device;
+        select.appendChild(o);
+      }
+      select.value = keep;
+      renderNetThresholds(m);
+    }
+    function renderNetThresholds(m) {
+      const box = $("net-thr");
+      box.textContent = "";
+      if (!m.thresholds.length) { box.appendChild(el("p", "note", "Pas encore de mesures par type de réseau.")); return; }
+      for (const t of m.thresholds) {
+        const card = el("div", "net-thr-type");
+        card.appendChild(el("strong", "", t.label + (t.chosen ? " — seuils choisis" : " — seuils de station.toml")));
+        const p = t.proposed || {};
+        const proposal = p.rtt || p.loss
+          ? "Proposé d'après vos mesures : " + (p.rtt ? "aller-retour " + p.rtt.warn + " / " + p.rtt.alert + " ms" : "") +
+            (p.rtt && p.loss ? ", " : "") + (p.loss ? "perte " + p.loss.warn + " / " + p.loss.alert + " %" : "")
+          : "Pas encore de proposition (7 jours et 2 000 mesures de 10 s de ce réseau ; " + t.days + " jour(s) aujourd'hui).";
+        card.appendChild(el("p", "note", proposal));
+        const values = { rtt_warn: t.inForce.rtt_warn, rtt_alert: t.inForce.rtt_alert, loss_warn: t.inForce.loss_warn, loss_alert: t.inForce.loss_alert };
+        const result = el("p", "note", "");
+        const simulate = () => {
+          if (!np) return;
+          const r = np.simulate(t.rttHist, m.edges.rtt_ms, values.rtt_warn, values.rtt_alert);
+          const l = np.simulate(t.lossHist, m.edges.loss_pct, values.loss_warn, values.loss_alert);
+          const pct = (x) => (x === null ? "—" : String(x).replace(".", ",") + " %");
+          result.textContent = "Sur l'historique — aller-retour : orange " + pct(r.orange_pct) + " du temps, rouge " + pct(r.red_pct) +
+            " ; son dégradé dans " + pct(r.degraded_red_pct) + " des moments rouges et " + pct(r.degraded_green_pct) + " des moments verts. " +
+            "Perte : orange " + pct(l.orange_pct) + ", rouge " + pct(l.red_pct) + ".";
+        };
+        const inputs = {};
+        const slider = (key, label, min, max, step, unit) => {
+          const row = el("label", "");
+          row.appendChild(el("span", "", label));
+          const input = document.createElement("input");
+          input.type = "range"; input.min = min; input.max = max; input.step = step; input.value = values[key];
+          const out = el("span", "", values[key] + " " + unit);
+          input.addEventListener("input", () => { values[key] = Number(input.value); out.textContent = input.value + " " + unit; simulate(); });
+          inputs[key] = { input: input, out: out, unit: unit };
+          row.appendChild(input); row.appendChild(out);
+          card.appendChild(row);
+        };
+        slider("rtt_warn", "Aller-retour orange", 50, 1500, 50, "ms");
+        slider("rtt_alert", "Aller-retour rouge", 100, 3000, 50, "ms");
+        slider("loss_warn", "Perte orange", 0.5, 20, 0.5, "%");
+        slider("loss_alert", "Perte rouge", 1, 50, 1, "%");
+        card.appendChild(result);
+        simulate();
+        const row = el("div", "row");
+        if (p.rtt || p.loss) {
+          const take = el("button", "chip", "Prendre la proposition");
+          take.addEventListener("click", () => {
+            const pick = { rtt_warn: p.rtt && p.rtt.warn, rtt_alert: p.rtt && p.rtt.alert, loss_warn: p.loss && p.loss.warn, loss_alert: p.loss && p.loss.alert };
+            for (const [key, value] of Object.entries(pick)) {
+              if (!Number.isFinite(value) || !inputs[key]) continue;
+              values[key] = value; inputs[key].input.value = value; inputs[key].out.textContent = value + " " + inputs[key].unit;
+            }
+            simulate();
+          });
+          row.appendChild(take);
+        }
+        const apply = el("button", "chip", "Appliquer");
+        apply.addEventListener("click", () => {
+          if (values.rtt_warn >= values.rtt_alert || values.loss_warn >= values.loss_alert) {
+            ui.log("Seuils refusés : l'orange doit être plus petit que le rouge.", "warn");
+            return;
+          }
+          client.netThresholds(Object.assign({ net_type: t.netType }, values)).then((res) => {
+            ui.log(res && res.ok ? "Seuils enregistrés sur la station pour « " + t.label + " »." : "Seuils refusés : " + web.reasonText(res && res.reason, res && res.detail), res && res.ok ? "" : "warn");
+            loadNetStats();
+          }).catch(fail);
+        });
+        row.appendChild(apply);
+        if (t.chosen) {
+          const reset = el("button", "chip", "Revenir aux valeurs de station.toml");
+          reset.addEventListener("click", () => client.netThresholds({ net_type: t.netType, reset: true }).then(loadNetStats).catch(fail));
+          row.appendChild(reset);
+        }
+        card.appendChild(row);
+        box.appendChild(card);
+      }
+    }
+    function loadNetStats() {
+      $("net-status").textContent = "Lecture…";
+      client.netStats(Number($("net-days").value), $("net-device").value).then((res) => {
+        if (!res || !res.ok) {
+          $("net-status").textContent = "Statistiques indisponibles : " + web.reasonText(res && res.reason, res && res.detail);
+          return;
+        }
+        netModel = web.netStatsModel(res.stats);
+        $("net-status").textContent = netModel ? "Mesures de " + ($("net-device").value ? "cet appareil" : "tous les appareils") + " ; heures locales de la station." : "Réponse illisible.";
+        renderNetStats(netModel);
+      }).catch((err) => { $("net-status").textContent = "Lecture impossible : " + err.message; });
+    }
+    $("net-days").value = "30";                                            // 30 jours par défaut
+    $("net-refresh").addEventListener("click", loadNetStats);
+    $("net-days").addEventListener("change", loadNetStats);
+    $("net-device").addEventListener("change", loadNetStats);
+    $("sec-net").addEventListener("toggle", () => { if ($("sec-net").open) loadNetStats(); });
+    $("net-clear").addEventListener("click", () => { $("net-clear-confirm").hidden = !$("net-clear-confirm").hidden; });
+    $("net-clear-confirm").addEventListener("click", () => {
+      $("net-clear-confirm").hidden = true;
+      client.netClear().then((res) => {
+        ui.log(res && res.ok ? "Historique réseau effacé (les seuils choisis sont gardés)." : "Effacement refusé : " + web.reasonText(res && res.reason, res && res.detail), res && res.ok ? "" : "warn");
+        loadNetStats();
+      }).catch(fail);
+    });
+
     const ui = {
       status(text, kind) { const b = $("status"); b.textContent = text; b.className = "badge" + (kind ? " " + kind : ""); },
       log(text, level) {
@@ -1656,6 +1882,16 @@
       },
       swr(msg) {
         onSwr(msg);
+      },
+      netEvent(msg) {                                          // sonde réseau : coupure diagnostiquée, profil VPN partagé
+        if (msg.event === "outage" && msg.outage) {
+          const o = msg.outage;
+          ui.log("Coupure réseau de " + web.netDuration((o.duration_ms || 0) / 1000) + (o.agent ? " (" + o.agent + ")" : "") +
+                 " — tronçon probable : " + (web.NET_DIAGNOSES[o.diagnosis] || "indéterminé") + ".", "warn");
+        } else if (msg.event === "vpn_shared" && msg.warning) {
+          ui.log(web.vpnText(msg.warning), "bad");
+        }
+        if (netModel && $("sec-net").open) loadNetStats();
       },
       spectrum(frame) {
         hfCalibrate(frame);
@@ -1721,6 +1957,7 @@
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
+          paintNet({ connected: false });                                        // plus d'indicateur de liaison
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
         renderSelcall(value ? client.selcall : null);
@@ -1839,6 +2076,7 @@
         hint.textContent = v.dataModeHint;
         renderPresence(v);
         paintHost(v);
+        paintNet(v);
         bzhRender(v);
         paintMini(v);
         voiceProfilesSync();

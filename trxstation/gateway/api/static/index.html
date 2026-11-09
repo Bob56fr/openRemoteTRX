@@ -29,10 +29,19 @@
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
       <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)">www.rf-diy.com</a>
+      <button id="net-bar" class="netbar" hidden title="Liaison avec la station : touche pour le détail"></button>
       <button id="host-bar" class="hostbar listener-hide" hidden title="Machine de la station : touche pour la synthèse du matériel"><span id="host-fill" class="hostbar-fill"></span></button>
       <span id="status" class="badge">déconnecté</span>
       <button id="presence" class="chip presence" hidden title="Visiteurs en réception seule : touche pour voir la liste">🎧 0</button>
       <span id="version" class="dim version" title="Version de la station" hidden></span>
+    </div>
+
+    <!-- Sonde de qualité réseau : détail de la liaison (accordéon, fermé par défaut) -->
+    <div id="net-detail" class="netdetail" hidden>
+      <table id="net-rows" class="netrows"></table>
+      <div id="net-vpn"></div>
+      <p id="net-thresholds" class="note"></p>
+      <div class="row"><button id="net-stats-open" class="chip listener-hide">Statistiques 30 jours</button><button id="net-detail-close" class="chip">Fermer</button></div>
     </div>
 
     <div id="blk-freq">
@@ -482,6 +491,30 @@
           <button id="swr-copy" class="chip" hidden>Copier l'image</button>
           <button id="swr-restored-open" class="chip">État du poste remis</button>
         </div>
+      </div>
+    </details>
+
+    <details id="sec-net" class="listener-hide" hidden>
+      <summary>Qualité du réseau</summary>
+      <div class="body">
+        <div class="row">
+          <label>Période <select id="net-days"><option value="1">24 h</option><option value="7">7 jours</option><option value="30" selected>30 jours</option></select></label>
+          <label>Appareil <select id="net-device"><option value="">tous</option></select></label>
+          <button id="net-refresh" class="chip">Actualiser</button>
+        </div>
+        <p id="net-status" class="note"></p>
+        <div id="net-view" class="netview" hidden>
+          <h4>Synthèse</h4><table id="net-summary" class="netrows"></table>
+          <h4>Coupures par jour</h4><div id="net-days-chart" class="netbars"></div>
+          <h4>Heures les plus touchées</h4><div id="net-heat" class="netheat"></div>
+          <h4>Tronçon probable</h4><div id="net-diag" class="netbars"></div>
+          <h4>Par réseau</h4><table id="net-types" class="netrows"></table>
+          <h4>Dernières coupures</h4><ul id="net-outages" class="netlist"></ul>
+          <h4>Seuils de l'indicateur</h4>
+          <p class="note">Les seuils ne changent que la couleur de l'indicateur et les alertes, jamais l'émission. Déplacez les curseurs : le texte dit ce qu'ils auraient donné sur l'historique, sans rien changer. « Appliquer » les garde sur la station pour ce type de réseau.</p>
+          <div id="net-thr"></div>
+        </div>
+        <div class="row"><button id="net-clear" class="chip">Tout effacer…</button><button id="net-clear-confirm" class="danger" hidden>Effacer l'historique réseau</button></div>
       </div>
     </details>
 

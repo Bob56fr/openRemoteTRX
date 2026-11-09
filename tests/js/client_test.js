@@ -1699,6 +1699,32 @@ test("sonde réseau : battements, échos, résumés de 10 s, remise après une c
   assert.equal(Object.keys(backlog[0])[0], "cmd");                                 // « cmd » en premier : message long admis
 });
 
+test("sonde réseau : /health toutes les 5 s, trous du son reçu, résumés pendant la reconnexion remis au retour", async () => {
+  const net = flaky();
+  let healthy = true;
+  const w = makeWorld({ postOffer: net.postOffer, health: async () => healthy, collectStats: async () => null });
+  await w.client.connect({ clientId: "phone", password: PASSWORD, useMic: false, reconnectWindowS: 60 });
+  w.hello({ features: ["netprobe"], role: "operator" });
+  w.client.netAudio({ concealed: 0, total: 0 });
+  for (let i = 0; i < 21; i++) {
+    if (i === 10) w.client.netAudio({ concealed: 960, total: 48000 });               // 2 % masqués : son dégradé
+    w.env.advance(500); w.state(); w.env.tick(); await nextTick(); await nextTick();
+  }
+  const report = w.sentCommands("net_report")[0].report;
+  assert.equal(report.health_ok, 2); assert.equal(report.health_fail, 0);
+  assert.equal(report.concealed_pct, 2); assert.equal(report.degraded, true);
+  // coupure : la reconnexion échoue 25 s, /health aussi ; les résumés hors ligne sont remis au retour
+  net.down = true; healthy = false;
+  w.dc().onclose();
+  await ticks(w, 50);
+  net.down = false; healthy = true;
+  await ticks(w, 6);
+  w.hello({ features: ["netprobe"], role: "operator" });
+  const backlog = w.sentCommands("net_backlog")[0].reports;
+  assert.ok(backlog.length >= 2);
+  assert.ok(backlog.some((r) => r.health_fail > 0 && r.health_ok === 0));
+});
+
 test("sonde réseau : un visiteur mesure son lien mais ne remet rien", async () => {
   const w = makeWorld();
   await w.client.connect({ clientId: "club1", password: "mot de passe de test", useMic: false });

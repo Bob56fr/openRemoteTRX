@@ -510,7 +510,7 @@ Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opé
 | 1 | Calculs (§ 4.4, 4.5, 7, 8.3), vecteurs partagés, protocole (§ 11) dans `protocole.md` et `tests/protocol/` | Python, client.js, Kotlin `:logic` |
 | 2a | FAIT (étape 137, station 0.106.0) : passerelle (`net_ping`/`net_pong`, `state.net`, `device`, D1/D2/D3, journal, heures, coupures, diagnostic sans les sondes, `net_*`, `[netprobe]`, alertes ntfy) ; partie protocole de la page (battements, résumés de 10 s, remise après une coupure, sans affichage) ; classes des commandes de l'application | passerelle, page, application |
 | 2b | FAIT (étape 138, station 0.107.0) : sondes de la station (box, Internet : ICMP sinon TCP) dans la passerelle, faits `lan_probe_down` / `internet_probe_down` du diagnostic, `state.net.probes`. L'export (`net_export`, zip anonyme) passe au lot 4 avec `trx-netreport`, qui fabrique le même rapport | passerelle |
-| 3 | Page : battement, getStats, `/health`, backlog, indicateur, accordéon, vue 30 jours, effacement, export | page |
+| 3 | FAIT (étape 139, station 0.108.0) : page : `/health` toutes les 5 s (aussi pendant une reconnexion), trous du son reçu (getStats), indicateur, accordéon, vue 30 jours, seuils (curseurs, proposition), effacement. Export : lot 4 | page |
 | 4 | trx-monitor (ligne et panneau), TRX Console menu 23, `trx-netreport`, aide du menu 19 | station |
 | 5 | Application : comme la page (pastille, panneau, écran des statistiques et des seuils, export partagé), « Liaison faible » en Android Auto et en mode conduite | Android |
 | 6 | Application : radio EF11 (relevé de base ; changement de cellule hors Google Play) | Android |

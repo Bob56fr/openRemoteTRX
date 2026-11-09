@@ -364,3 +364,30 @@ audio { display: none; }
 .presence-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--ligne); }
 .presence-list li .grow { flex: 1; }
 .presence-list li .dim { color: var(--texte-secondaire); font-size: .85em; }
+/* Sonde de qualité réseau : indicateur de l'en-tête (barres + forme, pas seulement la couleur), détail, statistiques */
+.netbar { display: inline-flex; align-items: flex-end; gap: 2px; height: 1.4rem; min-width: 0; padding: 0 .3rem; margin: 0 .2rem; border: 1px solid var(--bouton-bord); border-radius: 3px; background: var(--fond-champ); vertical-align: middle; cursor: pointer; }
+.netbar i { display: block; width: 4px; background: var(--bouton-bord); border-radius: 1px; }
+.netbar i:nth-child(1) { height: 35%; } .netbar i:nth-child(2) { height: 60%; } .netbar i:nth-child(3) { height: 85%; }
+.netbar.green i.on { background: var(--succes); } .netbar.orange i.on { background: var(--alerte); } .netbar.red i.on { background: var(--erreur); }
+.netbar.outage { border-color: var(--erreur); animation: netblink 1s steps(2) infinite; }
+@keyframes netblink { 50% { border-color: var(--bouton-bord); } }
+.netdetail { margin: .3rem 0; padding: .4rem .5rem; border: 1px solid var(--ligne); border-radius: .4rem; background: var(--fond-panneau); font-size: .85rem; }
+.netrows { width: 100%; border-collapse: collapse; }
+.netrows td { padding: .12rem .3rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.netrows td:first-child { color: var(--texte-secondaire); white-space: nowrap; }
+.netrows tr.bad td { color: var(--erreur); font-weight: 700; }
+.netview h4 { margin: .7rem 0 .25rem; font-size: .9rem; color: var(--accent); }
+.netbars .nb-row { display: grid; grid-template-columns: minmax(5.5rem, 34%) 1fr; gap: .4rem; align-items: center; margin: 2px 0; font-size: .8rem; }
+.netbars .nb-track { height: .8rem; background: var(--fond-champ); border-radius: 2px; overflow: hidden; }
+.netbars .nb-fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; min-width: 0; }
+.netbars .nb-label { color: var(--texte-secondaire); overflow-wrap: anywhere; line-height: 1.15; }
+.netbars .nb-value { color: var(--texte); }
+.netheat { display: grid; grid-template-columns: 4.6rem repeat(24, 1fr); gap: 2px; font-size: .65rem; }
+.netheat span { height: .8rem; border-radius: 2px; background: var(--accent); }
+.netheat span.zero { background: var(--fond-champ); }
+.netheat b { font-weight: 400; color: var(--texte-secondaire); white-space: nowrap; overflow: hidden; }
+.netlist { list-style: none; margin: 0; padding: 0; font-size: .82rem; }
+.netlist li { padding: .2rem 0; border-bottom: 1px solid var(--ligne); }
+.net-thr-type { margin: .4rem 0; padding: .3rem .4rem; border: 1px solid var(--ligne); border-radius: .3rem; }
+.net-thr-type label { display: flex; gap: .4rem; align-items: center; font-size: .8rem; }
+.net-thr-type input[type=range] { flex: 1; }

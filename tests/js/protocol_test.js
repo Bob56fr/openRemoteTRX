@@ -102,6 +102,44 @@ test("clarifieur : ΔTX prioritaire, décalage borné, absent sans RIT ni XIT", 
   assert.equal(web.clarifierText(0), "+0 Hz");
 });
 
+test("sonde réseau : state.net d'exemple -> indicateur, détail, avertissement de profil VPN", () => {
+  const v = web.netView(messages.state_net.net);
+  assert.equal(v.level, "orange"); assert.equal(v.bars, 2); assert.equal(v.weak, false); assert.equal(v.outage, false);
+  assert.match(v.title, /liaison moyenne, aller-retour 180 ms, perte 3,3 %/);
+  assert.deepEqual(v.rows[0], ["Perte (60 s / 10 s)", "3,3 % / 0 %"]);
+  assert.match(v.rows.at(-1)[1], /il y a 1 min 15 s — tronçon probable : téléphone, réseau mobile ou tunnel/);
+  assert.match(v.vpn[0].text, /page Windows \/ android 0\.53\.0\) arrivent en même temps par la même adresse 192\.168\.27\.2/);
+  assert.match(v.thresholds, /orange à 250 ms ou 2 %, rouge à 600 ms ou 10 %/);
+  assert.equal(web.netView(null), null); assert.equal(web.netView({ level: "violet" }), null);
+  const out = web.netView({ level: "red", outage: true, outage_s: 7, probes: { lan: { method: "icmp", ok: false, loss_pct: 50, rtt_ms: null } } });
+  assert.equal(out.weak, true); assert.deepEqual(out.rows[0], ["COUPURE EN COURS", "depuis 7 s"]);
+  assert.deepEqual(out.probes[0], ["Box (ping)", "NE RÉPOND PAS · perte 50 % · —"]);
+  assert.match(web.vpnText({ kind: "pattern", period_ms: 28000, agents: ["android"] }), /toutes les ~28 s/);
+  const ev = messages.net_event[0];
+  assert.equal(web.NET_DIAGNOSES[ev.outage.diagnosis], "profil VPN probablement partagé par un autre appareil");
+});
+
+test("sonde réseau : statistiques 30 jours -> vue", () => {
+  const stats = { days: 30, summary: { outages: 3, outage_s: 75, longest_s: 40, connected_s: 7200, availability_pct: 99, loss_pct: 0.4 },
+    per_day: [{ date: "2026-11-08", outages: 1, outage_s: 40, by_diagnosis: { lan: 1 }, hours: Array(24).fill(0).map((_, h) => (h === 8 ? 1 : 0)), loss_pct: 0.2, rtt_p95_ms: 90 },
+              { date: "2026-11-09", outages: 2, outage_s: 35, by_diagnosis: { vpn_shared: 2 }, hours: Array(24).fill(0).map((_, h) => (h === 18 ? 2 : 0)), loss_pct: null, rtt_p95_ms: null }],
+    by_diagnosis: { vpn_shared: 2, lan: 1 }, by_net_type: { "4g": { windows: 360, outages: 2, loss_pct: 0.5 } },
+    thresholds: { "4g": { in_force: { rtt_warn: 250, rtt_alert: 600, loss_warn: 2, loss_alert: 10 }, chosen: false, days: 2,
+                          rtt_hist: [[10, 0], [5, 1]], loss_hist: [[15, 1]], proposed: { rtt: null, loss: null } } },
+    edges: { rtt_ms: [50], loss_pct: [0.5] },
+    outages_list: [{ start_ms: 1762700000000, duration_ms: 6000, diagnosis: "vpn_shared", basis: ["backlog", "regular_pattern"], agent: "android", net_type: "4g", kind: "in_session" }],
+    devices: [{ device: "a".repeat(32), agent: "android", last_ms: 1 }] };
+  const m = web.netStatsModel(stats);
+  assert.deepEqual(m.summary[0], ["Coupures", "3"]); assert.deepEqual(m.summary[1], ["Durée cumulée", "1 min 15 s"]);
+  assert.equal(m.days[1].fraction, 1); assert.equal(m.days[0].fraction, 0.5);
+  assert.equal(m.days[1].hours[18].fraction, 1); assert.equal(m.days[0].hours[8].fraction, 0.5);
+  assert.equal(m.diagnoses[0].code, "vpn_shared"); assert.ok(Math.abs(m.diagnoses[0].fraction - 2 / 3) < 1e-9);
+  assert.deepEqual(m.types[0], ["4G", "1 h 00 mesurés · 2 coupure(s) · perte 0,5 %"]);
+  assert.equal(m.outages[0].basis, "mesures du client, coupures régulières"); assert.equal(m.outages[0].kind, "liaison ouverte");
+  assert.equal(m.thresholds[0].label, "4G"); assert.deepEqual(m.thresholds[0].rttHist[1], { n: 5, degraded: 1 });
+  assert.equal(web.netStatsModel(null), null); assert.equal(web.netStatsModel({}), null);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

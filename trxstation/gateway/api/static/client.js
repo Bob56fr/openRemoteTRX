@@ -44,6 +44,8 @@
   const NET_KEEP_REPORTS = 60;           // 10 minutes de résumés gardés en mémoire (remis après une coupure)
   const NET_BACKLOG_BEFORE_MS = 30000;   // résumés remis : ceux des 30 s avant la perte et ceux jamais partis
   const NET_EVENTS_MAX = 20;
+  const NET_HEALTH_EVERY_MS = 5000;      // GET /health : second chemin, en TCP, hors WebRTC (aussi pendant une reconnexion)
+  const NET_DEGRADED_PCT = 1;            // plus de 1 % d'échantillons masqués par le décodeur : son dégradé
   const NP = root.TrxNetProbe || (typeof require === "function" ? require("./netprobe.js") : null);
 
   const REASONS = {
@@ -492,6 +494,112 @@
              title: "Machine de la station : " + (parts.join(", ") || "mesures indisponibles") + ". Touche : synthèse du matériel" };
   }
 
+  // Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 9, § 10) : textes communs à la page et à l'application.
+  const NET_DIAGNOSES = {
+    app_station: "application ou machine de la station", lan: "réseau local ou machine de la station",
+    box_internet: "connexion Internet de la box", webrtc: "WebRTC ou passerelle", phone_radio: "radio du téléphone",
+    vpn_shared: "profil VPN probablement partagé par un autre appareil", mobile_or_tunnel: "téléphone, réseau mobile ou tunnel",
+    unknown: "indéterminé",
+  };
+  const NET_TYPES = { lan: "réseau local", wifi: "Wi-Fi", "4g": "4G", "5g": "5G", mobile: "mobile", unknown: "inconnu" };
+  const NET_LEVELS = { gray: "mesure en cours", green: "liaison bonne", orange: "liaison moyenne", red: "liaison faible" };
+  const NET_BARS = { gray: 0, red: 1, orange: 2, green: 3 };
+  const NET_BASIS = { backlog: "mesures du client", health_ok: "/health répondait", radio_weak: "signal faible",
+                      cell_changed: "changement de cellule", network_switched: "bascule de réseau",
+                      regular_pattern: "coupures régulières", lan_probe_down: "box injoignable",
+                      internet_probe_down: "Internet injoignable" };
+  const NET_PROBES = { lan: "Box", internet: "Internet" };
+
+  function netDuration(s) {
+    if (!Number.isFinite(s)) return "—";
+    if (s < 60) return Math.round(s) + " s";
+    if (s < 3600) return Math.floor(s / 60) + " min " + String(Math.round(s % 60)).padStart(2, "0") + " s";
+    return Math.floor(s / 3600) + " h " + String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  }
+
+  function netNumber(v, unit) { return Number.isFinite(v) ? String(v).replace(".", ",") + " " + unit : "—"; }
+
+  function vpnText(w) {
+    const agents = Array.isArray(w.agents) ? w.agents.map(String).join(" / ") : "";
+    if (w.kind === "pattern") {
+      return "Coupures très régulières (toutes les ~" + Math.round((w.period_ms || 0) / 1000) + " s) sur " + agents +
+        " : un autre appareil partage probablement le même profil VPN. Créez un profil par appareil.";
+    }
+    return "Deux appareils (" + agents + ") arrivent " + (w.kind === "same_time" ? "en même temps" : "à quelques minutes d'écart") +
+      " par la même adresse " + w.address + " : s'ils passent par un VPN, ils partagent probablement le même profil. Créez un profil par appareil.";
+  }
+
+  function netView(net) {
+    /* state.net (station 0.106.0+) -> indicateur de l'en-tête et détail ; null = station sans sonde. */
+    if (!net || typeof net !== "object" || !NET_LEVELS[net.level]) return null;
+    const rows = [
+      ["Perte (60 s / 10 s)", netNumber(net.loss_pct, "%") + " / " + netNumber(net.loss_pct_10, "%")],
+      ["Aller-retour (p95 / moyen)", netNumber(net.rtt_ms, "ms") + " / " + netNumber(net.rtt_mean_ms, "ms")],
+      ["Gigue", netNumber(net.jitter_ms, "ms")],
+      ["Réseau du client", NET_TYPES[net.net_type] || "inconnu"],
+    ];
+    if (net.outage) rows.unshift(["COUPURE EN COURS", Number.isFinite(net.outage_s) ? "depuis " + netDuration(net.outage_s) : ""]);
+    const last = net.last_outage;
+    if (last && typeof last === "object") {
+      rows.push(["Dernière coupure", netDuration(last.duration_s) + ", il y a " + netDuration(last.ago_s) + " — " +
+                 (last.diagnosis ? "tronçon probable : " + (NET_DIAGNOSES[last.diagnosis] || last.diagnosis) : "diagnostic en cours…")]);
+    }
+    const probes = [];
+    for (const [name, p] of Object.entries(net.probes && typeof net.probes === "object" ? net.probes : {})) {
+      if (!p || !NET_PROBES[name]) continue;
+      probes.push([NET_PROBES[name] + " (" + (p.method === "tcp" ? "TCP" : "ping") + ")",
+                   (p.ok === false ? "NE RÉPOND PAS" : p.ok ? "répond" : "—") + " · perte " + netNumber(p.loss_pct, "%") +
+                   " · " + netNumber(p.rtt_ms, "ms")]);
+    }
+    const th = net.thresholds || {};
+    const vpn = (Array.isArray(net.vpn) ? net.vpn : []).filter((w) => w && typeof w.address === "string")
+      .map((w) => ({ address: w.address, kind: w.kind, text: vpnText(w) }));
+    return {
+      level: net.level, bars: NET_BARS[net.level], outage: !!net.outage, rows: rows, probes: probes, vpn: vpn,
+      weak: net.level === "red",                                              // « Liaison faible » (conduite, Android Auto)
+      title: "Liaison avec la station : " + NET_LEVELS[net.level] + (net.outage ? " (COUPURE)" : "") +
+        (Number.isFinite(net.rtt_ms) ? ", aller-retour " + net.rtt_ms + " ms" : "") +
+        (Number.isFinite(net.loss_pct) ? ", perte " + String(net.loss_pct).replace(".", ",") + " %" : "") + ". Touche : détail",
+      thresholds: Number.isFinite(th.rtt_warn) ? "Seuils : orange à " + th.rtt_warn + " ms ou " + netNumber(th.loss_warn, "%") +
+        ", rouge à " + th.rtt_alert + " ms ou " + netNumber(th.loss_alert, "%") : "",
+    };
+  }
+
+  function netStatsModel(stats) {
+    /* Réponse de net_stats -> vue « Qualité du réseau » (page) ; null si la réponse est inutilisable. */
+    if (!stats || typeof stats !== "object" || !stats.summary) return null;
+    const s = stats.summary, days = Array.isArray(stats.per_day) ? stats.per_day : [];
+    const maxDay = Math.max(1, ...days.map((d) => d.outages || 0));
+    const maxCell = Math.max(1, ...days.flatMap((d) => (Array.isArray(d.hours) ? d.hours : [])));
+    const diag = Object.entries(stats.by_diagnosis || {}).sort((a, b) => b[1] - a[1]);
+    const totalDiag = diag.reduce((t, [, n]) => t + n, 0) || 1;
+    const outages = Array.isArray(stats.outages_list) ? stats.outages_list : [];
+    return {
+      summary: [
+        ["Coupures", String(s.outages || 0)], ["Durée cumulée", netDuration(s.outage_s)],
+        ["Plus longue", netDuration(s.longest_s)], ["Temps connecté", netDuration(s.connected_s)],
+        ["Disponibilité", netNumber(s.availability_pct, "%")], ["Perte moyenne", netNumber(s.loss_pct, "%")],
+      ],
+      days: days.map((d) => ({ date: d.date, outages: d.outages || 0, fraction: (d.outages || 0) / maxDay,
+                               short: (d.outages || 0) + " · " + netDuration(d.outage_s),
+                               detail: netDuration(d.outage_s) + " · perte " + netNumber(d.loss_pct, "%") + " · aller-retour p95 " + netNumber(d.rtt_p95_ms, "ms"),
+                               hours: (Array.isArray(d.hours) ? d.hours : []).map((n) => ({ n: n, fraction: n / maxCell })) })),
+      diagnoses: diag.map(([code, n]) => ({ code: code, label: NET_DIAGNOSES[code] || code, count: n, fraction: n / totalDiag })),
+      types: Object.entries(stats.by_net_type || {}).map(([k, v]) => [NET_TYPES[k] || k,
+        netDuration((v.windows || 0) * 10) + " mesurés · " + (v.outages || 0) + " coupure(s) · perte " + netNumber(v.loss_pct, "%")]),
+      outages: outages.map((o) => ({ when: o.start_ms, duration: netDuration((o.duration_ms || 0) / 1000),
+        diagnosis: NET_DIAGNOSES[o.diagnosis] || "indéterminé", agent: o.agent || "",
+        basis: (Array.isArray(o.basis) ? o.basis : []).map((b) => NET_BASIS[b] || b).join(", "),
+        kind: o.kind === "disconnect" ? "déconnexion" : "liaison ouverte", net: NET_TYPES[o.net_type] || "" })),
+      devices: Array.isArray(stats.devices) ? stats.devices : [],
+      thresholds: Object.entries(stats.thresholds || {}).map(([k, t]) => ({ netType: k, label: NET_TYPES[k] || k,
+        inForce: t.in_force || {}, chosen: !!t.chosen, days: t.days || 0, proposed: t.proposed || {},
+        rttHist: (t.rtt_hist || []).map((c) => ({ n: c[0], degraded: c[1] })),
+        lossHist: (t.loss_hist || []).map((c) => ({ n: c[0], degraded: c[1] })) })),
+      edges: stats.edges || { rtt_ms: [], loss_pct: [] },
+    };
+  }
+
   // Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md, station 0.100.0+) : textes communs
   // à la page et à l'application ; voyant BZH vert (prêt, émission par Breizh), orange (repli), gris (autre, « Direct »).
   const BREIZH_STATES = {
@@ -861,6 +969,8 @@
       this.losses = loadLosses(this.storage);
       this.device = loadDevice(this.storage, env);
       this.net = null; this.netReports = []; this.netEvents = []; this.netLostAt = 0;   // sonde réseau (fonction « netprobe »)
+      this.netOffered = false; this.netHealth = { ok: 0, fail: 0, busy: false, nextAt: 0 };
+      this.netConceal = { concealed: 0, total: 0, last: null }; this.netOffline = null;
       this.connectedAt = 0; this.lastMessageAt = 0; this.lastRttMs = null; this.pingFailures = 0; this._helloTimer = null;
       this.autoWindowS = 0; this._credentials = null; this.reconnecting = null; this._reconnectTimer = null; this._token = null;
       this.recentLogs = [];
@@ -1114,6 +1224,7 @@
       if (!r) return;
       const now = this.env.now();
       if (now >= r.deadline) { this._giveUp("timeout"); return; }
+      this._netOfflineTick(now);
       if (now - r.alertAt >= LINK_ALERT_REPEAT_MS) { r.alertAt = now; this._linkAlert("lost"); }   // rappel : la liaison n'est toujours pas revenue
       this._reconnectUi();
       if (r.busy || now < r.nextAt) return;
@@ -1478,6 +1589,7 @@
         indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),
         breizh: this.isListener() ? null : breizhView(this.state && this.state.breizh),
+        net: netView(this.state && this.state.net),                  // sonde réseau : la liaison de CE client
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -1546,6 +1658,7 @@
         this.lastStats = now;
         Promise.resolve(this.env.collectStats(this.pc)).then((r) => {
           if (r && r.net) this.ui.stats(r.net);
+          if (r && r.conceal) this.netAudio(r.conceal);
           if (r && r.diag) this.ui.diag(r.diag);
         }).catch(() => {});
       }
@@ -1924,6 +2037,8 @@
 
     _netStart(hello) {
       const offered = NP && Array.isArray(hello.features) && hello.features.includes("netprobe");
+      this.netOffered = !!offered;
+      this.netOffline = null;
       if (!offered) { this.net = null; return; }
       const now = this.env.now();
       this.net = { seq: 0, beats: [], nextPing: now, nextReport: now + NET_REPORT_EVERY_MS, nextClock: now };
@@ -1933,9 +2048,45 @@
       if (backlog.length && hello.role !== "listener") this.send("net_backlog", { reports: backlog }).catch(() => {});
     }
 
+    _netHealthCheck(now) {
+      /* GET /health toutes les 5 s, hors WebRTC : il répond quand seul WebRTC est tombé (diagnostic de la station). */
+      const h = this.netHealth;
+      if (!this.env.health || h.busy || now < h.nextAt) return;
+      h.busy = true; h.nextAt = now + NET_HEALTH_EVERY_MS;
+      Promise.resolve().then(() => this.env.health()).then((ok) => { if (ok) h.ok += 1; else h.fail += 1; })
+        .catch(() => { h.fail += 1; }).then(() => { h.busy = false; });
+    }
+
+    netAudio(conceal) {
+      /* Statistiques de l'audio reçu (getStats) : échantillons masqués par le décodeur = trous audibles. */
+      if (!conceal || !Number.isFinite(conceal.concealed) || !Number.isFinite(conceal.total)) return;
+      const c = this.netConceal, last = c.last;
+      if (last && conceal.total >= last.total && conceal.concealed >= last.concealed) {
+        c.concealed += conceal.concealed - last.concealed; c.total += conceal.total - last.total;
+      }
+      c.last = { concealed: conceal.concealed, total: conceal.total };
+    }
+
+    _netKeep(report, sent) {
+      this.netReports = this.netReports.concat([{ report: report, sent: sent }]).slice(-NET_KEEP_REPORTS);
+    }
+
+    _netOfflineTick(now) {
+      /* Pendant une reconnexion : /health continue, un résumé toutes les 10 s, remis à la station au retour. */
+      if (!this.netOffered) return;
+      if (!this.netOffline) this.netOffline = { nextReport: now + NET_REPORT_EVERY_MS };
+      this._netHealthCheck(now);
+      if (now < this.netOffline.nextReport) return;
+      this.netOffline.nextReport = now + NET_REPORT_EVERY_MS;
+      const h = this.netHealth, netType = this.env.netType ? this.env.netType() : null;
+      this._netKeep({ t: this._epoch(), net_type: netType || null, health_ok: h.ok, health_fail: h.fail, degraded: false, ice: null }, false);
+      h.ok = 0; h.fail = 0;
+    }
+
     _netTick(now) {
       const net = this.net;
       if (!net) return;
+      this._netHealthCheck(now);
       if (now >= net.nextPing) {
         net.seq += 1;
         const t = Math.round(now), ping = { cmd: "net_ping", seq: net.seq, t: t };
@@ -1948,8 +2099,7 @@
       if (now >= net.nextReport) {
         net.nextReport = now + NET_REPORT_EVERY_MS;
         const report = this._netReport(now);
-        const open = !!(this.dc && this.dc.readyState === "open");
-        this.netReports = this.netReports.concat([{ report: report, sent: open }]).slice(-NET_KEEP_REPORTS);
+        this._netKeep(report, !!(this.dc && this.dc.readyState === "open"));
         this._sendRaw({ cmd: "net_report", report: report });
       }
     }
@@ -1961,13 +2111,18 @@
     }
 
     _netReport(now) {
-      /* Résumé de 10 s (docs/protocole.md § 15) ; /health, getStats et la radio s'y ajoutent avec l'affichage (lot 3). */
+      /* Résumé de 10 s (docs/protocole.md § 15) : battement vu du client, /health, trous du son reçu. */
       const s = NP.windowStats(this.net.beats, Math.round(now), NET_REPORT_EVERY_MS);
       const ice = this.pc && typeof this.pc.iceConnectionState === "string" ? this.pc.iceConnectionState : null;
       const netType = this.env.netType ? this.env.netType() : null;
-      return { t: this._epoch(), net_type: netType || null, loss_pct: s.loss_pct, rtt_mean_ms: s.rtt_mean_ms,
-               rtt_p95_ms: s.rtt_p95_ms, jitter_ms: s.jitter_ms, health_ok: 0, health_fail: 0, degraded: false,
-               ice: ["new", "checking", "connected", "completed", "disconnected", "failed", "closed"].includes(ice) ? ice : null };
+      const h = this.netHealth, c = this.netConceal;
+      const concealed = c.total > 0 ? NP.round1(Math.min(100, 100 * c.concealed / c.total)) : null;
+      const report = { t: this._epoch(), net_type: netType || null, loss_pct: s.loss_pct, rtt_mean_ms: s.rtt_mean_ms,
+                       rtt_p95_ms: s.rtt_p95_ms, jitter_ms: s.jitter_ms, health_ok: Math.min(100, h.ok), health_fail: Math.min(100, h.fail),
+                       degraded: concealed !== null && concealed > NET_DEGRADED_PCT, concealed_pct: concealed,
+                       ice: ["new", "checking", "connected", "completed", "disconnected", "failed", "closed"].includes(ice) ? ice : null };
+      h.ok = 0; h.fail = 0; c.concealed = 0; c.total = 0;
+      return report;
     }
 
     netView() {
@@ -2090,6 +2245,7 @@
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
                 indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
-                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView };
+                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView,
+                NET_DIAGNOSES, NET_TYPES, NET_LEVELS, netView, netStatsModel, vpnText, netDuration };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

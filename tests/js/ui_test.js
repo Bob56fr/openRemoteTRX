@@ -1431,6 +1431,55 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   assert.equal(document.documentElement.getAttribute("data-role"), null);
 });
 
+step("sonde réseau : indicateur de l'en-tête, détail en accordéon, statistiques et seuils", async () => {
+  $("client-id").value = "phone"; $("password").value = "mot de passe";
+  await $("connect").click(); await wait();
+  assert.equal($("net-bar").hidden, true);                                          // rien avant la réponse de la station
+  send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [],
+         features: ["ptt", "netprobe"] });
+  await wait(30);
+  const net = { level: "red", loss_pct: 12.5, loss_pct_10: 30, rtt_ms: 700, rtt_mean_ms: 300, jitter_ms: 40, late: 0, out_of_order: 0,
+                outage: true, outage_s: 4, last_outage: null, net_type: "4g", thresholds: { rtt_warn: 250, rtt_alert: 600, loss_warn: 2, loss_alert: 10 },
+                vpn: [{ address: "192.168.27.2", kind: "alternate", agents: ["page Windows", "android"], since_ms: 1, period_ms: null }],
+                probes: { lan: { address: "192.168.1.254", method: "icmp", ok: true, loss_pct: 0, rtt_ms: 2 } } };
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"], net });
+  await wait(30);
+  assert.equal($("net-bar").hidden, false); assert.match($("net-bar").className, /red outage/);
+  assert.deepEqual($("net-bar").children.map((b) => b.className), ["on", "", ""]);   // forme aussi : une barre sur trois
+  assert.equal($("net-detail").hidden, true);                                        // fermé par défaut
+  await $("net-bar").click();
+  assert.equal($("net-detail").hidden, false);
+  assert.equal($("net-rows").children[0].children[0].textContent, "COUPURE EN COURS");
+  assert.match($("net-vpn").children[0].textContent, /quelques minutes d'écart/);
+  await $("net-vpn").children[0].children.at(-1).click(); await wait();
+  assert.equal(sent("net_vpn_ignore").at(-1).address, "192.168.27.2");
+  assert.equal($("sec-net").hidden, false);
+  await $("net-stats-open").click(); await wait();
+  assert.equal(sent("net_stats").at(-1).days, 30);
+  const stats = { days: 30, summary: { outages: 1, outage_s: 6, longest_s: 6, connected_s: 600, availability_pct: 99, loss_pct: 1 },
+    per_day: [{ date: "2026-11-09", outages: 1, outage_s: 6, by_diagnosis: { webrtc: 1 }, hours: Array(24).fill(0), loss_pct: 1, rtt_p95_ms: 80 }],
+    by_diagnosis: { webrtc: 1 }, by_net_type: { "4g": { windows: 60, outages: 1, loss_pct: 1 } },
+    thresholds: { "4g": { in_force: { rtt_warn: 250, rtt_alert: 600, loss_warn: 2, loss_alert: 10 }, chosen: false, days: 1,
+                          rtt_hist: Array(11).fill([5, 0]), loss_hist: Array(7).fill([5, 0]), proposed: { rtt: null, loss: null } } },
+    edges: { rtt_ms: [50, 100, 150, 200, 250, 300, 400, 600, 800, 1000], loss_pct: [0.5, 1, 2, 5, 10, 20] },
+    outages_list: [{ start_ms: 1762700000000, duration_ms: 6000, diagnosis: "webrtc", basis: ["health_ok"], agent: "android", net_type: "4g", kind: "in_session" }],
+    devices: [{ device: "a".repeat(32), agent: "android", last_ms: 1 }] };
+  answer(true, { stats }, "net_stats"); await wait(30);
+  assert.equal($("net-view").hidden, false);
+  assert.equal($("net-summary").children[0].children[1].textContent, "1");
+  assert.match($("net-outages").children[0].textContent, /WebRTC ou passerelle/);
+  assert.equal($("net-thr").children.length, 1);
+  await $("net-thr").children[0].children.at(-1).children[0].click(); await wait();          // « Appliquer »
+  assert.deepEqual(sent("net_thresholds").at(-1), Object.assign({ cmd: "net_thresholds", id: sent("net_thresholds").at(-1).id, net_type: "4g" },
+                   { rtt_warn: 250, rtt_alert: 600, loss_warn: 2, loss_alert: 10 }));
+  await $("net-clear").click(); assert.equal($("net-clear-confirm").hidden, false);
+  await $("net-clear-confirm").click(); await wait();
+  assert.equal(sent("net_clear").length, 1);
+  await $("net-detail-close").click(); assert.equal($("net-detail").hidden, true);
+  await $("disconnect").click(); await wait();
+  assert.equal($("net-bar").hidden, true);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of steps) {
