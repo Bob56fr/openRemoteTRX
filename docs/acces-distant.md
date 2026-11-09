@@ -58,6 +58,11 @@ Android, elle, n'a pas cette contrainte.
 
 Sous Android, **un seul VPN** peut être actif à la fois.
 
+**Un profil VPN par appareil, jamais partagé.** Si le PC et le téléphone utilisent le même profil (même clé WireGuard,
+même compte), le serveur VPN ne garde qu'une adresse d'origine pour les deux : chaque appareil la vole à l'autre et la
+liaison tombe toutes les 15 à 30 s (journal WireGuard : « stopped hearing back after 15 seconds »). Crée un profil
+pour chaque appareil.
+
 ### Android Auto et VPN (WireGuard)
 
 **Symptôme** : Android Auto affiche « Erreur de communication 21 - Si vous êtes connecté à un VPN… ».
@@ -175,4 +180,5 @@ Des comptes **visiteurs** (`role = "listener"`, TRX Console menu 20) écoutent l
 | Connecté mais pas de son | UDP bloqué (pare-feu, box, CGNAT) : option A, ou relais TURN ; vérifier `ice_servers` |
 | Toutes les origines apparaissent comme `127.0.0.1` | le proxy n'envoie pas `X-Forwarded-For`, ou n'est pas dans `trusted_proxies` |
 | Un attaquant verrouille tout le monde | l'origine vue est celle du proxy : régler `trusted_proxies` et l'en-tête du proxy |
+| Coupures régulières toutes les 15 à 30 s, signal bon | deux appareils sur le même profil VPN : un profil par appareil (section 3) |
 | « Identifiant ou mot de passe refusé » alors qu'ils sont justes | verrou après trop d'essais (attendre), ou mot de passe modifié (`--set-password`) |

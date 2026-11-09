@@ -1,0 +1,466 @@
+# Sonde de qualité réseau — cahier des charges
+
+Version 2 (2026-11-09, étape 134), à valider par l'utilisateur avant tout code. Elle reprend le cahier de l'utilisateur
+du 2026-11-09 (« Sonde de qualité réseau openRemoteTRX », exigences EF1 à EF12) et ajoute :
+- ce que le code existant change à ce cahier (§ 3) ;
+- l'affichage discret et le détail sur les trois interfaces (§ 9) ;
+- la vue des 30 derniers jours, l'effacement et l'export pour l'équipe de développement (§ 10) ;
+- la détection d'un profil VPN partagé par deux appareils (§ 8), décision de l'utilisateur du 2026-11-09 après la
+  cause trouvée des coupures (PC et S25 sur le même profil WireGuard).
+
+Les questions encore ouvertes sont au § 15.
+
+## 1. Objet
+
+Mesurer en continu le lien entre le client (page web, application Android) et la station, et dire après chaque
+coupure quel tronçon a lâché :
+
+| N° | Tronçon | Mesuré par |
+|---|---|---|
+| 1 | Radio du téléphone (4G/5G/Wi-Fi) | application Android (EF11) |
+| 2 | Internet jusqu'à l'adresse publique de la box | déduit (§ 7) |
+| 3 | Tunnel VPN (quel qu'il soit) | déduit (§ 7) ; profil partagé (§ 8) |
+| 4 | Réseau local de la box jusqu'à la station | sondes de la station (§ 5) |
+| 5 | Application (passerelle, WebRTC, client) | battement et `/health` (§ 4) |
+
+La sonde ne fait que **mesurer et afficher**. Elle n'agit jamais sur le PTT, la porte audio, le CAT ni le TOT. Les
+coupures d'émission restent celles des règles de sécurité : battement d'émission, perte de connexion, TOT.
+
+## 2. Décisions
+
+1. Le cahier de l'utilisateur est la base (EF1 à EF12, `[netprobe]`, tests, essais).
+2. 2026-11-09 : indicateur discret sur la page, dans l'application et dans trx-monitor. L'opérateur ouvre le détail
+   par un bouton ou un accordéon selon l'interface.
+3. 2026-11-09 : une vue des 30 derniers jours, un bouton « Tout effacer » et un export à transmettre à l'équipe de
+   développement.
+4. 2026-11-09 : la détection d'un profil VPN partagé est intégrée à ce cahier, pas livrée à part.
+5. Rien n'est propre à WireGuard ni à la Freebox : chaque utilisateur choisit son VPN (CLAUDE.md).
+
+## 3. Ce que le code existant change au cahier de l'utilisateur
+
+- **Il n'y a qu'un seul chemin WebRTC.** Le « canal de contrôle » EST un DataChannel WebRTC (`control`,
+  `docs/protocole.md` § 3). Le contrôle (SCTP) et l'audio (RTP) passent par la même connexion ICE, dans le même flux
+  UDP. Doubler le battement sur un « second » DataChannel (EF1) ne distinguerait rien. Le **second chemin
+  indépendant** sera donc `GET /health` en HTTPS, c'est-à-dire en TCP, hors WebRTC, sans état ni authentification,
+  déjà existant (§ 4.3).
+- **Nom des messages.** `heartbeat` est déjà pris : c'est le battement d'émission, sans réponse, envoyé seulement
+  pendant une émission. La sonde utilise `net_ping` / `net_pong` (§ 4.1) et la fonction `netprobe` de
+  `hello.features`.
+- **getStats existe déjà** dans la page (`ui.js`, `collectStats` : gigue, pertes, RTT de la paire ICE, pour le
+  diagnostic du son). La sonde réutilise cette lecture au lieu d'en écrire une seconde.
+- **Adresse du client.** `client_source` (`gateway/api/auth.py`) donne déjà l'adresse d'origine, y compris derrière
+  un relais (`X-Forwarded-For` des relais déclarés). La détection du profil partagé (§ 8) s'appuie dessus.
+- **Sondes de la station.** Elles tournent dans un **module** (`trxstation/modules/`, comme le Cluster DX) : un
+  processus à part, relancé seul s'il plante, qui ne peut rien casser dans la passerelle (exigence de
+  non-régression).
+- **Alertes.** C'est le superviseur qui les envoie, avec son `notify_url` existant, en lisant le champ `net` du
+  fichier d'état (bus d'état). Il ne parle pas à la sonde et n'ajoute aucune dépendance.
+- **Journal.** Il va dans `state_dir/netprobe/`, pas dans un chemin relatif `logs/netprobe` (le dossier courant
+  change entre Debian, Windows et le mode géré). La clé `log_dir` du cahier est retirée.
+- **Volume du journal.** Une ligne par battement ferait environ 17 Mo par jour et par client : trop pour 30 jours
+  sur la carte SD d'un Pi. Le journal garde donc des **résumés toutes les 10 s**, plus les événements, et les
+  statistiques sur 30 jours viennent de **résumés horaires** (§ 6).
+- **Diagnostic après coup.** Pendant une coupure, le client ne peut rien envoyer. Le diagnostic (EF7) se fait **à la
+  reconnexion**, quand le client remet ses 10 dernières minutes (EF6). Une coupure encore en cours s'affiche
+  « tronçon : à préciser à la reconnexion », sauf si les sondes de la station suffisent à conclure.
+- **Livraison.** Pas de `git add .` : seuls les fichiers de la livraison sont commités (d'autres conversations
+  travaillent dans le dépôt). Le dépôt compte environ 1 250 tests Python, pas 233. Une étape numérotée par lot.
+
+## 4. Mesures du lien client ↔ station
+
+### 4.1 Battement réseau dans les deux sens (EF1)
+
+- Le client envoie chaque seconde `{"cmd":"net_ping","seq":N,"t":T}` (`T` = horloge MONOTONE du client, en ms).
+  La station répond aussitôt `{"type":"net_pong","seq":N,"t":T,"tr":R}` (`R` = son horloge monotone, en ms).
+- La station envoie chaque seconde `{"type":"net_ping","seq":N,"t":T}`. Le client répond aussitôt
+  `{"cmd":"net_pong","seq":N,"t":T,"tr":R}`. Ce message ne reçoit aucun `result`, comme `heartbeat`.
+- Chaque côté mesure le temps aller-retour avec **sa propre horloge** (`maintenant − t` à la réception du `net_pong`).
+  Les horloges des deux côtés ne sont jamais comparées entre elles pour une mesure.
+- Moins de 120 octets par message. 2 messages de plus par seconde et par client, sous la limite de 30 par seconde.
+- `net_ping` et `net_pong` sont admis pour un VISITEUR (liste blanche, `docs/visiteurs-cahier-des-charges.md`) : il
+  voit la qualité de SON lien, et rien d'autre (§ 9).
+- Ce battement ne remplace PAS le battement d'émission, qui garde ses règles (400 ms, coupure à 2 s).
+
+### 4.2 Statistiques WebRTC (EF5)
+
+Le client lit `getStats()` toutes les 2 s :
+- RTP audio entrant (pertes, gigue, paquets) et sortant ;
+- paire ICE nommée (RTT, octets) ;
+- `iceConnectionState` et `connectionState`, avec chaque changement horodaté ;
+- `navigator.connection.type` quand le navigateur le donne.
+
+La station lit aussi les statistiques d'aiortc (comptes RTP, rapports RTCP du client) si elles sont fiables. C'est à
+vérifier au lot 2 : on ne retient que ce qu'un vrai aiortc fournit.
+
+### 4.3 Chemin HTTPS hors WebRTC
+
+Le client interroge `GET /health` toutes les 5 s (délai 3 s, aucune nouvelle route, aucun port nouveau). Il garde le
+résultat : réussite, durée ou échec. Interprétation :
+- `/health` répond mais le battement est perdu : le problème est dans WebRTC ou la passerelle (tronçon 5) ;
+- les deux sont perdus : le problème est dans le réseau ou le tunnel (tronçons 1 à 3).
+
+### 4.4 Indicateurs (EF2)
+
+Sur des fenêtres glissantes de 10 s et 60 s, des deux côtés :
+- perte en % (numéros manquants sur les numéros attendus) ;
+- temps aller-retour : moyenne, p95, maximum ;
+- gigue (RFC 3550, sur le temps de transit relatif) ;
+- nombre de numéros reçus hors séquence.
+
+Un `net_pong` qui arrive après 5 s compte comme perdu ET est noté « tardif ». Les calculs sont communs à trois
+codes : Python (station), `client.js` (page) et Kotlin (`:logic`). Ils sont figés par des vecteurs partagés
+`tests/protocol/netprobe_vectors.json` (séquences connues et résultats attendus), comme pour la mesure de TOS.
+
+### 4.5 Coupures (EF3)
+
+- Une coupure commence après `outage_missed_beats` battements perdus d'affilée (3 par défaut) et finit au premier
+  `net_pong` reçu.
+- Elle est enregistrée avec son début, sa fin, sa durée, le côté qui l'a vue le premier, les chemins tombés
+  (battement, `/health`, ICE) et le diagnostic (§ 7).
+- Une déconnexion complète du client est une coupure qui se termine à la reconnexion du MÊME appareil (§ 8.1). Une
+  coupure sans reconnexion dans les 30 min est close « sans retour ».
+
+### 4.6 Remise des 10 dernières minutes (EF6)
+
+- Le client garde en mémoire 10 min de résumés de 10 s : battement, getStats, `/health`, mesures radio de
+  l'application.
+- À la reconnexion, il les envoie par `{"cmd":"net_backlog", ...}`. Comme `layout_save` et `bug_report`, ce message
+  est reconnu à son début et peut atteindre 60 ko (`cmd` écrit en premier). Au-delà, il est envoyé en plusieurs
+  morceaux.
+- La station refuse tout ce qui dépasse 15 min ou date d'avant la coupure précédente.
+
+### 4.7 Écart d'horloge
+
+La station estime l'écart entre l'horloge MURALE du client (champ `w`, ajouté au `net_ping` du client toutes les
+60 s) et la sienne, comme NTP : milieu de l'aller-retour. Au-delà de 1 s, le journal le note et le backlog est recalé
+sur l'heure de la station.
+
+## 5. Sondes de la station (EF4)
+
+- Module `netprobe` (`trxstation/modules/builtin/netprobe/`), lancé et relancé comme les autres modules. Il publie
+  ses mesures sur le bus 127.0.0.1 ; la passerelle les reprend dans `state.net` et le fichier d'état.
+- Deux cibles chaque seconde :
+  - `lan_target` : `"auto"` = passerelle par défaut de la machine (Linux : `/proc/net/route` ; Windows :
+    `GetBestRoute2` ou `route print`) ;
+  - `internet_target` : `"1.1.1.1"` par défaut.
+- Méthode, dans l'ordre :
+  - ICMP sans privilège (Linux : socket `SOCK_DGRAM`/`IPPROTO_ICMP`, permise par `net.ipv4.ping_group_range` sur
+    Debian 13 ; Windows : `IcmpSendEcho` par ctypes) ;
+  - sinon connexion TCP, **toutes les 5 s seulement** (port 80 de la box, 443 de la cible Internet).
+
+  La méthode retenue est affichée.
+- Mêmes indicateurs qu'au § 4.4, sur les mêmes fenêtres.
+- Une sonde ne peut rien faire d'autre qu'envoyer ces paquets. Le module n'a pas de droit sur le bus d'émission.
+
+## 6. Journal et statistiques (EF6, EF10)
+
+Tout est dans `state_dir/netprobe/` (lisible par le compte de la station, 0644 comme les autres fichiers d'état ;
+jamais dans `station.toml`) :
+
+| Fichier | Contenu | Durée |
+|---|---|---|
+| `AAAA-MM-JJ.jsonl` | résumés de 10 s par client et par sonde, changements d'état, mesures radio | `log_retention_days` (7) |
+| `coupures.jsonl` | une ligne par coupure, avec son diagnostic | `stats_retention_days` (30) |
+| `heures.jsonl` | résumé horaire par appareil : coupures, durée cumulée, perte, aller-retour p95, gigue, type de réseau | `stats_retention_days` (30) |
+| `vpn.json` | appareils vus par adresse (§ 8), avertissements ignorés | 30 jours |
+
+- Chaque ligne a un horodatage UTC en ms, une source (`client`, `passerelle`, `sonde`, `radio`), un type
+  (`mesure`, `coupure`, `etat`) et ses valeurs.
+- Volume estimé par client connecté en continu : environ 2 Mo par jour pour les résumés de 10 s, environ 15 ko par
+  jour pour les heures. 30 jours de statistiques font moins de 1 Mo.
+- Rotation à minuit UTC, nettoyage au démarrage du module puis chaque jour.
+- **Un appareil** = l'identifiant `device` du § 8.1, jamais une adresse IP.
+
+## 7. Diagnostic automatique (EF7)
+
+À la fin d'une coupure (ou à la remise du backlog), la station applique la PREMIÈRE règle qui convient :
+
+| N° | Constat | Tronçon probable |
+|---|---|---|
+| 1 | La passerelle a redémarré ou s'est figée pendant la coupure (journal du superviseur) | 5, application ou station |
+| 2 | La sonde vers la box tombe aussi | 4, réseau local ou machine de la station |
+| 3 | Seule la sonde Internet tombe (la box répond) | 2, connexion Internet de la box |
+| 4 | Le battement tombe mais `/health` répond | 5, WebRTC ou passerelle |
+| 5 | Application Android : signal sous `rsrp_alert_dbm` / `sinr_alert_db`, changement de cellule ou bascule Wi-Fi ↔ mobile dans les 10 s d'avant | 1, radio du téléphone |
+| 6 | Motif régulier (§ 8.3) avec une radio correcte | 3, profil VPN probablement partagé |
+| 7 | Tous les chemins du client tombent, les sondes de la station restent bonnes | 1 à 3, téléphone, réseau mobile ou tunnel |
+| 8 | Données insuffisantes (pas de backlog) | indéterminé |
+
+- Le diagnostic dit toujours sur quoi il s'appuie (« sondes station bonnes, /health perdu, signal −98 dBm »).
+- Ce n'est jamais une certitude : le texte affiché dit « probable ».
+
+## 8. Profil VPN partagé par deux appareils
+
+Cause réelle des coupures du 2026-11-09 : le PC et le S25 étaient sur le même profil WireGuard. Le serveur VPN ne
+garde qu'une adresse d'origine par profil, et chaque appareil la vole à l'autre à chaque paquet. Seul le serveur VPN
+le voit directement. Il est hors de portée de la station (box, VPN de l'utilisateur), et lire son API (Freebox OS)
+serait propre à un VPN : c'est écarté. La station repère donc les **effets**, de trois façons.
+
+### 8.1 Identifiant d'appareil
+
+- Chaque client tire au hasard, une fois, un identifiant de 128 bits :
+  - page : `localStorage` (repli : un identifiant de session, alors la règle 8.3 seule s'applique) ;
+  - application : ses préférences.
+- Il est envoyé dans `POST /offer` (`"device"`, facultatif ; une station plus ancienne l'ignore).
+- Il ne contient rien de personnel, n'est jamais montré à un autre client et n'apparaît dans l'export que remplacé
+  par un repère (§ 10.3).
+- La station l'accompagne du type de client (`page` ou `android`) et du système déclaré, pour les messages.
+
+### 8.2 Même adresse, deux appareils (D1 en même temps, D2 en alternance)
+
+- **D1** : deux connexions OUVERTES EN MÊME TEMPS, d'identifiants `device` différents, arrivent de la MÊME adresse
+  privée (10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7).
+- **D2** : la même adresse privée sert à deux `device` différents en moins de 10 min (fermeture de l'un, ouverture
+  de l'autre).
+- Adresses jamais prises en compte : 127.0.0.1 et ::1 (client sur la station), adresses publiques (plusieurs
+  appareils derrière une même box distante, cas légitime).
+- Effet : avertissement (jamais un refus) sur la page, dans l'application (opérateurs seulement) et dans
+  trx-monitor, plus une alerte ntfy, au plus une par adresse et par 24 h :
+  > « Deux appareils (Windows, page / Android, application) arrivent par la même adresse 192.168.27.2. S'ils passent
+  > par un VPN, ils partagent probablement le même profil : c'est une cause connue de coupures toutes les 15 à 30 s.
+  > Créez un profil par appareil. »
+- Faux positif connu : la page ouverte dans Chrome ET l'application sur le MÊME téléphone (deux identifiants, une
+  adresse). Le message propose « Ignorer pour cette adresse », gardé dans `vpn.json`, effacé par « Tout effacer ».
+- Limite : un appareil qui est dans le VPN sans jamais se connecter à la station (le PC de l'incident) n'est pas vu
+  par D1 ni D2. Seul le § 8.3 peut alors l'attraper.
+
+### 8.3 Motif régulier des coupures (D3)
+
+- Signature d'un profil partagé : au moins 4 coupures en 10 min, intervalles réguliers (coefficient de variation
+  inférieur à 25 %, période de 10 à 150 s), durées voisines.
+- Pour une application Android, il faut aussi une radio correcte (pas de règle 5 du § 7).
+- Diagnostic : « profil VPN probablement partagé par un autre appareil (coupures toutes les ~28 s, signal bon) ». Les
+  mêmes conseils que D1 et D2 s'affichent.
+- `vpn_shared_warn = true` (défaut) active D1, D2 et D3. Avec `false`, seul le diagnostic du § 7 reste.
+
+### 8.4 Documentation
+
+- `docs/acces-distant.md` : « un profil VPN par appareil, jamais partagé » (fait dans cette étape).
+- Aide du menu 19 de TRX Console (appairage d'un téléphone) : même phrase (lot 4).
+
+## 9. Affichage : indicateur discret et détail
+
+### 9.1 Niveau de l'indicateur
+
+C'est le plus mauvais de :
+- perte sur 60 s : vert < `loss_warn_pct` ≤ orange < `loss_alert_pct` ≤ rouge ;
+- aller-retour p95 sur 60 s : mêmes paliers avec `rtt_warn_ms` / `rtt_alert_ms` ;
+- coupure en cours : rouge ; coupure dans les 2 dernières minutes : au moins orange ;
+- application Android : signal sous `rsrp_warn_dbm` / `sinr_warn_db` = orange, sous les seuils d'alerte = rouge.
+
+Il est gris tant qu'il n'y a pas 10 s de mesures. Chaque niveau a aussi une FORME (barres pleines ou barrées), pour
+ne pas reposer sur la seule couleur.
+
+### 9.2 Page web
+
+- **Indicateur** dans l'en-tête fixe : trois petites barres colorées (comme un niveau de réseau), sans texte.
+- **Détail** : un toucher ouvre un **accordéon** sous l'en-tête :
+  - perte 10 s / 60 s, aller-retour moyen et p95, gigue ;
+  - état ICE, `/health`, type de réseau du navigateur ;
+  - dernière coupure (durée, il y a combien de temps, tronçon probable) ;
+  - avertissement de profil partagé s'il y en a un ;
+  - lien « Statistiques 30 jours ».
+
+  Fermé par défaut. L'état ouvert ou fermé est retenu dans le navigateur.
+
+### 9.3 Application Android
+
+- **Indicateur** dans la barre du haut : pastille avec le type de réseau (`4G`, `5G`, `Wi-Fi`) et trois barres
+  colorées.
+- **Détail** : un toucher ouvre un **panneau en bas d'écran** avec le même contenu que la page, plus la radio
+  (RSRP/RSRQ/SINR ou RSSI Wi-Fi, niveau 0-4, cellule changée il y a…) et le lien vers l'écran plein écran des
+  statistiques (§ 10).
+- Mode conduite et Android Auto : AUCUN indicateur (question 3 du § 15).
+
+### 9.4 trx-monitor
+
+- Une ligne « Réseau » dans la vue principale : niveau par client connecté et état des deux sondes.
+- La touche `n` ouvre le panneau « Réseau » complet (EF8) :
+  - par tronçon : perte, aller-retour, gigue, dernière coupure ;
+  - les sondes et leur méthode (ICMP ou TCP) ;
+  - les 10 dernières coupures avec leur diagnostic ;
+  - les avertissements de profil partagé.
+- Actualisé chaque seconde. Lecture seule.
+
+### 9.5 Visiteurs
+
+Un visiteur voit l'indicateur et le détail de SON lien (calculés de son côté et par ses `net_pong`). Il ne voit
+jamais les sondes de la station, les autres clients, les statistiques de 30 jours, l'export, les avertissements de
+profil partagé ni « Tout effacer ».
+
+## 10. Statistiques des 30 derniers jours, effacement, export
+
+### 10.1 Vue « Qualité du réseau »
+
+Page : rubrique en fin de Réglages. Application : écran plein écran ouvert depuis les Réglages et depuis le panneau du
+§ 9.3. Opérateurs seulement. Choix de la période : 24 h, 7 jours, 30 jours ; choix de l'appareil : tous ou un
+appareil.
+
+Contenu :
+1. **Synthèse** : nombre de coupures, durée cumulée, plus longue coupure, disponibilité en % du temps connecté,
+   perte et aller-retour p95 médians.
+2. **Coupures par jour** : barres, couleur par tronçon probable.
+3. **Heures les plus touchées** : grille jour × heure, intensité = coupures (EF10).
+4. **Répartition par tronçon** : barres horizontales, en %.
+5. **Tendance** : aller-retour p95 et perte par jour (lignes).
+6. **Par réseau** (application) : coupures et qualité en 4G, 5G et Wi-Fi.
+7. **Liste des dernières coupures** : date, durée, tronçon, ce qui l'appuie.
+
+Les données viennent de `heures.jsonl` et `coupures.jsonl` par la commande `net_stats` (§ 11), au plus 60 ko par
+réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le client.
+
+### 10.2 Tout effacer
+
+- Bouton « Tout effacer » (opérateur), confirmation en deux temps : « Effacer l'historique réseau des 30 derniers
+  jours ? » puis le bouton rouge.
+- Commande `net_clear`. La station efface `state_dir/netprobe/` (journal, coupures, heures, appareils vus,
+  avertissements ignorés). Le client vide ses 10 min en mémoire. Les mesures reprennent aussitôt.
+- Le journal de la station garde une ligne « historique réseau effacé par <compte> à <heure> ».
+- TRX Console offre la même chose (menu 23, § 12).
+
+### 10.3 Export pour l'équipe de développement
+
+- Bouton « Exporter » (page : téléchargement ; application : partage par les applications du téléphone ou
+  enregistrement dans Documents/OpenRemoteTRX) et `trx-netreport --export FICHIER` sur la station.
+- Un fichier `openremotetrx-reseau-AAAAMMJJ.zip` contient :
+  - `rapport.html` : la vue du § 10.1 en page autonome, lisible hors ligne ;
+  - `donnees.json` : coupures, heures et résumés de 10 s des 7 derniers jours, versions de la station et des clients,
+    méthode des sondes, réglages `[netprobe]`.
+- **Anonyme par défaut** (même principe que `trx-journal-android`) :
+  - adresses IP remplacées par des repères (`privée-A`, `publique-B`) ;
+  - identifiants d'appareils remplacés par `appareil-1`, `-2` ;
+  - pas de nom de compte, d'identifiant de cellule ni de position ;
+  - l'identifiant de station est gardé (`station-id`, déjà prévu pour la collecte).
+- Deux cases, décochées par défaut : « joindre les identifiants de cellules » et « joindre les positions » (si elles
+  existent, EF11).
+- Le fichier est fabriqué par la station. Le client le reçoit en morceaux de 48 ko (`net_export`), au plus 2 Mo.
+- Envoi : par l'utilisateur (courriel, forum). Plus tard, pièce jointe du rapport de problème quand sa réception
+  (étape 2 du signalement) existera.
+
+## 11. Protocole (ajouts, version inchangée)
+
+| Message | Sens | Rôle | Qui |
+|---|---|---|---|
+| `net_ping` | les deux | battement réseau, `seq`, `t`, `w` facultatif | tous |
+| `net_pong` | les deux | écho, `seq`, `t`, `tr` ; aucune réponse | tous |
+| `net_report` | client → station | résumé de 10 s (getStats, `/health`, réseau, radio) | tous (visiteur : non journalisé) |
+| `net_backlog` | client → station | 10 dernières minutes après une coupure, 60 ko au plus | opérateurs |
+| `net_stats` | client → station | statistiques (période, appareil, page) | opérateurs |
+| `net_clear` | client → station | tout effacer | opérateurs |
+| `net_export` | client → station | export par morceaux (`part`) | opérateurs |
+| `state.net` | station → client | niveau, indicateurs 10 s / 60 s, sondes (opérateurs), dernière coupure, avertissement | tous (réduit pour un visiteur) |
+| `net_event` | station → client | coupure close et diagnostic, avertissement de profil partagé | opérateurs |
+| `POST /offer` `device` | client → station | identifiant d'appareil (§ 8.1) | tous |
+
+- Fonction `netprobe` dans `hello.features` (si `[netprobe] enabled`).
+- Mises à jour : `docs/protocole.md`, exemples `tests/protocol/`, `docs/parite-web-android.md`.
+
+## 12. Station : réglages, superviseur, console, rapport
+
+### 12.1 `[netprobe]` de `station.toml`
+
+| Clé | Défaut | Rôle |
+|---|---|---|
+| `enabled` | `true` | Active la sonde |
+| `heartbeat_interval_s` | `1` | Période du battement réseau (0,5 à 10) |
+| `outage_missed_beats` | `3` | Battements perdus pour déclarer une coupure (2 à 20) |
+| `lan_target` | `"auto"` | Box à sonder (`auto` = passerelle par défaut) |
+| `internet_target` | `"1.1.1.1"` | Cible Internet ; `""` = pas de sonde Internet |
+| `loss_warn_pct` / `loss_alert_pct` | `2` / `10` | Paliers de perte sur 60 s |
+| `rtt_warn_ms` / `rtt_alert_ms` | `150` / `400` | Paliers d'aller-retour p95 |
+| `alert_outage_s` | `10` | Coupure qui déclenche une alerte ntfy ; `0` = aucune |
+| `alert_cooldown_s` | `300` | Délai minimal entre deux alertes |
+| `log_retention_days` | `7` | Résumés de 10 s |
+| `stats_retention_days` | `30` | Coupures et résumés horaires (7 à 90) |
+| `vpn_shared_warn` | `true` | Détection du profil partagé (§ 8) |
+| `rsrp_warn_dbm` / `rsrp_alert_dbm` | `-105` / `-115` | Paliers du signal 4G/5G |
+| `sinr_warn_db` / `sinr_alert_db` | `3` / `0` | Paliers du rapport signal/bruit |
+| `operator_advice`, `arcep_refresh_days`, `advice_min_outages` | `false`, `30`, `10` | EF12, si gardé (§ 15) |
+
+- Défauts sans rien toucher. Une `station.toml` existante sans `[netprobe]` prend les défauts. Rien n'est réécrit
+  dans les autres sections (`notify_url` intact : un test l'impose).
+- Notice publique `docs/station-toml/contenu.toml` mise à jour (convention du dépôt).
+
+### 12.2 Superviseur (EF9)
+
+- Il lit `net` dans le fichier d'état et envoie l'alerte ntfy :
+  - coupure close plus longue que `alert_outage_s` ;
+  - perte sur 60 s au-dessus de `loss_alert_pct` ;
+  - profil partagé (§ 8).
+- Message : durée, tronçon probable, appareil (type et système, jamais l'identifiant).
+- Au plus une alerte par `alert_cooldown_s`, toutes causes confondues ; le profil partagé a son propre délai de 24 h.
+- Le superviseur ne fait rien d'autre. Une sonde muette n'est pas une panne de la station (pas de reprise, pas de
+  mode sûr). Le module est relancé comme tout module.
+
+### 12.3 TRX Console et `trx-netreport`
+
+- Menu 23 « Qualité du réseau » :
+  - synthèse 24 h et 30 jours ;
+  - dernières coupures ;
+  - avertissements de profil partagé ;
+  - export (chemin proposé sur le Bureau) ;
+  - « Tout effacer » (confirmation en tapant `EFFACER`) ;
+  - aide `h 23`.
+- `trx-netreport [--jours N] [--export FICHIER]` : résumé lisible (EF10). Ajouté à `[project.scripts]`, à la liste
+  `COMMANDS` d'`install.sh` et au mode d'emploi de la console.
+
+## 13. Application Android : radio (EF11) et seconde SIM
+
+Reprise d'EF11 telle quelle, avec ces précisions :
+- **Permissions.**
+  - `READ_PHONE_STATE` pour les écouteurs de téléphonie si la version d'Android l'exige (à vérifier au lot 6
+    API par API).
+  - `ACCESS_FINE_LOCATION` pour l'identité des cellules et la position, demandée seulement quand l'opérateur active
+    l'option.
+  - Sans ces permissions : type de réseau, niveau 0-4 et Wi-Fi seulement, sans gêner le reste.
+- **Écran éteint.** Le service de premier plan existant (`microphone|mediaPlayback`) garde les mesures radio. La
+  POSITION écran éteint exige le type `location` (et `FOREGROUND_SERVICE_LOCATION`), déclaré seulement si l'option
+  existe dans la version (question 2 du § 15).
+- **Position.** Option désactivée par défaut, accord explicite, enregistrée sur la station seulement, effacée par
+  « Tout effacer », absente de l'export sauf case cochée.
+- **Cellules des autres opérateurs** relevées (MCC-MNC, technologie, bande, niveaux), jamais de balayage réseau.
+- **Seconde SIM** (`createForSubscriptionId`) : mesurée si présente, utile à EF12 seulement.
+- **Calculs** dans `:logic` (tests sur la JVM). L'accès aux API Android reste dans `:core`.
+
+## 14. Découpage en lots (une étape par lot, chaque lot validé avant le suivant)
+
+| Lot | Contenu | Où |
+|---|---|---|
+| 1 | Calculs (§ 4.4, 4.5, 7, 8.3), vecteurs partagés, protocole (§ 11) dans `protocole.md` et `tests/protocol/` | Python, client.js, Kotlin `:logic` |
+| 2 | Station : `net_ping`/`net_pong`, `state.net`, `device`, D1/D2, journal, heures, coupures, diagnostic, `net_*`, module des sondes, `[netprobe]`, superviseur et ntfy | passerelle, module, superviseur |
+| 3 | Page : battement, getStats, `/health`, backlog, indicateur, accordéon, vue 30 jours, effacement, export | page |
+| 4 | trx-monitor (ligne et panneau), TRX Console menu 23, `trx-netreport`, aide du menu 19 | station |
+| 5 | Application : comme la page (pastille, panneau, écran des statistiques, export partagé) | Android |
+| 6 | Application : radio EF11, permissions, cellules, seconde SIM | Android |
+| 7 | EF12 conseil sur l'opérateur (ARCEP), si gardé | à décider (§ 15) |
+
+**Tests** (au fil des lots) :
+- les tests automatiques du cahier de l'utilisateur ;
+- vecteurs partagés vérifiés par les trois codes ;
+- faux transport qui perd, retarde ou désordonne ;
+- D1, D2 et D3 avec leurs faux positifs (même adresse publique, 127.0.0.1, « Ignorer pour cette adresse ») ;
+- liste blanche des visiteurs ;
+- `net_backlog` trop gros ou trop ancien refusé ;
+- un flot de `net_ping` invalides ne change RIEN à l'état PTT, au battement d'émission ni au TOT (test de
+  non-régression de la sécurité) ;
+- plantage du module des sondes sans effet sur la passerelle.
+
+**Essais réels** : ceux du cahier de l'utilisateur, plus un essai D1 (PC et téléphone sur le même profil WireGuard,
+les deux connectés à la station : avertissement attendu) et un essai D3 (PC dans le VPN sans ouvrir la page, téléphone
+connecté : « profil probablement partagé » attendu).
+
+## 15. Questions ouvertes
+
+1. **EF12 (conseil sur l'opérateur, données de l'ARCEP)** : à reporter après les essais des lots 1 à 6, ou à
+   abandonner ?
+   - Avis : les cartes de couverture font plusieurs centaines de Mo par opérateur, trop pour un Pi, et ce sont des
+     simulations.
+   - Il faut des positions, donc des trajets enregistrés.
+   - Si on le garde, il vaut mieux l'analyser hors station (sur le PC, à partir de l'export) que sur la station.
+2. **Position et Google Play** : la version Google Play porte-t-elle l'option de position ? La déclarer impose une
+   justification à Google. Avis : l'exclure de la version Google Play, comme le scrambler, et la garder dans la
+   version installée à la main.
+3. **Android Auto et mode conduite** : aucun indicateur (avis : rien de plus à regarder en roulant), ou un mot dans
+   le sous-titre seulement en cas de coupure (« Liaison faible ») ?
+4. **Seuils** : les paliers d'aller-retour (150 / 400 ms) sont ceux du cahier. En 4G à travers un VPN, 150 ms est
+   souvent dépassé sans gêne audible. Garder, ou passer à 250 / 600 ms ?
