@@ -32,7 +32,14 @@ def version(root: Path = ROOT) -> str:
 def manifest(root: Path = ROOT) -> list[tuple[str, Path]]:
     """[(nom dans le zip, sans le dossier racine), fichier source]."""
     files = [(name, root / "windows" / name) for name in TOP_FILES]
-    files += [("LICENSE", root / "LICENSE"), ("app/LICENSE", root / "LICENSE"), ("app/pyproject.toml", root / "pyproject.toml")]
+    files += [("LICENSE", root / "LICENSE"), ("app/LICENSE", root / "LICENSE"), ("app/pyproject.toml", root / "pyproject.toml"),
+              ("app/requirements.lock", root / "requirements.lock")]          # empreintes des modules (pip --require-hashes)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("build_lock", root / "scripts" / "build_lock.py")
+    lock = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lock)
+    if not lock.is_fresh(root):
+        raise FileNotFoundError("requirements.lock absent ou périmé : python scripts/build_lock.py")
     for path in sorted((root / "trxstation").rglob("*")):
         rel = path.relative_to(root)
         if path.is_file() and not EXCLUDED_PARTS.intersection(rel.parts) and path.suffix not in EXCLUDED_SUFFIXES:

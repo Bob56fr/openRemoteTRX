@@ -31,11 +31,14 @@ python scripts/gen_update_key.py
 
 1. Mettre la version dans `pyproject.toml` ET `trxstation/__init__.py` (ex. `0.24.0`).
 2. Committer et pousser (la clé publique doit être dans `pubkey.py` du commit publié).
-3. `python scripts/build_debian_zip.py` (phrase de passe demandée) produit dans `dist/` :
+3. Si une dépendance de `pyproject.toml` a changé : `python scripts/build_lock.py` (uv, accès à PyPI) régénère
+   `requirements.lock` (versions exactes et empreintes SHA-256) ; les fabrications refusent un fichier périmé.
+   Sinon le régénérer de temps en temps quand même, pour suivre les correctifs de sécurité des modules (puis essayer).
+4. `python scripts/build_debian_zip.py` (phrase de passe demandée) produit dans `dist/` :
    `trx-remote-debian-0.24.0.zip` et `trx-remote-debian-0.24.0.zip.sig`. La signature est revérifiée
    aussitôt, comme le fera la station. Sans clé ou avec une clé absente de `pubkey.py` : erreur, pas de
    `.sig`. Pour un essai local seulement : `--sans-signature`.
-4. Sur GitHub, créer une Release :
+5. Sur GitHub, créer une Release :
    - étiquette **`v` + la version exacte** de `pyproject.toml` : `v0.24.0` ;
    - joindre **les deux fichiers**, sans les renommer ;
    - notes de version : texte libre, affiché dans TRX Console (4 000 caractères au plus) ; écrire ce qui
@@ -84,9 +87,13 @@ allow_prerelease = false  # true : propose aussi les pré-versions
 
 ## Limites connues
 
-- La signature couvre le code de TRX distant, pas les modules Python téléchargés par pip (aiortc, aiohttp…,
-  versions minimales non épinglées) : même risque que l'installation manuelle. À faire : liste de versions
-  épinglées avec empreintes (`--require-hashes`).
+- Modules Python (étape 151, station 0.116.0) : `app/requirements.lock`, inclus dans le paquet et donc couvert par la
+  signature, fige la version et l'empreinte SHA-256 de chaque module ; install.sh et installer.ps1 installent avec
+  `pip install --require-hashes`, puis l'application seule (`--no-deps --no-build-isolation`). Un module remplacé sur
+  PyPI ou en chemin fait échouer l'installation. LIMITE (décision de l'utilisateur du 2026-11-09) : un module sans
+  fichier précompilé pour la plateforme (cas possible sur Raspberry Pi) est compilé, et les outils de compilation que
+  pip télécharge alors ne sont pas vérifiés par empreinte. Les versions étant figées, une mise à jour de sécurité d'un
+  module n'arrive qu'avec une nouvelle version de TRX distant.
 - Les notes de version ne sont pas signées : elles sont nettoyées (aucun caractère de contrôle) et ne
   servent qu'à l'affichage.
 - Le temps de veille du PC ne compte pas dans les 24 h (minuterie monotone de systemd).

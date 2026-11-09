@@ -411,10 +411,14 @@ else
   ok "environnement Python $SYS_PY réutilisé"
 fi
 printf '  Téléchargement et installation des modules Python (de 2 à 10 minutes)...\n'
-"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade pip setuptools wheel \
-  || fail "mise à jour de pip impossible."
-"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check "$RELEASE/app[station]" \
-  || fail "installation des modules Python impossible (détails dans $LOG)."
+# Modules vérifiés par EMPREINTE (app/requirements.lock, fabriqué par scripts/build_lock.py et couvert par la signature
+# du paquet) : un module différent de celui qui a été figé fait échouer l'installation. Puis l'application seule.
+LOCK_FILE=$RELEASE/app/requirements.lock
+[[ -f $LOCK_FILE ]] || fail "paquet sans empreintes des modules Python (app/requirements.lock) : refusé, demande un paquet récent."
+"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --require-hashes -r "$LOCK_FILE" \
+  || fail "installation des modules Python impossible : module introuvable ou EMPREINTE DIFFÉRENTE (détails dans $LOG)."
+"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --no-deps --no-build-isolation "$RELEASE/app" \
+  || fail "installation de TRX distant impossible (détails dans $LOG)."
 "$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \
   || fail "modules Python incomplets après installation."
 ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography, pyserial)"

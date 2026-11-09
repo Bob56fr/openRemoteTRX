@@ -290,9 +290,14 @@ Copy-Item -Path (Join-Path $Here "app") -Destination $Release -Recurse
 & $Python -m venv (Join-Path $Release "venv")
 if ($LASTEXITCODE -ne 0) { Fail "création de l'environnement Python impossible." }
 $VenvPy = Venv-Python $Release
-& $VenvPy -m pip install --disable-pip-version-check --upgrade pip | Out-Host
-& $VenvPy -m pip install --disable-pip-version-check "$(Join-Path $Release 'app')[station,tray]" | Out-Host
-if ($LASTEXITCODE -ne 0) { Fail "installation des modules Python impossible (Internet ? pare-feu d'entreprise ?)." }
+# Modules vérifiés par EMPREINTE (app\requirements.lock, scripts/build_lock.py) : un module différent de celui qui a été
+# figé fait échouer l'installation ; puis l'application seule, sans rien télécharger d'autre.
+$LockFile = Join-Path $Release "app\requirements.lock"
+if (-not (Test-Path -LiteralPath $LockFile)) { Fail "paquet sans empreintes des modules Python (app\requirements.lock) : refusé." }
+& $VenvPy -m pip install --disable-pip-version-check --require-hashes -r $LockFile | Out-Host
+if ($LASTEXITCODE -ne 0) { Fail "installation des modules Python impossible : Internet, pare-feu d'entreprise, ou EMPREINTE DIFFÉRENTE." }
+& $VenvPy -m pip install --disable-pip-version-check --no-deps --no-build-isolation (Join-Path $Release 'app') | Out-Host
+if ($LASTEXITCODE -ne 0) { Fail "installation de TRX distant impossible." }
 & $VenvPy -c "import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial, pystray, PIL; print('modules OK')"
 if ($LASTEXITCODE -ne 0) { Fail "modules Python incomplets." }
 Ok "TRX distant $Version installé dans $Release"

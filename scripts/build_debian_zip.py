@@ -60,8 +60,19 @@ def version(root: Path = ROOT) -> str:
     return tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 
 
+def _require_fresh_lock(root: Path) -> None:
+    """requirements.lock doit correspondre aux dépendances de pyproject.toml (scripts/build_lock.py)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("build_lock", root / "scripts" / "build_lock.py")
+    lock = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lock)
+    if not lock.is_fresh(root):
+        raise FileNotFoundError("requirements.lock absent ou périmé : python scripts/build_lock.py")
+
+
 def _app_files(root: Path) -> list[tuple[str, Path]]:
-    files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE")]   # AGPL : le texte suit le code
+    files = [("app/pyproject.toml", root / "pyproject.toml"), ("app/LICENSE", root / "LICENSE"),   # AGPL : le texte suit le code
+             ("app/requirements.lock", root / "requirements.lock")]     # empreintes des modules (pip --require-hashes)
     # tests/ et les dossiers qu'ils lisent (debian/, systemd/, scripts/, config/), même disposition que le dépôt :
     # TRX Console > menu expert lance toute la suite sur la station (python -m pytest app/tests).
     for base in ("trxstation", "docs", "tests", "debian", "systemd", "scripts", "config"):
@@ -75,6 +86,7 @@ def _app_files(root: Path) -> list[tuple[str, Path]]:
 
 def manifest(root: Path = ROOT) -> list[tuple[str, Path]]:
     """[(nom dans le zip, fichier source)], sans le dossier racine."""
+    _require_fresh_lock(root)
     files = [("install.sh", root / "debian" / "install.sh"), ("releases.sh", root / "debian" / "releases.sh"),
              ("LISEZMOI.txt", root / "debian" / "LISEZMOI.txt"), ("LICENSE", root / "LICENSE"),
              ("compiler-hamlib.sh", root / "debian" / "compiler-hamlib.sh")]   # Hamlib récent (postes absents de Debian)

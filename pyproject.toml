@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trx-station"
-version = "0.115.0"
+version = "0.116.0"
 description = "Passerelle de pilotage à distance d'un TRX radioamateur (côté Raspberry Pi)"
 requires-python = ">=3.11"
 # Cœur en stdlib ; les modules de l'audio, du web et de l'interface sont dans les extras ci-dessous.
@@ -16,7 +16,7 @@ monitor = ["textual>=0.50"]
 audio = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "pyserial>=3.5", "numpy>=1.24"]   # pyserial : spectre HF par le second port du poste ; numpy : SELCALL
 tls = ["cryptography>=41"]
 # Indicateur près de l'horloge (Windows seulement, trxstation/tray/) : installé par windows/installer.ps1.
-tray = ["pystray>=0.19", "pillow>=10"]
+tray = ["pystray>=0.19; sys_platform == 'win32'", "pillow>=10; sys_platform == 'win32'"]
 # Station complète (installation Debian) : tout ce qu'il faut pour la passerelle, la page web et TRX Console.
 station = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "textual>=0.50", "cryptography>=41", "pyserial>=3.5", "segno>=1.5", "numpy>=1.24"]
 

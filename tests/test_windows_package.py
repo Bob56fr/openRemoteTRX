@@ -48,7 +48,7 @@ def test_installer_respects_the_safety_and_privacy_rules():
     assert "/inheritance:r" in ps                                                   # configuration réservée au compte
     assert "-RunLevel Limited" in ps                                                # la station ne tourne pas en administrateur
     assert "WindowsApps" in ps                                                      # jamais l'alias Python du Microsoft Store
-    assert "[station,tray]" in ps and "pystray, PIL" in ps                       # indicateur près de l'horloge
+    assert "--require-hashes" in ps and "pystray, PIL" in ps                     # empreintes ; indicateur près de l'horloge
     for forbidden in ("Invoke-Expression", "iex ", "DownloadString", "Set-ExecutionPolicy"):
         assert forbidden not in ps, forbidden
 

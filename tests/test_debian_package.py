@@ -87,7 +87,7 @@ def test_install_script_is_strict_and_does_not_reuse_os_release_names():
     assert "set -Eeuo pipefail" in text
     assert not re.search(r"^\s*(VERSION|NAME|ID)=", text, re.M)     # /etc/os-release est sourcé : collision
     assert "install -d -m 0755 -o root -g \"$SERVICE_USER\" \"$CONF_DIR\"" in text
-    assert "chmod 0640" in text and "--desinstaller" in text and "[station]" in text
+    assert "chmod 0640" in text and "--desinstaller" in text and "--require-hashes" in text
 
 
 @pytest.mark.skipif(sys.platform == "win32" or shutil.which("bash") is None, reason="bash Linux requis")
