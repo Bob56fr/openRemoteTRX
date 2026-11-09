@@ -24,6 +24,7 @@ UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-update-che
 HELPER_UNITS=(trx-update-check.service)   # lancées par un timer : copiées, jamais activées
 TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
+WATCHDOG_CONF=/etc/systemd/system.conf.d/trx-remote-watchdog.conf   # watchdog matériel du Raspberry Pi (tenu par systemd)
 SENSOR_MODULES=/etc/modules-load.d/trx-remote-sensors.conf   # capteur de température du processeur (coretemp, k10temp)
 BRLTTY_OVERRIDE=/etc/udev/rules.d/85-brltty.rules
 BACKPORTS_SOURCES=/etc/apt/sources.list.d/trx-remote-backports.sources   # Hamlib 4.7 sur Debian 13 (étape 93)
@@ -138,7 +139,25 @@ install_services() {   # units de la version active (dossier systeme/ donné), a
   for unit in "${UNITS[@]}" "${HELPER_UNITS[@]}"; do install -D -m 0644 "$src/$unit" "$UNIT_DIR/$unit"; done
   systemctl daemon-reload
   systemctl enable "${UNITS[@]}" >/dev/null 2>&1
+  hardware_watchdog
   ok "services enregistrés, démarrage automatique avec le PC (recherche de mise à jour : au démarrage puis toutes les 24 h)"
+}
+
+# Watchdog MATÉRIEL (Raspberry Pi seulement, décision de l'utilisateur du 2026-11-09) : systemd l'entretient ; si le
+# système se fige (noyau, systemd), la puce redémarre le Pi, qui repart en réception. Jamais tenu par le superviseur :
+# sa moindre panne ferait redémarrer le Pi, alors que systemd sait déjà le relancer (WatchdogSec de son unité).
+hardware_watchdog() {
+  local model
+  model=$(tr -d '\0' </proc/device-tree/model 2>/dev/null || true)
+  if [[ $model != "Raspberry Pi"* || ! -e /dev/watchdog ]]; then
+    return 0
+  fi
+  install -d -m 0755 "$(dirname "$WATCHDOG_CONF")"
+  printf '%s\n' "# TRX distant (install.sh) : watchdog matériel du Raspberry Pi tenu par systemd (plafond de la puce : 15 s)." \
+    "[Manager]" "RuntimeWatchdogSec=15" "RebootWatchdogSec=10min" >"$WATCHDOG_CONF"
+  chmod 0644 "$WATCHDOG_CONF"
+  systemctl daemon-reexec
+  ok "watchdog matériel du Raspberry Pi actif (redémarrage si le système se fige plus de 15 s)"
 }
 
 start_if_configured() {
@@ -195,6 +214,7 @@ uninstall() {
   ok "services supprimés"
   for cmd in "${COMMANDS[@]}"; do rm -f "/usr/local/bin/$cmd"; done
   rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE" "$SENSOR_MODULES" "$BACKPORTS_SOURCES"
+  if [[ -f $WATCHDOG_CONF ]]; then rm -f "$WATCHDOG_CONF"; systemctl daemon-reexec; ok "watchdog matériel rendu au système"; fi
   rm -rf "$GNOME_EXT_DIR"
   if [[ -f $BRLTTY_OVERRIDE ]] && grep -q 'trx-remote' "$BRLTTY_OVERRIDE"; then rm -f "$BRLTTY_OVERRIDE"; fi
   command -v udevadm >/dev/null && udevadm control --reload || true

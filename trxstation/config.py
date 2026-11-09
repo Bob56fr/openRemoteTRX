@@ -218,6 +218,8 @@ class Supervisor:
     recovery_wait_s: float = 20.0     # attente entre deux niveaux de l'échelle de reprise
     healthy_reset_s: float = 120.0    # durée sans problème avant de repartir du niveau 0
     temp_alert_c: float = 80.0        # alerte seule
+    mem_alert_pct: int = 90           # mémoire utilisée au-delà (60 s de suite) : alerte seule, une par heure ; 0 = aucune
+    disk_alert_pct: int = 90          # disque (dossier d'état et /) au-delà : alerte seule, une par heure ; 0 = aucune
     alive_every_h: float = 1.0        # battement « Station en service » par notify_url (priorité minimale) ; 0 = aucun
     allow_local_tx: bool = True       # True (« station partagée ») : l'émission locale (micro du poste) n'est pas coupée,
                                       # sauf par tot_abs_s ; False : coupée à chaque passage (jamais d'escalade si « T 0 » marche)
@@ -534,6 +536,10 @@ def validate(cfg: Config) -> list[str]:
     for name in ("startup_grace_s", "mismatch_grace_s"):
         if getattr(v, name) < 0:
             p.append(f"[supervisor] {name} ne peut pas être négatif")
+    for name in ("mem_alert_pct", "disk_alert_pct"):
+        value = getattr(v, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not (value == 0 or 50 <= value <= 99):
+            p.append(f"[supervisor] {name} doit valoir 0 (aucune alerte) ou un entier de 50 à 99 (%)")
     if v.alive_every_h != 0 and not 0.25 <= v.alive_every_h <= 168:
         p.append("[supervisor] alive_every_h doit valoir 0 (aucun battement) ou entre 0,25 et 168 heures")
     if v.service_mode not in ("auto", "systemd", "managed"):
@@ -997,6 +1003,8 @@ def render_toml(cfg: Config) -> str:
         f"recovery_wait_s = {v.recovery_wait_s}",
         f"healthy_reset_s = {v.healthy_reset_s}",
         f"temp_alert_c = {v.temp_alert_c}",
+        f"mem_alert_pct = {v.mem_alert_pct}   # mémoire utilisée (%) : alerte ntfy seule ; 0 = aucune",
+        f"disk_alert_pct = {v.disk_alert_pct}   # disque utilisé (%), dossier d'état et / : alerte ntfy seule ; 0 = aucune",
         f"alive_every_h = {v.alive_every_h}   # message « Station en service » sans sonnerie par notify_url ; 0 = aucun",
         f"allow_local_tx = {str(v.allow_local_tx).lower()}   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s",
         f"gateway_unit = {_s(v.gateway_unit)}",

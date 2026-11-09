@@ -156,3 +156,16 @@ def test_station_installs_pyserial_for_the_hf_spectrum():
     for name in ("station", "audio"):                              # Debian (station) et Windows (audio)
         assert any(dep.startswith("pyserial") for dep in extras[name]), name
 
+
+
+def test_hardware_watchdog_only_on_raspberry_pi_and_removed_on_uninstall():
+    raw = INSTALL.read_bytes()
+    assert b"\x00" not in raw and b"\r" not in raw                 # script exécuté sous Linux : LF, aucun caractère nul
+    script = raw.decode("utf-8")
+    body = script.split("hardware_watchdog() {", 1)[1].split("\n}\n", 1)[0]
+    assert '"Raspberry Pi"*' in body and "/dev/watchdog" in body       # Pi seulement (décision du 2026-11-09)
+    assert "RuntimeWatchdogSec=15" in body                             # tenu par systemd, jamais par le superviseur
+    assert "hardware_watchdog\n" in script.split("install_services() {", 1)[1].split("\n}\n", 1)[0]
+    uninstall = script.split("uninstall() {", 1)[1].split("\n}\n", 1)[0]
+    assert "$WATCHDOG_CONF" in uninstall and "daemon-reexec" in uninstall
+    assert "/dev/watchdog" not in Path(ROOT / "trxstation" / "supervisor" / "core.py").read_text(encoding="utf-8")

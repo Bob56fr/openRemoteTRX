@@ -62,6 +62,8 @@ rigctld_fail_s = 5.0
 recovery_wait_s = 20.0
 healthy_reset_s = 120.0
 temp_alert_c = 80.0
+mem_alert_pct = 90   # mémoire utilisée (%) : alerte ntfy seule ; 0 = aucune
+disk_alert_pct = 90   # disque utilisé (%), dossier d'état et / : alerte ntfy seule ; 0 = aucune
 alive_every_h = 1.0   # message « Station en service » sans sonnerie par notify_url, toutes les N heures ; 0 = aucun
 allow_local_tx = true   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s
 gateway_unit = "trx-gateway.service"

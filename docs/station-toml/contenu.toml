@@ -832,6 +832,18 @@ niveau = "expert"
 role = "Température de la machine au-delà de laquelle une alerte est envoyée (sans autre action)."
 niveau = "expert"
 
+[reglages."supervisor.mem_alert_pct"]
+role = "Mémoire utilisée (en %) au-delà de laquelle une alerte <code>notify_url</code> est envoyée, si cela dure 60 s ; une alerte par heure au plus. Aucune autre action (ni redémarrage, ni mode sûr)."
+niveau = "expert"
+bornes = "0 (aucune alerte) ou 50 à 99."
+depuis = "0.115.0"
+
+[reglages."supervisor.disk_alert_pct"]
+role = "Disque utilisé (en %) au-delà duquel une alerte est envoyée, mesuré sur le dossier d'état et sur la racine du système ; 60 s de suite, une alerte par heure au plus. Un disque plein empêche d'écrire l'état et les journaux."
+niveau = "expert"
+bornes = "0 (aucune alerte) ou 50 à 99."
+depuis = "0.115.0"
+
 [reglages."supervisor.alive_every_h"]
 role = "Message « Station en service » envoyé par <code>notify_url</code> toutes les N heures (priorité minimale) ; 0 : aucun."
 niveau = "courant"

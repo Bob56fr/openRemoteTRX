@@ -608,3 +608,88 @@ def test_supervisor_settings_validation_and_roundtrip(tmp_path):
         bad = dummy_config()
         setattr(bad.supervisor, field, value)
         assert any("[supervisor]" in p for p in cfgmod.validate(bad)), field
+
+
+# --------------------------------------------------------------------------- mémoire, disque, Pi ralenti (alerte seule)
+
+def _host_world(tmp_path, **kw):
+    from trxstation.supervisor.core import HostReading
+    w = W(tmp_path, **kw)
+    w.host = HostReading()
+    w.sup = Supervisor(w.cfg, read_status=lambda: w.status, probe_rig=lambda: w.rig, actions=w, store=w.store,
+                       clock=lambda: w.now, wall=lambda: w.wall, port_exists=lambda p: w.port_present,
+                       read_temp=lambda: w.temp, read_host=lambda: w.host)
+    return w
+
+
+def test_memory_high_alerts_after_a_minute_then_once_an_hour_and_never_acts(tmp_path):
+    from trxstation.supervisor.core import HostReading
+    w = _host_world(tmp_path)
+    w.host = HostReading(mem_pct=95.0)
+    w.run(45, dt=1)
+    assert "Problème : memory_high" not in w.alerts                    # pic passager (< 60 s) : rien
+    w.run(60, dt=1)
+    assert w.alerts.count("Problème : memory_high") == 1
+    w.run(1800, dt=1)
+    assert w.alerts.count("Problème : memory_high") == 1               # pas toutes les 10 min comme les pannes
+    w.run(1900, dt=1)
+    assert w.alerts.count("Problème : memory_high") == 2               # une par heure
+    assert w.calls == []                                               # ni relance, ni mode sûr, ni « T 0 »
+
+
+def test_short_spike_and_disabled_thresholds_do_not_alert(tmp_path):
+    from trxstation.supervisor.core import HostReading
+    w = _host_world(tmp_path, mem_alert_pct=0, disk_alert_pct=0)
+    w.host = HostReading(mem_pct=99.0, disks={"/": 99.0})
+    w.run(300, dt=1)
+    assert not [a for a in w.alerts if a.startswith("Problème")]
+    w = _host_world(tmp_path)
+    w.host = HostReading(mem_pct=95.0)
+    w.run(40, dt=1)
+    w.host = HostReading(mem_pct=50.0)                                 # redescendue avant la minute
+    w.run(300, dt=1)
+    assert "Problème : memory_high" not in w.alerts
+
+
+def test_disk_full_and_throttled_pi_alert_with_details(tmp_path):
+    from trxstation.supervisor.core import HostReading
+    details = []
+    w = _host_world(tmp_path)
+    w.notify = lambda title, message, quiet=False: details.append((title, message)) if not quiet else None
+    w.host = HostReading(mem_pct=20.0, disks={"/var/lib/trx-remote": 97.0, "/": 40.0}, throttled="sous-tension")
+    w.run(100, dt=1)
+    text = dict(details)
+    assert "/var/lib/trx-remote à 97 %" in text["Problème : disk_high"] and "/ à" not in text["Problème : disk_high"]
+    assert "sous-tension" in text["Problème : pi_throttled"]
+    assert w.calls == []
+
+
+def test_a_failing_host_reading_never_stops_supervision(tmp_path):
+    w = _host_world(tmp_path)
+
+    def boom():
+        raise OSError("lecture impossible")
+    w.sup.read_host = boom
+    w.gateway_transmitting()
+    w.run(5)                                                           # la supervision continue normalement
+
+
+def test_default_host_reader_uses_hostinfo(monkeypatch):
+    from trxstation import hostinfo
+    from trxstation.supervisor.core import default_read_host
+    monkeypatch.setattr(hostinfo, "memory", lambda: (91.5, 4 << 30))
+    monkeypatch.setattr(hostinfo, "disk", lambda path: (93.0, 1, 100) if path == "/a" else None)
+    monkeypatch.setattr(hostinfo, "read_throttled", lambda: 0x50005)    # sous-tension + ralenti maintenant, et depuis
+    r = default_read_host(("/a", "/b"))
+    assert r.mem_pct == 91.5 and r.disks == {"/a": 93.0} and r.throttled == "sous-tension, ralenti"
+    monkeypatch.setattr(hostinfo, "read_throttled", lambda: 0x50000)    # seulement « depuis le démarrage » : pas d'alerte
+    assert default_read_host(()).throttled == ""
+
+
+@pytest.mark.parametrize("value, ok", [(0, True), (50, True), (90, True), (99, True), (49, False), (100, False), (True, False)])
+def test_memory_and_disk_thresholds_are_validated(value, ok):
+    cfg = dummy_config()
+    cfg.supervisor.mem_alert_pct = value
+    cfg.supervisor.disk_alert_pct = value
+    problems = [p for p in cfgmod.validate(cfg) if "_alert_pct" in p]
+    assert (problems == []) is ok

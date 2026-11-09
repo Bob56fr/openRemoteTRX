@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.114.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.115.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -276,6 +276,8 @@ Se modifie : Menu 14. (au redémarrage).
 | `recovery_wait_s` | expert | `20.0` | Attente entre deux niveaux de l'échelle de reprise (relances, reset USB, mode sûr). |
 | `healthy_reset_s` | expert | `120.0` | Durée sans problème avant de repartir du premier niveau de l'échelle de reprise. |
 | `temp_alert_c` | expert | `80.0` | Température de la machine au-delà de laquelle une alerte est envoyée (sans autre action). |
+| `mem_alert_pct` | expert | `90` | Mémoire utilisée (en %) au-delà de laquelle une alerte `notify_url` est envoyée, si cela dure 60 s ; une alerte par heure au plus. Aucune autre action (ni redémarrage, ni mode sûr). Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
+| `disk_alert_pct` | expert | `90` | Disque utilisé (en %) au-delà duquel une alerte est envoyée, mesuré sur le dossier d'état et sur la racine du système ; 60 s de suite, une alerte par heure au plus. Un disque plein empêche d'écrire l'état et les journaux. Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
 | `alive_every_h` | courant | `1.0` | Message « Station en service » envoyé par `notify_url` toutes les N heures (priorité minimale) ; 0 : aucun. |
 | `allow_local_tx` | courant | `true` | true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes. **Sécurité** : false : toute émission non demandée par la station est coupée. |
 | `gateway_unit` | expert | `"trx-gateway.service"` | Linux : nom du service systemd de la passerelle. |

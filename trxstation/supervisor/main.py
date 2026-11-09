@@ -21,7 +21,7 @@ from ..modules.supervisor_glue import build_launcher, make_tick, start_modules
 from ..status import read_status
 from .actions import SystemActions
 from .backends import choose_backend
-from .core import Supervisor
+from .core import Supervisor, default_read_host
 from .rigctl import RigctlProbe
 from .sdnotify import sd_notify
 from .state import StateStore
@@ -118,8 +118,10 @@ def main(argv: list[str] | None = None) -> int:
     status_path = cfg.supervisor.status_path
     probe = RigctlProbe(cfg.network.rigctld_host, cfg.network.rigctld_port)
     backend = choose_backend(cfg, args.config, store)
+    host_paths = tuple(dict.fromkeys([cfg.supervisor.state_dir, os.path.abspath(os.sep)]))   # dossier d'état, racine
     sup = Supervisor(cfg, read_status=lambda: read_status(status_path), probe_rig=probe.read,
-                     actions=SystemActions(cfg, backend), store=store, port_exists=port_present)
+                     actions=SystemActions(cfg, backend), store=store, port_exists=port_present,
+                     read_host=lambda: default_read_host(host_paths))
     stopping = False
 
     def _stop(*_: object) -> None:

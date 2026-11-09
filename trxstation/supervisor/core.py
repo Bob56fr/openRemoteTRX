@@ -56,6 +56,10 @@ LADDER = ("restart_gateway", "restart_rigctld", "reset_usb", "reboot")
 STUCK_S = 5.0              # émission non expliquée qui RÉSISTE à « T 0 » depuis ce délai : alors seulement, échelle de reprise
 RIG_LOST_TX_S = 1.0        # rigctld injoignable depuis ce délai pendant une émission : panne (sinon connexion ratée)
 RENOTIFY_S = 600.0
+HOST_EVERY_S = 30.0         # mémoire, disque, ralentissement du Pi : relevés toutes les 30 s (vcgencmd est un processus)
+HOST_SUSTAIN_S = 60.0       # seuil dépassé depuis ce délai : alerte (un pic passager n'alerte pas)
+HOST_RENOTIFY_S = 3600.0    # puis une alerte par heure au plus (décision de l'utilisateur, 2026-11-09)
+HOST_PROBLEMS = ("memory_high", "disk_high", "pi_throttled")
 SAFE_MODE_STOP_EVERY_S = 30.0
 ACTIVE_STATES = ("KEYING", "TX", "UNKEYING")
 
@@ -86,6 +90,29 @@ class StepReport:
     safe_mode: bool = False
 
 
+@dataclass
+class HostReading:
+    """Relevé de la machine pour les alertes « alerte seule » (aucune action du superviseur)."""
+    mem_pct: float | None = None
+    disks: dict[str, float] = field(default_factory=dict)      # dossier -> % utilisé du disque qui le porte
+    throttled: str = ""                                         # Raspberry Pi : ralentissement EN CE MOMENT, sinon ""
+
+
+def default_read_host(paths: tuple[str, ...]) -> HostReading:
+    """Mémoire, disques et ralentissement du Pi (hostinfo.py : bibliothèque standard seulement)."""
+    from .. import hostinfo
+    mem = hostinfo.memory()
+    disks: dict[str, float] = {}
+    for path in paths:
+        usage = hostinfo.disk(path)
+        if usage is not None:
+            disks[path] = usage[0]
+    flags = hostinfo.read_throttled()
+    now_bits = (flags or 0) & 0xF
+    throttled = ", ".join(label for bit, label in hostinfo.THROTTLE_BITS.items() if now_bits & (1 << bit))
+    return HostReading(mem[0] if mem else None, disks, throttled)
+
+
 def default_read_temp() -> float | None:
     """Température du PROCESSEUR (coretemp, k10temp... : cpu_temp.py), jamais celle de la carte mère."""
     return cpu_celsius()
@@ -96,10 +123,15 @@ class Supervisor:
                  probe_rig: Callable[[], RigProbe], actions: Actions, store: StateStore,
                  clock: Callable[[], float] = time.monotonic, wall: Callable[[], float] = time.time,
                  port_exists: Callable[[str], bool] = os.path.exists,
-                 read_temp: Callable[[], float | None] = default_read_temp):
+                 read_temp: Callable[[], float | None] = default_read_temp,
+                 read_host: Callable[[], HostReading] | None = None):
         self.cfg, self.sup = cfg, cfg.supervisor
         self.read_status, self.probe_rig, self.actions, self.store = read_status, probe_rig, actions, store
         self.clock, self.wall, self.port_exists, self.read_temp = clock, wall, port_exists, read_temp
+        self.read_host = read_host or HostReading                  # main.py branche default_read_host ; tests : rien
+        self._host: HostReading | None = None
+        self._host_at = -1e9
+        self._host_since: dict[str, float] = {}
         self.watch = GatewayWatch(self.sup.stale_after_s)
         self._started = clock()
         self._tx_since: float | None = None
@@ -230,6 +262,7 @@ class Supervisor:
         temperature = self.read_temp()
         if temperature is not None and temperature >= s.temp_alert_c:
             problems.append(Problem("cpu_hot", f"{temperature:.0f} °C", None, False))
+        problems += self._host_problems(now)
         status = self.watch.status
         if gateway_fresh and status is not None and status.ptt.get("temp_alert") in ("warn", "hot"):
             # Température du POSTE (TEMP_METER) : la passerelle coupe et refuse elle-même ; ici, l'alerte seule.
@@ -238,6 +271,37 @@ class Supervisor:
             shown = f"{temp:.0f} °C" if isinstance(temp, (int, float)) else "?"
             problems.append(Problem("rig_hot" if hot else "rig_warm",
                                     f"poste à {shown}" + (" : émission à distance coupée" if hot else ""), None, False))
+        return problems
+
+    def _host_problems(self, now: float) -> list[Problem]:
+        """Mémoire, disque, ralentissement du Pi : ALERTE SEULE (niveau None), après HOST_SUSTAIN_S de suite. Jamais de
+        relance ni de mode sûr pour ce motif : ce n'est pas une émission dangereuse."""
+        s = self.sup
+        if now - self._host_at >= HOST_EVERY_S:
+            self._host_at = now
+            try:
+                self._host = self.read_host()
+            except Exception:                       # une mesure ratée ne doit jamais arrêter la supervision
+                log.exception("relevé de la machine en erreur")
+                self._host = None
+        h = self._host
+        found: dict[str, str] = {}
+        if h is not None:
+            if s.mem_alert_pct and h.mem_pct is not None and h.mem_pct >= s.mem_alert_pct:
+                found["memory_high"] = f"mémoire utilisée à {h.mem_pct:.0f} % (seuil {s.mem_alert_pct} %)"
+            full = [f"{path} à {pct:.0f} %" for path, pct in h.disks.items() if s.disk_alert_pct and pct >= s.disk_alert_pct]
+            if full:
+                found["disk_high"] = "disque presque plein : " + ", ".join(full) + f" (seuil {s.disk_alert_pct} %)"
+            if h.throttled:
+                found["pi_throttled"] = f"Raspberry Pi ralenti en ce moment : {h.throttled} (alimentation ? refroidissement ?)"
+        for name in list(self._host_since):
+            if name not in found:
+                del self._host_since[name]
+        problems = []
+        for name, detail in found.items():
+            since = self._host_since.setdefault(name, now)
+            if now - since >= HOST_SUSTAIN_S:
+                problems.append(Problem(name, detail, None, False))
         return problems
 
     # ------------------------------------------------------------------ reprise
@@ -357,7 +421,7 @@ class Supervisor:
         names = {p.name for p in problems}
         for problem in problems:
             last = self._notified.get(problem.name)
-            if last is None or now - last >= RENOTIFY_S:
+            if last is None or now - last >= (HOST_RENOTIFY_S if problem.name in HOST_PROBLEMS else RENOTIFY_S):
                 self._notified[problem.name] = now
                 self._notify_text(f"Problème : {problem.name}", problem.detail)
         for gone in [n for n in self._notified if n not in names]:

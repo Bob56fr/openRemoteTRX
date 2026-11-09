@@ -217,3 +217,15 @@ Jamais essayé, et déconseillé : son processeur est 2 à 3 fois plus lent que 
 mémoire, et ses ports USB 2 partagent le bus de l'Ethernet. `install.sh` affiche un avertissement sur tout
 modèle autre que Pi 4, Pi 400 et Pi 5. Si le Pi 4 se révèle juste, inutile d'essayer le Pi 3. S'il est très à
 l'aise, on peut tenter le § 4 sur un Pi 3 pour voir.
+
+## Watchdog matériel et alertes de la machine (étape 150, station 0.115.0)
+
+- `install.sh` active le **watchdog matériel du Pi**, tenu par systemd : `/etc/systemd/system.conf.d/trx-remote-watchdog.conf`
+  (`RuntimeWatchdogSec=15`). Si le système se fige plus de 15 s, la puce redémarre le Pi, qui repart en réception.
+  Vérifier après installation : `systemctl show -p RuntimeWatchdogUSec` (15 s) et `journalctl -b | grep -i watchdog`.
+  Retiré par `install.sh --desinstaller`. Jamais activé sur un PC.
+- Le superviseur envoie une **alerte ntfy seule** (aucune relance) si la mémoire ou le disque (dossier d'état, `/`)
+  dépassent `[supervisor] mem_alert_pct` / `disk_alert_pct` (90 %) pendant 60 s, et si le Pi est ralenti EN CE MOMENT
+  (sous-tension, surchauffe : `vcgencmd get_throttled`) ; une alerte par heure au plus.
+- À essayer : alimentation trop faible (alerte « pi_throttled »), disque rempli au-delà de 90 % (`fallocate`), puis
+  `echo c > /proc/sysrq-trigger` (noyau figé volontairement) : redémarrage par le watchdog, station revenue en réception.
