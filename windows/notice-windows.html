@@ -122,8 +122,9 @@ réseau. L'adresse du PC est affichée par le diagnostic (« Adresses de ce PC �
 <tr><td>6 - Essai du poste</td><td>Essai guidé, station arrêtée.</td></tr>
 <tr><td>7 - Journaux de la station</td><td><code>C:\ProgramData\trx-remote\logs</code> : superviseur, passerelle, rigctld.</td></tr>
 <tr><td>8 - Mode d'emploi Windows</td><td>Cette notice.</td></tr>
-<tr><td>9 - Désinstaller</td><td>Retire le logiciel ; la configuration est gardée sauf si tu demandes de l'effacer.</td></tr>
+<tr><td>9 - Désinstaller</td><td>Retire le logiciel et les commandes du PATH ; la configuration est gardée sauf si tu demandes de l'effacer.</td></tr>
 </table>
+<p><strong>Commandes</strong> : dans un terminal ouvert APRÈS l'installation (Invite de commandes ou PowerShell), <code>trx-console</code>, <code>trx-setup</code>, <code>trx-monitor</code>, <code>trx-hwtest</code>, <code>trx-qualif</code>, <code>trx-journal-android</code> et <code>trx-netreport</code> se lancent depuis n'importe quel dossier (dossier <code>%LOCALAPPDATA%\Programs\TRX distant\bin</code> ajouté au PATH de ton compte, retiré à la désinstallation). Elles prennent la configuration <code>C:\ProgramData	rx-remote\station.toml</code> sans option. Après Ctrl+C, Windows peut demander « Terminer le programme de commandes (O/N) ? » : réponds O.</p>
 <p>Pour l'accès depuis l'extérieur (VPN de ton choix, ou port exposé avec TLS), voir la documentation « Accès distant » du projet.</p>
 
 <h2 id="maj">6. Mettre à jour, revenir en arrière</h2>
@@ -150,7 +151,7 @@ et le compte-rendu d'installation <code>%TEMP%\trx-remote-install.log</code>. Au
 
 <h2 id="differences">8. Différences avec la version Debian</h2>
 <ul>
-<li>Pas de TRX Console à menus : les raccourcis du menu Démarrer la remplacent.</li>
+<li>Les raccourcis du menu Démarrer remplacent les menus d'installation et de services de TRX Console, propres à Debian.</li>
 <li>Pas de mise à jour par Internet ni de vérification de signature : on installe le nouveau zip à la main.</li>
 <li>Pas d'indicateur dans la barre des tâches pour l'instant (prévu : icône près de l'horloge).</li>
 <li>Pas de réinitialisation automatique du port USB par le superviseur : en cas de panne répétée, rebranche le câble.</li>

@@ -26,6 +26,11 @@ $FirewallGroup = "TRX distant"
 $MinPython = [version]"3.11"
 $HamlibPage = "https://github.com/Hamlib/Hamlib/releases"
 $KeepVersions = 2
+# Commandes lançables depuis n'importe quel terminal (comme COMMANDS d'install.sh sous Debian) : toutes celles de
+# [project.scripts] SAUF trx-gateway, trx-rigctld et trx-supervisor (une seconde instance à côté de la tâche planifiée
+# n'a rien à faire en ligne de commande). Le test test_windows_package l'impose.
+$Commands = @("trx-console", "trx-setup", "trx-monitor", "trx-hwtest", "trx-qualif", "trx-journal-android", "trx-netreport")
+$BinDir = Join-Path $Base "bin"
 
 function Say([string]$Text) { Write-Host $Text }
 function Step([string]$Text) { Write-Host ""; Write-Host "== $Text" -ForegroundColor Cyan }
@@ -141,6 +146,54 @@ function New-Shortcut([string]$Name, [string]$Target, [string]$Arguments, [strin
     $link.Save()
 }
 
+# PATH de l'UTILISATEUR (jamais celui du système), lu et écrit dans le registre sans développer les %VARIABLES% :
+# [Environment]::GetEnvironmentVariable les remplacerait par leur valeur du moment (REG_EXPAND_SZ perdu).
+function Get-UserPath {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey("Environment")
+    if (-not $key) { return "" }
+    try { return [string]$key.GetValue("Path", "", [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
+    finally { $key.Close() }
+}
+function Set-UserPath([string]$Value) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Environment")
+    try {
+        if ($Value) { $key.SetValue("Path", $Value, [Microsoft.Win32.RegistryValueKind]::ExpandString) }
+        else { $key.DeleteValue("Path", $false) }
+    } finally { $key.Close() }
+    # Écrire (puis effacer) une variable par .NET diffuse WM_SETTINGCHANGE : les terminaux ouverts ENSUITE voient le PATH.
+    [Environment]::SetEnvironmentVariable("TRX_DISTANT_PATH", "1", "User")
+    [Environment]::SetEnvironmentVariable("TRX_DISTANT_PATH", $null, "User")
+}
+function Same-Dir([string]$A, [string]$B) {
+    return [string]::Equals($A.Trim().TrimEnd('\'), $B.Trim().TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase)
+}
+function Without-BinDir([string]$PathValue) {
+    return @($PathValue -split ';' | Where-Object { $_.Trim() -and -not (Same-Dir $_ $BinDir) }) -join ';'
+}
+# Un relais .cmd par commande vers la version ACTIVE (jonction current) : une mise à jour ou un retour arrière ne
+# change ni le PATH ni les relais. Chemin relatif au relais (%~dp0) : pur ASCII, un nom de compte accentué ne gêne pas.
+function Install-Commands {
+    if (Test-Path -LiteralPath $BinDir) { Remove-Item -LiteralPath $BinDir -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+    foreach ($cmd in $Commands) {
+        $exe = "%~dp0..\current\venv\Scripts\$cmd.exe"
+        $lines = @("@echo off", "rem TRX distant : relais vers la version active (cree par installer.ps1)",
+                   "if not exist `"$exe`" (echo TRX distant : version active introuvable, relance installer.cmd 1>&2 & exit /b 9009)",
+                   "`"$exe`" %*")
+        [IO.File]::WriteAllText((Join-Path $BinDir "$cmd.cmd"), (($lines -join "`r`n") + "`r`n"), [Text.Encoding]::ASCII)
+    }
+    $current = Get-UserPath
+    $clean = Without-BinDir $current
+    $wanted = if ($clean) { "$clean;$BinDir" } else { $BinDir }
+    if ($wanted -ne $current) { Set-UserPath $wanted }
+}
+function Remove-Commands {
+    $current = Get-UserPath
+    $clean = Without-BinDir $current
+    if ($clean -ne $current) { Set-UserPath $clean }
+    if (Test-Path -LiteralPath $BinDir) { Remove-Item -LiteralPath $BinDir -Recurse -Force }
+}
+
 # ------------------------------------------------------------------ désinstallation
 
 if ($Desinstaller) {
@@ -149,8 +202,9 @@ if ($Desinstaller) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Group $FirewallGroup -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
+    Remove-Commands
     if (Test-Path -LiteralPath $Base) { Remove-Item -LiteralPath $Base -Recurse -Force }
-    Ok "logiciel, tâche de démarrage, règles du pare-feu et raccourcis retirés"
+    Ok "logiciel, tâche de démarrage, règles du pare-feu, raccourcis et commandes (PATH) retirés"
     if (Test-Path -LiteralPath $DataDir) {
         if (Ask-Yes "Effacer aussi la configuration (comptes, réglages du poste, profils) dans $DataDir" $false) {
             Remove-Item -LiteralPath $DataDir -Recurse -Force
@@ -310,6 +364,8 @@ New-Shortcut "7 - Journaux de la station" "explorer.exe" "`"$LogDir`"" "Dossier 
 New-Shortcut "8 - Mode d'emploi Windows" (Join-Path $Current "notice-windows.html") "" "Notice d'installation et d'utilisation" $DataDir
 New-Shortcut "9 - Désinstaller" $ps "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller" "Retire TRX distant" $env:TEMP
 Ok "raccourcis dans le menu Démarrer > TRX distant"
+Install-Commands
+Ok "commandes $($Commands -join ', ') lançables depuis un NOUVEAU terminal (dossier $BinDir ajouté à ton PATH)"
 foreach ($file in @("notice-windows.html", "installer.cmd", "installer.ps1", "VERSION", "LICENSE")) {
     Copy-Item -LiteralPath (Join-Path $Here $file) -Destination $Release -Force
 }

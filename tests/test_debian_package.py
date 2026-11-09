@@ -143,10 +143,11 @@ def test_pyproject_station_extra_and_console_command():
 
 
 def test_every_linked_command_exists_and_qualification_is_available():
+    """Toutes les commandes de [project.scripts] sauf les services (même liste que l'installateur Windows)."""
     script = INSTALL.read_text(encoding="utf-8")
     linked = re.search(r"^COMMANDS=\(([^)]*)\)", script, re.M).group(1).split()
     declared = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["scripts"]
-    assert set(linked) <= set(declared), set(linked) - set(declared)
+    assert set(linked) == set(declared) - {"trx-gateway", "trx-rigctld", "trx-supervisor"}, set(linked) ^ set(declared)
     assert "trx-qualif" in linked                                   # qualification d'un poste sur le PC Debian
 
 
