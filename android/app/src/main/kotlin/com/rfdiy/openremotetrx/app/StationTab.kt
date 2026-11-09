@@ -106,9 +106,16 @@ private val SQL_OPEN = Page.SUCCES
 private val HEALTH = mapOf("green" to Page.SUCCES, "orange" to Page.ALERTE, "red" to Page.TX, "off" to Page.TEXTE_2)
 private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX)    // pastilles des bandes (page : lvl1..3)
 
-/** Onglet Station : afficheur, squelch, clarifieur, petit waterfall, bandes, modes, fonctions du poste. */
+/** Onglet Station : afficheur, puis commandes du poste (téléphone). */
 @Composable
 internal fun RigScope.StationTab(miniWaterfall: Boolean = true) {
+    StationDisplay()
+    StationControls(miniWaterfall)
+}
+
+/** Afficheur : fréquence et accord, mode, voyants, S-mètre, bargraphs, état de l'émission, squelch, clarifieur. */
+@Composable
+internal fun RigScope.StationDisplay() {
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
             Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -239,6 +246,11 @@ internal fun RigScope.StationTab(miniWaterfall: Boolean = true) {
                 }
             }
 
+}
+
+/** Commandes du poste : petit waterfall (téléphone), bandes, modes, fonctions, autres mesures. */
+@Composable
+internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
             // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
             if (miniWaterfall && miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
             Panel {
@@ -281,6 +293,7 @@ internal fun RigScope.StationTab(miniWaterfall: Boolean = true) {
                         CompactChip(
                             chip.label, onClick = { RigHub.pressControl(chip.key) }, enabled = canSet, selected = chip.on,
                             onLongClick = if (chip.key == "NR" || chip.key == "NB") ({ levelsDialog = true }) else null,
+                            help = com.rfdiy.openremotetrx.logic.Help.control(chip.key),
                         )
                     }
                 }

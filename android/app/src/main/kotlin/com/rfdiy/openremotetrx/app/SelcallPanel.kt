@@ -124,7 +124,7 @@ fun SelcallDialog(
                 if (!sendOffered) Text("Appel SELCALL et trame de fin : station à mettre à jour (0.63.0 ou plus).",
                     color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 if (sendOffered) Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Switch(
+                    AppSwitch(
                         checked = status.sendOnTxEnd, enabled = connected,
                         onCheckedChange = { RigHub.selcallOptions(sendOnTxEnd = it) },
                     )

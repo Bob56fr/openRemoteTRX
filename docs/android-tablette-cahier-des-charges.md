@@ -92,3 +92,5 @@ Elle convient à une tablette en paysage. Pour l'adapter :
 **Préalable FAIT (étape 148, application 0.56.1)** : `RigScreen.kt` découpé (onglets `StationTab`, `SpectreTab`, `MemoriesTab`, `SettingsTab` sur `RigScope`, `RigDialogs.kt`, `RigWidgets.kt`), sans changement visible.
 
 **Étape 1 FAITE (étape 149, application 0.57.0)** : fenêtre large en paysage (≥ 840 dp de large ET ≥ 600 dp de haut, `logic/ScreenLayout.kt`), colonne de l'afficheur à gauche avec PTT et STOP, spectre HF et rail à droite (`app/TabletLayout.kt`), Échap = STOP. Restent : fenêtre moyenne (600-839 dp) et portrait, mode station, hauteur du spectre réglable, raccourcis d'accord au clavier.
+
+**Étape 1 revue (étape 152, application 0.58.0)** : spectres HF et son côte à côte EN BAS sur toute la largeur (séparateur à glisser, chacun masquable), trois blocs au-dessus, rubrique agrandie au défilement, texte réglable 70 à 100 %, aide par appui long.

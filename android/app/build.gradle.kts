@@ -15,8 +15,8 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 63
-        versionName = "0.57.0"
+        versionCode = 64
+        versionName = "0.58.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
         // Sonde réseau : changement de cellule (autorisation de localisation, manifestes debug / release seulement)
         buildConfigField("boolean", "CELL_INFO", "true")

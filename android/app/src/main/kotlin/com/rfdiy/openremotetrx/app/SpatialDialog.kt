@@ -52,7 +52,7 @@ fun SpatialDialog(onDismiss: () -> Unit) {
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Spatialisation en service", Modifier.weight(1f))
-                    Switch(checked = s.on, onCheckedChange = { save(s.copy(on = it)) })
+                    AppSwitch(checked = s.on, onCheckedChange = { save(s.copy(on = it)) })
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for ((key, p) in Spatials.PRESETS) {
@@ -74,7 +74,7 @@ fun SpatialDialog(onDismiss: () -> Unit) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Sortie mono (pas de casque)", Modifier.weight(1f))
-                    Switch(checked = s.monoOut, onCheckedChange = { save(s.copy(monoOut = it)) })
+                    AppSwitch(checked = s.monoOut, onCheckedChange = { save(s.copy(monoOut = it)) })
                 }
                 if (ui.playing) {
                     Text("Corrélation G/D ${"%.2f".format(ui.correlation)} (1 = mono)", style = MaterialTheme.typography.bodySmall)

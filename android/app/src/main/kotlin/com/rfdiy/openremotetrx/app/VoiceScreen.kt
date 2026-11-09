@@ -126,7 +126,7 @@ fun VoiceTab(
             "que la voix passe par Breizh (réglages gardés pour le retour en direct). Gain du micro, porte de bruit et limiteur restent actifs.",
             color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.enabled && fx, onCheckedChange = { save(s.copy(enabled = it)) }, enabled = fx)
+            AppSwitch(checked = s.enabled && fx, onCheckedChange = { save(s.copy(enabled = it)) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text("Égaliseur et effets de voix", style = MaterialTheme.typography.titleSmall)
@@ -167,7 +167,7 @@ fun VoiceTab(
         )
         SliderRow("Gain", s.mic.gainDb, -12.0..20.0, 0.5, "dB") { save(s.copy(mic = s.mic.copy(gainDb = it))) }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.mic.gateOn, onCheckedChange = { save(s.copy(mic = s.mic.copy(gateOn = it))) })
+            AppSwitch(checked = s.mic.gateOn, onCheckedChange = { save(s.copy(mic = s.mic.copy(gateOn = it))) })
             Spacer(Modifier.width(8.dp))
             Text("Porte de bruit (atténue de 30 dB sous le seuil, jamais muette)", style = MaterialTheme.typography.bodyMedium)
         }
@@ -203,7 +203,7 @@ fun VoiceTab(
         Text("Déconseillés en BLU : ils réduisent la compréhension. Coupés net à la fin de chaque émission.",
             color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.chorus.on, onCheckedChange = { save(s.copy(chorus = s.chorus.copy(on = it))) }, enabled = fx)
+            AppSwitch(checked = s.chorus.on, onCheckedChange = { save(s.copy(chorus = s.chorus.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Text("Chorus", style = MaterialTheme.typography.bodyMedium)
         }
@@ -216,7 +216,7 @@ fun VoiceTab(
             SliderRow("Profondeur", s.chorus.depthMs, 0.5..8.0, 0.5, "ms", enabled = fx) { save(s.copy(chorus = s.chorus.copy(depthMs = it))) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = s.reverb.on, onCheckedChange = { save(s.copy(reverb = s.reverb.copy(on = it))) }, enabled = fx)
+            AppSwitch(checked = s.reverb.on, onCheckedChange = { save(s.copy(reverb = s.reverb.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Text("Réverbération", style = MaterialTheme.typography.bodyMedium)
         }
@@ -308,13 +308,13 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
             "bips de la station ne sont pas brouillés.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             val breizh = VoiceHub.ui.value.breizh                         // Breizh et scrambler d'émission exclusifs
-            Switch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) }, enabled = !breizh)
+            AppSwitch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) }, enabled = !breizh)
             Spacer(Modifier.width(8.dp))
             Text(if (breizh) "Brouiller mon émission (impossible : la voix passe par Breizh)" else "Brouiller mon émission",
                 style = MaterialTheme.typography.bodyMedium, color = if (scr.tx) WARN else if (breizh) Page.TEXTE_2 else Page.TEXTE)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = scr.rx, onCheckedChange = { change(scr.copy(rx = it)) })
+            AppSwitch(checked = scr.rx, onCheckedChange = { change(scr.copy(rx = it)) })
             Spacer(Modifier.width(8.dp))
             Text("Débrouiller la réception", style = MaterialTheme.typography.bodyMedium)
         }

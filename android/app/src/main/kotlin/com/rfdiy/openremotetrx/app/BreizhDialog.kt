@@ -74,7 +74,7 @@ fun BreizhDialog(view: BreizhView, events: List<BreizhEntry>, onDismiss: () -> U
                     Text(Breizhs.gainText(gain.toDouble()), style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(64.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = view.bypass, onCheckedChange = { RigHub.breizhSet(bypass = it) })
+                    AppSwitch(checked = view.bypass, onCheckedChange = { RigHub.breizhSet(bypass = it) })
                     Spacer(Modifier.width(8.dp))
                     Text("Direct : ignorer Breizh (à la prochaine émission)", style = MaterialTheme.typography.bodyMedium)
                 }

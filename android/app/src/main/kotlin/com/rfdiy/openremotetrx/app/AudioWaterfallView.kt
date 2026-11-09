@@ -74,7 +74,7 @@ private class AudioFall {
  * seulement pendant l'affichage ; aucun effet sur l'écoute. Réglages VIT / LARG / GAIN / PIC gardés sur le téléphone.
  */
 @Composable
-fun AudioWaterfallView(onClose: () -> Unit) {
+fun AudioWaterfallView(onClose: (() -> Unit)?, plotHeight: androidx.compose.ui.unit.Dp = 210.dp) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
     var settings by remember {
@@ -128,7 +128,7 @@ fun AudioWaterfallView(onClose: () -> Unit) {
             Text("Spectre audio", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Text(top?.let { "pic " + String.format(Locale.ROOT, "%.2f", it.hz / 1000.0) } ?: "", style = MaterialTheme.typography.labelMedium)
         }
-        Canvas(Modifier.fillMaxWidth().height(210.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(plotHeight)) {
             drawn.let { }                                          // redessin à chaque analyse
             val specH = size.height * 0.38f
             val axisH = 14.dp.toPx()
@@ -166,7 +166,7 @@ fun AudioWaterfallView(onClose: () -> Unit) {
             CompactChip(AudioWaterfall.widthLabel(settings.width), onClick = { save(AudioWaterfall.nextWidth(settings)) })
             CompactChip(AudioWaterfall.gainLabel(settings.gain), onClick = { save(AudioWaterfall.nextGain(settings)) })
             CompactChip(AudioWaterfall.peakLabel(settings.peak), onClick = { save(AudioWaterfall.nextPeak(settings)) })
-            CompactChip("Fermer", onClick = onClose)
+            if (onClose != null) CompactChip("Fermer", onClick = onClose)       // tablette : toujours affiché, sans « Fermer »
         }
     }
 }

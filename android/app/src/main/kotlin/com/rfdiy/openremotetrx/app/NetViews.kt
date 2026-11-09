@@ -287,7 +287,7 @@ fun NetCellsSection() {
     }
     Text("Qualité du réseau", style = MaterialTheme.typography.titleSmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.material3.Switch(checked = on, onCheckedChange = { wanted ->
+        AppSwitch(checked = on, onCheckedChange = { wanted ->
             if (wanted) {
                 ask.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
             } else {

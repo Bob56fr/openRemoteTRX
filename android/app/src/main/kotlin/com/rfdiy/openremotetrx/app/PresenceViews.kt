@@ -76,7 +76,7 @@ fun ListenersSwitch(p: PresenceUi) {
     var confirmClose by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = p.switchOn, enabled = p.switchAvailable || p.switchOn, onCheckedChange = { on ->
+            AppSwitch(checked = p.switchOn, enabled = p.switchAvailable || p.switchOn, onCheckedChange = { on ->
                 if (!on && p.count > 0) confirmClose = true else RigHub.setListenersOpen(on)
             })
             Spacer(Modifier.width(8.dp))

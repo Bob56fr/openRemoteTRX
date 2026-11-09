@@ -113,7 +113,7 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 
 /** En-tête (station, liaison, pastilles, sourdine) et bandeaux d'alerte (liaison, émission, poste sur place, conduite). */
 @Composable
-internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason) {
+internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason, presenceBanner: Boolean = true) {
             // En-tête : station, liaison, sourdine
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Santé de la machine de la station (opérateurs) : petit bargraph à gauche du nom, toucher = synthèse du matériel
@@ -143,10 +143,10 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason)
                 }
                 Text("Muet", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.width(6.dp))
-                Switch(checked = ui.muted, onCheckedChange = { RigHub.setMuted(it) })
+                AppSwitch(checked = ui.muted, onCheckedChange = { RigHub.setMuted(it) })
             }
             if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
-            rig.presence?.let { p -> p.suspended.ifEmpty { p.grace }.takeIf { it.isNotEmpty() }?.let { Banner(it, WARN) } }
+            if (presenceBanner) PresenceBanner()
 
             rig.reconnect?.let { r ->
                 Banner(
@@ -198,25 +198,33 @@ internal fun RigScope.BigPttLayer(pttEnabled: Boolean, debounce: Debounce) {
  * gros PTT) et STOP. `wfChip` : bouton du petit waterfall (absent sur tablette, où le spectre HF est toujours affiché).
  */
 @Composable
-internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: SpatialUi, debounce: Debounce, context: Context, wfChip: Boolean = true) {
+internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: SpatialUi, debounce: Debounce, context: Context, wfChip: Boolean = true,
+                                 compact: Boolean = false, onStop: () -> Unit = {}) {
         // Toujours visibles : armement, PTT (appui simple ; appui long = gros PTT au milieu de l'écran), STOP
         Surface(tonalElevation = 6.dp) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
+                if (!compact) Row(verticalAlignment = Alignment.CenterVertically) {
+                    AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                     Spacer(Modifier.width(8.dp))
                     Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
                 }
                 // Boutons du client sur leur propre ligne (WF, SEL, EQ, ST, voyant du scrambler)
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Tablette (compact) : l'armement sur la même ligne que les boutons du client, place gagnée pour l'afficheur
+                    if (compact) {
+                        AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (!ui.micAllowed) "Réception seule" else "Émission\nautorisée", style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.width(10.dp))
+                    }
                     // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
                     if (wfChip && HfScope.configured(hello)) {
-                        CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf)
+                        CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf, help = com.rfdiy.openremotetrx.logic.Help.client("WF"))
                         Spacer(Modifier.width(6.dp))
                     }
                     // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » (allumé) ; toucher = panneau ; même style que EQ
                     rig.selcall?.let { sel ->
-                        CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open)
+                        CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open, help = com.rfdiy.openremotetrx.logic.Help.client("SEL"))
                         Spacer(Modifier.width(6.dp))
                     }
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Audio »)
@@ -231,7 +239,8 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                     // Breizh Audio Box (station qui l'emploie) : voyant BZH vert / orange / gris ; toucher = sa fenêtre
                     rig.breizh?.let { bzh ->
                         Spacer(Modifier.width(6.dp))
-                        CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level))
+                        CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level),
+                            help = com.rfdiy.openremotetrx.logic.Help.client("BZH"))
                     }
                     // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
@@ -249,7 +258,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                         shape = RoundedCornerShape(16.dp),
                         color = if (pttEnabled) pttColors.containerColor else pttColors.disabledContainerColor,
                         contentColor = if (pttEnabled) pttColors.contentColor else pttColors.disabledContentColor,
-                        modifier = Modifier.weight(2f).height(64.dp).combinedClickable(
+                        modifier = Modifier.weight(2f).height(if (compact) 52.dp else 64.dp).combinedClickable(
                             enabled = pttEnabled || canShowBig,
                             onClick = { if (pttEnabled && debounce.pass()) RigHub.toggle() },
                             onLongClick = { if (canShowBig) bigPttRequested = true },
@@ -269,11 +278,11 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                       }
                     }
                     Button(
-                        onClick = { RigHub.stop(); bigPttRequested = false },      // STOP coupe toujours et masque le gros PTT
+                        onClick = { RigHub.stop(); bigPttRequested = false; onStop() },   // STOP coupe toujours, masque le gros PTT (tablette : replie le bloc)
                         enabled = connected && !listener,                          // un visiteur ne coupe pas l'opérateur
                         colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(64.dp),
+                        modifier = Modifier.weight(1f).height(if (compact) 52.dp else 64.dp),
                     ) { Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
                 }
             }
@@ -283,6 +292,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
 /** Fenêtres de l'écran de la station (fréquence, niveaux, bandes, SELCALL, ST, visiteurs, Breizh, TOS, réseau, rapport…). */
 @Composable
 internal fun RigScope.RigDialogsHost() {
+    HelpDialog()                                                      // aide courte par appui long
     if (entry) FrequencyDialog(shownHz, onDismiss = { entry = false }) { hz ->
         entry = false
         go(hz)
@@ -312,4 +322,10 @@ internal fun RigScope.RigDialogsHost() {
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
     }
+}
+
+/** Visiteurs suspendus ou attente de l'opérateur (« Station surchargée… ») : bandeau orange. */
+@Composable
+internal fun RigScope.PresenceBanner() {
+    rig.presence?.let { p -> p.suspended.ifEmpty { p.grace }.takeIf { it.isNotEmpty() }?.let { Banner(it, WARN) } }
 }

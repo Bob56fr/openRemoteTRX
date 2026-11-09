@@ -100,7 +100,7 @@ fun BeepsSection(beeps: BeepSettings?, connected: Boolean) {
     }
     Text("Produits et ÉMIS par la station ; réglage commun à tous les appareils.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Switch(checked = beeps.rogerEnabled, enabled = connected, onCheckedChange = { RigHub.setBeep("roger_enabled", it) })
+        AppSwitch(checked = beeps.rogerEnabled, enabled = connected, onCheckedChange = { RigHub.setBeep("roger_enabled", it) })
         Spacer(Modifier.width(8.dp))
         Text("Roger bip quand je relâche le PTT", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         TextButton(onClick = { sounds.playSequence(beeps.rogerSequence) }) { Text("Écouter") }
@@ -116,7 +116,7 @@ fun BeepsSection(beeps: BeepSettings?, connected: Boolean) {
         }
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Switch(checked = beeps.linkLostEnabled, enabled = connected, onCheckedChange = { on ->
+        AppSwitch(checked = beeps.linkLostEnabled, enabled = connected, onCheckedChange = { on ->
             if (on) confirmLost = true else RigHub.setBeep("link_lost_enabled", false)
         })
         Spacer(Modifier.width(8.dp))
@@ -153,7 +153,7 @@ fun HeadsetSection(headsetMicState: String) {
     var headsetMic by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_HEADSET_MIC, false)) }
     Text("Casque et volant", style = MaterialTheme.typography.titleSmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Switch(checked = mediaPtt, onCheckedChange = {
+        AppSwitch(checked = mediaPtt, onCheckedChange = {
             mediaPtt = it
             prefs.edit().putBoolean(RigHub.PREF_MEDIA_PTT, it).apply()
             RigHub.mediaButtonsChanged()
@@ -169,7 +169,7 @@ fun HeadsetSection(headsetMicState: String) {
         }
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Switch(checked = headsetMic, onCheckedChange = {
+        AppSwitch(checked = headsetMic, onCheckedChange = {
             headsetMic = it
             prefs.edit().putBoolean(RigHub.PREF_HEADSET_MIC, it).apply()
         })
@@ -214,12 +214,12 @@ fun MicSection() {
     }
     if (profile == "custom") {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = echo, onCheckedChange = { echo = it; prefs.edit().putBoolean(RigHub.PREF_MIC_ECHO, it).apply() })
+            AppSwitch(checked = echo, onCheckedChange = { echo = it; prefs.edit().putBoolean(RigHub.PREF_MIC_ECHO, it).apply() })
             Spacer(Modifier.width(8.dp))
             Text("Annulation d'écho", style = MaterialTheme.typography.bodyMedium)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = noise, onCheckedChange = { noise = it; prefs.edit().putBoolean(RigHub.PREF_MIC_NOISE, it).apply() })
+            AppSwitch(checked = noise, onCheckedChange = { noise = it; prefs.edit().putBoolean(RigHub.PREF_MIC_NOISE, it).apply() })
             Spacer(Modifier.width(8.dp))
             Text("Réduction de bruit", style = MaterialTheme.typography.bodyMedium)
         }

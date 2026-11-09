@@ -176,7 +176,7 @@ internal fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = favorite, onCheckedChange = { favorite = it })
+                    AppSwitch(checked = favorite, onCheckedChange = { favorite = it })
                     Spacer(Modifier.width(8.dp))
                     Text("Favorite (en tête de liste)")
                 }

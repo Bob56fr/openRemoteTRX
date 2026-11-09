@@ -37,17 +37,20 @@ fun CompactChip(
     selected: Boolean = false,
     onLongClick: (() -> Unit)? = null,
     dot: Color? = null,
+    help: String? = null,                    // aide courte (logic/Help.kt) par appui long, si l'appui long n'a pas d'autre rôle
 ) {
     val colors = MaterialTheme.colorScheme
+    val s = LocalUiScale.current
+    val long = onLongClick ?: help?.let { text -> { HelpPopup.show(label, text) } }
     Box {
     Surface(
         shape = RoundedCornerShape(7.dp),
         color = if (selected) colors.secondaryContainer else Color.Transparent,
         border = BorderStroke(1.dp, if (selected) colors.secondaryContainer else colors.outline.copy(alpha = 0.7f)),
-        modifier = Modifier.height(30.dp).defaultMinSize(minWidth = 36.dp)
-            .combinedClickable(enabled = enabled, onClick = onClick, onLongClick = onLongClick),
+        modifier = Modifier.height(30.dp * s).defaultMinSize(minWidth = 36.dp * s)
+            .combinedClickable(enabled = enabled, onClick = onClick, onLongClick = long),
     ) {
-        Box(Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.padding(horizontal = 8.dp * s), contentAlignment = Alignment.Center) {
             Text(
                 label + if (onLongClick != null) " ⋯" else "",
                 style = MaterialTheme.typography.labelLarge,

@@ -108,7 +108,19 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 
 /** Onglet Réglages : journal, préférences, sections du téléphone, outils de la station. */
 @Composable
-internal fun RigScope.SettingsTab() {
+internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit = {}) {
+            // Tablette : taille du texte (mémorisée sur l'appareil ; le PTT et le STOP gardent leur taille)
+            if (textPct != null) Panel {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Taille du texte (tablette)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text("$textPct %", style = MaterialTheme.typography.labelLarge)
+                }
+                Slider(
+                    value = textPct.toFloat(), onValueChange = { onTextPct(com.rfdiy.openremotetrx.logic.ScreenLayouts.fontPct(Math.round(it))) },
+                    valueRange = com.rfdiy.openremotetrx.logic.ScreenLayouts.FONT_MIN_PCT.toFloat()..com.rfdiy.openremotetrx.logic.ScreenLayouts.FONT_MAX_PCT.toFloat(),
+                    steps = 5,
+                )
+            }
             // Journal
             Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -128,7 +140,7 @@ internal fun RigScope.SettingsTab() {
             }
             Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepScreenOn, onCheckedChange = {
+                AppSwitch(checked = keepScreenOn, onCheckedChange = {
                     keepScreenOn = it
                     prefs.edit().putBoolean("keep_screen_on", it).apply()
                 })
@@ -136,7 +148,7 @@ internal fun RigScope.SettingsTab() {
                 Text("Écran toujours allumé pendant la connexion", style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = keepTx, onCheckedChange = {
+                AppSwitch(checked = keepTx, onCheckedChange = {
                     keepTx = it
                     prefs.edit().putBoolean("keep_tx_background", it).apply()
                 })
@@ -144,7 +156,7 @@ internal fun RigScope.SettingsTab() {
                 Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = drivingManual, onCheckedChange = {
+                AppSwitch(checked = drivingManual, onCheckedChange = {
                     drivingManual = it
                     prefs.edit().putBoolean(RigHub.PREF_DRIVING, it).apply()
                 })
@@ -152,7 +164,7 @@ internal fun RigScope.SettingsTab() {
                 Text("Mode conduite (écran réduit, PTT tactile désactivé)", style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = drivingAuto, onCheckedChange = {
+                AppSwitch(checked = drivingAuto, onCheckedChange = {
                     drivingAuto = it
                     prefs.edit().putBoolean(RigHub.PREF_DRIVING_AUTO, it).apply()
                 })
