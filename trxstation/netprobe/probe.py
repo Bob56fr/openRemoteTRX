@@ -41,7 +41,7 @@ def _wall_ms() -> int:
 
 
 class NetProbeHub:
-    def __init__(self, cfg, state_dir: str | Path, *, alert=None, tx_counter=None,
+    def __init__(self, cfg, state_dir: str | Path, *, alert=None, tx_counter=None, probes=None,
                  mono_ms=_mono_ms, wall_ms=_wall_ms) -> None:
         """`cfg` : section [netprobe] ; `alert` : (titre, message) -> None (ntfy) ; `tx_counter` : () -> (propriétaire de
         l'émission, trous + son jeté du son d'émission), pour reconnaître une fenêtre au son dégradé."""
@@ -49,7 +49,7 @@ class NetProbeHub:
         self.mono_ms, self.wall_ms = mono_ms, wall_ms
         self.store = NetStore(Path(state_dir) / "netprobe", cfg.log_retention_days, cfg.stats_retention_days, wall_ms)
         self.vpn = VpnWatch(self.store, cfg.vpn_shared_warn, self._alert_now, wall_ms)
-        self.probes: list[ClientProbe] = []
+        self.connections: list[ClientProbe] = []
         self.reports: dict[str, deque] = {}        # appareil -> (date station, résumé) des 15 dernières minutes
         self.offsets: dict[str, int] = {}          # appareil -> écart horloge station - horloge client (ms)
         self.last_seen: dict[str, dict] = {}       # appareil -> dernière nouvelle avant une fermeture (coupure « déconnexion »)
@@ -57,15 +57,17 @@ class NetProbeHub:
         self.pending: list[dict] = []              # coupures en attente de diagnostic
         self.last_outage: dict | None = None
         self._last_alert = -10**12
-        self.probe_facts = lambda start_ms, end_ms: {}   # sondes de la station (module, lot 2b) : lan_probe_down...
+        self.probes = probes                       # StationProbes (box, Internet) ou None
+        self.probe_facts = probes.facts if probes is not None else (lambda start_ms, end_ms: {})
+        self._next_probe_log = mono_ms() + WINDOW_MS
 
     # ------------------------------------------------------------------ connexions
 
     def open(self, client_id: str, role: str, device: str, agent: str, source: str, send) -> "ClientProbe":
         journal = role != "listener"                     # visiteur : son propre indicateur, rien d'enregistré
         probe = ClientProbe(self, client_id, role, device, agent, source, send, journal)
-        others = [(p.source, p.device, p.agent) for p in self.probes if p.journal]
-        self.probes.append(probe)                        # avant l'avertissement : le nouveau venu le reçoit aussi
+        others = [(p.source, p.device, p.agent) for p in self.connections if p.journal]
+        self.connections.append(probe)                        # avant l'avertissement : le nouveau venu le reçoit aussi
         if journal and device:
             warning = self.vpn.opened(source, device, agent, others)
             if warning is not None:
@@ -78,8 +80,8 @@ class NetProbeHub:
         return probe
 
     def close(self, probe: "ClientProbe") -> None:
-        if probe in self.probes:
-            self.probes.remove(probe)
+        if probe in self.connections:
+            self.connections.remove(probe)
         if probe.journal and probe.device:
             self.vpn.closed(probe.source, probe.device, probe.agent)
             last = probe.last_echo_wall or probe.opened_wall
@@ -89,7 +91,7 @@ class NetProbeHub:
 
     def broadcast(self, message: dict) -> None:
         """Vers les OPÉRATEURS connectés (jamais vers un visiteur)."""
-        for probe in list(self.probes):
+        for probe in list(self.connections):
             if probe.journal:
                 probe.send(message)
 
@@ -179,7 +181,7 @@ class NetProbeHub:
 
     def tick(self) -> None:
         """Toutes les ~250 ms : battements de chaque connexion, diagnostics arrivés à échéance, entretien."""
-        for probe in list(self.probes):
+        for probe in list(self.connections):
             try:
                 probe.tick()
             except Exception:
@@ -192,6 +194,14 @@ class NetProbeHub:
                 self._diagnose(item["outage"])
             except Exception:
                 log.exception("diagnostic d'une coupure réseau")
+        if self.probes is not None and now >= self._next_probe_log:
+            self._next_probe_log = now + WINDOW_MS
+            try:
+                snap = self.probes.snapshot()
+                if snap:
+                    self.store.log({"ts": self.wall_ms(), "src": "sonde", "kind": "mesure", **snap})
+            except Exception:
+                log.exception("journal des sondes de la station")
         self.store.prune()
 
     async def run(self, stop: asyncio.Event, every_s: float = 0.25) -> None:
@@ -229,7 +239,7 @@ class NetProbeHub:
         self.outages_by_device.clear()
         self.pending.clear()
         self.last_outage = None
-        for probe in self.probes:
+        for probe in self.connections:
             probe.last_outage = None
         self.store.log({"ts": self.wall_ms(), "src": "passerelle", "kind": "etat", "event": "effacement", "by": by})
         log.warning("historique de la sonde réseau effacé par %s", by)
@@ -237,7 +247,8 @@ class NetProbeHub:
     def summary(self) -> dict:
         """Champ `net` du fichier d'état (trx-monitor, TRX Console) : vue opérateur."""
         return {"enabled": True,
-                "clients": [p.summary() for p in self.probes],
+                "clients": [p.summary() for p in self.connections],
+                "probes": self.probes.snapshot() if self.probes is not None else {},
                 "vpn": self.vpn.active(),
                 "last_outage": public_outage(self.last_outage) if self.last_outage else None}
 
@@ -418,6 +429,7 @@ class ClientProbe:
                "net_type": self.net_type, "thresholds": th}
         if self.journal:
             out["vpn"] = self.hub.vpn.active()
+            out["probes"] = self.hub.probes.snapshot() if self.hub.probes is not None else {}
         return out
 
     def summary(self) -> dict:

@@ -373,3 +373,106 @@ def test_hub_runs_until_stopped(tmp_path):
         await asyncio.wait_for(task, 2)
         assert any(m["type"] == "net_ping" for m in sent)
     asyncio.run(main())
+
+
+# ---------------------------------------------------------------------- sondes de la station (box, Internet)
+
+def run_probes(probes, clock, seconds, up):
+    """Fait tourner les sondes `seconds` secondes ; `up(nom)` dit si la cible répond."""
+    async def main():
+        for _ in range(seconds):
+            for name, target in probes.targets.items():
+                await probes._probe(target)
+            clock.advance(1000)
+    probes._icmp_answer = up
+    asyncio.run(main())
+
+
+def make_probes(clock, icmp=None, tcp=None):
+    from trxstation.netprobe.station_probes import StationProbes
+    state = {"lan": True, "internet": True}
+
+    async def fake_icmp(address, seq):
+        clock.advance(5)
+        return state["lan" if address == "192.168.1.254" else "internet"]
+
+    probes = StationProbes("auto", "1.1.1.1", mono_ms=lambda: clock.mono, wall_ms=lambda: clock.wall,
+                           icmp=icmp or fake_icmp, tcp=tcp, gateway=lambda: "192.168.1.254")
+    probes._resolve()
+    return probes, state
+
+
+def test_station_probes_snapshot_and_facts():
+    clock = Clock()
+    probes, state = make_probes(clock)
+    assert set(probes.targets) == {"lan", "internet"} and probes.targets["lan"].address == "192.168.1.254"
+    start = clock.wall
+    run_probes(probes, clock, 10, None)
+    snap = probes.snapshot()
+    assert snap["lan"]["method"] == "icmp" and snap["lan"]["ok"] is True and snap["internet"]["loss_pct"] == 0.0
+    assert probes.facts(start, clock.wall) == {"lan_probe_down": False, "internet_probe_down": False}
+    state["internet"] = False
+    begin = clock.wall
+    run_probes(probes, clock, 6, None)
+    assert probes.facts(begin, clock.wall) == {"lan_probe_down": False, "internet_probe_down": True}
+    assert probes.facts(clock.wall + 1, clock.wall + 2) == {}                     # aucun essai : rien de sûr
+
+
+def test_station_probes_fall_back_to_tcp_and_skip_bad_targets():
+    from trxstation.netprobe.station_probes import StationProbes
+    clock = Clock()
+    seen = []
+
+    async def no_icmp(address, seq):
+        raise PermissionError("ping_group_range")
+
+    async def tcp(address, port):
+        seen.append((address, port))
+        return True
+    probes = StationProbes("auto", "", mono_ms=lambda: clock.mono, wall_ms=lambda: clock.wall, icmp=no_icmp, tcp=tcp,
+                           gateway=lambda: "")
+    probes._resolve()
+    assert probes.targets == {}                                                   # box introuvable, pas de cible Internet
+    probes = StationProbes("192.168.1.254", "1.1.1.1", mono_ms=lambda: clock.mono, wall_ms=lambda: clock.wall,
+                           icmp=no_icmp, tcp=tcp)
+    probes._resolve()
+    asyncio.run(probes._probe(probes.targets["lan"]))
+    assert probes.targets["lan"].method == "tcp" and seen == [("192.168.1.254", 80)]
+    assert probes.snapshot()["lan"]["ok"] is True
+
+
+def test_diagnosis_uses_the_station_probes(tmp_path):
+    clock = Clock()
+    probes, state = make_probes(clock)
+    alerts = []
+    hub = NetProbeHub(Netprobe(), tmp_path, alert=lambda t, m: alerts.append(m), probes=probes,
+                      mono_ms=lambda: clock.mono, wall_ms=lambda: clock.wall)
+    peer = Peer(hub, clock)
+    peer.run(12)
+    peer.answer = False
+    state["lan"] = state["internet"] = False                                      # la box ne répond plus
+    for _ in range(8):
+        run_probes(probes, clock, 1, None)
+        peer.run(0.25)
+    hub.add_reports(peer.probe, [report(clock, health_fail=2)])
+    state["lan"] = state["internet"] = True
+    peer.answer = True
+    peer.run(17)
+    outage = peer.of_type("net_event")[0]["outage"]
+    assert outage["diagnosis"] == "lan" and "lan_probe_down" in outage["basis"]
+    assert peer.probe.state()["probes"]["lan"]["address"] == "192.168.1.254"
+    assert hub.summary()["probes"]["internet"]["method"] == "icmp"
+
+
+def test_probes_run_until_stopped():
+    clock = Clock()
+    probes, _ = make_probes(clock)
+
+    async def main():
+        stop = asyncio.Event()
+        task = asyncio.create_task(probes.run(stop))
+        await asyncio.sleep(0.1)
+        stop.set()
+        await asyncio.wait_for(task, 2)
+    asyncio.run(main())
+    assert probes.targets["lan"].seq >= 1

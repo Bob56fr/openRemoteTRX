@@ -102,6 +102,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         if manager is not None and getattr(manager, "netprobe", None) is not None:
             publisher.net_status = manager.netprobe.summary                     # trx-monitor : qualité des liaisons
             tasks.append(asyncio.create_task(manager.netprobe.run(stop)))
+            if manager.netprobe.probes is not None:
+                tasks.append(asyncio.create_task(manager.netprobe.probes.run(stop)))
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
@@ -239,7 +241,10 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         def tx_counter():
             stats = pipeline.stats()
             return ctrl.snapshot().owner, stats.get("tx_underruns", 0) + stats.get("tx_overruns", 0)
-        netprobe = NetProbeHub(cfg.netprobe, cfg.supervisor.state_dir, alert=notifier.send, tx_counter=tx_counter)
+        from ..netprobe.station_probes import StationProbes
+        probes = StationProbes(cfg.netprobe.lan_target, cfg.netprobe.internet_target)   # box et Internet (diagnostic)
+        netprobe = NetProbeHub(cfg.netprobe, cfg.supervisor.state_dir, alert=notifier.send, tx_counter=tx_counter,
+                               probes=probes)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
                           layouts=layouts, spectrum=spectrum, reports=reports, access=access,
                           muted=None if access is None else

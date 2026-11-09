@@ -151,8 +151,11 @@ sur l'heure de la station.
 
 ## 5. Sondes de la station (EF4)
 
-- Module `netprobe` (`trxstation/modules/builtin/netprobe/`), lancé et relancé comme les autres modules. Il publie
-  ses mesures sur le bus 127.0.0.1 ; la passerelle les reprend dans `state.net` et le fichier d'état.
+- Décision technique du lot 2b (étape 138) : les sondes tournent DANS la passerelle (`netprobe/station_probes.py`),
+  en tâche asyncio sans rien de bloquant (ICMP de Windows dans un fil), toute erreur gardée chez elles ; un module ne
+  démarrerait que si `[modules]` est en service, donc pas par défaut. Ping sans privilège vérifié sur Debian 13
+  (`ping_group_range` = 0 2147483647) et sous Windows (IcmpSendEcho). Passerelle par défaut : `/proc/net/route` ;
+  Windows : table des routes, en sautant une route par défaut sans passerelle (VPN point à point).
 - Deux cibles chaque seconde :
   - `lan_target` : `"auto"` = passerelle par défaut de la machine (Linux : `/proc/net/route` ; Windows :
     `GetBestRoute2` ou `route print`) ;
@@ -506,7 +509,7 @@ Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opé
 |---|---|---|
 | 1 | Calculs (§ 4.4, 4.5, 7, 8.3), vecteurs partagés, protocole (§ 11) dans `protocole.md` et `tests/protocol/` | Python, client.js, Kotlin `:logic` |
 | 2a | FAIT (étape 137, station 0.106.0) : passerelle (`net_ping`/`net_pong`, `state.net`, `device`, D1/D2/D3, journal, heures, coupures, diagnostic sans les sondes, `net_*`, `[netprobe]`, alertes ntfy) ; partie protocole de la page (battements, résumés de 10 s, remise après une coupure, sans affichage) ; classes des commandes de l'application | passerelle, page, application |
-| 2b | Module des sondes de la station (box, Internet : ICMP sinon TCP), faits `lan_probe_down` / `internet_probe_down` du diagnostic, `net_export` (zip anonyme) | module, passerelle |
+| 2b | FAIT (étape 138, station 0.107.0) : sondes de la station (box, Internet : ICMP sinon TCP) dans la passerelle, faits `lan_probe_down` / `internet_probe_down` du diagnostic, `state.net.probes`. L'export (`net_export`, zip anonyme) passe au lot 4 avec `trx-netreport`, qui fabrique le même rapport | passerelle |
 | 3 | Page : battement, getStats, `/health`, backlog, indicateur, accordéon, vue 30 jours, effacement, export | page |
 | 4 | trx-monitor (ligne et panneau), TRX Console menu 23, `trx-netreport`, aide du menu 19 | station |
 | 5 | Application : comme la page (pastille, panneau, écran des statistiques et des seuils, export partagé), « Liaison faible » en Android Auto et en mode conduite | Android |
