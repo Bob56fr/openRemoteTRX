@@ -47,6 +47,15 @@ class CarTest {
         assertEquals(listOf(CarAction.ARM, CarAction.STOP), ids(s))   // cadenas à la place du micro
     }
 
+    @Test
+    fun `liaison faible - en tete du sous-titre seulement quand la liaison est rouge`() {
+        val weak = NetUi.view((ServerMessages.decode("""{"type":"state","net":{"level":"red","outage":true}}""") as State).net)
+        val s = Car.screen(rig(ptt(false, false), armed = false).copy(net = weak), "Maison", muted = false, micAllowed = true)
+        assertEquals("Liaison faible  S7  VFO", s.subtitle)
+        val orange = NetUi.view((ServerMessages.decode("""{"type":"state","net":{"level":"orange"}}""") as State).net)
+        assertEquals("S7  VFO", Car.screen(rig(ptt(false, false), armed = false).copy(net = orange), "Maison", false, true).subtitle)
+    }
+
     private fun lock(s: CarScreen) = s.buttons.single { it.icon.name.startsWith("LOCK") }
 
     @Test

@@ -46,6 +46,9 @@ class RtcLink(
     private val onSpectrum: (ByteArray) -> Unit = {},
     /** Annulation d'écho et réduction de bruit du micro (profil choisi par l'utilisateur, logic.MicProfiles). */
     private val processing: MicProcessing = MicProcessing(echo = true, noise = true),
+    /** Sonde réseau : identifiant d'appareil (tiré au hasard une fois) et nom affiché à l'opérateur. */
+    private val device: String = "",
+    private val agent: String = "",
 ) {
     private val factory: PeerConnectionFactory
     private var generation = 0
@@ -182,7 +185,7 @@ class RtcLink(
             sdpSet { peer.setLocalDescription(it, offer) }
             withTimeoutOrNull(3000) { gathered.await() }            // la station attend un SDP complet
             val local = peer.localDescription?.description ?: throw AttemptException("client_error", "offre vide")
-            val answer = withContext(Dispatchers.IO) { http.offer(account.user, password, local) }
+            val answer = withContext(Dispatchers.IO) { http.offer(account.user, password, local, device, agent) }
             if (gen != generation) throw AttemptException("client_error", "essai annulé")
             sdpSet { peer.setRemoteDescription(it, SessionDescription(SessionDescription.Type.ANSWER, answer)) }
         } catch (e: AttemptException) {

@@ -11,6 +11,9 @@ import com.rfdiy.openremotetrx.protocol.Hello
 import com.rfdiy.openremotetrx.protocol.Memory
 import com.rfdiy.openremotetrx.protocol.Memories
 import com.rfdiy.openremotetrx.protocol.ModuleMessage
+import com.rfdiy.openremotetrx.protocol.NetEvent
+import com.rfdiy.openremotetrx.protocol.NetPing
+import com.rfdiy.openremotetrx.protocol.NetPong
 import com.rfdiy.openremotetrx.protocol.Protocol
 import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
@@ -83,6 +86,11 @@ data class RigState(
     val breizh: BreizhView? = null,
     /** Journal de la liaison avec Breizh (relu à la connexion, complété par breizh_event), le plus ancien en tête. */
     val breizhEvents: List<BreizhEntry> = emptyList(),
+    /** Sonde réseau : la liaison de CE téléphone (state.net) ; null = station sans sonde. */
+    val net: NetUi.View? = null,
+    /** Statistiques de la sonde (net_stats) ; null = pas demandées ; `netStatus` = texte d'état (lecture, refus, export). */
+    val netStats: NetUi.Stats? = null,
+    val netStatus: String = "",
 )
 
 /** Profil d'égaliseur de l'opérateur, rangé sur la station (étape 102) ; `settings` revalidé à l'application. */
@@ -114,8 +122,12 @@ interface SessionLink {
 class RigSession(
     private val link: SessionLink,
     bandSpots: Map<String, BandSpot> = emptyMap(),
+    /** Type de réseau du téléphone pour la sonde (lan, wifi, 4g, 5g, mobile, unknown) ; null = inconnu. */
+    private val netType: () -> String? = { null },
     private val wall: () -> Long = System::currentTimeMillis,
 ) {
+    /** Export anonyme de la sonde reçu en entier : (nom du fichier, contenu du zip), à partager par l'application. */
+    var onNetExport: ((String, ByteArray) -> Unit)? = null
     var snapshot = RigState()
         private set
     var onChange: ((RigState) -> Unit)? = null
@@ -138,6 +150,11 @@ class RigSession(
     private var swrChoices: Pair<Double, Int>? = null
     private var swrLast: SwrResult? = null
     private var breizhEvents: List<BreizhEntry> = emptyList()
+    private val net = NetClient()
+    private var netOffered = false                   // la station a annoncé « netprobe » à la dernière connexion
+    private var netStats: NetUi.Stats? = null
+    private var netStatus = ""
+    private var netExport: Pair<String, java.io.ByteArrayOutputStream>? = null
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -247,6 +264,8 @@ class RigSession(
         val was = status != LinkStatus.DISCONNECTED
         teardown()
         reconnect = null
+        net.forget()
+        netOffered = false
         status = LinkStatus.DISCONNECTED
         if (was) log("Déconnecté.", LogLevel.INFO)
         publish(now)
@@ -280,6 +299,9 @@ class RigSession(
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
             is BreizhEvent -> onBreizhEvent(msg)
+            is NetPing -> link.send(Command.NetPong(msg.seq, msg.t, now).encode())      // écho immédiat, sans file d'attente
+            is NetPong -> net.pong(msg.seq, msg.t, now)
+            is NetEvent -> onNetEvent(msg)
             is SwrMessage -> {
                 val p = SwrUi.progress(msg.raw)
                 swr = p
@@ -324,6 +346,13 @@ class RigSession(
         if (msg.protocol == Protocol.VERSION && !msg.listener && msg.offers("breizh")) send(now, Command.BreizhLog)
         arming.onConnected()                                     // toujours désarmé à la connexion
         lastPing = now
+        // Sonde réseau : battement et résumés si la station l'annonce ; résumés d'avant la coupure remis (opérateurs)
+        netOffered = msg.protocol == Protocol.VERSION && msg.offers("netprobe")
+        if (netOffered) {
+            net.start(now)
+            val backlog = net.backlog()
+            if (backlog.isNotEmpty() && !msg.listener) send(now, Command.NetBacklog(kotlinx.serialization.json.JsonArray(backlog)))
+        }
         protocolOk = msg.protocol == Protocol.VERSION
         if (!protocolOk) {
             log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
@@ -386,6 +415,11 @@ class RigSession(
             publish(now)
             return
         }
+        if (entry.cmd.startsWith("net_")) {
+            onNetResult(now, entry.cmd, msg)
+            publish(now)
+            return
+        }
         if (entry.cmd == "host_info") {                         // synthèse du matériel : affichée telle quelle
             hostSections = if (msg.ok) HostSection.parse(msg.raw["sections"]).orEmpty() else emptyList()
             publish(now)
@@ -406,6 +440,59 @@ class RigSession(
         if (alarm) link.alert(LinkAlert.BREIZH_FALLBACK)
     }
 
+    private fun onNetEvent(msg: NetEvent) {
+        if (msg.event == "outage") {
+            val o = msg.raw["outage"] as? JsonObject ?: return
+            val ms = (o["duration_ms"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull() ?: 0.0
+            val diag = (o["diagnosis"] as? JsonPrimitive)?.contentOrNull
+            val agent = (o["agent"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+            log("Coupure réseau de ${NetUi.duration(ms / 1000)}" + (if (agent.isNotEmpty()) " ($agent)" else "") +
+                " — tronçon probable : ${NetUi.DIAGNOSES[diag] ?: "indéterminé"}.", LogLevel.WARN)
+        } else if (msg.event == "vpn_shared") {
+            val w = msg.raw["warning"] as? JsonObject ?: return
+            val warning = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                .decodeFromJsonElement(com.rfdiy.openremotetrx.protocol.NetVpnWarning.serializer(), w)
+            log(NetUi.vpnText(warning), LogLevel.BAD)
+        }
+    }
+
+    private fun onNetResult(now: Long, cmd: String, msg: Result) {
+        if (!msg.ok) {
+            netStatus = when (cmd) {
+                "net_stats" -> "Statistiques indisponibles : "
+                "net_export" -> "Export impossible : "
+                else -> "Refusé : "
+            } + Texts.refusal(msg.reason, msg.detail)
+            if (cmd == "net_export") netExport = null
+            return
+        }
+        when (cmd) {
+            "net_stats" -> {
+                netStats = NetUi.stats(msg.raw["stats"] as? JsonObject)
+                netStatus = if (netStats != null) "Mesures de tous les appareils ; heures locales de la station." else "Réponse illisible."
+            }
+            "net_clear" -> { netStatus = "Historique réseau effacé (les seuils choisis sont gardés)."; netStats(now) }
+            "net_thresholds" -> { netStatus = "Seuils enregistrés sur la station."; netStats(now) }
+            "net_vpn_ignore" -> netStatus = "Avertissement ignoré pour cette adresse."
+            "net_export" -> {
+                val current = netExport ?: return
+                val data = (msg.raw["data"] as? JsonPrimitive)?.contentOrNull ?: return
+                current.second.write(java.util.Base64.getDecoder().decode(data))
+                val part = (msg.raw["part"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 0
+                val parts = (msg.raw["parts"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: 1
+                val name = (msg.raw["name"] as? JsonPrimitive)?.contentOrNull?.replace(Regex("[^\\w.-]"), "_") ?: "openremotetrx-reseau.zip"
+                if (part + 1 < parts && part < 99) {
+                    netExport = name to current.second
+                    send(now, Command.NetExport(part + 1))
+                } else {
+                    netExport = null
+                    netStatus = "Export prêt : $name (anonyme)."
+                    onNetExport?.invoke(name, current.second.toByteArray())
+                }
+            }
+        }
+    }
+
     private fun afterState() {
         link.setMicOpen(mineTx())                               // micro ouvert seulement en TX confirmé de ce téléphone
     }
@@ -414,6 +501,7 @@ class RigSession(
 
     fun tick(now: Long, online: Boolean) {
         val r = reconnect
+        if (r != null && netOffered) net.offline(now, wall(), netType())    // résumés hors ligne, remis au retour
         if (r != null && !attemptActive) {
             if (r.expired(now)) {
                 giveUp(now, "plus de liaison après ${r.windowS} s")
@@ -447,6 +535,10 @@ class RigSession(
                 LinkVerdict.OK -> Unit
             }
             if (!listener && heartbeat.shouldBeat(now, mine)) link.send(Command.Heartbeat.encode())
+            if (netOffered) {                                     // sonde réseau : mesure seulement, jamais l'émission
+                net.ping(now, wall())?.let { (seq, t, w) -> link.send(Command.NetPing(seq, t, w).encode()) }
+                net.report(now, wall(), netType(), null, true)?.let { link.send(Command.NetReport(it).encode()) }
+            }
             if (now - lastPing >= PING_EVERY_MS) {
                 lastPing = now
                 send(now, Command.GetState)
@@ -766,6 +858,42 @@ class RigSession(
         send(now, Command.BreizhReactivate)
     }
 
+    // ---- sonde de qualité réseau (fonction « netprobe ») : mesure et affiche, n'agit jamais sur l'émission
+    private fun netOperator() = connected && protocolOk && !listener && netOffered
+
+    /** La couche Android sonde /health toutes les 5 s tant que c'est vrai (connecté ou en reconnexion). */
+    val netProbing: Boolean get() = netOffered && (connected || reconnect != null)
+
+    /** Réponse (ou échec) de GET /health. */
+    fun netHealth(ok: Boolean) { if (netOffered) net.health(ok) }
+
+    fun netStats(now: Long, days: Int = 30) {
+        if (!netOperator()) return
+        netStatus = "Lecture…"
+        send(now, Command.NetStats(days))
+        publish(now)
+    }
+
+    fun netClear(now: Long) { if (netOperator()) { send(now, Command.NetClear); publish(now) } }
+
+    fun netThresholds(now: Long, netType: String, rttWarn: Double, rttAlert: Double, lossWarn: Double, lossAlert: Double) {
+        if (!netOperator() || rttWarn >= rttAlert || lossWarn >= lossAlert) return
+        send(now, Command.NetThresholds(netType, rttWarn, rttAlert, lossWarn, lossAlert))
+    }
+
+    fun netThresholdsReset(now: Long, netType: String) { if (netOperator()) send(now, Command.NetThresholds(netType, reset = true)) }
+
+    fun netVpnIgnore(now: Long, address: String) { if (netOperator()) send(now, Command.NetVpnIgnore(address)) }
+
+    /** Export anonyme : morceaux demandés l'un après l'autre, puis `onNetExport`. */
+    fun netExport(now: Long) {
+        if (!netOperator() || netExport != null) return
+        netExport = "" to java.io.ByteArrayOutputStream()
+        netStatus = "Export en cours…"
+        send(now, Command.NetExport(0))
+        publish(now)
+    }
+
     fun breizhLog(now: Long) {
         if (!breizhOffered()) return
         send(now, Command.BreizhLog)
@@ -829,6 +957,8 @@ class RigSession(
         swr = null; swrPlan = null; swrChoices = null; swrLast = null
         breizhEvents = emptyList()
         protocolOk = true
+        net.stop(wall())                                         // les résumés restent : remis à la reconnexion
+        netStats = null; netExport = null; netStatus = ""
         pending.clear()
         rttMs = null
         status = LinkStatus.DISCONNECTED
@@ -873,6 +1003,8 @@ class RigSession(
             swr = swr, swrPlan = swrPlan, swrChoices = swrChoices, swrLast = swrLast,
             breizh = if (listener) null else Breizhs.view(state?.breizh),
             breizhEvents = if (listener) emptyList() else breizhEvents,
+            net = NetUi.view(state?.net),
+            netStats = netStats, netStatus = netStatus,
         )
         if (next != snapshot) {
             snapshot = next

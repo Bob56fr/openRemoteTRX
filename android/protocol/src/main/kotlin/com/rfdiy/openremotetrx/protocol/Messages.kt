@@ -189,6 +189,45 @@ data class BreizhStatus(
     @SerialName("reactivate_in_s") val reactivateInS: Int? = null,
 )
 
+/** Sonde de qualité réseau (station 0.106.0+, docs/protocole.md § 15) : la liaison de CE téléphone. */
+@Serializable
+data class NetState(
+    /** gray, green, orange, red. */
+    val level: String = "gray",
+    @SerialName("loss_pct") val lossPct: Double? = null,
+    @SerialName("loss_pct_10") val lossPct10: Double? = null,
+    @SerialName("rtt_ms") val rttMs: Double? = null,
+    @SerialName("rtt_mean_ms") val rttMeanMs: Double? = null,
+    @SerialName("jitter_ms") val jitterMs: Double? = null,
+    val outage: Boolean = false,
+    @SerialName("outage_s") val outageS: Int? = null,
+    @SerialName("last_outage") val lastOutage: NetLastOutage? = null,
+    @SerialName("net_type") val netType: String? = null,
+    val thresholds: NetThresholdsInForce? = null,
+    /** Avertissements de profil VPN partagé (opérateurs). */
+    val vpn: List<NetVpnWarning> = emptyList(),
+    /** Sondes de la station : lan (box), internet. */
+    val probes: Map<String, NetStationProbe> = emptyMap(),
+)
+
+@Serializable
+data class NetLastOutage(@SerialName("ago_s") val agoS: Int = 0, @SerialName("duration_s") val durationS: Int = 0,
+                         val diagnosis: String? = null)
+
+@Serializable
+data class NetThresholdsInForce(
+    @SerialName("rtt_warn") val rttWarn: Double = 250.0, @SerialName("rtt_alert") val rttAlert: Double = 600.0,
+    @SerialName("loss_warn") val lossWarn: Double = 2.0, @SerialName("loss_alert") val lossAlert: Double = 10.0,
+)
+
+@Serializable
+data class NetVpnWarning(val address: String = "", val kind: String = "", val agents: List<String> = emptyList(),
+                         @SerialName("since_ms") val sinceMs: Long = 0, @SerialName("period_ms") val periodMs: Long? = null)
+
+@Serializable
+data class NetStationProbe(val address: String = "", val method: String? = null, val ok: Boolean? = null,
+                           @SerialName("loss_pct") val lossPct: Double? = null, @SerialName("rtt_ms") val rttMs: Double? = null)
+
 @Serializable
 data class State(
     val ptt: PttStatus = PttStatus(),
@@ -199,6 +238,7 @@ data class State(
     val presence: Presence? = null,
     val host: Host? = null,
     val breizh: BreizhStatus? = null,
+    val net: NetState? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */
@@ -225,6 +265,13 @@ data class ModuleMessage(val module: String, val data: JsonElement) : ServerMess
 
 /** Événement de la liaison avec Breizh Audio Box (station 0.100.0+, opérateurs) : `detail` = texte à afficher. */
 data class BreizhEvent(val t: String, val event: String, val detail: String) : ServerMessage
+
+/** Sonde réseau : battement de la station (répondre aussitôt par net_pong) et écho de NOS net_ping. */
+data class NetPing(val seq: Int, val t: Long) : ServerMessage
+data class NetPong(val seq: Int, val t: Long, val tr: Long) : ServerMessage
+
+/** Sonde réseau (opérateurs) : coupure diagnostiquée (`outage`) ou profil VPN partagé (`vpn_shared`). */
+data class NetEvent(val event: String, val raw: JsonObject) : ServerMessage
 
 /** Progression de MA mesure de TOS (station 0.90.0+) ; lue par logic/SwrUi. */
 data class SwrMessage(val raw: JsonObject) : ServerMessage
@@ -270,6 +317,9 @@ object ServerMessages {
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 "swr" -> SwrMessage(obj)
                 "breizh_event" -> BreizhEvent(obj.text("t"), obj.text("event"), obj.text("detail"))
+                "net_ping" -> NetPing(obj.long("seq").toInt(), obj.long("t"))
+                "net_pong" -> NetPong(obj.long("seq").toInt(), obj.long("t"), obj.long("tr"))
+                "net_event" -> NetEvent(obj.text("event"), obj)
                 else -> Unknown(type)
             }
         } catch (e: SerializationException) {
@@ -280,6 +330,8 @@ object ServerMessages {
     }
 
     private fun JsonObject.text(key: String): String = (this[key] as? JsonPrimitive)?.contentOrNull ?: ""
+    private fun JsonObject.long(key: String): Long =
+        (this[key] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: throw IllegalArgumentException("$key manquant")
 }
 
 class ProtocolException(message: String, cause: Throwable? = null) : Exception(message, cause)

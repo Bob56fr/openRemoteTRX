@@ -174,6 +174,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var breizhDialog by remember { mutableStateOf(false) }
     var hostDialog by remember { mutableStateOf(false) }
     var swrOpen by rememberSaveable { mutableStateOf(false) }                // écran de la mesure de TOS
+    var netOpen by rememberSaveable { mutableStateOf(false) }                // écran « Qualité du réseau »
+    var netDialog by remember { mutableStateOf(false) }                      // détail de la liaison
     var miniWf by remember { mutableStateOf(prefs.getBoolean("mini_wf", true)) }     // petit waterfall de l'onglet Station
     fun setMiniWf(on: Boolean) { miniWf = on; prefs.edit().putBoolean("mini_wf", on).apply() }
     var tab by rememberSaveable { mutableStateOf(Tab.STATION) }
@@ -227,6 +229,10 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                         },
                         style = MaterialTheme.typography.labelMedium,
                     )
+                }
+                rig.net?.let { n ->                                                     // sonde réseau : pastille, toucher = détail
+                    NetChip(n, onClick = { netDialog = true })
+                    Spacer(Modifier.width(6.dp))
                 }
                 rig.presence?.takeIf { it.label.isNotEmpty() }?.let { p ->             // 🎧 N : visiteurs connectés
                     CompactChip(p.label, onClick = { presenceDialog = true })
@@ -584,6 +590,9 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
                 OutlinedButton(onClick = { swrOpen = true }) { Text("Mesure de TOS de l'antenne") }
             }
+            if (rig.net != null && !listener) {                             // sonde réseau (opérateur, station 0.106.0+)
+                OutlinedButton(onClick = { netOpen = true }) { Text("Qualité du réseau (30 jours)") }
+            }
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
                 OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
             }
@@ -701,6 +710,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
     if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
+    if (netOpen) NetScreen(rig) { netOpen = false }
+    if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, onStats = { netDialog = false; netOpen = true }) { netDialog = false } }
     if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->

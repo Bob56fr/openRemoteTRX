@@ -80,6 +80,9 @@ fun DrivingScreen(ui: RigUi, reason: DrivingReason, modifier: Modifier, onLeaveM
                 Text(Radio.formatIcom(radio?.frequencyHz), fontSize = 40.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
                 Text("${Radio.modeLabel(radio?.mode)}   ${Format.sMeter(radio?.strengthDb)}", fontSize = 22.sp)
                 ui.station?.name?.let { Text(it, color = Page.TEXTE_2, style = MaterialTheme.typography.bodyMedium) }
+                if (ui.rig.net?.weak == true) {                     // sonde réseau : texte seul, sans bip ni voix
+                    Text(com.rfdiy.openremotetrx.logic.Car.WEAK_LINK, color = Page.TX, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
         Button(

@@ -88,6 +88,17 @@ object RigHub {
 
     /** Réglages du téléphone lus par le service (fichier de préférences de l'application). */
     const val PREFS = "ui"
+    const val PREF_DEVICE = "device_id"
+
+    /** Identifiant d'appareil de la sonde réseau : 128 bits tirés au hasard UNE fois, rien de personnel. */
+    fun deviceId(context: android.content.Context): String {
+        val prefs = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+        prefs.getString(PREF_DEVICE, null)?.takeIf { Regex("[0-9a-f]{32}").matches(it) }?.let { return it }
+        val bytes = ByteArray(16).also { java.security.SecureRandom().nextBytes(it) }
+        val id = bytes.joinToString("") { "%02x".format(it) }
+        prefs.edit().putString(PREF_DEVICE, id).apply()
+        return id
+    }
     const val PREF_MEDIA_PTT = "media_ptt"
     const val PREF_HEADSET_MIC = "headset_mic"
     const val PREF_MIC_PROFILE = "mic_profile"
@@ -201,6 +212,27 @@ object RigHub {
     fun breizhReactivate() { service?.onRig { session, now -> session.breizhReactivate(now) } }
 
     fun breizhLog() { service?.onRig { session, now -> session.breizhLog(now) } }
+
+    // ---- sonde de qualité réseau (opérateurs) : statistiques, seuils, effacement, export anonyme
+    fun netStats(days: Int) { service?.onRig { session, now -> session.netStats(now, days) } }
+
+    fun netClear() { service?.onRig { session, now -> session.netClear(now) } }
+
+    fun netThresholds(netType: String, rttWarn: Double, rttAlert: Double, lossWarn: Double, lossAlert: Double) {
+        service?.onRig { session, now -> session.netThresholds(now, netType, rttWarn, rttAlert, lossWarn, lossAlert) }
+    }
+
+    fun netThresholdsReset(netType: String) { service?.onRig { session, now -> session.netThresholdsReset(now, netType) } }
+
+    fun netVpnIgnore(address: String) { service?.onRig { session, now -> session.netVpnIgnore(now, address) } }
+
+    fun netExport() { service?.onRig { session, now -> session.netExport(now) } }
+
+    /** Export reçu en entier : à partager par l'écran (puis `netExportTaken`). */
+    private val _netExport = MutableStateFlow<Pair<String, ByteArray>?>(null)
+    val netExportReady: StateFlow<Pair<String, ByteArray>?> = _netExport.asStateFlow()
+    internal fun offerNetExport(name: String, bytes: ByteArray) { _netExport.value = name to bytes }
+    fun netExportTaken() { _netExport.value = null }
 
     fun setFrequency(hz: Long) { service?.onRig { session, now -> session.setFrequency(now, hz) } }
 

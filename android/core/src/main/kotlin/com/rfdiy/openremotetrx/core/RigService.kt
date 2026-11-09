@@ -46,7 +46,9 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Service au premier plan, SEUL propriétaire de la connexion avec la station (CLAUDE.md, « Client Android »).
@@ -111,6 +113,8 @@ class RigService : Service() {
             onClosed = { code -> session.onLinkClosed(now(), code) },
             onSpectrum = { bytes -> RigHub.offerSpectrum(bytes) },
             processing = processing,
+            device = RigHub.deviceId(this),
+            agent = "android " + (runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: ""),
         )
         SpatialHub.load(this)
         SpatialHub.attach(rtc) { block -> runCatching { executor.execute(block) } }
@@ -126,7 +130,8 @@ class RigService : Service() {
                 rtc.close()
             }
             override fun alert(kind: LinkAlert) = sounds.play(kind)
-        })
+        }, netType = { netType() })
+        session.onNetExport = { name, bytes -> RigHub.offerNetExport(name, bytes) }
         session.onChange = { state -> onState(state) }
         session.onBandSpots = { spots -> request?.let { BandStore(this).save(it.account.id, spots) } }
         RigHub.service = this
@@ -228,9 +233,39 @@ class RigService : Service() {
         ticker = scope.launch {
             while (isActive) {
                 session.tick(now(), online())
+                netHealthStep()
                 if (headsetMic) headsetStep(headsetCall.tick(now()))
                 delay(com.rfdiy.openremotetrx.protocol.Protocol.HEARTBEAT_TICK_MS)
             }
+        }
+    }
+
+    private var nextHealth = 0L
+    private var healthBusy = false
+
+    /** Sonde réseau : GET /health toutes les 5 s (hors WebRTC), aussi pendant une reconnexion. */
+    private fun netHealthStep() {
+        val req = request ?: return
+        val t = now()
+        if (!session.netProbing || healthBusy || t < nextHealth) return
+        nextHealth = t + com.rfdiy.openremotetrx.logic.NetClient.HEALTH_EVERY_MS
+        healthBusy = true
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) { StationHttp(req.account.url, req.account.fingerprint).health() }
+            healthBusy = false
+            session.netHealth(ok)
+        }
+    }
+
+    /** Type de réseau pour la sonde (4G / 5G : lot 6, avec la radio). */
+    private fun netType(): String? {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return null
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return null
+        return when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "mobile"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "lan"
+            else -> "unknown"
         }
     }
 

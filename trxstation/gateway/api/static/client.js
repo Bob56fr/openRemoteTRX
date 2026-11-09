@@ -2047,9 +2047,10 @@
       if (!offered) { this.net = null; return; }
       const now = this.env.now();
       this.net = { seq: 0, beats: [], nextPing: now, nextReport: now + NET_REPORT_EVERY_MS, nextClock: now };
-      const since = this.netLostAt - NET_BACKLOG_BEFORE_MS;              // reconnexion : les 10 dernières minutes utiles
+      const since = this.netLostAt ? this.netLostAt - NET_BACKLOG_BEFORE_MS : Infinity;   // pas de perte : jamais partis seulement
       const backlog = this.netReports.filter((r) => !r.sent || r.report.t >= since).map((r) => r.report);
       this.netReports.forEach((r) => { r.sent = true; });
+      this.netLostAt = 0;                                                // remis une seule fois
       if (backlog.length && hello.role !== "listener") this.send("net_backlog", { reports: backlog }).catch(() => {});
     }
 

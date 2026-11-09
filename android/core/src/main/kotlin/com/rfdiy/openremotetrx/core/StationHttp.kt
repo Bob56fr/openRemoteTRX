@@ -70,9 +70,12 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
     }
 
     /** POST /offer ; renvoie le SDP de réponse. 401 => auth, 403 => refused (message de la station), 503 => busy, autre => http. */
-    fun offer(clientId: String, password: String, sdp: String): String {
+    fun offer(clientId: String, password: String, sdp: String, device: String = "", agent: String = ""): String {
         val body = buildJsonObject {
             put("client_id", clientId); put("password", password); put("sdp", sdp); put("type", "offer")
+            // sonde réseau (station 0.106.0+) : appareil tiré au hasard, nom affiché à l'opérateur ; ignorés par une station plus ancienne
+            if (device.isNotEmpty()) put("device", device)
+            if (agent.isNotEmpty()) put("agent", agent)
         }.toString()
         val (status, text) = request("POST", "/offer", body)
         // 403 / 503 avec {error, message} : accès refusé alors que le mot de passe est juste (visiteurs, station 0.71.0+)
@@ -90,7 +93,14 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
         return (obj["sdp"] as? JsonPrimitive)?.contentOrNull ?: throw AttemptException("http", "réponse sans SDP")
     }
 
-    private fun request(method: String, path: String, body: String?): Pair<Int, String> {
+    /** Sonde réseau : GET /health (HTTPS, hors WebRTC), 3 s au plus ; vrai si la station répond. */
+    fun health(): Boolean = try {
+        request("GET", "/health", null, timeoutMs = 3000).first == 200
+    } catch (e: Exception) {
+        false
+    }
+
+    private fun request(method: String, path: String, body: String?, timeoutMs: Int = 0): Pair<Int, String> {
         val conn = try {
             URL(baseUrl + path).openConnection() as HttpsURLConnection
         } catch (e: Exception) {
@@ -102,8 +112,8 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
                 conn.hostnameVerifier = HostnameVerifier { _, _ -> true }   // l'empreinte suffit
             }
             conn.requestMethod = method
-            conn.connectTimeout = 8000
-            conn.readTimeout = 10_000
+            conn.connectTimeout = if (timeoutMs > 0) timeoutMs else 8000
+            conn.readTimeout = if (timeoutMs > 0) timeoutMs else 10_000
             conn.useCaches = false
             if (body != null) {
                 conn.doOutput = true

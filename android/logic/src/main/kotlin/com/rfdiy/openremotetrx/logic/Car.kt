@@ -162,7 +162,9 @@ object Car {
         // les réglages (exemples de l'utilisateur : « S3  M: 430  NB NR  Preamp 100w », « S4  VFO  NB NR  100w »).
         val place = memory?.let { "M: ${it.name.take(NAME_MAX)}" } ?: "VFO"
         val signal = if (mine) null else r?.strengthDb?.let { Format.sMeter(it) }
-        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, listOfNotNull(signal, place)), playing = !muted, connecting = false,
+        // Sonde réseau : liaison rouge = « Liaison faible » en TÊTE du sous-titre (cahier § 9.3), sans bip ni voix
+        val weak = if (rig.net?.weak == true) WEAK_LINK else null
+        return CarScreen(title.ifEmpty { name }, settings(rig.hello, rig.state, eq, listOfNotNull(weak, signal, place)), playing = !muted, connecting = false,
             connected = true, buttons = arrange(buttons, canSkip), error = notice, secondary = parts.joinToString(" · "),
             canSkip = canSkip)
     }
@@ -187,6 +189,8 @@ object Car {
 
     /** Longueur maximale du sous-titre (F3) et du nom de mémoire qu'il montre. */
     const val SETTINGS_MAX = 40
+    /** Sonde réseau : liaison rouge (coupure en cours ou seuils d'alerte), en Android Auto et en mode conduite. */
+    const val WEAK_LINK = "Liaison faible"
     const val NAME_MAX = 12
 
     /**
