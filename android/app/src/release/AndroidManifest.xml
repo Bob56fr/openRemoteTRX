@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Sonde réseau (docs/netprobe-cahier-des-charges.md § 13) : changement de cellule = identifiant de la cellule servante,
+     qu'Android ne donne qu'avec l'autorisation de localisation. Version installée à la main SEULEMENT : la version Google
+     Play (type « play ») ne déclare pas cette autorisation. Aucune position n'est lue ; demandée seulement quand
+     l'utilisateur active l'option dans les Réglages. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+</manifest>

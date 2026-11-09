@@ -98,6 +98,40 @@ class NetUiTest {
     }
 
     @Test
+    fun `radio du telephone dans le resume - valeurs hors bornes jetees, faits transmis`() {
+        val c = NetClient()
+        c.start(0)
+        val radio = RadioSample("4g", rsrpDbm = -98, sinrDb = 12, level = 3, cellChanged = true, netSwitched = false)
+        val r = assertNotNull(c.report(10_000, 1_762_700_010_000, "mobile", null, true, radio))
+        assertEquals("-98", r["rsrp_dbm"].toString()); assertEquals("12", r["sinr_db"].toString())
+        assertEquals("3", r["signal_level"].toString()); assertEquals("true", r["cell_changed"].toString())
+        val odd = assertNotNull(c.report(20_000, 1_762_700_020_000, "5g", null, true, RadioSample("5g", rsrpDbm = 2147483647, sinrDb = -99, level = 7)))
+        assertEquals("null", odd["rsrp_dbm"].toString()); assertEquals("null", odd["sinr_db"].toString()); assertEquals("null", odd["signal_level"].toString())
+        assertEquals("4G · -98 dBm · S/B 12 dB · niveau 3/4", radio.text())
+        assertEquals("—", RadioSample().text())
+    }
+
+    @Test
+    fun `session - la radio fournit le type de reseau du resume`() {
+        val link = object : SessionLink {
+            val sent = mutableListOf<String>()
+            override fun startAttempt() {}
+            override fun send(text: String): Boolean { sent += text; return true }
+            override fun setMicOpen(open: Boolean) {}
+            override fun close() {}
+            override fun alert(kind: LinkAlert) {}
+        }
+        var reads = 0
+        val s = RigSession(link, netType = { "mobile" }, radio = { reads++; RadioSample("5g", -90, 15, 4) }) { 1_762_700_000_000L }
+        s.begin(0, 30); s.answered(0)
+        s.onMessage(0, """{"type":"hello","protocol":1,"client_id":"phone","features":["netprobe"]}""")
+        for (i in 1..22) { s.onMessage(i * 500L, """{"type":"state","ptt":{"state":"RX"}}"""); s.tick(i * 500L, true) }
+        val report = link.sent.first { it.contains("\"cmd\":\"net_report\"") }
+        assertTrue(report.contains("\"net_type\":\"5g\"") && report.contains("\"rsrp_dbm\":-90"), report)
+        assertEquals(1, reads)                                                               // lue une fois par résumé
+    }
+
+    @Test
     fun `session - net_ping, net_pong, resumes et remise a la reconnexion`() {
         val link = object : SessionLink {
             val sent = mutableListOf<String>()

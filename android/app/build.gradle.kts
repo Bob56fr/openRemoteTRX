@@ -15,9 +15,11 @@ android {
         applicationId = "com.rfdiy.openremotetrx"      // ne jamais le changer
         minSdk = 29                                     // Android 10 (décision de l'utilisateur)
         targetSdk = 36
-        versionCode = 58
-        versionName = "0.53.0"
+        versionCode = 59
+        versionName = "0.54.0"
         buildConfigField("boolean", "SCRAMBLER", "true")
+        // Sonde réseau : changement de cellule (autorisation de localisation, manifestes debug / release seulement)
+        buildConfigField("boolean", "CELL_INFO", "true")
     }
     // Clé d'envoi Google Play : HORS DU DÉPÔT (docs/android-play-store.md). Fichier android/keystore.properties
     // (storeFile, storePassword, keyAlias, keyPassword), ou un autre chemin par -PkeystoreProperties=...
@@ -42,6 +44,7 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += "release"
             buildConfigField("boolean", "SCRAMBLER", "false")
+            buildConfigField("boolean", "CELL_INFO", "false")      // pas d'autorisation de localisation sur Google Play
         }
     }
     compileOptions {

@@ -306,6 +306,9 @@ def _reseau_panel(snap: Snapshot, detail: bool = False) -> Panel:
         who = str(c.get("id", "?")) + (" (visiteur)" if c.get("role") == "listener" else "")
         text = f"{label} · {NET_TYPES.get(c.get('net_type'), c.get('net_type') or '?')} · perte {_value(c.get('loss_pct'), '%')}" \
                f" · {_value(c.get('rtt_ms'), 'ms')}" + (f" · {c['agent']}" if c.get("agent") else "")
+        if c.get("rsrp_dbm") is not None or c.get("signal_level") is not None:      # radio du téléphone (application)
+            text += " · radio " + " ".join(x for x in (f"{c['rsrp_dbm']} dBm" if c.get("rsrp_dbm") is not None else "",
+                                                       f"{c['signal_level']}/4" if c.get("signal_level") is not None else "") if x)
         rows.append(Row(who, text, "dim" if dim else level))
     if not rows:
         rows.append(Row("Clients", "aucun connecté", "dim"))

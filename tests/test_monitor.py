@@ -390,7 +390,9 @@ def test_network_panel_and_events():
            "clients": [{"id": "phone", "role": "operator", "agent": "android 0.53.0", "net_type": "4g", "level": "orange",
                         "loss_pct": 3.3, "rtt_ms": 180, "outage": False},
                        {"id": "club1", "role": "listener", "agent": "", "net_type": None, "level": "green",
-                        "loss_pct": 0.0, "rtt_ms": 40, "outage": True}],
+                        "loss_pct": 0.0, "rtt_ms": 40, "outage": True},
+                       {"id": "s25", "role": "operator", "agent": "android 0.54.0", "net_type": "4g", "level": "green",
+                        "loss_pct": 0.0, "rtt_ms": 60, "outage": False, "rsrp_dbm": -98, "signal_level": 3}],
            "probes": {"lan": {"address": "192.168.1.254", "method": "icmp", "ok": True, "loss_pct": 0.0, "rtt_ms": 2},
                       "internet": {"address": "1.1.1.1", "method": "tcp", "ok": False, "loss_pct": 60.0, "rtt_ms": None}},
            "vpn": [{"address": "192.168.27.2", "kind": "same_time", "agents": ["page Windows", "android"]}],
@@ -400,6 +402,7 @@ def test_network_panel_and_events():
     rows = {r.label: r for r in panel(snap(st), "reseau").rows}
     assert rows["phone"].level == "warn" and "MOYENNE · 4G · perte 3.3 % · 180 ms · android 0.53.0" == rows["phone"].text
     assert rows["club1 (visiteur)"].text.startswith("COUPURE") and rows["club1 (visiteur)"].level == "bad"
+    assert rows["s25"].text.endswith("· radio -98 dBm 3/4")
     assert rows["Box"].text == "répond · ping · 2 ms" and rows["Internet"].level == "bad"
     assert "profil VPN probablement partagé" in rows["Dernière coupure"].text and rows["PROFIL VPN"].level == "bad"
     assert "192.168.1.254" not in rows["Box"].text

@@ -29,6 +29,8 @@ data class RigUi(
     val carConnected: Boolean = false,
     /** « Je suis passager » : mode conduite levé jusqu'à la déconnexion de la voiture. */
     val passenger: Boolean = false,
+    /** Radio du téléphone (sonde réseau) : type de réseau, niveau 4G / 5G ; null tant que rien n'est relevé. */
+    val radio: com.rfdiy.openremotetrx.logic.RadioSample? = null,
 )
 
 /**
@@ -89,6 +91,8 @@ object RigHub {
     /** Réglages du téléphone lus par le service (fichier de préférences de l'application). */
     const val PREFS = "ui"
     const val PREF_DEVICE = "device_id"
+    /** Sonde réseau : repérer les changements de cellule (autorisation de localisation, hors Google Play). */
+    const val PREF_NET_CELLS = "net_cells"
 
     /** Identifiant d'appareil de la sonde réseau : 128 bits tirés au hasard UNE fois, rien de personnel. */
     fun deviceId(context: android.content.Context): String {

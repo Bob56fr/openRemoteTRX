@@ -124,6 +124,8 @@ class RigSession(
     bandSpots: Map<String, BandSpot> = emptyMap(),
     /** Type de réseau du téléphone pour la sonde (lan, wifi, 4g, 5g, mobile, unknown) ; null = inconnu. */
     private val netType: () -> String? = { null },
+    /** Radio du téléphone (lot 6) : lue UNE fois par résumé (les faits « changement » repartent à zéro chez l'appelant). */
+    private val radio: () -> RadioSample? = { null },
     private val wall: () -> Long = System::currentTimeMillis,
 ) {
     /** Export anonyme de la sonde reçu en entier : (nom du fichier, contenu du zip), à partager par l'application. */
@@ -501,7 +503,10 @@ class RigSession(
 
     fun tick(now: Long, online: Boolean) {
         val r = reconnect
-        if (r != null && netOffered) net.offline(now, wall(), netType())    // résumés hors ligne, remis au retour
+        if (r != null && netOffered && net.reportDue(now)) {          // résumés hors ligne, remis au retour
+            val radioNow = radio()
+            net.offline(now, wall(), radioNow?.netType ?: netType(), radioNow)
+        }
         if (r != null && !attemptActive) {
             if (r.expired(now)) {
                 giveUp(now, "plus de liaison après ${r.windowS} s")
@@ -537,7 +542,10 @@ class RigSession(
             if (!listener && heartbeat.shouldBeat(now, mine)) link.send(Command.Heartbeat.encode())
             if (netOffered) {                                     // sonde réseau : mesure seulement, jamais l'émission
                 net.ping(now, wall())?.let { (seq, t, w) -> link.send(Command.NetPing(seq, t, w).encode()) }
-                net.report(now, wall(), netType(), null, true)?.let { link.send(Command.NetReport(it).encode()) }
+                if (net.reportDue(now)) {
+                    val r = radio()
+                    net.report(now, wall(), r?.netType ?: netType(), null, true, r)?.let { link.send(Command.NetReport(it).encode()) }
+                }
             }
             if (now - lastPing >= PING_EVERY_MS) {
                 lastPing = now

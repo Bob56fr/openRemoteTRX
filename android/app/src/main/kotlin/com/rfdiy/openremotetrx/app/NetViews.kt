@@ -94,14 +94,14 @@ private fun Rows(rows: List<Pair<String, String>>, firstBad: Boolean = false) {
 
 /** Détail de la liaison (page : accordéon #net-detail). */
 @Composable
-fun NetDialog(view: NetUi.View, operator: Boolean, onStats: () -> Unit, onDismiss: () -> Unit) {
+fun NetDialog(view: NetUi.View, operator: Boolean, radio: String?, onStats: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Liaison avec la station") },
         text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(view.title.removeSuffix(". Touche : détail"), style = MaterialTheme.typography.bodySmall, color = netColor(view.level))
-                Rows(view.rows, view.outage)
+                Rows(view.rows + listOfNotNull(radio?.let { "Radio du téléphone" to it }), view.outage)
                 if (view.probes.isNotEmpty()) {
                     Text("Sondes de la station", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 6.dp))
@@ -265,5 +265,43 @@ private fun ThresholdCard(t: NetUi.Thresholds, rttEdges: List<Double>, lossEdges
         }
         if (!ok) Text("L'orange doit être plus petit que le rouge.", style = MaterialTheme.typography.labelSmall, color = Page.ALERTE,
             modifier = Modifier.alpha(0.9f))
+    }
+}
+
+/**
+ * Sonde réseau, changement de cellule (version installée à la main seulement, BuildConfig.CELL_INFO) : désactivé par
+ * défaut ; l'autorisation de localisation est demandée à l'activation et ne sert qu'à l'identifiant de la cellule.
+ */
+@Composable
+fun NetCellsSection() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(RigHub.PREFS, android.content.Context.MODE_PRIVATE) }
+    var on by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_NET_CELLS, false)) }
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { granted ->
+        val ok = granted[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
+        on = ok
+        prefs.edit().putBoolean(RigHub.PREF_NET_CELLS, ok).apply()
+        if (!ok) android.widget.Toast.makeText(context, "Autorisation refusée : seuls les niveaux du signal sont relevés.", android.widget.Toast.LENGTH_LONG).show()
+    }
+    Text("Qualité du réseau", style = MaterialTheme.typography.titleSmall)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.material3.Switch(checked = on, onCheckedChange = { wanted ->
+            if (wanted) {
+                ask.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
+            } else {
+                on = false
+                prefs.edit().putBoolean(RigHub.PREF_NET_CELLS, false).apply()
+            }
+        })
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text("Repérer les changements d'antenne-relais", style = MaterialTheme.typography.bodyMedium)
+            Text("Aide à expliquer une coupure en voiture. Android l'exige : autorisation de localisation, qui ne sert qu'à " +
+                "l'identifiant de l'antenne ; aucune position n'est lue ni envoyée. Application ouverte seulement. " +
+                "Sans elle, le type de réseau et le niveau du signal sont relevés quand même.",
+                color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

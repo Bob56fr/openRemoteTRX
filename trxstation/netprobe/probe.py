@@ -469,6 +469,9 @@ class ClientProbe:
 
     def summary(self) -> dict:
         s60 = self.stats(60_000)
+        report = self.last_report or {}
         return {"id": self.client_id, "role": self.role, "agent": self.agent, "net_type": self.net_type,
                 "level": self.state()["level"], "loss_pct": s60["loss_pct"], "rtt_ms": s60["rtt_p95_ms"],
-                "outage": self.detector.start_ms is not None}
+                "outage": self.detector.start_ms is not None,
+                # radio du téléphone (application, lot 6) : dernier résumé reçu ; None pour la page
+                "rsrp_dbm": report.get("rsrp_dbm"), "sinr_db": report.get("sinr_db"), "signal_level": report.get("signal_level")}

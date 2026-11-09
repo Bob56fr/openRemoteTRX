@@ -184,6 +184,28 @@ object NetUi {
 }
 
 /**
+ * Radio du téléphone (EF11, lot 6) relevée par la couche Android : type de réseau (lan, wifi, 4g, 5g, mobile, unknown),
+ * niveau 4G / 5G (RSRP ou SS-RSRP), rapport signal/bruit (RSSNR ou SS-SINR), niveau 0 à 4, et deux faits survenus depuis
+ * le résumé précédent : changement de cellule (seulement avec l'autorisation de localisation, hors Google Play) et
+ * bascule de réseau (Wi-Fi <-> mobile, changement de réseau). Valeur absente = null.
+ */
+data class RadioSample(
+    val netType: String? = null, val rsrpDbm: Int? = null, val sinrDb: Int? = null, val level: Int? = null,
+    val cellChanged: Boolean = false, val netSwitched: Boolean = false,
+) {
+    /** Ligne lisible (détail de la liaison) : « 4G · −98 dBm · S/B 12 dB · niveau 3/4 ». */
+    fun text(): String = listOfNotNull(NetUi.TYPES[netType] ?: netType, rsrpDbm?.let { "$it dBm" }, sinrDb?.let { "S/B $it dB" },
+                                       level?.let { "niveau $it/4" }).joinToString(" · ").ifEmpty { "—" }
+
+    companion object {
+        /** Bornes acceptées par la station (netprobe/report.py) : hors bornes = valeur jetée, jamais le résumé. */
+        fun rsrp(v: Int?): Int? = v?.takeIf { it in -160..-20 }
+        fun sinr(v: Int?): Int? = v?.takeIf { it in -30..50 }
+        fun level(v: Int?): Int? = v?.takeIf { it in 0..4 }
+    }
+}
+
+/**
  * Sonde réseau du TÉLÉPHONE (page : _netTick de client.js) : battement chaque seconde, échos, résumé de 10 s, 10 min
  * gardées pour la station après une coupure. Kotlin pur ; RigSession l'appelle sur son fil, l'heure en ms monotones.
  * Ne fait que mesurer : rien ici n'agit sur l'émission.
@@ -241,8 +263,11 @@ class NetClient {
         if (i >= 0 && beats[i].sentMs == t && beats[i].pongMs == null) beats[i] = beats[i].copy(pongMs = now)
     }
 
+    /** Un résumé est-il dû ? (la radio n'est lue qu'à ce moment-là) */
+    fun reportDue(now: Long): Boolean = now >= nextReport
+
     /** Résumé de 10 s dû (connecté) ; gardé pour la remise après une coupure. */
-    fun report(now: Long, wallNow: Long, netType: String?, ice: String?, open: Boolean): JsonObject? {
+    fun report(now: Long, wallNow: Long, netType: String?, ice: String?, open: Boolean, radio: RadioSample? = null): JsonObject? {
         if (!active || now < nextReport) return null
         nextReport = now + REPORT_EVERY_MS
         val s = NetProbe.windowStats(beats.toList(), now, REPORT_EVERY_MS)
@@ -251,6 +276,7 @@ class NetClient {
             put("loss_pct", s.lossPct); put("rtt_mean_ms", s.rttMeanMs); put("rtt_p95_ms", s.rttP95Ms); put("jitter_ms", s.jitterMs)
             put("health_ok", minOf(100, healthOk)); put("health_fail", minOf(100, healthFail)); put("degraded", false)
             put("ice", ice)
+            radioFields(radio)
         }
         healthOk = 0; healthFail = 0
         keep(r, wallNow, open)
@@ -258,15 +284,23 @@ class NetClient {
     }
 
     /** Pendant une reconnexion : un résumé hors ligne toutes les 10 s (/health et réseau seulement). */
-    fun offline(now: Long, wallNow: Long, netType: String?) {
+    fun offline(now: Long, wallNow: Long, netType: String?, radio: RadioSample? = null) {
         if (now < nextReport) return
         nextReport = now + REPORT_EVERY_MS
         val r = buildJsonObject {
             put("t", wallNow); put("net_type", netType); put("health_ok", minOf(100, healthOk)); put("health_fail", minOf(100, healthFail))
             put("degraded", false)
+            radioFields(radio)
         }
         healthOk = 0; healthFail = 0
         keep(r, wallNow, false)
+    }
+
+    private fun kotlinx.serialization.json.JsonObjectBuilder.radioFields(radio: RadioSample?) {
+        if (radio == null) return
+        put("rsrp_dbm", RadioSample.rsrp(radio.rsrpDbm)); put("sinr_db", RadioSample.sinr(radio.sinrDb))
+        put("signal_level", RadioSample.level(radio.level))
+        put("cell_changed", radio.cellChanged); put("net_switched", radio.netSwitched)
     }
 
     private fun keep(r: JsonObject, t: Long, sent: Boolean) {

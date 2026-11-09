@@ -130,7 +130,7 @@ class RigService : Service() {
                 rtc.close()
             }
             override fun alert(kind: LinkAlert) = sounds.play(kind)
-        }, netType = { netType() })
+        }, netType = { netType() }, radio = { netRadio.take() })
         session.onNetExport = { name, bytes -> RigHub.offerNetExport(name, bytes) }
         session.onChange = { state -> onState(state) }
         session.onBandSpots = { spots -> request?.let { BandStore(this).save(it.account.id, spots) } }
@@ -234,10 +234,24 @@ class RigService : Service() {
             while (isActive) {
                 session.tick(now(), online())
                 netHealthStep()
+                netRadioStep()
                 if (headsetMic) headsetStep(headsetCall.tick(now()))
                 delay(com.rfdiy.openremotetrx.protocol.Protocol.HEARTBEAT_TICK_MS)
             }
         }
+    }
+
+    private val netRadio by lazy { NetRadio(this) }
+    private var nextRadio = 0L
+
+    /** Radio du téléphone toutes les 2 s pendant que la sonde tourne (fil de la session). */
+    private fun netRadioStep() {
+        val t = now()
+        if (!session.netProbing || t < nextRadio) return
+        nextRadio = t + 2000
+        netRadio.sample()
+        val shown = netRadio.shown()
+        if (RigHub.ui.value.radio != shown) RigHub.publish { it.copy(radio = shown) }
     }
 
     private var nextHealth = 0L

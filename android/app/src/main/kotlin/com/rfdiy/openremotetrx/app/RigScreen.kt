@@ -585,6 +585,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
             }
             Panel { MicSection() }
             Panel { HeadsetSection(ui.headsetMic) }
+            if (BuildConfig.CELL_INFO && rig.net != null) Panel { NetCellsSection() }   // absent de la version Google Play
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
             if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
@@ -711,7 +712,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (netOpen) NetScreen(rig) { netOpen = false }
-    if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, onStats = { netDialog = false; netOpen = true }) { netDialog = false } }
+    if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, radio = ui.radio?.text(), onStats = { netDialog = false; netOpen = true }) { netDialog = false } }
     if (hostDialog) HostDialog(rig.host, rig.hostSections, onRefresh = { RigHub.hostInfo() }) { hostDialog = false }
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
