@@ -258,6 +258,26 @@ object RigHub {
     /** QSY sur un spot du Cluster DX (mode adapté au poste, puis fréquence). */
     fun qsySpot(id: Long) { service?.onRig { session, now -> session.qsySpot(now, id) } }
 
+    // Présence de groupe « Amis » : relayée au module « presence » de la station, qui n'agit jamais sur le poste ;
+    // le QSY vers un ami est confirmé par l'écran, refusé pendant l'émission, et passe par mode puis fréquence.
+    fun friendsWatch(on: Boolean) { service?.onRig { session, now -> session.friendsWatch(now, on) } }
+    fun friendsRefresh() { service?.onRig { session, now -> session.friendsRefresh(now) } }
+    fun friendsAction(action: String, args: Map<String, Any?> = emptyMap()) {
+        val json = kotlinx.serialization.json.JsonObject(args.mapNotNull { (k, v) ->
+            when (v) {
+                null -> null
+                is Boolean -> k to kotlinx.serialization.json.JsonPrimitive(v)
+                is Number -> k to kotlinx.serialization.json.JsonPrimitive(v)
+                else -> k to kotlinx.serialization.json.JsonPrimitive(v.toString())
+            }
+        }.toMap())
+        service?.onRig { session, now -> session.friendsAction(now, action, json) }
+    }
+    fun friendsJoin(url: String, name: String, level: String) { service?.onRig { session, now -> session.friendsJoin(now, url, name, level) } }
+    fun friendsQsy(hz: Long, mode: String) { service?.onRig { session, now -> session.friendsQsy(now, hz, mode) } }
+    fun friendsBack() { service?.onRig { session, now -> session.friendsBack(now) } }
+    fun friendsDismiss() { service?.onRig { session, now -> session.friendsDismiss(now) } }
+
     fun setSquelch(value: Double) { service?.onRig { session, now -> session.setSquelch(now, value) } }
 
     fun setOffset(name: String, hz: Int) { service?.onRig { session, now -> session.setOffset(now, name, hz) } }

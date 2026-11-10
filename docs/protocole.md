@@ -255,6 +255,7 @@ ni la commande ni les avis.
 - **Page web** (station 0.119.0+, `friends.js`, rubrique « Amis ») : vue relue à la connexion, sur l'avis et toutes les
   30 s quand la rubrique est là ; affichage au choix (dans les rubriques, en grand, fenêtre détachée Document
   Picture-in-Picture là où elle existe).
-- **QSY vers un ami** (page 0.119.0, application au lot 5) : confirmation de l'opérateur avec l'âge de l'information ; refusé pendant toute
+- **Application** (0.60.0+, `logic/Friends.kt`, `app/FriendsViews.kt`) : mêmes règles et mêmes textes que la page.
+- **QSY vers un ami** (page 0.119.0, application 0.60.0) : confirmation de l'opérateur avec l'âge de l'information ; refusé pendant toute
   émission ; `friends` `qsy_mark`, puis `set_mode` et `set_frequency` habituels ; « Retour » = `qsy_back` puis les
   mêmes commandes. Jamais d'émission.

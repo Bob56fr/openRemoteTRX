@@ -24,6 +24,7 @@ import com.rfdiy.openremotetrx.protocol.SwrMessage
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.longOrNull
 
 enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 
@@ -91,6 +92,24 @@ data class RigState(
     /** Statistiques de la sonde (net_stats) ; null = pas demandées ; `netStatus` = texte d'état (lecture, refus, export). */
     val netStats: NetUi.Stats? = null,
     val netStatus: String = "",
+    /** Présence de groupe « Amis » (fonction « friends », opérateurs) ; null = pas offerte par la station. */
+    val friends: FriendsState? = null,
+)
+
+/**
+ * Présence de groupe telle que reçue : `data` = vue de la station (action « view »), lue à `atWallMs` (heure du
+ * téléphone) ; l'interface la met en forme avec [Friends.view]. `back` : un point de retour est retenu (« Retour »).
+ */
+data class FriendsState(
+    val data: JsonObject? = null,
+    val atWallMs: Long = 0,
+    val back: Boolean = false,
+    /** Statistiques de l'administrateur : (groupe, statistiques), après « stats ». */
+    val stats: Pair<String, JsonObject>? = null,
+    /** Invitation créée : (groupe, lien), à montrer ou partager une seule fois. */
+    val invite: Pair<String, String>? = null,
+    /** Dernier message pour l'opérateur (refus, adhésion envoyée…) ; vide = rien. */
+    val notice: String = "",
 )
 
 /** Profil d'égaliseur de l'opérateur, rangé sur la station (étape 102) ; `settings` revalidé à l'application. */
@@ -157,6 +176,18 @@ class RigSession(
     private var netStats: NetUi.Stats? = null
     private var netStatus = ""
     private var netExport: Pair<String, java.io.ByteArrayOutputStream>? = null
+    private var friendsOffered = false                // la station a annoncé « friends » (opérateur) à la dernière connexion
+    private var friendsData: JsonObject? = null
+    private var friendsAt = 0L
+    private var friendsBackPoint: JsonObject? = null
+    private var friendsTarget: Pair<Long, String>? = null    // QSY confirmé, en attente du point de retour (qsy_mark)
+    private var friendsStats: Pair<String, JsonObject>? = null
+    private var friendsInvite: Pair<String, String>? = null
+    private var friendsNotice = ""
+    private var friendsJoinLevel: String? = null
+    private var friendsInviteGroup = ""
+    private var friendsWatching = false
+    private var friendsAskedAt = Long.MIN_VALUE / 2
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -180,7 +211,7 @@ class RigSession(
     private var rttMs: Int? = null
     private val log = ArrayDeque<LogLine>()
 
-    private class Pending(val cmd: String, val sentAt: Long)
+    private class Pending(val cmd: String, val sentAt: Long, val tag: String = "")
 
     val connected: Boolean get() = status == LinkStatus.CONNECTED
 
@@ -316,6 +347,8 @@ class RigSession(
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
                 Spots.recentOf(msg.data, wall())?.let { recentSpots = it }
+                if (msg.module == "presence" && friendsOffered &&
+                    ((msg.data as? JsonObject)?.get("kind") as? JsonPrimitive)?.contentOrNull == "friends_changed") friendsAsk(now)
                 if (msg.module == "cluster") {
                     val data = msg.data as? JsonObject
                     (data?.get("health") as? JsonPrimitive)?.contentOrNull?.let { clusterHealth = it }
@@ -356,6 +389,11 @@ class RigSession(
             if (backlog.isNotEmpty() && !msg.listener) send(now, Command.NetBacklog(kotlinx.serialization.json.JsonArray(backlog)))
         }
         protocolOk = msg.protocol == Protocol.VERSION
+        // Présence de groupe : vue relue à chaque connexion (opérateurs seulement)
+        friendsOffered = protocolOk && !msg.listener && msg.offers("friends")
+        friendsData = null; friendsBackPoint = null; friendsTarget = null; friendsStats = null; friendsInvite = null
+        friendsNotice = ""; friendsJoinLevel = null
+        if (friendsOffered) friendsAsk(now)
         if (!protocolOk) {
             log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
         } else {
@@ -414,6 +452,11 @@ class RigSession(
                 val pending = (msg.raw["pending"] as? JsonPrimitive)?.contentOrNull == "true"
                 log(if (pending) "Breizh sera repris dès qu'il répondra (à la prochaine émission)." else "Breizh repris : la prochaine émission passera par Breizh.", LogLevel.INFO)
             }
+            publish(now)
+            return
+        }
+        if (entry.cmd == "friends") {
+            onFriendsResult(now, entry.tag, msg)
             publish(now)
             return
         }
@@ -513,6 +556,7 @@ class RigSession(
     // ------------------------------------------------------------------ minuterie (toutes les 400 ms)
 
     fun tick(now: Long, online: Boolean) {
+        if (friendsOffered && friendsWatching && connected && now - friendsAskedAt >= Friends.REFRESH_MS) friendsAsk(now)
         val r = reconnect
         if (r != null && netOffered && net.reportDue(now)) {          // résumés hors ligne, remis au retour
             val radioNow = radio()
@@ -797,6 +841,126 @@ class RigSession(
 
     // ------------------------------------------------------------------ interne
 
+    // ------------------------------------------------------------------ présence de groupe « Amis » (opérateurs)
+
+    private fun friendsAsk(now: Long) {
+        friendsAskedAt = now
+        send(now, Command.Friends("view"))
+    }
+
+    /** L'interface montre (ou ne montre plus) les amis : vue relue toutes les 30 s tant qu'elle est visible. */
+    fun friendsWatch(now: Long, on: Boolean) {
+        val was = friendsWatching
+        friendsWatching = on
+        if (on && !was && friendsOffered && connected) friendsAsk(now)
+    }
+
+    fun friendsRefresh(now: Long) {
+        if (friendsOffered && connected) friendsAsk(now)
+        publish(now)
+    }
+
+    /** Action de l'opérateur (create, invite, leave, share, pseudo, shack_for…) ; vue relue après un succès. */
+    fun friendsAction(now: Long, action: String, args: JsonObject = JsonObject(emptyMap())) {
+        if (!friendsOffered || !connected) return
+        friendsNotice = ""
+        if (action == "invite") friendsInviteGroup = (args["g"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        send(now, Command.Friends(action, args))
+        publish(now)
+    }
+
+    /** Rejoindre avec une invitation, APRÈS le consentement ; `level` : partage choisi pour ce groupe. */
+    fun friendsJoin(now: Long, url: String, name: String, level: String) {
+        friendsJoinLevel = level
+        friendsAction(now, "join", JsonObject(mapOf("url" to JsonPrimitive(url), "name" to JsonPrimitive(name))))
+    }
+
+    fun friendsDismiss(now: Long) {
+        friendsStats = null; friendsInvite = null; friendsNotice = ""
+        publish(now)
+    }
+
+    /**
+     * QSY vers un ami, APRÈS confirmation de l'opérateur : jamais pendant l'émission ; la station retient d'abord la
+     * fréquence et le mode actuels (« Retour »), puis mode et fréquence partent comme pour un spot. Jamais d'émission.
+     */
+    fun friendsQsy(now: Long, hz: Long, mode: String) {
+        if (!friendsOffered || !connected) return
+        if ((state?.ptt?.state ?: "RX") != "RX") {
+            log(Texts.refusal("tx_active"), LogLevel.WARN)
+            publish(now)
+            return
+        }
+        friendsTarget = hz to mode
+        send(now, Command.Friends("qsy_mark"))
+        publish(now)
+    }
+
+    /** « Retour » : fréquence et mode d'avant le premier QSY vers un ami (rendus une fois par la station). */
+    fun friendsBack(now: Long) {
+        if (!friendsOffered || !connected) return
+        if ((state?.ptt?.state ?: "RX") != "RX") {
+            log(Texts.refusal("tx_active"), LogLevel.WARN)
+            publish(now)
+            return
+        }
+        send(now, Command.Friends("qsy_back"))
+        publish(now)
+    }
+
+    private fun qsyTo(now: Long, hz: Long, mode: String?) {
+        control(now, *buildList {
+            if (!mode.isNullOrEmpty() && mode != state?.rig?.mode) add(Command.SetMode(mode))
+            add(Command.SetFrequency(hz))
+        }.toTypedArray())
+    }
+
+    private fun onFriendsResult(now: Long, action: String, msg: Result) {
+        val data = msg.raw["data"] as? JsonObject
+        if (!msg.ok) {
+            if (action == "qsy_mark") friendsTarget?.let { (hz, mode) -> friendsTarget = null; qsyTo(now, hz, mode) }   // sans point de retour
+            if (action == "view" && msg.reason == "timeout") return
+            friendsNotice = Texts.refusal(msg.reason, msg.detail)
+            log("Amis : $friendsNotice", LogLevel.WARN)
+            return
+        }
+        when (action) {
+            "view" -> { friendsData = data; friendsAt = wall() }
+            "qsy_mark" -> {
+                (data?.get("back") as? JsonObject)?.let { friendsBackPoint = it }
+                friendsTarget?.let { (hz, mode) -> friendsTarget = null; qsyTo(now, hz, mode) }
+            }
+            "qsy_back" -> {
+                val back = data?.get("back") as? JsonObject
+                friendsBackPoint = null
+                val hz = (back?.get("freq") as? JsonPrimitive)?.longOrNull
+                if (hz == null) log(Texts.refusal("no_back"), LogLevel.WARN)
+                else qsyTo(now, hz, (back["mode"] as? JsonPrimitive)?.contentOrNull)
+            }
+            "stats" -> {
+                val g = (data?.get("g") as? JsonPrimitive)?.contentOrNull
+                val s = data?.get("stats") as? JsonObject
+                if (g != null && s != null) friendsStats = g to s
+            }
+            "invite" -> {
+                val url = (data?.get("url") as? JsonPrimitive)?.contentOrNull
+                if (url != null) friendsInvite = friendsInviteGroup to url
+                friendsAsk(now)
+            }
+            "join" -> {
+                val g = (data?.get("g") as? JsonPrimitive)?.contentOrNull
+                val level = friendsJoinLevel
+                friendsJoinLevel = null
+                if (g != null && level != null && level != "o") {
+                    send(now, Command.Friends("share", JsonObject(mapOf("g" to JsonPrimitive(g), "level" to JsonPrimitive(level)))))
+                }
+                friendsNotice = "Demande d'adhésion envoyée : validée dès que la station de l'administrateur la voit."
+                friendsAsk(now)
+            }
+            else -> friendsAsk(now)                                     // action réussie : vue relue
+        }
+    }
+
     // ------------------------------------------------------------------ visiteurs (opérateur seulement)
 
     /** Déconnecter un visiteur (il peut revenir ; pour l'en empêcher : désactiver son compte sur la station). */
@@ -940,7 +1104,7 @@ class RigSession(
             return
         }
         val id = nextId++
-        if (link.send(command.encode(id))) pending[id] = Pending(command.name, now)
+        if (link.send(command.encode(id))) pending[id] = Pending(command.name, now, (command as? Command.Friends)?.action.orEmpty())
     }
 
     private fun mineActive(): Boolean {
@@ -1035,6 +1199,8 @@ class RigSession(
             breizhEvents = if (listener) emptyList() else breizhEvents,
             net = NetUi.view(state?.net),
             netStats = netStats, netStatus = netStatus,
+            friends = if (friendsOffered && !listener) FriendsState(friendsData, friendsAt, friendsBackPoint != null,
+                                                                    friendsStats, friendsInvite, friendsNotice) else null,
         )
         if (next != snapshot) {
             snapshot = next

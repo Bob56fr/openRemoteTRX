@@ -251,9 +251,14 @@ internal fun RigScope.StationDisplay() {
 /** Commandes du poste : petit waterfall (téléphone), bandes, modes, fonctions, autres mesures. */
 @Composable
 internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
+            // Présence de groupe (téléphone) : bandeau de pastilles (toucher = vue complète, onglet Mémoires), ou, au choix
+            // de l'opérateur, le bloc « Amis » à la place du petit waterfall et des bandes
+            val friendsBlock = miniWaterfall && rig.friends != null && prefs.getBoolean(PREF_FRIENDS_BLOCK, false)
+            if (miniWaterfall && rig.friends != null && !friendsBlock) Panel { FriendsBanner(rig) { tab = Tab.MEMOIRES } }
+            if (friendsBlock) FriendsPanel(rig, canSet, compact = true, prefs = prefs)
             // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
-            if (miniWaterfall && miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
-            Panel {
+            if (!friendsBlock && miniWaterfall && miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }
+            if (!friendsBlock) Panel {
             // Bandes préférées, dans l'ordre choisi (✎ : choisir et ordonner) ; pastille = spots actifs (Cluster DX)
             val dots = rig.bandDots(System.currentTimeMillis())
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
