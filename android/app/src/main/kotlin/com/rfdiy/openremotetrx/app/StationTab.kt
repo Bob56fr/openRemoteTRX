@@ -254,7 +254,9 @@ internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
             // Présence de groupe (téléphone) : bandeau de pastilles (toucher = vue complète, onglet Mémoires), ou, au choix
             // de l'opérateur, le bloc « Amis » à la place du petit waterfall et des bandes
             val friendsBlock = miniWaterfall && rig.friends != null && prefs.getBoolean(PREF_FRIENDS_BLOCK, false)
-            if (miniWaterfall && rig.friends != null && !friendsBlock) Panel { FriendsBanner(rig) { tab = Tab.MEMOIRES } }
+            if (miniWaterfall && rig.friends != null && !friendsBlock) Panel {
+                FriendsBanner(rig) { tab = if (com.rfdiy.openremotetrx.logic.Friends.inGroup(rig.friends)) Tab.AMIS else Tab.MEMOIRES }
+            }
             if (friendsBlock) FriendsPanel(rig, canSet, compact = true, prefs = prefs)
             // Petit waterfall HF juste avant les bandes (toucher = réglages) ; « WF » en bas de l'écran l'affiche ou le masque
             if (!friendsBlock && miniWaterfall && miniWf && connected && HfScope.configured(hello)) Panel { MiniWaterfall(ui, canSet, onHide = { setMiniWf(false) }) }

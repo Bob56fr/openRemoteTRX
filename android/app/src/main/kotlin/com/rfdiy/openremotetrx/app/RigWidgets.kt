@@ -186,24 +186,44 @@ internal fun Banner(text: String, color: Color, big: Boolean = false, textColor:
 
 /** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
 internal enum class Tab(val symbol: String, val label: String) {
-    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"), EQ("♫", "Audio"), REGLAGES("⚙", "Réglages"),
+    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"),
+    /** Présence de groupe : seulement quand la station fait partie d'un groupe (pictogramme dessiné : tête stylisée). */
+    AMIS("", "Amis"),
+    EQ("♫", "Audio"), REGLAGES("⚙", "Réglages"),
+}
+
+/** Pictogramme d'un onglet : le symbole, ou pour « Amis » une tête stylisée (cercle et épaules), comme la pièce jointe
+ *  de l'utilisateur ; dessinée (et non un emoji en couleur) pour suivre la couleur de l'onglet. */
+@Composable
+internal fun TabIcon(tab: Tab, color: Color) {
+    if (tab != Tab.AMIS) {
+        Text(tab.symbol, fontSize = 16.sp, color = color)
+        return
+    }
+    androidx.compose.foundation.Canvas(Modifier.size(18.dp)) {
+        val w = size.width
+        drawCircle(color, radius = w * 0.24f, center = androidx.compose.ui.geometry.Offset(w / 2, w * 0.30f))
+        drawArc(color, startAngle = 180f, sweepAngle = 180f, useCenter = true,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.08f, w * 0.60f),
+            size = androidx.compose.ui.geometry.Size(w * 0.84f, w * 0.80f))
+    }
 }
 
 /** Barre d'onglets compacte (52 dp) : l'onglet choisi sur fond « sélection », comme les boutons de la page. */
 @Composable
-internal fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
+internal fun TabBar(current: Tab, tabs: List<Tab> = Tab.entries, onSelect: (Tab) -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Page.PANNEAU).padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        for (item in Tab.entries) {
+        for (item in tabs) {
             val on = item == current
             Column(
                 Modifier.weight(1f).height(48.dp).background(if (on) Page.SELECTION else Color.Transparent, RoundedCornerShape(12.dp))
                     .clickable { onSelect(item) },
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
             ) {
-                Text(item.symbol, fontSize = 16.sp, color = if (on) Page.MESURE else Page.TEXTE_2)
+                TabIcon(item, if (on) Page.MESURE else Page.TEXTE_2)
                 Text(item.label, style = MaterialTheme.typography.labelSmall, color = if (on) Page.TEXTE else Page.TEXTE_2,
                     fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
             }

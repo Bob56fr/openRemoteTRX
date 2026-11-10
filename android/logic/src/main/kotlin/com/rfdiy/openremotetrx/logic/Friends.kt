@@ -185,6 +185,11 @@ object Friends {
                      week.long("qso_min") ?: 0, week.long("rx_min") ?: 0)
         }.sortedBy { it.pseudo.lowercase(Locale.FRENCH) }
 
+    /** Onglet « Amis » du téléphone (demande de l'utilisateur, 2026-11-11) : seulement quand la station fait partie
+     *  d'au moins un groupe (membre, adhésion en attente ou exclue) ; avant, créer ou rejoindre se fait dans l'onglet
+     *  Mémoires. */
+    fun inGroup(f: FriendsState?): Boolean = (f?.data?.get("groups") as? JsonArray)?.isNotEmpty() == true
+
     /** Vue mise en forme à partir de l'état de la session (l'interface ne lit jamais le JSON elle-même). */
     fun ofState(f: FriendsState?, nowMs: Long, zone: ZoneId = ZoneId.systemDefault()): View? =
         f?.let { view(it.data, nowMs / 1000, maxOf(0, (nowMs - it.atWallMs) / 1000), zone) }

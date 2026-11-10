@@ -49,6 +49,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.rfdiy.openremotetrx.logic.Friends
 import com.rfdiy.openremotetrx.logic.BigPtt
 import com.rfdiy.openremotetrx.logic.BreizhLevel
 import androidx.compose.runtime.LaunchedEffect
@@ -237,6 +238,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         scope.RigDialogsHost()
         return
     }
+    if (tab == Tab.AMIS && !Friends.inGroup(rig.friends)) tab = Tab.MEMOIRES
     Column(modifier.fillMaxSize()) {
       Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
@@ -254,6 +256,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                 Tab.MEMOIRES -> {
                     scope.MemoriesTab()
                 }
+                Tab.AMIS -> FriendsPanel(rig, scope.canSet, compact = false, prefs = scope.prefs)
                 Tab.EQ -> VoiceTab(
                     transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles,
                     replayAllowed = hello?.replay != null && !listener, canBroadcast = pttEnabled && !mineTx,
@@ -268,8 +271,11 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
       }
 
         scope.ControlBar(pttEnabled, voice, spatial, debounce, context)
-        TabBar(tab) { tab = it }
+        TabBar(tab, phoneTabs(rig)) { tab = it }
     }
 
     scope.RigDialogsHost()
 }
+
+/** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. */
+internal fun phoneTabs(rig: RigState): List<Tab> = Tab.entries.filter { it != Tab.AMIS || Friends.inGroup(rig.friends) }

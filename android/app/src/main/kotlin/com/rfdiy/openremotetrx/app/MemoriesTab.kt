@@ -110,8 +110,10 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 @Composable
 internal fun RigScope.MemoriesTab(mini: Boolean = true) {
             if (mini) MiniDisplay(rig, shownHz, mineTx)
-            // Présence de groupe « Amis » (opérateurs, station 0.119.0+) : vue complète, en tête (téléphone et tablette)
-            if (rig.friends != null) FriendsPanel(rig, canSet, compact = false, prefs = prefs)
+            // Présence de groupe « Amis » (opérateurs, station 0.119.0+) : ici seulement AVANT le premier groupe (créer,
+            // rejoindre) ; ensuite, l'onglet « Amis » (téléphone) ou la rubrique du rail (tablette)
+            if (rig.friends != null && !com.rfdiy.openremotetrx.logic.Friends.inGroup(rig.friends))
+                FriendsPanel(rig, canSet, compact = false, prefs = prefs)
             // Mémoires partagées de la station
             if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {

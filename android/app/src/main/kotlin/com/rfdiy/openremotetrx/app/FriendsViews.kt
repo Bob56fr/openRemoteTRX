@@ -148,7 +148,10 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
         if (groups.isEmpty()) Text("Aucun groupe : créez-en un, ou rejoignez celui d'un ami avec son invitation.",
                                    style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         else if (byMember) {
-            for (m in view!!.members) FriendRow(m) { member = m to null }
+            // Bloc de l'accueil : les amis JOIGNABLES seulement (demande de l'utilisateur, 2026-11-11)
+            val shown = if (compact) view!!.members.filter { it.code != "O" } else view!!.members
+            for (m in shown) FriendRow(m) { member = m to null }
+            if (compact && shown.size < view.members.size) OfflineCount(view.members.size - shown.size)
             if (view.members.isEmpty()) Text("Personne d'autre dans vos groupes pour l'instant.", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         } else for (g in groups) {
             HorizontalDivider(color = Page.LIGNE)
@@ -162,7 +165,9 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
                 }
                 CompactChip(if (g.role == "a") "Quitter ou supprimer" else "Quitter", onClick = { leave = g })
             }
-            for (m in g.members) FriendRow(m) { member = m to g }
+            val shown = if (compact) g.members.filter { it.code != "O" } else g.members
+            for (m in shown) FriendRow(m) { member = m to g }
+            if (compact && shown.size < g.members.size) OfflineCount(g.members.size - shown.size)
             if (g.members.isEmpty() && g.status == "member") Text("Personne d'autre pour l'instant.", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         }
         if (!compact) {
@@ -200,6 +205,11 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
     f.invite?.let { (_, url) -> InviteDialog(url) }
     Friends.statsOf(f, view)?.let { (g, rows) -> StatsDialog(g, rows) }
     if (watch) ShackWatch(rig) { watch = false }
+}
+
+@Composable
+private fun OfflineCount(n: Int) {
+    Text("$n hors ligne", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
 }
 
 @Composable

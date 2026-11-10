@@ -101,6 +101,9 @@ class FriendsTest {
         val b = Friends.badges(v)
         assertEquals(listOf(2, 1, 3), listOf(b.list.size, b.active, b.total))
         assertNull(Friends.view(null, now, 0))
+        assertTrue(Friends.inGroup(FriendsState(view)))
+        assertFalse(Friends.inGroup(FriendsState(Json.parseToJsonElement("""{"groups":[]}""").jsonObject)))
+        assertFalse(Friends.inGroup(FriendsState())); assertFalse(Friends.inGroup(null))
     }
 
     @Test

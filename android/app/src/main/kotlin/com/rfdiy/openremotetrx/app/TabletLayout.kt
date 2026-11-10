@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.ReplayUi
 import com.rfdiy.openremotetrx.core.SpatialUi
 import com.rfdiy.openremotetrx.core.VoiceUi
+import com.rfdiy.openremotetrx.logic.Friends
 import com.rfdiy.openremotetrx.logic.DrivingReason
 import com.rfdiy.openremotetrx.logic.Help
 import com.rfdiy.openremotetrx.logic.HfScope
@@ -60,7 +61,7 @@ private const val PREF_TEXT_PCT = "tablet_text_pct"
 private const val PREF_HF = "tablet_hf_on"
 private const val PREF_AUDIO = "tablet_audio_on"
 private const val PREF_SPLIT = "tablet_split"
-private val SECTIONS = listOf(Tab.MEMOIRES, Tab.EQ, Tab.REGLAGES)
+private val SECTIONS = listOf(Tab.MEMOIRES, Tab.AMIS, Tab.EQ, Tab.REGLAGES)
 
 /**
  * Tablette, fenêtre LARGE en paysage (lot A5 ; choix de l'utilisateur du 2026-11-09, étape 152).
@@ -183,8 +184,9 @@ internal fun RigScope.TabletLayout(
             ) {
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail {
-                        for (s in SECTIONS) {
-                            NavigationRailItem(selected = s == section, onClick = { section = s }, icon = { Text(s.symbol) },
+                        for (s in SECTIONS.filter { it != Tab.AMIS || Friends.inGroup(rig.friends) }) {
+                            NavigationRailItem(selected = s == section, onClick = { section = s },
+                                icon = { TabIcon(s, if (s == section) Page.MESURE else Page.TEXTE_2) },
                                 label = { Text(s.label) })
                         }
                     }
@@ -204,6 +206,8 @@ internal fun RigScope.TabletLayout(
                                     textPct = pct
                                     prefs.edit().putInt(PREF_TEXT_PCT, pct).apply()
                                 }
+                                Tab.AMIS -> if (Friends.inGroup(rig.friends)) FriendsPanel(rig, canSet, compact = false, prefs = prefs)
+                                            else MemoriesTab(mini = false)
                                 else -> MemoriesTab(mini = false)
                             }
                         }
