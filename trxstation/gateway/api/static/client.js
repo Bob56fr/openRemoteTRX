@@ -98,6 +98,7 @@
     listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
     listeners_unavailable: "Cette station ne gère pas les visiteurs.",
     voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
+    no_back: "Pas de fréquence de retour mémorisée.",
     friends_unavailable: "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
     friends_error: "La présence de groupe n'a pas pu traiter la demande.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
@@ -1355,6 +1356,7 @@
         if (this.ui.selcall) this.ui.selcall(this.selcall, false);
         this.breizhEvents = [];                                          // journal de Breizh : relu sur la station à l'ouverture
         this._netStart(msg);
+        this._friendsStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -1405,6 +1407,10 @@
         if (data.kind === "recent") {                                  // 30 derniers spots toutes bandes (« Tout afficher »)
           this.recentSpots = data;
           if (this.ui.recentSpots) this.ui.recentSpots(data);
+          return;
+        }
+        if (data.kind === "friends_changed") {                         // présence de groupe : la vue a changé, on la relit
+          if (this.friendsOffered) this.friendsRefresh().catch(() => {});
           return;
         }
         if (data.kind === "cluster_status") {                          // état des flux : affiché, jamais au journal (toutes les 15 s)
@@ -2190,9 +2196,63 @@
 
     async friends(action, args) {
       /* Présence de groupe « Amis » (fonction « friends », docs/protocole.md § 16) : relayée au module « presence »,
-         qui n'agit jamais sur le poste ; réponse { ok, action, data } ou { ok: false, reason, detail }.
-         L'affichage (bloc « Amis ») viendra au lot 4 du cahier. */
+         qui n'agit jamais sur le poste ; réponse { ok, action, data } ou { ok: false, reason, detail }. */
       return this.send("friends", { action: action, args: args || {} });
+    }
+
+    _friendsStart(hello) {
+      this.friendsOffered = !!(hello && Array.isArray(hello.features) && hello.features.includes("friends")
+                               && hello.role !== "listener");
+      this.friendsView = null;
+      this.friendsAt = 0;
+      this.friendsBackPoint = null;
+      if (this.ui.friends) this.ui.friends(null);
+      if (this.friendsOffered) this.friendsRefresh().catch(() => {});
+    }
+
+    async friendsRefresh() {
+      /* Relit la vue (groupes, membres déjà déchiffrés par la station) ; appelée à la connexion, sur l'avis
+         « friends_changed » et par la page quand le bloc est affiché. */
+      if (!this.friendsOffered || !this.connected) return null;
+      const res = await this.friends("view");
+      if (res && res.ok && res.data && typeof res.data === "object") {
+        this.friendsView = res.data;
+        this.friendsAt = this.env.now();
+        if (this.ui.friends) this.ui.friends(this.friendsView);
+      }
+      return res;
+    }
+
+    async friendsAction(action, args) {
+      /* Action de l'opérateur (créer, inviter, rejoindre, partage…) ; refus écrit au journal, vue relue après un succès. */
+      const res = await this.friends(action, args);
+      if (res && res.ok) this.friendsRefresh().catch(() => {});
+      else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail), "warn");
+      return res;
+    }
+
+    async friendsQsy(member) {
+      /* QSY vers un ami, APRÈS confirmation de l'opérateur (la page l'a demandée) : jamais pendant l'émission ;
+         la station retient d'abord la fréquence et le mode actuels (bouton « Retour »), puis mode et fréquence
+         partent par les commandes habituelles, avec leurs règles. Jamais d'émission. */
+      if (this._ptt() && this._ptt().state !== "RX") { this.ui.log(reasonText("tx_active"), "warn"); return { ok: false, reason: "tx_active" }; }
+      if (!member || !Number.isFinite(member.f) || !member.m) return { ok: false, reason: "invalid_params" };
+      const mark = await this.friends("qsy_mark");
+      if (mark && mark.ok && mark.data && mark.data.back) this.friendsBackPoint = mark.data.back;
+      const res = await this.qsy(member.f, member.m);
+      if (this.ui.friends) this.ui.friends(this.friendsView);
+      return res;
+    }
+
+    async friendsBack() {
+      /* « Retour » : fréquence et mode d'avant le premier QSY vers un ami (rendus une fois par la station). */
+      if (this._ptt() && this._ptt().state !== "RX") { this.ui.log(reasonText("tx_active"), "warn"); return { ok: false, reason: "tx_active" }; }
+      const res = await this.friends("qsy_back");
+      const back = res && res.ok && res.data ? res.data.back : null;
+      this.friendsBackPoint = null;
+      if (this.ui.friends) this.ui.friends(this.friendsView);
+      if (!back || !Number.isFinite(back.freq)) return { ok: false, reason: "no_back" };
+      return this.qsy(back.freq, back.mode || null);
     }
 
     async hostInfo() {

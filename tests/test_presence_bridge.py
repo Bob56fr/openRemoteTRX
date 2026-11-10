@@ -389,3 +389,24 @@ def test_gateway_bridge_relays_friends_to_the_real_presence_service(tmp_path):
         task.cancel()
         await bridge.stop()
     asyncio.run(scenario())
+
+
+def test_view_relayed_to_a_page_says_which_shared_frequencies_this_station_may_transmit_on():
+    from trxstation.config import Band
+    sent = []
+    cfg = cfgmod.Config()
+    cfg.bands = [Band(name="20m", low_mhz=14.0, high_mhz=14.35)]
+    ctrl = SimpleNamespace(snapshot=lambda: SimpleNamespace(state="RX"), heartbeat=lambda cid: None, config=cfg)
+
+    async def friends(data):
+        return {"groups": [{"g": "0" * 32, "members": [{"id": "1" * 32, "f": 14_205_000}, {"id": "2" * 32, "f": 27_555_000},
+                                                       {"id": "3" * 32, "code": "O"}]}]}
+
+    s = ControlSession("phone", ctrl, SimpleNamespace(), None, None, sent.append)
+    s.friends_call = friends
+    asyncio.run(s.on_message(json.dumps({"cmd": "friends", "id": 1, "action": "view"})))
+    members = sent[-1]["data"]["groups"][0]["members"]
+    assert [m.get("tx_ok") for m in members] == [True, False, None]
+    cfg.safety.enforce_bands = False                                # la station ne juge pas les bandes : rien d'ajouté
+    asyncio.run(s.on_message(json.dumps({"cmd": "friends", "id": 2, "action": "view"})))
+    assert all("tx_ok" not in m for m in sent[-1]["data"]["groups"][0]["members"])

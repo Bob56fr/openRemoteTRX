@@ -360,6 +360,26 @@ audio { display: none; }
 .host-sections table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .host-sections td { padding: .15rem .3rem; border-bottom: 1px solid var(--ligne); vertical-align: top; white-space: pre-line; }
 .host-sections td:first-child { color: var(--texte-secondaire); white-space: nowrap; }
+/* ---- présence de groupe « Amis » : pastille = couleur ET lettre (lisible par les daltoniens) */
+.fr-badges { display: inline-flex; gap: .2rem; margin-left: .4rem; vertical-align: middle; }
+.fr-dot { display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; border-radius: 50%;
+          font-size: .72rem; font-weight: 700; color: var(--texte-sur-accent); border: 2px solid transparent; flex: none; }
+.fr-dot.q { background: var(--tx); color: var(--texte-sur-tx); } .fr-dot.r { background: var(--succes); color: var(--succes-sur); }
+.fr-dot.s { background: var(--alerte); color: var(--alerte-sur); } .fr-dot.a { background: var(--texte-secondaire); color: var(--fond); }
+.fr-dot.o { background: transparent; border-color: var(--texte-secondaire); }
+.fr-list { margin: .4rem 0; }
+.fr-group { border-top: 1px solid var(--ligne); padding: .3rem 0; }
+.fr-group summary { cursor: pointer; font-weight: 600; }
+.fr-group .row { margin: .2rem 0; }
+.fr-member { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .35rem .2rem; border: 0; border-bottom: 1px solid var(--ligne);
+             background: transparent; color: var(--texte); text-align: left; cursor: pointer; }
+.fr-member .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-member .dim, .fr-member.off { color: var(--texte-secondaire); }
+.fr-warn { color: var(--alerte); } .fr-strong { color: var(--erreur); font-weight: 700; }
+.fr-dialog-body { max-height: 60vh; overflow-y: auto; margin: .4rem 0; }
+.fr-dialog-body p { margin: .4rem 0; } .fr-dialog-body textarea, .fr-dialog-body input[type="text"] { width: 100%; }
+.fr-url { word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+#sec-friends.fr-big { border: 2px solid var(--accent); }
 .presence-list { list-style: none; margin: .4rem 0; padding: 0; max-height: 50vh; overflow-y: auto; }
 .presence-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid var(--ligne); }
 .presence-list li .grow { flex: 1; }

@@ -245,11 +245,16 @@ ni la commande ni les avis.
 - **Vue** (`view`) : `station`, `pseudo`, `registered`, `problem`, `last_sync`, `texts`, `groups` : `g`, `name`,
   `role` (a / c / m), `status` (`member`, `pending`, `removed`), `share`, `members` triés (actifs d'abord) : `id`,
   `pseudo`, `code` (Q En QSO, R En RX, S Au shack, A Absent, O Hors ligne), `age` (s depuis la dernière requête du
-  membre), et sauf hors ligne : `sd` (début du statut, absent si masqué), `lt` (dernière émission), `su` (fin de la
+  membre), `role` (a / c / m, d'après la liste signée ; station 0.119.0+), `tx_ok` (ajouté par la PASSERELLE quand
+  `[safety] enforce_bands` : la fréquence partagée `f` est-elle dans les `[[bands]]` de cette station ? indication
+  seulement, l'émission reste jugée à l'instant ; 0.119.0+), et sauf hors ligne : `sd` (début du statut, absent si masqué), `lt` (dernière émission), `su` (fin de la
   plage « Au shack »), `lv` (f / o / x), `f` et `m` (si f), `x` (si x), `updated` (s depuis l'état reçu).
   Vue de plus de 48 ko : `truncated: true`, membres réduits (le client demande chaque groupe avec `g`).
 - **Avis** `{"type": "module", "module": "presence", "data": {"kind": "friends_changed", "scope": "operators"}}` :
   la vue a changé ; le client redemande `view` (le message reste petit quel que soit le nombre de membres).
-- **QSY vers un ami** (lot 4 et 5) : confirmation de l'opérateur avec l'âge de l'information ; refusé pendant toute
+- **Page web** (station 0.119.0+, `friends.js`, rubrique « Amis ») : vue relue à la connexion, sur l'avis et toutes les
+  30 s quand la rubrique est là ; affichage au choix (dans les rubriques, en grand, fenêtre détachée Document
+  Picture-in-Picture là où elle existe).
+- **QSY vers un ami** (page 0.119.0, application au lot 5) : confirmation de l'opérateur avec l'âge de l'information ; refusé pendant toute
   émission ; `friends` `qsy_mark`, puis `set_mode` et `set_frequency` habituels ; « Retour » = `qsy_back` puis les
   mêmes commandes. Jamais d'émission.

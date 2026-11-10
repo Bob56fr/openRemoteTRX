@@ -578,11 +578,14 @@ class Engine:
         groups = []
         for g, rec in sorted(self.store.groups.items(), key=lambda kv: kv[1]["name"].casefold()):
             members = []
+            roster = self._roster(rec)
             for mid, c in rec["members"].items():
                 state = c.get("state") or {}
                 age = c.get("age", OFFLINE_AFTER_S + 1) + max(0, now - c.get("seen_at", now))
                 code = display_code(state.get("st"), age)
-                item = {"id": mid, "pseudo": c.get("pseudo", "?"), "code": code, "age": int(age)}
+                listed = roster.member(mid) if roster else None
+                item = {"id": mid, "pseudo": c.get("pseudo", "?"), "code": code, "age": int(age),
+                        "role": listed.role if listed else "m"}
                 if code != "O":
                     for key in ("sd", "lt", "su", "lv", "f", "m", "x"):
                         if key in state:

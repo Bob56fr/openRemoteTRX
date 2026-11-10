@@ -341,7 +341,7 @@ Validées par l'utilisateur le 2026-11-10 (« larges pour la preuve de concept �
    vers les clients (`docs/protocole.md`, `hello.features`) ; TRX Console (menu « Présence de groupe » : pseudo,
    groupes, invitation en QR code, désinscription ; mode d'emploi) ; ligne de trx-monitor ; tests de panne (relais
    muet, réponses fausses, états forgés, rejeu, liste non signée).
-4. **Page web** : bloc « Amis », consentement, niveaux de partage, textes, Au shack, invisible, QSY et Retour,
+4. **Page web** (FAIT, étape 159, station 0.119.0 : `friends.js`, rubrique « Amis ») : bloc « Amis », consentement, niveaux de partage, textes, Au shack, invisible, QSY et Retour,
    statistiques de l'administrateur, fenêtre détachée là où elle existe.
 5. **Application Android** : bandeau, vue complète, bloc « Amis » (téléphone, tablette), veille du shack, QSY et
    Retour ; `docs/parite-web-android.md`.

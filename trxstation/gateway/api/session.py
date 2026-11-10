@@ -513,7 +513,21 @@ class ControlSession:
             log.exception("commande friends de %s en erreur", self.client_id)
             self._result(cmd.id, False, reason="friends_error")
             return
+        if cmd.params["action"] == "view":
+            self._friends_bands(data)
         self._result(cmd.id, True, action=cmd.params["action"], data=data)
+
+    def _friends_bands(self, view) -> None:
+        """Vue des amis : `tx_ok` sur chaque fréquence partagée, d'après les [[bands]] de CETTE station (le module ne
+        les connaît pas) ; seulement si la station impose ses bandes. Une indication : l'émission reste jugée à l'instant."""
+        safety = getattr(self.ctrl.config, "safety", None)
+        if not isinstance(view, dict) or not getattr(safety, "enforce_bands", False):
+            return
+        for group in view.get("groups") or []:
+            for member in (group.get("members") or []) if isinstance(group, dict) else []:
+                f = member.get("f") if isinstance(member, dict) else None
+                if isinstance(f, int) and not isinstance(f, bool):
+                    member["tx_ok"] = bool(self.ctrl.config.tx_allowed(f))
 
     def _result(self, ident, ok: bool, **extra) -> None:
         self.send({"type": "result", "id": ident, "ok": ok, **extra})

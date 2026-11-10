@@ -1766,3 +1766,62 @@ test("sons de liaison : une interface dont le son plante ne gêne jamais la liai
   await ticks(w, 2); w.hello();
   assert.equal(lastReconnect(w).outcome, "ok"); assert.equal(w.client.connected, true);
 });
+
+test("Amis : rien sans la fonction « friends » ni pour un visiteur ; vue relue à la connexion et sur l'avis du module", async () => {
+  const w = makeWorld();
+  const seen = []; w.ui.friends = (v) => seen.push(v);
+  await w.client.connect({ clientId: "phone", password: "mot de passe de test", useMic: false });
+  w.hello({ features: ["ptt"], role: "operator" });
+  assert.equal(w.client.friendsOffered, false); assert.equal(w.sentCommands("friends").length, 0);
+  w.hello({ features: ["ptt", "friends"], role: "listener" });
+  assert.equal(w.client.friendsOffered, false); assert.equal(w.sentCommands("friends").length, 0);
+  w.hello({ features: ["ptt", "friends"], role: "operator" });
+  assert.deepEqual(w.sentCommands("friends").at(-1), { cmd: "friends", id: w.sentCommands("friends").at(-1).id, action: "view", args: {} });
+  const VIEW = { pseudo: "F4ABC", registered: true, groups: [{ g: "a".repeat(32), name: "Club", role: "a", status: "member", members: [] }] };
+  w.answer(true, { action: "view", data: VIEW });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.deepEqual(w.client.friendsView, VIEW); assert.deepEqual(seen.at(-1), VIEW);
+  w.dc().onmessage({ data: JSON.stringify({ type: "module", module: "presence", data: { kind: "friends_changed", scope: "operators" } }) });
+  assert.equal(w.sentCommands("friends").filter((c) => c.action === "view").length, 2);
+  w.answer(false, { reason: "module_absent" });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.deepEqual(w.client.friendsView, VIEW);                                     // une vue ratée ne l'efface pas
+  const act = w.client.friendsAction("share", { g: "a".repeat(32), level: "f" });
+  w.answer(false, { reason: "share", detail: "niveau f, o ou x" });
+  assert.equal((await act).ok, false);
+  assert.ok(w.ui.logs.some((l) => l[0].startsWith("Amis : ") && l[1] === "warn"));
+});
+
+test("Amis : QSY vers un ami jamais en émission ; point de retour retenu, puis « Retour »", async () => {
+  const w = makeWorld();
+  await w.client.connect({ clientId: "phone", password: "mot de passe de test", useMic: false });
+  w.hello({ features: ["ptt", "friends"], role: "operator" });
+  w.answer(true, { action: "view", data: { groups: [] } });
+  await new Promise((r) => setTimeout(r, 0));
+  w.state({ state: "TX", owner: "phone" });
+  const before = w.sentCommands("friends").length;
+  assert.equal((await w.client.friendsQsy({ f: 14205000, m: "LSB" })).reason, "tx_active");
+  assert.equal(w.sentCommands("friends").length, before); assert.equal(w.sentCommands("set_frequency").length, 0);
+  w.state({}, { frequency_hz: 7074000, mode: "PKTUSB" });
+  const q = w.client.friendsQsy({ f: 14205000, m: "USB" });
+  assert.equal(w.sentCommands("friends").at(-1).action, "qsy_mark");
+  w.answer(true, { action: "qsy_mark", data: { back: { freq: 7074000, mode: "PKTUSB" } } });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(w.sentCommands("set_mode").at(-1).mode, "USB"); w.answer(true, {});
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(w.sentCommands("set_frequency").at(-1).hz, 14205000); w.answer(true, {});
+  assert.equal((await q).ok, true);
+  assert.deepEqual(w.client.friendsBackPoint, { freq: 7074000, mode: "PKTUSB" });
+  w.state({}, { frequency_hz: 14205000, mode: "USB" });
+  const back = w.client.friendsBack();
+  assert.equal(w.sentCommands("friends").at(-1).action, "qsy_back");
+  w.answer(true, { action: "qsy_back", data: { back: { freq: 7074000, mode: "PKTUSB" } } });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(w.sentCommands("set_mode").at(-1).mode, "PKTUSB"); w.answer(true, {});
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(w.sentCommands("set_frequency").at(-1).hz, 7074000); w.answer(true, {});
+  assert.equal((await back).ok, true); assert.equal(w.client.friendsBackPoint, null);
+  const none = w.client.friendsBack();
+  w.answer(true, { action: "qsy_back", data: { back: null } });
+  assert.equal((await none).reason, "no_back");
+});

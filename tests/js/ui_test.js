@@ -145,6 +145,7 @@ global.TrxHfScope = require(path.join(STATIC, "hfscope.js"));
 global.TrxSpots = require(path.join(STATIC, "spots.js"));
 global.TrxVoice = require(path.join(STATIC, "voice.js"));
 global.TrxSwr = require(path.join(STATIC, "swr.js"));
+global.TrxFriends = require(path.join(STATIC, "friends.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -1478,6 +1479,79 @@ step("sonde réseau : indicateur de l'en-tête, détail en accordéon, statistiq
   await $("net-detail-close").click(); assert.equal($("net-detail").hidden, true);
   await $("disconnect").click(); await wait();
   assert.equal($("net-bar").hidden, true);
+});
+
+step("Amis : rubrique et pastilles, membre puis QSY confirmé et Retour, partage, en grand, adhésion avec consentement", async () => {
+  $("client-id").value = "phone"; $("password").value = "mot de passe";
+  await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB", "LSB", "PKTUSB"] }, tx_modes: [],
+         memories: [], features: ["ptt", "friends"] });
+  await wait(30);
+  send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 7074000, mode: "PKTUSB" }, clients: ["phone"] });
+  await wait(30);
+  const now = Math.floor(Date.now() / 1000);
+  const VIEW = { pseudo: "F4ABC", registered: true, problem: null, texts: ["Mobile"], groups: [
+    { g: "a".repeat(32), name: "Club", role: "a", status: "member", share: { level: "o" }, members: [
+      { id: "1".repeat(32), pseudo: "F5XYZ", code: "R", age: 30, role: "m", sd: now - 60, lv: "f", f: 14205000, m: "USB", updated: 30, tx_ok: true },
+      { id: "2".repeat(32), pseudo: "F6ZZZ", code: "O", age: 900, role: "c" }] }] };
+  answer(true, { action: "view", data: VIEW }, "friends"); await wait(30);
+  assert.equal(sent("friends")[0].action, "view");
+  assert.equal($("sec-friends").hidden, false);
+  assert.equal($("fr-badges").children[0].className, "fr-dot r"); assert.equal($("fr-badges").children[0].textContent, "R");
+  assert.match($("fr-status").textContent, /Pseudo F4ABC/);
+  assert.ok(!$("fr-display").options.some((o) => o.value === "pip"));             // pas de fenêtre détachée ici : pas proposée
+  const group = $("fr-list").children[0];
+  assert.match(group.children[0].textContent, /^Club · administrateur/);
+  const rows = group.children.filter((c) => c.className.startsWith("fr-member"));
+  assert.deepEqual(rows.map((r) => r.children[2].textContent), ["14,205 MHz USB", "Hors ligne"]);
+  assert.equal(rows[1].children[0].className, "fr-dot o");
+  // détail du membre puis QSY confirmé
+  await rows[0].click();
+  assert.equal($("fr-dialog").hidden, false);
+  assert.ok($("fr-dialog-body").children.some((n) => /Changement de bande/.test(n.textContent)));
+  const go = $("fr-dialog-buttons").children.find((b) => b.textContent === "Aller sur cette fréquence");
+  const clicked = go.click(); await wait();
+  assert.equal(sent("friends").at(-1).action, "qsy_mark");
+  answer(true, { action: "qsy_mark", data: { back: { freq: 7074000, mode: "PKTUSB" } } }, "friends"); await wait();
+  assert.equal(sent("set_mode").at(-1).mode, "USB"); answer(true, {}, "set_mode"); await wait();
+  assert.equal(sent("set_frequency").at(-1).hz, 14205000); answer(true, {}, "set_frequency"); await clicked; await wait();
+  assert.equal($("fr-dialog").hidden, true); assert.equal($("fr-back").hidden, false);
+  const backing = $("fr-back").click(); await wait();
+  assert.equal(sent("friends").at(-1).action, "qsy_back");
+  answer(true, { action: "qsy_back", data: { back: { freq: 7074000, mode: "PKTUSB" } } }, "friends"); await wait();
+  answer(true, {}, "set_mode"); await wait(); answer(true, {}, "set_frequency"); await backing; await wait();
+  assert.equal(sent("set_frequency").at(-1).hz, 7074000); assert.equal($("fr-back").hidden, true);
+  // partage : texte refusé sur place, puis accepté
+  await group.children[1].children[0].click();                                      // « Partage »
+  const body = $("fr-dialog-body").children;
+  body[0].children[0].value = "x"; body[1].children[0].value = "café";
+  const shares = sent("friends").filter((c) => c.action === "share").length;
+  await $("fr-dialog-buttons").children[0].click(); await wait();
+  assert.equal(sent("friends").filter((c) => c.action === "share").length, shares); assert.equal($("fr-dialog").hidden, false);
+  body[1].children[0].value = "Mobile";
+  const saving = $("fr-dialog-buttons").children[0].click(); await wait();
+  assert.deepEqual(sent("friends").at(-1).args, { g: "a".repeat(32), level: "x", invisible: false, hide_absence: false, text: "Mobile" });
+  answer(true, { action: "share", data: {} }, "friends"); await saving; await wait();
+  // affichage en grand, mémorisé
+  $("fr-display").value = "big"; await $("fr-display").dispatch("change");
+  assert.match($("sec-friends").className, /fr-big/); assert.equal($("sec-friends").open, true);
+  assert.equal(storage.get("trx.friends.display"), "big");
+  $("fr-display").value = "section"; await $("fr-display").dispatch("change");
+  assert.doesNotMatch($("sec-friends").className, /fr-big/);
+  // adhésion : consentement affiché, invitation collée
+  await $("fr-join").click();
+  assert.ok($("fr-dialog-body").children.some((n) => /statistiques d'activité AGRÉGÉES/.test(n.textContent)));
+  $("fr-dialog-body").children[0].children[0].value = "  https://api.rf-diy.com/i#eyJ2IjoxLCJnIjoiYWJjIn0  ";
+  const joining = $("fr-dialog-buttons").children[0].click(); await wait();
+  assert.deepEqual(sent("friends").at(-1).args, { url: "https://api.rf-diy.com/i#eyJ2IjoxLCJnIjoiYWJjIn0", name: "" });
+  answer(true, { action: "join", data: { g: "b".repeat(32) } }, "friends"); await joining; await wait();
+  // l'avis du module fait relire la vue
+  const views = sent("friends").filter((c) => c.action === "view").length;
+  send({ type: "module", module: "presence", data: { kind: "friends_changed", scope: "operators" } }); await wait();
+  assert.equal(sent("friends").filter((c) => c.action === "view").length, views + 1);
+  answerAll(); await wait();
+  await $("disconnect").click(); await wait();
+  assert.equal($("sec-friends").hidden, true);
 });
 
 (async () => {

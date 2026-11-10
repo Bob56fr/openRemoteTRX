@@ -272,6 +272,28 @@
       </div></div>
     </details>
 
+    <details id="sec-friends" class="listener-hide" hidden>
+      <summary>Amis <span id="fr-badges" class="fr-badges"></span></summary>
+      <div class="body">
+        <p id="fr-status" class="note"></p>
+        <div class="row">
+          <label>Affichage <select id="fr-display"><option value="section">dans les rubriques</option><option value="big">en grand</option><option value="pip">fenêtre détachée</option></select></label>
+          <label>Vue <select id="fr-by"><option value="group">par groupe</option><option value="member">par membre</option></select></label>
+          <button id="fr-refresh" class="chip">Actualiser</button>
+          <button id="fr-back" class="chip" hidden title="Revenir sur la fréquence et le mode d'avant le QSY vers un ami">↩ Retour</button>
+        </div>
+        <div id="fr-list" class="fr-list"></div>
+        <p id="fr-updated" class="note"></p>
+        <h4>Mon statut</h4>
+        <div class="row"><button id="fr-shack-60" class="chip">Au shack 1 h</button><button id="fr-shack-120" class="chip">Au shack 2 h</button><button id="fr-shack-cancel" class="chip">Fin du « shack »</button></div>
+        <h4>Groupes</h4>
+        <div class="row"><label class="grow">Pseudo <input id="fr-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="fr-pseudo-save" class="chip">Enregistrer</button></div>
+        <div class="row"><button id="fr-create" class="chip">Créer un groupe</button><button id="fr-join" class="chip">Rejoindre (invitation)</button></div>
+        <p class="note">Un groupe d'amis voit qui est actif sur sa station. Le relais de présence ne voit que des états chiffrés ;
+          un QSY vers un ami se fait en réception, après confirmation, jamais pendant une émission.</p>
+      </div>
+    </details>
+
     <details id="sec-audio">
       <summary>Audio</summary>
       <div class="body">
@@ -649,6 +671,13 @@
     <div class="row"><button id="host-refresh" class="chip">Actualiser</button><button id="host-close" class="chip">Fermer</button></div>
   </div>
 </div>
+<div id="fr-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div id="fr-dialog-title" class="kp-display ctl-title"></div>
+    <div id="fr-dialog-body" class="fr-dialog-body"></div>
+    <div id="fr-dialog-buttons" class="row"></div>
+  </div>
+</div>
 <div id="presence-dialog" class="keypad" hidden>
   <div class="kp-panel">
     <div class="kp-display ctl-title">Connectés à la station</div>
@@ -743,6 +772,7 @@
 <script src="spatial.js"></script>
 <script src="selcall.js"></script>
 <script src="layout.js"></script>
+<script src="friends.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

@@ -1959,6 +1959,7 @@
       beeps(settings) { renderBeeps(settings); },
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
+      friends(view) { frRender(view); },                                       // présence de groupe : vue relue
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
       clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
@@ -1968,6 +1969,7 @@
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
+          frRender(null);                                                        // plus de rubrique « Amis »
           paintNet({ connected: false });                                        // plus d'indicateur de liaison
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
@@ -2726,6 +2728,314 @@
     });
     $("bzh-log-refresh").addEventListener("click", bzhLoadLog);
     $("bzh-ind").addEventListener("click", () => { $("sec-breizh").open = true; $("sec-breizh").scrollIntoView({ block: "start" }); });
+
+    // ---- présence de groupe « Amis » (friends.js, docs/presence-cahier-des-charges.md, fonction « friends », OPÉRATEURS)
+    // Lecture de la vue préparée par la station (états déjà déchiffrés), actions relayées au module « presence ».
+    // Affichage choisi par l'opérateur : dans les rubriques, en grand (en tête, les autres rubriques repliées ; fréquence,
+    // PTT et STOP restent à leur place), ou dans une fenêtre détachée (Document Picture-in-Picture, là où elle existe).
+    // QSY vers un ami : confirmé, refusé pendant l'émission, commandes habituelles (client.friendsQsy) ; jamais d'émission.
+    const fx = root.TrxFriends || null;
+    const FR_REFRESH_MS = 30000;
+    let frView = null, frTimer = null, frPip = null, frHome = null;
+    let frBy = store.get("trx.friends.by", "group") === "member" ? "member" : "group";
+    let frMode = fx ? fx.displayMode(store.get("trx.friends.display", "section"), fx.pipSupported(root)) : "section";
+    function frOffered() { return !!(fx && client.friendsOffered && client.connected && !client.isListener()); }
+    function frNowS() { return Date.now() / 1000; }
+    function frElapsed() { return client.friendsAt ? Math.max(0, (client.env.now() - client.friendsAt) / 1000) : 0; }
+    function frPtt() { return typeof client._ptt === "function" && client._ptt() ? client._ptt().state : "RX"; }
+    function frRigHz() { return client.state && client.state.rig ? client.state.rig.frequency_hz : NaN; }
+    function frFail(res) { if (res && !res.ok) ui.log("Amis : " + web.reasonText(res.reason, res.detail), "warn"); return res; }
+
+    function frChip(label, fn, doc, cls) {
+      const b = (doc || document).createElement("button");
+      b.className = cls || "chip";
+      b.textContent = label;
+      b.addEventListener("click", fn);
+      return b;
+    }
+    function frMemberButton(m, g, doc) {
+      const d = doc || document;
+      const b = d.createElement("button");
+      b.className = "fr-member" + (m.code === "O" ? " off" : "");
+      const dot = d.createElement("span"); dot.className = "fr-dot " + m.cls; dot.textContent = m.letter; dot.title = m.label;
+      const name = d.createElement("span"); name.className = "grow";
+      name.textContent = m.pseudo + (m.groups && m.groups.length > 1 ? " (" + m.groups.join(", ") + ")" : "");
+      const det = d.createElement("span"); det.className = "dim"; det.textContent = m.detail;
+      b.appendChild(dot); b.appendChild(name); b.appendChild(det);
+      b.addEventListener("click", () => { if (frPip && d !== document) root.focus(); frOpenMember(m, g); });
+      return b;
+    }
+    function frList(box, v, compact, doc) {
+      const d = doc || document;
+      box.textContent = "";
+      const note = (text) => { const p = d.createElement("p"); p.className = "note"; p.textContent = text; box.appendChild(p); };
+      if (!v.groups.length) { note("Aucun groupe : créez-en un, ou rejoignez celui d'un ami avec son invitation."); return; }
+      if (v.by === "member") {
+        for (const m of v.members) box.appendChild(frMemberButton(m, null, d));
+        if (!v.members.length) note("Personne d'autre dans vos groupes pour l'instant.");
+        return;
+      }
+      for (const g of v.groups) {
+        const sec = d.createElement("details"); sec.className = "fr-group"; sec.open = true;
+        const sum = d.createElement("summary");
+        sum.textContent = g.name + (g.role !== "m" && g.roleText ? " · " + g.roleText : "") + (g.statusText ? " · " + g.statusText : "");
+        sec.appendChild(sum);
+        if (!compact) {
+          const row = d.createElement("div"); row.className = "row";
+          if (g.status === "member") row.appendChild(frChip("Partage", () => frShare(g), d));
+          if (g.admin && g.status === "member") { row.appendChild(frChip("Inviter", () => frInvite(g), d)); row.appendChild(frChip("Statistiques", () => frStats(g), d)); }
+          row.appendChild(frChip(g.role === "a" ? "Quitter ou supprimer" : "Quitter", () => frLeave(g), d));
+          sec.appendChild(row);
+        }
+        for (const m of g.members) sec.appendChild(frMemberButton(m, g, d));
+        if (!g.members.length && g.status === "member") { const p = d.createElement("p"); p.className = "note"; p.textContent = "Personne d'autre pour l'instant."; sec.appendChild(p); }
+        box.appendChild(sec);
+      }
+    }
+    function frBadges(view) {
+      const box = $("fr-badges");
+      box.textContent = "";
+      if (!view) return;
+      const b = fx.badges(view, frNowS(), frElapsed(), 6);
+      for (const m of b.list) { const dot = el("span", "fr-dot " + m.cls, m.letter); dot.title = m.pseudo + " : " + m.detail; box.appendChild(dot); }
+      if (b.total) box.appendChild(el("span", "note", " " + b.active + "/" + b.total));
+    }
+    function frRender(view) {
+      frView = view;
+      const on = frOffered();
+      $("sec-friends").hidden = !on;
+      if (!on) { frStopTimer(); frClosePip(); frApplyMode("section", false); $("fr-badges").textContent = ""; frCloseDialog(); return; }
+      const v = fx.buildView(view || {}, frNowS(), frElapsed(), frBy);
+      const st = view ? [view.pseudo ? "Pseudo " + view.pseudo : "Pas encore de pseudo (ci-dessous)",
+                         view.registered ? "station enregistrée auprès du relais" : "pas encore enregistrée auprès du relais",
+                         view.problem ? "problème : " + view.problem : ""].filter(Boolean).join(" · ") : "Lecture…";
+      $("fr-status").textContent = st;
+      if (view && document.activeElement !== $("fr-pseudo")) $("fr-pseudo").value = view.pseudo || "";
+      $("fr-back").hidden = !client.friendsBackPoint;
+      frBadges(view);
+      frList($("fr-list"), v, false);
+      $("fr-updated").textContent = client.friendsAt ? "Mis à jour il y a " + fx.freshness(frElapsed()) : "";
+      if (frPip) frPipRender();
+      if (!frTimer) frTimer = setInterval(() => { if (frOffered()) client.friendsRefresh().catch(() => {}); }, FR_REFRESH_MS);
+    }
+    function frStopTimer() { if (frTimer) { clearInterval(frTimer); frTimer = null; } }
+
+    // -- affichage : rubrique, en grand, fenêtre détachée
+    function frApplyMode(mode, remember) {
+      const sec = $("sec-friends");
+      if (mode !== "pip") frClosePip();
+      if (mode === "big") {
+        const parent = sec.parentNode;
+        if (parent && !frHome) {
+          frHome = { parent: parent, next: sec.nextSibling };
+          for (const other of parent.children || []) if (other !== sec && other.tagName && other.tagName.toLowerCase() === "details") other.open = false;
+          parent.insertBefore(sec, parent.firstChild);
+        }
+        sec.open = true;
+        sec.className = "listener-hide fr-big";
+      } else {
+        if (frHome) { frHome.parent.insertBefore(sec, frHome.next || null); frHome = null; }
+        sec.className = "listener-hide";
+        if (mode === "pip") frOpenPip();
+      }
+      frMode = mode;
+      $("fr-display").value = mode;
+      if (remember) store.set("trx.friends.display", mode);
+    }
+    async function frOpenPip() {
+      if (frPip || !fx.pipSupported(root)) return;
+      try {
+        const win = await root.documentPictureInPicture.requestWindow({ width: 340, height: 460 });
+        const link = win.document.createElement("link");
+        link.rel = "stylesheet"; link.href = new URL("client.css", location.href).href;
+        win.document.head.appendChild(link);
+        const theme = document.documentElement.getAttribute("data-theme");
+        if (theme) win.document.documentElement.setAttribute("data-theme", theme);
+        win.document.title = "Amis";
+        const box = win.document.createElement("div"); box.className = "fr-list"; box.id = "fr-pip-list";
+        win.document.body.appendChild(box);
+        win.addEventListener("pagehide", () => { frPip = null; if (frMode === "pip") frApplyMode("section", true); });
+        frPip = { win: win, box: box };
+        frPipRender();
+      } catch (e) {
+        ui.log("Fenêtre détachée refusée par le navigateur : la rubrique reste dans la page.", "warn");
+        frApplyMode("section", true);
+      }
+    }
+    function frPipRender() {
+      if (!frPip) return;
+      frList(frPip.box, fx.buildView(frView || {}, frNowS(), frElapsed(), frBy), true, frPip.win.document);
+    }
+    function frClosePip() { if (frPip) { const w = frPip.win; frPip = null; try { w.close(); } catch (e) { /* déjà fermée */ } } }
+
+    // -- fenêtres
+    function frDialog(title, nodes, buttons) {
+      $("fr-dialog-title").textContent = title;
+      const body = $("fr-dialog-body");
+      body.textContent = "";
+      for (const n of nodes) body.appendChild(typeof n === "string" ? el("p", "", n) : n);
+      const row = $("fr-dialog-buttons");
+      row.textContent = "";
+      for (const [label, cls, fn] of buttons) {
+        row.appendChild(frChip(label, async () => {
+          let keep = false;
+          try { keep = fn ? await fn() : false; } catch (e) { fail(e); }
+          if (!keep) frCloseDialog();
+        }, document, cls));
+      }
+      $("fr-dialog").hidden = false;
+    }
+    function frCloseDialog() { $("fr-dialog").hidden = true; }
+    function frField(label, input) { const l = el("label", "grow", label + " "); l.appendChild(input); return l; }
+    function frInput(value, max) { const i = document.createElement("input"); i.type = "text"; i.value = value || ""; if (max) i.maxLength = max; return i; }
+    function frLevelSelect(level) {
+      const s = document.createElement("select");
+      for (const key of Object.keys(fx.LEVELS)) { const o = el("option", "", fx.LEVELS[key]); o.value = key; s.appendChild(o); }
+      s.value = level || "o";
+      return s;
+    }
+    function frCheck(label, checked) {
+      const l = el("label", "check"), c = document.createElement("input");
+      c.type = "checkbox"; c.checked = !!checked; l.appendChild(c); l.appendChild(el("span", "", " " + label));
+      return { label: l, input: c };
+    }
+
+    function frOpenMember(m, g) {
+      const plan = fx.qsyPlan(m, { pttState: frPtt(), rigHz: frRigHz() });
+      const nodes = [el("p", "", m.label + " · " + m.detail)].concat(m.lines.map((l) => el("p", "note", l)));
+      const buttons = [];
+      if (m.qsy) {
+        if (!plan.ok) nodes.push(el("p", "fr-warn", plan.text));
+        else {
+          nodes.push(el("p", "", plan.text));
+          for (const w of plan.warnings.filter((x) => x.level !== "info")) nodes.push(el("p", w.level === "strong" ? "fr-strong" : "fr-warn", w.text));
+          buttons.push(["Aller sur cette fréquence", "primary", async () => {
+            const res = await client.friendsQsy(m);
+            frFail(res);
+          }]);
+        }
+      }
+      if (g && g.admin && g.status === "member" && m.raw && m.raw.role !== "a") {
+        buttons.push([m.raw.role === "c" ? "Retirer co-administrateur" : "Nommer co-administrateur", "chip", async () => {
+          frFail(await client.friendsAction("role", { g: g.g, member: m.id, role: m.raw.role === "c" ? "m" : "c" }));
+        }]);
+        buttons.push(["Exclure du groupe…", "chip", async () => { frConfirmExclude(g, m); return true; }]);
+      }
+      buttons.push(["Fermer", "chip", null]);
+      frDialog(m.pseudo + (g ? " · " + g.name : ""), nodes, buttons);
+    }
+    function frConfirmExclude(g, m) {
+      frDialog("Exclure " + m.pseudo, ["Exclure " + m.pseudo + " du groupe « " + g.name + " » ? Une nouvelle clé est remise aux autres membres : "
+        + m.pseudo + " ne lira plus rien du groupe."], [
+        ["Exclure", "danger", async () => { frFail(await client.friendsAction("exclude", { g: g.g, member: m.id })); }],
+        ["Annuler", "chip", null]]);
+    }
+    function frShare(g) {
+      const share = g.share || {};
+      const level = frLevelSelect(share.level);
+      const text = frInput(share.text || "", 16);
+      const presets = (frView && frView.texts) || [];
+      const invisible = frCheck("Invisible dans ce groupe (les autres me voient hors ligne)", share.invisible);
+      const hide = frCheck("Ne pas montrer depuis quand je suis absent", share.hide_absence);
+      const nodes = [frField("Je partage", level), frField("Texte (si « un court texte »)", text)];
+      if (presets.length) nodes.push(el("p", "note", "Textes enregistrés : " + presets.join(", ")));
+      nodes.push(invisible.label, hide.label, el("p", "note", "Pris à la prochaine requête de la station (moins de 2 minutes)."));
+      frDialog("Partage · " + g.name, nodes, [
+        ["Enregistrer", "primary", async () => {
+          const args = { g: g.g, level: level.value, invisible: invisible.input.checked, hide_absence: hide.input.checked };
+          if (level.value === "x") {
+            const t = fx.cleanText(text.value);
+            if (!t) { ui.log("Texte refusé : 16 caractères, lettres sans accent, chiffres, espace, . / -", "warn"); return true; }
+            args.text = t;
+          }
+          frFail(await client.friendsAction("share", args));
+        }],
+        ["Annuler", "chip", null]]);
+    }
+    async function frInvite(g) {
+      const res = frFail(await client.friendsAction("invite", { g: g.g, days: 7 }));
+      if (!res || !res.ok) return;
+      const url = res.data.url;
+      const buttons = [["Copier", "primary", async () => {
+        try { await navigator.clipboard.writeText(url); ui.log("Invitation copiée.", ""); } catch (e) { ui.log("Copie refusée par le navigateur : sélectionnez le lien.", "warn"); }
+        return true;
+      }]];
+      if (navigator.share) buttons.push(["Partager", "chip", async () => { try { await navigator.share({ title: "Invitation openRemoteTRX", url: url }); } catch (e) { /* annulé */ } return true; }]);
+      buttons.push(["Fermer", "chip", null]);
+      frDialog("Invitation · " + g.name, [
+        "Valable " + res.data.days + " jours, pour UNE seule station. Elle contient la clé du groupe : à transmettre seulement à la personne invitée (en main propre, messagerie, courriel).",
+        el("p", "fr-url", url),
+        el("p", "note", "Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 24.")], buttons);
+    }
+    function frJoin() {
+      const url = document.createElement("textarea"); url.rows = 3;
+      const name = frInput("", 24);
+      const level = frLevelSelect("o");
+      const nodes = [frField("Invitation reçue", url), frField("Nom du groupe chez moi (facultatif)", name)]
+        .concat(fx.CONSENT.map((c) => el("p", "note", c)), [frField("Je partage", level)]);
+      frDialog("Rejoindre un groupe", nodes, [
+        ["J'accepte et je rejoins", "primary", async () => {
+          const link = fx.cleanInvitation(url.value);
+          if (!link) { ui.log("Collez l'invitation complète reçue de l'administrateur du groupe.", "warn"); return true; }
+          const res = frFail(await client.friendsAction("join", { url: link, name: name.value.trim() }));
+          if (!res || !res.ok) return true;
+          if (level.value !== "o") frFail(await client.friendsAction("share", { g: res.data.g, level: level.value }));
+          ui.log("Demande d'adhésion envoyée : validée dès que la station de l'administrateur la voit.", "");
+        }],
+        ["Annuler", "chip", null]]);
+    }
+    function frCreate() {
+      const name = frInput("", 24);
+      frDialog("Créer un groupe", [frField("Nom du groupe", name), el("p", "note", "Vous en serez l'administrateur ; invitez ensuite vos amis (bouton « Inviter » du groupe).")], [
+        ["Créer", "primary", async () => {
+          if (!name.value.trim()) return true;
+          frFail(await client.friendsAction("create", { name: name.value.trim() }));
+        }],
+        ["Annuler", "chip", null]]);
+    }
+    function frLeave(g) {
+      const buttons = [["Quitter le groupe", "chip", async () => { frFail(await client.friendsAction("leave", { g: g.g })); }]];
+      if (g.role === "a") buttons.unshift(["Supprimer pour tous", "danger", async () => { frFail(await client.friendsAction("delete", { g: g.g })); }]);
+      buttons.push(["Annuler", "chip", null]);
+      frDialog(g.name, [g.role === "a" ? "Vous êtes administrateur : supprimer le groupe pour tout le monde, ou seulement le quitter ?"
+                                       : "Quitter ce groupe ? Il faudra une nouvelle invitation pour y revenir."], buttons);
+    }
+    async function frStats(g) {
+      const res = await client.friends("stats", { g: g.g });
+      if (!frFail(res) || !res.ok) return;
+      const pseudos = {};
+      for (const m of g.members) pseudos[m.id] = m.pseudo;
+      const rows = fx.statsRows(res.data.stats, pseudos);
+      const nodes = rows.length ? rows.map((r) => el("p", "", r.pseudo + " : dernier jour actif " + r.lastActive + ", " + r.days
+        + " jour(s) actif(s) ce mois ; cette semaine QSO " + r.qsoMin + " min, RX " + r.rxMin + " min"))
+        : [el("p", "note", "Pas encore de statistiques : elles se remplissent pendant que votre station est en marche.")];
+      nodes.push(el("p", "note", "Agrégées par jour, 6 mois au plus, calculées sur votre station ; les heures où elle était éteinte ne sont pas comptées."));
+      frDialog("Statistiques · " + g.name, nodes, [["Fermer", "chip", null]]);
+    }
+
+    if (fx) {
+      if (!fx.pipSupported(root)) {                                          // pas de fenêtre détachée : le choix n'est pas proposé
+        const select = $("fr-display");
+        for (const o of select.options || []) if (o.value === "pip") select.removeChild(o);
+      }
+      $("fr-display").value = frMode;
+      $("fr-by").value = frBy;
+      $("fr-display").addEventListener("change", (ev) => frApplyMode(fx.displayMode(ev.target.value, fx.pipSupported(root)), true));
+      $("fr-by").addEventListener("change", (ev) => { frBy = ev.target.value === "member" ? "member" : "group"; store.set("trx.friends.by", frBy); frRender(frView); });
+      $("fr-refresh").addEventListener("click", () => client.friendsRefresh().catch(fail));
+      $("fr-back").addEventListener("click", () => client.friendsBack().then(frFail).catch(fail));
+      $("fr-shack-60").addEventListener("click", () => client.friendsAction("shack_for", { minutes: 60 }).catch(fail));
+      $("fr-shack-120").addEventListener("click", () => client.friendsAction("shack_for", { minutes: 120 }).catch(fail));
+      $("fr-shack-cancel").addEventListener("click", () => client.friendsAction("shack_cancel", {}).catch(fail));
+      $("fr-pseudo-save").addEventListener("click", () => {
+        const p = fx.cleanPseudo($("fr-pseudo").value);
+        if (!p) { ui.log("Pseudo refusé : 16 caractères, lettres sans accent, chiffres, espace, . / _ -", "warn"); return; }
+        client.friendsAction("pseudo", { pseudo: p }).catch(fail);
+      });
+      $("fr-create").addEventListener("click", frCreate);
+      $("fr-join").addEventListener("click", frJoin);
+      $("sec-friends").addEventListener("toggle", () => { if ($("sec-friends").open && frOffered()) client.friendsRefresh().catch(() => {}); });
+    }
 
     // ---- spatialisation stéréo de la réception (spatial.js, docs/spatialisation-cahier-des-charges.md) : traitement de cet
     // appareil seulement, visiteurs compris ; la station n'en sait rien. Réglages gardés par le navigateur.
