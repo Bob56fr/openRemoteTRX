@@ -223,7 +223,7 @@ def test_actions_validate_their_arguments_and_qsy_back_is_given_once(tmp_path):
         with pytest.raises(ActionRefused):
             asyncio.run(actions.handle(eng, action, args))
     g = asyncio.run(svc.act("create", {"name": "Amis"}))["g"]
-    assert asyncio.run(svc.act("invite", {"g": g}))["url"].startswith("https://api.rf-diy.com/i#")
+    assert asyncio.run(svc.act("invite", {"g": g}))["url"].startswith("https://rf-diy.com/orx-relay/public/i#")
     eng.set_rig(7_074_000, "PKTUSB")
     assert asyncio.run(svc.act("qsy_mark", {})) == {"back": {"freq": 7_074_000, "mode": "PKTUSB"}}
     eng.on_rig(14_205_000, "USB")                               # le client a fait son QSY

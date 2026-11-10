@@ -164,7 +164,7 @@ class Breizh:
     reactivate_after_s: int = 60      # stabilité exigée avant le retour automatique (0 = seulement à la main)
 
 
-PRESENCE_DEFAULT_RELAY = "https://api.rf-diy.com"
+PRESENCE_DEFAULT_RELAY = "https://rf-diy.com/orx-relay/public"   # relais de rf-diy.com (sous-dossier : offre OVH sans sous-domaine libre)
 PRESENCE_KEY_FILE = "presence.key"   # dans state_dir/presence/ quand key_file est vide
 # Relais : https:// obligatoire ; http:// permis SEULEMENT vers la machine elle-même (essais avec un relais local).
 _PRESENCE_RELAY_RE = re.compile(r"(https://[a-z0-9.-]{1,100}|http://(127\.0\.0\.1|localhost))(:\d{1,5})?(/[A-Za-z0-9._~-]+)*")

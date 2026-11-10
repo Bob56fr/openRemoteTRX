@@ -13,6 +13,7 @@ Piloter un émetteur-récepteur radioamateur à distance, depuis le navigateur d
 - **PTT en bascule uniquement** (jamais en maintien), avec une case « Émission autorisée » à cocher d'abord.
 - **Waterfall de l'audio reçu** dans la page, et **spectre HF du poste** (Icom, par le second port CI-V) en plein écran ou intégré sur grand écran, avec accord au doigt.
 - **Spots du Cluster DX** (clusters radioamateurs, Reverse Beacon Network, page CB) affichés sur le spectre HF, avec l'état de chaque flux.
+- **Présence de groupe « Amis »** (désactivée par défaut) : un groupe d'amis équipés d'openRemoteTRX voit qui est en QSO, en réception, au shack ou absent, et, si chacun le veut, sur quelle fréquence ; QSY vers un ami en réception, après confirmation. Un relais ne transporte que des états chiffrés qu'il ne peut pas lire ; la fonction n'a aucun droit sur le poste.
 - **TRX Console** sur la station : assistant de configuration, diagnostic, tableau de bord, essai guidé du poste, mise à jour, modification de la configuration, seuils de température du poste, rapport de dépannage, tests automatiques.
 - Thèmes de couleurs, mises en page, sons de la liaison, bips de fin d'émission (désactivés par défaut), « Signaler un problème ».
 

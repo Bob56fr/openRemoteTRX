@@ -242,6 +242,9 @@ veut. Le choix est mémorisé sur l'appareil.
 - Démarrage sur l'hébergement **WordPress OVH mutualisé** de rf-diy.com : petit script PHP autonome sur un
   sous-domaine (`api.rf-diy.com`) qui **ne charge pas WordPress** ; un plugin WordPress fournit le back-office (pseudo,
   identifiant, date d'enregistrement, dernière activité, groupes ; rien d'autre).
+- INSTALLÉ le 2026-11-11 dans un SOUS-DOSSIER du site (`https://rf-diy.com/orx-relay/public`) : l'offre OVH n'acceptait plus de domaine rattaché
+  (« Attached Domains limit ») ; essai réel réussi (deux stations jetables : enregistrement, groupe, adhésion,
+  état chiffré relu, puis nettoyage).
 - Passage sur un VPS si le service prend de l'ampleur : seule l'adresse du relais change (`[presence] relay_url`,
   plus une redirection annoncée par l'ancien relais).
 - Risque assumé : un abus peut ralentir le blog. Parades sur ce même hébergement : rejet le plus tôt possible

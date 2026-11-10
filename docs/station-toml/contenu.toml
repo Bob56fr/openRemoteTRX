@@ -463,7 +463,7 @@ depuis = "0.117.0"
 role = "Adresse du relais de présence."
 niveau = "expert"
 bornes = "https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine)."
-exemple = "Relais par défaut : <code>https://api.rf-diy.com</code> ; essai local : <code>http://127.0.0.1:8099</code>."
+exemple = "Relais par défaut : <code>https://rf-diy.com/orx-relay/public</code> ; essai local : <code>http://127.0.0.1:8099</code>."
 depuis = "0.117.0"
 
 [reglages."presence.key_file"]

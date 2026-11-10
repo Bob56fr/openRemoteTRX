@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.119.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.120.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -189,7 +189,7 @@ Se modifie : Menu 14, et ajouter « presence » à `[modules] run`. Les groupes,
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
 | `enabled` | courant | `false` | true : la station s'enregistre auprès du relais et échange la présence avec les groupes dont elle est membre (« presence » doit aussi figurer dans `[modules] run`). **Sécurité** : La présence ne fait que montrer : aucune donnée reçue du relais ne peut commander le poste. (depuis 0.117.0) |
-| `relay_url` | expert | `"https://api.rf-diy.com"` | Adresse du relais de présence. Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://api.rf-diy.com` ; essai local : `http://127.0.0.1:8099`. (depuis 0.117.0) |
+| `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais de présence. Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.117.0) |
 | `key_file` | expert | `""` | Fichier des clés de la station pour la présence (signature et réception des clés de groupe). Vide : `presence.key` dans le dossier d'état, créé par le module au premier démarrage. Relatif : à côté de station.toml. **Sécurité** : Ce fichier identifie la station auprès du relais et des groupes : ne jamais le copier sur une autre station. (depuis 0.117.0) |
 
 ## Spectre HF du poste [spectrum]

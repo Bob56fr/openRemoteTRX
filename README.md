@@ -13,6 +13,7 @@ Remote control of an amateur radio transceiver from the browser of a smartphone,
 - **Toggle PTT only** (never press-and-hold), with a "transmit allowed" box to tick first.
 - **Waterfall of the received audio** in the page, and the **radio's HF spectrum** (Icom, through the second CI-V port) full screen or docked on large screens, with finger tuning.
 - **DX Cluster spots** (amateur clusters, Reverse Beacon Network, CB page) shown on the HF spectrum, with the status of each feed.
+- **Group presence "Friends"** (off by default): a group of friends running openRemoteTRX sees who is in a QSO, listening, at the shack or away and, if each one agrees, on which frequency; QSY to a friend in receive only, after confirmation. A relay only carries encrypted states it cannot read; the feature has no right over the radio.
 - **TRX Console** on the station: setup wizard, diagnostics, dashboard, guided radio test, updates, configuration editor, radio temperature thresholds, troubleshooting report, automated tests.
 - Colour themes, layouts, link sounds, end-of-transmission beeps (off by default), "Report a problem".
 
