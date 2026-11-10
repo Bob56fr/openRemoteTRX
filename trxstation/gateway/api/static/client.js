@@ -98,6 +98,8 @@
     listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
     listeners_unavailable: "Cette station ne gère pas les visiteurs.",
     voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
+    friends_unavailable: "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
+    friends_error: "La présence de groupe n'a pas pu traiter la demande.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
     swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
@@ -2184,6 +2186,13 @@
       const res = await this.send("breizh_log");
       if (res && res.ok && Array.isArray(res.entries)) this.breizhEvents = res.entries.slice(-BREIZH_EVENTS_MAX);
       return this.breizhEvents || [];
+    }
+
+    async friends(action, args) {
+      /* Présence de groupe « Amis » (fonction « friends », docs/protocole.md § 16) : relayée au module « presence »,
+         qui n'agit jamais sur le poste ; réponse { ok, action, data } ou { ok: false, reason, detail }.
+         L'affichage (bloc « Amis ») viendra au lot 4 du cahier. */
+      return this.send("friends", { action: action, args: args || {} });
     }
 
     async hostInfo() {

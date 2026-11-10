@@ -9,6 +9,9 @@ Règle d'or : le cœur n'attend jamais un module.
 - Un module trop lent à lire est déconnecté, sans effet sur le cœur.
 - Les commandes passent par les mêmes règles que celles du client :
   refusées pendant le PTT, journalisées avec leur origine.
+- call() : le cœur relaie à UN module (droit client_commands) la commande d'un
+  client opérateur et attend sa réponse (« reply »), avec un délai ; le module
+  ne reçoit jamais rien d'un visiteur (filtré par la session de la passerelle).
 """
 
 from __future__ import annotations
@@ -70,6 +73,7 @@ class ModuleSession:
     last_heartbeat: float = field(default_factory=time.monotonic)
     metrics: dict = field(default_factory=dict)
     tasks: list = field(default_factory=list)
+    calls: dict = field(default_factory=dict)        # appels du cœur en attente de « reply » : id -> Future
 
     @property
     def name(self) -> str:
@@ -104,6 +108,7 @@ class BusServer:
         self.client_rate, self.client_burst = client_rate, client_burst
         self.command_timeout_s = command_timeout_s
         self.seq = 0
+        self.call_ids = 0
         self.sessions: dict[str, ModuleSession] = {}
         self._server: asyncio.base_events.Server | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -154,6 +159,32 @@ class BusServer:
         self._enqueue(sess, {"type": "event", "seq": self.seq, "ts": time.time(),
                              "name": name, "data": data or {}})
         return True
+
+    async def call(self, module: str, data: dict, timeout_s: float = 25.0):
+        """Appel du cœur vers un seul module (commande d'un client opérateur) ; renvoie son résultat.
+
+        CommandRefused : module absent (`module_absent`), droit manquant (`forbidden`), délai dépassé (`timeout`),
+        ou le refus du module lui-même (son code). Ne bloque jamais plus que `timeout_s`.
+        """
+        sess = self.sessions.get(module)
+        if sess is None:
+            raise CommandRefused("module_absent", f"module {module} non connecté")
+        if not sess.manifest.rights.client_commands:
+            raise CommandRefused("forbidden", f"le module {module} ne reçoit pas de commandes des clients")
+        self.call_ids += 1
+        ident = self.call_ids
+        fut = asyncio.get_running_loop().create_future()
+        sess.calls[ident] = fut
+        self._enqueue(sess, {"type": "call", "id": ident, "data": data})
+        try:
+            ok, payload = await asyncio.wait_for(fut, timeout_s)
+        except asyncio.TimeoutError:
+            raise CommandRefused("timeout", f"le module {module} n'a pas répondu à temps") from None
+        finally:
+            sess.calls.pop(ident, None)
+        if not ok:
+            raise CommandRefused(str(payload.get("error") or "refused"), str(payload.get("message") or ""))
+        return payload.get("result")
 
     def _enqueue(self, sess: ModuleSession, msg: dict) -> None:
         q = sess.queue
@@ -273,6 +304,10 @@ class BusServer:
             elif mtype == "request":
                 resp = await self._handle_request(sess, msg)
                 self._enqueue(sess, resp)
+            elif mtype == "reply":
+                fut = sess.calls.get(msg.get("id"))
+                if fut is not None and not fut.done():
+                    fut.set_result((bool(msg.get("ok")), msg))
 
     def _safe_call(self, fn, *args) -> None:
         try:
@@ -347,6 +382,10 @@ class BusServer:
             log.info("module %s : %s", sess.name, reason)
         for t in sess.tasks:
             t.cancel()
+        for fut in sess.calls.values():
+            if not fut.done():
+                fut.set_exception(CommandRefused("module_absent", f"module {sess.name} déconnecté"))
+        sess.calls.clear()
         try:
             sess.writer.close()
         except Exception:

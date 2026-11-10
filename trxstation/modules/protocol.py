@@ -8,12 +8,15 @@ Module -> cœur
   {"type":"hello","module":"demo","secret":"…","api":"1.0"}
   {"type":"request","id":1,"op":"get_state"|"command"|"client_message"|"verify_token","args":{…}}
   {"type":"heartbeat","metrics":{…}}
+  {"type":"reply","id":7,"ok":true,"result":…}            (réponse à un « call » du cœur)
+  {"type":"reply","id":7,"ok":false,"error":"…","message":"…"}
 
 Cœur -> module
   {"type":"welcome","api":"1.0","seq":42}
   {"type":"event","seq":43,"ts":1730000000.0,"name":"ptt","data":{"active":true}}
   {"type":"response","id":1,"ok":true,"result":…}
   {"type":"response","id":1,"ok":false,"error":"ptt_active","message":"…"}
+  {"type":"call","id":7,"data":{…}}     (commande d'un client OPÉRATEUR, droit client_commands ; répondre par « reply »)
   {"type":"error","code":"auth","message":"…"}   (puis fermeture)
 """
 

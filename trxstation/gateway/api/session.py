@@ -19,7 +19,7 @@ import json
 import logging
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 from ... import __version__
 from ...hostinfo import hamlib_version, host_details, shared_monitor
@@ -30,11 +30,15 @@ from ..memories import MemoryStore, MemoryStoreError
 from ..voice_profiles import VoiceProfileError
 from ..safety import PttController, Refused
 from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
-from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, ProtocolError, parse_command
+from ...modules.bus import CommandRefused
+from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, Command, ProtocolError, parse_command
 
 log = logging.getLogger(__name__)
 
 
+# Commandes qui ne disent pas qu'un opérateur est actif (présence de groupe) : battement, état, consultations.
+PASSIVE_COMMANDS = frozenset({"heartbeat", "get_state", "layout_get", "spectrum_watch", "host_info", "voice_profiles",
+                              "swr_last", "swr_plan", "breizh_log"})
 _hamlib_version: str | None = None                # version de Hamlib (synthèse host_info), lue une fois
 FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0
 # Pendant une mesure de TOS, aucun client ne change les réglages du poste (la mesure les a pris et les remettra) ;
@@ -102,6 +106,10 @@ class ControlSession:
         self.reports = reports                   # ReportStore : rapports de problème de la page (bugreports.py)
         self.hf_view = False                     # vue HF affichée chez ce client (dernier spectrum_watch accepté)
         self.on_hf_view: Callable[["ControlSession", bool], None] | None = None   # ModuleBridge.replay (gateway/main)
+        # Présence de groupe : commande relayée au module « presence » (ModuleBridge.call), activité de l'opérateur
+        # (ModuleBridge.operator_activity) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
+        self.friends_call: Callable[[dict], Awaitable] | None = None
+        self.on_operator_activity: Callable[[], None] | None = None
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
@@ -191,7 +199,8 @@ class ControlSession:
                    "swr": self.swr is not None and self.ctrl.config.swr.enabled,
                    "replay": self._replay_allowed(),
                    "breizh": self.breizh is not None,
-                   "netprobe": self.netprobe is not None}
+                   "netprobe": self.netprobe is not None,
+                   "friends": self.friends_call is not None and not self.listener}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
@@ -489,6 +498,23 @@ class ControlSession:
             self._forbidden.clear()
             self.disconnect("too_many_forbidden")
 
+    async def _friends(self, cmd: Command) -> None:
+        """Présence de groupe : relayée au module, qui n'agit JAMAIS sur le poste ; son refus revient tel quel."""
+        if self.friends_call is None or self.listener:
+            self._result(cmd.id, False, reason="friends_unavailable", detail="présence de groupe non disponible")
+            return
+        try:
+            data = await self.friends_call({"action": cmd.params["action"], "args": cmd.params["args"],
+                                            "client": self.client_id})
+        except CommandRefused as exc:
+            self._result(cmd.id, False, reason=exc.code, detail=str(exc))
+            return
+        except Exception:
+            log.exception("commande friends de %s en erreur", self.client_id)
+            self._result(cmd.id, False, reason="friends_error")
+            return
+        self._result(cmd.id, True, action=cmd.params["action"], data=data)
+
     def _result(self, ident, ok: bool, **extra) -> None:
         self.send({"type": "result", "id": ident, "ok": ok, **extra})
 
@@ -523,6 +549,15 @@ class ControlSession:
             return
         if cmd.name.startswith("net_"):
             self._net_command(cmd)                               # sonde réseau : n'agit JAMAIS sur le poste
+            return
+        if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
+                and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))):
+            try:
+                self.on_operator_activity()                      # statut « En RX » de la présence de groupe
+            except Exception:
+                log.exception("activité de l'opérateur non transmise aux modules")
+        if cmd.name == "friends":
+            await self._friends(cmd)                             # opérateur seulement (liste blanche des visiteurs)
             return
         try:
             if cmd.name == "heartbeat":

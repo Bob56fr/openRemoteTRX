@@ -149,6 +149,8 @@ class PeerManager:
         self.ice_servers = ice_servers          # None : défaut d'aiortc ; [] : aucun (réseau local / VPN) ; sinon la liste
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
+        self.friends_call = None                # présence de groupe : (données) -> résultat du module (ModuleBridge.call)
+        self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
         self.peers: dict[str, _Peer] = {}
         self._tasks: set[asyncio.Task] = set()
 
@@ -199,6 +201,9 @@ class PeerManager:
                                      netprobe=self.netprobe, device=device, agent=agent, source=source,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
+            if role != LISTENER:                        # présence de groupe : jamais pour un visiteur
+                session.friends_call = self.friends_call
+                session.on_operator_activity = self.on_operator_activity
             peer.session = session
 
             @channel.on("message")

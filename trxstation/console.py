@@ -252,6 +252,7 @@ class Console:
             ("21", "Dernière mesure de TOS de l'antenne (lecture seule)", self.swr_report),
             ("22", "Breizh Audio Box (clé d'appairage, adresse, essai de la liaison, journal)", self.breizh),
             ("23", "Qualité du réseau (liaisons, coupures, statistiques, export, effacement)", self.network),
+            ("24", "Présence de groupe (pseudo, groupes d'amis, invitations, partage)", self.friends),
         ]
 
     # ------------------------------------------------------------------ outils
@@ -1162,6 +1163,196 @@ class Console:
             shutil.rmtree(work, ignore_errors=True)
         self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
                  "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
+
+    # ------------------------------------------------------------------ présence de groupe (menu 24)
+
+    FRIEND_LEVELS = {"1": ("f", "fréquence et mode"), "2": ("o", "« On Air » seulement"), "3": ("x", "un texte")}
+    FRIEND_ROLES = {"a": "administrateur", "c": "co-administrateur", "m": "membre"}
+    FRIEND_STATUS = {"member": "membre", "pending": "adhésion en attente", "removed": "exclu ou groupe supprimé"}
+    FRIEND_CODES = {"Q": "En QSO", "R": "En RX", "S": "Au shack", "A": "Absent", "O": "Hors ligne"}
+
+    def friends(self) -> None:
+        """Présence de groupe (docs/presence-cahier-des-charges.md) : le module « presence » fait le travail ; la
+        console lui dépose une demande (state_dir/presence-request.json) et lit sa réponse. Rien ici ne touche au
+        poste : un QSY vers un ami se fait depuis la page ou l'application."""
+        from .presence.store import STATUS_FILE
+        state_dir = config_state_dir(self.config)
+        while True:
+            try:
+                status = json.loads((state_dir / "presence" / STATUS_FILE).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                status = None
+            if not status or not status.get("enabled"):
+                self.say("\nPrésence de groupe désactivée, ou module « presence » jamais démarré.\n"
+                         "Pour l'activer (menu 14) : dans [presence], enabled = true ; dans [modules], ajouter\n"
+                         "\"presence\" à run (ex. run = [\"cluster\", \"presence\"]) ; puis redémarrer la station (menu 5).")
+                return
+            self.say("\n" + self.friends_summary(status))
+            choice = self.ask("\n  1) Choisir le pseudo\n"
+                              "  2) Groupes et membres\n"
+                              "  3) Créer un groupe\n"
+                              "  4) Inviter quelqu'un (lien et QR code)\n"
+                              "  5) Rejoindre un groupe (coller une invitation)\n"
+                              "  6) Ce que je partage dans un groupe\n"
+                              "  7) Quitter ou supprimer un groupe\n"
+                              "Choix (Entrée = retour) : ").strip()
+            if not choice:
+                return
+            {"1": self._friends_pseudo, "2": self._friends_view, "3": self._friends_create,
+             "4": self._friends_invite, "5": self._friends_join, "6": self._friends_share,
+             "7": self._friends_leave}.get(choice, lambda: self.say("Choix inconnu."))()
+
+    def friends_summary(self, status: dict) -> str:
+        lines = [f"Présence de groupe : pseudo {status.get('pseudo') or '(aucun : choix 1)'}, "
+                 f"{'enregistrée auprès du relais' if status.get('registered') else 'PAS ENCORE enregistrée'}"]
+        problem = status.get("problem")
+        if problem:
+            lines.append(f"  Problème : {problem}")
+        for grp in status.get("groups") or []:
+            lines.append(f"  - {grp.get('name')} : {self.FRIEND_ROLES.get(grp.get('role'), '?')}, "
+                         f"{self.FRIEND_STATUS.get(grp.get('status'), grp.get('status'))}, {grp.get('members', 0)} ami(s)")
+        if not status.get("groups"):
+            lines.append("  Aucun groupe : en créer un (choix 3) ou en rejoindre un (choix 5).")
+        return "\n".join(lines)
+
+    def friends_request(self, action: str, args: dict | None = None, *, timeout_s: float = 45.0,
+                        poll_s: float = 0.5) -> dict | None:
+        """Dépose la demande pour le module et attend sa réponse ; None si rien dans le délai (module arrêté)."""
+        import secrets
+        from .presence.service import CONSOLE_REPLY, CONSOLE_REQUEST
+        state_dir = config_state_dir(self.config)
+        ident = secrets.token_hex(8)
+        body = json.dumps({"id": ident, "action": action, "args": args or {}, "at": time.time()}).encode("utf-8")
+        target = state_dir / CONSOLE_REQUEST
+        try:
+            tmp = target.with_name(target.name + ".tmp")
+            tmp.write_bytes(body)
+            os.replace(tmp, target)
+        except PermissionError:                   # dossier du compte de la station : par l'administrateur (Linux)
+            work = Path(tempfile.mkdtemp(prefix="trx-presence-"))
+            try:
+                (work / CONSOLE_REQUEST).write_bytes(body)
+                if self.runner.run(["install", "-m", "0644", str(work / CONSOLE_REQUEST), str(target)], admin=True) != 0:
+                    self.say("Demande impossible à déposer.")
+                    return None
+            finally:
+                shutil.rmtree(work, ignore_errors=True)
+        except OSError as exc:
+            self.say(f"Demande impossible à déposer : {exc}")
+            return None
+        reply_path = state_dir / "presence" / CONSOLE_REPLY
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            try:
+                reply = json.loads(reply_path.read_text(encoding="utf-8"))
+                if reply.get("id") == ident:
+                    return reply
+            except (OSError, ValueError):
+                pass
+            time.sleep(poll_s)
+        self.say("Pas de réponse du module « presence » (station arrêtée ? voir le journal, menu 7).")
+        return None
+
+    def _friends_do(self, action: str, args: dict | None = None) -> dict | None:
+        self.say("Demande envoyée au module…")
+        reply = self.friends_request(action, args)
+        if reply is None:
+            return None
+        if not reply.get("ok"):
+            self.say(f"Refusé : {reply.get('message') or reply.get('error')}")
+            return None
+        return reply.get("result") or {}
+
+    def _friends_pick(self, *, admin: bool = False) -> str | None:
+        view = self._friends_do("view")
+        groups = [g for g in (view or {}).get("groups", []) if not admin or g.get("role") in ("a", "c")]
+        if not groups:
+            self.say("Aucun groupe" + (" que tu administres." if admin else "."))
+            return None
+        for i, g in enumerate(groups, 1):
+            self.say(f"  {i}) {g['name']} ({self.FRIEND_ROLES.get(g['role'], '?')})")
+        answer = self.ask("Numéro du groupe (Entrée = annuler) : ").strip()
+        if answer.isdigit() and 1 <= int(answer) <= len(groups):
+            return groups[int(answer) - 1]["g"]
+        return None
+
+    def _friends_pseudo(self) -> None:
+        pseudo = self.ask("Pseudo (indicatif ou surnom, 16 caractères : lettres sans accent, chiffres, espace, . / _ -) : ").strip()
+        if pseudo and self._friends_do("pseudo", {"pseudo": pseudo}) is not None:
+            self.say(f"Pseudo enregistré : {pseudo}")
+
+    def _friends_view(self) -> None:
+        view = self._friends_do("view")
+        for g in (view or {}).get("groups", []):
+            self.say(f"\n{g['name']} ({self.FRIEND_ROLES.get(g['role'], '?')}, "
+                     f"{self.FRIEND_STATUS.get(g['status'], g['status'])})")
+            for m in g.get("members", []):
+                detail = ""
+                if m.get("lv") == "f" and "f" in m:
+                    detail = f" {m['f'] / 1e6:.3f} MHz {m.get('m', '')}"
+                elif m.get("lv") == "x" and m.get("x"):
+                    detail = f" « {m['x']} »"
+                self.say(f"  [{m['code']}] {m['pseudo']} : {self.FRIEND_CODES.get(m['code'], '?')}{detail}")
+            if not g.get("members"):
+                self.say("  (personne d'autre pour l'instant)")
+
+    def _friends_create(self) -> None:
+        name = self.ask("Nom du groupe (24 caractères) : ").strip()
+        if name and self._friends_do("create", {"name": name}) is not None:
+            self.say(f"Groupe « {name} » créé : tu en es l'administrateur. Invite tes amis (choix 4).")
+
+    def _friends_invite(self) -> None:
+        from .setup_wizard import qr_lines
+        g = self._friends_pick(admin=True)
+        if g is None:
+            return
+        result = self._friends_do("invite", {"g": g, "days": 7})
+        if not result:
+            return
+        url = result["url"]
+        self.say("\nInvitation valable 7 jours, pour UNE seule station. À transmettre seulement à la personne invitée\n"
+                 "(elle contient la clé du groupe) :\n\n" + url + "\n")
+        lines = qr_lines(url)
+        if lines:
+            self.say("\n".join(lines))
+        self.say("Son adhésion sera validée automatiquement par ta station à sa prochaine requête.")
+
+    def _friends_join(self) -> None:
+        url = self.ask("Coller l'invitation (lien complet) : ").strip()
+        if not url:
+            return
+        name = self.ask("Nom de ce groupe chez toi (Entrée = automatique) : ").strip()
+        if self._friends_do("join", {"url": url, "name": name}) is not None:
+            self.say("Demande d'adhésion envoyée : elle est validée dès que la station de l'administrateur la voit.")
+
+    def _friends_share(self) -> None:
+        g = self._friends_pick()
+        if g is None:
+            return
+        for key, (_, label) in self.FRIEND_LEVELS.items():
+            self.say(f"  {key}) {label}")
+        level = self.FRIEND_LEVELS.get(self.ask("Que partager avec ce groupe : ").strip())
+        if level is None:
+            return
+        args = {"g": g, "level": level[0]}
+        if level[0] == "x":
+            args["text"] = self.ask("Texte (16 caractères : lettres sans accent, chiffres, espace, . / -) : ").strip()
+        args["invisible"] = self.yes("Être invisible dans ce groupe pour l'instant", False)
+        if self._friends_do("share", args) is not None:
+            self.say("Partage enregistré : pris à la prochaine requête (moins de 2 minutes).")
+
+    def _friends_leave(self) -> None:
+        g = self._friends_pick()
+        if g is None:
+            return
+        view = self._friends_do("view", {"g": g}) or {}
+        role = (view.get("groups") or [{}])[0].get("role")
+        if role == "a" and self.yes("Tu es administrateur : SUPPRIMER le groupe pour tout le monde", False):
+            if typed(self.ask("Taper SUPPRIMER pour confirmer : "), "SUPPRIMER") and self._friends_do("delete", {"g": g}) is not None:
+                self.say("Groupe supprimé.")
+            return
+        if self.yes("Quitter ce groupe", False) and self._friends_do("leave", {"g": g}) is not None:
+            self.say("Groupe quitté.")
 
     # ------------------------------------------------------------------ qualité du réseau (menu 23)
 

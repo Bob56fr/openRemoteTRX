@@ -9,10 +9,11 @@ start = "auto"
 description = "Présence de groupe : états chiffrés échangés par le relais (lecture seule du poste)"
 
 [rights]
-events = ["freq_mode", "ptt"]   # fréquence, mode et émission : le statut publié (lecture seule)
+events = ["freq_mode", "ptt", "operator_activity"]   # statut publié (lecture seule du poste)
 commands = []
-client_messages = false
+client_messages = true          # avis « friends_changed », réservé aux opérateurs
 verify_tokens = false
+client_commands = true          # commande « friends » d'un OPÉRATEUR, relayée par le cœur (jamais d'un visiteur)
 
 [resources]
 cpu_quota = 10        # % d'un cœur (la preuve de travail de l'enregistrement prend quelques secondes, une fois)

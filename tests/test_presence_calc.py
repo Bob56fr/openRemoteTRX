@@ -482,7 +482,8 @@ def test_shared_vectors_check_as_the_relay_does():
 
 def test_presence_package_never_touches_the_ptt_nor_the_cat():
     """La présence ne fait que montrer : son paquet n'importe ni la sécurité d'émission, ni le CAT, ni la passerelle ;
-    seul service.py importe le CLIENT du bus (droits = manifeste, aucune commande) ; personne n'appelle `.command(`."""
+    seul service.py importe le CLIENT du bus (droits = manifeste, aucune commande) et prévient les pages ;
+    personne n'appelle `.command(`."""
     forbidden = ("safety", "cat", "rigctl", "ptt", "gateway")
     for path in (ROOT / "trxstation" / "presence").glob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -491,8 +492,10 @@ def test_presence_package_never_touches_the_ptt_nor_the_cat():
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom):
                 names = [node.module or ""] + [a.name for a in node.names]
-            elif isinstance(node, ast.Attribute) and node.attr in ("command", "client_message"):
-                raise AssertionError(f"{path.name} : appel .{node.attr} interdit au module de présence")
+            elif isinstance(node, ast.Attribute) and node.attr == "command":
+                raise AssertionError(f"{path.name} : appel .command interdit au module de présence")
+            elif isinstance(node, ast.Attribute) and node.attr == "client_message":
+                assert path.name == "service.py", f"{path.name} : seul service.py prévient les pages"
             for name in names:
                 assert not any(part in forbidden for part in name.split(".")), f"{path.name} importe {name}"
                 if "modules" in name.split("."):

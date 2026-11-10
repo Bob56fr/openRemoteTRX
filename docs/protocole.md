@@ -110,6 +110,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `net_thresholds` | `net_type` (`lan`, `wifi`, `4g`, `5g`, `mobile`, `unknown`) et `rtt_warn`, `rtt_alert` (20 à 5 000 ms), `loss_warn`, `loss_alert` (0,1 à 100 %), orange < rouge ; ou `reset: true` | OPÉRATEUR : seuils de l'indicateur choisis pour ce type de réseau (priment sur `station.toml`) ou retour aux valeurs de départ ; réponse `thresholds` (tous les seuils choisis) |
 | `net_vpn_ignore` | `address` (adresse IP) | OPÉRATEUR : ne plus avertir d'un profil VPN partagé pour cette adresse |
 | `net_export` | `part` (0 à 99 ; 0 = fabriquer un nouvel export) | OPÉRATEUR (station 0.109.0+) : export ANONYME des 30 derniers jours (zip : `rapport.html`, `donnees.json`), par morceaux ; réponse `name` (nom de fichier), `part`, `parts`, `size` (octets du zip), `data` (36 000 octets au plus, en base64) ; le client demande `part` = 1, 2… jusqu'à `parts` - 1 et assemble |
+| `friends` | `action` (une de `view`, `stats`, `pseudo`, `texts`, `shack_for`, `shack_cancel`, `shack_rules`, `create`, `invite`, `join`, `leave`, `delete`, `exclude`, `role`, `share`, `rename`, `qsy_mark`, `qsy_back`), `args` (objet, 1 500 octets au plus, vérifié par le module) | OPÉRATEUR (station 0.118.0+, fonction `friends`, § 16) : présence de groupe, relayée au module « presence » ; réponse `action`, `data` (résultat de l'action) ; refus : `reason` du module ou `friends_unavailable` |
 
 ## 7. Réponses et erreurs
 
@@ -221,3 +222,34 @@ Cahier des charges : [`docs/netprobe-cahier-des-charges.md`](netprobe-cahier-des
 - **Diagnostic** (`diagnosis`) : `app_station`, `lan`, `box_internet`, `webrtc`, `phone_radio`, `vpn_shared`, `mobile_or_tunnel`, `unknown` ; `basis` = faits qui l'appuient (`backlog`, `health_ok`, `radio_weak`, `cell_changed`, `network_switched`, `regular_pattern`, sondes de la station).
 - **`net_stats.stats`** : `days`, `device`, `now_ms`, `devices` (`device`, `agent`, `last_ms`), `summary` (`outages`, `outage_s`, `longest_s`, `connected_s`, `availability_pct`, `loss_pct`), `per_day` (`date` locale, `outages`, `outage_s`, `by_diagnosis`, `hours` = 24 compteurs de coupures, `loss_pct`, `rtt_p95_ms`), `by_diagnosis`, `by_net_type` (`windows`, `outages`, `loss_pct`), `thresholds` par type de réseau (`in_force`, `chosen`, `rtt_hist` et `loss_hist` = `[fenêtres, dont son dégradé]` par case, `days`, `proposed` : `{rtt, loss}` chacun `{warn, alert}` ou `null`), `edges` (`rtt_ms`, `loss_pct` : limites des cases), `outages_list` (50 dernières).
 - Sondes de la station (0.107.0+) : une par seconde vers la box (`[netprobe] lan_target`, `auto` = passerelle par défaut) et vers `internet_target`, en ICMP sans privilège, sinon en TCP toutes les 5 s ; faits `lan_probe_down`, `internet_probe_down` du diagnostic. Export anonyme : `net_export` (station 0.109.0+), aussi `trx-netreport --export`.
+
+## 16. Présence de groupe « Amis » (station 0.118.0+, fonction `friends`)
+
+Cahier des charges : [`docs/presence-cahier-des-charges.md`](presence-cahier-des-charges.md). Le module « presence »
+échange avec le relais des états CHIFFRÉS ; il n'a AUCUN droit sur le poste. Annoncée dans `hello.features` (`friends`)
+seulement pour un OPÉRATEUR, quand `[presence] enabled` et « presence » est dans `[modules] run`. Un visiteur ne reçoit
+ni la commande ni les avis.
+
+- **Commande** `{"cmd": "friends", "id": 7, "action": "…", "args": {…}}` ; réponse `{"type": "result", "id": 7,
+  "ok": true, "action": "…", "data": {…}}`, ou `ok: false` avec `reason` : `module_absent` (module arrêté), `timeout`,
+  `args`, `unknown_group`, `not_admin`, `not_registered`, `relay_unreachable`, `invitation_expired`,
+  `invitation_token_used`, `other_relay`, `already`, `quota`, `pseudo`, `text`, `share`, `name`… et `detail` (texte).
+- **Actions** (`args`) : `view` (`g` facultatif : un seul groupe) ; `stats` (`g`, administrateurs) ; `pseudo`
+  (`pseudo`) ; `texts` (`texts`, 8 textes prédéfinis) ; `shack_for` (`minutes`, 1 à 1 440) ; `shack_cancel` ;
+  `shack_rules` (`rules` : `[{"days": [0..6], "start": "HH:MM", "end": "HH:MM"}]`, 7 au plus, `suspended_until`
+  facultatif) ; `create` (`name`) -> `g` ; `invite` (`g`, `days` 1 à 30, défaut 7) -> `url` (contient la clé du
+  groupe : à ne montrer qu'à l'opérateur) ; `join` (`url`, `name` facultatif) -> `g` ; `leave`, `delete` (`g`) ;
+  `exclude` (`g`, `member`) ; `role` (`g`, `member`, `role` a / c / m) ; `share` (`g`, `level` f / o / x, `text`
+  si x, `invisible`, `hide_absence`) ; `rename` (`g`, `name`) ; `qsy_mark` -> `back` (fréquence et mode ACTUELS,
+  retenus avant un QSY vers un ami) ; `qsy_back` -> `back` (rendu une fois, puis oublié).
+- **Vue** (`view`) : `station`, `pseudo`, `registered`, `problem`, `last_sync`, `texts`, `groups` : `g`, `name`,
+  `role` (a / c / m), `status` (`member`, `pending`, `removed`), `share`, `members` triés (actifs d'abord) : `id`,
+  `pseudo`, `code` (Q En QSO, R En RX, S Au shack, A Absent, O Hors ligne), `age` (s depuis la dernière requête du
+  membre), et sauf hors ligne : `sd` (début du statut, absent si masqué), `lt` (dernière émission), `su` (fin de la
+  plage « Au shack »), `lv` (f / o / x), `f` et `m` (si f), `x` (si x), `updated` (s depuis l'état reçu).
+  Vue de plus de 48 ko : `truncated: true`, membres réduits (le client demande chaque groupe avec `g`).
+- **Avis** `{"type": "module", "module": "presence", "data": {"kind": "friends_changed", "scope": "operators"}}` :
+  la vue a changé ; le client redemande `view` (le message reste petit quel que soit le nombre de membres).
+- **QSY vers un ami** (lot 4 et 5) : confirmation de l'opérateur avec l'âge de l'information ; refusé pendant toute
+  émission ; `friends` `qsy_mark`, puis `set_mode` et `set_frequency` habituels ; « Retour » = `qsy_back` puis les
+  mêmes commandes. Jamais d'émission.

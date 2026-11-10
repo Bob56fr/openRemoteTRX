@@ -49,6 +49,13 @@
    "quand": "Pour aider au débogage, ou vérifier qu'une installation est saine.",
    "role": "Menu expert : lance toute la suite de tests automatiques du logiciel sur la\nstation."
   },
+  "friends": {
+   "admin": true,
+   "expert": "La console dépose sa demande pour le module « presence » (fichier\npresence-request.json du dossier d'état, par sudo s'il le faut) et lit sa\nréponse (presence/console-reply.json, effacée après une minute : elle peut\ncontenir une invitation). La fonction s'active dans station.toml (menu 14) :\n[presence] enabled = true et « presence » dans [modules] run, puis\nredémarrer la station. Le relais ne voit que des états chiffrés : ni\nfréquence, ni mode, ni statut. Une invitation contient la clé du groupe : la\ntransmettre seulement à la personne invitée ; elle ne sert qu'une fois et\nexpire après 7 jours. Détail : docs/presence-cahier-des-charges.md.",
+   "modifie": "Les réglages de présence de la station, rangés à part dans le dossier d'état\n(pas dans station.toml) ; la création, l'invitation, l'adhésion et le départ\npassent par le relais de présence. Rien ne touche au poste : un QSY vers un\nami se fait depuis la page ou l'application.",
+   "quand": "Pour mettre en place la présence avec des amis équipés d'openRemoteTRX, ou\nquand la page et l'application ne sont pas à portée de main.",
+   "role": "Gère la présence de groupe : le pseudo de la station, les groupes d'amis\n(créer, inviter par un lien et un QR code, rejoindre avec une invitation\nreçue, quitter, supprimer), et ce que la station partage dans chaque groupe\n(fréquence et mode, « On Air » seulement, ou un court texte ; invisible). On\ny voit aussi qui, dans chaque groupe, est en QSO, en réception, au shack,\nabsent ou hors ligne."
+  },
   "hwtest": {
    "admin": true,
    "expert": "Le résumé final de l'essai s'affiche à l'écran : copie-le dans ta demande\nd'aide. Les réponses tapées ne tiennent compte ni des majuscules ni des\naccents (« emettre », « Émettre » et « EMETTRE » sont acceptés).",

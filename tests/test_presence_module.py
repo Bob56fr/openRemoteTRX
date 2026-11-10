@@ -398,7 +398,7 @@ def test_manifest_gives_no_right_on_the_rig():
     from trxstation.modules.manifest import load_manifest
     m = load_manifest(Path(__file__).resolve().parents[1] / "trxstation" / "modules" / "builtin" / "presence" / "manifest.toml")
     assert m.rights.commands == frozenset() and not m.rights.verify_tokens
-    assert m.rights.events == {"freq_mode", "ptt"}
+    assert m.rights.events == {"freq_mode", "ptt", "operator_activity"}
 
 
 def test_b64e_is_still_exported():

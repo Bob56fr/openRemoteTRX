@@ -7,6 +7,7 @@ Lecture seule. La fraîcheur de la passerelle se juge sur le changement de `seq`
 """
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -38,12 +39,22 @@ def read_system_info(proc: str = "/proc", sys_root: str = "/sys") -> SystemInfo:
                       mem_available_mb=mem, uptime_s=_read_float(Path(proc) / "uptime"))
 
 
+def read_presence(path: Path) -> dict | None:
+    """Résumé du module de présence (status.json : jamais de clé ni de fréquence d'ami) ; None si absent."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 class StatusSource:
     def __init__(self, status_path: str | Path, state_dir: str | Path, stale_after_s: float = 2.0, *,
                  clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
                  system_reader: Callable[[], SystemInfo] = read_system_info):
         self.status_path = Path(status_path)
         self.store = StateStore(state_dir)           # utilisé en lecture seule (safe_mode())
+        self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
         self.watch = GatewayWatch(stale_after_s)
         self.clock, self.sleep, self.system_reader = clock, sleep, system_reader
 
@@ -53,7 +64,8 @@ class StatusSource:
         self.watch.update(status, now)
         return Snapshot(status=status, gateway_fresh=self.watch.fresh(now),
                         stale_s=self.watch.age(now) if status is not None else None,
-                        safe_mode=self.store.safe_mode(), system=self.system_reader())
+                        safe_mode=self.store.safe_mode(), system=self.system_reader(),
+                        presence=read_presence(self.presence_path))
 
     def poll_once(self, wait_s: float = 0.6) -> Snapshot:
         """Pour une capture unique (--once) : deux lectures espacées ; figée si `seq` n'a pas bougé."""
@@ -65,4 +77,4 @@ class StatusSource:
         if second.status is not None and second.status.seq != first.status.seq:
             return second
         return Snapshot(status=second.status, gateway_fresh=False, stale_s=wait_s,
-                        safe_mode=second.safe_mode, system=second.system)
+                        safe_mode=second.safe_mode, system=second.system, presence=second.presence)

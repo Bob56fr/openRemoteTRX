@@ -68,7 +68,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "net_ping", "net_pong", "net_report",
             "net_backlog",                   # 10 dernières minutes du client après une coupure (opérateurs)
             "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",   # statistiques, effacement, seuils (opérateurs)
-            "net_export")                    # export anonyme (zip) par morceaux : part (opérateurs)
+            "net_export",                    # export anonyme (zip) par morceaux : part (opérateurs)
+            # présence de groupe (docs/presence-cahier-des-charges.md) : OPÉRATEURS ; relayée au module « presence »
+            # qui n'a AUCUN droit sur le poste (un QSY vers un ami = set_mode puis set_frequency du client)
+            "friends")                       # action (liste FRIENDS_ACTIONS) et args (objet, validé par le module)
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -80,7 +83,11 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "swr",                       # mesure de TOS de l'antenne (0.90.0+)
                      "replay",                    # rediffusion d'un enregistrement de l'audio reçu (0.91.0+, accordée par l'assistant)
                      "breizh",                    # Breizh Audio Box dans la chaîne d'émission (0.100.0+, [breizh] enabled)
-                     "netprobe")                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
+                     "netprobe",                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
+                     "friends")                   # présence de groupe « Amis » (0.118.0+, module presence)
+FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
+                   "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
+MAX_FRIENDS_ARGS_BYTES = 1500
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -305,6 +312,14 @@ def parse_command(raw: str | bytes) -> Command:
                 params["part"] = _int(data.get("part", 0), "part", 0, 99)
         except ReportInvalid as exc:
             raise ProtocolError("invalid_params", str(exc)) from None
+    elif name == "friends":
+        unknown = set(data) - {"cmd", "id", "action", "args"}
+        if unknown or data.get("action") not in FRIENDS_ACTIONS:
+            raise ProtocolError("invalid_params", f"action : une de {', '.join(FRIENDS_ACTIONS)}")
+        args = data.get("args", {})
+        if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_FRIENDS_ARGS_BYTES:
+            raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_FRIENDS_ARGS_BYTES} octets au plus")
+        params["action"], params["args"] = data["action"], args
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

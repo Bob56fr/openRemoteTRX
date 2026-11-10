@@ -110,6 +110,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                 tasks.append(asyncio.create_task(manager.netprobe.probes.run(stop)))
         if manager is not None:
             manager.on_hf_view = bridge.on_hf_view     # vue HF ouverte : spots du cluster rejoués à ce client
+            if cfg.presence.enabled and bridge.has_client_commands("presence"):   # présence de groupe (« friends »)
+                manager.friends_call = lambda data: bridge.call("presence", data)
+                manager.on_operator_activity = bridge.operator_activity
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,

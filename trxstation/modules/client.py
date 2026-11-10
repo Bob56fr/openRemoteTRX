@@ -34,6 +34,14 @@ class BusRefused(Exception):
         self.code = code
 
 
+class CallRefused(Exception):
+    """Levée par on_call : refus d'une commande de client, avec un code stable (renvoyé au client)."""
+
+    def __init__(self, code: str, message: str = "") -> None:
+        super().__init__(message or code)
+        self.code = code
+
+
 class RequestFailed(Exception):
     def __init__(self, code: str, message: str = "") -> None:
         super().__init__(message or code)
@@ -51,6 +59,7 @@ class ModuleClient:
         self.on_event: Callable[[str, dict], Any] | None = None
         self.on_gap: Callable[[], Any] | None = None
         self.on_connect: Callable[[], Any] | None = None
+        self.on_call: Callable[[dict], Any] | None = None   # commande d'un client opérateur (droit client_commands)
         self.metrics: Callable[[], dict] | None = None
         self.last_seq: int | None = None
         self.connected = asyncio.Event()
@@ -144,7 +153,7 @@ class ModuleClient:
                 msg = decode(line)
             except ProtocolError:
                 continue
-            if msg["type"] == "event":
+            if msg["type"] in ("event", "call"):
                 # Traité à part : un rappel peut lui-même faire une requête.
                 self._events.put_nowait(msg)
             elif msg["type"] == "response":
@@ -166,6 +175,9 @@ class ModuleClient:
                     except Exception:
                         log.exception("rappel de connexion en erreur")
                 continue
+            if msg.get("type") == "call":
+                await self._answer_call(msg)
+                continue
             seq = int(msg.get("seq", 0))
             gap = self.last_seq is not None and seq > self.last_seq + 1
             self.last_seq = seq
@@ -176,6 +188,23 @@ class ModuleClient:
                     await _maybe_await(self.on_event(msg.get("name"), msg.get("data") or {}))
             except Exception:
                 log.exception("traitement de l'événement %s en erreur", msg.get("name"))
+
+    async def _answer_call(self, msg: dict) -> None:
+        reply = {"type": "reply", "id": msg.get("id")}
+        try:
+            if self.on_call is None:
+                raise CallRefused("unavailable", "ce module ne reçoit pas de commandes")
+            result = await _maybe_await(self.on_call(dict(msg.get("data") or {})))
+            reply.update(ok=True, result=result)
+        except CallRefused as exc:
+            reply.update(ok=False, error=exc.code, message=str(exc))
+        except Exception:
+            log.exception("commande de client en erreur")
+            reply.update(ok=False, error="internal", message="erreur du module")
+        try:
+            await self._send(reply)
+        except (ConnectionError, OSError) as exc:
+            log.warning("réponse à une commande non envoyée : %s", exc)
 
     async def _heartbeat_loop(self) -> None:
         while True:

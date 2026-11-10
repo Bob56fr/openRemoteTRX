@@ -57,6 +57,8 @@ object Texts {
         "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
         "listeners_unavailable" to "Cette station ne gère pas les visiteurs.",
         "voice_profiles_unavailable" to "Cette station ne range pas les profils d'égaliseur.",
+        "friends_unavailable" to "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
+        "friends_error" to "La présence de groupe n'a pas pu traiter la demande.",
         "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
         "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
         "swr_busy" to "Mesure de TOS en cours : STOP pour l'arrêter.",

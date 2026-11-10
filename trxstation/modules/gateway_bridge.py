@@ -10,7 +10,10 @@
   les mêmes règles que pour le client (refus hors RX confirmé, bandes…).
   Aucun module ne peut demander le PTT : la commande n'existe pas.
 - Relaie vers les clients connectés les messages des modules
-  ({"type": "module", "module": nom, "data": …}).
+  ({"type": "module", "module": nom, "data": …}) ; `scope: "operators"` : jamais
+  à un visiteur.
+- Relaie à un module (droit client_commands) la commande d'un client OPÉRATEUR
+  (call) et publie « operator_activity » (au plus une fois par 30 s).
 
 Toute erreur du pont est journalisée et laisse la passerelle tourner :
 sans modules, la station fonctionne comme avant.
@@ -21,6 +24,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import time
 from collections.abc import Callable, Iterable
 
 from ..gateway.cat import CatConnectionError, RigError
@@ -32,6 +36,7 @@ from .registry import selected_manifests
 log = logging.getLogger(__name__)
 
 MIN_QSY_HZ, MAX_QSY_HZ = 100_000, 3_000_000_000
+OPERATOR_ACTIVITY_EVERY_S = 30.0
 RETAIN_MAX = 500                    # messages retenus par module et par sorte (instantané + changements) pour les clients qui arrivent
 _MODE_RE = re.compile(r"[A-Za-z0-9\-]{1,16}")
 
@@ -49,6 +54,7 @@ class ModuleBridge:
         self._last_freq_mode: tuple | None = None
         self._last_connected: bool | None = None
         self._retained: dict[str, list[dict]] = {}
+        self._last_activity = float("-inf")
 
     # ------------------------------------------------------------- cycle de vie
     async def start(self) -> bool:
@@ -144,6 +150,29 @@ class ModuleBridge:
         log.info("QSY %s Hz %s demandé par le module %s", freq, mode or "", module)
         return {"freq": freq, "mode": mode}
 
+    # ------------------------------------------------------------- commandes des clients opérateurs
+    async def call(self, module: str, data: dict):
+        """Commande d'un client OPÉRATEUR relayée à un module ; CommandRefused si absent, refusé ou trop lent."""
+        if self.bus is None:
+            raise CommandRefused("module_absent", "modules non démarrés")
+        return await self.bus.call(module, data)
+
+    def has_client_commands(self, module: str) -> bool:
+        """Le module est-il demandé (station.toml) et autorisé à recevoir les commandes des clients ?"""
+        try:
+            manifests, _ = selected_manifests(self.cfg.modules)
+        except Exception:
+            return False
+        return any(m.name == module and m.rights.client_commands for m in manifests)
+
+    def operator_activity(self, now: float | None = None) -> None:
+        """Un client opérateur agit : événement « operator_activity » (statut « En RX » de la présence)."""
+        now = time.monotonic() if now is None else now
+        if self.bus is None or now - self._last_activity < OPERATOR_ACTIVITY_EVERY_S:
+            return
+        self._last_activity = now
+        self.bus.publish("operator_activity", {})
+
     # ------------------------------------------------------------- vers les clients
     def to_clients(self, module: str, message: dict) -> None:
         """Relaie un message de module aux pages.
@@ -163,8 +192,11 @@ class ModuleBridge:
             else:
                 self._retained[key].append(payload)
         only_hf = message.get("scope") == "hf_view"
+        operators = message.get("scope") == "operators"
         for session in list(self.clients()):
             if only_hf and not getattr(session, "hf_view", False):
+                continue
+            if operators and getattr(session, "listener", True):     # inconnu = visiteur : rien
                 continue
             try:
                 session.send(payload)
@@ -177,6 +209,8 @@ class ModuleBridge:
             return
         for payloads in list(self._retained.values()):
             for payload in payloads:
+                if payload["data"].get("scope") == "operators" and getattr(session, "listener", True):
+                    continue
                 try:
                     session.send(payload)
                 except Exception:

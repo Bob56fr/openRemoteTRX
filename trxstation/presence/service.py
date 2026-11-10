@@ -8,7 +8,10 @@ fréquence, le mode et l'émission sur le bus, et échange des états chiffrés 
 - configuration : `[presence]` de station.toml (chemin dans TRX_CONFIG_PATH, donné par le superviseur) ;
 - clés de la station : `[presence] key_file`, ou `state_dir/presence/presence.key` créé au premier démarrage ;
 - groupes, clés de groupe, partage : `state_dir/presence/presence.json` (0600) ; résumé : `status.json` ;
-- journal : `state_dir/presence/presence.log`, 5 fichiers de 1 Mo, jamais de clé.
+- journal : `state_dir/presence/presence.log`, 5 fichiers de 1 Mo, jamais de clé ;
+- commandes des opérateurs (`friends` de la page et de l'application, relayées par le cœur : droit client_commands)
+  et de TRX Console (menu 24 : `state_dir/presence-request.json` déposé par la console, réponse dans
+  `state_dir/presence/console-reply.json`, effacée après 60 s) ; avis `friends_changed` aux SEULS opérateurs.
 
 À la main (essai) :  python -m trxstation.presence.service --config station.toml
 """
@@ -16,6 +19,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import json
 import logging
 import logging.handlers
 import os
@@ -26,13 +31,19 @@ from pathlib import Path
 from .. import __version__
 from .. import config as cfgmod
 from ..paths import default_config_path
-from .engine import Engine
+from . import actions
+from .engine import ActionRefused, Engine
 from .identity import Identity, load_key_file, save_key_file
 from .relay import HttpRelay
 from .store import Store
 
 log = logging.getLogger("trx.presence")
 ERROR_DELAY_S = 120.0
+CONSOLE_REQUEST = "presence-request.json"      # dans state_dir (déposé par TRX Console, au besoin par sudo)
+CONSOLE_REPLY = "console-reply.json"           # dans state_dir/presence
+CONSOLE_MAX_AGE_S = 120.0
+CONSOLE_REPLY_KEEP_S = 60.0
+TICK_S = 1.0
 
 
 def presence_dir(cfg: cfgmod.Config) -> Path:
@@ -59,6 +70,9 @@ class PresenceService:
         self.clock = clock
         self.engine: Engine | None = None
         self.store: Store | None = None
+        self.lock = asyncio.Lock()               # un cycle et une action de l'opérateur ne s'entremêlent jamais
+        self._view_digest = ""
+        self._reply_at: float | None = None
 
     def setup(self) -> Engine:
         identity = load_or_create_identity(cfgmod.presence_key_path(self.cfg, self.config_path))
@@ -73,6 +87,7 @@ class PresenceService:
             self.bus.on_event = self.on_event
             self.bus.on_connect = self.on_connect
             self.bus.on_gap = self.on_connect
+            self.bus.on_call = self.on_call
             self.bus.metrics = lambda: {"groups": len(self.store.groups), "problem": self.engine.problem or ""}
         return self.engine
 
@@ -89,6 +104,89 @@ class PresenceService:
             self.engine.on_rig(data.get("freq"), data.get("mode"))
         elif name == "ptt":
             self.engine.on_ptt(data.get("active"))
+        elif name == "operator_activity":
+            self.engine.on_activity()
+
+    # ------------------------------------------------------------- commandes des opérateurs et de la console
+    async def act(self, action: str, args: dict) -> dict:
+        """Une action de l'opérateur (ActionRefused sinon) ; les pages sont prévenues si la vue a changé."""
+        async with self.lock:
+            result = await actions.handle(self.engine, action, args)
+        if action in actions.MUTATING:
+            self.store.write_status({"enabled": True, "updated": int(self.clock()), **self.engine.status_summary()})
+        await self.notify_if_changed()
+        return result
+
+    async def on_call(self, data: dict):
+        from ..modules.client import CallRefused          # client du bus : seulement pour traduire le refus
+        try:
+            return await self.act(str(data.get("action")), data.get("args") or {})
+        except ActionRefused as exc:
+            raise CallRefused(exc.reason, str(exc)) from None
+
+    async def notify_if_changed(self) -> None:
+        """Avis court `friends_changed` aux OPÉRATEURS (jamais aux visiteurs) quand la vue a changé ; le client
+        redemande la vue (`friends` view) : un message reste petit, quel que soit le nombre de membres."""
+        if self.bus is None or not self.bus.connected.is_set():
+            return
+        digest = hashlib.sha256(json.dumps(self.engine.view(), sort_keys=True, default=str).encode()).hexdigest()
+        if digest == self._view_digest:
+            return
+        self._view_digest = digest
+        try:
+            await self.bus.client_message(kind="friends_changed", scope="operators")
+        except Exception as exc:                  # le bus peut refuser (débit) ou être tombé : la vue reste lisible
+            log.info("avis aux pages non transmis : %s", exc)
+
+    def _state_dir(self) -> Path:
+        return Path(self.cfg.supervisor.state_dir)
+
+    async def check_console(self) -> None:
+        """Demande de TRX Console (menu 24) : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""
+        from .store import write_json
+        reply_path = self.folder / CONSOLE_REPLY
+        now = self.clock()
+        if self._reply_at is not None and now - self._reply_at > CONSOLE_REPLY_KEEP_S:
+            try:
+                reply_path.unlink()
+            except OSError:
+                pass
+            self._reply_at = None
+        path = self._state_dir() / CONSOLE_REQUEST
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            log.warning("demande de la console illisible : %s", exc)
+            return
+        try:
+            path.unlink()
+        except OSError as exc:
+            log.warning("demande de la console non effacée : %s", exc)
+        try:
+            req = json.loads(raw.decode("utf-8"))
+            ident, action, args, at = req["id"], req["action"], req.get("args") or {}, float(req["at"])
+            if not isinstance(ident, str) or not isinstance(action, str) or not isinstance(args, dict):
+                raise ValueError("champs")
+        except (ValueError, KeyError, TypeError, UnicodeDecodeError):
+            log.warning("demande de la console mal formée : ignorée")
+            return
+        if abs(now - at) > CONSOLE_MAX_AGE_S:
+            log.warning("demande de la console trop ancienne : ignorée")
+            return
+        try:
+            reply = {"id": ident, "ok": True, "result": await self.act(action, args)}
+        except ActionRefused as exc:
+            reply = {"id": ident, "ok": False, "error": exc.reason, "message": str(exc)}
+        except Exception:
+            log.exception("demande de la console en erreur")
+            reply = {"id": ident, "ok": False, "error": "internal", "message": "erreur du module"}
+        try:
+            write_json(reply_path, reply, private=False)       # lisible par le compte de la console
+            self._reply_at = now
+        except OSError as exc:
+            log.warning("réponse à la console non écrite : %s", exc)
 
     # ------------------------------------------------------------- boucle
     async def run(self) -> None:
@@ -108,14 +206,22 @@ class PresenceService:
         await asyncio.gather(*tasks)
 
     async def _loop(self) -> None:
+        due = 0.0
         while True:
-            delay = await self.step()
-            await asyncio.sleep(delay)
+            if self.clock() >= due:
+                due = self.clock() + await self.step()
+                await self.notify_if_changed()
+            try:
+                await self.check_console()
+            except Exception:
+                log.exception("demande de la console en erreur")
+            await asyncio.sleep(TICK_S)
 
     async def step(self) -> float:
         """Un cycle, protégé : une erreur inattendue est journalisée, jamais fatale."""
         try:
-            delay = await self.engine.cycle()
+            async with self.lock:
+                delay = await self.engine.cycle()
         except asyncio.CancelledError:
             raise
         except Exception:

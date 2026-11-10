@@ -336,7 +336,7 @@ Validées par l'utilisateur le 2026-11-10 (« larges pour la preuve de concept �
    `docs/protocole-presence.md` (relais) ; tests.
 2. **Relais PHP et plugin WordPress** (FAIT, étape 156 : dépôt privé `Bob56fr/openRemoteTRX-relay`) : dans un **autre dépôt** (comme la collecte Azure), d'après le protocole figé au
    lot 1 et ses vecteurs ; faux relais Python dans `devtools/` pour les essais de la station.
-3. **Module de la station** (coupé en deux ; 3a FAIT, étape 157 : module, moteur, `[presence]` ; 3b : raccordement à la passerelle, console, trx-monitor) : manifeste, enregistrement, boucle de requêtes, groupes, invitations, rotation,
+3. **Module de la station** (FAIT : 3a, étape 157 : module, moteur, `[presence]` ; 3b, étape 158 : commande `friends` relayée par le bus, TRX Console menu 24, trx-monitor) : manifeste, enregistrement, boucle de requêtes, groupes, invitations, rotation,
    statistiques ; `[presence]` dans `station.toml` (notice), réglages des groupes dans `state_dir/presence/` ; messages
    vers les clients (`docs/protocole.md`, `hello.features`) ; TRX Console (menu « Présence de groupe » : pseudo,
    groupes, invitation en QR code, désinscription ; mode d'emploi) ; ligne de trx-monitor ; tests de panne (relais

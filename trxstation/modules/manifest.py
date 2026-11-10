@@ -16,7 +16,8 @@ from pathlib import Path
 from . import API_VERSION
 
 # Événements diffusés par le cœur (section 5 du cahier des charges).
-KNOWN_EVENTS = frozenset({"ptt", "freq_mode", "trx_state", "client", "degrade"})
+KNOWN_EVENTS = frozenset({"ptt", "freq_mode", "trx_state", "client", "degrade",
+                          "operator_activity"})   # commande d'un client OPÉRATEUR (jamais un visiteur), au plus 1 / 30 s
 # Commandes qu'un module peut être autorisé à demander au cœur.
 KNOWN_COMMANDS = frozenset({"qsy"})
 START_MODES = ("auto", "on_demand", "disabled")
@@ -37,6 +38,7 @@ class Rights:
     commands: frozenset[str] = frozenset()
     client_messages: bool = False
     verify_tokens: bool = False
+    client_commands: bool = False      # reçoit les commandes d'un OPÉRATEUR (jamais d'un visiteur) relayées par le cœur
 
 
 @dataclass(frozen=True)
@@ -110,7 +112,8 @@ def parse_manifest(data: dict, path: Path | None = None) -> Manifest:
         raise ManifestError(f"{name} : commandes non autorisables {sorted(unknown)}")
     rights = Rights(events=frozenset(events), commands=frozenset(commands),
                     client_messages=bool(r.get("client_messages", False)),
-                    verify_tokens=bool(r.get("verify_tokens", False)))
+                    verify_tokens=bool(r.get("verify_tokens", False)),
+                    client_commands=bool(r.get("client_commands", False)))
 
     res = data.get("resources", {}) or {}
     try:

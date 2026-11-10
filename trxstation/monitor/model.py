@@ -69,6 +69,7 @@ class Snapshot:
     stale_s: float | None
     safe_mode: str | None
     system: SystemInfo = SystemInfo()
+    presence: dict | None = None          # state_dir/presence/status.json (module « presence »), None : absent
 
 
 # --------------------------------------------------------------------------- formats
@@ -194,7 +195,23 @@ def _sante_panel(snap: Snapshot) -> Panel:
                         "bad" if fault else "ok"))
     rows.append(Row("Mode sûr", f"ACTIF : {snap.safe_mode}" if snap.safe_mode else "non",
                     "bad" if snap.safe_mode else "ok"))
+    row = presence_row(snap.presence)
+    if row is not None:
+        rows.append(row)
     return Panel("sante", "Santé", tuple(rows))
+
+
+def presence_row(presence: dict | None) -> Row | None:
+    """Ligne « Présence » : rien si la fonction est désactivée ou jamais démarrée (cas ordinaire)."""
+    if not presence or not presence.get("enabled"):
+        return None
+    groups = [g for g in presence.get("groups") or [] if g.get("status") == "member"]
+    friends = sum(int(g.get("members") or 0) for g in groups)
+    if presence.get("problem"):
+        return Row("Présence", f"problème : {presence['problem']}", "warn")
+    if not presence.get("registered"):
+        return Row("Présence", "pas encore enregistrée auprès du relais", "warn")
+    return Row("Présence", f"{len(groups)} groupe(s), {friends} ami(s)", "ok")
 
 
 def _materiel_panel(snap: Snapshot) -> Panel:

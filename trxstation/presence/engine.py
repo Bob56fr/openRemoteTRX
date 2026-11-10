@@ -71,6 +71,7 @@ class Engine:
         self._load_shack()
         self.freq: int | None = None
         self.mode: str | None = None
+        self.qsy_back: dict | None = None        # fréquence et mode d'avant le dernier QSY vers un ami (mémoire)
         self.next_in = DEFAULT_NEXT_IN
         self.since = 0
         self.problem: str | None = None
@@ -99,6 +100,16 @@ class Engine:
     def on_activity(self) -> None:
         """Commande d'un client opérateur, client opérateur connecté (jamais un visiteur)."""
         self.tracker.activity(self.clock())
+
+    def mark_qsy(self) -> dict | None:
+        """Avant un QSY vers un ami : retient la fréquence et le mode ACTUELS (bouton « Retour » du client).
+        Ne touche pas au poste ; un second QSY garde le point de départ du premier tant qu'on n'est pas revenu."""
+        if self.qsy_back is None and self.freq is not None:
+            self.qsy_back = {"freq": self.freq, "mode": self.mode}
+        return self.qsy_back
+
+    def qsy_done(self) -> None:
+        self.qsy_back = None
 
     # ------------------------------------------------------------------ profil
     @property
