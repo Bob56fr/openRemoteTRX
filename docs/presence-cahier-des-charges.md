@@ -352,7 +352,8 @@ Chaque lot est validé par l'utilisateur avant le suivant.
 
 Réponses de l'utilisateur du 2026-11-10 :
 1. Relais PHP et plugin WordPress : **dans un autre dépôt**, pour plus de sécurité.
-2. Extension `sodium` et version de PHP chez OVH : **à vérifier par l'utilisateur** avant le lot 2 (WordPress,
-   Outils > Santé du site, ou petit fichier d'essai supprimé aussitôt).
+2. Hébergement OVH vérifié par l'utilisateur le 2026-11-10 (petit fichier d'essai) : **PHP 8.2.35, extension
+   `sodium` présente**, `sodium_crypto_aead_xchacha20poly1305_ietf_encrypt` et `sodium_crypto_sign_detached`
+   disponibles. Le relais vise PHP 8.2.
 3. **Pas de Cloudflare** pour la preuve de concept.
 4. Valeurs du § 14 **validées**.
