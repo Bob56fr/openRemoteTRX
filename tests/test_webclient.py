@@ -117,6 +117,17 @@ def test_page_reads_the_shared_protocol_examples():
     assert done.returncode == 0, done.stdout + done.stderr
 
 
+def test_every_script_and_stylesheet_of_the_page_is_served_by_the_station():
+    """Chaque <script src> et <link href> de index.html est dans la liste fermée de la passerelle (WEB_FILES) :
+    friends.js oublié à l'étape 159 = rubrique « Amis » invisible sur une vraie station (404), tests verts."""
+    from trxstation.gateway.api.server import WEB_FILES
+    html = (ROOT / "trxstation" / "gateway" / "api" / "static" / "index.html").read_text(encoding="utf-8")
+    wanted = set(re.findall(r'<script src="([^"]+)"', html)) | set(re.findall(r'<link[^>]+href="([^"]+\.css)"', html))
+    assert wanted, "aucun fichier relevé dans index.html"
+    missing = sorted(name for name in wanted if "/" + name not in WEB_FILES)
+    assert not missing, f"fichiers de la page non servis par la station : {missing}"
+
+
 def test_friends_logic_of_the_page_matches_the_station_vectors():
     """friends.js (présence de groupe) : âges, pseudo et texte libre comme la station (presence_vectors.json), QSY."""
     node = shutil.which("node")

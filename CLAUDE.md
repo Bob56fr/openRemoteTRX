@@ -88,7 +88,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (station 0.120.0, application 0.61.0, étape 162)
+## État actuel (station 0.121.0, application 0.61.0, étape 163)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -161,6 +161,7 @@ L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvé
 - **Bus des modules (étape 158)** : un module ne parle à un client que par `client_message` (TOUS les clients, visiteurs compris, sauf `scope: "operators"`) et ne reçoit une commande de client que par `call` (droit `client_commands`) ; le mot `presence` de `hello.features` désigne les VISITEURS, la présence de groupe s'appelle `friends`. Ajouter une commande client = aussi `Command` et `NAMES` dans `android/protocol` (le test de contrat Android échoue sinon : lancer `gradlew.bat test`).
 - **Changement de version de la station (étape 157)** : relancer `python scripts/build_console_doc.py` ET `python scripts/build_station_toml_doc.py` même si ni la console ni station.toml n'ont changé (copie par version : `test_console_doc` échoue sinon).
 - **PHP du PC (étape 156)** : PHP 8.2 de winget SANS php.ini => `sodium` et `pdo_sqlite` à charger par `-d extension_dir=… -d extension=…` (`tests\run.cmd` du relais) ; le PATH n'est à jour que dans un NOUVEAU terminal ; ne pas écrire un `.cmd` avec `printf` (`\e` devient un caractère d'échappement).
+- **Page web, nouveau fichier .js / .css (étape 163)** : l'ajouter à `WEB_FILES` de `gateway/api/server.py` (liste fermée : sinon 404 sur la vraie station, tests Node verts) ; `test_every_script_and_stylesheet_of_the_page_is_served_by_the_station` le vérifie.
 - **Page web** : l'attribut `hidden` est battu par un `display:` de classe (`[hidden]{display:none !important}`) ; clic fantôme Android après un appui ; le faux DOM des tests JS n'a ni id ni parent (ni `parentNode`, ni `createTextNode` : un `<span>` à la place) ; un vrai Chromium (Playwright) avec une fausse station trouve ce que les tests simulés ne voient pas ; le canal de données d'aiortc limite un message à 64 ko.
 
 ## Environnement de l'utilisateur
