@@ -1,0 +1,297 @@
+{
+ "comment": "Présence de groupe v1 (docs/protocole-presence.md). Fabriqué par python -m trxstation.presence.vectors : ne pas modifier à la main.",
+ "now": 1794000000,
+ "identities": [
+  {
+   "name": "admin",
+   "ed_seed": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE",
+   "x_seed": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI",
+   "ed_pub": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+   "x_pub": "zo060cy2M-x7cMF4FKXHbs0CloUFDTRHRboFhw5YfVk",
+   "station_id": "755e36b15199ae1a0a69f261575f325f"
+  },
+  {
+   "name": "member",
+   "ed_seed": "ERERERERERERERERERERERERERERERERERERERERERE",
+   "x_seed": "EhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhI",
+   "ed_pub": "0EqyMnQrtKs6E2i9RhXk5tAiSrcaAWuvhSCjMsl3hzc",
+   "x_pub": "BSpQdzrI2Rdz8tyWYuEvDe_pFeQVuKHI4gpaPWqyuEM",
+   "station_id": "d3a492aef1b40f379a0b79899c5305d6"
+  },
+  {
+   "name": "other",
+   "ed_seed": "ISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISE",
+   "x_seed": "IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI",
+   "ed_pub": "iEuIV_TqoWE8YVBNs01L6vNGUXoOMd483dTZtCAdnQs",
+   "x_pub": "D6poTtKIZ7l_Smot7l34zpdOdrcBjj8iocTPJnhXDyA",
+   "station_id": "1a6aec63d9b9c03f89a8471c85e8fa41"
+  }
+ ],
+ "xchacha": {
+  "hchacha20": {
+   "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+   "nonce_hex": "000000090000004a0000000031415927",
+   "out_hex": "82413b4227b27bfed30e42508a877d73a0f9e4d58a74a853c12ec41326d3ecdc"
+  },
+  "aead": {
+   "key_hex": "808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f",
+   "nonce_hex": "404142434445464748494a4b4c4d4e4f5051525354555657",
+   "aad_hex": "50515253c0c1c2c3c4c5c6c7",
+   "plaintext": "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it.",
+   "ciphertext_hex": "bd6d179d3e83d43b9576579493c0e939572a1700252bfaccbed2902c21396cbb731c7f1b0b4aa6440bf3a82f4eda7e39ae64c6708c54c216cb96b72e1213b4522f8c9ba40db5d945b11b69b982c1bb9e3f3fac2bc369488f76b2383565d3fff921f9664c97637da9768812f615c68b13b52ec0875924c1c7987947deafd8780acf49"
+  }
+ },
+ "pow": {
+  "station_id": "755e36b15199ae1a0a69f261575f325f",
+  "bits": 12,
+  "valid": {
+   "nonce": 1828,
+   "sha256_hex": "000341ffc9564dcdf3efaec694db38318a99949323da1efd1f034b464e6c58e3"
+  },
+  "invalid": {
+   "nonce": 0,
+   "sha256_hex": "4d03e9ad99727e5e1653901a1f0284a0243b3ef85761314689dbb17c2e12ce52"
+  }
+ },
+ "requests": {
+  "path": "/v1/sync",
+  "body": "{\"n\":1794000000000,\"states\":[],\"t\":1794000000}",
+  "headers": {
+   "Content-Type": "application/json",
+   "X-Orx-Station": "755e36b15199ae1a0a69f261575f325f",
+   "X-Orx-Signature": "akQOMyXzWFa5NGG33dULp83LFdewmNmNaOFX1jcqXGeAYsAAIeUcMXMNin-HpUJyDT3Y04fsFXHLUQ0kHpswBQ"
+  },
+  "signed_hex": "6f72782d72656c61792076310a504f53540a2f76312f73796e630a7b226e223a313739343030303030303030302c22737461746573223a5b5d2c2274223a313739343030303030307d",
+  "ed_pub": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+  "valid": [
+   {
+    "now": 1794000000,
+    "last_n": 0
+   },
+   {
+    "now": 1794000599,
+    "last_n": 1793999999999
+   }
+  ],
+  "refused": [
+   {
+    "name": "corps changé",
+    "body": "{\"n\":1794000000000,\"states\":[ ],\"t\":1794000000}",
+    "now": 1794000000,
+    "last_n": 0,
+    "reason": "bad_signature"
+   },
+   {
+    "name": "horloge en avance",
+    "body": "{\"n\":1794000000000,\"states\":[],\"t\":1794000000}",
+    "now": 1793999399,
+    "last_n": 0,
+    "reason": "clock"
+   },
+   {
+    "name": "rejeu",
+    "body": "{\"n\":1794000000000,\"states\":[],\"t\":1794000000}",
+    "now": 1794000000,
+    "last_n": 1794000000000,
+    "reason": "replay"
+   }
+  ]
+ },
+ "pseudo": [
+  {
+   "in": "F4ABC",
+   "out": "F4ABC"
+  },
+  {
+   "in": "  F4ABC   Bob ",
+   "out": "F4ABC Bob"
+  },
+  {
+   "in": "F4ABC/P",
+   "out": "F4ABC/P"
+  },
+  {
+   "in": "-F4",
+   "out": null
+  },
+  {
+   "in": "Élodie",
+   "out": null
+  },
+  {
+   "in": "AAAAAAAAAAAAAAAA",
+   "out": "AAAAAAAAAAAAAAAA"
+  },
+  {
+   "in": "AAAAAAAAAAAAAAAAA",
+   "out": null
+  },
+  {
+   "in": "",
+   "out": null
+  },
+  {
+   "in": "x y_z.1",
+   "out": "x y_z.1"
+  },
+  {
+   "in": "F4 ",
+   "out": "F4"
+  }
+ ],
+ "text": [
+  {
+   "in": "Mobile",
+   "out": "Mobile"
+  },
+  {
+   "in": "Test  antenne",
+   "out": "Test antenne"
+  },
+  {
+   "in": "QRV 7.074",
+   "out": "QRV 7.074"
+  },
+  {
+   "in": "Test antenne 2026",
+   "out": null
+  },
+  {
+   "in": "café",
+   "out": null
+  },
+  {
+   "in": "a/b-c",
+   "out": "a/b-c"
+  },
+  {
+   "in": "<b>",
+   "out": null
+  },
+  {
+   "in": "",
+   "out": null
+  }
+ ],
+ "format_age": [
+  {
+   "s": 0,
+   "out": "1 min"
+  },
+  {
+   "s": 59,
+   "out": "1 min"
+  },
+  {
+   "s": 60,
+   "out": "1 min"
+  },
+  {
+   "s": 3599,
+   "out": "59 min"
+  },
+  {
+   "s": 3600,
+   "out": "1 h"
+  },
+  {
+   "s": 86399,
+   "out": "23 h"
+  },
+  {
+   "s": 86400,
+   "out": "1 j"
+  },
+  {
+   "s": 400000,
+   "out": "4 j"
+  }
+ ],
+ "display": [
+  {
+   "st": "R",
+   "age": 10,
+   "out": "R"
+  },
+  {
+   "st": "R",
+   "age": 240,
+   "out": "R"
+  },
+  {
+   "st": "R",
+   "age": 241,
+   "out": "O"
+  },
+  {
+   "st": "H",
+   "age": 5,
+   "out": "O"
+  },
+  {
+   "st": null,
+   "age": null,
+   "out": "O"
+  },
+  {
+   "st": "Q",
+   "age": 0,
+   "out": "Q"
+  },
+  {
+   "st": "?",
+   "age": 1,
+   "out": "O"
+  }
+ ],
+ "roster": {
+  "envelope": {
+   "p": "eyJnIjoiMDAxMTIyMzM0NDU1NjY3Nzg4OTlhYWJiY2NkZGVlZmYiLCJrdiI6MSwibSI6W3siZWQiOiJpb2pqM1hRSjhaWDlVdHN0UExwZGNzcG5DYjhkbEJJYjgzU0lBYlFQYjF3IiwiaWQiOiI3NTVlMzZiMTUxOTlhZTFhMGE2OWYyNjE1NzVmMzI1ZiIsImoiOjE3OTM5OTY0MDAsInIiOiJhIiwieCI6InpvMDYwY3kyTS14N2NNRjRGS1hIYnMwQ2xvVUZEVFJIUmJvRmh3NVlmVmsifSx7ImVkIjoiMEVxeU1uUXJ0S3M2RTJpOVJoWGs1dEFpU3JjYUFXdXZoU0NqTXNsM2h6YyIsImlkIjoiZDNhNDkyYWVmMWI0MGYzNzlhMGI3OTg5OWM1MzA1ZDYiLCJqIjoxNzkzOTk5OTQwLCJyIjoibSIsIngiOiJCU3BRZHpySTJSZHo4dHlXWXVFdkRlX3BGZVFWdUtISTRncGFQV3F5dUVNIn1dLCJwcmV2IjoiIiwidCI6MTc5Mzk5NjQwMCwidiI6MSwidmVyIjoxfQ",
+   "by": "755e36b15199ae1a0a69f261575f325f",
+   "s": "P9P87b8X77Jab82DYnHQEdGRKWsZTgRqs0xQ76396CW7HixrxeBA33hHbEJzF9Ae9XVqJb2BOMIAqe7JVszYBw"
+  },
+  "payload": "{\"g\":\"00112233445566778899aabbccddeeff\",\"kv\":1,\"m\":[{\"ed\":\"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w\",\"id\":\"755e36b15199ae1a0a69f261575f325f\",\"j\":1793996400,\"r\":\"a\",\"x\":\"zo060cy2M-x7cMF4FKXHbs0CloUFDTRHRboFhw5YfVk\"},{\"ed\":\"0EqyMnQrtKs6E2i9RhXk5tAiSrcaAWuvhSCjMsl3hzc\",\"id\":\"d3a492aef1b40f379a0b79899c5305d6\",\"j\":1793999940,\"r\":\"m\",\"x\":\"BSpQdzrI2Rdz8tyWYuEvDe_pFeQVuKHI4gpaPWqyuEM\"}],\"prev\":\"\",\"t\":1793996400,\"v\":1,\"ver\":1}",
+  "digest": "e7ffbd36a5c080ec7b881f1fa8120bfe492d903ef54987da069ad9d1243bf011"
+ },
+ "state": {
+  "group": "00112233445566778899aabbccddeeff",
+  "key": "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8",
+  "kv": 1,
+  "station_id": "d3a492aef1b40f379a0b79899c5305d6",
+  "nonce_hex": "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7",
+  "content": {
+   "v": 1,
+   "n": 1794000000000,
+   "t": 1794000000,
+   "st": "R",
+   "lv": "f",
+   "sd": 1793999880,
+   "lt": 1793999100,
+   "f": 14205000,
+   "m": "USB"
+  },
+  "blob": "wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbXSujn0jiWFr8EGo8hMzRt7ec2oDs7_tQZl4s4-f2mImWHVUQJgYHUHL_vS__SkM546cA3u7qA5EGu5aSQrVU7pXsOciG_zezpsa8XTv0kPzbvktMbUoRICxm8aZ589Zuu7w3UBUF5F8tNeIqx6PMkuuE8FkmAoNcppT88ezzmb7eXuxARBaAHhLtspwWpUXwCnuVq7WRBhy7Q4pn57f_3ciYDyIgIHVVRGTzqx-1DJjLX3cfqVpRubcXwxUCyLCuqJwCslXSR-J9VIAajX3hl2Qx46nzwC2s7nKAu8nF_cSONL1gyy_aWgw",
+  "size": 256
+ },
+ "key_box": {
+  "g": "00112233445566778899aabbccddeeff",
+  "kv": 1,
+  "for": "d3a492aef1b40f379a0b79899c5305d6",
+  "box": "HPV5q6RaELodHvBtkfyiqp7QoRUFFWUxVUBdCxjLmmfg4eLj5OXm5-jp6uvs7e7v8PHy8_T19vc_oaZzMiymdw7vAjR4SKmaMYsnt-W2jWTBI5s_C88HAaZ6M-zmqmubrpijlZk1_TI",
+  "by": "755e36b15199ae1a0a69f261575f325f",
+  "s": "x6J-AHjl-VBORyE2xX91A_nuABV3LIm4A5uAOj_fAyWwOXPpv7sU29vfdemF9g-jFu3e60f8N9YK23fve73wBQ"
+ },
+ "invitation": {
+  "url": "https://api.rf-diy.com/i#eyJhIjoiNzU1ZTM2YjE1MTk5YWUxYTBhNjlmMjYxNTc1ZjMyNWYiLCJlIjoxNzk0NjA0ODAwLCJnIjoiMDAxMTIyMzM0NDU1NjY3Nzg4OTlhYWJiY2NkZGVlZmYiLCJpIjoiWUdGaVkyUmxabWRvYVdwcmJHMXVidyIsImsiOiJJQ0VpSXlRbEppY29LU29yTEMwdUx6QXhNak0wTlRZM09EazZPenc5UGo4Iiwia3YiOjEsInIiOiJodHRwczovL2FwaS5yZi1kaXkuY29tIiwidiI6MX0",
+  "expires": 1794604800
+ },
+ "join": {
+  "g": "00112233445566778899aabbccddeeff",
+  "i": "YGFiY2RlZmdoaWprbG1ubw",
+  "id": "1a6aec63d9b9c03f89a8471c85e8fa41",
+  "ed": "iEuIV_TqoWE8YVBNs01L6vNGUXoOMd483dTZtCAdnQs",
+  "x": "D6poTtKIZ7l_Smot7l34zpdOdrcBjj8iocTPJnhXDyA",
+  "pseudo": "F4XYZ/P",
+  "proof": "GAd4KkGSlsZXH02XfOymAzup-cy593g_tm8nZ7n6Iic"
+ }
+}

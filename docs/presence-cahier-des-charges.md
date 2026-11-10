@@ -331,7 +331,7 @@ Validées par l'utilisateur le 2026-11-10 (« larges pour la preuve de concept �
 
 ## 15. Lots proposés
 
-1. **Protocole et calculs** : `trxstation/presence/` partie pure (statuts et priorités, temporisations, format et
+1. **Protocole et calculs** (FAIT, étape 155 : `trxstation/presence/`, `docs/protocole-presence.md`) : `trxstation/presence/` partie pure (statuts et priorités, temporisations, format et
    remplissage des états, signatures, liste signée, invitations, preuve de travail), `presence_vectors.json`,
    `docs/protocole-presence.md` (relais) ; tests.
 2. **Relais PHP et plugin WordPress** : dans un **autre dépôt** (comme la collecte Azure), d'après le protocole figé au
