@@ -32,7 +32,8 @@ INVITE_TTL_S = 7 * 86400
 JOIN_DOMAIN = b"orx-presence join v1\0"
 KEY_DOMAIN = b"orx-presence key v1\0"
 TOKEN_SIZE = 16
-_RELAY_RE = re.compile(r"https://[a-z0-9.-]{1,100}(?::\d{1,5})?(?:/[A-Za-z0-9._~-]+)*")
+# https:// ; http:// seulement vers la machine elle-même (essais avec un relais local), comme [presence] relay_url.
+_RELAY_RE = re.compile(r"(?:https://[a-z0-9.-]{1,100}|http://(?:127\.0\.0\.1|localhost))(?::\d{1,5})?(?:/[A-Za-z0-9._~-]+)*")
 
 
 class InviteRefused(ValueError):

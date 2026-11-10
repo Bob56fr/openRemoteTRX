@@ -100,6 +100,12 @@ quand il le peut : version + 1, chaînage, signataire et signature ; `stale_rost
 Les demandes en attente des nouveaux membres, et celles de `reject`, sont retirées. `keys` remplace les clés remises
 de chaque membre nommé (`for`). Un membre retiré de la liste ne reçoit plus rien.
 
+### 4.6 bis `/v1/group/reject`
+
+`{"g", "ids": [identifiants], "t", "n"}` : un administrateur ou co-administrateur retire des demandes d'adhésion
+refusées par sa station (jeton inconnu, déjà utilisé ou expiré, preuve fausse) sans publier de nouvelle liste.
+Refus : `not_admin`.
+
 ### 4.7 `/v1/group/leave` et `/v1/group/delete`
 
 `leave` `{"g", "t", "n"}` : la station quitte le groupe (plus d'états reçus ni distribués ; signalé aux
@@ -125,7 +131,7 @@ Réponse :
 ```json
 {"now": 1794000006, "next_in": 90,
  "groups": [{"g": "…",
-             "roster": {"p": "…", "by": "…", "s": "…"},
+             "rosters": [{"p": "…", "by": "…", "s": "…"}],
              "key": {"g": "…", "kv": 3, "for": "…", "box": "…", "by": "…", "s": "…"},
              "members": [{"id": "…", "pseudo": "F4ABC", "age": 42, "kv": 3, "blob": "…"},
                          {"id": "…", "pseudo": "F5XYZ", "age": 4000}],
@@ -134,8 +140,9 @@ Réponse :
              "admin": [{"id": "…", "joined": 1793000000, "version": "0.117.0", "flag": "errors"}]}]}
 ```
 
-- `roster` seulement si la version du relais dépasse `known` ; `key` seulement si la clé remise à cette station a
-  changé.
+- `rosters` seulement si la version du relais dépasse `known` : les versions APRÈS `known`, dans l'ordre (50 au plus ;
+  le relais garde les 50 dernières de chaque groupe), pour qu'une station restée éteinte suive le chaînage version
+  par version ; `key` seulement si la clé remise à cette station a changé depuis `since` (ou avec `rosters`).
 - `members` : TOUS les autres membres avec `age` = secondes depuis leur dernier `/v1/sync` (hors ligne au-delà de
   240 s, calculé par la station qui lit) ; `blob` et `kv` seulement si le bloc a été reçu après `since`.
 - `pending`, `left`, `admin` : seulement pour les administrateurs et co-administrateurs. `admin` = ce que le relais

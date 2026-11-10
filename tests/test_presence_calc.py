@@ -352,6 +352,24 @@ def test_co_admin_rights_and_takeover_after_90_days():
     assert ro.accept_next(old, ro.sign(demote, MEMBER), admin_last_seen=NOW - ro.TAKEOVER_S, now=NOW) == demote
 
 
+def test_roster_jump_needs_a_known_admin():
+    old = _first()
+    a, m = old.member(ADMIN.station_id), old.member(MEMBER.station_id)
+    v2 = old.next(t=NOW, members=[a, m, _m(OTHER, "m")])
+    v3 = v2.next(t=NOW, members=[a, m, _m(OTHER, "m")])
+    assert ro.accept_jump(old, ro.sign(v3, ADMIN), admin_last_seen=NOW, now=NOW) == v3
+    for signer, reason in ((MEMBER, "signer"), (OTHER, "signer")):
+        with pytest.raises(ro.RosterRefused) as err:
+            ro.accept_jump(old, ro.sign(v3, signer), admin_last_seen=NOW, now=NOW)
+        assert err.value.reason == reason
+    with pytest.raises(ro.RosterRefused) as err:
+        ro.accept_jump(old, ro.sign(v2, ADMIN), admin_last_seen=NOW, now=NOW)     # la suivante : pas un saut
+    assert err.value.reason == "version"
+    got, refused = ro.follow(old, [ro.sign(v3, MEMBER), ro.sign(v2, ADMIN), ro.sign(v3, ADMIN)], group=GROUP,
+                             invite_admin=None, admin_last_seen=NOW, now=NOW)
+    assert got == v3 and refused == ["signer"]
+
+
 def test_roster_size_limit():
     members = [ro.new_member(Identity(bytes([i]) * 32, bytes([i]) * 32).ed_pub, bytes(32), "a" if i == 1 else "m", NOW)
                for i in range(1, ro.MAX_MEMBERS + 2)]
@@ -463,8 +481,9 @@ def test_shared_vectors_check_as_the_relay_does():
 
 
 def test_presence_package_never_touches_the_ptt_nor_the_cat():
-    """La présence ne fait que montrer : son paquet n'importe ni la sécurité d'émission, ni le CAT, ni la passerelle."""
-    forbidden = ("safety", "cat", "rigctl", "ptt", "gateway", "modules")
+    """La présence ne fait que montrer : son paquet n'importe ni la sécurité d'émission, ni le CAT, ni la passerelle ;
+    seul service.py importe le CLIENT du bus (droits = manifeste, aucune commande) ; personne n'appelle `.command(`."""
+    forbidden = ("safety", "cat", "rigctl", "ptt", "gateway")
     for path in (ROOT / "trxstation" / "presence").glob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = []
@@ -472,5 +491,9 @@ def test_presence_package_never_touches_the_ptt_nor_the_cat():
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom):
                 names = [node.module or ""] + [a.name for a in node.names]
+            elif isinstance(node, ast.Attribute) and node.attr in ("command", "client_message"):
+                raise AssertionError(f"{path.name} : appel .{node.attr} interdit au module de présence")
             for name in names:
                 assert not any(part in forbidden for part in name.split(".")), f"{path.name} importe {name}"
+                if "modules" in name.split("."):
+                    assert path.name == "service.py" and name.endswith("modules.client"), f"{path.name} importe {name}"

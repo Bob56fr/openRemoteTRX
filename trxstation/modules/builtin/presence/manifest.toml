@@ -1,0 +1,26 @@
+# Module de présence de groupe (docs/presence-cahier-des-charges.md, étape 157).
+# AUCUN droit sur le poste : ni PTT, ni QSY (un QSY vers un ami passera par les commandes du client).
+[module]
+name = "presence"
+version = "0.1.0"
+api = "1.0"
+entry = "trxstation.presence.service"
+start = "auto"
+description = "Présence de groupe : états chiffrés échangés par le relais (lecture seule du poste)"
+
+[rights]
+events = ["freq_mode", "ptt"]   # fréquence, mode et émission : le statut publié (lecture seule)
+commands = []
+client_messages = false
+verify_tokens = false
+
+[resources]
+cpu_quota = 10        # % d'un cœur (la preuve de travail de l'enregistrement prend quelques secondes, une fois)
+memory_max_mb = 96
+nice = 15
+
+[degradation]
+levels = [4, 5]       # pause, arrêt
+
+[network]
+ports = []            # n'écoute sur aucun port (requêtes sortantes vers le relais seulement)

@@ -164,6 +164,22 @@ class Breizh:
     reactivate_after_s: int = 60      # stabilité exigée avant le retour automatique (0 = seulement à la main)
 
 
+PRESENCE_DEFAULT_RELAY = "https://api.rf-diy.com"
+PRESENCE_KEY_FILE = "presence.key"   # dans state_dir/presence/ quand key_file est vide
+# Relais : https:// obligatoire ; http:// permis SEULEMENT vers la machine elle-même (essais avec un relais local).
+_PRESENCE_RELAY_RE = re.compile(r"(https://[a-z0-9.-]{1,100}|http://(127\.0\.0\.1|localhost))(:\d{1,5})?(/[A-Za-z0-9._~-]+)*")
+
+
+@dataclass
+class Presence:
+    """Présence de groupe (docs/presence-cahier-des-charges.md) : module « presence », sans AUCUN droit sur le poste.
+    Groupes, partage, pseudo et clés de groupe sont dans state_dir/presence/ (choisis depuis la page, l'application
+    ou TRX Console), jamais ici."""
+    enabled: bool = False             # false : le module attend sans rien envoyer
+    relay_url: str = PRESENCE_DEFAULT_RELAY   # relais (https:// ; http:// seulement vers 127.0.0.1 pour les essais)
+    key_file: str = ""                # clés de la station ; vide = state_dir/presence/presence.key
+
+
 @dataclass
 class Tools:
     hamlib_dir: str = ""           # dossier d'installation de Hamlib (Windows) ; vide = PATH
@@ -440,6 +456,7 @@ class Config:
     swr: Swr = field(default_factory=Swr)
     breizh: Breizh = field(default_factory=Breizh)
     netprobe: Netprobe = field(default_factory=Netprobe)
+    presence: Presence = field(default_factory=Presence)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -493,6 +510,7 @@ def validate(cfg: Config) -> list[str]:
     p += _swr_problems(cfg.swr)
     p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
+    p += _presence_problems(cfg.presence)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -756,6 +774,26 @@ def _breizh_problems(b: Breizh, cfg: Config) -> list[str]:
     return p
 
 
+def _presence_problems(pr: Presence) -> list[str]:
+    p = []
+    if not isinstance(pr.enabled, bool):
+        p.append("[presence] enabled doit valoir true ou false")
+    if not isinstance(pr.relay_url, str) or not _PRESENCE_RELAY_RE.fullmatch(pr.relay_url):
+        p.append("[presence] relay_url : adresse https:// du relais attendue (http:// seulement vers 127.0.0.1)")
+    if not isinstance(pr.key_file, str):
+        p.append("[presence] key_file doit être un chemin")
+    return p
+
+
+def presence_key_path(cfg: Config, config_path: str | Path) -> Path:
+    """Clés de la station pour la présence : key_file (relatif = à côté de station.toml), sinon
+    state_dir/presence/presence.key (écrit par le module lui-même, droits 0600)."""
+    if cfg.presence.key_file:
+        path = Path(cfg.presence.key_file)
+        return path if path.is_absolute() else Path(config_path).parent / path
+    return Path(cfg.supervisor.state_dir) / "presence" / PRESENCE_KEY_FILE
+
+
 def breizh_key_path(cfg: Config, config_path: str | Path) -> Path:
     """Fichier de la clé d'appairage : key_file (relatif = à côté de station.toml), sinon breizh.key."""
     name = cfg.breizh.key_file or BREIZH_KEY_FILE
@@ -841,7 +879,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "bands", "clients"}
+                 "netprobe", "presence", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -863,6 +901,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             swr=_build(Swr, d.get("swr", {}), "swr", problems),
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
+            presence=_build(Presence, d.get("presence", {}), "presence", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -1096,6 +1135,11 @@ def render_toml(cfg: Config) -> str:
         f"rsrp_alert_dbm = {np.rsrp_alert_dbm}   # rouge (dBm)",
         f"sinr_warn_db = {np.sinr_warn_db}   # rapport signal/bruit : orange (dB)",
         f"sinr_alert_db = {np.sinr_alert_db}   # rouge (dB)",
+        "",
+        "[presence]   # présence de groupe (docs/presence-cahier-des-charges.md) : module « presence » de [modules] run",
+        f"enabled = {str(cfg.presence.enabled).lower()}",
+        f"relay_url = {_s(cfg.presence.relay_url)}   # relais (https:// ; http:// seulement vers 127.0.0.1)",
+        f"key_file = {_s(cfg.presence.key_file)}   # clés de la station ; vide = state_dir/presence/{PRESENCE_KEY_FILE}",
         "",
     ]
     for client in cfg.clients:

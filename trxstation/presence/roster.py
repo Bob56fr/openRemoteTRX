@@ -150,12 +150,27 @@ def accept_first(env: object, *, group: str, admin: str) -> Roster:
 def accept_next(old: Roster, env: object, *, admin_last_seen: float, now: float) -> Roster:
     """Version suivante d'une liste connue ; `admin_last_seen` : dernière fois qu'un administrateur s'est manifesté."""
     new, by, body, sig = _parse(env)
-    if new.group != old.group:
-        raise RosterRefused("group")
     if new.version != old.version + 1:
         raise RosterRefused("version")
     if new.prev != old.digest():
         raise RosterRefused("chain")
+    return _transition(old, new, by, body, sig, admin_last_seen=admin_last_seen, now=now)
+
+
+def accept_jump(old: Roster, env: object, *, admin_last_seen: float, now: float) -> Roster:
+    """Version PLUS LOINTAINE que la suivante (station éteinte au-delà de l'historique du relais) : sans chaînage,
+    elle doit être signée par un administrateur ou co-administrateur de la liste CONNUE, avec la clé connue ; mêmes
+    règles pour le reste (clés figées, clé qui ne recule pas, droits d'un co-administrateur)."""
+    new, by, body, sig = _parse(env)
+    if new.version <= old.version + 1:
+        raise RosterRefused("version")
+    return _transition(old, new, by, body, sig, admin_last_seen=admin_last_seen, now=now, jumped=True)
+
+
+def _transition(old: Roster, new: Roster, by: str, body: bytes, sig: bytes, *, admin_last_seen: float, now: float,
+                jumped: bool = False) -> Roster:
+    if new.group != old.group:
+        raise RosterRefused("group")
     signer = old.member(by)
     if signer is None or signer.role not in ("a", "c"):
         raise RosterRefused("signer")
@@ -176,3 +191,35 @@ def accept_next(old: Roster, env: object, *, admin_last_seen: float, now: float)
         if not (same or takeover):
             raise RosterRefused("admin_rights")
     return new
+
+
+def follow(current: Roster | None, envelopes: list, *, group: str, invite_admin: str | None,
+           admin_last_seen: float, now: float) -> tuple[Roster | None, list[str]]:
+    """Applique dans l'ordre les versions reçues du relais ; (liste retenue, motifs des versions refusées).
+
+    Sans liste connue (adhésion), la 1re version acceptée est la première signée par l'administrateur de
+    l'invitation ; ensuite chaque version doit suivre (chaînage) ou, après un trou, sauter (accept_jump).
+    """
+    refused: list[str] = []
+    for env in envelopes:
+        try:
+            if current is None:
+                if invite_admin is None:
+                    raise RosterRefused("signer")
+                current = accept_first(env, group=group, admin=invite_admin)
+                continue
+            version = _parse(env)[0].version
+            if version <= current.version:
+                continue
+            if version == current.version + 1:
+                current = accept_next(current, env, admin_last_seen=admin_last_seen, now=now)
+            else:
+                current = accept_jump(current, env, admin_last_seen=admin_last_seen, now=now)
+        except RosterRefused as exc:
+            refused.append(exc.reason)
+    return current, refused
+
+
+def parse_unchecked(env: object) -> Roster:
+    """Liste relue depuis le fichier de la station (déjà vérifiée quand elle a été reçue)."""
+    return _parse(env)[0]

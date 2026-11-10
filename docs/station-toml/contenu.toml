@@ -98,6 +98,12 @@ intro = "<p>La station mesure en continu la liaison avec chaque téléphone ou n
 ou = "Menu 14. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici."
 relu = "redemarrage"
 
+[sections.presence]
+titre = "Présence de groupe [presence]"
+intro = "<p>Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.</p>"
+ou = "Menu 14, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml)."
+relu = "redemarrage"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -444,6 +450,27 @@ role = "Durée maximale de l'émission d'un point. Le temps réel est étalonné
 niveau = "expert"
 bornes = "0,5 à 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- presence
+
+[reglages."presence.enabled"]
+role = "true : la station s'enregistre auprès du relais et échange la présence avec les groupes dont elle est membre (« presence » doit aussi figurer dans <code>[modules] run</code>)."
+niveau = "courant"
+securite = "La présence ne fait que montrer : aucune donnée reçue du relais ne peut commander le poste."
+depuis = "0.117.0"
+
+[reglages."presence.relay_url"]
+role = "Adresse du relais de présence."
+niveau = "expert"
+bornes = "https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine)."
+exemple = "Relais par défaut : <code>https://api.rf-diy.com</code> ; essai local : <code>http://127.0.0.1:8099</code>."
+depuis = "0.117.0"
+
+[reglages."presence.key_file"]
+role = "Fichier des clés de la station pour la présence (signature et réception des clés de groupe). Vide : <code>presence.key</code> dans le dossier d'état, créé par le module au premier démarrage. Relatif : à côté de station.toml."
+niveau = "expert"
+securite = "Ce fichier identifie la station auprès du relais et des groupes : ne jamais le copier sur une autre station."
+depuis = "0.117.0"
 
 # ---------------------------------------------------------------- breizh
 
