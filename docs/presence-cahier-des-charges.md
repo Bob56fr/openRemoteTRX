@@ -334,7 +334,7 @@ Validées par l'utilisateur le 2026-11-10 (« larges pour la preuve de concept �
 1. **Protocole et calculs** (FAIT, étape 155 : `trxstation/presence/`, `docs/protocole-presence.md`) : `trxstation/presence/` partie pure (statuts et priorités, temporisations, format et
    remplissage des états, signatures, liste signée, invitations, preuve de travail), `presence_vectors.json`,
    `docs/protocole-presence.md` (relais) ; tests.
-2. **Relais PHP et plugin WordPress** : dans un **autre dépôt** (comme la collecte Azure), d'après le protocole figé au
+2. **Relais PHP et plugin WordPress** (FAIT, étape 156 : dépôt privé `Bob56fr/openRemoteTRX-relay`) : dans un **autre dépôt** (comme la collecte Azure), d'après le protocole figé au
    lot 1 et ses vecteurs ; faux relais Python dans `devtools/` pour les essais de la station.
 3. **Module de la station** : manifeste, enregistrement, boucle de requêtes, groupes, invitations, rotation,
    statistiques ; `[presence]` dans `station.toml` (notice), réglages des groupes dans `state_dir/presence/` ; messages

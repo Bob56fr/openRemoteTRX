@@ -42,8 +42,10 @@ Le corps contient toujours `t` (heure de la station) et `n` (compteur strictemen
 millisecondes Unix, ou le précédent + 1). Le relais refuse si : corps trop grand (`too_large`), signature fausse
 (`bad_signature`), `t` à plus de 600 s de son heure (`clock`, la réponse donne `now` pour que la station prévienne
 l'opérateur), `n` ≤ dernier `n` accepté (`replay`). **Ordre des contrôles** (rejeter tôt, avant toute base) : taille,
-limite de débit (adresse IP en mémoire de courte durée, jamais écrite en base ; puis identifiant), forme des
-en-têtes, lecture de la clé de la station (une seule requête en base), signature, horloge, compteur.
+limite de débit par adresse IP (jamais écrite en base), pause, méthode et chemin, forme des en-têtes, lecture de la
+clé de la station (une seule requête en base), signature, horloge, compteur ; les limites propres à une station
+(rythme de `/v1/sync`) viennent APRÈS la signature, sinon un tiers pourrait bloquer une station en usurpant son
+en-tête.
 
 Réponse d'erreur : code HTTP + `{"error": motif, "message": texte, "now": heure}`.
 
@@ -52,9 +54,11 @@ Réponse d'erreur : code HTTP + `{"error": motif, "message": texte, "now": heure
 | 400 | `malformed`, `too_large` |
 | 401 | `bad_signature`, `unknown_station`, `clock`, `replay` |
 | 403 | `pow`, `not_admin`, `not_member`, `quota` |
-| 404 | `unknown_group` |
+| 404 | `unknown_group`, `unknown_route` |
+| 405 | `method` (POST attendu) |
 | 409 | `exists`, `stale_roster` |
 | 429 | `rate` (avec `retry_in` en secondes) |
+| 500 | `internal` : erreur du relais (détail dans son journal, jamais dans la réponse) |
 | 503 | `pause` (avec `retry_in`) : relais surchargé ou en maintenance ; la station réessaie sans alerter |
 
 ## 4. Points d'entrée
@@ -139,6 +143,13 @@ Réponse :
   aucun historique d'activité.
 - `next_in` : délai avant la prochaine requête, **le même pour toutes les stations** (90 s par défaut) ; le relais
   l'allonge s'il est chargé. Une station qui revient avant la moitié de `next_in` reçoit 429 `rate`.
+- `refused_states` (seulement s'il y en a) : rangs, dans `states`, des blocs refusés (groupe dont la station n'est
+  pas membre, taille fausse) ; les autres sont gardés.
+- Une demande d'adhésion doit porter les clés ENREGISTRÉES de la station qui l'envoie (sinon `malformed`).
+
+### 4.9 `GET /i` (page d'une invitation)
+
+Seule requête sans signature. Un lien d'invitation (`<relais>/i#…`) ouvert dans un navigateur affiche une page statique qui explique où le coller (page de la station, application, TRX Console). La partie après `#` n'est jamais envoyée au relais.
 
 ## 5. Preuve de travail
 
