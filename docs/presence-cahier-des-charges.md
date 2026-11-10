@@ -246,7 +246,8 @@ veut. Le choix est mémorisé sur l'appareil.
   plus une redirection annoncée par l'ancien relais).
 - Risque assumé : un abus peut ralentir le blog. Parades sur ce même hébergement : rejet le plus tôt possible
   (taille, signature de forme, limite de débit) avant toute requête en base ; limite de débit par fichiers (pas
-  d'APCu ni de Redis supposés) ; Cloudflare gratuit en frontal **recommandé** ; **frein général** : chaque réponse
+  d'APCu ni de Redis supposés) ; **pas de Cloudflare pour la preuve de concept** (décision du 2026-11-10, à
+  reconsidérer en cas d'abus ou au passage sur VPS) ; **frein général** : chaque réponse
   donne l'intervalle suivant (`next_in`), le même pour toutes les stations, que le relais peut allonger en cas de
   charge, et un mode « pause » (le module réessaie plus tard, sans erreur pour l'opérateur).
 
@@ -309,9 +310,11 @@ Comme le cahier d'origine : le relais ne connaît ni fréquences, ni modes, ni t
 la page et l'application) ; stations inactives purgées après 12 mois ; mention dans la politique de confidentialité
 de rf-diy.com ; écran de consentement à l'adhésion.
 
-## 14. Valeurs proposées (points « à définir » du cahier d'origine)
+## 14. Valeurs retenues (points « à définir » du cahier d'origine)
 
-| Point | Valeur proposée |
+Validées par l'utilisateur le 2026-11-10 (« larges pour la preuve de concept »).
+
+| Point | Valeur |
 |---|---|
 | Groupes créés par station | 5 |
 | Groupes rejoints par station | 20 |
@@ -345,9 +348,11 @@ de rf-diy.com ; écran de consentement à l'adhésion.
 
 Chaque lot est validé par l'utilisateur avant le suivant.
 
-## 16. Questions ouvertes
+## 16. Questions
 
-1. Le relais PHP et le plugin WordPress : dans un autre dépôt (proposé) ou dans `relay/` de ce dépôt ?
-2. L'offre OVH fournit-elle l'extension `sodium` et quelle version de PHP ? (à vérifier avant le lot 2)
-3. Cloudflare en frontal dès le départ, ou seulement en cas d'abus ?
-4. Valeurs du § 14 à confirmer.
+Réponses de l'utilisateur du 2026-11-10 :
+1. Relais PHP et plugin WordPress : **dans un autre dépôt**, pour plus de sécurité.
+2. Extension `sodium` et version de PHP chez OVH : **à vérifier par l'utilisateur** avant le lot 2 (WordPress,
+   Outils > Santé du site, ou petit fichier d'essai supprimé aussitôt).
+3. **Pas de Cloudflare** pour la preuve de concept.
+4. Valeurs du § 14 **validées**.
