@@ -71,7 +71,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "net_export",                    # export anonyme (zip) par morceaux : part (opérateurs)
             # présence de groupe (docs/presence-cahier-des-charges.md) : OPÉRATEURS ; relayée au module « presence »
             # qui n'a AUCUN droit sur le poste (un QSY vers un ami = set_mode puis set_frequency du client)
-            "friends")                       # action (liste FRIENDS_ACTIONS) et args (objet, validé par le module)
+            "friends",                       # action (liste FRIENDS_ACTIONS) et args (objet, validé par le module)
+            # FreeDV RADE V1 en réception (cahier FreeDV, lot F1) : OPÉRATEURS ; refusé pendant toute émission ;
+            # on = voix décodée vers tous les clients, visiteurs compris ; n'agit JAMAIS sur le poste
+            "freedv_set")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -84,7 +87,8 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "replay",                    # rediffusion d'un enregistrement de l'audio reçu (0.91.0+, accordée par l'assistant)
                      "breizh",                    # Breizh Audio Box dans la chaîne d'émission (0.100.0+, [breizh] enabled)
                      "netprobe",                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
-                     "friends")                   # présence de groupe « Amis » (0.118.0+, module presence)
+                     "friends",                   # présence de groupe « Amis » (0.118.0+, module presence)
+                     "freedv")                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
@@ -245,6 +249,10 @@ def parse_command(raw: str | bytes) -> Command:
         unknown = set(data) - {"cmd", "id", "filter_mode", "attenuation_db", "send_on_tx_end", "tx_level_dbfs"}
         if unknown or not params:
             raise ProtocolError("invalid_params", "filter_mode, attenuation_db, send_on_tx_end et/ou tx_level_dbfs attendus")
+    elif name == "freedv_set":
+        if not isinstance(data.get("on"), bool) or set(data) - {"cmd", "id", "on"}:
+            raise ProtocolError("invalid_params", "on doit valoir true ou false")
+        params["on"] = data["on"]
     elif name == "listeners_open":
         if not isinstance(data.get("on"), bool):
             raise ProtocolError("invalid_params", "on doit valoir true ou false")

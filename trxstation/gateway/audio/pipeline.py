@@ -30,6 +30,7 @@ class AudioPipeline:
         self._task: asyncio.Task | None = None
         self.selcall = None                       # SelcallReceiver si [selcall] enabled (gateway/main)
         self.route = None                         # TxRoute si [breizh] enabled (gateway/main) : micro -> Breizh -> porte
+        self.freedv = None                        # FreedvService si [freedv] enabled (gateway/main) : voix décodée
 
     @property
     def tx_input(self):

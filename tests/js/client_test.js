@@ -1650,6 +1650,42 @@ test("Breizh : événements, alerte du repli pendant MON émission, journal, com
   assert.deepEqual(w.client.breizhEvents, []);
 });
 
+test("FreeDV : vue de state.freedv (voyant, textes, indicatifs, séquences en étoiles)", () => {
+  const ex = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "..", "protocol", "messages.json"), "utf8"));
+  assert.equal(web.freedvView(null), null); assert.equal(web.freedvView({}), null);
+  const off = web.freedvView(ex.hello.freedv, 0);
+  assert.equal(off.level, "off"); assert.equal(off.on, false); assert.match(off.text, /mode FreeDV non choisi/);
+  const voice = web.freedvView(ex.state_freedv.freedv, 1794338400);
+  assert.equal(voice.level, "ok"); assert.equal(voice.text, "Voix FreeDV · SNR +7,5 dB");
+  assert.deepEqual(voice.lastCall, { callsign: "W6GOK", snrText: "9 dB", when: "il y a 38 s" });
+  assert.equal(voice.sequences[0].stars, "★★★★★"); assert.equal(voice.sequences[0].callsigns, "W6GOK");
+  const search = web.freedvView(Object.assign({}, ex.state_freedv.freedv, { confirmed: false, sync: "candidate" }), 0);
+  assert.equal(search.level, "warn"); assert.match(search.text, /recherche d'un signal/);
+  const restart = web.freedvView(Object.assign({}, ex.state_freedv.freedv, { engine: "relance", restarts: 2, cause: "radae_rx gelé" }), 0);
+  assert.equal(restart.level, "warn"); assert.equal(restart.cause, "radae_rx gelé"); assert.equal(restart.restarts, 2);
+  const fault = web.freedvView({ on: false, fault: "radae_rx gelé" });
+  assert.equal(fault.level, "bad"); assert.match(fault.text, /abandonné : radae_rx gelé/);
+  assert.equal(web.freedvStars(2), "★★☆☆☆"); assert.equal(web.freedvStars(9), "★★★★★");
+  for (const key of ["demarrage", "ecoute", "relance", "panne", "arret"]) assert.ok(web.FREEDV_ENGINE[key]);
+});
+
+test("FreeDV : commande, refus en français, indicatif et abandon dans le journal", async () => {
+  const w = makeWorld();
+  const events = [];
+  w.ui.freedvEvent = (msg) => events.push(msg.kind);
+  await w.connected();
+  const pending = w.client.freedvSet(true);
+  assert.deepEqual(w.sentCommands("freedv_set")[0].on, true);
+  w.answer(false, { reason: "freedv_tx" });
+  assert.equal((await pending).ok, false);
+  assert.ok(w.ui.logs.some(([t, l]) => t === "FreeDV : " + web.REASONS.freedv_tx && l === "warn"));
+  w.dc().onmessage({ data: JSON.stringify({ type: "freedv_event", kind: "callsign", callsign: "W6GOK", snr_db: 9, t: 1 }) });
+  w.dc().onmessage({ data: JSON.stringify({ type: "freedv_event", kind: "fault", cause: "radae_rx gelé" }) });
+  assert.ok(w.ui.logs.some(([t]) => t === "FreeDV : indicatif W6GOK décodé (SNR 9 dB)."));
+  assert.ok(w.ui.logs.some(([t, l]) => /FreeDV abandonné : radae_rx gelé\. Son du poste remis\./.test(t) && l === "warn"));
+  assert.deepEqual(events, ["callsign", "fault"]);
+});
+
 test("sonde réseau : rien sans la fonction « netprobe », appareil gardé d'une connexion à l'autre", async () => {
   const w = makeWorld();
   await w.connected();

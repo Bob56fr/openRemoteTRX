@@ -21,6 +21,10 @@ class RxHub:
         # Une erreur n'arrête jamais la réception : le son passe alors tel quel.
         self.processor = None
         self._processor_failed = False
+        # Mode FreeDV (freedv/service.py) : en service, il REMPLACE le traitement ci-dessus (voix décodée, pas de
+        # filtrage SELCALL sur elle) ; hors service ou en erreur, le son du poste suit le chemin habituel.
+        self.freedv = None
+        self._freedv_failed = False
 
     @property
     def subscribers(self) -> int:
@@ -38,7 +42,15 @@ class RxHub:
         pcm = apply_gain(pcm, self.gain_db)
         self.meter.update(pcm)                                      # niveau du poste, avant tout traitement
         self.frames += 1
-        if self.processor is not None:
+        freedv = self.freedv
+        if freedv is not None and freedv.on:
+            try:
+                pcm = freedv.process(pcm)
+            except Exception:
+                if not self._freedv_failed:
+                    log.exception("mode FreeDV en erreur : le son du poste passe tel quel")
+                self._freedv_failed = True
+        elif self.processor is not None:
             try:
                 pcm = self.processor(pcm)
             except Exception:

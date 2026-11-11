@@ -107,6 +107,10 @@
     swr_unavailable: "Mesure de TOS indisponible sur cette station.",
     breizh_unavailable: "Breizh Audio Box n'est pas utilisé par cette station.",
     breizh_storage_error: "Réglage de Breizh non enregistré sur la station (disque ?).",
+    freedv_unavailable: "FreeDV n'est pas en service sur cette station.",
+    freedv_tx: "Émission en cours : le mode FreeDV se change en réception.",
+    freedv_missing: "Décodeur FreeDV introuvable sur la station (voir [freedv] de station.toml).",
+    freedv_storage_error: "Dossier de travail de FreeDV inaccessible sur la station.",
     netprobe_unavailable: "Sonde de qualité réseau absente de cette station.",
     netprobe_error: "Sonde de qualité réseau : erreur sur la station (voir son journal).",
     swr_no_fm_mode: "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
@@ -637,6 +641,62 @@
       returnGainText: (gain > 0 ? "+" : gain < 0 ? "−" : "") + String(Math.abs(gain)).replace(".", ",") + " dB",
       canReactivate: !bypass && (state === "fallback" || state === "refused"),
       effectsOff: b.route === "breizh",           // égaliseur, chorus, réverbération coupés ; limiteur gardé ; scrambler exclu
+    };
+  }
+
+  // FreeDV RADE V1 en réception (station 0.122.0+, fonction « freedv », docs/protocole.md § 17) : textes communs à la
+  // page et à l'application. Voyant FDV : vert = voix (synchro tenue 2 s), orange = recherche d'un signal ou relance des
+  // décodeurs, rouge = abandon après panne, gris = son du poste. La station décode ; le client n'affiche que son état.
+  const FREEDV_ENGINE = {
+    demarrage: "démarrage des décodeurs…",
+    ecoute: "écoute",
+    relance: "relance des décodeurs…",
+    panne: "décodeurs en panne",
+    arret: "arrêté",
+  };
+
+  function freedvStars(note) {
+    const n = Math.max(0, Math.min(5, Math.round(Number(note) || 0)));
+    return "★".repeat(n) + "☆".repeat(5 - n);
+  }
+
+  function freedvDb(v) {
+    return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1).replace(".", ",") + " dB";
+  }
+
+  function freedvView(f, nowS) {
+    /* state.freedv -> voyant, rubrique, listes ; null = station sans FreeDV. nowS : heure Unix (secondes). */
+    if (!f || typeof f !== "object" || typeof f.on !== "boolean") return null;
+    const on = f.on, confirmed = on && f.confirmed === true;
+    const snr = on && Number.isFinite(f.snr_db) ? f.snr_db : null;
+    const engine = FREEDV_ENGINE[f.engine] ? f.engine : "arret";
+    const ago = (t) => Number.isFinite(t) && Number.isFinite(nowS) ? "il y a " + durationText(nowS - t) : "";
+    let level, text;
+    if (!on) {
+      level = f.fault ? "bad" : "off";
+      text = f.fault ? "FreeDV abandonné : " + String(f.fault).slice(0, 200) + " (son du poste remis)" : "Son du poste : mode FreeDV non choisi";
+    } else if (engine === "demarrage" || engine === "relance" || engine === "panne") {
+      level = "warn";
+      text = "FreeDV : " + FREEDV_ENGINE[engine];
+    } else if (confirmed) {
+      level = "ok";
+      text = "Voix FreeDV" + (snr !== null ? " · SNR " + freedvDb(snr) : "");
+    } else {
+      level = "warn";
+      text = "FreeDV : recherche d'un signal…";
+    }
+    const calls = (Array.isArray(f.calls) ? f.calls : []).filter((c) => c && typeof c.callsign === "string").slice(0, 10)
+      .map((c) => ({ callsign: c.callsign.slice(0, 12), snrText: Number.isFinite(c.snr_db) ? c.snr_db + " dB" : "", when: ago(c.t) }));
+    const sequences = (Array.isArray(f.sequences) ? f.sequences : []).filter((s) => s && Number.isFinite(s.note)).slice(0, 10)
+      .map((s) => ({ note: Math.max(1, Math.min(5, Math.round(s.note))), stars: freedvStars(s.note),
+        duration: durationText(s.duration_s), detail: String(s.detail || "").slice(0, 200),
+        callsigns: (Array.isArray(s.callsigns) ? s.callsigns : []).map((c) => String(c).slice(0, 12)).join(", "),
+        when: ago(Number(s.start) + (Number(s.duration_s) || 0)) }));
+    return {
+      on: on, level: level, text: text, confirmed: confirmed, snrText: snr === null ? "" : freedvDb(snr),
+      engine: engine, restarts: Number.isInteger(f.restarts) ? f.restarts : 0,
+      cause: on && f.cause ? String(f.cause).slice(0, 200) : "", fault: f.fault ? String(f.fault).slice(0, 200) : "",
+      calls: calls, lastCall: calls.length ? calls[0] : null, sequences: sequences,
     };
   }
 
@@ -1382,6 +1442,8 @@
         if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
       } else if (msg.type === "breizh_event") {                         // liaison avec Breizh Audio Box (opérateurs)
         this._onBreizhEvent(msg);
+      } else if (msg.type === "freedv_event") {                         // FreeDV : indicatif, fin de séquence, abandon
+        this._onFreedvEvent(msg);
       } else if (msg.type === "net_ping") {                             // sonde réseau : écho immédiat, sans file d'attente
         if (Number.isInteger(msg.seq) && Number.isInteger(msg.t)) this._sendRaw({ cmd: "net_pong", seq: msg.seq, t: msg.t, tr: Math.round(this.env.now()) });
       } else if (msg.type === "net_pong") {
@@ -1448,6 +1510,16 @@
     }
 
     // ---- SELCALL : squelch numérique de la station (n'agit que sur le son reçu, jamais sur l'émission)
+
+    _onFreedvEvent(msg) {
+      /* Indicatif décodé et abandon après panne : journal de la page ; la séquence notée s'affiche par state.freedv. */
+      if (msg.kind === "callsign" && typeof msg.callsign === "string") {
+        this.ui.log("FreeDV : indicatif " + msg.callsign.slice(0, 12) + " décodé" + (Number.isFinite(msg.snr_db) ? " (SNR " + msg.snr_db + " dB)." : "."), "");
+      } else if (msg.kind === "fault") {
+        this.ui.log("FreeDV abandonné : " + String(msg.cause || "décodeurs en panne").slice(0, 200) + ". Son du poste remis.", "warn");
+      }
+      if (this.ui.freedvEvent) { try { this.ui.freedvEvent(msg); } catch (e) { /* affichage seulement */ } }
+    }
 
     _onBreizhEvent(msg) {
       /* Journal de la liaison ; un repli pendant MON émission = alerte (bip court de la page, jamais de la station). */
@@ -1603,6 +1675,7 @@
         host: this.isListener() ? null : hostView(this.state && this.state.host),
         breizh: this.isListener() ? null : breizhView(this.state && this.state.breizh),
         net: netView(this.state && this.state.net),                  // sonde réseau : la liaison de CE client
+        freedv: freedvView(this.state && this.state.freedv, Date.now() / 1000),   // FreeDV : tous, visiteurs compris
         memories: this.memories, rig: rig,
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
@@ -2178,6 +2251,13 @@
       return { name: String(first.name || "openremotetrx-reseau.zip").replace(/[^\w.-]/g, "_"), bytes: bytes };
     }
 
+    /* FreeDV (fonction « freedv », opérateurs) : mode de la station en réception ; refusé pendant l'émission. */
+    async freedvSet(on) {
+      const res = await this.send("freedv_set", { on: !!on });
+      if (res && !res.ok) this.ui.log("FreeDV : " + reasonText(res.reason, res.detail), "warn");
+      return res;
+    }
+
     /* Breizh Audio Box (fonction « breizh », opérateurs) : réglages pris à la PROCHAINE émission (écran : lot 3 Breizh). */
     async breizhSet(changes) {
       return this.send("breizh_set", changes);
@@ -2337,7 +2417,7 @@
                 loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
                 indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
-                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView,
+                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView, FREEDV_ENGINE, freedvView, freedvStars,
                 NET_DIAGNOSES, NET_TYPES, NET_LEVELS, netView, netStatsModel, vpnText, netDuration };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -168,6 +168,7 @@ class ContractTest {
             "swr_cancel" -> Command.SwrCancel
             "swr_last" -> Command.SwrLast
             "listeners_open" -> Command.ListenersOpen(p("on").boolean)
+            "freedv_set" -> Command.FreedvSet(p("on").boolean)
             "breizh_set" -> Command.BreizhSet(e["return_gain_db"]?.jsonPrimitive?.double,
                                               e["bypass"]?.jsonPrimitive?.boolean)
             "breizh_reactivate" -> Command.BreizhReactivate

@@ -181,6 +181,16 @@ class Presence:
 
 
 @dataclass
+class Freedv:
+    """FreeDV RADE V1 en RÉCEPTION (lot F1, cahier des charges FreeDV) : deux décodeurs en processus enfants de la
+    passerelle (trxstation/freedv/). Le choix du mode FreeDV (voix décodée à la place du son du poste) se fait depuis
+    la page ou l'application, jamais ici ; il n'est pas gardé au redémarrage."""
+    enabled: bool = False             # fonction disponible sur cette station (décodeurs installés)
+    ka9q_path: str = "freedv-ka9q"    # voix décodée et indicatif (freedv-integrations) ; nom seul = cherché dans le PATH
+    radae_rx_path: str = "radae_rx"   # synchro, SNR et décalage (rade_c) ; nom seul = cherché dans le PATH
+
+
+@dataclass
 class Tools:
     hamlib_dir: str = ""           # dossier d'installation de Hamlib (Windows) ; vide = PATH
 
@@ -457,6 +467,7 @@ class Config:
     breizh: Breizh = field(default_factory=Breizh)
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
+    freedv: Freedv = field(default_factory=Freedv)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -511,6 +522,7 @@ def validate(cfg: Config) -> list[str]:
     p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
+    p += _freedv_problems(cfg.freedv)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -785,6 +797,17 @@ def _presence_problems(pr: Presence) -> list[str]:
     return p
 
 
+def _freedv_problems(fd: Freedv) -> list[str]:
+    p = []
+    if not isinstance(fd.enabled, bool):
+        p.append("[freedv] enabled doit valoir true ou false")
+    for name in ("ka9q_path", "radae_rx_path"):
+        value = getattr(fd, name)
+        if not isinstance(value, str) or not value.strip() or any(c in value for c in "\r\n\0"):
+            p.append(f"[freedv] {name} : chemin du programme (ou son nom, cherché dans le PATH) attendu")
+    return p
+
+
 def presence_key_path(cfg: Config, config_path: str | Path) -> Path:
     """Clés de la station pour la présence : key_file (relatif = à côté de station.toml), sinon
     state_dir/presence/presence.key (écrit par le module lui-même, droits 0600)."""
@@ -879,7 +902,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "presence", "bands", "clients"}
+                 "netprobe", "presence", "freedv", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -902,6 +925,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
+            freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -1140,6 +1164,11 @@ def render_toml(cfg: Config) -> str:
         f"enabled = {str(cfg.presence.enabled).lower()}",
         f"relay_url = {_s(cfg.presence.relay_url)}   # relais (https:// ; http:// seulement vers 127.0.0.1)",
         f"key_file = {_s(cfg.presence.key_file)}   # clés de la station ; vide = state_dir/presence/{PRESENCE_KEY_FILE}",
+        "",
+        "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
+        f"enabled = {str(cfg.freedv.enabled).lower()}",
+        f"ka9q_path = {_s(cfg.freedv.ka9q_path)}   # nom seul = cherché dans le PATH",
+        f"radae_rx_path = {_s(cfg.freedv.radae_rx_path)}",
         "",
     ]
     for client in cfg.clients:

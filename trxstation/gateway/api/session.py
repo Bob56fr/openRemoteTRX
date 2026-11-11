@@ -79,6 +79,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         **({} if listener or getattr(pipeline, "route", None) is None else {"breizh": pipeline.route.snapshot()}),
         # sonde de qualité réseau : la liaison de CE client (docs/netprobe-cahier-des-charges.md), si la station l'a
         **({} if net is None else {"net": net}),
+        # FreeDV en réception ([freedv] enabled) : mode, synchro, SNR, indicatifs ; visiteurs compris
+        **({} if getattr(pipeline, "freedv", None) is None else {"freedv": pipeline.freedv.snapshot()}),
     }
 
 
@@ -119,6 +121,8 @@ class ControlSession:
         self._beeps_listener = lambda settings: self.send({"type": "beeps", "settings": settings})
         self._selcall_listener = lambda status: self.send({"type": "selcall", "status": status.to_dict()})
         self._breizh_listener = lambda entry: self.send({"type": "breizh_event", **entry})
+        self._freedv_listener = lambda event: self.send({"type": "freedv_event", **event})
+        self.freedv = getattr(pipeline, "freedv", None)   # FreedvService (freedv/service.py) ou None : [freedv] enabled = false
         self.breizh = None if role == LISTENER else getattr(pipeline, "route", None)   # TxRoute ou None
         receiver = getattr(pipeline, "selcall", None)
         self.selcall = getattr(receiver, "store", None)   # SELCALL (selcall/receiver.py) ou None : [selcall] enabled = false
@@ -164,6 +168,7 @@ class ControlSession:
                    "spectrum": self.spectrum.capability() if self.spectrum is not None else None,
                    "beeps": self.beeps.config.to_dict() if self.beeps is not None else None,
                    "selcall": self.selcall.status.to_dict() if self.selcall is not None else None,
+                   "freedv": self.freedv.snapshot() if self.freedv is not None else None,
                    # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
                    "features": self.features()})
@@ -176,6 +181,8 @@ class ControlSession:
             self.memories.add_listener(self._memories_listener)       # une mémoire créée ailleurs apparaît ici aussitôt
         if self.breizh is not None:
             self.breizh.store.add_listener(self._breizh_listener)     # repli, retour, refus : prévenir l'opérateur
+        if self.freedv is not None:
+            self.freedv.add_listener(self._freedv_listener)           # indicatifs, fins de séquence, abandon : tous
         if self.netprobe is not None:
             try:
                 self.probe = self.netprobe.open(self.client_id, self.role, self.device, self.agent, self.source, self.send)
@@ -200,7 +207,8 @@ class ControlSession:
                    "replay": self._replay_allowed(),
                    "breizh": self.breizh is not None,
                    "netprobe": self.netprobe is not None,
-                   "friends": self.friends_call is not None and not self.listener}
+                   "friends": self.friends_call is not None and not self.listener,
+                   "freedv": self.freedv is not None}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
@@ -228,6 +236,8 @@ class ControlSession:
             self.selcall.remove_listener(self._selcall_listener)    # la déconnexion ne change PAS l'état du SELCALL
         if self.breizh is not None:
             self.breizh.store.remove_listener(self._breizh_listener)
+        if self.freedv is not None:
+            self.freedv.remove_listener(self._freedv_listener)
         if self.probe is not None:
             try:
                 self.netprobe.close(self.probe)
@@ -276,6 +286,24 @@ class ControlSession:
             self._result(cmd.id, True)
         else:                                            # swr_last
             self._result(cmd.id, True, last=self.swr.store.last(), choices=self.swr.store.choices(self.client_id))
+
+    async def _freedv_set(self, cmd) -> None:
+        """Mode FreeDV de la station (réception) : n'agit JAMAIS sur le poste ; refusé pendant toute émission (de la
+        station ou au micro du poste), comme le cahier FreeDV le demande pour l'entrée et la sortie du mode."""
+        from ...freedv.service import FreedvUnavailable
+        if self.freedv is None:
+            self._result(cmd.id, False, reason="freedv_unavailable")
+            return
+        if self.ctrl.snapshot().state != "RX" or bool(getattr(self.link.state, "ptt", False)):
+            self._result(cmd.id, False, reason="freedv_tx", detail="émission en cours : mode FreeDV changé après")
+            return
+        try:
+            await self.freedv.set_on(cmd.params["on"])
+        except FreedvUnavailable as exc:
+            self._result(cmd.id, False, reason=exc.reason, detail=exc.detail)
+            return
+        log.info("mode FreeDV %s par %s", "choisi" if cmd.params["on"] else "quitté", self.client_id)
+        self._result(cmd.id, True, freedv=self.freedv.snapshot())
 
     def _breizh_command(self, cmd) -> None:
         """Breizh Audio Box : réglages de la route du micro, jamais d'effet sur le PTT ; pris à la PROCHAINE émission."""
@@ -678,6 +706,8 @@ class ControlSession:
                 await self._swr_command(cmd)
             elif cmd.name.startswith("breizh_"):
                 self._breizh_command(cmd)
+            elif cmd.name == "freedv_set":
+                await self._freedv_set(cmd)
             elif cmd.name.startswith("voice_profile"):     # opérateur seulement ; un fichier sur la station, rien vers le poste
                 if self.voices is None:
                     self._result(cmd.id, False, reason="voice_profiles_unavailable")

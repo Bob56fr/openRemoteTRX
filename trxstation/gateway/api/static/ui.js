@@ -1969,6 +1969,7 @@
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
+          fdvRender(null);                                                       // plus de rubrique ni de voyant FreeDV
           frRender(null);                                                        // plus de rubrique « Amis »
           paintNet({ connected: false });                                        // plus d'indicateur de liaison
           presenceOpen = false; $("presence-dialog").hidden = true;
@@ -2091,6 +2092,7 @@
         paintHost(v);
         paintNet(v);
         bzhRender(v);
+        fdvRender(v);
         paintMini(v);
         voiceProfilesSync();
         paintSwr(v);
@@ -2728,6 +2730,55 @@
     });
     $("bzh-log-refresh").addEventListener("click", bzhLoadLog);
     $("bzh-ind").addEventListener("click", () => { $("sec-breizh").open = true; $("sec-breizh").scrollIntoView({ block: "start" }); });
+
+    // ---- FreeDV RADE V1 en réception (station 0.122.0+, fonction « freedv », docs/protocole.md § 17) : la station décode,
+    // la page affiche. Voyant FDV et rubrique pour TOUS (visiteurs compris) ; le bouton du mode est réservé aux opérateurs
+    // et grisé pendant une émission (la station le refuserait aussi).
+    let fdvOn = false;
+    function fdvOffered() {
+      return !!(client.connected && client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("freedv"));
+    }
+    function fdvRender(v) {
+      const f = v && v.connected && fdvOffered() ? v.freedv : null;
+      $("sec-freedv").hidden = !f; $("fdv-ind").hidden = !f;
+      if (!f) return;
+      fdvOn = f.on;
+      const lvl = f.level !== "off" ? " " + f.level : "";
+      $("fdv-ind").className = "chip fdv-ind" + lvl;
+      $("fdv-ind").title = f.text + (f.lastCall ? " · dernier indicatif " + f.lastCall.callsign : "") + ". Touche : sa rubrique";
+      $("fdv-state").className = "fdv-state" + lvl;
+      $("fdv-state").textContent = f.text;
+      const details = [];
+      if (f.lastCall) details.push("Dernier indicatif : " + f.lastCall.callsign + (f.lastCall.snrText ? " (" + f.lastCall.snrText + ")" : "") + (f.lastCall.when ? ", " + f.lastCall.when : ""));
+      if (f.restarts) details.push(f.restarts + " relance(s) des décodeurs");
+      if (f.cause) details.push("dernière panne : " + f.cause);
+      $("fdv-details").textContent = details.join(" · ");
+      $("fdv-toggle").textContent = f.on ? "Revenir au son du poste" : "Passer en FreeDV";
+      $("fdv-toggle").disabled = v.pttState !== "RX";
+      const calls = $("fdv-calls");
+      calls.textContent = "";
+      for (const c of f.calls) calls.appendChild(el("li", "", c.callsign + (c.snrText ? " · " + c.snrText : "") + (c.when ? " · " + c.when : "")));
+      if (!f.calls.length) calls.appendChild(el("li", "note", "aucun pour l'instant"));
+      const seqs = $("fdv-seqs");
+      seqs.textContent = "";
+      for (const s of f.sequences) {
+        const li = el("li", "");
+        const stars = el("span", "stars" + (s.note >= 4 ? " good" : ""), s.stars);
+        stars.title = s.detail;
+        li.appendChild(stars);
+        li.appendChild(el("span", "", " " + s.duration + (s.callsigns ? " · " + s.callsigns : "") + (s.when ? " · " + s.when : "")));
+        seqs.appendChild(li);
+      }
+      if (!f.sequences.length) seqs.appendChild(el("li", "note", "aucune pour l'instant"));
+    }
+    $("fdv-toggle").addEventListener("click", () => {
+      const want = !fdvOn;
+      $("fdv-toggle").disabled = true;
+      client.freedvSet(want).then((res) => {
+        if (res && res.ok) ui.log(want ? "Mode FreeDV : voix décodée par la station." : "Mode FreeDV quitté : son du poste.", "");
+      }).catch(fail);
+    });
+    $("fdv-ind").addEventListener("click", () => { $("sec-freedv").open = true; $("sec-freedv").scrollIntoView({ block: "start" }); });
 
     // ---- présence de groupe « Amis » (friends.js, docs/presence-cahier-des-charges.md, fonction « friends », OPÉRATEURS)
     // Lecture de la vue préparée par la station (états déjà déchiffrés), actions relayées au module « presence ».

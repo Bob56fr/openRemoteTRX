@@ -325,6 +325,14 @@ audio { display: none; }
 .bzh-state { font-weight: 600; } .bzh-state.ok { color: var(--succes); } .bzh-state.warn { color: var(--alerte); }
 .bzh-log { max-height: 12rem; overflow-y: auto; margin: .3rem 0 0; padding-left: 1.4rem; font-size: .85rem; color: var(--texte-secondaire); }
 .bzh-log li.warn { color: var(--alerte); }
+.fdv-ind { font-weight: 700; letter-spacing: .03em; opacity: .6; }
+.fdv-ind.ok { background: var(--succes); color: var(--succes-sur); border-color: var(--succes); opacity: 1; }
+.fdv-ind.warn { background: var(--alerte-fond); color: var(--alerte-texte); border-color: var(--alerte); opacity: 1; }
+.fdv-ind.bad { border-color: var(--alerte); color: var(--alerte); opacity: 1; }
+.fdv-state { font-weight: 600; } .fdv-state.ok { color: var(--succes); } .fdv-state.warn, .fdv-state.bad { color: var(--alerte); }
+.fdv-list { max-height: 12rem; overflow-y: auto; margin: .3rem 0 0; padding-left: 1.4rem; font-size: .85rem; }
+.fdv-list .stars { color: var(--alerte); letter-spacing: .05em; }
+.fdv-list .stars.good { color: var(--succes); }
 .sel-ind.open { background: var(--succes); color: var(--succes-sur); border-color: var(--succes); }
 .sel-state { font-weight: 700; }
 #sec-selcall .row { flex-wrap: wrap; }

@@ -232,6 +232,12 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("action", action); if (args != null) put("args", args) }
     }
 
+    /** Mode FreeDV de la station en réception (fonction « freedv », docs/protocole.md § 17) : voix décodée vers tous les
+     *  clients ; refusé pendant toute émission ; n'agit jamais sur le poste. Réponse `freedv`. */
+    data class FreedvSet(val on: Boolean) : Command("freedv_set") {
+        override fun JsonObjectBuilder.params() { put("on", on) }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -248,7 +254,7 @@ sealed class Command(val name: String) {
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
-            "net_export", "friends",
+            "net_export", "friends", "freedv_set",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

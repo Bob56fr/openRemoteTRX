@@ -264,6 +264,7 @@ def _audio_panel(snap: Snapshot) -> Panel:
             "warn" if audio.get("rx_dropped", 0) or audio.get("tx_dropped_not_owner", 0) else "dim"),
         *_breizh_rows(snap),
         *_selcall_rows(snap),
+        *_freedv_rows(snap),
         *_spectrum_rows(snap),
     ))
 
@@ -294,6 +295,42 @@ def _selcall_rows(snap: Snapshot) -> tuple[Row, ...]:
             details.append(time.strftime("%H:%M:%S", time.localtime(call["at"])))
     details.append(f"trames {sc.get('frames_valid', 0)} · rejetées {sc.get('frames_rejected', 0)}")
     rows.append(Row("Appels", " · ".join(details), "dim"))
+    return tuple(rows)
+
+
+FREEDV_ENGINE = {"demarrage": ("démarrage…", "warn"), "ecoute": ("écoute", "ok"), "relance": ("RELANCE", "warn"),
+                 "panne": ("PANNE", "bad"), "arret": ("arrêté", "dim")}
+
+
+def _freedv_rows(snap: Snapshot) -> tuple[Row, ...]:
+    """FreeDV ([freedv] enabled) : mode, état des décodeurs, synchro, SNR, dernier indicatif (cahier FreeDV § 8)."""
+    fd = getattr(snap.status, "freedv", None) if snap.status is not None else None
+    if not isinstance(fd, dict) or not fd:
+        return ()
+    fresh = snap.gateway_fresh
+    if not fd.get("on"):
+        text, level = "son du poste (mode FreeDV non choisi)", "dim"
+        if fd.get("fault"):
+            text, level = f"abandonné : {fd['fault']}", "bad"
+        return (Row("FreeDV", text, level if fresh else "dim"),)
+    label, level = FREEDV_ENGINE.get(fd.get("engine"), (str(fd.get("engine")), "warn"))
+    parts = [f"RADE V1 · {label}"]
+    if fd.get("confirmed"):
+        snr = fd.get("snr_db")
+        parts.append("SYNCHRO" + (f" {snr:+.1f} dB" if isinstance(snr, (int, float)) else ""))
+    elif fd.get("sync") in ("sync", "candidate"):
+        parts.append("recherche…")
+    if fd.get("restarts"):
+        parts.append(f"relances {fd['restarts']}")
+    rows = [Row("FreeDV", " · ".join(parts), level if fresh else "dim")]
+    call = fd.get("last_call")
+    if isinstance(call, dict) and call.get("callsign"):
+        detail = f"dernier indicatif {call['callsign']}"
+        if isinstance(call.get("snr_db"), (int, float)):
+            detail += f" ({call['snr_db']} dB)"
+        if isinstance(call.get("t"), (int, float)):
+            detail += " à " + time.strftime("%H:%M:%S", time.localtime(call["t"]))
+        rows.append(Row("Indicatif", detail, "info" if fresh else "dim"))
     return tuple(rows)
 
 

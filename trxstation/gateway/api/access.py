@@ -42,7 +42,8 @@ LISTENER_REFUSED = frozenset({
     "listeners_open", "host_info", "voice_profiles", "voice_profile_save", "voice_profile_delete",
     "swr_plan", "swr_start", "swr_cancel", "swr_last", "breizh_set", "breizh_reactivate", "breizh_log",
     "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore", "net_export",
-    "friends"})                     # présence de groupe : opérateurs seulement
+    "friends",                      # présence de groupe : opérateurs seulement
+    "freedv_set"})                  # mode FreeDV de la station : opérateurs seulement (le visiteur en voit l'état)
 assert LISTENER_COMMANDS <= set(COMMANDS)
 
 MESSAGES = {

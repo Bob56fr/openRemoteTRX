@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.121.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.122.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -191,6 +191,18 @@ Se modifie : Menu 14, et ajouter « presence » à `[modules] run`. Les groupes,
 | `enabled` | courant | `false` | true : la station s'enregistre auprès du relais et échange la présence avec les groupes dont elle est membre (« presence » doit aussi figurer dans `[modules] run`). **Sécurité** : La présence ne fait que montrer : aucune donnée reçue du relais ne peut commander le poste. (depuis 0.117.0) |
 | `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais de présence. Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.117.0) |
 | `key_file` | expert | `""` | Fichier des clés de la station pour la présence (signature et réception des clés de groupe). Vide : `presence.key` dans le dossier d'état, créé par le module au premier démarrage. Relatif : à côté de station.toml. **Sécurité** : Ce fichier identifie la station auprès du relais et des groupes : ne jamais le copier sur une autre station. (depuis 0.117.0) |
+
+## FreeDV en réception [freedv]
+
+La station décode elle-même la voix numérique FreeDV (RADE V1) avec deux programmes de l'équipe FreeDV, lancés seulement quand l'opérateur choisit le mode FreeDV dans la page : tous les connectés, visiteurs compris, entendent alors la voix décodée à la place du son du poste, avec la synchro, le SNR et les indicatifs reçus. Réception seulement : rien n'est émis, et le poste n'est pas touché.
+
+Se modifie : Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : FreeDV est proposé dans la page (rubrique et voyant « FDV ») ; les décodeurs ne tournent que pendant le mode FreeDV choisi par l'opérateur. **Sécurité** : Réception seulement : le mode FreeDV ne change ni la fréquence ni le mode du poste, et se refuse pendant une émission. Une panne des décodeurs n'arrête jamais la station : après 5 relances en 10 minutes, le son du poste revient. (depuis 0.122.0) |
+| `ka9q_path` | expert | `"freedv-ka9q"` | Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode FreeDV est refusé avec le nom du programme manquant. Exemple : `freedv-ka9q` (Debian), `C:\Program Files\FreeDV\freedv-ka9q.exe` (Windows). (depuis 0.122.0) |
+| `radae_rx_path` | expert | `"radae_rx"` | Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Exemple : `radae_rx` (depuis 0.122.0) |
 
 ## Spectre HF du poste [spectrum]
 

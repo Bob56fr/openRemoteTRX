@@ -1,0 +1,72 @@
+diff --git a/src/ka9q/main.cpp b/src/ka9q/main.cpp
+index 0584c8e..1d177ae 100644
+--- a/src/ka9q/main.cpp
++++ b/src/ka9q/main.cpp
+@@ -331,6 +331,8 @@ int main(int argc, char** argv)
+     // we have to use setmode() to make it a binary stream instead.
+     _setmode(_fileno(stdin), O_BINARY);
+     _setmode(_fileno(stdout), O_BINARY);
++    // stderr is block-buffered when redirected to a pipe: log lines (callsigns) would be delayed.
++    setvbuf(stderr, NULL, _IONBF, 0);
+ #endif // _WIN32
+ 
+     bool exiting = false; 
+@@ -342,6 +344,7 @@ int main(int argc, char** argv)
+     assert(writeBuffer != nullptr);
+     while (!exiting)
+     {
++        bool didRead = false;
+         fd_set readSet;
+         struct timeval tv;
+         
+@@ -353,13 +356,21 @@ int main(int argc, char** argv)
+         tv.tv_sec = 0;
+         tv.tv_usec = 0;
+         
++#if defined(_WIN32)
++        // Windows: select() only works on sockets, not on a stdin pipe. Block on read() instead;
++        // the input arrives in real time, so the loop is paced by it.
++        (void)readSet; (void)tv;
++        int rv = 1;
++#else
+         int rv = select(stdinFileNo + 1, &readSet, nullptr, nullptr, &tv);
++#endif // _WIN32
+         if (rv > 0 && !exiting)
+         {
+             if (callbackObj->infifo2->numFree() >= NUM_TO_READ)
+             {
+                 // Read from standard input and queue on input FIFO
+                 int numActuallyRead = read(stdinFileNo, readBuffer, sizeof(short) * NUM_TO_READ);
++                didRead = numActuallyRead > 0;
+                 if (numActuallyRead <= 0) 
+                 {
+                     // stdin closed, exit
+@@ -373,7 +384,12 @@ int main(int argc, char** argv)
+         {
+             constexpr int ERROR_BUFFER_LEN = 1024;
+             char tmpBuf[ERROR_BUFFER_LEN];
++#if defined(_WIN32)
++            (void)tmpBuf;
++            log_error("Error waiting for input: %s", strerror(errno));
++#else
+             log_error("Error waiting for input: %s", strerror_r(errno, tmpBuf, ERROR_BUFFER_LEN));
++#endif // _WIN32
+             break;
+         }
+ 
+@@ -391,10 +407,13 @@ int main(int argc, char** argv)
+             }
+         }
+ 
+-        if (!exiting)
++        // Sleep only when nothing was read. Sleeping a whole frame after every read capped the
++        // throughput below real time (0.993x on Linux, ~0.6x on Windows where short sleeps last
++        // at least 15.6 ms), so a real-time producer slowly built up a backlog.
++        if (!exiting && !didRead)
+         {
+             // Wait a bit for the output FIFO to be processed.
+-            std::this_thread::sleep_for(std::chrono::milliseconds(FRAME_DURATION_MS));
++            std::this_thread::sleep_for(std::chrono::milliseconds(FRAME_DURATION_MS / 4));
+         }
+     }
+     delete[] readBuffer;

@@ -1212,6 +1212,54 @@ step("Breizh Audio Box : rubrique et voyant seulement si annoncé, état, volume
   assert.equal($("sec-breizh").hidden, true); assert.equal($("bzh-ind").hidden, true);
 });
 
+step("FreeDV : voyant et rubrique seulement si annoncé, bouton du mode grisé en émission, indicatifs, séquences en étoiles", async () => {
+  await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode"] });
+  await wait(30); state({}); await wait(30);
+  assert.equal($("sec-freedv").hidden, true); assert.equal($("fdv-ind").hidden, true);              // station sans FreeDV : rien
+  await $("disconnect").click(); await wait(); await wait(400);
+  $("password").value = "mot de passe"; await $("connect").click(); await wait();
+  send({ type: "hello", protocol: 1, client_id: "phone", capabilities: { modes: ["USB", "LSB"] }, tx_modes: [], max_power_w: 100, memories: [],
+         features: ["ptt", "frequency", "mode", "freedv"] });
+  await wait(30);
+  const now = Date.now() / 1000;
+  const fdvState = (freedv, ptt) => send({ type: "state",
+    ptt: Object.assign({ state: "RX", owner: null, tot_remaining_s: null, tot_warning: false, last_cut_reason: "", fault: "" }, ptt || {}),
+    rig: { connected: true, frequency_hz: 14236000, mode: "USB", passband_hz: 2400, strength_db: -12, functions: {}, levels: {} },
+    audio: { rx_db: -23, tx_db: -90, gate_open: false }, clients: ["phone"],
+    freedv: Object.assign({ on: false, engine: "arret", sync: "search", confirmed: false, snr_db: null, foff_hz: null, restarts: 0,
+                            cause: null, fault: null, calls: [], sequences: [] }, freedv || {}) });
+  fdvState(); await wait(30);
+  assert.equal($("sec-freedv").hidden, false); assert.equal($("fdv-ind").hidden, false);
+  assert.doesNotMatch($("fdv-ind").className, /\b(ok|warn|bad)\b/);
+  assert.equal($("fdv-toggle").textContent, "Passer en FreeDV"); assert.equal($("fdv-toggle").disabled, false);
+  await $("fdv-toggle").click();
+  assert.equal(sent("freedv_set").pop().on, true);
+  fdvState({ on: true, engine: "ecoute", sync: "sync", confirmed: true, snr_db: 7.5,
+             calls: [{ callsign: "W6GOK", snr_db: 9, t: now - 38 }],
+             sequences: [{ start: now - 50, duration_s: 6.7, note: 5, detail: "SNR médian +12.2 dB", callsigns: ["W6GOK"] },
+                         { start: now - 200, duration_s: 20, note: 2, detail: "synchro 60 %", callsigns: [] }] });
+  await wait(30);
+  assert.match($("fdv-ind").className, /\bok\b/); assert.equal($("fdv-state").textContent, "Voix FreeDV · SNR +7,5 dB");
+  assert.match($("fdv-details").textContent, /Dernier indicatif : W6GOK \(9 dB\), il y a 3\d s/);
+  assert.equal($("fdv-toggle").textContent, "Revenir au son du poste");
+  assert.equal($("fdv-calls").children.length, 1); assert.match($("fdv-calls").children[0].textContent, /^W6GOK · 9 dB/);
+  assert.equal($("fdv-seqs").children.length, 2);
+  assert.equal($("fdv-seqs").children[0].children[0].textContent, "★★★★★");
+  assert.match($("fdv-seqs").children[0].children[0].className, /\bgood\b/);
+  assert.doesNotMatch($("fdv-seqs").children[1].children[0].className, /\bgood\b/);
+  fdvState({ on: true, engine: "ecoute", confirmed: false, sync: "candidate" }, { state: "TX", owner: "phone" }); await wait(30);
+  assert.match($("fdv-ind").className, /\bwarn\b/); assert.equal($("fdv-toggle").disabled, true);   // en émission : grisé
+  fdvState({ on: false, fault: "radae_rx gelé" }); await wait(30);
+  assert.match($("fdv-ind").className, /\bbad\b/); assert.match($("fdv-state").textContent, /abandonné : radae_rx gelé/);
+  await $("fdv-ind").click();
+  assert.equal($("sec-freedv").open, true);
+  await $("disconnect").click(); await wait();
+  assert.equal($("sec-freedv").hidden, true); assert.equal($("fdv-ind").hidden, true);
+});
+
 step("reconnexion automatique : grand texte à la place de la fréquence, sans redemander le mot de passe, annulation, échec, reprise", async () => {
   $("reconnect-select").value = "15"; await $("reconnect-select").dispatch("change", { target: $("reconnect-select") });
   assert.equal(storage.get("trx.reconnect"), "15");

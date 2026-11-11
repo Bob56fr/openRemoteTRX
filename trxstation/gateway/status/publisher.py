@@ -45,7 +45,7 @@ class StatusPublisher:
                              swr=self.swr_status() if self.swr_status is not None else {},
                              breizh=self.pipeline.route.snapshot()
                              if getattr(self.pipeline, "route", None) is not None else {},
-                             net=self._net(), selcall=self._selcall())
+                             net=self._net(), selcall=self._selcall(), freedv=self._freedv())
 
     def _net(self) -> dict:
         if self.net_status is None:
@@ -64,6 +64,16 @@ class StatusPublisher:
             return receiver.summary()
         except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
             log.exception("état SELCALL")
+            return {}
+
+    def _freedv(self) -> dict:
+        service = getattr(self.pipeline, "freedv", None)
+        if service is None:               # [freedv] enabled = false
+            return {}
+        try:
+            return service.summary()
+        except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
+            log.exception("état FreeDV")
             return {}
 
     def stop(self) -> None:

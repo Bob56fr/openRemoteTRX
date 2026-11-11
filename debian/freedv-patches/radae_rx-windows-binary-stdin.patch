@@ -1,0 +1,32 @@
+diff --git a/src/radae_rx.c b/src/radae_rx.c
+index 441663a..ec6226b 100644
+--- a/src/radae_rx.c
++++ b/src/radae_rx.c
+@@ -42,6 +42,11 @@
+ #include "rade_api.h"
+ #include "rade_dsp.h"
+ 
++#ifdef _WIN32
++#include <io.h>
++#include <fcntl.h>
++#endif
++
+ void usage(void) {
+     fprintf(stderr, "usage: radae_rx [options]\n");
+     fprintf(stderr, "  -h, --help              Show this help\n");
+@@ -159,6 +164,15 @@ int main(int argc, char *argv[]) {
+     int    snr_log_cap  = 0;
+     float *snr_log      = NULL;
+ 
++    /* Windows: stdin/stdout are text streams by default (0x1A ends the input, CR/LF are
++       translated), which corrupts binary IQ samples and features. */
++#ifdef _WIN32
++    _setmode(_fileno(stdin), _O_BINARY);
++    _setmode(_fileno(stdout), _O_BINARY);
++    /* stderr is block-buffered when redirected to a pipe: state lines would arrive ~4 kB at a time. */
++    setvbuf(stderr, NULL, _IONBF, 0);
++#endif
++
+     /* Main processing loop */
+     int sym_count = 0;
+     int valid_count = 0;

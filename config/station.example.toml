@@ -150,6 +150,11 @@ rsrp_alert_dbm = -115   # rouge (dBm)
 sinr_warn_db = 3   # rapport signal/bruit : orange (dB)
 sinr_alert_db = 0   # rouge (dB)
 
+[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)
+enabled = false
+ka9q_path = "freedv-ka9q"   # nom seul = cherché dans le PATH
+radae_rx_path = "radae_rx"
+
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]
 # id = "club1"

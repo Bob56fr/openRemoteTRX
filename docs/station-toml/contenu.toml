@@ -110,6 +110,12 @@ intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application
 ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
 relu = "redemarrage"
 
+[sections.freedv]
+titre = "FreeDV en réception [freedv]"
+intro = "<p>La station décode elle-même la voix numérique FreeDV (RADE V1) avec deux programmes de l'équipe FreeDV, lancés seulement quand l'opérateur choisit le mode FreeDV dans la page : tous les connectés, visiteurs compris, entendent alors la voix décodée à la place du son du poste, avec la synchro, le SNR et les indicatifs reçus. Réception seulement : rien n'est émis, et le poste n'est pas touché.</p>"
+ou = "Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage."
+relu = "redemarrage"
+
 [sections.selcall]
 titre = "SELCALL [selcall]"
 intro = "<p>Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.</p>"
@@ -450,6 +456,28 @@ role = "Durée maximale de l'émission d'un point. Le temps réel est étalonné
 niveau = "expert"
 bornes = "0,5 à 3 s."
 depuis = "0.90.0"
+
+# ---------------------------------------------------------------- freedv
+
+[reglages."freedv.enabled"]
+role = "true : FreeDV est proposé dans la page (rubrique et voyant « FDV ») ; les décodeurs ne tournent que pendant le mode FreeDV choisi par l'opérateur."
+niveau = "courant"
+securite = "Réception seulement : le mode FreeDV ne change ni la fréquence ni le mode du poste, et se refuse pendant une émission. Une panne des décodeurs n'arrête jamais la station : après 5 relances en 10 minutes, le son du poste revient."
+depuis = "0.122.0"
+
+[reglages."freedv.ka9q_path"]
+role = "Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH."
+niveau = "expert"
+bornes = "Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode FreeDV est refusé avec le nom du programme manquant."
+exemple = "<code>freedv-ka9q</code> (Debian), <code>C:\\Program Files\\FreeDV\\freedv-ka9q.exe</code> (Windows)."
+depuis = "0.122.0"
+
+[reglages."freedv.radae_rx_path"]
+role = "Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH."
+niveau = "expert"
+bornes = "Chemin d'un fichier, ou nom seul ; jamais vide."
+exemple = "<code>radae_rx</code>"
+depuis = "0.122.0"
 
 # ---------------------------------------------------------------- presence
 

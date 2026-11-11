@@ -81,6 +81,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     breizh_link = _start_breizh(cfg, pipeline, config_path)              # [breizh] enabled = false : rien
+    pipeline.freedv = _start_freedv(cfg, pipeline)                       # [freedv] enabled = false : rien
     spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
     access = AccessControl(cfg.clients, cfg.access)       # rôles, quotas, présence de l'opérateur (visiteurs)
     access.switch = ListenerSwitch(Path(cfg.supervisor.state_dir) / "listeners.json")   # commutateur de l'opérateur
@@ -131,6 +132,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         if manager is not None:
             await manager.close_all()              # déconnecte les clients : coupe l'émission du propriétaire
         await ctrl.close()
+        if pipeline.freedv is not None:
+            await pipeline.freedv.close()          # décodeurs FreeDV arrêtés (processus enfants)
         await pipeline.stop()
         publisher.stop()
         link.stop()
@@ -163,6 +166,24 @@ def _start_selcall(cfg: Config, pipeline: AudioPipeline, ctrl, link):
     pipeline.hub.processor = receiver.process
     log.info("SELCALL en service : état %s%s", store.status.state, f" (code {store.status.code})" if store.status.code else "")
     return receiver
+
+
+def _start_freedv(cfg: Config, pipeline: AudioPipeline):
+    """FreeDV RADE V1 en réception (lot F1) : service prêt, décodeurs lancés SEULEMENT quand l'opérateur choisit le
+    mode FreeDV (commande freedv_set). Une erreur du moteur n'arrête jamais la passerelle."""
+    fd = cfg.freedv
+    if fd.enabled is not True:
+        return None
+    from ..freedv.service import FreedvService, resolve_program   # numpy : seulement si la fonction est en service
+
+    service = FreedvService(fd.ka9q_path, fd.radae_rx_path, Path(cfg.supervisor.state_dir) / "freedv")
+    pipeline.hub.freedv = service
+    missing = [p for p in (fd.ka9q_path, fd.radae_rx_path) if resolve_program(p) is None]
+    if missing:
+        log.warning("FreeDV : décodeur introuvable (%s) : le mode FreeDV sera refusé", ", ".join(missing))
+    else:
+        log.info("FreeDV disponible (réception, mode choisi par l'opérateur)")
+    return service
 
 
 def _start_breizh(cfg: Config, pipeline: AudioPipeline, config_path: Path | None):

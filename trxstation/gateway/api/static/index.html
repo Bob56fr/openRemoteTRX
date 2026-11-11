@@ -139,6 +139,7 @@
       <button id="st-direct" class="chip st-direct" title="Spatialisation stéréo de la réception (casque) : marche / arrêt ; appui long : réglages">ST</button>
       <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
       <button id="bzh-ind" class="chip bzh-ind listener-hide" hidden title="Breizh Audio Box : touche pour ouvrir sa rubrique">BZH</button>
+      <button id="fdv-ind" class="chip fdv-ind" hidden title="FreeDV : touche pour ouvrir sa rubrique">FDV</button>
       <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
@@ -449,6 +450,25 @@
             <button id="sel-test-save" class="chip">Télécharger</button>
           </div>
         </div>
+      </div>
+    </details>
+
+    <details id="sec-freedv" hidden>
+      <summary>FreeDV</summary>
+      <div class="body">
+        <p class="note">FreeDV RADE V1 : voix numérique décodée par la station. En mode FreeDV, tous les connectés entendent la voix
+          décodée à la place du son du poste, et du silence tant qu'aucun signal FreeDV n'est accroché. Le poste reste réglé comme il
+          l'est : FreeDV se reçoit en BLU supérieure (USB ou PKTUSB), avec un filtre d'au moins 2,4 kHz.</p>
+        <p id="fdv-state" class="fdv-state"></p>
+        <p id="fdv-details" class="note"></p>
+        <div class="row listener-hide"><button id="fdv-toggle" class="chip" title="Refusé pendant une émission">Passer en FreeDV</button></div>
+        <h4>Indicatifs décodés</h4>
+        <ol id="fdv-calls" class="fdv-list"></ol>
+        <h4>Séquences reçues</h4>
+        <p class="note">Qualité probable à l'écoute, de 1 à 5 étoiles : SNR médian pendant la synchro (5 dès +6 dB, 4 dès +3, 3 dès 0,
+          2 dès −3), une étoile de moins si la synchro tient moins de 80 % du temps ou se perd souvent ; 2 au plus sous 3 s. La station
+          n'enregistre pas la voix.</p>
+        <ol id="fdv-seqs" class="fdv-list"></ol>
       </div>
     </details>
 
