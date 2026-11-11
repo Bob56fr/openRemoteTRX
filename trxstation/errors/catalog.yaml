@@ -26,7 +26,7 @@ ORT-1001:
   priorite_ntfy: 3
   codes_machine:
   - disk_high
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1001/
   depuis_version: 0.123.0
   en:
     titre: Disk almost full
@@ -52,7 +52,7 @@ ORT-1002:
   priorite_ntfy: 3
   codes_machine:
   - memory_high
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1002/
   depuis_version: 0.123.0
   en:
     titre: Station memory almost full
@@ -77,7 +77,7 @@ ORT-1003:
   priorite_ntfy: 3
   codes_machine:
   - pi_throttled
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1003/
   depuis_version: 0.123.0
   en:
     titre: Raspberry Pi throttled
@@ -99,7 +99,7 @@ ORT-1004:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1004/
   depuis_version: 0.123.0
   en:
     titre: Station identifier unavailable
@@ -121,7 +121,7 @@ ORT-1005:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1005/
   depuis_version: 0.123.0
   en:
     titre: Gateway status file not written
@@ -149,7 +149,7 @@ ORT-1006:
   codes_machine:
   - warn
   - bad
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1006/
   depuis_version: 0.123.0
   en:
     titre: Station machine under load
@@ -173,7 +173,7 @@ ORT-1007:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1007/
   depuis_version: 0.123.0
   en:
     titre: SWR sweep state not saved or unreadable
@@ -204,7 +204,7 @@ ORT-1008:
   - voice_profiles_storage_error
   - report_storage_error
   - freedv_storage_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1008/
   depuis_version: 0.123.0
   en:
     titre: Setting not saved on the station
@@ -228,7 +228,7 @@ ORT-1009:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1009/
   depuis_version: 0.123.0
   en:
     titre: Station log not written
@@ -253,7 +253,7 @@ ORT-1010:
   priorite_ntfy: 3
   codes_machine:
   - cpu_hot
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1010/
   depuis_version: 0.123.0
   en:
     titre: CPU temperature high
@@ -276,7 +276,7 @@ ORT-1011:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1011/
   depuis_version: 0.123.0
   en:
     titre: Operating system not supported
@@ -298,7 +298,7 @@ ORT-1012:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1012/
   depuis_version: 0.123.0
   en:
     titre: Not enough disk space
@@ -319,7 +319,7 @@ ORT-1013:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1013/
   depuis_version: 0.123.0
   en:
     titre: CPU temperature unreadable
@@ -341,7 +341,7 @@ ORT-1014:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1014/
   depuis_version: 0.123.0
   en:
     titre: Hardware below the recommended minimum
@@ -364,7 +364,7 @@ ORT-1015:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1015/
   depuis_version: 0.123.0
   en:
     titre: Raspberry Pi power supply too weak
@@ -387,7 +387,7 @@ ORT-1020:
   priorite_ntfy: 3
   codes_machine:
   - clock
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1020/
   depuis_version: 0.123.0
   en:
     titre: Station clock refused by the relay
@@ -410,7 +410,7 @@ ORT-1501:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1501
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1501/
   depuis_version: 0.123.0
   en:
     titre: Update check failed
@@ -433,7 +433,7 @@ ORT-1502:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1502
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1502/
   depuis_version: 0.123.0
   en:
     titre: Last update check too old
@@ -453,7 +453,7 @@ ORT-1503:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1503
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1503/
   depuis_version: 0.123.0
   en:
     titre: New version available
@@ -472,7 +472,7 @@ ORT-1504:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1504
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1504/
   depuis_version: 0.123.0
   en:
     titre: No known signing key
@@ -497,7 +497,7 @@ ORT-1505:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_TX
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1505
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1505/
   depuis_version: 0.123.0
   en:
     titre: 'Update refused: transmitting or unknown state'
@@ -526,7 +526,7 @@ ORT-1506:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_REFUSED
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1506
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1506/
   depuis_version: 0.123.0
   en:
     titre: Package signature refused
@@ -554,7 +554,7 @@ ORT-1507:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_REFUSED
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1507
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1507/
   depuis_version: 0.123.0
   en:
     titre: Package content refused
@@ -580,7 +580,7 @@ ORT-1508:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_REFUSED
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1508
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1508/
   depuis_version: 0.123.0
   en:
     titre: Update download failed
@@ -608,7 +608,7 @@ ORT-1509:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_REFUSED
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1509
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1509/
   depuis_version: 0.123.0
   en:
     titre: Dropped package refused or to be confirmed
@@ -637,7 +637,7 @@ ORT-1510:
   priorite_ntfy: 3
   codes_machine:
   - EXIT_FAILED
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1510
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1510/
   depuis_version: 0.123.0
   en:
     titre: Installing the new version failed
@@ -662,7 +662,7 @@ ORT-1511:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-1511
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1511/
   depuis_version: 0.123.0
   en:
     titre: Release signing key unusable (development)
@@ -694,7 +694,7 @@ ORT-2001:
   priorite_ntfy: 3
   codes_machine:
   - usb_missing
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2001/
   depuis_version: 0.123.0
   en:
     titre: Radio serial port not found
@@ -721,7 +721,7 @@ ORT-2002:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2002/
   depuis_version: 0.123.0
   en:
     titre: rigctld does not start
@@ -748,7 +748,7 @@ ORT-2003:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2003/
   depuis_version: 0.123.0
   en:
     titre: Hamlib not found (rigctld or rigctl)
@@ -771,7 +771,7 @@ ORT-2004:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2004/
   depuis_version: 0.123.0
   en:
     titre: rigctld not running (tool in --no-spawn)
@@ -796,7 +796,7 @@ ORT-2005:
   priorite_ntfy: 3
   codes_machine:
   - rigctld_down
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2005/
   depuis_version: 0.123.0
   en:
     titre: rigctld unreachable
@@ -821,7 +821,7 @@ ORT-2006:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2006/
   depuis_version: 0.123.0
   en:
     titre: Connection closed by rigctld
@@ -845,7 +845,7 @@ ORT-2007:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2007/
   depuis_version: 0.123.0
   en:
     titre: rigctld response out of sync
@@ -868,7 +868,7 @@ ORT-2008:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2008/
   depuis_version: 0.123.0
   en:
     titre: Unreadable rig response
@@ -891,7 +891,7 @@ ORT-2009:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2009/
   depuis_version: 0.123.0
   en:
     titre: Optional reading dropped for this rig
@@ -916,7 +916,7 @@ ORT-2010:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2010/
   depuis_version: 0.123.0
   en:
     titre: Rig not answering (rigctld is)
@@ -944,7 +944,7 @@ ORT-2011:
   priorite_ntfy: 3
   codes_machine:
   - rig_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2011/
   depuis_version: 0.123.0
   en:
     titre: Command rejected by the rig (RPRT)
@@ -970,7 +970,7 @@ ORT-2012:
   priorite_ntfy: 3
   codes_machine:
   - invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2012/
   depuis_version: 0.123.0
   en:
     titre: Mode or function not supported by this rig
@@ -994,7 +994,7 @@ ORT-2013:
   priorite_ntfy: 3
   codes_machine:
   - invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2013/
   depuis_version: 0.123.0
   en:
     titre: Value outside the rig's range
@@ -1016,7 +1016,7 @@ ORT-2014:
   action_auto: repli_jeu_minimal
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2014/
   depuis_version: 0.123.0
   en:
     titre: Rig capabilities unavailable (dump_caps)
@@ -1040,7 +1040,7 @@ ORT-2015:
   priorite_ntfy: 3
   codes_machine:
   - rig_absent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2015/
   depuis_version: 0.123.0
   en:
     titre: Rig off or unplugged
@@ -1062,7 +1062,7 @@ ORT-2016:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2016
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2016/
   depuis_version: 0.123.0
   en:
     titre: Profile radio port missing
@@ -1085,7 +1085,7 @@ ORT-2017:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2017
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2017/
   depuis_version: 0.123.0
   en:
     titre: Radio answers badly to the link test
@@ -1107,7 +1107,7 @@ ORT-2018:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2018
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2018/
   depuis_version: 0.123.0
   en:
     titre: Radio model unknown to this Hamlib
@@ -1129,7 +1129,7 @@ ORT-2019:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2019
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2019/
   depuis_version: 0.123.0
   en:
     titre: System service disturbing the serial port
@@ -1152,7 +1152,7 @@ ORT-2020:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2020/
   depuis_version: 0.123.0
   en:
     titre: Low radio supply voltage
@@ -1177,7 +1177,7 @@ ORT-2021:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2021
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2021/
   depuis_version: 0.123.0
   en:
     titre: Hamlib build failed
@@ -1200,7 +1200,7 @@ ORT-2022:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2022
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2022/
   depuis_version: 0.123.0
   en:
     titre: Another rigctld comes first
@@ -1223,7 +1223,7 @@ ORT-2104:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2104
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2104/
   depuis_version: 0.123.0
   en:
     titre: CAT response timeout
@@ -1246,7 +1246,7 @@ ORT-2200:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2200
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2200/
   depuis_version: 0.123.0
   en:
     titre: Hamlib older than the qualified version
@@ -1271,7 +1271,7 @@ ORT-2301:
   priorite_ntfy: 3
   codes_machine:
   - open_failed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2301
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2301/
   depuis_version: 0.123.0
   en:
     titre: Rig second port cannot be opened (HF spectrum)
@@ -1300,7 +1300,7 @@ ORT-2302:
   priorite_ntfy: 3
   codes_machine:
   - no_answer
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2302
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2302/
   depuis_version: 0.123.0
   en:
     titre: No CI-V answer on the second port
@@ -1327,7 +1327,7 @@ ORT-2303:
   priorite_ntfy: 3
   codes_machine:
   - wrong_address
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2303
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2303/
   depuis_version: 0.123.0
   en:
     titre: Rig CI-V address changed (second port)
@@ -1352,7 +1352,7 @@ ORT-2304:
   priorite_ntfy: 3
   codes_machine:
   - no_scope
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2304
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2304/
   depuis_version: 0.123.0
   en:
     titre: Rig does not provide the spectrum over CI-V
@@ -1375,7 +1375,7 @@ ORT-2305:
   priorite_ntfy: 3
   codes_machine:
   - other_rig
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2305
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2305/
   depuis_version: 0.123.0
   en:
     titre: Second port belongs to another rig
@@ -1398,7 +1398,7 @@ ORT-2306:
   priorite_ntfy: 3
   codes_machine:
   - ptt_unknown
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2306
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2306/
   depuis_version: 0.123.0
   en:
     titre: Transmit state unreadable after opening the second port
@@ -1425,7 +1425,7 @@ ORT-2307:
   priorite_ntfy: 3
   codes_machine:
   - silent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2307
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2307/
   depuis_version: 0.123.0
   en:
     titre: No more HF spectrum data
@@ -1452,7 +1452,7 @@ ORT-2308:
   priorite_ntfy: 3
   codes_machine:
   - port_lost
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2308
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2308/
   depuis_version: 0.123.0
   en:
     titre: Rig second port lost
@@ -1475,7 +1475,7 @@ ORT-2309:
   priorite_ntfy: 3
   codes_machine:
   - internal
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2309
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2309/
   depuis_version: 0.123.0
   en:
     titre: HF spectrum internal error
@@ -1500,7 +1500,7 @@ ORT-2310:
   priorite_ntfy: 3
   codes_machine:
   - spectrum_refused
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2310
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2310/
   depuis_version: 0.123.0
   en:
     titre: Spectrum or FIL filter setting refused
@@ -1526,7 +1526,7 @@ ORT-2311:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2311
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2311/
   depuis_version: 0.123.0
   en:
     titre: HF spectrum setting incompatible with the radio
@@ -1552,7 +1552,7 @@ ORT-2312:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2312
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2312/
   depuis_version: 0.123.0
   en:
     titre: Second CI-V port check failed
@@ -1578,7 +1578,7 @@ ORT-2313:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2313
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2313/
   depuis_version: 0.123.0
   en:
     titre: HF spectrum failed (display)
@@ -1604,7 +1604,7 @@ ORT-2601:
   priorite_ntfy: 3
   codes_machine:
   - freq_rw
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2601
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2601/
   depuis_version: 0.123.0
   en:
     titre: 'Test: rig does not follow frequency'
@@ -1628,7 +1628,7 @@ ORT-2602:
   priorite_ntfy: 3
   codes_machine:
   - mode_rw
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2602
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2602/
   depuis_version: 0.123.0
   en:
     titre: 'Test: rig does not follow mode'
@@ -1652,7 +1652,7 @@ ORT-2603:
   priorite_ntfy: 3
   codes_machine:
   - filters
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2603
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2603/
   depuis_version: 0.123.0
   en:
     titre: 'Test: filter widths not followed'
@@ -1676,7 +1676,7 @@ ORT-2604:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2604
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2604/
   depuis_version: 0.123.0
   en:
     titre: 'Test: rig function or level failed'
@@ -1704,7 +1704,7 @@ ORT-2605:
   priorite_ntfy: 3
   codes_machine:
   - cat_endurance
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2605
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2605/
   depuis_version: 0.123.0
   en:
     titre: 'Test: CAT link endurance failed'
@@ -1732,7 +1732,7 @@ ORT-2606:
   priorite_ntfy: 3
   codes_machine:
   - usb_replug
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2606
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2606/
   depuis_version: 0.123.0
   en:
     titre: 'Test: no recovery after USB unplug'
@@ -1757,7 +1757,7 @@ ORT-2607:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2607
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2607/
   depuis_version: 0.123.0
   en:
     titre: 'Test: rig original state not restored'
@@ -1782,7 +1782,7 @@ ORT-2608:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2608
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2608/
   depuis_version: 0.123.0
   en:
     titre: 'Test: unkey made on the rig not seen by the station'
@@ -1804,7 +1804,7 @@ ORT-2701:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2701
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2701/
   depuis_version: 0.123.0
   en:
     titre: 'Qualification: core failed, rig refused'
@@ -1826,7 +1826,7 @@ ORT-2702:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2702
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2702/
   depuis_version: 0.123.0
   en:
     titre: Qualification incomplete
@@ -1848,7 +1848,7 @@ ORT-2703:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2703
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2703/
   depuis_version: 0.123.0
   en:
     titre: 'Qualification: display or audio not confirmed by the operator'
@@ -1870,7 +1870,7 @@ ORT-2704:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-2704
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2704/
   depuis_version: 0.123.0
   en:
     titre: Rig or firmware not qualified
@@ -1899,7 +1899,7 @@ ORT-3001:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3001/
   depuis_version: 0.123.0
   en:
     titre: Rig audio device missing
@@ -1925,7 +1925,7 @@ ORT-3002:
   priorite_ntfy: 3
   codes_machine:
   - audio_rx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3002/
   depuis_version: 0.123.0
   en:
     titre: 'Test: received audio missing, silent or clipping'
@@ -1950,7 +1950,7 @@ ORT-3003:
   priorite_ntfy: 3
   codes_machine:
   - audio_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3003/
   depuis_version: 0.123.0
   en:
     titre: 'Test: transmit audio not sent or high SWR'
@@ -1973,7 +1973,7 @@ ORT-3004:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3004/
   depuis_version: 0.123.0
   en:
     titre: Cannot open the audio device
@@ -1999,7 +1999,7 @@ ORT-3005:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3005/
   depuis_version: 0.123.0
   en:
     titre: Late or choppy transmit audio
@@ -2023,7 +2023,7 @@ ORT-3006:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3006/
   depuis_version: 0.123.0
   en:
     titre: Client too slow for receive audio
@@ -2045,7 +2045,7 @@ ORT-3007:
   action_auto: repli_son_brut
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3007/
   depuis_version: 0.123.0
   en:
     titre: Receive audio processing failed
@@ -2066,7 +2066,7 @@ ORT-3008:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3008/
   depuis_version: 0.123.0
   en:
     titre: Cannot flush transmit audio buffer on cut
@@ -2087,7 +2087,7 @@ ORT-3009:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3009/
   depuis_version: 0.123.0
   en:
     titre: Station sound devices not selected
@@ -2110,7 +2110,7 @@ ORT-3010:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3010/
   depuis_version: 0.123.0
   en:
     titre: Frequent audio xruns
@@ -2134,7 +2134,7 @@ ORT-3011:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-3011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3011/
   depuis_version: 0.123.0
   en:
     titre: Radio sound card held by the desktop audio
@@ -2161,7 +2161,7 @@ ORT-4001:
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4001/
   depuis_version: 0.123.0
   en:
     titre: High client packet loss
@@ -2184,7 +2184,7 @@ ORT-4002:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4002/
   depuis_version: 0.123.0
   en:
     titre: Listener disconnect request ignored
@@ -2209,7 +2209,7 @@ ORT-4003:
   priorite_ntfy: 3
   codes_machine:
   - bad_request
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4003/
   depuis_version: 0.123.0
   en:
     titre: Malformed connection request
@@ -2238,7 +2238,7 @@ ORT-4004:
   priorite_ntfy: 3
   codes_machine:
   - unauthorized
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4004/
   depuis_version: 0.123.0
   en:
     titre: 'Connection refused: login or password'
@@ -2268,7 +2268,7 @@ ORT-4005:
   codes_machine:
   - busy
   - operators_full
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4005/
   depuis_version: 0.123.0
   en:
     titre: 'Station busy: too many connections'
@@ -2293,7 +2293,7 @@ ORT-4006:
   priorite_ntfy: 3
   codes_machine:
   - server_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4006/
   depuis_version: 0.123.0
   en:
     titre: Station error during connection
@@ -2317,7 +2317,7 @@ ORT-4007:
   codes_machine:
   - account_disabled
   - account_expired
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4007/
   depuis_version: 0.123.0
   en:
     titre: Account disabled or expired
@@ -2340,7 +2340,7 @@ ORT-4008:
   priorite_ntfy: 3
   codes_machine:
   - account_changed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4008/
   depuis_version: 0.123.0
   en:
     titre: 'Account changed: please reconnect'
@@ -2362,7 +2362,7 @@ ORT-4009:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4009/
   depuis_version: 0.123.0
   en:
     titre: WebRTC connection never established
@@ -2388,7 +2388,7 @@ ORT-4010:
   - too_large
   - bad_json
   - bad_message
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4010/
   depuis_version: 0.123.0
   en:
     titre: Unreadable client message
@@ -2411,7 +2411,7 @@ ORT-4011:
   priorite_ntfy: 3
   codes_machine:
   - unknown_command
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4011/
   depuis_version: 0.123.0
   en:
     titre: Command unknown to the station
@@ -2439,7 +2439,7 @@ ORT-4012:
   - invalid
   - voice_profile_refused
   - layout_invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4012/
   depuis_version: 0.123.0
   en:
     titre: Command parameters refused
@@ -2463,7 +2463,7 @@ ORT-4013:
   priorite_ntfy: 3
   codes_machine:
   - rate_limited
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4013/
   depuis_version: 0.123.0
   en:
     titre: 'Client flooding: messages ignored'
@@ -2489,7 +2489,7 @@ ORT-4014:
   priorite_ntfy: 3
   codes_machine:
   - '*_unavailable'
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4014/
   depuis_version: 0.123.0
   en:
     titre: Feature not available on this station
@@ -2516,7 +2516,7 @@ ORT-4015:
   codes_machine:
   - unknown_memory
   - unknown_listener
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4015/
   depuis_version: 0.123.0
   en:
     titre: Requested item unknown
@@ -2540,7 +2540,7 @@ ORT-4016:
   codes_machine:
   - report_empty
   - report_too_soon
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4016
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4016/
   depuis_version: 0.123.0
   en:
     titre: Problem report refused
@@ -2562,7 +2562,7 @@ ORT-4017:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4017
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4017/
   depuis_version: 0.123.0
   en:
     titre: TRX Console request ignored
@@ -2583,7 +2583,7 @@ ORT-4018:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4018
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4018/
   depuis_version: 0.126.0
   en:
     titre: 'Unexpected error: client session'
@@ -2605,7 +2605,7 @@ ORT-4101:
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4101
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4101/
   depuis_version: 0.123.0
   en:
     titre: 'TLS certificate unusable: API not started'
@@ -2629,7 +2629,7 @@ ORT-4102:
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4102
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4102/
   depuis_version: 0.123.0
   en:
     titre: Gateway port cannot be opened
@@ -2655,7 +2655,7 @@ ORT-4103:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4103
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4103/
   depuis_version: 0.123.0
   en:
     titre: Access account badly defined
@@ -2679,7 +2679,7 @@ ORT-4104:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4104
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4104/
   depuis_version: 0.123.0
   en:
     titre: Account with a clear-text token
@@ -2701,7 +2701,7 @@ ORT-4105:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4105
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4105/
   depuis_version: 0.123.0
   en:
     titre: Weak password refused
@@ -2723,7 +2723,7 @@ ORT-4106:
   action_auto: repli_acces_local
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4106
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4106/
   depuis_version: 0.123.0
   en:
     titre: 'HTTPS certificate impossible: access limited to this PC'
@@ -2743,7 +2743,7 @@ ORT-4107:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4107
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4107/
   depuis_version: 0.123.0
   en:
     titre: No network address on this PC
@@ -2766,7 +2766,7 @@ ORT-4108:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4108
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4108/
   depuis_version: 0.123.0
   en:
     titre: Station port closed or blocked
@@ -2791,7 +2791,7 @@ ORT-4301:
   priorite_ntfy: 3
   codes_machine:
   - listeners_off
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4301
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4301/
   depuis_version: 0.123.0
   en:
     titre: Listener access disabled on the station
@@ -2813,7 +2813,7 @@ ORT-4302:
   priorite_ntfy: 3
   codes_machine:
   - listeners_closed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4302
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4302/
   depuis_version: 0.123.0
   en:
     titre: Listener access closed by the operator
@@ -2834,7 +2834,7 @@ ORT-4303:
   priorite_ntfy: 3
   codes_machine:
   - listeners_full
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4303
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4303/
   depuis_version: 0.123.0
   en:
     titre: Maximum number of listeners reached
@@ -2856,7 +2856,7 @@ ORT-4304:
   priorite_ntfy: 3
   codes_machine:
   - operator_absent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4304
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4304/
   depuis_version: 0.123.0
   en:
     titre: 'Operator absent: listening not possible'
@@ -2879,7 +2879,7 @@ ORT-4305:
   priorite_ntfy: 3
   codes_machine:
   - kicked
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4305
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4305/
   depuis_version: 0.123.0
   en:
     titre: Listener disconnected by the operator
@@ -2901,7 +2901,7 @@ ORT-4306:
   priorite_ntfy: 3
   codes_machine:
   - forbidden
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4306
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4306/
   depuis_version: 0.123.0
   en:
     titre: Command refused to a listener
@@ -2925,7 +2925,7 @@ ORT-4307:
   priorite_ntfy: 3
   codes_machine:
   - too_many_forbidden
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4307
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4307/
   depuis_version: 0.123.0
   en:
     titre: 'Listener disconnected: too many refused commands'
@@ -2954,7 +2954,7 @@ ORT-4308:
   priorite_ntfy: 3
   codes_machine:
   - station_overload
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4308
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4308/
   depuis_version: 0.123.0
   en:
     titre: 'Station overloaded: listeners disconnected'
@@ -2982,7 +2982,7 @@ ORT-4309:
   priorite_ntfy: 3
   codes_machine:
   - station_overload (locked)
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4309
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4309/
   depuis_version: 0.123.0
   en:
     titre: Listener access locked after repeated overloads
@@ -3004,7 +3004,7 @@ ORT-4310:
   priorite_ntfy: 3
   codes_machine:
   - still_overloaded
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4310
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4310/
   depuis_version: 0.123.0
   en:
     titre: Reopening listener access refused
@@ -3031,7 +3031,7 @@ ORT-4501:
   priorite_ntfy: 3
   codes_machine:
   - net_event outage
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4501
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4501/
   depuis_version: 0.123.0
   en:
     titre: Client network outage
@@ -3058,7 +3058,7 @@ ORT-4502:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4502
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4502/
   depuis_version: 0.123.0
   en:
     titre: High network round-trip time
@@ -3083,7 +3083,7 @@ ORT-4503:
   priorite_ntfy: 3
   codes_machine:
   - net_event vpn_shared
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4503
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4503/
   depuis_version: 0.123.0
   en:
     titre: VPN profile probably shared
@@ -3104,7 +3104,7 @@ ORT-4504:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4504
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4504/
   depuis_version: 0.123.0
   en:
     titre: Client clock offset
@@ -3126,7 +3126,7 @@ ORT-4505:
   action_auto: repli_tcp
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4505
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4505/
   depuis_version: 0.123.0
   en:
     titre: Station probe to router or Internet dropped
@@ -3147,7 +3147,7 @@ ORT-4506:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4506
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4506/
   depuis_version: 0.123.0
   en:
     titre: Network probe history cleared
@@ -3168,7 +3168,7 @@ ORT-4507:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4507
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4507/
   depuis_version: 0.123.0
   en:
     titre: 'trx-netreport: no measurements'
@@ -3190,7 +3190,7 @@ ORT-4508:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4508
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4508/
   depuis_version: 0.123.0
   en:
     titre: Network history export or erase failed
@@ -3212,7 +3212,7 @@ ORT-4509:
   priorite_ntfy: 3
   codes_machine:
   - netprobe_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4509
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4509/
   depuis_version: 0.126.0
   en:
     titre: 'Unexpected error: network quality probe'
@@ -3240,7 +3240,7 @@ ORT-5001:
   priorite_ntfy: 3
   codes_machine:
   - tot
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5001/
   depuis_version: 0.123.0
   en:
     titre: Transmit time-out (TOT) reached
@@ -3267,7 +3267,7 @@ ORT-5002:
   codes_machine:
   - heartbeat
   - client_disconnected
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5002/
   depuis_version: 0.123.0
   en:
     titre: 'Forced back to receive: client lost'
@@ -3293,7 +3293,7 @@ ORT-5003:
   priorite_ntfy: 3
   codes_machine:
   - spectrum_port_keyed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5003/
   depuis_version: 0.123.0
   en:
     titre: Opening the second port keys the rig
@@ -3318,7 +3318,7 @@ ORT-5004:
   priorite_ntfy: 3
   codes_machine:
   - ptt_busy
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5004/
   depuis_version: 0.123.0
   en:
     titre: Transmission while opening the second port (other cause)
@@ -3345,7 +3345,7 @@ ORT-5005:
   priorite_ntfy: 3
   codes_machine:
   - local_active
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5005/
   depuis_version: 0.123.0
   en:
     titre: 'Rig in local use: remote PTT blocked'
@@ -3369,7 +3369,7 @@ ORT-5006:
   priorite_ntfy: 3
   codes_machine:
   - local_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5006/
   depuis_version: 0.123.0
   en:
     titre: 'Cannot take control: rig transmitting locally'
@@ -3390,7 +3390,7 @@ ORT-5007:
   priorite_ntfy: 3
   codes_machine:
   - local_released
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5007/
   depuis_version: 0.123.0
   en:
     titre: Control taken back remotely
@@ -3416,7 +3416,7 @@ ORT-5008:
   codes_machine:
   - rig_overheat
   - rig_hot
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5008/
   depuis_version: 0.123.0
   en:
     titre: 'Rig too hot: remote transmit cut'
@@ -3441,7 +3441,7 @@ ORT-5009:
   priorite_ntfy: 3
   codes_machine:
   - rig_warm
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5009/
   depuis_version: 0.123.0
   en:
     titre: Rig warm
@@ -3466,7 +3466,7 @@ ORT-5010:
   priorite_ntfy: 3
   codes_machine:
   - ptt_mismatch
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5010/
   depuis_version: 0.123.0
   en:
     titre: PTT active without a client session
@@ -3490,7 +3490,7 @@ ORT-5011:
   priorite_ntfy: 3
   codes_machine:
   - cancelled
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5011/
   depuis_version: 0.123.0
   en:
     titre: Keying cancelled by a cut
@@ -3512,7 +3512,7 @@ ORT-5012:
   priorite_ntfy: 3
   codes_machine:
   - ptt_write_failed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5012/
   depuis_version: 0.123.0
   en:
     titre: Keying command failed
@@ -3537,7 +3537,7 @@ ORT-5013:
   priorite_ntfy: 3
   codes_machine:
   - rig_did_not_key
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5013/
   depuis_version: 0.123.0
   en:
     titre: Rig did not key up
@@ -3561,7 +3561,7 @@ ORT-5014:
   priorite_ntfy: 3
   codes_machine:
   - tot_warning
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5014/
   depuis_version: 0.123.0
   en:
     titre: Transmit time-out approaching
@@ -3582,7 +3582,7 @@ ORT-5015:
   priorite_ntfy: 3
   codes_machine:
   - stop
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5015/
   depuis_version: 0.123.0
   en:
     titre: Transmission cut by STOP
@@ -3603,7 +3603,7 @@ ORT-5016:
   priorite_ntfy: 3
   codes_machine:
   - toggle
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5016
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5016/
   depuis_version: 0.123.0
   en:
     titre: Transmission cut by another client
@@ -3630,7 +3630,7 @@ ORT-5017:
   - mode_changed
   - split_changed
   - xit_changed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5017
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5017/
   depuis_version: 0.123.0
   en:
     titre: Rig setting changed during transmission
@@ -3655,7 +3655,7 @@ ORT-5018:
   priorite_ntfy: 3
   codes_machine:
   - rig_reported_rx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5018
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5018/
   depuis_version: 0.123.0
   en:
     titre: Rig went back to receive on its own
@@ -3682,7 +3682,7 @@ ORT-5019:
   codes_machine:
   - cat_down
   - rig_silent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5019
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5019/
   depuis_version: 0.123.0
   en:
     titre: Link to the rig lost during transmission
@@ -3711,7 +3711,7 @@ ORT-5020:
   codes_machine:
   - unkey_failed
   - gateway_cannot_unkey
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5020/
   depuis_version: 0.123.0
   en:
     titre: Unable to return to receive
@@ -3736,7 +3736,7 @@ ORT-5021:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5021
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5021/
   depuis_version: 0.123.0
   en:
     titre: End-of-transmission tone failed
@@ -3757,7 +3757,7 @@ ORT-5022:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5022
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5022/
   depuis_version: 0.123.0
   en:
     titre: End tone interrupted by a cut
@@ -3779,7 +3779,7 @@ ORT-5023:
   priorite_ntfy: 3
   codes_machine:
   - shutdown
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5023
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5023/
   depuis_version: 0.123.0
   en:
     titre: Transmission cut by station shutdown
@@ -3804,7 +3804,7 @@ ORT-5024:
   priorite_ntfy: 5
   codes_machine:
   - tot_absolu
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5024
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5024/
   depuis_version: 0.123.0
   en:
     titre: 'Absolute TOT exceeded: supervisor cut'
@@ -3831,7 +3831,7 @@ ORT-5025:
   priorite_ntfy: 5
   codes_machine:
   - gateway_silent_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5025
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5025/
   depuis_version: 0.123.0
   en:
     titre: Gateway silent during transmission
@@ -3858,7 +3858,7 @@ ORT-5026:
   priorite_ntfy: 5
   codes_machine:
   - rigctld_down_during_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5026
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5026/
   depuis_version: 0.123.0
   en:
     titre: rigctld unreachable during transmission
@@ -3882,7 +3882,7 @@ ORT-5027:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 5
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5027
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5027/
   depuis_version: 0.123.0
   en:
     titre: Supervisor "T 0" not confirmed
@@ -3903,7 +3903,7 @@ ORT-5028:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5028
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5028/
   depuis_version: 0.126.0
   en:
     titre: 'Unexpected error: end-of-transmission beeps'
@@ -3926,7 +3926,7 @@ ORT-5101:
   priorite_ntfy: 3
   codes_machine:
   - fault_latched
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5101
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5101/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: latched fault'
@@ -3950,7 +3950,7 @@ ORT-5102:
   priorite_ntfy: 3
   codes_machine:
   - starting
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5102
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5102/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: station starting'
@@ -3973,7 +3973,7 @@ ORT-5103:
   priorite_ntfy: 3
   codes_machine:
   - not_idle
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5103
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5103/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: cut or transmission in progress'
@@ -3996,7 +3996,7 @@ ORT-5104:
   priorite_ntfy: 3
   codes_machine:
   - unknown_client
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5104
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5104/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: unknown client'
@@ -4019,7 +4019,7 @@ ORT-5105:
   priorite_ntfy: 3
   codes_machine:
   - swr_busy
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5105
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5105/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: SWR sweep in progress'
@@ -4043,7 +4043,7 @@ ORT-5106:
   priorite_ntfy: 3
   codes_machine:
   - tx_disabled
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5106
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5106/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: no band allowed'
@@ -4068,7 +4068,7 @@ ORT-5107:
   priorite_ntfy: 3
   codes_machine:
   - out_of_band
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5107
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5107/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: out of allowed bands'
@@ -4096,7 +4096,7 @@ ORT-5108:
   priorite_ntfy: 3
   codes_machine:
   - split_unreadable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5108
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5108/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: split unreadable'
@@ -4122,7 +4122,7 @@ ORT-5109:
   priorite_ntfy: 3
   codes_machine:
   - xit_unreadable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5109
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5109/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: XIT unreadable'
@@ -4146,7 +4146,7 @@ ORT-5110:
   priorite_ntfy: 3
   codes_machine:
   - cat_down
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5110
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5110/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: link to the rig lost'
@@ -4172,7 +4172,7 @@ ORT-5111:
   priorite_ntfy: 3
   codes_machine:
   - cat_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5111
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5111/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: rig not answering properly'
@@ -4197,7 +4197,7 @@ ORT-5112:
   priorite_ntfy: 3
   codes_machine:
   - ptt_unreadable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5112
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5112/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: PTT state unreadable'
@@ -4225,7 +4225,7 @@ ORT-5113:
   priorite_ntfy: 3
   codes_machine:
   - rig_already_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5113
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5113/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: rig already transmitting'
@@ -4252,7 +4252,7 @@ ORT-5114:
   priorite_ntfy: 3
   codes_machine:
   - mode_not_allowed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5114
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5114/
   depuis_version: 0.123.0
   en:
     titre: Transmit refused in this mode
@@ -4274,7 +4274,7 @@ ORT-5115:
   priorite_ntfy: 3
   codes_machine:
   - cooldown
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5115
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5115/
   depuis_version: 0.123.0
   en:
     titre: 'Transmit refused: too soon'
@@ -4298,7 +4298,7 @@ ORT-5116:
   priorite_ntfy: 3
   codes_machine:
   - tx_active
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5116
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5116/
   depuis_version: 0.123.0
   en:
     titre: Setting refused while transmitting
@@ -4320,7 +4320,7 @@ ORT-5501:
   priorite_ntfy: 3
   codes_machine:
   - swr_unavailable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5501
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5501/
   depuis_version: 0.123.0
   en:
     titre: SWR sweep unavailable
@@ -4345,7 +4345,7 @@ ORT-5502:
   codes_machine:
   - swr_bad_range
   - swr_too_many_points
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5502
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5502/
   depuis_version: 0.123.0
   en:
     titre: Invalid SWR sweep range
@@ -4370,7 +4370,7 @@ ORT-5503:
   priorite_ntfy: 3
   codes_machine:
   - swr_out_of_band
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5503
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5503/
   depuis_version: 0.123.0
   en:
     titre: 'SWR sweep: no point within allowed bands'
@@ -4393,7 +4393,7 @@ ORT-5504:
   priorite_ntfy: 3
   codes_machine:
   - swr_no_fm_mode
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5504
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5504/
   depuis_version: 0.123.0
   en:
     titre: 'SWR sweep: no FM mode allowed'
@@ -4416,7 +4416,7 @@ ORT-5505:
   priorite_ntfy: 3
   codes_machine:
   - swr_unreadable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5505
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5505/
   depuis_version: 0.123.0
   en:
     titre: 'SWR sweep stopped: rig unreadable'
@@ -4441,7 +4441,7 @@ ORT-5506:
   codes_machine:
   - cut
   - swr_cancel
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5506
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5506/
   depuis_version: 0.123.0
   en:
     titre: SWR sweep interrupted by a cut
@@ -4463,7 +4463,7 @@ ORT-5507:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5507
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5507/
   depuis_version: 0.123.0
   en:
     titre: 'SWR sweep stopped: transmit refused'
@@ -4485,7 +4485,7 @@ ORT-5508:
   priorite_ntfy: 3
   codes_machine:
   - swr_failed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5508
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5508/
   depuis_version: 0.123.0
   en:
     titre: SWR sweep error
@@ -4508,7 +4508,7 @@ ORT-5509:
   priorite_ntfy: 3
   codes_machine:
   - swr_unstable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5509
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5509/
   depuis_version: 0.123.0
   en:
     titre: Unstable SWR reading on this rig
@@ -4532,7 +4532,7 @@ ORT-5510:
   priorite_ntfy: 3
   codes_machine:
   - reduced
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5510
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5510/
   depuis_version: 0.123.0
   en:
     titre: Sweep point at reduced power
@@ -4554,7 +4554,7 @@ ORT-5511:
   priorite_ntfy: 3
   codes_machine:
   - unread
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5511
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5511/
   depuis_version: 0.123.0
   en:
     titre: Sweep point without SWR reading
@@ -4575,7 +4575,7 @@ ORT-5512:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5512
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5512/
   depuis_version: 0.123.0
   en:
     titre: Rig not fully restored after the sweep
@@ -4599,7 +4599,7 @@ ORT-5801:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5801
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5801/
   depuis_version: 0.123.0
   en:
     titre: 'PTT by RTS or DTR: risk of a short transmission'
@@ -4622,7 +4622,7 @@ ORT-5802:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5802
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5802/
   depuis_version: 0.123.0
   en:
     titre: Band checking disabled
@@ -4644,7 +4644,7 @@ ORT-5803:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5803
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5803/
   depuis_version: 0.123.0
   en:
     titre: Profile load refused while transmitting
@@ -4666,7 +4666,7 @@ ORT-5804:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5804
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5804/
   depuis_version: 0.123.0
   en:
     titre: 'PTT active during the test: forced back to receive'
@@ -4689,7 +4689,7 @@ ORT-5805:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5805
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5805/
   depuis_version: 0.123.0
   en:
     titre: trx-monitor STOP TX not confirmed
@@ -4713,7 +4713,7 @@ ORT-5806:
   priorite_ntfy: 3
   codes_machine:
   - layout_invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5806
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5806/
   depuis_version: 0.123.0
   en:
     titre: Layout without safety control
@@ -4738,7 +4738,7 @@ ORT-5901:
   priorite_ntfy: 3
   codes_machine:
   - ptt_cycle
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5901
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5901/
   depuis_version: 0.123.0
   en:
     titre: 'Test: inconsistent PTT readback'
@@ -4763,7 +4763,7 @@ ORT-5902:
   action_auto: retour_rx
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5902
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5902/
   depuis_version: 0.123.0
   en:
     titre: 'Fault drill: transmission was not cut'
@@ -4791,7 +4791,7 @@ ORT-6401:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6401
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6401/
   depuis_version: 0.123.0
   en:
     titre: DX cluster enabled but incomplete
@@ -4817,7 +4817,7 @@ ORT-6402:
   priorite_ntfy: 3
   codes_machine:
   - unreachable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6402
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6402/
   depuis_version: 0.123.0
   en:
     titre: Spot server unreachable
@@ -4842,7 +4842,7 @@ ORT-6403:
   priorite_ntfy: 2
   codes_machine:
   - closed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6403
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6403/
   depuis_version: 0.123.0
   en:
     titre: Cluster connection closed by the server
@@ -4865,7 +4865,7 @@ ORT-6404:
   priorite_ntfy: 3
   codes_machine:
   - idle
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6404
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6404/
   depuis_version: 0.123.0
   en:
     titre: Silent cluster connection
@@ -4889,7 +4889,7 @@ ORT-6405:
   priorite_ntfy: 3
   codes_machine:
   - callsign_refused
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6405
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6405/
   depuis_version: 0.123.0
   en:
     titre: Callsign refused by the cluster
@@ -4913,7 +4913,7 @@ ORT-6406:
   priorite_ntfy: 3
   codes_machine:
   - password_refused
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6406
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6406/
   depuis_version: 0.123.0
   en:
     titre: Password refused by the cluster
@@ -4935,7 +4935,7 @@ ORT-6407:
   priorite_ntfy: 3
   codes_machine:
   - password_required
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6407
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6407/
   depuis_version: 0.123.0
   en:
     titre: The cluster asks for a password
@@ -4957,7 +4957,7 @@ ORT-6408:
   priorite_ntfy: 3
   codes_machine:
   - failed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6408
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6408/
   depuis_version: 0.123.0
   en:
     titre: Switching to another cluster
@@ -4981,7 +4981,7 @@ ORT-6409:
   priorite_ntfy: 3
   codes_machine:
   - red
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6409
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6409/
   depuis_version: 0.123.0
   en:
     titre: No DX cluster source connected
@@ -5006,7 +5006,7 @@ ORT-6410:
   priorite_ntfy: 3
   codes_machine:
   - format
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6410
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6410/
   depuis_version: 0.123.0
   en:
     titre: CB spot page unreadable
@@ -5027,7 +5027,7 @@ ORT-6411:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6411
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6411/
   depuis_version: 0.123.0
   en:
     titre: Country table (cty.dat) missing or unreadable
@@ -5049,7 +5049,7 @@ ORT-6412:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6412
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6412/
   depuis_version: 0.123.0
   en:
     titre: cty.dat update failed
@@ -5071,7 +5071,7 @@ ORT-6413:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6413
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6413/
   depuis_version: 0.123.0
   en:
     titre: Callsign refused by the DX cluster setup
@@ -5098,7 +5098,7 @@ ORT-6501:
   - freedv_missing
   - state.freedv.cause
   - module_absent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6501
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6501/
   depuis_version: 0.123.0
   en:
     titre: External module declared but missing or not started
@@ -5124,7 +5124,7 @@ ORT-6502:
   codes_machine:
   - breizh_event refused (proto)
   - api
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6502
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6502/
   depuis_version: 0.123.0
   en:
     titre: Incompatible module version
@@ -5151,7 +5151,7 @@ ORT-6503:
   - breizh_event refused (format
   - latency)
   - auth
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6503
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6503/
   depuis_version: 0.123.0
   en:
     titre: Negotiation with the module failed
@@ -5178,7 +5178,7 @@ ORT-6504:
   codes_machine:
   - breizh_event lost
   - state.freedv.cause
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6504
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6504/
   depuis_version: 0.123.0
   en:
     titre: Module no longer answers (heartbeat lost)
@@ -5201,7 +5201,7 @@ ORT-6505:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6505
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6505/
   depuis_version: 0.123.0
   en:
     titre: Module catalogue invalid or untranslated
@@ -5221,7 +5221,7 @@ ORT-6506:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6506
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6506/
   depuis_version: 0.123.0
   en:
     titre: Received code missing from the module catalogue
@@ -5242,7 +5242,7 @@ ORT-6507:
   action_auto: arreter_module
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6507
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6507/
   depuis_version: 0.123.0
   en:
     titre: Module disturbs the station (CPU, audio latency)
@@ -5263,7 +5263,7 @@ ORT-6508:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6508
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6508/
   depuis_version: 0.123.0
   en:
     titre: Unregistered prefix
@@ -5286,7 +5286,7 @@ ORT-6511:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6511
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6511/
   depuis_version: 0.123.0
   en:
     titre: Invalid module manifest
@@ -5308,7 +5308,7 @@ ORT-6512:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6512
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6512/
   depuis_version: 0.123.0
   en:
     titre: Module disabled by its manifest
@@ -5327,7 +5327,7 @@ ORT-6513:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6513
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6513/
   depuis_version: 0.123.0
   en:
     titre: No usable module
@@ -5349,7 +5349,7 @@ ORT-6514:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6514
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6514/
   depuis_version: 0.123.0
   en:
     titre: Module bus unavailable
@@ -5373,7 +5373,7 @@ ORT-6515:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6515
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6515/
   depuis_version: 0.123.0
   en:
     titre: Invalid module key
@@ -5397,7 +5397,7 @@ ORT-6516:
   action_auto: refus
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6516
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6516/
   depuis_version: 0.123.0
   en:
     titre: Module run account unusable
@@ -5422,7 +5422,7 @@ ORT-6517:
   action_auto: nouvel_essai
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6517
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6517/
   depuis_version: 0.123.0
   en:
     titre: Unexpected module stop
@@ -5445,7 +5445,7 @@ ORT-6518:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6518
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6518/
   depuis_version: 0.123.0
   en:
     titre: Unreadable module message
@@ -5467,7 +5467,7 @@ ORT-6519:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6519
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6519/
   depuis_version: 0.123.0
   en:
     titre: Station unreachable from a module
@@ -5490,7 +5490,7 @@ ORT-6520:
   priorite_ntfy: 2
   codes_machine:
   - ptt_active
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6520
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6520/
   depuis_version: 0.123.0
   en:
     titre: Module command refused while transmitting
@@ -5513,7 +5513,7 @@ ORT-6521:
   priorite_ntfy: 3
   codes_machine:
   - forbidden
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6521
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6521/
   depuis_version: 0.123.0
   en:
     titre: Module action not allowed
@@ -5537,7 +5537,7 @@ ORT-6522:
   priorite_ntfy: 2
   codes_machine:
   - unavailable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6522
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6522/
   depuis_version: 0.123.0
   en:
     titre: Command unavailable
@@ -5560,7 +5560,7 @@ ORT-6523:
   priorite_ntfy: 2
   codes_machine:
   - rate_limited
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6523
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6523/
   depuis_version: 0.123.0
   en:
     titre: Too many messages from a module
@@ -5583,7 +5583,7 @@ ORT-6524:
   priorite_ntfy: 3
   codes_machine:
   - timeout
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6524
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6524/
   depuis_version: 0.123.0
   en:
     titre: Response timeout between the station and a module
@@ -5609,7 +5609,7 @@ ORT-6525:
   priorite_ntfy: 3
   codes_machine:
   - invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6525
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6525/
   depuis_version: 0.123.0
   en:
     titre: Frequency change requested by a module refused
@@ -5634,7 +5634,7 @@ ORT-6526:
   priorite_ntfy: 3
   codes_machine:
   - token_expired
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6526
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6526/
   depuis_version: 0.123.0
   en:
     titre: Session token refused
@@ -5657,7 +5657,7 @@ ORT-6527:
   priorite_ntfy: 3
   codes_machine:
   - internal
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6527
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6527/
   depuis_version: 0.123.0
   en:
     titre: Unexpected error in the module bus
@@ -5678,7 +5678,7 @@ ORT-6528:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6528
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6528/
   depuis_version: 0.123.0
   en:
     titre: Module file not written
@@ -5703,7 +5703,7 @@ ORT-6531:
   action_auto: repli_direct
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6531
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6531/
   depuis_version: 0.123.0
   en:
     titre: Breizh Audio Box pairing key unusable
@@ -5729,7 +5729,7 @@ ORT-6532:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event lost
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6532
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6532/
   depuis_version: 0.123.0
   en:
     titre: Breizh Audio Box left OpenRemoteTRX mode
@@ -5754,7 +5754,7 @@ ORT-6533:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event fallback
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6533
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6533/
   depuis_version: 0.123.0
   en:
     titre: 'Fallback during transmission: rest goes direct'
@@ -5779,7 +5779,7 @@ ORT-6534:
   priorite_ntfy: 3
   codes_machine:
   - state.breizh.late
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6534
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6534/
   depuis_version: 0.123.0
   en:
     titre: Audio blocks returned too late by Breizh Audio Box
@@ -5801,7 +5801,7 @@ ORT-6535:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event refused (mode_off)
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6535
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6535/
   depuis_version: 0.123.0
   en:
     titre: OpenRemoteTRX mode not enabled in Breizh Audio Box
@@ -5823,7 +5823,7 @@ ORT-6536:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event refused (busy)
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6536
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6536/
   depuis_version: 0.123.0
   en:
     titre: Breizh Audio Box already serving another station
@@ -5845,7 +5845,7 @@ ORT-6537:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event refused (cat_on)
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6537
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6537/
   depuis_version: 0.123.0
   en:
     titre: Breizh Audio Box did not disable its CAT
@@ -5870,7 +5870,7 @@ ORT-6538:
   - breizh_event refused (nonce
   - json
   - code)
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6538
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6538/
   depuis_version: 0.123.0
   en:
     titre: Malformed reply from Breizh Audio Box
@@ -5897,7 +5897,7 @@ ORT-6539:
   priorite_ntfy: 3
   codes_machine:
   - breizh_event bad_packets
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6539
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6539/
   depuis_version: 0.123.0
   en:
     titre: Packets from Breizh Audio Box refused
@@ -5926,7 +5926,7 @@ ORT-6540:
   - breizh_event connected
   - back
   - reactivated
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6540
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6540/
   depuis_version: 0.123.0
   en:
     titre: Breizh Audio Box joined or resumed
@@ -5947,7 +5947,7 @@ ORT-6541:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6541
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6541/
   depuis_version: 0.126.0
   en:
     titre: 'Unexpected error: Breizh Audio Box link'
@@ -5969,7 +5969,7 @@ ORT-6561:
   priorite_ntfy: 3
   codes_machine:
   - state.freedv.cause
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6561
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6561/
   depuis_version: 0.123.0
   en:
     titre: FreeDV decoder stopped
@@ -5991,7 +5991,7 @@ ORT-6562:
   priorite_ntfy: 3
   codes_machine:
   - state.freedv.cause
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6562
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6562/
   depuis_version: 0.123.0
   en:
     titre: FreeDV decoder output unreadable
@@ -6013,7 +6013,7 @@ ORT-6563:
   priorite_ntfy: 3
   codes_machine:
   - freedv_event fault
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6563
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6563/
   depuis_version: 0.123.0
   en:
     titre: FreeDV given up after its restarts
@@ -6033,7 +6033,7 @@ ORT-6564:
   action_auto: repli_son_du_poste
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6564
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6564/
   depuis_version: 0.123.0
   en:
     titre: FreeDV mode error in the audio chain
@@ -6055,7 +6055,7 @@ ORT-6565:
   priorite_ntfy: 3
   codes_machine:
   - trx-monitor freedv.drops
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6565
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6565/
   depuis_version: 0.123.0
   en:
     titre: 'FreeDV decoder too slow: audio dropped'
@@ -6077,7 +6077,7 @@ ORT-6566:
   priorite_ntfy: 3
   codes_machine:
   - freedv_tx
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6566
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6566/
   depuis_version: 0.123.0
   en:
     titre: FreeDV mode not changed while transmitting
@@ -6096,7 +6096,7 @@ ORT-6567:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6567
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6567/
   depuis_version: 0.126.0
   en:
     titre: 'Unexpected error: FreeDV mode'
@@ -6116,7 +6116,7 @@ ORT-6801:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6801
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6801/
   depuis_version: 0.123.0
   en:
     titre: 'SELCALL test: RIT refused or unreadable'
@@ -6136,7 +6136,7 @@ ORT-6802:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6802
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6802/
   depuis_version: 0.123.0
   en:
     titre: 'End-of-over SELCALL skipped: TOT too close'
@@ -6157,7 +6157,7 @@ ORT-6803:
   priorite_ntfy: 3
   codes_machine:
   - selcall_too_long
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6803
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6803/
   depuis_version: 0.123.0
   en:
     titre: 'SELCALL call refused: longer than the TOT'
@@ -6180,7 +6180,7 @@ ORT-6804:
   codes_machine:
   - selcall_timeout
   - selcall_failed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6804
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6804/
   depuis_version: 0.123.0
   en:
     titre: SELCALL call interrupted
@@ -6200,7 +6200,7 @@ ORT-6805:
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6805
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6805/
   depuis_version: 0.123.0
   en:
     titre: SELCALL call received
@@ -6221,7 +6221,7 @@ ORT-6806:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 1
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6806
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6806/
   depuis_version: 0.123.0
   en:
     titre: SELCALL frame rejected
@@ -6243,7 +6243,7 @@ ORT-6807:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6807
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6807/
   depuis_version: 0.123.0
   en:
     titre: SELCALL state unreadable
@@ -6265,7 +6265,7 @@ ORT-6808:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6808
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6808/
   depuis_version: 0.123.0
   en:
     titre: SELCALL state not saved
@@ -6288,7 +6288,7 @@ ORT-6809:
   priorite_ntfy: 2
   codes_machine:
   - selcall_unavailable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6809
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6809/
   depuis_version: 0.123.0
   en:
     titre: SELCALL unavailable
@@ -6310,7 +6310,7 @@ ORT-6810:
   priorite_ntfy: 2
   codes_machine:
   - selcall_not_armed
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6810
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6810/
   depuis_version: 0.123.0
   en:
     titre: 'SELCALL call impossible: no code armed'
@@ -6331,7 +6331,7 @@ ORT-6811:
   priorite_ntfy: 2
   codes_machine:
   - invalid_params
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6811
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6811/
   depuis_version: 0.123.0
   en:
     titre: Invalid SELCALL code
@@ -6352,7 +6352,7 @@ ORT-6812:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6812
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6812/
   depuis_version: 0.123.0
   en:
     titre: 'SELCALL auto level: ALC unreadable'
@@ -6374,7 +6374,7 @@ ORT-6813:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6813
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6813/
   depuis_version: 0.123.0
   en:
     titre: 'SELCALL auto level: ALC active at the lowest level'
@@ -6394,7 +6394,7 @@ ORT-6814:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6814
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6814/
   depuis_version: 0.123.0
   en:
     titre: Unexpected SELCALL error
@@ -6416,7 +6416,7 @@ ORT-6901:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6901
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6901/
   depuis_version: 0.123.0
   en:
     titre: '"presence" module unreachable from the console'
@@ -6440,7 +6440,7 @@ ORT-6902:
   priorite_ntfy: 3
   codes_machine:
   - pseudo_missing
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6902
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6902/
   depuis_version: 0.123.0
   en:
     titre: 'Group presence: no nickname'
@@ -6465,7 +6465,7 @@ ORT-6903:
   priorite_ntfy: 3
   codes_machine:
   - relay_unreachable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6903
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6903/
   depuis_version: 0.123.0
   en:
     titre: Presence relay unreachable
@@ -6492,7 +6492,7 @@ ORT-6904:
   priorite_ntfy: 3
   codes_machine:
   - register_{motif}
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6904
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6904/
   depuis_version: 0.123.0
   en:
     titre: Registration refused by the presence relay
@@ -6516,7 +6516,7 @@ ORT-6905:
   priorite_ntfy: 2
   codes_machine:
   - relay_paused
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6905
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6905/
   depuis_version: 0.123.0
   en:
     titre: Presence relay paused or busy
@@ -6540,7 +6540,7 @@ ORT-6906:
   priorite_ntfy: 3
   codes_machine:
   - relay_error_{motif}
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6906
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6906/
   depuis_version: 0.123.0
   en:
     titre: Request refused by the presence relay
@@ -6565,7 +6565,7 @@ ORT-6907:
   priorite_ntfy: 3
   codes_machine:
   - http_{code}
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6907
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6907/
   depuis_version: 0.123.0
   en:
     titre: Action refused by the presence relay
@@ -6589,7 +6589,7 @@ ORT-6908:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6908
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6908/
   depuis_version: 0.123.0
   en:
     titre: Group member list refused
@@ -6613,7 +6613,7 @@ ORT-6909:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6909
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6909/
   depuis_version: 0.123.0
   en:
     titre: Group key refused
@@ -6636,7 +6636,7 @@ ORT-6910:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 1
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6910
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6910/
   depuis_version: 0.123.0
   en:
     titre: Member state refused
@@ -6658,7 +6658,7 @@ ORT-6911:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6911
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6911/
   depuis_version: 0.123.0
   en:
     titre: Station removed from a group
@@ -6679,7 +6679,7 @@ ORT-6912:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 2
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6912
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6912/
   depuis_version: 0.123.0
   en:
     titre: Join request refused automatically
@@ -6705,7 +6705,7 @@ ORT-6913:
   priorite_ntfy: 2
   codes_machine:
   - invitation_expired
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6913
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6913/
   depuis_version: 0.123.0
   en:
     titre: Invitation refused
@@ -6729,7 +6729,7 @@ ORT-6914:
   priorite_ntfy: 2
   codes_machine:
   - quota
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6914
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6914/
   depuis_version: 0.123.0
   en:
     titre: Too many groups
@@ -6752,7 +6752,7 @@ ORT-6915:
   priorite_ntfy: 2
   codes_machine:
   - not_registered
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6915
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6915/
   depuis_version: 0.123.0
   en:
     titre: Station not yet registered with the relay
@@ -6775,7 +6775,7 @@ ORT-6916:
   priorite_ntfy: 2
   codes_machine:
   - not_admin
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6916
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6916/
   depuis_version: 0.123.0
   en:
     titre: Action reserved to a group administrator
@@ -6799,7 +6799,7 @@ ORT-6917:
   priorite_ntfy: 2
   codes_machine:
   - unknown_group
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6917
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6917/
   depuis_version: 0.123.0
   en:
     titre: Unknown group or member
@@ -6826,7 +6826,7 @@ ORT-6918:
   priorite_ntfy: 2
   codes_machine:
   - pseudo
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6918
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6918/
   depuis_version: 0.123.0
   en:
     titre: Input refused (group presence)
@@ -6853,7 +6853,7 @@ ORT-6919:
   priorite_ntfy: 2
   codes_machine:
   - friends_unavailable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6919
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6919/
   depuis_version: 0.123.0
   en:
     titre: Group presence unavailable
@@ -6877,7 +6877,7 @@ ORT-6920:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6920
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6920/
   depuis_version: 0.123.0
   en:
     titre: Presence key file unreadable
@@ -6901,7 +6901,7 @@ ORT-6921:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6921
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6921/
   depuis_version: 0.123.0
   en:
     titre: Presence data unreadable
@@ -6925,7 +6925,7 @@ ORT-6922:
   codes_machine:
   - internal
   - friends_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6922
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6922/
   depuis_version: 0.123.0
   en:
     titre: Unexpected group presence error
@@ -6946,7 +6946,7 @@ ORT-6923:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6923
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6923/
   depuis_version: 0.126.0
   en:
     titre: Invalid signature received (possible attack)
@@ -6973,7 +6973,7 @@ ORT-7001:
   ntfy_defaut: false
   priorite_ntfy: 2
   prevu: true
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-7001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7001/
   depuis_version: 0.123.0
   en:
     titre: Monitor link established
@@ -6994,7 +6994,7 @@ ORT-7010:
   ntfy_defaut: false
   priorite_ntfy: 3
   prevu: true
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-7010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7010/
   depuis_version: 0.123.0
   en:
     titre: ICE failed, falling back to UDP port
@@ -7016,7 +7016,7 @@ ORT-7020:
   ntfy_defaut: false
   priorite_ntfy: 3
   prevu: true
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-7020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7020/
   depuis_version: 0.123.0
   en:
     titre: Send queue full
@@ -7038,7 +7038,7 @@ ORT-7030:
   ntfy_defaut: true
   priorite_ntfy: 4
   prevu: true
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-7030
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7030/
   depuis_version: 0.123.0
   en:
     titre: Remote key changed, link suspended
@@ -7068,7 +7068,7 @@ ORT-8001:
   codes_machine:
   - restart_gateway
   - restart_rigctld
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8001/
   depuis_version: 0.123.0
   en:
     titre: Process restarted by the supervisor
@@ -7089,7 +7089,7 @@ ORT-8002:
   action_auto: arreter_module
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8002/
   depuis_version: 0.123.0
   en:
     titre: Module disabled after repeated stops
@@ -7112,7 +7112,7 @@ ORT-8003:
   priorite_ntfy: 3
   codes_machine:
   - gateway_silent
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8003/
   depuis_version: 0.123.0
   en:
     titre: Gateway silent
@@ -7136,7 +7136,7 @@ ORT-8004:
   priorite_ntfy: 3
   codes_machine:
   - reset_usb
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8004/
   depuis_version: 0.123.0
   en:
     titre: Rig USB reset
@@ -7158,7 +7158,7 @@ ORT-8005:
   action_auto: redemarrer_rigctld
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8005/
   depuis_version: 0.123.0
   en:
     titre: USB reset not possible
@@ -7182,7 +7182,7 @@ ORT-8006:
   priorite_ntfy: 3
   codes_machine:
   - reboot
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8006/
   depuis_version: 0.123.0
   en:
     titre: Machine reboot by the supervisor
@@ -7203,7 +7203,7 @@ ORT-8007:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8007/
   depuis_version: 0.123.0
   en:
     titre: 'Reboot refused: history not writable'
@@ -7228,7 +7228,7 @@ ORT-8008:
   priorite_ntfy: 4
   codes_machine:
   - safe_mode
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8008/
   depuis_version: 0.123.0
   en:
     titre: 'Safe mode: station on receive, access cut'
@@ -7251,7 +7251,7 @@ ORT-8009:
   action_auto: mode_sur
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8009/
   depuis_version: 0.123.0
   en:
     titre: Safe mode not saved
@@ -7274,7 +7274,7 @@ ORT-8010:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8010/
   depuis_version: 0.123.0
   en:
     titre: Supervisor action failed
@@ -7296,7 +7296,7 @@ ORT-8011:
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8011/
   depuis_version: 0.123.0
   en:
     titre: Station recovered
@@ -7316,7 +7316,7 @@ ORT-8012:
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 1
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8012/
   depuis_version: 0.123.0
   en:
     titre: Station in service
@@ -7338,7 +7338,7 @@ ORT-8013:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8013/
   depuis_version: 0.123.0
   en:
     titre: ntfy alert not sent
@@ -7360,7 +7360,7 @@ ORT-8014:
   action_auto: arreter_superviseur
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8014/
   depuis_version: 0.123.0
   en:
     titre: Supervision loop error
@@ -7381,7 +7381,7 @@ ORT-8015:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8015/
   depuis_version: 0.123.0
   en:
     titre: Supervisor already running
@@ -7402,7 +7402,7 @@ ORT-8016:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8016
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8016/
   depuis_version: 0.123.0
   en:
     titre: Station does not stop
@@ -7423,7 +7423,7 @@ ORT-8017:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8017
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8017/
   depuis_version: 0.123.0
   en:
     titre: 'Supervisor gone: gateway stopped'
@@ -7443,7 +7443,7 @@ ORT-8018:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8018
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8018/
   depuis_version: 0.123.0
   en:
     titre: Access watch error
@@ -7466,7 +7466,7 @@ ORT-8019:
   codes_machine:
   - netprobe_error
   - friends_error
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8019
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8019/
   depuis_version: 0.123.0
   en:
     titre: Unexpected component error (station carries on)
@@ -7489,7 +7489,7 @@ ORT-8020:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8020/
   depuis_version: 0.123.0
   en:
     titre: No alert address (ntfy)
@@ -7511,7 +7511,7 @@ ORT-8021:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8021
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8021/
   depuis_version: 0.123.0
   en:
     titre: Station service failed or stopped
@@ -7541,7 +7541,7 @@ ORT-9001:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9001/
   depuis_version: 0.123.0
   en:
     titre: station.toml invalid
@@ -7566,7 +7566,7 @@ ORT-9002:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9002/
   depuis_version: 0.123.0
   en:
     titre: Unknown setting in station.toml
@@ -7589,7 +7589,7 @@ ORT-9003:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9003/
   depuis_version: 0.123.0
   en:
     titre: Invalid station.toml structure
@@ -7611,7 +7611,7 @@ ORT-9004:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9004/
   depuis_version: 0.123.0
   en:
     titre: Unsupported station.toml format version
@@ -7633,7 +7633,7 @@ ORT-9005:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9005/
   depuis_version: 0.123.0
   en:
     titre: On/off setting malformed
@@ -7656,7 +7656,7 @@ ORT-9006:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9006
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9006/
   depuis_version: 0.123.0
   en:
     titre: Setting out of range
@@ -7680,7 +7680,7 @@ ORT-9007:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9007
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9007/
   depuis_version: 0.123.0
   en:
     titre: Malformed setting value
@@ -7702,7 +7702,7 @@ ORT-9008:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9008
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9008/
   depuis_version: 0.123.0
   en:
     titre: Thresholds in the wrong order
@@ -7725,7 +7725,7 @@ ORT-9009:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9009
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9009/
   depuis_version: 0.123.0
   en:
     titre: Inconsistent transmit safety settings
@@ -7749,7 +7749,7 @@ ORT-9010:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9010
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9010/
   depuis_version: 0.123.0
   en:
     titre: rigctld exposed outside the machine
@@ -7771,7 +7771,7 @@ ORT-9011:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9011
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9011/
   depuis_version: 0.123.0
   en:
     titre: Reserved option forbidden in extra_conf
@@ -7792,7 +7792,7 @@ ORT-9012:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9012
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9012/
   depuis_version: 0.123.0
   en:
     titre: Rig model or port missing
@@ -7814,7 +7814,7 @@ ORT-9013:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9013
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9013/
   depuis_version: 0.123.0
   en:
     titre: Unknown PTT method
@@ -7836,7 +7836,7 @@ ORT-9014:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9014
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9014/
   depuis_version: 0.123.0
   en:
     titre: Transmit band badly defined
@@ -7859,7 +7859,7 @@ ORT-9015:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9015
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9015/
   depuis_version: 0.123.0
   en:
     titre: Two services on the same port
@@ -7880,7 +7880,7 @@ ORT-9016:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9016
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9016/
   depuis_version: 0.123.0
   en:
     titre: Module set to run as root
@@ -7902,7 +7902,7 @@ ORT-9017:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9017
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9017/
   depuis_version: 0.123.0
   en:
     titre: Link address refused (not private or not encrypted)
@@ -7925,7 +7925,7 @@ ORT-9018:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9018
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9018/
   depuis_version: 0.123.0
   en:
     titre: station.toml change refused
@@ -7947,7 +7947,7 @@ ORT-9019:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9019
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9019/
   depuis_version: 0.123.0
   en:
     titre: Saving station.toml failed
@@ -7971,7 +7971,7 @@ ORT-9020:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9020
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9020/
   depuis_version: 0.123.0
   en:
     titre: station.toml not readable by this account
@@ -7994,7 +7994,7 @@ ORT-9021:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9021
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9021/
   depuis_version: 0.123.0
   en:
     titre: Wrong station.toml permissions
@@ -8016,7 +8016,7 @@ ORT-9022:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9022
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9022/
   depuis_version: 0.123.0
   en:
     titre: Station not configured yet
@@ -8036,7 +8036,7 @@ ORT-9023:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9023
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9023/
   depuis_version: 0.123.0
   en:
     titre: No text editor
@@ -8057,7 +8057,7 @@ ORT-9101:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9101
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9101/
   depuis_version: 0.123.0
   en:
     titre: Radio profile unreadable or damaged
@@ -8081,7 +8081,7 @@ ORT-9102:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9102
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9102/
   depuis_version: 0.123.0
   en:
     titre: Radio profile from another version
@@ -8105,7 +8105,7 @@ ORT-9103:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9103
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9103/
   depuis_version: 0.123.0
   en:
     titre: Radio profile rejected by validation
@@ -8126,7 +8126,7 @@ ORT-9104:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9104
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9104/
   depuis_version: 0.123.0
   en:
     titre: Profile name refused
@@ -8148,7 +8148,7 @@ ORT-9105:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9105
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9105/
   depuis_version: 0.123.0
   en:
     titre: secrets.toml unreadable or malformed
@@ -8171,7 +8171,7 @@ ORT-9106:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9106
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9106/
   depuis_version: 0.123.0
   en:
     titre: Source password refused
@@ -8192,7 +8192,7 @@ ORT-9107:
   action_auto: repli_correction_droits
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9107
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9107/
   depuis_version: 0.123.0
   en:
     titre: secrets.toml readable by other accounts
@@ -8214,7 +8214,7 @@ ORT-9108:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9108
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9108/
   depuis_version: 0.123.0
   en:
     titre: Invalid station identifier
@@ -8239,7 +8239,7 @@ ORT-9201:
   priorite_ntfy: 3
   codes_machine:
   - layout_invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9201
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9201/
   depuis_version: 0.123.0
   en:
     titre: Layout refused
@@ -8264,7 +8264,7 @@ ORT-9202:
   priorite_ntfy: 3
   codes_machine:
   - layout_invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9202
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9202/
   depuis_version: 0.123.0
   en:
     titre: Theme refused (contrast or transmit colour)
@@ -8287,7 +8287,7 @@ ORT-9203:
   priorite_ntfy: 3
   codes_machine:
   - layout_invalid
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9203
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9203/
   depuis_version: 0.123.0
   en:
     titre: Layout from a newer format
@@ -8308,7 +8308,7 @@ ORT-9204:
   action_auto: repli_profil_usine
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9204
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9204/
   depuis_version: 0.123.0
   en:
     titre: 'Saved layout damaged: factory layout served'
@@ -8329,7 +8329,7 @@ ORT-9205:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9205
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9205/
   depuis_version: 0.123.0
   en:
     titre: Widget bound to a function the radio lacks
@@ -8350,7 +8350,7 @@ ORT-9301:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9301
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9301/
   depuis_version: 0.123.0
   en:
     titre: Python missing or too old
@@ -8373,7 +8373,7 @@ ORT-9302:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9302
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9302/
   depuis_version: 0.123.0
   en:
     titre: Missing Python modules
@@ -8397,7 +8397,7 @@ ORT-9303:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9303
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9303/
   depuis_version: 0.123.0
   en:
     titre: Account missing from a required group
@@ -8420,7 +8420,7 @@ ORT-9304:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9304
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9304/
   depuis_version: 0.123.0
   en:
     titre: Installation package incomplete
@@ -8441,7 +8441,7 @@ ORT-9305:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9305
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9305/
   depuis_version: 0.123.0
   en:
     titre: Administrator rights required
@@ -8462,7 +8462,7 @@ ORT-9306:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9306
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9306/
   depuis_version: 0.123.0
   en:
     titre: No Internet access during installation
@@ -8485,7 +8485,7 @@ ORT-9307:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9307
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9307/
   depuis_version: 0.123.0
   en:
     titre: Debian packages installation failed
@@ -8510,7 +8510,7 @@ ORT-9308:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9308
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9308/
   depuis_version: 0.123.0
   en:
     titre: Python modules could not be installed
@@ -8536,7 +8536,7 @@ ORT-9309:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9309
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9309/
   depuis_version: 0.123.0
   en:
     titre: Installing TRX distant or activating the version failed
@@ -8559,7 +8559,7 @@ ORT-9310:
   action_auto: repli_config_precedente
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9310
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9310/
   depuis_version: 0.123.0
   en:
     titre: Configuration refused by the installed version
@@ -8581,7 +8581,7 @@ ORT-9311:
   action_auto: arreter_installation
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9311
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9311/
   depuis_version: 0.126.0
   en:
     titre: 'Python module hash mismatch: installation stopped'
@@ -8605,7 +8605,7 @@ ORT-9501:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9501
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9501/
   depuis_version: 0.123.0
   en:
     titre: Android log unreadable
@@ -8628,7 +8628,7 @@ ORT-9502:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9502
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9502/
   depuis_version: 0.123.0
   en:
     titre: 'Phone: cannot copy or read the log'
@@ -8650,7 +8650,7 @@ ORT-9503:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9503
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9503/
   depuis_version: 0.123.0
   en:
     titre: Android log HTML report not written
@@ -8673,7 +8673,7 @@ ORT-9504:
   priorite_ntfy: 3
   codes_machine:
   - plantage
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9504
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9504/
   depuis_version: 0.123.0
   en:
     titre: 'Android app: crash'
@@ -8697,7 +8697,7 @@ ORT-9505:
   priorite_ntfy: 3
   codes_machine:
   - blocage
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9505
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9505/
   depuis_version: 0.123.0
   en:
     titre: Android app not responding (ANR)
@@ -8722,7 +8722,7 @@ ORT-9506:
   priorite_ntfy: 3
   codes_machine:
   - installation
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9506
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9506/
   depuis_version: 0.123.0
   en:
     titre: 'Android app: install failed'
@@ -8748,7 +8748,7 @@ ORT-9507:
   priorite_ntfy: 3
   codes_machine:
   - arret
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9507
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9507/
   depuis_version: 0.123.0
   en:
     titre: Android app killed by Android
@@ -8772,7 +8772,7 @@ ORT-9508:
   priorite_ntfy: 3
   codes_machine:
   - erreur
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9508
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9508/
   depuis_version: 0.123.0
   en:
     titre: Errors logged by the Android app
@@ -8795,7 +8795,7 @@ ORT-9701:
   priorite_ntfy: 3
   codes_machine:
   - no_pyserial
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9701
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9701/
   depuis_version: 0.123.0
   en:
     titre: pyserial module missing (HF spectrum)
@@ -8817,7 +8817,7 @@ ORT-9702:
   action_auto: repli_liste_vide
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9702
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9702/
   depuis_version: 0.123.0
   en:
     titre: Memory file unreadable
@@ -8840,7 +8840,7 @@ ORT-9703:
   priorite_ntfy: 3
   codes_machine:
   - memories_unavailable
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9703
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9703/
   depuis_version: 0.123.0
   en:
     titre: Memories unavailable on this station
@@ -8863,7 +8863,7 @@ ORT-9704:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9704
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9704/
   depuis_version: 0.123.0
   en:
     titre: Invalid qualification sheet
@@ -8887,7 +8887,7 @@ ORT-9705:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9705
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9705/
   depuis_version: 0.123.0
   en:
     titre: Tool parameter out of range
@@ -8910,7 +8910,7 @@ ORT-9706:
   action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9706
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9706/
   depuis_version: 0.123.0
   en:
     titre: 'station.toml changed but invalid: accounts unchanged'
@@ -8932,7 +8932,7 @@ ORT-9707:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9707
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9707/
   depuis_version: 0.123.0
   en:
     titre: Audio library missing (sounddevice / PortAudio)
@@ -8956,7 +8956,7 @@ ORT-9708:
   action_auto: arreter_passerelle
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9708
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9708/
   depuis_version: 0.123.0
   en:
     titre: Invalid test audio source or output
@@ -8980,7 +8980,7 @@ ORT-9709:
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9709
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9709/
   depuis_version: 0.123.0
   en:
     titre: 'WebRTC modules missing: API not started'
@@ -9001,7 +9001,7 @@ ORT-9710:
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9710
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9710/
   depuis_version: 0.123.0
   en:
     titre: 'No client account: no API'
@@ -9022,7 +9022,7 @@ ORT-9711:
   action_auto: repli_reception_seule
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9711
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9711/
   depuis_version: 0.123.0
   en:
     titre: 'API exposure deemed unsafe: API not started'
@@ -9045,7 +9045,7 @@ ORT-9712:
   action_auto: repli_valeurs_par_defaut
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9712
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9712/
   depuis_version: 0.123.0
   en:
     titre: Station settings file unreadable
@@ -9067,7 +9067,7 @@ ORT-9713:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9713
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9713/
   depuis_version: 0.123.0
   en:
     titre: Diagnostic report failed
@@ -9089,7 +9089,7 @@ ORT-9714:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9714
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9714/
   depuis_version: 0.123.0
   en:
     titre: Command not found
@@ -9111,7 +9111,7 @@ ORT-9715:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9715
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9715/
   depuis_version: 0.123.0
   en:
     titre: Unknown or invalid command option
@@ -9132,7 +9132,7 @@ ORT-9716:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9716
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9716/
   depuis_version: 0.123.0
   en:
     titre: Importing the configuration from another PC failed
@@ -9155,7 +9155,7 @@ ORT-9717:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9717
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9717/
   depuis_version: 0.123.0
   en:
     titre: Desktop indicator unavailable
@@ -9177,7 +9177,7 @@ ORT-9718:
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
-  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9718
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9718/
   depuis_version: 0.123.0
   en:
     titre: Station tests unavailable

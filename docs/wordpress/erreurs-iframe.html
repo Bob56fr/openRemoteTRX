@@ -1,0 +1,28 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Codes d'erreur de TRX distant, affichés depuis GitHub Pages. À coller UNE FOIS dans un bloc « HTML
+     personnalisé » de WordPress : les pages se mettent à jour toutes seules à chaque changement du catalogue.
+     Lien direct vers un code : adresse de la page WordPress suivie de ?code=ORT-2104 (ouvre la page de ce code).
+     La page envoie sa hauteur ; ce petit script l'applique à l'iframe (pas de double barre de défilement).
+     Seuls les messages venant de GitHub Pages du projet sont acceptés. -->
+<iframe id="trx-erreurs-doc" src="https://bob56fr.github.io/openRemoteTRX/erreurs/" title="Codes d'erreur de TRX distant"
+        loading="lazy" referrerpolicy="no-referrer"
+        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        style="display:block;width:100%;height:3200px;border:0;border-radius:8px;background:#0f141c"></iframe>
+<p style="font-size:.9em;opacity:.75">Page introuvable ? <a href="https://bob56fr.github.io/openRemoteTRX/erreurs/"
+   target="_blank" rel="noopener noreferrer">Ouvrir la liste des codes dans un nouvel onglet</a>.</p>
+<script>
+(function () {
+  var base = "https://bob56fr.github.io/openRemoteTRX/erreurs/";
+  var frame = document.getElementById("trx-erreurs-doc");
+  var m = /[?&]code=([A-Za-z]{3}-\d{4})(?:&|$)/.exec(window.location.search);
+  if (m) frame.src = base + m[1].toUpperCase() + "/";
+  window.addEventListener("message", function (event) {
+    if (event.origin !== "https://bob56fr.github.io" || event.source !== frame.contentWindow) return;
+    var data = event.data;
+    if (!data || data.type !== "trx-doc-height") return;
+    var height = Number(data.height);
+    if (isFinite(height) && height >= 200 && height <= 60000) frame.style.height = Math.ceil(height) + "px";
+  });
+})();
+</script>

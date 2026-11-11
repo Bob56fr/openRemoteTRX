@@ -1,6 +1,6 @@
 # Inventaire des erreurs existantes (lot M1, partie 1)
 
-Partie 1 faite le 2026-11-11 sur le code de la station 0.122.0 ; décisions de l'utilisateur appliquées à l'étape 168 (station 0.126.0 : origines recalées sur ce code). SANS changer son comportement. Référence : `trxstation/errors/catalog.yaml` (cahier des charges du monitoring inter-stations `docs/cdc-monitoring.md`, § 7). Les messages du code seront remplacés par les codes dans la 2e partie du lot M1.
+Partie 1 faite le 2026-11-11 sur le code de la station 0.122.0 ; décisions de l'utilisateur appliquées à l'étape 168 (station 0.126.0 : origines recalées sur ce code). SANS changer son comportement. Référence : `trxstation/errors/catalog.yaml` (cahier des charges du monitoring inter-stations `docs/cdc-monitoring.md`, § 7). Les messages du code seront remplacés par les codes dans la 2e partie du lot M1. Pages publiques (une par code, français et anglais) : https://bob56fr.github.io/openRemoteTRX/erreurs/ (`scripts/build_errors_doc.py`, étape 172).
 
 ## Chiffres
 

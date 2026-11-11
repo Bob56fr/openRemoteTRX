@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_errors_doc.py depuis trxstation/errors/catalog.json : ne pas modifier à la main. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORT-2306 : État d&#x27;émission illisible après l&#x27;ouverture du second port</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .2rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:0}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent)}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.2rem 0}
+.version{color:var(--doux);font-size:.95rem;margin:0 0 1rem}
+.lecture{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.sommaire{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0;padding:0;list-style:none}
+.sommaire a{display:inline-block;background:var(--carte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.25rem .9rem;text-decoration:none;color:var(--texte)}
+.etapes{list-style:none;margin:0;padding:0;counter-reset:e}
+.etapes>li{counter-increment:e;display:grid;grid-template-columns:2.2rem 1fr;gap:.8rem;background:var(--carte);
+  border:1px solid var(--ligne);border-radius:.6rem;padding:.8rem 1rem;margin:.7rem 0}
+.etapes>li::before{content:counter(e);width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:700;display:flex;align-items:center;justify-content:center}
+.etapes>li>div{min-width:0}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;margin:.55rem 0}
+summary{cursor:pointer;padding:.65rem 1rem;display:flex;gap:.7rem;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";color:var(--doux);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.num{flex:none;min-width:2.1rem;text-align:center;font-weight:700;color:#fff;background:var(--accent);border-radius:.4rem;
+  padding:0 .3rem}
+.corps{padding:0 1rem .8rem 1rem}
+dl{display:grid;grid-template-columns:minmax(7rem,max-content) 1fr;gap:.35rem 1rem;margin:.2rem 0 .6rem}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0}
+.sudo{color:var(--emission);font-weight:600}
+.libre{color:var(--ok);font-weight:600}
+.expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
+.plus{display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.theme{margin:1.4rem 0 .3rem;color:var(--doux);font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+.langues{margin:0 0 1rem;color:var(--doux);font-size:.95rem}
+.bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+@media (max-width:30rem){dl{grid-template-columns:1fr}dt{margin-top:.3rem}}[hidden]{display:none !important}
+.g{display:inline-block;border-radius:1rem;padding:0 .55rem;font-size:.8rem;font-weight:600;vertical-align:middle}
+.g-info{background:#1c2f45;color:#9cc8f2}.g-avertissement{background:#3d3418;color:#f2d06b}
+.g-erreur{background:#45261c;color:#ffb08a}.g-critique{background:#5a1c1a;color:#ffb4ad}
+.code{font-family:ui-monospace,Consolas,monospace;font-weight:700;white-space:nowrap}
+.liste{list-style:none;margin:.3rem 0 1rem;padding:0}
+.liste li{display:grid;grid-template-columns:6.2rem 1fr auto;gap:.6rem;align-items:baseline;padding:.3rem .6rem;
+  border-bottom:1px solid var(--ligne)}
+.liste a{text-decoration:none}.liste .t{min-width:0}
+.vieux{opacity:.55;text-decoration:line-through}
+.recherche{width:100%;padding:.55rem .8rem;border-radius:.5rem;border:1px solid var(--ligne);background:var(--carte);
+  color:var(--texte);font:inherit;margin:.6rem 0}
+.choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
+.note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
+@media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
+</head>
+<body>
+<main>
+<h1><span class="code">ORT-2306</span></h1>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<section class="langue" lang="fr" id="fr">
+<h2>État d&#x27;émission illisible après l&#x27;ouverture du second port <span class="g g-avertissement">avertissement</span></h2>
+<dl><dt>Message</dt><dd>État d&#x27;émission illisible juste après l&#x27;ouverture de <code>{port}</code> : par prudence, port refermé.</dd><dt>Causes possibles</dt><dd><ul><li>Liaison CAT perdue au même moment</li><li>Poste qui ne dit pas son état PTT</li></ul></dd><dt>Que faire</dt><dd>Vérifier la liaison CAT ; nouvel essai automatique dans 60 s.</dd><dt>Ce que fait la station</dt><dd><code>repli_mode_normal</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>ptt_unknown</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="en" id="en">
+<h2>Transmit state unreadable after opening the second port <span class="g g-avertissement">warning</span></h2>
+<dl><dt>Message</dt><dd>Transmit state unreadable right after opening <code>{port}</code>: port closed as a precaution.</dd><dt>Possible causes</dt><dd><ul><li>CAT link lost at the same moment</li><li>Rig that does not report its PTT state</li></ul></dd><dt>What to do</dt><dd>Check the CAT link; automatic retry in 60 s.</dd><dt>What the station does</dt><dd><code>repli_mode_normal</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>ptt_unknown</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<footer>
+<p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
+</footer>
+</main>
+<script>(function () {
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  document.addEventListener("toggle", send, true);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();</script>
+</body>
+</html>

@@ -16,7 +16,7 @@ AND-1001:
   priorite_ntfy: 3
   codes_machine:
   - plantage
-  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1001
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/AND-1001/
   depuis_version: 0.126.0
   en:
     titre: 'Android app: crash'
@@ -38,7 +38,7 @@ AND-1002:
   priorite_ntfy: 3
   codes_machine:
   - blocage
-  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1002
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/AND-1002/
   depuis_version: 0.126.0
   en:
     titre: Android app not responding (ANR)
@@ -61,7 +61,7 @@ AND-1003:
   priorite_ntfy: 3
   codes_machine:
   - installation
-  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1003
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/AND-1003/
   depuis_version: 0.126.0
   en:
     titre: 'Android app: install failed'
@@ -85,7 +85,7 @@ AND-1004:
   priorite_ntfy: 3
   codes_machine:
   - arret
-  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1004
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/AND-1004/
   depuis_version: 0.126.0
   en:
     titre: Android app killed by Android
@@ -107,7 +107,7 @@ AND-1005:
   priorite_ntfy: 3
   codes_machine:
   - erreur
-  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1005
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/AND-1005/
   depuis_version: 0.126.0
   en:
     titre: Errors logged by the Android app
