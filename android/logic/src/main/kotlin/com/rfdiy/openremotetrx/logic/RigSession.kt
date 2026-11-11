@@ -4,6 +4,7 @@ package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.Beeps
 import com.rfdiy.openremotetrx.protocol.BreizhEvent
+import com.rfdiy.openremotetrx.protocol.FreedvEvent
 import com.rfdiy.openremotetrx.protocol.Bye
 import com.rfdiy.openremotetrx.protocol.Command
 import com.rfdiy.openremotetrx.protocol.ErrorMessage
@@ -94,6 +95,10 @@ data class RigState(
     val netStatus: String = "",
     /** Présence de groupe « Amis » (fonction « friends », opérateurs) ; null = pas offerte par la station. */
     val friends: FriendsState? = null,
+    /** FreeDV RADE V1 en réception (state.freedv, TOUS les comptes) ; null = station sans FreeDV. */
+    val freedv: FreeDvView? = null,
+    /** Dernier refus du mode FreeDV (montré dans sa fenêtre, là où l'on a cliqué) ; vide sinon. */
+    val freedvNotice: String = "",
 )
 
 /**
@@ -171,6 +176,7 @@ class RigSession(
     private var swrChoices: Pair<Double, Int>? = null
     private var swrLast: SwrResult? = null
     private var breizhEvents: List<BreizhEntry> = emptyList()
+    private var freedvNotice = ""
     private val net = NetClient()
     private var netOffered = false                   // la station a annoncé « netprobe » à la dernière connexion
     private var netStats: NetUi.Stats? = null
@@ -332,6 +338,7 @@ class RigSession(
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
             is BreizhEvent -> onBreizhEvent(msg)
+            is FreedvEvent -> onFreedvEvent(msg)
             is NetPing -> link.send(Command.NetPong(msg.seq, msg.t, now).encode())      // écho immédiat, sans file d'attente
             is NetPong -> net.pong(msg.seq, msg.t, now)
             is NetEvent -> onNetEvent(msg)
@@ -455,6 +462,17 @@ class RigSession(
             publish(now)
             return
         }
+        if (entry.cmd == "freedv_set") {                        // mode FreeDV : refus montré dans sa fenêtre
+            if (msg.ok) {
+                freedvNotice = ""
+                log(if (entry.tag == "true") "Mode FreeDV : voix décodée par la station." else "Mode FreeDV quitté : son du poste.", LogLevel.INFO)
+            } else {
+                freedvNotice = Texts.refusal(msg.reason, msg.detail)
+                log("FreeDV : $freedvNotice", LogLevel.WARN)
+            }
+            publish(now)
+            return
+        }
         if (entry.cmd == "friends") {
             onFriendsResult(now, entry.tag, msg)
             publish(now)
@@ -495,6 +513,17 @@ class RigSession(
         log("Breizh Audio Box : " + entry.detail, if (alarm) LogLevel.BAD else if (entry.warn) LogLevel.WARN else LogLevel.INFO)
         if (alarm) link.alert(LinkAlert.BREIZH_FALLBACK)
     }
+
+    /** Indicatif décodé et abandon après panne : journal (la séquence notée s'affiche par state.freedv), comme la page. */
+    private fun onFreedvEvent(msg: FreedvEvent) {
+        when (msg.kind) {
+            "callsign" -> if (msg.callsign.isNotEmpty()) log("FreeDV : indicatif " + msg.callsign.take(12) + " décodé" +
+                (msg.snrDb?.takeIf { it.isFinite() }?.let { " (SNR " + jsNumber(it) + " dB)." } ?: "."), LogLevel.INFO)
+            "fault" -> log("FreeDV abandonné : " + msg.cause.ifEmpty { "décodeurs en panne" }.take(200) + ". Son du poste remis.", LogLevel.WARN)
+        }
+    }
+
+    private fun jsNumber(v: Double): String = if (v == Math.floor(v) && Math.abs(v) < 1e15) v.toLong().toString() else v.toString()
 
     private fun onNetEvent(msg: NetEvent) {
         if (msg.event == "outage") {
@@ -1047,6 +1076,14 @@ class RigSession(
         publish(now)
     }
 
+    // ---- FreeDV (opérateur, fonction « freedv ») : mode de la station en RÉCEPTION ; la station le refuse en émission
+    fun freedvSet(now: Long, on: Boolean) {
+        if (!connected || !protocolOk || listener || hello?.offers("freedv") != true) return
+        freedvNotice = ""
+        send(now, Command.FreedvSet(on))
+        publish(now)
+    }
+
     fun breizhReactivate(now: Long) {
         if (!breizhOffered()) return
         send(now, Command.BreizhReactivate)
@@ -1104,7 +1141,8 @@ class RigSession(
             return
         }
         val id = nextId++
-        if (link.send(command.encode(id))) pending[id] = Pending(command.name, now, (command as? Command.Friends)?.action.orEmpty())
+        if (link.send(command.encode(id))) pending[id] = Pending(command.name, now,
+            (command as? Command.Friends)?.action ?: (command as? Command.FreedvSet)?.on?.toString().orEmpty())
     }
 
     private fun mineActive(): Boolean {
@@ -1150,6 +1188,7 @@ class RigSession(
         voiceProfiles = null
         swr = null; swrPlan = null; swrChoices = null; swrLast = null
         breizhEvents = emptyList()
+        freedvNotice = ""
         protocolOk = true
         net.stop(wall())                                         // les résumés restent : remis à la reconnexion
         netStats = null; netExport = null; netStatus = ""
@@ -1201,6 +1240,8 @@ class RigSession(
             netStats = netStats, netStatus = netStatus,
             friends = if (friendsOffered && !listener) FriendsState(friendsData, friendsAt, friendsBackPoint != null,
                                                                     friendsStats, friendsInvite, friendsNotice) else null,
+            freedv = if (hello?.offers("freedv") == true) FreeDvs.view(state?.freedv ?: hello?.freedv, wall() / 1000.0) else null,
+            freedvNotice = freedvNotice,
         )
         if (next != snapshot) {
             snapshot = next

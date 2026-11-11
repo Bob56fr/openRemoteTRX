@@ -466,14 +466,14 @@ securite = "Réception seulement : le mode FreeDV ne change ni la fréquence ni 
 depuis = "0.122.0"
 
 [reglages."freedv.ka9q_path"]
-role = "Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH."
+role = "Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows). Debian et Raspberry Pi : <code>sudo bash compiler-freedv.sh</code> (dossier du paquet) les compile et les met dans le PATH ; rien à régler ensuite."
 niveau = "expert"
 bornes = "Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode FreeDV est refusé avec le nom du programme manquant."
-exemple = "<code>freedv-ka9q</code> (Debian), <code>C:\\Program Files\\FreeDV\\freedv-ka9q.exe</code> (Windows)."
+exemple = "<code>freedv-ka9q</code> (défaut, Debian et Windows), ou le chemin complet d'un programme compilé à part."
 depuis = "0.122.0"
 
 [reglages."freedv.radae_rx_path"]
-role = "Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH."
+role = "Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows), comme freedv-ka9q."
 niveau = "expert"
 bornes = "Chemin d'un fichier, ou nom seul ; jamais vide."
 exemple = "<code>radae_rx</code>"

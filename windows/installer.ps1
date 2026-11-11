@@ -287,6 +287,13 @@ $Release = Join-Path $Base "versions\$Version"
 if (Test-Path -LiteralPath $Release) { Remove-Item -LiteralPath $Release -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $Release | Out-Null
 Copy-Item -Path (Join-Path $Here "app") -Destination $Release -Recurse
+# Décodeurs FreeDV RADE V1 (freedv-ka9q.exe, radae_rx.exe et leurs DLL) : à côté de venv, la station les y trouve
+# (trxstation/freedv/service.py, bundled_dir) ; absents d'un paquet fait sans eux.
+$FreedvDir = Join-Path $Here "freedv"
+if (Test-Path -LiteralPath $FreedvDir) {
+    Copy-Item -Path $FreedvDir -Destination $Release -Recurse
+    Ok "décodeurs FreeDV copiés (mode FreeDV de la station en réception)"
+}
 & $Python -m venv (Join-Path $Release "venv")
 if ($LASTEXITCODE -ne 0) { Fail "création de l'environnement Python impossible." }
 $VenvPy = Venv-Python $Release

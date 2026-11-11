@@ -21,6 +21,7 @@ import asyncio
 import collections
 import logging
 import shutil
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -45,10 +46,25 @@ class FreedvUnavailable(Exception):
         self.reason, self.detail = reason, detail
 
 
-def resolve_program(path: str) -> str | None:
-    """Chemin complet du programme : nom seul = cherché dans le PATH ; None s'il est introuvable."""
+def bundled_dir() -> Path:
+    """Décodeurs livrés avec la station : dossier `freedv` à côté de l'environnement Python de la version installée
+    (paquet Windows : `…\\TRX distant\\versions\\X.Y.Z\\freedv`, à côté de `venv`). Sous Debian, compiler-freedv.sh
+    les met dans /usr/local/lib/trx-freedv avec des liens dans /usr/local/bin (PATH)."""
+    return Path(sys.prefix).parent / "freedv"
+
+
+def resolve_program(path: str, bundled: Path | None = None) -> str | None:
+    """Chemin complet du programme : nom seul = cherché dans le PATH, puis dans les décodeurs livrés
+    (`bundled_dir()`) ; None s'il est introuvable."""
     if Path(path).name == path:
-        return shutil.which(path)
+        found = shutil.which(path)
+        if found:
+            return found
+        folder = bundled if bundled is not None else bundled_dir()
+        for name in (path, path + ".exe") if sys.platform == "win32" and not path.lower().endswith(".exe") else (path,):
+            if (folder / name).is_file():
+                return str(folder / name)
+        return None
     p = Path(path)
     return str(p) if p.is_file() else None
 

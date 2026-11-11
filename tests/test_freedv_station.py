@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -74,6 +75,17 @@ def test_resolve_program_finds_a_name_in_the_path_or_a_real_file(tmp_path):
     assert resolve_program(PROGRAM) == PROGRAM
     assert resolve_program(str(tmp_path / "absent")) is None
     assert resolve_program("nexiste-pas-freedv-xyz") is None
+
+
+def test_resolve_program_finds_a_name_among_the_decoders_shipped_with_the_station(tmp_path):
+    """Paquet Windows : décodeurs dans le dossier freedv de la version, à côté de venv (bundled_dir)."""
+    from trxstation.freedv.service import bundled_dir
+    assert bundled_dir() == Path(sys.prefix).parent / "freedv"
+    name = "radae_rx-essai-xyz"
+    target = tmp_path / (name + (".exe" if sys.platform == "win32" else ""))
+    target.write_bytes(b"x")
+    assert resolve_program(name, bundled=tmp_path) == str(target)
+    assert resolve_program(name, bundled=tmp_path / "vide") is None
 
 
 # ---------------------------------------------------------------- service

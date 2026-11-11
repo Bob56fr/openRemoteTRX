@@ -38,6 +38,8 @@ object Help {
             "« SEL OUVERT » = appel reçu. Appui : panneau SELCALL.",
         "BZH" to "Breizh Audio Box : chaîne de traitement de la voix émise. Vert = prête, orange = repli en direct, " +
             "gris = absente. Appui : sa fenêtre.",
+        "FDV" to "FreeDV RADE V1 décodé par la station. Vert = voix reçue, orange = recherche d'un signal ou relance, " +
+            "rouge = décodeurs abandonnés (son du poste remis), gris = son du poste. Appui : sa fenêtre.",
         "WF" to "Petit waterfall HF de l'onglet Station. Appui : affiché / masqué.",
         "HF" to "Spectre HF du poste, envoyé par la station : il consomme de la bande passante. Le masquer en 4G / 5G " +
             "pour économiser des données.",

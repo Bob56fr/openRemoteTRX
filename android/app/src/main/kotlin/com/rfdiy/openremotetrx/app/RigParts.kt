@@ -51,6 +51,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import com.rfdiy.openremotetrx.logic.BigPtt
 import com.rfdiy.openremotetrx.logic.BreizhLevel
+import com.rfdiy.openremotetrx.logic.FreeDvLevel
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
@@ -242,6 +243,12 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                         CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level),
                             help = com.rfdiy.openremotetrx.logic.Help.client("BZH"))
                     }
+                    // FreeDV (station qui l'offre, TOUS les comptes) : voyant FDV vert / orange / rouge / gris ; toucher = sa fenêtre
+                    rig.freedv?.let { fdv ->
+                        Spacer(Modifier.width(6.dp))
+                        CompactChip("FDV", onClick = { freedvDialog = true }, selected = fdv.level == FreeDvLevel.OK, dot = freedvColor(fdv.level),
+                            help = com.rfdiy.openremotetrx.logic.Help.client("FDV"))
+                    }
                     // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
@@ -313,6 +320,10 @@ internal fun RigScope.RigDialogsHost() {
     }
     if (presenceDialog) rig.presence?.let { PresenceDialog(it) { presenceDialog = false } }
     if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
+    if (freedvDialog) rig.freedv?.let {
+        FreeDvDialog(it, rig.freedvNotice, operator = !listener && connected && rig.protocolOk,
+            transmitting = (rig.state?.ptt?.state ?: "RX") != "RX") { freedvDialog = false }
+    }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (netOpen) NetScreen(rig) { netOpen = false }
     if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, radio = ui.radio?.text(), onStats = { netDialog = false; netOpen = true }) { netDialog = false } }

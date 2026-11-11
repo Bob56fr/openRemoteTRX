@@ -20,6 +20,11 @@ Ton poste manque encore dans « rigctl -l » (ex. IC-7300MK2 sur Debian 12) :
        sudo bash compiler-hamlib.sh
 compile un Hamlib récent dans /usr/local (le paquet de Debian reste en place).
 
+FreeDV RADE V1 en réception (facultatif) : les deux décodeurs se compilent sur la station,
+depuis des sources épinglées et vérifiées (~5 minutes sur un PC, 30 à 60 sur un Raspberry Pi 4) :
+       sudo bash compiler-freedv.sh
+puis [freedv] enabled = true dans station.toml (TRX Console, menu 14).
+
 Tu viens d'un autre PC (Windows) ? Pose son fichier station.toml dans ce dossier, à côté de
 install.sh, AVANT l'étape 2 : comptes, mots de passe, alertes et bandes seront repris.
 

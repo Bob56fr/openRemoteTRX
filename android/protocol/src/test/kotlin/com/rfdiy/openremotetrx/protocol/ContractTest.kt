@@ -125,6 +125,23 @@ class ContractTest {
         assertEquals("fallback", e.event); assertTrue(e.detail.startsWith("Breizh ne répond plus"))
     }
 
+    @Test
+    fun `FreeDV - etat, hello, evenements et reponses d exemple`() {
+        val wrapped = "{\"type\":\"state\",\"freedv\":" + messages["state_freedv"]!!.jsonObject["freedv"].toString() + "}"
+        val f = assertIs<State>(ServerMessages.decode(wrapped)).freedv!!
+        assertEquals(true, f.on); assertEquals("ecoute", f.engine); assertEquals("sync", f.sync); assertTrue(f.confirmed)
+        assertEquals(7.5, f.snrDb); assertNull(f.fault); assertEquals("W6GOK", f.calls.single().callsign)
+        assertEquals(5.0, f.sequences.single().note); assertEquals(listOf("W6GOK"), f.sequences.single().callsigns)
+        assertNull(assertIs<State>(ServerMessages.decode(messages["state"].toString())).freedv)      // station sans FreeDV
+        val hello = assertIs<Hello>(ServerMessages.decode(messages["hello"].toString())).freedv!!
+        assertEquals(false, hello.on); assertEquals("arret", hello.engine); assertNull(hello.snrDb)
+        val events = messages["freedv_event"]!!.jsonArray.map { assertIs<FreedvEvent>(ServerMessages.decode(it.toString())) }
+        assertEquals(listOf("callsign", "sequence", "fault"), events.map { it.kind })
+        assertEquals("W6GOK", events[0].callsign); assertEquals(9.0, events[0].snrDb); assertTrue(events[2].cause.startsWith("radae_rx"))
+        val results = messages["freedv_set_result"]!!.jsonArray.map { assertIs<Result>(ServerMessages.decode(it.toString())) }
+        assertTrue(results[0].ok); assertEquals(listOf("freedv_tx", "freedv_missing"), results.drop(1).map { it.reason })
+    }
+
     private fun fromExample(name: String, e: JsonObject): Command {
         fun p(key: String) = e[key]!!.jsonPrimitive
         return when (name) {

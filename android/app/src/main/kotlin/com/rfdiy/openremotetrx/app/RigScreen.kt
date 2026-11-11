@@ -187,6 +187,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     var spatialDialog by spatialDialogS
     val breizhDialogS = remember { mutableStateOf(false) }
     var breizhDialog by breizhDialogS
+    val freedvDialogS = remember { mutableStateOf(false) }
     val hostDialogS = remember { mutableStateOf(false) }
     var hostDialog by hostDialogS
     val reportOpenS = remember { mutableStateOf(false) }                     // « Signaler un problème » (lot A3)
@@ -209,7 +210,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val pendingLive = pendingHz?.takeIf { it != radio?.frequencyHz && SystemClock.elapsedRealtime() - pendingAt < 2500 }
     val shownHz = pendingLive ?: radio?.frequencyHz
     val step = Radio.STEPS_HZ[stepIndex]
-    val scope = RigScope(ui, prefs, onDisconnect, keepScreenOnS, keepTxS, drivingManualS, drivingAutoS, bigPttRequestedS, pendingHzS, pendingAtS, stepIndexS, entryS, showLogS, levelsDialogS, showWaterfallS, bandsPrefS, bandsDialogS, memoryDialogS, spotsDialogS, presenceDialogS, selcallDialogS, spatialDialogS, breizhDialogS, hostDialogS, reportOpenS, swrOpenS, netOpenS, netDialogS, miniWfS, tabS, squelchDragS, offsetDragS)
+    val scope = RigScope(ui, prefs, onDisconnect, keepScreenOnS, keepTxS, drivingManualS, drivingAutoS, bigPttRequestedS, pendingHzS, pendingAtS, stepIndexS, entryS, showLogS, levelsDialogS, showWaterfallS, bandsPrefS, bandsDialogS, memoryDialogS, spotsDialogS, presenceDialogS, selcallDialogS, spatialDialogS, breizhDialogS, freedvDialogS, hostDialogS, reportOpenS, swrOpenS, netOpenS, netDialogS, miniWfS, tabS, squelchDragS, offsetDragS)
 
     fun go(hz: Long) {
         pendingHz = hz

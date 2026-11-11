@@ -81,6 +81,8 @@ data class Hello(
     val selcall: JsonObject? = null,
     /** Rediffusion d'un enregistrement de l'audio reçu, accordée sur la station (station 0.91.0+) ; null sinon. */
     val replay: ReplayInfo? = null,
+    /** FreeDV RADE V1 en réception (station 0.122.0+, comme `state.freedv`) ; null sans `[freedv] enabled`. */
+    val freedv: FreedvStatus? = null,
     val features: List<String> = emptyList(),
 ) : ServerMessage {
     fun offers(feature: String): Boolean = feature in features
@@ -189,6 +191,43 @@ data class BreizhStatus(
     @SerialName("reactivate_in_s") val reactivateInS: Int? = null,
 )
 
+/** FreeDV : indicatif décodé (le plus récent en tête de `calls`). */
+@Serializable
+data class FreedvCall(val callsign: String? = null, @SerialName("snr_db") val snrDb: Double? = null, val t: Double? = null)
+
+/** FreeDV : séquence de voix reçue, notée de 1 à 5 par la station. */
+@Serializable
+data class FreedvSequence(
+    val start: Double? = null,
+    @SerialName("duration_s") val durationS: Double? = null,
+    val note: Double? = null,
+    val detail: String = "",
+    val callsigns: List<String> = emptyList(),
+)
+
+/**
+ * FreeDV RADE V1 en réception (station 0.122.0+, docs/protocole.md § 17) : `state.freedv` et `hello.freedv`, TOUTES les
+ * connexions (visiteurs compris) ; absent sans `[freedv] enabled`. `on` absent = objet illisible (rien à afficher).
+ */
+@Serializable
+data class FreedvStatus(
+    val on: Boolean? = null,
+    /** demarrage, ecoute, relance, panne, arret. */
+    val engine: String = "arret",
+    /** search, candidate, sync. */
+    val sync: String = "search",
+    /** Synchro tenue au moins 2 s : seule « voix » affichée (les fausses synchros du bruit durent ~1 s). */
+    val confirmed: Boolean = false,
+    @SerialName("snr_db") val snrDb: Double? = null,
+    @SerialName("foff_hz") val foffHz: Double? = null,
+    val restarts: Int = 0,
+    val cause: String? = null,
+    /** Cause de l'abandon après les relances (mode quitté tout seul) ; null sinon. */
+    val fault: String? = null,
+    val calls: List<FreedvCall> = emptyList(),
+    val sequences: List<FreedvSequence> = emptyList(),
+)
+
 /** Sonde de qualité réseau (station 0.106.0+, docs/protocole.md § 15) : la liaison de CE téléphone. */
 @Serializable
 data class NetState(
@@ -239,6 +278,7 @@ data class State(
     val host: Host? = null,
     val breizh: BreizhStatus? = null,
     val net: NetState? = null,
+    val freedv: FreedvStatus? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */
@@ -265,6 +305,9 @@ data class ModuleMessage(val module: String, val data: JsonElement) : ServerMess
 
 /** Événement de la liaison avec Breizh Audio Box (station 0.100.0+, opérateurs) : `detail` = texte à afficher. */
 data class BreizhEvent(val t: String, val event: String, val detail: String) : ServerMessage
+
+/** FreeDV (station 0.122.0+, à TOUS) : `kind` = callsign (`callsign`, `snrDb`), sequence, fault (`cause`). */
+data class FreedvEvent(val kind: String, val callsign: String, val snrDb: Double?, val cause: String, val raw: JsonObject) : ServerMessage
 
 /** Sonde réseau : battement de la station (répondre aussitôt par net_pong) et écho de NOS net_ping. */
 data class NetPing(val seq: Int, val t: Long) : ServerMessage
@@ -317,6 +360,8 @@ object ServerMessages {
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 "swr" -> SwrMessage(obj)
                 "breizh_event" -> BreizhEvent(obj.text("t"), obj.text("event"), obj.text("detail"))
+                "freedv_event" -> FreedvEvent(obj.text("kind"), obj.text("callsign"),
+                    (obj["snr_db"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull(), obj.text("cause"), obj)
                 "net_ping" -> NetPing(obj.long("seq").toInt(), obj.long("t"))
                 "net_pong" -> NetPong(obj.long("seq").toInt(), obj.long("t"), obj.long("tr"))
                 "net_event" -> NetEvent(obj.text("event"), obj)

@@ -149,3 +149,50 @@ def test_tray_indicator_is_stopped_before_replacing_files_and_removed_on_uninsta
     assert ps.index("{ Stop-Tray }") < ps.index("Remove-Item -LiteralPath $Release")   # avant de remplacer la version
     assert 'Start-Process explorer.exe' in ps                                         # lancé sans les droits administrateur
     assert "Startup" in ps and "-m trxstation.tray" in ps
+
+
+# ---------------------------------------------------------------- décodeurs FreeDV (lot F1, compiler-freedv.sh --windows)
+def _freedv_folder(tmp_path: Path) -> Path:
+    import hashlib
+    folder = tmp_path / "freedv-windows"
+    (folder / "licences").mkdir(parents=True)
+    for name, data in (("freedv-ka9q.exe", b"MZ ka9q"), ("radae_rx.exe", b"MZ radae"), ("librade.dll", b"MZ rade"),
+                       ("libwinpthread-1.dll", b"MZ pthread"), ("VERSION", b"rade_c c8a3dc1 + essai\n"),
+                       ("licences/rade_c.txt", b"BSD 2-Clause License\n")):
+        (folder / name).write_bytes(data)
+    lines = [f"{hashlib.sha256((folder / n).read_bytes()).hexdigest()}  {n}"
+             for n in sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*") if p.is_file())]
+    (folder / "SHA256SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return folder
+
+
+def test_freedv_decoders_are_packaged_unchanged_next_to_the_application(tmp_path):
+    folder = _freedv_folder(tmp_path)
+    target = builder.build(tmp_path / "out", freedv=folder)
+    top = f"trx-remote-windows-{builder.version()}/"
+    with zipfile.ZipFile(target) as z:
+        for name in ("freedv-ka9q.exe", "radae_rx.exe", "librade.dll", "libwinpthread-1.dll", "VERSION", "SHA256SUMS",
+                     "licences/rade_c.txt"):
+            assert z.read(top + "freedv/" + name) == (folder / name).read_bytes(), name     # octets intacts
+    without = builder.build(tmp_path / "sans")
+    with zipfile.ZipFile(without) as z:
+        assert not any("/freedv/" in n and not n.startswith(top + "app/") for n in z.namelist())
+
+
+@pytest.mark.parametrize("damage", ["hash", "extra", "missing"])
+def test_freedv_decoders_with_a_wrong_or_missing_checksum_are_refused(tmp_path, damage):
+    folder = _freedv_folder(tmp_path)
+    if damage == "hash":
+        (folder / "librade.dll").write_bytes(b"MZ autre chose")
+    elif damage == "extra":
+        (folder / "intrus.dll").write_bytes(b"MZ")
+    else:
+        (folder / "radae_rx.exe").unlink()
+    with pytest.raises(ValueError):
+        builder.build(tmp_path / "out", freedv=folder)
+
+
+def test_installer_copies_the_freedv_decoders_next_to_the_venv():
+    ps = (WIN / "installer.ps1").read_text(encoding="utf-8-sig")
+    assert '$FreedvDir = Join-Path $Here "freedv"' in ps
+    assert ps.index("Copy-Item -Path $FreedvDir -Destination $Release") < ps.index("-m venv")

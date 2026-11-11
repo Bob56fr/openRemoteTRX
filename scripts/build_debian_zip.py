@@ -89,7 +89,9 @@ def manifest(root: Path = ROOT) -> list[tuple[str, Path]]:
     _require_fresh_lock(root)
     files = [("install.sh", root / "debian" / "install.sh"), ("releases.sh", root / "debian" / "releases.sh"),
              ("LISEZMOI.txt", root / "debian" / "LISEZMOI.txt"), ("LICENSE", root / "LICENSE"),
-             ("compiler-hamlib.sh", root / "debian" / "compiler-hamlib.sh")]   # Hamlib récent (postes absents de Debian)
+             ("compiler-hamlib.sh", root / "debian" / "compiler-hamlib.sh"),   # Hamlib récent (postes absents de Debian)
+             ("compiler-freedv.sh", root / "debian" / "compiler-freedv.sh")]   # décodeurs FreeDV (sources épinglées)
+    files += [(f"freedv-patches/{p.name}", p) for p in sorted((root / "debian" / "freedv-patches").glob("*.patch"))]
     files += [(f"systeme/{name}", root / source) for name, source in SYSTEM_FILES.items()]
     files += _app_files(root)
     missing = [str(src.relative_to(root)) for _, src in files if not src.is_file()]

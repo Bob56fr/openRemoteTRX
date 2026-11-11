@@ -130,6 +130,7 @@ internal class RigScope(
     selcallDialogS: MutableState<Boolean>,
     spatialDialogS: MutableState<Boolean>,
     breizhDialogS: MutableState<Boolean>,
+    freedvDialogS: MutableState<Boolean>,
     hostDialogS: MutableState<Boolean>,
     reportOpenS: MutableState<Boolean>,
     swrOpenS: MutableState<Boolean>,
@@ -160,6 +161,7 @@ internal class RigScope(
     var selcallDialog by selcallDialogS
     var spatialDialog by spatialDialogS
     var breizhDialog by breizhDialogS
+    var freedvDialog by freedvDialogS
     var hostDialog by hostDialogS
     var reportOpen by reportOpenS
     var swrOpen by swrOpenS

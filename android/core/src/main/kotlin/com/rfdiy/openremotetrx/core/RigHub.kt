@@ -217,6 +217,9 @@ object RigHub {
 
     fun breizhLog() { service?.onRig { session, now -> session.breizhLog(now) } }
 
+    /** FreeDV (opérateurs) : mode de la station en réception ; refusé par la station pendant l'émission. */
+    fun freedvSet(on: Boolean) { service?.onRig { session, now -> session.freedvSet(now, on) } }
+
     // ---- sonde de qualité réseau (opérateurs) : statistiques, seuils, effacement, export anonyme
     fun netStats(days: Int) { service?.onRig { session, now -> session.netStats(now, days) } }
 

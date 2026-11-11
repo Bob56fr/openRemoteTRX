@@ -216,6 +216,11 @@ uninstall() {
   rm -f "$DESKTOP_FILE" "$ICON_FILE" "$TMPFILES" "$MM_RULE" "$SENSOR_MODULES" "$BACKPORTS_SOURCES"
   if [[ -f $WATCHDOG_CONF ]]; then rm -f "$WATCHDOG_CONF"; systemctl daemon-reexec; ok "watchdog matériel rendu au système"; fi
   rm -rf "$GNOME_EXT_DIR"
+  # Décodeurs FreeDV de compiler-freedv.sh (propres à la station, contrairement à Hamlib) : liens et dossier
+  for fdv in freedv-ka9q radae_rx; do
+    [[ -L /usr/local/bin/$fdv && $(readlink "/usr/local/bin/$fdv") == /usr/local/lib/trx-freedv/* ]] && rm -f "/usr/local/bin/$fdv"
+  done
+  rm -rf /usr/local/lib/trx-freedv
   if [[ -f $BRLTTY_OVERRIDE ]] && grep -q 'trx-remote' "$BRLTTY_OVERRIDE"; then rm -f "$BRLTTY_OVERRIDE"; fi
   command -v udevadm >/dev/null && udevadm control --reload || true
   command -v update-desktop-database >/dev/null && update-desktop-database -q /usr/share/applications || true

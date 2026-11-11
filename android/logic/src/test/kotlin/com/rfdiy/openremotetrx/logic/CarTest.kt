@@ -77,6 +77,22 @@ class CarTest {
         assertTrue(long.length <= Car.SETTINGS_MAX && long.startsWith("S9+20"))
     }
 
+    @Test
+    fun `freedv - etat seul en tete du sous-titre, aucun bouton`() {
+        val base = rig(ptt(false, false), armed = false)
+        fun fdv(json: String) = FreeDvs.view(
+            (ServerMessages.decode("""{"type":"state","freedv":$json}""") as State).freedv, 0.0)
+        fun screen(json: String) = Car.screen(base.copy(freedv = fdv(json)), "Maison", muted = false, micAllowed = true)
+        assertEquals("S7  VFO", screen("""{"on":false}""").subtitle)
+        assertEquals("FDV  S7  VFO", screen("""{"on":true,"engine":"ecoute","confirmed":true,"snr_db":6}""").subtitle)
+        assertEquals("FDV …  S7  VFO", screen("""{"on":true,"engine":"ecoute","confirmed":false}""").subtitle)
+        assertEquals("FDV PANNE  S7  VFO", screen("""{"on":false,"fault":"radae_rx gelé"}""").subtitle)
+        assertEquals(ids(Car.screen(base, "Maison", false, true)), ids(screen("""{"on":true,"engine":"ecoute","confirmed":true}""")))
+        val weak = NetUi.view((ServerMessages.decode("""{"type":"state","net":{"level":"red","outage":true}}""") as State).net)
+        assertEquals("Liaison faible  FDV  S7  VFO", Car.screen(base.copy(net = weak,
+            freedv = fdv("""{"on":true,"engine":"ecoute","confirmed":true}""")), "Maison", false, true).subtitle)
+    }
+
     private fun lock(s: CarScreen) = s.buttons.single { it.icon.name.startsWith("LOCK") }
 
     @Test

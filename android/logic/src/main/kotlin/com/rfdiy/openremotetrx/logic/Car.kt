@@ -137,6 +137,7 @@ object Car {
             else if (!rig.armed && !mine) add("émission non autorisée")
             if (muted) add("muet")
             if (selcall?.open == true) add("SELCALL ouvert")
+            rig.freedv?.takeIf { it.on || it.level == FreeDvLevel.BAD }?.let { add(it.text) }
             add(name)
         }
         val buttons = buildList {
@@ -165,8 +166,10 @@ object Car {
         // Sonde réseau : liaison rouge = « Liaison faible » en TÊTE du sous-titre (cahier § 9.3), sans bip ni voix
         val weak = if (rig.net?.weak == true) WEAK_LINK else null
         val (selHead, selTail) = selcallParts(selcall)
+        // FreeDV (lot F1, cahier § 8) : état seul en tête (« FDV », « FDV … », « FDV PANNE »), aucun bouton
+        val fdv = FreeDvs.carPart(rig.freedv)
         return CarScreen(title.ifEmpty { name },
-            settings(rig.hello, rig.state, eq, listOfNotNull(weak, selHead, signal, place), listOfNotNull(selTail)),
+            settings(rig.hello, rig.state, eq, listOfNotNull(weak, fdv, selHead, signal, place), listOfNotNull(selTail)),
             playing = !muted, connecting = false,
             connected = true, buttons = arrange(buttons, canSkip), error = notice, secondary = parts.joinToString(" · "),
             canSkip = canSkip)
