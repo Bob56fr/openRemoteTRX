@@ -11,7 +11,7 @@ titre = "Réglages de la station : station.toml"
 intro = """
 <p><code>station.toml</code> est le fichier de configuration de la station : le poste, les cartes son, le réseau, les
 sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie
-ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le <strong>vérifie</strong>
+ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le <strong>vérifie</strong>
 à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.</p>
 """
 lecture = """
@@ -32,31 +32,31 @@ relu = "redemarrage"
 [sections.rig]
 titre = "Le poste [rig]"
 intro = "<p>Le transceiver piloté par Hamlib : modèle, liaison CAT, commande du PTT, modes et puissance.</p>"
-ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+ou = "Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2."
 relu = "redemarrage"
 
 [sections.audio]
 titre = "Le son [audio]"
 intro = "<p>Les deux sens audio entre la station et le poste (interface son type Digirig, SignaLink, ou carte USB du poste).</p>"
-ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+ou = "Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2."
 relu = "redemarrage"
 
 [sections.tools]
 titre = "Outils [tools]"
 intro = "<p>Où trouver Hamlib quand il n'est pas dans le chemin du système.</p>"
-ou = "Assistant (menu 2) ou menu 14."
+ou = "Assistant (menu 3.1) ou menu 3.2."
 relu = "redemarrage"
 
 [sections.network]
 titre = "Réseau [network]"
 intro = "<p>Comment la page web et l'application joignent la station. Voir aussi le guide d'accès distant (VPN ou port exposé avec HTTPS).</p>"
-ou = "Assistant (menu 2), appairage d'un téléphone (menu 19), ou menu 14."
+ou = "Assistant (menu 3.1), appairage d'un téléphone (menu 4.1), ou menu 3.2."
 relu = "redemarrage"
 
 [sections.safety]
 titre = "Sécurités d'émission [safety]"
 intro = "<p>Les règles que la station applique à TOUTE émission demandée à distance, indépendamment de la page et de l'application.</p>"
-ou = "Menu 14 ; seuils de température : menu 16 ; rediffusion : assistant (menu 2)."
+ou = "Menu 3.2 ; seuils de température : menu 3.4 ; rediffusion : assistant (menu 3.1)."
 relu = "redemarrage"
 
 [sections.bands]
@@ -65,73 +65,73 @@ intro = """
 <p>Une entrée par bande où l'émission est permise. <strong>Liste vide = réception seule.</strong> Les bandes proposées
 par l'assistant (IARU Région 1) sont un point de départ : vérifiez-les pour votre licence et votre pays.</p>
 """
-ou = "Assistant (menu 2) ou menu 14."
+ou = "Assistant (menu 3.1) ou menu 3.2."
 relu = "redemarrage"
 
 [sections.clients]
 titre = "Comptes [[clients]]"
 intro = "<p>Une entrée par compte qui peut se connecter : opérateurs (contrôle complet) et visiteurs (écoute seule).</p>"
-ou = "Assistant (menu 2), visiteurs (menu 20), commande <code>trx-setup --add-client</code>."
+ou = "Assistant (menu 3.1), visiteurs (menu 4.2), commande <code>trx-setup --add-client</code>."
 relu = "chaud"
 
 [sections.access]
 titre = "Visiteurs en réception seule [access]"
 intro = "<p>Des comptes qui écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste.</p>"
-ou = "Menu 20."
+ou = "Menu 4.2."
 relu = "chaud"
 
 [sections.swr]
 titre = "Mesure de TOS [swr]"
-intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 21.</p>"
-ou = "Menu 14."
+intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 2.5.</p>"
+ou = "Menu 3.2."
 relu = "redemarrage"
 
 [sections.breizh]
 titre = "Breizh Audio Box dans l'émission [breizh]"
 intro = "<p>Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.</p>"
-ou = "Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
+ou = "Menu 3.2 ; la clé d'appairage se crée avec TRX Console (fichier <code>breizh.key</code> à côté de station.toml)."
 relu = "redemarrage"
 
 [sections.netprobe]
 titre = "Sonde de qualité réseau [netprobe]"
 intro = "<p>La station mesure en continu la liaison avec chaque téléphone ou navigateur connecté (pertes, temps aller-retour, gigue, coupures) et dit après une coupure quel tronçon a probablement lâché. Un petit indicateur l'affiche ; les statistiques des 30 derniers jours, l'effacement et l'export sont dans la page et l'application. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission.</p>"
-ou = "Menu 14. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici."
+ou = "Menu 3.2. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici."
 relu = "redemarrage"
 
 [sections.presence]
 titre = "Présence de groupe [presence]"
 intro = "<p>Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.</p>"
-ou = "Menu 14, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml)."
+ou = "Menu 3.2, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml)."
 relu = "redemarrage"
 
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
-ou = "Assistant (menu 2), profils de poste (menu 18), ou menu 14."
+ou = "Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2."
 relu = "redemarrage"
 
 [sections.freedv]
 titre = "FreeDV en réception [freedv]"
 intro = "<p>La station décode elle-même la voix numérique FreeDV (RADE V1) avec deux programmes de l'équipe FreeDV, lancés seulement quand l'opérateur choisit le mode FreeDV dans la page : tous les connectés, visiteurs compris, entendent alors la voix décodée à la place du son du poste, avec la synchro, le SNR et les indicatifs reçus. Réception seulement : rien n'est émis, et le poste n'est pas touché.</p>"
-ou = "Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage."
+ou = "Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage."
 relu = "redemarrage"
 
 [sections.selcall]
 titre = "SELCALL [selcall]"
 intro = "<p>Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.</p>"
-ou = "Menu 14 ; le code et les options se règlent depuis la page ou l'application."
+ou = "Menu 3.2 ; le code et les options se règlent depuis la page ou l'application."
 relu = "redemarrage"
 
 [sections.cluster]
 titre = "Cluster DX [cluster]"
 intro = "<p>Les spots des clusters DX, du RBN et des cibistes, affichés sur le spectre et en liste.</p>"
-ou = "Menu 14 ; mots de passe des sources : fichier <code>secrets.toml</code> (jamais ici)."
+ou = "Menu 3.2 ; mots de passe des sources : fichier <code>secrets.toml</code> (jamais ici)."
 relu = "redemarrage"
 
 [sections."cluster.source"]
 titre = "Sources du Cluster DX [[cluster.source]]"
 intro = "<p>Une entrée par source de spots (cluster telnet, RBN, site web).</p>"
-ou = "Menu 14."
+ou = "Menu 3.2."
 relu = "redemarrage"
 
 [sections.supervisor]
@@ -140,19 +140,19 @@ intro = """
 <p>La seconde couche de sécurité, indépendante de la passerelle : elle surveille l'émission, rigctld et la machine, coupe
 l'émission en cas de doute et relance ce qui ne répond plus.</p>
 """
-ou = "Menu 14."
+ou = "Menu 3.2."
 relu = "redemarrage"
 
 [sections.modules]
 titre = "Modules [modules]"
 intro = "<p>Programmes complémentaires lancés à côté de la station (Cluster DX…), reliés par un bus local.</p>"
-ou = "Menu 14."
+ou = "Menu 3.2."
 relu = "redemarrage"
 
 [sections.update]
 titre = "Mises à jour [update]"
 intro = "<p>Recherche des nouvelles versions publiées (rien n'est installé sans votre accord).</p>"
-ou = "Menu 14 ; installation : menu 10."
+ou = "Menu 3.2 ; installation : menu 6.1."
 relu = "redemarrage"
 
 # ---------------------------------------------------------------- racine
@@ -264,7 +264,7 @@ role = "Sert la page web de contrôle sur le même port que l'application. false
 niveau = "expert"
 
 [reglages."network.tls_cert"]
-role = "Certificat HTTPS de la station (fichier PEM). L'assistant en génère un ; son empreinte sert à l'appairage du téléphone (menu 19)."
+role = "Certificat HTTPS de la station (fichier PEM). L'assistant en génère un ; son empreinte sert à l'appairage du téléphone (menu 4.1)."
 niveau = "courant"
 
 [reglages."network.tls_key"]
@@ -362,7 +362,7 @@ niveau = "expert"
 securite = "Un secret en clair dans le fichier est lisible par qui lit le fichier : remplacez-le."
 
 [reglages."clients.password_hash"]
-role = "Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 20 ou <code>trx-setup --set-password</code>."
+role = "Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 4.2 ou <code>trx-setup --set-password</code>."
 niveau = "courant"
 
 [reglages."clients.role"]

@@ -54,12 +54,12 @@ export function summarize(input) {
 
   if (safe) {
     level = "safe"; label = "MODE SÛR";
-    add("Station", "MODE SÛR : " + safe + " (TRX Console, menu 9)", "bad");
+    add("Station", "MODE SÛR : " + safe + " (TRX Console, menu 1.5)", "bad");
   }
   const age = status ? nowS - Number(status.written_at) : Infinity;
   if (!status) {
     if (!safe) { level = "off"; label = "TRX arrêtée"; }
-    add("Station", "arrêtée (TRX Console, menu 5 pour la démarrer)", safe ? "bad" : "info");
+    add("Station", "arrêtée (TRX Console, menu 1.1 pour la démarrer)", safe ? "bad" : "info");
   } else if (!(age < STALE_S)) {
     if (!safe) { level = age > 120 ? "off" : "stale"; label = age > 120 ? "TRX arrêtée" : "TRX ?"; }
     add("Station", age > 120 ? "arrêtée" : "ne répond plus depuis " + Math.round(age) + " s", age > 120 ? "info" : "warn");
@@ -110,7 +110,7 @@ export function summarize(input) {
     add("Cluster DX", CLUSTER[cluster.health], cluster.health === "green" ? "ok" : cluster.health === "orange" ? "warn" : "bad");
   }
   const release = input && input.update && input.update.release;
-  if (release && release.version) add("Mise à jour", "version " + text(release.version, 20) + " disponible (TRX Console, menu 10)", "warn");
+  if (release && release.version) add("Mise à jour", "version " + text(release.version, 20) + " disponible (TRX Console, menu 6.1)", "warn");
   if (input && input.version) add("Version", text(input.version, 20), "info");
   if (input && input.stationId) add("Identifiant", text(input.stationId, 40), "info");
 

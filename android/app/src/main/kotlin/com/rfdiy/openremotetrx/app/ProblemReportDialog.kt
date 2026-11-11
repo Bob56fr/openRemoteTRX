@@ -32,7 +32,7 @@ import com.rfdiy.openremotetrx.logic.ProblemReport
 
 /**
  * « Signaler un problème » (lot A3, comme la page) : description, puis le texte COMPLET montré avant l'envoi ; rien ne
- * part sans « Envoyer ». La station range le rapport et le joint au rapport de dépannage (TRX Console, menu 8).
+ * part sans « Envoyer ». La station range le rapport et le joint au rapport de dépannage (TRX Console, menu 2.3).
  */
 @Composable
 fun ProblemReportDialog(onClose: () -> Unit) {

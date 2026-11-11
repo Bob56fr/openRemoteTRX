@@ -64,14 +64,14 @@ object ClusterStatus {
             if (verdict == "ok" || verdict == "calme") parts += listOf(rate, age?.let { "dernier il y a $it" } ?: "aucun spot reçu")
             val retry = s.number("retry_in_s")
             if (verdict == "attente" && retry != null && retry > 0) parts += "nouvel essai dans ${shortAge(retry)}"
-            if (verdict == "echec") s.text("code")?.takeIf { it.isNotEmpty() }?.let { parts += it.take(40) + " : voir TRX Console, menu 12" }
+            if (verdict == "echec") s.text("code")?.takeIf { it.isNotEmpty() }?.let { parts += it.take(40) + " : voir TRX Console, menu 5.1" }
             val type = TYPES[s.text("type")] ?: "flux"
             ClusterLine(dot, (s.text("name") ?: "?").take(40) + " ($type) : " + parts.joinToString(" · "))
         }
         val stale = elapsed > STALE_S
         return ClusterView(
             health, TITLES.getValue(health), lines, stale,
-            if (stale) "Plus de nouvelles du module Cluster DX depuis ${shortAge(elapsed)} : arrêté ? (TRX Console, menu 1)" else "",
+            if (stale) "Plus de nouvelles du module Cluster DX depuis ${shortAge(elapsed)} : arrêté ? (TRX Console, menu 2.1)" else "",
         )
     }
 

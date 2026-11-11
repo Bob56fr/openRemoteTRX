@@ -1,7 +1,9 @@
-# Contenu du mode d'emploi de TRX Console (page publiée sur GitHub Pages, affichée dans le site rf-diy.com).
+# Contenu du mode d'emploi de TRX Console (page publiée sur GitHub Pages, affichée dans le site rf-diy.com), en
+# FRANÇAIS : la référence. Mêmes sections, dans le même ordre, dans contenu.en.toml, contenu.de.toml, contenu.es.toml.
 # Fabriqué par : python scripts/build_console_doc.py  (résultat dans docs/site/console/).
-# La LISTE des menus vient du code (trxstation/console.py) ; ici, seulement les explications. Chaque menu de la console
-# doit avoir sa section [menus.<nom de la méthode>] : sinon la fabrication et les tests échouent.
+# La LISTE des menus (thèmes, numéros, libellés) vient du code (trxstation/console.py, catalogues trxstation/i18n/) ;
+# ici, seulement les explications. Chaque menu de la console doit avoir sa section [menus.<nom de la méthode>] dans
+# CHAQUE langue : sinon la fabrication et les tests échouent.
 # Ces textes servent AUSSI à l'aide de la touche « h » de la console (trxstation/console_help.json, fabriqué par le même script).
 # Texte en HTML simple (p, ul, li, code, strong, em, a). Aucun script, aucune image ni ressource externe.
 # Exemples génériques uniquement : jamais d'adresse IP, de nom de machine, de port réel ni de clé.
@@ -13,16 +15,47 @@ intro = """
 relié au poste. Elle sert à installer et configurer la station, la démarrer, l'essayer, la mettre à jour et la
 dépanner. Elle s'ouvre depuis le menu des applications (« TRX Console ») ou en tapant <code>trx-console</code>
 dans un terminal.</p>
-<p><strong>Un doute sur un menu ?</strong> Tape <code>h</code> puis son numéro (ou directement <code>h 19</code>) :
+<p>Les menus sont rangés par thème (Station, Dépannage et essais, Configuration, Accès, Fonctions, Mises à jour) :
+tape le numéro du thème puis celui du menu, ou directement les deux, par exemple <code>4.1</code> pour appairer un
+téléphone. <code>0</code> change la langue de la console (français, English, Deutsch, Español).</p>
+<p><strong>Un doute sur un menu ?</strong> Tape <code>h</code> puis son numéro (par exemple <code>h 4.1</code>) :
 la console affiche, sans rien lancer, à quoi sert ce menu, quand s'en servir et ce qu'il modifie (les textes de cette page).</p>
 <p>Elle n'émet jamais d'elle-même : les seuls menus qui peuvent faire passer le poste en émission sont l'essai
-complet (menu 4, avec confirmation à chaque étape) et, bien sûr, la station une fois démarrée, pilotée depuis la page web.</p>
+complet (menu 2.2, avec confirmation à chaque étape) et, bien sûr, la station une fois démarrée, pilotée depuis la page web.</p>
 """
 lecture = """
 <p><strong>Premier déploiement ?</strong> Suis le parcours ci-dessous dans l'ordre. <strong>Station déjà en
 service ?</strong> Va directement à la référence des menus. <strong>Tu aides à déboguer ?</strong> Voir la partie
 « Dépannage avancé ».</p>
 """
+
+[ui]   # textes de la page elle-même
+lang_name = "Français"
+langs = "Langue :"
+version = "TRX distant version {version}"
+nav_first = "Premier déploiement"
+nav_menus = "Les menus"
+nav_expert = "Dépannage avancé"
+h_first = "Premier déploiement, pas à pas"
+h_menus = "Les menus de la console"
+menus_intro = """
+<p>Le menu principal montre les thèmes : tape le numéro d'un thème puis celui d'un de ses menus, ou directement les
+deux (<code>6.3</code>) ; <code>r</code> revient au menu principal, <code>0</code> change la langue, <code>q</code>
+quitte. Les anciens numéros 10 à 24 (un seul niveau, jusqu'à la version 0.125.0) restent acceptés quelque temps : la
+console donne le nouveau. Les réponses aux questions (oui, non, OUI, EMETTRE...) ne tiennent compte ni des majuscules
+ni des accents. <span class="sudo">Mot de passe</span> : le menu demande ton mot de passe de session (sudo).</p>
+"""
+dt_role = "À quoi il sert"
+dt_when = "Quand"
+dt_changes = "Ce qu'il modifie"
+dt_rights = "Droits"
+rights_yes = "mot de passe de session demandé"
+rights_no = "non"
+more = "Pour aller plus loin"
+latest = "Dernière version"
+others = "Autres versions :"
+footer = "Projet libre (AGPL-3.0-or-later)"
+source = "code source"
 
 # ------------------------------------------------------------------ parcours du débutant
 
@@ -39,7 +72,7 @@ avant de lancer l'installation : comptes, bandes et alertes seront repris.</p>
 """
 
 [[parcours]]
-titre = "Configurer la station (menu 2)"
+titre = "Configurer la station (menu 3.1)"
 texte = """
 <p>Au premier lancement, TRX Console propose l'assistant. Il demande, dans l'ordre : le modèle du poste (liste
 Hamlib), le port série du CAT, la méthode de PTT, les cartes son (réception et émission), les bandes autorisées
@@ -49,15 +82,15 @@ enregistré si tu abandonnes en cours de route.</p>
 """
 
 [[parcours]]
-titre = "Vérifier (menu 1)"
+titre = "Vérifier (menu 2.1)"
 texte = """
 <p>Le diagnostic passe tout en revue sans rien modifier. Chaque ligne est <strong>OK</strong>, à
 <strong>surveiller</strong> ou en <strong>échec</strong>, avec la marche à suivre. Corrige les échecs avant
-d'aller plus loin (menu 14 pour retoucher la configuration, ou relance l'assistant).</p>
+d'aller plus loin (menu 3.2 pour retoucher la configuration, ou relance l'assistant).</p>
 """
 
 [[parcours]]
-titre = "Essayer le poste (menu 4)"
+titre = "Essayer le poste (menu 2.2)"
 texte = """
 <p>Avant tout, la carte son du poste ne doit <strong>pas</strong> être le son par défaut du PC : sous Debian,
 <em>Paramètres &gt; Son</em>, choisis en sortie les haut-parleurs du PC et en entrée son micro (sous Windows,
@@ -69,9 +102,9 @@ chaque étape. La station est arrêtée pendant l'essai.</p>
 """
 
 [[parcours]]
-titre = "Démarrer (menu 5) et se connecter"
+titre = "Démarrer (menu 1.1) et se connecter"
 texte = """
-<p>Le menu 5 démarre la station ; refais un diagnostic (menu 1) quelques secondes plus tard. Sur le téléphone
+<p>Le menu 1.1 démarre la station ; refais un diagnostic (menu 2.1) quelques secondes plus tard. Sur le téléphone
 ou un autre PC du même réseau, ouvre <code>https://&lt;adresse-de-la-station&gt;:8443</code> et connecte-toi avec
 le compte créé par l'assistant. Pour l'accès depuis l'extérieur, voir la documentation « Accès distant » du projet.</p>
 """
@@ -135,15 +168,15 @@ expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code
 
 [menus.clear_safe_mode]
 role = "Sort du <strong>mode sûr</strong>. Le superviseur y place la station après des pannes répétées : poste en réception, accès coupé."
-quand = "Seulement après avoir trouvé et corrigé la cause (menus 1 et 7)."
+quand = "Seulement après avoir trouvé et corrigé la cause (menus 2.1 et 1.4)."
 modifie = "Efface le mode sûr mémorisé et redémarre la station."
 admin = true
 expert = "<p>Le mode sûr survit aux redémarrages et aux corrections : il faut le lever explicitement ici.</p>"
 
 [menus.update]
 role = "Mise à jour par Internet : présente la nouvelle version, propose de voir la nature des changements (notes de CHAQUE version publiée depuis la tienne, la plus récente d'abord, par pages : Entrée = suite, q = arrêter là), puis l'installe après vérification de sa signature. À jour : propose une nouvelle recherche immédiate sur GitHub."
-quand = "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la console (jaune dans un terminal) et que le menu 10 est marqué « <== NOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la station puis toutes les 24 h."
-modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 11). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer."
+quand = "Quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en haut de la console (jaune dans un terminal) et que le menu 6.1 est marqué « <== NOUVELLE VERSION ». La recherche a lieu 2 minutes après le démarrage de la station puis toutes les 24 h."
+modifie = "Installe la nouvelle version à côté de l'ancienne (gardée pour le menu 6.2). <code>station.toml</code> et les certificats sont conservés. Refusé tant que le poste émet. Il faut taper le numéro de version pour confirmer."
 admin = true
 
 [menus.rollback]
@@ -161,7 +194,7 @@ admin = true
 [menus.install_zip]
 role = "Installe une version à partir d'un fichier <code>trx-remote-debian-X.Y.Z.zip</code> déposé sur le Bureau, dans Téléchargements ou dans le dossier personnel."
 quand = "Station sans Internet, version d'essai, ou retour à une version précise."
-modifie = "Comme le menu 10 : nouvelle version à côté de l'ancienne, configuration conservée. Un paquet non signé demande de taper <code>OUI</code> puis le numéro de version."
+modifie = "Comme le menu 6.1 : nouvelle version à côté de l'ancienne, configuration conservée. Un paquet non signé demande de taper <code>OUI</code> puis le numéro de version."
 admin = true
 expert = "<p>Déposer le zip ne suffit pas : il faut l'installer ici. Compte-rendu : <code>/var/log/trx-remote-install.log</code>.</p>"
 
@@ -182,7 +215,7 @@ expert = "<p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-
 [menus.temperature]
 role = "Seuils de température du poste : premier seuil (avertissement dans la page et notification), second seuil (émission à distance coupée et refusée jusqu'au retour sous le premier seuil). 40 et 50 °C par défaut."
 quand = "Si ton poste chauffe en usage normal (modes numériques en continu, par exemple) ou pour plus de prudence."
-modifie = "Les clés <code>rig_temp_warn_c</code> et <code>rig_temp_cut_c</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 14."
+modifie = "Les clés <code>rig_temp_warn_c</code> et <code>rig_temp_cut_c</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 3.2."
 admin = true
 expert = "<p>Sans effet si le poste ne donne pas sa température par Hamlib (cas de l'IC-7300MK2). L'opérateur au micro du poste n'est jamais coupé pour ce motif.</p>"
 
@@ -195,52 +228,52 @@ expert = "<p>Fichiers lus chaque seconde : <code>/run/trx-remote/gateway-status.
 
 [menus.profiles]
 role = "Profils de poste, pour qui pilote plusieurs TRX tour à tour : <strong>enregistrer</strong> la configuration du poste en service sous un nom (« IC-7300 maison »), la <strong>recharger</strong> plus tard, ou supprimer un profil. Le profil en service est signalé dans la liste."
-quand = "Après avoir configuré et essayé un poste (menus 2 et 4) : enregistre-le. Pour changer de poste : branche-le, charge son profil, la station redémarre avec lui."
-modifie = "Charger un profil ne change que les réglages du POSTE dans <code>station.toml</code> (modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le menu 14 (différences montrées, confirmation, ancienne version gardée). Comptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé pendant une émission."
+quand = "Après avoir configuré et essayé un poste (menus 3.1 et 2.2) : enregistre-le. Pour changer de poste : branche-le, charge son profil, la station redémarre avec lui."
+modifie = "Charger un profil ne change que les réglages du POSTE dans <code>station.toml</code> (modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le menu 3.2 (différences montrées, confirmation, ancienne version gardée). Comptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé pendant une émission."
 admin = true
-expert = "<p>Fichiers : <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Chaque profil porte un numéro de format. Un profil d'une ancienne version est converti au chargement quand c'est possible (une clé manquante prend sa valeur par défaut) ; sinon, ou s'il vient d'une version plus récente, il est refusé avec la marche à suivre : refaire la configuration de ce poste (menu 2) puis l'enregistrer de nouveau. Le fichier d'origine n'est jamais modifié au chargement.</p>"
+expert = "<p>Fichiers : <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Chaque profil porte un numéro de format. Un profil d'une ancienne version est converti au chargement quand c'est possible (une clé manquante prend sa valeur par défaut) ; sinon, ou s'il vient d'une version plus récente, il est refusé avec la marche à suivre : refaire la configuration de ce poste (menu 3.1) puis l'enregistrer de nouveau. Le fichier d'origine n'est jamais modifié au chargement.</p>"
 
 [menus.pairing]
 role = "Affiche ce qu'il faut pour <strong>appairer l'application Android</strong> avec cette station : l'adresse à saisir, les comptes autorisés, l'<strong>empreinte du certificat</strong> (SHA-256, sur deux lignes), puis un <strong>QR code</strong> à scanner avec l'application (« Scanner le QR code de la station ») : il remplit l'adresse, l'identifiant et l'empreinte. S'il y a plusieurs adresses ou plusieurs comptes, la console demande lesquels mettre dans le QR code (Entrée = choix proposé). Ni le QR code ni l'écran ne contiennent de mot de passe : la station ne les connaît pas en clair, il se saisit dans l'application."
-quand = "Au moment d'ajouter la station dans l'application Android, et après avoir refait le certificat (menu 2)."
+quand = "Au moment d'ajouter la station dans l'application Android, et après avoir refait le certificat (menu 3.1)."
 modifie = "Rien : lecture seule."
 admin = false
-expert = "<p>Même affichage en ligne de commande : <code>trx-setup --output /etc/trx-remote/station.toml --empreinte</code>. Si le certificat n'est lisible que par la station, la console le relit avec les droits d'administration. Station limitée à cette machine (boucle locale) : aucun téléphone ne peut s'y connecter, la console le dit. Derrière un proxy HTTPS, l'empreinte à épingler est celle du certificat du proxy (pas de QR code). Le QR code est dessiné pour un terminal à fond sombre ; l'application lit aussi un terminal clair. S'il n'apparaît pas (paquet « segno » absent), réinstaller la station (menu 13) ou saisir l'empreinte à la main.</p>"
+expert = "<p>Même affichage en ligne de commande : <code>trx-setup --output /etc/trx-remote/station.toml --empreinte</code>. Si le certificat n'est lisible que par la station, la console le relit avec les droits d'administration. Station limitée à cette machine (boucle locale) : aucun téléphone ne peut s'y connecter, la console le dit. Derrière un proxy HTTPS, l'empreinte à épingler est celle du certificat du proxy (pas de QR code). Le QR code est dessiné pour un terminal à fond sombre ; l'application lit aussi un terminal clair. S'il n'apparaît pas (paquet « segno » absent), réinstaller la station (menu 6.3) ou saisir l'empreinte à la main.</p>"
 
 [menus.swr_report]
 role = "Affiche la <strong>dernière mesure de TOS</strong> de l'antenne rangée sur la station : date, puissance, mode, plage, et le TOS de chaque point avec une petite barre (« ÉLEVÉ » au-dessus de 2), le meilleur point et les réglages du poste qui n'auraient pas été remis. <strong>Lecture seule</strong> : la console ne lance jamais de mesure (un outil ne peut que couper une émission) ; la mesure se lance depuis la page ou l'application."
 quand = "Pour retrouver une mesure faite à distance, la comparer avec une nouvelle, ou vérifier qu'un réglage du poste a bien été remis après une mesure interrompue."
 modifie = "Rien."
 admin = false
-expert = "<p>Fichier lu : <code>swr.json</code> dans le dossier d'état de la station (derniers choix de chaque compte, temps de lecture du TOS étalonné par modèle de poste, dernière mesure). Réglages de la station : section <code>[swr]</code> de <code>station.toml</code> (menu 14 : <code>enabled</code>, plafond de puissance <code>max_power_pct</code>, <code>max_points</code>, <code>point_tx_max_s</code>). Détail : <code>docs/tos-cahier-des-charges.md</code>.</p>"
+expert = "<p>Fichier lu : <code>swr.json</code> dans le dossier d'état de la station (derniers choix de chaque compte, temps de lecture du TOS étalonné par modèle de poste, dernière mesure). Réglages de la station : section <code>[swr]</code> de <code>station.toml</code> (menu 3.2 : <code>enabled</code>, plafond de puissance <code>max_power_pct</code>, <code>max_points</code>, <code>point_tx_max_s</code>). Détail : <code>docs/tos-cahier-des-charges.md</code>.</p>"
 
 [menus.visitors]
 role = "Gère les <strong>visiteurs en réception seule</strong> : des comptes qui écoutent la station et voient l'écran de l'opérateur, sans <strong>aucune</strong> commande vers le poste (ni fréquence, ni mode, ni émission, ni STOP). On y règle le <strong>nombre maximal</strong> de visiteurs (0 = écoute fermée sur la station ; sinon, c'est l'opérateur qui ouvre ou ferme l'écoute depuis sa page ou l'application, commutateur « Écoute des visiteurs », fermé par défaut), le commutateur <strong>« opérateur requis »</strong> (visiteurs admis seulement si un opérateur est connecté, et déconnectés après une attente réglable, 60 s par défaut, s'il perd la liaison), l'écoute <strong>hors des bandes</strong> de la station (coupée par défaut : silence) et la cadence du spectre HF des visiteurs (5 images par seconde par défaut). On y crée, modifie (pseudo, mot de passe, activé, date de fin) et supprime les comptes visiteurs, on choisit le <strong>pseudo</strong> des comptes opérateurs, on <strong>déconnecte</strong> un visiteur connecté, et on <strong>rouvre l'écoute</strong> suspendue par une surcharge."
 quand = "Avant une démonstration en radio-club, une formation ou l'écoute partagée d'un QSO ; pour retirer l'accès à un visiteur (désactiver ou supprimer son compte)."
-modifie = "Les comptes et la section <code>[access]</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 14 (différences montrées, confirmation, ancienne version gardée ; le fichier est réécrit dans sa forme standard). La station les relit d'elle-même en quelques secondes, <strong>sans redémarrer</strong> : un compte désactivé, expiré ou supprimé est déconnecté aussitôt. « Déconnecter » ne touche pas à <code>station.toml</code>."
+modifie = "Les comptes et la section <code>[access]</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 3.2 (différences montrées, confirmation, ancienne version gardée ; le fichier est réécrit dans sa forme standard). La station les relit d'elle-même en quelques secondes, <strong>sans redémarrer</strong> : un compte désactivé, expiré ou supprimé est déconnecté aussitôt. « Déconnecter » ne touche pas à <code>station.toml</code>."
 admin = true
-expert = "<p>Les autres connectés ne voient jamais l'identifiant d'un compte, seulement son <strong>pseudo</strong> (plusieurs comptes peuvent porter le même) ; seul un opérateur voit identifiants et adresses. Pendant une émission, les visiteurs entendent la voix de l'opérateur (ce qui part vers le poste) ; le code SELCALL ne leur est jamais montré. Un visiteur ne peut envoyer que deux commandes (relire l'état, afficher ou non le spectre HF) : tout le reste est refusé par la station, et au-delà de 20 refus en une minute sa connexion est fermée avec une alerte. Les visiteurs ont leur propre quota : ils ne prennent jamais la place d'un opérateur. Si la station souffre (processeur à 85 °C, chargé à 90 %, passerelle en retard de plus de 100 ms ou mémoire presque pleine, pendant 10 s), les visiteurs sont déconnectés avec la cause précise ; l'écoute se rouvre d'elle-même après 5 minutes nettement en dessous, ou à la main (choix 7) après 3 coupures en une heure. Seuils : <code>[access] overload_*</code> (menu 14). Retransmettre ce que l'on reçoit à des tiers engage la responsabilité de l'opérateur : voir le guide d'accès distant. Détail : <code>docs/visiteurs-cahier-des-charges.md</code>.</p>"
+expert = "<p>Les autres connectés ne voient jamais l'identifiant d'un compte, seulement son <strong>pseudo</strong> (plusieurs comptes peuvent porter le même) ; seul un opérateur voit identifiants et adresses. Pendant une émission, les visiteurs entendent la voix de l'opérateur (ce qui part vers le poste) ; le code SELCALL ne leur est jamais montré. Un visiteur ne peut envoyer que deux commandes (relire l'état, afficher ou non le spectre HF) : tout le reste est refusé par la station, et au-delà de 20 refus en une minute sa connexion est fermée avec une alerte. Les visiteurs ont leur propre quota : ils ne prennent jamais la place d'un opérateur. Si la station souffre (processeur à 85 °C, chargé à 90 %, passerelle en retard de plus de 100 ms ou mémoire presque pleine, pendant 10 s), les visiteurs sont déconnectés avec la cause précise ; l'écoute se rouvre d'elle-même après 5 minutes nettement en dessous, ou à la main (choix 7) après 3 coupures en une heure. Seuils : <code>[access] overload_*</code> (menu 3.2). Retransmettre ce que l'on reçoit à des tiers engage la responsabilité de l'opérateur : voir le guide d'accès distant. Détail : <code>docs/visiteurs-cahier-des-charges.md</code>.</p>"
 
 [menus.breizh]
 role = "Relie la station à <strong>Breizh Audio Box</strong>, le traitement de la voix qui tourne sur un PC du même réseau local : la voix de l'opérateur passe par Breizh avant d'aller au poste. On y <strong>crée la clé d'appairage</strong> (montrée <strong>une seule fois</strong>, à recopier dans l'onglet « OpenRemoteTRX » des réglages de Breizh avec l'adresse de la station et le port), on règle l'<strong>adresse IP</strong> et le <strong>port UDP</strong> du PC de Breizh, on <strong>active ou désactive</strong> le passage par Breizh, on fait un <strong>essai de la liaison sans son</strong> et on lit le <strong>journal</strong> (connexions, replis, refus). L'état de la liaison en ce moment (prêt, émission par Breizh, repli, refus, aller-retour) s'affiche en tête."
 quand = "À la mise en place de Breizh, après une réinstallation de Breizh (nouvelle clé), quand la page ou l'application signalent un repli, ou pour vérifier la liaison avant une émission."
-modifie = "La clé : fichier <code>breizh.key</code> à côté de <code>station.toml</code> (jamais dedans), avec les droits de la configuration. L'adresse, le port et l'activation : section <code>[breizh]</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 14 (différences montrées, confirmation, ancienne version gardée) ; la station les prend au <strong>redémarrage</strong> (proposé). L'essai et le journal ne modifient rien."
+modifie = "La clé : fichier <code>breizh.key</code> à côté de <code>station.toml</code> (jamais dedans), avec les droits de la configuration. L'adresse, le port et l'activation : section <code>[breizh]</code> de <code>station.toml</code>, par le même chemin vérifié que le menu 3.2 (différences montrées, confirmation, ancienne version gardée) ; la station les prend au <strong>redémarrage</strong> (proposé). L'essai et le journal ne modifient rien."
 admin = true
-expert = "<p><strong>Sécurité</strong> : Breizh ne peut jamais faire émettre la station ; elle garde le PTT, le TOT, la porte audio et son limiteur, et passe en direct à gain réduit (−6 dB par défaut) si Breizh ne répond plus pendant 100 ms, sans couper l'émission. Le mode OpenRemoteTRX de Breizh coupe son CAT. Le son du micro circule <strong>en clair</strong> sur le réseau local : seule une adresse IP <strong>privée</strong> est acceptée. Sur le PC de Breizh, le pare-feu doit laisser entrer l'UDP du port choisi (47100 par défaut). L'essai envoie un appel et cinq PING, jamais de son ; si la station est en marche avec Breizh activé, Breizh répond « occupé » (il sert déjà la passerelle) : c'est normal, l'état est en tête du menu. Réglages fins (délais, gain de repli, retour automatique) : <code>[breizh]</code>, menu 14 et la notice de <code>station.toml</code>. Détail : <code>docs/breizh-cahier-des-charges.md</code>.</p>"
+expert = "<p><strong>Sécurité</strong> : Breizh ne peut jamais faire émettre la station ; elle garde le PTT, le TOT, la porte audio et son limiteur, et passe en direct à gain réduit (−6 dB par défaut) si Breizh ne répond plus pendant 100 ms, sans couper l'émission. Le mode OpenRemoteTRX de Breizh coupe son CAT. Le son du micro circule <strong>en clair</strong> sur le réseau local : seule une adresse IP <strong>privée</strong> est acceptée. Sur le PC de Breizh, le pare-feu doit laisser entrer l'UDP du port choisi (47100 par défaut). L'essai envoie un appel et cinq PING, jamais de son ; si la station est en marche avec Breizh activé, Breizh répond « occupé » (il sert déjà la passerelle) : c'est normal, l'état est en tête du menu. Réglages fins (délais, gain de repli, retour automatique) : <code>[breizh]</code>, menu 3.2 et la notice de <code>station.toml</code>. Détail : <code>docs/breizh-cahier-des-charges.md</code>.</p>"
 
 [menus.network]
 role = "Montre la <strong>qualité des liaisons</strong> entre la station et les téléphones ou navigateurs connectés : pour chacun, l'état (bonne, moyenne, faible, coupure), le type de réseau, la perte et le temps aller-retour ; l'état des <strong>sondes de la station</strong> vers la box et vers Internet ; la <strong>dernière coupure</strong> avec son tronçon probable ; et l'avertissement <strong>« profil VPN probablement partagé »</strong> quand deux appareils semblent utiliser le même profil VPN. On y lit la <strong>synthèse</strong> des 24 dernières heures ou des 30 derniers jours (coupures, durée, tronçons, heures les plus touchées, par réseau), on crée un <strong>export anonyme</strong> sur le Bureau pour l'équipe de développement, et on peut <strong>tout effacer</strong>."
 quand = "Quand la liaison coupe souvent (en voiture, en 4G, à travers un VPN), pour savoir si c'est le téléphone, le réseau mobile, le tunnel, la box ou la station ; avant de demander de l'aide (export)."
 modifie = "Rien, sauf « Tout effacer » (confirmation en tapant EFFACER) : l'historique réseau de la station (coupures, statistiques, appareils vus). Les seuils de l'indicateur choisis dans la page ou l'application sont gardés. L'export est un fichier zip sur le Bureau."
 admin = true
-expert = "<p>La station envoie un battement d'une seconde à chaque client connecté et en attend l'écho ; trois battements sans réponse font une coupure. Après chaque coupure, elle croise ses propres sondes (box, Internet, ping sinon TCP), les mesures remises par le client (dont l'accès à la station en HTTPS pendant la coupure) et la régularité des coupures pour dire quel tronçon a probablement lâché ; c'est une probabilité, jamais une certitude. Deux appareils sur le <strong>même profil VPN</strong> se volent la liaison toutes les 15 à 30 s : <strong>un profil par appareil</strong>. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission. Fichiers : dossier <code>netprobe</code> du dossier d'état (journal de 7 jours, coupures et statistiques de 30 jours). Même synthèse en ligne de commande : <code>trx-netreport</code> (<code>--jours 30</code>, <code>--export FICHIER</code>). Réglages : section <code>[netprobe]</code> de <code>station.toml</code> (menu 14). « Tout effacer » demande <code>sudo</code> : les fichiers appartiennent au compte de la station. Détail : <code>docs/netprobe-cahier-des-charges.md</code>.</p>"
+expert = "<p>La station envoie un battement d'une seconde à chaque client connecté et en attend l'écho ; trois battements sans réponse font une coupure. Après chaque coupure, elle croise ses propres sondes (box, Internet, ping sinon TCP), les mesures remises par le client (dont l'accès à la station en HTTPS pendant la coupure) et la régularité des coupures pour dire quel tronçon a probablement lâché ; c'est une probabilité, jamais une certitude. Deux appareils sur le <strong>même profil VPN</strong> se volent la liaison toutes les 15 à 30 s : <strong>un profil par appareil</strong>. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission. Fichiers : dossier <code>netprobe</code> du dossier d'état (journal de 7 jours, coupures et statistiques de 30 jours). Même synthèse en ligne de commande : <code>trx-netreport</code> (<code>--jours 30</code>, <code>--export FICHIER</code>). Réglages : section <code>[netprobe]</code> de <code>station.toml</code> (menu 3.2). « Tout effacer » demande <code>sudo</code> : les fichiers appartiennent au compte de la station. Détail : <code>docs/netprobe-cahier-des-charges.md</code>.</p>"
 
 [menus.friends]
 role = "Gère la <strong>présence de groupe</strong> : le <strong>pseudo</strong> de la station, les <strong>groupes d'amis</strong> (créer, inviter par un lien et un <strong>QR code</strong>, rejoindre avec une invitation reçue, quitter, supprimer), et ce que la station <strong>partage</strong> dans chaque groupe (fréquence et mode, « On Air » seulement, ou un court texte ; invisible). On y voit aussi qui, dans chaque groupe, est en QSO, en réception, au shack, absent ou hors ligne."
 quand = "Pour mettre en place la présence avec des amis équipés d'openRemoteTRX, ou quand la page et l'application ne sont pas à portée de main."
 modifie = "Les réglages de présence de la station, rangés à part dans le dossier d'état (pas dans station.toml) ; la création, l'invitation, l'adhésion et le départ passent par le relais de présence. Rien ne touche au poste : un QSY vers un ami se fait depuis la page ou l'application."
 admin = true
-expert = "<p>La console dépose sa demande pour le module « presence » (fichier <code>presence-request.json</code> du dossier d'état, par <code>sudo</code> s'il le faut) et lit sa réponse (<code>presence/console-reply.json</code>, effacée après une minute : elle peut contenir une invitation). La fonction s'active dans <code>station.toml</code> (menu 14) : <code>[presence] enabled = true</code> et « presence » dans <code>[modules] run</code>, puis redémarrer la station. Le relais ne voit que des états chiffrés : ni fréquence, ni mode, ni statut. Une invitation contient la clé du groupe : la transmettre seulement à la personne invitée ; elle ne sert qu'une fois et expire après 7 jours. Détail : <code>docs/presence-cahier-des-charges.md</code>.</p>"
+expert = "<p>La console dépose sa demande pour le module « presence » (fichier <code>presence-request.json</code> du dossier d'état, par <code>sudo</code> s'il le faut) et lit sa réponse (<code>presence/console-reply.json</code>, effacée après une minute : elle peut contenir une invitation). La fonction s'active dans <code>station.toml</code> (menu 3.2) : <code>[presence] enabled = true</code> et « presence » dans <code>[modules] run</code>, puis redémarrer la station. Le relais ne voit que des états chiffrés : ni fréquence, ni mode, ni statut. Une invitation contient la clé du groupe : la transmettre seulement à la personne invitée ; elle ne sert qu'une fois et expire après 7 jours. Détail : <code>docs/presence-cahier-des-charges.md</code>.</p>"
 
 # ------------------------------------------------------------------ dépannage avancé
 
@@ -261,7 +294,7 @@ envoyé nulle part automatiquement.</p>
 titre = "Fichiers utiles (Debian)"
 texte = """
 <ul>
-<li><code>/etc/trx-remote/station.toml</code> : configuration (modifier par le menu 14).</li>
+<li><code>/etc/trx-remote/station.toml</code> : configuration (modifier par le menu 3.2).</li>
 <li><code>/var/lib/trx-remote/</code> : état de la station (mode sûr, mémoires, rapports de la page, identifiant <code>station-id</code>, Cluster DX).</li>
 <li><code>/run/trx-remote/gateway-status.json</code> : état en direct publié par la passerelle (lu par le tableau de bord).</li>
 <li><code>/opt/trx-remote/releases/</code> : versions installées côte à côte ; <code>/opt/trx-remote/current</code> pointe sur la version active.</li>
@@ -273,7 +306,7 @@ texte = """
 titre = "Relevés sur le poste (lecture seule)"
 texte = """
 <p>Pour un poste Icom avec un second port CI-V (spectre), un relevé brut des réglages, sans aucune écriture,
-aide à établir le format réel des réponses. Station arrêtée (menu 6), puis :</p>
+aide à établir le format réel des réponses. Station arrêtée (menu 1.2), puis :</p>
 <pre>/opt/trx-remote/current/venv/bin/python -m trxstation.devtools.civ_scope --port /dev/serial/by-id/&lt;port-B&gt; --reglages</pre>
 <p>Le résultat est enregistré dans un dossier <code>spectre-reglages-…</code> : joins-le à ta demande.</p>
 """
@@ -283,7 +316,7 @@ titre = "Transmettre un problème"
 texte = """
 <ol>
 <li>Dans la page web : section « Signaler un problème » (texte relu avant l'envoi).</li>
-<li>Sur la station : menu 8 (rapport de dépannage), et si besoin le résultat du menu 15.</li>
+<li>Sur la station : menu 2.3 (rapport de dépannage), et si besoin le résultat du menu 2.6.</li>
 <li>Décris ce que tu faisais, ce que tu attendais et ce qui s'est passé, avec l'heure approximative.</li>
 </ol>
 """

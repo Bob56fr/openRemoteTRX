@@ -55,7 +55,7 @@ data class PresenceUi(
             val suspended = p.suspended?.let { it.message.ifBlank { "Écoute des visiteurs suspendue." }.take(300) } ?: ""
             val available = p.maxListeners > 0
             val note = when {
-                !available -> "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 20)."
+                !available -> "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 4.2)."
                 p.open == true -> "Ouverte : ${p.listeners} visiteur(s) sur ${p.maxListeners} au plus."
                 else -> "Fermée : aucun visiteur ne peut se connecter."
             }

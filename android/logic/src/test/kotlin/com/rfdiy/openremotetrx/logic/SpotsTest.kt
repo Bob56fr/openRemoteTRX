@@ -86,7 +86,7 @@ class ClusterStatusTest {
         assertEquals(listOf("green", "orange", "red"), v.lines.map { it.dot })
         assertEquals("F5LEN (cluster) : reçoit · 4 spots/min · dernier il y a 30 s", v.lines[0].text)
         assertEquals("RBN (RBN) : connexion en cours · nouvel essai dans 30 s", v.lines[1].text)
-        assertTrue(v.lines[2].text.endsWith("http_403 : voir TRX Console, menu 12"))
+        assertTrue(v.lines[2].text.endsWith("http_403 : voir TRX Console, menu 5.1"))
         assertEquals(false, v.stale)
         assertTrue(ClusterStatus.view(data, 60.0).stale)
     }

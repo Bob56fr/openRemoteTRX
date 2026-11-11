@@ -1470,7 +1470,7 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
          presence: Object.assign({}, presence, { open: false, max_listeners: 0, listeners: 0 }) });
   await wait(30);
-  assert.equal($("listeners-open").disabled, true); assert.match($("listeners-note").textContent, /menu 20/);
+  assert.equal($("listeners-open").disabled, true); assert.match($("listeners-note").textContent, /menu 4.2/);
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"],
          presence: Object.assign({}, presence, { suspended: { message: "Station surchargée (processeur à 87 °C)" } }) });
   await wait(30);

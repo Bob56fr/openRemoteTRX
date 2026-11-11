@@ -2,11 +2,11 @@
 # Copyright (C) 2026 RF-DIY.COM
 """TRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
 
-Un menu numéroté regroupe le diagnostic, l'assistant de configuration, le tableau de bord, l'essai du poste,
-le démarrage et l'arrêt des services, le journal, le rapport de dépannage, la sortie du mode sûr,
-la mise à jour (paquet signé, après confirmation), le retour à la version précédente, le Cluster DX,
-l'installation d'un paquet zip déposé sur la machine (Bureau, Téléchargements) et la modification de station.toml
-(copie éditée avec nano, VALIDÉE avant d'être enregistrée, ancienne version gardée).
+Menus sur deux niveaux, par thème (MENU_THEMES) : 1 Station, 2 Dépannage et essais, 3 Configuration, 4 Accès,
+5 Fonctions, 6 Mises à jour ; « 6.3 » tapé directement ouvre un sous-menu ; 0 = langue (fr, en, de, es : trxstation/
+i18n/, choix gardé par compte). Les anciens numéros 10 à 24 (un seul niveau, jusqu'à la station 0.125.0) restent
+acceptés quelque temps avec le nouveau numéro (OLD_NUMBERS). Les textes des menus et de l'aide « h » viennent des
+catalogues de langue ; les textes à l'intérieur des menus sont encore en français (lot L2).
 Les actions qui touchent au système passent par `sudo` : le mot de passe de session est demandé au besoin.
 
     trx-console               menu
@@ -33,6 +33,7 @@ from pathlib import Path
 from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
+from .i18n import LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
 from .paths import default_state_dir
 from . import profiles as prof
 from .station_id import read_station_id
@@ -50,7 +51,33 @@ GNOME_EXTENSION_UUID = "trx-distant@rf-diy.com"
 GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSION_UUID
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
 NOTES_PAGE_LINES = 20             # notes de version : affichées par pages de 20 lignes
-UPDATE_MENU = "10"
+UPDATE_MENU = "6.1"
+# Menus par thème : (numéro du thème, identifiant du titre, [méthodes de Console dans l'ordre des sous-menus]).
+# Libellés : « menu.<méthode> » et « theme.<id> » des catalogues trxstation/i18n/console.<langue>.json.
+MENU_THEMES = (
+    ("1", "station", ("start", "stop", "monitor", "journal", "clear_safe_mode")),
+    ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert")),
+    ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
+    ("4", "access", ("pairing", "visitors")),
+    ("5", "features", ("cluster", "breizh", "friends")),
+    ("6", "updates", ("update", "rollback", "install_zip")),
+)
+# Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
+# avec un message ; 1 à 9 ouvrent désormais un thème.
+OLD_NUMBERS = {"1": "diagnostic", "2": "assistant", "3": "monitor", "4": "hwtest", "5": "start", "6": "stop",
+               "7": "journal", "8": "report", "9": "clear_safe_mode", "10": "update", "11": "rollback",
+               "12": "cluster", "13": "install_zip", "14": "edit_config", "15": "expert", "16": "temperature",
+               "17": "indicator", "18": "profiles", "19": "pairing", "20": "visitors", "21": "swr_report",
+               "22": "breizh", "23": "network", "24": "friends"}
+OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
+
+
+def menu_number(method: str) -> str:
+    """Numéro « thème.sous-menu » d'une méthode de la console (ex. « install_zip » -> « 6.3 »)."""
+    for theme, _, methods in MENU_THEMES:
+        if method in methods:
+            return f"{theme}.{methods.index(method) + 1}"
+    raise KeyError(method)
 STATUS_FRESH_S = 10               # fichier d'état de la passerelle plus vieux : passerelle arrêtée
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
@@ -100,25 +127,27 @@ def set_safety_values(text: str, values: dict[str, int]) -> str:
     return "".join(lines)
 
 
-def address_line(bind: str, port: int, tls: bool, addresses: list[str]) -> str:
+def address_line(bind: str, port: int, tls: bool, addresses: list[str], t: Translator | None = None) -> str:
     """En-tête de la console : adresse(s) où joindre la station (page web, application)."""
+    t = t or Translator()
     scheme = "https" if tls else "http"
     if bind in ("", "127.0.0.1", "localhost", "::1"):
-        return f"  Adresse : {scheme}://127.0.0.1:{port} (cette machine seulement)"
+        return "  " + t("head.address_local", url=f"{scheme}://127.0.0.1:{port}")
     hosts = addresses if bind in ("0.0.0.0", "::") else [bind]
     if not hosts:
-        return f"  Adresse : port {port} (adresse IP de la machine introuvable)"
-    return "  Adresse : " + ", ".join(f"{scheme}://{host}:{port}" for host in hosts)
+        return "  " + t("head.address_unknown", port=port)
+    return "  " + t("head.address", urls=", ".join(f"{scheme}://{host}:{port}" for host in hosts))
 
 
-def rig_vitals_line(rig: dict | None) -> str:
+def rig_vitals_line(rig: dict | None, t: Translator | None = None) -> str:
     """En-tête de la console : tension d'alimentation et température du poste, telles que la passerelle les publie
     (aucune connexion de plus à rigctld). `rig` None = passerelle arrêtée. « — » = valeur non fournie par le poste
     (l'IC-7300MK2 ne donne pas sa température à Hamlib)."""
+    t = t or Translator()
     if rig is None:
-        return "  Poste : mesures indisponibles (station arrêtée)"
+        return "  " + t("head.rig_unavailable")
     if not rig.get("connected"):
-        return "  Poste : pas de liaison CAT (poste éteint ou débranché ?)"
+        return "  " + t("head.rig_no_cat")
     levels = rig.get("levels") if isinstance(rig.get("levels"), dict) else {}
 
     def number(key: str) -> float | None:
@@ -126,9 +155,9 @@ def rig_vitals_line(rig: dict | None) -> str:
         return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
     vd, temp = number("VD_METER"), number("TEMP_METER")
-    volts = f"{vd:.1f} V".replace(".", ",") if vd is not None else "—"
+    volts = f"{vd:.1f} V".replace(".", t("num.decimal")) if vd is not None else "—"
     degrees = f"{round(temp)} °C" if temp is not None else "—"
-    return f"  Poste : alimentation {volts}, température {degrees}"
+    return "  " + t("head.rig", volts=volts, degrees=degrees)
 
 
 def config_state_dir(config: Path) -> Path:
@@ -218,7 +247,8 @@ class Console:
                  previous: Callable[[], str | None] = previous_version, installed: str = __version__,
                  home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
                  desktop: Callable[[], Path] | None = None, color: bool | None = None,
-                 addresses: Callable[[], list[str]] | None = None) -> None:
+                 addresses: Callable[[], list[str]] | None = None, lang: str | None = None,
+                 lang_file: Path | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
         self.color = color if color is not None else (say is print and sys.stdout.isatty())
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
@@ -228,32 +258,22 @@ class Console:
         self.app_dir = app_dir
         self.desktop = desktop
         self.addresses = addresses
-        self.items: list[tuple[str, str, Callable[[], None]]] = [
-            ("1", "Diagnostic complet", self.diagnostic),
-            ("2", "Assistant de configuration", self.assistant),
-            ("3", "Tableau de bord (fréquence, émission, services)", self.monitor),
-            ("4", "Essai du poste (CAT, audio, PTT)", self.hwtest),
-            ("5", "Démarrer ou redémarrer la station", self.start),
-            ("6", "Arrêter la station", self.stop),
-            ("7", "Journal de la station", self.journal),
-            ("8", "Rapport de dépannage (zip sur le Bureau)", self.report),
-            ("9", "Sortir du mode sûr", self.clear_safe_mode),
-            ("10", "Mise à jour de TRX distant", self.update),
-            ("11", "Revenir à la version précédente", self.rollback),
-            ("12", "Cluster DX (spots suivis, sources, test)", self.cluster),
-            ("13", "Installer une version depuis un fichier zip (Bureau, Téléchargements)", self.install_zip),
-            ("14", "Modifier la configuration (station.toml)", self.edit_config),
-            ("15", "Menu expert (tests automatiques du logiciel)", self.expert),
-            ("16", "Seuils de température du poste (avertissement, coupure)", self.temperature),
-            ("17", "Indicateur dans la barre du haut (GNOME : état de la station en permanence)", self.indicator),
-            ("18", "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)", self.profiles),
-            ("19", "Appairer un téléphone (application Android : adresse, empreinte, QR code)", self.pairing),
-            ("20", "Visiteurs en réception seule (comptes, nombre maximal, connectés)", self.visitors),
-            ("21", "Dernière mesure de TOS de l'antenne (lecture seule)", self.swr_report),
-            ("22", "Breizh Audio Box (clé d'appairage, adresse, essai de la liaison, journal)", self.breizh),
-            ("23", "Qualité du réseau (liaisons, coupures, statistiques, export, effacement)", self.network),
-            ("24", "Présence de groupe (pseudo, groupes d'amis, invitations, partage)", self.friends),
-        ]
+        # Langue : choisie par le menu 0 (fichier par compte), sinon celle du système, sinon le français. Les tests
+        # passent `lang` (défaut "fr" quand `ask` n'est pas la saisie du terminal : sorties stables).
+        self.lang_file = lang_file or prefs_path(home)
+        if lang is None:
+            lang = load_lang(self.lang_file) if ask is input else "fr"
+        self.t = Translator(lang)
+
+    @property
+    def items(self) -> list[tuple[str, str, Callable[[], None]]]:
+        """[(numéro « thème.n », libellé dans la langue choisie, méthode)] dans l'ordre des thèmes."""
+        return [(f"{theme}.{n}", self.t(f"menu.{name}"), getattr(self, name))
+                for theme, _, methods in MENU_THEMES for n, name in enumerate(methods, 1)]
+
+    def themes(self) -> list[tuple[str, str, str]]:
+        """[(numéro, titre, contenu en quelques mots)] du menu principal."""
+        return [(theme, self.t(f"theme.{tid}"), self.t(f"theme.{tid}.desc")) for theme, tid, _ in MENU_THEMES]
 
     # ------------------------------------------------------------------ outils
 
@@ -262,12 +282,12 @@ class Console:
 
     def pause(self) -> None:
         try:
-            self.ask("\nEntrée pour revenir au menu... ")
+            self.ask("\n" + self.t("loop.pause"))
         except EOFError:
             pass
 
     def yes(self, question: str, default: bool = True) -> bool:
-        answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip()
+        answer = self.ask(f"{question} ({self.t('yes.default_yes') if default else self.t('yes.default_no')}) : ").strip()
         return default if not answer else yes_no(answer) is True
 
     def station_running(self) -> bool:
@@ -344,7 +364,7 @@ class Console:
             self.say("Bureau sans GNOME (ou outil gnome-extensions absent) : l'indicateur n'existe que pour GNOME pour l'instant.")
             return
         if not GNOME_EXTENSION_DIR.is_dir():
-            self.say(f"Indicateur absent ({GNOME_EXTENSION_DIR}) : installe la version 0.49.0 ou plus récente (menu 13).")
+            self.say(f"Indicateur absent ({GNOME_EXTENSION_DIR}) : installe la version 0.49.0 ou plus récente (menu 6.3).")
             return
         known = GNOME_EXTENSION_UUID in self.runner.output([tool, "list"]).split()
         if not known:
@@ -368,7 +388,7 @@ class Console:
 
     def cluster(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         code = self.runner.run(self.module("trxstation.cluster.setup", "--config", str(self.config)), admin=True)
         if code == 0 and self.station_running() and self.yes("Redémarrer la station pour appliquer"):
@@ -379,7 +399,7 @@ class Console:
 
     def hwtest(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         from .audio_devices import desktop_audio_advice
         self.say("Avant l'essai, vérifie le son de l'ordinateur :\n" + desktop_audio_advice() + "\n")
@@ -398,15 +418,15 @@ class Console:
 
     def start(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         code = self.runner.run(["systemctl", "restart", TARGET], admin=True)
-        self.say("Station démarrée. Diagnostic conseillé dans quelques secondes (menu 1)." if code == 0
-                 else "Le démarrage a échoué : voir le journal (menu 7).")
+        self.say("Station démarrée. Diagnostic conseillé dans quelques secondes (menu 2.1)." if code == 0
+                 else "Le démarrage a échoué : voir le journal (menu 1.4).")
 
     def stop(self) -> None:
         code = self.runner.run(["systemctl", "stop", TARGET], admin=True)
-        self.say("Station arrêtée (le poste reste en réception)." if code == 0 else "Arrêt impossible : voir le journal (menu 7).")
+        self.say("Station arrêtée (le poste reste en réception)." if code == 0 else "Arrêt impossible : voir le journal (menu 1.4).")
 
     def journal(self) -> None:
         self.runner.run(["journalctl", "--no-pager", "-n", "80", "-o", "short", *[f"--unit={u}" for u in UNITS]], admin=True)
@@ -422,7 +442,7 @@ class Console:
 
     def clear_safe_mode(self) -> None:
         self.say("Le mode sûr a été déclenché par le superviseur après des pannes répétées.\n"
-                 "Vérifie d'abord la cause (menu 1 et menu 7).")
+                 "Vérifie d'abord la cause (menu 2.1 et menu 1.4).")
         if not self.yes("La cause est réglée, sortir du mode sûr", False):
             return
         code = self.runner.run(self.module("trxstation.supervisor.main", "--config", str(self.config),
@@ -465,7 +485,7 @@ class Console:
             self.say(f"\nNotes complètes sur GitHub : {clean_text(release.page_url, 200, single_line=True)}")
         self.say("\nPendant l'installation (quelques minutes, Internet nécessaire), la station est arrêtée.\n"
                  "Elle est refusée tant que le poste émet. Le paquet est vérifié (signature) avant toute installation ;\n"
-                 f"la version {self.installed}, station.toml et les certificats sont conservés (retour possible : menu 11).")
+                 f"la version {self.installed}, station.toml et les certificats sont conservés (retour possible : menu 6.2).")
         entered = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
         if entered != release.version:
             self.say(f"Mise à jour annulée : rien n'a été modifié. Elle reste proposée par le menu {UPDATE_MENU}.")
@@ -523,7 +543,7 @@ class Console:
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "rollback"),
                                admin=True)
         self.say(self._apply_result(code, f"Retour à la version {previous} fait. Quitte TRX Console (q) et "
-                                          "rouvre-la. La version plus récente restera proposée par le menu 10."))
+                                          "rouvre-la. La version plus récente restera proposée par le menu 6.1."))
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
@@ -545,7 +565,7 @@ class Console:
         newer, current = parse_version(version) or (), parse_version(self.installed) or ()
         if newer < current:
             self.say(f"ATTENTION : {version} est plus ANCIENNE que la version installée ({self.installed}).\n"
-                     "Pour revenir simplement à la version précédente, le menu 11 suffit.")
+                     "Pour revenir simplement à la version précédente, le menu 6.2 suffit.")
         elif newer == current:
             self.say(f"La version {version} est déjà installée : elle sera réinstallée.")
         self.say("\nPendant l'installation (quelques minutes, Internet nécessaire pour les modules Python), la station\n"
@@ -573,7 +593,7 @@ class Console:
         avec ses droits d'origine ; l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         try:
             original = self.config.read_bytes()
@@ -609,7 +629,7 @@ class Console:
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
-    # ------------------------------------------------------------------ profils de poste (menu 18)
+    # ------------------------------------------------------------------ profils de poste (menu 3.3)
 
     def pairing(self) -> None:
         """Adresse, comptes et empreinte du certificat à vérifier dans l'application Android. Lecture seule ;
@@ -617,7 +637,7 @@ class Console:
         from . import config as cfgmod
         from .setup_wizard import show_pairing
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         try:
             cfg, _ = cfgmod.load_unchecked(self.config)
@@ -629,7 +649,7 @@ class Console:
 
     def profiles(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         self._list_profiles()
         self.say("\n  1) Enregistrer la configuration actuelle du poste sous un profil\n"
@@ -685,7 +705,7 @@ class Console:
         try:
             cfg = cfgmod.load(self.config)
         except (OSError, cfgmod.ConfigError) as exc:
-            self.say(f"Configuration actuelle invalide ou illisible : corrige-la d'abord (menu 14). ({exc})")
+            self.say(f"Configuration actuelle invalide ou illisible : corrige-la d'abord (menu 3.2). ({exc})")
             return
         name = self.ask("Nom du profil (ex. IC-7300 maison ; Entrée = annuler) : ").strip()
         if not name:
@@ -812,10 +832,10 @@ class Console:
             if self.yes("Redémarrer la station pour appliquer"):
                 self.start()
         else:
-            self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 5).")
+            self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 1.1).")
         return True
 
-    # ------------------------------------------------------------------ visiteurs (menu 20)
+    # ------------------------------------------------------------------ visiteurs (menu 4.2)
 
     def swr_report(self) -> None:
         """Dernière mesure de TOS (state_dir/swr.json) : lecture seule. La console ne lance JAMAIS de mesure (un outil ne
@@ -852,11 +872,11 @@ class Console:
 
     def visitors(self) -> None:
         """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : réglages [access], comptes
-        role = "listener", pseudos, connectés et déconnexion. station.toml passe par le chemin validé du menu 14
+        role = "listener", pseudos, connectés et déconnexion. station.toml passe par le chemin validé du menu 3.2
         (réécrit dans sa forme standard) ; la passerelle le relit sans redémarrer."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         while True:
             try:
@@ -1101,7 +1121,7 @@ class Console:
         return True
 
     def _save_accounts(self, original: bytes, cfg, live: bool = True) -> None:
-        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 14 ; `live` : relu sans redémarrer."""
+        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 3.2 ; `live` : relu sans redémarrer."""
         from . import config as cfgmod
         edited = cfgmod.render_toml(cfg).encode("utf-8")
         if edited == original:
@@ -1137,7 +1157,7 @@ class Console:
         finally:
             shutil.rmtree(work, ignore_errors=True)
         self.say("Demande envoyée : la station rouvre l'écoute si elle est revenue nettement sous les seuils "
-                 "(sinon elle refuse : voir le journal, menu 7)." if code == 0 else f"Demande impossible (code {code}).")
+                 "(sinon elle refuse : voir le journal, menu 1.4)." if code == 0 else f"Demande impossible (code {code}).")
 
     def _visitor_kick(self, cfg) -> None:
         from .gateway.access_watch import KICK_REQUEST, kick_request
@@ -1164,7 +1184,7 @@ class Console:
         self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
                  "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
 
-    # ------------------------------------------------------------------ présence de groupe (menu 24)
+    # ------------------------------------------------------------------ présence de groupe (menu 5.3)
 
     FRIEND_LEVELS = {"1": ("f", "fréquence et mode"), "2": ("o", "« On Air » seulement"), "3": ("x", "un texte")}
     FRIEND_ROLES = {"a": "administrateur", "c": "co-administrateur", "m": "membre"}
@@ -1184,8 +1204,8 @@ class Console:
                 status = None
             if not status or not status.get("enabled"):
                 self.say("\nPrésence de groupe désactivée, ou module « presence » jamais démarré.\n"
-                         "Pour l'activer (menu 14) : dans [presence], enabled = true ; dans [modules], ajouter\n"
-                         "\"presence\" à run (ex. run = [\"cluster\", \"presence\"]) ; puis redémarrer la station (menu 5).")
+                         "Pour l'activer (menu 3.2) : dans [presence], enabled = true ; dans [modules], ajouter\n"
+                         "\"presence\" à run (ex. run = [\"cluster\", \"presence\"]) ; puis redémarrer la station (menu 1.1).")
                 return
             self.say("\n" + self.friends_summary(status))
             choice = self.ask("\n  1) Choisir le pseudo\n"
@@ -1250,7 +1270,7 @@ class Console:
             except (OSError, ValueError):
                 pass
             time.sleep(poll_s)
-        self.say("Pas de réponse du module « presence » (station arrêtée ? voir le journal, menu 7).")
+        self.say("Pas de réponse du module « presence » (station arrêtée ? voir le journal, menu 1.4).")
         return None
 
     def _friends_do(self, action: str, args: dict | None = None) -> dict | None:
@@ -1354,7 +1374,7 @@ class Console:
         if self.yes("Quitter ce groupe", False) and self._friends_do("leave", {"g": g}) is not None:
             self.say("Groupe quitté.")
 
-    # ------------------------------------------------------------------ qualité du réseau (menu 23)
+    # ------------------------------------------------------------------ qualité du réseau (menu 2.4)
 
     def network(self) -> None:
         """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 12.3) : liaisons en ce moment (fichier d'état),
@@ -1444,7 +1464,7 @@ class Console:
                                 "-delete"], admin=True)
         self.say("Historique réseau effacé (seuils choisis gardés)." if code == 0 else f"Effacement impossible (code {code}).")
 
-    # ------------------------------------------------------------------ Breizh Audio Box (menu 22)
+    # ------------------------------------------------------------------ Breizh Audio Box (menu 5.2)
 
     BREIZH_STATES = {"connecting": "recherche de Breizh…", "ready": "prêt : prochaines émissions par Breizh",
                      "active": "ÉMISSION par Breizh", "fallback": "REPLI : Breizh ne répond plus, émissions en direct",
@@ -1453,10 +1473,10 @@ class Console:
     def breizh(self) -> None:
         """Breizh Audio Box (docs/breizh-cahier-des-charges.md) : clé d'appairage (breizh.key, à côté de station.toml,
         créée ici et montrée UNE fois), adresse et port de Breizh et activation ([breizh] de station.toml, chemin validé
-        du menu 14), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
+        du menu 3.2), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         while True:
             try:
@@ -1518,7 +1538,7 @@ class Console:
             lines.append(f"  Liaison maintenant    : {self.BREIZH_STATES.get(live.get('state'), live.get('state'))} · "
                          + " · ".join(details))
         elif b.enabled:
-            lines.append("  Liaison maintenant    : passerelle arrêtée, ou clé illisible au démarrage (voir le journal, menu 7)")
+            lines.append("  Liaison maintenant    : passerelle arrêtée, ou clé illisible au démarrage (voir le journal, menu 1.4)")
         for entry in self._breizh_entries(cfg)[-3:]:
             lines.append(f"  Journal               : {entry}")
         return "\n".join(lines)
@@ -1629,10 +1649,10 @@ class Console:
 
     def temperature(self) -> None:
         """Seuils de température du poste ([safety] rig_temp_warn_c, rig_temp_cut_c), écrits dans station.toml par
-        le même chemin que le menu 14 : copie, validation, différences, confirmation, sauvegarde."""
+        le même chemin que le menu 3.2 : copie, validation, différences, confirmation, sauvegarde."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 2).")
+            self.say("Configure d'abord la station (menu 3.1).")
             return
         try:
             original = self.config.read_bytes()
@@ -1743,18 +1763,19 @@ class Console:
         return read_station_id(config_state_dir(self.config))
 
     def header(self) -> str:
+        t = self.t
         if not self.config.exists():
-            state = "station PAS ENCORE CONFIGURÉE : commence par le menu 2"
+            state = t("head.not_configured", menu=menu_number("assistant"))
         else:
-            state = "station en marche" if self.station_running() else "station arrêtée"
-        line = f"\n=== TRX Console  -  TRX distant version {self.installed} ===\n  {state}"
+            state = t("head.running") if self.station_running() else t("head.stopped")
+        line = f"\n=== {t('app.title', version=self.installed)} ===\n  {state}"
         if self.config.exists():
             line += "".join("\n" + extra for extra in self.station_lines())
-        line += f"\n  Identifiant de la station : {self.station_id() or 'créé au premier démarrage de la station'}"
+        line += "\n  " + t("head.station_id", id=self.station_id() or t("head.station_id_later"))
         release = self.offered(self.update_state())
         if release is not None:
-            line += self.banner([f"NOUVELLE VERSION {release.version} DISPONIBLE (installée : {self.installed})",
-                                 f"Menu {UPDATE_MENU} : voir les changements, puis installer si tu le souhaites"])
+            line += self.banner([t("head.new_version", version=release.version, installed=self.installed),
+                                 t("head.new_version_menu", menu=UPDATE_MENU)])
         return line
 
     def station_lines(self) -> list[str]:
@@ -1774,88 +1795,172 @@ class Console:
         except Exception:                               # en-tête : une adresse introuvable ne bloque pas la console
             found = []
         status = self._gateway_status()
-        return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found),
-                rig_vitals_line(status.rig if status is not None else None)]
+        return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
+                rig_vitals_line(status.rig if status is not None else None, self.t)]
 
     def menu_label(self, key: str, label: str) -> str:
-        release = self.offered(self.update_state()) if key == UPDATE_MENU else None
-        return f"{label}   <== NOUVELLE VERSION {release.version}" if release is not None else label
+        release = self.offered(self.update_state()) if key in (UPDATE_MENU, UPDATE_MENU.split(".")[0]) else None
+        return f"{label}   {self.t('loop.update_tag', version=release.version)}" if release is not None else label
 
-    def help_menu(self, key: str = "") -> None:
+    def resolve(self, choice: str, theme: str | None = None) -> tuple[str, object] | None:
+        """Choix tapé -> ("theme", numéro), ("item", (numéro, libellé, méthode)), ("old", même chose) ou None.
+        Dans un thème, « 2 » vise son 2e sous-menu ; partout, « 6.3 » vise un sous-menu ; « 13 » (ancien numéro,
+        menu principal seulement) est accepté avec un message."""
+        items = {key: (key, label, fn) for key, label, fn in self.items}
+        if theme is not None and choice.isdigit() and f"{theme}.{choice}" in items:
+            return "item", items[f"{theme}.{choice}"]
+        if choice in items:
+            return "item", items[choice]
+        if theme is None and choice in {t for t, _, _ in MENU_THEMES}:
+            return "theme", choice
+        if theme is None and choice in OLD_ACCEPTED:
+            return "old", items[menu_number(OLD_NUMBERS[choice])]
+        return None
+
+    def language(self) -> None:
+        """Menu 0 : langue de la console, gardée pour ce compte de l'ordinateur."""
+        t = self.t
+        self.say("\n" + t("lang.title"))
+        self.say(t("lang.current", name=NAMES[t.lang]))
+        for n, code in enumerate(LANGS, 1):
+            self.say(f"  {n}) {NAMES[code]} ({code})")
+        choice = self.ask(t("lang.prompt")).strip().lower()
+        if not choice:
+            return
+        code = LANGS[int(choice) - 1] if choice.isdigit() and 1 <= int(choice) <= len(LANGS) else choice
+        if code not in LANGS:
+            self.say(t("loop.unknown"))
+            return
+        self.t = Translator(code)
+        saved = save_lang(self.lang_file, code)
+        self.say(self.t("lang.saved", name=NAMES[code]) if saved else self.t("lang.not_saved", path=self.lang_file))
+        if code != "fr":
+            self.say(self.t("lang.partial"))
+
+    def help_menu(self, key: str = "", theme: str | None = None) -> None:
         """Touche « h » : à quoi sert un menu, quand s'en servir, ce qu'il modifie. Mêmes textes que le mode d'emploi
-        en ligne (docs/console/contenu.toml), livrés avec la station dans console_help.json."""
+        en ligne (docs/console/contenu*.toml), livrés avec la station dans console_help.json, dans la langue choisie."""
+        t = self.t
         if not key:
-            key = self.ask("Aide sur quel menu ? Numéro (Entrée = annuler) : ").strip()
+            key = self.ask(t("help.ask")).strip()
             if not key:
                 return
-        item = next(((k, label, fn) for k, label, fn in self.items if k == key), None)
-        if item is None:
-            self.say(f"Pas de menu {key} : choisir un numéro de 1 à {len(self.items)}.")
+        found = self.resolve(key, theme)
+        if found is None:
+            self.say(t("help.none", key=key))
             return
-        number, label, fn = item
-        texts = load_help().get(fn.__name__)
+        kind, value = found
+        if kind == "theme":
+            title = next(self.t(f"theme.{tid}") for th, tid, _ in MENU_THEMES if th == value)
+            self.say(t("help.theme", key=value, title=title))
+            return
+        number, label, fn = value
+        texts = load_help(t.lang).get(fn.__name__)
         if not texts:
-            self.say(f"Aide indisponible pour le menu {number} : voir le mode d'emploi en ligne, {DOC_URL}")
+            self.say(t("help.unavailable", key=number, url=DOC_URL))
             return
-        out = [f"\nMenu {number} : {label}", "=" * min(76, len(label) + 10)]
-        for title, field in (("À quoi il sert", "role"), ("Quand l'utiliser", "quand"), ("Ce qu'il modifie", "modifie")):
+        title = t("help.title", key=number, label=label)
+        out = ["", title, "=" * min(76, len(title))]
+        for head, field in (("help.role", "role"), ("help.when", "quand"), ("help.changes", "modifie")):
             if texts.get(field):
-                out += ["", title.upper(), texts[field]]
-        out += ["", "Droits d'administration (sudo) : " + ("oui, le mot de passe de session sera demandé" if texts.get("admin") else "non")]
+                out += ["", t(head).upper(), texts[field]]
+        out += ["", t("help.admin", value=t("help.admin_yes") if texts.get("admin") else t("help.admin_no"))]
         if texts.get("expert"):
-            out += ["", "POUR ALLER PLUS LOIN", texts["expert"]]
+            out += ["", t("help.more").upper(), texts["expert"]]
         self.say("\n".join(out))
+
+    def show_main(self) -> None:
+        self.say(self.header())
+        for number, title, desc in self.themes():
+            self.say(f"  {number}) {self.menu_label(number, title)}" + (f"  ({desc})" if desc else ""))
+        self.say(f"  0) {self.t('menu.language')}")
+        self.say("  " + self.t("loop.help_main"))
+        self.say("  " + self.t("loop.quit"))
+
+    def show_theme(self, theme: str) -> None:
+        title = next(self.t(f"theme.{tid}") for th, tid, _ in MENU_THEMES if th == theme)
+        self.say(f"\n--- {theme}) {title} ---")
+        for key, label, _ in self.items:
+            if key.startswith(theme + "."):
+                self.say(f"  {key.split('.')[1]}) {self.menu_label(key, label)}")
+        self.say("  " + self.t("loop.help_theme", example=f"{theme}.1"))
+        self.say("  " + self.t("loop.back"))
+        self.say("  " + self.t("loop.quit"))
+
+    def run_item(self, item: tuple[str, str, Callable[[], None]]) -> bool:
+        """Lance un sous-menu ; False si le terminal est fermé (quitter)."""
+        try:
+            item[2]()
+        except KeyboardInterrupt:
+            self.say("\n" + self.t("loop.interrupted"))
+        except EOFError:                             # terminal fermé pendant une question : on quitte proprement
+            return False
+        self.pause()
+        return True
 
     def loop(self) -> int:
         if not self.config.exists():
             self.say(self.header())
-            if self.yes("Première utilisation : lancer l'assistant de configuration"):
+            if self.yes(self.t("loop.first_use")):
                 self.assistant()
                 self.pause()
+        theme: str | None = None
         while True:
-            self.say(self.header())
-            for key, label, _ in self.items:
-                self.say(f"  {key}) {self.menu_label(key, label)}")
-            self.say("  h) Aide sur un menu (ex. « h 19 »)")
-            self.say("  q) Quitter")
+            if theme is None:
+                self.show_main()
+            else:
+                self.show_theme(theme)
             try:
-                choice = self.ask("Choix : ").strip().lower()
+                choice = self.ask(self.t("loop.choice")).strip().lower()
             except EOFError:
                 return 0
-            if choice in ("q", "quitter"):
+            if choice in ("q", "quitter", "quit", "beenden", "salir"):
                 return 0
-            asked = re.fullmatch(r"(?:h|aide|\?)\s*(\d*)", choice)
+            if choice in ("r", "") and theme is not None:
+                theme = None
+                continue
+            if choice == "0" and theme is None:
+                try:
+                    self.language()
+                except EOFError:
+                    return 0
+                continue
+            asked = re.fullmatch(r"(?:h|aide|help|hilfe|ayuda|\?)\s*([\d.]*)", choice)
             if asked:
                 try:
-                    self.help_menu(asked.group(1))
+                    self.help_menu(asked.group(1), theme)
                 except EOFError:
                     return 0
                 self.pause()
                 continue
-            action = next((fn for key, _, fn in self.items if key == choice), None)
-            if action is None:
-                self.say("Choix inconnu.")
+            found = self.resolve(choice, theme)
+            if found is None:
+                self.say(self.t("loop.unknown"))
                 continue
-            try:
-                action()
-            except KeyboardInterrupt:
-                self.say("\nInterrompu.")
-            except EOFError:                             # terminal fermé pendant une question : on quitte proprement
+            kind, value = found
+            if kind == "theme":
+                theme = value
+                continue
+            if kind == "old":
+                self.say(self.t("loop.moved", old=choice, new=value[0], label=value[1]))
+            if not self.run_item(value):
                 return 0
-            self.pause()
 
 
 DOC_URL = "https://bob56fr.github.io/openRemoteTRX/console/"
 
 
-def load_help() -> dict[str, dict]:
-    """Textes de l'aide (touche h) par nom de méthode du menu ; {} si le fichier manque ou est illisible."""
+def load_help(lang: str = "fr") -> dict[str, dict]:
+    """Textes de l'aide (touche h) par nom de méthode du menu, dans la langue demandée (sinon en français) ; {} si le
+    fichier manque ou est illisible."""
     try:
         from importlib.resources import files
         data = json.loads(files("trxstation").joinpath("console_help.json").read_text(encoding="utf-8"))
-        return data.get("menus", {}) if isinstance(data, dict) else {}
     except (OSError, ValueError, ModuleNotFoundError):
         return {}
+    langs = data.get("langs", {}) if isinstance(data, dict) else {}
+    menus = (langs.get(lang) or {}).get("menus") or (langs.get("fr") or {}).get("menus") or {}
+    return menus if isinstance(menus, dict) else {}
 
 
 def main(argv: list[str] | None = None) -> int:

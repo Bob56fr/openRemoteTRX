@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Rapport lisible et export anonyme de la sonde réseau (docs/netprobe-cahier-des-charges.md § 10.3, EF10).
 
-Un seul rapport pour trois usages : `trx-netreport`, TRX Console (menu 23) et le bouton « Exporter » de la page et
+Un seul rapport pour trois usages : `trx-netreport`, TRX Console (menu 2.4) et le bouton « Exporter » de la page et
 de l'application (commande `net_export`). L'export est un zip :
   rapport.html   la synthèse, lisible hors ligne ;
   donnees.json   coupures et résumés horaires des `days` derniers jours, résumés de 10 s des dernières 24 h,

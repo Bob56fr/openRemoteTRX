@@ -95,7 +95,7 @@
     forbidden: "Compte visiteur : réception seule, aucune commande vers la station.",
     unknown_listener: "Ce visiteur n'est plus connecté.",
     still_overloaded: "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
-    listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
+    listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 4.2 : nombre maximal de visiteurs).",
     listeners_unavailable: "Cette station ne gère pas les visiteurs.",
     voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
     no_back: "Pas de fréquence de retour mémorisée.",
@@ -169,7 +169,7 @@
       switchOn: presence.open === true,
       switchAvailable: (Number(presence.max_listeners) || 0) > 0,
       switchNote: (Number(presence.max_listeners) || 0) <= 0
-        ? "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 20)."
+        ? "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 4.2)."
         : presence.open === true ? "Ouverte : " + listeners + " visiteur(s) sur " + Number(presence.max_listeners) + " au plus."
           : "Fermée : aucun visiteur ne peut se connecter.",
     };
@@ -265,11 +265,11 @@
       const parts = [word];
       if (s.verdict === "ok" || s.verdict === "calme") parts.push(rate, age ? "dernier il y a " + age : "aucun spot reçu");
       if (s.verdict === "attente" && Number.isFinite(s.retry_in_s) && s.retry_in_s > 0) parts.push("nouvel essai dans " + shortAge(s.retry_in_s));
-      if (s.verdict === "echec" && s.code) parts.push(String(s.code).slice(0, 40) + " : voir TRX Console, menu 12");
+      if (s.verdict === "echec" && s.code) parts.push(String(s.code).slice(0, 40) + " : voir TRX Console, menu 5.1");
       return { dot: dot, text: String(s.name || "?").slice(0, 40) + " (" + (CLUSTER_TYPES[s.type] || "flux") + ") : " + parts.join(" · ") };
     });
     return { health: health, title: CLUSTER_TITLES[health], lines: lines, stale: elapsed > CLUSTER_STALE_S,
-             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 1)" : "" };
+             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 2.1)" : "" };
   }
 
   // Pastille des boutons de bande : nombre de spots actifs (« 20m » du cluster -> bouton « 20 ») ; couleur du gris au rouge.
@@ -1889,9 +1889,9 @@
     }
 
     async sendProblemReport(text) {
-      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 8). */
+      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 2.3). */
       const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
-      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 8).", "");
+      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", "");
       else this.ui.log(reasonText(res.reason, res.detail), "warn");
       return res;
     }

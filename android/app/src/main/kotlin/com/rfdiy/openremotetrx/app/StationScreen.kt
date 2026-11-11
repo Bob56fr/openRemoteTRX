@@ -56,7 +56,7 @@ private val WINDOWS = listOf(0, 30, 60, 120, 300)
 
 /**
  * Choix ou appairage d'une station : adresse, identifiant, mot de passe et empreinte du certificat
- * (TRX Console menu 19). La dernière cause de déconnexion reste affichée.
+ * (TRX Console menu 4.1). La dernière cause de déconnexion reste affichée.
  */
 @Composable
 fun StationScreen(
@@ -89,14 +89,14 @@ fun StationScreen(
         fingerprint = a?.fingerprint ?: ""; window = a?.reconnectWindowS ?: 60; error = ""
     }
 
-    // QR code du menu 19 de TRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
+    // QR code du menu 4.1 de TRX Console : adresse, identifiant, empreinte. Le mot de passe reste à saisir.
     // Lu par l'appareil photo, ou dans une image de la bibliothèque (photo, capture d'écran reçue par message…).
     var notice by remember { mutableStateOf("") }
     fun applyPairing(text: String) {
         val pairing = PairingCode.parse(text)
         if (pairing == null) {
             notice = ""
-            error = "Ce QR code n'est pas un QR code d'appairage openRemoteTRX (TRX Console, menu 19)."
+            error = "Ce QR code n'est pas un QR code d'appairage openRemoteTRX (TRX Console, menu 4.1)."
             return
         }
         val known = accounts.firstOrNull { it.url == pairing.url && (pairing.user.isEmpty() || it.user == pairing.user) }
@@ -145,7 +145,7 @@ fun StationScreen(
                 scan.launch(
                     ScanOptions()
                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                        .setPrompt("QR code du menu 19 de TRX Console")
+                        .setPrompt("QR code du menu 4.1 de TRX Console")
                         .setBeepEnabled(false)
                         .setOrientationLocked(false)
                         .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
@@ -183,7 +183,7 @@ fun StationScreen(
         }
         val security: @Composable () -> Unit = {
             OutlinedTextField(
-                fingerprint, { fingerprint = it }, label = { Text("Empreinte du certificat (TRX Console, menu 19)") },
+                fingerprint, { fingerprint = it }, label = { Text("Empreinte du certificat (TRX Console, menu 4.1)") },
                 supportingText = { Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.") },
                 minLines = 2, modifier = Modifier.fillMaxWidth(),
             )

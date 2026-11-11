@@ -63,7 +63,7 @@ fun PresenceDialog(p: PresenceUi, onDismiss: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirm = null },
             title = { Text("Déconnecter « ${visitor.text} » ?") },
-            text = { Text("Il peut se reconnecter ; pour l'en empêcher, désactive son compte sur la station (TRX Console, menu 20).") },
+            text = { Text("Il peut se reconnecter ; pour l'en empêcher, désactive son compte sur la station (TRX Console, menu 4.2).") },
             confirmButton = { TextButton(onClick = { RigHub.kickListener(visitor.account); confirm = null }) { Text("Déconnecter") } },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Annuler") } },
         )

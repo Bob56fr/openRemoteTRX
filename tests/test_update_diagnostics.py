@@ -74,7 +74,7 @@ def test_up_to_date():
 
 def test_new_version_points_to_the_menu():
     checks = by_name(d.check_update(Sys(state_file(ok=True, release=release("99.0.0"))), cfg()))
-    assert "99.0.0" in checks["Nouvelle version"].message and "Menu 10" in checks["Nouvelle version"].fix
+    assert "99.0.0" in checks["Nouvelle version"].message and "Menu 6.1" in checks["Nouvelle version"].fix
 
 
 def test_already_installed_version_is_not_announced():

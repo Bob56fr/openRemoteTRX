@@ -381,7 +381,7 @@ private fun InviteDialog(url: String) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Valable 7 jours, pour UNE seule station. Elle contient la clé du groupe : à transmettre seulement à la personne invitée.")
                 Text(url, style = MaterialTheme.typography.bodySmall)
-                Text("Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 24.",
+                Text("Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 5.3.",
                      style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },

@@ -1022,7 +1022,7 @@ test("cluster DX : état des flux lisible, débit adapté à la vitesse de chaqu
   assert.equal(view.lines[2].text, "db0sue (cluster) : en réserve (secours)"); assert.equal(view.lines[2].dot, "");
   assert.equal(view.lines[3].text, "clusterdx (page CB) : reçoit · 1 spot en 10 min · dernier il y a 5 min");
   assert.match(view.lines[4].text, /connexion en cours · nouvel essai dans 30 s/);
-  assert.match(view.lines[5].text, /refusé · callsign_refused : voir TRX Console, menu 12/); assert.equal(view.lines[5].dot, "red");
+  assert.match(view.lines[5].text, /refusé · callsign_refused : voir TRX Console, menu 5.1/); assert.equal(view.lines[5].dot, "red");
   const old = web.clusterStatusView(data, 120);
   assert.equal(old.stale, true); assert.match(old.staleText, /Plus de nouvelles du module Cluster DX depuis 2 min/);
   assert.equal(web.clusterStatusView({ health: "?" }, 0).health, "red");                                 // valeur douteuse : rouge

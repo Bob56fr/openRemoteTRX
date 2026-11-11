@@ -38,7 +38,7 @@ def test_console_shows_the_last_measure_read_only(tmp_path, monkeypatch):
     assert "1.30" in text and "2.40" in text and "ÉLEVÉ" in text and "puissance réduite" in text and "hors bande" in text
     assert "Meilleur TOS : 1.30 à 14.000 MHz" in text and "À CORRIGER À LA MAIN : coupleur" in text
     assert fake.admin_commands() == []                                                    # lecture seule
-    assert any(key == "21" and fn.__name__ == "swr_report" for key, _, fn in con.items)
+    assert any(key == "2.5" and fn.__name__ == "swr_report" for key, _, fn in con.items)
 
 
 def test_monitor_shows_a_measure_in_progress(tmp_path):

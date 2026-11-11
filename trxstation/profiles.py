@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Profils de poste : plusieurs TRX pilotés tour à tour par la même station (TRX Console, menu 18).
+"""Profils de poste : plusieurs TRX pilotés tour à tour par la même station (TRX Console, menu 3.3).
 
 Un profil garde ce qui dépend DU POSTE : sections [rig] (modèle, port, PTT, modes d'émission, puissance), [audio]
 (cartes son, gains) et [spectrum] (second port CI-V). Le reste de station.toml appartient à la station et n'est
@@ -88,7 +88,7 @@ def _section_text(rendered: str, names: tuple[str, ...]) -> str:
 
 def render(name: str, cfg: cfgmod.Config, version: str, saved_at: str) -> str:
     """Texte du profil : en-tête [profil] puis les sections du poste, telles que station.toml les écrit."""
-    return ("# Profil de poste TRX distant (TRX Console, menu 18). Modifier de préférence par la console :\n"
+    return ("# Profil de poste TRX distant (TRX Console, menu 3.3). Modifier de préférence par la console :\n"
             "# charger le profil, changer la configuration, puis le réenregistrer.\n"
             "[profil]\n"
             f"nom = {cfgmod._s(name)}\n"
@@ -124,8 +124,8 @@ def upgrade(profile: Profile) -> dict:
         step = MIGRATIONS.get(fmt)
         if step is None:
             raise ProfileError(f"profil trop ancien (format {profile.format}, version {profile.version}) : sa conversion "
-                               "n'est pas possible. Refais la configuration de ce poste (menu 2), puis enregistre-le "
-                               "de nouveau (menu 18)")
+                               "n'est pas possible. Refais la configuration de ce poste (menu 3.1), puis enregistre-le "
+                               "de nouveau (menu 3.3)")
         sections = step(sections)
     unknown = sorted(set(sections) - set(SECTIONS))
     if unknown:
@@ -141,7 +141,7 @@ def apply(station_text: str, profile: Profile) -> tuple[cfgmod.Config, str]:
     try:
         current = tomllib.loads(station_text)
     except tomllib.TOMLDecodeError as exc:
-        raise ProfileError(f"station.toml illisible ({exc}) : corrige-le d'abord (menu 14)") from exc
+        raise ProfileError(f"station.toml illisible ({exc}) : corrige-le d'abord (menu 3.2)") from exc
     merged = dict(current)
     for name in SECTIONS:
         merged[name] = sections.get(name, {})          # section absente du profil : valeurs par défaut
@@ -149,8 +149,8 @@ def apply(station_text: str, profile: Profile) -> tuple[cfgmod.Config, str]:
         cfg = cfgmod.from_dict(merged)
     except cfgmod.ConfigError as exc:
         raise ProfileError("profil refusé, la station ne démarrerait pas avec :\n  - " + "\n  - ".join(exc.problems)
-                           + "\nSi ce profil vient d'une ancienne version, refais la configuration de ce poste (menu 2) "
-                           "puis réenregistre-le (menu 18)") from exc
+                           + "\nSi ce profil vient d'une ancienne version, refais la configuration de ce poste (menu 3.1) "
+                           "puis réenregistre-le (menu 3.3)") from exc
     return cfg, cfgmod.render_toml(cfg)
 
 

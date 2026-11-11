@@ -4,7 +4,7 @@
 
 Le texte est assemblé par la page et MONTRÉ à l'utilisateur avant l'envoi : il décide de ce qui part. La station le
 range dans `<state_dir>/reports/page-AAAAMMJJ-HHMMSS-<compte>.txt` ; TRX Console le joint au rapport de dépannage
-(menu 8). Rien ne part sur Internet depuis la passerelle.
+(menu 2.3). Rien ne part sur Internet depuis la passerelle.
 
 Garde-fous : clients authentifiés seulement (la session donne le compte, jamais le message) ; texte borné
 (MAX_TEXT_CHARS), caractères de contrôle retirés (sauf saut de ligne et tabulation) ; un envoi par compte toutes les

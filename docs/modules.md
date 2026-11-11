@@ -19,7 +19,7 @@ station se comporte exactement comme avant.
 Modules fournis : `freedv_activity` (stations FreeDV actives par fréquence, d'après FreeDV Reporter lu en observateur ;
 locator de la station dans `[freedv] locator` ; `docs/protocole.md` § 17), `presence` (présence de groupe),
 `cluster` (Cluster DX, voir `docs/cluster-dx.md` ; se règle
-avec TRX Console, menu 12, qui l'ajoute ici) et `demo`, un module factice qui se met
+avec TRX Console, menu 5.1, qui l'ajoute ici) et `demo`, un module factice qui se met
 en pause pendant l'émission et l'annonce dans le journal de la page web
 (« [demo] Démo en pause pendant l'émission », puis « [demo] Démo reprise »).
 Il sert à valider la chaîne complète sans matériel.

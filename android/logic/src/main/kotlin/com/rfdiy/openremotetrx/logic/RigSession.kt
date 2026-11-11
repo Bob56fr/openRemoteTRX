@@ -495,7 +495,7 @@ class RigSession(
             if (msg.ok) {
                 val name = (msg.raw["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 log("Rapport envoyé à la station" + (if (name.isNotEmpty()) " ($name)" else "") +
-                    " : il sera joint au rapport de dépannage (TRX Console, menu 8).", LogLevel.INFO)
+                    " : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", LogLevel.INFO)
             } else {
                 log("Rapport non envoyé : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
             }
@@ -711,7 +711,7 @@ class RigSession(
     fun problemReport(now: Long, description: String, device: String, screen: String): String =
         ProblemReport.format(ProblemReport.Input(now, description, hello, state, connected, device, screen, rttMs, log.toList()))
 
-    /** Envoi du texte RELU par l'utilisateur ; la station le range et le joint au rapport de dépannage (menu 8). */
+    /** Envoi du texte RELU par l'utilisateur ; la station le range et le joint au rapport de dépannage (menu 2.3). */
     fun sendProblemReport(now: Long, text: String) {
         if (!connected || hello?.offers("bug_report") != true) return
         send(now, Command.BugReport(text.take(ProblemReport.MAX_CHARS)))

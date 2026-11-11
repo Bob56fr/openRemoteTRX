@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Surveillance des accès, chaque seconde, dans la boucle de la passerelle (docs/visiteurs-cahier-des-charges.md) :
 
-  * station.toml modifié (TRX Console, menu 20) : [[clients]] et [access] relus SANS redémarrer, seulement si TOUT le
+  * station.toml modifié (TRX Console, menu 4.2) : [[clients]] et [access] relus SANS redémarrer, seulement si TOUT le
     fichier est valide (sinon l'ancienne liste reste et l'erreur est journalisée une fois) ;
   * connexions devenues invalides (compte désactivé, expiré, supprimé, mot de passe ou rôle changé) et visiteurs
     restés sans opérateur au-delà de l'attente : fermées avec leur motif ;

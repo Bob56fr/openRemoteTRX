@@ -119,7 +119,7 @@ def import_config(source: Config, *, desktop: bool) -> tuple[Config, list[str]]:
     with_secret = [s.name for s in cfg.cluster.source if s.secret]
     if with_secret:
         notes.append(f"Cluster DX : mots de passe de {', '.join(with_secret)} NON repris (secrets.toml ne voyage pas) : "
-                     "à ressaisir avec TRX Console, menu 12.")
+                     "à ressaisir avec TRX Console, menu 5.1.")
     return cfg, notes
 
 

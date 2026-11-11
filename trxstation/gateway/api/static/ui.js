@@ -3056,7 +3056,7 @@
       frDialog("Invitation · " + g.name, [
         "Valable " + res.data.days + " jours, pour UNE seule station. Elle contient la clé du groupe : à transmettre seulement à la personne invitée (en main propre, messagerie, courriel).",
         el("p", "fr-url", url),
-        el("p", "note", "Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 24.")], buttons);
+        el("p", "note", "Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 5.3.")], buttons);
     }
     function frJoin() {
       const url = document.createElement("textarea"); url.rows = 3;

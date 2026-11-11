@@ -251,6 +251,6 @@ ok "décodeurs FreeDV installés dans $DEST ($FREEDV_BUILD_ID)"
 if [[ $MODE == system ]]; then
   found=$(command -v freedv-ka9q || true)
   [[ $found == "$BIN/freedv-ka9q" ]] || printf '  [ATTENTION] le PATH trouve d'\''abord %s\n' "${found:-rien}"
-  printf '\nPour s'\''en servir : [freedv] enabled = true dans station.toml (TRX Console, menu 14), puis le mode FreeDV\n'
+  printf '\nPour s'\''en servir : [freedv] enabled = true dans station.toml (TRX Console, menu 3.2), puis le mode FreeDV\n'
   printf 'se choisit depuis la page (rubrique « FreeDV »).\n'
 fi

@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--seconds", type=float, default=3.0, help="durée du son de test")
     ap.add_argument("--pings", type=int, default=5)
     ap.add_argument("--timeout", type=float, default=5.0)
-    ap.add_argument("--sans-son", action="store_true", help="liaison et PING seulement, aucun son (TRX Console, menu 22)")
+    ap.add_argument("--sans-son", action="store_true", help="liaison et PING seulement, aucun son (TRX Console, menu 5.2)")
     args = ap.parse_args(argv)
     sys.exit(asyncio.run(_main(args)))
 

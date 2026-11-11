@@ -184,7 +184,7 @@ def test_refusing_to_save_or_a_concurrent_change_writes_nothing(tmp_path):
 def test_menu_lists_the_two_new_entries(tmp_path):
     con, _, _ = make(tmp_path)
     labels = {key: label for key, label, _ in con.items}
-    assert "zip" in labels["13"] and "station.toml" in labels["14"]
+    assert "zip" in labels["6.3"] and "station.toml" in labels["3.2"]
 
 
 # --------------------------------------------------------------------------- menu 15 : tests automatiques

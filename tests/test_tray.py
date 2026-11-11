@@ -26,7 +26,7 @@ def test_windows_hints_replace_trx_console_menus():
     view = summarize({"status": None, "nowS": 1.0, "safeMode": "pannes"}, WINDOWS_HINTS)
     texts = " ".join(line["text"] for line in view["lines"])
     assert "TRX Console" not in texts and "menu Démarrer" in texts
-    assert "TRX Console, menu 5" in summarize({"status": None, "nowS": 1.0}, DEBIAN_HINTS)["lines"][0]["text"]
+    assert "TRX Console, menu 1.1" in summarize({"status": None, "nowS": 1.0}, DEBIAN_HINTS)["lines"][0]["text"]
 
 
 def test_collect_reads_the_station_files_and_never_raises(tmp_path):

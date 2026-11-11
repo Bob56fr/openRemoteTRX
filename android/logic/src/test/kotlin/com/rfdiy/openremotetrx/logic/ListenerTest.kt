@@ -97,7 +97,7 @@ class ListenerTest {
         val hot = PresenceUi.of(p.copy(suspended = PresenceSuspended(message = "Station surchargée (processeur à 87 °C)")), false)!!
         assertTrue(hot.suspended.contains("87 °C") && hot.canReopen)
         val closed = PresenceUi.of(p.copy(maxListeners = 0, open = false), false)!!
-        assertFalse(closed.switchAvailable); assertTrue(closed.switchNote.contains("menu 20"))
+        assertFalse(closed.switchAvailable); assertTrue(closed.switchNote.contains("menu 4.2"))
         assertFalse(PresenceUi.of(p.copy(open = null), false)!!.switchShown)    // station sans commutateur
         assertNull(PresenceUi.of(null, false))
     }

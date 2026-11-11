@@ -616,7 +616,7 @@ def qr_lines(text: str, border: int = 2) -> list[str] | None:
 
 def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
                  addresses: Callable[[], list[str]] | None = None, hostname: Callable[[], str] = socket.gethostname) -> None:
-    """Menu 19 et `--empreinte` : informations d'appairage, puis un QR code à scanner par l'application.
+    """Menu 4.1 et `--empreinte` : informations d'appairage, puis un QR code à scanner par l'application.
     Demande l'adresse et le compte seulement s'il y a un choix. OSError si le certificat est illisible."""
     from .gateway.api.tls import certificate_fingerprint
     say("\n".join(pairing_lines(cfg, addresses)))
@@ -631,7 +631,7 @@ def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[
     user = _pick(accounts, "Compte à mettre dans le QR code", ask, say, default="") if accounts else ""
     lines = qr_lines(pairing_uri(hostname(), f"https://{host}:{n.gateway_port}", user, certificate_fingerprint(n.tls_cert)))
     if lines is None:
-        say("  QR code indisponible (paquet « segno » absent : réinstaller la station, menu 13) : saisir l'empreinte ci-dessus.")
+        say("  QR code indisponible (paquet « segno » absent : réinstaller la station, menu 6.3) : saisir l'empreinte ci-dessus.")
         return
     say("  QR code à scanner avec l'application (« Scanner le QR code ») ; il ne contient AUCUN mot de passe :")
     say("\n".join("  " + line for line in lines))

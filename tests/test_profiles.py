@@ -92,7 +92,7 @@ def test_format_conversions(tmp_path, monkeypatch):
     cfg, _ = prof.apply(station, old)
     assert cfg.rig.max_power_w == 50
     monkeypatch.setattr(prof, "MIGRATIONS", {1: None})                                 # conversion déclarée impossible
-    with pytest.raises(prof.ProfileError, match=r"trop ancien.*menu 2.*menu 18"):
+    with pytest.raises(prof.ProfileError, match=r"trop ancien.*menu 3.1.*menu 3.3"):
         prof.apply(station, old)
     monkeypatch.setattr(prof, "MIGRATIONS", {})                                        # conversion oubliée : même refus
     with pytest.raises(prof.ProfileError, match="trop ancien"):

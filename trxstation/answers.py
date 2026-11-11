@@ -21,12 +21,12 @@ def typed(answer: str | None, word: str) -> bool:
     return normalize(answer) == normalize(word)
 
 
-YES_WORDS = ("O", "OUI", "Y", "YES")
-NO_WORDS = ("N", "NON", "NO")
+YES_WORDS = ("O", "OUI", "Y", "YES", "J", "JA", "S", "SI")      # français, anglais, allemand, espagnol (« sí » sans accent)
+NO_WORDS = ("N", "NON", "NO", "NEIN")
 
 
 def yes_no(answer: str | None) -> bool | None:
-    """o/oui/y/yes => True, n/non/no => False, autre chose (ou vide) => None."""
+    """o/oui/y/yes/j/ja/s/sí => True, n/non/no/nein => False, autre chose (ou vide) => None."""
     word = normalize(answer)
     if word in YES_WORDS:
         return True

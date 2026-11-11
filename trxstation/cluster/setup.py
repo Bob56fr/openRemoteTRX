@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Réglage du Cluster DX sans éditer de fichier (TRX Console, menu 12).
+"""Réglage du Cluster DX sans éditer de fichier (TRX Console, menu 5.1).
 
     python -m trxstation.cluster.setup --config /etc/trx-remote/station.toml
 
@@ -439,7 +439,7 @@ class ClusterEditor:
             self.secrets_changed = True
         self.write(self.cfg, self.secrets if self.secrets_changed else None)
         self.dirty = self.secrets_changed = False
-        self.say("Enregistré. Redémarrer la station pour appliquer (TRX Console, menu 5).")
+        self.say("Enregistré. Redémarrer la station pour appliquer (TRX Console, menu 1.1).")
         return True
 
     # ------------------------------------------------------------------ menu

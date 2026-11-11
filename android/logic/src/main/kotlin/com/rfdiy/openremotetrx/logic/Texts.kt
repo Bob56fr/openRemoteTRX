@@ -54,7 +54,7 @@ object Texts {
         "forbidden" to "Compte visiteur : réception seule, aucune commande vers la station.",
         "unknown_listener" to "Ce visiteur n'est plus connecté.",
         "still_overloaded" to "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
-        "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 20 : nombre maximal de visiteurs).",
+        "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 4.2 : nombre maximal de visiteurs).",
         "listeners_unavailable" to "Cette station ne gère pas les visiteurs.",
         "voice_profiles_unavailable" to "Cette station ne range pas les profils d'égaliseur.",
         "no_back" to "Pas de fréquence de retour mémorisée.",
@@ -123,7 +123,7 @@ object Texts {
         "http" to "Réponse inattendue de la station",
         "client_error" to "Erreur dans l'application",
         "pin" to "Empreinte du certificat DIFFÉRENTE : ce n'est peut-être pas ta station, connexion bloquée",
-        "untrusted" to "Certificat de la station non reconnu : saisis son empreinte (TRX Console, menu 19) ou scanne son QR code",
+        "untrusted" to "Certificat de la station non reconnu : saisis son empreinte (TRX Console, menu 4.1) ou scanne son QR code",
     )
 
     val PTT_LABELS = mapOf("RX" to "RÉCEPTION", "KEYING" to "PRISE D'ÉMISSION", "TX" to "ÉMISSION", "UNKEYING" to "COUPURE EN COURS")

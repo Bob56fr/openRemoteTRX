@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * « Signaler un problème » (lot A3) : MÊME texte que la page (`formatProblemReport` de client.js), montré en entier à
- * l'utilisateur AVANT l'envoi, rangé par la station (`bug_report`) et joint au rapport de dépannage (TRX Console, menu 8).
+ * l'utilisateur AVANT l'envoi, rangé par la station (`bug_report`) et joint au rapport de dépannage (TRX Console, menu 2.3).
  * Aucun secret : ni mot de passe, ni empreinte, ni jeton. Appareil : modèle et version d'Android (choix de l'utilisateur,
  * 2026-11-09), à la place de l'« user agent » de la page.
  */

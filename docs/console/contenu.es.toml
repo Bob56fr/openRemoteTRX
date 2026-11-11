@@ -1,0 +1,322 @@
+# Contenido del manual de TRX Console (página publicada en GitHub Pages, mostrada en el sitio rf-diy.com), en
+# ESPAÑOL. La referencia es contenu.toml (francés): mismas secciones, en el mismo orden.
+# Generado por: python scripts/build_console_doc.py  (resultado en docs/site/console/).
+# La LISTA de menús (temas, números, etiquetas) viene del código (trxstation/console.py, catálogos trxstation/i18n/);
+# aquí, solo las explicaciones. Cada menú de la consola debe tener su sección [menus.<nombre del método>] en
+# CADA idioma: si no, la generación y las pruebas fallan.
+# Estos textos sirven TAMBIÉN para la ayuda de la tecla « h » de la consola (trxstation/console_help.json, generado por el mismo script).
+# Texto en HTML simple (p, ul, li, code, strong, em, a). Ningún script, ninguna imagen ni recurso externo.
+# Solo ejemplos genéricos: nunca direcciones IP, nombres de equipo, puertos reales ni claves.
+
+[page]
+titre = "TRX Console: manual de uso"
+intro = """
+<p><strong>TRX Console</strong> es el panel de mando de la estación TRX distant, en el PC (o la Raspberry Pi)
+conectado al transceptor. Sirve para instalar y configurar la estación, arrancarla, probarla, actualizarla y
+resolver sus problemas. Se abre desde el menú de aplicaciones (« TRX Console ») o escribiendo <code>trx-console</code>
+en un terminal.</p>
+<p>Los menús están ordenados por tema (Estación, Solución de problemas y pruebas, Configuración, Acceso, Funciones,
+Actualizaciones): escribe el número del tema y luego el del menú, o directamente los dos, por ejemplo <code>4.1</code>
+para emparejar un teléfono. <code>0</code> cambia el idioma de la consola (français, English, Deutsch, Español).</p>
+<p><strong>¿Dudas sobre un menú?</strong> Escribe <code>h</code> y su número (por ejemplo <code>h 4.1</code>):
+la consola muestra, sin ejecutar nada, para qué sirve ese menú, cuándo usarlo y qué modifica (los textos de esta página).</p>
+<p>Nunca transmite por sí misma: los únicos menús que pueden poner el transceptor en transmisión son la prueba
+completa (menú 2.2, con confirmación en cada paso) y, por supuesto, la estación una vez arrancada, manejada desde la página web.</p>
+"""
+lecture = """
+<p><strong>¿Primera instalación?</strong> Sigue el recorrido de abajo en orden. <strong>¿Estación ya en
+servicio?</strong> Ve directamente a la referencia de los menús. <strong>¿Ayudas a depurar?</strong> Consulta la parte
+« Solución de problemas avanzada ».</p>
+"""
+
+[ui]   # textos de la propia página
+lang_name = "Español"
+langs = "Idioma:"
+version = "TRX distant versión {version}"
+nav_first = "Primera instalación"
+nav_menus = "Los menús"
+nav_expert = "Solución de problemas avanzada"
+h_first = "Primera instalación, paso a paso"
+h_menus = "Los menús de la consola"
+menus_intro = """
+<p>El menú principal muestra los temas: escribe el número de un tema y luego el de uno de sus menús, o directamente
+los dos (<code>6.3</code>); <code>r</code> vuelve al menú principal, <code>0</code> cambia el idioma, <code>q</code>
+sale. Los antiguos números 10 a 24 (un solo nivel, hasta la versión 0.125.0) se siguen aceptando durante un tiempo: la
+consola indica el nuevo. Las respuestas a las preguntas (sí, no, OUI, EMETTRE...) no distinguen mayúsculas
+ni acentos. <span class="sudo">Contraseña</span>: el menú pide tu contraseña de sesión (sudo).</p>
+"""
+dt_role = "Para qué sirve"
+dt_when = "Cuándo"
+dt_changes = "Qué modifica"
+dt_rights = "Derechos"
+rights_yes = "se pide la contraseña de sesión"
+rights_no = "no"
+more = "Para saber más"
+latest = "Última versión"
+others = "Otras versiones:"
+footer = "Proyecto libre (AGPL-3.0-or-later)"
+source = "código fuente"
+
+# ------------------------------------------------------------------ recorrido del principiante
+
+[[parcours]]
+titre = "Instalar el software"
+texte = """
+<p>En un PC Debian 12 o 13 con escritorio: descomprime el paquete <code>trx-remote-debian-X.Y.Z.zip</code> en
+Descargas, abre un terminal en la carpeta obtenida y escribe:</p>
+<pre>sudo bash install.sh</pre>
+<p>Se pide tu contraseña de sesión (no se muestra nada mientras escribes: es normal). Al final,
+<strong>cierra la sesión y vuelve a iniciarla</strong> para que se apliquen los derechos.</p>
+<p>¿Vienes de una estación Windows? Coloca su archivo <code>station.toml</code> junto a <code>install.sh</code>
+antes de lanzar la instalación: se recuperarán las cuentas, las bandas y las alertas.</p>
+"""
+
+[[parcours]]
+titre = "Configurar la estación (menú 3.1)"
+texte = """
+<p>En el primer arranque, TRX Console propone el asistente. Pide, por orden: el modelo del transceptor (lista
+Hamlib), el puerto serie del CAT, el método de PTT, las tarjetas de sonido (recepción y transmisión), las bandas
+autorizadas para transmitir, el acceso a la red y la primera cuenta (usuario y contraseña para la página web).</p>
+<p>El transceptor se consulta <strong>en solo lectura</strong> durante el asistente: ninguna transmisión. No se
+guarda nada si abandonas a medio camino.</p>
+"""
+
+[[parcours]]
+titre = "Comprobar (menú 2.1)"
+texte = """
+<p>El diagnóstico lo revisa todo sin modificar nada. Cada línea es <strong>OK</strong>, a
+<strong>vigilar</strong> o un <strong>fallo</strong>, con los pasos a seguir. Corrige los fallos antes de
+continuar (menú 3.2 para retocar la configuración, o vuelve a lanzar el asistente).</p>
+"""
+
+[[parcours]]
+titre = "Probar el transceptor (menú 2.2)"
+texte = """
+<p>Antes de nada, la tarjeta de sonido del transceptor <strong>no</strong> debe ser el sonido por defecto del PC: en Debian,
+<em>Configuración &gt; Sonido</em>, elige como salida los altavoces del PC y como entrada su micrófono (en Windows,
+<em>Configuración &gt; Sistema &gt; Sonido</em>). Si no, el escritorio ocupa la tarjeta y sus sonidos van al transceptor.</p>
+<p>Empieza por la prueba <strong>solo en recepción</strong> (opción 1): enlace CAT, sonido recibido, cambio de
+frecuencia y de modo, anchos de filtro, espectro. Solo después, la prueba <strong>completa</strong> (opción 2)
+comprueba la transmisión: <strong>carga artificial obligatoria</strong>, potencia reducida, confirmación pedida en
+cada paso. La estación se detiene durante la prueba.</p>
+"""
+
+[[parcours]]
+titre = "Arrancar (menú 1.1) y conectarse"
+texte = """
+<p>El menú 1.1 arranca la estación; repite un diagnóstico (menú 2.1) unos segundos después. En el teléfono
+o en otro PC de la misma red, abre <code>https://&lt;adresse-de-la-station&gt;:8443</code> y conéctate con
+la cuenta creada por el asistente. Para el acceso desde el exterior, consulta la documentación « Acceso remoto » del proyecto.</p>
+"""
+
+# ------------------------------------------------------------------ referencia de los menús
+# Campos: role (para qué sirve), quand (cuándo usarlo), modifie (qué cambia), admin (se pide
+# contraseña: sudo), expert (opcional: detalles para la solución de problemas).
+
+[menus.diagnostic]
+role = "Control completo de la estación, en solo lectura: sistema, software, configuración, hardware (puertos serie, tarjetas de sonido), servicios, espectro HF, DX Cluster, acceso a la red y actualizaciones. Al final del balance, tres líneas « Modos de la estación »: Breizh Audio Box (activado o no, estado del enlace), escucha de los visitantes (abierta o cerrada, número máximo) y cuentas de visitantes (seudónimo, desactivada, caducada), sin ningún secreto."
+quand = "Después de la instalación, después de cada cambio y como primer reflejo en cuanto algo va mal."
+modifie = "Nada. Ninguna orden al transceptor, ninguna transmisión."
+admin = false
+expert = "<p>El mismo resultado sin el menú: <code>trx-console --diagnostic</code> (código de salida distinto de 0 en caso de fallo, utilizable en un script).</p>"
+
+[menus.assistant]
+role = "Asistente de configuración: transceptor, puertos, PTT, tarjetas de sonido, bandas autorizadas, acceso a la red, cuentas. Escribe <code>station.toml</code>."
+quand = "En la primera instalación, o para rehacerlo todo (cambio de transceptor, de interfaz de audio, de PC)."
+modifie = "<code>station.toml</code> (solo si llegas hasta el final). La estación se detiene durante el asistente y luego se reinicia si lo pides."
+admin = true
+expert = "<p>El transceptor solo se consulta en lectura. Una configuración importada de una estación anterior (<code>station.import.toml</code>) sirve de punto de partida.</p><p>Al añadir un transceptor, el asistente pregunta si se autoriza la <strong>retransmisión de grabaciones</strong> (aplicación: grabar el audio recibido y luego reenviarlo en transmisión, con una duración limitada al tiempo máximo de transmisión menos 5 s). Respuesta por defecto: no. Retransmitir a terceros la emisión de una estación suele estar prohibido en el servicio de aficionados: acepta solo si lo necesitas y bajo tu responsabilidad (<code>[safety] allow_replay</code>).</p>"
+
+[menus.monitor]
+role = "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción, clientes conectados, servicios, hardware, audio, registro."
+quand = "Para vigilar la estación in situ, o durante una prueba."
+modifie = "Nada, salvo una tecla: <strong>STOP TX</strong> fuerza la recepción. El panel nunca puede hacer transmitir."
+admin = false
+
+[menus.hwtest]
+role = "Prueba guiada del transceptor real. Opción 1: solo recepción (CAT, sonido recibido, sintonía, anchos de filtro, pantalla del espectro). Opción 2: lo mismo y después la transmisión."
+quand = "Después del asistente, después de un cambio de cable o de interfaz de audio, o para cualificar un transceptor nuevo."
+modifie = "Nada en la configuración. La opción 2 hace transmitir al transceptor: carga artificial, potencia reducida, confirmación (escribir <code>EMETTRE</code>) en cada paso. La estación se detiene durante la prueba."
+admin = true
+expert = "<p>El resumen final de la prueba se muestra en pantalla: cópialo en tu solicitud de ayuda. Las respuestas escritas no distinguen mayúsculas ni acentos (se aceptan « emettre », « Émettre » y « EMETTRE »).</p>"
+
+[menus.start]
+role = "Arranca (o reinicia) la estación: rigctld, pasarela, supervisor."
+quand = "Después de la configuración, después de una modificación, o si la página web ya no responde."
+modifie = "El estado de los servicios. El transceptor siempre vuelve a recepción al arrancar."
+admin = true
+
+[menus.stop]
+role = "Detiene la estación."
+quand = "Antes de conectar o desconectar el transceptor o la interfaz de audio, o para usar otro programa con el transceptor."
+modifie = "El estado de los servicios. El transceptor se queda en recepción."
+admin = true
+
+[menus.journal]
+role = "Muestra las 80 últimas líneas del registro de los servicios de la estación."
+quand = "Cuando el diagnóstico señala un servicio con fallo, o para entender un corte de transmisión."
+modifie = "Nada."
+admin = true
+expert = "<p>Registro completo: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>.</p>"
+
+[menus.report]
+role = "Crea un informe de solución de problemas (archivo zip en el Escritorio): diagnóstico, registros, configuración <strong>sin ninguna contraseña</strong>, versiones, hardware detectado, informes enviados desde la página, identificador de la estación."
+quand = "Para pedir ayuda: adjunta este zip a tu solicitud."
+modifie = "Nada (se crea un archivo en el Escritorio)."
+admin = false
+expert = "<p>Sin el menú: <code>trx-console --rapport</code>. El archivo <code>station.toml</code> del informe tiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo si quieres.</p>"
+
+[menus.clear_safe_mode]
+role = "Sale del <strong>modo seguro</strong>. El supervisor pone en él la estación tras fallos repetidos: transceptor en recepción, acceso cortado."
+quand = "Solo después de haber encontrado y corregido la causa (menús 2.1 y 1.4)."
+modifie = "Borra el modo seguro memorizado y reinicia la estación."
+admin = true
+expert = "<p>El modo seguro sobrevive a los reinicios y a las correcciones: hay que quitarlo explícitamente aquí.</p>"
+
+[menus.update]
+role = "Actualización por Internet: presenta la nueva versión, propone ver la naturaleza de los cambios (notas de CADA versión publicada desde la tuya, la más reciente primero, por páginas: Intro = seguir, q = parar ahí) y luego la instala tras comprobar su firma. Si ya estás al día: propone una nueva búsqueda inmediata en GitHub."
+quand = "Cuando aparece un recuadro « NUEVA VERSIÓN … DISPONIBLE » arriba en la consola (amarillo en un terminal) y el menú 6.1 está marcado « <== NUEVA VERSIÓN ». La búsqueda se hace 2 minutos después del arranque de la estación y luego cada 24 h."
+modifie = "Instala la nueva versión junto a la anterior (conservada para el menú 6.2). <code>station.toml</code> y los certificados se conservan. Se rechaza mientras el transceptor transmite. Hay que escribir el número de versión para confirmar."
+admin = true
+
+[menus.rollback]
+role = "Vuelve a la versión anterior, conservada en la última actualización, sin Internet."
+quand = "Si la nueva versión da problemas."
+modifie = "La versión activa. La configuración se conserva."
+admin = true
+
+[menus.cluster]
+role = "Ajustes del DX Cluster: spots seguidos, fuentes (RBN, servidores telnet, web), filtros, prueba de las fuentes."
+quand = "Para mostrar los spots en el espectro y las marcas de los botones de banda en la página."
+modifie = "La sección Cluster de <code>station.toml</code>; después se propone reiniciar."
+admin = true
+
+[menus.install_zip]
+role = "Instala una versión a partir de un archivo <code>trx-remote-debian-X.Y.Z.zip</code> dejado en el Escritorio, en Descargas o en la carpeta personal."
+quand = "Estación sin Internet, versión de prueba, o vuelta a una versión concreta."
+modifie = "Como el menú 6.1: nueva versión junto a la anterior, configuración conservada. Un paquete sin firmar pide escribir <code>OUI</code> y luego el número de versión."
+admin = true
+expert = "<p>Dejar el zip no basta: hay que instalarlo aquí. Informe: <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.edit_config]
+role = "Modifica <code>station.toml</code> en el editor nano, sobre una copia."
+quand = "Para un ajuste concreto sin volver a lanzar todo el asistente."
+modifie = "<code>station.toml</code>, solo si la copia es válida: se comprueba, se muestran las diferencias, se pide confirmación y la versión anterior se guarda al lado. Una configuración no válida nunca se escribe."
+admin = true
+expert = "<p>En nano: Ctrl+O y luego Intro para guardar, Ctrl+X para salir. Las copias de seguridad se llaman <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p><p>Referencia de TODOS los ajustes (función, valor por defecto, límites, seguridad, menú que los modifica): <code>https://bob56fr.github.io/openRemoteTRX/station-toml/</code>, también en el sitio rf-diy.com.</p>"
+
+[menus.expert]
+role = "Menú experto: lanza todo el conjunto de pruebas automáticas del software en la estación."
+quand = "Para ayudar a depurar, o comprobar que una instalación está sana."
+modifie = "Nada. Las pruebas usan un transceptor <strong>simulado</strong>: ninguna orden al transceptor real, ninguna transmisión. La estación se detiene durante las pruebas (7 a 10 minutos en un PC reciente, 30 minutos o más en un PC pequeño) y luego se reinicia si lo pides."
+admin = true
+expert = "<p>El resultado se guarda en el Escritorio (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>): envía este archivo si fallan pruebas. La herramienta de pruebas (pytest) se instala en el primer uso (hace falta Internet).</p><p>Los puntos se muestran a medida que avanzan; si no hay nada nuevo durante un minuto, la consola recuerda que las pruebas continúan. Una prueba realmente bloqueada 10 minutos muestra la pila de sus hilos de ejecución: eso es lo que hay que enviar (Ctrl+C detiene las pruebas).</p>"
+
+[menus.temperature]
+role = "Umbrales de temperatura del transceptor: primer umbral (aviso en la página y notificación), segundo umbral (transmisión remota cortada y rechazada hasta volver por debajo del primer umbral). 40 y 50 °C por defecto."
+quand = "Si tu transceptor se calienta en uso normal (modos digitales en continuo, por ejemplo) o para más prudencia."
+modifie = "Las claves <code>rig_temp_warn_c</code> y <code>rig_temp_cut_c</code> de <code>station.toml</code>, por el mismo camino comprobado que el menú 3.2."
+admin = true
+expert = "<p>Sin efecto si el transceptor no da su temperatura por Hamlib (caso del IC-7300MK2). El operador al micrófono del transceptor nunca se corta por este motivo.</p>"
+
+[menus.indicator]
+role = "Activa o desactiva el <strong>indicador de la barra superior</strong> (escritorio GNOME): un piloto a la izquierda del sonido (verde recepción, rojo transmisión, naranja alerta, gris estación detenida, violeta modo seguro), la frecuencia o la cuenta atrás de transmisión y, al hacer clic, el estado completo: transmisión, frecuencia y filtro, clientes web conectados, enlace con el transceptor, operador in situ, último corte, temperatura, alimentación, espectro HF, DX Cluster, actualización disponible, versión e identificador."
+quand = "Una vez, después de la instalación (y de cerrar y volver a abrir la sesión), para vigilar la estación en todo momento."
+modifie = "Solo la visualización de tu escritorio. El indicador solo LEE el estado publicado por la estación: no puede controlar nada."
+admin = false
+expert = "<p>Archivos leídos cada segundo: <code>/run/trx-remote/gateway-status.json</code>, y en <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extensión instalada en <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. El menú del indicador también abre la página web, TRX Console y el panel.</p>"
+
+[menus.profiles]
+role = "Perfiles de transceptor, para quien maneja varios TRX por turnos: <strong>guardar</strong> la configuración del transceptor en servicio con un nombre (« IC-7300 casa »), <strong>volver a cargarla</strong> más tarde, o eliminar un perfil. El perfil en servicio se indica en la lista."
+quand = "Después de configurar y probar un transceptor (menús 3.1 y 2.2): guárdalo. Para cambiar de transceptor: conéctalo, carga su perfil y la estación se reinicia con él."
+modifie = "Cargar un perfil solo cambia los ajustes del TRANSCEPTOR en <code>station.toml</code> (modelo, puertos, PTT, tarjetas de sonido, espectro), por el mismo camino comprobado que el menú 3.2 (diferencias mostradas, confirmación, versión anterior guardada). Cuentas, red, bandas autorizadas y seguridades nunca cambian. Se rechaza durante una transmisión."
+admin = true
+expert = "<p>Archivos: <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Cada perfil lleva un número de formato. Un perfil de una versión antigua se convierte al cargarlo cuando es posible (una clave que falta toma su valor por defecto); si no, o si viene de una versión más reciente, se rechaza con los pasos a seguir: rehacer la configuración de ese transceptor (menú 3.1) y volver a guardarlo. El archivo original nunca se modifica al cargarlo.</p>"
+
+[menus.pairing]
+role = "Muestra lo necesario para <strong>emparejar la aplicación Android</strong> con esta estación: la dirección que hay que introducir, las cuentas autorizadas, la <strong>huella del certificado</strong> (SHA-256, en dos líneas) y un <strong>código QR</strong> para escanear con la aplicación (« Scanner le QR code de la station »): rellena la dirección, el usuario y la huella. Si hay varias direcciones o varias cuentas, la consola pregunta cuáles poner en el código QR (Intro = opción propuesta). Ni el código QR ni la pantalla contienen contraseñas: la estación no las conoce en claro, se introducen en la aplicación."
+quand = "Al añadir la estación en la aplicación Android, y después de rehacer el certificado (menú 3.1)."
+modifie = "Nada: solo lectura."
+admin = false
+expert = "<p>La misma información en línea de comandos: <code>trx-setup --output /etc/trx-remote/station.toml --empreinte</code>. Si el certificado solo lo puede leer la estación, la consola lo relee con derechos de administración. Estación limitada a este equipo (bucle local): ningún teléfono puede conectarse, la consola lo indica. Detrás de un proxy HTTPS, la huella que hay que fijar es la del certificado del proxy (sin código QR). El código QR está dibujado para un terminal de fondo oscuro; la aplicación también lo lee en un terminal claro. Si no aparece (falta el paquete « segno »), reinstala la estación (menú 6.3) o introduce la huella a mano.</p>"
+
+[menus.swr_report]
+role = "Muestra la <strong>última medida de ROE</strong> de la antena guardada en la estación: fecha, potencia, modo, rango y la ROE de cada punto con una pequeña barra (« ÉLEVÉ » por encima de 2), el mejor punto y los ajustes del transceptor que no se hayan restablecido. <strong>Solo lectura</strong>: la consola nunca lanza una medida (una herramienta solo puede cortar una transmisión); la medida se lanza desde la página o la aplicación."
+quand = "Para recuperar una medida hecha a distancia, compararla con una nueva, o comprobar que un ajuste del transceptor se restableció bien tras una medida interrumpida."
+modifie = "Nada."
+admin = false
+expert = "<p>Archivo leído: <code>swr.json</code> en la carpeta de estado de la estación (últimas elecciones de cada cuenta, tiempo de lectura de la ROE calibrado por modelo de transceptor, última medida). Ajustes de la estación: sección <code>[swr]</code> de <code>station.toml</code> (menú 3.2: <code>enabled</code>, tope de potencia <code>max_power_pct</code>, <code>max_points</code>, <code>point_tx_max_s</code>). Detalle: <code>docs/tos-cahier-des-charges.md</code>.</p>"
+
+[menus.visitors]
+role = "Gestiona los <strong>visitantes solo en recepción</strong>: cuentas que escuchan la estación y ven la pantalla del operador, sin <strong>ninguna</strong> orden hacia el transceptor (ni frecuencia, ni modo, ni transmisión, ni STOP). Aquí se ajusta el <strong>número máximo</strong> de visitantes (0 = escucha cerrada en la estación; si no, es el operador quien abre o cierra la escucha desde su página o la aplicación, interruptor « Écoute des visiteurs », cerrado por defecto), el interruptor <strong>« operador requerido »</strong> (visitantes admitidos solo si hay un operador conectado, y desconectados tras una espera ajustable, 60 s por defecto, si este pierde el enlace), la escucha <strong>fuera de las bandas</strong> de la estación (cortada por defecto: silencio) y la cadencia del espectro HF de los visitantes (5 imágenes por segundo por defecto). Aquí se crean, modifican (seudónimo, contraseña, activada, fecha de fin) y eliminan las cuentas de visitantes, se elige el <strong>seudónimo</strong> de las cuentas de operador, se <strong>desconecta</strong> a un visitante conectado y se <strong>reabre la escucha</strong> suspendida por una sobrecarga."
+quand = "Antes de una demostración en un radioclub, una formación o la escucha compartida de un QSO; para retirar el acceso a un visitante (desactivar o eliminar su cuenta)."
+modifie = "Las cuentas y la sección <code>[access]</code> de <code>station.toml</code>, por el mismo camino comprobado que el menú 3.2 (diferencias mostradas, confirmación, versión anterior guardada; el archivo se reescribe en su forma estándar). La estación los relee por sí sola en unos segundos, <strong>sin reiniciar</strong>: una cuenta desactivada, caducada o eliminada se desconecta en el acto. « Desconectar » no toca <code>station.toml</code>."
+admin = true
+expert = "<p>Los demás conectados nunca ven el usuario de una cuenta, solo su <strong>seudónimo</strong> (varias cuentas pueden llevar el mismo); solo un operador ve usuarios y direcciones. Durante una transmisión, los visitantes oyen la voz del operador (lo que va hacia el transceptor); el código SELCALL nunca se les muestra. Un visitante solo puede enviar dos órdenes (releer el estado, mostrar o no el espectro HF): todo lo demás lo rechaza la estación, y por encima de 20 rechazos en un minuto su conexión se cierra con una alerta. Los visitantes tienen su propia cuota: nunca ocupan el lugar de un operador. Si la estación sufre (procesador a 85 °C, carga al 90 %, pasarela con más de 100 ms de retraso o memoria casi llena, durante 10 s), los visitantes se desconectan con la causa precisa; la escucha se reabre sola tras 5 minutos claramente por debajo, o a mano (opción 7) tras 3 cortes en una hora. Umbrales: <code>[access] overload_*</code> (menú 3.2). Retransmitir a terceros lo que se recibe compromete la responsabilidad del operador: consulta la guía de acceso remoto. Detalle: <code>docs/visiteurs-cahier-des-charges.md</code>.</p>"
+
+[menus.breizh]
+role = "Conecta la estación con <strong>Breizh Audio Box</strong>, el procesado de voz que funciona en un PC de la misma red local: la voz del operador pasa por Breizh antes de llegar al transceptor. Aquí se <strong>crea la clave de emparejamiento</strong> (mostrada <strong>una sola vez</strong>, que hay que copiar en la pestaña « OpenRemoteTRX » de los ajustes de Breizh con la dirección de la estación y el puerto), se ajustan la <strong>dirección IP</strong> y el <strong>puerto UDP</strong> del PC de Breizh, se <strong>activa o desactiva</strong> el paso por Breizh, se hace una <strong>prueba del enlace sin sonido</strong> y se lee el <strong>registro</strong> (conexiones, repliegues, rechazos). El estado actual del enlace (listo, transmisión por Breizh, repliegue, rechazo, ida y vuelta) se muestra arriba."
+quand = "Al instalar Breizh, después de reinstalar Breizh (clave nueva), cuando la página o la aplicación señalan un repliegue, o para comprobar el enlace antes de una transmisión."
+modifie = "La clave: archivo <code>breizh.key</code> junto a <code>station.toml</code> (nunca dentro), con los derechos de la configuración. La dirección, el puerto y la activación: sección <code>[breizh]</code> de <code>station.toml</code>, por el mismo camino comprobado que el menú 3.2 (diferencias mostradas, confirmación, versión anterior guardada); la estación los aplica al <strong>reiniciar</strong> (se propone). La prueba y el registro no modifican nada."
+admin = true
+expert = "<p><strong>Seguridad</strong>: Breizh nunca puede hacer transmitir la estación; esta conserva el PTT, el TOT, la puerta de audio y su limitador, y pasa a directo con ganancia reducida (−6 dB por defecto) si Breizh deja de responder durante 100 ms, sin cortar la transmisión. El modo OpenRemoteTRX de Breizh desactiva su CAT. El sonido del micrófono circula <strong>sin cifrar</strong> por la red local: solo se acepta una dirección IP <strong>privada</strong>. En el PC de Breizh, el cortafuegos debe dejar entrar el UDP del puerto elegido (47100 por defecto). La prueba envía una llamada y cinco PING, nunca sonido; si la estación está en marcha con Breizh activado, Breizh responde « ocupado » (ya atiende a la pasarela): es normal, el estado está arriba del menú. Ajustes finos (plazos, ganancia de repliegue, vuelta automática): <code>[breizh]</code>, menú 3.2 y la referencia de <code>station.toml</code>. Detalle: <code>docs/breizh-cahier-des-charges.md</code>.</p>"
+
+[menus.network]
+role = "Muestra la <strong>calidad de los enlaces</strong> entre la estación y los teléfonos o navegadores conectados: para cada uno, el estado (buena, media, débil, corte), el tipo de red, la pérdida y el tiempo de ida y vuelta; el estado de las <strong>sondas de la estación</strong> hacia el router y hacia Internet; el <strong>último corte</strong> con su tramo probable; y el aviso <strong>« perfil VPN probablemente compartido »</strong> cuando dos dispositivos parecen usar el mismo perfil VPN. Aquí se lee la <strong>síntesis</strong> de las últimas 24 horas o de los últimos 30 días (cortes, duración, tramos, horas más afectadas, por red), se crea una <strong>exportación anónima</strong> en el Escritorio para el equipo de desarrollo, y se puede <strong>borrar todo</strong>."
+quand = "Cuando el enlace se corta a menudo (en el coche, en 4G, a través de una VPN), para saber si es el teléfono, la red móvil, el túnel, el router o la estación; antes de pedir ayuda (exportación)."
+modifie = "Nada, salvo « Borrar todo » (confirmación escribiendo EFFACER): el historial de red de la estación (cortes, estadísticas, dispositivos vistos). Los umbrales del indicador elegidos en la página o la aplicación se conservan. La exportación es un archivo zip en el Escritorio."
+admin = true
+expert = "<p>La estación envía un latido cada segundo a cada cliente conectado y espera su eco; tres latidos sin respuesta cuentan como un corte. Tras cada corte, cruza sus propias sondas (router, Internet, ping o si no TCP), las medidas entregadas por el cliente (incluido el acceso a la estación en HTTPS durante el corte) y la regularidad de los cortes para decir qué tramo ha fallado probablemente; es una probabilidad, nunca una certeza. Dos dispositivos con el <strong>mismo perfil VPN</strong> se roban el enlace cada 15 a 30 s: <strong>un perfil por dispositivo</strong>. La sonda solo mide: nunca actúa sobre la transmisión. Archivos: carpeta <code>netprobe</code> de la carpeta de estado (registro de 7 días, cortes y estadísticas de 30 días). La misma síntesis en línea de comandos: <code>trx-netreport</code> (<code>--jours 30</code>, <code>--export FICHIER</code>). Ajustes: sección <code>[netprobe]</code> de <code>station.toml</code> (menú 3.2). « Borrar todo » pide <code>sudo</code>: los archivos pertenecen a la cuenta de la estación. Detalle: <code>docs/netprobe-cahier-des-charges.md</code>.</p>"
+
+[menus.friends]
+role = "Gestiona la <strong>presencia de grupo</strong>: el <strong>seudónimo</strong> de la estación, los <strong>grupos de amigos</strong> (crear, invitar con un enlace y un <strong>código QR</strong>, unirse con una invitación recibida, salir, eliminar) y lo que la estación <strong>comparte</strong> en cada grupo (frecuencia y modo, solo « On Air », o un texto corto; invisible). También se ve quién, en cada grupo, está en QSO, en recepción, en el cuarto de radio, ausente o desconectado."
+quand = "Para poner en marcha la presencia con amigos equipados con openRemoteTRX, o cuando la página y la aplicación no están a mano."
+modifie = "Los ajustes de presencia de la estación, guardados aparte en la carpeta de estado (no en station.toml); la creación, la invitación, la adhesión y la salida pasan por el relé de presencia. Nada toca el transceptor: un QSY hacia un amigo se hace desde la página o la aplicación."
+admin = true
+expert = "<p>La consola deja su solicitud para el módulo « presence » (archivo <code>presence-request.json</code> de la carpeta de estado, con <code>sudo</code> si hace falta) y lee su respuesta (<code>presence/console-reply.json</code>, borrada al cabo de un minuto: puede contener una invitación). La función se activa en <code>station.toml</code> (menú 3.2): <code>[presence] enabled = true</code> y « presence » en <code>[modules] run</code>, y luego reiniciar la estación. El relé solo ve estados cifrados: ni frecuencia, ni modo, ni estado. Una invitación contiene la clave del grupo: transmítela solo a la persona invitada; solo sirve una vez y caduca a los 7 días. Detalle: <code>docs/presence-cahier-des-charges.md</code>.</p>"
+
+# ------------------------------------------------------------------ solución de problemas avanzada
+
+[[expert]]
+titre = "Cabecera de la consola"
+texte = """
+<p>La primera línea da la <strong>versión instalada</strong>, la segunda el estado (en marcha, detenida, aún no
+configurada). Una vez configurada la estación aparecen la <strong>dirección</strong> para llegar a ella desde la
+página web o la aplicación (direcciones IP del equipo y puerto; « solo este equipo » si solo escucha en
+local) y luego el <strong>estado del transceptor</strong>: tensión de alimentación y temperatura, tal como la estación las
+lee (« — »: valor que el transceptor no proporciona; el IC-7300MK2, por ejemplo, no da su temperatura;
+« medidas no disponibles »: estación detenida). La última línea da el <strong>identificador de la estación</strong>:
+un código único creado en el primer arranque, que permite relacionar varios informes de una misma estación. No se
+envía a ningún sitio automáticamente.</p>
+"""
+
+[[expert]]
+titre = "Archivos útiles (Debian)"
+texte = """
+<ul>
+<li><code>/etc/trx-remote/station.toml</code>: configuración (modificar con el menú 3.2).</li>
+<li><code>/var/lib/trx-remote/</code>: estado de la estación (modo seguro, memorias, informes de la página, identificador <code>station-id</code>, DX Cluster).</li>
+<li><code>/run/trx-remote/gateway-status.json</code>: estado en directo publicado por la pasarela (leído por el panel).</li>
+<li><code>/opt/trx-remote/releases/</code>: versiones instaladas una junto a otra; <code>/opt/trx-remote/current</code> apunta a la versión activa.</li>
+<li><code>/var/log/trx-remote-install.log</code>: informe de las instalaciones y actualizaciones.</li>
+</ul>
+"""
+
+[[expert]]
+titre = "Lecturas del transceptor (solo lectura)"
+texte = """
+<p>Para un transceptor Icom con un segundo puerto CI-V (espectro), una lectura en bruto de los ajustes, sin ninguna escritura,
+ayuda a establecer el formato real de las respuestas. Con la estación detenida (menú 1.2):</p>
+<pre>/opt/trx-remote/current/venv/bin/python -m trxstation.devtools.civ_scope --port /dev/serial/by-id/&lt;port-B&gt; --reglages</pre>
+<p>El resultado se guarda en una carpeta <code>spectre-reglages-…</code>: adjúntala a tu solicitud.</p>
+"""
+
+[[expert]]
+titre = "Comunicar un problema"
+texte = """
+<ol>
+<li>En la página web: sección « Signaler un problème » (texto revisado antes del envío).</li>
+<li>En la estación: menú 2.3 (informe de solución de problemas) y, si hace falta, el resultado del menú 2.6.</li>
+<li>Describe lo que estabas haciendo, lo que esperabas y lo que pasó, con la hora aproximada.</li>
+</ol>
+"""

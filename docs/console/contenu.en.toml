@@ -1,0 +1,322 @@
+# Content of the TRX Console user manual (page published on GitHub Pages, shown on the rf-diy.com site), in
+# ENGLISH. The reference is contenu.toml (French): same sections, in the same order.
+# Built by: python scripts/build_console_doc.py  (output in docs/site/console/).
+# The LIST of menus (themes, numbers, labels) comes from the code (trxstation/console.py, catalogues trxstation/i18n/);
+# here, only the explanations. Every console menu must have its [menus.<method name>] section in
+# EVERY language: otherwise the build and the tests fail.
+# These texts are ALSO used by the console "h" key help (trxstation/console_help.json, built by the same script).
+# Plain HTML text (p, ul, li, code, strong, em, a). No script, no image, no external resource.
+# Generic examples only: never an IP address, machine name, real port or key.
+
+[page]
+titre = "TRX Console: user manual"
+intro = """
+<p><strong>TRX Console</strong> is the control panel of the TRX distant station, on the PC (or Raspberry Pi)
+connected to the transceiver. It is used to install and configure the station, start it, test it, update it and
+troubleshoot it. Open it from the applications menu ("TRX Console") or by typing <code>trx-console</code>
+in a terminal.</p>
+<p>The menus are grouped by theme (Station, Troubleshooting and tests, Configuration, Access, Features, Updates):
+type the theme number then the menu number, or both at once, for example <code>4.1</code> to pair a
+phone. <code>0</code> changes the console language (français, English, Deutsch, Español).</p>
+<p><strong>Not sure about a menu?</strong> Type <code>h</code> followed by its number (for example <code>h 4.1</code>):
+without running anything, the console shows what the menu is for, when to use it and what it changes (the texts of this page).</p>
+<p>It never transmits on its own: the only menus that can put the transceiver into transmit are the full
+test (menu 2.2, with confirmation at each step) and, of course, the station once started, controlled from the web page.</p>
+"""
+lecture = """
+<p><strong>First deployment?</strong> Follow the steps below in order. <strong>Station already in
+service?</strong> Go straight to the menu reference. <strong>Helping with debugging?</strong> See the
+"Advanced troubleshooting" part.</p>
+"""
+
+[ui]   # texts of the page itself
+lang_name = "English"
+langs = "Language:"
+version = "TRX distant version {version}"
+nav_first = "First deployment"
+nav_menus = "The menus"
+nav_expert = "Advanced troubleshooting"
+h_first = "First deployment, step by step"
+h_menus = "The console menus"
+menus_intro = """
+<p>The main menu shows the themes: type the number of a theme then the number of one of its menus, or both at
+once (<code>6.3</code>); <code>r</code> goes back to the main menu, <code>0</code> changes the language, <code>q</code>
+quits. The old numbers 10 to 24 (single level, up to version 0.125.0) are still accepted for a while: the
+console gives the new one. Answers to questions (oui, non, OUI, EMETTRE...) ignore upper/lower case and
+accents. <span class="sudo">Password</span>: the menu asks for your session password (sudo).</p>
+"""
+dt_role = "What it is for"
+dt_when = "When"
+dt_changes = "What it changes"
+dt_rights = "Rights"
+rights_yes = "session password asked"
+rights_no = "no"
+more = "Going further"
+latest = "Latest version"
+others = "Other versions:"
+footer = "Free software project (AGPL-3.0-or-later)"
+source = "source code"
+
+# ------------------------------------------------------------------ beginner's path
+
+[[parcours]]
+titre = "Install the software"
+texte = """
+<p>On a Debian 12 or 13 PC with a desktop: unzip the package <code>trx-remote-debian-X.Y.Z.zip</code> into
+Downloads, open a terminal in the resulting folder and type:</p>
+<pre>sudo bash install.sh</pre>
+<p>Your session password is asked (nothing is shown while you type: this is normal). At the end,
+<strong>log out then log in again</strong> so that the new rights take effect.</p>
+<p>Coming from a Windows station? Put its <code>station.toml</code> file next to <code>install.sh</code>
+before starting the installation: accounts, bands and alerts will be carried over.</p>
+"""
+
+[[parcours]]
+titre = "Configure the station (menu 3.1)"
+texte = """
+<p>On first launch, TRX Console offers the wizard. It asks, in order: the transceiver model (Hamlib
+list), the CAT serial port, the PTT method, the sound cards (receive and transmit), the bands allowed
+for transmission, network access and the first account (username and password for the web page).</p>
+<p>The transceiver is queried <strong>read-only</strong> during the wizard: no transmission. Nothing is
+saved if you give up halfway.</p>
+"""
+
+[[parcours]]
+titre = "Check (menu 2.1)"
+texte = """
+<p>The diagnostic reviews everything without changing anything. Each line is <strong>OK</strong>, to
+<strong>watch</strong> or <strong>failed</strong>, with what to do. Fix the failures before
+going further (menu 3.2 to adjust the configuration, or run the wizard again).</p>
+"""
+
+[[parcours]]
+titre = "Test the transceiver (menu 2.2)"
+texte = """
+<p>First of all, the transceiver sound card must <strong>not</strong> be the PC's default sound device: on Debian,
+<em>Settings &gt; Sound</em>, choose the PC speakers as output and its microphone as input (on Windows,
+<em>Settings &gt; System &gt; Sound</em>). Otherwise the desktop holds the card and its sounds go to the transceiver.</p>
+<p>Start with the <strong>receive-only</strong> test (choice 1): CAT link, received audio, frequency and
+mode changes, filter widths, spectrum. Only then does the <strong>full</strong> test (choice 2)
+check transmission: <strong>dummy load required</strong>, reduced power, confirmation asked at
+each step. The station is stopped during the test.</p>
+"""
+
+[[parcours]]
+titre = "Start (menu 1.1) and connect"
+texte = """
+<p>Menu 1.1 starts the station; run a diagnostic again (menu 2.1) a few seconds later. On the phone
+or another PC on the same network, open <code>https://&lt;adresse-de-la-station&gt;:8443</code> and log in with
+the account created by the wizard. For access from outside, see the project's "Remote access" documentation.</p>
+"""
+
+# ------------------------------------------------------------------ menu reference
+# Fields: role (what it is for), quand (when to use it), modifie (what it changes), admin (password
+# asked: sudo), expert (optional: troubleshooting details).
+
+[menus.diagnostic]
+role = "Full check of the station, read-only: system, software, configuration, hardware (serial ports, sound cards), services, HF spectrum, DX Cluster, network access and updates. At the end, three \"Station modes\" lines: Breizh Audio Box (enabled or not, link state), visitor listening (open or closed, maximum number) and visitor accounts (nickname, disabled, expired), without any secret."
+quand = "After installation, after every change, and as a first reflex whenever something is wrong."
+modifie = "Nothing. No command to the transceiver, no transmission."
+admin = false
+expert = "<p>Same result without the menu: <code>trx-console --diagnostic</code> (non-zero exit code on failure, usable in a script).</p>"
+
+[menus.assistant]
+role = "Configuration wizard: transceiver, ports, PTT, sound cards, allowed bands, network access, accounts. Writes <code>station.toml</code>."
+quand = "On first deployment, or to start over (new transceiver, audio interface or PC)."
+modifie = "<code>station.toml</code> (only if you go to the end). The station is stopped during the wizard then restarted on request."
+admin = true
+expert = "<p>The transceiver is only queried read-only. A configuration imported from an old station (<code>station.import.toml</code>) is used as a starting point.</p><p>When a transceiver is added, the wizard asks whether <strong>replay of recordings</strong> is allowed (app: record the received audio then send it back on transmit, duration limited to the maximum transmit time minus 5 s). Default answer: no. Retransmitting a station's signal to third parties is generally forbidden in the amateur service: accept only if you need it and under your own responsibility (<code>[safety] allow_replay</code>).</p>"
+
+[menus.monitor]
+role = "Live dashboard, in the terminal: frequency, mode, transmit or receive, connected clients, services, hardware, audio, log."
+quand = "To watch the station on site, or during a test."
+modifie = "Nothing, except one key: <strong>STOP TX</strong> forces receive. The dashboard can never make the transceiver transmit."
+admin = false
+
+[menus.hwtest]
+role = "Guided test of the real transceiver. Choice 1: receive only (CAT, received audio, tuning, filter widths, spectrum display). Choice 2: the same, then transmission."
+quand = "After the wizard, after changing a cable or audio interface, or to qualify a new transceiver."
+modifie = "Nothing in the configuration. Choice 2 makes the transceiver transmit: dummy load, reduced power, confirmation (type <code>EMETTRE</code>) at each step. The station is stopped during the test."
+admin = true
+expert = "<p>The final summary of the test is shown on screen: copy it into your help request. Typed answers ignore upper/lower case and accents (\"emettre\", \"Émettre\" and \"EMETTRE\" are accepted).</p>"
+
+[menus.start]
+role = "Starts (or restarts) the station: rigctld, gateway, supervisor."
+quand = "After configuration, after a change, or if the web page no longer responds."
+modifie = "The state of the services. The transceiver is always set back to receive at startup."
+admin = true
+
+[menus.stop]
+role = "Stops the station."
+quand = "Before plugging or unplugging the transceiver or the audio interface, or to use other software on the transceiver."
+modifie = "The state of the services. The transceiver stays in receive."
+admin = true
+
+[menus.journal]
+role = "Shows the last 80 lines of the station services log."
+quand = "When the diagnostic reports a failed service, or to understand why a transmission was cut."
+modifie = "Nothing."
+admin = true
+expert = "<p>Full log: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>.</p>"
+
+[menus.report]
+role = "Creates a troubleshooting report (zip file on the Desktop): diagnostic, logs, configuration <strong>without any password</strong>, versions, detected hardware, reports sent from the page, station identifier."
+quand = "To ask for help: attach this zip to your request."
+modifie = "Nothing (a file is created on the Desktop)."
+admin = false
+expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's <code>station.toml</code> file has its secrets masked; you may still check its content before sending it if you wish.</p>"
+
+[menus.clear_safe_mode]
+role = "Leaves <strong>safe mode</strong>. The supervisor puts the station into it after repeated failures: transceiver in receive, access cut."
+quand = "Only after finding and fixing the cause (menus 2.1 and 1.4)."
+modifie = "Clears the stored safe mode and restarts the station."
+admin = true
+expert = "<p>Safe mode survives restarts and fixes: it must be lifted explicitly here.</p>"
+
+[menus.update]
+role = "Update over the Internet: shows the new version, offers to see what changed (notes of EVERY version published since yours, newest first, page by page: Enter = next, q = stop there), then installs it after checking its signature. Up to date: offers an immediate new check on GitHub."
+quand = "When a \"NEW VERSION … AVAILABLE\" box appears at the top of the console (yellow in a terminal) and menu 6.1 is marked \"<== NEW VERSION\". The check runs 2 minutes after the station starts, then every 24 h."
+modifie = "Installs the new version next to the old one (kept for menu 6.2). <code>station.toml</code> and the certificates are kept. Refused while the transceiver is transmitting. You must type the version number to confirm."
+admin = true
+
+[menus.rollback]
+role = "Goes back to the previous version, kept during the last update, without Internet."
+quand = "If the new version causes problems."
+modifie = "The active version. The configuration is kept."
+admin = true
+
+[menus.cluster]
+role = "DX Cluster settings: followed spots, sources (RBN, telnet servers, web), filters, source test."
+quand = "To show spots on the spectrum and badges on the band buttons in the page."
+modifie = "The Cluster section of <code>station.toml</code>; a restart is offered afterwards."
+admin = true
+
+[menus.install_zip]
+role = "Installs a version from a <code>trx-remote-debian-X.Y.Z.zip</code> file placed on the Desktop, in Downloads or in the home folder."
+quand = "Station without Internet, test version, or going back to a specific version."
+modifie = "Like menu 6.1: new version next to the old one, configuration kept. An unsigned package asks you to type <code>OUI</code> then the version number."
+admin = true
+expert = "<p>Dropping the zip is not enough: it must be installed here. Log: <code>/var/log/trx-remote-install.log</code>.</p>"
+
+[menus.edit_config]
+role = "Edits <code>station.toml</code> in the nano editor, on a copy."
+quand = "For a specific setting without running the whole wizard again."
+modifie = "<code>station.toml</code>, only if the copy is valid: it is checked, the differences are shown, a confirmation is asked and the old version is kept alongside. An invalid configuration is never written."
+admin = true
+expert = "<p>In nano: Ctrl+O then Enter to save, Ctrl+X to quit. Backup copies are named <code>station.toml.avant-modification-AAAAMMJJ-HHMMSS</code>.</p><p>Reference of ALL settings (role, default value, limits, safety, menu that changes them): <code>https://bob56fr.github.io/openRemoteTRX/station-toml/</code>, also on the rf-diy.com site.</p>"
+
+[menus.expert]
+role = "Expert menu: runs the whole automatic software test suite on the station."
+quand = "To help with debugging, or to check that an installation is healthy."
+modifie = "Nothing. The tests use a <strong>simulated</strong> transceiver: no command to the real transceiver, no transmission. The station is stopped during the tests (7 to 10 minutes on a recent PC, 30 minutes or more on a small PC) then restarted on request."
+admin = true
+expert = "<p>The result is saved on the Desktop (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>): send this file if tests fail. The test tool (pytest) is installed on first use (Internet required).</p><p>Dots are shown as the tests progress; with nothing new for a minute, the console reminds you that the tests are still running. A test truly stuck for 10 minutes shows the stack of its threads: that is what to send (Ctrl+C stops the tests).</p>"
+
+[menus.temperature]
+role = "Transceiver temperature thresholds: first threshold (warning in the page and notification), second threshold (remote transmission cut and refused until back below the first threshold). 40 and 50 °C by default."
+quand = "If your transceiver gets hot in normal use (continuous digital modes, for example) or for extra caution."
+modifie = "The <code>rig_temp_warn_c</code> and <code>rig_temp_cut_c</code> keys of <code>station.toml</code>, through the same checked path as menu 3.2."
+admin = true
+expert = "<p>No effect if the transceiver does not report its temperature through Hamlib (the case of the IC-7300MK2). The operator at the transceiver's microphone is never cut for this reason.</p>"
+
+[menus.indicator]
+role = "Enables or disables the <strong>top bar indicator</strong> (GNOME desktop): a light to the left of the sound icon (green receive, red transmit, orange alert, grey station stopped, purple safe mode), the frequency or the transmit countdown, and on click the full status: transmission, frequency and filter, connected web clients, link with the transceiver, on-site operator, last cut, temperature, power supply, HF spectrum, DX Cluster, available update, version and identifier."
+quand = "Once, after installation (then log out and log in again), to keep an eye on the station at all times."
+modifie = "Only your desktop display. The indicator only READS the state published by the station: it cannot control anything."
+admin = false
+expert = "<p>Files read every second: <code>/run/trx-remote/gateway-status.json</code>, and in <code>/var/lib/trx-remote/</code>: <code>safe_mode</code>, <code>cluster/status.json</code>, <code>update/latest.json</code>, <code>station-id</code>. Extension installed in <code>/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com</code>. The indicator menu also opens the web page, TRX Console and the dashboard.</p>"
+
+[menus.profiles]
+role = "Transceiver profiles, for those who use several rigs in turn: <strong>save</strong> the configuration of the transceiver in service under a name (\"IC-7300 home\"), <strong>reload</strong> it later, or delete a profile. The profile in service is marked in the list."
+quand = "After configuring and testing a transceiver (menus 3.1 and 2.2): save it. To change transceiver: plug it in, load its profile, and the station restarts with it."
+modifie = "Loading a profile only changes the TRANSCEIVER settings in <code>station.toml</code> (model, ports, PTT, sound cards, spectrum), through the same checked path as menu 3.2 (differences shown, confirmation, old version kept). Accounts, network, allowed bands and safety settings never change. Refused during a transmission."
+admin = true
+expert = "<p>Files: <code>/etc/trx-remote/profils/&lt;nom&gt;.toml</code>. Each profile carries a format number. A profile from an older version is converted on loading when possible (a missing key takes its default value); otherwise, or if it comes from a newer version, it is refused with what to do: redo the configuration of that transceiver (menu 3.1) then save it again. The original file is never changed on loading.</p>"
+
+[menus.pairing]
+role = "Shows what you need to <strong>pair the Android app</strong> with this station: the address to enter, the allowed accounts, the <strong>certificate fingerprint</strong> (SHA-256, on two lines), then a <strong>QR code</strong> to scan with the app (\"Scan the station QR code\"): it fills in the address, username and fingerprint. If there are several addresses or accounts, the console asks which ones to put in the QR code (Enter = suggested choice). Neither the QR code nor the screen contains a password: the station does not know it in clear text, it is entered in the app."
+quand = "When adding the station in the Android app, and after recreating the certificate (menu 3.1)."
+modifie = "Nothing: read-only."
+admin = false
+expert = "<p>Same display on the command line: <code>trx-setup --output /etc/trx-remote/station.toml --empreinte</code>. If the certificate can only be read by the station, the console reads it again with administrator rights. Station limited to this machine (loopback): no phone can connect to it, and the console says so. Behind an HTTPS proxy, the fingerprint to pin is the proxy certificate's (no QR code). The QR code is drawn for a dark-background terminal; the app also reads a light terminal. If it does not appear (\"segno\" package missing), reinstall the station (menu 6.3) or enter the fingerprint by hand.</p>"
+
+[menus.swr_report]
+role = "Shows the <strong>last antenna SWR measurement</strong> stored on the station: date, power, mode, range, and the SWR of each point with a small bar (\"HIGH\" above 2), the best point and any transceiver settings that may not have been restored. <strong>Read-only</strong>: the console never starts a measurement (a tool can only cut a transmission); the measurement is started from the page or the app."
+quand = "To find a measurement made remotely, compare it with a new one, or check that a transceiver setting was properly restored after an interrupted measurement."
+modifie = "Nothing."
+admin = false
+expert = "<p>File read: <code>swr.json</code> in the station state folder (last choices of each account, SWR reading time calibrated per transceiver model, last measurement). Station settings: <code>[swr]</code> section of <code>station.toml</code> (menu 3.2: <code>enabled</code>, power ceiling <code>max_power_pct</code>, <code>max_points</code>, <code>point_tx_max_s</code>). Details: <code>docs/tos-cahier-des-charges.md</code>.</p>"
+
+[menus.visitors]
+role = "Manages <strong>receive-only visitors</strong>: accounts that listen to the station and see the operator's screen, without <strong>any</strong> command to the transceiver (no frequency, no mode, no transmission, no STOP). Here you set the <strong>maximum number</strong> of visitors (0 = listening closed on the station; otherwise the operator opens or closes listening from their page or the app, \"Visitor listening\" switch, closed by default), the <strong>\"operator required\"</strong> switch (visitors admitted only if an operator is connected, and disconnected after an adjustable wait, 60 s by default, if the operator loses the link), listening <strong>outside the station's bands</strong> (off by default: silence) and the HF spectrum rate for visitors (5 frames per second by default). Here you create, edit (nickname, password, enabled, end date) and delete visitor accounts, choose the <strong>nickname</strong> of operator accounts, <strong>disconnect</strong> a connected visitor, and <strong>reopen listening</strong> suspended by an overload."
+quand = "Before a radio club demonstration, a training session or shared listening of a QSO; to remove a visitor's access (disable or delete their account)."
+modifie = "The accounts and the <code>[access]</code> section of <code>station.toml</code>, through the same checked path as menu 3.2 (differences shown, confirmation, old version kept; the file is rewritten in its standard form). The station reloads them on its own within a few seconds, <strong>without restarting</strong>: a disabled, expired or deleted account is disconnected at once. \"Disconnect\" does not touch <code>station.toml</code>."
+admin = true
+expert = "<p>Other connected users never see an account's username, only its <strong>nickname</strong> (several accounts can share the same one); only an operator sees usernames and addresses. During a transmission, visitors hear the operator's voice (what goes to the transceiver); the SELCALL code is never shown to them. A visitor can only send two commands (read the state again, show or hide the HF spectrum): everything else is refused by the station, and beyond 20 refusals in one minute its connection is closed with an alert. Visitors have their own quota: they never take an operator's place. If the station is struggling (processor at 85 °C, 90 % loaded, gateway more than 100 ms late or memory almost full, for 10 s), visitors are disconnected with the exact cause; listening reopens on its own after 5 minutes clearly below, or by hand (choice 7) after 3 cuts in one hour. Thresholds: <code>[access] overload_*</code> (menu 3.2). Retransmitting what you receive to third parties is the operator's responsibility: see the remote access guide. Details: <code>docs/visiteurs-cahier-des-charges.md</code>.</p>"
+
+[menus.breizh]
+role = "Links the station to <strong>Breizh Audio Box</strong>, the voice processing that runs on a PC on the same local network: the operator's voice goes through Breizh before reaching the transceiver. Here you <strong>create the pairing key</strong> (shown <strong>only once</strong>, to copy into the \"OpenRemoteTRX\" tab of the Breizh settings together with the station address and port), set the <strong>IP address</strong> and <strong>UDP port</strong> of the Breizh PC, <strong>enable or disable</strong> routing through Breizh, run a <strong>link test without audio</strong> and read the <strong>log</strong> (connections, fallbacks, refusals). The current link state (ready, transmitting through Breizh, fallback, refused, round trip) is shown at the top."
+quand = "When setting up Breizh, after reinstalling Breizh (new key), when the page or the app report a fallback, or to check the link before transmitting."
+modifie = "The key: file <code>breizh.key</code> next to <code>station.toml</code> (never inside it), with the configuration's permissions. The address, port and activation: <code>[breizh]</code> section of <code>station.toml</code>, through the same checked path as menu 3.2 (differences shown, confirmation, old version kept); the station applies them on <strong>restart</strong> (offered). The test and the log change nothing."
+admin = true
+expert = "<p><strong>Safety</strong>: Breizh can never make the station transmit; the station keeps the PTT, the TOT, the audio gate and its limiter, and switches to direct at reduced gain (−6 dB by default) if Breizh stops answering for 100 ms, without cutting the transmission. Breizh's OpenRemoteTRX mode turns off its CAT. The microphone audio travels <strong>unencrypted</strong> on the local network: only a <strong>private</strong> IP address is accepted. On the Breizh PC, the firewall must let in UDP on the chosen port (47100 by default). The test sends a call and five PINGs, never audio; if the station is running with Breizh enabled, Breizh answers \"busy\" (it is already serving the gateway): this is normal, the state is at the top of the menu. Fine settings (delays, fallback gain, automatic return): <code>[breizh]</code>, menu 3.2 and the <code>station.toml</code> reference. Details: <code>docs/breizh-cahier-des-charges.md</code>.</p>"
+
+[menus.network]
+role = "Shows the <strong>quality of the links</strong> between the station and the connected phones or browsers: for each one, the state (good, fair, weak, dropout), the network type, the loss and the round-trip time; the state of the <strong>station probes</strong> towards the router and the Internet; the <strong>last dropout</strong> with its probable segment; and the <strong>\"VPN profile probably shared\"</strong> warning when two devices seem to use the same VPN profile. Here you read the <strong>summary</strong> of the last 24 hours or the last 30 days (dropouts, duration, segments, most affected hours, per network), create an <strong>anonymous export</strong> on the Desktop for the development team, and can <strong>erase everything</strong>."
+quand = "When the link often drops (in the car, on 4G, through a VPN), to find out whether it is the phone, the mobile network, the tunnel, the router or the station; before asking for help (export)."
+modifie = "Nothing, except \"Erase everything\" (confirm by typing EFFACER): the station's network history (dropouts, statistics, devices seen). The indicator thresholds chosen in the page or the app are kept. The export is a zip file on the Desktop."
+admin = true
+expert = "<p>The station sends a one-second heartbeat to each connected client and waits for its echo; three heartbeats without an answer make a dropout. After each dropout, it combines its own probes (router, Internet, ping or else TCP), the measurements sent by the client (including HTTPS access to the station during the dropout) and the regularity of the dropouts to tell which segment probably failed; it is a probability, never a certainty. Two devices on the <strong>same VPN profile</strong> steal the link from each other every 15 to 30 s: <strong>one profile per device</strong>. The probe only measures: it never acts on transmission. Files: <code>netprobe</code> folder in the state folder (7-day log, 30-day dropouts and statistics). Same summary on the command line: <code>trx-netreport</code> (<code>--jours 30</code>, <code>--export FICHIER</code>). Settings: <code>[netprobe]</code> section of <code>station.toml</code> (menu 3.2). \"Erase everything\" asks for <code>sudo</code>: the files belong to the station account. Details: <code>docs/netprobe-cahier-des-charges.md</code>.</p>"
+
+[menus.friends]
+role = "Manages <strong>group presence</strong>: the station's <strong>nickname</strong>, the <strong>groups of friends</strong> (create, invite with a link and a <strong>QR code</strong>, join with a received invitation, leave, delete), and what the station <strong>shares</strong> in each group (frequency and mode, \"On Air\" only, or a short text; invisible). You also see who, in each group, is in a QSO, receiving, in the shack, away or offline."
+quand = "To set up presence with friends equipped with openRemoteTRX, or when the page and the app are not at hand."
+modifie = "The station's presence settings, stored separately in the state folder (not in station.toml); creating, inviting, joining and leaving go through the presence relay. Nothing touches the transceiver: a QSY to a friend is done from the page or the app."
+admin = true
+expert = "<p>The console leaves its request for the \"presence\" module (file <code>presence-request.json</code> in the state folder, with <code>sudo</code> if needed) and reads its answer (<code>presence/console-reply.json</code>, erased after one minute: it may contain an invitation). The feature is enabled in <code>station.toml</code> (menu 3.2): <code>[presence] enabled = true</code> and \"presence\" in <code>[modules] run</code>, then restart the station. The relay only sees encrypted states: no frequency, no mode, no status. An invitation contains the group key: give it only to the invited person; it can be used only once and expires after 7 days. Details: <code>docs/presence-cahier-des-charges.md</code>.</p>"
+
+# ------------------------------------------------------------------ advanced troubleshooting
+
+[[expert]]
+titre = "Console header"
+texte = """
+<p>The first line gives the <strong>installed version</strong>, the second the state (running, stopped, not
+configured yet). Once the station is configured come the <strong>address</strong> where it can be reached from the
+web page or the app (machine IP addresses and port; "this machine only" if it only listens
+locally), then the <strong>transceiver state</strong>: supply voltage and temperature, as read by the
+station ("—": value the transceiver does not provide; the IC-7300MK2, for example, does not report its temperature;
+"readings unavailable": station stopped). The last line gives the <strong>station identifier</strong>:
+a unique code created on first start, which makes it possible to match several reports from the same station. It is
+never sent anywhere automatically.</p>
+"""
+
+[[expert]]
+titre = "Useful files (Debian)"
+texte = """
+<ul>
+<li><code>/etc/trx-remote/station.toml</code>: configuration (edit through menu 3.2).</li>
+<li><code>/var/lib/trx-remote/</code>: station state (safe mode, memories, reports from the page, identifier <code>station-id</code>, DX Cluster).</li>
+<li><code>/run/trx-remote/gateway-status.json</code>: live state published by the gateway (read by the dashboard).</li>
+<li><code>/opt/trx-remote/releases/</code>: versions installed side by side; <code>/opt/trx-remote/current</code> points to the active version.</li>
+<li><code>/var/log/trx-remote-install.log</code>: log of installations and updates.</li>
+</ul>
+"""
+
+[[expert]]
+titre = "Readings from the transceiver (read-only)"
+texte = """
+<p>For an Icom transceiver with a second CI-V port (spectrum), a raw dump of the settings, without any write,
+helps establish the real format of the answers. With the station stopped (menu 1.2), run:</p>
+<pre>/opt/trx-remote/current/venv/bin/python -m trxstation.devtools.civ_scope --port /dev/serial/by-id/&lt;port-B&gt; --reglages</pre>
+<p>The result is saved in a <code>spectre-reglages-…</code> folder: attach it to your request.</p>
+"""
+
+[[expert]]
+titre = "Reporting a problem"
+texte = """
+<ol>
+<li>In the web page: "Report a problem" section (text reviewed before sending).</li>
+<li>On the station: menu 2.3 (troubleshooting report), and if needed the result of menu 2.6.</li>
+<li>Describe what you were doing, what you expected and what happened, with the approximate time.</li>
+</ol>
+"""

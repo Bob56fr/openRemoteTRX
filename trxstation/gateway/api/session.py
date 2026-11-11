@@ -690,7 +690,7 @@ class ControlSession:
                     self._result(cmd.id, False, reason="listeners_unavailable")
                 elif cmd.params["on"] and self.access.settings.max_listeners <= 0:
                     self._result(cmd.id, False, reason="listeners_off",
-                                 detail="écoute des visiteurs fermée sur la station ([access] max_listeners, TRX Console menu 20)")
+                                 detail="écoute des visiteurs fermée sur la station ([access] max_listeners, TRX Console menu 4.2)")
                 else:
                     self.access.switch.set(cmd.params["on"])
                     log.warning("écoute des visiteurs %s par l'opérateur %s", "OUVERTE" if cmd.params["on"] else "fermée",

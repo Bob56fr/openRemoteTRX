@@ -12,7 +12,7 @@ Coupure : une des conditions dure HOLD_S (10 s) :
 
 Réouverture : TOUT est repassé sous les seuils de retour (temp_c - 10, 70 %, lag_ms / 2, mem_pct + 5) sans
 interruption pendant REOPEN_S (5 min). Après MAX_PER_HOUR (3) coupures en une heure ayant déconnecté des visiteurs :
-fermé jusqu'à une réouverture À LA MAIN (console menu 20, page de l'opérateur), acceptée seulement au vert.
+fermé jusqu'à une réouverture À LA MAIN (console menu 4.2, page de l'opérateur), acceptée seulement au vert.
 Pur Python, horloge et mesures injectables. Ne touche JAMAIS au poste ni à l'émission.
 """
 from __future__ import annotations

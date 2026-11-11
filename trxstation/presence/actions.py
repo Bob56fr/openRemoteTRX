@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Actions de l'opérateur sur la présence de groupe (commande client `friends`, TRX Console menu 24).
+"""Actions de l'opérateur sur la présence de groupe (commande client `friends`, TRX Console menu 5.3).
 
 Chaque argument est vérifié ici (le cœur ne contrôle que la forme : action connue, objet de 1 500 octets au plus).
 Aucune action ne touche au poste : `qsy_mark` / `qsy_back` ne font que retenir puis rendre la fréquence et le mode

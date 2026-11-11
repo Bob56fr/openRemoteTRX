@@ -83,7 +83,7 @@ async def run(args) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m trxstation.devtools.presence_buddy", description="Membre d'essai")
-    ap.add_argument("invitation", help="lien d'invitation complet (menu 24 ou « Inviter » de la page)")
+    ap.add_argument("invitation", help="lien d'invitation complet (menu 5.3 ou « Inviter » de la page)")
     ap.add_argument("--minutes", type=float, default=20)
     ap.add_argument("--pseudo", default="ESSAI-PC")
     ap.add_argument("--freq", type=int, default=14_205_000)

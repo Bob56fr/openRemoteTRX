@@ -472,18 +472,18 @@ def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) ->
         return []
     s, c = "Cluster DX", cfg.cluster
     if not c.enabled:
-        return [Check(s, "Module", INFO, "désactivé", "TRX Console, menu 12")] if c.source else []
+        return [Check(s, "Module", INFO, "désactivé", "TRX Console, menu 5.1")] if c.source else []
     active = [x for x in c.source if x.enabled]
     out = [Check(s, "Sources", OK if active else FAIL,
                  f"{len(active)} source(s) active(s) : {', '.join(x.name for x in active)}" if active
-                 else "aucune source active", "" if active else "TRX Console, menu 12")]
+                 else "aucune source active", "" if active else "TRX Console, menu 5.1")]
     from .secretstore import path_for
     spath = path_for(path)
     named = sorted({x.secret for x in active if x.secret})
     st = sysm.stat(spath)
     if named and st is None:
         out.append(Check(s, "secrets.toml", FAIL, f"absent alors que {', '.join(named)} y est attendu : "
-                         "connexion sans mot de passe", "Ressaisir le mot de passe : TRX Console, menu 12"))
+                         "connexion sans mot de passe", "Ressaisir le mot de passe : TRX Console, menu 5.1"))
     elif st is not None:
         mode = st.st_mode & 0o777
         if sysm.platform != "win32" and mode & 0o077:
@@ -499,12 +499,12 @@ def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) ->
         data = None
     if not isinstance(data, dict):
         out.append(Check(s, "Module", WARN, "aucun état publié : module pas encore lancé, ou station arrêtée",
-                         "Vérifier [modules] run et démarrer la station (menu 5)"))
+                         "Vérifier [modules] run et démarrer la station (menu 1.1)"))
         return out
     age = sysm.now() - float(data.get("time") or 0)
     if age > 30:
         out.append(Check(s, "Module", WARN, f"état vieux de {age:.0f} s : module arrêté ou bloqué",
-                         "Journal (menu 7) ; le superviseur le relance s'il s'est arrêté"))
+                         "Journal (menu 1.4) ; le superviseur le relance s'il s'est arrêté"))
         return out
     for name, src in (data.get("sources") or {}).items():
         if not isinstance(src, dict):
@@ -514,7 +514,7 @@ def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) ->
         why = "" if state == "connected" else f" ({str(src.get('message', ''))[:160]})" if src.get("message") else ""
         out.append(Check(s, f"Source {str(name)[:32]}", level,
                          f"{CLUSTER_STATE_TEXT.get(state, state)}{why}",
-                         "" if level == OK else "Tester la source : TRX Console, menu 12"))
+                         "" if level == OK else "Tester la source : TRX Console, menu 5.1"))
     counters = data.get("counters") or {}
     last = counters.get("last_spot_age_s")
     if last is None:
@@ -577,7 +577,7 @@ def check_update(sysm: System, cfg: Config | None) -> list[Check]:
     out = [Check(s, "Version installée", INFO, __version__)]
     previous = sysm.previous_version()
     if previous:
-        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 11)"))
+        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 6.2)"))
     if not PUBLIC_KEYS:
         out.append(Check(s, "Clé de signature", WARN, "aucune clé connue : mise à jour automatique impossible",
                          "Installe une version publiée (sudo bash install.sh)"))
@@ -602,7 +602,7 @@ def check_update(sysm: System, cfg: Config | None) -> list[Check]:
                          "systemctl status trx-update-check.timer"))
     release = state.release
     if release is not None and (parse_version(release.version) or ()) > (parse_version(__version__) or ()):
-        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 10 de TRX Console"))
+        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 6.1 de TRX Console"))
     elif state.ok and not stale:
         out.append(Check(s, "Recherche de mise à jour", OK, f"à jour (vérifié il y a {age_h:.0f} h)"))
     return out

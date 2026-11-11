@@ -145,7 +145,7 @@ Pour essayer davantage, recommencer avec `--listeners 10`.
 | TRX Console s'affiche correctement en SSH : cadres, accents, couleurs | défauts d'affichage |
 | Diagnostic : Python, modules, Hamlib, groupes, température du processeur (capteur `cpu_thermal`) OK | toute ligne en échec |
 | `trx-monitor` dans une 2e fenêtre SSH : radio vivante, spectre HF vert, compteur « Trames » qui avance | |
-| Menu 19 : le QR code s'affiche dans le terminal et le téléphone le lit | |
+| Menu 4.1 : le QR code s'affiche dans le terminal et le téléphone le lit | |
 
 ## 6. La station en marche : mesures
 

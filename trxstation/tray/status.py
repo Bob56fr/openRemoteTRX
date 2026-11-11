@@ -30,7 +30,7 @@ CLUSTER = {"green": "toutes les sources connectées", "orange": "sources en part
 RANK = {"ok": 0, "info": 0, "warn": 1, "bad": 2}
 
 # Où agir (renvois aux outils de la station) : TRX Console sous Debian, menu Démarrer sous Windows.
-DEBIAN_HINTS = {"start": "TRX Console, menu 5 pour la démarrer", "safe": "TRX Console, menu 9", "update": "TRX Console, menu 10"}
+DEBIAN_HINTS = {"start": "TRX Console, menu 1.1 pour la démarrer", "safe": "TRX Console, menu 1.5", "update": "TRX Console, menu 6.1"}
 WINDOWS_HINTS = {"start": "menu Démarrer > TRX distant > 3 - Démarrer la station",
                  "safe": "voir le diagnostic : menu Démarrer > TRX distant > 2", "update": "installer le nouveau paquet"}
 

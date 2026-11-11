@@ -43,7 +43,7 @@ warn_before_s = 10
 heartbeat_interval_ms = 500
 heartbeat_timeout_ms = 2000
 rig_temp_warn_c = 40   # température du poste (si Hamlib la donne) : avertissement
-rig_temp_cut_c = 50    # émission à distance coupée, reprise sous rig_temp_warn_c (TRX Console, menu 16)
+rig_temp_cut_c = 50    # émission à distance coupée, reprise sous rig_temp_warn_c (TRX Console, menu 3.4)
 allow_replay = false   # rediffusion d'un enregistrement de l'audio reçu (accordée par l'assistant, responsabilité de l'opérateur)
 
 [supervisor]
@@ -100,7 +100,7 @@ tx_level_dbfs = -6.0   # niveau de la trame émise (sous le seuil d'ALC)
 notify_on_call = true   # notification ntfy à l'ouverture
 history_size = 10
 
-[access]   # visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) ; TRX Console menu 20 ; relu sans redémarrer
+[access]   # visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) ; TRX Console menu 4.2 ; relu sans redémarrer
 max_listeners = 0   # visiteurs connectés en même temps ; 0 = fonction désactivée
 max_operators = 4   # connexions opérateur (quota à part, jamais pris par un visiteur)
 listeners_need_operator = true   # true : visiteurs admis seulement si un opérateur est connecté
@@ -158,7 +158,7 @@ radae_rx_path = "radae_rx"
 # Compte visiteur (exemple) : role = "listener", pseudo montré aux autres connectés à la place de l'identifiant.
 # [[clients]]
 # id = "club1"
-# password_hash = "..."   # TRX Console menu 20 (jamais de mot de passe en clair)
+# password_hash = "..."   # TRX Console menu 4.2 (jamais de mot de passe en clair)
 # role = "listener"
 # pseudo = "Radio-club"
 # enabled = true

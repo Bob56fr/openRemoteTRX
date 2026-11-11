@@ -4,6 +4,7 @@
 bloc WordPress qui n'accepte que les messages de GitHub Pages."""
 from __future__ import annotations
 
+import html
 import importlib.util
 import re
 from pathlib import Path
@@ -19,9 +20,10 @@ spec.loader.exec_module(doc)
 def test_every_console_menu_is_explained_and_nothing_else():
     menus, content = doc.console_menus(), doc.load_content()
     doc.check(menus, content)
-    assert [key for key, _, _ in menus] == [str(n) for n in range(1, len(menus) + 1)]
+    from trxstation.console import MENU_THEMES
+    assert [m[0] for m in menus] == [f"{t}.{n}" for t, _, ms in MENU_THEMES for n in range(1, len(ms) + 1)]
     content["menus"].pop("temperature")
-    with pytest.raises(doc.DocError, match="menu 16"):
+    with pytest.raises(doc.DocError, match="menu 3.4"):
         doc.check(menus, content)
     content = doc.load_content()
     content["menus"]["fantome"] = {"role": "", "quand": "", "modifie": "", "admin": False}
@@ -45,8 +47,31 @@ def test_page_is_self_contained_and_reports_its_height():
     assert urls <= {doc.REPO_URL, doc.SITE_URL}, urls
     assert "trx-doc-height" in page and f"version {doc.project_version()}" in page
     assert not re.search(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", page)            # aucune adresse IP
-    for key in range(1, len(doc.console_menus()) + 1):
-        assert f'id="menu-{key}"' in page
+    for m in doc.console_menus():
+        assert f'id="menu-{m[0].replace(".", "-")}"' in page
+
+
+def test_every_language_has_the_same_manual_and_its_own_page():
+    from trxstation.i18n import LANGS
+    assert doc.LANGS == LANGS
+    contents = doc.load_all()
+    doc.check_all(contents)
+    for lang in LANGS:
+        sub = "" if lang == "fr" else lang + "/"
+        page = (doc.SITE / "console" / sub / "index.html").read_text(encoding="utf-8")
+        assert f'<html lang="{lang}">' in page and html.escape(contents[lang]["page"]["titre"]) in page
+        for other in LANGS:
+            if other != lang:
+                assert f'hreflang="{other}"' in page                      # lien vers chaque autre langue
+        assert (doc.SITE / "console" / doc.project_version() / sub / "index.html").is_file()
+    broken = {lang: dict(c) for lang, c in contents.items()}
+    broken["es"] = dict(broken["es"], parcours=broken["es"]["parcours"][:-1])
+    with pytest.raises(doc.DocError, match="parcours"):
+        doc.check_all(broken)
+    broken = doc.load_all()
+    broken["de"]["menus"]["start"]["admin"] = not broken["de"]["menus"]["start"]["admin"]
+    with pytest.raises(doc.DocError, match="admin"):
+        doc.check_all(broken)
 
 
 def test_wordpress_block_trusts_only_github_pages():

@@ -104,7 +104,7 @@ def fix_permissions(path: str | Path, account: str = "trx") -> None:
 
 def render(secrets: dict[str, str]) -> str:
     lines = ["# secrets.toml : mots de passe des sources du cluster DX. NE JAMAIS JOINDRE À UN RAPPORT.",
-             "# Droits 0600. Se modifie avec TRX Console (menu 12).", "[secrets]"]
+             "# Droits 0600. Se modifie avec TRX Console (menu 5.1).", "[secrets]"]
     for name in sorted(secrets):
         if not NAME_RE.fullmatch(name):
             raise SecretsError(f"nom de secret invalide : {name[:32]}")

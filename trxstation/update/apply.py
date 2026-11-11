@@ -4,7 +4,7 @@
 
     apply --config C install --version 0.23.0   installe la version annoncée (confirmée dans TRX Console)
     apply --config C local --zip F [--sans-signature]
-                                                installe un paquet DÉJÀ PRÉSENT sur la machine (TRX Console, menu 13) :
+                                                installe un paquet DÉJÀ PRÉSENT sur la machine (TRX Console, menu 6.3) :
                                                 signature vérifiée si F.sig est à côté ; sans .sig, refus sauf
                                                 --sans-signature (confirmation explicite de l'opérateur)
     apply --config C rollback                   revient à la version précédente (sans réseau)

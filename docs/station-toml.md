@@ -2,9 +2,9 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.126.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.127.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
-`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
+`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
 **Débutant** : seuls les réglages courant vous concernent ; l'assistant les règle pour vous. Les réglages expert ont des valeurs par défaut sûres : n'y touchez qu'en connaissance de cause. Emplacement du fichier : `/etc/trx-remote/station.toml` (Debian, Raspberry Pi), `C:\ProgramData\trx-remote\station.toml` (Windows).
 
@@ -12,7 +12,7 @@ TRX distant version 0.126.0. Page du site : https://bob56fr.github.io/openRemote
 
 Le transceiver piloté par Hamlib : modèle, liaison CAT, commande du PTT, modes et puissance.
 
-Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -29,7 +29,7 @@ Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au red
 
 Les deux sens audio entre la station et le poste (interface son type Digirig, SignaLink, ou carte USB du poste).
 
-Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -43,7 +43,7 @@ Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au red
 
 Comment la page web et l'application joignent la station. Voir aussi le guide d'accès distant (VPN ou port exposé avec HTTPS).
 
-Se modifie : Assistant (menu 2), appairage d'un téléphone (menu 19), ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1), appairage d'un téléphone (menu 4.1), ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -52,7 +52,7 @@ Se modifie : Assistant (menu 2), appairage d'un téléphone (menu 19), ou menu 1
 | `gateway_bind` | courant | `"127.0.0.1"` | Adresse d'écoute de la station pour la page et l'application. `127.0.0.1` : cette machine seulement ; l'adresse de la machine sur votre VPN ; ou `0.0.0.0` : toutes ses adresses. **Sécurité** : Hors de la machine, HTTPS est exigé (`tls_cert`, `tls_key`), sauf `allow_insecure_http` dans un VPN. |
 | `gateway_port` | courant | `8443` | Port de la station pour la page web et l'application. |
 | `web_client` | expert | `true` | Sert la page web de contrôle sur le même port que l'application. false : application seulement. |
-| `tls_cert` | courant | `""` | Certificat HTTPS de la station (fichier PEM). L'assistant en génère un ; son empreinte sert à l'appairage du téléphone (menu 19). |
+| `tls_cert` | courant | `""` | Certificat HTTPS de la station (fichier PEM). L'assistant en génère un ; son empreinte sert à l'appairage du téléphone (menu 4.1). |
 | `tls_key` | courant | `""` | Clé privée du certificat HTTPS. **Sécurité** : Fichier secret : il ne doit être lisible que par la station. |
 | `allow_insecure_http` | expert | `false` | Autorise l'écoute hors de la machine SANS HTTPS. À n'accepter que dans un VPN qui chiffre déjà tout. **Sécurité** : Sur Internet sans VPN, mots de passe et audio passeraient en clair : laissez false. |
 | `trusted_proxies` | expert | `["127.0.0.1", "::1"]` | Adresses (ou plages) des relais de confiance devant la station, dont l'en-tête X-Forwarded-For est cru pour connaître l'adresse réelle du client. |
@@ -62,7 +62,7 @@ Se modifie : Assistant (menu 2), appairage d'un téléphone (menu 19), ou menu 1
 
 Les règles que la station applique à TOUTE émission demandée à distance, indépendamment de la page et de l'application.
 
-Se modifie : Menu 14 ; seuils de température : menu 16 ; rediffusion : assistant (menu 2). (au redémarrage).
+Se modifie : Menu 3.2 ; seuils de température : menu 3.4 ; rediffusion : assistant (menu 3.1). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -80,7 +80,7 @@ Se modifie : Menu 14 ; seuils de température : menu 16 ; rediffusion : assistan
 
 Une entrée par bande où l'émission est permise. **Liste vide = réception seule.** Les bandes proposées par l'assistant (IARU Région 1) sont un point de départ : vérifiez-les pour votre licence et votre pays.
 
-Se modifie : Assistant (menu 2) ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1) ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -92,13 +92,13 @@ Se modifie : Assistant (menu 2) ou menu 14. (au redémarrage).
 
 Une entrée par compte qui peut se connecter : opérateurs (contrôle complet) et visiteurs (écoute seule).
 
-Se modifie : Assistant (menu 2), visiteurs (menu 20), commande `trx-setup --add-client`. (relu sans redémarrer).
+Se modifie : Assistant (menu 3.1), visiteurs (menu 4.2), commande `trx-setup --add-client`. (relu sans redémarrer).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
 | `id` | courant | `""` | Identifiant de connexion du compte, saisi dans la page ou l'application. Exemple : "telephone", "voiture" |
 | `token` | expert | `""` | Ancien secret en clair (anciennes versions). Toujours accepté, mais à remplacer par un mot de passe (`password_hash`). **Sécurité** : Un secret en clair dans le fichier est lisible par qui lit le fichier : remplacez-le. |
-| `password_hash` | courant | `""` | Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 20 ou `trx-setup --set-password`. |
+| `password_hash` | courant | `""` | Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 4.2 ou `trx-setup --set-password`. |
 | `role` | courant | `"operator"` | `operator` : contrôle complet ; `listener` : visiteur en écoute seule, aucune commande vers le poste. |
 | `pseudo` | courant | `""` | Nom montré aux autres connectés à la place de l'identifiant (plusieurs comptes peuvent porter le même). |
 | `enabled` | courant | `true` | false : connexion refusée, et une connexion en cours est fermée. |
@@ -108,7 +108,7 @@ Se modifie : Assistant (menu 2), visiteurs (menu 20), commande `trx-setup --add-
 
 Des comptes qui écoutent la station et voient l'écran de l'opérateur, sans aucune commande vers le poste.
 
-Se modifie : Menu 20. (relu sans redémarrer).
+Se modifie : Menu 4.2. (relu sans redémarrer).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -125,9 +125,9 @@ Se modifie : Menu 20. (relu sans redémarrer).
 
 ## Mesure de TOS [swr]
 
-La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 21.
+La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 2.5.
 
-Se modifie : Menu 14. (au redémarrage).
+Se modifie : Menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -140,7 +140,7 @@ Se modifie : Menu 14. (au redémarrage).
 
 Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.
 
-Se modifie : Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
+Se modifie : Menu 3.2 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -157,7 +157,7 @@ Se modifie : Menu 14 ; la clé d'appairage se crée avec TRX Console (fichier `b
 
 La station mesure en continu la liaison avec chaque téléphone ou navigateur connecté (pertes, temps aller-retour, gigue, coupures) et dit après une coupure quel tronçon a probablement lâché. Un petit indicateur l'affiche ; les statistiques des 30 derniers jours, l'effacement et l'export sont dans la page et l'application. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission.
 
-Se modifie : Menu 14. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici. (au redémarrage).
+Se modifie : Menu 3.2. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -184,7 +184,7 @@ Se modifie : Menu 14. Les seuils de l'indicateur choisis dans la page ou l'appli
 
 Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.
 
-Se modifie : Menu 14, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+Se modifie : Menu 3.2, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -196,7 +196,7 @@ Se modifie : Menu 14, et ajouter « presence » à `[modules] run`. Les groupes,
 
 La station décode elle-même la voix numérique FreeDV (RADE V1) avec deux programmes de l'équipe FreeDV, lancés seulement quand l'opérateur choisit le mode FreeDV dans la page : tous les connectés, visiteurs compris, entendent alors la voix décodée à la place du son du poste, avec la synchro, le SNR et les indicatifs reçus. Réception seulement : rien n'est émis, et le poste n'est pas touché.
 
-Se modifie : Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage. (au redémarrage).
+Se modifie : Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -209,7 +209,7 @@ Se modifie : Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeD
 
 Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.
 
-Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -225,7 +225,7 @@ Se modifie : Assistant (menu 2), profils de poste (menu 18), ou menu 14. (au red
 
 Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.
 
-Se modifie : Menu 14 ; le code et les options se règlent depuis la page ou l'application. (au redémarrage).
+Se modifie : Menu 3.2 ; le code et les options se règlent depuis la page ou l'application. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -244,7 +244,7 @@ Se modifie : Menu 14 ; le code et les options se règlent depuis la page ou l'ap
 
 Les spots des clusters DX, du RBN et des cibistes, affichés sur le spectre et en liste.
 
-Se modifie : Menu 14 ; mots de passe des sources : fichier `secrets.toml` (jamais ici). (au redémarrage).
+Se modifie : Menu 3.2 ; mots de passe des sources : fichier `secrets.toml` (jamais ici). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -264,7 +264,7 @@ Se modifie : Menu 14 ; mots de passe des sources : fichier `secrets.toml` (jamai
 
 Une entrée par source de spots (cluster telnet, RBN, site web).
 
-Se modifie : Menu 14. (au redémarrage).
+Se modifie : Menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -282,7 +282,7 @@ Se modifie : Menu 14. (au redémarrage).
 
 La seconde couche de sécurité, indépendante de la passerelle : elle surveille l'émission, rigctld et la machine, coupe l'émission en cas de doute et relance ce qui ne répond plus.
 
-Se modifie : Menu 14. (au redémarrage).
+Se modifie : Menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -312,7 +312,7 @@ Se modifie : Menu 14. (au redémarrage).
 
 Programmes complémentaires lancés à côté de la station (Cluster DX…), reliés par un bus local.
 
-Se modifie : Menu 14. (au redémarrage).
+Se modifie : Menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -325,7 +325,7 @@ Se modifie : Menu 14. (au redémarrage).
 
 Recherche des nouvelles versions publiées (rien n'est installé sans votre accord).
 
-Se modifie : Menu 14 ; installation : menu 10. (au redémarrage).
+Se modifie : Menu 3.2 ; installation : menu 6.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -336,7 +336,7 @@ Se modifie : Menu 14 ; installation : menu 10. (au redémarrage).
 
 Où trouver Hamlib quand il n'est pas dans le chemin du système.
 
-Se modifie : Assistant (menu 2) ou menu 14. (au redémarrage).
+Se modifie : Assistant (menu 3.1) ou menu 3.2. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|

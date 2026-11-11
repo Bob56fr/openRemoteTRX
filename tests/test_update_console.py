@@ -52,10 +52,11 @@ def text(out):
 def test_header_announces_a_newer_version(tmp_path):
     con, _, _ = make(tmp_path, state=chk.UpdateState(installed="0.22.0", ok=True, release=release()))
     assert "NOUVELLE VERSION 0.23.0 DISPONIBLE (installée : 0.22.0)" in con.header()
-    assert "Menu 10 : voir les changements" in con.header()
+    assert "Menu 6.1 : voir les changements" in con.header()
     assert "\x1b" not in con.header()                                     # pas de couleur hors d'un terminal
-    assert con.menu_label("10", "Mise à jour") == "Mise à jour   <== NOUVELLE VERSION 0.23.0"
-    assert con.menu_label("11", "Retour") == "Retour"
+    assert con.menu_label("6.1", "Mise à jour") == "Mise à jour   <== NOUVELLE VERSION 0.23.0"
+    assert con.menu_label("6", "Mises à jour") == "Mises à jour   <== NOUVELLE VERSION 0.23.0"   # thème marqué aussi
+    assert con.menu_label("6.2", "Retour") == "Retour"
     con, _, _ = make(tmp_path, state=chk.UpdateState(installed="0.22.0", ok=True, release=release()),
                      installed="0.23.0")                         # déjà installée : plus annoncée
     assert "Nouvelle version" not in con.header()
@@ -66,7 +67,7 @@ def test_header_announces_a_newer_version(tmp_path):
 def test_menu_lists_update_and_rollback(tmp_path):
     con, _, _ = make(tmp_path)
     keys = {key: label for key, label, _ in con.items}
-    assert keys["10"].startswith("Mise à jour") and keys["11"] == "Revenir à la version précédente"
+    assert keys["6.1"].startswith("Mise à jour") and keys["6.2"] == "Revenir à la version précédente"
 
 
 def test_update_shows_notes_and_installs_only_after_typed_confirmation(tmp_path):

@@ -115,7 +115,7 @@ l'administrateur du site de cet usage.
 
 ### Régler le Cluster DX
 
-Debian : **TRX Console, menu 12**. Windows ou à la main :
+Debian : **TRX Console, menu 5.1**. Windows ou à la main :
 
     python -m trxstation.cluster.setup --config station.toml
 
@@ -134,7 +134,7 @@ Ensuite, le menu permet de revenir sur ces choix (`f`), d'ajouter, modifier ou
 supprimer une source, de passer un cluster en premier, d'activer ou de
 désactiver une source ou tout le module, de régler filtres et durées de vie.
 Rien n'est écrit avant `w` (Enregistrer), et la configuration est validée
-avant. Redémarrer ensuite la station (menu 5 ; la console le propose).
+avant. Redémarrer ensuite la station (menu 1.1 ; la console le propose).
 
 - **Test obligatoire** de toute source ajoutée ou modifiée : connexion,
   identification, un spot en 60 s au plus. Compte rendu : OK, serveur

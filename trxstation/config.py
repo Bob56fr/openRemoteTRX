@@ -974,7 +974,7 @@ def _list(values: list[str]) -> str:
 
 def _render_cluster(c: Cluster) -> list[str]:
     lines = [
-        "[cluster]   # module Cluster DX : se règle avec TRX Console (menu 12) ou python -m trxstation.cluster.setup",
+        "[cluster]   # module Cluster DX : se règle avec TRX Console (menu 5.1) ou python -m trxstation.cluster.setup",
         f"enabled = {str(c.enabled).lower()}",
         f"call = {_s(c.call)}   # VOTRE indicatif radioamateur, seul envoyé aux clusters et au RBN",
         f"cb_call = {_s(c.cb_call)}   # votre indicatif de cibiste (sources CB)",

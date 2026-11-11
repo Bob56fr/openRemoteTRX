@@ -1,13 +1,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Fabrique le mode d'emploi de TRX Console (page HTML, thème sombre) publié par GitHub Pages.
+"""Fabrique le mode d'emploi de TRX Console (pages HTML, thème sombre) publié par GitHub Pages, dans chaque langue.
 
-La liste des menus vient du code (`trxstation.console.Console.items`) ; les explications de
-`docs/console/contenu.toml`. Un menu sans explication (ou une explication sans menu) arrête la fabrication.
+La liste des menus (thèmes, numéros, libellés) vient du code (`trxstation.console`, catalogues `trxstation/i18n/`) ;
+les explications de `docs/console/contenu.toml` (français, référence) et `contenu.<langue>.toml` (en, de, es).
+Toutes les langues doivent avoir les MÊMES menus, champs, étapes et blocs : sinon la fabrication et les tests
+échouent (un nouveau menu s'écrit donc dans les 4 langues). La table `[ui]` porte les textes de la page.
 
 Résultat dans `docs/site/` :
-  - `console/index.html` : dernière version (adresse fixe, celle de l'iframe du site rf-diy.com) ;
-  - `console/<version>/index.html` : une copie par version, gardée (l'utilisateur d'une ancienne version lit la sienne) ;
+  - `console/index.html` (français) et `console/<langue>/index.html` : dernière version (adresses fixes ; celle en
+    français est celle de l'iframe du site rf-diy.com) ;
+  - `console/<version>/index.html` et `console/<version>/<langue>/index.html` : une copie par version, gardée ;
   - `index.html` : accueil minimal vers la page.
 Usage : python scripts/build_console_doc.py   (à relancer à chaque étape qui touche la console ; les tests vérifient
 que la page publiée est à jour).
@@ -24,6 +27,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTENT = ROOT / "docs" / "console" / "contenu.toml"
+LANGS = ("fr", "en", "de", "es")                         # même liste que trxstation.i18n.LANGS (vérifié par les tests)
+UI_KEYS = ("lang_name", "version", "nav_first", "nav_menus", "nav_expert", "h_first", "h_menus", "menus_intro", "dt_role",
+           "dt_when", "dt_changes", "dt_rights", "rights_yes", "rights_no", "more", "latest", "others", "footer",
+           "source", "langs")
+
+
+def content_path(lang: str) -> Path:
+    return CONTENT if lang == "fr" else CONTENT.with_name(f"contenu.{lang}.toml")
 # Aide de la touche « h » de la console : mêmes textes, en texte simple, livrés avec la station (package-data).
 HELP = ROOT / "trxstation" / "console_help.json"
 SITE = ROOT / "docs" / "site"
@@ -75,8 +86,9 @@ dd{margin:0;min-width:0}
 .sudo{color:var(--emission);font-weight:600}
 .libre{color:var(--ok);font-weight:600}
 .expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
-.expert::before{content:"Pour aller plus loin";display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;
-  letter-spacing:.04em}
+.plus{display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.theme{margin:1.4rem 0 .3rem;color:var(--doux);font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+.langues{margin:0 0 1rem;color:var(--doux);font-size:.95rem}
 .bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 @media (max-width:30rem){dl{grid-template-columns:1fr}dt{margin-top:.3rem}}
@@ -107,34 +119,76 @@ def project_version(root: Path = ROOT) -> str:
     return tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 
 
-def console_menus() -> list[tuple[str, str, str]]:
-    """[(numéro, libellé, nom de la méthode)] dans l'ordre du menu, lus dans le code de la console."""
+def console_menus(lang: str = "fr") -> list[tuple[str, str, str, str, str]]:
+    """[(numéro « thème.n », libellé, nom de la méthode, numéro du thème, titre du thème)] dans l'ordre du menu, lus
+    dans le code de la console, dans la langue demandée."""
     sys.path.insert(0, str(ROOT))
-    from trxstation.console import Console
+    from trxstation.console import MENU_THEMES, Console
     con = Console(ROOT / "absent" / "station.toml", update_state=lambda: None, previous=lambda: None, home=ROOT,
-                  editor="nano")
-    return [(key, label, fn.__name__) for key, label, fn in con.items]
+                  editor="nano", lang=lang)
+    titles = {theme: con.t(f"theme.{tid}") for theme, tid, _ in MENU_THEMES}
+    return [(key, label, fn.__name__, key.split(".")[0], titles[key.split(".")[0]]) for key, label, fn in con.items]
 
 
 def load_content(path: Path = CONTENT) -> dict:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def check(menus: list[tuple[str, str, str]], content: dict) -> None:
+def load_all() -> dict[str, dict]:
+    return {lang: load_content(content_path(lang)) for lang in LANGS}
+
+
+def check(menus: list[tuple], content: dict, lang: str = "fr") -> None:
+    path = content_path(lang)
     documented = set(content.get("menus", {}))
-    names = {name for _, _, name in menus}
-    problems = [f"menu {key} « {label} » ({name}) sans explication dans {CONTENT.name}"
-                for key, label, name in menus if name not in documented]
-    problems += [f"explication [menus.{name}] sans menu correspondant dans la console" for name in sorted(documented - names)]
+    names = {m[2] for m in menus}
+    problems = [f"menu {m[0]} « {m[1]} » ({m[2]}) sans explication dans {path.name}"
+                for m in menus if m[2] not in documented]
+    problems += [f"explication [menus.{name}] sans menu correspondant dans la console ({path.name})"
+                 for name in sorted(documented - names)]
     for name, fields in content.get("menus", {}).items():
         missing = [f for f in ("role", "quand", "modifie", "admin") if f not in fields]
         if missing:
-            problems.append(f"[menus.{name}] : champ(s) manquant(s) {', '.join(missing)}")
-    text = CONTENT.read_text(encoding="utf-8") if CONTENT.exists() else ""
+            problems.append(f"[menus.{name}] ({path.name}) : champ(s) manquant(s) {', '.join(missing)}")
+    missing_ui = [k for k in UI_KEYS if k not in content.get("ui", {})]
+    if missing_ui:
+        problems.append(f"[ui] ({path.name}) : clé(s) manquante(s) {', '.join(missing_ui)}")
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
     if re.search(r"<\s*(script|iframe|img|link|style)\b", text, re.I):
-        problems.append("contenu : balise interdite (script, iframe, img, link, style)")
+        problems.append(f"{path.name} : balise interdite (script, iframe, img, link, style)")
     if re.search(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", text):
-        problems.append("contenu : adresse IP trouvée (exemples génériques seulement)")
+        problems.append(f"{path.name} : adresse IP trouvée (exemples génériques seulement)")
+    if problems:
+        raise DocError("\n".join(problems))
+
+
+def check_all(contents: dict[str, dict]) -> None:
+    """Chaque langue complète, et la même structure que le français (menus, champs, étapes, blocs, [ui])."""
+    problems = []
+    ref = contents["fr"]
+    for lang in LANGS:
+        c = contents.get(lang)
+        if c is None:
+            problems.append(f"{content_path(lang).name} absent")
+            continue
+        try:
+            check(console_menus(lang), c, lang)
+        except DocError as exc:
+            problems.append(str(exc))
+        if lang == "fr":
+            continue
+        for name, fields in ref.get("menus", {}).items():
+            other = c.get("menus", {}).get(name, {})
+            if set(fields) != set(other):
+                problems.append(f"[menus.{name}] : champs différents du français dans {content_path(lang).name}")
+            elif other.get("admin") != fields.get("admin"):
+                problems.append(f"[menus.{name}] : admin différent du français dans {content_path(lang).name}")
+        for part in ("parcours", "expert"):
+            if len(c.get(part, [])) != len(ref.get(part, [])):
+                problems.append(f"{content_path(lang).name} : {len(c.get(part, []))} [[{part}]] au lieu de "
+                                f"{len(ref.get(part, []))} (français)")
+        if set(c.get("page", {})) != set(ref.get("page", {})):
+            problems.append(f"{content_path(lang).name} : [page] n'a pas les mêmes clés que le français")
     if problems:
         raise DocError("\n".join(problems))
 
@@ -143,58 +197,77 @@ def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
-def render(version: str, menus: list[tuple[str, str, str]], content: dict, versions: list[str], up: str = "") -> str:
-    """`up` : chemin vers le dossier console/ depuis la page ("" pour console/index.html, "../" pour une version)."""
-    check(menus, content)
-    page = content["page"]
+def render(version: str, menus: list[tuple], content: dict, versions: list[str], lang: str = "fr",
+           versioned: bool = False, site: Path = SITE) -> str:
+    """Page d'une langue. `versioned` : copie gardée dans console/<version>/ (liens relatifs adaptés)."""
+    check(menus, content, lang)
+    page, ui = content["page"], content["ui"]
     esc = html.escape
+    depth = (1 if versioned else 0) + (0 if lang == "fr" else 1)
+    root = "../" * depth                                    # vers console/
+
+    def page_url(v: str | None, lg: str) -> str:
+        return root + (f"{v}/" if v else "") + ("" if lg == "fr" else f"{lg}/")
+
+    links = []
+    for lg in LANGS:
+        name = esc(load_content(content_path(lg))["ui"]["lang_name"])
+        links.append(f"<strong>{name}</strong>" if lg == lang else
+                     f'<a href="{page_url(version if versioned else None, lg)}" hreflang="{lg}">{name}</a>')
     out = ["<!doctype html>",
            "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->",
            "<!-- Copyright (C) 2026 RF-DIY.COM -->",
-           "<!-- Fabriqué par scripts/build_console_doc.py à partir de docs/console/contenu.toml : ne pas modifier à la main. -->",
-           '<html lang="fr">', "<head>", '<meta charset="utf-8">',
+           "<!-- Fabriqué par scripts/build_console_doc.py à partir de docs/console/contenu*.toml : ne pas modifier à la main. -->",
+           f'<html lang="{lang}">', "<head>", '<meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width, initial-scale=1">',
            f"<title>{esc(page['titre'])} ({esc(version)})</title>",
            f"<style>{CSS.strip()}</style>", "</head>", "<body>", "<main>",
            f"<h1>{esc(page['titre'])}</h1>",
-           f'<p class="version">TRX distant version {esc(version)}</p>',
+           f'<p class="version">{esc(ui["version"].format(version=version))}</p>',
+           f'<p class="langues">{esc(ui["langs"])} {" · ".join(links)}</p>',
            page["intro"].strip(),
            f'<div class="lecture">{page["lecture"].strip()}</div>',
-           '<ul class="sommaire"><li><a href="#premier-deploiement">Premier déploiement</a></li>'
-           '<li><a href="#menus">Les menus</a></li><li><a href="#depannage">Dépannage avancé</a></li></ul>',
-           '<h2 id="premier-deploiement">Premier déploiement, pas à pas</h2>', '<ol class="etapes">']
+           f'<ul class="sommaire"><li><a href="#premier-deploiement">{esc(ui["nav_first"])}</a></li>'
+           f'<li><a href="#menus">{esc(ui["nav_menus"])}</a></li><li><a href="#depannage">{esc(ui["nav_expert"])}</a></li></ul>',
+           f'<h2 id="premier-deploiement">{esc(ui["h_first"])}</h2>', '<ol class="etapes">']
     for step in content.get("parcours", []):
         out.append(f"<li><div><h3>{esc(step['titre'])}</h3>{step['texte'].strip()}</div></li>")
-    out += ["</ol>", '<h2 id="menus">Les menus de la console</h2>',
-            "<p>Tape le numéro du menu puis Entrée ; <code>q</code> pour quitter. Les réponses aux questions "
-            "(oui, non, OUI, EMETTRE...) ne tiennent compte ni des majuscules ni des accents. "
-            '<span class="sudo">Mot de passe</span> : le menu demande ton mot de passe de session (sudo).</p>']
-    for key, label, name in menus:
+    out += ["</ol>", f'<h2 id="menus">{esc(ui["h_menus"])}</h2>', ui["menus_intro"].strip()]
+    current_theme = None
+    for key, label, name, theme, theme_title in menus:
+        if theme != current_theme:
+            current_theme = theme
+            out.append(f'<h3 class="theme" id="theme-{esc(theme)}">{esc(theme)}) {esc(theme_title)}</h3>')
         item = content["menus"][name]
-        rights = ('<span class="sudo">mot de passe de session demandé</span>' if item["admin"]
-                  else '<span class="libre">non</span>')
-        extra = f'<div class="expert">{item["expert"].strip()}</div>' if item.get("expert") else ""
-        out.append(f'<details id="menu-{esc(key)}"><summary><span class="num">{esc(key)}</span>'
+        rights = (f'<span class="sudo">{esc(ui["rights_yes"])}</span>' if item["admin"]
+                  else f'<span class="libre">{esc(ui["rights_no"])}</span>')
+        extra = (f'<div class="expert"><p class="plus">{esc(ui["more"])}</p>{item["expert"].strip()}</div>'
+                 if item.get("expert") else "")
+        out.append(f'<details id="menu-{esc(key.replace(".", "-"))}"><summary><span class="num">{esc(key)}</span>'
                    f"<h3>{esc(label)}</h3></summary><div class=\"corps\"><dl>"
-                   f"<dt>À quoi il sert</dt><dd>{item['role']}</dd>"
-                   f"<dt>Quand</dt><dd>{item['quand']}</dd>"
-                   f"<dt>Ce qu'il modifie</dt><dd>{item['modifie']}</dd>"
-                   f"<dt>Droits</dt><dd>{rights}</dd></dl>{extra}</div></details>")
-    out.append('<h2 id="depannage">Dépannage avancé</h2>')
-    for block in content.get("expert", []):
-        out.append(f'<div class="bloc" id="{_slug(block["titre"])}"><h3>{esc(block["titre"])}</h3>{block["texte"].strip()}</div>')
+                   f"<dt>{esc(ui['dt_role'])}</dt><dd>{item['role']}</dd>"
+                   f"<dt>{esc(ui['dt_when'])}</dt><dd>{item['quand']}</dd>"
+                   f"<dt>{esc(ui['dt_changes'])}</dt><dd>{item['modifie']}</dd>"
+                   f"<dt>{esc(ui['dt_rights'])}</dt><dd>{rights}</dd></dl>{extra}</div></details>")
+    out.append(f'<h2 id="depannage">{esc(ui["nav_expert"])}</h2>')
+    for n, block in enumerate(content.get("expert", []), 1):
+        out.append(f'<div class="bloc" id="bloc-{n}"><h3>{esc(block["titre"])}</h3>{block["texte"].strip()}</div>')
     others = [v for v in versions if v != version]
-    archive = ("Autres versions : " + ", ".join(f'<a href="{up}{esc(v)}/">{esc(v)}</a>' for v in others) + ". ") if others else ""
-    if up:
-        archive = f'<a href="{up}">Dernière version</a>. ' + archive
+
+    def archived(v: str) -> str:            # une ancienne version n'a peut-être que la page en français
+        has = lang == "fr" or (site / "console" / v / lang / "index.html").is_file()
+        return page_url(v, lang if has else "fr")
+    archive = (esc(ui["others"]) + " " + ", ".join(f'<a href="{archived(v)}">{esc(v)}</a>' for v in others) + ". ") if others else ""
+    if versioned:
+        archive = f'<a href="{page_url(None, lang)}">{esc(ui["latest"])}</a>. ' + archive
     out += ["<footer>",
-            f'<p>{archive}Projet libre (AGPL-3.0-or-later) : <a href="{REPO_URL}" target="_blank" rel="noopener noreferrer">'
-            f'code source</a> · <a href="{SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
+            f'<p>{archive}{esc(ui["footer"])} : <a href="{REPO_URL}" target="_blank" rel="noopener noreferrer">'
+            f'{esc(ui["source"])}</a> · <a href="{SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
             "</footer>", "</main>", f"<script>{RESIZE_JS.strip()}</script>", "</body>", "</html>", ""]
     return "\n".join(out)
 
 
-def html_to_text(fragment: str, width: int = 76) -> str:
+def html_to_text(fragment: str, width: int = 76, french: bool = True) -> str:
     """HTML simple du contenu (p, ul, li, code, strong, em, a) -> texte pour le terminal, coupé à `width`."""
     text = re.sub(r"\s+", " ", fragment)
     text = re.sub(r"<li[^>]*>", "\n- ", text, flags=re.I)
@@ -208,20 +281,24 @@ def html_to_text(fragment: str, width: int = 76) -> str:
             if lines and lines[-1] != "":
                 lines.append("")
             continue
-        # typographie française : jamais de « : ; ? ! » ni de guillemet seuls en début ou fin de ligne
-        para = re.sub(r" ([:;?!»])", " \\1", para).replace("« ", "« ")
+        if french:      # typographie française : jamais de « : ; ? ! » ni de guillemet seuls en début ou fin de ligne
+            para = re.sub(r" ([:;?!»])", " \\1", para).replace("« ", "« ")
         lines.append(textwrap.fill(para, width, subsequent_indent="  " if para.startswith("- ") else "",
                                    break_on_hyphens=False, break_long_words=False).replace(" ", " "))
     return "\n".join(lines).strip()
 
 
-def help_json(content: dict) -> str:
-    """Contenu de trxstation/console_help.json : pour chaque menu, ses explications en texte simple."""
-    menus = {}
-    for name, fields in content.get("menus", {}).items():
-        menus[name] = {key: html_to_text(fields.get(key, "")) for key in ("role", "quand", "modifie", "expert")}
-        menus[name]["admin"] = bool(fields.get("admin"))
-    return json.dumps({"menus": menus}, ensure_ascii=False, indent=1, sort_keys=True) + "\n"
+def help_json(contents: dict[str, dict]) -> str:
+    """Contenu de trxstation/console_help.json : pour chaque langue et chaque menu, ses explications en texte simple."""
+    langs = {}
+    for lang, content in contents.items():
+        menus = {}
+        for name, fields in content.get("menus", {}).items():
+            menus[name] = {key: html_to_text(fields.get(key, ""), french=lang == "fr")
+                           for key in ("role", "quand", "modifie", "expert")}
+            menus[name]["admin"] = bool(fields.get("admin"))
+        langs[lang] = {"menus": menus}
+    return json.dumps({"langs": langs}, ensure_ascii=False, indent=1, sort_keys=True) + "\n"
 
 
 def published_versions(site: Path = SITE) -> list[str]:
@@ -233,17 +310,24 @@ def published_versions(site: Path = SITE) -> list[str]:
 def build(site: Path = SITE, version: str | None = None) -> dict[Path, str]:
     """Pages à écrire {chemin: contenu}. La page d'une version ANTÉRIEURE n'est jamais réécrite."""
     version = version or project_version()
-    menus, content = console_menus(), load_content()
+    contents = load_all()
+    check_all(contents)
     versions = sorted(set(published_versions(site)) | {version},
                       key=lambda v: tuple(int(x) for x in v.split(".")), reverse=True)
     home = ("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->\n<!-- Copyright (C) 2026 RF-DIY.COM -->\n"
             '<html lang="fr"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=console/">'
             "<title>TRX distant</title></head><body style=\"background:#0f141c;color:#dbe3ee;font-family:system-ui\">"
             '<p><a style="color:#4c9be8" href="console/">Mode d\'emploi de TRX Console</a></p></body></html>\n')
-    return {site / "console" / "index.html": render(version, menus, content, versions),
-            site / "console" / version / "index.html": render(version, menus, content, versions, up="../"),
-            site / "index.html": home,
-            HELP: help_json(content)}
+    pages: dict[Path, str] = {}
+    for lang in LANGS:
+        sub = "" if lang == "fr" else lang + "/"
+        menus, content = console_menus(lang), contents[lang]
+        pages[site / "console" / sub / "index.html"] = render(version, menus, content, versions, lang=lang, site=site)
+        pages[site / "console" / version / sub / "index.html"] = render(version, menus, content, versions, lang=lang,
+                                                                         versioned=True, site=site)
+    pages[site / "index.html"] = home
+    pages[HELP] = help_json(contents)
+    return pages
 
 
 def main() -> int:
