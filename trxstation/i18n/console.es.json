@@ -1,8 +1,8 @@
 {
   "app.title": "TRX Console  -  TRX distant versión {version}",
-  "head.not_configured": "estación AÚN NO CONFIGURADA: empieza por el menú {menu}",
-  "head.running": "estación en marcha",
-  "head.stopped": "estación detenida",
+  "head.not_configured": "Estación AÚN NO CONFIGURADA: empieza por el menú {menu}",
+  "head.running": "Estación en marcha",
+  "head.stopped": "Estación detenida",
   "head.station_id": "Identificador de la estación: {id}",
   "head.station_id_later": "se crea en el primer arranque de la estación",
   "head.new_version": "NUEVA VERSIÓN {version} DISPONIBLE (instalada: {installed})",

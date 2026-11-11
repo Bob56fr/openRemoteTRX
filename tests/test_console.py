@@ -275,3 +275,22 @@ def test_network_menu_reports_exports_and_clears(tmp_path):
     assert "Rien n'a été effacé." in text
     clear = [c for c in fake.calls if c[0][0] == "find"]
     assert len(clear) == 1 and clear[0][1] is True and "seuils.json" in clear[0][0]
+
+
+def test_language_menu_comes_first_in_yellow_and_the_station_state_is_coloured(tmp_path):
+    write_config(tmp_path)
+    con, _, out = console(tmp_path, running=True)
+    con.color = True
+    con.show_main()
+    text = "\n".join(out)
+    assert "\x1b[1;32mStation en marche\x1b[0m" in text
+    menu = [line for line in text.splitlines() if line.strip()[:2] in ("0)", "1)", "6)") or "\x1b[1;33m0)" in line]
+    assert "\x1b[1;33m0) Langue / Language" in menu[0] and menu[1].strip().startswith("1) Station")
+    con, _, out = console(tmp_path, running=False)
+    con.color = True
+    assert "\x1b[1;31mStation arrêtée\x1b[0m" in con.header()
+    con.color = False                                                 # hors d'un terminal : aucune couleur
+    assert "\x1b" not in con.header() and "Station arrêtée" in con.header()
+    con, _, _ = console(tmp_path / "vide", running=False)
+    con.color = True
+    assert "\x1b[1;33mStation PAS ENCORE CONFIGURÉE" in con.header()

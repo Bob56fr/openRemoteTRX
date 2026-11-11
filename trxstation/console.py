@@ -52,6 +52,7 @@ GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSIO
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
 NOTES_PAGE_LINES = 20             # notes de version : affichées par pages de 20 lignes
 UPDATE_MENU = "6.1"
+GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu 0 (terminal seulement)
 # Menus par thème : (numéro du thème, identifiant du titre, [méthodes de Console dans l'ordre des sous-menus]).
 # Libellés : « menu.<méthode> » et « theme.<id> » des catalogues trxstation/i18n/console.<langue>.json.
 MENU_THEMES = (
@@ -1765,9 +1766,11 @@ class Console:
     def header(self) -> str:
         t = self.t
         if not self.config.exists():
-            state = t("head.not_configured", menu=menu_number("assistant"))
+            state = self.paint(t("head.not_configured", menu=menu_number("assistant")), YELLOW)
+        elif self.station_running():
+            state = self.paint(t("head.running"), GREEN)
         else:
-            state = t("head.running") if self.station_running() else t("head.stopped")
+            state = self.paint(t("head.stopped"), RED)
         line = f"\n=== {t('app.title', version=self.installed)} ===\n  {state}"
         if self.config.exists():
             line += "".join("\n" + extra for extra in self.station_lines())
@@ -1869,11 +1872,15 @@ class Console:
             out += ["", t("help.more").upper(), texts["expert"]]
         self.say("\n".join(out))
 
+    def paint(self, text: str, color: str) -> str:
+        """Texte en couleur dans un vrai terminal (gras) ; tel quel sinon (tests, fichier, pythonw)."""
+        return f"[1;{color}m{text}[0m" if self.color else text
+
     def show_main(self) -> None:
         self.say(self.header())
+        self.say("  " + self.paint(f"0) {self.t('menu.language')}", YELLOW))     # en tête : retrouvable dans toute langue
         for number, title, desc in self.themes():
             self.say(f"  {number}) {self.menu_label(number, title)}" + (f"  ({desc})" if desc else ""))
-        self.say(f"  0) {self.t('menu.language')}")
         self.say("  " + self.t("loop.help_main"))
         self.say("  " + self.t("loop.quit"))
 
