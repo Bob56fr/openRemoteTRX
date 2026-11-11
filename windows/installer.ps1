@@ -301,8 +301,17 @@ $VenvPy = Venv-Python $Release
 # figé fait échouer l'installation ; puis l'application seule, sans rien télécharger d'autre.
 $LockFile = Join-Path $Release "app\requirements.lock"
 if (-not (Test-Path -LiteralPath $LockFile)) { Fail "paquet sans empreintes des modules Python (app\requirements.lock) : refusé." }
-& $VenvPy -m pip install --disable-pip-version-check --require-hashes -r $LockFile | Out-Host
-if ($LASTEXITCODE -ne 0) { Fail "installation des modules Python impossible : Internet, pare-feu d'entreprise, ou EMPREINTE DIFFÉRENTE." }
+# Échec : EMPREINTE DIFFÉRENTE (ORT-9311, critique : ne jamais contourner) ou autre cause (ORT-9308) ; pip écrit son
+# compte-rendu complet dans $PipLog.
+$PipLog = Join-Path $env:TEMP ("trx-remote-pip-" + [guid]::NewGuid().ToString("N") + ".log")
+& $VenvPy -m pip install --disable-pip-version-check --log $PipLog --require-hashes -r $LockFile | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    $HashBad = (Test-Path -LiteralPath $PipLog) -and (Select-String -LiteralPath $PipLog -SimpleMatch "DO NOT MATCH THE HASHES" -Quiet)
+    Remove-Item -LiteralPath $PipLog -Force -ErrorAction SilentlyContinue
+    if ($HashBad) { Fail "ORT-9311 EMPREINTE DIFFÉRENTE d'un module Python : installation arrêtée (fichier altéré, miroir ou proxy qui modifie les téléchargements). Ne pas contourner. https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9311/" }
+    Fail "ORT-9308 installation des modules Python impossible : Internet, pare-feu d'entreprise ou module introuvable. https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9308/"
+}
+Remove-Item -LiteralPath $PipLog -Force -ErrorAction SilentlyContinue
 & $VenvPy -m pip install --disable-pip-version-check --no-deps --no-build-isolation (Join-Path $Release 'app') | Out-Host
 if ($LASTEXITCODE -ne 0) { Fail "installation de TRX distant impossible." }
 & $VenvPy -c "import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial, pystray, PIL; print('modules OK')"

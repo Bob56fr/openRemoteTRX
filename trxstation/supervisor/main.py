@@ -13,7 +13,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .. import config as cfgmod
-from ..logsetup import LOG_DIR_ENV, setup_logging
+from ..logsetup import LOG_DIR_ENV, add_json_journal, setup_logging
 from ..paths import default_config_path
 from ..ports import port_present
 from ..procutil import acquire_instance_lock
@@ -113,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Un superviseur est déjà en cours d'exécution (port de verrouillage "
               f"{cfg.supervisor.instance_lock_port} occupé).", file=sys.stderr)
         return 4
+    add_json_journal("superviseur", cfg.supervisor.state_dir)
     stop_file = stop_request_path(cfg)
     stop_file.unlink(missing_ok=True)                         # demande d'arrêt d'une session précédente : oubliée
     status_path = cfg.supervisor.status_path

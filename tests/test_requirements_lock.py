@@ -76,3 +76,20 @@ def test_a_stale_lock_is_refused(tmp_path):
         '"numpy>=1.24"]', '"numpy>=1.25"]'), encoding="utf-8")
     (tmp_path / "requirements.lock").write_bytes(LOCK.read_bytes())
     assert not build_lock.is_fresh(tmp_path)
+
+
+def test_installers_tell_a_hash_mismatch_ort_9311_from_other_failures_ort_9308():
+    """Empreinte différente = ORT-9311 (critique, ne jamais contourner) ; autre échec de pip = ORT-9308. La phrase
+    cherchée dans le compte-rendu de pip (`--log`) est celle de pip lui-même."""
+    import os
+
+    import pip
+    marker = "DO NOT MATCH THE HASHES"
+    source = Path(os.path.dirname(pip.__file__)) / "_internal" / "exceptions.py"
+    assert marker in " ".join(source.read_text(encoding="utf-8").replace('"\n', "").split()), "message de pip changé"
+    sh = (ROOT / "debian" / "install.sh").read_text(encoding="utf-8")
+    ps = (ROOT / "windows" / "installer.ps1").read_text(encoding="utf-8-sig")
+    for text in (sh, ps):
+        assert "--log" in text and marker in text
+        assert text.index("ORT-9311") < text.index("ORT-9308")       # l'empreinte est examinée d'abord
+        assert "erreurs/ORT-9311/" in text and "erreurs/ORT-9308/" in text

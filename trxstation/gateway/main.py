@@ -27,7 +27,7 @@ from ..audio_devices import real_device_names
 from ..config import Config, exposure_problem
 from ..layout import LayoutStore
 from ..modules.gateway_bridge import ModuleBridge
-from ..logsetup import setup_logging
+from ..logsetup import add_json_journal, setup_logging
 from ..paths import default_config_path
 from ..procutil import pid_alive
 from ..spectrum.service import SpectrumService
@@ -306,6 +306,7 @@ def main(argv: list[str] | None = None) -> int:
     except cfgmod.ConfigError as exc:
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2
+    add_json_journal("passerelle", cfg.supervisor.state_dir)
 
     async def _main() -> None:
         loop = asyncio.get_running_loop()

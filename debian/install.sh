@@ -420,8 +420,19 @@ printf '  Téléchargement et installation des modules Python (de 2 à 10 minute
 # du paquet) : un module différent de celui qui a été figé fait échouer l'installation. Puis l'application seule.
 LOCK_FILE=$RELEASE/app/requirements.lock
 [[ -f $LOCK_FILE ]] || fail "paquet sans empreintes des modules Python (app/requirements.lock) : refusé, demande un paquet récent."
-"$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --require-hashes -r "$LOCK_FILE" \
-  || fail "installation des modules Python impossible : module introuvable ou EMPREINTE DIFFÉRENTE (détails dans $LOG)."
+# Échec : EMPREINTE DIFFÉRENTE (ORT-9311, critique : paquet altéré ou miroir compromis, ne jamais contourner) ou autre
+# cause (ORT-9308 : Internet, proxy, module introuvable) ; pip écrit son compte-rendu complet dans PIP_LOG.
+PIP_LOG=$(mktemp)
+if ! "$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --log "$PIP_LOG" --require-hashes -r "$LOCK_FILE"; then
+  cat "$PIP_LOG" >>"$LOG" 2>/dev/null || true
+  if grep -q "DO NOT MATCH THE HASHES" "$PIP_LOG"; then
+    rm -f "$PIP_LOG"
+    fail "ORT-9311 EMPREINTE DIFFÉRENTE d'un module Python : installation arrêtée (fichier altéré, miroir ou proxy qui modifie les téléchargements). Ne pas contourner. https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9311/"
+  fi
+  rm -f "$PIP_LOG"
+  fail "ORT-9308 installation des modules Python impossible : Internet, proxy ou module introuvable (détails dans $LOG). https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9308/"
+fi
+rm -f "$PIP_LOG"
 "$REL_VENV/bin/python" -m pip install --quiet --disable-pip-version-check --no-deps --no-build-isolation "$RELEASE/app" \
   || fail "installation de TRX distant impossible (détails dans $LOG)."
 "$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \

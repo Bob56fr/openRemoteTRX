@@ -66,7 +66,7 @@ Périmètre : `raise` métier, `except` qui journalise, alerte, refuse ou bascul
 14. **Pas d'alerte ntfy** pour FreeDV, le cluster, le relais de présence et le SELCALL en réception (FreeDV n'est pas mûr).
 15. **Battement des modules internes** : pas encore ; ORT-6504 reste pour les modules extérieurs (Breizh, FreeDV).
 16. **Fichier de clés de présence abîmé** : le module ne plante plus et n'écrase jamais les clés. Il émet ORT-6920, publie le problème (ligne « Présence » de trx-monitor) et attend. En passant, un défaut a été corrigé : `await a if c else b` n'attendait pas `b`, et sans bus le module rendait la main tout de suite. Test : `test_presence_module.py`.
-17. **Installation** : deux codes, ORT-9308 (modules Python impossibles) et ORT-9311 (EMPREINTE différente, critique). Les scripts d'installation devront distinguer les deux messages de pip (partie 2b).
+17. **Installation** : deux codes, ORT-9308 (modules Python impossibles) et ORT-9311 (EMPREINTE différente, critique). Les scripts d'installation distinguent les deux depuis l'étape 174 (station 0.132.0) : compte-rendu de pip (`--log`), phrase « DO NOT MATCH THE HASHES » = ORT-9311, tout autre échec = ORT-9308.
 18. **Présence** : deux codes, ORT-6908 et 6909 (refus ordinaires) et ORT-6923 (signature invalide, attaque possible).
 19. **CAT `invalid`** : deux codes, ORT-2012 (fonction non gérée) et ORT-2013 (valeur hors plage). Le code machine `invalid` du protocole reste le même ; l'événement les distinguera (partie 2b).
 20. **Refus d'émission dus au poste** : gardés en 5100.

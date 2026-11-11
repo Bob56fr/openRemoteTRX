@@ -50,6 +50,7 @@ def _state_dir(sysm: System, config_path: Path) -> Path | None:
 
 
 MAX_PAGE_REPORTS = 10
+JSON_JOURNALS = ("passerelle", "superviseur")      # logsetup.add_json_journal
 PAGE_REPORT_NAME = re.compile(r"^page-\d{8}-\d{6}-[A-Za-z0-9_-]{1,32}\.txt$")
 
 
@@ -103,6 +104,10 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
         archive.writestr("cluster-etat.json", cluster if cluster is not None else "{}\n")
         station_id = sysm.read_text(id_path(state_dir)) if state_dir else None    # GUID de la station
         archive.writestr("station-id.txt", (station_id or "inconnu (station jamais démarrée ?)\n").strip() + "\n")
+        for process in JSON_JOURNALS:                # journaux structurés (codes d'erreur), fichier courant seulement
+            text = sysm.read_text(state_dir / f"journal-{process}.jsonl") if state_dir else None
+            if text is not None:
+                archive.writestr(f"journaux/journal-{process}.jsonl", text)
         for page in page_reports(state_dir)[-MAX_PAGE_REPORTS:]:    # « Signaler un problème » de la page, relus par l'utilisateur
             text = sysm.read_text(page)
             if text is not None:

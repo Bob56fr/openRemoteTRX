@@ -105,6 +105,7 @@ def test_troubleshooting_zip_includes_the_page_reports(tmp_path, monkeypatch):
     reports = ReportStore(tmp_path / "state" / "reports")
     reports.save("phone", "Le waterfall reste noir")
     (tmp_path / "state" / "reports" / "autre.txt").write_text("pas un rapport", encoding="utf-8")
+    (tmp_path / "state" / "journal-passerelle.jsonl").write_text('{"code": "ORT-5024"}\n', encoding="utf-8")
 
     class Sys:
         def run(self, cmd, timeout=15):
@@ -120,3 +121,5 @@ def test_troubleshooting_zip_includes_the_page_reports(tmp_path, monkeypatch):
         names = archive.namelist()
         page = [n for n in names if n.startswith("rapports-page/")]
         assert len(page) == 1 and "Le waterfall reste noir" in archive.read(page[0]).decode("utf-8")
+        assert "ORT-5024" in archive.read("journaux/journal-passerelle.jsonl").decode("utf-8")
+        assert "journaux/journal-superviseur.jsonl" not in names            # absent : rien d'inventé
