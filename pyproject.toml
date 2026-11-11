@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "cryptography>=41", "segno>=1.5"]   # cryptography : signature des paquets (build_debian_zip.py)
+dev = ["pytest>=8", "cryptography>=41", "segno>=1.5", "pyyaml>=6"]   # cryptography : signature des paquets (build_debian_zip.py) ; pyyaml : catalogue d'erreurs (trxstation/errors/)
 monitor = ["textual>=0.50"]
 audio = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "pyserial>=3.5", "numpy>=1.24"]   # pyserial : spectre HF par le second port du poste ; numpy : SELCALL
 tls = ["cryptography>=41"]
@@ -36,6 +36,7 @@ trx-netreport = "trxstation.netprobe.netreport:main"
 "trxstation.gateway.api" = ["static/*"]
 "trxstation.modules" = ["builtin/*/manifest.toml"]
 "trxstation" = ["console_help.json"]   # aide de la touche « h » de TRX Console (scripts/build_console_doc.py)
+"trxstation.errors" = ["*.yaml"]   # catalogue d'erreurs et registre des préfixes (cahier du monitoring, § 7)
 
 [tool.setuptools.packages.find]
 include = ["trxstation*"]

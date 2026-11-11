@@ -1,0 +1,43 @@
+# Registre des préfixes de codes d'erreur (cahier des charges du monitoring inter-stations, § 7).
+# Un préfixe = 3 lettres majuscules, unique, jamais réutilisé. ORT est réservé au cœur d'openRemoteTRX.
+# Un module extérieur livre son catalogue <PREFIXE>-catalog.yaml (même structure que catalog.yaml,
+# français et anglais obligatoires). Les problèmes de LIAISON entre la station et un module restent
+# des codes ORT-65xx : c'est la station qui les constate.
+#
+# Champs : nom, role, interaction (mode d'interaction avec la station), contact, version_min
+# (version minimale d'openRemoteTRX), catalogue (chemin du catalogue, relatif à ce dossier pour le cœur,
+# au dossier d'installation du module sinon ; null = pas encore fourni).
+
+prefixes:
+  ORT:
+    nom: openRemoteTRX (cœur)
+    role: réservé au cœur de la station (passerelle, superviseur, outils, modules internes)
+    interaction: interne
+    contact: https://github.com/Bob56fr/openRemoteTRX/issues
+    version_min: 0.123.0
+    catalogue: catalog.yaml
+    en:
+      nom: openRemoteTRX (core)
+      role: reserved for the station core (gateway, supervisor, tools, built-in modules)
+
+  BZA:
+    nom: Breizh Audio Box
+    role: traitement de la voix émise entre le micro du client et le poste (route d'émission de la station)
+    interaction: UDP authentifié par HMAC, port 47100, blocs de 480 échantillons (docs/breizh-cahier-des-charges.md § 5)
+    contact: à préciser
+    version_min: 0.99.0
+    catalogue: null
+    en:
+      nom: Breizh Audio Box
+      role: processing of the transmitted voice between the client microphone and the radio (station transmit route)
+
+  FDV:
+    nom: FreeDV
+    role: encodage et décodage numérique sur la passerelle (RADE V1 en réception aujourd'hui)
+    interaction: processus enfants lancés par la passerelle (freedv-ka9q, radae_rx), son par l'entrée standard, messages par la sortie d'erreur
+    contact: à préciser
+    version_min: 0.122.0
+    catalogue: null
+    en:
+      nom: FreeDV
+      role: digital voice encoding and decoding on the gateway (RADE V1 receive today)
