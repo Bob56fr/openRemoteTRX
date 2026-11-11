@@ -333,6 +333,13 @@ audio { display: none; }
 .fdv-list { max-height: 12rem; overflow-y: auto; margin: .3rem 0 0; padding-left: 1.4rem; font-size: .85rem; }
 .fdv-list .stars { color: var(--alerte); letter-spacing: .05em; }
 .fdv-list .stars.good { color: var(--succes); }
+.fdva-wrap { max-height: 22rem; overflow: auto; }
+.fdva { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.fdva th, .fdva td { text-align: left; padding: .2rem .35rem; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.fdva td.f { font-family: monospace; white-space: nowrap; font-weight: 600; }
+.fdva tr.go { cursor: pointer; } .fdva tr.go:hover { background: var(--fond-panneau); }
+.fdva tr.here td.f { color: var(--succes); }
+.fdva .on { color: var(--succes); font-weight: 600; }
 .sel-ind.open { background: var(--succes); color: var(--succes-sur); border-color: var(--succes); }
 .sel-state { font-weight: 700; }
 #sec-selcall .row { flex-wrap: wrap; }

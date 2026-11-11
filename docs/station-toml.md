@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.124.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.125.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -203,6 +203,7 @@ Se modifie : Menu 14 ; le mode FreeDV se choisit dans la page (rubrique « FreeD
 | `enabled` | courant | `false` | true : FreeDV est proposé dans la page (rubrique et voyant « FDV ») ; les décodeurs ne tournent que pendant le mode FreeDV choisi par l'opérateur. **Sécurité** : Réception seulement : le mode FreeDV ne change ni la fréquence ni le mode du poste, et se refuse pendant une émission. Une panne des décodeurs n'arrête jamais la station : après 5 relances en 10 minutes, le son du poste revient. (depuis 0.122.0) |
 | `ka9q_path` | expert | `"freedv-ka9q"` | Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows). Debian et Raspberry Pi : `sudo bash compiler-freedv.sh` (dossier du paquet) les compile et les met dans le PATH ; rien à régler ensuite. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode FreeDV est refusé avec le nom du programme manquant. Exemple : `freedv-ka9q` (défaut, Debian et Windows), ou le chemin complet d'un programme compilé à part. (depuis 0.122.0) |
 | `radae_rx_path` | expert | `"radae_rx"` | Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows), comme freedv-ka9q. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Exemple : `radae_rx` (depuis 0.122.0) |
+| `locator` | courant | `""` | Locator Maidenhead de la station. Sert à la liste « Activité FreeDV » (module `freedv_activity` de `[modules] run`) : distance de chaque station et note de chance de réception. Il n'est envoyé nulle part : FreeDV Reporter est lu en simple observateur. Valeurs : 4 ou 6 caractères (JN18 ou JN18du), ou vide (liste sans distance, note moins juste). Exemple : `JN18du` (depuis 0.125.0) |
 
 ## Spectre HF du poste [spectrum]
 

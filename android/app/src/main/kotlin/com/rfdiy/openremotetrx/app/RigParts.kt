@@ -322,7 +322,8 @@ internal fun RigScope.RigDialogsHost() {
     if (breizhDialog) rig.breizh?.let { BreizhDialog(it, rig.breizhEvents) { breizhDialog = false } }
     if (freedvDialog) rig.freedv?.let {
         FreeDvDialog(it, rig.freedvNotice, operator = !listener && connected && rig.protocolOk,
-            transmitting = (rig.state?.ptt?.state ?: "RX") != "RX") { freedvDialog = false }
+            transmitting = (rig.state?.ptt?.state ?: "RX") != "RX",
+            activity = rig.freedvActivity, activityNotice = rig.freedvActivityNotice) { freedvDialog = false }
     }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (netOpen) NetScreen(rig) { netOpen = false }

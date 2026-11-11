@@ -2,8 +2,11 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.app
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -20,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.RigHub
+import com.rfdiy.openremotetrx.logic.FreeDvActivities
+import com.rfdiy.openremotetrx.logic.FreeDvActivityView
 import com.rfdiy.openremotetrx.logic.FreeDvLevel
 import com.rfdiy.openremotetrx.logic.FreeDvView
 
@@ -37,7 +42,8 @@ fun freedvColor(level: FreeDvLevel): Color = when (level) {
  * décodée arrive par le son normal de la station : rien à régler sur le téléphone.
  */
 @Composable
-fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitting: Boolean, onDismiss: () -> Unit) {
+fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitting: Boolean,
+                 activity: FreeDvActivityView? = null, activityNotice: String = "", onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
@@ -59,6 +65,7 @@ fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitti
                     if (transmitting) Text("Refusé pendant une émission.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                     if (notice.isNotEmpty()) Text(notice, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 }
+                if (activity != null) FreeDvActivitySection(activity, activityNotice, operator)
                 Text("Indicatifs décodés", style = MaterialTheme.typography.titleSmall)
                 if (view.calls.isEmpty()) Text("aucun pour l'instant", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 for (c in view.calls) {
@@ -84,4 +91,45 @@ fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitti
             }
         },
     )
+}
+
+/**
+ * Activité FreeDV (module « freedv_activity ») : stations actives par fréquence, d'après FreeDV Reporter lu par la
+ * station en observateur. Comme la liste de la rubrique FreeDV de la page : un OPÉRATEUR touche une ligne = QSY
+ * IMMÉDIAT (USB si besoin ; refusé pendant l'émission) ; un visiteur la lit seulement.
+ */
+@Composable
+private fun FreeDvActivitySection(a: FreeDvActivityView, notice: String, operator: Boolean) {
+    Text("Activité FreeDV", style = MaterialTheme.typography.titleSmall)
+    Text(
+        "D'après FreeDV Reporter (qso.freedv.org), lu par la station en simple observateur : rien n'est envoyé. " +
+            "Note = chance de réception ici (RADE V1) : stations qui émettent, voisins qui décodent." +
+            (if (operator) " Touchez une fréquence pour y aller (USB si le poste n'est pas en BLU supérieure)." else ""),
+        color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
+    )
+    Text(a.text, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+    if (notice.isNotEmpty()) Text(notice, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
+    if (a.rows.isEmpty()) {
+        Text(if (a.status == "ok") FreeDvActivities.EMPTY else "—", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+    }
+    for (r in a.rows) {
+        val rowModifier = Modifier.fillMaxWidth().let { if (operator) it.clickable { RigHub.freedvActivityQsy(r.hz) } else it }
+        Column(rowModifier.padding(vertical = 3.dp)) {
+            Text(buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = if (r.here) Page.SUCCES else Color.Unspecified)) {
+                    append(r.freqText + (if (r.here) FreeDvActivities.HERE else ""))
+                }
+                append("  · note " + r.noteText)
+            }, style = MaterialTheme.typography.bodyMedium)
+            Text(buildAnnotatedString {
+                append("Émettent : ")
+                if (r.tx.isEmpty()) append("—")
+                r.tx.forEachIndexed { i, t ->
+                    if (i > 0) append(", ")
+                    if (t.on) withStyle(SpanStyle(color = Page.SUCCES, fontWeight = FontWeight.Bold)) { append(t.text) } else append(t.text)
+                }
+            }, style = MaterialTheme.typography.bodySmall)
+            Text("Reçoivent : " + (r.rx.joinToString(", ").ifEmpty { "—" }), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }

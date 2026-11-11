@@ -1256,8 +1256,26 @@ step("FreeDV : voyant et rubrique seulement si annoncé, bouton du mode grisé e
   assert.match($("fdv-ind").className, /\bbad\b/); assert.match($("fdv-state").textContent, /abandonné : radae_rx gelé/);
   await $("fdv-ind").click();
   assert.equal($("sec-freedv").open, true);
+  // Activité FreeDV (module freedv_activity) : liste absente sans message, puis lignes ; clic = QSY immédiat
+  assert.equal($("fdva").hidden, true);
+  send({ type: "module", module: "freedv_activity", data: { kind: "freedv_activity", retain: "snapshot", status: "ok", message: "",
+    total: 140, locator: true, t: Math.floor(Date.now() / 1000), freqs: [
+      { f: 14236000, note: 4.4, tx: [{ c: "W6GOK", km: 8700, on: true, min: null, m: "RADEV1" }], rx: [{ c: "F4ABC", km: 420, snr: 6, m: "RADEV1" }] },
+      { f: 7177000, note: 0.4, tx: [{ c: "VK5KVA", km: null, on: false, min: 4, m: "RADEV1" }], rx: [] }] } });
+  await wait(30);
+  assert.equal($("fdva").hidden, false);
+  assert.equal($("fdva-state").textContent, "140 stations connectées à FreeDV Reporter");
+  assert.equal($("fdva-rows").children.length, 2);
+  const first = $("fdva-rows").children[0];
+  assert.match(first.className, /\bhere\b/); assert.equal(first.children[0].textContent, "14236,0 kHz ◀ poste");
+  assert.equal(first.children[2].children[0].textContent, "W6GOK 8700 km ÉMET"); assert.equal(first.children[3].textContent, "F4ABC 420 km 6 dB");
+  assert.equal($("fdva-rows").children[1].children[2].children[0].textContent, "VK5KVA (4 min)");
+  const freqsBefore = sent("set_frequency").length;
+  await $("fdva-rows").children[1].click(); await wait();
+  assert.equal(sent("set_frequency").length, freqsBefore + 1); assert.equal(sent("set_frequency").at(-1).hz, 7177000);   // poste en USB : mode gardé
+  answerAll(); await wait();
   await $("disconnect").click(); await wait();
-  assert.equal($("sec-freedv").hidden, true); assert.equal($("fdv-ind").hidden, true);
+  assert.equal($("sec-freedv").hidden, true); assert.equal($("fdv-ind").hidden, true); assert.equal($("fdva").hidden, true);
 });
 
 step("reconnexion automatique : grand texte à la place de la fréquence, sans redemander le mot de passe, annulation, échec, reprise", async () => {

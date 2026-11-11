@@ -285,3 +285,16 @@ les clients ne décodent rien.
 - **Pannes** : un décodeur arrêté, gelé ou introuvable est relancé (1, 2, 5, 10 puis 30 s) ; au-delà de 5 relances en
   10 minutes, le mode est quitté (`freedv_event` `fault`, `state.freedv.fault`), jusqu'à une nouvelle demande.
 - Exemples : `state_freedv`, `freedv_event`, `freedv_set_result` de [`tests/protocol/messages.json`](../tests/protocol/messages.json).
+- **Activité FreeDV** (station 0.125.0+, module `freedv_activity` de `[modules] run`, désactivé par défaut) : la station lit
+  FreeDV Reporter (qso.freedv.org) en OBSERVATEUR (rôle « view » : rien n'est envoyé) et publie toutes les 10 s, à TOUS les
+  clients (visiteurs compris), un message de module (`type: "module"`, `module: "freedv_activity"`) dont `data` vaut :
+  `kind: "freedv_activity"`, `retain: "snapshot"`, `status` (`ok`, `connexion`, `erreur`), `message` (cause lisible de
+  l'erreur), `total` (stations connectées au service), `locator` (booléen : `[freedv] locator` réglé, donc distances
+  présentes), `t` (heure Unix de l'envoi : au-delà de 60 s sans nouveau message, la liste est périmée), `freqs` (20 au
+  plus, la plus prometteuse en tête ; activité HF 1,8 à 29,7 MHz par pas de 500 Hz) : `f` (Hz), `note` (chance de
+  réception ici, RADE V1 seulement : émetteur en cours 2, récent 1, × 0,4 au-delà de 3 000 km ou distance inconnue ;
+  voisin à moins de 1 500 km qui décode à 3 dB ou plus : +2, +3 sous 800 km), `tx` (8 au plus, ceux qui émettent en
+  tête : `c` indicatif, `km` ou `null`, `on` émet en ce moment, `min` minutes depuis la dernière émission (15 au plus) ou
+  `null`, `m` mode FreeDV, `RADEV1` ou autre), `rx` (6 au plus, les plus proches en tête : `c`, `km`, `snr` en dB, `m`).
+  Le QSY d'un OPÉRATEUR vers une ligne est immédiat et passe par les commandes habituelles : `set_mode` `USB` si le
+  poste n'est ni en USB ni en PKTUSB, puis `set_frequency` (refusés pendant l'émission). Exemple : `module_freedv_activity`.

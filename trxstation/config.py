@@ -188,6 +188,8 @@ class Freedv:
     enabled: bool = False             # fonction disponible sur cette station (décodeurs installés)
     ka9q_path: str = "freedv-ka9q"    # voix décodée et indicatif (freedv-integrations) ; nom seul = cherché dans le PATH
     radae_rx_path: str = "radae_rx"   # synchro, SNR et décalage (rade_c) ; nom seul = cherché dans le PATH
+    locator: str = ""                 # locator Maidenhead de la station (4 ou 6 caractères) : distances et note de la
+                                      # liste « Activité FreeDV » (module freedv_activity) ; vide = sans distance
 
 
 @dataclass
@@ -797,6 +799,9 @@ def _presence_problems(pr: Presence) -> list[str]:
     return p
 
 
+_LOCATOR = re.compile(r"^[A-R]{2}[0-9]{2}([A-X]{2})?$")
+
+
 def _freedv_problems(fd: Freedv) -> list[str]:
     p = []
     if not isinstance(fd.enabled, bool):
@@ -805,6 +810,8 @@ def _freedv_problems(fd: Freedv) -> list[str]:
         value = getattr(fd, name)
         if not isinstance(value, str) or not value.strip() or any(c in value for c in "\r\n\0"):
             p.append(f"[freedv] {name} : chemin du programme (ou son nom, cherché dans le PATH) attendu")
+    if not isinstance(fd.locator, str) or (fd.locator.strip() and not _LOCATOR.match(fd.locator.strip().upper())):
+        p.append("[freedv] locator : locator Maidenhead de 4 ou 6 caractères attendu (ex. JN18 ou JN18du), ou vide")
     return p
 
 
@@ -1169,6 +1176,7 @@ def render_toml(cfg: Config) -> str:
         f"enabled = {str(cfg.freedv.enabled).lower()}",
         f"ka9q_path = {_s(cfg.freedv.ka9q_path)}   # nom seul = cherché dans le PATH",
         f"radae_rx_path = {_s(cfg.freedv.radae_rx_path)}",
+        f"locator = {_s(cfg.freedv.locator)}   # locator de la station (JN18du) : distances de la liste « Activité FreeDV »",
         "",
     ]
     for client in cfg.clients:

@@ -1,0 +1,27 @@
+# Module « Activité FreeDV » (étape 167) : stations FreeDV actives par fréquence, d'après FreeDV Reporter
+# (qso.freedv.org) lu en OBSERVATEUR (rien n'est envoyé : ni indicatif, ni locator, ni fréquence).
+# AUCUN droit sur le poste : le QSY se fait par les commandes habituelles du client.
+[module]
+name = "freedv_activity"
+version = "0.1.0"
+api = "1.0"
+entry = "trxstation.freedv.activity_service"
+start = "auto"
+description = "Activité FreeDV : stations actives par fréquence, d'après FreeDV Reporter (lecture seule)"
+
+[rights]
+events = []
+commands = []
+client_messages = true          # liste « freedv_activity » à TOUS les clients, visiteurs compris
+verify_tokens = false
+
+[resources]
+cpu_quota = 5         # % d'un cœur
+memory_max_mb = 96    # 3 000 stations au plus
+nice = 15
+
+[degradation]
+levels = [4, 5]       # pause, arrêt
+
+[network]
+ports = []            # n'écoute sur aucun port (requêtes HTTPS sortantes vers qso.freedv.org seulement)

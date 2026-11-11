@@ -99,6 +99,10 @@ data class RigState(
     val freedv: FreeDvView? = null,
     /** Dernier refus du mode FreeDV (montré dans sa fenêtre, là où l'on a cliqué) ; vide sinon. */
     val freedvNotice: String = "",
+    /** Activité FreeDV par fréquence (module « freedv_activity », TOUS les comptes) ; null = aucun message reçu. */
+    val freedvActivity: FreeDvActivityView? = null,
+    /** Dernier refus d'un QSY de la liste d'activité (montré dans la fenêtre FreeDV) ; vide sinon. */
+    val freedvActivityNotice: String = "",
 )
 
 /**
@@ -177,6 +181,8 @@ class RigSession(
     private var swrLast: SwrResult? = null
     private var breizhEvents: List<BreizhEntry> = emptyList()
     private var freedvNotice = ""
+    private var freedvActivity: com.rfdiy.openremotetrx.protocol.FreedvActivity? = null
+    private var freedvActivityNotice = ""
     private val net = NetClient()
     private var netOffered = false                   // la station a annoncé « netprobe » à la dernière connexion
     private var netStats: NetUi.Stats? = null
@@ -218,6 +224,7 @@ class RigSession(
     private val log = ArrayDeque<LogLine>()
 
     private class Pending(val cmd: String, val sentAt: Long, val tag: String = "")
+    private var fdvaTargetText = ""                    // fréquence du dernier QSY de la liste d'activité (journal)
 
     val connected: Boolean get() = status == LinkStatus.CONNECTED
 
@@ -353,6 +360,7 @@ class RigSession(
             }
             is ModuleMessage -> {                                       // spots et santé du cluster ; autres modules : ignorés ici
                 spotBook.apply(msg.data, wall())
+                com.rfdiy.openremotetrx.protocol.FreedvActivity.of(msg.data)?.let { freedvActivity = it }   // toutes les 10 s
                 Spots.recentOf(msg.data, wall())?.let { recentSpots = it }
                 if (msg.module == "presence" && friendsOffered &&
                     ((msg.data as? JsonObject)?.get("kind") as? JsonPrimitive)?.contentOrNull == "friends_changed") friendsAsk(now)
@@ -498,6 +506,10 @@ class RigSession(
             hostSections = if (msg.ok) HostSection.parse(msg.raw["sections"]).orEmpty() else emptyList()
             publish(now)
             return
+        }
+        if (entry.tag == FDVA_TAG) {                                // QSY depuis la liste d'activité FreeDV
+            if (!msg.ok) freedvActivityNotice = Texts.refusal(msg.reason, msg.detail)
+            else if (entry.cmd == "set_frequency") log("QSY FreeDV : $fdvaTargetText.", LogLevel.INFO)
         }
         if (!msg.ok) {
             if (entry.cmd == "toggle") heartbeat.cancelGrace()
@@ -1084,6 +1096,27 @@ class RigSession(
         publish(now)
     }
 
+    /**
+     * Toucher une ligne de la liste « Activité FreeDV » (OPÉRATEUR) : QSY IMMÉDIAT, sans confirmation (décision de
+     * l'utilisateur) ; USB d'abord si le poste n'est ni en USB ni en PKTUSB, puis la fréquence (comme client.freedvQsy).
+     * Refusé pendant l'émission, ici et par la station ; un refus s'affiche dans la fenêtre FreeDV.
+     */
+    fun freedvActivityQsy(now: Long, hz: Long) {
+        if (!connected || listener || freedvActivity == null || hz <= 0) return
+        if (!protocolOk) { control(now); return }
+        if ((state?.ptt?.state ?: "RX") != "RX") {
+            freedvActivityNotice = Texts.refusal("tx_active")
+            log(freedvActivityNotice, LogLevel.WARN)
+            publish(now)
+            return
+        }
+        freedvActivityNotice = ""
+        fdvaTargetText = FreeDvActivities.freqText(hz)
+        FreeDvActivities.qsyMode(state?.rig?.mode)?.let { send(now, Command.SetMode(it, 0), FDVA_TAG) }
+        send(now, Command.SetFrequency(hz), FDVA_TAG)
+        publish(now)
+    }
+
     fun breizhReactivate(now: Long) {
         if (!breizhOffered()) return
         send(now, Command.BreizhReactivate)
@@ -1132,7 +1165,7 @@ class RigSession(
 
     private val listener: Boolean get() = hello?.listener == true
 
-    private fun send(now: Long, command: Command) {
+    private fun send(now: Long, command: Command, tag: String? = null) {
         if (listener && command.name !in Command.LISTENER) {      // visiteur : rien d'autre ne part vers la station
             if (now - lastForbiddenLog > 2000) {
                 lastForbiddenLog = now
@@ -1142,7 +1175,7 @@ class RigSession(
         }
         val id = nextId++
         if (link.send(command.encode(id))) pending[id] = Pending(command.name, now,
-            (command as? Command.Friends)?.action ?: (command as? Command.FreedvSet)?.on?.toString().orEmpty())
+            tag ?: (command as? Command.Friends)?.action ?: (command as? Command.FreedvSet)?.on?.toString().orEmpty())
     }
 
     private fun mineActive(): Boolean {
@@ -1189,6 +1222,7 @@ class RigSession(
         swr = null; swrPlan = null; swrChoices = null; swrLast = null
         breizhEvents = emptyList()
         freedvNotice = ""
+        freedvActivity = null; freedvActivityNotice = ""
         protocolOk = true
         net.stop(wall())                                         // les résumés restent : remis à la reconnexion
         netStats = null; netExport = null; netStatus = ""
@@ -1242,6 +1276,8 @@ class RigSession(
                                                                     friendsStats, friendsInvite, friendsNotice) else null,
             freedv = if (hello?.offers("freedv") == true) FreeDvs.view(state?.freedv ?: hello?.freedv, wall() / 1000.0) else null,
             freedvNotice = freedvNotice,
+            freedvActivity = FreeDvActivities.view(freedvActivity, state?.rig?.frequencyHz, wall() / 1000.0),
+            freedvActivityNotice = freedvActivityNotice,
         )
         if (next != snapshot) {
             snapshot = next
@@ -1250,6 +1286,8 @@ class RigSession(
     }
 
     companion object {
+        /** Étiquette des commandes d'un QSY de la liste d'activité FreeDV (refus montré dans la fenêtre FreeDV). */
+        private const val FDVA_TAG = "fdva"
         const val PING_EVERY_MS = 2000L
         const val COMMAND_TIMEOUT_MS = 5000L
         /** Connexion manuelle : le canal doit s'ouvrir dans ce délai après la réponse de la station. */

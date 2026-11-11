@@ -1669,6 +1669,28 @@ test("FreeDV : vue de state.freedv (voyant, textes, indicatifs, séquences en é
   for (const key of ["demarrage", "ecoute", "relance", "panne", "arret"]) assert.ok(web.FREEDV_ENGINE[key]);
 });
 
+test("Activité FreeDV : vue de la liste (textes, distances, mode autre que RADE V1, périmée, visiteur) et mode du QSY", () => {
+  assert.equal(web.freedvActivityView(null), null); assert.equal(web.freedvActivityView({ kind: "spots" }), null);
+  const msg = { kind: "freedv_activity", status: "ok", total: 1, locator: false, t: 1000, freqs: [
+    { f: 14236000, note: 2, tx: [{ c: "W6GOK", km: null, on: true, min: null, m: "RADE" }], rx: [{ c: "K1ABC", km: null, snr: -2, m: "RADEV1" }] },
+    { f: "x" }, null] };
+  const v = web.freedvActivityView(msg, 14236400, 1010);
+  assert.equal(v.text, "1 station connectée à FreeDV Reporter · distances absentes ([freedv] locator)");
+  assert.equal(v.rows.length, 1); assert.equal(v.rows[0].freqText, "14236,0 kHz"); assert.equal(v.rows[0].here, true);
+  assert.deepEqual(v.rows[0].tx, [{ text: "W6GOK ÉMET RADE", on: true }]); assert.deepEqual(v.rows[0].rx, ["K1ABC -2 dB"]);
+  assert.equal(web.freedvActivityView(msg, 7000000, 1010).rows[0].here, false);
+  const stale = web.freedvActivityView(msg, 0, 1100);                                  // plus de 60 s : périmée, vide
+  assert.equal(stale.status, "erreur"); assert.equal(stale.rows.length, 0); assert.match(stale.text, /périmée/);
+  assert.match(web.freedvActivityView(Object.assign({}, msg, { status: "connexion" }), 0, 1010).text, /^Connexion/);
+  assert.equal(web.freedvActivityView(Object.assign({}, msg, { status: "erreur", message: "injoignable" }), 0, 1010).text, "injoignable");
+  assert.equal(web.freedvQsyMode("USB"), null); assert.equal(web.freedvQsyMode("PKTUSB"), null);
+  assert.equal(web.freedvQsyMode("LSB"), "USB"); assert.equal(web.freedvQsyMode(undefined), "USB");
+  const ex = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "..", "protocol", "messages.json"), "utf8")).module_freedv_activity;
+  const shared = web.freedvActivityView(ex.data, 7196200, ex.data.t + 5);
+  assert.equal(shared.text, "61 stations connectées à FreeDV Reporter"); assert.equal(shared.rows.length, 2);
+  assert.equal(shared.rows[0].here, true); assert.equal(shared.rows[0].tx[1].text, "DL2BHM 1012 km (1 min)");
+});
+
 test("FreeDV : commande, refus en français, indicatif et abandon dans le journal", async () => {
   const w = makeWorld();
   const events = [];

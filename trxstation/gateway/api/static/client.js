@@ -700,6 +700,47 @@
     };
   }
 
+  // Activité FreeDV (module « freedv_activity », station 0.125.0+) : stations FreeDV actives par fréquence, d'après
+  // FreeDV Reporter lu par la station en observateur. Un clic d'un OPÉRATEUR = QSY immédiat (client.freedvQsy) ;
+  // un visiteur voit la liste sans pouvoir changer de fréquence.
+  const FREEDV_ACTIVITY_STALE_S = 60;
+
+  function freedvFreqText(hz) {
+    return (Math.round(hz / 100) / 10).toFixed(1).replace(".", ",") + " kHz";
+  }
+
+  function freedvActivityView(a, rigHz, nowS) {
+    /* message « freedv_activity » -> { status, text, rows } ; null sans message (module absent). */
+    if (!a || typeof a !== "object" || a.kind !== "freedv_activity") return null;
+    const stale = Number.isFinite(a.t) && Number.isFinite(nowS) && nowS - a.t > FREEDV_ACTIVITY_STALE_S;
+    const status = stale ? "erreur" : (a.status === "ok" || a.status === "connexion" || a.status === "erreur" ? a.status : "erreur");
+    const total = Number.isInteger(a.total) ? a.total : 0;
+    let text;
+    if (stale) text = "Liste périmée : le module Activité FreeDV ne répond plus.";
+    else if (status === "connexion") text = "Connexion à FreeDV Reporter…";
+    else if (status === "erreur") text = String(a.message || "FreeDV Reporter injoignable").slice(0, 200);
+    else text = total + " station" + (total > 1 ? "s" : "") + " connectée" + (total > 1 ? "s" : "") + " à FreeDV Reporter"
+      + (a.locator ? "" : " · distances absentes ([freedv] locator)");
+    const km = (k) => Number.isInteger(k) ? " " + k + " km" : "";
+    const other = (m) => m && m !== "RADEV1" ? String(m).slice(0, 12) : "";
+    const rows = (stale || !Array.isArray(a.freqs) ? [] : a.freqs).filter((g) => g && Number.isInteger(g.f) && g.f > 0).slice(0, 20).map((g) => {
+      const tx = (Array.isArray(g.tx) ? g.tx : []).slice(0, 8).map((t) => {
+        const m = other(t.m);
+        return { text: String(t.c || "?").slice(0, 12) + km(t.km) + (t.on ? " ÉMET" + (m ? " " + m : "") : " (" + (Number.isInteger(t.min) ? t.min : "?") + " min" + (m ? ", " + m : "") + ")"), on: t.on === true };
+      });
+      const rx = (Array.isArray(g.rx) ? g.rx : []).slice(0, 6).map((r) => String(r.c || "?").slice(0, 12) + km(r.km)
+        + (Number.isFinite(r.snr) ? " " + r.snr + " dB" : "") + (other(r.m) ? " (" + other(r.m) + ")" : ""));
+      return { hz: g.f, freqText: freedvFreqText(g.f), note: Number.isFinite(g.note) ? g.note : 0,
+        here: Number.isFinite(rigHz) && Math.abs(g.f - rigHz) <= 1500, tx: tx, rx: rx };
+    });
+    return { status: status, text: text, rows: rows };
+  }
+
+  function freedvQsyMode(rigMode) {
+    /* FreeDV se reçoit en BLU supérieure : le mode du poste est gardé s'il est USB ou PKTUSB, sinon USB. */
+    return rigMode === "USB" || rigMode === "PKTUSB" ? null : "USB";
+  }
+
   function favoriteBands(saved) {
     /* Bandes affichées (réglage du navigateur, « 11,20,40 ») dans l'ordre du plan ; aucune valide = toutes. */
     const keys = String(saved || "").split(",").map((k) => k.trim()).filter(Boolean);
@@ -1471,6 +1512,11 @@
           if (this.ui.recentSpots) this.ui.recentSpots(data);
           return;
         }
+        if (data.kind === "freedv_activity") {                         // activité FreeDV par fréquence (toutes les 10 s)
+          this.freedvActivity = data;
+          if (this.ui.freedvActivity) this.ui.freedvActivity(data);
+          return;
+        }
         if (data.kind === "friends_changed") {                         // présence de groupe : la vue a changé, on la relit
           if (this.friendsOffered) this.friendsRefresh().catch(() => {});
           return;
@@ -1499,6 +1545,12 @@
       }
       this.pendingHz = null;
       return this.setFrequency(Math.round(hz));
+    }
+
+    async freedvQsy(hz) {
+      /* Clic sur une fréquence de la liste « Activité FreeDV » : QSY immédiat (opérateurs ; refusé en émission). */
+      const rig = this.state && this.state.rig ? this.state.rig : {};
+      return this.qsy(hz, freedvQsyMode(rig.mode));
     }
 
     async setBeeps(changes) {
@@ -2418,6 +2470,7 @@
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
                 indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
                 LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView, FREEDV_ENGINE, freedvView, freedvStars,
+                freedvActivityView, freedvQsyMode, freedvFreqText,
                 NET_DIAGNOSES, NET_TYPES, NET_LEVELS, netView, netStatsModel, vpnText, netDuration };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

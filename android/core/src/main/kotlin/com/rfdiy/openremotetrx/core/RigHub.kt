@@ -219,6 +219,8 @@ object RigHub {
 
     /** FreeDV (opérateurs) : mode de la station en réception ; refusé par la station pendant l'émission. */
     fun freedvSet(on: Boolean) { service?.onRig { session, now -> session.freedvSet(now, on) } }
+    /** Liste « Activité FreeDV » : QSY immédiat vers une fréquence (opérateurs ; refusé pendant l'émission). */
+    fun freedvActivityQsy(hz: Long) { service?.onRig { session, now -> session.freedvActivityQsy(now, hz) } }
 
     // ---- sonde de qualité réseau (opérateurs) : statistiques, seuils, effacement, export anonyme
     fun netStats(days: Int) { service?.onRig { session, now -> session.netStats(now, days) } }

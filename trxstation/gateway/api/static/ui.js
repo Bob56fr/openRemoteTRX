@@ -1960,6 +1960,7 @@
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
+      freedvActivity() { fdvaRender(); },                                      // activité FreeDV (toutes les 10 s)
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
       clusterStatus(data) { clusterData = data; clusterAt = performance.now(); renderCluster(); },
@@ -1970,6 +1971,7 @@
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
           fdvRender(null);                                                       // plus de rubrique ni de voyant FreeDV
+          fdvaRender();                                                          // plus de liste « Activité FreeDV »
           frRender(null);                                                        // plus de rubrique « Amis »
           paintNet({ connected: false });                                        // plus d'indicateur de liaison
           presenceOpen = false; $("presence-dialog").hidden = true;
@@ -2093,6 +2095,7 @@
         paintNet(v);
         bzhRender(v);
         fdvRender(v);
+        fdvaRender();
         paintMini(v);
         voiceProfilesSync();
         paintSwr(v);
@@ -2779,6 +2782,43 @@
       }).catch(fail);
     });
     $("fdv-ind").addEventListener("click", () => { $("sec-freedv").open = true; $("sec-freedv").scrollIntoView({ block: "start" }); });
+
+    // ---- Activité FreeDV (module « freedv_activity ») : stations actives par fréquence, d'après FreeDV Reporter.
+    // Un clic d'un OPÉRATEUR sur une ligne = QSY immédiat (refusé pendant l'émission, ici et par la station).
+    function fdvaRender() {
+      const rig = client.state && client.state.rig ? client.state.rig : {};
+      const a = client.connected ? web.freedvActivityView(client.freedvActivity, rig.frequency_hz, Date.now() / 1000) : null;
+      $("fdva").hidden = !a;
+      if (!a) return;
+      $("fdva-state").textContent = a.text;
+      const body = $("fdva-rows");
+      body.textContent = "";
+      const operator = !client.isListener();
+      for (const r of a.rows) {
+        const tr = el("tr", (operator ? "go" : "") + (r.here ? " here" : ""));
+        if (operator) { tr.title = "Aller sur " + r.freqText; tr.addEventListener("click", () => fdvaQsy(r.hz)); }
+        tr.appendChild(el("td", "f", r.freqText + (r.here ? " ◀ poste" : "")));
+        tr.appendChild(el("td", "", String(r.note).replace(".", ",")));
+        const tx = el("td", "");
+        r.tx.forEach((t, i) => { tx.appendChild(el("span", t.on ? "on" : "", (i ? ", " : "") + t.text)); });
+        if (!r.tx.length) tx.appendChild(el("span", "", "—"));
+        tr.appendChild(tx);
+        tr.appendChild(el("td", "", r.rx.join(", ") || "—"));
+        body.appendChild(tr);
+      }
+      if (!a.rows.length) {
+        const tr = el("tr", "");
+        tr.appendChild(el("td", "note", a.status === "ok" ? "aucune activité HF" : "—"));
+        body.appendChild(tr);
+      }
+    }
+    function fdvaQsy(hz) {
+      if (client.isListener()) return;
+      client.freedvQsy(hz).then((res) => {
+        if (res && res.ok) ui.log("QSY FreeDV : " + web.freedvFreqText(hz) + ".", "");
+        else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
+      }).catch(fail);
+    }
 
     // ---- présence de groupe « Amis » (friends.js, docs/presence-cahier-des-charges.md, fonction « friends », OPÉRATEURS)
     // Lecture de la vue préparée par la station (états déjà déchiffrés), actions relayées au module « presence ».

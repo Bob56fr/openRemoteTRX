@@ -472,6 +472,13 @@ bornes = "Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode 
 exemple = "<code>freedv-ka9q</code> (défaut, Debian et Windows), ou le chemin complet d'un programme compilé à part."
 depuis = "0.122.0"
 
+[reglages."freedv.locator"]
+role = "Locator Maidenhead de la station. Sert à la liste « Activité FreeDV » (module <code>freedv_activity</code> de <code>[modules] run</code>) : distance de chaque station et note de chance de réception. Il n'est envoyé nulle part : FreeDV Reporter est lu en simple observateur."
+niveau = "courant"
+bornes = "4 ou 6 caractères (JN18 ou JN18du), ou vide (liste sans distance, note moins juste)."
+exemple = "<code>JN18du</code>"
+depuis = "0.125.0"
+
 [reglages."freedv.radae_rx_path"]
 role = "Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows), comme freedv-ka9q."
 niveau = "expert"

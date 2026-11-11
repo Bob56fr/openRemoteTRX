@@ -68,7 +68,7 @@ def test_freedv_section_defaults_validation_and_round_trip():
     assert "[freedv]" in text
     import tomllib
     data = tomllib.loads(text)["freedv"]
-    assert data == {"enabled": True, "ka9q_path": "/usr/local/bin/freedv-ka9q", "radae_rx_path": "radae_rx"}
+    assert data == {"enabled": True, "ka9q_path": "/usr/local/bin/freedv-ka9q", "radae_rx_path": "radae_rx", "locator": ""}
 
 
 def test_resolve_program_finds_a_name_in_the_path_or_a_real_file(tmp_path):

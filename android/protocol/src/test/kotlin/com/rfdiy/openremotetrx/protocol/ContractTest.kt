@@ -142,6 +142,19 @@ class ContractTest {
         assertTrue(results[0].ok); assertEquals(listOf("freedv_tx", "freedv_missing"), results.drop(1).map { it.reason })
     }
 
+    @Test
+    fun `Activite FreeDV - message de module d exemple`() {
+        val msg = assertIs<ModuleMessage>(ServerMessages.decode(messages["module_freedv_activity"].toString()))
+        assertEquals("freedv_activity", msg.module)
+        val a = FreedvActivity.of(msg.data)!!
+        assertEquals("ok", a.status); assertEquals(61, a.total); assertTrue(a.locator); assertEquals(1794338400.0, a.t)
+        assertEquals(listOf(7196000L, 14236000L), a.freqs.map { it.f })
+        val tx = a.freqs[0].tx
+        assertEquals("DL2GRF", tx[0].c); assertEquals(839, tx[0].km); assertTrue(tx[0].on); assertNull(tx[0].min); assertEquals("RADEV1", tx[0].m)
+        assertEquals(1, tx[1].min); assertEquals(8.0, a.freqs[0].rx.single().snr); assertEquals(28.0, a.freqs[0].note)
+        assertNull(FreedvActivity.of(messages["module"]!!.jsonObject["data"]))                   // autre module : rien
+    }
+
     private fun fromExample(name: String, e: JsonObject): Command {
         fun p(key: String) = e[key]!!.jsonPrimitive
         return when (name) {

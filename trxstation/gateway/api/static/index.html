@@ -462,6 +462,15 @@
         <p id="fdv-state" class="fdv-state"></p>
         <p id="fdv-details" class="note"></p>
         <div class="row listener-hide"><button id="fdv-toggle" class="chip" title="Refusé pendant une émission">Passer en FreeDV</button></div>
+        <div id="fdva" hidden>
+          <h4>Activité FreeDV</h4>
+          <p class="note">D'après FreeDV Reporter (qso.freedv.org), lu par la station en simple observateur : rien n'est envoyé.
+            Note = chance de réception ici (RADE V1) : stations qui émettent, voisins qui décodent. <span class="listener-hide">Touchez une
+            fréquence pour y aller (USB si le poste n'est pas en BLU supérieure).</span></p>
+          <p id="fdva-state" class="note"></p>
+          <div class="fdva-wrap"><table class="fdva"><thead><tr><th>Fréquence</th><th>Note</th><th>Émettent (15 min)</th><th>Reçoivent (SNR)</th></tr></thead>
+            <tbody id="fdva-rows"></tbody></table></div>
+        </div>
         <h4>Indicatifs décodés</h4>
         <ol id="fdv-calls" class="fdv-list"></ol>
         <h4>Séquences reçues</h4>
