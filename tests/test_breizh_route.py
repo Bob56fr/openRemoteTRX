@@ -497,3 +497,26 @@ def test_store_survives_a_broken_file_and_bounds_the_journal(tmp_path):
     assert len(again.journal) == 200 and again.last(1)[0]["detail"] == "n 249"
     with pytest.raises(ValueError):
         store.update(return_gain_db=6.5)
+
+
+def test_silent_breizh_is_reported_once_in_the_journal(caplog):
+    """Breizh arrêté : rien ne répond aux HELLO ; après SILENT_REPORT_S, ORT-6501 une seule fois (pas de ntfy)."""
+    import logging
+
+    from trxstation.breizh import link as bl
+    now = [0.0]
+    events = []
+    link = BreizhLink("127.0.0.1", 9, KEY, reactivate_after_s=60, station_version="0.0.0",
+                      notify=lambda kind, text: events.append(kind), clock=lambda: now[0])
+
+    class Transport:
+        def sendto(self, data, addr=None):
+            pass
+    link.transport = Transport()
+    caplog.set_level(logging.WARNING)
+    for _ in range(3):
+        now[0] += bl.SILENT_REPORT_S
+        link.tick()
+    found = [r for r in caplog.records if r.getMessage().startswith("ORT-6501 ")]
+    assert len(found) == 1 and "Breizh Audio Box" in found[0].getMessage() and "127.0.0.1:9" in found[0].getMessage()
+    assert events == []                                     # aucun événement envoyé aux clients ni à ntfy

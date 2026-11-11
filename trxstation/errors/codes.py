@@ -110,6 +110,7 @@ ORT_4014 = "ORT-4014"   # info : Fonction absente de cette station
 ORT_4015 = "ORT-4015"   # info : Élément demandé inconnu
 ORT_4016 = "ORT-4016"   # info : Rapport de problème refusé
 ORT_4017 = "ORT-4017"   # info : Demande de TRX Console ignorée
+ORT_4018 = "ORT-4018"   # erreur : Erreur inattendue : session d'un client
 ORT_4101 = "ORT-4101"   # erreur : Certificat TLS inutilisable : API non démarrée
 ORT_4102 = "ORT-4102"   # erreur : Port de la passerelle impossible à ouvrir
 ORT_4103 = "ORT-4103"   # erreur : Compte d'accès mal défini
@@ -136,10 +137,11 @@ ORT_4505 = "ORT-4505"   # avertissement : Sonde de la station vers la box ou Int
 ORT_4506 = "ORT-4506"   # info : Historique de la sonde réseau effacé
 ORT_4507 = "ORT-4507"   # info : trx-netreport : aucune mesure
 ORT_4508 = "ORT-4508"   # erreur : Export ou effacement de l'historique réseau impossible
+ORT_4509 = "ORT-4509"   # erreur : Erreur inattendue : sonde de qualité réseau
 ORT_5001 = "ORT-5001"   # avertissement : Durée maximale d'émission (TOT) atteinte
 ORT_5002 = "ORT-5002"   # erreur : Retour forcé en réception : terminal perdu
 ORT_5003 = "ORT-5003"   # critique : L'ouverture du second port met le poste en émission
-ORT_5004 = "ORT-5004"   # avertissement : Émission pendant l'ouverture du second port (autre cause)
+ORT_5004 = "ORT-5004"   # info : Émission pendant l'ouverture du second port (autre cause)
 ORT_5005 = "ORT-5005"   # info : Poste utilisé sur place : PTT à distance bloqué
 ORT_5006 = "ORT-5006"   # info : Reprise de la main impossible : le poste émet sur place
 ORT_5007 = "ORT-5007"   # info : Main reprise à distance
@@ -163,6 +165,7 @@ ORT_5024 = "ORT-5024"   # critique : TOT absolu dépassé : coupure par le super
 ORT_5025 = "ORT-5025"   # critique : Passerelle muette pendant une émission
 ORT_5026 = "ORT-5026"   # critique : rigctld injoignable pendant une émission
 ORT_5027 = "ORT-5027"   # critique : « T 0 » du superviseur non confirmé
+ORT_5028 = "ORT-5028"   # erreur : Erreur inattendue : bips de fin d'émission
 ORT_5101 = "ORT-5101"   # erreur : Émission refusée : défaut verrouillé
 ORT_5102 = "ORT-5102"   # info : Émission refusée : station en démarrage
 ORT_5103 = "ORT-5103"   # info : Émission refusée : coupure ou émission en cours
@@ -248,12 +251,14 @@ ORT_6537 = "ORT-6537"   # erreur : Breizh Audio Box n'a pas coupé son CAT
 ORT_6538 = "ORT-6538"   # erreur : Réponse de Breizh Audio Box mal formée
 ORT_6539 = "ORT-6539"   # avertissement : Paquets de Breizh Audio Box refusés
 ORT_6540 = "ORT-6540"   # info : Breizh Audio Box joint ou repris
+ORT_6541 = "ORT-6541"   # erreur : Erreur inattendue : liaison avec Breizh Audio Box
 ORT_6561 = "ORT-6561"   # avertissement : Décodeur FreeDV arrêté
 ORT_6562 = "ORT-6562"   # avertissement : Sortie d'un décodeur FreeDV illisible
 ORT_6563 = "ORT-6563"   # erreur : FreeDV abandonné après ses relances
 ORT_6564 = "ORT-6564"   # erreur : Mode FreeDV en erreur dans la chaîne audio
 ORT_6565 = "ORT-6565"   # avertissement : Décodeur FreeDV trop lent : son jeté
 ORT_6566 = "ORT-6566"   # info : Mode FreeDV non changé pendant l'émission
+ORT_6567 = "ORT-6567"   # erreur : Erreur inattendue : mode FreeDV
 ORT_6801 = "ORT-6801"   # info : Essai SELCALL : RIT refusé ou illisible
 ORT_6802 = "ORT-6802"   # info : Trame SELCALL de fin omise : TOT trop proche
 ORT_6803 = "ORT-6803"   # avertissement : Appel SELCALL refusé : plus long que le TOT
@@ -290,6 +295,7 @@ ORT_6919 = "ORT-6919"   # info : Présence de groupe non disponible
 ORT_6920 = "ORT-6920"   # erreur : Fichier de clés de la présence illisible
 ORT_6921 = "ORT-6921"   # erreur : Données de la présence illisibles
 ORT_6922 = "ORT-6922"   # erreur : Erreur inattendue de la présence de groupe
+ORT_6923 = "ORT-6923"   # erreur : Signature invalide reçue (attaque possible)
 ORT_7001 = "ORT-7001"   # info : Liaison monitor établie
 ORT_7010 = "ORT-7010"   # avertissement : Échec ICE, bascule en port UDP
 ORT_7020 = "ORT-7020"   # avertissement : File d'envoi saturée
@@ -312,7 +318,7 @@ ORT_8015 = "ORT-8015"   # erreur : Superviseur déjà en cours d'exécution
 ORT_8016 = "ORT-8016"   # erreur : La station ne s'arrête pas
 ORT_8017 = "ORT-8017"   # erreur : Superviseur disparu : passerelle arrêtée
 ORT_8018 = "ORT-8018"   # erreur : Surveillance des accès en erreur
-ORT_8019 = "ORT-8019"   # erreur : Erreur inattendue d'un composant (la station continue)
+ORT_8019 = "ORT-8019"   # erreur : Erreur inattendue d'un composant (la station continue)  [abandonné]
 ORT_8020 = "ORT-8020"   # avertissement : Aucune adresse d'alerte (ntfy)
 ORT_8021 = "ORT-8021"   # erreur : Service de la station en échec ou arrêté
 ORT_9001 = "ORT-9001"   # erreur : station.toml invalide
@@ -358,17 +364,18 @@ ORT_9304 = "ORT-9304"   # erreur : Paquet d'installation incomplet
 ORT_9305 = "ORT-9305"   # erreur : Droits administrateur nécessaires
 ORT_9306 = "ORT-9306"   # erreur : Pas d'accès Internet pendant l'installation
 ORT_9307 = "ORT-9307"   # erreur : Installation des paquets Debian impossible
-ORT_9308 = "ORT-9308"   # critique : Installation des modules Python impossible ou empreinte différente
+ORT_9308 = "ORT-9308"   # erreur : Installation des modules Python impossible
 ORT_9309 = "ORT-9309"   # erreur : Installation de TRX distant ou activation de la version impossible
 ORT_9310 = "ORT-9310"   # avertissement : Configuration refusée par la version installée
+ORT_9311 = "ORT-9311"   # critique : Empreinte d'un module Python différente : installation arrêtée
 ORT_9501 = "ORT-9501"   # erreur : Journal Android illisible
 ORT_9502 = "ORT-9502"   # avertissement : Téléphone : copie ou lecture du journal impossible
 ORT_9503 = "ORT-9503"   # avertissement : Rapport HTML du journal Android non écrit
-ORT_9504 = "ORT-9504"   # erreur : Application Android : plantage
-ORT_9505 = "ORT-9505"   # erreur : Application Android bloquée (ANR)
-ORT_9506 = "ORT-9506"   # avertissement : Application Android : installation en échec
-ORT_9507 = "ORT-9507"   # avertissement : Application Android arrêtée par Android
-ORT_9508 = "ORT-9508"   # info : Erreurs écrites par l'application Android
+ORT_9504 = "ORT-9504"   # erreur : Application Android : plantage  [abandonné]
+ORT_9505 = "ORT-9505"   # erreur : Application Android bloquée (ANR)  [abandonné]
+ORT_9506 = "ORT-9506"   # avertissement : Application Android : installation en échec  [abandonné]
+ORT_9507 = "ORT-9507"   # avertissement : Application Android arrêtée par Android  [abandonné]
+ORT_9508 = "ORT-9508"   # info : Erreurs écrites par l'application Android  [abandonné]
 ORT_9701 = "ORT-9701"   # erreur : Module pyserial absent (spectre HF)
 ORT_9702 = "ORT-9702"   # avertissement : Fichier des mémoires illisible
 ORT_9703 = "ORT-9703"   # info : Mémoires indisponibles sur cette station
@@ -387,6 +394,11 @@ ORT_9715 = "ORT-9715"   # info : Option de commande inconnue ou invalide
 ORT_9716 = "ORT-9716"   # erreur : Import de la configuration d'un autre PC impossible
 ORT_9717 = "ORT-9717"   # info : Indicateur de bureau indisponible
 ORT_9718 = "ORT-9718"   # info : Tests de la station indisponibles
+AND_1001 = "AND-1001"   # erreur : Application Android : plantage
+AND_1002 = "AND-1002"   # erreur : Application Android bloquée (ANR)
+AND_1003 = "AND-1003"   # avertissement : Application Android : installation en échec
+AND_1004 = "AND-1004"   # avertissement : Application Android arrêtée par Android
+AND_1005 = "AND-1005"   # info : Erreurs écrites par l'application Android
 
 ALL: frozenset[str] = frozenset({
     ORT_1001, ORT_1002, ORT_1003, ORT_1004, ORT_1005, ORT_1006, ORT_1007, ORT_1008,
@@ -402,39 +414,41 @@ ALL: frozenset[str] = frozenset({
     ORT_3005, ORT_3006, ORT_3007, ORT_3008, ORT_3009, ORT_3010, ORT_3011, ORT_4001,
     ORT_4002, ORT_4003, ORT_4004, ORT_4005, ORT_4006, ORT_4007, ORT_4008, ORT_4009,
     ORT_4010, ORT_4011, ORT_4012, ORT_4013, ORT_4014, ORT_4015, ORT_4016, ORT_4017,
-    ORT_4101, ORT_4102, ORT_4103, ORT_4104, ORT_4105, ORT_4106, ORT_4107, ORT_4108,
-    ORT_4301, ORT_4302, ORT_4303, ORT_4304, ORT_4305, ORT_4306, ORT_4307, ORT_4308,
-    ORT_4309, ORT_4310, ORT_4501, ORT_4502, ORT_4503, ORT_4504, ORT_4505, ORT_4506,
-    ORT_4507, ORT_4508, ORT_5001, ORT_5002, ORT_5003, ORT_5004, ORT_5005, ORT_5006,
-    ORT_5007, ORT_5008, ORT_5009, ORT_5010, ORT_5011, ORT_5012, ORT_5013, ORT_5014,
-    ORT_5015, ORT_5016, ORT_5017, ORT_5018, ORT_5019, ORT_5020, ORT_5021, ORT_5022,
-    ORT_5023, ORT_5024, ORT_5025, ORT_5026, ORT_5027, ORT_5101, ORT_5102, ORT_5103,
-    ORT_5104, ORT_5105, ORT_5106, ORT_5107, ORT_5108, ORT_5109, ORT_5110, ORT_5111,
-    ORT_5112, ORT_5113, ORT_5114, ORT_5115, ORT_5116, ORT_5501, ORT_5502, ORT_5503,
-    ORT_5504, ORT_5505, ORT_5506, ORT_5507, ORT_5508, ORT_5509, ORT_5510, ORT_5511,
-    ORT_5512, ORT_5801, ORT_5802, ORT_5803, ORT_5804, ORT_5805, ORT_5806, ORT_5901,
-    ORT_5902, ORT_6401, ORT_6402, ORT_6403, ORT_6404, ORT_6405, ORT_6406, ORT_6407,
-    ORT_6408, ORT_6409, ORT_6410, ORT_6411, ORT_6412, ORT_6413, ORT_6501, ORT_6502,
-    ORT_6503, ORT_6504, ORT_6505, ORT_6506, ORT_6507, ORT_6508, ORT_6511, ORT_6512,
-    ORT_6513, ORT_6514, ORT_6515, ORT_6516, ORT_6517, ORT_6518, ORT_6519, ORT_6520,
-    ORT_6521, ORT_6522, ORT_6523, ORT_6524, ORT_6525, ORT_6526, ORT_6527, ORT_6528,
-    ORT_6531, ORT_6532, ORT_6533, ORT_6534, ORT_6535, ORT_6536, ORT_6537, ORT_6538,
-    ORT_6539, ORT_6540, ORT_6561, ORT_6562, ORT_6563, ORT_6564, ORT_6565, ORT_6566,
-    ORT_6801, ORT_6802, ORT_6803, ORT_6804, ORT_6805, ORT_6806, ORT_6807, ORT_6808,
-    ORT_6809, ORT_6810, ORT_6811, ORT_6812, ORT_6813, ORT_6814, ORT_6901, ORT_6902,
-    ORT_6903, ORT_6904, ORT_6905, ORT_6906, ORT_6907, ORT_6908, ORT_6909, ORT_6910,
-    ORT_6911, ORT_6912, ORT_6913, ORT_6914, ORT_6915, ORT_6916, ORT_6917, ORT_6918,
-    ORT_6919, ORT_6920, ORT_6921, ORT_6922, ORT_7001, ORT_7010, ORT_7020, ORT_7030,
-    ORT_8001, ORT_8002, ORT_8003, ORT_8004, ORT_8005, ORT_8006, ORT_8007, ORT_8008,
-    ORT_8009, ORT_8010, ORT_8011, ORT_8012, ORT_8013, ORT_8014, ORT_8015, ORT_8016,
-    ORT_8017, ORT_8018, ORT_8019, ORT_8020, ORT_8021, ORT_9001, ORT_9002, ORT_9003,
-    ORT_9004, ORT_9005, ORT_9006, ORT_9007, ORT_9008, ORT_9009, ORT_9010, ORT_9011,
-    ORT_9012, ORT_9013, ORT_9014, ORT_9015, ORT_9016, ORT_9017, ORT_9018, ORT_9019,
-    ORT_9020, ORT_9021, ORT_9022, ORT_9023, ORT_9101, ORT_9102, ORT_9103, ORT_9104,
-    ORT_9105, ORT_9106, ORT_9107, ORT_9108, ORT_9201, ORT_9202, ORT_9203, ORT_9204,
-    ORT_9205, ORT_9301, ORT_9302, ORT_9303, ORT_9304, ORT_9305, ORT_9306, ORT_9307,
-    ORT_9308, ORT_9309, ORT_9310, ORT_9501, ORT_9502, ORT_9503, ORT_9504, ORT_9505,
-    ORT_9506, ORT_9507, ORT_9508, ORT_9701, ORT_9702, ORT_9703, ORT_9704, ORT_9705,
-    ORT_9706, ORT_9707, ORT_9708, ORT_9709, ORT_9710, ORT_9711, ORT_9712, ORT_9713,
-    ORT_9714, ORT_9715, ORT_9716, ORT_9717, ORT_9718,
+    ORT_4018, ORT_4101, ORT_4102, ORT_4103, ORT_4104, ORT_4105, ORT_4106, ORT_4107,
+    ORT_4108, ORT_4301, ORT_4302, ORT_4303, ORT_4304, ORT_4305, ORT_4306, ORT_4307,
+    ORT_4308, ORT_4309, ORT_4310, ORT_4501, ORT_4502, ORT_4503, ORT_4504, ORT_4505,
+    ORT_4506, ORT_4507, ORT_4508, ORT_4509, ORT_5001, ORT_5002, ORT_5003, ORT_5004,
+    ORT_5005, ORT_5006, ORT_5007, ORT_5008, ORT_5009, ORT_5010, ORT_5011, ORT_5012,
+    ORT_5013, ORT_5014, ORT_5015, ORT_5016, ORT_5017, ORT_5018, ORT_5019, ORT_5020,
+    ORT_5021, ORT_5022, ORT_5023, ORT_5024, ORT_5025, ORT_5026, ORT_5027, ORT_5028,
+    ORT_5101, ORT_5102, ORT_5103, ORT_5104, ORT_5105, ORT_5106, ORT_5107, ORT_5108,
+    ORT_5109, ORT_5110, ORT_5111, ORT_5112, ORT_5113, ORT_5114, ORT_5115, ORT_5116,
+    ORT_5501, ORT_5502, ORT_5503, ORT_5504, ORT_5505, ORT_5506, ORT_5507, ORT_5508,
+    ORT_5509, ORT_5510, ORT_5511, ORT_5512, ORT_5801, ORT_5802, ORT_5803, ORT_5804,
+    ORT_5805, ORT_5806, ORT_5901, ORT_5902, ORT_6401, ORT_6402, ORT_6403, ORT_6404,
+    ORT_6405, ORT_6406, ORT_6407, ORT_6408, ORT_6409, ORT_6410, ORT_6411, ORT_6412,
+    ORT_6413, ORT_6501, ORT_6502, ORT_6503, ORT_6504, ORT_6505, ORT_6506, ORT_6507,
+    ORT_6508, ORT_6511, ORT_6512, ORT_6513, ORT_6514, ORT_6515, ORT_6516, ORT_6517,
+    ORT_6518, ORT_6519, ORT_6520, ORT_6521, ORT_6522, ORT_6523, ORT_6524, ORT_6525,
+    ORT_6526, ORT_6527, ORT_6528, ORT_6531, ORT_6532, ORT_6533, ORT_6534, ORT_6535,
+    ORT_6536, ORT_6537, ORT_6538, ORT_6539, ORT_6540, ORT_6541, ORT_6561, ORT_6562,
+    ORT_6563, ORT_6564, ORT_6565, ORT_6566, ORT_6567, ORT_6801, ORT_6802, ORT_6803,
+    ORT_6804, ORT_6805, ORT_6806, ORT_6807, ORT_6808, ORT_6809, ORT_6810, ORT_6811,
+    ORT_6812, ORT_6813, ORT_6814, ORT_6901, ORT_6902, ORT_6903, ORT_6904, ORT_6905,
+    ORT_6906, ORT_6907, ORT_6908, ORT_6909, ORT_6910, ORT_6911, ORT_6912, ORT_6913,
+    ORT_6914, ORT_6915, ORT_6916, ORT_6917, ORT_6918, ORT_6919, ORT_6920, ORT_6921,
+    ORT_6922, ORT_6923, ORT_7001, ORT_7010, ORT_7020, ORT_7030, ORT_8001, ORT_8002,
+    ORT_8003, ORT_8004, ORT_8005, ORT_8006, ORT_8007, ORT_8008, ORT_8009, ORT_8010,
+    ORT_8011, ORT_8012, ORT_8013, ORT_8014, ORT_8015, ORT_8016, ORT_8017, ORT_8018,
+    ORT_8019, ORT_8020, ORT_8021, ORT_9001, ORT_9002, ORT_9003, ORT_9004, ORT_9005,
+    ORT_9006, ORT_9007, ORT_9008, ORT_9009, ORT_9010, ORT_9011, ORT_9012, ORT_9013,
+    ORT_9014, ORT_9015, ORT_9016, ORT_9017, ORT_9018, ORT_9019, ORT_9020, ORT_9021,
+    ORT_9022, ORT_9023, ORT_9101, ORT_9102, ORT_9103, ORT_9104, ORT_9105, ORT_9106,
+    ORT_9107, ORT_9108, ORT_9201, ORT_9202, ORT_9203, ORT_9204, ORT_9205, ORT_9301,
+    ORT_9302, ORT_9303, ORT_9304, ORT_9305, ORT_9306, ORT_9307, ORT_9308, ORT_9309,
+    ORT_9310, ORT_9311, ORT_9501, ORT_9502, ORT_9503, ORT_9504, ORT_9505, ORT_9506,
+    ORT_9507, ORT_9508, ORT_9701, ORT_9702, ORT_9703, ORT_9704, ORT_9705, ORT_9706,
+    ORT_9707, ORT_9708, ORT_9709, ORT_9710, ORT_9711, ORT_9712, ORT_9713, ORT_9714,
+    ORT_9715, ORT_9716, ORT_9717, ORT_9718, AND_1001, AND_1002, AND_1003, AND_1004,
+    AND_1005,
 })

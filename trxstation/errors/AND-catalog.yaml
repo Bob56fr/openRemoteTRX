@@ -1,0 +1,118 @@
+# Catalogue d'erreurs de l'application Android (préfixe AND, registre modules.yaml).
+# Même structure que catalog.yaml (cahier du monitoring inter-stations, docs/cdc-monitoring.md § 7) ;
+# codes AND-NNNN STABLES. Relevés aujourd'hui par trx-journal-android dans les journaux des bêta-testeurs.
+# Plages conseillées : 0xxx démarrage et configuration, 1xxx traitement, 2xxx interface avec la station, 9xxx divers.
+
+AND-1001:
+  gravite: erreur
+  titre: 'Application Android : plantage'
+  message: '{type} de l''application : {exception}.'
+  causes:
+  - Exception non rattrapée dans l'application (Kotlin)
+  - 'Plantage natif (WebRTC, audio) : signal du code natif'
+  preconisation: Envoyer le rapport HTML (sans données personnelles) avec la version de l'application.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - plantage
+  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1001
+  depuis_version: 0.126.0
+  en:
+    titre: 'Android app: crash'
+    message: 'App {type}: {exception}.'
+    causes:
+    - Uncaught exception in the app (Kotlin)
+    - 'Native crash (WebRTC, audio): signal from native code'
+    preconisation: Send the HTML report (no personal data) with the app version.
+
+AND-1002:
+  gravite: erreur
+  titre: Application Android bloquée (ANR)
+  message: 'Application bloquée (ANR) : {detail}.'
+  causes:
+  - Fil principal de l'application bloqué (réseau, audio, disque)
+  preconisation: Envoyer le rapport HTML avec ce qui était fait au moment du blocage.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - blocage
+  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1002
+  depuis_version: 0.126.0
+  en:
+    titre: Android app not responding (ANR)
+    message: 'App not responding (ANR): {detail}.'
+    causes:
+    - App main thread blocked (network, audio, disk)
+    preconisation: Send the HTML report with what was being done when it froze.
+
+AND-1003:
+  gravite: avertissement
+  titre: 'Application Android : installation en échec'
+  message: 'Installation (Play Store) : {detail}.'
+  causes:
+  - Version debug installée qui bloque celle du Store (autre signature)
+  - Fichier APK abîmé
+  - Erreur du Play Store (DF-…)
+  preconisation: Désinstaller l'ancienne version (debug) puis réinstaller depuis le Store.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - installation
+  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1003
+  depuis_version: 0.126.0
+  en:
+    titre: 'Android app: install failed'
+    message: 'Install (Play Store): {detail}.'
+    causes:
+    - Debug build installed, blocking the Store build (different signature)
+    - Damaged APK
+    - Play Store error (DF-…)
+    preconisation: Uninstall the old (debug) version then reinstall from the Store.
+
+AND-1004:
+  gravite: avertissement
+  titre: Application Android arrêtée par Android
+  message: 'Application arrêtée par Android : {detail}.'
+  causes:
+  - Manque de mémoire du téléphone (lowmemorykiller)
+  - Économiseur de batterie qui tue le service
+  preconisation: Exclure l'application de l'optimisation de batterie ; fermer les applications gourmandes.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - arret
+  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1004
+  depuis_version: 0.126.0
+  en:
+    titre: Android app killed by Android
+    message: 'App stopped by Android: {detail}.'
+    causes:
+    - Phone low on memory (lowmemorykiller)
+    - Battery saver killing the service
+    preconisation: Exclude the app from battery optimisation; close heavy apps.
+
+AND-1005:
+  gravite: info
+  titre: Erreurs écrites par l'application Android
+  message: 'Erreurs écrites par l''application : {tag} : {message} ({nombre} fois).'
+  causes:
+  - Erreurs journalisées par l'application ou par WebRTC dans son processus
+  preconisation: Lire les plus fréquentes dans le rapport HTML ; à joindre à un rapport de problème.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - erreur
+  doc: https://rf-diy.com/openremotetrx/erreurs/AND-1005
+  depuis_version: 0.126.0
+  en:
+    titre: Errors logged by the Android app
+    message: 'Errors logged by the app: {tag}: {message} ({nombre} times).'
+    causes:
+    - Errors logged by the app or by WebRTC in its process
+    preconisation: Read the most frequent ones in the HTML report; attach them to a problem report.
+

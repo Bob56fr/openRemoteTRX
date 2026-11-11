@@ -103,7 +103,7 @@ class Access:
     listeners_outside_bands: bool = False  # false : silence pour les visiteurs quand la réception sort des [[bands]]
     listener_spectrum_fps: int = 5      # spectre HF des visiteurs : images par seconde au plus (l'opérateur garde max_fps)
     # Surcharge (gateway/api/overload.py) : au-delà pendant 10 s, visiteurs déconnectés ; retour sous les seuils 5 min
-    overload_temp_c: int = 85           # température du processeur (°C)
+    overload_temp_c: int = 70           # température du processeur (°C) ; 70 : décision de l'utilisateur (2026-11-11)
     overload_cpu_pct: int = 90          # charge de tous les cœurs (%)
     overload_lag_ms: int = 100          # retard de la boucle de la passerelle (ms)
     overload_mem_pct: int = 10          # mémoire libre minimale (%)
@@ -128,7 +128,7 @@ class Netprobe:
     lan_target: str = "auto"            # box à sonder (auto = passerelle par défaut) : sondes de la station
     internet_target: str = "1.1.1.1"    # cible Internet des sondes ; "" = aucune
     loss_warn_pct: float = 2.0          # perte sur 60 s : palier orange
-    loss_alert_pct: float = 10.0        # palier rouge
+    loss_alert_pct: float = 5.0         # palier rouge (5 % : décision de l'utilisateur, 2026-11-11)
     rtt_warn_ms: int = 250              # aller-retour p95 sur 60 s : palier orange
     rtt_alert_ms: int = 600             # palier rouge
     alert_outage_s: int = 10            # coupure plus longue : alerte ntfy (0 = aucune)
@@ -245,9 +245,9 @@ class Supervisor:
     rigctld_fail_s: float = 5.0       # rigctld injoignable depuis ce délai : on le redémarre
     recovery_wait_s: float = 20.0     # attente entre deux niveaux de l'échelle de reprise
     healthy_reset_s: float = 120.0    # durée sans problème avant de repartir du niveau 0
-    temp_alert_c: float = 80.0        # alerte seule
+    temp_alert_c: float = 70.0        # alerte seule (70 °C : décision de l'utilisateur, 2026-11-11)
     mem_alert_pct: int = 90           # mémoire utilisée au-delà (60 s de suite) : alerte seule, une par heure ; 0 = aucune
-    disk_alert_pct: int = 90          # disque (dossier d'état et /) au-delà : alerte seule, une par heure ; 0 = aucune
+    disk_alert_pct: int = 70          # disque (dossier d'état et /) au-delà : alerte seule, une par heure ; 0 = aucune
     alive_every_h: float = 1.0        # battement « Station en service » par notify_url (priorité minimale) ; 0 = aucun
     allow_local_tx: bool = True       # True (« station partagée ») : l'émission locale (micro du poste) n'est pas coupée,
                                       # sauf par tot_abs_s ; False : coupée à chaque passage (jamais d'escalade si « T 0 » marche)

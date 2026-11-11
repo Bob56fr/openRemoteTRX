@@ -38,6 +38,7 @@ from .api.access import OPERATOR, AccessControl, ListenerSwitch, listener_muted
 from .api.overload import Limits, LagMeter, OverloadGuard, system_sampler
 from .audio import AudioConfigError, AudioPipeline
 from .audio.beeps import BeepStore, TailPlayer
+from .audio.xruns import XrunWatch
 from .bugreports import ReportStore
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
@@ -87,7 +88,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     access.switch = ListenerSwitch(Path(cfg.supervisor.state_dir) / "listeners.json")   # commutateur de l'opérateur
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum,
                                 presence=lambda: access.presence(OPERATOR))
-    tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run())]
+    tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run()),
+             asyncio.create_task(XrunWatch(pipeline.source).run(stop))]   # décrochages de la carte son : ORT-3010
     if breizh_link is not None:
         tasks.append(asyncio.create_task(breizh_link.run(stop)))
     if parent_pid is not None:

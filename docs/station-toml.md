@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.125.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.126.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 14, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -118,7 +118,7 @@ Se modifie : Menu 20. (relu sans redémarrer).
 | `operator_grace_s` | expert | `60` | Après la perte du dernier opérateur, attente avant de déconnecter les visiteurs. Valeurs : 0 à 600 s. |
 | `listeners_outside_bands` | courant | `false` | false : silence pour les visiteurs quand la réception sort des bandes de la station. |
 | `listener_spectrum_fps` | expert | `5` | Cadence maximale du spectre HF envoyé aux visiteurs (images par seconde) ; l'opérateur garde la sienne. Valeurs : 1 à 20. |
-| `overload_temp_c` | expert | `85` | Protection de la station : température du processeur au-delà de laquelle (pendant 10 s) les visiteurs sont déconnectés. Valeurs : 50 à 105 °C. |
+| `overload_temp_c` | expert | `70` | Protection de la station : température du processeur au-delà de laquelle (pendant 10 s) les visiteurs sont déconnectés. Valeurs : 50 à 105 °C. |
 | `overload_cpu_pct` | expert | `90` | Même protection : charge du processeur (tous cœurs) en %. Valeurs : 50 à 100 %. |
 | `overload_lag_ms` | expert | `100` | Même protection : retard de la boucle de la station, en millisecondes. Valeurs : 20 à 2000 ms. |
 | `overload_mem_pct` | expert | `10` | Même protection : mémoire libre minimale, en %. Valeurs : 1 à 50 %. |
@@ -167,7 +167,7 @@ Se modifie : Menu 14. Les seuils de l'indicateur choisis dans la page ou l'appli
 | `lan_target` | expert | `"auto"` | Box (passerelle du réseau local) que la station sonde pour savoir si une coupure vient de son propre réseau. auto : la passerelle par défaut de la machine. (depuis 0.106.0) |
 | `internet_target` | expert | `"1.1.1.1"` | Adresse sur Internet que la station sonde pour savoir si une coupure vient de la connexion de la box. Vide : aucune sonde Internet. (depuis 0.106.0) |
 | `loss_warn_pct` | expert | `2.0` | Perte de battements sur 60 s à partir de laquelle l'indicateur passe à l'orange (valeur de départ). Valeurs : 0,1 à 100 %, plus petit que loss_alert_pct. (depuis 0.106.0) |
-| `loss_alert_pct` | expert | `10.0` | Perte de battements sur 60 s à partir de laquelle l'indicateur passe au rouge (valeur de départ). Valeurs : 0,1 à 100 %. (depuis 0.106.0) |
+| `loss_alert_pct` | expert | `5.0` | Perte de battements sur 60 s à partir de laquelle l'indicateur passe au rouge (valeur de départ). Valeurs : 0,1 à 100 %. (depuis 0.106.0) |
 | `rtt_warn_ms` | expert | `250` | Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe à l'orange. Valeur de départ : la rubrique « Seuils » des statistiques propose des valeurs d'après vos mesures. Valeurs : 20 à 5 000 ms, plus petit que rtt_alert_ms. (depuis 0.106.0) |
 | `rtt_alert_ms` | expert | `600` | Temps aller-retour (p95 sur 60 s) à partir duquel l'indicateur passe au rouge (valeur de départ). Valeurs : 20 à 5 000 ms. (depuis 0.106.0) |
 | `alert_outage_s` | courant | `10` | Une coupure plus longue envoie une alerte par l'adresse de notification de [supervisor] (notify_url). 0 : aucune alerte de coupure. Valeurs : 0 à 3 600 s. (depuis 0.106.0) |
@@ -300,9 +300,9 @@ Se modifie : Menu 14. (au redémarrage).
 | `rigctld_fail_s` | expert | `5.0` | rigctld injoignable depuis ce délai : il est redémarré. |
 | `recovery_wait_s` | expert | `20.0` | Attente entre deux niveaux de l'échelle de reprise (relances, reset USB, mode sûr). |
 | `healthy_reset_s` | expert | `120.0` | Durée sans problème avant de repartir du premier niveau de l'échelle de reprise. |
-| `temp_alert_c` | expert | `80.0` | Température de la machine au-delà de laquelle une alerte est envoyée (sans autre action). |
+| `temp_alert_c` | expert | `70.0` | Température de la machine au-delà de laquelle une alerte est envoyée (sans autre action). |
 | `mem_alert_pct` | expert | `90` | Mémoire utilisée (en %) au-delà de laquelle une alerte `notify_url` est envoyée, si cela dure 60 s ; une alerte par heure au plus. Aucune autre action (ni redémarrage, ni mode sûr). Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
-| `disk_alert_pct` | expert | `90` | Disque utilisé (en %) au-delà duquel une alerte est envoyée, mesuré sur le dossier d'état et sur la racine du système ; 60 s de suite, une alerte par heure au plus. Un disque plein empêche d'écrire l'état et les journaux. Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
+| `disk_alert_pct` | expert | `70` | Disque utilisé (en %) au-delà duquel une alerte est envoyée, mesuré sur le dossier d'état et sur la racine du système ; 60 s de suite, une alerte par heure au plus. Un disque plein empêche d'écrire l'état et les journaux. Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
 | `alive_every_h` | courant | `1.0` | Message « Station en service » envoyé par `notify_url` toutes les N heures (priorité minimale) ; 0 : aucun. |
 | `allow_local_tx` | courant | `true` | true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes. **Sécurité** : false : toute émission non demandée par la station est coupée. |
 | `gateway_unit` | expert | `"trx-gateway.service"` | Linux : nom du service systemd de la passerelle. |

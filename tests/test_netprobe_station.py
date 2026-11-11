@@ -72,7 +72,7 @@ def test_beats_level_and_state_net(tmp_path):
     net = peer.probe.state()
     assert net["level"] == "green" and net["loss_pct"] == 0.0 and net["outage"] is False
     assert len(peer.of_type("net_ping")) == 15                     # un battement par seconde
-    assert net["thresholds"] == {"rtt_warn": 250, "rtt_alert": 600, "loss_warn": 2.0, "loss_alert": 10.0}
+    assert net["thresholds"] == {"rtt_warn": 250, "rtt_alert": 600, "loss_warn": 2.0, "loss_alert": 5.0}
     assert net["vpn"] == []
 
 

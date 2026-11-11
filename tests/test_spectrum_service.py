@@ -316,7 +316,7 @@ def test_transmission_from_elsewhere_right_after_opening_is_not_blamed_on_port_b
         await svc.start()
         assert await wait_for(lambda: svc.snapshot()["code"] == "ptt_busy")
         snap = svc.snapshot()
-        assert ctrl.cuts == ["spectrum_port_keyed"]                        # en cas de doute, coupure quand même
+        assert ctrl.cuts == []                                             # micro du poste : jamais coupé (2026-11-11)
         link.state.ptt = False                                             # fin de l'émission
         assert await wait_for(lambda: len(opened) >= 2)                    # PAS désactivé : nouvel essai
         assert await wait_for(lambda: svc.snapshot()["state"] == "ok")
@@ -746,3 +746,24 @@ def test_a_slow_event_loop_is_never_flooded_by_sweeps(caplog):
         loop.close()
     assert sum("diffusion du spectre en erreur" in r.message for r in caplog.records) == 1
     assert svc.sweeps == 1001
+
+
+def test_unreadable_ptt_after_closing_port_b_is_a_doubt_and_cuts():
+    """PTT vu juste après l'ouverture, puis illisible port refermé : doute = coupure, nouvel essai plus tard."""
+    rig = PortB()
+
+    async def scenario():
+        svc, link, ctrl, opened = make_service(None)
+
+        def opener(port, baud):
+            opened.append(port)
+            if len(opened) == 1:
+                link.state.ptt = True
+                rig.close = lambda: (setattr(rig, "closed", True), setattr(link.state, "ptt", None))   # PTT illisible
+            return rig
+        svc.opener, svc.CLOSE_SETTLE_S = opener, 0.3
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["code"] == "ptt_unknown")
+        assert await wait_for(lambda: ctrl.cuts == ["spectrum_port_keyed"])
+        await svc.stop()
+    asyncio.run(scenario())

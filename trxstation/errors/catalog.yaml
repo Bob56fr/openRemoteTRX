@@ -1,9 +1,11 @@
 # Catalogue d'erreurs d'openRemoteTRX : référence unique (cahier du monitoring inter-stations, § 7).
-# Codes ORT-NNNN STABLES : jamais réutilisés ni renumérotés ; une erreur abandonnée passe en `deprecated: true`.
+# Codes ORT-NNNN STABLES : jamais réutilisés ni renumérotés ; une erreur abandonnée passe en `deprecated: true`
+# (avec `remplace_par`).
 # Gravité : info | avertissement | erreur | critique. Textes en français, bloc `en` obligatoire.
 # `action_auto` décrit ce que la station FAIT aujourd'hui ; `codes_machine` = codes déjà émis par le code
 # (refus renvoyés aux clients, raisons de coupure, types d'alerte). `prevu: true` = pas encore produit par le code.
 # Cahier : docs/cdc-monitoring.md § 7. Origines dans le code et cas à trancher : docs/errors/inventaire.md. Validé par tests/test_error_catalog.py.
+# Après toute modification : python scripts/build_errors.py (codes.py et catalog.json).
 
 
 # ====================================================================================================
@@ -2571,6 +2573,25 @@ ORT-4017:
     - Listener already gone
     preconisation: Repeat the request from TRX Console while the gateway is running.
 
+ORT-4018:
+  gravite: erreur
+  titre: 'Erreur inattendue : session d''un client'
+  message: 'Session d''un client : erreur inattendue ({erreur}) ; la station continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4018
+  depuis_version: 0.126.0
+  en:
+    titre: 'Unexpected error: client session'
+    message: 'Client session: unexpected error ({erreur}); the station carries on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (TRX Console menu 8).
+
 ORT-4101:
   gravite: erreur
   titre: 'Certificat TLS inutilisable : API non démarrée'
@@ -3179,6 +3200,27 @@ ORT-4508:
     - State folder permissions (operation run as administrator)
     preconisation: Check disk space and permissions, then try again (menu 23).
 
+ORT-4509:
+  gravite: erreur
+  titre: 'Erreur inattendue : sonde de qualité réseau'
+  message: 'Sonde de qualité réseau : erreur inattendue ({erreur}) ; la station continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - netprobe_error
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-4509
+  depuis_version: 0.126.0
+  en:
+    titre: 'Unexpected error: network quality probe'
+    message: 'Network quality probe: unexpected error ({erreur}); the station carries on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (TRX Console menu 8).
+
 
 # ====================================================================================================
 # 5000–5999 : PTT et sécurité d'émission
@@ -3263,15 +3305,15 @@ ORT-5003:
       then restart the station.
 
 ORT-5004:
-  gravite: avertissement
+  gravite: info
   titre: Émission pendant l'ouverture du second port (autre cause)
-  message: 'Le poste est passé en émission juste après l''ouverture de {port}, mais pas à cause de ce port (l''émission
-    a continué port refermé : micro du poste ?). Coupure faite par prudence ; nouvel essai plus tard.'
+  message: 'Le poste est passé en émission juste après l''ouverture de {port}, sans que ce port en soit la cause
+    (micro du poste ?) : émission laissée à l''opérateur, nouvel essai du spectre plus tard.'
   causes:
   - Opérateur sur place au micro du poste
   - VOX du poste
-  preconisation: Si un opérateur émet sur place, rien à faire. Sinon vérifier le VOX et les lignes PTT du poste.
-  action_auto: retour_rx
+  preconisation: 'Aucune action : le spectre revient seul après l''émission faite sur le poste.'
+  action_auto: nouvel_essai
   ntfy_defaut: false
   priorite_ntfy: 3
   codes_machine:
@@ -3280,12 +3322,12 @@ ORT-5004:
   depuis_version: 0.123.0
   en:
     titre: Transmission while opening the second port (other cause)
-    message: 'The rig went into transmit right after opening {port}, but not because of this port (it kept transmitting
-      with the port closed: rig microphone?). Unkeyed as a precaution; retry later.'
+    message: 'The rig went to transmit right after {port} was opened, but not because of that port (rig microphone?):
+      transmission left to the operator, spectrum retried later.'
     causes:
     - Local operator on the rig microphone
     - Rig VOX
-    preconisation: If someone transmits locally, nothing to do. Otherwise check the rig VOX and PTT lines.
+    preconisation: 'Nothing to do: the spectrum comes back by itself after the transmission made on the rig.'
 
 ORT-5005:
   gravite: info
@@ -3665,7 +3707,7 @@ ORT-5020:
     et la méthode PTT ; effacer le défaut sur la station.
   action_auto: redemarrer_passerelle
   ntfy_defaut: true
-  priorite_ntfy: 3
+  priorite_ntfy: 5
   codes_machine:
   - unkey_failed
   - gateway_cannot_unkey
@@ -3759,7 +3801,7 @@ ORT-5024:
     reprise est lancée).
   action_auto: retour_rx
   ntfy_defaut: true
-  priorite_ntfy: 3
+  priorite_ntfy: 5
   codes_machine:
   - tot_absolu
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5024
@@ -3786,7 +3828,7 @@ ORT-5025:
     charge.
   action_auto: redemarrer_passerelle
   ntfy_defaut: true
-  priorite_ntfy: 3
+  priorite_ntfy: 5
   codes_machine:
   - gateway_silent_tx
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5025
@@ -3813,7 +3855,7 @@ ORT-5026:
   preconisation: Contrôler le poste immédiatement ; vérifier le câble USB (ferrites), puis les journaux de rigctld.
   action_auto: redemarrer_rigctld
   ntfy_defaut: true
-  priorite_ntfy: 3
+  priorite_ntfy: 5
   codes_machine:
   - rigctld_down_during_tx
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5026
@@ -3839,7 +3881,7 @@ ORT-5027:
   preconisation: Contrôler le poste immédiatement et le couper à la main si besoin.
   action_auto: nouvel_essai
   ntfy_defaut: false
-  priorite_ntfy: 3
+  priorite_ntfy: 5
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5027
   depuis_version: 0.123.0
   en:
@@ -3850,6 +3892,25 @@ ORT-5027:
     - Rig ignoring the command
     - PTT held by other means
     preconisation: Check the rig immediately and switch it off by hand if needed.
+
+ORT-5028:
+  gravite: erreur
+  titre: 'Erreur inattendue : bips de fin d''émission'
+  message: 'Bips de fin d''émission : erreur inattendue ({erreur}) ; la station continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-5028
+  depuis_version: 0.126.0
+  en:
+    titre: 'Unexpected error: end-of-transmission beeps'
+    message: 'End-of-transmission beeps: unexpected error ({erreur}); the station carries on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (TRX Console menu 8).
 
 ORT-5101:
   gravite: erreur
@@ -5876,6 +5937,25 @@ ORT-6540:
     - Automatic resume after reactivate_after_s or on operator request
     preconisation: None.
 
+ORT-6541:
+  gravite: erreur
+  titre: 'Erreur inattendue : liaison avec Breizh Audio Box'
+  message: 'Liaison avec Breizh Audio Box : erreur inattendue ({erreur}) ; la station continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6541
+  depuis_version: 0.126.0
+  en:
+    titre: 'Unexpected error: Breizh Audio Box link'
+    message: 'Breizh Audio Box link: unexpected error ({erreur}); the station carries on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (TRX Console menu 8).
+
 ORT-6561:
   gravite: avertissement
   titre: Décodeur FreeDV arrêté
@@ -6005,6 +6085,25 @@ ORT-6566:
     causes:
     - Station or rig-microphone transmission in progress
     preconisation: Change FreeDV mode once back on receive.
+
+ORT-6567:
+  gravite: erreur
+  titre: 'Erreur inattendue : mode FreeDV'
+  message: 'Mode FreeDV : erreur inattendue ({erreur}) ; la station continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 8 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6567
+  depuis_version: 0.126.0
+  en:
+    titre: 'Unexpected error: FreeDV mode'
+    message: 'FreeDV mode: unexpected error ({erreur}); the station carries on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (TRX Console menu 8).
 
 ORT-6801:
   gravite: info
@@ -6825,6 +6924,7 @@ ORT-6922:
   priorite_ntfy: 3
   codes_machine:
   - internal
+  - friends_error
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6922
   depuis_version: 0.123.0
   en:
@@ -6833,6 +6933,29 @@ ORT-6922:
     causes:
     - Software defect
     preconisation: Send a problem report (TRX Console menu 8) with presence.log.
+
+ORT-6923:
+  gravite: erreur
+  titre: Signature invalide reçue (attaque possible)
+  message: 'Présence de groupe {groupe} : {objet} signé par une clé inconnue ou signature fausse ; refusé.'
+  causes:
+  - Relais compromis ou intermédiaire qui modifie les messages
+  - Administrateur dont la clé a changé
+  preconisation: Rien n'est accepté. Vérifier auprès de l'administrateur du groupe ; si cela se répète, quitter
+    le groupe et prévenir l'administrateur du relais.
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-6923
+  depuis_version: 0.126.0
+  en:
+    titre: Invalid signature received (possible attack)
+    message: 'Group presence {groupe}: {objet} signed by an unknown key or with a bad signature; refused.'
+    causes:
+    - Compromised relay or man in the middle altering messages
+    - Administrator whose key changed
+    preconisation: Nothing is accepted. Check with the group administrator; if it repeats, leave the group and warn
+      the relay administrator.
 
 
 # ====================================================================================================
@@ -7102,7 +7225,7 @@ ORT-8008:
     9 ou « trx-supervisor --clear-safe-mode »).
   action_auto: mode_sur
   ntfy_defaut: true
-  priorite_ntfy: 3
+  priorite_ntfy: 4
   codes_machine:
   - safe_mode
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-8008
@@ -7352,6 +7475,9 @@ ORT-8019:
     - Software defect
     - Unexpected data from a client or a module
     preconisation: Send a problem report with the gateway log (TRX Console menu 8).
+  deprecated: true
+  remplace_par: ORT-4018, ORT-4509, ORT-5028, ORT-6541, ORT-6567, ORT-6922, ORT-8018 (une erreur inattendue par
+    domaine)
 
 ORT-8020:
   gravite: avertissement
@@ -8371,8 +8497,8 @@ ORT-9307:
     preconisation: Wait for the other installation to finish, try sudo apt-get update by hand, then rerun.
 
 ORT-9308:
-  gravite: critique
-  titre: Installation des modules Python impossible ou empreinte différente
+  gravite: erreur
+  titre: Installation des modules Python impossible
   message: 'Installation des modules Python impossible : {detail}.'
   causes:
   - Pas d'accès à pypi.org (Internet, pare-feu d'entreprise)
@@ -8387,7 +8513,7 @@ ORT-9308:
   doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9308
   depuis_version: 0.123.0
   en:
-    titre: Python modules installation failed or hash mismatch
+    titre: Python modules could not be installed
     message: 'Python modules installation failed: {detail}.'
     causes:
     - No access to pypi.org (Internet, corporate firewall)
@@ -8442,6 +8568,29 @@ ORT-9310:
     - Setting rejected by the new validation (new rule, removed key)
     preconisation: Fix station.toml (menu 14) or rerun the wizard; on rollback the pre-update configuration is restored
       automatically when available.
+
+ORT-9311:
+  gravite: critique
+  titre: 'Empreinte d''un module Python différente : installation arrêtée'
+  message: 'Le module {module} téléchargé n''a pas l''empreinte attendue ({detail}) : rien n''est installé.'
+  causes:
+  - Fichier modifié en chemin (proxy, miroir compromis)
+  - requirements.lock périmé par rapport au paquet
+  preconisation: Ne pas forcer l'installation. Réessayer plus tard ou depuis un autre réseau ; si l'écart persiste,
+    le signaler avec le message complet.
+  action_auto: arreter_installation
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://rf-diy.com/openremotetrx/erreurs/ORT-9311
+  depuis_version: 0.126.0
+  en:
+    titre: 'Python module hash mismatch: installation stopped'
+    message: 'Downloaded module {module} does not have the expected hash ({detail}): nothing is installed.'
+    causes:
+    - File altered in transit (proxy, compromised mirror)
+    - requirements.lock out of date for the package
+    preconisation: Do not force the installation. Try again later or from another network; if the mismatch persists,
+      report it with the full message.
 
 ORT-9501:
   gravite: erreur
@@ -8533,6 +8682,8 @@ ORT-9504:
     - Uncaught exception in the app (Kotlin)
     - 'Native crash (WebRTC, audio): signal from native code'
     preconisation: Send the HTML report (no personal data) with the app version.
+  deprecated: true
+  remplace_par: AND-1001 (catalogue de l'application Android, AND-catalog.yaml)
 
 ORT-9505:
   gravite: erreur
@@ -8554,6 +8705,8 @@ ORT-9505:
     causes:
     - App main thread blocked (network, audio, disk)
     preconisation: Send the HTML report with what was being done when it froze.
+  deprecated: true
+  remplace_par: AND-1002 (catalogue de l'application Android, AND-catalog.yaml)
 
 ORT-9506:
   gravite: avertissement
@@ -8579,6 +8732,8 @@ ORT-9506:
     - Damaged APK
     - Play Store error (DF-…)
     preconisation: Uninstall the old (debug) version then reinstall from the Store.
+  deprecated: true
+  remplace_par: AND-1003 (catalogue de l'application Android, AND-catalog.yaml)
 
 ORT-9507:
   gravite: avertissement
@@ -8602,6 +8757,8 @@ ORT-9507:
     - Phone low on memory (lowmemorykiller)
     - Battery saver killing the service
     preconisation: Exclude the app from battery optimisation; close heavy apps.
+  deprecated: true
+  remplace_par: AND-1004 (catalogue de l'application Android, AND-catalog.yaml)
 
 ORT-9508:
   gravite: info
@@ -8623,6 +8780,8 @@ ORT-9508:
     causes:
     - Errors logged by the app or by WebRTC in its process
     preconisation: Read the most frequent ones in the HTML report; attach them to a problem report.
+  deprecated: true
+  remplace_par: AND-1005 (catalogue de l'application Android, AND-catalog.yaml)
 
 ORT-9701:
   gravite: erreur

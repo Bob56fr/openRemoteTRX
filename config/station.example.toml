@@ -61,9 +61,9 @@ mismatch_grace_s = 1.5
 rigctld_fail_s = 5.0
 recovery_wait_s = 20.0
 healthy_reset_s = 120.0
-temp_alert_c = 80.0
+temp_alert_c = 70.0
 mem_alert_pct = 90   # mémoire utilisée (%) : alerte ntfy seule ; 0 = aucune
-disk_alert_pct = 90   # disque utilisé (%), dossier d'état et / : alerte ntfy seule ; 0 = aucune
+disk_alert_pct = 70   # disque utilisé (%), dossier d'état et / : alerte ntfy seule ; 0 = aucune
 alive_every_h = 1.0   # message « Station en service » sans sonnerie par notify_url, toutes les N heures ; 0 = aucun
 allow_local_tx = true   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s
 gateway_unit = "trx-gateway.service"
@@ -108,7 +108,7 @@ operator_grace_s = 60   # opérateur perdu : attente avant de déconnecter les v
 listeners_outside_bands = false   # false : silence pour les visiteurs hors [[bands]]
 listener_spectrum_fps = 5   # spectre HF des visiteurs : images par seconde au plus (1 à 20)
 # Surcharge : au-delà pendant 10 s, visiteurs déconnectés ; réouverture après 5 min nettement en dessous
-overload_temp_c = 85   # température du processeur (°C)
+overload_temp_c = 70   # température du processeur (°C)
 overload_cpu_pct = 90   # charge de tous les cœurs (%)
 overload_lag_ms = 100   # retard de la boucle de la passerelle (ms)
 overload_mem_pct = 10   # mémoire libre minimale (%)
@@ -137,7 +137,7 @@ lan_target = "auto"   # box à sonder ; auto = passerelle par défaut
 internet_target = "1.1.1.1"   # cible Internet ; "" = aucune
 # Seuils de DÉPART de l'indicateur ; ceux choisis dans la page ou l'application (statistiques) priment
 loss_warn_pct = 2.0   # perte sur 60 s : orange (%)
-loss_alert_pct = 10.0   # perte sur 60 s : rouge (%)
+loss_alert_pct = 5.0   # perte sur 60 s : rouge (%)
 rtt_warn_ms = 250   # aller-retour p95 sur 60 s : orange (ms)
 rtt_alert_ms = 600   # aller-retour p95 sur 60 s : rouge (ms)
 alert_outage_s = 10   # coupure plus longue : alerte par notify_url (0 = aucune)

@@ -4,7 +4,7 @@
 l'utilisateur du 2026-10-30). L'opérateur passe toujours avant les visiteurs.
 
 Coupure : une des conditions dure HOLD_S (10 s) :
-  * processeur >= temp_c (85 °C ; ignoré si la température est inconnue : cpu_temp.py) ;
+  * processeur >= temp_c (70 °C ; ignoré si la température est inconnue : cpu_temp.py) ;
   * charge de tous les cœurs >= cpu_pct (90 %) ;
   * retard de la boucle de la passerelle > lag_ms (100 ms) : l'audio et la sécurité d'émission en souffrent ;
   * mémoire libre < mem_pct (10 %).
@@ -38,7 +38,7 @@ class Sample:
 
 @dataclass
 class Limits:
-    temp_c: float = 85.0
+    temp_c: float = 70.0
     cpu_pct: float = 90.0
     lag_ms: float = 100.0
     mem_pct: float = 10.0

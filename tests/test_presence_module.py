@@ -403,3 +403,29 @@ def test_manifest_gives_no_right_on_the_rig():
 
 def test_b64e_is_still_exported():
     assert b64e(b"\x00") == "AA"
+
+
+def test_damaged_key_file_is_reported_without_crash_loop_nor_new_identity(tmp_path, caplog):
+    """Fichier de clés abîmé : ORT-6920 au journal, problème publié, AUCUNE nouvelle identité, pas de plantage."""
+    import asyncio
+    import logging
+    clock = Clock()
+    cfg = cfgmod.Config()
+    cfg.supervisor.state_dir = str(tmp_path / "state")
+    cfg.presence.enabled = True
+    key = tmp_path / "state" / "presence" / "presence.key"
+    key.parent.mkdir(parents=True)
+    key.write_text("{abîmé", encoding="utf-8")
+    service = PresenceService(cfg, tmp_path / "station.toml", relay_factory=FakeRelay(clock).transport, clock=clock)
+    caplog.set_level(logging.ERROR)
+
+    async def scenario():
+        task = asyncio.ensure_future(service.run())
+        await asyncio.sleep(0.2)
+        assert not task.done()                               # le module attend : pas de sortie, pas de relance en boucle
+        task.cancel()
+    asyncio.run(scenario())
+    assert any(r.getMessage().startswith("ORT-6920 ") for r in caplog.records)
+    assert key.read_text(encoding="utf-8") == "{abîmé"      # jamais écrasé : l'identité de la station n'est pas perdue
+    status = json.loads((tmp_path / "state" / "presence" / "status.json").read_text(encoding="utf-8"))
+    assert status["enabled"] and "clés" in status["problem"]

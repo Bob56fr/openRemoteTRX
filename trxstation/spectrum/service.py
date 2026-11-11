@@ -12,8 +12,10 @@ Règles :
   - juste après l'ouverture, le PTT est relu par le port CAT pendant PTT_SETTLE_S : s'il passe à 1, le port est
     refermé AUSSITÔT puis on regarde pendant CLOSE_SETTLE_S si l'émission tombe : oui = c'est ce port qui la tenait
     (réglage « USB SEND » / « USB Keying » sur une ligne DTR ou RTS de ce port ; sous Linux, l'ouverture lève DTR et
-    RTS), coupure et spectre désactivé jusqu'au redémarrage ; non = émission venue d'ailleurs (micro du poste...),
-    coupure par prudence et nouvel essai plus tard (`ptt_busy`) ; illisible = port refermé ;
+    RTS), coupure et spectre désactivé jusqu'au redémarrage ; non, le poste émet toujours port refermé = émission
+    venue du poste lui-même (micro du poste) : AUCUNE coupure (décision de l'utilisateur, 2026-11-11 : l'opérateur
+    sur place garde sa station ; la règle « opérateur sur place » de la passerelle s'applique), nouvel essai plus
+    tard (`ptt_busy`) ; PTT illisible pendant cette attente = doute : coupure, nouvel essai plus tard ;
   - à chaque ouverture, `probe.check` revérifie l'adresse CI-V, le spectre et la fréquence (même poste) ;
   - en marche : plus de balayage pendant SILENT_S, ou poste qui ne répond plus à son adresse (vérifiée toutes les
     IDENT_EVERY_S) = retour au mode normal ; nouvel essai toutes les RETRY_S, toujours en réception confirmée ;
@@ -327,15 +329,16 @@ class SpectrumService:
         if self.link.state.ptt is not False:
             raise CheckFailed("ptt_unknown")
 
-    def _keyed_by_port_b(self) -> bool:
-        """Port B déjà refermé : l'émission tombe-t-elle ? Oui = c'est lui qui la tenait (ligne DTR/RTS retombée)."""
+    def _who_keyed(self) -> str:
+        """Port B déjà refermé : l'émission tombe-t-elle ? « port_b » = oui, c'est lui qui la tenait (ligne DTR/RTS
+        retombée) ; « rig » = le poste émet TOUJOURS (micro du poste) ; « unknown » = PTT illisible ou arrêt demandé."""
         end = self.clock() + self.CLOSE_SETTLE_S
         while self.clock() < end:
             if self.link.state.ptt is False:
-                return True
+                return "port_b"
             if self._wait(0.1):
-                break
-        return False
+                return "unknown"
+        return "rig" if self.link.state.ptt is True else "unknown"
 
     def _transmitting(self) -> bool:
         return self.link.state.ptt is True or self.ctrl.snapshot().state != "RX"
@@ -387,10 +390,13 @@ class SpectrumService:
             except CheckFailed as exc:
                 if exc.code == "ptt_on_open":
                     ser.close()                     # d'abord fermer le port qui tient peut-être le PTT
-                    guilty = self._keyed_by_port_b()
-                    self._cut()                     # dans les deux cas : en cas de doute, pas d'émission
-                    if not guilty:
-                        raise CheckFailed("ptt_busy") from exc   # pas ce port : pas de désactivation définitive
+                    who = self._who_keyed()
+                    if who != "rig":                # port B coupable, ou doute : pas d'émission
+                        self._cut()
+                    if who == "rig":                # micro du poste : rien coupé, pas de désactivation définitive
+                        raise CheckFailed("ptt_busy") from exc
+                    if who == "unknown":            # doute : coupé, nouvel essai plus tard
+                        raise CheckFailed("ptt_unknown") from exc
                 raise
             if self._stop.is_set():
                 return

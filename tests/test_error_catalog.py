@@ -16,7 +16,6 @@ import pytest
 yaml = pytest.importorskip("yaml", reason="PyYAML absent (extra « dev ») : catalogue non vérifié")
 
 ERRORS_DIR = Path(__file__).resolve().parents[1] / "trxstation" / "errors"
-CATALOG = ERRORS_DIR / "catalog.yaml"
 MODULES = ERRORS_DIR / "modules.yaml"
 
 GRAVITES = {"info", "avertissement", "erreur", "critique"}
@@ -59,26 +58,51 @@ def _fields(text: str) -> set[str]:
 
 
 @pytest.fixture(scope="module")
-def catalog() -> dict:
-    data = _load(CATALOG)
-    assert isinstance(data, dict) and data, "catalog.yaml vide ou mal formé"
-    return data
-
-
-@pytest.fixture(scope="module")
 def registry() -> dict:
     data = _load(MODULES)
     assert isinstance(data, dict) and isinstance(data.get("prefixes"), dict)
     return data["prefixes"]
 
 
-def test_codes_are_unique_well_formed_and_in_a_known_range(catalog: dict) -> None:
-    # L'unicité est garantie par le chargeur (clé répétée = erreur) ; reste la forme et la plage.
-    for code in catalog:
-        m = CODE_RE.match(str(code))
-        assert m, f"{code} : format attendu ORT-NNNN"
-        assert m["prefix"] == "ORT", f"{code} : le catalogue du cœur ne contient que des codes ORT"
-        assert m["num"][0] in PLAGES_ORT, f"{code} : hors des plages 1000-9999"
+@pytest.fixture(scope="module")
+def catalogs(registry: dict) -> dict[str, dict]:
+    """Catalogue du cœur (ORT) et catalogues des modules livrés dans ce dossier (AND…), par préfixe."""
+    out = {}
+    for prefix, entry in registry.items():
+        name = entry.get("catalogue")
+        if name and (ERRORS_DIR / name).is_file():
+            data = _load(ERRORS_DIR / name)
+            assert isinstance(data, dict) and data, f"{name} vide ou mal formé"
+            out[prefix] = data
+    assert "ORT" in out and out["ORT"] is not None
+    return out
+
+
+@pytest.fixture(scope="module")
+def catalog(catalogs: dict) -> dict:
+    """Tous les codes, tous préfixes confondus (codes uniques entre catalogues : préfixes différents)."""
+    merged: dict = {}
+    for data in catalogs.values():
+        assert not set(merged) & set(data)
+        merged.update(data)
+    return merged
+
+
+def test_codes_are_unique_well_formed_and_in_a_known_range(catalogs: dict) -> None:
+    # L'unicité est garantie par le chargeur (clé répétée = erreur) ; reste la forme, le préfixe et la plage.
+    for prefix, data in catalogs.items():
+        for code in data:
+            m = CODE_RE.match(str(code))
+            assert m, f"{code} : format attendu {prefix}-NNNN"
+            assert m["prefix"] == prefix, f"{code} : le catalogue {prefix} ne contient que des codes {prefix}"
+            if prefix == "ORT":
+                assert m["num"][0] in PLAGES_ORT, f"{code} : hors des plages 1000-9999"
+
+
+def test_deprecated_entries_say_what_replaces_them(catalog: dict) -> None:
+    for code, entry in catalog.items():
+        if entry.get("deprecated"):
+            assert isinstance(entry.get("remplace_par"), str) and entry["remplace_par"].strip(),                 f"{code} : abandonné sans `remplace_par`"
 
 
 def test_every_entry_has_the_required_fields(catalog: dict) -> None:
@@ -129,7 +153,7 @@ def test_external_module_link_codes_of_the_specification_are_present(catalog: di
 
 
 def test_module_registry(registry: dict) -> None:
-    assert {"ORT", "BZA", "FDV"} <= set(registry)
+    assert {"ORT", "BZA", "FDV", "AND"} <= set(registry)
     assert registry["ORT"]["catalogue"] == "catalog.yaml"
     for prefix, entry in registry.items():
         assert re.fullmatch(r"[A-Z]{3}", prefix), f"préfixe {prefix!r} : 3 lettres majuscules"

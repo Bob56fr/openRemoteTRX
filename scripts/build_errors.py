@@ -5,6 +5,8 @@
 - trxstation/errors/codes.py     : une constante par code (ORT_2104 = "ORT-2104"), utilisée par le code de la station ;
 - trxstation/errors/catalog.json : copie compacte lue par la station (stdlib seulement, sans PyYAML).
 
+Les catalogues des modules livrés dans ce dossier (registre modules.yaml : AND-catalog.yaml…) y sont ajoutés.
+
 À relancer après TOUTE modification du catalogue : `python scripts/build_errors.py` (PyYAML : extra « dev »).
 `--check` : ne rien écrire, sortir en erreur si les fichiers fabriqués ne sont plus à jour (utilisé par les tests).
 """
@@ -26,6 +28,16 @@ def load_yaml(path: Path) -> dict:
     import yaml   # extra « dev » : jamais importé par la station
     with path.open(encoding="utf-8") as fh:
         return yaml.safe_load(fh)
+
+
+def module_catalogs(modules: dict) -> dict[str, dict]:
+    """Catalogues des modules livrés DANS le dépôt (registre : `catalogue` présent dans ce dossier, hors ORT)."""
+    out = {}
+    for prefix, entry in modules["prefixes"].items():
+        name = entry.get("catalogue")
+        if prefix != "ORT" and name and (ERRORS_DIR / name).is_file():
+            out[prefix] = load_yaml(ERRORS_DIR / name)
+    return out
 
 
 def build_json(catalog: dict, modules: dict) -> str:
@@ -55,6 +67,8 @@ def build_codes(catalog: dict) -> str:
 
 def outputs() -> dict[Path, str]:
     catalog, modules = load_yaml(CATALOG_YAML), load_yaml(MODULES_YAML)
+    for extra in module_catalogs(modules).values():   # un seul espace de codes : préfixes différents, jamais en double
+        catalog = {**catalog, **extra}
     return {CODES_PY: build_codes(catalog), CATALOG_JSON: build_json(catalog, modules)}
 
 

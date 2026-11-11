@@ -30,6 +30,8 @@ from pathlib import Path
 
 from .. import __version__
 from .. import config as cfgmod
+from ..errors import codes
+from ..errors.emit import emit_event
 from ..paths import default_config_path
 from . import actions
 from .engine import ActionRefused, Engine
@@ -196,9 +198,19 @@ class PresenceService:
             log.info("[presence] désactivé : le module attend sans rien envoyer")
             if self.bus is not None:
                 tasks.append(asyncio.ensure_future(self._bus_forever()))
-            await asyncio.gather(*tasks) if tasks else asyncio.Event().wait()
+            await (asyncio.gather(*tasks) if tasks else asyncio.Event().wait())
             return
-        engine = self.setup()
+        try:
+            engine = self.setup()
+        except (ValueError, OSError) as exc:      # fichier de clés abîmé ou illisible : ni plantage en boucle, ni
+            key_path = cfgmod.presence_key_path(self.cfg, self.config_path)   # nouvelle identité créée en silence
+            emit_event(codes.ORT_6920, logger=log, fichier=str(key_path), detail=str(exc))
+            Store(self.folder).write_status({"enabled": True, "updated": int(self.clock()),
+                                             "problem": f"fichier de clés illisible ({key_path.name})"})
+            if self.bus is not None:
+                tasks.append(asyncio.ensure_future(self._bus_forever()))
+            await (asyncio.gather(*tasks) if tasks else asyncio.Event().wait())
+            return
         log.info("démarrage : relais %s, station %s", self.cfg.presence.relay_url, engine.me)
         if self.bus is not None:
             tasks.append(asyncio.ensure_future(self._bus_forever()))

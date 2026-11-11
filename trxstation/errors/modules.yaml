@@ -41,3 +41,14 @@ prefixes:
     en:
       nom: FreeDV
       role: digital voice encoding and decoding on the gateway (RADE V1 receive today)
+
+  AND:
+    nom: application Android OpenRemoteTRX
+    role: client de la station sur téléphone, tablette et Android Auto
+    interaction: rapports de bug et journaux (logcat) des bêta-testeurs analysés par trx-journal-android ; plus tard, événements remis à la station
+    contact: https://github.com/Bob56fr/openRemoteTRX/issues
+    version_min: 0.126.0
+    catalogue: AND-catalog.yaml
+    en:
+      nom: OpenRemoteTRX Android app
+      role: station client on phone, tablet and Android Auto

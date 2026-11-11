@@ -17,6 +17,8 @@ import time
 from collections import Counter
 from collections.abc import Callable
 
+from ..errors import codes
+from ..errors.emit import emit_event
 from . import protocol as p
 
 log = logging.getLogger(__name__)
@@ -27,6 +29,7 @@ IDLE_LOST_S = 3.0
 REFUSED_RETRY_S = 60.0
 SOCKET_RETRY_S = 5.0
 BAD_REPORT_S = 60.0
+SILENT_REPORT_S = 60.0   # « connecting » sans aucune réponse depuis : journalisé une fois (ORT-6501), sans ntfy
 TICK_S = 0.1
 NOT_BAD = frozenset({"late", "icmp", "send_error", "ack_changed"})   # pas des paquets suspects : retards, réseau
 MAX_OUTSTANDING = 400            # blocs envoyés en attente de retour (4 s de son) : au-delà, les plus anciens sont oubliés
@@ -56,6 +59,7 @@ class BreizhLink(asyncio.DatagramProtocol):
         self._refused_until = 0.0
         self._reactivate_requested = False
         self._stable_since: float | None = None
+        self._silent_reported = False
         self._new_attempt()
 
     # ---------------------------------------------------------------- session
@@ -240,6 +244,7 @@ class BreizhLink(asyncio.DatagramProtocol):
         self.peer_version = ack.breizh
         now = self.clock()
         self._last_valid, self._stable_since, self._refused_code = now, now, ""
+        self._silent_reported = False
         detail = f"{ack.breizh or 'Breizh'} joint (traitement annoncé : {ack.latency_ms} ms)"
         if self.state in ("connecting", "refused"):
             self.state = "ready"
@@ -271,6 +276,12 @@ class BreizhLink(asyncio.DatagramProtocol):
                 return
             if self.state == "fallback" and self._refused_code and now < self._refused_until:
                 return
+            if (self.state == "connecting" and not self._silent_reported
+                    and now - self._last_valid >= SILENT_REPORT_S):
+                self._silent_reported = True       # Breizh arrêté ou mode OpenRemoteTRX coupé : rien ne répond
+                emit_event(codes.ORT_6501, logger=log, module="Breizh Audio Box",
+                           detail=f"aucune réponse de {self.host}:{self.port} depuis {SILENT_REPORT_S:g} s ; "
+                                  "émissions en direct")
             if now >= self._next_hello:
                 self._next_hello = now + HELLO_EVERY_S
                 self._send(p.Type.HELLO, payload=p.hello_payload(self._nonce, self.station_version))

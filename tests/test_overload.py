@@ -53,7 +53,7 @@ def test_limits_name_the_first_cause_and_need_a_clear_margin_to_go_back():
     assert limits.over(Sample(lag_ms=150)) == "passerelle en retard de 150 ms"
     assert limits.over(Sample(mem_free_pct=7)) == "mémoire libre à 7 %"
     assert limits.over(Sample()) == ""                                      # rien de lisible (Windows) : jamais de coupure
-    assert limits.green(CALM) and not limits.green(Sample(temp_c=80))      # sous 85 mais pas sous 75 : pas encore
+    assert limits.green(CALM) and not limits.green(Sample(temp_c=65))      # sous 70 mais pas sous 60 : pas encore
     assert not limits.green(Sample(cpu_pct=75)) and not limits.green(Sample(lag_ms=60))
 
 
@@ -68,12 +68,12 @@ def test_ten_seconds_over_cut_the_listeners_with_a_precise_message_then_reopen_a
     assert "processeur à 87 °C" in w.guard.message() and "5 minutes" in w.guard.message()
     status = w.guard.status()
     assert status["locked"] is False and status["reopen_in_s"] == REOPEN_S
-    w.sample = Sample(temp_c=80)                                            # redescendu, mais pas assez
+    w.sample = Sample(temp_c=65)                                            # redescendu, mais pas assez
     w.run(REOPEN_S + 10)
     assert w.guard.suspended
     w.sample = CALM
     w.run(REOPEN_S - 5)
-    w.sample = Sample(temp_c=78)                                            # rechute au-dessus du seuil de retour : on recompte
+    w.sample = Sample(temp_c=63)                                            # rechute au-dessus du seuil de retour : on recompte
     w.run(2)
     w.sample = CALM
     w.run(REOPEN_S - 1)

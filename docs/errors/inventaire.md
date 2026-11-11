@@ -1,98 +1,85 @@
 # Inventaire des erreurs existantes (lot M1, partie 1)
 
-Fabriqué le 2026-11-11 à partir du code de la station 0.122.0 (sans numéro d'étape : le lot M1 complet en prendra un), SANS changer son comportement. Référence : `trxstation/errors/catalog.yaml` (cahier des charges du monitoring inter-stations `docs/cdc-monitoring.md`, § 7). Les messages du code seront remplacés par les codes dans la 2e partie du lot M1.
+Partie 1 faite le 2026-11-11 sur le code de la station 0.122.0 ; décisions de l'utilisateur appliquées à l'étape 168 (station 0.126.0 : origines recalées sur ce code). SANS changer son comportement. Référence : `trxstation/errors/catalog.yaml` (cahier des charges du monitoring inter-stations `docs/cdc-monitoring.md`, § 7). Les messages du code seront remplacés par les codes dans la 2e partie du lot M1.
 
 ## Chiffres
 
-- 381 codes ORT (dont 12 écrits d'après le cahier : ORT-6501 à 6508, ORT-7001 à 7030) ;
-- 437 situations relevées dans le code, regroupées quand la cause est la même (68 doublons fusionnés, liste plus bas) ;
-- 1406 origines `fichier:ligne` (toutes vérifiées : le fichier existe et la ligne aussi) ;
-- 165 questions relevées pendant l'inventaire (synthèse ci-dessous, détail en fin de page).
+- 388 codes ORT, dont 6 abandonnés (`deprecated`) et 12 écrits d'après le cahier (ORT-6501 à 6508, ORT-7001 à 7030) ; 5 codes AND (application Android, `AND-catalog.yaml`) ;
+- 444 situations relevées dans le code, regroupées quand la cause est la même (68 doublons fusionnés, liste plus bas) ;
+- 1427 origines `fichier:ligne` (toutes vérifiées : le fichier existe et la ligne aussi) ;
+- 165 questions relevées pendant l'inventaire, toutes tranchées (décisions ci-dessous, détail en fin de page).
 
 Périmètre : `raise` métier, `except` qui journalise, alerte, refuse ou bascule, `log.error/warning/critical`, alertes ntfy du superviseur et de la passerelle, refus renvoyés aux clients (codes machine du protocole), messages de l'assistant `trx-setup`, de TRX Console et des scripts d'installation (`debian/install.sh`, `releases.sh`, `compiler-hamlib.sh`, `windows/installer.ps1`), échecs CAT / Hamlib, audio, réseau, PTT, scénarios de panne du superviseur. Écartés (comptés en fin de page) : erreurs de programmation, `except` silencieux d'un cas normal, annulations asyncio, outils de développement. Le code de la page web (JS) et de l'application Android (Kotlin) n'est PAS inventorié : seuls les codes machine qu'ils reçoivent le sont.
 
-## Choix faits pour cette première partie (à valider)
+## Choix de la première partie (acceptés)
 
-1. **Emplacement** : `trxstation/errors/` (catalog.yaml, modules.yaml, et plus tard codes.py, emit.py) plutôt qu'un dossier `errors/` à la racine. Les fichiers doivent être installés avec la station : la passerelle et le superviseur les liront. Ils sont déclarés dans `[tool.setuptools.package-data]`.
-2. **PyYAML** n'est ajouté qu'à l'extra `dev`, pas à la station (cœur en stdlib, `requirements.lock` inchangé). Le test est donc ignoré sur une station installée (menu expert). Pour la 2e partie, je propose que le générateur produise `codes.py` et une copie JSON lue par la station.
-3. **`depuis_version` = 0.123.0 partout** : c'est la première version publiée qui contiendra le catalogue. On ne sait pas depuis quand chaque erreur existe ; il faudrait un `git blame` ligne par ligne, et ce ne serait pas fiable après les déplacements de code.
-4. **Plage 6500 = tout ce qui passe par l'interface des modules.** Ce qui est générique reste en ORT-6501 à 6508, comme dans le cahier ; les situations de Breizh, de FreeDV et du bus des modules qui ont la même cause y sont fusionnées. Le reste se répartit ainsi : bus et lanceur des modules en 6511-6528, Breizh Audio Box en 6531-6540, FreeDV en 6561-6566. Une autre possibilité serait de donner au bus INTERNE une plage à part (6100 ou 6300 sont libres).
-5. **Sous-blocs de numérotation** (laissés libres par le cahier) :
+1. **Emplacement** : `trxstation/errors/` (catalog.yaml, modules.yaml, codes.py, catalog.json, emit.py), installé avec la station.
+2. **PyYAML** dans l'extra `dev` seulement : la station lit `catalog.json`, fabriqué par `scripts/build_errors.py`.
+3. **`depuis_version`** : 0.123.0 pour la première série, la version d'arrivée pour les suivantes (0.126.0).
+4. **Plage 6500** : ORT-6501 à 6508 génériques (cahier), bus des modules 6511-6528, Breizh Audio Box 6531-6541, FreeDV 6561-6567.
+5. **Sous-blocs** :
    - 1500 : mises à jour ;
-   - 2300 : spectre HF et second port ;
+   - 2300 : spectre HF ;
    - 2600 : essais trx-hwtest ;
    - 2700 : qualification ;
-   - 4100 : accès, comptes, certificats ;
-   - 4300 : visiteurs et surcharge ;
+   - 4100 : accès ;
+   - 4300 : visiteurs ;
    - 4500 : sonde réseau ;
    - 5100 : refus de prise d'émission ;
-   - 5500 : mesure de TOS ;
-   - 5800 : réglages de sécurité (configuration, profils, mise en page) ;
+   - 5500 : TOS ;
+   - 5800 : réglages de sécurité ;
    - 5900 : essais de panne ;
    - 9100 : profils et secrets ;
    - 9200 : mises en page ;
    - 9300 : installation ;
-   - 9500 : journaux Android ;
-   - 9700 : outils et divers.
-6. **ORT-7001 à 7030** (monitor inter-stations) sont écrits d'après le cahier et marqués `prevu: true` : le code ne les produit pas encore.
-7. **Textes repris du code** : là où le cahier diffère du code (seuils, TOT), le catalogue décrit le code ACTUEL. Les écarts sont listés ci-dessous.
+   - 9500 : outils des journaux Android ;
+   - 9700 : outils.
+6. **ORT-7001 à 7030** : `prevu: true` (monitor inter-stations à venir).
+7. **Comportement décrit** : celui du code actuel.
 
-## Cas ambigus à trancher (synthèse)
+## Décisions de l'utilisateur (2026-11-11) et suites données (station 0.126.0, étape 168)
 
-**Sécurité d'émission**
+1. **Spectre et micro du poste** : une émission venue du poste n'est plus coupée.
+   - `spectrum/service.py` regarde, port B refermé, qui tient l'émission :
+     - le port B (le PTT retombe) : coupure et spectre désactivé, comme avant ;
+     - le poste (le PTT reste actif, donc le micro du poste) : AUCUNE coupure, nouvel essai plus tard (ORT-5004, passé en « info ») ; c'est la règle « opérateur sur place » de la passerelle qui s'applique ;
+     - le PTT devient illisible : c'est un doute, donc coupure (`ptt_unknown`).
+   - Tests : `test_spectrum_service.py`.
+2. **TOT** : passerelle 90 s = ORT-5001, TOT absolu 135 s du superviseur = ORT-5024.
+3. **ORT-5010** reste critique.
+4. **Priorités ntfy** : 5 pour ORT-5020, 5024, 5025, 5026 et 5027 ; 4 pour le mode sûr (ORT-8008). Elles s'appliqueront quand les alertes passeront par le catalogue (partie 2b).
+5. **ORT-5003** : pas d'alerte ntfy.
+6. **ORT-8002** reste la boucle d'arrêts d'un module (plus de 5 en 300 s), seule boucle comptée aujourd'hui. Les relances de la passerelle restent bornées par l'échelle du superviseur (relances, rigctld, reset USB, reboots limités, puis mode sûr).
+7. **Seuils** (`config.py`, `station.example.toml`) :
+   - disque 70 % (`[supervisor] disk_alert_pct`) ;
+   - processeur 70 °C (`temp_alert_c`) ;
+   - pertes réseau 5 % (`[netprobe] loss_alert_pct`) ;
+   - surcharge des visiteurs 70 °C (`[access] overload_temp_c`, retour sous 60 °C).
 
-1. **Spectre HF contre opérateur sur place (ORT-5004)** : quand le poste passe en émission juste après l'ouverture du port B, sans que ce port en soit la cause (le micro du poste, probablement), la station COUPE quand même par prudence (`trxstation/spectrum/service.py:385-393`). La règle « opérateur sur place » dit que la station ne coupe jamais l'opérateur local pour ce motif, tandis que la règle « fail-safe » dit qu'en cas de doute, on n'émet pas. Lequel l'emporte ? Le comportement n'a pas été changé.
-2. **TOT, ORT-5001 et ORT-5024** : le cahier écrit « Timeout d'émission 3 min, critique ». Le code est différent :
-   - TOT de la passerelle : 90 s par défaut, plafond 120 s, sans alerte ntfy ; c'est un fonctionnement normal, donc avertissement.
-   - TOT absolu du superviseur : 135 s, avec alerte ntfy ; c'est une panne, donc critique.
-
-   J'ai mis le TOT de la passerelle en ORT-5001 et le TOT absolu en ORT-5024 : est-ce le bon choix ?
-3. **ORT-5010 (PTT actif sans session cliente)** : avec `allow_local_tx = true` (par défaut), le cas `ptt_mismatch` n'est ni signalé ni coupé, et seul le TOT absolu agit. Faut-il le garder en « critique » ?
-4. **Priorités ntfy** : aucune alerte n'envoie de priorité aujourd'hui (priorité 3 par défaut), sauf « Station en service ». Même ORT-5020 (retour en réception impossible, `unkey_failed`), la panne la plus grave, part en priorité 3. Je propose 5 pour ORT-5020, 5024, 5025, 5026 et 5027, et 4 pour le mode sûr (ORT-8008) : à valider avant la 2e partie. Le catalogue garde pour l'instant 3, valeur du code actuel.
-5. **ORT-5003 (le port B met le poste en émission)** : seul le journal le signale, sans alerte ntfy. Faut-il en ajouter une ?
-
-**Écarts entre le cahier et le code**
-
-6. **ORT-8002** : le cahier parle de « plus de 3 redémarrages d'un processus en 10 min ». Le code compte les reboots de la MACHINE (3 par heure au plus) avant le mode sûr, et rien ne limite les relances de la passerelle. Seul le lanceur des modules a une boucle comparable : module désactivé après plus de 5 arrêts en 300 s. J'ai donné ORT-8002 à cette dernière, et le mode sûr reçoit ORT-8008. Faut-il aligner les seuils, et ajouter une limite aux relances de la passerelle ?
-7. **Seuils différents du cahier** :
-   - disque : ORT-1001 à 90 % dans le code, 85 % dans le cahier ;
-   - processeur : ORT-1010 à 80 °C dans le superviseur, 75 °C dans le cahier, 70 / 80 °C dans trx-monitor ;
-   - pertes réseau : ORT-4001 à 10 % (`loss_alert_pct`), 5 % dans le cahier ;
-   - surcharge des visiteurs : 85 °C.
-
-   Qui fait foi ?
-8. **ORT-2104 (délai CAT)** : le cahier prévoit un compteur sur 5 min, une alerte ntfy et une relance de rigctld. Le code referme et réessaie, sans compter ni alerter, et le journal ne distingue pas un délai dépassé d'une connexion fermée (ORT-2006).
-9. **ORT-2001 (port série introuvable)** : critique dans le cahier. Hors émission, le code n'envoie qu'une alerte simple (`rig_absent`, ORT-2015). Pendant une émission (`usb_missing`), il lance l'échelle de reprise. Ces deux cas ont été fusionnés quand la cause est le port USB disparu ; le poste simplement éteint garde son propre code.
-10. **ORT-3001 (périphérique audio absent)** : la passerelle s'ARRÊTE (code 5), et le superviseur la relance en boucle (`supervisor/backends.py:233`). Cela contredit le piège noté dans CLAUDE.md : « la passerelle ne doit jamais quitter sur une erreur de port ».
-11. **ORT-3010 (xruns)** : aucune source aujourd'hui. Les compteurs de la capture ne sont publiés nulle part et rien n'alerte.
-12. **Tailscale** : rien ne le surveille dans le code, alors que CLAUDE.md le mentionne. Aucun code n'est créé pour lui.
-
-**Lacunes trouvées (rien n'alerte aujourd'hui)**
-
-13. Breizh Audio Box arrêté : la station reste en « connecting » sans journal ni événement (ORT-6501 n'est jamais produit).
-14. Pas d'alerte ntfy pour :
-    - l'abandon de FreeDV après ses relances (ORT-6563) ;
-    - le cluster DX sans source (ORT-6409) ;
-    - le relais de présence injoignable (ORT-6903) ;
-    - l'erreur du traitement du son reçu, qui coupe le squelch SELCALL (ORT-3007).
-15. Pas de battement pour les modules internes : ORT-6504 ne s'applique aujourd'hui qu'à Breizh et FreeDV.
-16. Un fichier de clés de présence abîmé fait planter le module en boucle, sans message clair.
-
-**Granularité et classement**
-
-17. **Installation (ORT-9308)** : « modules Python impossibles » mêle une panne réseau et une EMPREINTE DIFFÉRENTE, qui touche à la sécurité. Faut-il deux codes ?
-18. **Présence** : une signature fausse (liste de membres, clé de groupe : ORT-6908, 6909) est rangée avec les refus ordinaires. Faut-il un code à part, plus grave, pour une attaque possible ?
-19. **CAT `invalid`** : ce seul code machine couvre « fonction non gérée » (ORT-2012) et « valeur hors plage » (ORT-2013). Le catalogue les sépare, mais pas le code actuel.
-20. **Refus d'émission causés par le poste** (split ou XIT illisibles, `cat_down`, `rig_silent`…) : ils sont rangés en 5100 (sécurité d'émission), pas en 2000. Est-ce le bon choix ?
-21. **Journaux de l'application Android** (`trx-journal-android`, ORT-9501 à 9508) : rangés en 9500 en attendant. Faut-il un préfixe propre à l'application (AND ?) ?
-22. **Mémoires, réglages enregistrés, mises en page** : rangés en 1000 (stockage) et 9200. Est-ce le bon choix ?
-23. **Affichages de la console et de trx-monitor** qui reprennent une panne d'ailleurs (liaison poste, défaut PTT, mode sûr, passerelle muette) : ils sont fusionnés avec le code de la panne. Seul l'affichage d'une panne du spectre (ORT-2313) garde son code, car il couvre plusieurs pannes à la fois. Dans la 2e partie, la console devra afficher le code d'origine.
-24. **Gravités différentes selon l'outil** :
-    - un système non pris en charge (ORT-1011) bloque l'installation, mais n'est qu'un avertissement au diagnostic ;
-    - le disque insuffisant à l'installation (ORT-1012, seuil absolu) est distinct du disque presque plein en service (ORT-1001).
-25. **Erreurs réservées aux développeurs** : la clé de signature des versions (ORT-1511) doit-elle rester dans le catalogue public ?
-26. **FreeDV** : les plantages et les sorties illisibles des décodeurs (ORT-6561, 6562) relèveraient plutôt du préfixe FDV. Mais les décodeurs sont des programmes de l'équipe FreeDV, sans catalogue. Faut-il les garder en ORT-65xx (choix actuel) ?
-27. **Erreurs inattendues** : une seule entrée générique (ORT-8019, `netprobe_error`, `friends_error`…), ou une par domaine ?
+   Une station.toml DÉJÀ écrite garde ses anciennes valeurs : à corriger à la main (menu 14). Le bargraph de la page et de l'application (`hostinfo.LIMITS`) n'est pas changé : ce sont des seuils d'affichage.
+8. **ORT-2104** (délai CAT) : pas de changement. Une lecture qui n'aboutit pas est aujourd'hui refermée et réessayée en silence. Le cahier imaginait un compteur sur 5 min avec alerte et relance de rigctld, ce que le code ne fait pas. Les deux causes (délai dépassé, connexion fermée par rigctld) seront distinguées quand le code émettra ses événements.
+9. **ORT-2001** : la fusion est acceptée.
+10. **Passerelle sans carte son** : pas de changement pour l'instant. Pour ne plus quitter, la passerelle devrait tourner sans son et REFUSER l'émission, avec un nouveau refus dans le protocole, la page et l'application. Ce chantier est à décider à part.
+11. **Xruns (ORT-3010)** : `gateway/audio/xruns.py` relève les décrochages et les trames perdues de la capture toutes les 30 s. Au-delà de 50 en 5 min, il émet ORT-3010 au journal, une fois par 30 min, sans ntfy. Tests : `test_audio_xruns.py`.
+12. **Tailscale** : aucun code. Aucun VPN n'est imposé (accès distant au choix de l'utilisateur) ; la mention de CLAUDE.md est corrigée.
+13. **Breizh arrêté** : `breizh/link.py` émet ORT-6501 au journal une fois, après 60 s sans aucune réponse aux HELLO, sans ntfy ni message aux clients. Test : `test_breizh_route.py`.
+14. **Pas d'alerte ntfy** pour FreeDV, le cluster, le relais de présence et le SELCALL en réception (FreeDV n'est pas mûr).
+15. **Battement des modules internes** : pas encore ; ORT-6504 reste pour les modules extérieurs (Breizh, FreeDV).
+16. **Fichier de clés de présence abîmé** : le module ne plante plus et n'écrase jamais les clés. Il émet ORT-6920, publie le problème (ligne « Présence » de trx-monitor) et attend. En passant, un défaut a été corrigé : `await a if c else b` n'attendait pas `b`, et sans bus le module rendait la main tout de suite. Test : `test_presence_module.py`.
+17. **Installation** : deux codes, ORT-9308 (modules Python impossibles) et ORT-9311 (EMPREINTE différente, critique). Les scripts d'installation devront distinguer les deux messages de pip (partie 2b).
+18. **Présence** : deux codes, ORT-6908 et 6909 (refus ordinaires) et ORT-6923 (signature invalide, attaque possible).
+19. **CAT `invalid`** : deux codes, ORT-2012 (fonction non gérée) et ORT-2013 (valeur hors plage). Le code machine `invalid` du protocole reste le même ; l'événement les distinguera (partie 2b).
+20. **Refus d'émission dus au poste** : gardés en 5100.
+21. **Application Android** : préfixe AND (`AND-catalog.yaml`, registre `modules.yaml`). AND-1001 à 1005 remplacent ORT-9504 à 9508 (`deprecated`). Les erreurs de l'OUTIL trx-journal-android (ORT-9501 à 9503) restent ORT.
+22. **Mémoires, réglages, mises en page** : rangement gardé (1000 et 9200).
+23. **Affichages** : fusionnés avec le code de la panne affichée ; la console affichera le code d'origine (partie 2b).
+24. **Gravités selon l'outil** : gardées. Un système non pris en charge bloque l'installation (ORT-1011) ; le disque insuffisant à l'installation (ORT-1012) reste distinct du disque plein en service (ORT-1001).
+25. **Clé de signature des versions** (ORT-1511) : gardée, utile au mainteneur.
+26. **Décodeurs FreeDV** : restent en ORT-65xx.
+27. **Erreurs inattendues** : une par domaine.
+   - Nouveaux codes : ORT-4018 (session d'un client), ORT-4509 (sonde réseau, `netprobe_error`), ORT-5028 (bips de fin), ORT-6541 (Breizh), ORT-6567 (FreeDV).
+   - Rattachements : `friends_error` à ORT-6922, la surveillance des accès à ORT-8018.
+   - ORT-8019 est `deprecated`.
 
 ## Tableau code → origines
 
@@ -106,18 +93,18 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-1001 | avert. | Disque presque plein | oui (3) | aucune | `disk_high` | `trxstation/supervisor/core.py:292-294` |
 | ORT-1002 | avert. | Mémoire de la station presque pleine | oui (3) | aucune | `memory_high` | `trxstation/supervisor/core.py:290-291` |
 | ORT-1003 | avert. | Raspberry Pi ralenti | oui (3) | aucune | `pi_throttled` | `trxstation/supervisor/core.py:295-296`, `trxstation/hostinfo.py:39`, `trxstation/hostinfo.py:140` |
-| ORT-1004 | avert. | Identifiant de station indisponible | non | aucune |  | `trxstation/gateway/main.py:259-260` |
+| ORT-1004 | avert. | Identifiant de station indisponible | non | aucune |  | `trxstation/gateway/main.py:261-260` |
 | ORT-1005 | erreur | Fichier d'état de la passerelle non écrit | non | nouvel_essai |  | `trxstation/gateway/status/publisher.py:89`, `trxstation/gateway/status/publisher.py:91`, `trxstation/status.py:87` |
 | ORT-1006 | avert. | Machine de la station chargée | non | aucune | `warn`, `bad` | `trxstation/hostinfo.py:35`, `trxstation/hostinfo.py:163-177`, `trxstation/hostinfo.py:370` |
 | ORT-1007 | avert. | État de la mesure de TOS non enregistré ou illisible | non | aucune |  | `trxstation/swr/store.py:79`, `trxstation/swr/store.py:93` |
-| ORT-1008 | erreur | Réglage non enregistré sur la station | non | refus | `storage_error`, `layout_storage_error`, `beeps_storage_error`, `breizh_storage_error`, `voice_profiles_storage_error`, `report_storage_error`, `freedv_storage_error` | `trxstation/gateway/api/session.py:344`, `trxstation/gateway/api/session.py:380`, `trxstation/gateway/api/session.py:660`, `trxstation/gateway/api/session.py:325`, `trxstation/gateway/api/session.py:723`, `trxstation/gateway/voice_profiles.py:121`, `trxstation/gateway/bugreports.py:70`, `trxstation/freedv/service.py:107`, `trxstation/gateway/api/access.py:90`, `trxstation/gateway/memories.py:116`, `trxstation/gateway/api/session.py:344`, `trxstation/gateway/api/session.py:351`, `trxstation/layout/store.py:88`, `trxstation/layout/store.py:101`, `trxstation/layout/store.py:121`, `trxstation/gateway/api/session.py:380` |
+| ORT-1008 | erreur | Réglage non enregistré sur la station | non | refus | `storage_error`, `layout_storage_error`, `beeps_storage_error`, `breizh_storage_error`, `voice_profiles_storage_error`, `report_storage_error`, `freedv_storage_error` | `trxstation/gateway/api/session.py:344`, `trxstation/gateway/api/session.py:380`, `trxstation/gateway/api/session.py:660`, `trxstation/gateway/api/session.py:325`, `trxstation/gateway/api/session.py:723`, `trxstation/gateway/voice_profiles.py:121`, `trxstation/gateway/bugreports.py:70`, `trxstation/freedv/service.py:123`, `trxstation/gateway/api/access.py:90`, `trxstation/gateway/memories.py:116`, `trxstation/gateway/api/session.py:344`, `trxstation/gateway/api/session.py:351`, `trxstation/layout/store.py:88`, `trxstation/layout/store.py:101`, `trxstation/layout/store.py:121`, `trxstation/gateway/api/session.py:380` |
 | ORT-1009 | avert. | Journal de la station non écrit | non | aucune |  | `trxstation/breizh/store.py:116`, `trxstation/netprobe/store.py:62`, `trxstation/netprobe/store.py:156`, `trxstation/netprobe/store.py:190`, `trxstation/netprobe/store.py:205`, `trxstation/netprobe/store.py:217` |
 | ORT-1010 | avert. | Température du processeur élevée | oui (3) | aucune | `cpu_hot` | `trxstation/supervisor/core.py:262-264`, `trxstation/cpu_temp.py:85`, `trxstation/diagnostics.py:186`, `trxstation/monitor/model.py:219` |
-| ORT-1011 | erreur | Système d'exploitation non pris en charge | non | refus |  | `debian/install.sh:284`, `debian/install.sh:287`, `trxstation/diagnostics.py:169`, `trxstation/diagnostics.py:171`, `windows/installer.ps1:231`, `windows/installer.ps1:233` |
-| ORT-1012 | erreur | Espace disque insuffisant | non | refus |  | `trxstation/diagnostics.py:178`, `debian/install.sh:310`, `windows/installer.ps1:269` |
-| ORT-1013 | info | Température du processeur illisible | non | aucune |  | `debian/install.sh:490` |
-| ORT-1014 | avert. | Matériel en dessous du minimum conseillé | non | aucune |  | `debian/install.sh:295`, `debian/install.sh:298`, `debian/install.sh:307` |
-| ORT-1015 | avert. | Alimentation du Raspberry Pi trop faible | non | aucune |  | `debian/install.sh:301` |
+| ORT-1011 | erreur | Système d'exploitation non pris en charge | non | refus |  | `debian/install.sh:289`, `debian/install.sh:287`, `trxstation/diagnostics.py:169`, `trxstation/diagnostics.py:171`, `windows/installer.ps1:231`, `windows/installer.ps1:233` |
+| ORT-1012 | erreur | Espace disque insuffisant | non | refus |  | `trxstation/diagnostics.py:178`, `debian/install.sh:315`, `windows/installer.ps1:269` |
+| ORT-1013 | info | Température du processeur illisible | non | aucune |  | `debian/install.sh:495` |
+| ORT-1014 | avert. | Matériel en dessous du minimum conseillé | non | aucune |  | `debian/install.sh:300`, `debian/install.sh:303`, `debian/install.sh:312` |
+| ORT-1015 | avert. | Alimentation du Raspberry Pi trop faible | non | aucune |  | `debian/install.sh:306` |
 | ORT-1020 | erreur | Horloge de la station refusée par le relais | non | nouvel_essai | `clock` | `trxstation/presence/engine.py:396` |
 | ORT-1501 | avert. | Recherche de mise à jour impossible | non | nouvel_essai |  | `trxstation/update/check.py:245`, `trxstation/update/check.py:253`, `trxstation/update/check.py:254`, `trxstation/update/check.py:257`, `trxstation/update/check.py:259`, `trxstation/update/check.py:177`, `trxstation/update/check.py:180`, `trxstation/update/check.py:329`, `trxstation/update/check.py:367`, `trxstation/diagnostics.py:597`, `trxstation/console.py:442`, `trxstation/console.py:452`, `trxstation/update/apply.py:229` |
 | ORT-1502 | avert. | Dernière recherche de mise à jour trop ancienne | non | aucune |  | `trxstation/diagnostics.py:601`, `trxstation/update/check.py:364` |
@@ -148,28 +135,28 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-2011 | avert. | Commande refusée par le poste (RPRT) | non | refus | `rig_error` | `trxstation/gateway/cat/client.py:61`, `trxstation/gateway/cat/client.py:116`, `trxstation/gateway/api/session.py:744`, `trxstation/modules/gateway_bridge.py:147`, `trxstation/qualif/runner.py:62` |
 | ORT-2012 | info | Mode ou fonction non géré par ce poste | non | refus | `invalid` | `trxstation/gateway/cat/link.py:280`, `trxstation/gateway/cat/link.py:332`, `trxstation/gateway/api/session.py:742` |
 | ORT-2013 | info | Valeur hors de la plage du poste | non | refus | `invalid` | `trxstation/gateway/cat/link.py:308`, `trxstation/gateway/cat/link.py:321`, `trxstation/gateway/cat/client.py:295`, `trxstation/gateway/api/session.py:742` |
-| ORT-2014 | avert. | Capacités du poste indisponibles (dump_caps) | non | repli_jeu_minimal |  | `trxstation/gateway/cat/capabilities.py:182`, `trxstation/gateway/cat/capabilities.py:184`, `trxstation/gateway/main.py:69`, `trxstation/devtools/hwtest.py:180`, `trxstation/qualif/main.py:158`, `trxstation/gateway/main.py:69` |
+| ORT-2014 | avert. | Capacités du poste indisponibles (dump_caps) | non | repli_jeu_minimal |  | `trxstation/gateway/cat/capabilities.py:182`, `trxstation/gateway/cat/capabilities.py:184`, `trxstation/gateway/main.py:70`, `trxstation/devtools/hwtest.py:180`, `trxstation/qualif/main.py:158`, `trxstation/gateway/main.py:70` |
 | ORT-2015 | avert. | Poste éteint ou débranché | oui (3) | aucune | `rig_absent` | `trxstation/supervisor/core.py:258`, `trxstation/ports.py:57`, `trxstation/supervisor/core.py:257-260` |
 | ORT-2016 | avert. | Port du poste du profil absent | non | aucune |  | `trxstation/console.py:740` |
 | ORT-2017 | erreur | Le poste répond mal au test de liaison | non | refus |  | `trxstation/setup_wizard.py:150` |
 | ORT-2018 | erreur | Modèle du poste inconnu de ce Hamlib | non | aucune |  | `trxstation/diagnostics.py:295` |
-| ORT-2019 | avert. | Service système qui perturbe le port série | non | aucune |  | `trxstation/diagnostics.py:315`, `trxstation/diagnostics.py:320`, `debian/install.sh:467`, `debian/install.sh:476` |
+| ORT-2019 | avert. | Service système qui perturbe le port série | non | aucune |  | `trxstation/diagnostics.py:315`, `trxstation/diagnostics.py:320`, `debian/install.sh:472`, `debian/install.sh:481` |
 | ORT-2020 | avert. | Tension d'alimentation du poste basse | non | aucune |  | `trxstation/tray/status.py:190` |
 | ORT-2021 | erreur | Compilation de Hamlib impossible | non | refus |  | `debian/compiler-hamlib.sh:48`, `debian/compiler-hamlib.sh:50`, `debian/compiler-hamlib.sh:60`, `debian/compiler-hamlib.sh:61`, `debian/compiler-hamlib.sh:62`, `debian/compiler-hamlib.sh:67` |
 | ORT-2022 | avert. | Un autre rigctld passe avant celui compilé | non | aucune |  | `debian/compiler-hamlib.sh:70` |
 | ORT-2104 | erreur | Délai de réponse CAT dépassé | non | nouvel_essai |  | `trxstation/gateway/cat/client.py:106`, `trxstation/gateway/cat/client.py:132`, `trxstation/gateway/cat/link.py:124` |
-| ORT-2200 | avert. | Version de Hamlib plus ancienne que la version qualifiée | non | aucune |  | `trxstation/qualif/sheet.py:222`, `trxstation/diagnostics.py:216`, `trxstation/diagnostics.py:218`, `debian/install.sh:363`, `debian/install.sh:359`, `debian/install.sh:356` |
-| ORT-2301 | avert. | Second port du poste impossible à ouvrir (spectre HF) | non | repli_mode_normal | `open_failed` | `trxstation/spectrum/probe.py:37`, `trxstation/spectrum/service.py:381`, `trxstation/spectrum/service.py:137`, `trxstation/devtools/hwtest.py:443` |
-| ORT-2302 | avert. | Aucune réponse CI-V sur le second port | non | repli_mode_normal | `no_answer` | `trxstation/spectrum/probe.py:39`, `trxstation/spectrum/probe.py:167`, `trxstation/spectrum/probe.py:175`, `trxstation/spectrum/service.py:445` |
+| ORT-2200 | avert. | Version de Hamlib plus ancienne que la version qualifiée | non | aucune |  | `trxstation/qualif/sheet.py:222`, `trxstation/diagnostics.py:216`, `trxstation/diagnostics.py:218`, `debian/install.sh:368`, `debian/install.sh:364`, `debian/install.sh:361` |
+| ORT-2301 | avert. | Second port du poste impossible à ouvrir (spectre HF) | non | repli_mode_normal | `open_failed` | `trxstation/spectrum/probe.py:37`, `trxstation/spectrum/service.py:384`, `trxstation/spectrum/service.py:139`, `trxstation/devtools/hwtest.py:443` |
+| ORT-2302 | avert. | Aucune réponse CI-V sur le second port | non | repli_mode_normal | `no_answer` | `trxstation/spectrum/probe.py:39`, `trxstation/spectrum/probe.py:167`, `trxstation/spectrum/probe.py:175`, `trxstation/spectrum/service.py:451` |
 | ORT-2303 | avert. | Adresse CI-V du poste changée (second port) | non | repli_mode_normal | `wrong_address` | `trxstation/spectrum/probe.py:41`, `trxstation/spectrum/probe.py:166` |
-| ORT-2304 | avert. | Le poste ne fournit pas le spectre par le CI-V | non | repli_mode_normal | `no_scope` | `trxstation/spectrum/probe.py:43`, `trxstation/spectrum/probe.py:170`, `trxstation/spectrum/service.py:402`, `trxstation/devtools/hwtest.py:454` |
+| ORT-2304 | avert. | Le poste ne fournit pas le spectre par le CI-V | non | repli_mode_normal | `no_scope` | `trxstation/spectrum/probe.py:43`, `trxstation/spectrum/probe.py:170`, `trxstation/spectrum/service.py:408`, `trxstation/devtools/hwtest.py:454` |
 | ORT-2305 | erreur | Le second port n'est pas celui du même poste | non | repli_mode_normal | `other_rig` | `trxstation/spectrum/probe.py:44`, `trxstation/spectrum/probe.py:181` |
-| ORT-2306 | avert. | État d'émission illisible après l'ouverture du second port | non | repli_mode_normal | `ptt_unknown` | `trxstation/spectrum/probe.py:47`, `trxstation/spectrum/service.py:328` |
-| ORT-2307 | avert. | Plus aucune donnée du spectre HF | non | repli_mode_normal | `silent` | `trxstation/spectrum/probe.py:50`, `trxstation/spectrum/service.py:434`, `trxstation/devtools/hwtest.py:487` |
-| ORT-2308 | avert. | Second port du poste perdu | non | repli_mode_normal | `port_lost` | `trxstation/spectrum/probe.py:52`, `trxstation/spectrum/service.py:406` |
-| ORT-2309 | erreur | Erreur interne du spectre HF | non | repli_mode_normal | `internal` | `trxstation/spectrum/probe.py:54`, `trxstation/spectrum/service.py:347`, `trxstation/spectrum/service.py:105` |
-| ORT-2310 | info | Réglage du spectre ou du filtre FIL refusé | non | refus | `spectrum_refused` | `trxstation/spectrum/service.py:50`, `trxstation/spectrum/service.py:175`, `trxstation/spectrum/service.py:177`, `trxstation/spectrum/service.py:184`, `trxstation/spectrum/service.py:188`, `trxstation/spectrum/service.py:256`, `trxstation/spectrum/service.py:287`, `trxstation/gateway/api/session.py:648`, `trxstation/gateway/api/session.py:673` |
-| ORT-2311 | erreur | Réglage du spectre HF incompatible avec le poste | non | refus |  | `trxstation/config.py:634`, `trxstation/config.py:642`, `trxstation/config.py:644`, `trxstation/config.py:863`, `trxstation/setup_wizard.py:176` |
+| ORT-2306 | avert. | État d'émission illisible après l'ouverture du second port | non | repli_mode_normal | `ptt_unknown` | `trxstation/spectrum/probe.py:47`, `trxstation/spectrum/service.py:330` |
+| ORT-2307 | avert. | Plus aucune donnée du spectre HF | non | repli_mode_normal | `silent` | `trxstation/spectrum/probe.py:50`, `trxstation/spectrum/service.py:440`, `trxstation/devtools/hwtest.py:480` |
+| ORT-2308 | avert. | Second port du poste perdu | non | repli_mode_normal | `port_lost` | `trxstation/spectrum/probe.py:52`, `trxstation/spectrum/service.py:412` |
+| ORT-2309 | erreur | Erreur interne du spectre HF | non | repli_mode_normal | `internal` | `trxstation/spectrum/probe.py:54`, `trxstation/spectrum/service.py:350`, `trxstation/spectrum/service.py:107` |
+| ORT-2310 | info | Réglage du spectre ou du filtre FIL refusé | non | refus | `spectrum_refused` | `trxstation/spectrum/service.py:52`, `trxstation/spectrum/service.py:177`, `trxstation/spectrum/service.py:179`, `trxstation/spectrum/service.py:186`, `trxstation/spectrum/service.py:190`, `trxstation/spectrum/service.py:258`, `trxstation/spectrum/service.py:289`, `trxstation/gateway/api/session.py:648`, `trxstation/gateway/api/session.py:673` |
+| ORT-2311 | erreur | Réglage du spectre HF incompatible avec le poste | non | refus |  | `trxstation/config.py:634`, `trxstation/config.py:642`, `trxstation/config.py:644`, `trxstation/config.py:870`, `trxstation/setup_wizard.py:176` |
 | ORT-2312 | erreur | Vérification du second port CI-V impossible | non | refus |  | `trxstation/setup_wizard.py:180`, `trxstation/setup_wizard.py:200`, `trxstation/setup_wizard.py:204`, `trxstation/setup_wizard.py:206`, `trxstation/setup_wizard.py:217`, `trxstation/setup_wizard.py:223`, `trxstation/setup_wizard.py:264`, `trxstation/setup_wizard.py:873` |
 | ORT-2313 | erreur | Spectre HF en panne (affichage) | non | aucune |  | `trxstation/diagnostics.py:458`, `trxstation/monitor/model.py:245`, `trxstation/tray/status.py:196` |
 | ORT-2601 | erreur | Essai : fréquence non suivie par le poste | non | aucune | `freq_rw` | `trxstation/qualif/runner.py:245`, `trxstation/devtools/hwtest.py:371`, `trxstation/devtools/hwtest.py:372`, `trxstation/devtools/hwtest.py:516`, `trxstation/devtools/hwtest.py:519` |
@@ -180,7 +167,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-2606 | avert. | Essai : pas de reprise après débranchement USB | non | aucune | `usb_replug` | `trxstation/qualif/runner.py:510`, `trxstation/qualif/runner.py:515` |
 | ORT-2607 | avert. | Essai : état d'origine du poste non rétabli | non | aucune |  | `trxstation/qualif/runner.py:186`, `trxstation/devtools/hwtest.py:410`, `trxstation/devtools/hwtest.py:578`, `trxstation/devtools/hwtest.py:353` |
 | ORT-2608 | erreur | Essai : coupure faite sur le poste non vue par la station | non | aucune |  | `trxstation/devtools/hwtest.py:746`, `trxstation/devtools/hwtest.py:748` |
-| ORT-2701 | avert. | Qualification : socle en échec, poste refusé | non | aucune |  | `trxstation/qualif/results.py:63`, `trxstation/qualif/main.py:122`, `trxstation/qualif/results.py:149` |
+| ORT-2701 | avert. | Qualification : socle en échec, poste refusé | non | aucune |  | `trxstation/qualif/results.py:63`, `trxstation/qualif/main.py:70`, `trxstation/qualif/results.py:149` |
 | ORT-2702 | info | Qualification incomplète | non | aucune |  | `trxstation/qualif/results.py:65`, `trxstation/qualif/runner.py:99`, `trxstation/qualif/runner.py:546`, `trxstation/devtools/hwtest.py:765`, `trxstation/qualif/main.py:116` |
 | ORT-2703 | info | Qualification : afficheur ou son non confirmés par l'opérateur | non | aucune |  | `trxstation/qualif/runner.py:442`, `trxstation/qualif/runner.py:457`, `trxstation/qualif/runner.py:462` |
 | ORT-2704 | info | Poste ou firmware non qualifié | non | aucune |  | `trxstation/qualif/sheet.py:214`, `trxstation/qualif/sheet.py:220`, `trxstation/qualif/sheet.py:224` |
@@ -189,16 +176,16 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 
 | Code | Gravité | Titre | ntfy | Action | Codes machine | Origines |
 | --- | --- | --- | --- | --- | --- | --- |
-| ORT-3001 | CRITIQUE | Périphérique audio du poste absent | non | arreter_passerelle |  | `trxstation/audio_devices.py:130`, `trxstation/gateway/audio/devices.py:212`, `trxstation/gateway/audio/devices.py:272`, `trxstation/gateway/main.py:319`, `trxstation/gateway/main.py:71`, `trxstation/gateway/main.py:319-321`, `trxstation/diagnostics.py:347`, `trxstation/diagnostics.py:330` |
+| ORT-3001 | CRITIQUE | Périphérique audio du poste absent | non | arreter_passerelle |  | `trxstation/audio_devices.py:130`, `trxstation/gateway/audio/devices.py:212`, `trxstation/gateway/audio/devices.py:272`, `trxstation/gateway/main.py:321`, `trxstation/gateway/main.py:72`, `trxstation/gateway/main.py:321-321`, `trxstation/diagnostics.py:347`, `trxstation/diagnostics.py:330` |
 | ORT-3002 | avert. | Essai : son reçu absent, muet ou saturé | non | aucune | `audio_rx` | `trxstation/devtools/hwtest.py:261`, `trxstation/devtools/hwtest.py:265`, `trxstation/devtools/hwtest.py:267`, `trxstation/devtools/hwtest.py:186` |
 | ORT-3003 | erreur | Essai : audio d'émission non transmis ou ROS élevé | non | retour_rx | `audio_tx` | `trxstation/devtools/hwtest.py:641`, `trxstation/devtools/hwtest.py:643` |
-| ORT-3004 | CRITIQUE | Ouverture du périphérique audio impossible | non | arreter_passerelle |  | `trxstation/gateway/audio/devices.py:235`, `trxstation/gateway/audio/devices.py:285`, `trxstation/gateway/main.py:319` |
-| ORT-3005 | avert. | Son d'émission en retard ou haché | non | aucune |  | `trxstation/gateway/audio/ring.py:40`, `trxstation/gateway/audio/ring.py:29`, `trxstation/gateway/audio/pipeline.py:62`, `trxstation/netprobe/probe.py:430` |
+| ORT-3004 | CRITIQUE | Ouverture du périphérique audio impossible | non | arreter_passerelle |  | `trxstation/gateway/audio/devices.py:235`, `trxstation/gateway/audio/devices.py:285`, `trxstation/gateway/main.py:321` |
+| ORT-3005 | avert. | Son d'émission en retard ou haché | non | aucune |  | `trxstation/gateway/audio/ring.py:40`, `trxstation/gateway/audio/ring.py:29`, `trxstation/gateway/audio/pipeline.py:62`, `trxstation/netprobe/probe.py:51` |
 | ORT-3006 | info | Client trop lent pour le son reçu | non | aucune |  | `trxstation/gateway/audio/hub.py:63`, `trxstation/gateway/audio/pipeline.py:57` |
 | ORT-3007 | erreur | Traitement du son reçu en erreur | non | repli_son_brut |  | `trxstation/gateway/audio/hub.py:58` |
 | ORT-3008 | erreur | Vidage du tampon d'émission impossible à la coupure | non | aucune |  | `trxstation/gateway/audio/beeps.py:294` |
-| ORT-3009 | avert. | Cartes son de la station non choisies | non | aucune |  | `trxstation/config.py:858`, `trxstation/migrate.py:5` |
-| ORT-3010 | avert. | Sous-débits audio fréquents (xruns) | non | aucune |  | `trxstation/gateway/audio/devices.py:224`, `trxstation/gateway/audio/devices.py:219` |
+| ORT-3009 | avert. | Cartes son de la station non choisies | non | aucune |  | `trxstation/config.py:865`, `trxstation/migrate.py:5` |
+| ORT-3010 | avert. | Sous-débits audio fréquents (xruns) | non | aucune |  | `trxstation/gateway/audio/devices.py:224`, `trxstation/gateway/audio/devices.py:219`, `trxstation/gateway/audio/xruns.py:55` |
 | ORT-3011 | avert. | Carte son du poste occupée par le son du bureau | non | aucune |  | `trxstation/diagnostics.py:352`, `trxstation/diagnostics.py:366`, `trxstation/diagnostics.py:370` |
 
 ### 4000–4999 : Réseau, accès, clients
@@ -221,15 +208,16 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-4014 | info | Fonction absente de cette station | non | refus | `*_unavailable` | `trxstation/gateway/api/session.py:269`, `trxstation/gateway/api/session.py:295`, `trxstation/gateway/api/session.py:312`, `trxstation/gateway/api/session.py:336`, `trxstation/gateway/api/session.py:367`, `trxstation/gateway/api/session.py:390`, `trxstation/gateway/api/session.py:466`, `trxstation/gateway/api/session.py:532`, `trxstation/gateway/api/session.py:619`, `trxstation/gateway/api/session.py:648`, `trxstation/gateway/api/session.py:655`, `trxstation/gateway/api/session.py:690`, `trxstation/gateway/api/session.py:713` |
 | ORT-4015 | info | Élément demandé inconnu | non | refus | `unknown_memory`, `unknown_listener` | `trxstation/gateway/api/session.py:353`, `trxstation/gateway/api/session.py:357`, `trxstation/gateway/api/session.py:687`, `trxstation/gateway/api/session.py:357`, `trxstation/gateway/api/session.py:353`, `trxstation/gateway/memories.py:88` |
 | ORT-4016 | info | Rapport de problème refusé | non | refus | `report_empty`, `report_too_soon` | `trxstation/gateway/bugreports.py:51`, `trxstation/gateway/bugreports.py:55`, `trxstation/gateway/api/session.py:624` |
-| ORT-4017 | info | Demande de TRX Console ignorée | non | refus |  | `trxstation/netprobe/probe.py:226`, `trxstation/netprobe/probe.py:231`, `trxstation/gateway/access_watch.py:86`, `trxstation/gateway/access_watch.py:91`, `trxstation/gateway/access_watch.py:96`, `trxstation/gateway/access_watch.py:99`, `trxstation/gateway/access_watch.py:124`, `trxstation/presence/service.py:161`, `trxstation/presence/service.py:173`, `trxstation/presence/service.py:176` |
-| ORT-4101 | erreur | Certificat TLS inutilisable : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:251`, `trxstation/gateway/api/tls.py:22`, `trxstation/gateway/api/tls.py:36`, `trxstation/gateway/main.py:250-252`, `trxstation/setup_wizard.py:802`, `trxstation/diagnostics.py:554`, `trxstation/console.py:628` |
-| ORT-4102 | erreur | Port de la passerelle impossible à ouvrir | non | repli_reception_seule |  | `trxstation/gateway/main.py:288`, `trxstation/gateway/api/server.py:109`, `trxstation/gateway/main.py:287-290`, `trxstation/gateway/main.py:213` |
+| ORT-4017 | info | Demande de TRX Console ignorée | non | refus |  | `trxstation/netprobe/probe.py:226`, `trxstation/netprobe/probe.py:231`, `trxstation/gateway/access_watch.py:86`, `trxstation/gateway/access_watch.py:91`, `trxstation/gateway/access_watch.py:96`, `trxstation/gateway/access_watch.py:99`, `trxstation/gateway/access_watch.py:124`, `trxstation/presence/service.py:163`, `trxstation/presence/service.py:175`, `trxstation/presence/service.py:178` |
+| ORT-4018 | erreur | Erreur inattendue : session d'un client | non | aucune |  | `trxstation/gateway/api/session.py:148`, `trxstation/gateway/api/session.py:600`, `trxstation/gateway/api/session.py:682` |
+| ORT-4101 | erreur | Certificat TLS inutilisable : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:253`, `trxstation/gateway/api/tls.py:22`, `trxstation/gateway/api/tls.py:36`, `trxstation/gateway/main.py:252-252`, `trxstation/setup_wizard.py:802`, `trxstation/diagnostics.py:554`, `trxstation/console.py:628` |
+| ORT-4102 | erreur | Port de la passerelle impossible à ouvrir | non | repli_reception_seule |  | `trxstation/gateway/main.py:290`, `trxstation/gateway/api/server.py:109`, `trxstation/gateway/main.py:289-290`, `trxstation/gateway/main.py:215` |
 | ORT-4103 | erreur | Compte d'accès mal défini | non | refus |  | `trxstation/config.py:509`, `trxstation/config.py:511`, `trxstation/config.py:514`, `trxstation/config.py:516`, `trxstation/config.py:518`, `trxstation/config.py:659`, `trxstation/config.py:662`, `trxstation/config.py:664`, `trxstation/setup_wizard.py:686`, `trxstation/setup_wizard.py:688`, `trxstation/setup_wizard.py:718`, `trxstation/console.py:1049` |
-| ORT-4104 | avert. | Compte avec un jeton en clair | non | aucune |  | `trxstation/config.py:866` |
+| ORT-4104 | avert. | Compte avec un jeton en clair | non | aucune |  | `trxstation/config.py:873` |
 | ORT-4105 | avert. | Mot de passe trop faible refusé | non | refus |  | `trxstation/passwords.py:62`, `trxstation/passwords.py:64`, `trxstation/passwords.py:66`, `trxstation/passwords.py:68`, `trxstation/setup_wizard.py:691`, `trxstation/console.py:1010` |
 | ORT-4106 | avert. | Certificat HTTPS impossible : accès limité à ce PC | non | repli_acces_local |  | `trxstation/setup_wizard.py:545` |
 | ORT-4107 | avert. | Aucune adresse réseau sur ce PC | non | aucune |  | `trxstation/diagnostics.py:537` |
-| ORT-4108 | avert. | Port de la station fermé ou bloqué | non | aucune |  | `trxstation/diagnostics.py:561`, `trxstation/diagnostics.py:566`, `windows/installer.ps1:352` |
+| ORT-4108 | avert. | Port de la station fermé ou bloqué | non | aucune |  | `trxstation/diagnostics.py:561`, `trxstation/diagnostics.py:566`, `windows/installer.ps1:359` |
 | ORT-4301 | info | Écoute des visiteurs coupée sur la station | non | refus | `listeners_off` | `trxstation/gateway/api/access.py:172`, `trxstation/gateway/api/access.py:217`, `trxstation/gateway/api/session.py:692` |
 | ORT-4302 | info | Écoute des visiteurs fermée par l'opérateur | non | refus | `listeners_closed` | `trxstation/gateway/api/access.py:174`, `trxstation/gateway/api/access.py:219`, `trxstation/gateway/api/access.py:75` |
 | ORT-4303 | info | Nombre maximal de visiteurs atteint | non | refus | `listeners_full` | `trxstation/gateway/api/access.py:178` |
@@ -237,7 +225,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-4305 | info | Visiteur déconnecté par l'opérateur | non | refus | `kicked` | `trxstation/gateway/api/webrtc.py:297`, `trxstation/gateway/api/session.py:686`, `trxstation/gateway/access_watch.py:122` |
 | ORT-4306 | info | Commande refusée à un visiteur | non | refus | `forbidden` | `trxstation/gateway/api/session.py:518`, `trxstation/gateway/api/session.py:519` |
 | ORT-4307 | avert. | Visiteur déconnecté : trop de commandes refusées | oui (3) | refus | `too_many_forbidden` | `trxstation/gateway/api/session.py:521`, `trxstation/gateway/api/session.py:523`, `trxstation/gateway/api/session.py:527` |
-| ORT-4308 | erreur | Station surchargée : visiteurs déconnectés | oui (3) | arreter_ecoute_visiteurs | `station_overload` | `trxstation/gateway/api/overload.py:91`, `trxstation/gateway/api/overload.py:46`, `trxstation/gateway/access_watch.py:113`, `trxstation/gateway/access_watch.py:116`, `trxstation/gateway/access_watch.py:118`, `trxstation/gateway/api/access.py:176`, `trxstation/gateway/access_watch.py:111-118`, `trxstation/gateway/api/overload.py:91` |
+| ORT-4308 | erreur | Station surchargée : visiteurs déconnectés | oui (3) | arreter_ecoute_visiteurs | `station_overload` | `trxstation/gateway/api/overload.py:91`, `trxstation/gateway/api/overload.py:46`, `trxstation/gateway/access_watch.py:113`, `trxstation/gateway/access_watch.py:116`, `trxstation/gateway/access_watch.py:118`, `trxstation/gateway/api/access.py:176`, `trxstation/gateway/access_watch.py:111-118`, `trxstation/gateway/api/overload.py:141` |
 | ORT-4309 | avert. | Écoute des visiteurs verrouillée après des surcharges répétées | non | arreter_ecoute_visiteurs | `station_overload (locked)` | `trxstation/gateway/api/overload.py:111`, `trxstation/gateway/api/overload.py:89` |
 | ORT-4310 | info | Réouverture de l'écoute des visiteurs refusée | non | refus | `still_overloaded` | `trxstation/gateway/api/overload.py:129`, `trxstation/gateway/api/session.py:734`, `trxstation/gateway/access_watch.py:109`, `trxstation/gateway/access_watch.py:109` |
 | ORT-4501 | avert. | Coupure réseau d'un client | oui (3) | aucune | `net_event outage` | `trxstation/netprobe/probe.py:160`, `trxstation/netprobe/probe.py:163`, `trxstation/netprobe/probe.py:291` |
@@ -248,6 +236,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-4506 | info | Historique de la sonde réseau effacé | non | aucune |  | `trxstation/netprobe/probe.py:280` |
 | ORT-4507 | info | trx-netreport : aucune mesure | non | aucune |  | `trxstation/netprobe/netreport.py:38`, `trxstation/netprobe/netreport.py:42` |
 | ORT-4508 | erreur | Export ou effacement de l'historique réseau impossible | non | refus |  | `trxstation/console.py:1415`, `trxstation/console.py:1445` |
+| ORT-4509 | erreur | Erreur inattendue : sonde de qualité réseau | non | aucune | `netprobe_error` | `trxstation/gateway/api/session.py:190`, `trxstation/gateway/api/session.py:223`, `trxstation/gateway/api/session.py:245`, `trxstation/gateway/api/session.py:501`, `trxstation/netprobe/probe.py:180`, `trxstation/netprobe/probe.py:194`, `trxstation/netprobe/probe.py:202`, `trxstation/netprobe/probe.py:210`, `trxstation/netprobe/vpn.py:94`, `trxstation/netprobe/station_probes.py:197` |
 
 ### 5000–5999 : PTT et sécurité d'émission
 
@@ -255,14 +244,14 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | --- | --- | --- | --- | --- | --- | --- |
 | ORT-5001 | avert. | Durée maximale d'émission (TOT) atteinte | non | retour_rx | `tot` | `trxstation/gateway/safety/ptt.py:625-626`, `trxstation/gateway/safety/ptt.py:96` |
 | ORT-5002 | erreur | Retour forcé en réception : terminal perdu | non | retour_rx | `heartbeat`, `client_disconnected` | `trxstation/gateway/safety/ptt.py:628-629`, `trxstation/gateway/safety/ptt.py:261` |
-| ORT-5003 | CRITIQUE | L'ouverture du second port met le poste en émission | non | retour_rx | `spectrum_port_keyed` | `trxstation/spectrum/probe.py:45`, `trxstation/spectrum/service.py:324`, `trxstation/spectrum/service.py:317`, `trxstation/devtools/hwtest.py:450`, `trxstation/devtools/hwtest.py:451`, `trxstation/spectrum/service.py:317`, `trxstation/setup_wizard.py:195` |
-| ORT-5004 | avert. | Émission pendant l'ouverture du second port (autre cause) | non | retour_rx | `ptt_busy` | `trxstation/spectrum/probe.py:48`, `trxstation/spectrum/service.py:393`, `trxstation/spectrum/service.py:391` |
+| ORT-5003 | CRITIQUE | L'ouverture du second port met le poste en émission | non | retour_rx | `spectrum_port_keyed` | `trxstation/spectrum/probe.py:45`, `trxstation/spectrum/service.py:326`, `trxstation/spectrum/service.py:319`, `trxstation/devtools/hwtest.py:450`, `trxstation/devtools/hwtest.py:451`, `trxstation/spectrum/service.py:319`, `trxstation/setup_wizard.py:195` |
+| ORT-5004 | info | Émission pendant l'ouverture du second port (autre cause) | non | nouvel_essai | `ptt_busy` | `trxstation/spectrum/probe.py:48`, `trxstation/spectrum/service.py:393`, `trxstation/spectrum/service.py:393` |
 | ORT-5005 | info | Poste utilisé sur place : PTT à distance bloqué | non | refus | `local_active` | `trxstation/gateway/safety/ptt.py:477`, `trxstation/gateway/safety/ptt.py:601`, `trxstation/gateway/safety/local.py:46` |
 | ORT-5006 | info | Reprise de la main impossible : le poste émet sur place | non | refus | `local_tx` | `trxstation/gateway/safety/ptt.py:424` |
 | ORT-5007 | info | Main reprise à distance | non | aucune | `local_released` | `trxstation/gateway/safety/ptt.py:425` |
 | ORT-5008 | erreur | Poste trop chaud : émission à distance coupée | oui (3) | retour_rx | `rig_overheat`, `rig_hot` | `trxstation/gateway/safety/ptt.py:479`, `trxstation/gateway/safety/ptt.py:615`, `trxstation/gateway/safety/ptt.py:605`, `trxstation/gateway/safety/thermal.py:45`, `trxstation/supervisor/core.py:272` |
 | ORT-5009 | avert. | Poste chaud | oui (3) | aucune | `rig_warm` | `trxstation/gateway/safety/thermal.py:50`, `trxstation/supervisor/core.py:272` |
-| ORT-5010 | CRITIQUE | PTT actif sans session cliente | oui (3) | retour_rx | `ptt_mismatch` | `trxstation/supervisor/core.py:224-236` |
+| ORT-5010 | CRITIQUE | PTT actif sans session cliente | oui (3) | retour_rx | `ptt_mismatch` | `trxstation/supervisor/core.py:235-236` |
 | ORT-5011 | info | Prise d'émission annulée par une coupure | non | refus | `cancelled` | `trxstation/gateway/safety/ptt.py:512`, `trxstation/gateway/safety/ptt.py:534`, `trxstation/gateway/safety/ptt.py:541` |
 | ORT-5012 | erreur | L'ordre d'émission a échoué | non | retour_rx | `ptt_write_failed` | `trxstation/gateway/safety/ptt.py:531`, `trxstation/gateway/safety/ptt.py:532` |
 | ORT-5013 | erreur | Le poste n'est pas passé en émission | non | retour_rx | `rig_did_not_key` | `trxstation/gateway/safety/ptt.py:543`, `trxstation/gateway/safety/ptt.py:544`, `trxstation/gateway/safety/ptt.py:543`, `trxstation/gateway/safety/ptt.py:544` |
@@ -272,20 +261,21 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-5017 | avert. | Réglage modifié sur le poste pendant l'émission | non | retour_rx | `frequency_changed`, `mode_changed`, `split_changed`, `xit_changed` | `trxstation/gateway/safety/ptt.py:654`, `trxstation/gateway/safety/ptt.py:661`, `trxstation/gateway/safety/ptt.py:668`, `trxstation/gateway/safety/ptt.py:643`, `trxstation/gateway/safety/ptt.py:654`, `trxstation/gateway/safety/ptt.py:668`, `trxstation/gateway/safety/ptt.py:661` |
 | ORT-5018 | avert. | Le poste est repassé seul en réception | non | retour_rx | `rig_reported_rx` | `trxstation/gateway/safety/ptt.py:674`, `trxstation/gateway/safety/ptt.py:674` |
 | ORT-5019 | erreur | Liaison avec le poste perdue pendant l'émission | non | retour_rx | `cat_down`, `rig_silent` | `trxstation/gateway/safety/ptt.py:611`, `trxstation/gateway/safety/ptt.py:613`, `trxstation/gateway/safety/ptt.py:617`, `trxstation/gateway/safety/ptt.py:611`, `trxstation/gateway/safety/ptt.py:613` |
-| ORT-5020 | CRITIQUE | Retour en réception impossible | oui (3) | redemarrer_passerelle | `unkey_failed`, `gateway_cannot_unkey` | `trxstation/gateway/safety/ptt.py:700`, `trxstation/gateway/safety/ptt.py:706`, `trxstation/gateway/safety/ptt.py:710-711`, `trxstation/supervisor/core.py:223`, `trxstation/monitor/model.py:194`, `trxstation/tray/status.py:177` |
+| ORT-5020 | CRITIQUE | Retour en réception impossible | oui (5) | redemarrer_passerelle | `unkey_failed`, `gateway_cannot_unkey` | `trxstation/gateway/safety/ptt.py:700`, `trxstation/gateway/safety/ptt.py:706`, `trxstation/gateway/safety/ptt.py:710-711`, `trxstation/supervisor/core.py:223`, `trxstation/monitor/model.py:194`, `trxstation/tray/status.py:177` |
 | ORT-5021 | avert. | Bip de fin d'émission impossible | non | retour_rx |  | `trxstation/gateway/safety/ptt.py:365`, `trxstation/gateway/safety/ptt.py:381`, `trxstation/gateway/safety/ptt.py:385`, `trxstation/gateway/safety/ptt.py:396`, `trxstation/gateway/safety/ptt.py:308` |
 | ORT-5022 | info | Bip de fin interrompu par une coupure | non | retour_rx |  | `trxstation/gateway/safety/ptt.py:388`, `trxstation/gateway/safety/ptt.py:287` |
-| ORT-5023 | info | Émission coupée par l'arrêt de la station | non | retour_rx | `shutdown` | `trxstation/gateway/safety/ptt.py:235`, `trxstation/gateway/main.py:127` |
-| ORT-5024 | CRITIQUE | TOT absolu dépassé : coupure par le superviseur | oui (3) | retour_rx | `tot_absolu` | `trxstation/supervisor/core.py:210-214`, `trxstation/supervisor/core.py:186`, `trxstation/supervisor/core.py:426` |
-| ORT-5025 | CRITIQUE | Passerelle muette pendant une émission | oui (3) | redemarrer_passerelle | `gateway_silent_tx` | `trxstation/supervisor/core.py:215-218`, `trxstation/supervisor/core.py:186` |
-| ORT-5026 | CRITIQUE | rigctld injoignable pendant une émission | oui (3) | redemarrer_rigctld | `rigctld_down_during_tx` | `trxstation/supervisor/core.py:242-244`, `trxstation/supervisor/core.py:184-186`, `trxstation/supervisor/core.py:244` |
+| ORT-5023 | info | Émission coupée par l'arrêt de la station | non | retour_rx | `shutdown` | `trxstation/gateway/safety/ptt.py:235`, `trxstation/gateway/main.py:129` |
+| ORT-5024 | CRITIQUE | TOT absolu dépassé : coupure par le superviseur | oui (5) | retour_rx | `tot_absolu` | `trxstation/supervisor/core.py:214-214`, `trxstation/supervisor/core.py:186`, `trxstation/supervisor/core.py:426` |
+| ORT-5025 | CRITIQUE | Passerelle muette pendant une émission | oui (5) | redemarrer_passerelle | `gateway_silent_tx` | `trxstation/supervisor/core.py:218-218`, `trxstation/supervisor/core.py:186` |
+| ORT-5026 | CRITIQUE | rigctld injoignable pendant une émission | oui (5) | redemarrer_rigctld | `rigctld_down_during_tx` | `trxstation/supervisor/core.py:242-244`, `trxstation/supervisor/core.py:184-186`, `trxstation/supervisor/core.py:244` |
 | ORT-5027 | CRITIQUE | « T 0 » du superviseur non confirmé | non | nouvel_essai |  | `trxstation/supervisor/core.py:313-314`, `trxstation/supervisor/rigctl.py:88`, `trxstation/supervisor/backends.py:248`, `trxstation/supervisor/backends.py:252` |
+| ORT-5028 | erreur | Erreur inattendue : bips de fin d'émission | non | aucune |  | `trxstation/gateway/audio/beeps.py:172` |
 | ORT-5101 | erreur | Émission refusée : défaut verrouillé | non | refus | `fault_latched` | `trxstation/gateway/safety/ptt.py:462` |
 | ORT-5102 | info | Émission refusée : station en démarrage | non | refus | `starting` | `trxstation/gateway/safety/ptt.py:464` |
 | ORT-5103 | info | Émission refusée : coupure ou émission en cours | non | refus | `not_idle` | `trxstation/gateway/safety/ptt.py:466`, `trxstation/gateway/safety/ptt.py:245` |
 | ORT-5104 | avert. | Émission refusée : client non reconnu | non | refus | `unknown_client` | `trxstation/gateway/safety/ptt.py:468`, `trxstation/gateway/safety/ptt.py:422` |
 | ORT-5105 | info | Émission refusée : mesure de TOS en cours | non | refus | `swr_busy` | `trxstation/gateway/safety/ptt.py:470`, `trxstation/swr/runner.py:96`, `trxstation/swr/runner.py:109`, `trxstation/gateway/api/session.py:590` |
-| ORT-5106 | avert. | Émission refusée : aucune bande autorisée | non | refus | `tx_disabled` | `trxstation/gateway/safety/ptt.py:472`, `trxstation/config.py:852`, `trxstation/setup_wizard.py:499` |
+| ORT-5106 | avert. | Émission refusée : aucune bande autorisée | non | refus | `tx_disabled` | `trxstation/gateway/safety/ptt.py:472`, `trxstation/config.py:859`, `trxstation/setup_wizard.py:499` |
 | ORT-5107 | avert. | Émission refusée : hors des bandes autorisées | non | refus | `out_of_band` | `trxstation/gateway/safety/ptt.py:520` |
 | ORT-5108 | erreur | Émission refusée : split illisible | non | refus | `split_unreadable` | `trxstation/gateway/safety/ptt.py:567`, `trxstation/gateway/safety/ptt.py:572`, `trxstation/gateway/safety/ptt.py:575`, `trxstation/gateway/safety/ptt.py:567`, `trxstation/gateway/safety/ptt.py:572`, `trxstation/gateway/safety/ptt.py:575` |
 | ORT-5109 | erreur | Émission refusée : ΔTX (XIT) illisible | non | refus | `xit_unreadable` | `trxstation/gateway/safety/ptt.py:587`, `trxstation/gateway/safety/ptt.py:590`, `trxstation/gateway/safety/ptt.py:587`, `trxstation/gateway/safety/ptt.py:590` |
@@ -295,7 +285,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-5113 | avert. | Émission refusée : le poste émet déjà | non | refus | `rig_already_tx` | `trxstation/gateway/safety/ptt.py:514`, `trxstation/gateway/safety/ptt.py:514`, `trxstation/devtools/hwtest.py:237` |
 | ORT-5114 | avert. | Émission refusée dans ce mode | non | refus | `mode_not_allowed` | `trxstation/gateway/safety/ptt.py:516`, `trxstation/gateway/safety/ptt.py:516`, `trxstation/devtools/hwtest.py:533`, `trxstation/devtools/hwtest.py:538` |
 | ORT-5115 | info | Émission refusée : trop rapprochée | non | refus | `cooldown` | `trxstation/gateway/safety/ptt.py:481` |
-| ORT-5116 | info | Réglage refusé pendant l'émission | non | refus | `tx_active` | `trxstation/gateway/safety/ptt.py:456`, `trxstation/swr/runner.py:107`, `trxstation/gateway/safety/ptt.py:456`, `trxstation/spectrum/service.py:179`, `trxstation/spectrum/service.py:208`, `trxstation/spectrum/service.py:276` |
+| ORT-5116 | info | Réglage refusé pendant l'émission | non | refus | `tx_active` | `trxstation/gateway/safety/ptt.py:456`, `trxstation/swr/runner.py:107`, `trxstation/gateway/safety/ptt.py:456`, `trxstation/spectrum/service.py:181`, `trxstation/spectrum/service.py:210`, `trxstation/spectrum/service.py:278` |
 | ORT-5501 | info | Mesure de TOS non disponible | non | refus | `swr_unavailable` | `trxstation/swr/runner.py:98` |
 | ORT-5502 | info | Plage de mesure de TOS invalide | non | refus | `swr_bad_range`, `swr_too_many_points` | `trxstation/swr/plan.py:76`, `trxstation/swr/plan.py:90`, `trxstation/swr/plan.py:92`, `trxstation/swr/plan.py:101`, `trxstation/swr/plan.py:105`, `trxstation/swr/runner.py:101-102` |
 | ORT-5503 | avert. | Mesure de TOS : aucun point dans les bandes | non | refus | `swr_out_of_band` | `trxstation/swr/runner.py:77-78` |
@@ -308,8 +298,8 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-5510 | avert. | Point de mesure à puissance réduite | non | aucune | `reduced` | `trxstation/swr/runner.py:271-272` |
 | ORT-5511 | info | Point de mesure sans lecture du TOS | non | aucune | `unread` | `trxstation/swr/runner.py:265-266` |
 | ORT-5512 | avert. | Remise en état du poste incomplète après la mesure | non | aucune |  | `trxstation/swr/runner.py:301-302`, `trxstation/swr/runner.py:327`, `trxstation/swr/runner.py:336-343` |
-| ORT-5801 | avert. | PTT par RTS ou DTR : risque d'émission brève | non | aucune |  | `trxstation/config.py:873`, `trxstation/diagnostics.py:248` |
-| ORT-5802 | avert. | Contrôle des bandes désactivé | non | aucune |  | `trxstation/config.py:854` |
+| ORT-5801 | avert. | PTT par RTS ou DTR : risque d'émission brève | non | aucune |  | `trxstation/config.py:880`, `trxstation/diagnostics.py:248` |
+| ORT-5802 | avert. | Contrôle des bandes désactivé | non | aucune |  | `trxstation/config.py:861` |
 | ORT-5803 | avert. | Chargement d'un profil refusé pendant l'émission | non | refus |  | `trxstation/console.py:723`, `trxstation/console.py:778` |
 | ORT-5804 | avert. | PTT actif pendant le test : retour en réception forcé | non | retour_rx |  | `trxstation/setup_wizard.py:154`, `trxstation/setup_wizard.py:439` |
 | ORT-5805 | CRITIQUE | STOP TX de trx-monitor sans confirmation | non | retour_rx |  | `trxstation/monitor/actions.py:18` |
@@ -334,10 +324,10 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-6411 | avert. | Table des pays (cty.dat) absente ou illisible | non | aucune |  | `trxstation/cluster/cty.py:163`, `trxstation/cluster/cty.py:165`, `trxstation/cluster/cty.py:127`, `trxstation/cluster/cli.py:146` |
 | ORT-6412 | info | Mise à jour de cty.dat impossible | non | nouvel_essai |  | `trxstation/cluster/service.py:290`, `trxstation/cluster/cty.py:183`, `trxstation/cluster/cty.py:186`, `trxstation/cluster/cli.py:143` |
 | ORT-6413 | info | Indicatif refusé par le réglage du Cluster DX | non | refus |  | `trxstation/cluster/text.py:74`, `trxstation/cluster/text.py:76`, `trxstation/cluster/text.py:85`, `trxstation/cluster/setup.py:178`, `trxstation/cluster/cli.py:228` |
-| ORT-6501 | erreur | Module extérieur déclaré mais absent ou non démarré | non | aucune | `freedv_missing`, `state.freedv.cause`, `module_absent` | `trxstation/breizh/link.py:303`, `trxstation/breizh/link.py:276`, `trxstation/freedv/service.py:103`, `trxstation/gateway/main.py:183`, `trxstation/gateway/api/session.py:303`, `trxstation/gateway/main.py:181-183`, `trxstation/freedv/rx_engine.py:282`, `trxstation/modules/registry.py:39`, `trxstation/modules/launcher.py:191`, `trxstation/modules/supervisor_glue.py:69`, `trxstation/supervisor/main.py:143`, `trxstation/supervisor/main.py:153`, `trxstation/modules/bus.py:171`, `trxstation/modules/bus.py:389`, `trxstation/modules/gateway_bridge.py:157`, `trxstation/gateway/api/session.py:538` |
-| ORT-6502 | erreur | Version du module incompatible | non | refus | `breizh_event refused (proto)`, `api` | `trxstation/breizh/link.py:124`, `trxstation/breizh/protocol.py:249`, `trxstation/breizh/protocol.py:265`, `trxstation/breizh/protocol.py:126`, `trxstation/modules/launcher.py:118`, `trxstation/modules/bus.py:262`, `trxstation/modules/supervisor_glue.py:51` |
-| ORT-6503 | erreur | Échec de la négociation avec le module | non | refus | `breizh_event refused (format`, `latency)`, `auth` | `trxstation/breizh/link.py:124`, `trxstation/breizh/protocol.py:251`, `trxstation/breizh/protocol.py:271`, `trxstation/modules/bus.py:236`, `trxstation/modules/bus.py:247`, `trxstation/modules/bus.py:251`, `trxstation/modules/bus.py:258`, `trxstation/modules/client.py:92`, `trxstation/cluster/service.py:345`, `trxstation/presence/service.py:238`, `trxstation/modules/demo_module.py:70` |
-| ORT-6504 | avert. | Le module ne répond plus (battement perdu) | non | repli_direct | `breizh_event lost`, `state.freedv.cause` | `trxstation/breizh/link.py:279`, `trxstation/breizh/store.py:112`, `trxstation/freedv/rx_engine.py:422`, `trxstation/freedv/rx_engine.py:354`, `trxstation/freedv/rx_engine.py:358` |
+| ORT-6501 | erreur | Module extérieur déclaré mais absent ou non démarré | non | aucune | `freedv_missing`, `state.freedv.cause`, `module_absent` | `trxstation/breizh/link.py:314`, `trxstation/breizh/link.py:287`, `trxstation/freedv/service.py:119`, `trxstation/gateway/main.py:185`, `trxstation/gateway/api/session.py:303`, `trxstation/gateway/main.py:183-183`, `trxstation/freedv/rx_engine.py:282`, `trxstation/modules/registry.py:39`, `trxstation/modules/launcher.py:191`, `trxstation/modules/supervisor_glue.py:69`, `trxstation/supervisor/main.py:143`, `trxstation/supervisor/main.py:153`, `trxstation/modules/bus.py:171`, `trxstation/modules/bus.py:389`, `trxstation/modules/gateway_bridge.py:157`, `trxstation/gateway/api/session.py:538`, `trxstation/breizh/link.py:282` |
+| ORT-6502 | erreur | Version du module incompatible | non | refus | `breizh_event refused (proto)`, `api` | `trxstation/breizh/link.py:128`, `trxstation/breizh/protocol.py:249`, `trxstation/breizh/protocol.py:265`, `trxstation/breizh/protocol.py:126`, `trxstation/modules/launcher.py:118`, `trxstation/modules/bus.py:262`, `trxstation/modules/supervisor_glue.py:51` |
+| ORT-6503 | erreur | Échec de la négociation avec le module | non | refus | `breizh_event refused (format`, `latency)`, `auth` | `trxstation/breizh/link.py:128`, `trxstation/breizh/protocol.py:251`, `trxstation/breizh/protocol.py:271`, `trxstation/modules/bus.py:236`, `trxstation/modules/bus.py:247`, `trxstation/modules/bus.py:251`, `trxstation/modules/bus.py:258`, `trxstation/modules/client.py:92`, `trxstation/cluster/service.py:345`, `trxstation/presence/service.py:250`, `trxstation/modules/demo_module.py:70` |
+| ORT-6504 | avert. | Le module ne répond plus (battement perdu) | non | repli_direct | `breizh_event lost`, `state.freedv.cause` | `trxstation/breizh/link.py:290`, `trxstation/breizh/store.py:112`, `trxstation/freedv/rx_engine.py:422`, `trxstation/freedv/rx_engine.py:354`, `trxstation/freedv/rx_engine.py:358` |
 | ORT-6505 | avert. | Catalogue du module invalide ou non traduit | non | aucune |  | *prévu, pas encore dans le code* |
 | ORT-6506 | avert. | Code reçu absent du catalogue du module | non | aucune |  | *prévu, pas encore dans le code* |
 | ORT-6507 | erreur | Le module perturbe la station (CPU, latence audio) | non | arreter_module |  | `trxstation/modules/bus.py:282` |
@@ -359,28 +349,30 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-6525 | avert. | Changement de fréquence demandé par un module refusé | non | refus | `invalid` | `trxstation/modules/gateway_bridge.py:135`, `trxstation/modules/gateway_bridge.py:137`, `trxstation/modules/gateway_bridge.py:143`, `trxstation/modules/gateway_bridge.py:147`, `trxstation/modules/gateway_bridge.py:149` |
 | ORT-6526 | avert. | Jeton de session refusé | non | refus | `token_expired` | `trxstation/modules/bus.py:371`, `trxstation/modules/tokens.py:75`, `trxstation/modules/tokens.py:78`, `trxstation/modules/tokens.py:87`, `trxstation/modules/tokens.py:90` |
 | ORT-6527 | erreur | Erreur inattendue dans le bus des modules | non | aucune | `internal` | `trxstation/modules/bus.py:223`, `trxstation/modules/bus.py:316`, `trxstation/modules/bus.py:376`, `trxstation/modules/client.py:176`, `trxstation/modules/client.py:190`, `trxstation/modules/client.py:202`, `trxstation/modules/client.py:216`, `trxstation/modules/supervisor_glue.py:86`, `trxstation/modules/gateway_bridge.py:99`, `trxstation/modules/gateway_bridge.py:204`, `trxstation/modules/gateway_bridge.py:217`, `trxstation/modules/launcher.py:305` |
-| ORT-6528 | avert. | Fichier d'un module non écrit | non | aucune |  | `trxstation/cluster/service.py:181`, `trxstation/cluster/service.py:259`, `trxstation/presence/service.py:255`, `trxstation/presence/store.py:88`, `trxstation/presence/service.py:166`, `trxstation/presence/service.py:189` |
-| ORT-6531 | erreur | Clé d'appairage de Breizh Audio Box inutilisable | non | repli_direct |  | `trxstation/breizh/keyfile.py:30`, `trxstation/breizh/keyfile.py:32`, `trxstation/breizh/keyfile.py:34`, `trxstation/breizh/keyfile.py:38`, `trxstation/breizh/keyfile.py:62`, `trxstation/gateway/main.py:203`, `trxstation/gateway/main.py:202-204`, `trxstation/console.py:1500`, `trxstation/console.py:1565`, `trxstation/console.py:1606` |
-| ORT-6532 | info | Breizh Audio Box a quitté le mode OpenRemoteTRX | non | repli_direct | `breizh_event lost` | `trxstation/breizh/link.py:223` |
-| ORT-6533 | avert. | Repli pendant l'émission : fin en direct | non | repli_direct | `breizh_event fallback` | `trxstation/gateway/audio/route.py:133`, `trxstation/gateway/audio/route.py:75`, `trxstation/breizh/link.py:115` |
+| ORT-6528 | avert. | Fichier d'un module non écrit | non | aucune |  | `trxstation/cluster/service.py:181`, `trxstation/cluster/service.py:259`, `trxstation/presence/service.py:267`, `trxstation/presence/store.py:88`, `trxstation/presence/service.py:168`, `trxstation/presence/service.py:191` |
+| ORT-6531 | erreur | Clé d'appairage de Breizh Audio Box inutilisable | non | repli_direct |  | `trxstation/breizh/keyfile.py:30`, `trxstation/breizh/keyfile.py:32`, `trxstation/breizh/keyfile.py:34`, `trxstation/breizh/keyfile.py:38`, `trxstation/breizh/keyfile.py:62`, `trxstation/gateway/main.py:205`, `trxstation/gateway/main.py:204-204`, `trxstation/console.py:1500`, `trxstation/console.py:1565`, `trxstation/console.py:1606` |
+| ORT-6532 | info | Breizh Audio Box a quitté le mode OpenRemoteTRX | non | repli_direct | `breizh_event lost` | `trxstation/breizh/link.py:227` |
+| ORT-6533 | avert. | Repli pendant l'émission : fin en direct | non | repli_direct | `breizh_event fallback` | `trxstation/gateway/audio/route.py:133`, `trxstation/gateway/audio/route.py:75`, `trxstation/breizh/link.py:119` |
 | ORT-6534 | info | Blocs de son revenus trop tard de Breizh Audio Box | non | aucune | `state.breizh.late` | `trxstation/gateway/audio/route.py:128`, `trxstation/gateway/audio/route.py:164` |
-| ORT-6535 | erreur | Mode OpenRemoteTRX non activé dans Breizh Audio Box | non | repli_direct | `breizh_event refused (mode_off)` | `trxstation/breizh/link.py:124` |
-| ORT-6536 | avert. | Breizh Audio Box sert déjà une autre station | non | repli_direct | `breizh_event refused (busy)` | `trxstation/breizh/link.py:124` |
-| ORT-6537 | erreur | Breizh Audio Box n'a pas coupé son CAT | non | repli_direct | `breizh_event refused (cat_on)` | `trxstation/breizh/link.py:124`, `trxstation/breizh/protocol.py:268` |
-| ORT-6538 | erreur | Réponse de Breizh Audio Box mal formée | non | repli_direct | `breizh_event refused (nonce`, `json`, `code)` | `trxstation/breizh/link.py:124`, `trxstation/breizh/protocol.py:217`, `trxstation/breizh/protocol.py:204`, `trxstation/breizh/protocol.py:282` |
-| ORT-6539 | avert. | Paquets de Breizh Audio Box refusés | non | aucune | `breizh_event bad_packets` | `trxstation/breizh/link.py:265`, `trxstation/breizh/link.py:181`, `trxstation/breizh/protocol.py:143` |
-| ORT-6540 | info | Breizh Audio Box joint ou repris | non | aucune | `breizh_event connected`, `back`, `reactivated` | `trxstation/breizh/link.py:247`, `trxstation/breizh/link.py:255`, `trxstation/breizh/link.py:251`, `trxstation/breizh/link.py:290`, `trxstation/breizh/link.py:93` |
+| ORT-6535 | erreur | Mode OpenRemoteTRX non activé dans Breizh Audio Box | non | repli_direct | `breizh_event refused (mode_off)` | `trxstation/breizh/link.py:128` |
+| ORT-6536 | avert. | Breizh Audio Box sert déjà une autre station | non | repli_direct | `breizh_event refused (busy)` | `trxstation/breizh/link.py:128` |
+| ORT-6537 | erreur | Breizh Audio Box n'a pas coupé son CAT | non | repli_direct | `breizh_event refused (cat_on)` | `trxstation/breizh/link.py:128`, `trxstation/breizh/protocol.py:268` |
+| ORT-6538 | erreur | Réponse de Breizh Audio Box mal formée | non | repli_direct | `breizh_event refused (nonce`, `json`, `code)` | `trxstation/breizh/link.py:128`, `trxstation/breizh/protocol.py:217`, `trxstation/breizh/protocol.py:204`, `trxstation/breizh/protocol.py:282` |
+| ORT-6539 | avert. | Paquets de Breizh Audio Box refusés | non | aucune | `breizh_event bad_packets` | `trxstation/breizh/link.py:270`, `trxstation/breizh/link.py:185`, `trxstation/breizh/protocol.py:143` |
+| ORT-6540 | info | Breizh Audio Box joint ou repris | non | aucune | `breizh_event connected`, `back`, `reactivated` | `trxstation/breizh/link.py:252`, `trxstation/breizh/link.py:260`, `trxstation/breizh/link.py:256`, `trxstation/breizh/link.py:301`, `trxstation/breizh/link.py:97` |
+| ORT-6541 | erreur | Erreur inattendue : liaison avec Breizh Audio Box | non | aucune |  | `trxstation/breizh/link.py:319`, `trxstation/breizh/store.py:121` |
 | ORT-6561 | avert. | Décodeur FreeDV arrêté | non | nouvel_essai | `state.freedv.cause` | `trxstation/freedv/rx_engine.py:414`, `trxstation/freedv/rx_engine.py:266` |
 | ORT-6562 | avert. | Sortie d'un décodeur FreeDV illisible | non | nouvel_essai | `state.freedv.cause` | `trxstation/freedv/rx_engine.py:381`, `trxstation/freedv/rx_engine.py:400` |
-| ORT-6563 | erreur | FreeDV abandonné après ses relances | non | repli_son_du_poste | `freedv_event fault` | `trxstation/freedv/service.py:139`, `trxstation/freedv/service.py:140`, `trxstation/freedv/rx_engine.py:263` |
+| ORT-6563 | erreur | FreeDV abandonné après ses relances | non | repli_son_du_poste | `freedv_event fault` | `trxstation/freedv/service.py:155`, `trxstation/freedv/service.py:156`, `trxstation/freedv/rx_engine.py:263` |
 | ORT-6564 | erreur | Mode FreeDV en erreur dans la chaîne audio | non | repli_son_du_poste |  | `trxstation/gateway/audio/hub.py:51` |
 | ORT-6565 | avert. | Décodeur FreeDV trop lent : son jeté | non | aucune | `trx-monitor freedv.drops` | `trxstation/freedv/rx_engine.py:326` |
 | ORT-6566 | info | Mode FreeDV non changé pendant l'émission | non | refus | `freedv_tx` | `trxstation/gateway/api/session.py:298` |
+| ORT-6567 | erreur | Erreur inattendue : mode FreeDV | non | aucune |  | `trxstation/freedv/service.py:104` |
 | ORT-6801 | info | Essai SELCALL : RIT refusé ou illisible | non | aucune |  | `trxstation/devtools/hwtest.py:301`, `trxstation/devtools/hwtest.py:321`, `trxstation/devtools/hwtest.py:354` |
 | ORT-6802 | info | Trame SELCALL de fin omise : TOT trop proche | non | aucune |  | `trxstation/gateway/safety/ptt.py:306` |
 | ORT-6803 | avert. | Appel SELCALL refusé : plus long que le TOT | non | refus | `selcall_too_long` | `trxstation/gateway/safety/ptt.py:316` |
 | ORT-6804 | erreur | Appel SELCALL interrompu | non | retour_rx | `selcall_timeout`, `selcall_failed` | `trxstation/gateway/safety/ptt.py:334-335`, `trxstation/gateway/safety/ptt.py:340-341` |
-| ORT-6805 | info | Appel SELCALL reçu | oui (3) | aucune |  | `trxstation/selcall/receiver.py:205`, `trxstation/selcall/receiver.py:227`, `trxstation/gateway/main.py:106` |
+| ORT-6805 | info | Appel SELCALL reçu | oui (3) | aucune |  | `trxstation/selcall/receiver.py:205`, `trxstation/selcall/receiver.py:227`, `trxstation/gateway/main.py:108` |
 | ORT-6806 | info | Trame SELCALL rejetée | non | aucune |  | `trxstation/selcall/receiver.py:347`, `trxstation/selcall/decoder.py:242` |
 | ORT-6807 | avert. | État SELCALL illisible | non | aucune |  | `trxstation/selcall/receiver.py:99` |
 | ORT-6808 | avert. | État SELCALL non enregistré | non | aucune |  | `trxstation/selcall/receiver.py:136` |
@@ -409,9 +401,10 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-6917 | info | Groupe ou membre inconnu | non | refus | `unknown_group` | `trxstation/presence/engine.py:176`, `trxstation/presence/actions.py:63`, `trxstation/presence/engine.py:265`, `trxstation/presence/engine.py:279` |
 | ORT-6918 | info | Saisie refusée (présence de groupe) | non | refus | `pseudo` | `trxstation/presence/engine.py:122`, `trxstation/presence/engine.py:132`, `trxstation/presence/engine.py:140`, `trxstation/presence/engine.py:148`, `trxstation/presence/engine.py:190`, `trxstation/presence/engine.py:289`, `trxstation/presence/engine.py:298`, `trxstation/presence/actions.py:24`, `trxstation/presence/actions.py:98`, `trxstation/presence/actions.py:146` |
 | ORT-6919 | info | Présence de groupe non disponible | non | refus | `friends_unavailable` | `trxstation/gateway/api/session.py:532`, `trxstation/gateway/api/session.py:542` |
-| ORT-6920 | erreur | Fichier de clés de la présence illisible | non | nouvel_essai |  | `trxstation/presence/identity.py:73`, `trxstation/presence/identity.py:75`, `trxstation/presence/service.py:54` |
+| ORT-6920 | erreur | Fichier de clés de la présence illisible | non | nouvel_essai |  | `trxstation/presence/identity.py:73`, `trxstation/presence/identity.py:75`, `trxstation/presence/service.py:56`, `trxstation/presence/service.py:207` |
 | ORT-6921 | erreur | Données de la présence illisibles | non | aucune |  | `trxstation/presence/store.py:56`, `trxstation/presence/engine.py:166` |
-| ORT-6922 | erreur | Erreur inattendue de la présence de groupe | non | nouvel_essai | `internal` | `trxstation/presence/service.py:228`, `trxstation/presence/service.py:229`, `trxstation/presence/service.py:183`, `trxstation/presence/service.py:217` |
+| ORT-6922 | erreur | Erreur inattendue de la présence de groupe | non | nouvel_essai | `internal` | `trxstation/presence/service.py:240`, `trxstation/presence/service.py:241`, `trxstation/presence/service.py:185`, `trxstation/presence/service.py:229`, `trxstation/gateway/api/session.py:541` |
+| ORT-6923 | erreur | Signature invalide reçue (attaque possible) | non | refus |  | `trxstation/presence/engine.py:438`, `trxstation/presence/roster.py:144`, `trxstation/presence/roster.py:139`, `trxstation/presence/roster.py:156`, `trxstation/presence/roster.py:182`, `trxstation/presence/roster.py:185`, `trxstation/presence/roster.py:192`, `trxstation/presence/roster.py:95`, `trxstation/presence/engine.py:460`, `trxstation/presence/invite.py:173`, `trxstation/presence/invite.py:176`, `trxstation/presence/invite.py:179`, `trxstation/presence/invite.py:183` |
 
 ### 7000–7999 : Monitor inter-stations
 
@@ -433,7 +426,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-8005 | erreur | Réinitialisation USB impossible | non | redemarrer_rigctld |  | `trxstation/supervisor/usb.py:30`, `trxstation/supervisor/usb.py:39`, `trxstation/supervisor/backends.py:282` |
 | ORT-8006 | CRITIQUE | Redémarrage de la machine par le superviseur | oui (3) | redemarrer_systeme | `reboot` | `trxstation/supervisor/core.py:348`, `trxstation/supervisor/core.py:364-365`, `trxstation/supervisor/backends.py:89-90` |
 | ORT-8007 | CRITIQUE | Redémarrage refusé : historique non inscriptible | non | arreter_passerelle |  | `trxstation/supervisor/core.py:358-363` |
-| ORT-8008 | CRITIQUE | Mode sûr : station en réception, accès coupé | oui (3) | mode_sur | `safe_mode` | `trxstation/supervisor/core.py:353-354`, `trxstation/supervisor/core.py:368`, `trxstation/supervisor/core.py:376`, `trxstation/supervisor/core.py:386`, `trxstation/supervisor/state.py:45`, `trxstation/supervisor/backends.py:215`, `trxstation/diagnostics.py:427`, `trxstation/monitor/model.py:196`, `trxstation/tray/status.py:130`, `trxstation/console.py:424` |
+| ORT-8008 | CRITIQUE | Mode sûr : station en réception, accès coupé | oui (4) | mode_sur | `safe_mode` | `trxstation/supervisor/core.py:353-354`, `trxstation/supervisor/core.py:368`, `trxstation/supervisor/core.py:376`, `trxstation/supervisor/core.py:386`, `trxstation/supervisor/state.py:45`, `trxstation/supervisor/backends.py:215`, `trxstation/diagnostics.py:427`, `trxstation/monitor/model.py:196`, `trxstation/tray/status.py:130`, `trxstation/console.py:424` |
 | ORT-8009 | erreur | Mode sûr non enregistré | non | mode_sur |  | `trxstation/supervisor/core.py:371-372` |
 | ORT-8010 | erreur | Action du superviseur en échec | non | aucune |  | `trxstation/supervisor/core.py:316`, `trxstation/supervisor/backends.py:64`, `trxstation/supervisor/backends.py:66`, `trxstation/supervisor/backends.py:274`, `trxstation/supervisor/backends.py:191` |
 | ORT-8011 | info | Station rétablie | oui (3) | aucune |  | `trxstation/supervisor/core.py:429-430` |
@@ -442,21 +435,21 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-8014 | CRITIQUE | Boucle de supervision en erreur | non | arreter_superviseur |  | `trxstation/supervisor/main.py:75`, `trxstation/supervisor/main.py:76-77` |
 | ORT-8015 | erreur | Superviseur déjà en cours d'exécution | non | refus |  | `trxstation/supervisor/main.py:113-115`, `trxstation/procutil.py:37` |
 | ORT-8016 | erreur | La station ne s'arrête pas | non | aucune |  | `trxstation/supervisor/main.py:59` |
-| ORT-8017 | erreur | Superviseur disparu : passerelle arrêtée | non | arreter_passerelle |  | `trxstation/gateway/main.py:56` |
-| ORT-8018 | erreur | Surveillance des accès en erreur | non | nouvel_essai |  | `trxstation/gateway/access_watch.py:133` |
-| ORT-8019 | erreur | Erreur inattendue d'un composant (la station continue) | non | aucune | `netprobe_error`, `friends_error` | `trxstation/gateway/api/session.py:148`, `trxstation/gateway/api/session.py:190`, `trxstation/gateway/api/session.py:223`, `trxstation/gateway/api/session.py:245`, `trxstation/gateway/api/session.py:501`, `trxstation/gateway/api/session.py:541`, `trxstation/gateway/api/session.py:600`, `trxstation/gateway/api/session.py:682`, `trxstation/gateway/audio/beeps.py:172`, `trxstation/netprobe/probe.py:180`, `trxstation/netprobe/probe.py:194`, `trxstation/netprobe/probe.py:202`, `trxstation/netprobe/probe.py:210`, `trxstation/netprobe/vpn.py:94`, `trxstation/netprobe/station_probes.py:197`, `trxstation/breizh/link.py:308`, `trxstation/breizh/store.py:121`, `trxstation/freedv/service.py:88`, `trxstation/gateway/access_watch.py:133` |
-| ORT-8020 | avert. | Aucune adresse d'alerte (ntfy) | non | aucune |  | `trxstation/config.py:871` |
+| ORT-8017 | erreur | Superviseur disparu : passerelle arrêtée | non | arreter_passerelle |  | `trxstation/gateway/main.py:57` |
+| ORT-8018 | erreur | Surveillance des accès en erreur | non | nouvel_essai |  | `trxstation/gateway/access_watch.py:133`, `trxstation/gateway/access_watch.py:133` |
+| ORT-8019 | erreur | Erreur inattendue d'un composant (la station continue) | non | aucune | `netprobe_error`, `friends_error` | *abandonné → ORT-4018, ORT-4509, ORT-5028, ORT-6541, ORT-6567, ORT-6922, ORT-8018 (une erreur inattendue par domaine)* |
+| ORT-8020 | avert. | Aucune adresse d'alerte (ntfy) | non | aucune |  | `trxstation/config.py:878` |
 | ORT-8021 | erreur | Service de la station en échec ou arrêté | non | aucune |  | `trxstation/diagnostics.py:415`, `trxstation/diagnostics.py:417`, `trxstation/diagnostics.py:419`, `trxstation/console.py:406`, `trxstation/console.py:409`, `debian/install.sh:168` |
 
 ### 9000–9999 : Configuration et installation
 
 | Code | Gravité | Titre | ntfy | Action | Codes machine | Origines |
 | --- | --- | --- | --- | --- | --- | --- |
-| ORT-9001 | erreur | station.toml invalide | non | refus |  | `trxstation/config.py:948`, `trxstation/config.py:940`, `trxstation/gateway/main.py:305`, `trxstation/supervisor/main.py:97`, `trxstation/monitor/main.py:25`, `trxstation/update/apply.py:352`, `trxstation/update/check.py:354`, `trxstation/setup_wizard.py:736`, `trxstation/setup_wizard.py:841`, `trxstation/setup_wizard.py:758`, `trxstation/diagnostics.py:233`, `trxstation/console.py:688`, `trxstation/tray/main.py:177`, `trxstation/run_rigctld.py:25`, `trxstation/devtools/hwtest.py:870`, `trxstation/devtools/hwtest.py:873`, `trxstation/qualif/main.py:142`, `trxstation/qualif/main.py:147`, `trxstation/supervisor/main.py:96-98`, `trxstation/gateway/main.py:304-306`, `trxstation/cluster/service.py:355`, `trxstation/presence/service.py:265`, `trxstation/cluster/setup.py:499`, `trxstation/cluster/setup.py:502` |
-| ORT-9002 | erreur | Réglage inconnu dans station.toml | non | refus |  | `trxstation/config.py:881`, `trxstation/config.py:907`, `trxstation/config.py:889` |
-| ORT-9003 | erreur | Structure de station.toml invalide | non | refus |  | `trxstation/config.py:933` |
+| ORT-9001 | erreur | station.toml invalide | non | refus |  | `trxstation/config.py:955`, `trxstation/config.py:947`, `trxstation/gateway/main.py:307`, `trxstation/supervisor/main.py:97`, `trxstation/monitor/main.py:25`, `trxstation/update/apply.py:352`, `trxstation/update/check.py:354`, `trxstation/setup_wizard.py:736`, `trxstation/setup_wizard.py:841`, `trxstation/setup_wizard.py:758`, `trxstation/diagnostics.py:233`, `trxstation/console.py:688`, `trxstation/tray/main.py:177`, `trxstation/run_rigctld.py:25`, `trxstation/devtools/hwtest.py:870`, `trxstation/devtools/hwtest.py:873`, `trxstation/qualif/main.py:142`, `trxstation/qualif/main.py:147`, `trxstation/supervisor/main.py:96-98`, `trxstation/gateway/main.py:306-306`, `trxstation/cluster/service.py:355`, `trxstation/presence/service.py:277`, `trxstation/cluster/setup.py:499`, `trxstation/cluster/setup.py:502` |
+| ORT-9002 | erreur | Réglage inconnu dans station.toml | non | refus |  | `trxstation/config.py:881`, `trxstation/config.py:914`, `trxstation/config.py:896` |
+| ORT-9003 | erreur | Structure de station.toml invalide | non | refus |  | `trxstation/config.py:940` |
 | ORT-9004 | erreur | Version du format de station.toml non prise en charge | non | refus |  | `trxstation/config.py:484` |
-| ORT-9005 | erreur | Réglage oui/non mal écrit | non | refus |  | `trxstation/config.py:382`, `trxstation/config.py:419`, `trxstation/config.py:552`, `trxstation/config.py:601`, `trxstation/config.py:606`, `trxstation/config.py:624`, `trxstation/config.py:666`, `trxstation/config.py:687`, `trxstation/config.py:694`, `trxstation/config.py:721`, `trxstation/config.py:761`, `trxstation/config.py:792`, `trxstation/config.py:803` |
+| ORT-9005 | erreur | Réglage oui/non mal écrit | non | refus |  | `trxstation/config.py:382`, `trxstation/config.py:419`, `trxstation/config.py:552`, `trxstation/config.py:601`, `trxstation/config.py:606`, `trxstation/config.py:624`, `trxstation/config.py:666`, `trxstation/config.py:687`, `trxstation/config.py:694`, `trxstation/config.py:721`, `trxstation/config.py:761`, `trxstation/config.py:792`, `trxstation/config.py:808` |
 | ORT-9006 | erreur | Valeur de réglage hors limites | non | refus |  | `trxstation/config.py:492`, `trxstation/config.py:499`, `trxstation/config.py:502`, `trxstation/config.py:505`, `trxstation/config.py:542`, `trxstation/config.py:560`, `trxstation/config.py:562`, `trxstation/config.py:565`, `trxstation/config.py:568`, `trxstation/config.py:572`, `trxstation/config.py:574`, `trxstation/config.py:578`, `trxstation/config.py:591`, `trxstation/config.py:395`, `trxstation/config.py:413`, `trxstation/config.py:421`, `trxstation/config.py:612`, `trxstation/config.py:616`, `trxstation/config.py:626`, `trxstation/config.py:628`, `trxstation/config.py:640`, `trxstation/config.py:684`, `trxstation/config.py:698`, `trxstation/config.py:701`, `trxstation/config.py:723`, `trxstation/config.py:731`, `trxstation/config.py:735`, `trxstation/config.py:773`, `trxstation/config.py:779`, `trxstation/config.py:782` |
 | ORT-9007 | erreur | Valeur de réglage mal formée | non | refus |  | `trxstation/config.py:495`, `trxstation/config.py:532`, `trxstation/config.py:535`, `trxstation/config.py:576`, `trxstation/config.py:580`, `trxstation/config.py:582`, `trxstation/config.py:587`, `trxstation/config.py:589`, `trxstation/config.py:595`, `trxstation/config.py:386`, `trxstation/config.py:389`, `trxstation/config.py:391`, `trxstation/config.py:400`, `trxstation/config.py:402`, `trxstation/config.py:405`, `trxstation/config.py:408`, `trxstation/config.py:411`, `trxstation/config.py:415`, `trxstation/config.py:417`, `trxstation/config.py:614`, `trxstation/config.py:630`, `trxstation/config.py:638`, `trxstation/config.py:668`, `trxstation/config.py:673`, `trxstation/config.py:743`, `trxstation/config.py:745`, `trxstation/config.py:768`, `trxstation/config.py:796`, `trxstation/config.py:807` |
 | ORT-9008 | erreur | Seuils de réglage dans le mauvais ordre | non | refus |  | `trxstation/config.py:554`, `trxstation/config.py:739`, `trxstation/config.py:741`, `trxstation/config.py:776`, `trxstation/console.py:1662` |
@@ -473,7 +466,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-9019 | erreur | Enregistrement de station.toml impossible | non | refus |  | `trxstation/console.py:795`, `trxstation/console.py:800`, `trxstation/console.py:805` |
 | ORT-9020 | avert. | station.toml illisible pour ce compte | non | refus |  | `trxstation/console.py:581`, `trxstation/console.py:732`, `trxstation/console.py:866`, `trxstation/console.py:1466`, `trxstation/console.py:1641`, `trxstation/console.py:628`, `trxstation/diagnostics.py:236` |
 | ORT-9021 | avert. | Droits de station.toml incorrects | non | aucune |  | `trxstation/diagnostics.py:242`, `trxstation/diagnostics.py:245` |
-| ORT-9022 | info | Station pas encore configurée | non | aucune |  | `trxstation/diagnostics.py:228`, `trxstation/console.py:401`, `trxstation/console.py:1747`, `debian/install.sh:171`, `debian/install.sh:500`, `windows/installer.ps1:421` |
+| ORT-9022 | info | Station pas encore configurée | non | aucune |  | `trxstation/diagnostics.py:228`, `trxstation/console.py:401`, `trxstation/console.py:1747`, `debian/install.sh:171`, `debian/install.sh:505`, `windows/installer.ps1:428` |
 | ORT-9023 | info | Aucun éditeur de texte | non | refus |  | `trxstation/console.py:585` |
 | ORT-9101 | erreur | Profil de poste illisible ou abîmé | non | refus |  | `trxstation/profiles.py:105`, `trxstation/profiles.py:107`, `trxstation/profiles.py:111`, `trxstation/console.py:720`, `trxstation/console.py:729` |
 | ORT-9102 | erreur | Profil de poste d'une autre version | non | refus |  | `trxstation/profiles.py:120`, `trxstation/profiles.py:126`, `trxstation/profiles.py:132` |
@@ -482,48 +475,61 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 | ORT-9105 | erreur | secrets.toml illisible ou mal formé | non | refus |  | `trxstation/secretstore.py:56`, `trxstation/secretstore.py:60`, `trxstation/secretstore.py:63`, `trxstation/secretstore.py:67`, `trxstation/secretstore.py:110`, `trxstation/cluster/service.py:198`, `trxstation/diagnostics.py:485`, `trxstation/cluster/service.py:193`, `trxstation/cluster/service.py:195`, `trxstation/cluster/service.py:198`, `trxstation/cluster/setup.py:507`, `trxstation/cluster/setup.py:242` |
 | ORT-9106 | avert. | Mot de passe de source refusé | non | refus |  | `trxstation/secretstore.py:42`, `trxstation/secretstore.py:44` |
 | ORT-9107 | avert. | secrets.toml lisible par d'autres comptes | non | repli_correction_droits |  | `trxstation/secretstore.py:81`, `trxstation/cluster/service.py:192`, `trxstation/diagnostics.py:490` |
-| ORT-9108 | avert. | Identifiant de station invalide | non | aucune |  | `trxstation/station_id.py:47`, `trxstation/station_id.py:70`, `trxstation/gateway/main.py:260` |
+| ORT-9108 | avert. | Identifiant de station invalide | non | aucune |  | `trxstation/station_id.py:47`, `trxstation/station_id.py:70`, `trxstation/gateway/main.py:262` |
 | ORT-9201 | avert. | Mise en page refusée | non | refus | `layout_invalid` | `trxstation/layout/store.py:76`, `trxstation/gateway/api/session.py:377`, `trxstation/layout/validate.py:66-199`, `trxstation/layout/validate.py:251-308` |
 | ORT-9202 | avert. | Thème refusé (contraste ou couleur d'émission) | non | refus | `layout_invalid` | `trxstation/layout/theme.py:106`, `trxstation/layout/theme.py:115`, `trxstation/layout/palette.py:100`, `trxstation/layout/palette.py:103`, `trxstation/layout/validate.py:228`, `trxstation/layout/validate.py:238`, `trxstation/layout/validate.py:244` |
 | ORT-9203 | avert. | Mise en page d'un format plus récent | non | refus | `layout_invalid` | `trxstation/layout/validate.py:266` |
 | ORT-9204 | avert. | Mise en page enregistrée abîmée : profil d'usine servi | non | repli_profil_usine |  | `trxstation/layout/store.py:66` |
 | ORT-9205 | info | Widget lié à une fonction absente du poste | non | aucune |  | `trxstation/layout/validate.py:110` |
-| ORT-9301 | erreur | Python absent ou trop ancien | non | refus |  | `trxstation/diagnostics.py:173`, `debian/install.sh:338`, `windows/installer.ps1:238`, `windows/installer.ps1:244` |
-| ORT-9302 | erreur | Modules Python manquants | non | refus |  | `trxstation/diagnostics.py:204`, `trxstation/diagnostics.py:445`, `debian/install.sh:423`, `debian/install.sh:248`, `windows/installer.ps1:302`, `trxstation/monitor/main.py:34`, `trxstation/tray/main.py:185`, `trxstation/update/signing.py:141` |
-| ORT-9303 | avert. | Compte absent d'un groupe nécessaire | non | aucune |  | `trxstation/diagnostics.py:284`, `trxstation/diagnostics.py:287`, `debian/install.sh:317` |
-| ORT-9304 | erreur | Paquet d'installation incomplet | non | refus |  | `debian/install.sh:47`, `debian/install.sh:277`, `debian/install.sh:279`, `debian/install.sh:241` |
+| ORT-9301 | erreur | Python absent ou trop ancien | non | refus |  | `trxstation/diagnostics.py:173`, `debian/install.sh:343`, `windows/installer.ps1:238`, `windows/installer.ps1:244` |
+| ORT-9302 | erreur | Modules Python manquants | non | refus |  | `trxstation/diagnostics.py:204`, `trxstation/diagnostics.py:445`, `debian/install.sh:428`, `debian/install.sh:253`, `windows/installer.ps1:309`, `trxstation/monitor/main.py:34`, `trxstation/tray/main.py:185`, `trxstation/update/signing.py:141` |
+| ORT-9303 | avert. | Compte absent d'un groupe nécessaire | non | aucune |  | `trxstation/diagnostics.py:284`, `trxstation/diagnostics.py:287`, `debian/install.sh:322` |
+| ORT-9304 | erreur | Paquet d'installation incomplet | non | refus |  | `debian/install.sh:47`, `debian/install.sh:282`, `debian/install.sh:284`, `debian/install.sh:246` |
 | ORT-9305 | erreur | Droits administrateur nécessaires | non | refus |  | `debian/install.sh:94`, `debian/compiler-hamlib.sh:31` |
-| ORT-9306 | erreur | Pas d'accès Internet pendant l'installation | non | refus |  | `debian/install.sh:313` |
-| ORT-9307 | erreur | Installation des paquets Debian impossible | non | refus |  | `debian/install.sh:334`, `debian/install.sh:335`, `debian/compiler-hamlib.sh:40`, `debian/compiler-hamlib.sh:42` |
-| ORT-9308 | CRITIQUE | Installation des modules Python impossible ou empreinte différente | non | refus |  | `debian/install.sh:417`, `debian/install.sh:419`, `windows/installer.ps1:291`, `windows/installer.ps1:296`, `windows/installer.ps1:298` |
-| ORT-9309 | erreur | Installation de TRX distant ou activation de la version impossible | non | refus |  | `debian/install.sh:421`, `debian/install.sh:426`, `debian/install.sh:250`, `debian/install.sh:243`, `debian/install.sh:246`, `debian/install.sh:64`, `windows/installer.ps1:300` |
-| ORT-9310 | avert. | Configuration refusée par la version installée | non | repli_config_precedente |  | `debian/install.sh:259`, `debian/install.sh:261` |
+| ORT-9306 | erreur | Pas d'accès Internet pendant l'installation | non | refus |  | `debian/install.sh:318` |
+| ORT-9307 | erreur | Installation des paquets Debian impossible | non | refus |  | `debian/install.sh:339`, `debian/install.sh:340`, `debian/compiler-hamlib.sh:40`, `debian/compiler-hamlib.sh:42` |
+| ORT-9308 | erreur | Installation des modules Python impossible | non | refus |  | `debian/install.sh:422`, `debian/install.sh:419`, `windows/installer.ps1:298`, `windows/installer.ps1:303`, `windows/installer.ps1:305` |
+| ORT-9309 | erreur | Installation de TRX distant ou activation de la version impossible | non | refus |  | `debian/install.sh:426`, `debian/install.sh:431`, `debian/install.sh:255`, `debian/install.sh:248`, `debian/install.sh:245`, `debian/install.sh:64`, `windows/installer.ps1:307` |
+| ORT-9310 | avert. | Configuration refusée par la version installée | non | repli_config_precedente |  | `debian/install.sh:264`, `debian/install.sh:264` |
+| ORT-9311 | CRITIQUE | Empreinte d'un module Python différente : installation arrêtée | non | arreter_installation |  | `debian/install.sh:422`, `debian/install.sh:419`, `windows/installer.ps1:298`, `windows/installer.ps1:303`, `windows/installer.ps1:305` |
 | ORT-9501 | erreur | Journal Android illisible | non | refus |  | `trxstation/devtools/androidlog.py:596`, `trxstation/devtools/androidlog.py:362`, `trxstation/devtools/androidlog.py:620`, `trxstation/devtools/androidlog.py:589` |
 | ORT-9502 | avert. | Téléphone : copie ou lecture du journal impossible | non | refus |  | `trxstation/devtools/androidlog.py:650`, `trxstation/devtools/androidlog.py:546`, `trxstation/devtools/androidlog.py:554` |
 | ORT-9503 | avert. | Rapport HTML du journal Android non écrit | non | aucune |  | `trxstation/devtools/androidlog.py:604` |
-| ORT-9504 | erreur | Application Android : plantage | non | aucune | `plantage` | `trxstation/devtools/androidlog.py:299`, `trxstation/devtools/androidlog.py:311`, `trxstation/devtools/androidlog.py:322`, `trxstation/devtools/androidlog.py:134` |
-| ORT-9505 | erreur | Application Android bloquée (ANR) | non | aucune | `blocage` | `trxstation/devtools/androidlog.py:259` |
-| ORT-9506 | avert. | Application Android : installation en échec | non | aucune | `installation` | `trxstation/devtools/androidlog.py:279` |
-| ORT-9507 | avert. | Application Android arrêtée par Android | non | aucune | `arret` | `trxstation/devtools/androidlog.py:271` |
-| ORT-9508 | info | Erreurs écrites par l'application Android | non | aucune | `erreur` | `trxstation/devtools/androidlog.py:284` |
-| ORT-9701 | erreur | Module pyserial absent (spectre HF) | non | repli_mode_normal | `no_pyserial` | `trxstation/spectrum/probe.py:53`, `trxstation/spectrum/service.py:379`, `trxstation/devtools/hwtest.py:441` |
+| ORT-9504 | erreur | Application Android : plantage | non | aucune | `plantage` | *abandonné → AND-1001 (catalogue de l'application Android, AND-catalog.yaml)* |
+| ORT-9505 | erreur | Application Android bloquée (ANR) | non | aucune | `blocage` | *abandonné → AND-1002 (catalogue de l'application Android, AND-catalog.yaml)* |
+| ORT-9506 | avert. | Application Android : installation en échec | non | aucune | `installation` | *abandonné → AND-1003 (catalogue de l'application Android, AND-catalog.yaml)* |
+| ORT-9507 | avert. | Application Android arrêtée par Android | non | aucune | `arret` | *abandonné → AND-1004 (catalogue de l'application Android, AND-catalog.yaml)* |
+| ORT-9508 | info | Erreurs écrites par l'application Android | non | aucune | `erreur` | *abandonné → AND-1005 (catalogue de l'application Android, AND-catalog.yaml)* |
+| ORT-9701 | erreur | Module pyserial absent (spectre HF) | non | repli_mode_normal | `no_pyserial` | `trxstation/spectrum/probe.py:53`, `trxstation/spectrum/service.py:382`, `trxstation/devtools/hwtest.py:441` |
 | ORT-9702 | avert. | Fichier des mémoires illisible | non | repli_liste_vide |  | `trxstation/gateway/memories.py:149` |
 | ORT-9703 | info | Mémoires indisponibles sur cette station | non | refus | `memories_unavailable` | `trxstation/gateway/api/session.py:336` |
 | ORT-9704 | avert. | Fiche de qualification invalide | non | refus |  | `trxstation/qualif/main.py:67`, `trxstation/qualif/sheet.py:124`, `trxstation/qualif/sheet.py:154`, `trxstation/qualif/sheet.py:156`, `trxstation/qualif/sheet.py:114`, `trxstation/qualif/sheet.py:234` |
 | ORT-9705 | info | Paramètre d'outil hors bornes | non | refus |  | `trxstation/devtools/hwtest.py:877`, `trxstation/devtools/hwtest.py:880`, `trxstation/devtools/hwtest.py:886`, `trxstation/devtools/hwtest.py:131`, `trxstation/qualif/main.py:150`, `trxstation/qualif/main.py:153`, `trxstation/qualif/main.py:167` |
 | ORT-9706 | avert. | station.toml modifié mais invalide : comptes inchangés | non | nouvel_essai |  | `trxstation/gateway/access_watch.py:61`, `trxstation/gateway/access_watch.py:64` |
-| ORT-9707 | CRITIQUE | Bibliothèque audio absente (sounddevice / PortAudio) | non | arreter_passerelle |  | `trxstation/gateway/audio/devices.py:186`, `trxstation/gateway/main.py:319` |
+| ORT-9707 | CRITIQUE | Bibliothèque audio absente (sounddevice / PortAudio) | non | arreter_passerelle |  | `trxstation/gateway/audio/devices.py:186`, `trxstation/gateway/main.py:321` |
 | ORT-9708 | erreur | Source ou sortie audio d'essai invalide | non | arreter_passerelle |  | `trxstation/gateway/audio/devices.py:100`, `trxstation/gateway/audio/devices.py:102`, `trxstation/gateway/audio/devices.py:107`, `trxstation/gateway/audio/devices.py:148`, `trxstation/gateway/audio/devices.py:314` |
-| ORT-9709 | erreur | Modules WebRTC absents : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:244`, `trxstation/gateway/main.py:243-245` |
-| ORT-9710 | avert. | Aucun compte client : pas d'API | non | repli_reception_seule |  | `trxstation/gateway/main.py:232`, `trxstation/gateway/main.py:232`, `trxstation/config.py:869`, `trxstation/gateway/main.py:232` |
-| ORT-9711 | erreur | Exposition de l'API jugée dangereuse : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:236`, `trxstation/gateway/main.py:234-237`, `trxstation/config.py:843`, `trxstation/config.py:527`, `trxstation/gateway/main.py:236`, `trxstation/diagnostics.py:544` |
+| ORT-9709 | erreur | Modules WebRTC absents : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:246`, `trxstation/gateway/main.py:245-245` |
+| ORT-9710 | avert. | Aucun compte client : pas d'API | non | repli_reception_seule |  | `trxstation/gateway/main.py:234`, `trxstation/gateway/main.py:234`, `trxstation/config.py:876`, `trxstation/gateway/main.py:234` |
+| ORT-9711 | erreur | Exposition de l'API jugée dangereuse : API non démarrée | non | repli_reception_seule |  | `trxstation/gateway/main.py:238`, `trxstation/gateway/main.py:236-237`, `trxstation/config.py:850`, `trxstation/config.py:527`, `trxstation/gateway/main.py:238`, `trxstation/diagnostics.py:544` |
 | ORT-9712 | avert. | Fichier de réglages de la station illisible | non | repli_valeurs_par_defaut |  | `trxstation/gateway/audio/beeps.py:145`, `trxstation/gateway/voice_profiles.py:155`, `trxstation/breizh/store.py:73`, `trxstation/netprobe/store.py:119` |
 | ORT-9713 | erreur | Rapport de diagnostic impossible | non | refus |  | `trxstation/console.py:419` |
 | ORT-9714 | erreur | Commande introuvable | non | refus |  | `trxstation/console.py:156`, `trxstation/console.py:201`, `windows/installer.ps1:183` |
 | ORT-9715 | info | Option de commande inconnue ou invalide | non | refus |  | `debian/install.sh:88`, `debian/compiler-hamlib.sh:29`, `trxstation/setup_wizard.py:809`, `trxstation/setup_wizard.py:863` |
-| ORT-9716 | erreur | Import de la configuration d'un autre PC impossible | non | refus |  | `trxstation/migrate.py:135`, `debian/install.sh:447`, `debian/install.sh:449`, `debian/install.sh:445` |
+| ORT-9716 | erreur | Import de la configuration d'un autre PC impossible | non | refus |  | `trxstation/migrate.py:135`, `debian/install.sh:452`, `debian/install.sh:454`, `debian/install.sh:450` |
 | ORT-9717 | info | Indicateur de bureau indisponible | non | aucune |  | `trxstation/console.py:344`, `trxstation/console.py:347`, `trxstation/console.py:351`, `trxstation/console.py:363`, `trxstation/tray/main.py:157` |
 | ORT-9718 | info | Tests de la station indisponibles | non | refus |  | `trxstation/console.py:1689`, `trxstation/console.py:1698` |
+
+### Application Android (préfixe AND)
+
+Relevés par trx-journal-android dans les journaux des bêta-testeurs ; ORT-9504 à 9508 abandonnés à leur profit.
+
+| Code | Remplace | Titre | Origines |
+| --- | --- | --- | --- |
+| AND-1001 | ORT-9504 | Application Android : plantage | `trxstation/devtools/androidlog.py:299`, `trxstation/devtools/androidlog.py:311`, `trxstation/devtools/androidlog.py:322`, `trxstation/devtools/androidlog.py:134` |
+| AND-1002 | ORT-9505 | Application Android bloquée (ANR) | `trxstation/devtools/androidlog.py:259` |
+| AND-1003 | ORT-9506 | Application Android : installation en échec | `trxstation/devtools/androidlog.py:279` |
+| AND-1004 | ORT-9507 | Application Android arrêtée par Android | `trxstation/devtools/androidlog.py:271` |
+| AND-1005 | ORT-9508 | Erreurs écrites par l'application Android | `trxstation/devtools/androidlog.py:284` |
 
 ## Doublons regroupés (même cause = même code)
 
@@ -578,7 +584,7 @@ Gravité et action automatique : comportement ACTUEL du code. `codes machine` : 
 
 ## Questions relevées pendant l'inventaire (détail, par code)
 
-Chaque question vient de la lecture du code ; les plus importantes sont reprises dans la synthèse.
+Questions de la partie 1, tranchées par l'utilisateur le 2026-11-11 (décisions plus haut) ; gardées comme trace.
 
 - **ORT-1001** (Disque presque plein) : Le cahier écrit > 85 % ; le code alerte à disk_alert_pct = 90 % (config.py:248) ; le bargraph passe orange à 85 % (hostinfo.py:35). Une alerte par heure au plus.
 - **ORT-1002** (Mémoire de la station presque pleine) : Seuil par défaut 90 % (config.py:247) ; CLAUDE.md note qu'il est peut-être trop bas sous Windows. Une alerte par heure au plus.
@@ -733,7 +739,7 @@ Chaque question vient de la lecture du code ; les plus importantes sont reprises
 - **ORT-9001** (station.toml invalide) : Même cause que ORT-9001 (station.toml invalide) vue depuis un module : fusionner avec l'entrée de l'agent configuration ?
 - **ORT-9009** (Réglages de sécurité d'émission incohérents) : Le cahier (ORT-5001) parle d'un « timeout d'émission 3 min » ; le code a tot_s = 90 s (plafond 120 s) et tot_abs_s = 135 s. Quel texte garder dans le catalogue ?
 - **ORT-9105** (secrets.toml illisible ou mal formé) : secrets.toml sert à toute la station (secretstore) : plage 9000 plutôt que 6400 ?
-- **ORT-9308** (Installation des modules Python impossible ou empreinte différente) : Un seul message mêle panne réseau et empreinte différente (sécurité) : faut-il les séparer (le code pip ne permet pas de distinguer aujourd'hui) ?
+- **ORT-9308** (Installation des modules Python impossible) : Un seul message mêle panne réseau et empreinte différente (sécurité) : faut-il les séparer (le code pip ne permet pas de distinguer aujourd'hui) ?
 - **ORT-9501** (Journal Android illisible) : Plage à choisir pour l'application Android et ses outils (aucune plage dédiée dans le cahier) : 9000 provisoire, ou préfixe à part (ex. ORA) ?
 - **ORT-9502** (Téléphone : copie ou lecture du journal impossible) : Plage à choisir pour l'application Android et ses outils (aucune plage dédiée dans le cahier) : 9000 provisoire, ou préfixe à part (ex. ORA) ?
 - **ORT-9503** (Rapport HTML du journal Android non écrit) : Plage à choisir pour l'application Android et ses outils (aucune plage dédiée dans le cahier) : 9000 provisoire, ou préfixe à part (ex. ORA) ?
