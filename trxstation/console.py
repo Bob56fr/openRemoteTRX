@@ -173,6 +173,7 @@ def config_state_dir(config: Path) -> Path:
 
 class Runner:
     """Exécute les commandes dans le terminal de l'utilisateur ; remplacé par un faux dans les tests."""
+    t = Translator()                     # remplacé par la console (langue choisie)
 
     def __init__(self) -> None:
         self.is_root = hasattr(os, "geteuid") and os.geteuid() == 0
@@ -183,7 +184,7 @@ class Runner:
         try:
             return subprocess.call(cmd)
         except FileNotFoundError:
-            print(f"Commande introuvable : {cmd[0]}")
+            print(self.t("runner.not_found", cmd=cmd[0]))
             return 127
         except KeyboardInterrupt:
             print()
@@ -205,8 +206,7 @@ class Runner:
                 with lock:
                     if now - last[0] >= quiet_after_s:
                         last[0] = now
-                        sys.stdout.write(f"\n  ... toujours en cours ({format_duration(now - started)} écoulées) : "
-                                         "test long ou petit PC, patience.\n")
+                        sys.stdout.write("\n" + self.t("runner.still_running", duration=format_duration(now - started)) + "\n")
                         sys.stdout.flush()
         try:
             with open(log_path, "wb") as log, subprocess.Popen(
@@ -228,7 +228,7 @@ class Runner:
                 finally:
                     done.set()
         except FileNotFoundError:
-            print(f"Commande introuvable : {cmd[0]}")
+            print(self.t("runner.not_found", cmd=cmd[0]))
             return 127
         except KeyboardInterrupt:
             print()
@@ -242,6 +242,8 @@ class Runner:
 
 
 class Console:
+    t = Translator()          # français par défaut ; remplacé dans __init__ par la langue choisie
+
     def __init__(self, config: Path = CONFIG_PATH, runner: Runner | None = None,
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
                  python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
@@ -265,6 +267,13 @@ class Console:
         if lang is None:
             lang = load_lang(self.lang_file) if ask is input else "fr"
         self.t = Translator(lang)
+        self._share_language()
+
+    def _share_language(self) -> None:
+        try:
+            self.runner.t = self.t                 # messages du lanceur de commandes dans la même langue
+        except AttributeError:
+            pass
 
     @property
     def items(self) -> list[tuple[str, str, Callable[[], None]]]:
@@ -291,6 +300,14 @@ class Console:
         answer = self.ask(f"{question} ({self.t('yes.default_yes') if default else self.t('yes.default_no')}) : ").strip()
         return default if not answer else yes_no(answer) is True
 
+    def typed_word(self, answer: str, key: str, french: str, exact: bool = False) -> bool:
+        """Mot de confirmation tapé : celui de la langue choisie OU le mot français (toujours accepté).
+        `exact` : casse et accents comptent (comme avant pour EFFACER)."""
+        words = {self.t(key), french}
+        if exact:
+            return (answer or "").strip() in words
+        return any(typed(answer, w) for w in words)
+
     def station_running(self) -> bool:
         return any(self.runner.output(["systemctl", "is-active", unit]) == "active" for unit in UNITS)
 
@@ -298,14 +315,14 @@ class Console:
         """Arrête la station si elle tourne (port série et carte son doivent être libres). Vrai si arrêtée ici."""
         if not self.station_running():
             return False
-        self.say(f"La station est en marche : elle va être arrêtée pendant {why}.")
+        self.say(self.t("stop_for_exclusive_use.1", why=why))
         self.runner.run(["systemctl", "stop", TARGET], admin=True)
         return True
 
     # ------------------------------------------------------------------ actions
 
     def diagnostic(self) -> None:
-        self.say("Diagnostic en cours (lecture seule, aucune émission)...")
+        self.say(self.t("diagnostic.1"))
         self.say(format_checks(run_all(path=self.config), color=sys.stdout.isatty()))
         extras = self._diagnostic_modes()
         if extras:
@@ -323,76 +340,71 @@ class Console:
         except (OSError, cfgmod.ConfigError):
             return ""                                   # déjà signalé par le diagnostic
         b, a = cfg.breizh, cfg.access
-        breizh = "activé" if b.enabled else "désactivé"
+        breizh = self.t("diagnostic_modes.1") if b.enabled else self.t("diagnostic_modes.2")
         if b.enabled:
             status = self._gateway_status()
             live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
-            state = self.BREIZH_STATES.get(live.get("state"), live.get("state")) if live else "passerelle arrêtée"
-            breizh += f" ({b.host or 'adresse à régler'} port {b.port}) · liaison : {state}"
+            state = self.label(self.BREIZH_STATES, live.get("state"), live.get("state")) if live else self.t("diagnostic_modes.3")
+            breizh += self.t("diagnostic_modes.4", v=b.host or self.t("diagnostic_modes.5"), port=b.port, state=state)
         today = date.today()
         accounts = []
         for c in (c for c in cfg.clients if c.role == "listener"):
             label = self._account_label(c)
-            accounts.append(label + (" EXPIRÉ" if c.expired(today) else ""))
+            accounts.append(label + (self.t("diagnostic_modes.6") if c.expired(today) else ""))
         return "\n".join([
-            "\nModes de la station :",
-            f"  Breizh Audio Box : {breizh}",
-            "  Visiteurs        : " + (f"écoute OUVERTE, {a.max_listeners} au plus" if a.max_listeners
-                                       else "écoute FERMÉE (max_listeners = 0)"),
-            "  Comptes visiteurs: " + (", ".join(accounts) or "aucun"),
+            self.t("diagnostic_modes.7"),
+            self.t("diagnostic_modes.8", breizh=breizh),
+            self.t("diagnostic_modes.9") + (self.t("diagnostic_modes.10", max_listeners=a.max_listeners) if a.max_listeners
+                                       else self.t("diagnostic_modes.11")),
+            self.t("diagnostic_modes.12") + (", ".join(accounts) or self.t("diagnostic_modes.13")),
         ])
 
     def assistant(self) -> None:
-        stopped = self.stop_for_exclusive_use("l'assistant")
+        stopped = self.stop_for_exclusive_use(self.t("assistant.why"))
         cmd = self.module("trxstation.setup_wizard", "--output", str(self.config))
         imported = self.config.parent / IMPORT_NAME
         if not self.config.exists() and imported.exists():
-            self.say(f"Reprise de la configuration importée de l'ancien PC ({imported}).")
+            self.say(self.t("assistant.1", imported=imported))
             cmd += ["--base", str(imported)]
         code = self.runner.run(cmd, admin=True)
         if code != 0:
-            self.say("L'assistant n'est pas allé au bout : rien n'a été modifié.")
+            self.say(self.t("assistant.2"))
             if stopped and self.config.exists():
                 self.runner.run(["systemctl", "start", TARGET], admin=True)
             return
-        if self.yes("Démarrer la station maintenant"):
+        if self.yes(self.t("assistant.3")):
             self.start()
 
     def indicator(self) -> None:
         """Extension GNOME installée par install.sh (lecture seule) : l'activer ou la désactiver pour ce compte."""
         tool = shutil.which("gnome-extensions")
         if tool is None:
-            self.say("Bureau sans GNOME (ou outil gnome-extensions absent) : l'indicateur n'existe que pour GNOME pour l'instant.")
+            self.say(self.t("indicator.1"))
             return
         if not GNOME_EXTENSION_DIR.is_dir():
-            self.say(f"Indicateur absent ({GNOME_EXTENSION_DIR}) : installe la version 0.49.0 ou plus récente (menu 6.3).")
+            self.say(self.t("indicator.2", gnome_extension_dir=GNOME_EXTENSION_DIR))
             return
         known = GNOME_EXTENSION_UUID in self.runner.output([tool, "list"]).split()
         if not known:
-            self.say("L'indicateur est installé mais GNOME ne le connaît pas encore : déconnecte-toi puis reconnecte-toi,\n"
-                     "puis reviens dans ce menu.")
+            self.say(self.t("indicator.3"))
             return
         enabled = GNOME_EXTENSION_UUID in self.runner.output([tool, "list", "--enabled"]).split()   # sans dépendre de la langue
-        self.say("L'indicateur affiche en haut de l'écran, à gauche du son : un voyant (vert réception, rouge émission,\n"
-                 "orange alerte, gris station arrêtée, violet mode sûr), la fréquence ou le compte à rebours d'émission,\n"
-                 "et au clic l'état complet (clients, poste, spectre, Cluster DX, température, mise à jour...).\n"
-                 "Il ne fait que LIRE l'état de la station : il ne peut rien commander.\n"
-                 f"État : {'ACTIVÉ' if enabled else 'désactivé'}.")
+        self.say(self.t("indicator.4", v=self.t("indicator.5") if enabled else self.t("indicator.6")))
         if enabled:
-            if self.yes("Désactiver l'indicateur", False):
+            if self.yes(self.t("indicator.7"), False):
                 code = self.runner.run([tool, "disable", GNOME_EXTENSION_UUID])
-                self.say("Indicateur désactivé." if code == 0 else f"Échec de la désactivation (code {code}).")
-        elif self.yes("Activer l'indicateur", True):
+                self.say(self.t("indicator.8") if code == 0 else self.t("indicator.9", code=code))
+        elif self.yes(self.t("indicator.10"), True):
             code = self.runner.run([tool, "enable", GNOME_EXTENSION_UUID])
-            self.say("Indicateur activé : il apparaît en haut à droite." if code == 0 else
-                     f"Échec de l'activation (code {code}) : déconnecte-toi puis reconnecte-toi et réessaie.")
+            self.say(self.t("indicator.11") if code == 0 else
+                     self.t("indicator.12", code=code))
 
     def cluster(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("cluster.1"))
             return
         code = self.runner.run(self.module("trxstation.cluster.setup", "--config", str(self.config)), admin=True)
-        if code == 0 and self.station_running() and self.yes("Redémarrer la station pour appliquer"):
+        if code == 0 and self.station_running() and self.yes(self.t("cluster.2")):
             self.start()
 
     def monitor(self) -> None:
@@ -400,34 +412,32 @@ class Console:
 
     def hwtest(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("hwtest.1"))
             return
         from .audio_devices import desktop_audio_advice
-        self.say("Avant l'essai, vérifie le son de l'ordinateur :\n" + desktop_audio_advice() + "\n")
-        self.say("Essai sur le vrai poste :\n"
-                 "  1) en réception seule (aucune émission) : CAT, audio reçu, accord, largeurs de filtre, écran du spectre\n"
-                 "  2) complet : la même chose, puis l'émission (charge fictive, puissance réduite, confirmation à chaque étape)")
-        choice = self.ask("Choix (1, 2 ; Entrée = annuler) : ").strip()
+        self.say(self.t("hwtest.2") + desktop_audio_advice() + "\n")
+        self.say(self.t("hwtest.3"))
+        choice = self.ask(self.t("hwtest.4")).strip()
         if choice not in ("1", "2"):
-            self.say("Annulé.")
+            self.say(self.t("hwtest.5"))
             return
-        stopped = self.stop_for_exclusive_use("l'essai")
+        stopped = self.stop_for_exclusive_use(self.t("hwtest.why"))
         extra = ["--reception-seule"] if choice == "1" else []
         self.runner.run(self.module("trxstation.devtools.hwtest", "--config", str(self.config), *extra), admin=True)
-        if stopped and self.yes("Redémarrer la station"):
+        if stopped and self.yes(self.t("hwtest.6")):
             self.start()
 
     def start(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("start.1"))
             return
         code = self.runner.run(["systemctl", "restart", TARGET], admin=True)
-        self.say("Station démarrée. Diagnostic conseillé dans quelques secondes (menu 2.1)." if code == 0
-                 else "Le démarrage a échoué : voir le journal (menu 1.4).")
+        self.say(self.t("start.2") if code == 0
+                 else self.t("start.3"))
 
     def stop(self) -> None:
         code = self.runner.run(["systemctl", "stop", TARGET], admin=True)
-        self.say("Station arrêtée (le poste reste en réception)." if code == 0 else "Arrêt impossible : voir le journal (menu 1.4).")
+        self.say(self.t("stop.1") if code == 0 else self.t("stop.2"))
 
     def journal(self) -> None:
         self.runner.run(["journalctl", "--no-pager", "-n", "80", "-o", "short", *[f"--unit={u}" for u in UNITS]], admin=True)
@@ -437,14 +447,13 @@ class Console:
         try:
             path = make_report(config_path=self.config)
         except OSError as exc:
-            self.say(f"Rapport impossible : {exc}")
+            self.say(self.t("report.1", exc=exc))
             return
-        self.say(f"Rapport créé : {path}\nIl ne contient aucun mot de passe : joins-le à ta demande d'aide.")
+        self.say(self.t("report.2", path=path))
 
     def clear_safe_mode(self) -> None:
-        self.say("Le mode sûr a été déclenché par le superviseur après des pannes répétées.\n"
-                 "Vérifie d'abord la cause (menu 2.1 et menu 1.4).")
-        if not self.yes("La cause est réglée, sortir du mode sûr", False):
+        self.say(self.t("clear_safe_mode.1"))
+        if not self.yes(self.t("clear_safe_mode.2"), False):
             return
         code = self.runner.run(self.module("trxstation.supervisor.main", "--config", str(self.config),
                                            "--clear-safe-mode"), admin=True)
@@ -454,51 +463,47 @@ class Console:
     def update(self) -> None:
         state = self.update_state()
         if state is None:
-            self.say("Pas encore de recherche de mise à jour (elle a lieu 2 minutes après le démarrage de la station).")
-            if self.config.exists() and self.yes("Chercher maintenant", False):
+            self.say(self.t("update.1"))
+            if self.config.exists() and self.yes(self.t("update.2"), False):
                 state = self.search_now()
             if state is None:
                 return
         if not state.ok:
-            self.say(f"Dernière recherche impossible : {clean_text(state.error, 300, single_line=True)}")
+            self.say(self.t("update.3", clean_text=clean_text(state.error, 300, single_line=True)))
         release = self.offered(state)
         if release is None:
             checked = time.strftime("%d/%m/%Y %H:%M", time.localtime(state.checked_at)) if state.checked_at else "inconnue"
-            self.say(f"TRX distant est à jour (version {self.installed}). Dernière recherche : {checked}.")
-            if not (self.config.exists() and self.yes("Chercher à nouveau maintenant sur GitHub", False)):
+            self.say(self.t("update.4", installed=self.installed, checked=checked))
+            if not (self.config.exists() and self.yes(self.t("update.5"), False)):
                 return
             state = self.search_now()
             release = self.offered(state)
             if release is None:
-                self.say("Toujours à jour." if state is not None and state.ok else "Recherche impossible : "
-                         + clean_text(state.error if state is not None else "aucun résultat", 300, single_line=True))
+                self.say(self.t("update.6") if state is not None and state.ok else self.t("update.7")
+                         + clean_text(state.error if state is not None else self.t("update.8"), 300, single_line=True))
                 return
         changes = self.changes_of(state, release)
         published = clean_text(release.published_at, 40, single_line=True)[:10]
-        self.say(self.banner([f"NOUVELLE VERSION {release.version}{' (PRÉ-VERSION)' if release.prerelease else ''}"
-                              f" ; installée : {self.installed}",
+        self.say(self.banner([self.t("update.9", version=release.version, v=self.t("update.10") if release.prerelease else '', installed=self.installed),
                               clean_text(release.name, 120, single_line=True) + (f" ({published})" if published else "")]))
         if len(changes) > 1:
-            self.say(f"{len(changes)} versions publiées depuis la tienne : "
-                     + ", ".join(c.version for c in reversed(changes)) + " (toutes comprises dans la mise à jour).")
-        if self.yes("Voir la nature des changements avant de décider", True):
+            self.say(self.t("update.11", len=len(changes))
+                     + ", ".join(c.version for c in reversed(changes)) + self.t("update.12"))
+        if self.yes(self.t("update.13"), True):
             self.show_changes(changes)
-            self.say(f"\nNotes complètes sur GitHub : {clean_text(release.page_url, 200, single_line=True)}")
-        self.say("\nPendant l'installation (quelques minutes, Internet nécessaire), la station est arrêtée.\n"
-                 "Elle est refusée tant que le poste émet. Le paquet est vérifié (signature) avant toute installation ;\n"
-                 f"la version {self.installed}, station.toml et les certificats sont conservés (retour possible : menu 6.2).")
-        entered = self.ask(f"Pour installer, tape le numéro de version {release.version} (Entrée = non) : ").strip()
+            self.say(self.t("update.14", clean_text=clean_text(release.page_url, 200, single_line=True)))
+        self.say(self.t("update.15", installed=self.installed))
+        entered = self.ask(self.t("update.16", version=release.version)).strip()
         if entered != release.version:
-            self.say(f"Mise à jour annulée : rien n'a été modifié. Elle reste proposée par le menu {UPDATE_MENU}.")
+            self.say(self.t("update.17", update_menu=UPDATE_MENU))
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
                                            "--version", release.version), admin=True)
-        self.say(self._apply_result(code, f"Version {release.version} installée. Quitte TRX Console (q) et "
-                                          "rouvre-la pour utiliser la nouvelle version."))
+        self.say(self._apply_result(code, self.t("update.18", version=release.version)))
 
     def search_now(self) -> UpdateState | None:
         """Recherche immédiate par le service de la station (compte trx, jamais root) ; rien n'est installé."""
-        self.say("Recherche sur GitHub...")
+        self.say(self.t("search_now.1"))
         self.runner.run(["systemctl", "start", CHECK_UNIT], admin=True)
         return self.update_state()
 
@@ -515,13 +520,12 @@ class Console:
         lines: list[str] = []
         for change in changes:
             published = clean_text(change.published_at, 40, single_line=True)[:10]
-            lines += ["", f"--- Version {change.version}{' du ' + published if published else ''} : "
-                          f"{clean_text(change.name, 120, single_line=True)} ---"]
-            lines += (clean_text(change.notes, 4000) or "(aucune note)").split("\n")
+            lines += ["", self.t("show_changes.1", version=change.version, v=self.t("show_changes.2") + published if published else '', clean_text=clean_text(change.name, 120, single_line=True))]
+            lines += (clean_text(change.notes, 4000) or self.t("show_changes.3")).split("\n")
         for start in range(0, len(lines), NOTES_PAGE_LINES):
             self.say("\n".join(lines[start:start + NOTES_PAGE_LINES]))
             if start + NOTES_PAGE_LINES < len(lines):
-                if self.ask("-- Entrée : suite des notes ; q : arrêter là -- ").strip().lower() in ("q", "quitter"):
+                if self.ask(self.t("show_changes.4")).strip().lower() in ("q", "quitter"):
                     return
 
     def banner(self, lines: list[str]) -> str:
@@ -535,96 +539,86 @@ class Console:
     def rollback(self) -> None:
         previous = self.previous()
         if previous is None:
-            self.say("Aucune version précédente gardée : elle apparaît après une première mise à jour.")
+            self.say(self.t("rollback.1"))
             return
-        self.say(f"Version active : {self.installed}. Version précédente gardée : {previous}.\n"
-                 "Le retour se fait sans Internet ; la station est arrêtée pendant l'opération.")
-        if not self.yes(f"Revenir à la version {previous}", False):
+        self.say(self.t("rollback.2", installed=self.installed, previous=previous))
+        if not self.yes(self.t("rollback.3", previous=previous), False):
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "rollback"),
                                admin=True)
-        self.say(self._apply_result(code, f"Retour à la version {previous} fait. Quitte TRX Console (q) et "
-                                          "rouvre-la. La version plus récente restera proposée par le menu 6.1."))
+        self.say(self._apply_result(code, self.t("rollback.4", previous=previous)))
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
         packages = find_packages(self.home)
         if not packages:
-            self.say("Aucun paquet « trx-remote-debian-X.Y.Z.zip » sur le Bureau, dans Téléchargements ni dans le\n"
-                     f"dossier personnel ({self.home}). Copie-le à l'un de ces endroits puis recommence.")
+            self.say(self.t("install_zip.1", home=self.home))
             return
-        self.say(f"Version installée : {self.installed}\nPaquets trouvés :")
+        self.say(self.t("install_zip.2", installed=self.installed))
         for number, (version, path) in enumerate(packages, 1):
             signed = path.with_name(path.name + ".sig").is_file()
-            self.say(f"  {number}) {version:<10} {'signé' if signed else 'NON signé'}   {path}")
-        choice = self.ask("Numéro du paquet à installer (Entrée = annuler) : ").strip()
+            self.say(f"  {number}) {version:<10} {self.t('install_zip.3') if signed else self.t('install_zip.4')}   {path}")
+        choice = self.ask(self.t("install_zip.5")).strip()
         if not choice.isdigit() or not 1 <= int(choice) <= len(packages):
-            self.say("Annulé : rien n'a été modifié.")
+            self.say(self.t("install_zip.6"))
             return
         version, path = packages[int(choice) - 1]
         signed = path.with_name(path.name + ".sig").is_file()
         newer, current = parse_version(version) or (), parse_version(self.installed) or ()
         if newer < current:
-            self.say(f"ATTENTION : {version} est plus ANCIENNE que la version installée ({self.installed}).\n"
-                     "Pour revenir simplement à la version précédente, le menu 6.2 suffit.")
+            self.say(self.t("install_zip.7", version=version, installed=self.installed))
         elif newer == current:
-            self.say(f"La version {version} est déjà installée : elle sera réinstallée.")
-        self.say("\nPendant l'installation (quelques minutes, Internet nécessaire pour les modules Python), la station\n"
-                 "est arrêtée. Elle est refusée tant que le poste émet ; le contenu du paquet est contrôlé avant\n"
-                 f"toute installation ; la version {self.installed}, station.toml et les certificats sont conservés.")
+            self.say(self.t("install_zip.8", version=version))
+        self.say(self.t("install_zip.9", installed=self.installed))
         extra: list[str] = []
         if not signed:
-            self.say("\nCe paquet n'est PAS SIGNÉ : rien ne garantit qu'il vient de l'équipe TRX distant. Installe-le\n"
-                     "seulement si tu l'as toi-même copié depuis une source sûre (ton PC, ta clé USB).")
-            if not typed(self.ask("Tape OUI pour accepter un paquet non signé (Entrée = non) : "), "OUI"):
-                self.say("Annulé : rien n'a été modifié.")
+            self.say(self.t("install_zip.10"))
+            if not self.typed_word(self.ask(self.t("install_zip.type_word", word=self.t("word.yes"))), "word.yes", "OUI"):
+                self.say(self.t("install_zip.11"))
                 return
             extra = ["--sans-signature"]
-        entered = self.ask(f"Pour installer, tape le numéro de version {version} (Entrée = non) : ").strip()
+        entered = self.ask(self.t("install_zip.12", version=version)).strip()
         if entered != version:
-            self.say("Annulé : rien n'a été modifié.")
+            self.say(self.t("install_zip.13"))
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "local",
                                            "--zip", str(path), *extra), admin=True)
-        self.say(self._apply_result(code, f"Version {version} installée. Quitte TRX Console (q) et "
-                                          "rouvre-la pour utiliser la nouvelle version."))
+        self.say(self._apply_result(code, self.t("install_zip.14", version=version)))
 
     def edit_config(self) -> None:
         """station.toml modifiée sur une COPIE (nano), validée, différences montrées, puis enregistrée par sudo
         avec ses droits d'origine ; l'ancienne version est gardée à côté. Une configuration invalide n'est jamais écrite."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("edit_config.1"))
             return
         try:
             original = self.config.read_bytes()
         except OSError as exc:
-            self.say(f"Lecture de {self.config} impossible ({exc}).\nSi tu viens d'être ajouté au groupe « trx », "
-                     "ferme ta session puis rouvre-la.")
+            self.say(self.t("edit_config.2", config=self.config, exc=exc))
             return
         if not self.editor:
-            self.say("Aucun éditeur de texte trouvé : installe nano (sudo apt install nano).")
+            self.say(self.t("edit_config.3"))
             return
         work = Path(tempfile.mkdtemp(prefix="trx-config-"))
         draft = work / "station.toml"
         try:
             draft.write_bytes(original)
             os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
-            self.say(f"Modification de {self.config} (sur une copie : rien n'est changé avant ta confirmation).\n"
-                     "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter.")
+            self.say(self.t("edit_config.4", config=self.config))
             while True:
                 self.runner.run([self.editor, str(draft)])
                 edited = draft.read_bytes()
                 if edited == original:
-                    self.say("Aucune modification : station.toml n'a pas été changé.")
+                    self.say(self.t("edit_config.5"))
                     return
                 try:
                     cfgmod.load(draft)
                     break
                 except cfgmod.ConfigError as exc:
-                    self.say("Configuration REFUSÉE (la station ne démarrerait pas) :\n  - " + "\n  - ".join(exc.problems))
-                    if not self.yes("Reprendre la modification", True):
-                        self.say("Abandon : station.toml n'a pas été changé.")
+                    self.say(self.t("edit_config.6") + "\n  - ".join(exc.problems))
+                    if not self.yes(self.t("edit_config.7"), True):
+                        self.say(self.t("edit_config.8"))
                         return
             self._save_config(original, edited, draft)
         finally:
@@ -638,7 +632,7 @@ class Console:
         from . import config as cfgmod
         from .setup_wizard import show_pairing
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("pairing.1"))
             return
         try:
             cfg, _ = cfgmod.load_unchecked(self.config)
@@ -646,18 +640,15 @@ class Console:
         except PermissionError:                            # certificat réservé à la station : relu avec les droits d'administration
             self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--empreinte"), admin=True)
         except (OSError, ValueError, cfgmod.ConfigError) as exc:
-            self.say(f"Lecture impossible ({exc}).")
+            self.say(self.t("pairing.2", exc=exc))
 
     def profiles(self) -> None:
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("profiles.1"))
             return
         self._list_profiles()
-        self.say("\n  1) Enregistrer la configuration actuelle du poste sous un profil\n"
-                 "  2) Charger un profil (changer de poste)\n"
-                 "  3) Supprimer un profil\n"
-                 "  q) Retour")
-        choice = self.ask("Choix : ").strip().lower()
+        self.say(self.t("profiles.2"))
+        choice = self.ask(self.t("profiles.3")).strip().lower()
         action = {"1": self._save_profile, "2": self._load_profile, "3": self._delete_profile}.get(choice)
         if action is not None:
             action()
@@ -665,39 +656,37 @@ class Console:
     def _list_profiles(self) -> list[tuple[Path, prof.Profile | None, str]]:
         from . import config as cfgmod
         found = prof.list_profiles(self.config)
-        self.say("Un profil garde ce qui dépend du POSTE : modèle, ports, PTT, cartes son, spectre. Les comptes, le réseau,\n"
-                 "les bandes autorisées et les sécurités appartiennent à la station : un profil n'y touche jamais.")
+        self.say(self.t("list_profiles.1"))
         if not found:
-            self.say("\nAucun profil enregistré.")
+            self.say(self.t("list_profiles.2"))
             return found
         try:
             current, _ = cfgmod.load_unchecked(self.config)
         except (OSError, cfgmod.ConfigError):
             current = None
-        self.say("\nProfils enregistrés :")
+        self.say(self.t("list_profiles.3"))
         for number, (path, profile, problem) in enumerate(found, 1):
             if profile is None:
-                self.say(f"  {number}) {path.name:<28} INUTILISABLE : {problem}")
+                self.say(self.t("list_profiles.4", number=number, name=path.name, problem=problem))
                 continue
             if profile.format > prof.PROFILE_FORMAT:
-                state = "version plus récente : mettre TRX distant à jour"
+                state = self.t("list_profiles.5")
             elif profile.format < prof.PROFILE_FORMAT:
-                state = "ancien format : converti au chargement"
+                state = self.t("list_profiles.6")
             else:
                 state = ""
             rig = profile.sections.get("rig")
             model = rig.get("model", "?") if isinstance(rig, dict) else "?"
-            here = "  <- poste en service" if current is not None and prof.same_rig(current, profile) else ""
-            self.say(f"  {number}) {profile.name:<28} modèle Hamlib {model}, enregistré le {profile.saved_at} "
-                     f"(version {profile.version}){' ; ' + state if state else ''}{here}")
+            here = self.t("list_profiles.7") if current is not None and prof.same_rig(current, profile) else ""
+            self.say(self.t("list_profiles.8", number=number, name=profile.name, model=model, saved_at=profile.saved_at, version=profile.version, v=' ; ' + state if state else '', here=here))
         return found
 
     def _choose_profile(self, found, verb: str):
         if not found:
             return None
-        choice = self.ask(f"Numéro du profil à {verb} (Entrée = annuler) : ").strip()
+        choice = self.ask(self.t("choose_profile.1", verb=verb)).strip()
         if not choice.isdigit() or not 1 <= int(choice) <= len(found):
-            self.say("Annulé.")
+            self.say(self.t("choose_profile.2"))
             return None
         return found[int(choice) - 1]
 
@@ -706,18 +695,18 @@ class Console:
         try:
             cfg = cfgmod.load(self.config)
         except (OSError, cfgmod.ConfigError) as exc:
-            self.say(f"Configuration actuelle invalide ou illisible : corrige-la d'abord (menu 3.2). ({exc})")
+            self.say(self.t("save_profile.1", exc=exc))
             return
-        name = self.ask("Nom du profil (ex. IC-7300 maison ; Entrée = annuler) : ").strip()
+        name = self.ask(self.t("save_profile.2")).strip()
         if not name:
-            self.say("Annulé.")
+            self.say(self.t("save_profile.3"))
             return
         if not prof.valid_name(name):
-            self.say("Nom refusé : 40 caractères au plus, lettres, chiffres, espaces et - _ . + seulement.")
+            self.say(self.t("save_profile.4"))
             return
         target = prof.folder_for(self.config) / prof.file_name(name)
-        if target.exists() and not self.yes(f"Le profil {target.name} existe déjà : le remplacer", False):
-            self.say("Annulé : rien n'a été modifié.")
+        if target.exists() and not self.yes(self.t("save_profile.5", name=target.name), False):
+            self.say(self.t("save_profile.6"))
             return
         text = prof.render(name, cfg, self.installed, time.strftime("%Y-%m-%d %H:%M"))
         work = Path(tempfile.mkdtemp(prefix="trx-profil-"))
@@ -729,61 +718,59 @@ class Console:
                                     "-g", str(st.st_gid), str(draft), str(target)], admin=True)
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        self.say(f"Profil « {name} » enregistré : {target}" if code == 0 else
-                 f"Enregistrement impossible (code {code}) : rien n'a été modifié.")
+        self.say(self.t("save_profile.7", name=name, target=target) if code == 0 else
+                 self.t("save_profile.8", code=code))
 
     def _load_profile(self) -> None:
-        picked = self._choose_profile(self._list_profiles(), "charger")
+        picked = self._choose_profile(self._list_profiles(), self.t("verb.load"))
         if picked is None:
             return
         path, profile, problem = picked
         if profile is None:
-            self.say(f"Profil inutilisable : {problem}")
+            self.say(self.t("load_profile.1", problem=problem))
             return
         if self.transmitting():
-            self.say("Refusé : le poste émet (ou son état est illisible). Charge le profil une fois revenu en réception.")
+            self.say(self.t("load_profile.2"))
             return
         try:
             original = self.config.read_bytes()
             _, text = prof.apply(original.decode("utf-8"), profile)
         except prof.ProfileError as exc:
-            self.say(f"Chargement impossible : {exc}")
+            self.say(self.t("load_profile.3", exc=exc))
             return
         except OSError as exc:
-            self.say(f"Lecture de {self.config} impossible ({exc}).")
+            self.say(self.t("load_profile.4", config=self.config, exc=exc))
             return
         if profile.format < prof.PROFILE_FORMAT:
-            self.say(f"Profil d'un ancien format ({profile.format}) converti au format {prof.PROFILE_FORMAT}. Vérifie les "
-                     "changements ci-dessous ; réenregistre-le ensuite (choix 1) pour ne plus avoir à le convertir.")
+            self.say(self.t("load_profile.5", format=profile.format, profile_format=prof.PROFILE_FORMAT))
         rig = profile.sections.get("rig")
         port = str(rig.get("port", "")) if isinstance(rig, dict) else ""
         if port and not Path(port).exists():
-            self.say(f"Attention : le port du poste {port} est absent pour l'instant (poste éteint ou pas encore branché ?).")
+            self.say(self.t("load_profile.6", port=port))
         edited = text.encode("utf-8")
         if edited == original:
-            self.say("Ce profil est déjà celui du poste en service : rien à changer.")
+            self.say(self.t("load_profile.7"))
             return
         work = Path(tempfile.mkdtemp(prefix="trx-config-"))
         try:
             draft = work / "station.toml"
             draft.write_bytes(edited)
             os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
-            self.say(f"Chargement du profil « {profile.name} » : seules les sections [rig], [audio] et [spectrum] changent "
-                     "(station.toml est réécrit dans sa forme standard).")
+            self.say(self.t("load_profile.8", name=profile.name))
             self._save_config(original, edited, draft)
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
     def _delete_profile(self) -> None:
-        picked = self._choose_profile(self._list_profiles(), "supprimer")
+        picked = self._choose_profile(self._list_profiles(), self.t("verb.delete"))
         if picked is None:
             return
         path, profile, _ = picked
-        if not self.yes(f"Supprimer définitivement le profil {profile.name if profile else path.name}", False):
-            self.say("Annulé.")
+        if not self.yes(self.t("delete_profile.1", v=profile.name if profile else path.name), False):
+            self.say(self.t("delete_profile.2"))
             return
         code = self.runner.run(["rm", "-f", str(path)], admin=True)
-        self.say("Profil supprimé." if code == 0 else f"Suppression impossible (code {code}).")
+        self.say(self.t("delete_profile.3") if code == 0 else self.t("delete_profile.4", code=code))
 
     def transmitting(self) -> bool:
         """Émission en cours d'après l'état publié par la passerelle ; en cas de doute (état illisible), oui."""
@@ -807,33 +794,32 @@ class Console:
         after = edited.decode("utf-8", "replace").splitlines()
         diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
                 if not line.startswith(("---", "+++", "@@"))]
-        self.say("Changements :\n" + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
-                 + (f"\n  ... ({len(diff) - MAX_DIFF_LINES} lignes de plus)" if len(diff) > MAX_DIFF_LINES else ""))
-        if not self.yes("Enregistrer ces changements", False):
-            self.say("Abandon : station.toml n'a pas été changé.")
+        self.say(self.t("save_config.1") + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
+                 + (self.t("save_config.2", v=len(diff) - MAX_DIFF_LINES) if len(diff) > MAX_DIFF_LINES else ""))
+        if not self.yes(self.t("save_config.3"), False):
+            self.say(self.t("save_config.4"))
             return False
         if self.config.read_bytes() != original:
-            self.say("station.toml a été modifié par ailleurs pendant ce temps : abandon, recommence.")
+            self.say(self.t("save_config.5"))
             return False
         st = self.config.stat()
         backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
         if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
-            self.say("Copie de sauvegarde impossible : station.toml n'a pas été changé.")
+            self.say(self.t("save_config.6"))
             return False
         code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
                                 str(draft), str(self.config)], admin=True)
         if code != 0:
-            self.say(f"Enregistrement impossible (code {code}) : station.toml n'a pas été changé.")
+            self.say(self.t("save_config.7", code=code))
             return False
-        self.say(f"Enregistré. Ancienne version gardée : {backup}")
+        self.say(self.t("save_config.8", backup=backup))
         if live:
-            self.say("La station prend ces changements en compte d'elle-même en quelques secondes (sans redémarrer) ; "
-                     "un compte désactivé ou supprimé est déconnecté aussitôt.")
+            self.say(self.t("save_config.9"))
         elif self.station_running():
-            if self.yes("Redémarrer la station pour appliquer"):
+            if self.yes(self.t("save_config.10")):
                 self.start()
         else:
-            self.say("Les changements s'appliqueront au prochain démarrage de la station (menu 1.1).")
+            self.say(self.t("save_config.11"))
         return True
 
     # ------------------------------------------------------------------ visiteurs (menu 4.2)
@@ -845,30 +831,29 @@ class Console:
         from .swr.store import SwrStore
         last = SwrStore(config_state_dir(self.config) / "swr.json").last()
         if not last or not last.get("points"):
-            self.say("Aucune mesure de TOS rangée sur cette station. Elle se lance depuis la page ou l'application "
-                     "(rubrique « Mesure de TOS »), jamais depuis la console.")
+            self.say(self.t("swr_report.1"))
             return
         when = time.strftime("%d/%m/%Y %H:%M", time.localtime(last.get("at") or 0))
         power = f"{last['power_w']} W" if last.get("power_w") else f"{last.get('power_pct')} %"
-        out = [f"\nDernière mesure de TOS : {when}, {power} en {last.get('fm_mode')}",
-               f"  de {last['low_hz'] / 1e6:.3f} à {last['high_hz'] / 1e6:.3f} MHz, pas de {last['step_hz'] // 1000} kHz", ""]
-        marks = {"good": "", "fair": "  (moyen)", "bad": "  ÉLEVÉ"}
+        out = [self.t("swr_report.2", when=when, power=power, get=last.get('fm_mode')),
+               self.t("swr_report.3", v=last['low_hz'] / 1e6, v2=last['high_hz'] / 1e6, v3=last['step_hz'] // 1000), ""]
+        marks = {"good": "", "fair": self.t("swr_report.fair"), "bad": self.t("swr_report.4")}
         for p in last["points"]:
             swr = p.get("swr")
             if swr is None:
-                text = {"out_of_band": "hors bande", "unread": "non lu"}.get(p.get("status"), p.get("status") or "—")
+                text = {"out_of_band": self.t("swr_report.5"), "unread": self.t("swr_report.6")}.get(p.get("status"), p.get("status") or "—")
                 out.append(f"  {p['hz'] / 1e6:9.3f} MHz   {text}")
             else:
                 bar = "#" * max(1, min(40, round((min(swr, 5.0) - 1) * 10)))
                 out.append(f"  {p['hz'] / 1e6:9.3f} MHz   {swr:4.2f}  {bar}{marks[level(swr)]}"
-                           + ("  (puissance réduite par le poste)" if p.get("status") == "reduced" else ""))
+                           + (self.t("swr_report.7") if p.get("status") == "reduced" else ""))
         best = last.get("best")
         if best:
-            out.append(f"\n  Meilleur TOS : {best['swr']:.2f} à {best['hz'] / 1e6:.3f} MHz")
+            out.append(self.t("swr_report.8", swr=best['swr'], v=best['hz'] / 1e6))
         if last.get("reason") and last["reason"] != "done":
-            out.append(f"  Mesure interrompue : {last.get('detail') or last['reason']}")
+            out.append(self.t("swr_report.9", v=last.get('detail') or last['reason']))
         for diff in last.get("differences") or []:
-            out.append(f"  À CORRIGER À LA MAIN : {diff}")
+            out.append(self.t("swr_report.10", diff=diff))
         self.say("\n".join(out))
 
     def visitors(self) -> None:
@@ -877,24 +862,17 @@ class Console:
         (réécrit dans sa forme standard) ; la passerelle le relit sans redémarrer."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("visitors.1"))
             return
         while True:
             try:
                 original = self.config.read_bytes()
                 cfg, _ = cfgmod.load_unchecked(self.config)
             except (OSError, cfgmod.ConfigError) as exc:
-                self.say(f"Lecture de {self.config} impossible ({exc}).")
+                self.say(self.t("visitors.2", config=self.config, exc=exc))
                 return
             self.say(self._visitors_summary(cfg))
-            choice = self.ask("\n  1) Réglages (nombre maximal, opérateur requis, attente, hors bandes)\n"
-                              "  2) Créer un compte visiteur\n"
-                              "  3) Modifier un compte visiteur (pseudo, mot de passe, activé, expiration)\n"
-                              "  4) Supprimer un compte visiteur\n"
-                              "  5) Pseudo d'un compte opérateur (montré aux visiteurs)\n"
-                              "  6) Déconnecter un visiteur connecté\n"
-                              "  7) Rouvrir l'écoute suspendue par une surcharge de la station\n"
-                              "Choix (Entrée = retour) : ").strip()
+            choice = self.ask(self.t("visitors.3")).strip()
             if not choice:
                 return
             actions = {"1": self._visitor_settings, "2": self._visitor_create, "3": self._visitor_edit,
@@ -907,7 +885,7 @@ class Console:
                 continue
             action = actions.get(choice)
             if action is None:
-                self.say("Choix inconnu.")
+                self.say(self.t("visitors.4"))
                 continue
             if action(cfg):
                 self._save_accounts(original, cfg)
@@ -915,29 +893,28 @@ class Console:
     def _visitors_summary(self, cfg) -> str:
         a = cfg.access
         listeners = [c for c in cfg.clients if c.role == "listener"]
-        lines = ["\nVisiteurs en réception seule : ils écoutent et voient l'écran, sans AUCUNE commande vers le poste.",
-                 f"  Écoute des visiteurs : {'ouverte, ' + str(a.max_listeners) + ' au plus' if a.max_listeners else 'FERMÉE (0)'}",
-                 "  Opérateur requis     : " + (f"oui (visiteurs déconnectés {a.operator_grace_s} s après sa perte)"
-                                                if a.listeners_need_operator else "non (écoute possible sans opérateur)"),
-                 "  Hors bandes          : " + ("écoute permise" if a.listeners_outside_bands else "silence pour les visiteurs"),
-                 "  Comptes visiteurs    : " + (", ".join(self._account_label(c) for c in listeners) or "aucun")]
+        lines = [self.t("visitors_summary.1"),
+                 self.t("visitors_summary.2", v=self.t("visitors_summary.3") + str(a.max_listeners) + self.t("visitors_summary.4") if a.max_listeners else self.t("visitors_summary.5")),
+                 self.t("visitors_summary.6") + (self.t("visitors_summary.7", operator_grace_s=a.operator_grace_s)
+                                                if a.listeners_need_operator else self.t("visitors_summary.8")),
+                 self.t("visitors_summary.9") + (self.t("visitors_summary.10") if a.listeners_outside_bands else self.t("visitors_summary.11")),
+                 self.t("visitors_summary.12") + (", ".join(self._account_label(c) for c in listeners) or self.t("visitors_summary.13"))]
         presence = self._presence()
         if isinstance(presence.get("open"), bool):        # commutateur de l'opérateur (page, application)
-            lines.append("  Commutateur opérateur: " + ("ÉCOUTE OUVERTE" if presence["open"] else
-                                                       "écoute fermée (l'opérateur l'ouvre depuis la page ou l'application)"))
+            lines.append(self.t("visitors_summary.14") + (self.t("visitors_summary.15") if presence["open"] else
+                                                       self.t("visitors_summary.16")))
         suspended = presence.get("suspended")
         if isinstance(suspended, dict):
-            lines.append("  ÉCOUTE SUSPENDUE     : " + str(suspended.get("message", ""))[:300])
+            lines.append(self.t("visitors_summary.17") + str(suspended.get("message", ""))[:300])
         connected = [c for c in self._connected() if c.get("role") == "listener"]
-        lines.append("  Connectés maintenant : " + (", ".join(
-            f"{c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')}, {int(c.get('since_s', 0)) // 60} min)"
-            for c in connected) or "aucun visiteur"))
+        lines.append(self.t("visitors_summary.18") + (", ".join(
+            self.t("visitors_summary.19", get=c.get('pseudo', '?'), get2=c.get('id', '?'), get3=c.get('source', '?'), v=int(c.get('since_s', 0)) // 60)
+            for c in connected) or self.t("visitors_summary.20")))
         return "\n".join(lines)
 
-    @staticmethod
-    def _account_label(c) -> str:
-        notes = [n for n in ("désactivé" if not c.enabled else "", f"jusqu'au {c.expires}" if c.expires else "") if n]
-        return f"{c.id} « {c.pseudo or 'sans pseudo'} »" + (f" ({', '.join(notes)})" if notes else "")
+    def _account_label(self, c) -> str:
+        notes = [n for n in (self.t("account_label.1") if not c.enabled else "", self.t("account_label.until", expires=c.expires) if c.expires else "") if n]
+        return f"{c.id} « {c.pseudo or self.t('account_label.2')} »" + (f" ({', '.join(notes)})" if notes else "")
 
     def _connected(self) -> list[dict]:
         """Connexions publiées par la passerelle (fichier d'état) ; [] si elle est arrêtée."""
@@ -964,36 +941,34 @@ class Console:
 
     def _ask_int(self, question: str, current: int, low: int, high: int) -> int:
         while True:
-            answer = self.ask(f"{question} ({low} à {high}, Entrée = {current}) : ").strip()
+            answer = self.ask(self.t("ask_int.1", question=question, low=low, high=high, current=current)).strip()
             if not answer:
                 return current
             if re.fullmatch(r"\d{1,5}", answer) and low <= int(answer) <= high:
                 return int(answer)
-            self.say(f"Un nombre entier de {low} à {high}.")
+            self.say(self.t("ask_int.2", low=low, high=high))
 
     def _ask_yes(self, question: str, current: bool) -> bool:
         while True:
-            answer = self.ask(f"{question} (o/n, Entrée = {'oui' if current else 'non'}) : ").strip()
+            answer = self.ask(self.t("ask_yes.1", question=question, v=self.t("ask_yes.2") if current else self.t("ask_yes.3"))).strip()
             if not answer:
                 return current
             value = yes_no(answer)
             if value is not None:
                 return value
-            self.say("Réponds par oui ou non.")
+            self.say(self.t("ask_yes.4"))
 
     def _visitor_settings(self, cfg) -> bool:
         a = cfg.access
         before = (a.max_listeners, a.listeners_need_operator, a.operator_grace_s, a.listeners_outside_bands,
                   a.listener_spectrum_fps)
-        a.max_listeners = self._ask_int("Visiteurs connectés en même temps au plus (0 = écoute fermée)", a.max_listeners, 0, 20)
-        a.listeners_need_operator = self._ask_yes("Visiteurs admis SEULEMENT si un opérateur est connecté",
+        a.max_listeners = self._ask_int(self.t("visitor_settings.1"), a.max_listeners, 0, 20)
+        a.listeners_need_operator = self._ask_yes(self.t("visitor_settings.2"),
                                                   a.listeners_need_operator)
         if a.listeners_need_operator:
-            a.operator_grace_s = self._ask_int("Attente après la perte de l'opérateur avant de déconnecter les visiteurs, "
-                                               "en secondes", a.operator_grace_s, 0, 600)
-        a.listeners_outside_bands = self._ask_yes("Laisser les visiteurs écouter HORS des bandes de la station "
-                                                  "(sous ta responsabilité)", a.listeners_outside_bands)
-        a.listener_spectrum_fps = self._ask_int("Spectre HF des visiteurs : images par seconde au plus",
+            a.operator_grace_s = self._ask_int(self.t("visitor_settings.3"), a.operator_grace_s, 0, 600)
+        a.listeners_outside_bands = self._ask_yes(self.t("visitor_settings.4"), a.listeners_outside_bands)
+        a.listener_spectrum_fps = self._ask_int(self.t("visitor_settings.5"),
                                                 a.listener_spectrum_fps, 1, 20)
         return before != (a.max_listeners, a.listeners_need_operator, a.operator_grace_s, a.listeners_outside_bands,
                           a.listener_spectrum_fps)
@@ -1002,38 +977,38 @@ class Console:
         """Pseudo montré aux autres connectés ; None = abandon."""
         from .config import PSEUDO_MAX
         while True:
-            answer = self.ask(f"Pseudo montré aux autres connectés ({PSEUDO_MAX} caractères au plus"
-                              + (f", Entrée = {current}" if current else ", Entrée = aucun") + ", - = abandon) : ").strip()
+            answer = self.ask(self.t("ask_pseudo.1", pseudo_max=PSEUDO_MAX)
+                              + (self.t("ask_pseudo.2", current=current) if current else self.t("ask_pseudo.3")) + self.t("ask_pseudo.4")).strip()
             if answer == "-":
                 return None
             if not answer:
                 return current
             if len(answer) > PSEUDO_MAX or any(ord(ch) < 32 for ch in answer):
-                self.say(f"{PSEUDO_MAX} caractères au plus, sans caractère spécial.")
+                self.say(self.t("ask_pseudo.5", pseudo_max=PSEUDO_MAX))
             elif any(answer.casefold() == c.id.casefold() for c in cfg.clients):
-                self.say("C'est l'identifiant d'un compte : il serait montré aux autres connectés. Choisis un autre pseudo.")
+                self.say(self.t("ask_pseudo.6"))
             else:
                 return answer
 
     def _ask_new_password(self, login: str) -> str | None:
         from .passwords import generate_password, password_problem
         while True:
-            answer = self.ask("Mot de passe (Entrée = en générer un fort, - = abandon) : ").strip()
+            answer = self.ask(self.t("ask_new_password.1")).strip()
             if answer == "-":
                 return None
             if not answer:
                 answer = generate_password()
-                self.say(f"Mot de passe : {answer}\nTransmets-le au visiteur maintenant : la station ne le garde pas en clair.")
+                self.say(self.t("ask_new_password.2", answer=answer))
                 return answer
             problem = password_problem(answer, login)
             if problem is None:
                 return answer
-            self.say(f"Refusé : {problem}.")
+            self.say(self.t("ask_new_password.3", problem=problem))
 
     def _ask_expiry(self, current: str) -> str | None:
         from datetime import date
         while True:
-            answer = self.ask("Date de fin AAAA-MM-JJ (Entrée = " + (current or "jamais") + ", 0 = jamais, - = abandon) : ").strip()
+            answer = self.ask(self.t("ask_expiry.1") + (current or self.t("ask_expiry.never")) + self.t("ask_expiry.2")).strip()
             if answer == "-":
                 return None
             if not answer:
@@ -1046,16 +1021,16 @@ class Console:
                     return answer
             except ValueError:
                 pass
-            self.say("Une date comme 2026-12-31.")
+            self.say(self.t("ask_expiry.3"))
 
     def _pick_account(self, cfg, role: str, verb: str):
         accounts = [c for c in cfg.clients if c.role == role]
         if not accounts:
-            self.say("Aucun compte " + ("visiteur." if role == "listener" else "opérateur."))
+            self.say(self.t("pick_account.1") + (self.t("pick_account.visitor") if role == "listener" else self.t("pick_account.2")))
             return None
         for i, c in enumerate(accounts, 1):
             self.say(f"  {i}) {self._account_label(c)}")
-        answer = self.ask(f"Numéro du compte à {verb} (Entrée = annuler) : ").strip()
+        answer = self.ask(self.t("pick_account.3", verb=verb)).strip()
         if answer.isdigit() and 1 <= int(answer) <= len(accounts):
             return accounts[int(answer) - 1]
         return None
@@ -1063,11 +1038,11 @@ class Console:
     def _visitor_create(self, cfg) -> bool:
         from .config import ClientAuth
         from .passwords import hash_password
-        login = self.ask("Identifiant de connexion du visiteur (lettres, chiffres, _ et -, Entrée = annuler) : ").strip()
+        login = self.ask(self.t("visitor_create.1")).strip()
         if not login:
             return False
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id == login for c in cfg.clients):
-            self.say("Identifiant invalide ou déjà utilisé.")
+            self.say(self.t("visitor_create.2"))
             return False
         pseudo = self._ask_pseudo(cfg)
         expires = None if pseudo is None else self._ask_expiry("")
@@ -1075,29 +1050,29 @@ class Console:
         if password is None:
             return False
         if pseudo and pseudo.casefold() == login.casefold():
-            self.say("Le pseudo ne peut pas être l'identifiant : il serait montré aux autres connectés.")
+            self.say(self.t("visitor_create.3"))
             return False
         cfg.clients.append(ClientAuth(id=login, password_hash=hash_password(password), role="listener", pseudo=pseudo,
                                       expires=expires))
         if not cfg.access.max_listeners:
-            self.say("Attention : l'écoute des visiteurs est FERMÉE (nombre maximal 0) : ouvre-la par le choix 1.")
+            self.say(self.t("visitor_create.4"))
         return True
 
     def _visitor_edit(self, cfg) -> bool:
         from .passwords import hash_password
-        account = self._pick_account(cfg, "listener", "modifier")
+        account = self._pick_account(cfg, "listener", self.t("verb.edit"))
         if account is None:
             return False
         pseudo = self._ask_pseudo(cfg, account.pseudo)
         if pseudo is None:
             return False
-        enabled = self._ask_yes("Compte activé", account.enabled)
+        enabled = self._ask_yes(self.t("visitor_edit.1"), account.enabled)
         expires = self._ask_expiry(account.expires)
         if expires is None:
             return False
         changed = (pseudo, enabled, expires) != (account.pseudo, account.enabled, account.expires)
         account.pseudo, account.enabled, account.expires = pseudo, enabled, expires
-        if self.yes("Lui donner un nouveau mot de passe", False):
+        if self.yes(self.t("visitor_edit.2"), False):
             password = self._ask_new_password(account.id)
             if password is None:
                 return False
@@ -1105,14 +1080,14 @@ class Console:
         return changed
 
     def _visitor_delete(self, cfg) -> bool:
-        account = self._pick_account(cfg, "listener", "supprimer")
-        if account is None or not self.yes(f"Supprimer le compte {account.id}", False):
+        account = self._pick_account(cfg, "listener", self.t("verb.delete"))
+        if account is None or not self.yes(self.t("visitor_delete.1", id=account.id), False):
             return False
         cfg.clients.remove(account)
         return True
 
     def _operator_pseudo(self, cfg) -> bool:
-        account = self._pick_account(cfg, "operator", "nommer")
+        account = self._pick_account(cfg, "operator", self.t("verb.name"))
         if account is None:
             return False
         pseudo = self._ask_pseudo(cfg, account.pseudo)
@@ -1126,7 +1101,7 @@ class Console:
         from . import config as cfgmod
         edited = cfgmod.render_toml(cfg).encode("utf-8")
         if edited == original:
-            self.say("Aucune modification : station.toml n'a pas été changé.")
+            self.say(self.t("save_accounts.1"))
             return
         work = Path(tempfile.mkdtemp(prefix="trx-config-"))
         try:
@@ -1136,9 +1111,9 @@ class Console:
             try:
                 cfgmod.load(draft)
             except cfgmod.ConfigError as exc:
-                self.say("Changement REFUSÉ :\n  - " + "\n  - ".join(exc.problems))
+                self.say(self.t("save_accounts.2") + "\n  - ".join(exc.problems))
                 return
-            self.say("(station.toml est réécrit dans sa forme standard.)")
+            self.say(self.t("save_accounts.3"))
             self._save_config(original, edited, draft, live=live)
         finally:
             shutil.rmtree(work, ignore_errors=True)
@@ -1147,7 +1122,7 @@ class Console:
         """Demande à la station de rouvrir l'écoute (elle refuse tant qu'elle n'est pas nettement revenue à la normale)."""
         from .gateway.access_watch import REOPEN_REQUEST, kick_request
         if not isinstance(self._presence().get("suspended"), dict):
-            self.say("L'écoute des visiteurs n'est pas suspendue.")
+            self.say(self.t("visitor_reopen.1"))
             return
         work = Path(tempfile.mkdtemp(prefix="trx-reopen-"))
         try:
@@ -1157,22 +1132,21 @@ class Console:
                                     str(Path(cfg.supervisor.state_dir) / REOPEN_REQUEST)], admin=True)
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        self.say("Demande envoyée : la station rouvre l'écoute si elle est revenue nettement sous les seuils "
-                 "(sinon elle refuse : voir le journal, menu 1.4)." if code == 0 else f"Demande impossible (code {code}).")
+        self.say(self.t("visitor_reopen.2") if code == 0 else self.t("visitor_reopen.3", code=code))
 
     def _visitor_kick(self, cfg) -> None:
         from .gateway.access_watch import KICK_REQUEST, kick_request
         connected = [c for c in self._connected() if c.get("role") == "listener"]
         if not connected:
-            self.say("Aucun visiteur connecté (ou station arrêtée).")
+            self.say(self.t("visitor_kick.1"))
             return
         for i, c in enumerate(connected, 1):
             self.say(f"  {i}) {c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')})")
-        answer = self.ask("Numéro du visiteur à déconnecter (Entrée = annuler) : ").strip()
+        answer = self.ask(self.t("visitor_kick.2")).strip()
         if not (answer.isdigit() and 1 <= int(answer) <= len(connected)):
             return
         target = str(connected[int(answer) - 1].get("id", ""))
-        if not self.yes(f"Déconnecter {target} maintenant", False):
+        if not self.yes(self.t("visitor_kick.3", target=target), False):
             return
         work = Path(tempfile.mkdtemp(prefix="trx-kick-"))
         try:
@@ -1182,15 +1156,21 @@ class Console:
                                     str(Path(cfg.supervisor.state_dir) / KICK_REQUEST)], admin=True)
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        self.say("Demande envoyée : le visiteur est déconnecté dans la seconde (il peut se reconnecter ; pour l'en "
-                 "empêcher, désactive son compte, choix 3)." if code == 0 else f"Demande impossible (code {code}).")
+        self.say(self.t("visitor_kick.4") if code == 0 else self.t("visitor_kick.5", code=code))
 
     # ------------------------------------------------------------------ présence de groupe (menu 5.3)
 
-    FRIEND_LEVELS = {"1": ("f", "fréquence et mode"), "2": ("o", "« On Air » seulement"), "3": ("x", "un texte")}
-    FRIEND_ROLES = {"a": "administrateur", "c": "co-administrateur", "m": "membre"}
-    FRIEND_STATUS = {"member": "membre", "pending": "adhésion en attente", "removed": "exclu ou groupe supprimé"}
-    FRIEND_CODES = {"Q": "En QSO", "R": "En RX", "S": "Au shack", "A": "Absent", "O": "Hors ligne"}
+    # Libellés : clés du catalogue de langue (traduites au moment de l'affichage par `label`)
+    FRIEND_LEVELS = {"1": ("f", "friends.level.f"), "2": ("o", "friends.level.o"), "3": ("x", "friends.level.x")}
+    FRIEND_ROLES = {"a": "friends.role.a", "c": "friends.role.c", "m": "friends.role.m"}
+    FRIEND_STATUS = {"member": "friends.status.member", "pending": "friends.status.pending",
+                     "removed": "friends.status.removed"}
+    FRIEND_CODES = {"Q": "friends.code.Q", "R": "friends.code.R", "S": "friends.code.S", "A": "friends.code.A",
+                    "O": "friends.code.O"}
+
+    def label(self, table: dict, code, default):
+        """Libellé traduit d'un code (FRIEND_ROLES, BREIZH_STATES...) ; `default` si le code est inconnu."""
+        return self.t(table[code]) if code in table else default
 
     def friends(self) -> None:
         """Présence de groupe (docs/presence-cahier-des-charges.md) : le module « presence » fait le travail ; la
@@ -1204,36 +1184,25 @@ class Console:
             except (OSError, ValueError):
                 status = None
             if not status or not status.get("enabled"):
-                self.say("\nPrésence de groupe désactivée, ou module « presence » jamais démarré.\n"
-                         "Pour l'activer (menu 3.2) : dans [presence], enabled = true ; dans [modules], ajouter\n"
-                         "\"presence\" à run (ex. run = [\"cluster\", \"presence\"]) ; puis redémarrer la station (menu 1.1).")
+                self.say(self.t("friends.1"))
                 return
             self.say("\n" + self.friends_summary(status))
-            choice = self.ask("\n  1) Choisir le pseudo\n"
-                              "  2) Groupes et membres\n"
-                              "  3) Créer un groupe\n"
-                              "  4) Inviter quelqu'un (lien et QR code)\n"
-                              "  5) Rejoindre un groupe (coller une invitation)\n"
-                              "  6) Ce que je partage dans un groupe\n"
-                              "  7) Quitter ou supprimer un groupe\n"
-                              "Choix (Entrée = retour) : ").strip()
+            choice = self.ask(self.t("friends.2")).strip()
             if not choice:
                 return
             {"1": self._friends_pseudo, "2": self._friends_view, "3": self._friends_create,
              "4": self._friends_invite, "5": self._friends_join, "6": self._friends_share,
-             "7": self._friends_leave}.get(choice, lambda: self.say("Choix inconnu."))()
+             "7": self._friends_leave}.get(choice, lambda: self.say(self.t("loop.unknown")))()
 
     def friends_summary(self, status: dict) -> str:
-        lines = [f"Présence de groupe : pseudo {status.get('pseudo') or '(aucun : choix 1)'}, "
-                 f"{'enregistrée auprès du relais' if status.get('registered') else 'PAS ENCORE enregistrée'}"]
+        lines = [self.t("friends_summary.1", v=status.get('pseudo') or self.t("friends_summary.2"), v2=self.t("friends_summary.3") if status.get('registered') else self.t("friends_summary.4"))]
         problem = status.get("problem")
         if problem:
-            lines.append(f"  Problème : {problem}")
+            lines.append(self.t("friends_summary.5", problem=problem))
         for grp in status.get("groups") or []:
-            lines.append(f"  - {grp.get('name')} : {self.FRIEND_ROLES.get(grp.get('role'), '?')}, "
-                         f"{self.FRIEND_STATUS.get(grp.get('status'), grp.get('status'))}, {grp.get('members', 0)} ami(s)")
+            lines.append(self.t("friends_summary.6", get=grp.get('name'), get2=self.label(self.FRIEND_ROLES, grp.get('role'), '?'), get3=self.label(self.FRIEND_STATUS, grp.get('status'), grp.get('status')), get4=grp.get('members', 0)))
         if not status.get("groups"):
-            lines.append("  Aucun groupe : en créer un (choix 3) ou en rejoindre un (choix 5).")
+            lines.append(self.t("friends_summary.7"))
         return "\n".join(lines)
 
     def friends_request(self, action: str, args: dict | None = None, *, timeout_s: float = 45.0,
@@ -1254,12 +1223,12 @@ class Console:
             try:
                 (work / CONSOLE_REQUEST).write_bytes(body)
                 if self.runner.run(["install", "-m", "0644", str(work / CONSOLE_REQUEST), str(target)], admin=True) != 0:
-                    self.say("Demande impossible à déposer.")
+                    self.say(self.t("friends_request.1"))
                     return None
             finally:
                 shutil.rmtree(work, ignore_errors=True)
         except OSError as exc:
-            self.say(f"Demande impossible à déposer : {exc}")
+            self.say(self.t("friends_request.2", exc=exc))
             return None
         reply_path = state_dir / "presence" / CONSOLE_REPLY
         deadline = time.monotonic() + timeout_s
@@ -1271,16 +1240,16 @@ class Console:
             except (OSError, ValueError):
                 pass
             time.sleep(poll_s)
-        self.say("Pas de réponse du module « presence » (station arrêtée ? voir le journal, menu 1.4).")
+        self.say(self.t("friends_request.3"))
         return None
 
     def _friends_do(self, action: str, args: dict | None = None) -> dict | None:
-        self.say("Demande envoyée au module…")
+        self.say(self.t("friends_do.1"))
         reply = self.friends_request(action, args)
         if reply is None:
             return None
         if not reply.get("ok"):
-            self.say(f"Refusé : {reply.get('message') or reply.get('error')}")
+            self.say(self.t("friends_do.2", v=reply.get('message') or reply.get('error')))
             return None
         return reply.get("result") or {}
 
@@ -1288,39 +1257,39 @@ class Console:
         view = self._friends_do("view")
         groups = [g for g in (view or {}).get("groups", []) if not admin or g.get("role") in ("a", "c")]
         if not groups:
-            self.say("Aucun groupe" + (" que tu administres." if admin else "."))
+            self.say(self.t("friends_pick.1") + (self.t("friends_pick.2") if admin else "."))
             return None
         for i, g in enumerate(groups, 1):
-            self.say(f"  {i}) {g['name']} ({self.FRIEND_ROLES.get(g['role'], '?')})")
-        answer = self.ask("Numéro du groupe (Entrée = annuler) : ").strip()
+            self.say(f"  {i}) {g['name']} ({self.label(self.FRIEND_ROLES, g['role'], '?')})")
+        answer = self.ask(self.t("friends_pick.3")).strip()
         if answer.isdigit() and 1 <= int(answer) <= len(groups):
             return groups[int(answer) - 1]["g"]
         return None
 
     def _friends_pseudo(self) -> None:
-        pseudo = self.ask("Pseudo (indicatif ou surnom, 16 caractères : lettres sans accent, chiffres, espace, . / _ -) : ").strip()
+        pseudo = self.ask(self.t("friends_pseudo.1")).strip()
         if pseudo and self._friends_do("pseudo", {"pseudo": pseudo}) is not None:
-            self.say(f"Pseudo enregistré : {pseudo}")
+            self.say(self.t("friends_pseudo.2", pseudo=pseudo))
 
     def _friends_view(self) -> None:
         view = self._friends_do("view")
         for g in (view or {}).get("groups", []):
-            self.say(f"\n{g['name']} ({self.FRIEND_ROLES.get(g['role'], '?')}, "
-                     f"{self.FRIEND_STATUS.get(g['status'], g['status'])})")
+            self.say(f"\n{g['name']} ({self.label(self.FRIEND_ROLES, g['role'], '?')}, "
+                     f"{self.label(self.FRIEND_STATUS, g['status'], g['status'])})")
             for m in g.get("members", []):
                 detail = ""
                 if m.get("lv") == "f" and "f" in m:
                     detail = f" {m['f'] / 1e6:.3f} MHz {m.get('m', '')}"
                 elif m.get("lv") == "x" and m.get("x"):
                     detail = f" « {m['x']} »"
-                self.say(f"  [{m['code']}] {m['pseudo']} : {self.FRIEND_CODES.get(m['code'], '?')}{detail}")
+                self.say(f"  [{m['code']}] {m['pseudo']} : {self.label(self.FRIEND_CODES, m['code'], '?')}{detail}")
             if not g.get("members"):
-                self.say("  (personne d'autre pour l'instant)")
+                self.say(self.t("friends_view.1"))
 
     def _friends_create(self) -> None:
-        name = self.ask("Nom du groupe (24 caractères) : ").strip()
+        name = self.ask(self.t("friends_create.1")).strip()
         if name and self._friends_do("create", {"name": name}) is not None:
-            self.say(f"Groupe « {name} » créé : tu en es l'administrateur. Invite tes amis (choix 4).")
+            self.say(self.t("friends_create.2", name=name))
 
     def _friends_invite(self) -> None:
         from .setup_wizard import qr_lines
@@ -1331,36 +1300,35 @@ class Console:
         if not result:
             return
         url = result["url"]
-        self.say("\nInvitation valable 7 jours, pour UNE seule station. À transmettre seulement à la personne invitée\n"
-                 "(elle contient la clé du groupe) :\n\n" + url + "\n")
+        self.say(self.t("friends_invite.1") + url + "\n")
         lines = qr_lines(url)
         if lines:
             self.say("\n".join(lines))
-        self.say("Son adhésion sera validée automatiquement par ta station à sa prochaine requête.")
+        self.say(self.t("friends_invite.2"))
 
     def _friends_join(self) -> None:
-        url = self.ask("Coller l'invitation (lien complet) : ").strip()
+        url = self.ask(self.t("friends_join.1")).strip()
         if not url:
             return
-        name = self.ask("Nom de ce groupe chez toi (Entrée = automatique) : ").strip()
+        name = self.ask(self.t("friends_join.2")).strip()
         if self._friends_do("join", {"url": url, "name": name}) is not None:
-            self.say("Demande d'adhésion envoyée : elle est validée dès que la station de l'administrateur la voit.")
+            self.say(self.t("friends_join.3"))
 
     def _friends_share(self) -> None:
         g = self._friends_pick()
         if g is None:
             return
         for key, (_, label) in self.FRIEND_LEVELS.items():
-            self.say(f"  {key}) {label}")
-        level = self.FRIEND_LEVELS.get(self.ask("Que partager avec ce groupe : ").strip())
+            self.say(f"  {key}) {self.t(label)}")
+        level = self.FRIEND_LEVELS.get(self.ask(self.t("friends_share.what")).strip())
         if level is None:
             return
         args = {"g": g, "level": level[0]}
         if level[0] == "x":
-            args["text"] = self.ask("Texte (16 caractères : lettres sans accent, chiffres, espace, . / -) : ").strip()
-        args["invisible"] = self.yes("Être invisible dans ce groupe pour l'instant", False)
+            args["text"] = self.ask(self.t("friends_share.1")).strip()
+        args["invisible"] = self.yes(self.t("friends_share.2"), False)
         if self._friends_do("share", args) is not None:
-            self.say("Partage enregistré : pris à la prochaine requête (moins de 2 minutes).")
+            self.say(self.t("friends_share.3"))
 
     def _friends_leave(self) -> None:
         g = self._friends_pick()
@@ -1368,12 +1336,12 @@ class Console:
             return
         view = self._friends_do("view", {"g": g}) or {}
         role = (view.get("groups") or [{}])[0].get("role")
-        if role == "a" and self.yes("Tu es administrateur : SUPPRIMER le groupe pour tout le monde", False):
-            if typed(self.ask("Taper SUPPRIMER pour confirmer : "), "SUPPRIMER") and self._friends_do("delete", {"g": g}) is not None:
-                self.say("Groupe supprimé.")
+        if role == "a" and self.yes(self.t("friends_leave.1"), False):
+            if self.typed_word(self.ask(self.t("friends_leave.type_word", word=self.t("word.delete"))), "word.delete", "SUPPRIMER") and self._friends_do("delete", {"g": g}) is not None:
+                self.say(self.t("friends_leave.2"))
             return
-        if self.yes("Quitter ce groupe", False) and self._friends_do("leave", {"g": g}) is not None:
-            self.say("Groupe quitté.")
+        if self.yes(self.t("friends_leave.3"), False) and self._friends_do("leave", {"g": g}) is not None:
+            self.say(self.t("friends_leave.4"))
 
     # ------------------------------------------------------------------ qualité du réseau (menu 2.4)
 
@@ -1387,21 +1355,17 @@ class Console:
         while True:
             st = self._gateway_status()
             if st is None:
-                self.say("\nStation arrêtée : pas de liaison en cours à montrer.")
+                self.say(self.t("network.1"))
             else:
                 panel = _reseau_panel(Snapshot(status=st, gateway_fresh=True, stale_s=0.0, safe_mode=None), detail=True)
                 self.say("\n" + render_plain([panel]).rstrip())
-            choice = self.ask("\n  1) Synthèse des 24 dernières heures\n"
-                              "  2) Synthèse des 30 derniers jours\n"
-                              "  3) Export anonyme sur le Bureau (pour l'équipe de développement)\n"
-                              "  4) Tout effacer (historique réseau ; les seuils choisis sont gardés)\n"
-                              "Choix (Entrée = retour) : ").strip()
+            choice = self.ask(self.t("network.2")).strip()
             if not choice:
                 return
             store = store_of(state_dir)
             if choice in ("1", "2"):
                 if not store.folder.is_dir():
-                    self.say("Aucune mesure encore : la sonde enregistre dès qu'un téléphone ou une page est connecté.")
+                    self.say(self.t("network.3"))
                     continue
                 self.say("\n" + report_text(store.stats(1 if choice == "1" else 30, "", {})))
             elif choice == "3":
@@ -1409,7 +1373,7 @@ class Console:
             elif choice == "4":
                 self._network_clear(state_dir)
             else:
-                self.say("Choix inconnu.")
+                self.say(self.t("network.4"))
 
     def _network_export(self, store, state_dir: Path) -> None:
         from dataclasses import asdict
@@ -1420,7 +1384,7 @@ class Console:
         from .report import desktop_dir
         from .station_id import read_station_id
         if not store.folder.is_dir():
-            self.say("Aucune mesure à exporter.")
+            self.say(self.t("network_export.1"))
             return
         try:
             cfg, _ = cfgmod.load_unchecked(self.config)
@@ -1433,18 +1397,16 @@ class Console:
             target.write_bytes(build_export(store, 30, version=__version__, station_id=read_station_id(state_dir) or "",
                                             settings=settings))
         except OSError as exc:
-            self.say(f"Export impossible : {exc}")
+            self.say(self.t("network_export.2", exc=exc))
             return
-        self.say(f"Export anonyme créé : {target}\nSans compte, adresse IP ni position : joins-le à ton message pour "
-                 "l'équipe de développement.")
+        self.say(self.t("network_export.3", target=target))
 
     def _network_clear(self, state_dir: Path) -> None:
         from .gateway.access_watch import kick_request
         from .netprobe.probe import CLEAR_REQUEST
-        answer = self.ask("Effacer tout l'historique réseau (coupures, statistiques, appareils vus) ? "
-                          "Tape EFFACER pour confirmer : ").strip()
-        if answer != "EFFACER":
-            self.say("Rien n'a été effacé.")
+        answer = self.ask(self.t("network_clear.1", word=self.t("word.erase"))).strip()
+        if not self.typed_word(answer, "word.erase", "EFFACER", exact=True):
+            self.say(self.t("network_clear.2"))
             return
         if self._gateway_status() is not None:          # station en marche : c'est elle qui efface (mémoire comprise)
             work = Path(tempfile.mkdtemp(prefix="trx-net-"))
@@ -1454,22 +1416,21 @@ class Console:
                 code = self.runner.run(["install", "-m", "0644", str(request), str(state_dir / CLEAR_REQUEST)], admin=True)
             finally:
                 shutil.rmtree(work, ignore_errors=True)
-            self.say("Demande envoyée : l'historique est effacé dans la seconde." if code == 0
-                     else f"Demande impossible (code {code}).")
+            self.say(self.t("network_clear.3") if code == 0
+                     else self.t("network_clear.4", code=code))
             return
         folder = state_dir / "netprobe"
         if not folder.is_dir():
-            self.say("Aucun historique à effacer.")
+            self.say(self.t("network_clear.5"))
             return
         code = self.runner.run(["find", str(folder), "-maxdepth", "1", "-type", "f", "!", "-name", "seuils.json",
                                 "-delete"], admin=True)
-        self.say("Historique réseau effacé (seuils choisis gardés)." if code == 0 else f"Effacement impossible (code {code}).")
+        self.say(self.t("network_clear.6") if code == 0 else self.t("network_clear.7", code=code))
 
     # ------------------------------------------------------------------ Breizh Audio Box (menu 5.2)
 
-    BREIZH_STATES = {"connecting": "recherche de Breizh…", "ready": "prêt : prochaines émissions par Breizh",
-                     "active": "ÉMISSION par Breizh", "fallback": "REPLI : Breizh ne répond plus, émissions en direct",
-                     "refused": "liaison refusée par Breizh (voir le journal)"}
+    BREIZH_STATES = {"connecting": "breizh.state.connecting", "ready": "breizh.state.ready", "active": "breizh.state.active",
+                     "fallback": "breizh.state.fallback", "refused": "breizh.state.refused"}   # clés du catalogue
 
     def breizh(self) -> None:
         """Breizh Audio Box (docs/breizh-cahier-des-charges.md) : clé d'appairage (breizh.key, à côté de station.toml,
@@ -1477,21 +1438,17 @@ class Console:
         du menu 3.2), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("breizh.1"))
             return
         while True:
             try:
                 original = self.config.read_bytes()
                 cfg, _ = cfgmod.load_unchecked(self.config)
             except (OSError, cfgmod.ConfigError) as exc:
-                self.say(f"Lecture de {self.config} impossible ({exc}).")
+                self.say(self.t("breizh.2", config=self.config, exc=exc))
                 return
             self.say(self._breizh_summary(cfg))
-            choice = self.ask("\n  1) Créer ou remplacer la clé d'appairage (à recopier dans Breizh)\n"
-                              "  2) Adresse et port de Breizh, activer ou désactiver\n"
-                              "  3) Essai de la liaison (sans son)\n"
-                              "  4) Journal de la liaison\n"
-                              "Choix (Entrée = retour) : ").strip()
+            choice = self.ask(self.t("breizh.3")).strip()
             if not choice:
                 return
             if choice == "1":
@@ -1504,7 +1461,7 @@ class Console:
             elif choice == "4":
                 self._breizh_journal(cfg, 20)
             else:
-                self.say("Choix inconnu.")
+                self.say(self.t("breizh.4"))
 
     def _breizh_key_state(self, cfg) -> str:
         """« présente », ou le problème (absente, illisible, droits trop larges). Jamais la clé elle-même."""
@@ -1512,36 +1469,36 @@ class Console:
         from .config import breizh_key_path
         path = breizh_key_path(cfg, self.config)
         if not path.exists():
-            return "ABSENTE (choix 1)"
+            return self.t("breizh_key_state.1")
         try:
             read_key(path)
         except KeyFileError as exc:
             if " illisible (" in str(exc):                     # droits root:trx : le compte de bureau ne la lit pas
-                return f"présente ({path} ; lue par la station, pas par ce compte)"
-            return f"PROBLÈME : {exc}"
-        return f"présente ({path})"
+                return self.t("breizh_key_state.2", path=path)
+            return self.t("breizh_key_state.3", exc=exc)
+        return self.t("breizh_key_state.4", path=path)
 
     def _breizh_summary(self, cfg) -> str:
         b = cfg.breizh
-        lines = ["\nBreizh Audio Box : la voix de l'opérateur passe par Breizh (autre PC du réseau local) avant le poste ;",
-                 "la station garde le PTT, le TOT et son limiteur, et repasse en direct si Breizh ne répond plus.",
-                 f"  En service            : {'oui' if b.enabled else 'non'}",
-                 f"  PC de Breizh          : {b.host or '(adresse à régler, choix 2)'} port UDP {b.port}",
-                 f"  Clé d'appairage       : {self._breizh_key_state(cfg)}"]
+        lines = [self.t("breizh_summary.1"),
+                 self.t("breizh_summary.2"),
+                 self.t("breizh_summary.3", v=self.t("breizh_summary.4") if b.enabled else self.t("breizh_summary.5")),
+                 self.t("breizh_summary.6", v=b.host or self.t("breizh_summary.7"), port=b.port),
+                 self.t("breizh_summary.8", breizh_key_state=self._breizh_key_state(cfg))]
         status = self._gateway_status()
         live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
         if live:
-            details = [f"route {live.get('route')}" + (" (« Direct » choisi)" if live.get("bypass") else "")]
+            details = [self.t("breizh_summary.route", route=live.get('route')) + (self.t("breizh_summary.9") if live.get("bypass") else "")]
             if live.get("peer"):
                 details.append(str(live["peer"])[:64])
             if live.get("rtt_ms") is not None:
-                details.append(f"aller-retour {live['rtt_ms']} ms")
-            lines.append(f"  Liaison maintenant    : {self.BREIZH_STATES.get(live.get('state'), live.get('state'))} · "
+                details.append(self.t("breizh_summary.10", rtt_ms=live['rtt_ms']))
+            lines.append(self.t("breizh_summary.11", get=self.label(self.BREIZH_STATES, live.get('state'), live.get('state')))
                          + " · ".join(details))
         elif b.enabled:
-            lines.append("  Liaison maintenant    : passerelle arrêtée, ou clé illisible au démarrage (voir le journal, menu 1.4)")
+            lines.append(self.t("breizh_summary.12"))
         for entry in self._breizh_entries(cfg)[-3:]:
-            lines.append(f"  Journal               : {entry}")
+            lines.append(self.t("breizh_summary.13", entry=entry))
         return "\n".join(lines)
 
     def _breizh_entries(self, cfg) -> list[str]:
@@ -1555,16 +1512,15 @@ class Console:
 
     def _breizh_journal(self, cfg, count: int) -> None:
         entries = self._breizh_entries(cfg)[-count:]
-        self.say("\n".join(["\nJournal de la liaison avec Breizh (le plus récent en bas) :"]
-                           + ["  " + e for e in entries]) if entries else "Journal vide : la passerelle n'a encore rien noté.")
+        self.say("\n".join([self.t("breizh_journal.1")]
+                           + ["  " + e for e in entries]) if entries else self.t("breizh_journal.2"))
 
     def _breizh_new_key(self, cfg) -> None:
         """Nouvelle clé de 32 octets, écrite avec les droits de station.toml (jamais lisible par tous) et montrée UNE fois."""
         from .breizh.protocol import key_to_text, new_key
         from .config import breizh_key_path
         path = breizh_key_path(cfg, self.config)
-        if path.exists() and not self.yes("Une clé existe déjà : la remplacer oblige à recopier la nouvelle dans Breizh. "
-                                          "Remplacer", False):
+        if path.exists() and not self.yes(self.t("breizh_new_key.1"), False):
             return
         key = new_key()
         work = Path(tempfile.mkdtemp(prefix="trx-breizh-"))
@@ -1583,12 +1539,12 @@ class Console:
                     write_key(path, key)
                     code = 0
                 except OSError as exc:
-                    self.say(f"Écriture impossible ({exc}) : relance TRX Console en administrateur.")
+                    self.say(self.t("breizh_new_key.2", exc=exc))
                     code = 1
         finally:
             shutil.rmtree(work, ignore_errors=True)
         if code != 0:
-            self.say(f"Clé NON enregistrée (code {code}).")
+            self.say(self.t("breizh_new_key.3", code=code))
             return
         try:
             if self.addresses is None:
@@ -1597,13 +1553,8 @@ class Console:
             found = self.addresses()
         except Exception:                                   # adresse introuvable : texte générique
             found = []
-        self.say("\nClé d'appairage enregistrée. À recopier MAINTENANT dans l'onglet « OpenRemoteTRX » des réglages de Breizh"
-                 " (elle n'est plus jamais affichée ; perdue : en créer une nouvelle) :\n\n"
-                 f"    {key_to_text(key)}\n\n"
-                 f"Dans Breizh : adresse de cette station = {', '.join(found) or 'son adresse IP sur le réseau local'}, "
-                 f"port UDP = {cfg.breizh.port}, puis activer le mode OpenRemoteTRX (cela coupe le CAT de Breizh).\n"
-                 f"Sur le PC de Breizh, le pare-feu doit laisser entrer l'UDP {cfg.breizh.port} depuis cette station.")
-        if cfg.breizh.enabled and self.station_running() and self.yes("Redémarrer la station pour qu'elle prenne la nouvelle clé"):
+        self.say(self.t("breizh_new_key.4", key_to_text=key_to_text(key), v=', '.join(found) or self.t("breizh_new_key.5"), port=cfg.breizh.port, port2=cfg.breizh.port))
+        if cfg.breizh.enabled and self.station_running() and self.yes(self.t("breizh_new_key.6")):
             self.start()
 
     def _breizh_settings(self, cfg) -> bool:
@@ -1612,19 +1563,18 @@ class Console:
         b = cfg.breizh
         before = (b.enabled, b.host, b.port)
         while True:
-            answer = self.ask(f"Adresse IP du PC de Breizh (127.0.0.1 = ce PC ; Entrée = {b.host or 'aucune'}) : ").strip()
+            answer = self.ask(self.t("breizh_settings.1", v=b.host or self.t("breizh_settings.2"))).strip()
             if not answer or breizh_host_allowed(answer):
                 b.host = answer or b.host
                 break
-            self.say("Adresse IP PRIVÉE attendue (192.168.x.y, 10.x.y.z, 172.16 à 31.x.y, 127.0.0.1…) : ni nom ni adresse "
-                     "publique, le son du micro circule en clair.")
-        b.port = self._ask_int("Port UDP de Breizh", b.port, 1024, 65535)
-        b.enabled = self._ask_yes("Faire passer la voix par Breizh", b.enabled)
+            self.say(self.t("breizh_settings.3"))
+        b.port = self._ask_int(self.t("breizh_settings.4"), b.port, 1024, 65535)
+        b.enabled = self._ask_yes(self.t("breizh_settings.5"), b.enabled)
         if b.enabled and not b.host:
-            self.say("Sans adresse, Breizh ne peut pas être activé.")
+            self.say(self.t("breizh_settings.6"))
             b.enabled = False
         if b.enabled and self._breizh_key_state(cfg).startswith("ABSENTE"):
-            self.say("Attention : pas encore de clé d'appairage (choix 1) : la station démarrera SANS Breizh.")
+            self.say(self.t("breizh_settings.7"))
         return (b.enabled, b.host, b.port) != before
 
     def _breizh_probe(self, cfg) -> None:
@@ -1632,18 +1582,16 @@ class Console:
         from .config import breizh_key_path
         b = cfg.breizh
         if not b.host:
-            self.say("Règle d'abord l'adresse de Breizh (choix 2).")
+            self.say(self.t("breizh_probe.1"))
             return
         path = breizh_key_path(cfg, self.config)
         if not path.exists():
-            self.say("Crée d'abord la clé d'appairage (choix 1).")
+            self.say(self.t("breizh_probe.2"))
             return
         status = self._gateway_status()
         live = status.breizh if status is not None and isinstance(getattr(status, "breizh", None), dict) else {}
         if live.get("state") in ("ready", "active", "fallback") and live.get("peer"):
-            self.say(f"La liaison de la station avec Breizh est EN SERVICE ({live.get('peer')}, aller-retour "
-                     f"{live.get('rtt_ms')} ms) : essai inutile. Breizh ne sert qu'une station à la fois et répondrait "
-                     "« occupé » à l'essai. L'essai sert quand la station est arrêtée ou que Breizh n'y est pas activé.")
+            self.say(self.t("breizh_probe.3", get=live.get('peer'), get2=live.get('rtt_ms')))
             return
         self.runner.run(self.module("trxstation.devtools.breizh_probe", "--host", b.host, "--port", str(b.port),
                                     "--key-file", str(path), "--sans-son"), admin=os.name == "posix")
@@ -1653,23 +1601,20 @@ class Console:
         le même chemin que le menu 3.2 : copie, validation, différences, confirmation, sauvegarde."""
         from . import config as cfgmod
         if not self.config.exists():
-            self.say("Configure d'abord la station (menu 3.1).")
+            self.say(self.t("temperature.1"))
             return
         try:
             original = self.config.read_bytes()
             cfg, _ = cfgmod.load_unchecked(self.config)
         except (OSError, cfgmod.ConfigError) as exc:
-            self.say(f"Lecture de {self.config} impossible ({exc}).")
+            self.say(self.t("temperature.2", config=self.config, exc=exc))
             return
         s = cfg.safety
-        self.say("Température du poste (lue par Hamlib, TEMP_METER) :\n"
-                 f"  1er seuil (avertissement : page et notification)            : {s.rig_temp_warn_c} °C\n"
-                 f"  2e seuil (émission à distance coupée, reprise sous le 1er)  : {s.rig_temp_cut_c} °C\n"
-                 "Sans effet si le poste ne donne pas sa température (cas de l'IC-7300MK2 sous Hamlib).")
-        warn = self._ask_degrees("Nouveau 1er seuil", s.rig_temp_warn_c)
-        cut = self._ask_degrees("Nouveau 2e seuil", s.rig_temp_cut_c)
+        self.say(self.t("temperature.3", rig_temp_warn_c=s.rig_temp_warn_c, rig_temp_cut_c=s.rig_temp_cut_c))
+        warn = self._ask_degrees(self.t("temperature.4"), s.rig_temp_warn_c)
+        cut = self._ask_degrees(self.t("temperature.5"), s.rig_temp_cut_c)
         if (warn, cut) == (s.rig_temp_warn_c, s.rig_temp_cut_c):
-            self.say("Aucune modification : station.toml n'a pas été changé.")
+            self.say(self.t("temperature.6"))
             return
         edited = set_safety_values(original.decode("utf-8"), {"rig_temp_warn_c": warn, "rig_temp_cut_c": cut}).encode("utf-8")
         work = Path(tempfile.mkdtemp(prefix="trx-config-"))
@@ -1680,7 +1625,7 @@ class Console:
             try:
                 cfgmod.load(draft)
             except cfgmod.ConfigError as exc:
-                self.say("Seuils REFUSÉS :\n  - " + "\n  - ".join(exc.problems))
+                self.say(self.t("temperature.7") + "\n  - ".join(exc.problems))
                 return
             self._save_config(original, edited, draft)
         finally:
@@ -1688,41 +1633,36 @@ class Console:
 
     def _ask_degrees(self, question: str, current: int) -> int:
         while True:
-            answer = self.ask(f"{question} en °C (Entrée = {current}) : ").strip()
+            answer = self.ask(self.t("ask_degrees.1", question=question, current=current)).strip()
             if not answer:
                 return current
             if re.fullmatch(r"\d{1,3}", answer):
                 return int(answer)
-            self.say("Un nombre entier de degrés, par exemple 45.")
+            self.say(self.t("ask_degrees.2"))
 
     def expert(self) -> None:
-        self.say("\nMenu expert :\n"
-                 "  1) Tests automatiques du logiciel (pytest, 7 à 10 minutes sur un PC récent, 30 minutes ou plus sur un\n"
-                 "     petit PC ; poste SIMULÉ : aucune émission)\n"
-                 "  q) Retour")
-        if self.ask("Choix : ").strip() == "1":
+        self.say(self.t("expert.1"))
+        if self.ask(self.t("expert.2")).strip() == "1":
             self.run_tests()
 
     def run_tests(self) -> None:
         """Toute la suite de tests de la version installée, sur cette machine. Résultat enregistré sur le Bureau."""
         tests = self.app_dir / "current" / "app" / "tests"
         if not tests.is_dir():
-            self.say(f"Tests absents de la version installée ({tests}) : ils sont fournis à partir de la version 0.42.0.")
+            self.say(self.t("run_tests.1", tests=tests))
             return
         if self.runner.output([self.python, "-c", "import pytest; print('ok')"]) != "ok":
-            self.say("L'outil de test (pytest) n'est pas installé. Son installation demande Internet et le mot de passe\n"
-                     "(il est ajouté à la version installée ; une mise à jour le retire, il suffira de le réinstaller).")
-            if not self.yes("Installer pytest maintenant", False):
+            self.say(self.t("run_tests.2"))
+            if not self.yes(self.t("run_tests.3"), False):
                 return
             self.runner.run([self.python, "-m", "pip", "install", "--quiet", "pytest"], admin=True)
             if self.runner.output([self.python, "-c", "import pytest; print('ok')"]) != "ok":
-                self.say("Installation de pytest impossible (Internet ?) : tests non lancés.")
+                self.say(self.t("run_tests.4"))
                 return
-        self.say("Les tests utilisent un poste SIMULÉ (aucune commande au vrai poste, aucune émission). La station est\n"
-                 "arrêtée pendant les tests pour libérer ses ports réseau, puis relancée si tu le souhaites.")
-        if not self.yes("Lancer les tests", True):
+        self.say(self.t("run_tests.5"))
+        if not self.yes(self.t("run_tests.6"), True):
             return
-        stopped = self.stop_for_exclusive_use("les tests")
+        stopped = self.stop_for_exclusive_use(self.t("run_tests.7"))
         from .report import desktop_dir
         folder = self.desktop() if self.desktop else desktop_dir()
         log = folder / f"trx-remote-tests-{time.strftime('%Y%m%d-%H%M')}.txt"
@@ -1734,11 +1674,11 @@ class Console:
             code = runner(cmd, log, cwd=work) if runner else self.runner.run(cmd)
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        self.say("\nTous les tests passent." if code == 0 else
-                 f"\nDes tests échouent (code {code}). Transmets ce fichier pour analyse : {log}")
+        self.say(self.t("run_tests.8") if code == 0 else
+                 self.t("run_tests.9", code=code, log=log))
         if code == 0:
-            self.say(f"Résultat enregistré : {log}")
-        if stopped and self.yes("Redémarrer la station"):
+            self.say(self.t("run_tests.10", log=log))
+        if stopped and self.yes(self.t("run_tests.11")):
             self.start()
 
     def offered(self, state: UpdateState | None):
@@ -1748,15 +1688,14 @@ class Console:
             return None
         return release
 
-    @staticmethod
-    def _apply_result(code: int, success: str) -> str:
+    def _apply_result(self, code: int, success: str) -> str:
         if code == upd.EXIT_OK:
             return success
         if code == upd.EXIT_TX:
-            return "Refusé : le poste émet, ou son état n'a pas pu être vérifié. Rien n'a été modifié."
+            return self.t("apply_result.1")
         if code == upd.EXIT_REFUSED:
-            return "Refusé : paquet non vérifié ou indisponible. Rien n'a été installé."
-        return f"Échec (code {code}) : la version active est inchangée. Détails : {INSTALL_LOG}"
+            return self.t("apply_result.2")
+        return self.t("apply_result.3", code=code, install_log=INSTALL_LOG)
 
     # ------------------------------------------------------------------ boucle
 
@@ -1835,6 +1774,7 @@ class Console:
             self.say(t("loop.unknown"))
             return
         self.t = Translator(code)
+        self._share_language()
         saved = save_lang(self.lang_file, code)
         self.say(self.t("lang.saved", name=NAMES[code]) if saved else self.t("lang.not_saved", path=self.lang_file))
         if code != "fr":

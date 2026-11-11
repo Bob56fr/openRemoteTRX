@@ -13,7 +13,7 @@ from trxstation import i18n
 from trxstation.answers import yes_no
 from trxstation.console import MENU_THEMES
 
-FIELD = re.compile(r"\{(\w+)\}")
+FIELD = re.compile(r"\{(\w+(?:![rsa])?(?::[^{}]*)?)\}")      # champ, conversion et format compris ({v:.3f})
 
 
 def test_every_language_has_exactly_the_keys_and_fields_of_the_french_reference():
@@ -79,3 +79,46 @@ def test_yes_prompt_letters_match_accepted_answers():
         for key in ("yes.default_yes", "yes.default_no"):
             letters = t(key).split("/")
             assert len(letters) == 2 and yes_no(letters[0]) is True and yes_no(letters[1]) is False, (lang, key)
+
+
+# ---------------------------------------------------------------- textes de la console (lot L2)
+def _console_source() -> str:
+    from pathlib import Path
+    return (Path(__file__).resolve().parents[1] / "trxstation" / "console.py").read_text(encoding="utf-8")
+
+
+def test_every_key_used_by_the_console_exists_in_the_french_catalogue():
+    keys = set(re.findall(r"""\bt\(\s*["']([\w.]+)["']""", _console_source()))
+    keys |= set(re.findall(r"""["']((?:friends|breizh)\.(?:level|role|status|code|state)\.\w+)["']""", _console_source()))
+    assert len(keys) > 300
+    missing = sorted(k for k in keys if k not in i18n.catalog("fr"))
+    assert not missing, f"clés absentes de console.fr.json : {missing}"
+
+
+def test_no_french_text_is_left_hard_coded_in_what_the_console_says_or_asks():
+    import ast
+    src = _console_source()
+    tree = ast.parse(src)
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+
+    def skipped(node) -> bool:        # clé du catalogue, indice, comparaison, valeur par défaut d'un .get : pas du texte affiché
+        p = parents.get(node)
+        if isinstance(p, (ast.Subscript, ast.Compare)):
+            return True
+        return isinstance(p, ast.Call) and isinstance(p.func, (ast.Attribute, ast.Name)) and             (p.func.attr if isinstance(p.func, ast.Attribute) else p.func.id) in ("t", "get", "label")
+    left = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ("say", "ask", "yes")
+                and isinstance(node.func.value, ast.Name) and node.func.value.id == "self"):
+            continue
+        for arg in node.args:
+            for sub in ast.walk(arg):
+                if isinstance(sub, ast.Constant) and isinstance(sub.value, str) and not isinstance(parents.get(sub), ast.JoinedStr):
+                    text = sub.value
+                elif isinstance(sub, ast.JoinedStr):
+                    text = "".join(v.value for v in sub.values if isinstance(v, ast.Constant))
+                else:
+                    continue
+                if not skipped(sub) and re.search(r"[A-Za-zÀ-ÿ]{3,}", text):     # des mots : passer par self.t(...)
+                    left.append((sub.lineno, text[:60]))
+    assert not left, f"textes en dur dans console.py : {left}"
