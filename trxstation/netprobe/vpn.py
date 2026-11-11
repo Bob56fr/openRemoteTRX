@@ -17,6 +17,8 @@ import ipaddress
 import logging
 import time
 
+from ..errors import codes
+
 log = logging.getLogger(__name__)
 ALTERNATE_MS = 600_000                 # D2 : deux appareils sur une adresse à moins de 10 min d'écart
 WARNING_MS = 86_400_000                # un avertissement reste affiché 24 h
@@ -89,7 +91,7 @@ class VpnWatch:
             self.alerted[key] = now
             self._save()
             try:
-                self.alert("TRX distant : profil VPN partage ?", text(warning))
+                self.alert(codes.ORT_4503, text(warning))
             except Exception:                      # une alerte ratée ne gêne jamais la station
                 log.exception("alerte du profil VPN partagé non envoyée")
         return warning

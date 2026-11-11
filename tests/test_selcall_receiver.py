@@ -298,7 +298,7 @@ def test_ntfy_alert_on_opening_only_and_never_with_the_code(tmp_path):
     sent = []
     store.add_listener(rc.open_alert(lambda title, message: sent.append((title, message)), store.status.state))
     run(receiver, np.concatenate([frame48("4721"), np.zeros(RATE // 2)]))
-    assert len(sent) == 1 and sent[0][0] == "SELCALL" and "squelch ouvert" in sent[0][1]
+    assert len(sent) == 1 and sent[0][0] == "ORT-6805" and "squelch ouvert" in sent[0][1]
     assert "4721" not in sent[0][1]                                                  # décision du 2026-11-09
     store.set_options(attenuation_db=10)                                             # reste OUVERT : pas de 2e alerte
     run(receiver, np.concatenate([frame48("4721"), np.zeros(RATE // 2)]))           # déjà ouvert

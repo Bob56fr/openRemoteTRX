@@ -20,6 +20,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .. import config as cfgmod
+from ..errors import codes
 from .api.access import LISTENER
 
 log = logging.getLogger(__name__)
@@ -113,7 +114,7 @@ class AccessWatcher:
                 log.error("%s (%d visiteur(s) déconnecté(s))", message, len(listeners))
                 alert = getattr(self.manager, "alert", None)
                 if alert is not None:
-                    alert("TRX distant : visiteurs deconnectes", message)
+                    alert(codes.ORT_4308, message)
                 for client_id in listeners:
                     await self.manager.kick(client_id, "station_overload", message=message)
         wanted = self.take_kick_request()

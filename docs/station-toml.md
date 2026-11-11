@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.130.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.131.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -289,7 +289,7 @@ Se modifie : Menu 3.2. (au redémarrage).
 | `tot_abs_s` | courant | `135` | TOT absolu du superviseur : au-delà, il coupe l'émission lui-même, même si la passerelle ne le fait pas. Coupe aussi une émission faite au micro du poste. **Sécurité** : Doit rester strictement plus grand que `[safety] tot_ceiling_s`. |
 | `poll_interval_s` | expert | `1.0` | Cadence de surveillance au repos (plus rapide pendant une émission). |
 | `max_reboots_per_hour` | expert | `3` | Redémarrages de la machine permis par heure ; au-delà, mode sûr (réception, accès coupé). |
-| `notify_url` | courant | `""` | Adresse de notification ntfy pour les alertes de la station (facultatif). **Sécurité** : Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes. Exemple : `https://ntfy.sh/mon-sujet-secret` |
+| `notify_url` | courant | `""` | Adresse de notification ntfy pour les alertes de la station (facultatif). Chaque alerte porte un code stable (par exemple « ORT-5024 TOT absolu dépassé »), la priorité ntfy de ce code, ce qu'il faut faire et le lien vers la page du code (liste des codes d’erreur) ; un code sans alerte par défaut est seulement inscrit au journal. **Sécurité** : Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes. Exemple : `https://ntfy.sh/mon-sujet-secret` |
 | `status_path` | expert | `/run/trx-remote/gateway-status.json` (Linux) ; `C:\ProgramData\trx-remote\run\gateway-status.json` (Windows). | Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et TRX Console. |
 | `state_dir` | expert | `/var/lib/trx-remote` (Linux) ; `C:\ProgramData\trx-remote\state` (Windows). | Dossier d'état de la station : mode sûr, mémoires, profils, mesures de TOS, identifiant de station. |
 | `service_mode` | expert | `"auto"` | `auto`, `systemd` (Linux : services du système) ou `managed` (le superviseur lance lui-même les processus, Windows). |

@@ -82,6 +82,14 @@ def entry(code: str) -> dict | None:
     return catalog().get(code)
 
 
+def by_machine(name: str) -> str | None:
+    """Premier code en service dont `codes_machine` contient `name` (raison de coupure, type de problème…)."""
+    for code, e in catalog().items():
+        if not e.get("deprecated") and name in (e.get("codes_machine") or ()):
+            return code
+    return None
+
+
 def render(code: str, lang: str = "fr", **contexte: Any) -> tuple[str, str]:
     """(titre, message) du code dans la langue demandée, variables remplacées ; code inconnu = texte générique."""
     e = entry(code)
@@ -120,8 +128,16 @@ def emit_event(code: str, *, logger: logging.Logger | None = None, prefixe: str 
     except Exception:                                  # filet ultime : jamais d'exception vers l'appelant
         event = ErrorEvent(code=str(code), gravite="erreur", titre=UNKNOWN_TITLE["fr"], message=str(code),
                            horodatage=time.time(), connu=False)
+    publish(event, logger=logger)
+    return event
+
+
+def publish(event: ErrorEvent, *, logger: logging.Logger | None = None, prefix: str = "") -> None:
+    """Journalise un événement déjà construit (au niveau de sa gravité) et le remet aux abonnés. Ne lève jamais.
+    `prefix` : mot placé en tête de la ligne du journal (« ALERTE » pour une alerte ntfy)."""
     try:
-        (logger or log).log(LEVELS.get(event.gravite, logging.ERROR), "%s %s", event.code, event.message,
+        head = f"{prefix} " if prefix else ""
+        (logger or log).log(LEVELS.get(event.gravite, logging.ERROR), "%s%s %s", head, event.code, event.message,
                             extra={"event": event.as_dict()})
     except Exception:
         pass
@@ -135,7 +151,6 @@ def emit_event(code: str, *, logger: logging.Logger | None = None, prefixe: str 
                 log.warning("abonné des événements en erreur : %r", sink, exc_info=True)
             except Exception:
                 pass
-    return event
 
 
 def _reset_for_tests() -> None:

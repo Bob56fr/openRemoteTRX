@@ -843,7 +843,7 @@ role = "Redémarrages de la machine permis par heure ; au-delà, mode sûr (réc
 niveau = "expert"
 
 [reglages."supervisor.notify_url"]
-role = "Adresse de notification ntfy pour les alertes de la station (facultatif)."
+role = "Adresse de notification ntfy pour les alertes de la station (facultatif). Chaque alerte porte un code stable (par exemple « ORT-5024 TOT absolu dépassé »), la priorité ntfy de ce code, ce qu'il faut faire et le lien vers la page du code (<a href=\"https://bob56fr.github.io/openRemoteTRX/erreurs/\" target=\"_blank\" rel=\"noopener noreferrer\">liste des codes d’erreur</a>) ; un code sans alerte par défaut est seulement inscrit au journal."
 niveau = "courant"
 exemple = "<code>https://ntfy.sh/mon-sujet-secret</code>"
 securite = "Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes."

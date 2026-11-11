@@ -6,6 +6,8 @@ import pytest
 from trxstation import config as cfgmod
 from trxstation.setup_wizard import dummy_config
 from trxstation.status import GatewayStatus
+from trxstation.errors import codes
+from trxstation.supervisor import core
 from trxstation.supervisor.core import Supervisor
 from trxstation.supervisor.rigctl import RigProbe
 from trxstation.supervisor.state import StateStore
@@ -36,6 +38,7 @@ class World:
         self.boom: set[str] = set()
         self.calls: list[str] = []
         self.alerts: list[str] = []
+        self.codes: list[str] = []
         self.alive: list[str] = []                # battements « Station en service » (sans sonnerie)
         self.store = StateStore(tmp_path)
         self.sup = self.make_supervisor()
@@ -104,11 +107,13 @@ class World:
     def reboot(self):
         self._record("reboot")
 
-    def notify(self, title, message, quiet=False):
-        if quiet:
-            self.alive.append(message)
+    def notify(self, code, detail="", key=""):
+        # Alerte par code du catalogue : on note le sujet (nom du problème, niveau de reprise) ou le code.
+        self.codes.append(code)
+        if code == codes.ORT_8012:
+            self.alive.append(detail)
         else:
-            self.alerts.append(title)
+            self.alerts.append(key or code)
 
 
 def W(tmp_path, **kw):
@@ -409,7 +414,7 @@ def test_rigctld_lost_during_tx_is_cut_then_restarted_after_one_second(tmp_path)
     reports = w.run(0.25)                         # 1 s depuis la première lecture ratée
     assert "rigctld_down_during_tx" in reports[0].problems
     assert w.calls == ["force_rx", "restart_rigctld"]   # « T 0 » tenté d'abord, puis l'échelle
-    assert "Problème : rigctld_down_during_tx" in w.alerts
+    assert "rigctld_down_during_tx" in w.alerts
     w.run(1)
     assert w.calls.count("force_rx") == 5 and w.calls.count("restart_rigctld") == 1   # « T 0 » à chaque passage
 
@@ -478,7 +483,7 @@ def test_rig_switched_off_is_awaited_never_escalated_to_safe_mode(tmp_path):
     w.rig = RigProbe(False, error="TimeoutError('timed out')")
     w.run(600)                                                       # dix minutes poste éteint
     assert w.calls == [] and w.store.safe_mode() is None
-    assert "Problème : rig_absent" in w.alerts and "MODE SÛR" not in w.alerts
+    assert "rig_absent" in w.alerts and codes.ORT_8008 not in w.alerts and codes.ORT_2015 in w.codes
     w.port_present, w.gateway_up = True, True                       # poste rallumé : rigctld relancé par la reprise normale
     w.run(30)
     assert "restart_rigctld" in w.calls and w.store.safe_mode() is None
@@ -498,17 +503,17 @@ def test_cpu_hot_only_alerts(tmp_path):
     w = W(tmp_path)
     w.temp = 85.0
     w.run(10)
-    assert w.calls == [] and "Problème : cpu_hot" in w.alerts
+    assert w.calls == [] and "cpu_hot" in w.alerts
 
 
 def test_hot_rig_only_alerts(tmp_path):
     w = W(tmp_path)
     w.gw_temp = "warn"
     w.run(10)
-    assert w.calls == [] and "Problème : rig_warm" in w.alerts
+    assert w.calls == [] and "rig_warm" in w.alerts
     w.gw_temp = "hot"                                                # la passerelle coupe elle-même ; ici l'alerte seule
     w.run(10)
-    assert w.calls == [] and "Problème : rig_hot" in w.alerts
+    assert w.calls == [] and "rig_hot" in w.alerts
 
 
 def test_alerts_are_not_repeated_and_recovery_is_announced(tmp_path):
@@ -517,10 +522,10 @@ def test_alerts_are_not_repeated_and_recovery_is_announced(tmp_path):
     w.run(2)
     w.freeze_gateway()
     w.run(100)
-    assert w.alerts.count("Problème : gateway_silent") == 1
+    assert w.alerts.count("gateway_silent") == 1
     w.gateway_up, w.frozen = True, False
     w.run(5)
-    assert "Station rétablie" in w.alerts
+    assert codes.ORT_8011 in w.alerts
 
 
 # --------------------------------------------------------------------------- robustesse
@@ -627,13 +632,13 @@ def test_memory_high_alerts_after_a_minute_then_once_an_hour_and_never_acts(tmp_
     w = _host_world(tmp_path)
     w.host = HostReading(mem_pct=95.0)
     w.run(45, dt=1)
-    assert "Problème : memory_high" not in w.alerts                    # pic passager (< 60 s) : rien
+    assert "memory_high" not in w.alerts                    # pic passager (< 60 s) : rien
     w.run(60, dt=1)
-    assert w.alerts.count("Problème : memory_high") == 1
+    assert w.alerts.count("memory_high") == 1
     w.run(1800, dt=1)
-    assert w.alerts.count("Problème : memory_high") == 1               # pas toutes les 10 min comme les pannes
+    assert w.alerts.count("memory_high") == 1               # pas toutes les 10 min comme les pannes
     w.run(1900, dt=1)
-    assert w.alerts.count("Problème : memory_high") == 2               # une par heure
+    assert w.alerts.count("memory_high") == 2               # une par heure
     assert w.calls == []                                               # ni relance, ni mode sûr, ni « T 0 »
 
 
@@ -642,25 +647,25 @@ def test_short_spike_and_disabled_thresholds_do_not_alert(tmp_path):
     w = _host_world(tmp_path, mem_alert_pct=0, disk_alert_pct=0)
     w.host = HostReading(mem_pct=99.0, disks={"/": 99.0})
     w.run(300, dt=1)
-    assert not [a for a in w.alerts if a.startswith("Problème")]
+    assert not [a for a in w.alerts if a in core.HOST_PROBLEMS]
     w = _host_world(tmp_path)
     w.host = HostReading(mem_pct=95.0)
     w.run(40, dt=1)
     w.host = HostReading(mem_pct=50.0)                                 # redescendue avant la minute
     w.run(300, dt=1)
-    assert "Problème : memory_high" not in w.alerts
+    assert "memory_high" not in w.alerts
 
 
 def test_disk_full_and_throttled_pi_alert_with_details(tmp_path):
     from trxstation.supervisor.core import HostReading
     details = []
     w = _host_world(tmp_path)
-    w.notify = lambda title, message, quiet=False: details.append((title, message)) if not quiet else None
+    w.notify = lambda code, detail="", key="": details.append((key, detail)) if code != codes.ORT_8012 else None
     w.host = HostReading(mem_pct=20.0, disks={"/var/lib/trx-remote": 97.0, "/": 40.0}, throttled="sous-tension")
     w.run(100, dt=1)
     text = dict(details)
-    assert "/var/lib/trx-remote à 97 %" in text["Problème : disk_high"] and "/ à" not in text["Problème : disk_high"]
-    assert "sous-tension" in text["Problème : pi_throttled"]
+    assert "/var/lib/trx-remote à 97 %" in text["disk_high"] and "/ à" not in text["disk_high"]
+    assert "sous-tension" in text["pi_throttled"]
     assert w.calls == []
 
 

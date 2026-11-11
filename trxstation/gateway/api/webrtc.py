@@ -135,7 +135,7 @@ class PeerManager:
         self.reports = reports                  # ReportStore : rapports de problème envoyés par la page
         self.access = access                    # AccessControl : rôles, quotas, présence ; None = tout client est opérateur
         self.listener_muted = muted             # () -> bool : silence pour les visiteurs (réception hors bandes)
-        self.alert = alert                      # (titre, message) -> None : alerte ntfy
+        self.alert = alert                      # (code du catalogue, détail) -> None : alerte ntfy (Notifier.alert)
         self.ctrl, self.link, self.pipeline, self.capabilities = ctrl, link, pipeline, capabilities
         self.spectrum = spectrum                # SpectrumService : son état est joint aux messages « state »
         self.fanout = SpectrumFanout(spectrum.cfg.max_fps if spectrum is not None else 10, time.monotonic)

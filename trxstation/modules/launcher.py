@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import Callable
 
+from ..errors import codes
 from . import API_VERSION, DEFAULT_BUS_HOST
 from .manifest import Manifest, api_compatible
 
@@ -66,7 +67,7 @@ class ModuleProcess:
         return self.manifest.name
 
 
-Notify = Callable[[str, str, str], None]      # (module, état, message)
+Notify = Callable[[str, str, str, str], None]  # (module, état, message, code du catalogue d'erreurs)
 SecretsSource = Callable[[], dict[str, str] | None]
 
 
@@ -116,7 +117,7 @@ class ModuleLauncher:
             if not api_compatible(m.api, API_VERSION):
                 mp.state = INCOMPATIBLE
                 self._notify(mp, f"API {m.api} attendue, {API_VERSION} fournie : "
-                                 "module non lancé")
+                                 "module non lancé", codes.ORT_6502)
             self.modules[m.name] = mp
         self._task: asyncio.Task | None = None
 
@@ -153,7 +154,7 @@ class ModuleLauncher:
         if not self.run_as or self.run_as == "root" or not self._user_exists(self.run_as):
             mp.state = DISABLED
             self._notify(mp, f"le superviseur est root et le compte « {self.run_as or '?'} » "
-                             "est introuvable : module non lancé (jamais en root)")
+                             "est introuvable : module non lancé (jamais en root)", codes.ORT_6516)
             return None
         try:
             import pwd
@@ -161,7 +162,7 @@ class ModuleLauncher:
             groups = os.getgrouplist(self.run_as, info.pw_gid)   # ex. video pour une caméra USB
         except (ImportError, KeyError, OSError) as exc:
             mp.state = DISABLED
-            self._notify(mp, f"compte « {self.run_as} » inutilisable ({exc}) : module non lancé")
+            self._notify(mp, f"compte « {self.run_as} » inutilisable ({exc}) : module non lancé", codes.ORT_6516)
             return None
         return {"user": info.pw_uid, "group": info.pw_gid, "extra_groups": groups,
                 "_home": info.pw_dir}
@@ -188,7 +189,7 @@ class ModuleLauncher:
             mp.proc = subprocess.Popen(self.command_for(m), **kwargs)
         except (OSError, KeyError, ValueError) as exc:
             mp.state = DISABLED
-            self._notify(mp, f"lancement impossible : {exc}")
+            self._notify(mp, f"lancement impossible : {exc}", codes.ORT_6501)
             return False
         mp.started_at = time.monotonic()
         mp.state = RUNNING
@@ -275,14 +276,14 @@ class ModuleLauncher:
                 if len(mp.restarts) > p.max_restarts:
                     mp.state = DISABLED
                     self._notify(mp, f"arrêté {len(mp.restarts)} fois en moins de "
-                                     f"{p.window_s:.0f} s : désactivé")
+                                     f"{p.window_s:.0f} s : désactivé", codes.ORT_8002)
                     continue
                 mp.delay_s = p.first_delay_s if mp.delay_s == 0 else \
                     min(p.max_delay_s, mp.delay_s * 2)
                 mp.next_start = now + mp.delay_s
                 mp.state = WAITING
                 self._notify(mp, f"arrêt inattendu (code {code}), "
-                                 f"relance dans {mp.delay_s:.0f} s")
+                                 f"relance dans {mp.delay_s:.0f} s", codes.ORT_6517)
             elif mp.state == WAITING and now >= mp.next_start:
                 if not self._spawn(mp) and mp.state == WAITING:
                     mp.next_start = now + p.first_delay_s
@@ -296,11 +297,11 @@ class ModuleLauncher:
         finally:
             self.stop_all()
 
-    def _notify(self, mp: ModuleProcess, message: str) -> None:
-        log.warning("module %s : %s", mp.name, message)
+    def _notify(self, mp: ModuleProcess, message: str, code: str) -> None:
+        log.warning("module %s : %s (%s)", mp.name, message, code)
         if self.notify:
             try:
-                self.notify(mp.name, mp.state, message)
+                self.notify(mp.name, mp.state, message, code)
             except Exception:
                 log.exception("notification impossible")
 

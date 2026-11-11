@@ -273,13 +273,13 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
             return ctrl.snapshot().owner, stats.get("tx_underruns", 0) + stats.get("tx_overruns", 0)
         from ..netprobe.station_probes import StationProbes
         probes = StationProbes(cfg.netprobe.lan_target, cfg.netprobe.internet_target)   # box et Internet (diagnostic)
-        netprobe = NetProbeHub(cfg.netprobe, cfg.supervisor.state_dir, alert=notifier.send, tx_counter=tx_counter,
+        netprobe = NetProbeHub(cfg.netprobe, cfg.supervisor.state_dir, alert=notifier.alert, tx_counter=tx_counter,
                                probes=probes)
     manager = PeerManager(ctrl, link, pipeline, capabilities, ice_servers=cfg.network.ice_servers, memories=memories,
                           layouts=layouts, spectrum=spectrum, reports=reports, access=access,
                           muted=None if access is None else
                           lambda: listener_muted(access.settings, cfg, link.state.frequency_hz),
-                          alert=notifier.send, voices=voices, swr=swr, netprobe=netprobe)
+                          alert=notifier.alert, voices=voices, swr=swr, netprobe=netprobe)
     registry = ClientRegistry(cfg.clients)
     app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,

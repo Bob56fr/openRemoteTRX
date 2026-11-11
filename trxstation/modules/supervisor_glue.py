@@ -25,7 +25,7 @@ from .registry import selected_manifests
 log = logging.getLogger(__name__)
 
 
-def build_launcher(cfg, *, alert: Callable[[str, str], object] | None = None,
+def build_launcher(cfg, *, alert: Callable[..., object] | None = None,
                    policy: RestartPolicy | None = None, config_path: Path | None = None,
                    **kwargs) -> ModuleLauncher | None:
     """Lanceur des modules de [modules] run, ou None s'il n'y en a aucun.
@@ -46,9 +46,9 @@ def build_launcher(cfg, *, alert: Callable[[str, str], object] | None = None,
         key = read_key(kpath)
         return module_secrets(key, names) if key is not None else None
 
-    def notify(module: str, state: str, message: str) -> None:
+    def notify(module: str, state: str, message: str, code: str) -> None:
         if alert is not None:
-            alert(f"Module {module}", f"{module} ({state}) : {message}")
+            alert(code, f"{module} ({state}) : {message}", key=module)
 
     cwd = Path(cfg.supervisor.state_dir)
     return ModuleLauncher(manifests, secrets, bus_port=cfg.modules.bus_port,

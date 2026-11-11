@@ -44,7 +44,8 @@ def test_page_is_public_self_contained_and_reports_its_height():
     page = (doc.SITE / "station-toml" / "index.html").read_text(encoding="utf-8")
     assert page.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
     assert not re.search(r"<(link|img|iframe)\b|\bsrc\s*=", page, re.I)                # tout est dans la page
-    assert set(re.findall(r'href="(https?://[^"]+)"', page)) <= {doc.base.REPO_URL, doc.base.SITE_URL}
+    assert set(re.findall(r'href="(https?://[^"]+)"', page)) <= {doc.base.REPO_URL, doc.base.SITE_URL,
+                                                                    "https://bob56fr.github.io/openRemoteTRX/erreurs/"}   # liste des codes (même site)
     assert "trx-doc-height" in page
     ips = set(re.findall(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", page))
     assert ips <= {"127.0.0.1", "0.0.0.0", "1.1.1.1"}, ips     # aucune adresse réelle ; 1.1.1.1 : cible Internet par défaut de [netprobe]

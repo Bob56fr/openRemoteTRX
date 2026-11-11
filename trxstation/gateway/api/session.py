@@ -22,6 +22,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable
 
 from ... import __version__
+from ...errors import codes
 from ...hostinfo import hamlib_version, host_details, shared_monitor
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..bugreports import ReportRefused
@@ -99,7 +100,7 @@ class ControlSession:
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
         self.disconnect = disconnect             # (motif) -> None : la couche réseau ferme CETTE connexion
-        self.alert = alert                       # (titre, message) -> None : alerte ntfy (refus répétés d'un visiteur)
+        self.alert = alert                       # (code du catalogue, détail) -> None : alerte ntfy (Notifier.alert) (refus répétés d'un visiteur)
         self.kick_listener = kick_listener       # (compte) -> bool : « Déconnecter » un visiteur (opérateur seulement)
         self._forbidden: deque[float] = deque()
         self._forbidden_logged = 0.0
@@ -520,7 +521,7 @@ class ControlSession:
         if len(self._forbidden) > FORBIDDEN_LIMIT and self.disconnect is not None:
             log.error("visiteur %s : %d commandes refusées en une minute, connexion fermée", self.client_id, len(self._forbidden))
             if self.alert is not None:
-                self.alert("TRX distant : visiteur deconnecte",
+                self.alert(codes.ORT_4307,
                            f"Le visiteur {self.client_id} a envoyé plus de {FORBIDDEN_LIMIT} commandes refusées en une "
                            "minute (client modifié ?) : connexion fermée.")
             self._forbidden.clear()

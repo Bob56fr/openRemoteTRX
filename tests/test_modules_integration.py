@@ -295,7 +295,7 @@ def test_superviseur_attend_la_cle_de_la_passerelle_puis_lance(tmp_path):
     cfg = make_cfg(tmp_path)
     (tmp_path / "etat").mkdir()
     alerts = []
-    la = build_launcher(cfg, alert=lambda t, m: alerts.append((t, m)), is_root=lambda: False,
+    la = build_launcher(cfg, alert=lambda code, detail, key="": alerts.append((code, detail)), is_root=lambda: False,
                         command_override=lambda m: [sys.executable, "-c", "import time; time.sleep(30)"])
     assert set(la.modules) == {"demo"}
     start_modules(la)

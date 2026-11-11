@@ -199,7 +199,7 @@ def test_regular_outages_point_to_a_shared_vpn_profile(tmp_path):
     assert diagnoses[0] == "mobile_or_tunnel" and diagnoses[-1] == "vpn_shared"
     warnings = [e["warning"] for e in peer.of_type("net_event") if e["event"] == "vpn_shared"]
     assert warnings and warnings[0]["kind"] == "pattern" and 25_000 < warnings[0]["period_ms"] < 31_000
-    assert len([a for a in alerts if "VPN" in a[0]]) == 1                       # une alerte par 24 h
+    assert len([a for a in alerts if a[0] == "ORT-4503"]) == 1                      # une alerte par 24 h
 
 
 def test_shared_vpn_profile_same_time_and_alternate(tmp_path):
@@ -251,7 +251,7 @@ def test_loss_alert_once_until_the_link_recovers(tmp_path):
             original(params)
     peer.probe.on_pong = lossy
     peer.run(70)
-    assert len([a for a in alerts if "degradee" in a[0]]) == 1
+    assert len([a for a in alerts if a[0] == "ORT-4001"]) == 1
 
 
 def test_hours_stats_thresholds_and_clear(tmp_path):

@@ -25,7 +25,7 @@ def launcher_with(code: str, secrets=None, **kw):
     kw.setdefault("is_root", lambda: False)        # le bac à sable de test peut tourner en root
     la = ModuleLauncher([make_manifest("demo")], {"demo": "s"} if secrets is None else secrets,
                         bus_port=1, command_override=lambda _m: [sys.executable, "-c", code],
-                        notify=lambda n, st, msg: notes.append((n, st, msg)), **kw)
+                        notify=lambda n, st, msg, code: notes.append((n, st, msg)), **kw)
     return la, notes
 
 
@@ -90,7 +90,7 @@ def test_module_stable_remet_le_delai_a_zero():
 def test_module_incompatible_jamais_lance():
     notes = []
     la = ModuleLauncher([make_manifest("vieux", api="2.0")], {"vieux": "s"}, bus_port=1,
-                        notify=lambda n, st, msg: notes.append(msg))
+                        notify=lambda n, st, msg, code: notes.append(msg))
     assert la.modules["vieux"].state == INCOMPATIBLE and not la.start("vieux")
     assert notes and "API" in notes[0]
 

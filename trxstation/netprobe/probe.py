@@ -20,6 +20,7 @@ from collections import deque
 from dataclasses import asdict
 from pathlib import Path
 
+from ..errors import codes
 from . import calc
 from .store import NetStore
 from .vpn import VpnWatch
@@ -47,7 +48,7 @@ def _wall_ms() -> int:
 class NetProbeHub:
     def __init__(self, cfg, state_dir: str | Path, *, alert=None, tx_counter=None, probes=None,
                  mono_ms=_mono_ms, wall_ms=_wall_ms) -> None:
-        """`cfg` : section [netprobe] ; `alert` : (titre, message) -> None (ntfy) ; `tx_counter` : () -> (propriétaire de
+        """`cfg` : section [netprobe] ; `alert` : (code du catalogue, détail) -> None (Notifier.alert) ; `tx_counter` : () -> (propriétaire de
         l'émission, trous + son jeté du son d'émission), pour reconnaître une fenêtre au son dégradé."""
         self.cfg, self.alert, self.tx_counter = cfg, alert, tx_counter
         self.mono_ms, self.wall_ms = mono_ms, wall_ms
@@ -161,12 +162,12 @@ class NetProbeHub:
                  outage["kind"], outage["diagnosis"])
         self.broadcast({"type": "net_event", "event": "outage", "outage": public_outage(outage)})
         if self.cfg.alert_outage_s and outage["duration_ms"] >= self.cfg.alert_outage_s * 1000:
-            self._alert_now("TRX distant : coupure reseau",
+            self._alert_now(codes.ORT_4501,
                             f"Coupure de {round(outage['duration_ms'] / 1000)} s ({outage['agent'] or outage['client']}). "
                             f"Tronçon probable : {DIAGNOSIS_TEXT.get(outage['diagnosis'], outage['diagnosis'])}.",
                             cooldown=True)
 
-    def _alert_now(self, title: str, message: str, cooldown: bool = False) -> None:
+    def _alert_now(self, code: str, message: str, cooldown: bool = False) -> None:
         if self.alert is None:
             return
         now = self.mono_ms()
@@ -175,12 +176,12 @@ class NetProbeHub:
                 return
             self._last_alert = now
         try:
-            self.alert(title, message)
+            self.alert(code, message)
         except Exception:                              # une alerte ratée ne gêne jamais la station
             log.exception("alerte de la sonde réseau non envoyée")
 
     def loss_alert(self, probe: "ClientProbe", loss_pct: float) -> None:
-        self._alert_now("TRX distant : liaison degradee",
+        self._alert_now(codes.ORT_4001,
                         f"Perte de {loss_pct:g} % des battements sur 60 s ({probe.agent or probe.client_id}).", cooldown=True)
 
     # ------------------------------------------------------------------ minuterie

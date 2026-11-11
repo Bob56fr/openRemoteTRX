@@ -25,6 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ..errors import codes
 from . import protocol as p
 from .decoder import RATE as DEC_RATE
 from .decoder import Frame, SelcallDecoder
@@ -224,7 +225,7 @@ def open_alert(send: Callable[[str, str], object], state: str) -> Callable[[Selc
             details.append(f"décalage {call['delta_hz']:+.0f} Hz")
         if isinstance(call.get("snr_db"), (int, float)):
             details.append(f"S/B {call['snr_db']:.0f} dB")
-        send("SELCALL", "Appel reçu : squelch ouvert" + (f" ({', '.join(details)})" if details else "") + ".")
+        send(codes.ORT_6805, "Appel reçu : squelch ouvert" + (f" ({', '.join(details)})" if details else "") + ".")
 
     return listener
 

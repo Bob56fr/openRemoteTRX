@@ -358,7 +358,7 @@ def test_frozen_gateway_during_real_transmission_is_cut_by_supervisor(tmp_path):
             def restart_rigctld(self): calls.append("restart_rigctld")
             def reset_usb(self): calls.append("reset_usb")
             def reboot(self): calls.append("reboot")
-            def notify(self, title, message, quiet=False): pass
+            def notify(self, code, detail="", key=""): pass
 
         sup = Supervisor(cfg, read_status=lambda: read_status(status_path), probe_rig=probe.read,
                          actions=Actions(), store=StateStore(tmp_path / "state"), read_temp=lambda: None)

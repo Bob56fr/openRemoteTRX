@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     launcher = None
     try:
-        launcher = build_launcher(cfg, alert=sup.actions.notifier.send, config_path=args.config)   # [modules] run vide : None
+        launcher = build_launcher(cfg, alert=sup.actions.notifier.alert, config_path=args.config)   # [modules] run vide : None
         start_modules(launcher)
     except Exception:
         log.exception("modules non lancés : la station fonctionne sans eux")

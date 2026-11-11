@@ -690,7 +690,7 @@ ORT-2001:
   - Nom du port changé (préférer /dev/serial/by-id)
   preconisation: Allumer le poste, vérifier le câble USB et le pilote, puis relancer le diagnostic (menu 1).
   action_auto: aucune
-  ntfy_defaut: false
+  ntfy_defaut: true
   priorite_ntfy: 3
   codes_machine:
   - usb_missing

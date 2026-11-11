@@ -46,6 +46,8 @@ from typing import Protocol
 
 from ..cpu_temp import cpu_celsius
 from ..config import DUMMY_MODEL, Config
+from ..errors import codes
+from ..errors.emit import by_machine
 from ..status import GatewayStatus, GatewayWatch
 from .rigctl import RigProbe
 from .state import StateStore
@@ -53,6 +55,9 @@ from .state import StateStore
 log = logging.getLogger(__name__)
 
 LADDER = ("restart_gateway", "restart_rigctld", "reset_usb", "reboot")
+# Code d'alerte de chaque niveau de l'échelle de reprise (catalogue d'erreurs).
+LADDER_CODES = {"restart_gateway": codes.ORT_8001, "restart_rigctld": codes.ORT_8001,
+                "reset_usb": codes.ORT_8004, "reboot": codes.ORT_8006}
 STUCK_S = 5.0              # émission non expliquée qui RÉSISTE à « T 0 » depuis ce délai : alors seulement, échelle de reprise
 RIG_LOST_TX_S = 1.0        # rigctld injoignable depuis ce délai pendant une émission : panne (sinon connexion ratée)
 RENOTIFY_S = 600.0
@@ -72,7 +77,7 @@ class Actions(Protocol):
     def restart_rigctld(self) -> None: ...
     def reset_usb(self) -> None: ...
     def reboot(self) -> None: ...
-    def notify(self, title: str, message: str, quiet: bool = False) -> None: ...
+    def notify(self, code: str, detail: str = "", key: str = "") -> None: ...   # alerte du catalogue d'erreurs
 
 
 @dataclass(frozen=True)
@@ -336,7 +341,7 @@ class Supervisor:
         name = LADDER[level]
         detail = ", ".join(p.name for p in problems)
         log.error("reprise niveau %d (%s) : %s", level, name, detail)
-        self._notify_text(f"Reprise : {name}", detail)
+        self._alert(LADDER_CODES[name], f"reprise « {name} » : {detail}", key=name)
         if name == "restart_gateway":
             self._act(report, "kill_gateway", self.actions.kill_gateway)
             self._act(report, "restart_gateway", self.actions.restart_gateway)
@@ -373,7 +378,7 @@ class Supervisor:
         report.safe_mode = True
         self._act(report, "force_rx", self.actions.force_rx)
         self._act(report, "stop_gateway", self.actions.stop_gateway)
-        self._notify_text("MODE SÛR", reason)
+        self._alert(codes.ORT_8008, reason)
 
     def _safe_mode_step(self, now: float, rig_tx: bool, gateway_fresh: bool, reason: str,
                         report: StepReport) -> StepReport:
@@ -388,12 +393,10 @@ class Supervisor:
 
     # ------------------------------------------------------------------ alertes
 
-    def _notify_text(self, title: str, message: str, quiet: bool = False) -> None:
+    def _alert(self, code: str, detail: str, key: str = "") -> None:
+        """Alerte d'un code du catalogue (titre, priorité, marche à suivre : Notifier.alert)."""
         try:
-            if quiet:
-                self.actions.notify(title, message, quiet=True)
-            else:
-                self.actions.notify(title, message)
+            self.actions.notify(code, detail, key=key)
         except Exception:
             log.exception("alerte en erreur")
 
@@ -415,7 +418,7 @@ class Supervisor:
             f"problèmes : {', '.join(problems) if problems else 'aucun'}",
             f"prochain message dans {every_h:g} h",
         ]
-        self._notify_text("Station en service", "\n".join(lines), quiet=True)
+        self._alert(codes.ORT_8012, "\n".join(lines))
 
     def _notify(self, now: float, problems: list[Problem]) -> None:
         names = {p.name for p in problems}
@@ -423,9 +426,10 @@ class Supervisor:
             last = self._notified.get(problem.name)
             if last is None or now - last >= (HOST_RENOTIFY_S if problem.name in HOST_PROBLEMS else RENOTIFY_S):
                 self._notified[problem.name] = now
-                self._notify_text(f"Problème : {problem.name}", problem.detail)
+                # code absent (ne devrait pas arriver : test) => alerte quand même, sous le nom du problème
+                self._alert(by_machine(problem.name) or problem.name, problem.detail, key=problem.name)
         for gone in [n for n in self._notified if n not in names]:
             del self._notified[gone]
         if not names and self._had_problems:
-            self._notify_text("Station rétablie", "plus aucun problème détecté")
+            self._alert(codes.ORT_8011, "plus aucun problème détecté")
         self._had_problems = bool(names)
