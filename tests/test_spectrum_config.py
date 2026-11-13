@@ -31,8 +31,9 @@ def test_disabled_by_default_and_rigctld_unchanged():
 
 def test_enabled_spectrum_stays_on_the_machine_and_never_opens_the_udp_command_server():
     cmd = command(build(spectrum={"enabled": True, "data_port": 4600}))
-    conf = cmd[cmd.index("-C") + 1]
-    assert conf == "async=1,multicast_data_addr=127.0.0.1,multicast_data_port=4600,multicast_cmd_addr=0.0.0.0"
+    confs = [cmd[i + 1] for i, a in enumerate(cmd) if a == "-C"]
+    assert "async=1,multicast_data_addr=127.0.0.1,multicast_data_port=4600,multicast_cmd_addr=0.0.0.0" in confs
+    assert "cache_timeout=0" in confs                                    # cache du PTT toujours coupé (étape 176)
     assert cmd[cmd.index("-T") + 1] == "127.0.0.1"
 
 

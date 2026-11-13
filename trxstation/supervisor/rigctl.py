@@ -13,6 +13,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 RETRY_PAUSE_S = 0.05     # avant le second essai d'une connexion refusée ou coupée
+CACHE_DEFAULT_MS = 1000  # cache de rigctld inconnu : le plus long par défaut (Hamlib 5.0)
+CACHE_WAIT_MAX_S = 2.0   # attente maximale avant de relire après « T 0 » si le cache n'a pas pu être coupé
 
 
 class RigctlError(Exception):
@@ -85,10 +87,27 @@ class RigctlProbe:
         except (OSError, RigctlError, ValueError) as exc:
             return RigProbe(False, error=repr(exc))
 
+    def cache_ms(self) -> int | None:
+        """Coupe le cache de rigctld (réglage global) et renvoie le délai relu : 0 attendu ; None = illisible.
+        Avec un cache, rigctld renvoie après « T 0 » la valeur COMMANDÉE (0) sans relire le poste (étape 176)."""
+        try:
+            self._query("\\set_cache 0")
+        except (OSError, RigctlError):
+            pass
+        try:
+            return int(float(self._query("\\get_cache").get("Timeout (msecs)", "")))
+        except (OSError, RigctlError, ValueError):
+            return None
+
     def force_rx(self) -> bool:
-        """Envoie « T 0 » puis relit : True si le poste est bien repassé en réception."""
+        """Envoie « T 0 » puis relit : True si le poste est bien repassé en réception. Cache de rigctld coupé avant ;
+        s'il reste actif (ou illisible), on attend qu'il expire avant de relire : sinon la relecture répondrait « 0 »
+        quel que soit l'état réel du poste."""
+        cache = self.cache_ms()
         try:
             self._query("T 0")
+            if cache != 0:
+                self.sleep(min(CACHE_WAIT_MAX_S, (cache if cache is not None else CACHE_DEFAULT_MS) / 1000 + 0.1))
             return self.read().ptt is not True
         except (OSError, RigctlError, ValueError):
             return False

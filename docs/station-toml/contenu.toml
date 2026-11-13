@@ -194,6 +194,7 @@ niveau = "expert"
 [reglages."rig.extra_conf"]
 role = "Options supplémentaires passées à rigctld (<code>-C nom=valeur</code>), pour un poste qui en a besoin."
 niveau = "expert"
+securite = "Interdits ici : les options du spectre (<code>async</code>, <code>multicast_…</code>, réglées par [spectrum]) et <code>cache_timeout</code>. La station lance toujours rigctld avec <code>cache_timeout=0</code> (depuis 0.134.0) : avec un cache, rigctld renvoie après une coupure la valeur commandée au lieu de l'état réel du poste, et un poste resté en émission paraîtrait coupé."
 exemple = "[\"civaddr=0x94\"]"
 
 [reglages."rig.tx_modes"]

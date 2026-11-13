@@ -484,6 +484,9 @@ class PttController:
         async with self._tx_lock:
             epoch = self._epoch
             self._check_idle(client_id)
+            if self.limits.require_ptt_readback and getattr(self.link, "ptt_cache_ok", None) is False:
+                # rigctld renverrait la valeur COMMANDÉE à la relecture : ni la prise ni la coupure ne se vérifieraient.
+                raise Refused("ptt_unreadable", "rigctld garde le PTT en cache (relecture non fiable)")
             client = self.link.client
             try:
                 freq = await client.get_frequency()

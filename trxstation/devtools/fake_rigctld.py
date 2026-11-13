@@ -8,11 +8,16 @@ Usage manuel (ex. sous Windows, pour lancer la passerelle sans matériel) :
 Usage en test : voir tests/test_cat.py. Les attributs `errors` (code RPRT par commande),
 `delay_s` et `drop_connections()` permettent de simuler des pannes.
 Le faux poste enregistre toutes les commandes reçues, dont tout PTT (`ptt_set_calls`).
+
+Cache du PTT (`cache_timeout_ms`, 0 par défaut = pas de cache) : imite Hamlib (relevé dans rig.c de Hamlib 5.0,
+étape 176) : après « T x », rigctld garde la valeur COMMANDÉE et la renvoie à « t » sans interroger le poste tant
+qu'elle a moins de `cache_timeout_ms` ; « \\set_cache N » / « \\get_cache » le règlent comme le vrai.
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
+import time
 
 from .loop_noise import install_quiet_reset_handler
 
@@ -34,6 +39,8 @@ class FakeRigctld:
         self.rit = 0
         self.xit = 0
         self.ptt = 0
+        self.cache_timeout_ms = 0          # Hamlib : 500 ms (4.x) ou 1000 ms (5.0) par défaut ; 0 = pas de cache
+        self._ptt_cache: tuple[int, float] | None = None   # (valeur, instant) mise par « T » ou par une vraie lecture
         self.writable_levels = {"SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"}   # « L » accepté (les autres : RPRT -11)
         self.vfo = "VFOA"         # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
         self.commands: list[str] = []
@@ -165,6 +172,11 @@ class FakeRigctld:
                     return "RPRT -11\n"
                 return f"get_vfo:\n{self._out('VFO', self.vfo)}RPRT 0\n"
             if key == "t":
+                now = time.monotonic()
+                cached = self._ptt_cache
+                if cached is not None and (now - cached[1]) * 1000 < self.cache_timeout_ms:
+                    return f"get_ptt:\n{self._out('PTT', cached[0])}RPRT 0\n"        # sans interroger le « poste »
+                self._ptt_cache = (self.ptt, now)
                 return f"get_ptt:\n{self._out('PTT', self.ptt)}RPRT 0\n"
             if key == "T":
                 value = int(args[0])
@@ -173,7 +185,13 @@ class FakeRigctld:
                     return "RPRT -5\n"
                 if not (value == 0 and self.ignore_unkey):
                     self.ptt = value
+                self._ptt_cache = (value, time.monotonic())                       # valeur COMMANDÉE, comme Hamlib
                 return f"set_ptt: {args[0]}\nRPRT 0\n"
+            if key == "\\set_cache" and args:
+                self.cache_timeout_ms = int(args[0])
+                return f"set_cache: {args[0]}\nRPRT 0\n"
+            if key == "\\get_cache":
+                return f"get_cache:\n{self._out('Timeout (msecs)', self.cache_timeout_ms)}RPRT 0\n"
         except (IndexError, ValueError):
             return "RPRT -1\n"
         return "RPRT -4\n"

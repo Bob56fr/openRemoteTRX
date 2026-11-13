@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.133.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.134.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -21,7 +21,7 @@ Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au
 | `speed` | courant | `vide` | Débit série de la liaison CAT. Vide : le débit par défaut de Hamlib pour ce modèle. Doit être identique au réglage du poste. Exemple : 19200, 115200. |
 | `ptt_type` | courant | `"RIG"` | Comment la station passe le poste en émission : `RIG` (commande CAT), `RTS` ou `DTR` (ligne d'un port série), `GPIO` / `GPION` (broche du Raspberry Pi), `NONE` (aucune : réception seule). **Sécurité** : La station relit l'état du PTT après chaque commande ; avec `NONE`, aucune émission n'est possible. |
 | `ptt_port` | expert | `""` | Port de la commande PTT quand elle n'est pas sur le port CAT (RTS ou DTR d'un autre port). Vide : le port CAT. |
-| `extra_conf` | expert | `[]` | Options supplémentaires passées à rigctld (`-C nom=valeur`), pour un poste qui en a besoin. Exemple : ["civaddr=0x94"] |
+| `extra_conf` | expert | `[]` | Options supplémentaires passées à rigctld (`-C nom=valeur`), pour un poste qui en a besoin. **Sécurité** : Interdits ici : les options du spectre (`async`, `multicast_…`, réglées par [spectrum]) et `cache_timeout`. La station lance toujours rigctld avec `cache_timeout=0` (depuis 0.134.0) : avec un cache, rigctld renvoie après une coupure la valeur commandée au lieu de l'état réel du poste, et un poste resté en émission paraîtrait coupé. Exemple : ["civaddr=0x94"] |
 | `tx_modes` | courant | `[]` | Modes dans lesquels l'émission est permise ; vide = tous. Sur les Icom, l'audio de la carte son USB n'est émis qu'en modes données (USB-D, LSB-D, FM-D…) : dans un autre mode, le poste modulerait avec son propre micro. **Sécurité** : Une demande d'émission dans un mode absent de la liste est refusée. La mesure de TOS utilise le premier mode FM permis ici (FM, PKTFM ou FM-D). Exemple : Icom : ["PKTUSB", "PKTLSB", "FM-D", "AM-D"]. |
 | `max_power_w` | courant | `0` | Puissance maximale du poste en watts. 0 : inconnue, la page et l'application affichent des pourcentages au lieu de watts. Exemple : 100 pour un poste de 100 W. |
 

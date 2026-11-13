@@ -239,7 +239,9 @@ def test_rigctld_command_keeps_station_settings_and_disables_the_udp_command_ser
     cmd = hs.rigctld_probe_command(cfg, "127.0.0.1")
     assert cmd[0] == "/usr/bin/rigctld" and "-T" in cmd and cmd[cmd.index("-T") + 1] == "127.0.0.1"
     assert cmd[cmd.index("-t") + 1] == str(hs.RIGCTLD_PORT) and "rts_state=OFF" in cmd and "COM8" in cmd
-    conf = cmd[cmd.index("-C", cmd.index("rts_state=OFF")) + 1]
+    confs = [cmd[i + 1] for i, a in enumerate(cmd) if a == "-C"]
+    assert "cache_timeout=0" in confs                                    # cache du PTT coupé (étape 176)
+    conf = next(c for c in confs if c.startswith("async="))
     assert "async=1" in conf and "multicast_data_addr=127.0.0.1" in conf and "multicast_cmd_addr=0.0.0.0" in conf
 
 

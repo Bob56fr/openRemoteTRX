@@ -54,7 +54,7 @@ class Rig:
             args += ["-p", self.ptt_port]
         for conf in self.extra_conf:
             args += ["-C", conf]
-        return args
+        return args + ["-C", NO_CACHE_CONF]          # EN DERNIER : Hamlib garde la dernière valeur d'une option
 
 
 @dataclass
@@ -300,6 +300,11 @@ def parse_civ_address(text: str) -> int | None:
 # Options -C de rigctld réservées à [spectrum] : jamais dans extra_conf (le serveur de commandes UDP de Hamlib
 # n'a AUCUNE authentification et pourrait mettre le poste en émission ; la diffusion doit rester locale).
 RESERVED_RIGCTLD_CONF = ("async", "multicast_data_addr", "multicast_data_port", "multicast_cmd_addr", "multicast_cmd_port")
+# Cache de rigctld COUPÉ (étape 176) : avec un cache (Hamlib 4.0+, 500 ms en 4.x, 1000 en 5.0), rigctld renvoie après
+# « T 0 » la valeur COMMANDÉE à la relecture du PTT sans interroger le poste : un poste resté en émission paraîtrait
+# coupé. Ajouté par la station à chaque lancement ; interdit dans extra_conf.
+NO_CACHE_CONF = "cache_timeout=0"
+SAFETY_RIGCTLD_CONF = ("cache_timeout",)
 SPECTRUM_MIN_SPEED = 115200
 
 
@@ -622,6 +627,9 @@ def validate(cfg: Config) -> list[str]:
     if reserved:
         p.append(f"[rig] extra_conf : {', '.join(reserved)} interdit(s) ici (réglé par [spectrum] ; le serveur de "
                  "commandes UDP de Hamlib n'a aucune authentification)")
+    if set(_conf_keys(r.extra_conf)) & set(SAFETY_RIGCTLD_CONF):
+        p.append("[rig] extra_conf : cache_timeout interdit (la station coupe le cache de rigctld : sinon la relecture "
+                 "du PTT renvoie la valeur commandée au lieu de l'état réel du poste)")
     if not isinstance(sp.enabled, bool):
         p.append("[spectrum] enabled doit valoir true ou false")
     if isinstance(sp.data_port, bool) or not isinstance(sp.data_port, int) or not 1024 <= sp.data_port <= 65535:

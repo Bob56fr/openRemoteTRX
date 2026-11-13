@@ -74,6 +74,8 @@ class CatLink:
         self._disabled: set[str] = set()                # lectures facultatives abandonnées (non gérées par ce poste)
         self._failures: dict[str, int] = {}
         self._extra_index = self._tx_index = 0
+        self.ptt_cache_ok: bool | None = None           # cache du PTT de rigctld coupé ? (voir _disable_cache)
+        self._cache_warned = False
 
     # ------------------------------------------------------------------ état
 
@@ -116,6 +118,7 @@ class CatLink:
         while not self._stop.is_set():
             try:
                 await self.client.connect()
+                await self._disable_cache()
                 backoff = self.backoff_min_s
                 self._refresh_now = True
                 self._update(connected=True, last_error="")
@@ -131,6 +134,27 @@ class CatLink:
                 break
             backoff = min(backoff * 2, self.backoff_max_s)
         self._set_state(RigState(connected=False, updated_at=time.time()))
+
+    async def _disable_cache(self) -> None:
+        """Cache de rigctld coupé (étape 176) : sinon, après « T 0 », la relecture du PTT renvoie pendant 0,5 à 1 s la
+        valeur COMMANDÉE sans interroger le poste, et un poste resté en émission paraît coupé. rigctld est déjà lancé
+        avec « -C cache_timeout=0 » ; ceci couvre un rigctld lancé autrement. Résultat dans `ptt_cache_ok` :
+        True = cache coupé, False = cache ACTIF (la prise d'émission est refusée), None = commande inconnue."""
+        try:
+            await self.client.set_cache_timeout(0)
+        except (RigError, CatProtocolError) as exc:
+            log.warning("cache de rigctld : « \\set_cache 0 » refusé (%s)", exc)
+        try:
+            ms = await self.client.get_cache_timeout()          # relu même si le réglage a échoué : c'est lui qui décide
+        except (RigError, CatProtocolError) as exc:
+            if self.ptt_cache_ok is not None or not self._cache_warned:
+                log.warning("cache de rigctld : réglage impossible (%s) ; relecture du PTT peut-être périmée", exc)
+                self._cache_warned = True
+            self.ptt_cache_ok = None
+            return
+        self.ptt_cache_ok = ms == 0
+        if ms != 0:
+            log.error("cache de rigctld toujours actif (%d ms) : la relecture du PTT n'est pas fiable, émission refusée", ms)
 
     async def _poll_loop(self) -> None:
         tick = 0

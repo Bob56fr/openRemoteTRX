@@ -187,6 +187,21 @@ class RigctldClient:
         except ValueError:
             raise CatProtocolError(f"état de fonction illisible : {raw!r}") from None
 
+    async def set_cache_timeout(self, ms: int) -> None:
+        """Délai du cache de rigctld (TOUTES les connexions : réglage global de rigctld). 0 = pas de cache.
+        Ce n'est pas une commande au poste. Hamlib 4.0+ : après « T x », rigctld garde la valeur COMMANDÉE et la
+        renvoie à « t » sans relire le poste tant qu'elle est plus jeune que ce délai (500 ms en 4.x, 1000 en 5.0)."""
+        if isinstance(ms, bool) or not isinstance(ms, int) or not 0 <= ms <= 5000:
+            raise ValueError(f"délai de cache invalide : {ms!r}")
+        await self._command(f"\\set_cache {ms}")
+
+    async def get_cache_timeout(self) -> int:
+        raw = self._pick(await self._command("\\get_cache"), "Timeout (msecs)", "#1", command="\\get_cache")
+        try:
+            return int(float(raw))
+        except ValueError:
+            raise CatProtocolError(f"délai de cache illisible : {raw!r}") from None
+
     async def get_ptt(self) -> bool:
         """État du PTT, LECTURE SEULE. Toute valeur non nulle (1, 2, 3) signifie émission."""
         raw = self._pick(await self._command("t"), "PTT", "#1", command="t")
