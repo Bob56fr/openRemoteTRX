@@ -17,7 +17,18 @@ trx-qualif --plan                    # cahier de test du modèle de station.toml
 trx-qualif                           # qualification complète guidée
 trx-qualif --cycles 2000 --tot 8     # endurance plus longue, TOT des essais d'émission
 trx-qualif --catalogue DOSSIER       # vérifie toutes les fiches d'un catalogue
+trx-qualif --plan --modele 1042      # cahier et incohérences de dump_caps d'un modèle, SANS station.toml ni poste
+trx-qualif --explorer                # exploration d'un poste jamais essayé, SANS émission (expert, voir plus bas)
+trx-qualif --explorer --lecture-seule  # la même chose sans rien changer sur le poste
+trx-qualif --sans-emission           # qualification sans la phase 3 (verdict « incomplet »)
+trx-qualif --filtres                 # essaie AUSSI les largeurs de filtre (voir « Filtres » : réécrit les FIL d'un Icom)
 ```
+
+Depuis TRX Console : menu 2.7 « Qualification d'un poste » (choix 1 à 5 = les commandes ci-dessus ; rapports dans
+le dossier d'état de la station, `qualifications/`).
+
+Un rigctld qui répond déjà est REFUSÉ (c'est presque toujours celui de la station) : arrêter la station, ou
+`--no-spawn` pour utiliser ce rigctld en connaissance de cause.
 
 Sans `--config`, `trx-qualif` prend `station.toml` à l'emplacement standard, sinon celui du dossier
 courant (cas d'un poste de développement Windows).
@@ -56,6 +67,43 @@ Recalculé à partir des résultats bruts :
 Une erreur d'installation (rigctld injoignable, carte son introuvable, bandes mal réglées) donne
 `incomplet`, jamais `refuse`. Seul un état PTT illisible refuse le poste dès la liaison CAT.
 Le statut `valide` (ou `restreint`) reste une décision de l'éditeur.
+
+## Exploration d'un poste jamais essayé (`--explorer`, étape 175)
+
+Pour un expert, AVANT la qualification : aller le plus loin possible sans émettre et trouver où Hamlib et le poste
+divergent. Aucune commande de PTT n'est envoyée ; le mode n'est jamais changé.
+
+1. PTT relu 10 fois : poste pas en réception (ou PTT illisible) = arrêt immédiat, sans rien écrire.
+2. Indicateurs « Can get … » de dump_caps comparés aux réponses réelles (commandes de lecture seulement).
+3. Lecture de TOUTES les fonctions, niveaux et paramètres déclarés, deux fois : refus, instabilité, valeur hors de
+   la plage déclarée. Les fonctions d'action (SEND_MORSE, SEND_VOICE_MEM) ne sont pas lues.
+4. Couverture : bords des plages de réception, puis une fréquence hors couverture (doit être refusée ; acceptée sans
+   être appliquée = constat).
+5. Niveau inexistant : refus attendu, et la réponse suivante doit rester juste (flux synchronisé).
+6. Écritures avec relecture et remise à la valeur d'origine, LISTE FERMÉE de réglages de réception
+   (`EXPLORE_WRITE_FUNCS`, `EXPLORE_WRITE_LEVELS` : CTCSS, APF, PBT, pitch et vitesse CW…). Jamais VOX, tuner, envoi
+   de morse ou de mémoire vocale, break-in, MICGAIN, RFPOWER, volume AF, spectre, verrouillage. Le PTT est relu avant
+   chaque écriture. Les réglages déjà exploités par TRX Remote sont essayés par la qualification, pas ici.
+7. Rafale de lectures mêlées (fréquence, mode, PTT, S-mètre) : réponses décalées, et temps de réponse par commande.
+8. Reconnexions à rigctld ; fréquence d'origine remise, mode relu.
+
+Constats (`coherence.py`), par gravité (bloquant, à vérifier, pour information) et par source supposée (hamlib,
+poste, trx). Une partie sort de dump_caps SEUL (`--plan`) : préamplis / atténuateurs dont la liste ne suit pas la
+plage, plage AGC vide, « PTT type: None » avec « Can set PTT: Y », modes données absents des plages d'émission,
+réglages non relisibles, backend non « Stable ».
+
+Dossier `qualifications/explore-<modèle>-<date>/` : `exploration.json`, `constats.txt`, `fiche-poste.md` (brouillon
+pour `docs/postes/`, jamais validé en émission), `rapport-hamlib.md` (brouillon EN ANGLAIS des écarts imputables à
+Hamlib, à vérifier sur Hamlib master avant envoi), `dump_caps.txt`, `cat_trace.log`, `journal.txt`. Ni indicatif, ni
+adresse, ni port série.
+
+### Résultat sur l'IC-7300MK2 (minix-bzh, Hamlib 5.0.0~git, 2026-11-13)
+
+Couverture 30 kHz – 74,8 MHz confirmée, hors couverture refusée (RPRT -9), aucune réponse décalée sur 300 lectures,
+état remis. Constats : fréquence, mode et PTT servis par le CACHE de rigctld (0,25 ms : le PTT relu peut être celui
+du cache) ; ANN refusé alors que déclaré ; AGC_TIME et BKINDL refusés dans le mode du moment (RPRT -9) ; COMP arrondi
+par le poste (pas réel plus grossier que le pas déclaré 0,01) ; STRENGTH et VD_METER lus hors de leur plage déclarée ;
+« PTT type » = None avec Hamlib 4.7.2 mais « Rig capable » avec 5.0.
 
 ## Rapport
 
@@ -120,6 +168,20 @@ But : dérouler la qualification de bout en bout sur un poste connu, pour juger 
 
 Le spectre HF (second port) n'est pas couvert par la qualification à ce jour.
 
+## Filtres et préréglages FIL (Icom)
+
+Sur un Icom, `set_mode` avec une largeur (> 3 Hz) ÉCRIT cette largeur dans le préréglage FIL1/2/3 choisi par
+Hamlib (`icom_set_dsp_flt`, rigs/icom/icom.c). Depuis l'étape 175 :
+- le test des filtres n'est fait qu'avec `--filtres` (sinon « ignoré », avec la raison) ;
+- le mode d'origine est remis avec la largeur 0 (largeur par défaut du backend, comme la passerelle ; une largeur de
+  0 à 3 sort de Hamlib AVANT l'écriture du filtre) : les préréglages restent intacts, mais le filtre SÉLECTIONNÉ peut
+  changer. Le bilan liste alors « À REMETTRE À LA MAIN » (re-sélectionner FIL1 / FIL3 dans les modes concernés) ;
+- `trx-hwtest`, étape « Largeurs de filtre » : avertissement et réponse « non » par défaut.
+
+Temps de réponse CAT : avec rigctld 5, la fréquence vient du cache (0,2 ms) ; la mesure prend alors le S-mètre,
+toujours demandé au poste. NR / NB : la fonction est mise en marche le temps d'essayer son niveau (l'IC-7300MK2
+refuse le niveau NB quand NB est arrêté).
+
 ## Écarts connus avec le cahier des charges
 
 - La reprise après débranchement USB est un test **fixe** et non du socle : sous Windows, rigctld
@@ -131,8 +193,9 @@ Le spectre HF (second port) n'est pas couvert par la qualification à ce jour.
   backend Beta, modes données FM-D et AM-D (et non PKTFM, PKTAM), pas d'IP+ (AIP), AGC `0=OFF 2=FAST 5=MEDIUM 3=SLOW`,
   préamplis publiés « 1dB 2dB » (valeurs 1 et 2, alors que la plage du niveau annonce 0..20/10 : on suit la liste).
 - AGC : l'essai d'écriture évite OFF tant qu'une autre valeur active existe.
-- Filtres Icom : Hamlib choisit FIL1/2/3 et le poste relit la largeur qui y est RÉGLÉE. Une largeur différente
-  de Hamlib est acceptée si chaque demande sélectionne bien un filtre distinct ; sinon c'est un échec.
+- Filtres Icom (seulement avec `--filtres`) : Hamlib choisit FIL1/2/3 et le poste relit la largeur qui y est
+  RÉGLÉE. Une largeur différente de Hamlib est acceptée si chaque demande sélectionne bien un filtre distinct ; sinon
+  c'est un échec. ATTENTION : la largeur demandée est écrite dans le préréglage (voir « Filtres et préréglages FIL »).
 - Si un ancien `station.toml` contient `tx_modes = ["PKTUSB", "PKTLSB", "PKTFM", "PKTAM"]`, l'émission en FM-D
   et AM-D est refusée avec Hamlib 4.7 : `trx-setup --tx-modes PKTUSB PKTLSB FM-D AM-D`.
 - Le spectre (scope) n'est pas encore qualifié.

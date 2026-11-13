@@ -123,7 +123,9 @@ def test_full_qualification_of_a_healthy_rig(tmp_path):
         for item in ("cat", "cat_endurance", "freq_rw", "mode_rw", "audio_rx", "ptt_cycle", "cat_loss_rx"):
             assert results[item].ok is True, item
         assert "cat_down" in results["cat_loss_rx"].detail
-        assert results["write_level_RFPOWER"].ok and results["write_level_AGC"].ok and results["filters"].ok
+        assert results["write_level_RFPOWER"].ok and results["write_level_AGC"].ok
+        assert results["filters"].ok is None and "--filtres" in results["filters"].detail     # préréglages FIL : sur demande
+        assert not any(c.lstrip("+").startswith("M ") and c.split()[-1] not in ("0",) for c in fake.commands)
         assert results["write_func_TUNER"].ok is None and results["usb_replug"].ok is None
         assert results["decl_freq"].ok is True and results["decl_func_NR"].ok is True
         assert results["latency"].data["polling_max_hz"] > 0
@@ -153,7 +155,11 @@ def test_the_rig_state_is_restored_after_phase_one(tmp_path):
         fake.freq, fake.mode, fake.passband = 14_074_000, "PKTUSB", 3000
         fake.funcs["NR"], fake.levels["SQL"] = 1, 0.45
         await q.run()
-        assert (fake.freq, fake.mode, fake.passband) == (14_074_000, "PKTUSB", 3000)
+        # Mode remis avec la largeur 0 (défaut du backend) : une largeur explicite RÉÉCRIRAIT un préréglage FIL (Icom).
+        assert (fake.freq, fake.mode) == (14_074_000, "PKTUSB")
+        assert not any(c.lstrip("+").startswith("M ") and c.split()[-1] != "0" for c in fake.commands)
+        assert any("filtre du mode PKTUSB : 3000 Hz" in m for m in q.manual_restore)
+        assert any("À REMETTRE À LA MAIN" in line for line in q.summary())
         assert fake.funcs["NR"] == 1 and abs(fake.levels["SQL"] - 0.45) < 0.001
     run(tmp_path, scenario, answers={EMIT_WORD: "non"})
 

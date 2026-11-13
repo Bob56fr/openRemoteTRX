@@ -37,7 +37,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .. import config as cfgmod
-from ..answers import typed
+from ..answers import typed, yes_no
 from ..asyncio_noise import install_quiet_handler
 from ..config import Config
 from ..gateway.audio import AudioConfigError, AudioPipeline
@@ -391,8 +391,10 @@ class HwTest:
         candidates = filter_candidates(mode, declared)
         self.say(f"  Mode {mode}, largeur actuelle {khz(original)} ; Hamlib déclare : "
                  f"{', '.join(khz(w) for w in declared) or 'rien'}")
-        answer = await self.prompt(f"  Essayer {', '.join(khz(w) for w in candidates)} puis remettre {khz(original)} ? [O/n] : ")
-        if answer.lower() in ("n", "non"):
+        self.say("  ATTENTION : sur certains postes (Icom), chaque largeur envoyée est ÉCRITE dans le préréglage de filtre\n"
+                 "  choisi (FIL1, FIL2 ou FIL3) : tes réglages de filtre du poste peuvent être remplacés.")
+        answer = await self.prompt(f"  Essayer {', '.join(khz(w) for w in candidates)} puis remettre {khz(original)} ? [o/N] : ")
+        if yes_no(answer) is not True:
             return self.record("Largeurs de filtre", None, "ignoré")
         accepted, changed = [], []
         try:

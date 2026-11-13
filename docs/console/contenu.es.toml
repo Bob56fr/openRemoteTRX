@@ -212,6 +212,13 @@ modifie = "Nada. Las pruebas usan un transceptor <strong>simulado</strong>: ning
 admin = true
 expert = "<p>El resultado se guarda en el Escritorio (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>): envía este archivo si fallan pruebas. La herramienta de pruebas (pytest) se instala en el primer uso (hace falta Internet).</p><p>Los puntos se muestran a medida que avanzan; si no hay nada nuevo durante un minuto, la consola recuerda que las pruebas continúan. Una prueba realmente bloqueada 10 minutos muestra la pila de sus hilos de ejecución: eso es lo que hay que enviar (Ctrl+C detiene las pruebas).</p>"
 
+[menus.qualif]
+role = "Cualificación de un transceptor con <code>trx-qualif</code>, para un experto que quiere llegar lo más lejos posible con un transceptor nunca probado pero conocido por Hamlib. Opción 1: plan de pruebas e incoherencias de Hamlib, sin tocar el transceptor. Opción 2: exploración sin transmisión (todo lo que Hamlib declara se lee y se compara con las respuestas del transceptor). Opción 3: lo mismo, solo lectura. Opción 4: cualificación sin transmisión. Opción 5: cualificación completa."
+quand = "Antes de usar un modelo de transceptor nuevo, o para preparar un informe para los desarrolladores de Hamlib."
+modifie = "Nada en la configuración. Las opciones 2 y 4 cambian la frecuencia y algunos ajustes de recepción del transceptor y luego los restablecen; la exploración nunca cambia el modo. Solo la opción 5 transmite (carga artificial, confirmación <code>EMETTRE</code> en cada paso). La estación se detiene durante la prueba."
+admin = true
+expert = "<p>Informes en la carpeta de estado de la estación (<code>qualifications/</code>): <code>exploration.json</code>, <code>constats.txt</code>, borradores <code>fiche-poste.md</code> y <code>rapport-hamlib.md</code> (en inglés), registro de todas las órdenes (<code>cat_trace.log</code>). La exploración nunca envía una orden de PTT y se detiene en seco si el transceptor pasa a transmisión (su propio micrófono). Los anchos de filtro solo se prueban con <code>trx-qualif --filtres</code>: en un Icom, cada ancho enviado se escribe en un preajuste FIL1/2/3.</p>"
+
 [menus.temperature]
 role = "Umbrales de temperatura del transceptor: primer umbral (aviso en la página y notificación), segundo umbral (transmisión remota cortada y rechazada hasta volver por debajo del primer umbral). 40 y 50 °C por defecto."
 quand = "Si tu transceptor se calienta en uso normal (modos digitales en continuo, por ejemplo) o para más prudencia."

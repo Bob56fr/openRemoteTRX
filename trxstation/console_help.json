@@ -114,6 +114,13 @@
      "quand": "Nachdem du einen Transceiver konfiguriert und getestet hast (Menüs 3.1 und\n2.2): speichere es. Zum Wechseln des Transceivers: anschließen, sein Profil\nladen, die Station startet mit ihm neu.",
      "role": "Transceiver-Profile, für alle, die mehrere TRX abwechselnd betreiben: die\nKonfiguration des aktiven Transceivers unter einem Namen speichern („IC-7300\nzuhause“), sie später wieder laden oder ein Profil löschen. Das aktive\nProfil ist in der Liste markiert."
     },
+    "qualif": {
+     "admin": true,
+     "expert": "Berichte im Statusordner der Station (qualifications/): exploration.json,\nconstats.txt, Entwürfe fiche-poste.md und rapport-hamlib.md (auf Englisch),\nProtokoll aller Befehle (cat_trace.log). Die Erkundung sendet nie einen\nPTT-Befehl und bricht sofort ab, wenn der Transceiver sendet (eigenes\nMikrofon). Filterbreiten werden nur mit trx-qualif --filtres versucht: bei\nIcom wird jede gesendete Breite in eine FIL1/2/3-Voreinstellung geschrieben.",
+     "modifie": "Nichts an der Konfiguration. Auswahl 2 und 4 ändern die Frequenz und einige\nEmpfangseinstellungen des Transceivers und setzen sie zurück; die Erkundung\nändert nie die Betriebsart. Nur Auswahl 5 sendet (Dummy-Load, Bestätigung\nEMETTRE bei jedem Schritt). Die Station wird während des Tests angehalten.",
+     "quand": "Vor der Nutzung eines neuen Transceiver-Modells oder um einen Bericht für\ndie Hamlib-Entwickler vorzubereiten.",
+     "role": "Qualifizierung eines Transceivers mit trx-qualif, für Experten, die mit\neinem nie getesteten, aber von Hamlib unterstützten Transceiver so weit wie\nmöglich gehen wollen. Auswahl 1: Testplan und Unstimmigkeiten von Hamlib,\nohne den Transceiver zu berühren. Auswahl 2: Erkundung ohne Senden (alles,\nwas Hamlib angibt, wird gelesen und mit den Antworten des Transceivers\nverglichen). Auswahl 3: dasselbe, nur lesend. Auswahl 4: Qualifizierung ohne\nSenden. Auswahl 5: vollständige Qualifizierung."
+    },
     "report": {
      "admin": false,
      "expert": "Ohne Menü: trx-console --rapport. In der Datei station.toml des Berichts\nsind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem\nVersand, wenn du möchtest.",
@@ -285,6 +292,13 @@
      "modifie": "Loading a profile only changes the TRANSCEIVER settings in station.toml\n(model, ports, PTT, sound cards, spectrum), through the same checked path as\nmenu 3.2 (differences shown, confirmation, old version kept). Accounts,\nnetwork, allowed bands and safety settings never change. Refused during a\ntransmission.",
      "quand": "After configuring and testing a transceiver (menus 3.1 and 2.2): save it. To\nchange transceiver: plug it in, load its profile, and the station restarts\nwith it.",
      "role": "Transceiver profiles, for those who use several rigs in turn: save the\nconfiguration of the transceiver in service under a name (\"IC-7300 home\"),\nreload it later, or delete a profile. The profile in service is marked in\nthe list."
+    },
+    "qualif": {
+     "admin": true,
+     "expert": "Reports in the station state folder (qualifications/): exploration.json,\nconstats.txt, drafts fiche-poste.md and rapport-hamlib.md (in English),\ntrace of every command (cat_trace.log). The exploration never sends a PTT\ncommand and stops at once if the transceiver starts transmitting (its own\nmicrophone). Filter widths are only tried with trx-qualif --filtres: on an\nIcom, every width sent is written into a FIL1/2/3 preset.",
+     "modifie": "Nothing in the configuration. Choices 2 and 4 change the frequency and a few\nreceive settings of the transceiver, then put them back; the exploration\nnever changes the mode. Only choice 5 transmits (dummy load, confirmation\nEMETTRE at each step). The station is stopped during the test.",
+     "quand": "Before using a new transceiver model, or to prepare a report for the Hamlib\ndevelopers.",
+     "role": "Transceiver qualification with trx-qualif, for an expert who wants to go as\nfar as possible with a transceiver never tested but known to Hamlib. Choice\n1: test plan and Hamlib inconsistencies, without touching the transceiver.\nChoice 2: exploration without transmission (everything Hamlib declares is\nread and compared with the transceiver's answers). Choice 3: the same,\nread-only. Choice 4: qualification without transmission. Choice 5: full\nqualification."
     },
     "report": {
      "admin": false,
@@ -458,6 +472,13 @@
      "quand": "Después de configurar y probar un transceptor (menús 3.1 y 2.2): guárdalo.\nPara cambiar de transceptor: conéctalo, carga su perfil y la estación se\nreinicia con él.",
      "role": "Perfiles de transceptor, para quien maneja varios TRX por turnos: guardar la\nconfiguración del transceptor en servicio con un nombre (« IC-7300 casa »),\nvolver a cargarla más tarde, o eliminar un perfil. El perfil en servicio se\nindica en la lista."
     },
+    "qualif": {
+     "admin": true,
+     "expert": "Informes en la carpeta de estado de la estación (qualifications/):\nexploration.json, constats.txt, borradores fiche-poste.md y\nrapport-hamlib.md (en inglés), registro de todas las órdenes\n(cat_trace.log). La exploración nunca envía una orden de PTT y se detiene en\nseco si el transceptor pasa a transmisión (su propio micrófono). Los anchos\nde filtro solo se prueban con trx-qualif --filtres: en un Icom, cada ancho\nenviado se escribe en un preajuste FIL1/2/3.",
+     "modifie": "Nada en la configuración. Las opciones 2 y 4 cambian la frecuencia y algunos\najustes de recepción del transceptor y luego los restablecen; la exploración\nnunca cambia el modo. Solo la opción 5 transmite (carga artificial,\nconfirmación EMETTRE en cada paso). La estación se detiene durante la\nprueba.",
+     "quand": "Antes de usar un modelo de transceptor nuevo, o para preparar un informe\npara los desarrolladores de Hamlib.",
+     "role": "Cualificación de un transceptor con trx-qualif, para un experto que quiere\nllegar lo más lejos posible con un transceptor nunca probado pero conocido\npor Hamlib. Opción 1: plan de pruebas e incoherencias de Hamlib, sin tocar\nel transceptor. Opción 2: exploración sin transmisión (todo lo que Hamlib\ndeclara se lee y se compara con las respuestas del transceptor). Opción 3:\nlo mismo, solo lectura. Opción 4: cualificación sin transmisión. Opción 5:\ncualificación completa."
+    },
     "report": {
      "admin": false,
      "expert": "Sin el menú: trx-console --rapport. El archivo station.toml del informe\ntiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo\nsi quieres.",
@@ -629,6 +650,13 @@
      "modifie": "Charger un profil ne change que les réglages du POSTE dans station.toml\n(modèle, ports, PTT, cartes son, spectre), par le même chemin vérifié que le\nmenu 3.2 (différences montrées, confirmation, ancienne version gardée).\nComptes, réseau, bandes autorisées et sécurités ne bougent jamais. Refusé\npendant une émission.",
      "quand": "Après avoir configuré et essayé un poste (menus 3.1 et 2.2) : enregistre-le.\nPour changer de poste : branche-le, charge son profil, la station redémarre\navec lui.",
      "role": "Profils de poste, pour qui pilote plusieurs TRX tour à tour : enregistrer la\nconfiguration du poste en service sous un nom (« IC-7300 maison »), la\nrecharger plus tard, ou supprimer un profil. Le profil en service est\nsignalé dans la liste."
+    },
+    "qualif": {
+     "admin": true,
+     "expert": "Rapports dans le dossier d'état de la station (qualifications/) :\nexploration.json, constats.txt, brouillons fiche-poste.md et\nrapport-hamlib.md (en anglais), trace de toutes les commandes\n(cat_trace.log). L'exploration n'envoie jamais de commande de PTT et\ns'arrête net si le poste passe en émission (micro du poste). Les largeurs de\nfiltre ne sont essayées qu'avec trx-qualif --filtres : sur un Icom, chaque\nlargeur envoyée est écrite dans un préréglage FIL1/2/3.",
+     "modifie": "Rien dans la configuration. Les choix 2 et 4 changent la fréquence et\nquelques réglages de réception du poste, puis les remettent ; le mode n'est\njamais changé par l'exploration. Seul le choix 5 fait émettre (charge\nfictive, confirmation EMETTRE à chaque étape). La station est arrêtée\npendant l'essai.",
+     "quand": "Avant d'utiliser un nouveau modèle de poste, ou pour préparer un rapport aux\ndéveloppeurs de Hamlib.",
+     "role": "Qualification d'un poste avec trx-qualif, pour un expert qui veut aller le\nplus loin possible avec un poste jamais essayé mais connu de Hamlib. Choix\n1 : cahier de test et incohérences de Hamlib, sans toucher au poste. Choix\n2 : exploration sans émission (tout ce que Hamlib déclare est lu et comparé\naux réponses du poste). Choix 3 : la même chose en lecture seule. Choix 4 :\nqualification sans émission. Choix 5 : qualification complète."
     },
     "report": {
      "admin": false,

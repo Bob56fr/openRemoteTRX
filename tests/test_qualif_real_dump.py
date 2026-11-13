@@ -62,7 +62,7 @@ def test_setup_proposes_only_data_modes_that_exist_for_the_model():
     assert set(ALL_DATA_MODES) == {"PKTUSB", "PKTLSB", "PKTFM", "PKTAM", "FM-D", "AM-D"}
 
 
-def run(tmp_path, scenario, *, fake_setup=None, answers=None):
+def run(tmp_path, scenario, *, fake_setup=None, answers=None, **kwargs):
     async def wrapper():
         fake = FakeRigctld()
         await fake.start()
@@ -81,7 +81,7 @@ def run(tmp_path, scenario, *, fake_setup=None, answers=None):
                           ask=lambda p: next((v for k, v in defaults.items() if k in p), ""), out=lambda s: None,
                           tot_s=3.0, hold_s=0.3, tx_seconds=0.6, rx_listen_s=0.6, tx_levels_db=(-40.0,),
                           cat_timeout_s=3.0, record_wav=str(tmp_path / "rx.wav"), cycles=2, endurance_cycles=100,
-                          settle_s=0.6, cat_cut_s=0.8)
+                          settle_s=0.6, cat_cut_s=0.8, **kwargs)
         try:
             await asyncio.wait_for(scenario(q, fake), 120)
         finally:
@@ -130,7 +130,7 @@ def test_filters_set_differently_on_the_rig_are_not_a_failure(tmp_path):
             await q.teardown()
         check = latest(q.checks)["filters"]
         assert check.ok is True and "réglages FIL" in check.detail
-    run(tmp_path, scenario, fake_setup=user_fil)
+    run(tmp_path, scenario, fake_setup=user_fil, filters_test=True)
 
 
 def test_filters_that_do_not_switch_are_a_failure(tmp_path):
@@ -153,4 +153,4 @@ def test_filters_that_do_not_switch_are_a_failure(tmp_path):
             await q.teardown()
         check = latest(q.checks)["filters"]
         assert check.ok is False and "filtres distincts" in check.detail
-    run(tmp_path, scenario, fake_setup=stuck)
+    run(tmp_path, scenario, fake_setup=stuck, filters_test=True)

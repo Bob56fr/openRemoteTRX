@@ -34,6 +34,22 @@ class LevelRange:
         return {"min": self.low, "max": self.high, "pas": self.step}
 
 
+@dataclass(frozen=True)
+class FreqRange:
+    """Plage de fréquences déclarée (« RX ranges » / « TX ranges ») avec ses modes et, en émission, ses puissances."""
+    low_hz: int
+    high_hz: int
+    modes: tuple[str, ...] = ()
+    low_w: float | None = None
+    high_w: float | None = None
+
+    def to_dict(self) -> dict:
+        found = {"min_hz": self.low_hz, "max_hz": self.high_hz, "modes": list(self.modes)}
+        if self.high_w is not None:
+            found.update({"puissance_min_w": self.low_w, "puissance_max_w": self.high_w})
+        return found
+
+
 @dataclass
 class HamlibProfile:
     caps: Capabilities
@@ -49,6 +65,15 @@ class HamlibProfile:
     preamps: tuple[int, ...] = ()
     attenuators: tuple[int, ...] = ()
     agc_levels: tuple[int, ...] = ()  # valeurs Hamlib d'AGC proposées par le backend ; vide = inconnues
+    get_level_ranges: dict[str, LevelRange] = field(default_factory=dict)  # plages des niveaux en lecture
+    get_params: tuple[str, ...] = ()
+    set_params: tuple[str, ...] = ()
+    ptt_declared: str = ""            # « PTT type » de dump_caps (« Rig capable », « None »…) ; vide = absent
+    rig_type: str = ""
+    async_data: bool | None = None    # « Has async data support »
+    backend_warnings: int | None = None   # « Overall backend warnings »
+    rx_ranges: tuple[FreqRange, ...] = ()
+    tx_ranges: tuple[FreqRange, ...] = ()
 
     @property
     def modes(self) -> tuple[str, ...]:
@@ -71,6 +96,10 @@ class HamlibProfile:
             "plages": {k: v.to_dict() for k, v in self.level_ranges.items()},
             "peut": dict(self.can), "preamplis_db": list(self.preamps), "attenuateurs_db": list(self.attenuators),
             "agc": list(self.agc_levels), "filtres": {k: list(v) for k, v in self.caps.filters.items()},
+            "parametres_lecture": list(self.get_params), "parametres_ecriture": list(self.set_params),
+            "ptt_declare": self.ptt_declared, "type": self.rig_type, "async": self.async_data,
+            "avertissements_backend": self.backend_warnings,
+            "plages_rx": [r.to_dict() for r in self.rx_ranges], "plages_tx": [r.to_dict() for r in self.tx_ranges],
         }
 
 
@@ -105,6 +134,46 @@ def _version(text: str) -> str:
     return match.group(1) if match else ""
 
 
+_RANGE_HEADER_RE = re.compile(r"^(TX|RX) ranges #\d+ for [^:]*:\s*$")
+_FREQ_RANGE_RE = re.compile(r"^\s+(\d+) Hz - (\d+) Hz\s*$")
+_POWER_RE = re.compile(r"Low power:\s*([\d.]+)\s*W,\s*High power:\s*([\d.]+)\s*W")
+
+
+def _freq_ranges(text: str) -> tuple[tuple[FreqRange, ...], tuple[FreqRange, ...]]:
+    """Plages RX et TX de dump_caps (format relevé sur Hamlib 4.7.2 et 5.0 : en-tête, puis plages indentées)."""
+    found: dict[str, list[dict]] = {"RX": [], "TX": []}
+    kind, current = None, None
+    for line in text.splitlines():
+        header = _RANGE_HEADER_RE.match(line)
+        if header:
+            kind, current = header.group(1), None
+            continue
+        if kind is None:
+            continue
+        if not line.startswith(("	", " ")):
+            kind, current = None, None          # fin du bloc (ligne d'état, autre rubrique)
+            continue
+        rng = _FREQ_RANGE_RE.match(line)
+        if rng:
+            current = {"low_hz": int(rng.group(1)), "high_hz": int(rng.group(2)), "modes": ()}
+            found[kind].append(current)
+            continue
+        if current is None:
+            continue
+        stripped = line.strip()
+        if stripped.startswith("Mode list:"):
+            current["modes"] = tuple(stripped.split(":", 1)[1].split())
+        power = _POWER_RE.search(stripped)
+        if power:
+            current["low_w"], current["high_w"] = float(power.group(1)), float(power.group(2))
+    return tuple(FreqRange(**r) for r in found["RX"]), tuple(FreqRange(**r) for r in found["TX"])
+
+
+def _flag(text: str, label: str) -> bool | None:
+    value = _line(text, label)
+    return None if not value else value.upper().startswith("Y")
+
+
 def parse_profile(text: str, model: int = 0) -> HamlibProfile:
     caps = parse_dump_caps(text, model)
     profile = HamlibProfile(caps=caps, model=model)
@@ -116,6 +185,15 @@ def parse_profile(text: str, model: int = 0) -> HamlibProfile:
     profile.get_levels = _names(text, "Get level")
     profile.set_levels = _names(text, "Set level")
     profile.level_ranges = _ranges(text, "Set level")
+    profile.get_level_ranges = _ranges(text, "Get level")
+    profile.get_params = _names(text, "Get parameters")
+    profile.set_params = _names(text, "Set parameters")
+    profile.ptt_declared = (_line(text, "PTT type") or "")[:40]
+    profile.rig_type = (_line(text, "Rig type") or "")[:80]
+    profile.async_data = _flag(text, "Has async data support")
+    warnings = re.search(r"^Overall backend warnings:\s*(\d+)", text, re.MULTILINE)
+    profile.backend_warnings = int(warnings.group(1)) if warnings else None
+    profile.rx_ranges, profile.tx_ranges = _freq_ranges(text)
     for verb, what, flag in re.findall(r"^Can (set|get) ([A-Za-z ]+?):[ \t]*(\S+)", text, re.MULTILINE):
         profile.can[f"{verb} {what.strip()}"] = flag.upper()[:1] in ("Y", "E")     # E = émulé par Hamlib
     profile.preamps = _decibels(text, "Preamp")

@@ -19,7 +19,8 @@ from trxstation.setup_wizard import dummy_config
 
 def scripted(log, answers=None):
     """Réponses par mot-clé du message ; une liste est consommée dans l'ordre (la dernière valeur se répète)."""
-    defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "plus fort": "O"}
+    # « puis remettre » : essai des largeurs de filtre (non par défaut : il peut réécrire les préréglages FIL d'un Icom)
+    defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "plus fort": "O", "puis remettre": "o"}
     defaults.update(answers or {})
 
     def ask(prompt):
@@ -93,6 +94,18 @@ def test_reception_only_run_never_transmits_and_tries_the_filter_widths(tmp_path
         assert fake.passband == 2400 and fake.mode == "USB"                             # largeur d'origine remise
     caps = Capabilities(filters={"USB": [2400, 1800, 3000]})
     run(tmp_path, scenario, rx_only=True, capabilities=caps)
+
+
+def test_filter_widths_are_not_tried_without_an_explicit_yes(tmp_path):
+    """Sur un Icom, chaque largeur envoyée est écrite dans un préréglage FIL1/2/3 : Entrée = on n'y touche pas."""
+    async def scenario(hw, fake, out, prompts):
+        results = await hw.run()
+        widths = results[-1]
+        assert widths.name == "Largeurs de filtre" and widths.ok is None
+        assert any("préréglage de filtre" in line for line in out)
+        assert not any(c.lstrip("+").startswith("M ") for c in fake.commands)
+    caps = Capabilities(filters={"USB": [2400, 1800, 3000]})
+    run(tmp_path, scenario, rx_only=True, capabilities=caps, answers={"puis remettre": ""})
 
 
 def test_filter_candidates_by_mode_family():

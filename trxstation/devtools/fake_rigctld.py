@@ -34,7 +34,8 @@ class FakeRigctld:
         self.rit = 0
         self.xit = 0
         self.ptt = 0
-        self.vfo = "VFOA"          # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
+        self.writable_levels = {"SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"}   # « L » accepté (les autres : RPRT -11)
+        self.vfo = "VFOA"         # « VFO: VFOA » (format relevé sur rigctld 4.7.2) ; None = poste qui ne le dit pas (RPRT -11)
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
         self.delay_s = 0.0
@@ -134,9 +135,9 @@ class FakeRigctld:
                 self.funcs[args[0]] = int(args[1])
                 return f"set_func: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "L" and len(args) == 2:
-                if args[0] not in ("SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"):
+                if args[0] not in self.writable_levels:
                     return "RPRT -11\n"
-                self.levels[args[0]] = float(args[1]) if args[0] in ("SQL", "RFPOWER", "NR", "NB") else int(args[1])
+                self.levels[args[0]] = int(args[1]) if args[0] in ("AGC", "PREAMP", "ATT") else float(args[1])
                 return f"set_level: {args[0]} {args[1]}\nRPRT 0\n"
             if key == "s":
                 vfo = "VFOB" if self.split else "currVFO"

@@ -212,6 +212,13 @@ modifie = "Nothing. The tests use a <strong>simulated</strong> transceiver: no c
 admin = true
 expert = "<p>The result is saved on the Desktop (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>): send this file if tests fail. The test tool (pytest) is installed on first use (Internet required).</p><p>Dots are shown as the tests progress; with nothing new for a minute, the console reminds you that the tests are still running. A test truly stuck for 10 minutes shows the stack of its threads: that is what to send (Ctrl+C stops the tests).</p>"
 
+[menus.qualif]
+role = "Transceiver qualification with <code>trx-qualif</code>, for an expert who wants to go as far as possible with a transceiver never tested but known to Hamlib. Choice 1: test plan and Hamlib inconsistencies, without touching the transceiver. Choice 2: exploration without transmission (everything Hamlib declares is read and compared with the transceiver's answers). Choice 3: the same, read-only. Choice 4: qualification without transmission. Choice 5: full qualification."
+quand = "Before using a new transceiver model, or to prepare a report for the Hamlib developers."
+modifie = "Nothing in the configuration. Choices 2 and 4 change the frequency and a few receive settings of the transceiver, then put them back; the exploration never changes the mode. Only choice 5 transmits (dummy load, confirmation <code>EMETTRE</code> at each step). The station is stopped during the test."
+admin = true
+expert = "<p>Reports in the station state folder (<code>qualifications/</code>): <code>exploration.json</code>, <code>constats.txt</code>, drafts <code>fiche-poste.md</code> and <code>rapport-hamlib.md</code> (in English), trace of every command (<code>cat_trace.log</code>). The exploration never sends a PTT command and stops at once if the transceiver starts transmitting (its own microphone). Filter widths are only tried with <code>trx-qualif --filtres</code>: on an Icom, every width sent is written into a FIL1/2/3 preset.</p>"
+
 [menus.temperature]
 role = "Transceiver temperature thresholds: first threshold (warning in the page and notification), second threshold (remote transmission cut and refused until back below the first threshold). 40 and 50 °C by default."
 quand = "If your transceiver gets hot in normal use (continuous digital modes, for example) or for extra caution."

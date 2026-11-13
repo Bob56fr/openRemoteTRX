@@ -86,6 +86,32 @@ def test_hwtest_offers_a_reception_only_run_and_can_be_cancelled(tmp_path):
     assert fake.calls == [] and out[-1] == "Annulé."                    # rien arrêté, rien lancé
 
 
+def test_qualif_menu_runs_trx_qualif_with_the_chosen_mode(tmp_path):
+    con, fake, out = console(tmp_path)
+    con.qualif()
+    assert fake.calls == [] and any("menu 3.1" in line for line in out)
+    write_config(tmp_path)
+    con, fake, out = console(tmp_path, answers=["1"], running=True)
+    con.qualif()                                                       # cahier : ne touche pas au poste
+    assert [c for c, _ in fake.calls if c[0] == "systemctl"] == [] and fake.calls[-1][0][-1] == "--plan"
+    con, fake, out = console(tmp_path, answers=["2", "o"], running=True)
+    con.qualif()                                                       # exploration : station arrêtée, puis relancée
+    commands = [c for c, _ in fake.calls]
+    assert commands[0] == ["systemctl", "stop", TARGET] and "trxstation.qualif.main" in commands[1]
+    assert commands[1][-1] == "--explorer" and "--output" in commands[1] and fake.calls[1][1] is True
+    assert ["systemctl", "restart", TARGET] in commands
+    for choice, last in (("3", "--lecture-seule"), ("4", "--sans-emission")):
+        con, fake, out = console(tmp_path, answers=[choice, "n"])
+        con.qualif()
+        assert fake.calls[-1][0][-1] == last
+    con, fake, out = console(tmp_path, answers=["5", "n"])
+    con.qualif()                                                       # complète : aucune option d'émission à part
+    assert fake.calls[-1][0][-2] == "--output"
+    con, fake, out = console(tmp_path, answers=["9"], running=True)
+    con.qualif()
+    assert fake.calls == [] and out[-1] == "Annulé."
+
+
 def test_leaving_safe_mode_requires_an_explicit_yes(tmp_path):
     write_config(tmp_path)
     con, fake, _ = console(tmp_path, answers=[""])
@@ -196,8 +222,11 @@ def test_direct_number_and_old_number_run_the_same_menu(tmp_path, monkeypatch):
 def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     import trxstation.console as module
     methods = [m for _, _, ms in module.MENU_THEMES for m in ms]
-    assert len(methods) == len(set(methods)) == len(module.OLD_NUMBERS)
-    assert set(module.OLD_NUMBERS.values()) == set(methods)
+    assert len(methods) == len(set(methods))
+    assert len(set(module.OLD_NUMBERS.values())) == len(module.OLD_NUMBERS)
+    # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
+    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif"}
+    assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "6.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
         assert callable(getattr(module.Console, name))

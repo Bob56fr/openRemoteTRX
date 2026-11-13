@@ -212,6 +212,13 @@ modifie = "Rien. Les tests utilisent un poste <strong>simulé</strong> : aucune 
 admin = true
 expert = "<p>Le résultat est enregistré sur le Bureau (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>) : transmets ce fichier si des tests échouent. L'outil de test (pytest) est installé au premier usage (Internet nécessaire).</p><p>Les points s'affichent au fur et à mesure ; sans rien de nouveau pendant une minute, la console rappelle que les tests continuent. Un test vraiment bloqué 10 minutes affiche la pile de ses fils d'exécution : c'est ce qu'il faut transmettre (Ctrl+C arrête les tests).</p>"
 
+[menus.qualif]
+role = "Qualification d'un poste avec <code>trx-qualif</code>, pour un expert qui veut aller le plus loin possible avec un poste jamais essayé mais connu de Hamlib. Choix 1 : cahier de test et incohérences de Hamlib, sans toucher au poste. Choix 2 : exploration sans émission (tout ce que Hamlib déclare est lu et comparé aux réponses du poste). Choix 3 : la même chose en lecture seule. Choix 4 : qualification sans émission. Choix 5 : qualification complète."
+quand = "Avant d'utiliser un nouveau modèle de poste, ou pour préparer un rapport aux développeurs de Hamlib."
+modifie = "Rien dans la configuration. Les choix 2 et 4 changent la fréquence et quelques réglages de réception du poste, puis les remettent ; le mode n'est jamais changé par l'exploration. Seul le choix 5 fait émettre (charge fictive, confirmation <code>EMETTRE</code> à chaque étape). La station est arrêtée pendant l'essai."
+admin = true
+expert = "<p>Rapports dans le dossier d'état de la station (<code>qualifications/</code>) : <code>exploration.json</code>, <code>constats.txt</code>, brouillons <code>fiche-poste.md</code> et <code>rapport-hamlib.md</code> (en anglais), trace de toutes les commandes (<code>cat_trace.log</code>). L'exploration n'envoie jamais de commande de PTT et s'arrête net si le poste passe en émission (micro du poste). Les largeurs de filtre ne sont essayées qu'avec <code>trx-qualif --filtres</code> : sur un Icom, chaque largeur envoyée est écrite dans un préréglage FIL1/2/3.</p>"
+
 [menus.temperature]
 role = "Seuils de température du poste : premier seuil (avertissement dans la page et notification), second seuil (émission à distance coupée et refusée jusqu'au retour sous le premier seuil). 40 et 50 °C par défaut."
 quand = "Si ton poste chauffe en usage normal (modes numériques en continu, par exemple) ou pour plus de prudence."

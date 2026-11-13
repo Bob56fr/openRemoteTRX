@@ -93,6 +93,12 @@ def label(name: str) -> str:
     return LABELS.get(name, name)
 
 
+def level_label(name: str, profile: HamlibProfile) -> str:
+    """Libellé d'un NIVEAU ; « , niveau » quand une fonction porte le même nom (NR, NB, COMP : marche/arrêt ET niveau)."""
+    both = name in profile.get_functions or name in profile.set_functions
+    return f"{label(name)}, niveau" if both else label(name)
+
+
 def core_modes(profile: HamlibProfile) -> tuple[str, ...]:
     """Modes du socle présents sur le poste ; tous ses modes s'il n'en a aucun (poste FM seul, etc.)."""
     core = tuple(m for m in CORE_MODES if m in profile.modes)
@@ -111,7 +117,7 @@ def build_plan(profile: HamlibProfile) -> TestPlan:
     for name in READ_LEVELS:
         if name in profile.get_levels:
             note = "valeur significative en émission seulement" if name in (POWER_METER, *TX_METERS) else ""
-            items.append(PlanItem(f"read_level_{name}", f"Lecture : {label(name)}", GENERE, "read_level", name, note))
+            items.append(PlanItem(f"read_level_{name}", f"Lecture : {level_label(name, profile)}", GENERE, "read_level", name, note))
     for name in WRITE_FUNCS:
         if name in profile.set_functions:
             if name in NO_AUTO_WRITE:
@@ -121,7 +127,7 @@ def build_plan(profile: HamlibProfile) -> TestPlan:
                 items.append(PlanItem(f"write_func_{name}", f"Écriture : {label(name)}", GENERE, "write_func", name))
     for name in WRITE_LEVELS:
         if name in profile.set_levels:
-            items.append(PlanItem(f"write_level_{name}", f"Écriture : {label(name)}", GENERE, "write_level", name))
+            items.append(PlanItem(f"write_level_{name}", f"Écriture : {level_label(name, profile)}", GENERE, "write_level", name))
     used = set(READ_FUNCS) | set(READ_LEVELS) | set(WRITE_FUNCS) | set(WRITE_LEVELS)
     unused = sorted(profile.declared() - used)
     return TestPlan(items, unused)

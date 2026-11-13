@@ -57,7 +57,7 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 # Libellés : « menu.<méthode> » et « theme.<id> » des catalogues trxstation/i18n/console.<langue>.json.
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "journal", "clear_safe_mode")),
-    ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert")),
+    ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
     ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
     ("4", "access", ("pairing", "visitors")),
     ("5", "features", ("cluster", "breizh", "friends")),
@@ -425,6 +425,27 @@ class Console:
         extra = ["--reception-seule"] if choice == "1" else []
         self.runner.run(self.module("trxstation.devtools.hwtest", "--config", str(self.config), *extra), admin=True)
         if stopped and self.yes(self.t("hwtest.6")):
+            self.start()
+
+    QUALIF_CHOICES = {"1": ("--plan",), "2": ("--explorer",), "3": ("--explorer", "--lecture-seule"),
+                      "4": ("--sans-emission",), "5": ()}
+
+    def qualif(self) -> None:
+        """trx-qualif pour un expert : cahier, exploration SANS émission, qualification avec ou sans émission.
+        Seul le choix 5 peut émettre, et chaque émission y exige EMETTRE (PttController, comme trx-hwtest)."""
+        if not self.config.exists():
+            self.say(self.t("qualif.1"))
+            return
+        output = config_state_dir(self.config) / "qualifications"
+        self.say(self.t("qualif.2", path=output))
+        choice = self.ask(self.t("qualif.3")).strip()
+        if choice not in self.QUALIF_CHOICES:
+            self.say(self.t("qualif.4"))
+            return
+        stopped = choice != "1" and self.stop_for_exclusive_use(self.t("qualif.why"))
+        self.runner.run(self.module("trxstation.qualif.main", "--config", str(self.config), "--output", str(output),
+                                    *self.QUALIF_CHOICES[choice]), admin=True)
+        if stopped and self.yes(self.t("qualif.5")):
             self.start()
 
     def start(self) -> None:

@@ -10,6 +10,11 @@
            plus la perte de la liaison CAT pendant l'émission, simulée par le relais de trace.
   Enfin, et seulement si l'opérateur le demande : reprise après débranchement USB (en réception).
 
+  Sans émission (`--sans-emission`) : la phase 3 n'est pas faite, le socle reste incomplet (verdict « incomplet »).
+  Filtres : SEULEMENT sur demande (`--filtres`). Sur un Icom, « M mode largeur » écrit la largeur demandée DANS le
+  préréglage FIL1/2/3 choisi par Hamlib : l'essai réécrirait les filtres de l'utilisateur. Pour la même raison, le
+  mode d'origine est remis avec la largeur 0 (largeur par défaut du backend, comme le fait la passerelle).
+
 SÉCURITÉ : toute émission passe par PttController (hérité de trx-hwtest) ; toutes les écritures
 passent par PttController, qui les refuse hors réception confirmée. Le tuner n'est jamais activé
 automatiquement. La puissance n'est jamais laissée plus haute qu'au départ.
@@ -39,6 +44,8 @@ DEFAULT_BANDS_MHZ = ((3.5, 3.8), (7.0, 7.2), (14.0, 14.35), (21.0, 21.45), (28.0
 FREQ_OFFSET_HZ = 123              # décalage « au hertz » pour vérifier la résolution
 MAX_RESOLUTION_HZ = 10
 POWER_TOLERANCE = 0.015           # même tolérance que l'application (±1,5 %)
+CACHE_MS = 1.0                    # lecture plus rapide qu'un aller-retour série : cache de rigctld (Hamlib 5)
+LATENCY_SAMPLES = 200
 TOOL_NAME = "trx-qualif"
 
 # Résultats de trx-hwtest -> tests de la qualification.
@@ -72,11 +79,14 @@ def _mhz(hz: int | None) -> str:
 
 class Qualification(HwTest):
     def __init__(self, cfg: Config, *, profile: HamlibProfile, dump_text: str = "", proxy: TraceProxy | None = None,
-                 endurance_cycles: int = 1000, cat_cut_s: float = 1.5, settle_s: float = 2.0, **kwargs):
+                 endurance_cycles: int = 1000, cat_cut_s: float = 1.5, settle_s: float = 2.0, no_tx: bool = False,
+                 filters_test: bool = False, **kwargs):
         super().__init__(cfg, capabilities=profile.caps, **kwargs)
         self.profile, self.dump_text, self.proxy = profile, dump_text, proxy
         self.plan: TestPlan = build_plan(profile)
         self.endurance_cycles, self.cat_cut_s, self.settle_s = endurance_cycles, cat_cut_s, settle_s
+        self.no_tx, self.filters_test = no_tx, filters_test
+        self.manual_restore: list[str] = []      # ce que l'opérateur doit remettre à la main (affiché dans le bilan)
         self.checks: list[Check] = []
         self.journal: list[str] = []
         self.firmware = ""
@@ -173,8 +183,16 @@ class Qualification(HwTest):
             except Exception as exc:
                 problems.append(f"{label(name)} ({_rprt(exc)})")
         if "mode" in self._orig:
+            mode, width = self._orig["mode"]
             try:
-                await self.ctrl.set_mode(self._orig["mode"][0], self._orig["mode"][1])
+                await self.ctrl.set_mode(mode, 0)      # jamais de largeur explicite : elle réécrirait un préréglage FIL (Icom)
+                now = await self._poll(self.link.client.get_mode, lambda v: v[0] == mode)
+                if not isinstance(now, Exception) and now is not None and now[0] == mode and now[1] != width:
+                    text = (f"filtre du mode {mode} : {width} Hz avant l'essai, {now[1]} Hz maintenant (filtre par défaut "
+                            "du mode, préréglages du poste intacts) : re-sélectionne ton filtre sur le poste")
+                    self.say(f"  {text[0].upper()}{text[1:]}.")
+                    if text not in self.manual_restore:
+                        self.manual_restore.append(text)
             except Exception as exc:
                 problems.append(f"mode ({_rprt(exc)})")
         if "freq" in self._orig:
@@ -261,12 +279,20 @@ class Qualification(HwTest):
                 passed.add(mode)
             got = _rprt(read) if isinstance(read, Exception) else (read[0] if read else "?")
             self.check(f"mode_{mode}", f"Mode {mode}", GENERE, ok, f"relu : {got}")
+        if passed:
+            self.manual_restore.append("modes essayés (" + ", ".join(m for m in modes if m in passed) + ") : chacun a pu "
+                                       "reprendre son filtre par défaut (préréglages intacts) ; re-sélectionne tes filtres habituels")
         missing = [m for m in core if m not in passed]
         self.check("mode_rw", "Mode : écriture et relecture", SOCLE, not missing,
                    f"modes du socle relus : {', '.join(m for m in core if m in passed) or 'aucun'}"
                    + (f" ; en échec : {', '.join(missing)}" if missing else ""))
 
     async def test_filters(self) -> None:
+        if not self.filters_test:
+            self.check("filters", "Filtres (largeur de bande)", FIXE, None,
+                       "non fait : envoyer une largeur peut RÉÉCRIRE les préréglages de filtre du poste (Icom : FIL1/2/3) ; "
+                       "relancer avec --filtres pour l'essayer en connaissance de cause")
+            return
         filters = {m: w for m, w in self.caps.filters.items() if m in core_modes(self.profile)}
         if not filters:
             self.check("filters", "Filtres (largeur de bande)", FIXE, None, "Hamlib ne déclare aucune largeur pour ces modes")
@@ -379,15 +405,33 @@ class Qualification(HwTest):
             target, tol = (choices[0] if choices else restore), 0.5
             if not choices:
                 note = " (valeur inchangée : autres valeurs inconnues de Hamlib)"
-        results = []
-        for value in (target, restore):
+        # NR, NB : beaucoup de postes refusent le NIVEAU quand la FONCTION est arrêtée (IC-7300MK2 : RPRT -9 pour NB).
+        # La fonction est mise en marche le temps de l'essai, puis remise (elle fait aussi partie de l'état relevé).
+        switched = False
+        if name in self.profile.set_functions and name in self.profile.get_functions:
             try:
-                await self.ctrl.set_level(name, value)
-            except Exception as exc:
-                self.check(item_id, name_label, GENERE, False, f"commande refusée : {_rprt(exc)}")
-                return
-            read = await self._poll(lambda: client.get_level(name), lambda v, t=value: abs(v - t) <= tol)
-            results.append(None if isinstance(read, Exception) else read)
+                if not await client.get_func(name):
+                    await self.ctrl.set_function(name, True)
+                    switched = True
+                    note += f" (fonction {name} mise en marche le temps de l'essai)"
+            except Exception:
+                pass
+        results = []
+        try:
+            for value in (target, restore):
+                try:
+                    await self.ctrl.set_level(name, value)
+                except Exception as exc:
+                    self.check(item_id, name_label, GENERE, False, f"commande refusée : {_rprt(exc)}{note}")
+                    return
+                read = await self._poll(lambda: client.get_level(name), lambda v, t=value: abs(v - t) <= tol)
+                results.append(None if isinstance(read, Exception) else read)
+        finally:
+            if switched:
+                try:
+                    await self.ctrl.set_function(name, False)
+                except Exception as exc:
+                    self.say(f"  !!! fonction {name} non remise à l'arrêt ({_rprt(exc)}) : vérifie le poste")
         ok = all(r is not None and abs(r - v) <= tol for r, v in zip(results, (target, restore)))
         if ok:
             self._write_ok.add(name)
@@ -415,19 +459,42 @@ class Qualification(HwTest):
         done = len(latencies) + errors
         self.check("cat_endurance", "Endurance de la liaison CAT", SOCLE, errors == 0 and done == cycles,
                    f"{len(latencies)}/{cycles} lectures réussies, {errors} erreur(s)" + (f" (1re : {first_error})" if first_error else ""))
-        if len(latencies) >= 10:
-            ordered = sorted(latencies)
-            p50 = statistics.median(ordered)
-            p95 = ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)]
-            data = {"latence_cat_ms": round(p50, 2), "latence_cat_p95_ms": round(p95, 2)}
-            rate = ""
-            if p95 > 0:                       # une mesure nulle ne donne pas une cadence : on n'en écrit pas
-                data["polling_max_hz"] = round(1000 / p95, 1)
-                rate = f" (≈ {data['polling_max_hz']:g} lectures/s)"
-            self.check("latency", "Temps de réponse CAT", FIXE, True,
-                       f"médiane {p50:.1f} ms, 95 % sous {p95:.1f} ms, max {ordered[-1]:.1f} ms{rate}", **data)
-        else:
+        if len(latencies) < 10:
             self.check("latency", "Temps de réponse CAT", FIXE, False, "pas assez de mesures")
+            return
+        source = "lectures de fréquence"
+        if statistics.median(latencies) < CACHE_MS:
+            # rigctld 5 répond à « f » depuis son cache : ce n'est pas le temps de réponse du POSTE. Le S-mètre, lui,
+            # est toujours demandé au poste.
+            measured = await self._strength_latencies(LATENCY_SAMPLES) if "STRENGTH" in self.profile.get_levels else []
+            if len(measured) < 10:
+                self.check("latency", "Temps de réponse CAT", FIXE, None,
+                           f"fréquence servie par le cache de rigctld (médiane {statistics.median(latencies):.2f} ms) "
+                           "et pas de S-mètre pour mesurer le poste : temps de réponse inconnu")
+                return
+            latencies, source = measured, (f"S-mètre, {len(measured)} lectures ; la fréquence vient du cache de rigctld "
+                                           f"(médiane {statistics.median(latencies):.2f} ms)")
+        ordered = sorted(latencies)
+        p50 = statistics.median(ordered)
+        p95 = ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)]
+        data = {"latence_cat_ms": round(p50, 2), "latence_cat_p95_ms": round(p95, 2)}
+        rate = ""
+        if p95 > 0:                       # une mesure nulle ne donne pas une cadence : on n'en écrit pas
+            data["polling_max_hz"] = round(1000 / p95, 1)
+            rate = f" (≈ {data['polling_max_hz']:g} lectures/s)"
+        self.check("latency", "Temps de réponse CAT", FIXE, True,
+                   f"médiane {p50:.1f} ms, 95 % sous {p95:.1f} ms, max {ordered[-1]:.1f} ms{rate} ({source})", **data)
+
+    async def _strength_latencies(self, count: int) -> list[float]:
+        found = []
+        for _ in range(count):
+            t0 = time.perf_counter()
+            try:
+                await self.link.client.get_strength()
+            except Exception:
+                continue
+            found.append((time.perf_counter() - t0) * 1000)
+        return found
 
     # ------------------------------------------------------------------ phase 2 : guidée
 
@@ -548,7 +615,15 @@ class Qualification(HwTest):
             await self.phase_auto()
             await self.stage_rx_audio()
             await self.phase_guided()
-            await self.phase_tx()
+            if self.no_tx:
+                self.say("\n=== Phase 3 : émission NON faite (--sans-emission) ===")
+                why = "non fait : qualification sans émission (--sans-emission)"
+                for item_id, name, category in (("ptt_cycle", "PTT activé puis désactivé, avec relecture", SOCLE),
+                                                ("cat_loss_rx", "Retour en réception sur perte de la liaison CAT", SOCLE),
+                                                ("audio_tx", "Audio en émission", FIXE)):
+                    self.check(item_id, name, category, None, why)
+            else:
+                await self.phase_tx()
             await self._restore_mode()
             await self.test_usb_replug()
         finally:
@@ -573,6 +648,9 @@ class Qualification(HwTest):
         lines += [f"  - {r}" for r in verdict.reasons]
         if self.plan.unused:
             lines.append("Disponible dans Hamlib, non exploité par TRX Remote : " + ", ".join(self.plan.unused))
+        if self.manual_restore:
+            lines.append("\nÀ REMETTRE À LA MAIN sur le poste :")
+            lines += [f"  - {m}" for m in self.manual_restore]
         return lines
 
     def write_report(self, directory: Path) -> Path:

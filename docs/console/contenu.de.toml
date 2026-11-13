@@ -212,6 +212,13 @@ modifie = "Nichts. Die Tests verwenden einen <strong>simulierten</strong> Transc
 admin = true
 expert = "<p>Das Ergebnis wird auf dem Schreibtisch gespeichert (<code>trx-remote-tests-AAAAMMJJ-HHMM.txt</code>): sende diese Datei, wenn Tests fehlschlagen. Das Testwerkzeug (pytest) wird bei der ersten Benutzung installiert (Internet nötig).</p><p>Die Punkte erscheinen nach und nach; kommt eine Minute lang nichts Neues, erinnert die Konsole daran, dass die Tests weiterlaufen. Ein Test, der wirklich 10 Minuten hängt, zeigt den Stack seiner Threads: genau das musst du senden (Strg+C bricht die Tests ab).</p>"
 
+[menus.qualif]
+role = "Qualifizierung eines Transceivers mit <code>trx-qualif</code>, für Experten, die mit einem nie getesteten, aber von Hamlib unterstützten Transceiver so weit wie möglich gehen wollen. Auswahl 1: Testplan und Unstimmigkeiten von Hamlib, ohne den Transceiver zu berühren. Auswahl 2: Erkundung ohne Senden (alles, was Hamlib angibt, wird gelesen und mit den Antworten des Transceivers verglichen). Auswahl 3: dasselbe, nur lesend. Auswahl 4: Qualifizierung ohne Senden. Auswahl 5: vollständige Qualifizierung."
+quand = "Vor der Nutzung eines neuen Transceiver-Modells oder um einen Bericht für die Hamlib-Entwickler vorzubereiten."
+modifie = "Nichts an der Konfiguration. Auswahl 2 und 4 ändern die Frequenz und einige Empfangseinstellungen des Transceivers und setzen sie zurück; die Erkundung ändert nie die Betriebsart. Nur Auswahl 5 sendet (Dummy-Load, Bestätigung <code>EMETTRE</code> bei jedem Schritt). Die Station wird während des Tests angehalten."
+admin = true
+expert = "<p>Berichte im Statusordner der Station (<code>qualifications/</code>): <code>exploration.json</code>, <code>constats.txt</code>, Entwürfe <code>fiche-poste.md</code> und <code>rapport-hamlib.md</code> (auf Englisch), Protokoll aller Befehle (<code>cat_trace.log</code>). Die Erkundung sendet nie einen PTT-Befehl und bricht sofort ab, wenn der Transceiver sendet (eigenes Mikrofon). Filterbreiten werden nur mit <code>trx-qualif --filtres</code> versucht: bei Icom wird jede gesendete Breite in eine FIL1/2/3-Voreinstellung geschrieben.</p>"
+
 [menus.temperature]
 role = "Temperaturschwellen des Transceivers: erste Schwelle (Warnung auf der Webseite und Benachrichtigung), zweite Schwelle (Senden aus der Ferne abgeschaltet und abgelehnt, bis die Temperatur wieder unter der ersten Schwelle liegt). Standard 40 und 50 °C."
 quand = "Wenn dein Transceiver im normalen Betrieb warm wird (zum Beispiel bei Dauerbetrieb in digitalen Betriebsarten) oder für mehr Vorsicht."
