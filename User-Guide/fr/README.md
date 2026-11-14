@@ -22,9 +22,11 @@ Ce guide t'accompagne, dans l'ordre, du déballage à la première liaison depui
 | [7. Exploitation au quotidien](07-exploitation-au-quotidien.md) | démarrer, surveiller, mettre à jour, sauvegarder | à lire |
 | [8. Dépannage](08-depannage.md) | codes d'erreur, problèmes fréquents, demander de l'aide | au besoin |
 | [9. Fonctions facultatives](09-fonctions-facultatives.md) | visiteurs, Cluster DX, FreeDV, SELCALL, TOS… | au choix |
+| [Glossaire](glossaire.md) | les mots du projet : qui est quoi | au besoin |
 | [10. Récapitulatif à cocher](10-recapitulatif.md) | savoir où tu en es | |
 
-Fiche du poste : [Yaesu FTDX10](postes/ftdx10.md).
+Fiche du poste : [Yaesu FTDX10](postes/ftdx10.md). Schéma des briques de la station : partie 0, « Comment c'est
+organisé ».
 
 ## Comment lire ce guide
 

@@ -41,6 +41,7 @@ def test_every_part_and_rig_sheet_is_in_the_page_in_order() -> None:
     files = builder.guide_files("fr")
     names = [p.relative_to(GUIDE / "fr").as_posix() for p in files]
     assert names[0] == "README.md" and names[-1].startswith("10-")
+    assert names[-2] == "glossaire.md", "le glossaire se place juste avant le récapitulatif"
     assert names.index("postes/ftdx10.md") == names.index(next(n for n in names if n.startswith("01-"))) + 1
     page = builder.render_page("fr")
     positions = [page.index(f'id="{builder.anchor_of(p, "fr")}"') for p in files]
@@ -71,3 +72,22 @@ def test_unknown_guide_file_link_is_refused(tmp_path: Path) -> None:
     except builder.GuideError:
         return
     raise AssertionError("un lien vers une partie absente doit être refusé")
+
+
+def test_diagram_is_inlined_and_published_without_script() -> None:
+    builder = _builder()
+    pages = builder.build()
+    page = pages[builder.SITE / "index.html"]
+    assert '<figure class="schema"><svg class="schema-svg"' in page
+    published = builder.SITE / "images" / "briques.svg"
+    assert published in pages and published.exists()
+    for svg in GUIDE.rglob("*.svg"):
+        text = svg.read_text(encoding="utf-8").lower()
+        assert "<script" not in text and "href=\"http" not in text and "<foreignobject" not in text, svg.name
+
+
+def test_every_glossary_term_used_by_the_diagram_is_defined() -> None:
+    glossary = (GUIDE / "fr" / "glossaire.md").read_text(encoding="utf-8")
+    for term in ("Passerelle", "Superviseur", "rigctld", "TRX Console", "station.toml", "ntfy", "CAT", "WebRTC",
+                 "Hamlib", "TOT", "PTT", "Mode sûr"):
+        assert term in glossary, f"terme absent du glossaire : {term}"

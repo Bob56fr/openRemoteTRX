@@ -29,12 +29,14 @@ SITE = ROOT / "docs" / "site" / "guide"
 LANGS = ("fr",)                      # langues publiées ; « fr » = référence (page à la racine de guide/)
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 PART = re.compile(r"^(\d\d)-[a-z0-9-]+\.md$")
+ANNEXES = ("glossaire.md",)          # fichiers hors parties numérotées, placés avant le récapitulatif
+IMAGE = re.compile(r"^!\[([^\]]+)\]\((images/[a-z0-9-]+\.svg)\)$")
 UI = {
     "fr": {"progress": "{n} / {m} étapes cochées", "reset": "Tout décocher", "print": "Imprimer",
            "saved": "Les cases cochées sont gardées dans ce navigateur.",
            "unsaved": "Ce navigateur ne garde pas les cases : imprime la page pour garder une trace.",
            "source": "Source de ce guide sur GitHub", "footer": "Projet libre (AGPL-3.0-or-later)",
-           "top": "Haut de page"},
+           "top": "Haut de page", "enlarge": "ouvrir le schéma en grand"},
 }
 
 CSS = """
@@ -82,6 +84,9 @@ th{color:var(--doux);font-weight:600}
 button{font:inherit;color:var(--texte);background:var(--fond);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;cursor:pointer}
 button:hover{border-color:var(--accent)}
+.schema{margin:1rem 0 1.2rem;text-align:center}
+.schema-svg{display:block;width:100%;max-width:40rem;height:auto;margin:0 auto}
+figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 @media print{
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
@@ -159,8 +164,11 @@ def guide_files(lang: str) -> list[Path]:
     if not parts:
         raise GuideError(f"aucune partie NN-*.md dans {folder}")
     rigs = sorted((folder / "postes").glob("*.md"))
+    annexes = [folder / name for name in ANNEXES if (folder / name).exists()]
     ordered: list[Path] = [folder / "README.md"]
     for part in parts:
+        if part == parts[-1]:
+            ordered += annexes                 # annexes juste avant la dernière partie (le récapitulatif)
         ordered.append(part)
         if part.name.startswith("01-"):
             ordered += rigs
@@ -175,6 +183,8 @@ def anchor_of(path: Path, lang: str) -> str:
         return "top"
     if rel.parts[0] == "postes":
         return "poste-" + rel.stem
+    if not PART.match(rel.name):
+        return rel.stem                        # annexe : « glossaire »
     return "p-" + rel.stem[:2]
 
 
@@ -185,6 +195,7 @@ class Renderer:
         self.boxes = 0
         self.section = 0
         self.heading_ids: set[str] = set()
+        self.images: list[Path] = []
 
     # ------------------------------------------------------------------ texte en ligne
     def link(self, target: str) -> tuple[str, bool]:
@@ -197,7 +208,8 @@ class Renderer:
         file_part, _, frag = target.partition("#")
         resolved = (self.path.parent / file_part).resolve()
         if resolved in self.anchors:
-            return "#" + (frag or self.anchors[resolved]), False
+            anchor = self.anchors[resolved]
+            return "#" + (f"{anchor}-{frag}" if frag else anchor), False
         if file_part.endswith(".md") and str(resolved).startswith(str(GUIDE.resolve())):
             raise GuideError(f"{self.path.name} : lien vers un fichier absent du guide : {target}")
         try:
@@ -246,6 +258,22 @@ class Renderer:
         cls = ' class="partie"' if level == 1 else ""
         return f'<{tag} id="{esc(ident)}"{cls}>{self.inline(text)}</{tag}>'
 
+    def figure(self, alt: str, rel: str) -> str:
+        """Schéma SVG intégré à la page (aucune ressource externe) et publié à côté pour l'ouvrir en grand."""
+        source = (self.path.parent / rel).resolve()
+        if not source.is_file():
+            raise GuideError(f"{self.path.name} : image absente : {rel}")
+        svg = source.read_text(encoding="utf-8")
+        if "<script" in svg.lower() or "<foreignobject" in svg.lower() or "href=\"http" in svg.lower():
+            raise GuideError(f"{rel} : un schéma ne contient ni script, ni objet étranger, ni lien externe")
+        svg = re.sub(r"^<\?xml[^>]*>\s*", "", svg.strip())
+        svg = svg.replace("<svg ", '<svg class="schema-svg" ', 1)
+        self.images.append(source)
+        published = source.relative_to((GUIDE / self.lang).resolve()).as_posix()
+        return (f'<figure class="schema">{svg}<figcaption>{esc(alt)} · '
+                f'<a href="{esc(published)}" target="_blank" rel="noopener">{esc(UI[self.lang]["enlarge"])}</a>'
+                "</figcaption></figure>")
+
     def table(self, rows: list[str]) -> str:
         def cells(row: str) -> list[str]:
             return [c.strip() for c in row.strip().strip("|").split("|")]
@@ -278,6 +306,11 @@ class Renderer:
             match = re.match(r"^(#{1,4})\s+(.*)$", line)
             if match:
                 out.append(self.heading(len(match.group(1)), match.group(2).strip()))
+                i += 1
+                continue
+            image = IMAGE.match(stripped)
+            if image:
+                out.append(self.figure(image.group(1), image.group(2)))
                 i += 1
                 continue
             if stripped.startswith("|"):
@@ -360,7 +393,8 @@ class Renderer:
         return i
 
 
-def render_page(lang: str) -> str:
+def render_page(lang: str, images: list[Path] | None = None) -> str:
+    """Page complète ; `images` reçoit les schémas SVG utilisés (à publier à côté de la page)."""
     files = guide_files(lang)
     anchors = {p.resolve(): anchor_of(p, lang) for p in files}
     ui = UI[lang]
@@ -376,8 +410,12 @@ def render_page(lang: str) -> str:
             title = lines[0][2:].strip()
             body.append(f'<h1 id="top">{esc(title)}</h1>')
             body.append(renderer.render(lines[1:]))
+            if images is not None:
+                images += renderer.images
             continue
         html_part = renderer.render(lines)
+        if images is not None:
+            images += renderer.images
         if renderer.boxes:
             total_boxes += renderer.boxes
             tools = (f'<div class="outils"><strong id="progress" data-model="{esc(ui["progress"])}"></strong>'
@@ -412,7 +450,10 @@ def build() -> dict[Path, str]:
     pages: dict[Path, str] = {}
     for lang in LANGS:
         sub = SITE if lang == "fr" else SITE / lang
-        pages[sub / "index.html"] = render_page(lang)
+        images: list[Path] = []
+        pages[sub / "index.html"] = render_page(lang, images)
+        for image in images:
+            pages[sub / image.relative_to((GUIDE / lang).resolve())] = image.read_bytes().decode("utf-8")
     return pages
 
 

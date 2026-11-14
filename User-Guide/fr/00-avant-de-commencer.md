@@ -9,6 +9,21 @@
   bandes que tu as déclarées.
 - Un **superviseur** indépendant qui surveille la station et peut t'envoyer des alertes sur ton téléphone.
 
+## Comment c'est organisé
+
+![Les briques d'une station openRemoteTRX](images/briques.svg)
+
+- Tu utilises un **navigateur** ou l'**application Android**. Ils parlent à la **passerelle**, le cœur de la station,
+  qui tourne sur le **PC de la station** à côté du poste.
+- La passerelle commande le poste par **rigctld** (le programme de Hamlib) et échange le son avec la **carte son du
+  poste**. C'est elle qui décide de l'émission et applique les sécurités.
+- Le **superviseur** surveille le tout de façon indépendante : il ne peut que couper une émission, relancer un
+  service, et t'envoyer des **alertes**.
+- **TRX Console**, le tableau de bord et l'indicateur sont tes outils sur le PC : ils lisent l'état de la station.
+- La configuration tient dans un seul fichier, **`station.toml`**.
+
+Chaque mot est expliqué dans le [glossaire](glossaire.md).
+
 ## Le matériel
 
 | Élément | Pour le FTDX10 |
