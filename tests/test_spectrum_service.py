@@ -744,7 +744,7 @@ def test_a_slow_event_loop_is_never_flooded_by_sweeps(caplog):
         assert got == [sweeps[-1], sweeps[0]]
     finally:
         loop.close()
-    assert sum("diffusion du spectre en erreur" in r.message for r in caplog.records) == 1
+    assert sum("ORT-1016" in r.message and "diffusion du spectre" in r.message for r in caplog.records) == 1
     assert svc.sweeps == 1001
 
 

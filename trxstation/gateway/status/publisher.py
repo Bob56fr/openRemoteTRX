@@ -16,6 +16,8 @@ from pathlib import Path
 from ...status import GatewayStatus, write_status
 from ..cat import CatLink
 from ..safety import PttController
+from ...errors import codes
+from ...errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class StatusPublisher:
         try:
             return self.net_status()
         except Exception:                 # la sonde ne doit jamais empêcher l'écriture de l'état (superviseur)
-            log.exception("état de la sonde réseau")
+            emit_event(codes.ORT_4509, logger=log, trace=True, erreur="résumé pour le fichier d'état")
             return {}
 
     def _selcall(self) -> dict:
@@ -63,7 +65,7 @@ class StatusPublisher:
         try:
             return receiver.summary()
         except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
-            log.exception("état SELCALL")
+            emit_event(codes.ORT_6814, logger=log, trace=True, contexte="résumé pour le fichier d'état")
             return {}
 
     def _freedv(self) -> dict:
@@ -73,7 +75,7 @@ class StatusPublisher:
         try:
             return service.summary()
         except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
-            log.exception("état FreeDV")
+            emit_event(codes.ORT_6567, logger=log, trace=True, erreur="résumé pour le fichier d'état")
             return {}
 
     def stop(self) -> None:
@@ -85,11 +87,10 @@ class StatusPublisher:
             write_status(self.path, self.build())
         except OSError as exc:  # disque plein, droits, fichier tenu ouvert... : on continue d'essayer
             self._failures += 1
-            if self._failures == 1:
-                log.warning("écriture de l'état refusée : %s", exc)
+            if self._failures == 1:                     # souvent passager (fichier tenu ouvert) : avertissement
+                emit_event(codes.ORT_1017, logger=log, detail=str(exc))
             elif self._failures % 20 == 0:
-                log.error("écriture de l'état impossible depuis %d essais : %s "
-                          "(le superviseur jugera la passerelle muette)", self._failures, exc)
+                emit_event(codes.ORT_1005, logger=log, n=self._failures, detail=str(exc))
             return False
         if self._failures:
             if self._failures > 1:

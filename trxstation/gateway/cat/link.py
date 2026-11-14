@@ -17,6 +17,8 @@ from dataclasses import asdict, dataclass, field, replace
 from .capabilities import RIT_LIMIT_HZ, Capabilities
 from .client import (RIG_ENAVAIL, RIG_ENIMPL, CatConnectionError, CatProtocolError,
                      RigctldClient, RigError)
+from ...errors import codes
+from ...errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -95,7 +97,7 @@ class CatLink:
                 try:
                     callback(replace(new))
                 except Exception:  # un écouteur défaillant ne doit pas casser la liaison
-                    log.exception("écouteur d'état en erreur")
+                    emit_event(codes.ORT_1016, logger=log, trace=True, partie="état du poste", erreur="voir la trace")
 
     def _update(self, **changes) -> None:
         self._set_state(replace(self._state, updated_at=time.time(), **changes))
@@ -124,7 +126,7 @@ class CatLink:
                 self._update(connected=True, last_error="")
                 await self._poll_loop()
             except (CatConnectionError, CatProtocolError, OSError) as exc:
-                log.warning("liaison rigctld perdue : %s", exc)
+                emit_event(codes.ORT_2005, logger=log, detail=str(exc))
                 self._set_state(RigState(connected=False, last_error=str(exc), updated_at=time.time()))
             finally:
                 await self.client.close()
@@ -143,18 +145,18 @@ class CatLink:
         try:
             await self.client.set_cache_timeout(0)
         except (RigError, CatProtocolError) as exc:
-            log.warning("cache de rigctld : « \\set_cache 0 » refusé (%s)", exc)
+            emit_event(codes.ORT_2023, logger=log, detail=f"« \\set_cache 0 » refusé ({exc})")
         try:
             ms = await self.client.get_cache_timeout()          # relu même si le réglage a échoué : c'est lui qui décide
         except (RigError, CatProtocolError) as exc:
             if self.ptt_cache_ok is not None or not self._cache_warned:
-                log.warning("cache de rigctld : réglage impossible (%s) ; relecture du PTT peut-être périmée", exc)
+                emit_event(codes.ORT_2023, logger=log, detail=f"réglage impossible ({exc})")
                 self._cache_warned = True
             self.ptt_cache_ok = None
             return
         self.ptt_cache_ok = ms == 0
         if ms != 0:
-            log.error("cache de rigctld toujours actif (%d ms) : la relecture du PTT n'est pas fiable, émission refusée", ms)
+            emit_event(codes.ORT_2024, logger=log, ms=ms)
 
     async def _poll_loop(self) -> None:
         tick = 0
@@ -181,7 +183,7 @@ class CatLink:
             else:
                 self._update(strength_db=None, last_error=str(exc))
         except CatProtocolError as exc:           # réponse illisible : lecture facultative, la liaison reste valide
-            log.warning("S-mètre illisible, lecture désactivée : %s", exc)
+            emit_event(codes.ORT_2008, logger=log, commande="S-mètre (l STRENGTH), lecture désactivée", reponse=str(exc))
             self._strength_supported = False
             self._update(strength_db=None)
 

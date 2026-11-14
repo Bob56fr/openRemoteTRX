@@ -30,6 +30,8 @@ from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from .pcm import FRAME_BYTES, FRAME_S, SAMPLE_RATE
+from ...errors import codes
+from ...errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -142,7 +144,7 @@ class BeepStore:
             self.config = replace(BeepConfig(), **validate_changes({k: v for k, v in data.items()
                                                                     if k in BeepConfig.__dataclass_fields__}))
         except (OSError, ValueError, TypeError) as exc:
-            log.warning("réglages des bips illisibles (%s) : bips désactivés", exc)
+            emit_event(codes.ORT_9712, logger=log, fichier=str(self.path), erreur=str(exc), repli="bips désactivés")
             self.config = BeepConfig()
 
     def add_listener(self, callback: Callable[[dict], None]) -> None:
@@ -169,7 +171,7 @@ class BeepStore:
             try:
                 callback(new.to_dict())
             except Exception:
-                log.exception("écouteur des bips en erreur")
+                emit_event(codes.ORT_5028, logger=log, trace=True, erreur="écouteur des réglages (voir la trace)")
         return new
 
 
@@ -291,4 +293,4 @@ class TailPlayer:
         try:
             self.sink.flush()
         except Exception:
-            log.exception("vidage du tampon de lecture impossible")
+            emit_event(codes.ORT_3008, logger=log, trace=True, erreur="voir la trace")

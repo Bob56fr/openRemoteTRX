@@ -15,6 +15,16 @@ ROOT = Path(__file__).resolve().parents[1] / "trxstation"
 FORBIDDEN = {"warning", "error", "critical", "exception", "warn", "fatal"}
 CONVERTED = [
     "gateway/safety/ptt.py",
+    # étape 179 : poste, spectre, audio, mesure de TOS, état publié, mémoires, profils de voix
+    "gateway/cat/link.py",
+    "spectrum/service.py",
+    "gateway/audio/beeps.py",
+    "gateway/audio/hub.py",
+    "swr/runner.py",
+    "swr/store.py",
+    "gateway/status/publisher.py",
+    "gateway/memories.py",
+    "gateway/voice_profiles.py",
     "supervisor/actions.py",
     "supervisor/backends.py",
     "supervisor/core.py",

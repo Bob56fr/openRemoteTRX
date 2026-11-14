@@ -18,6 +18,8 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ class MemoryStore:
             try:
                 callback(items)
             except Exception:
-                log.exception("écouteur de mémoires en erreur")
+                emit_event(codes.ORT_1016, logger=log, trace=True, partie="mémoires", erreur="voir la trace")
 
     def _persist(self) -> None:
         if self.path is None:
@@ -146,7 +148,7 @@ class MemoryStore:
                 if isinstance(raw["id"], str) and ID_RE.fullmatch(raw["id"]):
                     self._items[raw["id"]] = Memory(raw["id"], name, hz, mode, favorite)
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            log.warning("fichier de mémoires illisible (%s) : copie conservée, démarrage avec une liste vide", exc)
+            emit_event(codes.ORT_9702, logger=log, fichier=str(self.path), detail=str(exc))
             self._items.clear()
             with contextlib.suppress(OSError):
                 os.replace(self.path, self.path.with_suffix(self.path.suffix + ".corrupt"))

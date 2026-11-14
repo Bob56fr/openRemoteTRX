@@ -24,6 +24,8 @@ from ..gateway.cat import RigError
 from ..gateway.safety import Refused
 from . import plan as planmod
 from .store import SwrStore
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -210,7 +212,7 @@ class SwrRunner:
             if self.ctrl.epoch == epoch:
                 await self._unkey(client_id)
         if settle is None:
-            log.warning("mesure de TOS : lecture instable sur ce poste, %.1f s par point", limit)
+            emit_event(codes.ORT_5509, logger=log, secondes=round(limit, 1))
             return limit
         return round(min(limit, max(SETTLE_MIN_S, settle)), 2)
 
@@ -279,7 +281,7 @@ class SwrRunner:
             reason = "cancelled"
             raise
         except Exception as exc:
-            log.exception("mesure de TOS en erreur")
+            emit_event(codes.ORT_5508, logger=log, trace=True, detail=str(exc))
             reason, detail = "swr_failed", str(exc)
         finally:
             await self._finish(client_id, plan, points, saved, reason, detail, warning, progress)
@@ -298,7 +300,7 @@ class SwrRunner:
                 progress("restoring")
                 restored, differences = await self._restore(saved)
         except Exception as exc:
-            log.exception("mesure de TOS : remise en état impossible")
+            emit_event(codes.ORT_5512, logger=log, trace=True, ecarts=f"remise en état impossible : {exc}")
             differences.append(f"remise en état impossible : {exc}")
         finally:
             ctrl.release_reservation(client_id)
@@ -313,7 +315,12 @@ class SwrRunner:
             self.store.save_last(result)
         state = "done" if reason == "done" else "cancelled" if reason in ("cut",) and detail == "swr_cancel" else \
             "cut" if reason == "cut" else "failed"
-        log.warning("mesure de TOS terminée : %s %s (%d points mesurés)", reason, detail, len(measured))
+        if state == "done":
+            log.info("mesure de TOS terminée : %d points mesurés", len(measured))
+        elif state in ("cancelled", "cut"):
+            emit_event(codes.ORT_5506, logger=log, raison=f"{reason} {detail}".strip(), points=len(measured))
+        else:
+            emit_event(codes.ORT_5508, logger=log, detail=f"{reason} {detail}".strip(), points=len(measured))
         progress(state, None, result=result)
 
     async def _restore(self, saved: dict) -> tuple[dict, list[str]]:

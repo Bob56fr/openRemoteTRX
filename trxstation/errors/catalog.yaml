@@ -375,6 +375,46 @@ ORT-1015:
     - Power-hungry USB devices
     preconisation: Use the official 5.1 V 3 A supply and a short cable; power hungry devices separately.
 
+ORT-1016:
+  gravite: erreur
+  titre: 'Erreur inattendue dans un écouteur de la passerelle'
+  message: 'Erreur inattendue dans un écouteur ({partie}) : {erreur} ; la passerelle continue.'
+  causes:
+  - 'Défaut du programme (cas non prévu)'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1016/
+  depuis_version: 0.136.0
+  en:
+    titre: 'Unexpected error in a gateway listener'
+    message: 'Unexpected error in a listener ({partie}): {erreur}; the gateway carries on.'
+    causes:
+    - 'Program defect (unforeseen case)'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+
+ORT-1017:
+  gravite: avertissement
+  titre: 'Écriture du fichier d''état refusée'
+  message: 'Écriture du fichier d''état refusée ({detail}) : nouvel essai ; ORT-1005 suit si cela dure.'
+  causes:
+  - 'Fichier tenu ouvert un instant par un autre programme (antivirus, indexation, trx-monitor)'
+  - 'Disque plein ou droits du dossier d''état'
+  preconisation: 'Rien à faire si c''est passager ; sinon voir ORT-1005.'
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-1017/
+  depuis_version: 0.136.0
+  en:
+    titre: 'Status file write refused'
+    message: 'Status file write refused ({detail}): retrying; ORT-1005 follows if it lasts.'
+    causes:
+    - 'File held open for a moment by another program (antivirus, indexing, trx-monitor)'
+    - 'Disk full or state folder permissions'
+    preconisation: 'Nothing to do if transient; otherwise see ORT-1005.'
+
 ORT-1020:
   gravite: erreur
   titre: Horloge de la station refusée par le relais
@@ -1208,6 +1248,48 @@ ORT-2022:
     causes:
     - Debian Hamlib still installed and before /usr/local/bin in PATH
     preconisation: Check `command -v rigctld`; remove libhamlib-utils or fix PATH.
+
+ORT-2023:
+  gravite: avertissement
+  titre: 'Cache de rigctld non réglable'
+  message: 'Cache de rigctld : {detail} ; la relecture du PTT est peut-être périmée.'
+  causes:
+  - 'rigctld trop ancien (commande « \set_cache » absente)'
+  - 'rigctld lancé hors de la station avec d''autres options'
+  preconisation: 'Lancer rigctld par la station (option -C cache_timeout=0) ou mettre Hamlib à jour.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2023/
+  depuis_version: 0.136.0
+  en:
+    titre: 'rigctld cache cannot be set'
+    message: 'rigctld cache: {detail}; the PTT read-back may be stale.'
+    causes:
+    - 'rigctld too old (no « \set_cache » command)'
+    - 'rigctld started outside the station with other options'
+    preconisation: 'Let the station start rigctld (option -C cache_timeout=0) or update Hamlib.'
+
+ORT-2024:
+  gravite: erreur
+  titre: 'Cache de rigctld actif : émission refusée'
+  message: 'Cache de rigctld toujours actif ({ms} ms) : la relecture du PTT n''est pas fiable, émission refusée.'
+  causes:
+  - 'rigctld lancé hors de la station sans « -C cache_timeout=0 »'
+  - 'Hamlib qui ignore le réglage du cache'
+  preconisation: 'Relancer la station pour qu''elle lance rigctld elle-même, ou ajouter « -C cache_timeout=0 » à rigctld.'
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2024/
+  depuis_version: 0.136.0
+  en:
+    titre: 'rigctld cache active: transmit refused'
+    message: 'rigctld cache still active ({ms} ms): the PTT read-back is unreliable, transmit refused.'
+    causes:
+    - 'rigctld started outside the station without « -C cache_timeout=0 »'
+    - 'Hamlib ignoring the cache setting'
+    preconisation: 'Restart the station so it starts rigctld itself, or add « -C cache_timeout=0 » to rigctld.'
 
 ORT-2104:
   gravite: erreur

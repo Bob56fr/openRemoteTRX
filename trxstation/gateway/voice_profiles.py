@@ -18,6 +18,8 @@ import math
 import os
 import tempfile
 from pathlib import Path
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -152,4 +154,4 @@ class VoiceProfileStore:
                         continue
                 self._data[account] = kept
         except (OSError, ValueError, AttributeError) as exc:
-            log.warning("profils de voix illisibles (%s) : ignorés", exc)
+            emit_event(codes.ORT_9712, logger=log, fichier=str(self.path), erreur=str(exc), repli="profils ignorés")

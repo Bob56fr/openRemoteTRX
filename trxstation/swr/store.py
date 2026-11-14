@@ -15,6 +15,8 @@ import math
 import os
 import tempfile
 from pathlib import Path
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ class SwrStore:
                     os.unlink(tmp)
                 raise
         except OSError as exc:                         # une mesure ne doit jamais échouer pour un fichier d'état
-            log.error("mesure de TOS : état non enregistré (%s)", exc)
+            emit_event(codes.ORT_1007, logger=log, cas="non enregistré", detail=str(exc))
 
     def _load(self) -> None:
         if self.path is None or not self.path.exists():
@@ -90,4 +92,4 @@ class SwrStore:
                 if isinstance(data.get("last"), dict):
                     self._data["last"] = data["last"]
         except (OSError, ValueError) as exc:
-            log.warning("état de la mesure de TOS illisible (%s) : défauts", exc)
+            emit_event(codes.ORT_1007, logger=log, cas="illisible (valeurs par défaut)", detail=str(exc))

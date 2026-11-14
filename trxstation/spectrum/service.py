@@ -43,6 +43,8 @@ from ..config import Spectrum, parse_civ_address
 from .civ import (FILTERS, LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_mode_filter,
                   decode_setting, encode_mode_filter, encode_setting)
 from .probe import FALLBACK, SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, open_serial
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger("trx-gateway.spectrum")
 
@@ -104,7 +106,8 @@ class SpectrumService:
             except Exception:                         # noqa: BLE001 - un client fautif ne touche ni les autres ni la lecture
                 if id(callback) not in self._failing:  # une fois par écouteur : pas un journal (et une boucle) noyés
                     self._failing.add(id(callback))
-                    log.exception("diffusion du spectre en erreur (signalé une seule fois pour cet écouteur)")
+                    emit_event(codes.ORT_1016, logger=log, trace=True, partie="diffusion du spectre HF",
+                               erreur="signalée une seule fois pour cet écouteur")
 
     def _dispatch_latest(self) -> None:
         with self._lock:
@@ -136,7 +139,7 @@ class SpectrumService:
             self._state = {"state": state, "code": code, "message": message}
         if changed:
             if state == "error":
-                log.error("spectre HF : %s", message)          # le message contient déjà « Mode normal… »
+                emit_event(codes.ORT_2313, logger=log, message=message, cause=code)   # message : « Mode normal… »
             elif state == "ok":
                 log.info("spectre HF reçu sur %s", self.cfg.port)
 
@@ -347,7 +350,7 @@ class SpectrumService:
         try:
             self._run()
         except Exception as exc:                    # jamais d'arrêt de la passerelle à cause du spectre
-            log.exception("spectre HF : erreur interne")
+            emit_event(codes.ORT_2309, logger=log, trace=True, detail=type(exc).__name__)
             self._fail(CheckFailed("internal", type(exc).__name__))
 
     def _run(self) -> None:

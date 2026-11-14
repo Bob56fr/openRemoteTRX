@@ -8,6 +8,8 @@ import logging
 
 from .levels import LevelMeter
 from .pcm import apply_gain
+from ...errors import codes
+from ...errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -48,14 +50,14 @@ class RxHub:
                 pcm = freedv.process(pcm)
             except Exception:
                 if not self._freedv_failed:
-                    log.exception("mode FreeDV en erreur : le son du poste passe tel quel")
+                    emit_event(codes.ORT_6567, logger=log, trace=True, erreur="décodage : le son du poste passe tel quel")
                 self._freedv_failed = True
         elif self.processor is not None:
             try:
                 pcm = self.processor(pcm)
             except Exception:
                 if not self._processor_failed:
-                    log.exception("traitement du son reçu en erreur : le son passe sans traitement")
+                    emit_event(codes.ORT_3007, logger=log, trace=True, erreur="le son passe sans traitement")
                 self._processor_failed = True
         for queue in self._subscribers:
             if queue.full():                                        # client lent : on jette le plus ancien
