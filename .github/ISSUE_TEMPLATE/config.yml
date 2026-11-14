@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: "Questions et discussions / Questions and discussions"
+    url: https://github.com/Bob56fr/openRemoteTRX/discussions/categories/q-a
+    about: "Une question, une aide à l'installation, un retour d'essai ? Posez-la ici (FR, EN, DE, ES). A question, installation help, a test report? Ask here."
   - name: "rf-diy.com : aide et nouvelles / help and news"
     url: https://rf-diy.com
     about: "Questions générales, mode d'emploi et nouvelles du projet. General questions, guides and project news."
