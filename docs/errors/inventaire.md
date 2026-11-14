@@ -81,6 +81,14 @@ Périmètre : `raise` métier, `except` qui journalise, alerte, refuse ou bascul
    - Rattachements : `friends_error` à ORT-6922, la surveillance des accès à ORT-8018.
    - ORT-8019 est `deprecated`.
 
+## Partie 2b : le code passe par les codes (suivi)
+
+Les origines du tableau ci-dessous datent de la station 0.126.0 ; la conversion du code se fait domaine par domaine, et `tests/test_error_free_text.py` interdit ensuite tout avertissement ou erreur en texte libre dans les fichiers convertis (liste `CONVERTED`, qui ne fait que s'allonger).
+
+- Étape 173 (0.131.0) : alertes ntfy (`Notifier.alert`), toutes par un code.
+- Étape 174 (0.132.0) : journal JSON, installateurs ORT-9308 / ORT-9311.
+- Étape 178 (0.135.0) : sécurité d'émission (`gateway/safety/ptt.py`) et superviseur (`supervisor/`). Nouveaux codes : ORT-5029 (erreur inattendue du contrôle du PTT), ORT-5030 (retour en réception non confirmé, nouvel essai : signe avant-coureur d'ORT-5020), ORT-5031 (coupure du PTT, information, avec `code_cause`), ORT-8022 (fichier d'état illisible), ORT-8023 (relevé de la machine impossible), ORT-8024 (lancement ou arrêt des modules en erreur).
+
 ## Tableau code → origines
 
 Gravité et action automatique : comportement ACTUEL du code. `codes machine` : codes déjà émis (refus, raisons de coupure, types d'alerte).

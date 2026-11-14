@@ -9,6 +9,9 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+from ..errors import codes
+from ..errors.emit import emit_event
+
 log = logging.getLogger(__name__)
 
 
@@ -27,7 +30,7 @@ def find_usb_authorized(port: str, sys_root: str = "/sys") -> Path | None:
 def reset_usb_sysfs(port: str, sys_root: str = "/sys", sleep: Callable[[float], None] = time.sleep) -> bool:
     authorized = find_usb_authorized(port, sys_root) if port else None
     if authorized is None:
-        log.error("réinitialisation USB impossible : périphérique introuvable dans /sys")
+        emit_event(codes.ORT_8005, logger=log, detail="périphérique introuvable dans /sys")
         return False
     try:
         authorized.write_text("0")
@@ -36,5 +39,5 @@ def reset_usb_sysfs(port: str, sys_root: str = "/sys", sleep: Callable[[float], 
         sleep(2.0)
         return True
     except OSError as exc:
-        log.error("réinitialisation USB en erreur : %s", exc)
+        emit_event(codes.ORT_8005, logger=log, detail=str(exc))
         return False

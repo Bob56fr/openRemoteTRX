@@ -13,6 +13,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .. import config as cfgmod
+from ..errors import codes
+from ..errors.emit import emit_event
 from ..logsetup import LOG_DIR_ENV, add_json_journal, setup_logging
 from ..paths import default_config_path
 from ..ports import port_present
@@ -72,7 +74,7 @@ def run_forever(sup: Supervisor, poll_interval_s: float, *, stop: Callable[[], b
             failures = 0
         except Exception:
             failures += 1
-            log.exception("erreur dans la boucle de supervision (%d/%d)", failures, MAX_CONSECUTIVE_FAILURES)
+            emit_event(codes.ORT_8014, logger=log, trace=True, n=failures, max=MAX_CONSECUTIVE_FAILURES)
             if failures >= MAX_CONSECUTIVE_FAILURES:
                 return 1                      # systemd (Restart=always) nous relance proprement
         notify("WATCHDOG=1")
@@ -141,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
         launcher = build_launcher(cfg, alert=sup.actions.notifier.alert, config_path=args.config)   # [modules] run vide : None
         start_modules(launcher)
     except Exception:
-        log.exception("modules non lancés : la station fonctionne sans eux")
+        emit_event(codes.ORT_8024, logger=log, trace=True, action="lancement", erreur="voir la trace")
         launcher = None
     try:
         return run_forever(sup, cfg.supervisor.poll_interval_s, stop=lambda: stopping or stop_file.exists(),
@@ -151,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 launcher.stop_all()
             except Exception:
-                log.exception("arrêt des modules incomplet")
+                emit_event(codes.ORT_8024, logger=log, trace=True, action="arrêt", erreur="voir la trace")
         backend.stop_all(force_rx=sup.actions.force_rx)       # no-op sous systemd ; « T 0 » avant d'arrêter rigctld
         stop_file.unlink(missing_ok=True)
 

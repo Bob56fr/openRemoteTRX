@@ -112,9 +112,11 @@ def remove_sink(sink: Callable[[ErrorEvent], None]) -> None:
             _sinks.remove(sink)
 
 
-def emit_event(code: str, *, logger: logging.Logger | None = None, prefixe: str = "ORT",
+def emit_event(code: str, *, logger: logging.Logger | None = None, prefixe: str = "ORT", trace: bool = False,
                **contexte: Any) -> ErrorEvent:
     """Journalise et diffuse l'événement `code` ; renvoie l'événement. Ne lève jamais d'exception.
+
+    `trace` : joindre la trace Python de l'exception en cours (dans un `except`, comme `log.exception`).
 
     `prefixe` : préfixe du module qui émet (registre modules.yaml), publié dans le champ `module` de l'événement ;
     ne pas confondre avec la variable `{module}` des messages ORT-65xx, passée dans le contexte.
@@ -128,17 +130,17 @@ def emit_event(code: str, *, logger: logging.Logger | None = None, prefixe: str 
     except Exception:                                  # filet ultime : jamais d'exception vers l'appelant
         event = ErrorEvent(code=str(code), gravite="erreur", titre=UNKNOWN_TITLE["fr"], message=str(code),
                            horodatage=time.time(), connu=False)
-    publish(event, logger=logger)
+    publish(event, logger=logger, trace=trace)
     return event
 
 
-def publish(event: ErrorEvent, *, logger: logging.Logger | None = None, prefix: str = "") -> None:
+def publish(event: ErrorEvent, *, logger: logging.Logger | None = None, prefix: str = "", trace: bool = False) -> None:
     """Journalise un événement déjà construit (au niveau de sa gravité) et le remet aux abonnés. Ne lève jamais.
     `prefix` : mot placé en tête de la ligne du journal (« ALERTE » pour une alerte ntfy)."""
     try:
         head = f"{prefix} " if prefix else ""
         (logger or log).log(LEVELS.get(event.gravite, logging.ERROR), "%s%s %s", head, event.code, event.message,
-                            extra={"event": event.as_dict()})
+                            extra={"event": event.as_dict()}, exc_info=trace)
     except Exception:
         pass
     with _lock:

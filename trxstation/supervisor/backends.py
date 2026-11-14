@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Protocol
 
 from ..config import Config
+from ..errors import codes
+from ..errors.emit import emit_event
 from ..hamlib import rigctld_command
 from ..logsetup import log_dir
 from .usb import reset_usb_sysfs
@@ -61,9 +63,10 @@ class SystemdBackend:
         try:
             done = self._run(["systemctl", *args], capture_output=True, text=True, timeout=30)
             if done.returncode != 0:
-                log.error("systemctl %s a échoué : %s", " ".join(args), (done.stderr or "").strip()[:200])
+                emit_event(codes.ORT_8010, logger=log, action="systemctl " + " ".join(args),
+                           detail=(done.stderr or "").strip()[:200] or f"code {done.returncode}")
         except (OSError, subprocess.TimeoutExpired) as exc:
-            log.error("systemctl %s impossible : %s", " ".join(args), exc)
+            emit_event(codes.ORT_8010, logger=log, action="systemctl " + " ".join(args), detail=str(exc))
 
     def start(self) -> None: pass
     def maintain(self) -> None: pass
@@ -188,7 +191,8 @@ class ManagedBackend:
             proc.kill()
             proc.wait(5)
         except (OSError, subprocess.TimeoutExpired):
-            log.error("%s : impossible de tuer le processus %s", child.name, proc.pid)
+            emit_event(codes.ORT_8010, logger=log, action=f"arrêt forcé de {child.name}",
+                       detail=f"processus {proc.pid} impossible à tuer")
 
     def _wait_for_rigctld(self) -> None:
         deadline = self._clock() + self.rigctld_wait_s
@@ -212,7 +216,7 @@ class ManagedBackend:
         gateway = self.children["gateway"]
         if self._safe_mode():
             gateway.stopped = gateway.safe_mode_hold = True
-            log.warning("mode sûr actif : la passerelle n'est pas lancée")
+            emit_event(codes.ORT_8008, logger=log, raison="mode sûr mémorisé, la passerelle n'est pas lancée")
         else:
             self._spawn(gateway)
 
@@ -230,7 +234,8 @@ class ManagedBackend:
                 continue
             if now - child.last_start < self.restart_delay_s:
                 continue
-            log.warning("%s s'est arrêté (code %s) : redémarrage", child.name, child.proc.returncode)
+            emit_event(codes.ORT_8001, logger=log, niveau="-", action=f"relance de {child.name}",
+                       problemes=f"{child.name} arrêté (code {child.proc.returncode})")
             child.restarts += 1
             self._spawn(child)
 
@@ -245,11 +250,11 @@ class ManagedBackend:
         if force_rx is not None and (self._alive(rig) or self.rigctld_adopted):
             try:
                 if force_rx() is False:
-                    log.warning("arrêt : retour en réception non confirmé par le poste")
+                    emit_event(codes.ORT_5027, logger=log, moment="arrêt de la station")
                 else:
                     log.info("arrêt : poste remis en réception (T 0) avant l'arrêt de rigctld")
             except Exception:                             # noqa: BLE001 - l'arrêt continue quoi qu'il arrive
-                log.exception("arrêt : « T 0 » impossible")
+                emit_event(codes.ORT_5027, logger=log, trace=True, moment="arrêt de la station")
         rig.stopped = True
         self._terminate(rig)
 
@@ -271,7 +276,8 @@ class ManagedBackend:
     def restart_rigctld(self) -> None:
         child = self.children["rigctld"]
         if self.rigctld_adopted and child.proc is None:
-            log.error("rigctld n'est pas géré par le superviseur (adopté) : redémarrage impossible")
+            emit_event(codes.ORT_8010, logger=log, action="restart_rigctld",
+                       detail="rigctld lancé hors du superviseur (adopté) : redémarrage impossible")
             return
         self._terminate(child)
         self._spawn(child)
@@ -279,7 +285,7 @@ class ManagedBackend:
 
     def reset_usb(self) -> None:
         if self.platform == "win32":
-            log.error("réinitialisation USB non prise en charge sous Windows : rebranche le câble si besoin")
+            emit_event(codes.ORT_8005, logger=log, detail="non prise en charge sous Windows : rebrancher le câble si besoin")
             return
         reset_usb_sysfs(self.cfg.rig.port)
         self.restart_rigctld()

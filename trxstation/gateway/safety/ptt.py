@@ -42,6 +42,8 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 
 from ...config import Config
+from ...errors import codes
+from ...errors.emit import by_machine, emit_event
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
 from ..cat.client import RIG_ENAVAIL, RIG_ENIMPL
 from .local import LocalPresence
@@ -201,7 +203,7 @@ class PttController:
             try:
                 callback(snap)
             except Exception:
-                log.exception("écouteur PTT en erreur")
+                emit_event(codes.ORT_5029, logger=log, trace=True, partie="un écouteur de l'état du PTT", erreur="voir la trace")
 
     def _set_state(self, new: PttState, event: str = "") -> None:
         if new is not PttState.RX or self._state is not PttState.RX:
@@ -219,7 +221,7 @@ class PttController:
         def _done(t: asyncio.Task) -> None:
             self._tasks.discard(t)
             if not t.cancelled() and t.exception() is not None:
-                log.error("tâche de sécurité en erreur : %r", t.exception())
+                emit_event(codes.ORT_5029, logger=log, partie="une tâche de sécurité", erreur=repr(t.exception()))
         task.add_done_callback(_done)
 
     # ------------------------------------------------------------------ cycle de vie
@@ -281,7 +283,7 @@ class PttController:
 
     async def force_rx(self, reason: str, by: str | None = None) -> None:
         """Coupure. Jamais refusée, idempotente, envoie toujours « PTT off »."""
-        log.warning("coupure PTT : %s (demandée par %s)", reason, by or "interne")
+        emit_event(codes.ORT_5031, logger=log, raison=reason, par=by or "interne", code_cause=by_machine(reason))
         self.last_cut_request = reason
         self._epoch += 1               # annule toute prise d'émission en préparation
         self._stop_tail()              # un bip de fin en cours s'arrête net
@@ -303,9 +305,9 @@ class PttController:
                 if tail.max_wait("selcall") <= left:
                     kind = "selcall"
                 else:
-                    log.warning("trame SELCALL de fin omise : plus assez de temps avant le TOT (%.1f s)", left)
+                    emit_event(codes.ORT_6802, logger=log, secondes=round(left, 1))
         except Exception:
-            log.exception("trame SELCALL de fin impossible : roger bip ou coupure")
+            emit_event(codes.ORT_5021, logger=log, trace=True, type="SELCALL", detail="roger bip ou coupure à la place")
         return kind
 
     async def send_selcall(self, client_id: str, sequence, duration_s: float) -> PttSnapshot:
@@ -332,13 +334,13 @@ class PttController:
             await asyncio.wait_for(asyncio.shield(task), bound_s)
         except asyncio.TimeoutError:
             reason = "selcall_timeout"
-            log.error("appel SELCALL trop long : coupure")
+            emit_event(codes.ORT_6804, logger=log, cause="appel plus long que prévu, coupure")
         except asyncio.CancelledError:
             if not task.cancelled():
                 raise
         except Exception:
             reason = "selcall_failed"
-            log.exception("appel SELCALL en erreur : coupure")
+            emit_event(codes.ORT_6804, logger=log, trace=True, cause="erreur inattendue, coupure")
         if self._epoch == epoch:                      # personne n'a coupé pendant l'appel : fin normale
             if self._tail_task is task:
                 self._tail_task = None
@@ -362,7 +364,7 @@ class PttController:
         try:
             wanted = tail is not None and tail.wanted(kind)
         except Exception:
-            log.exception("réglages des bips illisibles : coupure sans bip")
+            emit_event(codes.ORT_5021, logger=log, trace=True, type=kind, detail="réglages des bips illisibles")
             wanted = False
         if self._state is not PttState.TX or not wanted or self._tail_task is not None:
             await self.force_rx(reason, by=by)
@@ -378,11 +380,12 @@ class PttController:
             try:
                 bound = max(TAIL_MAX_WAIT_S, min(float(tail.max_wait(kind)), TAIL_SELCALL_MAX_S))
             except Exception:
-                log.exception("durée de la trame SELCALL inconnue : attente d'un bip")
+                emit_event(codes.ORT_5021, logger=log, trace=True, type=kind,
+                           detail="durée de la trame inconnue, attente limitée à celle d'un bip")
         try:
             await asyncio.wait_for(asyncio.shield(task), bound)
         except asyncio.TimeoutError:
-            log.error("bip de fin trop long : coupure sans attendre")
+            emit_event(codes.ORT_5021, logger=log, type=kind, detail="bip trop long, coupure sans attendre")
         except asyncio.CancelledError:
             if task.cancelled():
                 log.info("bip %s interrompu par une coupure", kind)   # force_rx (SELCALL : trame annulée)
@@ -393,7 +396,7 @@ class PttController:
                     self._spawn(self.force_rx(reason, by=by))
                 raise
         except Exception:
-            log.exception("bip de fin en erreur : coupure")
+            emit_event(codes.ORT_5021, logger=log, trace=True, type=kind, detail="erreur pendant le bip")
         if self._epoch == epoch:                      # personne n'a coupé pendant le bip : on coupe maintenant
             await self.force_rx(reason, by=by)
 
@@ -422,7 +425,7 @@ class PttController:
             raise Refused("unknown_client")
         if not self.local.release():
             raise Refused("local_tx", "le poste émet en ce moment depuis son micro")
-        log.warning("poste utilisé sur place : main reprise à distance par %s", client_id)
+        emit_event(codes.ORT_5007, logger=log, client=client_id)
         self._emit("local_released")
         return self.snapshot("local_released")
 
@@ -605,7 +608,13 @@ class PttController:
                      self.local.reason, self.local.hold_s)
             self._emit("local_active")
         if self.thermal.observe(state.levels.get("TEMP_METER")):
-            log.warning("température du poste : %.0f °C (niveau %s)", self.thermal.temp_c, self.thermal.level or "normal")
+            hot = self.thermal.level == "hot"
+            if self.thermal.level in ("warn", "hot"):
+                emit_event(codes.ORT_5008 if hot else codes.ORT_5009, logger=log, temp_c=round(self.thermal.temp_c),
+                           seuil_c=round(self.thermal.cut_c if hot else self.thermal.warn_c),
+                           reprise_c=round(self.thermal.warn_c))
+            else:
+                log.info("température du poste : %.0f °C (niveau normal)", self.thermal.temp_c)
             self._emit("temp_alert")
         if self._state is not PttState.TX:
             return
@@ -700,18 +709,18 @@ class PttController:
                 await self.link.client.write_ptt(False)
                 if not await self._rig_still_keyed():
                     break
-                log.warning("le poste reste en émission après « PTT off », nouvelle tentative")
+                emit_event(codes.ORT_5030, logger=log, detail="le poste relit encore « émission »")
             except _CAT_ERRORS as exc:
                 if isinstance(exc, CatConnectionError) and not latch_fault:
                     # RX de démarrage : la liaison CAT s'établit, c'est attendu et sans gravité
                     log.debug("RX de démarrage en attente de la liaison CAT (%s)", exc)
                 else:
-                    log.warning("échec du retour RX (%s), nouvelle tentative", exc)
+                    emit_event(codes.ORT_5030, logger=log, detail=str(exc))
             if not faulted and time.monotonic() >= deadline:
                 faulted = True
                 if latch_fault:
                     self._fault = "unkey_failed"
-                    log.error("RETOUR RX IMPOSSIBLE depuis %.1f s : défaut verrouillé", self.limits.unkey_deadline_s)
+                    emit_event(codes.ORT_5020, logger=log, delai_s=self.limits.unkey_deadline_s)
                     self._emit("fault")
             await asyncio.sleep(self.limits.unkey_retry_s)
         else:

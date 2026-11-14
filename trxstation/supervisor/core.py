@@ -47,7 +47,7 @@ from typing import Protocol
 from ..cpu_temp import cpu_celsius
 from ..config import DUMMY_MODEL, Config
 from ..errors import codes
-from ..errors.emit import by_machine
+from ..errors.emit import by_machine, emit_event
 from ..status import GatewayStatus, GatewayWatch
 from .rigctl import RigProbe
 from .state import StateStore
@@ -163,7 +163,7 @@ class Supervisor:
         try:
             status = self.read_status()
         except Exception:
-            log.exception("lecture du fichier d'état en erreur")
+            emit_event(codes.ORT_8022, logger=log, trace=True, erreur="voir la trace")
             status = None
         self.watch.update(status, now)
         try:
@@ -287,7 +287,7 @@ class Supervisor:
             try:
                 self._host = self.read_host()
             except Exception:                       # une mesure ratée ne doit jamais arrêter la supervision
-                log.exception("relevé de la machine en erreur")
+                emit_event(codes.ORT_8023, logger=log, trace=True, erreur="voir la trace")
                 self._host = None
         h = self._host
         found: dict[str, str] = {}
@@ -316,9 +316,9 @@ class Supervisor:
         try:
             result = fn()
             if name == "force_rx" and result is False:
-                log.warning("force_rx : le poste n'est pas confirmé en réception")
+                emit_event(codes.ORT_5027, logger=log, moment="supervision")
         except Exception:
-            log.exception("action %s en erreur", name)
+            emit_event(codes.ORT_8010, logger=log, trace=True, action=name, detail="erreur inattendue (voir la trace)")
 
     def _escalate(self, now: float, problems: list[Problem], report: StepReport) -> None:
         actionable = [p for p in problems if p.level is not None]
@@ -340,8 +340,7 @@ class Supervisor:
     def _run_level(self, level: int, problems: list[Problem], report: StepReport) -> None:
         name = LADDER[level]
         detail = ", ".join(p.name for p in problems)
-        log.error("reprise niveau %d (%s) : %s", level, name, detail)
-        self._alert(LADDER_CODES[name], f"reprise « {name} » : {detail}", key=name)
+        self._alert(LADDER_CODES[name], f"reprise niveau {level} ({name}) : {detail}", key=name)
         if name == "restart_gateway":
             self._act(report, "kill_gateway", self.actions.kill_gateway)
             self._act(report, "restart_gateway", self.actions.restart_gateway)
@@ -362,7 +361,7 @@ class Supervisor:
             self.store.add_reboot(wall)
         except OSError:
             # Sans historique fiable, un redémarrage en boucle serait possible : on s'abstient.
-            log.error("historique des redémarrages non inscriptible : pas de reboot, passerelle arrêtée")
+            emit_event(codes.ORT_8007, logger=log)
             self._act(report, "force_rx", self.actions.force_rx)
             self._act(report, "stop_gateway", self.actions.stop_gateway)
             return
@@ -370,11 +369,10 @@ class Supervisor:
         self._act(report, "reboot", self.actions.reboot)
 
     def _enter_safe_mode(self, report: StepReport, reason: str) -> None:
-        log.error("MODE SÛR : %s", reason)
         try:
             self.store.set_safe_mode(reason)
         except OSError:
-            log.exception("mode sûr non persisté (il ne survivra pas à un redémarrage du superviseur)")
+            emit_event(codes.ORT_8009, logger=log, trace=True, detail="voir la trace")
         report.safe_mode = True
         self._act(report, "force_rx", self.actions.force_rx)
         self._act(report, "stop_gateway", self.actions.stop_gateway)
@@ -398,7 +396,7 @@ class Supervisor:
         try:
             self.actions.notify(code, detail, key=key)
         except Exception:
-            log.exception("alerte en erreur")
+            emit_event(codes.ORT_8013, logger=log, trace=True, detail=f"{code} : erreur inattendue (voir la trace)")
 
     def _alive(self, now: float, rig: RigProbe, gateway_fresh: bool, safe_reason: str, problems: list[str]) -> None:
         every_h = self.sup.alive_every_h

@@ -16,6 +16,7 @@ import unicodedata
 import urllib.request
 from collections.abc import Callable
 
+from ..errors import codes as emit_codes
 from ..errors import emit
 
 log = logging.getLogger(__name__)
@@ -64,7 +65,7 @@ class Notifier:
             priority = str(e["priorite_ntfy"]) if e is not None and e.get("priorite_ntfy") else ""
             return self._deliver(f"{code}:{key}", f"{code} {titre}", body, priority)
         except Exception:                      # une alerte ratée ne doit rien casser
-            log.exception("alerte %s non envoyée", code)
+            emit.emit_event(emit_codes.ORT_8013, logger=log, trace=True, detail=f"{code} : erreur inattendue (voir la trace)")
             return False
 
     def send(self, title: str, message: str, quiet: bool = False) -> bool:
@@ -90,7 +91,7 @@ class Notifier:
             try:
                 self._post(self.url, title, message, priority)
             except Exception as exc:          # une alerte ratée ne doit rien casser
-                log.error("envoi d'alerte impossible : %s", exc)
+                emit.emit_event(emit_codes.ORT_8013, logger=log, detail=f"{title[:40]} : {exc}")
 
         if self.threaded:
             threading.Thread(target=work, daemon=True).start()

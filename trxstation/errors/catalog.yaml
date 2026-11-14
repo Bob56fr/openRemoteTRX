@@ -3912,6 +3912,67 @@ ORT-5028:
     - Program defect (unforeseen case)
     preconisation: Report the problem with the station log (TRX Console menu 8).
 
+ORT-5029:
+  gravite: erreur
+  titre: 'Erreur inattendue : contrôle du PTT'
+  message: 'Contrôle du PTT : erreur inattendue dans {partie} ({erreur}) ; la sécurité d''émission continue.'
+  causes:
+  - 'Défaut du programme (cas non prévu)'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5029/
+  depuis_version: 0.135.0
+  en:
+    titre: 'Unexpected error: PTT control'
+    message: 'PTT control: unexpected error in {partie} ({erreur}); transmit safety carries on.'
+    causes:
+    - 'Program defect (unforeseen case)'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+
+ORT-5030:
+  gravite: avertissement
+  titre: 'Retour en réception non confirmé : nouvel essai'
+  message: 'Retour en réception non confirmé ({detail}) : nouvel essai de « PTT off ».'
+  causes:
+  - 'Le poste a relu « émission » juste après l''ordre (lenteur, cache de rigctld)'
+  - 'Liaison CAT perturbée pendant l''ordre'
+  preconisation: 'Rien à faire si le retour en réception aboutit ; sinon ORT-5020 suit (défaut verrouillé).'
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5030/
+  depuis_version: 0.135.0
+  en:
+    titre: 'Return to receive not confirmed: retrying'
+    message: 'Return to receive not confirmed ({detail}): retrying « PTT off ».'
+    causes:
+    - 'The radio read back « transmit » right after the order (slowness, rigctld cache)'
+    - 'CAT link disturbed during the order'
+    preconisation: 'Nothing to do if the return to receive succeeds; otherwise ORT-5020 follows (latched fault).'
+
+ORT-5031:
+  gravite: info
+  titre: 'Coupure du PTT'
+  message: 'Coupure du PTT : {raison} (demandée par {par}).'
+  causes:
+  - 'Fin d''émission normale (relâché, STOP, TOT)'
+  - 'Sécurité de la station (terminal perdu, poste, température)'
+  preconisation: 'Rien à faire : trace de chaque coupure ; la cause précise porte son propre code (champ code_cause).'
+  action_auto: retour_rx
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5031/
+  depuis_version: 0.135.0
+  en:
+    titre: 'PTT cut'
+    message: 'PTT cut: {raison} (requested by {par}).'
+    causes:
+    - 'Normal end of transmission (released, STOP, TOT)'
+    - 'Station safety (terminal lost, radio, temperature)'
+    preconisation: 'Nothing to do: trace of every cut; the precise cause carries its own code (code_cause field).'
+
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'
@@ -7522,6 +7583,69 @@ ORT-8021:
     - Start or stop refused by systemd
     preconisation: 'Read the log (TRX Console, menu 7: journalctl -u {service} -n 50), fix the cause, then "Start
       the station"; if not installed: sudo bash install.sh.'
+
+ORT-8022:
+  gravite: avertissement
+  titre: 'Fichier d''état de la passerelle illisible'
+  message: 'Lecture du fichier d''état de la passerelle impossible ({erreur}) : passerelle considérée comme muette.'
+  causes:
+  - 'Fichier en cours d''écriture ou abîmé'
+  - 'Droits du fichier'
+  preconisation: 'Rien à faire si cela reste isolé ; sinon vérifier le dossier d''état et les droits, puis le rapport de dépannage.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8022/
+  depuis_version: 0.135.0
+  en:
+    titre: 'Gateway status file unreadable'
+    message: 'Reading the gateway status file failed ({erreur}): gateway considered silent.'
+    causes:
+    - 'File being written or damaged'
+    - 'File permissions'
+    preconisation: 'Nothing to do if isolated; otherwise check the state folder and permissions, then the troubleshooting report.'
+
+ORT-8023:
+  gravite: avertissement
+  titre: 'Relevé de la machine impossible'
+  message: 'Relevé de la machine (mémoire, disque, Pi) impossible ({erreur}) : alertes de la machine suspendues.'
+  causes:
+  - 'Système de fichiers /proc ou /sys inaccessible'
+  - 'Défaut du programme'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8023/
+  depuis_version: 0.135.0
+  en:
+    titre: 'Host reading failed'
+    message: 'Host reading (memory, disk, Pi) failed ({erreur}): host alerts suspended.'
+    causes:
+    - '/proc or /sys file system unavailable'
+    - 'Program defect'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+
+ORT-8024:
+  gravite: erreur
+  titre: 'Lancement ou arrêt des modules en erreur'
+  message: 'Modules : {action} en erreur ({erreur}) ; la station fonctionne sans eux.'
+  causes:
+  - 'Manifeste ou réglage [modules] incohérent'
+  - 'Défaut du programme'
+  preconisation: 'Vérifier [modules] de station.toml, puis le rapport de dépannage.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8024/
+  depuis_version: 0.135.0
+  en:
+    titre: 'Module start or stop failed'
+    message: 'Modules: {action} failed ({erreur}); the station runs without them.'
+    causes:
+    - 'Inconsistent manifest or [modules] setting'
+    - 'Program defect'
+    preconisation: 'Check [modules] in station.toml, then the troubleshooting report.'
 
 
 # ====================================================================================================
