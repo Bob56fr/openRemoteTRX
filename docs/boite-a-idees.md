@@ -4,6 +4,10 @@ Projets annexes envisagés, **hors de la liste des tâches du projet principal**
 
 ---
 
+## Allumer le poste à distance (2026-11-14)
+
+**Idée** : après une coupure de courant, une station distante reste muette tant que personne n'appuie sur ON/OFF. Le FTDX10 s'allume par CAT **par l'USB seulement** (`PS1;` envoyé deux fois à 1-2 s d'écart, manuel CAT 2308-F ; impossible par la prise RS-232C) ; Hamlib expose `set_powerstat`. À étudier : commande « allumer le poste » réservée à l'opérateur, jamais automatique, aucune émission (le poste démarre en réception), refus si le modèle ne le déclare pas ; vérifier qu'un poste éteint garde l'USB alimenté.
+
 ## Transcription et traduction de l'écoute (2026-10-28)
 
 **Idée** : se caler sur une fréquence où l'on parle anglais, allemand ou autre, et obtenir une transcription écrite à l'écran, voire une traduction (texte ou audio).

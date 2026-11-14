@@ -1,0 +1,468 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_user_guide.py à partir de User-Guide/ : ne pas modifier à la main. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mettre en service une station openRemoteTRX : guide de l&#x27;opérateur</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .6rem}
+h2{font-size:1.35rem;margin:2.6rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.1rem;margin:1.6rem 0 .4rem}
+h4{font-size:1rem;margin:1.2rem 0 .3rem;color:var(--doux)}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent);overflow-wrap:anywhere}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+pre code{background:none;border:0;padding:0}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.25rem 0}
+li>p{margin:.2rem 0}
+.table{overflow-x:auto;margin:.6rem 0 1rem}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{border-bottom:1px solid var(--ligne);padding:.45rem .4rem;text-align:left;vertical-align:top}
+th{color:var(--doux);font-weight:600}
+.note{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.note.danger{border-left-color:var(--emission)}
+.partie{scroll-margin-top:1rem}
+.haut{font-size:.85rem;color:var(--doux)}
+.cases{list-style:none;margin:.3rem 0 1rem;padding:0}
+.cases li{margin:.15rem 0}
+.cases label{display:flex;gap:.6rem;align-items:flex-start;background:var(--carte);border:1px solid var(--ligne);
+  border-radius:.5rem;padding:.45rem .7rem;cursor:pointer}
+.cases input{width:1.15rem;height:1.15rem;margin:.2rem 0 0;flex:none;accent-color:var(--ok)}
+.cases input:checked+span{color:var(--doux);text-decoration:line-through}
+.outils{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;background:var(--carte);border:1px solid var(--ligne);
+  border-radius:.6rem;padding:.6rem .9rem;margin:1rem 0}
+.outils strong{margin-right:auto}
+.barre{flex-basis:100%;height:.5rem;background:var(--code);border-radius:.3rem;overflow:hidden}
+.barre span{display:block;height:100%;width:0;background:var(--ok)}
+.memo{flex-basis:100%;color:var(--doux);font-size:.85rem;margin:0}
+button{font:inherit;color:var(--texte);background:var(--fond);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;cursor:pointer}
+button:hover{border-color:var(--accent)}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+@media print{
+  :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
+  .outils button,.haut,footer{display:none}
+  a{color:#000}
+  .partie{break-before:page}
+}</style>
+</head>
+<body>
+<main>
+<h1 id="top">Mettre en service une station openRemoteTRX : guide de l&#x27;opérateur</h1>
+<p>Ce guide t&#x27;accompagne, dans l&#x27;ordre, du déballage à la première liaison depuis l&#x27;extérieur. Il est écrit pour le <strong>Yaesu FTDX10</strong> ; les parties communes valent pour tous les postes, ce qui est propre au FTDX10 est dans <a href="#poste-ftdx10">la fiche du poste</a>.</p>
+<div class="note"><p><strong>FTDX10 : préparé, pas encore validé sur un vrai poste.</strong> Les réglages viennent du manuel CAT de Yaesu et des capacités de Hamlib. Les essais de la partie 3 servent de validation : fais-les tous, sur charge fictive, et rapporte le résultat (partie 8, « Demander de l&#x27;aide »).</p></div>
+<h3 id="top-le-parcours">Le parcours</h3>
+<div class="table"><table><thead><tr><th>Partie</th><th>Ce que tu fais</th><th>Durée indicative</th></tr></thead><tbody><tr><td><a href="#p-00">0. Avant de commencer</a></td><td>matériel, réglementation, choix Debian ou Windows</td><td>15 min de lecture</td></tr><tr><td><a href="#p-01">1. Préparer le poste</a></td><td>câblage, pilote USB, menus du FTDX10</td><td>30 min</td></tr><tr><td><a href="#p-02">2. Installer la station</a></td><td>logiciel sur le PC</td><td>20 min</td></tr><tr><td><a href="#p-03">3. Intégrer le TRX et l&#x27;essayer</a></td><td>assistant, essais en réception puis en émission, essais de sécurité</td><td>1 h 30</td></tr><tr><td><a href="#p-04">4. Utiliser sur le réseau local</a></td><td>page web, téléphone, application Android</td><td>30 min</td></tr><tr><td><a href="#p-05">5. Utiliser à distance</a></td><td>VPN ou port exposé, essai en 4G</td><td>1 h</td></tr><tr><td><a href="#p-06">6. Station sans surveillance</a></td><td>alertes, redémarrage après coupure, protections</td><td>30 min</td></tr><tr><td><a href="#p-07">7. Exploitation au quotidien</a></td><td>démarrer, surveiller, mettre à jour, sauvegarder</td><td>à lire</td></tr><tr><td><a href="#p-08">8. Dépannage</a></td><td>codes d&#x27;erreur, problèmes fréquents, demander de l&#x27;aide</td><td>au besoin</td></tr><tr><td><a href="#p-09">9. Fonctions facultatives</a></td><td>visiteurs, Cluster DX, FreeDV, SELCALL, TOS…</td><td>au choix</td></tr><tr><td><a href="#p-10">10. Récapitulatif à cocher</a></td><td>savoir où tu en es</td><td></td></tr></tbody></table></div>
+<p>Fiche du poste : <a href="#poste-ftdx10">Yaesu FTDX10</a>.</p>
+<h3 id="top-comment-lire-ce-guide">Comment lire ce guide</h3>
+<ul>
+<li>Les <strong>menus de TRX Console</strong> sont notés par leur numéro : « menu 3.1 » = thème 3, menu 1. Sous Windows, les mêmes actions sont dans le menu Démarrer &gt; <strong>TRX distant</strong> (la partie 2 donne la correspondance).</li>
+<li>Une case <strong>« Sécurité »</strong> signale un point qui touche à l&#x27;émission : ne la saute pas.</li>
+<li>Ce guide existe aussi en page web, avec un récapitulatif que l&#x27;on coche en ligne : <a href="https://bob56fr.github.io/openRemoteTRX/guide/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/guide/</a></li>
+</ul>
+<section id="s-p-00"><h2 id="p-00" class="partie">0. Avant de commencer</h2>
+<h3 id="p-00-ce-que-tu-vas-obtenir">Ce que tu vas obtenir</h3>
+<ul>
+<li>Ton FTDX10 piloté depuis un <strong>navigateur</strong> (PC, tablette, téléphone) ou l&#x27;<strong>application Android</strong> : fréquence, mode, filtres, S-mètre, son reçu, et l&#x27;<strong>émission en phonie</strong> avec le micro du téléphone ou du PC.</li>
+<li>Une station qui <strong>se protège seule</strong> : elle démarre toujours en réception, coupe l&#x27;émission au bout d&#x27;une durée maximale (90 s par défaut), si le téléphone ne répond plus ou si la liaison tombe, et refuse d&#x27;émettre hors des bandes que tu as déclarées.</li>
+<li>Un <strong>superviseur</strong> indépendant qui surveille la station et peut t&#x27;envoyer des alertes sur ton téléphone.</li>
+</ul>
+<h3 id="p-00-le-matériel">Le matériel</h3>
+<div class="table"><table><thead><tr><th>Élément</th><th>Pour le FTDX10</th></tr></thead><tbody><tr><td>Le poste</td><td>Yaesu FTDX10, alimentation 13,8 V adaptée, antenne</td></tr><tr><td>La liaison PC - poste</td><td><strong>un câble USB A-B</strong> (prise USB à l&#x27;arrière du poste) : il transporte à la fois la commande (CAT) et le son ; aucune interface externe</td></tr><tr><td>Le PC de la station</td><td>PC sous <strong>Debian 12 ou 13</strong> avec bureau (recommandé), ou <strong>Windows 10/11</strong> 64 bits. Il reste allumé en permanence près du poste</td></tr><tr><td>Le réseau</td><td>le PC relié à la box, de préférence <strong>par câble</strong></td></tr><tr><td>Pour les essais</td><td>une <strong>charge fictive</strong> (50 Ω) qui supporte la puissance d&#x27;essai : <strong>obligatoire</strong> pour toute la partie 3</td></tr><tr><td>Côté utilisateur</td><td>un téléphone Android 10 ou plus récent, ou n&#x27;importe quel navigateur récent</td></tr></tbody></table></div>
+<p>Le Raspberry Pi 4 est prévu mais n&#x27;a <strong>jamais été essayé</strong> : ne le choisis pas pour une première station.</p>
+<h3 id="p-00-debian-ou-windows">Debian ou Windows ?</h3>
+<div class="table"><table><thead><tr><th></th><th>Debian (recommandé)</th><th>Windows</th></tr></thead><tbody><tr><td>Démarrage</td><td>au démarrage du PC, sans ouvrir de session</td><td>à l&#x27;<strong>ouverture de ta session</strong> (le PC doit rester avec ta session ouverte, verrouillée si tu veux)</td></tr><tr><td>Mises à jour</td><td>par Internet depuis TRX Console, signature vérifiée</td><td>à la main, en relançant l&#x27;installateur d&#x27;une nouvelle version</td></tr><tr><td>Outils</td><td>TRX Console complète (menus 1 à 6)</td><td>raccourcis du menu Démarrer &gt; TRX distant, et les mêmes commandes dans un terminal</td></tr></tbody></table></div>
+<h3 id="p-00-réglementation">Réglementation</h3>
+<div class="note danger"><p><strong>Sécurité et responsabilité.</strong> Tu restes responsable de chaque émission de ta station, <strong>y compris à distance</strong> : respect de ta licence, des bandes et des puissances autorisées, identification. Les conditions du trafic à distance dépendent du pays : renseigne-toi auprès de ton administration (en France : l&#x27;ANFR) avant de l&#x27;utiliser. Certains boutons de bande de la page (85, 45, 11 m) ne servent qu&#x27;à <strong>l&#x27;écoute</strong> : ce ne sont pas des bandes radioamateur.</p></div>
+<h3 id="p-00-où-trouver-le-logiciel">Où trouver le logiciel</h3>
+<p>Les paquets d&#x27;installation sont sur la page des versions du projet : <a href="https://github.com/Bob56fr/openRemoteTRX/releases" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/releases</a></p>
+<ul>
+<li>Debian : <code>trx-remote-debian-X.Y.Z.zip</code> (et son fichier de signature <code>.sig</code>).</li>
+<li>Windows : <code>trx-remote-windows-X.Y.Z.zip</code>.</li>
+</ul>
+<p>L&#x27;application Android est en <strong>test sur invitation</strong> (Google Play) : demande l&#x27;accès en ouvrant un ticket (partie 8). Sans elle, la page web fait tout depuis le navigateur du téléphone.</p><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-01"><h2 id="p-01" class="partie">1. Préparer le poste</h2>
+<p>Station <strong>éteinte</strong>, rien de branché : c&#x27;est le moment de régler le poste. Le détail des menus du FTDX10 est dans <a href="#poste-ftdx10">la fiche du poste</a> ; cette partie dit dans quel ordre faire les choses.</p>
+<h3 id="p-01-11-installer-le-pilote-usb-windows-seulement">1.1 Installer le pilote USB (Windows seulement)</h3>
+<p>Sous Windows, le pilote <strong>Silicon Labs CP210x</strong> doit être installé <strong>avant</strong> de brancher le câble USB du poste ; sinon Windows peut installer un mauvais pilote. Voir <a href="#poste-ftdx10">la fiche du poste</a>, « Pilote USB ».</p>
+<p>Sous Debian, rien à installer : le noyau reconnaît le poste tout seul.</p>
+<h3 id="p-01-12-brancher">1.2 Brancher</h3>
+<ol>
+<li>Antenne débranchée, <strong>charge fictive</strong> sur la prise d&#x27;antenne utilisée.</li>
+<li>Câble USB entre l&#x27;arrière du FTDX10 et le PC.</li>
+<li>Allume le poste (appui long sur ON/OFF).</li>
+</ol>
+<p>Le PC voit alors <strong>deux ports série</strong> et <strong>une carte son</strong> (« USB Audio CODEC ») :</p>
+<div class="table"><table><thead><tr><th>Port</th><th>Rôle</th><th>À utiliser pour</th></tr></thead><tbody><tr><td><strong>Enhanced COM Port</strong></td><td>commande du poste (CAT)</td><td><strong>la station</strong></td></tr><tr><td>Standard COM Port</td><td>lignes RTS/DTR (PTT, manipulation CW)</td><td>rien : la station ne s&#x27;en sert pas</td></tr></tbody></table></div>
+<p>Sous Windows : Gestionnaire de périphériques &gt; Ports (COM et LPT), note le numéro COM de l&#x27;« Enhanced COM Port ». Sous Debian, l&#x27;assistant reconnaît lui-même le bon port.</p>
+<h3 id="p-01-13-régler-les-menus-du-poste">1.3 Régler les menus du poste</h3>
+<p>Règle les menus listés dans <a href="#poste-ftdx10">la fiche du poste</a>, section « Menus à régler ». Ils sont indispensables :</p>
+<ul>
+<li><strong>débit du CAT</strong> identique à celui de la station (38400 bps) ;</li>
+<li><strong>voix par l&#x27;USB</strong> : sinon le poste module avec son propre micro, c&#x27;est-à-dire le bruit de la pièce ;</li>
+<li><strong>aucune ligne RTS/DTR</strong> pour le PTT ni la CW : sinon le poste peut passer en émission au démarrage du PC ;</li>
+<li><strong>VOX éteint</strong> ;</li>
+<li><strong>minuterie d&#x27;émission du poste</strong> (TX TIME OUT TIMER) : une seconde sécurité, indépendante de la station.</li>
+</ul>
+<div class="note danger"><p><strong>Sécurité.</strong> Une sécurité en plus ne coûte rien : règle aussi une <strong>puissance maximale</strong> raisonnable dans le poste (HF MAX POWER). La station ne peut pas la dépasser, quoi qu&#x27;il arrive.</p></div>
+<h3 id="p-01-14-son-du-pc">1.4 Son du PC</h3>
+<p>La carte son du poste ne doit <strong>jamais</strong> être le son par défaut du PC, sinon les sons du bureau partent vers le poste (et le bureau occupe la carte) :</p>
+<ul>
+<li>Debian : <em>Paramètres &gt; Son</em> : en sortie les haut-parleurs du PC, en entrée son micro.</li>
+<li>Windows : <em>Paramètres &gt; Système &gt; Son</em> : idem ; dans « Plus de paramètres de son », la carte du poste n&#x27;est ni « Périphérique par défaut » ni « Périphérique de communication par défaut » ; schéma de sons « Aucun son ». Le détail est dans la notice Windows jointe au paquet.</li>
+</ul><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-poste-ftdx10"><h2 id="poste-ftdx10" class="partie">Fiche du poste : Yaesu FTDX10</h2>
+<div class="note"><p><strong>Préparé, pas encore validé sur un vrai poste.</strong> Réglages tirés du <em>CAT Operation Reference Manual</em> du FTDX10 (Yaesu, édition 2308-F), de la notice du pilote USB (2205-E) et des capacités de Hamlib. Le premier opérateur qui fait les essais de la <a href="#p-03">partie 3</a> valide cette fiche : merci de rapporter le résultat.</p></div>
+<h3 id="poste-ftdx10-identité-pour-la-station">Identité pour la station</h3>
+<div class="table"><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Numéro Hamlib</td><td><strong>1042</strong> (« FTDX10 »)</td></tr><tr><td>Liaison</td><td>USB, port « <strong>Enhanced COM Port</strong> », <strong>38400</strong> bauds</td></tr><tr><td>PTT</td><td>par <strong>CAT</strong> (la station envoie la commande d&#x27;émission par le port USB)</td></tr><tr><td>Carte son</td><td>« USB Audio CODEC » (réception et émission)</td></tr><tr><td>Lu par la station</td><td>fréquence, mode, filtres, S-mètre, puissance, ALC, TOS, tension, VFO A / B, split, clarifieur</td></tr><tr><td>Pas disponible</td><td>spectre HF du poste (Yaesu n&#x27;envoie pas les données de l&#x27;écran par CAT : seul le spectre audio est affiché) ; température du poste (le seuil de température de la station est sans effet)</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-pilote-usb-windows">Pilote USB (Windows)</h3>
+<ol>
+<li><strong>Câble USB débranché.</strong> Télécharge le pilote « CP210x Universal Windows Driver » (lien sur le site de Yaesu, ou directement chez Silicon Labs) et décompresse-le.</li>
+<li>Clic droit sur le fichier <strong><code>silabser.inf</code></strong> &gt; (Windows 11 : « Afficher plus d&#x27;options ») &gt; <strong>Installer</strong>.</li>
+<li>Branche le câble USB, allume le poste : Windows termine l&#x27;installation (redémarrage parfois demandé). Le pilote de la carte son est celui de Windows, rien à faire.</li>
+<li>Gestionnaire de périphériques &gt; Ports (COM et LPT) : deux lignes « Silicon Labs Dual CP210x USB to UART Bridge » : <strong>Enhanced COM Port (COMx)</strong> pour la station, Standard COM Port (COMy) inutilisé. Un « ! » ou une croix sur une ligne : désinstalle puis réinstalle le pilote.</li>
+</ol>
+<p>Sous Debian : aucun pilote. Les noms stables des ports sont dans <code>/dev/serial/by-id/</code> (<code>…CP2105…-if00-port0</code> = Enhanced, <code>…-if01-port0</code> = Standard) ; l&#x27;assistant propose d&#x27;office le bon.</p>
+<h3 id="poste-ftdx10-menus-à-régler">Menus à régler</h3>
+<p>Chemins tels qu&#x27;ils apparaissent dans le menu de réglages du poste (voir le manuel d&#x27;utilisation du FTDX10 pour l&#x27;ouvrir). Les réglages « MODE » se font <strong>pour chaque mode</strong> que tu veux utiliser en phonie.</p>
+<h4 id="poste-ftdx10-liaison-cat-operation-setting-general">Liaison CAT : OPERATION SETTING &gt; GENERAL</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Valeur</th><th>Pourquoi</th></tr></thead><tbody><tr><td>CAT RATE</td><td><strong>38400 bps</strong></td><td>même débit que dans la station (proposé par l&#x27;assistant)</td></tr><tr><td>CAT TIME OUT TIMER</td><td><strong>1000 msec</strong></td><td>valeur proposée par l&#x27;assistant</td></tr><tr><td>CAT RTS</td><td><strong>ENABLE</strong></td><td>Hamlib utilise le contrôle de flux RTS/CTS sur ce poste</td></tr><tr><td>TX TIME OUT TIMER</td><td><strong>3</strong> (minutes)</td><td>seconde sécurité du poste lui-même, au-delà du temps maximal de la station (90 s)</td></tr></tbody></table></div>
+<p>(<code>232C RATE</code> et <code>232C TIME OUT TIMER</code> concernent la prise RS-232C : sans effet par l&#x27;USB.)</p>
+<h4 id="poste-ftdx10-voix-par-lusb-radio-setting-mode-ssb-mode-am-mode-fm-mode-pskdata">Voix par l&#x27;USB : RADIO SETTING &gt; MODE SSB, MODE AM, MODE FM, MODE PSK/DATA</h4>
+<div class="table"><table><thead><tr><th>Menu (dans chaque mode)</th><th>Valeur</th><th>Pourquoi</th></tr></thead><tbody><tr><td>SSB / AM / FM / DATA <strong>MOD SOURCE</strong></td><td><strong>REAR</strong></td><td>la modulation vient de l&#x27;arrière du poste, pas du micro de façade</td></tr><tr><td><strong>REAR SELECT</strong></td><td><strong>USB</strong></td><td>l&#x27;arrière = l&#x27;USB (et non la prise DATA)</td></tr><tr><td><strong>RPTT SELECT</strong></td><td><strong>DAKY</strong></td><td>le PTT « arrière » reste sur la prise DATA, où rien n&#x27;est branché ; <strong>jamais RTS ni DTR</strong></td></tr><tr><td>RPORT GAIN</td><td>à ajuster (partie 3)</td><td>niveau de la voix qui arrive par l&#x27;USB : à régler avec l&#x27;ALC</td></tr><tr><td>SSB / AM / FM / DATA OUT LEVEL</td><td>valeur d&#x27;usine au départ</td><td>niveau du son reçu envoyé vers l&#x27;USB : à monter si le son reçu est faible</td></tr></tbody></table></div>
+<p>Sans « MOD SOURCE = REAR » en BLU, l&#x27;assistant limite l&#x27;émission aux modes données (DATA-U, DATA-L) : la page ne pourra pas émettre en USB / LSB.</p>
+<div class="note danger"><p><strong>Sécurité : RPTT SELECT et PC KEYING.</strong> Yaesu prévient que, quand le PTT passe par les lignes du port USB, <em>« le poste peut passer en émission au démarrage de l&#x27;ordinateur »</em>. La station n&#x27;utilise pas ces lignes : laisse <strong>RPTT SELECT = DAKY</strong> dans chaque mode et <strong>CW SETTING &gt; MODE CW &gt; PC KEYING = OFF</strong>.</p></div>
+<h4 id="poste-ftdx10-autres-réglages-conseillés">Autres réglages conseillés</h4>
+<div class="table"><table><thead><tr><th>Menu</th><th>Valeur</th><th>Pourquoi</th></tr></thead><tbody><tr><td>Touche <strong>VOX</strong> de la façade</td><td><strong>éteinte</strong></td><td>avec la voix par l&#x27;USB, un son parasite du PC pourrait faire émettre le poste</td></tr><tr><td>OPERATION SETTING &gt; TX GENERAL &gt; HF MAX POWER (et 50M, 70M, AM)</td><td>la puissance que tu t&#x27;autorises</td><td>plafond du poste lui-même, que la station ne peut pas dépasser</td></tr><tr><td>OPERATION SETTING &gt; TX GENERAL &gt; EMERGENCY FREQ TX</td><td><strong>DISABLE</strong></td><td>pas d&#x27;émission sur la fréquence d&#x27;urgence</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-correspondance-des-modes">Correspondance des modes</h3>
+<div class="table"><table><thead><tr><th>Page web / Hamlib</th><th>Écran du FTDX10</th></tr></thead><tbody><tr><td>USB / LSB</td><td>USB / LSB</td></tr><tr><td>PKTUSB / PKTLSB</td><td>DATA-U / DATA-L</td></tr><tr><td>FM / PKTFM</td><td>FM / DATA-FM</td></tr><tr><td>AM</td><td>AM</td></tr><tr><td>CW / CWR</td><td>CW-U / CW-L</td></tr></tbody></table></div>
+<h3 id="poste-ftdx10-points-à-vérifier-lors-des-essais-validation-de-cette-fiche">Points à vérifier lors des essais (validation de cette fiche)</h3>
+<p>À noter dans le rapport de la <a href="#p-03">partie 3</a> :</p>
+<ol>
+<li>Le diagnostic (menu 2.1) trouve le poste ; fréquence et mode suivent quand tu tournes le VFO.</li>
+<li>Voyant <strong>VFO A / VFO B</strong> de la page quand tu appuies sur A/B du poste.</li>
+<li>Émission sur charge fictive : la page voit puissance, <strong>ALC</strong> et TOS ; le niveau ALC à pleine voix (le seuil d&#x27;alerte de l&#x27;ALC n&#x27;a pas encore été relevé sur un Yaesu).</li>
+<li>Split activé sur le poste : la page l&#x27;affiche, l&#x27;émission part sur la bonne fréquence.</li>
+<li>Émission au micro du poste : la page affiche « opérateur sur place » et bloque le PTT à distance.</li>
+<li>Aucun passage en émission au démarrage du PC ni au branchement du câble.</li>
+</ol><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-02"><h2 id="p-02" class="partie">2. Installer la station</h2>
+<p>L&#x27;installation ne commande jamais le poste : il peut rester allumé et branché.</p>
+<h3 id="p-02-21-debian-12-ou-13-avec-bureau">2.1 Debian (12 ou 13, avec bureau)</h3>
+<ol>
+<li>Télécharge <code>trx-remote-debian-X.Y.Z.zip</code> (partie 0) dans <strong>Téléchargements</strong>, clic droit &gt; « Extraire ici ».</li>
+<li><p>Dans le dossier obtenu : clic droit dans une zone vide &gt; « Ouvrir dans un terminal », puis :</p>
+<pre><code>sudo bash install.sh</code></pre>
+<p>Ton mot de passe de session est demandé (rien ne s&#x27;affiche pendant la frappe : c&#x27;est normal). Le script installe Hamlib, Python, les modules, le compte de service et les services de la station.</p></li>
+<li>À la fin, <strong>déconnecte-toi puis reconnecte-toi</strong> (les droits de ton compte changent).</li>
+<li>Ouvre <strong>TRX Console</strong> depuis le menu des applications (ou tape <code>trx-console</code> dans un terminal). Elle propose l&#x27;assistant de configuration : c&#x27;est la partie 3.</li>
+</ol>
+<p>Sans bureau (serveur), tout se fait par SSH : copie le zip, puis</p>
+<pre><code>unzip -q trx-remote-debian-*.zip &amp;&amp; cd trx-remote-debian-*/ &amp;&amp; sudo bash install.sh</code></pre>
+<p>ferme la connexion SSH, reconnecte-toi et tape <code>trx-console</code>.</p>
+<h3 id="p-02-22-windows-10-11">2.2 Windows 10 / 11</h3>
+<ol>
+<li>Installe <strong>Hamlib 64 bits</strong> (<code>hamlib-w64-X.Y.Z.exe</code>, version 4.6 ou plus récente) depuis <a href="https://github.com/Hamlib/Hamlib/releases" target="_blank" rel="noopener noreferrer">https://github.com/Hamlib/Hamlib/releases</a>, dans le dossier proposé.</li>
+<li>Copie <code>trx-remote-windows-X.Y.Z.zip</code> sur le PC. Clic droit &gt; Propriétés &gt; coche <strong>Débloquer</strong> &gt; OK.</li>
+<li>Clic droit &gt; Extraire tout, puis double-clic sur <strong><code>installer.cmd</code></strong>. Si Windows affiche « Windows a protégé votre ordinateur » : Informations complémentaires &gt; Exécuter quand même.</li>
+<li>Accepte la demande d&#x27;administrateur et réponds aux questions (Python est installé s&#x27;il manque, avec ton accord).</li>
+<li><p>Réglages de Windows indispensables :</p>
+<ul>
+<li>réseau de la maison en profil <strong>Privé</strong> (le pare-feu n&#x27;ouvre la station que sur les réseaux privés) ;</li>
+<li><strong>veille et hibernation désactivées</strong> (Paramètres &gt; Système &gt; Alimentation) ;</li>
+<li><em>Paramètres &gt; Confidentialité &gt; Microphone</em> : accès autorisé aux applications de bureau (sinon le son reçu du poste est un silence).</li>
+</ul></li>
+</ol>
+<p>La notice complète (<code>notice-windows.html</code>) est dans le paquet.</p>
+<h4 id="p-02-correspondance-windows-trx-console">Correspondance Windows / TRX Console</h4>
+<p>Ce guide cite les menus de TRX Console (Debian). Sous Windows :</p>
+<div class="table"><table><thead><tr><th>TRX Console (Debian)</th><th>Windows : menu Démarrer &gt; TRX distant</th></tr></thead><tbody><tr><td>3.1 Assistant de configuration</td><td>1 - Configuration de la station</td></tr><tr><td>2.1 Diagnostic</td><td>2 - Diagnostic</td></tr><tr><td>1.1 Démarrer / 1.2 Arrêter</td><td>3 - Démarrer la station / 4 - Arrêter la station</td></tr><tr><td>1.3 Tableau de bord</td><td>5 - Tableau de bord</td></tr><tr><td>2.2 Essai du poste</td><td>6 - Essai du poste (station arrêtée d&#x27;abord)</td></tr><tr><td>1.4 Journal</td><td>7 - Journaux de la station</td></tr><tr><td>3.2 Modifier station.toml</td><td>éditer <code>C:\ProgramData\trx-remote\station.toml</code> (Bloc-notes lancé en administrateur), puis arrêter et redémarrer la station</td></tr><tr><td>4.1 Appairage d&#x27;un téléphone</td><td><code>trx-setup --empreinte</code> dans un terminal (adresse, comptes, empreinte du certificat ; pas de QR code)</td></tr><tr><td>6.1 Mise à jour</td><td>relancer <code>installer.cmd</code> d&#x27;une nouvelle version</td></tr></tbody></table></div>
+<p>Les autres menus de TRX Console (profils, visiteurs, Cluster DX…) sont propres à Debian ; sous Windows, leurs réglages se font dans <code>station.toml</code> (notice de chaque réglage : <a href="https://bob56fr.github.io/openRemoteTRX/station-toml/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/station-toml/</a>). Les commandes (<code>trx-setup</code>, <code>trx-monitor</code>, <code>trx-hwtest</code>…) se lancent dans un terminal ouvert <strong>après</strong> l&#x27;installation.</p><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-03"><h2 id="p-03" class="partie">3. Intégrer le TRX et l&#x27;essayer</h2>
+<div class="note danger"><p><strong>Sécurité.</strong> Pendant toute cette partie : <strong>charge fictive</strong> sur la prise d&#x27;antenne, <strong>puissance réduite</strong> (10 W par exemple), personne à proximité de l&#x27;antenne débranchée.</p></div>
+<h3 id="p-03-31-lassistant-de-configuration-menu-31">3.1 L&#x27;assistant de configuration (menu 3.1)</h3>
+<p>Le poste n&#x27;est interrogé qu&#x27;<strong>en lecture</strong> : aucune émission pendant l&#x27;assistant. Rien n&#x27;est enregistré si tu abandonnes en cours de route. Réponses pour le FTDX10 :</p>
+<div class="table"><table><thead><tr><th>Question</th><th>Réponse</th></tr></thead><tbody><tr><td>Modèle du poste</td><td><strong>1042</strong> (Yaesu FTDX10). L&#x27;assistant affiche alors la liste des menus du poste à vérifier (partie 1)</td></tr><tr><td>Port série du CAT</td><td>le port <strong>Enhanced</strong> (Debian : proposé d&#x27;office ; Windows : le COM noté à la partie 1)</td></tr><tr><td>Débit</td><td><strong>38400</strong> (identique à CAT RATE du poste)</td></tr><tr><td>Méthode de PTT</td><td><strong>CAT</strong> (proposée)</td></tr><tr><td>La voix part-elle par l&#x27;USB ?</td><td><strong>oui</strong>, si MOD SOURCE = REAR et REAR SELECT = USB sont réglés ; sinon l&#x27;émission sera limitée aux modes données</td></tr><tr><td>Cartes son (réception, émission)</td><td>« USB Audio CODEC » pour les deux</td></tr><tr><td>Spectre HF par un second port</td><td><strong>aucun</strong> (le FTDX10 n&#x27;envoie pas son spectre)</td></tr><tr><td>Bandes autorisées à l&#x27;émission</td><td>les bandes de <strong>ta licence</strong>, seulement. Liste vide = réception seule</td></tr><tr><td>Accès réseau</td><td>« <strong>Réseau local ou VPN, en HTTPS avec un certificat généré ici</strong> » (recommandé)</td></tr><tr><td>Comptes</td><td>un identifiant (lettres, chiffres, <code>_</code>, <code>-</code>) et un <strong>mot de passe long</strong> (Entrée = un mot de passe fort est généré : note-le) ; Entrée sur un identifiant vide pour terminer</td></tr><tr><td>Puissance maximale du poste</td><td><strong>100</strong> (watts)</td></tr><tr><td>Durée maximale d&#x27;une émission (TOT)</td><td><strong>90</strong> secondes (valeur par défaut, plafond 120)</td></tr><tr><td>Rediffusion d&#x27;enregistrements</td><td><strong>non</strong> (réponse par défaut)</td></tr></tbody></table></div>
+<p>L&#x27;assistant affiche à la fin l&#x27;adresse à ouvrir (<code>https://&lt;adresse-de-la-station&gt;:8443</code>) et l&#x27;<strong>empreinte du certificat</strong> (utile pour l&#x27;application Android, partie 4).</p>
+<h3 id="p-03-32-le-diagnostic-menu-21">3.2 Le diagnostic (menu 2.1)</h3>
+<p>Il passe tout en revue sans rien modifier : chaque ligne est <strong>OK</strong>, à <strong>surveiller</strong> ou en <strong>échec</strong>, avec la marche à suivre. Corrige chaque échec avant d&#x27;aller plus loin (menu 3.2 pour un réglage, ou relance l&#x27;assistant).</p>
+<p>Échecs fréquents à ce stade : mauvais port (Standard au lieu d&#x27;Enhanced), CAT RATE du poste différent de 38400, carte son du poste prise par le bureau (partie 1.4).</p>
+<h3 id="p-03-33-lessai-guidé-du-poste-menu-22">3.3 L&#x27;essai guidé du poste (menu 2.2)</h3>
+<p>La station est arrêtée pendant l&#x27;essai.</p>
+<ol>
+<li><strong>Choix 1, réception seule</strong> : liaison CAT, son reçu, changement de fréquence et de mode, largeurs de filtre. Écoute que le son reçu est propre et à un niveau correct (sinon : OUT LEVEL du mode, fiche du poste).</li>
+<li><strong>Choix 2, réception puis émission</strong> : charge fictive, puissance réduite. Chaque passage en émission demande de taper <code>EMETTRE</code>.</li>
+</ol>
+<p>Copie le <strong>résumé final</strong> affiché à l&#x27;écran : il sert au rapport de validation.</p>
+<h3 id="p-03-34-démarrer-la-station-et-régler-la-modulation">3.4 Démarrer la station et régler la modulation</h3>
+<ol>
+<li>Menu <strong>1.1</strong> : la station démarre (le poste est toujours remis en réception au démarrage). Refais un diagnostic (menu 2.1) quelques secondes plus tard.</li>
+<li>Ouvre la page <code>https://&lt;adresse-de-la-station&gt;:8443</code> depuis un téléphone ou un PC du réseau (détails et avertissement du certificat : partie 4), connecte-toi.</li>
+<li>Bande autorisée, mode USB ou LSB, charge fictive : appuie sur le <strong>PTT</strong> (bascule : un appui pour émettre, un appui pour revenir en réception), parle normalement quelques secondes, appuie de nouveau.</li>
+<li>Regarde l&#x27;<strong>ALC</strong> dans la page : il doit bouger sur les pointes de voix sans rester au maximum. Ajuste <strong>RPORT GAIN</strong> sur le poste (menu du mode utilisé) jusqu&#x27;à obtenir ce résultat.</li>
+</ol>
+<h3 id="p-03-35-les-essais-de-sécurité">3.5 Les essais de sécurité</h3>
+<p>Fais-les <strong>tous</strong>, sur charge fictive, avant toute émission sur antenne. Chacun doit se terminer par le retour du poste en réception (vérifie sur l&#x27;écran du poste, pas seulement dans la page).</p>
+<div class="table"><table><thead><tr><th>#</th><th>Essai</th><th>Résultat attendu</th></tr></thead><tbody><tr><td>1</td><td>Pendant une émission, bouton <strong>STOP</strong> de la page</td><td>retour en réception immédiat</td></tr><tr><td>2</td><td>Émettre sans rien toucher</td><td>compte à rebours et bip 10 s avant la fin, retour en réception au bout de <strong>90 s</strong></td></tr><tr><td>3</td><td>Pendant une émission, couper le Wi-Fi du téléphone (ou fermer l&#x27;onglet)</td><td>retour en réception en <strong>2 s</strong> environ</td></tr><tr><td>4</td><td>Pendant une émission depuis le téléphone, verrouiller l&#x27;écran</td><td>retour en réception</td></tr><tr><td>5</td><td>Régler une fréquence hors de tes bandes autorisées, appuyer sur PTT</td><td>émission <strong>refusée</strong>, message dans la page</td></tr><tr><td>6</td><td>Émettre <strong>au micro du poste</strong> (sans la station)</td><td>la page affiche l&#x27;opérateur sur place et bloque le PTT à distance pendant l&#x27;émission puis 2 minutes</td></tr><tr><td>7</td><td>Pendant une émission, touche <strong>STOP TX</strong> du tableau de bord (menu 1.3)</td><td>retour en réception</td></tr><tr><td>8</td><td>Pendant une émission, arrêter la station (menu 1.2)</td><td>retour en réception</td></tr><tr><td>9</td><td>Redémarrer le PC, poste allumé</td><td>le poste ne passe <strong>jamais</strong> en émission pendant le démarrage</td></tr></tbody></table></div>
+<p>Un essai qui ne donne pas le résultat attendu : <strong>n&#x27;utilise pas la station en émission</strong>, arrête-la (menu 1.2) et demande de l&#x27;aide (partie 8) avec le rapport du menu 2.3.</p>
+<h3 id="p-03-36-pour-aller-plus-loin-facultatif">3.6 Pour aller plus loin (facultatif)</h3>
+<ul>
+<li><strong>Qualification du poste</strong> (menu 2.7, <code>trx-qualif</code>) : pour un expert qui veut tout vérifier de ce que Hamlib déclare pour le FTDX10. Commence par le choix 2 (exploration sans émission) ; le rapport produit est précieux pour valider la fiche du poste.</li>
+<li><strong>Profil de poste</strong> (menu 3.3) : enregistre la configuration sous un nom (« FTDX10 maison ») pour la recharger plus tard si tu changes de poste.</li>
+</ul>
+<h3 id="p-03-37-rapporter-la-validation">3.7 Rapporter la validation</h3>
+<p>Le FTDX10 n&#x27;ayant jamais été essayé avec la station, ton résultat compte : ouvre un ticket « Signaler un bug » en français (même si tout va bien, titre « FTDX10 : essais de mise en service ») avec le résumé de l&#x27;essai guidé, le résultat des 9 essais de sécurité et les points de la <a href="#poste-ftdx10">fiche du poste</a>, section « Points à vérifier ».</p><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-04"><h2 id="p-04" class="partie">4. Utiliser la station sur le réseau local</h2>
+<p>Le réseau local, c&#x27;est le Wi-Fi ou le câble de la maison : le téléphone et la station sont derrière la même box.</p>
+<h3 id="p-04-41-une-adresse-fixe-pour-la-station">4.1 Une adresse fixe pour la station</h3>
+<p>Dans ta box, <strong>réserve une adresse IP</strong> au PC de la station (réservation DHCP). Le certificat créé par l&#x27;assistant porte l&#x27;adresse du PC : si elle change, le navigateur et l&#x27;application ne le reconnaîtront plus. Après un changement d&#x27;adresse, relance l&#x27;assistant (menu 3.1) pour refaire le certificat.</p>
+<p>L&#x27;adresse à utiliser est affichée en tête de TRX Console et par le diagnostic.</p>
+<h3 id="p-04-42-la-page-web">4.2 La page web</h3>
+<ol>
+<li>Sur le téléphone ou un PC : <code>https://&lt;adresse-de-la-station&gt;:8443</code></li>
+<li>Le navigateur signale un <strong>certificat non reconnu</strong> : c&#x27;est attendu (certificat créé par ta station, pas par une autorité). « Avancé » puis « Continuer ». Cela ne se fait qu&#x27;une fois par appareil.</li>
+<li>Connecte-toi avec le compte créé par l&#x27;assistant.</li>
+</ol>
+<p>Ce que tu dois voir : fréquence et mode qui suivent le poste, S-mètre, son reçu (touche le bouton du son si le navigateur l&#x27;a bloqué).</p>
+<p>Pour <strong>émettre</strong>, la page a besoin du <strong>micro</strong> : le navigateur le demande à la première émission. Il ne le propose qu&#x27;en HTTPS, d&#x27;où le certificat.</p>
+<div class="note danger"><p><strong>Sécurité.</strong> Le PTT est une <strong>bascule</strong> : un appui pour émettre, un appui pour revenir en réception. L&#x27;état affiché est celui que la station confirme, jamais une supposition. <strong>STOP</strong> coupe à tout moment. Une page masquée (autre onglet, écran verrouillé) arrête l&#x27;émission.</p></div>
+<h3 id="p-04-43-plusieurs-utilisateurs">4.3 Plusieurs utilisateurs</h3>
+<p>Chaque personne a <strong>son compte</strong>. Pour en ajouter un, relance l&#x27;assistant (menu 3.1) : il reprend tous tes réglages (réponds « oui » à « Les garder » pour les comptes existants) et te laisse ajouter des identifiants ; à la question du mot de passe, Entrée = un mot de passe fort est généré. Une seule personne peut émettre à la fois. Pour des auditeurs sans aucune commande, préfère les <strong>visiteurs</strong> (partie 9).</p>
+<h3 id="p-04-44-lapplication-android">4.4 L&#x27;application Android</h3>
+<p>L&#x27;application (« openRemoteTRX », Android 10 ou plus récent) apporte ce que la page ne peut pas faire : émission qui continue écran éteint, bouton d&#x27;un casque, Android Auto, mode conduite.</p>
+<ol>
+<li>Installe l&#x27;application (test sur invitation, partie 0).</li>
+<li>Sur la station, menu <strong>4.1</strong> : TRX Console affiche l&#x27;adresse, les comptes, l&#x27;empreinte du certificat et un <strong>QR code</strong> (sans mot de passe).</li>
+<li>Dans l&#x27;application : « <strong>Scanner le QR code de la station</strong> ». L&#x27;adresse, l&#x27;identifiant et l&#x27;empreinte se remplissent ; saisis le mot de passe.</li>
+<li>Connecte-toi : même vérification que pour la page (fréquence, son reçu), puis un essai d&#x27;émission sur charge fictive avec STOP.</li>
+</ol>
+<p>L&#x27;empreinte du certificat protège la liaison : l&#x27;application refuse une station dont le certificat a changé. Après un nouveau certificat (changement d&#x27;adresse), refais l&#x27;appairage.</p>
+<div class="note danger"><p><strong>Sécurité.</strong> En voiture, le PTT tactile du téléphone est masqué (mode conduite) : utilise Android Auto, la commande vocale ou les touches du volant, et respecte le code de la route.</p></div><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-05"><h2 id="p-05" class="partie">5. Utiliser la station à distance (hors du réseau local)</h2>
+<p>La station ne gère pas le réseau : elle écoute sur une adresse et un port, et protège l&#x27;accès par identifiant et mot de passe. C&#x27;est toi qui choisis comment ton téléphone la joint depuis l&#x27;extérieur. Le guide technique complet : <a href="https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant.md" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant.md</a></p>
+<h3 id="p-05-51-choisir-vpn-ou-port-ouvert">5.1 Choisir : VPN ou port ouvert</h3>
+<div class="table"><table><thead><tr><th></th><th>A. VPN (recommandé)</th><th>B. Port ouvert sur la box</th></tr></thead><tbody><tr><td>Principe</td><td>un VPN relie le téléphone au réseau de la station</td><td>la box redirige un port d&#x27;Internet vers la station</td></tr><tr><td>Exemples</td><td>WireGuard (souvent intégré à la box), Tailscale, OpenVPN</td><td>box + nom de domaine + certificat reconnu</td></tr><tr><td>Visible depuis Internet</td><td>rien</td><td>la page de connexion</td></tr><tr><td>Son (WebRTC, UDP)</td><td>passe simplement</td><td>passe souvent, <strong>pas toujours</strong> (box stricte, partage d&#x27;adresse de l&#x27;opérateur)</td></tr></tbody></table></div>
+<p>Choisis le VPN si tu hésites : rien n&#x27;est exposé, et le son passe.</p>
+<h3 id="p-05-52-option-a-vpn">5.2 Option A : VPN</h3>
+<ol>
+<li>Installe le VPN de ton choix : serveur sur la box ou sur le PC de la station, client sur le téléphone. Pour Tailscale, un guide dédié : <a href="https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant-tailscale.md" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/blob/main/docs/acces-distant-tailscale.md</a></li>
+<li><strong>Un profil VPN par appareil</strong>, jamais partagé. Deux appareils sur le même profil se volent la liaison : coupures toutes les 15 à 30 secondes.</li>
+<li>Si le VPN arrive <strong>sur ton réseau local</strong> (VPN de la box) : rien à changer à la station, utilise la même adresse qu&#x27;à la maison. Si le VPN donne au PC de la station <strong>une adresse à part</strong> (Tailscale, WireGuard sur le PC) : relance l&#x27;assistant (menu 3.1, accès réseau) pour que le certificat couvre aussi cette adresse, puis refais l&#x27;appairage de l&#x27;application (menu 4.1).</li>
+<li>Sur le téléphone, en 4G, VPN actif : ouvre la même page <code>https://&lt;adresse-de-la-station&gt;:8443</code>.</li>
+</ol>
+<p>Sous Android, un seul VPN peut être actif à la fois. Avec <strong>Android Auto</strong>, ne fais passer par le tunnel que le réseau de la station (pas tout le trafic), sinon la voiture refuse la liaison : réglages détaillés dans le guide technique, section « Android Auto et VPN ».</p>
+<h3 id="p-05-53-option-b-port-ouvert-sur-la-box">5.3 Option B : port ouvert sur la box</h3>
+<p>À réserver à qui connaît sa box et les certificats.</p>
+<ol>
+<li><strong>Vérifie que c&#x27;est possible</strong> : compare l&#x27;adresse « WAN » de ta box à celle que donne un site « quelle est mon adresse IP ». Si elles diffèrent, ton opérateur partage ton adresse (CGNAT) : aucun port ne peut être ouvert, prends un VPN.</li>
+<li>Un <strong>nom de domaine</strong> qui pointe vers ta box (DNS dynamique si l&#x27;adresse change).</li>
+<li>Un <strong>certificat reconnu</strong> : le plus simple est un proxy HTTPS (Caddy) sur le PC de la station, qui obtient et renouvelle seul un certificat Let&#x27;s Encrypt ; la station reste alors en écoute locale. Exemple et réglages dans le guide technique, section « Option B ».</li>
+<li>Redirige sur la box le port 443 (TCP) vers le PC de la station.</li>
+</ol>
+<div class="note danger"><p><strong>Sécurité.</strong> Avec un port ouvert, le <strong>mot de passe est ta seule barrière</strong> : long et unique pour chaque compte. La station freine les essais (5 échecs par minute et par origine, 30 par quart d&#x27;heure et par compte), mais un mot de passe volé permet d&#x27;émettre dans tes bandes autorisées. Les sécurités d&#x27;émission restent actives dans tous les cas, et le minuteur d&#x27;émission du poste (partie 1) aussi.</p></div>
+<h3 id="p-05-54-essais-depuis-lextérieur">5.4 Essais depuis l&#x27;extérieur</h3>
+<p>Téléphone <strong>en 4G</strong> (Wi-Fi coupé), charge fictive sur le poste :</p>
+<ol>
+<li>La page s&#x27;ouvre (option B : cadenas sans avertissement).</li>
+<li>Un mauvais mot de passe est refusé.</li>
+<li>Le bon mot de passe connecte : fréquence, S-mètre, <strong>son reçu</strong>.</li>
+<li>Émission sur charge fictive : PTT, puis <strong>STOP</strong> ; puis émission et passage en mode avion : retour en réception.</li>
+<li>Si la page s&#x27;ouvre mais que le son ne s&#x27;établit pas : c&#x27;est l&#x27;UDP qui ne passe pas (option B) : passe au VPN.</li>
+</ol>
+<p>En cas de coupures répétées, le menu 2.4 (qualité du réseau) dit quel tronçon lâche : téléphone, réseau mobile, tunnel, box ou station.</p><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-06"><h2 id="p-06" class="partie">6. Une station sans surveillance</h2>
+<p>Une station pilotée à distance fonctionne la plupart du temps sans personne à côté. Cette partie prépare ce cas.</p>
+<h3 id="p-06-61-les-alertes-sur-ton-téléphone-ntfy">6.1 Les alertes sur ton téléphone (ntfy)</h3>
+<p>Le superviseur de la station peut t&#x27;envoyer des notifications : émission coupée par sécurité, panne, mode sûr, mémoire ou disque presque plein, coupure de la liaison, et un message « Station en service » sans sonnerie toutes les heures (s&#x27;il n&#x27;arrive plus, la station ou sa connexion est en panne).</p>
+<ol>
+<li>Installe l&#x27;application <strong>ntfy</strong> sur le téléphone.</li>
+<li>Choisis un <strong>nom de sujet long et impossible à deviner</strong> (par exemple 20 lettres et chiffres au hasard) : sur le serveur public ntfy.sh, quiconque connaît le nom lit les messages.</li>
+<li>Abonne-toi à ce sujet dans l&#x27;application ntfy.</li>
+<li>Sur la station, menu <strong>3.2</strong>, section <code>[supervisor]</code> : <code>notify_url = &quot;https://ntfy.sh/&lt;ton-sujet&gt;&quot;</code>. Redémarre la station (menu 1.1).</li>
+<li>Vérifie : le message « Station en service » arrive dans l&#x27;heure.</li>
+</ol>
+<p>Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (partie 8).</p>
+<h3 id="p-06-62-le-mode-sûr">6.2 Le mode sûr</h3>
+<p>Après des pannes répétées que les relances n&#x27;ont pas réglées, le superviseur met la station en <strong>mode sûr</strong> : poste en réception, accès coupé, alerte envoyée. Le mode sûr <strong>survit aux redémarrages</strong> : il faut trouver la cause (menus 2.1 et 1.4), puis le lever par le menu <strong>1.5</strong>.</p>
+<h3 id="p-06-63-après-une-coupure-de-courant">6.3 Après une coupure de courant</h3>
+<div class="table"><table><thead><tr><th>Élément</th><th>À régler</th></tr></thead><tbody><tr><td>PC</td><td>dans le BIOS / UEFI : « Restore on AC power loss » = <strong>Power On</strong> (le nom varie selon la carte mère)</td></tr><tr><td>Station Debian</td><td>rien : elle démarre avec le PC, sans ouvrir de session</td></tr><tr><td>Station Windows</td><td>elle démarre à l&#x27;<strong>ouverture de session</strong> : sans connexion automatique de ta session, elle reste arrêtée</td></tr><tr><td>Poste</td><td>le FTDX10 ne se rallume <strong>pas</strong> seul ; la station ne sait pas (encore) l&#x27;allumer à distance</td></tr><tr><td>Box</td><td>se rallume seule ; vérifie que le VPN aussi</td></tr></tbody></table></div>
+<p>Un <strong>onduleur</strong> pour le PC, la box et l&#x27;alimentation du poste évite la plupart de ces cas.</p>
+<h3 id="p-06-64-protections-du-matériel">6.4 Protections du matériel</h3>
+<ul>
+<li><strong>Foudre</strong> : une station isolée de toute présence humaine est exposée. Parafoudre sur le câble d&#x27;antenne, et antenne mise à la terre ou déconnectée en cas d&#x27;orage prévu.</li>
+<li><strong>Puissance</strong> : le plafond du poste (HF MAX POWER, partie 1) reste la dernière barrière.</li>
+<li><strong>Minuteur du poste</strong> (TX TIME OUT TIMER) : réglé à 3 min, il coupe même si tout le reste a lâché.</li>
+<li><strong>Température</strong> : le superviseur surveille le processeur du PC et alerte au-delà de 70 °C. Celle du FTDX10 n&#x27;est pas lisible par la station : ventilation correcte autour du poste.</li>
+<li><strong>Opérateur sur place</strong> : si quelqu&#x27;un utilise le poste sur place, l&#x27;émission à distance est bloquée pendant son émission puis 2 minutes ; la station ne le coupe jamais pour ce motif.</li>
+</ul><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-07"><h2 id="p-07" class="partie">7. Exploitation au quotidien</h2>
+<h3 id="p-07-71-démarrer-arrêter-surveiller">7.1 Démarrer, arrêter, surveiller</h3>
+<div class="table"><table><thead><tr><th>Besoin</th><th>Debian (TRX Console)</th><th>Windows (menu Démarrer &gt; TRX distant)</th></tr></thead><tbody><tr><td>Démarrer / redémarrer</td><td>menu 1.1</td><td>3 - Démarrer la station</td></tr><tr><td>Arrêter (avant de débrancher le poste, ou pour un autre logiciel)</td><td>menu 1.2</td><td>4 - Arrêter la station</td></tr><tr><td>État en direct, touche STOP TX</td><td>menu 1.3 (<code>trx-monitor</code>)</td><td>5 - Tableau de bord</td></tr><tr><td>Voyant permanent de la station</td><td>indicateur de la barre du haut (menu 3.5)</td><td>indicateur près de l&#x27;horloge (10)</td></tr><tr><td>Journal</td><td>menu 1.4</td><td>7 - Journaux de la station</td></tr></tbody></table></div>
+<p>La station se remet toujours en réception au démarrage et à l&#x27;arrêt. Arrête-la avant de débrancher le câble USB du poste.</p>
+<h3 id="p-07-72-mettre-à-jour">7.2 Mettre à jour</h3>
+<ul>
+<li><strong>Debian</strong> : quand un cadre « NOUVELLE VERSION … DISPONIBLE » apparaît en tête de TRX Console, menu <strong>6.1</strong> : il montre les nouveautés de chaque version, vérifie la signature, installe la nouvelle version à côté de l&#x27;ancienne et garde ta configuration. En cas de problème : menu <strong>6.2</strong> (retour à la version précédente, sans Internet). Station sans Internet : dépose le zip sur le Bureau et utilise le menu <strong>6.3</strong>.</li>
+<li><strong>Windows</strong> : télécharge le nouveau zip, lance son <code>installer.cmd</code> ; configuration et profils sont conservés. Garde le zip de l&#x27;ancienne version pour revenir en arrière.</li>
+</ul>
+<p>La mise à jour est refusée pendant une émission.</p>
+<h3 id="p-07-73-sauvegarder">7.3 Sauvegarder</h3>
+<p>Copie ces fichiers ailleurs (clé USB, autre PC) après chaque changement de configuration :</p>
+<div class="table"><table><thead><tr><th></th><th>Debian</th><th>Windows</th></tr></thead><tbody><tr><td>Configuration (comptes, bandes, sécurités)</td><td><code>/etc/trx-remote/station.toml</code></td><td><code>C:\ProgramData\trx-remote\station.toml</code></td></tr><tr><td>Certificat et sa clé</td><td>dossier <code>tls</code> à côté de <code>station.toml</code></td><td>idem</td></tr><tr><td>Profils de poste, clé Breizh</td><td><code>/etc/trx-remote/profils/</code>, <code>breizh.key</code></td><td>dans <code>C:\ProgramData\trx-remote\</code></td></tr></tbody></table></div>
+<p>Ces fichiers contiennent des <strong>secrets</strong> (clé du certificat, empreintes des mots de passe) : garde la sauvegarde en lieu sûr. Pour reprendre une station Windows sur Debian, pose son <code>station.toml</code> à côté de <code>install.sh</code> avant l&#x27;installation.</p>
+<h3 id="p-07-74-changer-un-réglage">7.4 Changer un réglage</h3>
+<ul>
+<li>Un réglage précis : menu <strong>3.2</strong> (copie vérifiée, différences montrées, ancienne version gardée). La notice de chaque réglage : <a href="https://bob56fr.github.io/openRemoteTRX/station-toml/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/station-toml/</a></li>
+<li>Tout reprendre (nouveau poste, nouveau PC) : menu <strong>3.1</strong> ; comptes et sécurités sont repris.</li>
+<li>Le mode d&#x27;emploi complet de TRX Console : <a href="https://bob56fr.github.io/openRemoteTRX/console/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/console/</a> (ou la touche <code>h</code> dans la console : <code>h 3.2</code>).</li>
+</ul><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-08"><h2 id="p-08" class="partie">8. Dépannage</h2>
+<h3 id="p-08-81-le-premier-réflexe">8.1 Le premier réflexe</h3>
+<ol>
+<li><strong>Diagnostic</strong> (menu 2.1) : il dit ce qui ne va pas et quoi faire.</li>
+<li><strong>Journal</strong> (menu 1.4) : les messages commencent par un code « ORT-NNNN ».</li>
+<li>Chaque code a sa page d&#x27;explication (cause, que faire) : <a href="https://bob56fr.github.io/openRemoteTRX/erreurs/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/erreurs/</a> (champ de recherche : tape le code).</li>
+</ol>
+<h3 id="p-08-82-problèmes-fréquents">8.2 Problèmes fréquents</h3>
+<div class="table"><table><thead><tr><th>Symptôme</th><th>Cause probable</th><th>À faire</th></tr></thead><tbody><tr><td>Le diagnostic ne trouve pas le poste</td><td>poste éteint, port <strong>Standard</strong> choisi, CAT RATE différent de 38400, pilote absent (Windows)</td><td>allumer ; reprendre l&#x27;assistant avec le port <strong>Enhanced</strong> ; régler CAT RATE (fiche du poste)</td></tr><tr><td>Pas de son reçu</td><td>carte son du poste prise par le bureau ; micro interdit aux applications (Windows) ; OUT LEVEL trop bas</td><td>partie 1.4 ; partie 2.2 ; fiche du poste</td></tr><tr><td>L&#x27;émission part mais rien n&#x27;est modulé</td><td>MOD SOURCE = MIC ou REAR SELECT = DATA dans ce mode</td><td>fiche du poste, « Voix par l&#x27;USB »</td></tr><tr><td>Seuls les modes DATA peuvent émettre</td><td>l&#x27;assistant a noté que la voix ne passe pas par l&#x27;USB</td><td>régler MOD SOURCE, puis relancer l&#x27;assistant et répondre « oui »</td></tr><tr><td>ALC au maximum, son saturé</td><td>RPORT GAIN trop haut</td><td>partie 3.4</td></tr><tr><td>Le poste passe en émission au démarrage du PC</td><td>RPTT SELECT sur RTS ou DTR, ou PC KEYING actif</td><td><strong>débrancher l&#x27;USB</strong>, régler RPTT SELECT = DAKY et PC KEYING = OFF</td></tr><tr><td>« Micro indisponible » dans la page</td><td>page ouverte en HTTP</td><td>ouvrir l&#x27;adresse en <strong>https://</strong></td></tr><tr><td>Page injoignable depuis le téléphone</td><td>station arrêtée ; adresse changée ; réseau en profil Public (Windows)</td><td>menu 1.1 ; partie 4.1 ; partie 2.2</td></tr><tr><td>Connecté mais pas de son à distance</td><td>l&#x27;UDP ne passe pas (port ouvert sur la box)</td><td>VPN (partie 5)</td></tr><tr><td>Coupures toutes les 15 à 30 s</td><td>deux appareils sur le même profil VPN</td><td>un profil par appareil</td></tr><tr><td>Émission coupée toute seule</td><td>durée maximale atteinte, téléphone qui ne répond plus, fréquence hors bandes, opérateur sur place</td><td>normal : la raison est affichée dans la page et le journal</td></tr><tr><td>Plus rien ne répond, alerte « mode sûr »</td><td>pannes répétées</td><td>partie 6.2</td></tr></tbody></table></div>
+<h3 id="p-08-83-demander-de-laide">8.3 Demander de l&#x27;aide</h3>
+<ol>
+<li>Menu <strong>2.3</strong> : crée un rapport de dépannage (zip sur le Bureau) <strong>sans aucun mot de passe</strong>. Sous Windows : le dossier des journaux (raccourci 7) et le résultat du diagnostic.</li>
+<li>Depuis la page web : section « Signaler un problème » (texte relu avant l&#x27;envoi).</li>
+<li>Ouvre un ticket sur <a href="https://github.com/Bob56fr/openRemoteTRX/issues" target="_blank" rel="noopener noreferrer">https://github.com/Bob56fr/openRemoteTRX/issues</a> avec le formulaire <strong>en français</strong> (« Signaler un bug »), décris ce que tu faisais, ce que tu attendais, ce qui s&#x27;est passé, et joins le rapport.</li>
+</ol><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-09"><h2 id="p-09" class="partie">9. Fonctions facultatives</h2>
+<p>Toutes sont <strong>désactivées</strong> au départ. Active-les une fois la station validée (parties 3 à 5).</p>
+<div class="table"><table><thead><tr><th>Fonction</th><th>À quoi elle sert</th><th>Où l&#x27;activer</th></tr></thead><tbody><tr><td><strong>Visiteurs</strong> en réception seule</td><td>des comptes qui écoutent la station et voient l&#x27;écran, sans <strong>aucune</strong> commande (radio-club, démonstration)</td><td>menu 4.2, puis le commutateur « Écoute des visiteurs » de la page</td></tr><tr><td><strong>Cluster DX</strong></td><td>spots sur le spectre et pastilles sur les boutons de bande</td><td>menu 5.1</td></tr><tr><td><strong>FreeDV</strong> RADE V1 (réception)</td><td>voix numérique FreeDV décodée par la station</td><td>décodeurs à compiler (<code>sudo bash compiler-freedv.sh</code> dans le dossier du paquet Debian), puis <code>[freedv]</code> (menu 3.2)</td></tr><tr><td><strong>SELCALL</strong></td><td>squelch par appel de groupe en BLU</td><td><code>[selcall] enabled = true</code> (menu 3.2), puis la rubrique SELCALL de la page</td></tr><tr><td><strong>Mesure de TOS</strong></td><td>courbe de TOS de l&#x27;antenne sur une bande, en FM, puissance réduite</td><td>page web ou application ; la station émet : bandes autorisées seulement</td></tr><tr><td><strong>Présence de groupe</strong></td><td>voir quels amis équipés d&#x27;openRemoteTRX sont en QSO, et les rejoindre</td><td>menu 5.3</td></tr><tr><td><strong>Breizh Audio Box</strong></td><td>traitement de la voix sur un autre PC du réseau local</td><td>menu 5.2</td></tr><tr><td><strong>Rediffusion</strong> d&#x27;un enregistrement</td><td>renvoyer en émission un enregistrement de la réception</td><td>accordée à l&#x27;assistant ; en général <strong>interdite</strong> au service amateur</td></tr></tbody></table></div>
+<div class="note danger"><p><strong>Sécurité.</strong> Retransmettre à des tiers ce que la station reçoit (visiteurs) engage ta responsabilité, surtout hors des bandes radioamateur ; par défaut, les visiteurs n&#x27;entendent que du silence hors de tes bandes.</p></div>
+<p>Avec le FTDX10, deux fonctions de la page restent indisponibles : le <strong>spectre HF du poste</strong> (seul le spectre audio s&#x27;affiche) et les <strong>préréglages de filtre FIL1/2/3</strong> (propres aux Icom).</p><p class="haut"><a href="#top">Haut de page</a></p></section>
+<section id="s-p-10"><h2 id="p-10" class="partie">10. Récapitulatif : où en es-tu ?</h2><div class="outils"><strong id="progress" data-model="{n} / {m} étapes cochées"></strong><button type="button" id="print">Imprimer</button><button type="button" id="reset">Tout décocher</button><div class="barre"><span id="bar"></span></div><p class="memo" id="memo" data-saved="Les cases cochées sont gardées dans ce navigateur." data-unsaved="Ce navigateur ne garde pas les cases : imprime la page pour garder une trace."></p></div>
+<p>Coche au fur et à mesure. Sur la page web du guide, les cases se cochent en ligne et restent cochées dans ton navigateur ; sur GitHub, imprime cette page ou recopie la liste.</p>
+<h3 id="p-10-0-avant-de-commencer">0. Avant de commencer</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c1-1"><span>Conditions du trafic à distance vérifiées pour ma licence</span></label></li>
+<li><label><input type="checkbox" id="c1-2"><span>Charge fictive disponible pour les essais</span></label></li>
+<li><label><input type="checkbox" id="c1-3"><span>Système choisi (Debian recommandé, ou Windows) et paquet téléchargé</span></label></li>
+</ul>
+<h3 id="p-10-1-préparer-le-poste">1. Préparer le poste</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c2-4"><span>Pilote CP210x installé avant de brancher le câble (Windows)</span></label></li>
+<li><label><input type="checkbox" id="c2-5"><span>Port « Enhanced COM Port » repéré</span></label></li>
+<li><label><input type="checkbox" id="c2-6"><span>CAT RATE 38400, CAT TIME OUT TIMER 1000 msec, CAT RTS ENABLE</span></label></li>
+<li><label><input type="checkbox" id="c2-7"><span>MOD SOURCE = REAR et REAR SELECT = USB dans chaque mode utilisé</span></label></li>
+<li><label><input type="checkbox" id="c2-8"><span>RPTT SELECT = DAKY dans chaque mode, PC KEYING = OFF</span></label></li>
+<li><label><input type="checkbox" id="c2-9"><span>VOX éteint, TX TIME OUT TIMER 3 min, HF MAX POWER réglé</span></label></li>
+<li><label><input type="checkbox" id="c2-10"><span>Carte son du poste retirée du son par défaut du PC</span></label></li>
+</ul>
+<h3 id="p-10-2-installer-la-station">2. Installer la station</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c3-11"><span>Logiciel installé (install.sh ou installer.cmd)</span></label></li>
+<li><label><input type="checkbox" id="c3-12"><span>Session rouverte (Debian) ; profil réseau Privé et veille désactivée (Windows)</span></label></li>
+</ul>
+<h3 id="p-10-3-intégrer-le-trx-et-lessayer">3. Intégrer le TRX et l&#x27;essayer</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c4-13"><span>Assistant terminé (modèle 1042, port Enhanced, PTT par CAT, bandes de ma licence)</span></label></li>
+<li><label><input type="checkbox" id="c4-14"><span>Diagnostic sans échec</span></label></li>
+<li><label><input type="checkbox" id="c4-15"><span>Essai guidé en réception seule réussi</span></label></li>
+<li><label><input type="checkbox" id="c4-16"><span>Essai guidé avec émission réussi sur charge fictive</span></label></li>
+<li><label><input type="checkbox" id="c4-17"><span>Station démarrée, page ouverte, modulation réglée avec l&#x27;ALC (RPORT GAIN)</span></label></li>
+<li><label><input type="checkbox" id="c4-18"><span>Essai 1 : STOP coupe l&#x27;émission</span></label></li>
+<li><label><input type="checkbox" id="c4-19"><span>Essai 2 : coupure au bout de 90 s, avertissement 10 s avant</span></label></li>
+<li><label><input type="checkbox" id="c4-20"><span>Essai 3 : liaison coupée pendant l&#x27;émission, retour en réception</span></label></li>
+<li><label><input type="checkbox" id="c4-21"><span>Essai 4 : écran verrouillé pendant l&#x27;émission, retour en réception</span></label></li>
+<li><label><input type="checkbox" id="c4-22"><span>Essai 5 : émission refusée hors de mes bandes</span></label></li>
+<li><label><input type="checkbox" id="c4-23"><span>Essai 6 : émission au micro du poste, PTT à distance bloqué</span></label></li>
+<li><label><input type="checkbox" id="c4-24"><span>Essai 7 : STOP TX du tableau de bord</span></label></li>
+<li><label><input type="checkbox" id="c4-25"><span>Essai 8 : arrêt de la station pendant l&#x27;émission</span></label></li>
+<li><label><input type="checkbox" id="c4-26"><span>Essai 9 : aucun passage en émission au démarrage du PC</span></label></li>
+<li><label><input type="checkbox" id="c4-27"><span>Résultat des essais rapporté (ticket « FTDX10 : essais de mise en service »)</span></label></li>
+</ul>
+<h3 id="p-10-4-utiliser-sur-le-réseau-local">4. Utiliser sur le réseau local</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c5-28"><span>Adresse IP réservée au PC de la station dans la box</span></label></li>
+<li><label><input type="checkbox" id="c5-29"><span>Page web ouverte en https, certificat accepté, micro autorisé</span></label></li>
+<li><label><input type="checkbox" id="c5-30"><span>Un compte par utilisateur, mots de passe longs</span></label></li>
+<li><label><input type="checkbox" id="c5-31"><span>Application Android appairée par le QR code (menu 4.1), essai d&#x27;émission et STOP</span></label></li>
+</ul>
+<h3 id="p-10-5-utiliser-à-distance">5. Utiliser à distance</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c6-32"><span>Choix fait : VPN (recommandé) ou port ouvert</span></label></li>
+<li><label><input type="checkbox" id="c6-33"><span>Un profil VPN par appareil</span></label></li>
+<li><label><input type="checkbox" id="c6-34"><span>Depuis la 4G : page, son reçu, émission sur charge fictive, STOP</span></label></li>
+<li><label><input type="checkbox" id="c6-35"><span>Depuis la 4G : mode avion pendant l&#x27;émission, retour en réception</span></label></li>
+</ul>
+<h3 id="p-10-6-station-sans-surveillance">6. Station sans surveillance</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c7-36"><span>Alertes ntfy reçues (sujet long et secret), message « Station en service » vu</span></label></li>
+<li><label><input type="checkbox" id="c7-37"><span>PC réglé pour se rallumer après une coupure de courant</span></label></li>
+<li><label><input type="checkbox" id="c7-38"><span>Onduleur, parafoudre, ventilation du poste</span></label></li>
+<li><label><input type="checkbox" id="c7-39"><span>Je sais lever le mode sûr (menu 1.5) après avoir trouvé la cause</span></label></li>
+</ul>
+<h3 id="p-10-7-exploitation-au-quotidien">7. Exploitation au quotidien</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c8-40"><span>Je sais démarrer, arrêter et surveiller la station</span></label></li>
+<li><label><input type="checkbox" id="c8-41"><span>Je sais mettre à jour et revenir à la version précédente</span></label></li>
+<li><label><input type="checkbox" id="c8-42"><span>Configuration et certificat sauvegardés ailleurs</span></label></li>
+<li><label><input type="checkbox" id="c8-43"><span>Profil du poste enregistré (menu 3.3)</span></label></li>
+</ul>
+<h3 id="p-10-station-en-service">Station en service</h3>
+<ul class="cases">
+<li><label><input type="checkbox" id="c9-44"><span>Première émission sur antenne, dans mes bandes, avec identification</span></label></li>
+</ul><p class="haut"><a href="#top">Haut de page</a></p></section>
+<footer>Projet libre (AGPL-3.0-or-later) · <a href="https://github.com/Bob56fr/openRemoteTRX/tree/main/User-Guide/fr" target="_blank" rel="noopener noreferrer">Source de ce guide sur GitHub</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></footer>
+</main>
+<script>(function () {
+  var KEY = "trx-guide-fr";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".cases input"));
+  var saved = {}, store = null;
+  try { store = window.localStorage; saved = JSON.parse(store.getItem(KEY) || "{}") || {}; } catch (e) { store = null; }
+  var memo = document.getElementById("memo");
+  if (memo) memo.textContent = memo.getAttribute(store ? "data-saved" : "data-unsaved");
+  function update() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    var text = document.getElementById("progress");
+    if (text) text.textContent = text.getAttribute("data-model").replace("{n}", done).replace("{m}", boxes.length);
+    var bar = document.getElementById("bar");
+    if (bar) bar.style.width = (boxes.length ? Math.round(100 * done / boxes.length) : 0) + "%";
+  }
+  function save() {
+    if (!store) return;
+    var state = {};
+    boxes.forEach(function (b) { if (b.checked) state[b.id] = 1; });
+    try { store.setItem(KEY, JSON.stringify(state)); } catch (e) { /* stockage plein ou refusé */ }
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!saved[b.id];
+    b.addEventListener("change", function () { save(); update(); });
+  });
+  var reset = document.getElementById("reset");
+  if (reset) reset.addEventListener("click", function () {
+    boxes.forEach(function (b) { b.checked = false; }); save(); update();
+  });
+  var print = document.getElementById("print");
+  if (print) print.addEventListener("click", function () { window.print(); });
+  update();
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();</script>
+</body>
+</html>

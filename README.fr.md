@@ -40,15 +40,17 @@ Le détail est dans `CLAUDE.md` (« Règles de sécurité d'émission ») et `do
 
 ## Installation
 
+**Première station ?** Suivez le **guide de l'opérateur**, pas à pas, avec un récapitulatif à cocher : [User-Guide/](User-Guide/README.md) (page web : https://bob56fr.github.io/openRemoteTRX/guide/). Ce qui suit en est le résumé.
+
 ### Debian (recommandé)
 
 1. Récupérez le paquet `trx-remote-debian-X.Y.Z.zip` et décompressez-le.
 2. Dans le dossier : `sudo bash install.sh` (dépendances, compte de service, services systemd).
-3. Ouvrez **TRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 2) : poste, ports, cartes son, accès réseau, comptes.
-4. Faites l'**essai guidé** (menu 4) sur charge fictive.
+3. Ouvrez **TRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 3.1) : poste, ports, cartes son, accès réseau, comptes.
+4. Faites l'**essai guidé** (menu 2.2) sur charge fictive.
 5. Sur le téléphone, ouvrez `https://<adresse-de-la-station>:8443`.
 
-Les versions suivantes s'installent depuis TRX Console (menu 10 par Internet, menu 13 depuis un fichier zip).
+Les versions suivantes s'installent depuis TRX Console (menu 6.1 par Internet, menu 6.3 depuis un fichier zip).
 
 ### Windows
 
@@ -64,7 +66,7 @@ Le projet n'impose **aucun VPN** : vous choisissez le vôtre (WireGuard, Tailsca
 
 ## Ce qui reste à faire ou à valider
 
-- Application **Android** (service au premier plan, Android Auto, boutons Bluetooth et du volant) : la page web s'arrête d'émettre dès qu'elle est masquée.
+- Application **Android** (service au premier plan, Android Auto, boutons Bluetooth et du volant) : en test sur invitation (Google Play) ; essais réels en voiture à poursuivre. La page web, elle, s'arrête d'émettre dès qu'elle est masquée.
 - Accès distant réel en 4G/5G, essais Raspberry Pi, signature des mises à jour publiées.
 - La documentation détaillée (`docs/`) est en français.
 

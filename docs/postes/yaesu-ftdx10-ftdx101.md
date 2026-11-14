@@ -33,17 +33,31 @@ Un seul câble USB donne deux ports série (puce Silicon Labs CP2105) et une car
 
 ## Menus du poste (proposés par `trx-setup`)
 
-- **CAT RATE** = 38400 bps, la même valeur que dans `station.toml`.
-- **CAT TIME OUT** = 1000 msec.
-- **CAT RTS** = ON : Hamlib attend le contrôle de flux RTS/CTS.
-- **RPTT SELECT** : ni RTS ni DTR si le PTT passe par CAT. Une ligne RTS ou DTR mal placée peut mettre le poste en
-  émission. Un passage en émission inattendu a été signalé pendant des essais CAT d'un FTDX10 sous Hamlib.
-- **SSB, AM, FM et DATA MOD SOURCE** = REAR, et **REAR SELECT** = USB : l'audio du client part par l'USB.
+Noms et chemins vérifiés (étape 181) sur le tableau des menus du manuel CAT du FTDX10 (Yaesu 2308-F, « Table 2 »).
+Guide de l'opérateur, pas à pas : `User-Guide/fr/postes/ftdx10.md`.
+
+- OPERATION SETTING > GENERAL : **CAT RATE** = 38400 bps, la même valeur que dans `station.toml`.
+- OPERATION SETTING > GENERAL : **CAT TIME OUT TIMER** = 1000 msec.
+- OPERATION SETTING > GENERAL : **CAT RTS** = ENABLE : Hamlib attend le contrôle de flux RTS/CTS.
+- RADIO SETTING > MODE SSB / AM / FM / PSK/DATA : **RPTT SELECT** = DAKY (choix possibles : DAKY, RTS, DTR ; il
+  n'y a pas de « OFF »). DAKY = ligne PTT de la prise DATA arrière, où rien n'est branché. Une ligne RTS ou DTR peut
+  mettre le poste en émission : Yaesu prévient lui-même que le poste « peut passer en émission au démarrage de
+  l'ordinateur » quand le PTT passe par l'USB. Un passage en émission inattendu a aussi été signalé pendant des
+  essais CAT d'un FTDX10 sous Hamlib. Même raison : CW SETTING > MODE CW > **PC KEYING** = OFF.
+- RADIO SETTING > MODE SSB / AM / FM / PSK/DATA : **SSB, AM, FM et DATA MOD SOURCE** = REAR, et **REAR SELECT** = USB
+  (dans chaque mode) : l'audio du client part par l'USB.
   - Sans ces réglages, le poste modulerait avec son propre micro, c'est-à-dire le son de la pièce.
   - `trx-setup` limite alors l'émission aux modes données (PKTUSB, PKTLSB…), comme pour un Icom.
-- **USB MOD GAIN / RPORT GAIN** : à régler avec l'ALC. Le réglage automatique SELCALL et le voyant OVERLOAD ALC (seuil
-  à 50 %) aident, mais l'échelle de l'ALC Yaesu n'a pas été relevée : seuil à vérifier.
-- **TX TIME OUT TIMER** = 3 min : seconde sécurité, indépendante de la station (TOT 90 s par défaut).
+- **RPORT GAIN** (dans chaque mode ; il n'y a pas de « USB MOD GAIN » sur ce poste) : à régler avec l'ALC. Le
+  réglage automatique SELCALL et le voyant OVERLOAD ALC (seuil à 50 %) aident, mais l'échelle de l'ALC Yaesu n'a pas
+  été relevée : seuil à vérifier. **OUT LEVEL** (SSB, AM, FM, DATA) : niveau du son reçu envoyé vers l'USB.
+- Touche **VOX** éteinte : avec la modulation par l'arrière, un son parasite du PC pourrait faire émettre le poste.
+- OPERATION SETTING > GENERAL : **TX TIME OUT TIMER** = 3 min (0 à 30) : seconde sécurité, indépendante de la station
+  (TOT 90 s par défaut).
+- OPERATION SETTING > TX GENERAL : **HF MAX POWER** (et 50M, 70M, AM) = plafond de puissance du poste ; **EMERGENCY
+  FREQ TX** = DISABLE.
+- Mise sous tension par CAT (`PS1;`, deux fois à 1-2 s d'écart) possible par l'USB seulement (pas par la prise
+  RS-232C) : non utilisée par la station.
 
 ## Ce qui ne marche pas avec ces postes
 

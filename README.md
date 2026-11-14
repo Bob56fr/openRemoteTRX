@@ -40,15 +40,17 @@ Details in `CLAUDE.md` ("Règles de sécurité d'émission") and `docs/` (in Fre
 
 ## Installation
 
+**First station?** Follow the step-by-step **operator guide**, with a checklist at the end: [User-Guide/](User-Guide/README.md) (web page: https://bob56fr.github.io/openRemoteTRX/guide/; French for now, translations to come). What follows is a summary.
+
 ### Debian (recommended)
 
 1. Get the `trx-remote-debian-X.Y.Z.zip` package and unzip it.
 2. In that folder: `sudo bash install.sh` (dependencies, service account, systemd services).
-3. Open **TRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 2): radio, ports, sound cards, network access, accounts.
-4. Run the **guided test** (menu 4) on a dummy load.
+3. Open **TRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 3.1): radio, ports, sound cards, network access, accounts.
+4. Run the **guided test** (menu 2.2) on a dummy load.
 5. On the phone, open `https://<station-address>:8443`.
 
-Later versions are installed from TRX Console (menu 10 over the Internet, menu 13 from a zip file).
+Later versions are installed from TRX Console (menu 6.1 over the Internet, menu 6.3 from a zip file).
 
 ### Windows
 
@@ -64,7 +66,7 @@ The project imposes **no VPN**: use your own (WireGuard, Tailscale…) or expose
 
 ## Still to do or to validate
 
-- **Android app** (foreground service, Android Auto, Bluetooth and steering-wheel buttons): the web page stops transmitting as soon as it is hidden.
+- **Android app** (foreground service, Android Auto, Bluetooth and steering-wheel buttons): invitation-only testing (Google Play); real in-car tests still to be done. The web page itself stops transmitting as soon as it is hidden.
 - Real remote access over 4G/5G, Raspberry Pi tests, signing of published updates.
 - The detailed documentation (`docs/`) is in French.
 

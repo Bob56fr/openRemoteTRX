@@ -21,14 +21,16 @@ class RigHint:
     checklist: tuple[str, ...]        # menus du poste à régler avant d'aller plus loin
 
 
+# Noms et chemins des menus : tableau des menus du manuel CAT du FTDX10 (Yaesu 2308-F, « Table 2 (MENU Chart) »).
 _YAESU_CHECKLIST = (
-    "CAT RATE = 38400 bps (même valeur que le débit ci-dessous)",
-    "CAT TIME OUT = 1000 msec ; CAT RTS = ON (Hamlib utilise le contrôle de flux RTS/CTS)",
+    "OPERATION SETTING > GENERAL : CAT RATE = 38400 bps (même valeur que le débit ci-dessous)",
+    "OPERATION SETTING > GENERAL : CAT TIME OUT TIMER = 1000 msec ; CAT RTS = ENABLE (contrôle de flux RTS/CTS de Hamlib)",
     "Port CAT = « Enhanced COM Port » (Silicon Labs CP2105) ; jamais le « Standard COM Port » pour le CAT",
-    "RPTT SELECT : ni RTS ni DTR si le PTT passe par CAT (une ligne RTS/DTR mal placée peut mettre le poste en émission)",
-    "SSB MOD SOURCE = REAR, AM MOD SOURCE = REAR, FM MOD SOURCE = REAR, DATA MOD SOURCE = REAR ; REAR SELECT = USB",
-    "USB MOD GAIN / RPORT GAIN : à régler avec l'ALC (réglage automatique SELCALL ou voyant OVERLOAD ALC)",
-    "TX TIME OUT TIMER du poste : 3 min (seconde sécurité, en plus du TOT de la station)",
+    "RADIO SETTING > MODE SSB, AM, FM, PSK/DATA : RPTT SELECT = DAKY (jamais RTS ni DTR : le poste peut passer en "
+    "émission au démarrage du PC) ; CW SETTING > MODE CW : PC KEYING = OFF",
+    "RADIO SETTING > MODE SSB, AM, FM, PSK/DATA : SSB / AM / FM / DATA MOD SOURCE = REAR et REAR SELECT = USB",
+    "RPORT GAIN (dans chaque mode) : à régler avec l'ALC ; OUT LEVEL : niveau du son reçu envoyé vers l'USB",
+    "Touche VOX éteinte ; OPERATION SETTING > GENERAL : TX TIME OUT TIMER = 3 (min), seconde sécurité du poste",
     "Pas de spectre HF dans l'application avec ce poste (Yaesu n'envoie pas les données du scope par CAT) : spectre audio seul",
 )
 
