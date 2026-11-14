@@ -21,6 +21,8 @@ from pathlib import Path
 from ..status import replace_atomic
 from . import calc
 from .report import NET_TYPES
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 DAY_MS = 86_400_000
@@ -59,7 +61,7 @@ class NetStore:
             self._failed = False
         except OSError as exc:
             if not self._failed:
-                log.warning("journal de la sonde réseau non écrit (%s) : les mesures continuent sans lui", exc)
+                emit_event(codes.ORT_1009, logger=log, journal="de la sonde réseau", erreur=str(exc))
             self._failed = True
 
     def log(self, record: dict) -> None:
@@ -116,7 +118,7 @@ class NetStore:
         except FileNotFoundError:
             return []
         except OSError as exc:
-            log.warning("lecture de %s impossible : %s", name, exc)
+            emit_event(codes.ORT_9712, logger=log, fichier=name, erreur=str(exc), repli="historique vide")
             return []
         out = []
         for line in lines:
@@ -153,7 +155,7 @@ class NetStore:
             tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
             replace_atomic(tmp, self.folder / name)
         except OSError as exc:
-            log.warning("%s non enregistré : %s", name, exc)
+            emit_event(codes.ORT_1009, logger=log, journal=name, erreur=str(exc))
 
     def thresholds(self) -> dict:
         """Seuils choisis par l'opérateur : {type de réseau: {rtt_warn, rtt_alert, loss_warn, loss_alert}}."""
@@ -187,7 +189,7 @@ class NetStore:
                 try:
                     path.unlink()
                 except OSError as exc:
-                    log.warning("%s non effacé : %s", path.name, exc)
+                    emit_event(codes.ORT_1009, logger=log, journal=path.name, erreur=f"effacement : {exc}")
 
     def prune(self) -> None:
         """Une fois par jour : fichiers du jour trop anciens effacés, coupures et heures trop anciennes retirées."""
@@ -202,7 +204,7 @@ class NetStore:
                 try:
                     path.unlink()
                 except OSError as exc:
-                    log.warning("%s non effacé : %s", path.name, exc)
+                    emit_event(codes.ORT_1009, logger=log, journal=path.name, erreur=f"effacement : {exc}")
         limit = now - self.stats_days * DAY_MS
         for name, key in (("coupures.jsonl", "end_ms"), ("heures.jsonl", "hour_ms")):
             items = self._read(name)
@@ -214,7 +216,7 @@ class NetStore:
                                    encoding="utf-8")
                     replace_atomic(tmp, self.folder / name)
                 except OSError as exc:
-                    log.warning("%s non nettoyé : %s", name, exc)
+                    emit_event(codes.ORT_1009, logger=log, journal=name, erreur=f"nettoyage : {exc}")
 
     # ------------------------------------------------------------------ statistiques (net_stats)
 

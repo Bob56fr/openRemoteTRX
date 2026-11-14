@@ -34,6 +34,8 @@ from ..audio.listeners import ListenerMix, TxTap
 from ..audio.pcm import FRAME_SAMPLES, SAMPLE_RATE, FrameAssembler
 from .access import LISTENER, OPERATOR
 from .session import ControlSession
+from ...errors import codes
+from ...errors.emit import by_machine, emit_event
 
 log = logging.getLogger(__name__)
 CONTROL_LABEL = "control"
@@ -275,7 +277,7 @@ class PeerManager:
     async def _expire_if_not_connected(self, client_id: str, peer: _Peer) -> None:
         await asyncio.sleep(self.peer_timeout_s)
         if not peer.closed and peer.pc.connectionState != "connected":
-            log.warning("connexion de %s jamais établie : abandon", client_id)
+            emit_event(codes.ORT_4009, logger=log, compte=client_id, delai_s=self.peer_timeout_s)
             await self.close_peer(client_id, peer)
 
     async def kick(self, client_id: str, reason: str, peer: _Peer | None = None, message: str = "") -> None:
@@ -283,7 +285,7 @@ class PeerManager:
         peer = peer or self.peers.get(client_id)
         if peer is None or peer.closed:
             return
-        log.warning("connexion de %s (%s) fermée par la station : %s", client_id, peer.role, reason)
+        emit_event(codes.ORT_4020, logger=log, compte=client_id, role=peer.role, raison=reason, code_cause=by_machine(reason))
         if peer.session is not None:
             peer.session.bye(reason, message)
             await asyncio.sleep(0.3)                            # le temps que le message parte avant la fermeture

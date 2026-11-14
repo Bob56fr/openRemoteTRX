@@ -33,6 +33,7 @@ from ..safety import PttController, Refused
 from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
 from ...modules.bus import CommandRefused
 from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, Command, ProtocolError, parse_command
+from ...errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 
@@ -146,7 +147,7 @@ class ControlSession:
         try:
             self._send(message)
         except Exception:
-            log.exception("envoi vers %s impossible", self.client_id)
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"envoi vers {self.client_id}")
 
     @property
     def listener(self) -> bool:
@@ -188,7 +189,7 @@ class ControlSession:
             try:
                 self.probe = self.netprobe.open(self.client_id, self.role, self.device, self.agent, self.source, self.send)
             except Exception:                            # la sonde ne doit jamais empêcher une connexion
-                log.exception("sonde réseau de %s non ouverte", self.client_id)
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"ouverture pour {self.client_id}")
         self.send(self._state())
         self._state_task = asyncio.get_running_loop().create_task(self._state_loop())
 
@@ -221,7 +222,7 @@ class ControlSession:
             try:
                 net = self.probe.state()
             except Exception:
-                log.exception("état de la sonde réseau de %s", self.client_id)
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"état pour {self.client_id}")
         return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net)
 
     async def close(self) -> None:
@@ -243,7 +244,7 @@ class ControlSession:
             try:
                 self.netprobe.close(self.probe)
             except Exception:
-                log.exception("sonde réseau de %s non fermée", self.client_id)
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"fermeture pour {self.client_id}")
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)
@@ -279,8 +280,8 @@ class ControlSession:
                 self._result(cmd.id, True, plan=plan, choices=self.swr.store.choices(self.client_id))
         elif cmd.name == "swr_start":
             plan = await self.swr.start(self.client_id, p["low_hz"], p["high_hz"], p["points"], p["power_pct"], self.send)
-            log.warning("mesure de TOS lancée par %s : %d points, %s %% en %s", self.client_id, len(plan["points"]),
-                        plan["power_pct"], plan["fm_mode"])
+            emit_event(codes.ORT_4019, logger=log, compte=self.client_id,
+                       action=f"mesure de TOS lancée : {len(plan['points'])} points, {plan['power_pct']} % en {plan['fm_mode']}")
             self._result(cmd.id, True, plan=plan)
         elif cmd.name == "swr_cancel":
             await self.swr.cancel(self.client_id)
@@ -316,14 +317,14 @@ class ControlSession:
             self._result(cmd.id, True, entries=route.store.last(50))
         elif cmd.name == "breizh_reactivate":
             pending = route.link.reactivate()
-            log.warning("Breizh : réactivation demandée par %s", self.client_id)
+            emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action="réactivation de Breizh Audio Box")
             self._result(cmd.id, True, pending=pending, breizh=route.snapshot())
         else:                                            # breizh_set
             before = route.store.settings.bypass
             try:
                 settings = route.store.update(**cmd.params)
             except OSError as exc:
-                log.error("réglages de Breizh non enregistrés : %s", exc)
+                emit_event(codes.ORT_1008, logger=log, fonction="Breizh Audio Box", erreur=str(exc), effet="refusé")
                 self._result(cmd.id, False, reason="breizh_storage_error")
                 return
             if settings.bypass != before:
@@ -406,7 +407,7 @@ class ControlSession:
             finally:
                 store.set_sending("")
 
-        log.warning("SELCALL : appel manuel %s (%d fois) demandé par %s", code, repeat, self.client_id)
+        emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action=f"appel SELCALL manuel {code} ({repeat} fois)")
         snapshot = await self.ctrl.send_selcall(self.client_id, sequence, duration)    # Refused : refus comme toggle
         self._result(cmd.id, True, ptt=snapshot.to_dict())
 
@@ -432,13 +433,13 @@ class ControlSession:
                 level, why = await calibrate.run(step, read_alc, store.set_sending)
                 if level is not None:
                     store.set_options(tx_level_dbfs=level)
-                log.warning("SELCALL : réglage automatique : %s", why)
+                emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action=f"réglage automatique SELCALL : {why}")
                 store.set_calibration(why)
             finally:
                 store.set_sending("")
 
         store.set_calibration("")
-        log.warning("SELCALL : réglage automatique du niveau demandé par %s", self.client_id)
+        emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action="réglage automatique du niveau SELCALL demandé")
         snapshot = await self.ctrl.send_selcall(self.client_id, sequence, calibrate.duration_s())
         self._result(cmd.id, True, ptt=snapshot.to_dict())
 
@@ -499,7 +500,7 @@ class ControlSession:
                     self._result(cmd.id, True, name=name, part=part, parts=parts, size=len(blob),
                                  data=base64.b64encode(blob[part * chunk:(part + 1) * chunk]).decode("ascii"))
         except Exception:
-            log.exception("sonde réseau : commande %s de %s", cmd.name, self.client_id)
+            emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"commande {cmd.name} de {self.client_id}")
             if not silent:
                 self._result(cmd.id, False, reason="netprobe_error")
 
@@ -516,10 +517,10 @@ class ControlSession:
             self._forbidden.popleft()
         if now - self._forbidden_logged >= 1.0:
             self._forbidden_logged = now
-            log.warning("visiteur %s : commande « %s » refusée (réception seule)", self.client_id, name[:40])
+            emit_event(codes.ORT_4306, logger=log, visiteur=self.client_id, commande=name[:40])
         self._result(ident, False, reason="forbidden", detail="visiteur : réception seule, aucune commande")
         if len(self._forbidden) > FORBIDDEN_LIMIT and self.disconnect is not None:
-            log.error("visiteur %s : %d commandes refusées en une minute, connexion fermée", self.client_id, len(self._forbidden))
+            emit_event(codes.ORT_4307, logger=log, visiteur=self.client_id, max=FORBIDDEN_LIMIT, n=len(self._forbidden))
             if self.alert is not None:
                 self.alert(codes.ORT_4307,
                            f"Le visiteur {self.client_id} a envoyé plus de {FORBIDDEN_LIMIT} commandes refusées en une "
@@ -539,7 +540,7 @@ class ControlSession:
             self._result(cmd.id, False, reason=exc.code, detail=str(exc))
             return
         except Exception:
-            log.exception("commande friends de %s en erreur", self.client_id)
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"commande friends de {self.client_id}")
             self._result(cmd.id, False, reason="friends_error")
             return
         if cmd.params["action"] == "view":
@@ -598,7 +599,8 @@ class ControlSession:
             try:
                 self.on_operator_activity()                      # statut « En RX » de la présence de groupe
             except Exception:
-                log.exception("activité de l'opérateur non transmise aux modules")
+                emit_event(codes.ORT_6527, logger=log, trace=True, contexte="activité de l'opérateur vers les modules",
+                           detail="voir la trace")
         if cmd.name == "friends":
             await self._friends(cmd)                             # opérateur seulement (liste blanche des visiteurs)
             return
@@ -658,7 +660,7 @@ class ControlSession:
                     try:
                         config = self.beeps.update(cmd.params)
                     except OSError as exc:
-                        log.error("réglages des bips non enregistrés : %s", exc)
+                        emit_event(codes.ORT_1008, logger=log, fonction="Bips de fin", erreur=str(exc), effet="refusé")
                         self._result(cmd.id, False, reason="beeps_storage_error")
                     else:
                         log.info("bips réglés par %s : %s", self.client_id, cmd.params)
@@ -680,11 +682,12 @@ class ControlSession:
                         try:
                             self.on_hf_view(self, self.hf_view)
                         except Exception:                # un module ne doit jamais gêner la session
-                            log.exception("rejeu des messages des modules impossible")
+                            emit_event(codes.ORT_6527, logger=log, trace=True, contexte="rejeu des messages des modules",
+                                       detail="voir la trace")
             elif cmd.name == "listener_kick":            # opérateur seulement (liste blanche : jamais d'un visiteur)
                 ok = self.kick_listener is not None and self.kick_listener(cmd.params["account"])
                 if ok:
-                    log.warning("visiteur %s déconnecté par l'opérateur %s", cmd.params["account"], self.client_id)
+                    emit_event(codes.ORT_4305, logger=log, visiteur=cmd.params["account"], par=f"l'opérateur {self.client_id}")
                 self._result(cmd.id, ok, **({} if ok else {"reason": "unknown_listener"}))
             elif cmd.name == "listeners_open":          # opérateur : commutateur « Écoute des visiteurs »
                 if self.access is None:
@@ -694,8 +697,8 @@ class ControlSession:
                                  detail="écoute des visiteurs fermée sur la station ([access] max_listeners, TRX Console menu 4.2)")
                 else:
                     self.access.switch.set(cmd.params["on"])
-                    log.warning("écoute des visiteurs %s par l'opérateur %s", "OUVERTE" if cmd.params["on"] else "fermée",
-                                self.client_id)
+                    emit_event(codes.ORT_4019, logger=log, compte=self.client_id,
+                               action="écoute des visiteurs " + ("OUVERTE" if cmd.params["on"] else "fermée"))
                     self._result(cmd.id, True, open=self.access.switch.open)
             elif cmd.name == "host_info":                # opérateur seulement (liste blanche) ; n'agit sur rien
                 global _hamlib_version
@@ -721,7 +724,7 @@ class ControlSession:
                         else:
                             profiles = self.voices.list(self.client_id)
                     except VoiceProfileError as exc:
-                        log.error("%s", exc)
+                        emit_event(codes.ORT_1008, logger=log, fonction="Profils de voix", erreur=str(exc), effet="refusé")
                         self._result(cmd.id, False, reason="voice_profiles_storage_error")
                     except ValueError as exc:
                         self._result(cmd.id, False, reason="voice_profile_refused", detail=str(exc))
@@ -731,7 +734,7 @@ class ControlSession:
                 guard = getattr(self.access, "guard", None)
                 refusal = guard.reopen() if guard is not None else ""
                 if not refusal:
-                    log.warning("écoute des visiteurs rouverte par l'opérateur %s", self.client_id)
+                    emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action="écoute des visiteurs rouverte")
                 self._result(cmd.id, not refusal, **({"reason": "still_overloaded", "detail": refusal} if refusal else {}))
             elif cmd.name.startswith("memory_"):
                 await self._memory_command(cmd)

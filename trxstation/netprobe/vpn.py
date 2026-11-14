@@ -18,6 +18,7 @@ import logging
 import time
 
 from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 ALTERNATE_MS = 600_000                 # D2 : deux appareils sur une adresse à moins de 10 min d'écart
@@ -86,14 +87,15 @@ class VpnWatch:
         fresh = key not in self.warnings
         self.warnings[key] = warning
         if fresh:
-            log.warning("profil VPN probablement partagé (%s) : %s", kind, warning)
+            emit_event(codes.ORT_4503, logger=log, adresse=key, appareils=", ".join(warning["agents"]), type=kind,
+                       periode_ms=period_ms)
         if self.alert is not None and now - int(self.alerted.get(key, 0)) >= ALERT_EVERY_MS:
             self.alerted[key] = now
             self._save()
             try:
                 self.alert(codes.ORT_4503, text(warning))
             except Exception:                      # une alerte ratée ne gêne jamais la station
-                log.exception("alerte du profil VPN partagé non envoyée")
+                emit_event(codes.ORT_8013, logger=log, trace=True, detail="ORT-4503 (profil VPN partagé)")
         return warning
 
     def ignore(self, address: str) -> None:

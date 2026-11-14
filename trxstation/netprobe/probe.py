@@ -24,6 +24,7 @@ from ..errors import codes
 from . import calc
 from .store import NetStore
 from .vpn import VpnWatch
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 WINDOW_MS = 10_000
@@ -178,7 +179,7 @@ class NetProbeHub:
         try:
             self.alert(code, message)
         except Exception:                              # une alerte ratée ne gêne jamais la station
-            log.exception("alerte de la sonde réseau non envoyée")
+            emit_event(codes.ORT_8013, logger=log, trace=True, detail=f"{code} (sonde réseau)")
 
     def loss_alert(self, probe: "ClientProbe", loss_pct: float) -> None:
         self._alert_now(codes.ORT_4001,
@@ -192,7 +193,7 @@ class NetProbeHub:
             try:
                 probe.tick()
             except Exception:
-                log.exception("sonde réseau de %s", probe.client_id)
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"sonde de {probe.client_id}")
         now = self.mono_ms()
         due = [p for p in self.pending if p["due"] <= now]
         self.pending = [p for p in self.pending if p["due"] > now]
@@ -200,7 +201,7 @@ class NetProbeHub:
             try:
                 self._diagnose(item["outage"])
             except Exception:
-                log.exception("diagnostic d'une coupure réseau")
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur="diagnostic d'une coupure")
         if self.probes is not None and now >= self._next_probe_log:
             self._next_probe_log = now + WINDOW_MS
             try:
@@ -208,7 +209,7 @@ class NetProbeHub:
                 if snap:
                     self.store.log({"ts": self.wall_ms(), "src": "sonde", "kind": "mesure", **snap})
             except Exception:
-                log.exception("journal des sondes de la station")
+                emit_event(codes.ORT_4509, logger=log, trace=True, erreur="journal des sondes de la station")
         if now >= self._next_clear_check:
             self._next_clear_check = now + 1000
             self._console_clear()
@@ -224,12 +225,12 @@ class NetProbeHub:
             path.unlink()
             at = float(json.loads(raw)["at"])
         except (OSError, ValueError, KeyError, TypeError):
-            log.warning("demande d'effacement de l'historique réseau illisible : ignorée")
+            emit_event(codes.ORT_4017, logger=log, demande="effacement de l'historique réseau", motif="illisible")
             return
         if abs(self.wall_ms() / 1000 - at) <= CLEAR_MAX_AGE_S:
             self.clear("TRX Console")
         else:
-            log.warning("demande d'effacement de l'historique réseau trop ancienne : ignorée")
+            emit_event(codes.ORT_4017, logger=log, demande="effacement de l'historique réseau", motif="trop ancienne")
 
     def export(self) -> tuple[str, bytes]:
         """Export anonyme (zip) des 30 derniers jours : (nom de fichier, contenu)."""
@@ -278,7 +279,7 @@ class NetProbeHub:
         for probe in self.connections:
             probe.last_outage = None
         self.store.log({"ts": self.wall_ms(), "src": "passerelle", "kind": "etat", "event": "effacement", "by": by})
-        log.warning("historique de la sonde réseau effacé par %s", by)
+        emit_event(codes.ORT_4506, logger=log, par=by)
 
     def summary(self) -> dict:
         """Champ `net` du fichier d'état (trx-monitor, TRX Console) : vue opérateur."""

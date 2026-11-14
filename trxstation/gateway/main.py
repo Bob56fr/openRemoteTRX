@@ -47,6 +47,8 @@ from ..swr.runner import SwrRunner
 from ..swr.store import SwrStore
 from .safety import PttController
 from .status import StatusPublisher
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger("trx-gateway")
 
@@ -54,7 +56,7 @@ log = logging.getLogger("trx-gateway")
 async def _watch_parent(pid: int, stop: asyncio.Event, every_s: float = 1.0) -> None:
     while not stop.is_set():
         if not pid_alive(pid):
-            log.error("le superviseur (pid %d) a disparu : arrêt de la passerelle", pid)
+            emit_event(codes.ORT_8017, logger=log, pid=pid)
             stop.set()
             return
         await asyncio.sleep(every_s)
@@ -67,7 +69,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     try:
         capabilities = await load_capabilities(cfg.rig.model, cfg.tools.hamlib_dir)
     except Exception as exc:                       # Hamlib absent ou format inattendu : l'interface s'adapte
-        log.warning("capacités du poste indisponibles (%s) : jeu minimal", exc)
+        emit_event(codes.ORT_2014, logger=log, detail=str(exc))
         capabilities = None
     pipeline = AudioPipeline(cfg.audio)            # AudioConfigError : périphérique introuvable, on s'arrête franchement
     try:
@@ -182,7 +184,8 @@ def _start_freedv(cfg: Config, pipeline: AudioPipeline):
     pipeline.hub.freedv = service
     missing = [p for p in (fd.ka9q_path, fd.radae_rx_path) if resolve_program(p) is None]
     if missing:
-        log.warning("FreeDV : décodeur introuvable (%s) : le mode FreeDV sera refusé", ", ".join(missing))
+        emit_event(codes.ORT_6501, logger=log, module="FreeDV",
+                   detail=f"décodeur introuvable ({', '.join(missing)}) : le mode FreeDV sera refusé")
     else:
         log.info("FreeDV disponible (réception, mode choisi par l'opérateur)")
     return service
@@ -202,7 +205,7 @@ def _start_breizh(cfg: Config, pipeline: AudioPipeline, config_path: Path | None
     try:
         key = read_key(cfgmod.breizh_key_path(cfg, config_path or default_config_path()))
     except KeyFileError as exc:
-        log.error("Breizh Audio Box NON utilisé (émissions en direct) : %s", exc)
+        emit_event(codes.ORT_6531, logger=log, probleme=str(exc))
         return None
     store = BreizhStore(cfg.supervisor.state_dir)
     link = BreizhLink(b.host, b.port, key, reactivate_after_s=b.reactivate_after_s, station_version=__version__,
@@ -231,11 +234,11 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     """Démarre l'API WebRTC si des clients sont autorisés, si aiortc/aiohttp sont installés et si l'exposition est sûre.
     Retourne (manager, runner, registry), ou trois None."""
     if not cfg.clients:
-        log.warning("aucun client autorisé ([[clients]]) : pas d'API, le poste reste en réception seule")
+        emit_event(codes.ORT_9710, logger=log)
         return None, None, None
     problem = exposure_problem(cfg)
     if problem:
-        log.error("API NON DÉMARRÉE (réception seule) : %s", problem)    # on ne quitte pas : le superviseur redémarrerait la station
+        emit_event(codes.ORT_9711, logger=log, probleme=problem)   # on ne quitte pas : le superviseur redémarrerait la station
         return None, None, None
     try:
         from .api.auth import ClientRegistry
@@ -243,14 +246,14 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         from .api.tls import make_ssl_context
         from .api.webrtc import PeerManager
     except ImportError as exc:
-        log.error("API WebRTC indisponible (%s) : pip install -e \".[audio]\" ; réception seule", exc)
+        emit_event(codes.ORT_9709, logger=log, erreur=str(exc))
         return None, None, None
     ssl_context = None
     if cfg.network.tls_cert and cfg.network.tls_key:
         try:
             ssl_context = make_ssl_context(cfg.network.tls_cert, cfg.network.tls_key)
         except (OSError, ssl.SSLError) as exc:
-            log.error("API NON DÉMARRÉE (réception seule) : certificat TLS inutilisable (%s)", exc)
+            emit_event(codes.ORT_4101, logger=log, erreur=str(exc))
             return None, None, None
     memories = MemoryStore(Path(cfg.supervisor.state_dir) / "memories.json")
     layouts = LayoutStore(Path(cfg.supervisor.state_dir) / "layouts")     # profils de mise en page (designer)
@@ -259,7 +262,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     try:
         station_id = ensure_station_id(cfg.supervisor.state_dir)    # GUID de la station (créé une seule fois)
     except OSError as exc:                                           # jamais bloquant : la station marche sans
-        log.warning("identifiant de station indisponible : %s", exc)
+        emit_event(codes.ORT_1004, logger=log, detail=str(exc))
         station_id = ""
     reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
                           station_id=station_id)
@@ -287,8 +290,8 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     try:
         runner = await start_server(app, cfg.network.gateway_bind, cfg.network.gateway_port, ssl_context)
     except OSError as exc:                         # on ne quitte pas : le superviseur relancerait la passerelle en boucle
-        log.error("API NON DÉMARRÉE (réception seule) : écoute impossible sur %s:%s (%s). %s",
-                  cfg.network.gateway_bind, cfg.network.gateway_port, exc, bind_hint(cfg.network.gateway_bind))
+        emit_event(codes.ORT_4102, logger=log, adresse=cfg.network.gateway_bind, port=cfg.network.gateway_port,
+                   erreur=str(exc), conseil=bind_hint(cfg.network.gateway_bind))
         return None, None, None
     log.info("API WebRTC%s en écoute en %s sur %s:%s", " et page web" if cfg.network.web_client else "",
              "HTTPS" if ssl_context else "HTTP", cfg.network.gateway_bind, cfg.network.gateway_port)

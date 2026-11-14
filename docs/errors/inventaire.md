@@ -89,6 +89,7 @@ Les origines du tableau ci-dessous datent de la station 0.126.0 ; la conversion 
 - Étape 174 (0.132.0) : journal JSON, installateurs ORT-9308 / ORT-9311.
 - Étape 178 (0.135.0) : sécurité d'émission (`gateway/safety/ptt.py`) et superviseur (`supervisor/`). Nouveaux codes : ORT-5029 (erreur inattendue du contrôle du PTT), ORT-5030 (retour en réception non confirmé, nouvel essai : signe avant-coureur d'ORT-5020), ORT-5031 (coupure du PTT, information, avec `code_cause`), ORT-8022 (fichier d'état illisible), ORT-8023 (relevé de la machine impossible), ORT-8024 (lancement ou arrêt des modules en erreur).
 - Étape 179 (0.136.0) : poste (`gateway/cat/link.py`), spectre, audio (bips, concentrateur), mesure de TOS, état publié, mémoires, profils de voix. Nouveaux codes : ORT-1016 (erreur inattendue dans un écouteur de la passerelle), ORT-1017 (écriture du fichier d'état refusée : avertissement au 1er refus, ORT-1005 ensuite), ORT-2023 (cache de rigctld non réglable), ORT-2024 (cache de rigctld actif : émission refusée).
+- Étape 180 (0.137.0) : réseau et accès (`gateway/main.py`, `access_watch.py`, `api/session.py`, `webrtc.py`, `server.py`, `access.py`, `netprobe/`). Nouveaux codes d'information : ORT-4019 (action d'un opérateur), ORT-4020 (connexion fermée par la station), ORT-4021 (connexion refusée par les règles d'accès), avec `code_cause`.
 
 ## Tableau code → origines
 

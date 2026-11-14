@@ -157,7 +157,7 @@ def test_busy_port_keeps_the_gateway_in_receive_only(tmp_path, caplog):
         blocker.close()
     assert (manager, runner) == (None, None)                                 # pas d'exception : la passerelle continue, en RX
     message = caplog.records[-1].getMessage()
-    assert "API NON DÉMARRÉE" in message and f"127.0.0.1:{port}" in message and "déjà pris" in message
+    assert "ORT-4102" in message and "API non démarrée" in message and f"127.0.0.1:{port}" in message and "déjà pris" in message
 
 
 @pytest.mark.skipif(not _api_available(), reason="aiohttp/aiortc absents")

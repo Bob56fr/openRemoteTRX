@@ -25,6 +25,8 @@ from datetime import date
 
 from ...config import Access, ClientAuth
 from .protocol import COMMANDS
+from ...errors import codes
+from ...errors.emit import emit_event
 
 OPERATOR, LISTENER = "operator", "listener"
 log = logging.getLogger(__name__)
@@ -87,7 +89,8 @@ class ListenerSwitch:
             from ...status import replace_atomic
             replace_atomic(tmp, self.path)
         except OSError as exc:                     # gardé en mémoire : effet immédiat, perdu au redémarrage
-            log.error("commutateur des visiteurs non enregistré : %s", exc)
+            emit_event(codes.ORT_1008, logger=log, fonction="Écoute des visiteurs", erreur=str(exc),
+                       effet="gardé jusqu'au redémarrage")
 HTTP_STATUS = {"listeners_full": 503, "operators_full": 503}     # le reste : 403
 
 

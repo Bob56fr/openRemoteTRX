@@ -2674,6 +2674,71 @@ ORT-4018:
     - Program defect (unforeseen case)
     preconisation: Report the problem with the station log (TRX Console menu 8).
 
+ORT-4019:
+  gravite: info
+  titre: 'Action d''un opérateur'
+  message: '{compte} : {action}.'
+  causes:
+  - 'Action volontaire d''un opérateur (mesure de TOS, appel SELCALL, écoute des visiteurs, Breizh…)'
+  preconisation: 'Rien à faire : trace des actions qui comptent, pour savoir qui a fait quoi et quand.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4019/
+  depuis_version: 0.137.0
+  en:
+    titre: 'Operator action'
+    message: '{compte}: {action}.'
+    causes:
+    - 'Deliberate operator action (SWR measurement, SELCALL call, visitor listening, Breizh…)'
+    preconisation: 'Nothing to do: trace of the actions that matter, to know who did what and when.'
+
+ORT-4020:
+  gravite: info
+  titre: 'Connexion d''un client fermée par la station'
+  message: 'Connexion de {compte} ({role}) fermée par la station : {raison}.'
+  causes:
+  - 'Visiteur déconnecté par l''opérateur ou par la protection contre la surcharge'
+  - 'Compte modifié, désactivé ou expiré'
+  - 'Opérateur parti : visiteurs déconnectés après l''attente'
+  preconisation: 'Rien à faire en général ; la cause précise porte son propre code (champ code_cause).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4020/
+  depuis_version: 0.137.0
+  en:
+    titre: 'Client connection closed by the station'
+    message: 'Connection of {compte} ({role}) closed by the station: {raison}.'
+    causes:
+    - 'Visitor disconnected by the operator or by the overload protection'
+    - 'Account changed, disabled or expired'
+    - 'Operator gone: visitors disconnected after the wait'
+    preconisation: 'Usually nothing to do; the precise cause carries its own code (code_cause field).'
+
+ORT-4021:
+  gravite: info
+  titre: 'Connexion refusée par les règles d''accès'
+  message: 'Connexion de « {compte} » depuis {source} refusée : {detail}.'
+  causes:
+  - 'Écoute des visiteurs fermée ou pleine, opérateur absent'
+  - 'Trop d''opérateurs connectés'
+  - 'Compte désactivé ou expiré, station surchargée'
+  preconisation: 'Rien à faire si la règle est voulue ; la cause précise porte son propre code (champ code_cause).'
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4021/
+  depuis_version: 0.137.0
+  en:
+    titre: 'Connection refused by the access rules'
+    message: 'Connection of « {compte} » from {source} refused: {detail}.'
+    causes:
+    - 'Visitor listening closed or full, operator absent'
+    - 'Too many operators connected'
+    - 'Account disabled or expired, station overloaded'
+    preconisation: 'Nothing to do if the rule is intended; the precise cause carries its own code (code_cause field).'
+
 ORT-4101:
   gravite: erreur
   titre: 'Certificat TLS inutilisable : API non démarrée'

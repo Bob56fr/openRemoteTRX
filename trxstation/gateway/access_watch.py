@@ -22,6 +22,7 @@ from pathlib import Path
 from .. import config as cfgmod
 from ..errors import codes
 from .api.access import LISTENER
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 KICK_REQUEST = "visitor-kick.json"
@@ -59,10 +60,10 @@ class AccessWatcher:
             cfg = cfgmod.load(self.config_path)
         except cfgmod.ConfigError as exc:
             self._refused_mtime = mtime
-            log.error("station.toml modifié mais INVALIDE : comptes et visiteurs inchangés (%s)", "; ".join(exc.problems)[:500])
+            emit_event(codes.ORT_9706, logger=log, problemes="; ".join(exc.problems)[:500])
             return False
         except OSError as exc:
-            log.warning("station.toml illisible pour l'instant (%s) : nouvel essai", exc)
+            emit_event(codes.ORT_9020, logger=log, fichier=str(self.config_path), detail=f"{exc} ; nouvel essai")
             return False
         self._mtime, self._refused_mtime = mtime, None
         self.registry.update(cfg.clients)
@@ -84,20 +85,20 @@ class AccessWatcher:
         except FileNotFoundError:
             return None
         except OSError as exc:
-            log.warning("demande de déconnexion illisible : %s", exc)
+            emit_event(codes.ORT_4002, logger=log, raison=f"demande illisible ({exc})")
             return None
         try:
             path.unlink()
         except OSError as exc:
-            log.warning("demande de déconnexion impossible à effacer : %s", exc)
+            emit_event(codes.ORT_4002, logger=log, raison=f"demande impossible à effacer ({exc})")
         try:
             data = json.loads(raw)
             client_id, at = data["id"], float(data["at"])
         except (ValueError, KeyError, TypeError):
-            log.warning("demande de déconnexion mal formée : ignorée")
+            emit_event(codes.ORT_4002, logger=log, raison="demande mal formée")
             return None
         if not isinstance(client_id, str) or abs(self.wall() - at) > KICK_MAX_AGE_S:
-            log.warning("demande de déconnexion trop ancienne ou invalide : ignorée")
+            emit_event(codes.ORT_4002, logger=log, raison="demande trop ancienne ou invalide")
             return None
         return client_id
 
@@ -107,11 +108,14 @@ class AccessWatcher:
         if guard is not None:
             if self.take_kick_request(self.reopen_path) is not None:
                 refusal = guard.reopen()
-                log.warning("réouverture de l'écoute des visiteurs demandée par la console : %s", refusal or "faite")
+                if refusal:
+                    emit_event(codes.ORT_4310, logger=log, depassement=refusal, par="TRX Console")
+                else:
+                    emit_event(codes.ORT_4019, logger=log, compte="TRX Console", action="écoute des visiteurs rouverte")
             listeners = [cid for cid, c in self.access.connections.items() if c.role == LISTENER]
             if guard.step(len(listeners)):
                 message = guard.message()
-                log.error("%s (%d visiteur(s) déconnecté(s))", message, len(listeners))
+                emit_event(codes.ORT_4308, logger=log, depassement=message, n=len(listeners))
                 alert = getattr(self.manager, "alert", None)
                 if alert is not None:
                     alert(codes.ORT_4308, message)
@@ -122,7 +126,7 @@ class AccessWatcher:
             if self.access.role(wanted) == LISTENER and wanted in self.access.connections:
                 await self.manager.kick(wanted, "kicked")
             else:
-                log.warning("demande de déconnexion de « %s » ignorée : pas un visiteur connecté", wanted[:32])
+                emit_event(codes.ORT_4002, logger=log, raison=f"« {wanted[:32]} » n'est pas un visiteur connecté")
         for client_id, reason in self.access.due():
             await self.manager.kick(client_id, reason)
 
@@ -131,7 +135,7 @@ class AccessWatcher:
             try:
                 await self.step()
             except Exception:                         # jamais de sortie de la passerelle pour ça
-                log.exception("surveillance des accès en erreur")
+                emit_event(codes.ORT_8018, logger=log, trace=True, detail="voir la trace")
             try:
                 await asyncio.wait_for(stop.wait(), self.interval_s)
             except asyncio.TimeoutError:

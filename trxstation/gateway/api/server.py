@@ -23,6 +23,8 @@ from ...netprobe.report import clean_agent, clean_device
 from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
 from .webrtc import PeerLimitError, PeerManager
+from ...errors import codes
+from ...errors.emit import by_machine, emit_event
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
             # scrypt est CPU-bound : hors de la boucle, pour ne jamais retarder la surveillance de l'émission
             allowed = await asyncio.to_thread(registry.verify, client_id, secret, source)
         if not allowed:
-            log.warning("connexion refusée pour « %s » depuis %s", client_id[:32], source[:64])
+            emit_event(codes.ORT_4004, logger=log, compte=client_id[:32], source=source[:64])
             return web.json_response({"error": "unauthorized"}, status=401)    # même réponse quelle que soit la cause
         try:
             # device : identifiant tiré au hasard par le client, agent : « page Windows »... (sonde réseau, facultatifs)
@@ -70,12 +72,13 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
                                                                 device=clean_device(data.get("device")),
                                                                 agent=clean_agent(data.get("agent"))))
         except AccessRefused as exc:
-            log.warning("connexion de « %s » depuis %s refusée : %s", client_id[:32], source[:64], exc.reason)
+            emit_event(codes.ORT_4021, logger=log, compte=client_id[:32], source=source[:64], detail=exc.message,
+                       raison=exc.reason, code_cause=by_machine(exc.reason))
             return web.json_response({"error": exc.reason, "message": exc.message}, status=exc.status)
         except PeerLimitError:
             return web.json_response({"error": "busy"}, status=503)
         except Exception:
-            log.exception("offre de %s en erreur", client_id)
+            emit_event(codes.ORT_4006, logger=log, trace=True, compte=client_id[:32], erreur="voir la trace")
             return web.json_response({"error": "server_error"}, status=500)
 
     async def health(_: web.Request) -> web.Response:

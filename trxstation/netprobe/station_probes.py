@@ -24,6 +24,8 @@ import time
 from collections import deque
 
 from . import calc
+from ..errors import codes
+from ..errors.emit import emit_event
 
 log = logging.getLogger(__name__)
 ICMP_EVERY_MS = 1_000
@@ -173,7 +175,7 @@ class StationProbes:
             except ValueError:
                 pass
             if wanted:
-                log.warning("sonde %s : pas d'adresse IPv4 utilisable (%s) : sonde abandonnée", name, wanted)
+                emit_event(codes.ORT_4505, logger=log, sonde=name, cible=wanted)
 
     async def _probe(self, target: Target) -> None:
         target.seq += 1
@@ -194,7 +196,7 @@ class StationProbes:
             if target.method == "tcp":
                 ok = await self._tcp(target.address, TCP_PORTS[target.name])
         except Exception:                          # une sonde ne fait jamais tomber la passerelle
-            log.exception("sonde %s", target.name)
+            emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"sonde {target.name}")
             ok = False
         now = self.mono_ms()
         if ok and now - beat[1] <= TIMEOUT_S * 1000 * (3 if target.method == "tcp" else 1.5):
