@@ -1,0 +1,51 @@
+name: "🇫🇷 Proposer une amélioration"
+description: "Une idée de fonction ou d'amélioration de la station, de la page web ou de l'application."
+title: "[Idée] "
+labels: ["enhancement", "lang:fr"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci pour votre idée. Cherchez d'abord parmi les [tickets existants](https://github.com/Bob56fr/openRemoteTRX/issues?q=is%3Aissue) : elle est peut-être déjà proposée.
+        Les règles de sécurité d'émission (PTT en bascule seulement, coupure automatique, réception par défaut) ne sont pas négociables : une idée qui les affaiblit sera refusée.
+  - type: dropdown
+    id: partie
+    attributes:
+      label: Partie concernée
+      multiple: true
+      options:
+        - Station (passerelle, superviseur)
+        - Page web
+        - Application Android
+        - Android Auto
+        - TRX Console
+        - Installation (Windows, Debian, Raspberry Pi)
+        - Documentation
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin
+      description: "Ce qui vous manque ou vous gêne aujourd'hui, dans quelle situation."
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: La proposition
+      description: "Ce que vous aimeriez voir, le plus concrètement possible."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Autres solutions envisagées
+      description: "Facultatif."
+  - type: input
+    id: trx
+    attributes:
+      label: Modèle de TRX
+      description: "Si l'idée dépend du poste (facultatif)."
+      placeholder: "Yaesu FTDX10"

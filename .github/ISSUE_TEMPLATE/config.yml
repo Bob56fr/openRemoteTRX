@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "rf-diy.com : aide et nouvelles / help and news"
+    url: https://rf-diy.com
+    about: "Questions générales, mode d'emploi et nouvelles du projet. General questions, guides and project news."
+  - name: "Codes d'erreur ORT / ORT error codes"
+    url: https://bob56fr.github.io/openRemoteTRX/erreurs/
+    about: "Explication de chaque code ORT-NNNN affiché par la station. Explanation of every ORT-NNNN code."

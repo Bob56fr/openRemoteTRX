@@ -74,8 +74,9 @@ You remain responsible for complying with your licence and your country's regula
 
 ## Reporting problems, contributing
 
-- From the page: **"Signaler un problème"** section (the report is shown before sending), then TRX Console, menu 8 (troubleshooting report, no passwords).
-- On GitHub: *Issues* tab.
+- From the page: **"Signaler un problème"** section (the report is shown before sending), then TRX Console, menu 2.3 (troubleshooting report, no passwords).
+- On GitHub: *Issues* tab, with the form in your language (English, French, German, Spanish).
+- Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 

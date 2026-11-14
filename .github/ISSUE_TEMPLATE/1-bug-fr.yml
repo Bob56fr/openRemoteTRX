@@ -1,0 +1,105 @@
+name: "🇫🇷 Signaler un bug"
+description: "Un comportement anormal de la station, de la page web ou de l'application Android."
+title: "[Bug] "
+labels: ["bug", "lang:fr"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler ce problème.
+        - Cherchez d'abord parmi les [tickets existants](https://github.com/Bob56fr/openRemoteTRX/issues?q=is%3Aissue) : il est peut-être déjà connu.
+        - Un code d'erreur `ORT-NNNN` est affiché ? Son explication est sur la [page des codes d'erreur](https://bob56fr.github.io/openRemoteTRX/erreurs/).
+        - **Ce ticket est public** : ne collez ni mot de passe, ni clé, ni adresse IP publique, ni nom de domaine personnel.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Station : en-tête de TRX Console. Application : écran de connexion."
+      placeholder: "station 0.134.0 / application 0.63.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: systeme
+    attributes:
+      label: Système
+      description: "Où le problème se produit (plusieurs choix possibles)."
+      multiple: true
+      options:
+        - Windows
+        - Linux (Debian, Ubuntu…)
+        - Raspberry Pi
+        - Android (application)
+        - Android Auto
+    validations:
+      required: true
+  - type: input
+    id: trx
+    attributes:
+      label: Modèle de TRX
+      description: "Marque et modèle, et si possible le numéro Hamlib (assistant trx-setup)."
+      placeholder: "Icom IC-7300MK2 (Hamlib 3094)"
+    validations:
+      required: true
+  - type: input
+    id: interface
+    attributes:
+      label: Interface CAT et audio
+      description: "Câble USB du poste, Digirig, SignaLink… (facultatif)."
+      placeholder: "USB du poste"
+  - type: dropdown
+    id: liaison
+    attributes:
+      label: Liaison
+      description: "Comment le client joint la station (plusieurs choix possibles)."
+      multiple: true
+      options:
+        - Réseau local (Wi-Fi ou câble)
+        - VPN (WireGuard, OpenVPN, Tailscale…)
+        - Port exposé avec TLS
+        - Réseau mobile 4G / 5G
+        - Je ne sais pas
+    validations:
+      required: true
+  - type: checkboxes
+    id: emission
+    attributes:
+      label: Émission
+      options:
+        - label: "Le problème touche l'émission (PTT, TOT, retour en réception, porte audio)."
+  - type: textarea
+    id: description
+    attributes:
+      label: Ce qui se passe
+      description: "Ce que vous avez constaté, et ce que vous attendiez à la place."
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. Ouvrir la page de la station
+        2. Choisir la bande 40 m
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Code d'erreur
+      description: "Si un code ORT-NNNN est affiché (facultatif)."
+      placeholder: "ORT-2104"
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Journaux
+      description: |
+        Extraits utiles du journal (TRX Console, menu 1.4). Le rapport de dépannage (menu 2.3) est un zip sans mot de passe : glissez-le dans la zone « Ce qui se passe » ci-dessus. Application Android : Réglages > « Signaler un problème ».
+      render: text
+  - type: checkboxes
+    id: confidentialite
+    attributes:
+      label: Confidentialité
+      options:
+        - label: "J'ai retiré les mots de passe, clés, adresses IP publiques et noms de domaine personnels."
+          required: true

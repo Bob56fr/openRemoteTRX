@@ -1,0 +1,51 @@
+name: "🇬🇧 Suggest an improvement"
+description: "An idea for a feature or an improvement of the station, the web page or the app."
+title: "[Idea] "
+labels: ["enhancement", "lang:en"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your idea. Please search the [existing issues](https://github.com/Bob56fr/openRemoteTRX/issues?q=is%3Aissue) first: it may already have been suggested.
+        The transmit safety rules (toggle-only PTT, automatic cut-off, receive by default) are not negotiable: an idea that weakens them will be declined.
+  - type: dropdown
+    id: partie
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Station (gateway, supervisor)
+        - Web page
+        - Android app
+        - Android Auto
+        - TRX Console
+        - Installation (Windows, Debian, Raspberry Pi)
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: besoin
+    attributes:
+      label: The need
+      description: "What is missing or bothers you today, and in which situation."
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: The proposal
+      description: "What you would like to see, as concretely as possible."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: "Optional."
+  - type: input
+    id: trx
+    attributes:
+      label: Transceiver model
+      description: "If the idea depends on the radio (optional)."
+      placeholder: "Yaesu FTDX10"

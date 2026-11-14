@@ -74,8 +74,9 @@ Vous restez responsable du respect de votre licence et de la réglementation de 
 
 ## Signaler un problème, contribuer
 
-- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis TRX Console, menu 8 (rapport de dépannage, sans mot de passe).
-- Sur GitHub : onglet *Issues*.
+- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis TRX Console, menu 2.3 (rapport de dépannage, sans mot de passe).
+- Sur GitHub : onglet *Issues*, avec le formulaire de votre langue (français, anglais, allemand, espagnol).
+- Contribuer : voir [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 

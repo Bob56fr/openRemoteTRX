@@ -1,0 +1,105 @@
+name: "🇬🇧 Report a bug"
+description: "Unexpected behaviour of the station, the web page or the Android app."
+title: "[Bug] "
+labels: ["bug", "lang:en"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this problem.
+        - Please search the [existing issues](https://github.com/Bob56fr/openRemoteTRX/issues?q=is%3Aissue) first: it may already be known.
+        - An error code `ORT-NNNN` is shown? It is explained on the [error codes page](https://bob56fr.github.io/openRemoteTRX/erreurs/).
+        - **This issue is public**: do not paste passwords, keys, public IP addresses or personal domain names.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Station: TRX Console header. App: login screen."
+      placeholder: "station 0.134.0 / app 0.63.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: systeme
+    attributes:
+      label: System
+      description: "Where the problem happens (several choices allowed)."
+      multiple: true
+      options:
+        - Windows
+        - Linux (Debian, Ubuntu…)
+        - Raspberry Pi
+        - Android (app)
+        - Android Auto
+    validations:
+      required: true
+  - type: input
+    id: trx
+    attributes:
+      label: Transceiver model
+      description: "Make and model, and if possible the Hamlib number (trx-setup wizard)."
+      placeholder: "Icom IC-7300MK2 (Hamlib 3094)"
+    validations:
+      required: true
+  - type: input
+    id: interface
+    attributes:
+      label: CAT and audio interface
+      description: "Radio's own USB cable, Digirig, SignaLink… (optional)."
+      placeholder: "Radio's USB"
+  - type: dropdown
+    id: liaison
+    attributes:
+      label: Connection
+      description: "How the client reaches the station (several choices allowed)."
+      multiple: true
+      options:
+        - Local network (Wi-Fi or cable)
+        - VPN (WireGuard, OpenVPN, Tailscale…)
+        - Exposed port with TLS
+        - Mobile network 4G / 5G
+        - I don't know
+    validations:
+      required: true
+  - type: checkboxes
+    id: emission
+    attributes:
+      label: Transmission
+      options:
+        - label: "The problem affects transmission (PTT, TOT, return to receive, audio gate)."
+  - type: textarea
+    id: description
+    attributes:
+      label: What happens
+      description: "What you observed, and what you expected instead."
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the station page
+        2. Select the 40 m band
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Error code
+      description: "If an ORT-NNNN code is shown (optional)."
+      placeholder: "ORT-2104"
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Logs
+      description: |
+        Useful excerpts of the log (TRX Console, menu 1.4). The troubleshooting report (menu 2.3) is a zip without passwords: drag it into the "What happens" box above. Android app: Réglages > "Signaler un problème" (the app is in French).
+      render: text
+  - type: checkboxes
+    id: confidentialite
+    attributes:
+      label: Privacy
+      options:
+        - label: "I removed passwords, keys, public IP addresses and personal domain names."
+          required: true

@@ -1,0 +1,105 @@
+name: "🇩🇪 Fehler melden"
+description: "Ein unerwartetes Verhalten der Station, der Webseite oder der Android-App."
+title: "[Bug] "
+labels: ["bug", "lang:de"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass Sie sich die Zeit nehmen, dieses Problem zu melden.
+        - Bitte suchen Sie zuerst in den [vorhandenen Tickets](https://github.com/Bob56fr/openRemoteTRX/issues?q=is%3Aissue): Vielleicht ist es schon bekannt.
+        - Wird ein Fehlercode `ORT-NNNN` angezeigt? Er wird auf der [Seite der Fehlercodes](https://bob56fr.github.io/openRemoteTRX/erreurs/) erklärt.
+        - **Dieses Ticket ist öffentlich**: Fügen Sie keine Passwörter, Schlüssel, öffentlichen IP-Adressen oder persönlichen Domainnamen ein.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Station: Kopfzeile von TRX Console. App: Anmeldebildschirm."
+      placeholder: "Station 0.134.0 / App 0.63.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: systeme
+    attributes:
+      label: System
+      description: "Wo das Problem auftritt (Mehrfachauswahl möglich)."
+      multiple: true
+      options:
+        - Windows
+        - Linux (Debian, Ubuntu…)
+        - Raspberry Pi
+        - Android (App)
+        - Android Auto
+    validations:
+      required: true
+  - type: input
+    id: trx
+    attributes:
+      label: Funkgerät (Modell)
+      description: "Hersteller und Modell, wenn möglich mit Hamlib-Nummer (Assistent trx-setup)."
+      placeholder: "Icom IC-7300MK2 (Hamlib 3094)"
+    validations:
+      required: true
+  - type: input
+    id: interface
+    attributes:
+      label: CAT- und Audio-Schnittstelle
+      description: "USB-Kabel des Geräts, Digirig, SignaLink… (optional)."
+      placeholder: "USB des Geräts"
+  - type: dropdown
+    id: liaison
+    attributes:
+      label: Verbindung
+      description: "Wie der Client die Station erreicht (Mehrfachauswahl möglich)."
+      multiple: true
+      options:
+        - Lokales Netz (WLAN oder Kabel)
+        - VPN (WireGuard, OpenVPN, Tailscale…)
+        - Offener Port mit TLS
+        - Mobilfunk 4G / 5G
+        - Weiß ich nicht
+    validations:
+      required: true
+  - type: checkboxes
+    id: emission
+    attributes:
+      label: Senden
+      options:
+        - label: "Das Problem betrifft das Senden (PTT, TOT, Rückkehr auf Empfang, Audio-Sperre)."
+  - type: textarea
+    id: description
+    attributes:
+      label: Was passiert
+      description: "Was Sie beobachtet haben und was Sie stattdessen erwartet hätten."
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Schritte zum Nachstellen
+      placeholder: |
+        1. Seite der Station öffnen
+        2. Band 40 m wählen
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Fehlercode
+      description: "Falls ein Code ORT-NNNN angezeigt wird (optional)."
+      placeholder: "ORT-2104"
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Protokolle
+      description: |
+        Nützliche Auszüge aus dem Protokoll (TRX Console, Menü 1.4). Der Fehlerbericht (Menü 2.3) ist ein Zip ohne Passwörter: Ziehen Sie ihn in das Feld „Was passiert“ oben. Android-App: Réglages > „Signaler un problème“ (die App ist auf Französisch).
+      render: text
+  - type: checkboxes
+    id: confidentialite
+    attributes:
+      label: Datenschutz
+      options:
+        - label: "Ich habe Passwörter, Schlüssel, öffentliche IP-Adressen und persönliche Domainnamen entfernt."
+          required: true
