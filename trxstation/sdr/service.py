@@ -10,7 +10,7 @@ Il lance sdr-core (programme natif, processus enfant), lit ses trames (frames.py
      "code": ..., "detail": ..., "serial", "fs", "center", "lna", "gr", "ant", "rate", "bins", "overload", "drops",
      "gaps", "cpu", "restarts", "t"}
 Commandes d'un opérateur (droit client_commands, relayées par la passerelle) : « state », « set » (center_hz, lna, gr,
-rate). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
+rate, agc). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
 Réglages choisis depuis la page gardés dans state_dir/sdr/last.json (jamais dans station.toml).
 
 À la main (essai, sans bus) :  python -m trxstation.sdr.service --config station.toml --once
@@ -48,6 +48,8 @@ LOSS_REPORT_EVERY_S = 600.0
 STOP_GRACE_S = 3.0
 MAX_RATE = 15                  # le bus limite un module à 20 messages par seconde
 SET_LIMITS = {"center_hz": (1_000, 2_000_000_000), "lna": (0, 8), "gr": (20, 59), "rate": (1, MAX_RATE)}
+SET_BOOLS = ("agc",)           # AGC matériel de la FI
+SET_BOOLS = ("agc",)           # AGC matériel de la FI
 
 
 class SetRefused(ValueError):
@@ -60,13 +62,19 @@ class Settings:
     lna: int
     gr: int
     rate: int
+    agc: bool = True
 
 
 def clean_settings(args: dict, current: Settings) -> Settings:
     """Nouveaux réglages demandés par un opérateur ; SetRefused (message en français) si l'un est hors limites."""
-    if not isinstance(args, dict) or set(args) - set(SET_LIMITS):
-        raise SetRefused(f"réglages permis : {', '.join(SET_LIMITS)}")
+    if not isinstance(args, dict) or set(args) - set(SET_LIMITS) - set(SET_BOOLS):
+        raise SetRefused(f"réglages permis : {', '.join([*SET_LIMITS, *SET_BOOLS])}")
     values = asdict(current)
+    for name in SET_BOOLS:
+        if name in args:
+            if not isinstance(args[name], bool):
+                raise SetRefused(f"{name} : true ou false")
+            values[name] = args[name]
     for name, (lo, hi) in SET_LIMITS.items():
         if name not in args:
             continue
@@ -80,7 +88,7 @@ def clean_settings(args: dict, current: Settings) -> Settings:
 def core_args(sd: cfgmod.Sdr, s: Settings) -> list[str]:
     return ["--serial", sd.serial, "--fs", str(sd.sample_rate_hz), "--bw", str(cfgmod.SDR_RATES[sd.sample_rate_hz]),
             "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", sd.antenna,
-            "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(s.rate)]
+            "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(s.rate), "--agc", str(int(s.agc))]
 
 
 def line_message(line: Line, now: float) -> dict:
@@ -117,10 +125,11 @@ class SdrService:
 
     # ------------------------------------------------------------- réglages gardés
     def _load_settings(self) -> Settings:
-        base = Settings(self.sd.center_hz, self.sd.lna_state, self.sd.gain_reduction_db, min(self.sd.lines_per_s, MAX_RATE))
+        base = Settings(self.sd.center_hz, self.sd.lna_state, self.sd.gain_reduction_db, min(self.sd.lines_per_s, MAX_RATE),
+                        self.sd.agc)
         try:
             data = json.loads((self.folder / "last.json").read_text(encoding="utf-8"))
-            return clean_settings({k: v for k, v in data.items() if k in SET_LIMITS}, base)
+            return clean_settings({k: v for k, v in data.items() if k in SET_LIMITS or k in SET_BOOLS}, base)
         except (OSError, ValueError, TypeError, AttributeError):
             return base
 
@@ -136,7 +145,7 @@ class SdrService:
     # ------------------------------------------------------------- état publié
     def snapshot(self) -> dict:
         s = self.settings
-        return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate,
+        return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
                 "restarts": self.restarts, "t": int(self.clock())}
 
     async def publish_state(self) -> None:
@@ -179,6 +188,8 @@ class SdrService:
             lines.append(f"gain {new.lna} {new.gr}")
         if new.rate != old.rate:
             lines.append(f"rate {new.rate}")
+        if new.agc != old.agc:
+            lines.append(f"agc {int(new.agc)}")
         proc = self.proc
         if not lines or proc is None or proc.stdin is None or proc.returncode is not None:
             return                         # pris en compte au prochain lancement
@@ -246,6 +257,9 @@ class SdrService:
         for key in ("overload", "drops", "gaps"):
             if isinstance(st.get(key), int):
                 self.state[key] = st[key]
+        gr_now, gain = st.get("gr_now"), st.get("gain_db")      # gain réellement appliqué (AGC de la FI)
+        self.state["gr_now"] = gr_now if isinstance(gr_now, int) and gr_now >= 0 else None
+        self.state["gain_db"] = gain if isinstance(gain, (int, float)) and gain else None
         self.state["cpu"] = self._core_cpu()
         loss = (self.state["drops"], self.state["gaps"])
         now = self.clock()

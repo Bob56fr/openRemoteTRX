@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.140.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.141.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -220,8 +220,9 @@ Se modifie : Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite dep
 | `sample_rate_hz` | courant | `2000000` | Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul. Valeurs : 2000000, 6000000 ou 8000000 (Hz). Exemple : `2000000` (depuis 0.140.0) |
 | `center_hz` | courant | `7100000` | Fréquence centrale du SDR au premier démarrage. La dernière choisie depuis la page est ensuite reprise (rangée sur la station, pas dans ce fichier). Valeurs : 1 000 à 2 000 000 000 Hz. Exemple : `7100000` (depuis 0.140.0) |
 | `antenna` | courant | `"A"` | Entrée d'antenne du SDR (RSP2 : A ou B). Valeurs : A ou B. (depuis 0.140.0) |
-| `lna_state` | expert | `2` | État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page. Valeurs : 0 à 8. (depuis 0.140.0) |
-| `gain_reduction_db` | expert | `50` | Réduction de gain de la FI au premier démarrage. Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée. Valeurs : 20 à 59 dB. (depuis 0.140.0) |
+| `lna_state` | expert | `2` | État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page, où il est présenté à l'endroit (curseur « Gain RF » : 8 = gain maximal). Valeurs : 0 à 8. (depuis 0.140.0) |
+| `gain_reduction_db` | expert | `50` | Réduction de gain de la FI au premier démarrage, utilisée quand l'AGC de la FI est coupé (`agc = false`). Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée. Valeurs : 20 à 59 dB. (depuis 0.140.0) |
+| `agc` | courant | `true` | AGC matériel de la FI : le SDR règle lui-même la réduction de gain FI pour garder le signal au bon niveau ; la page n'offre alors que le curseur « Gain RF ». false : la réduction de gain se règle à la main (curseur « Gain FI »). Se change ensuite depuis la page. Valeurs : true ou false. (depuis 0.141.0) |
 | `fft_size` | expert | `4096` | Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin. Valeurs : Puissance de 2 de 512 à 16 384. (depuis 0.140.0) |
 | `bins` | expert | `1024` | Nombre de cases d'une ligne envoyée aux clients (chaque case garde le maximum des points qu'elle couvre). Moins de cases = moins de données mobiles. Valeurs : Puissance de 2 de 128 à fft_size. (depuis 0.140.0) |
 | `lines_per_s` | expert | `8` | Lignes de waterfall par seconde au premier démarrage ; se règle ensuite depuis la page. Valeurs : 1 à 15. (depuis 0.140.0) |

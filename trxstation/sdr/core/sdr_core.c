@@ -47,6 +47,10 @@ static double g_fs = 2e6, g_freq = 7.1e6;
 static int g_bw = 1536, g_lna = 2, g_gr = 50, g_fft = 4096, g_bins = 1024;
 static double g_rate = 8.0;
 static char g_ant = 'A';
+static int g_agc = 1;                   // AGC matériel de la FI (consigne AGC_SETPOINT_DBFS) : le SDR règle la réduction
+#define AGC_SETPOINT_DBFS (-30)
+static volatile int g_gr_now = -1;      // réduction de gain FI réellement appliquée (événement de l'API), -1 = inconnue
+static volatile double g_gain_db = 0;   // gain total du récepteur selon l'API (dB)
 static const char *g_serial = NULL, *g_iq_file = NULL;
 
 // ---------------------------------------------------------------- état partagé
@@ -127,7 +131,10 @@ static void stream_cb(short *xi, short *xq, sdrplay_api_StreamCbParamsT *p, unsi
 
 static void event_cb(sdrplay_api_EventT id, sdrplay_api_TunerSelectT tuner, sdrplay_api_EventParamsT *p, void *ctx) {
     (void)ctx;
-    if (id == sdrplay_api_PowerOverloadChange && g_dev) {
+    if (id == sdrplay_api_GainChange) {
+        g_gr_now = (int)p->gainParams.gRdB;
+        g_gain_db = p->gainParams.currGain;
+    } else if (id == sdrplay_api_PowerOverloadChange && g_dev) {
         g_overload = p->powerOverloadParams.powerOverloadChangeType == sdrplay_api_Overload_Detected;
         sdrplay_api_Update(g_dev->dev, tuner, sdrplay_api_Update_Ctrl_OverloadMsgAck, sdrplay_api_Update_Ext1_None);
         json_frame("{\"t\":\"event\",\"name\":\"overload\",\"on\":%d}", g_overload);
@@ -175,7 +182,8 @@ static void api_start(void) {
     ch->tunerParams.ifType = sdrplay_api_IF_Zero;
     ch->tunerParams.gain.gRdB = g_gr;
     ch->tunerParams.gain.LNAstate = (unsigned char)g_lna;
-    ch->ctrlParams.agc.enable = sdrplay_api_AGC_DISABLE;
+    ch->ctrlParams.agc.enable = g_agc ? sdrplay_api_AGC_50HZ : sdrplay_api_AGC_DISABLE;
+    ch->ctrlParams.agc.setPoint_dBfs = AGC_SETPOINT_DBFS;
     if (g_dev->hwVer == SDRPLAY_RSP2_ID)
         ch->rsp2TunerParams.antennaSel = g_ant == 'B' ? sdrplay_api_Rsp2_ANTENNA_B : sdrplay_api_Rsp2_ANTENNA_A;
     sdrplay_api_CallbackFnsT cb = { stream_cb, NULL, event_cb };
@@ -206,6 +214,14 @@ static void api_set_gain(int lna, int gr) {
     g_params->rxChannelA->tunerParams.gain.LNAstate = (unsigned char)lna;
     g_params->rxChannelA->tunerParams.gain.gRdB = gr;
     sdrplay_api_Update(g_dev->dev, sdrplay_api_Tuner_A, sdrplay_api_Update_Tuner_Gr, sdrplay_api_Update_Ext1_None);
+}
+
+static void api_set_agc(int on) {
+    if (!g_dev) return;
+    g_params->rxChannelA->ctrlParams.agc.enable = on ? sdrplay_api_AGC_50HZ : sdrplay_api_AGC_DISABLE;
+    g_params->rxChannelA->ctrlParams.agc.setPoint_dBfs = AGC_SETPOINT_DBFS;
+    sdrplay_api_Update(g_dev->dev, sdrplay_api_Tuner_A, sdrplay_api_Update_Ctrl_Agc, sdrplay_api_Update_Ext1_None);
+    if (!on) api_set_gain(g_lna, g_gr);                // AGC coupé : la réduction choisie s'applique de nouveau
 }
 #endif
 
@@ -246,6 +262,11 @@ static void *command_thread(void *arg) {
 #ifndef SDR_NO_SDRPLAY
             api_set_gain(lna, gr);
 #endif
+        } else if (sscanf(line, "agc %d", &lna) == 1 && (lna == 0 || lna == 1)) {
+            g_agc = lna;
+#ifndef SDR_NO_SDRPLAY
+            api_set_agc(lna);
+#endif
         } else if (sscanf(line, "rate %lf", &rate) == 1 && rate >= 1 && rate <= 25) {
             g_rate = rate;
         } else if (!strncmp(line, "quit", 4)) {
@@ -280,13 +301,14 @@ static int parse_args(int argc, char **argv, int *list) {
         else if (!strcmp(a, "--fft")) g_fft = atoi(v);
         else if (!strcmp(a, "--bins")) g_bins = atoi(v);
         else if (!strcmp(a, "--rate")) g_rate = atof(v);
+        else if (!strcmp(a, "--agc")) g_agc = atoi(v);
         else { fprintf(stderr, "argument inconnu : %s\n", a); return 0; }
     }
     if (*list) return 1;
     if (!g_serial && !g_iq_file) { fprintf(stderr, "--serial (ou --iq-file) obligatoire\n"); return 0; }
     if (g_fs < 2e5 || g_fs > 10e6 || g_freq < 1e3 || g_freq > 2e9 || g_lna < 0 || g_lna > 9 || g_gr < 20 || g_gr > 59
         || !is_pow2(g_fft) || g_fft < 512 || g_fft > 16384 || !is_pow2(g_bins) || g_bins < 128 || g_bins > g_fft
-        || g_rate < 1 || g_rate > 25 || (g_ant != 'A' && g_ant != 'B')) {
+        || g_rate < 1 || g_rate > 25 || (g_ant != 'A' && g_ant != 'B') || (g_agc != 0 && g_agc != 1)) {
         fprintf(stderr, "réglage hors limites\n");
         return 0;
     }
@@ -384,8 +406,9 @@ int main(int argc, char **argv) {
         if (t - last_status >= 1.0) {
             last_status = t;
             json_frame("{\"t\":\"status\",\"fs\":%.0f,\"freq\":%.0f,\"lna\":%d,\"gr\":%d,\"ant\":\"%c\",\"rate\":%.1f,"
-                       "\"bins\":%d,\"overload\":%d,\"samples\":%llu,\"drops\":%llu,\"gaps\":%llu}",
-                       g_fs, g_freq, g_lna, g_gr, g_ant, g_rate, B, g_overload,
+                       "\"bins\":%d,\"agc\":%d,\"gr_now\":%d,\"gain_db\":%.1f,\"overload\":%d,\"samples\":%llu,"
+                       "\"drops\":%llu,\"gaps\":%llu}",
+                       g_fs, g_freq, g_lna, g_gr, g_ant, g_rate, B, g_agc, g_gr_now, g_gain_db, g_overload,
                        (unsigned long long)g_samples, (unsigned long long)g_drops, (unsigned long long)g_gaps);
         }
     }

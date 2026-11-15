@@ -429,3 +429,4 @@ audio { display: none; }
 /* module SDR (sdr.js) : waterfall du SDR, une ligne par message, la plus récente en haut */
 .sdr-plot { position: relative; height: 12rem; background: var(--fond); border-radius: .25rem; overflow: hidden; cursor: crosshair; }
 .sdr-wf { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.sdr-val { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; }

@@ -209,7 +209,8 @@ class Sdr:
     center_hz: int = 7_100_000        # fréquence centrale au démarrage (la dernière choisie depuis la page est reprise)
     antenna: str = "A"                # entrée du RSP2 : A ou B
     lna_state: int = 2                # état du LNA (0 = gain maximal ; 0 à 8 sur le RSP2)
-    gain_reduction_db: int = 50       # réduction de gain FI (20 à 59 dB)
+    gain_reduction_db: int = 50       # réduction de gain FI (20 à 59 dB), quand l'AGC de la FI est coupé
+    agc: bool = True                  # AGC matériel de la FI : le SDR règle lui-même la réduction de gain FI
     fft_size: int = 4096              # points de la FFT (512 à 16384, puissance de 2)
     bins: int = 1024                  # cases d'une ligne envoyée aux clients (128 à fft_size, puissance de 2)
     lines_per_s: int = 8              # lignes de waterfall par seconde (1 à 15)
@@ -874,6 +875,8 @@ def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
             p.append(f"[sdr] {name} : entier de {lo} à {hi}")
     if sd.antenna not in ("A", "B"):
         p.append("[sdr] antenna : A ou B")
+    if not isinstance(sd.agc, bool):
+        p.append("[sdr] agc doit valoir true ou false")
     if not _pow2(sd.fft_size) or not 512 <= sd.fft_size <= 16384:
         p.append("[sdr] fft_size : puissance de 2 de 512 à 16384")
     if not _pow2(sd.bins) or not 128 <= sd.bins <= min(16384, sd.fft_size if isinstance(sd.fft_size, int) else 16384):
@@ -1260,7 +1263,8 @@ def render_toml(cfg: Config) -> str:
         f"center_hz = {cfg.sdr.center_hz}   # fréquence centrale au démarrage",
         f"antenna = {_s(cfg.sdr.antenna)}   # entrée A ou B",
         f"lna_state = {cfg.sdr.lna_state}   # 0 = gain maximal (0 à 8)",
-        f"gain_reduction_db = {cfg.sdr.gain_reduction_db}   # réduction de gain FI (20 à 59 dB)",
+        f"gain_reduction_db = {cfg.sdr.gain_reduction_db}   # réduction de gain FI (20 à 59 dB), AGC coupé",
+        f"agc = {str(cfg.sdr.agc).lower()}   # AGC de la FI : le SDR règle lui-même la réduction de gain",
         f"fft_size = {cfg.sdr.fft_size}",
         f"bins = {cfg.sdr.bins}   # cases d'une ligne envoyée aux clients",
         f"lines_per_s = {cfg.sdr.lines_per_s}",

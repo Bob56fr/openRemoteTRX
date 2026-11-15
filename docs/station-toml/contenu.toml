@@ -542,16 +542,22 @@ bornes = "A ou B."
 depuis = "0.140.0"
 
 [reglages."sdr.lna_state"]
-role = "État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page."
+role = "État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page, où il est présenté à l'endroit (curseur « Gain RF » : 8 = gain maximal)."
 niveau = "expert"
 bornes = "0 à 8."
 depuis = "0.140.0"
 
 [reglages."sdr.gain_reduction_db"]
-role = "Réduction de gain de la FI au premier démarrage. Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée."
+role = "Réduction de gain de la FI au premier démarrage, utilisée quand l'AGC de la FI est coupé (<code>agc = false</code>). Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée."
 niveau = "expert"
 bornes = "20 à 59 dB."
 depuis = "0.140.0"
+
+[reglages."sdr.agc"]
+role = "AGC matériel de la FI : le SDR règle lui-même la réduction de gain FI pour garder le signal au bon niveau ; la page n'offre alors que le curseur « Gain RF ». false : la réduction de gain se règle à la main (curseur « Gain FI »). Se change ensuite depuis la page."
+niveau = "courant"
+bornes = "true ou false."
+depuis = "0.141.0"
 
 [reglages."sdr.fft_size"]
 role = "Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin."

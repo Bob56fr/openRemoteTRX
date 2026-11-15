@@ -313,14 +313,17 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
     waterfall ne sont envoyées qu'aux opérateurs qui l'affichent ; à l'ouverture, le dernier état est renvoyé tout de
     suite. Réponse : `on`.
   - `state` : état du SDR (`data`, mêmes champs que `sdr_state` ci-dessous).
-  - `set` (`center_hz` 1 000 à 2 000 000 000, `lna` 0 à 8, `gr` 20 à 59 dB, `rate` 1 à 15 lignes/s ; au moins un) :
+  - `set` (`center_hz` 1 000 à 2 000 000 000, `lna` 0 à 8 (0 = gain maximal), `gr` 20 à 59 dB, `rate` 1 à 15
+    lignes/s, `agc` booléen (AGC matériel de la FI, station 0.141.0+ : le SDR règle lui-même la réduction de gain) ; au
+    moins un) :
     nouveaux réglages du SDR, gardés sur la station (`state_dir/sdr/last.json`, jamais dans station.toml) ; `data` =
     nouvel état. Ne touche JAMAIS au poste ; envoyer une fréquence du SDR au TRX = `set_frequency` habituel (refusé
     pendant l'émission).
 - **État** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_state", "retain": "snapshot", "scope":
   "operators", …}}` : `state` (`starting`, `running`, `error`), `code` et `detail` (cause d'une erreur : `absent`,
   `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
-  (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `overload` (surcharge du CAN signalée par le SDR), `overloads` (surcharges
+  (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `agc`, `gr_now` (réduction de gain FI réellement
+  appliquée, ou `null`) et `gain_db` (gain total selon le SDR, ou `null`) (0.141.0+), `overload` (surcharge du CAN signalée par le SDR), `overloads` (surcharges
   comptées depuis le lancement ; état publié au plus une fois par seconde),
   `drops` et `gaps` (échantillons perdus), `cpu` (% d'un cœur pour sdr-core, ou `null`), `restarts`, `t`.
 - **Ligne** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz,
@@ -331,7 +334,8 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
   (uint32 petit-boutiste : 1 ligne, 2 JSON), longueur ; ligne = centre et largeur (float64), cases (uint16), réservé
   (uint16), valeurs ; JSON = `started`, `status`, `event` (`overload`, `refused`), `error` (`absent`, `busy`,
   `service`, `init`, `removed`, `file`), `stopped`. Commandes sur son entrée : `freq HZ`, `gain LNA GR`, `rate N`,
-  `quit`. Codes de sortie : 2 réglage refusé, 3 SDR absent ou pris, 4 service du fabricant injoignable, 5 init.
-- **Page web** (`sdr.js`, rubrique « SDR ») : waterfall, échelle, réglages (centre, LNA, réduction de gain,
-  cadence), clic = fréquence lue, « QSY du TRX » par `set_frequency`.
+  `agc 0|1`, `quit`. Codes de sortie : 2 réglage refusé, 3 SDR absent ou pris, 4 service du fabricant injoignable, 5 init.
+- **Page web** (`sdr.js`, rubrique « SDR ») : waterfall, échelle, réglages (centre, cadence ; curseur « Gain RF » =
+  8 - `lna` ; « FI auto » = `agc`, sinon curseur « Gain FI » = 59 - `gr` ; appliqués pendant qu'on fait glisser, un
+  envoi toutes les 0,3 s au plus), clic = fréquence lue, « QSY du TRX » par `set_frequency`.
 - **Application** : lot S1c (le contrat Android connaît déjà la commande).

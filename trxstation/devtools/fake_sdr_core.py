@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ant", default="A")
     ap.add_argument("--bw", type=int, default=1536)
     ap.add_argument("--fft", type=int, default=4096)
+    ap.add_argument("--agc", type=int, default=1)
     ap.add_argument("--fail", choices=("absent", "service", "crash"), default=None)
     ap.add_argument("--crash-after", type=float, default=1.0)
     ap.add_argument("--list", action="store_true")
@@ -44,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.fail == "service":
         out.write(encode_json({"t": "error", "code": "service", "detail": "service SDRplay injoignable"})); out.flush()
         return 4
-    state = {"freq": a.freq, "lna": a.lna, "gr": a.gr, "rate": a.rate, "stop": False}
+    state = {"freq": a.freq, "lna": a.lna, "gr": a.gr, "rate": a.rate, "agc": a.agc, "stop": False}
 
     def commands() -> None:
         for line in sys.stdin:
@@ -53,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
                 state["freq"] = float(parts[1])
             elif parts[:1] == ["gain"] and len(parts) == 3:
                 state["lna"], state["gr"] = int(parts[1]), int(parts[2])
+            elif parts[:1] == ["agc"] and len(parts) == 2:
+                state["agc"] = int(parts[1])
             elif parts[:1] == ["rate"] and len(parts) == 2:
                 state["rate"] = float(parts[1])
             elif parts[:1] == ["quit"]:
@@ -81,6 +84,8 @@ def main(argv: list[str] | None = None) -> int:
                 last_status = now
                 out.write(encode_json({"t": "status", "fs": a.fs, "freq": state["freq"], "lna": state["lna"],
                                        "gr": state["gr"], "ant": a.ant, "rate": state["rate"], "bins": a.bins,
+                                       "agc": state["agc"], "gr_now": 38 if state["agc"] else state["gr"],
+                                       "gain_db": 61.5,
                                        "overload": 0, "samples": 0, "drops": 0, "gaps": 0}))
             out.flush()
             time.sleep(1.0 / max(1.0, state["rate"]))

@@ -2839,11 +2839,33 @@
         : state && state.state === "error" ? "en panne" : "";
       if (state && state.state) {
         if (document.activeElement !== $("sdr-center") && Number.isFinite(state.center)) $("sdr-center").value = sdrx.formatMHz(state.center, 4);
-        if (document.activeElement !== $("sdr-gr") && Number.isFinite(state.gr)) $("sdr-gr").value = String(state.gr);
-        if (Number.isFinite(state.lna)) $("sdr-lna").value = String(state.lna);
+        if (!sdrDragging("sdr-rf") && Number.isFinite(state.lna)) $("sdr-rf").value = String(sdrx.rfFromLna(state.lna));
+        if (!sdrDragging("sdr-if") && Number.isFinite(state.gr)) $("sdr-if").value = String(sdrx.ifFromGr(state.gr));
+        $("sdr-agc").checked = state.agc !== false;
+        $("sdr-if-box").hidden = state.agc !== false;
         if (Number.isFinite(state.rate)) $("sdr-rate").value = String(state.rate);
+        sdrSliderLabels();
       }
       $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
+      $("sdr-gain").textContent = sdrx.gainText(state);
+    }
+    // curseurs de gain : appliqués PENDANT le glissement, au plus un envoi toutes les 0,3 s (le dernier part toujours)
+    const SDR_SLIDE_MS = 300;
+    const sdrSlide = { busy: false, pending: null, held: {} };
+    function sdrDragging(id) { return !!sdrSlide.held[id]; }
+    function sdrSliderLabels() {
+      $("sdr-rf-val").textContent = $("sdr-rf").value + "/" + sdrx.LNA_MAX;
+      $("sdr-if-val").textContent = $("sdr-if").value + "/39";
+    }
+    function sdrSlideSend(args) {
+      sdrSlide.pending = Object.assign(sdrSlide.pending || {}, args);
+      if (sdrSlide.busy) return;
+      sdrSlide.busy = true;
+      const next = sdrSlide.pending; sdrSlide.pending = null;
+      sdrSend(next).finally(() => setTimeout(() => {
+        sdrSlide.busy = false;
+        if (sdrSlide.pending) sdrSlideSend({});
+      }, SDR_SLIDE_MS));
     }
     function sdrAxis(center, span) {
       const box = $("sdr-axis");
@@ -2892,8 +2914,18 @@
         if (hz === null) { ui.log("SDR : fréquence centrale illisible (ex. 14.100 en MHz).", "warn"); return; }
         sdrSend({ center_hz: hz });
       });
-      $("sdr-lna").addEventListener("change", () => sdrSend({ lna: Number($("sdr-lna").value) }));
-      $("sdr-gr").addEventListener("change", () => sdrSend({ gr: Number($("sdr-gr").value) }));
+      for (const id of ["sdr-rf", "sdr-if"]) {
+        const send = () => {
+          sdrSliderLabels();
+          sdrSlideSend(id === "sdr-rf" ? { lna: sdrx.lnaFromRf(Number($(id).value)) } : { gr: sdrx.grFromIf(Number($(id).value)) });
+        };
+        $(id).addEventListener("input", () => { sdrSlide.held[id] = true; send(); });
+        $(id).addEventListener("change", () => { sdrSlide.held[id] = false; send(); });
+      }
+      $("sdr-agc").addEventListener("change", () => {
+        $("sdr-if-box").hidden = $("sdr-agc").checked;
+        sdrSend({ agc: $("sdr-agc").checked });
+      });
       $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));
       $("sdr-range").addEventListener("click", () => { sdrView.range = sdrx.nextRange(sdrView.range); sdrRender(null); });
       $("sdr-wf").addEventListener("click", (ev) => {

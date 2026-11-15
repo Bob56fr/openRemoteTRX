@@ -8,6 +8,8 @@
 
   const DB_MIN = -150, DB_STEP = 0.5;                 // niveau d'une case : -150 dBFS + 0,5 dB × valeur (0 à 255)
   const LIMITS = { center_hz: [1000, 2000000000], lna: [0, 8], gr: [20, 59], rate: [1, 15] };
+  const BOOLS = ["agc"];                               // AGC matériel de la FI (station 0.141.0+)
+  const LNA_MAX = 8, GR_MAX = 59, GR_MIN = 20;
   const RANGES = [30, 40, 50, 60, 80];                 // dynamique affichée (dB)
   const DEFAULT_VIEW = { range: 50, auto: true, floor: -110 };
 
@@ -79,11 +81,29 @@
     const names = Object.keys(args);
     if (!names.length) return "aucun réglage";
     for (const name of names) {
+      if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return name + " : vrai ou faux"; continue; }
       const lim = LIMITS[name], v = args[name];
       if (!lim) return "réglage inconnu : " + name;
       if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return name + " : entier de " + lim[0] + " à " + lim[1];
     }
     return "";
+  }
+
+  // Curseurs « à l'endroit » : plus à droite = plus de gain (le SDR parle en atténuation : LNA 0 et GR 20 = maximum).
+  const rfFromLna = (lna) => LNA_MAX - lna;
+  const lnaFromRf = (rf) => LNA_MAX - rf;
+  const ifFromGr = (gr) => GR_MAX - gr;
+  const grFromIf = (v) => GR_MAX - v;
+
+  function gainText(st) {
+    /* Ligne de gain : ce que le SDR applique réellement (AGC de la FI compris). */
+    if (!st || !Number.isFinite(st.lna)) return "";
+    let t = "Gain RF " + rfFromLna(st.lna) + "/" + LNA_MAX;
+    if (st.agc) t += " · FI auto" + (Number.isFinite(st.gr_now) ? " (gain FI " + ifFromGr(st.gr_now) + "/" + (GR_MAX - GR_MIN) + ")" : "");
+    else t += " · gain FI " + ifFromGr(st.gr) + "/" + (GR_MAX - GR_MIN);
+    if (Number.isFinite(st.gain_db)) t += " · gain total " + st.gain_db.toFixed(1) + " dB";
+    if (st.overload) t += " — SURCHARGE : baisser le gain RF";
+    return t;
   }
 
   const CODE_TEXTS = {
@@ -101,7 +121,6 @@
     if (!st || typeof st !== "object") return "SDR : en attente de l'état…";
     if (st.state === "running") {
       let t = "SDR " + (st.serial || "") + " : " + formatMHz(st.center, 3) + " MHz, largeur " + formatMHz(st.fs, 0) + " MHz";
-      t += ", LNA " + st.lna + ", GR " + st.gr + " dB";
       if (st.overload) t += " — SURCHARGE (baisser le gain)";
       if (st.drops || st.gaps) t += " — pertes : " + (st.drops || 0) + " / " + (st.gaps || 0);
       if (Number.isFinite(st.cpu)) t += " — CPU " + st.cpu + " %";
@@ -117,7 +136,8 @@
     return RANGES[(i + 1) % RANGES.length];
   }
 
-  const api = { DB_MIN, DB_STEP, LIMITS, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex, binFreq,
-                freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS };
+  const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
+                binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
+                lnaFromRf, ifFromGr, grFromIf, gainText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

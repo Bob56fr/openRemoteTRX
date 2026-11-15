@@ -286,13 +286,19 @@
         <div class="row">
           <label>Centre (MHz) <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
           <button id="sdr-center-set" class="chip">Appliquer</button>
-          <label>LNA <select id="sdr-lna"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
-          <label>Réduction de gain <input id="sdr-gr" type="number" min="20" max="59" step="1" size="3"></label>
           <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
           <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
         </div>
-        <p class="note">Récepteur SDR en parallèle du TRX, en réception seule. LNA 0 = gain maximal ; une surcharge se
-          corrige en montant le LNA ou la réduction de gain. Le SDR n'agit jamais sur le poste.</p>
+        <div class="row">
+          <label class="grow" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser.">Gain RF
+            <input id="sdr-rf" type="range" min="0" max="8" step="1"> <span id="sdr-rf-val" class="sdr-val"></span></label>
+          <label title="AGC de la FI : le SDR règle lui-même le gain FI"><input id="sdr-agc" type="checkbox"> FI auto</label>
+          <label id="sdr-if-box" class="grow" title="Gain de la FI, réglé à la main quand « FI auto » est coupé">Gain FI
+            <input id="sdr-if" type="range" min="0" max="39" step="1"> <span id="sdr-if-val" class="sdr-val"></span></label>
+        </div>
+        <p id="sdr-gain" class="note"></p>
+        <p class="note">Récepteur SDR en parallèle du TRX, en réception seule. Les curseurs s'appliquent pendant qu'on les
+          fait glisser ; en cas de SURCHARGE, baisser le gain RF. Le SDR n'agit jamais sur le poste.</p>
       </div>
     </details>
 

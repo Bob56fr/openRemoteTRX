@@ -344,3 +344,32 @@ def test_an_overload_burst_does_not_flood_the_bus(tmp_path: Path) -> None:
     svc, bus = asyncio.run(scenario())
     states = [m for m in bus.sent if m["kind"] == "sdr_state"]
     assert svc.state["overloads"] == 200 and len(states) <= 6          # au plus ~1 par seconde, pas 400
+
+
+def test_if_agc_setting_reaches_the_core_and_real_gain_is_reported(tmp_path: Path) -> None:
+    base = Settings(7_100_000, 2, 50, 8)
+    assert base.agc is True and clean_settings({"agc": False}, base).agc is False
+    with pytest.raises(SetRefused):
+        clean_settings({"agc": 1}, base)
+    assert core_args(cfgmod.Sdr(serial="170502E910"), base)[-2:] == ["--agc", "1"]
+
+    async def scenario():
+        svc, bus, _ = _service(tmp_path)
+        task = asyncio.ensure_future(svc.run())
+        for _ in range(100):
+            if svc.state.get("gr_now") is not None:
+                break
+            await asyncio.sleep(0.05)
+        auto = dict(svc.snapshot())
+        res = await svc.on_call({"action": "set", "args": {"agc": False, "gr": 40}})
+        for _ in range(100):
+            if svc.state.get("gr_now") == 40:
+                break
+            await asyncio.sleep(0.05)
+        manual = dict(svc.snapshot())
+        svc.stop()
+        await asyncio.wait_for(task, 10)
+        return auto, res, manual
+    auto, res, manual = asyncio.run(scenario())
+    assert auto["agc"] is True and auto["gr_now"] == 38 and auto["gain_db"] == 61.5
+    assert res["agc"] is False and manual["gr_now"] == 40          # le faux cœur applique la réduction choisie

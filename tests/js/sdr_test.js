@@ -48,6 +48,17 @@ test("saisie de fréquence et limites des réglages (mêmes que la station)", ()
   assert.match(sdr.checkSettings({}), /aucun/);
 });
 
+test("curseurs de gain à l'endroit et ligne de gain", () => {
+  assert.equal(sdr.rfFromLna(0), 8); assert.equal(sdr.lnaFromRf(8), 0); assert.equal(sdr.lnaFromRf(sdr.rfFromLna(3)), 3);
+  assert.equal(sdr.ifFromGr(59), 0); assert.equal(sdr.grFromIf(39), 20); assert.equal(sdr.grFromIf(sdr.ifFromGr(45)), 45);
+  assert.equal(sdr.checkSettings({ agc: false }), ""); assert.match(sdr.checkSettings({ agc: 1 }), /agc/);
+  const auto = sdr.gainText({ lna: 2, gr: 50, agc: true, gr_now: 38, gain_db: 61.5 });
+  assert.match(auto, /Gain RF 6\/8/); assert.match(auto, /FI auto \(gain FI 21\/39\)/); assert.match(auto, /61\.5 dB/);
+  assert.match(sdr.gainText({ lna: 2, gr: 50, agc: false }), /gain FI 9\/39/);
+  assert.match(sdr.gainText({ lna: 0, gr: 50, agc: true, overload: 1 }), /SURCHARGE/);
+  assert.equal(sdr.gainText(null), "");
+});
+
 test("ligne d'état lisible", () => {
   assert.match(sdr.stateText(null), /attente/);
   const run = { state: "running", serial: "170502E910", center: 7100000, fs: 2000000, lna: 2, gr: 50, overload: 1, cpu: 12.5 };
