@@ -3,7 +3,8 @@
 - v1 : 2026-11-07, rédigée par l'utilisateur.
 - v2 : 2026-11-15 (étape 183), relecture commentée avec l'utilisateur : décisions marquées
   **[D 2026-11-15]**, relevé de minix-bzh (§ 2.4), découpage des lots revu (§ 15).
-- Aucun code n'est écrit à ce jour. Rien n'est commencé avant l'essai S0 (§ 15).
+- Essai S0 FAIT sur minix-bzh le 2026-11-15 (étape 184) : résultats et décisions au § 16.
+- Aucun code dans le dépôt à ce jour.
 
 ## 1. Objet et périmètre
 
@@ -468,3 +469,49 @@ partie du guide de l'opérateur sur la protection de l'entrée (§ 1).
 - SoapySDR : installé par install.sh / le paquet Windows, ou à la main comme l'API SDRplay ?
 - Délai d'inactivité et plages horaires par défaut de l'apprentissage (S6).
 - Relais de protection : matériel cible (relais USB, GPIO du Pi) (S5).
+
+## 16. Résultats de l'essai S0 (minix-bzh, 2026-11-15, étape 184)
+
+Matériel : Intel i3-N300 (8 cœurs E), 16 Go, Debian 13, API SDRplay 3.15, RSP2pro 170502E910 sur
+le port 3-5 ; projet AIS RSSI EN MARCHE pendant tout l'essai (pas besoin de l'arrêter) ; station
+openRemoteTRX en marche, capture de la carte son de l'IC-7300 active (`RUNNING`).
+Outils hors dépôt dans `~/sdr-s0/` de minix-bzh : `sdrplay_iq` (C, lié à l'API : liste les SDR,
+ouvre UN numéro de série, IQ int16 sur la sortie standard), `run_rate.sh`, `bench_dsp.py` (numpy du
+venv de la station).
+
+| Mesure | Résultat |
+| --- | --- |
+| Liste des SDR par l'API | SEUL le RSP libre est listé ; celui de l'AIS (ouvert) n'apparaît pas |
+| Ouverture par numéro de série | OK ; numéro absent = rien n'est ouvert (code 3) |
+| Cohabitation avec AIS-catcher | OK ; ses relances toutes les ~5 min 07 s sont son propre cycle (journal), sans lien avec l'essai |
+| Flux 2 / 6 / 8 MHz, sortie jetée | 0 trou d'échantillons ; aucune erreur USB du noyau |
+| CPU du service SDRplay (commun) | 10 % d'un cœur avec l'AIS seul ; + 9 % à 2 MHz, + 18 % à 6 MHz, + 24 % à 8 MHz |
+| CPU de l'outil C | ~3 % à 2 MHz |
+| xruns de l'IC-7300 | aucun ORT-3010 (seuil : 50 en 5 min) ; compteur fin NON publié par la passerelle |
+| numpy, 2 MHz, waterfall (moyenne de TOUTES les FFT) + 1 canal | 51 % d'un cœur |
+| numpy, 2 MHz, + 16 canaux | 64 % d'un cœur |
+| numpy, 8 MHz | 116 à 151 % d'un cœur : NE SUIT PAS (échantillons perdus) |
+| Opus d'une seconde piste (PyAV) | 1 à 2 % d'un cœur par client |
+
+Décisions et conséquences :
+
+- **Liste des SDR** : l'API ne voit pas un SDR déjà ouvert. L'assistant croise donc la liste de l'API
+  avec les appareils USB du fabricant (sysfs, VID 1df7) pour afficher « présent mais pris par une
+  autre application » ; le numéro de série reste lu par l'API.
+- **Accès au SDR par un petit programme C** (comme `sdrplay_iq`), processus enfant du module, lié
+  dynamiquement à l'API du fabricant, IQ par un tube : pas de SoapySDR pour le RSP (Debian ne fournit
+  pas son module SDRplay, l'API étant propriétaire), pas de structures C recopiées en Python.
+  Compilé par install.sh comme les décodeurs FreeDV (sans intervention de l'opérateur, qui n'installe
+  que l'API SDRplay) ; Windows : compilé à la fabrication du zip. SoapySDR reste prévu pour les autres
+  SDR (Debian fournit les modules RTL-SDR, Airspy…).
+- **Licence** : ce programme AGPL est lié à une bibliothèque propriétaire ; en tant que titulaire des
+  droits, RF-DIY.COM ajoute une EXCEPTION DE LIAISON explicite dans son en-tête (à décider par
+  l'utilisateur avant S1a).
+- **Cadence** : 2 MHz par défaut sur minix-bzh (et moins sur un Pi). Au-delà : waterfall calculé sur
+  une partie des FFT (1 sur 4), traitement réparti sur plusieurs processus, ou canaliseur en C
+  (liquid-dsp, MIT) ; à décider en S1a sur mesure. numpy n'utilise qu'un cœur pour une FFT.
+- **Seconde piste audio** : coût négligeable, rien à changer.
+- **xruns** : S1b publie le compteur de décrochages de la carte son du poste (état de la passerelle)
+  pour mesurer finement l'effet du SDR.
+- **Windows** : S0 à refaire sur un PC Windows avec un RSP (pas encore fait).
+
