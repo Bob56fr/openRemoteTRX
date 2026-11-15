@@ -615,9 +615,11 @@ def qr_lines(text: str, border: int = 2) -> list[str] | None:
 
 
 def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
-                 addresses: Callable[[], list[str]] | None = None, hostname: Callable[[], str] = socket.gethostname) -> None:
+                 addresses: Callable[[], list[str]] | None = None, hostname: Callable[[], str] = socket.gethostname,
+                 user: str | None = None) -> None:
     """Menu 4.1 et `--empreinte` : informations d'appairage, puis un QR code à scanner par l'application.
-    Demande l'adresse et le compte seulement s'il y a un choix. OSError si le certificat est illisible."""
+    Demande l'adresse et le compte seulement s'il y a un choix ; `user` : compte imposé (menu 4.3, compte qui vient
+    d'être créé). OSError si le certificat est illisible."""
     from .gateway.api.tls import certificate_fingerprint
     say("\n".join(pairing_lines(cfg, addresses)))
     n = cfg.network
@@ -628,7 +630,8 @@ def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[
         return
     host = _pick(hosts, "Adresse à mettre dans le QR code", ask, say, default=hosts[0])
     accounts = [c.id for c in cfg.clients]
-    user = _pick(accounts, "Compte à mettre dans le QR code", ask, say, default="") if accounts else ""
+    if user is None or user not in accounts:
+        user = _pick(accounts, "Compte à mettre dans le QR code", ask, say, default="") if accounts else ""
     lines = qr_lines(pairing_uri(hostname(), f"https://{host}:{n.gateway_port}", user, certificate_fingerprint(n.tls_cert)))
     if lines is None:
         say("  QR code indisponible (paquet « segno » absent : réinstaller la station, menu 6.3) : saisir l'empreinte ci-dessus.")
@@ -779,6 +782,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="génère un certificat TLS auto-signé pour ces noms/adresses IP et l'active (--output)")
     ap.add_argument("--empreinte", action="store_true",
                     help="affiche adresse, comptes et empreinte du certificat pour appairer l'application Android (--output, lecture seule)")
+    ap.add_argument("--compte", metavar="NOM", help="avec --empreinte : compte à mettre dans le QR code (sans question)")
     ap.add_argument("--base", type=Path, metavar="FICHIER",
                     help="reprend ce fichier comme point de départ (ex. configuration importée d'un autre PC) ; "
                          "par défaut, le fichier --output s'il existe")
@@ -797,7 +801,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.empreinte:
             cfg, _ = cfgmod.load_unchecked(args.output)
             try:                                               # sans terminal (journal, tube) : choix par défaut
-                show_pairing(cfg, ask=input if sys.stdin.isatty() else (lambda _prompt: ""))
+                show_pairing(cfg, ask=input if sys.stdin.isatty() else (lambda _prompt: ""), user=args.compte)
             except (OSError, ValueError) as exc:
                 print(f"Certificat illisible ({cfg.network.tls_cert}) : {exc}", file=sys.stderr)
                 return 1

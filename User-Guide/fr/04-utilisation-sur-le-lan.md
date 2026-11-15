@@ -27,11 +27,25 @@ propose qu'en HTTPS, d'où le certificat.
 > affiché est celui que la station confirme, jamais une supposition. **STOP** coupe à tout moment. Une page masquée
 > (autre onglet, écran verrouillé) arrête l'émission.
 
-## 4.3 Plusieurs utilisateurs
+## 4.3 Plusieurs appareils, plusieurs utilisateurs
 
-Chaque personne a **son compte**. Pour en ajouter un, relance l'assistant (menu 3.1) : il reprend tous tes
-réglages (réponds « oui » à « Les garder » pour les comptes existants) et te laisse ajouter des identifiants ; à la
-question du mot de passe, Entrée = un mot de passe fort est généré. Une seule personne peut émettre à la fois. Pour des auditeurs sans aucune commande, préfère les **visiteurs** (partie 9).
+Règle simple : **un compte par appareil**, nommé d'après l'appareil (`PC`, `S25`, `tablette`…), même s'ils sont à
+toi. Un même compte ouvert sur un second appareil **ferme la connexion du premier** (et coupe son émission s'il
+émettait). Avec un compte par appareil, la station sait lequel émet, et tu peux retirer un seul appareil (téléphone
+perdu) sans toucher aux autres.
+
+Tout se fait au menu **4.3 « Comptes opérateurs »** de TRX Console :
+
+- **ajouter** un compte : identifiant, mot de passe (Entrée = un mot de passe fort est généré, note-le), puis le
+  **QR code d'appairage** de ce compte pour l'application ;
+- **changer un mot de passe** (un mot de passe oublié se remplace : la station ne le connaît pas en clair) ;
+- **désactiver** un compte (téléphone perdu ou prêté), puis le réactiver ;
+- **supprimer** un compte.
+
+La station prend les changements en quelques secondes, sans redémarrer ; la connexion d'un compte désactivé,
+supprimé ou dont le mot de passe a changé est fermée aussitôt. Le dernier compte opérateur actif ne peut être ni
+désactivé ni supprimé. Une seule personne peut émettre à la fois. Pour des auditeurs sans aucune commande, préfère
+les **visiteurs** (menu 4.2, partie 9).
 
 ## 4.4 L'application Android
 

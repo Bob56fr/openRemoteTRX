@@ -414,6 +414,59 @@ def test_visitors_menu_kick_writes_a_request_for_a_connected_listener_only(tmp_p
     assert request["id"] == "club1" and abs(request["at"] - time.time()) < 5
 
 
+# --------------------------------------------------------------------------- menu 4.3 : comptes opérateurs
+
+def test_operators_menu_adds_one_account_per_device_and_offers_its_pairing(tmp_path, monkeypatch):
+    import trxstation.setup_wizard as wizard
+    path = _with_operator(tmp_path)
+    shown = []
+    monkeypatch.setattr(wizard, "show_pairing", lambda cfg, ask, say, user=None: shown.append(user))
+    con, fake, out = make(tmp_path, answers=[
+        "1", "phone", "1", "S25", "", "", "o", "o",                 # « phone » existe déjà : refusé
+        ""])
+    con.operators()
+    cfg = cfgmod.load(path)
+    s25 = next(c for c in cfg.clients if c.id == "S25")
+    assert s25.role == "operator" and s25.enabled and s25.password_hash and not s25.pseudo
+    assert shown == ["S25"]
+    text = "\n".join(out)
+    assert "UN PAR APPAREIL" in text and "déjà utilisé" in text and "Mot de passe : " in text
+    assert "sans redémarrer" in text and not any(c[:2] == ["systemctl", "restart"] for c in fake.admin_commands())
+
+
+def test_operators_menu_never_disables_nor_deletes_the_last_active_operator(tmp_path):
+    path = _with_operator(tmp_path)
+    con, _, out = make(tmp_path, answers=["3", "1", "5", "1", ""])
+    con.operators()
+    assert [(c.id, c.enabled) for c in cfgmod.load(path).clients] == [("phone", True)]
+    assert sum("dernier compte opérateur actif" in line for line in out) == 2
+
+
+def test_operators_menu_changes_password_disables_reenables_and_deletes(tmp_path):
+    from trxstation.passwords import verify_password
+    path = _with_operator(tmp_path)
+    con, _, _ = make(tmp_path, answers=["1", "PC", "", "Un autre mot de passe correct 77", "o", "n", ""])
+    con.operators()
+    con, _, _ = make(tmp_path, answers=["2", "2", "Encore un mot de passe correct 55", "o", ""])
+    con.operators()
+    pc = next(c for c in cfgmod.load(path).clients if c.id == "PC")
+    assert verify_password("Encore un mot de passe correct 55", pc.password_hash)
+    con, _, out = make(tmp_path, answers=["3", "1", "o", "o", ""])     # phone désactivé : PC reste actif
+    con.operators()
+    assert next(c for c in cfgmod.load(path).clients if c.id == "phone").enabled is False
+    con, _, out = make(tmp_path, answers=["5", "2", ""])              # PC = dernier actif : refusé
+    con.operators()
+    assert any("dernier compte opérateur actif" in line for line in out)
+    con, _, _ = make(tmp_path, answers=["3", "1", "o", "5", "1", "o", "o", ""])   # phone réactivé puis supprimé
+    con.operators()
+    assert [(c.id, c.enabled) for c in cfgmod.load(path).clients] == [("PC", True)]
+
+
+def test_operators_menu_is_in_the_access_theme():
+    from trxstation.console import menu_number
+    assert menu_number("operators") == "4.3"
+
+
 # --------------------------------------------------------------------------- menu 22 : Breizh Audio Box
 
 def test_breizh_menu_creates_the_key_shows_it_once_and_never_again(tmp_path):

@@ -46,7 +46,7 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 
 - [ ] Adresse IP réservée au PC de la station dans la box
 - [ ] Page web ouverte en https, certificat accepté, micro autorisé
-- [ ] Un compte par utilisateur, mots de passe longs
+- [ ] Un compte par appareil (menu 4.3), mots de passe longs
 - [ ] Application Android appairée par le QR code (menu 4.1), essai d'émission et STOP
 
 ## 5. Utiliser à distance

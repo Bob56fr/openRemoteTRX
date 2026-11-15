@@ -55,6 +55,7 @@ Ce guide cite les menus de TRX Console (Debian). Sous Windows :
 | 1.4 Journal | 7 - Journaux de la station |
 | 3.2 Modifier station.toml | éditer `C:\ProgramData\trx-remote\station.toml` (Bloc-notes lancé en administrateur), puis arrêter et redémarrer la station |
 | 4.1 Appairage d'un téléphone | `trx-setup --empreinte` dans un terminal (adresse, comptes, empreinte du certificat ; pas de QR code) |
+| 4.3 Comptes opérateurs | terminal lancé **en administrateur** : `trx-setup --output C:\ProgramData\trx-remote\station.toml --add-client NOM` (nouveau compte) ou `--set-password NOM` ; désactiver ou supprimer : éditer `station.toml` |
 | 6.1 Mise à jour | relancer `installer.cmd` d'une nouvelle version |
 
 Les autres menus de TRX Console (profils, visiteurs, Cluster DX…) sont propres à Debian ; sous Windows, leurs

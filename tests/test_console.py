@@ -225,7 +225,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     assert len(methods) == len(set(methods))
     assert len(set(module.OLD_NUMBERS.values())) == len(module.OLD_NUMBERS)
     # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
-    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif"}
+    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "6.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:

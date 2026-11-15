@@ -47,7 +47,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **Application Android** | l'application openRemoteTRX : la même chose que la page, plus l'émission écran éteint, le casque, la voiture |
 | **Android Auto** | l'affichage de l'application sur l'écran de la voiture : écoute, mémoires, PTT, sans graphique |
 | **Mode conduite** | l'écran réduit de l'application en voiture : pas de PTT tactile |
-| **Compte opérateur** | identifiant + mot de passe qui permettent de commander le poste et d'émettre |
+| **Compte opérateur** | identifiant + mot de passe qui permettent de commander le poste et d'émettre ; **un par appareil** (`PC`, `S25`…), gérés au menu 4.3 |
 | **Visiteur** | compte en réception seule : écoute et voit l'écran, aucune commande |
 | **Appairage** | l'ajout de la station dans l'application, par le **QR code** du menu 4.1 |
 

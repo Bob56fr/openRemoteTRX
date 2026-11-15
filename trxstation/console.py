@@ -59,7 +59,7 @@ MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "journal", "clear_safe_mode")),
     ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
     ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
-    ("4", "access", ("pairing", "visitors")),
+    ("4", "access", ("pairing", "visitors", "operators")),
     ("5", "features", ("cluster", "breizh", "friends")),
     ("6", "updates", ("update", "rollback", "install_zip")),
 )
@@ -1107,23 +1107,158 @@ class Console:
         cfg.clients.remove(account)
         return True
 
-    def _operator_pseudo(self, cfg) -> bool:
+    # ------------------------------------------------------------------ comptes opérateurs (menu 4.3)
+
+    def operators(self) -> None:
+        """Comptes opérateurs, UN PAR APPAREIL (PC, téléphone, tablette) : un même compte ouvert sur un second appareil
+        ferme la connexion du premier (et coupe son émission). Ajout, mot de passe, activation, pseudo, suppression ;
+        jamais sans un opérateur actif. Même chemin validé que le menu 4.2 : la passerelle relit sans redémarrer et
+        ferme aussitôt la connexion d'un compte désactivé, supprimé ou dont le mot de passe a changé."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say(self.t("operators.1"))
+            return
+        while True:
+            try:
+                original = self.config.read_bytes()
+                cfg, _ = cfgmod.load_unchecked(self.config)
+            except (OSError, cfgmod.ConfigError) as exc:
+                self.say(self.t("operators.2", config=self.config, exc=exc))
+                return
+            self.say(self._operators_summary(cfg))
+            choice = self.ask(self.t("operators.3")).strip()
+            if not choice:
+                return
+            if choice == "6":
+                self.pairing()
+                continue
+            action = {"1": self._operator_create, "2": self._operator_password, "3": self._operator_toggle,
+                      "4": self._operator_pseudo, "5": self._operator_delete}.get(choice)
+            if action is None:
+                self.say(self.t("operators.4"))
+                continue
+            login = action(cfg)
+            if not login:
+                continue
+            saved = self._save_accounts(original, cfg)
+            if saved and choice == "1" and self.yes(self.t("operators.5", id=login), True):
+                self._pair_account(login)
+
+    def _operators_summary(self, cfg) -> str:
+        operators = [c for c in cfg.clients if c.role == "operator"]
+        connected = {c.get("id") for c in self._connected() if c.get("role") != "listener"}
+        lines = [self.t("operators_summary.1"), self.t("operators_summary.2")]
+        for c in operators:
+            lines.append("  - " + self._account_label(c) + (self.t("operators_summary.3") if c.id in connected else ""))
+        if not operators:
+            lines.append(self.t("operators_summary.4"))
+        return "\n".join(lines)
+
+    def _active_operators(self, cfg) -> list:
+        from datetime import date
+        today = date.today()
+        return [c for c in cfg.clients if c.role == "operator" and c.enabled is True and not c.expired(today)]
+
+    def _warn_if_connected(self, login: str) -> None:
+        if any(c.get("id") == login for c in self._connected()):
+            self.say(self.t("operators.connected", id=login))
+
+    def _operator_create(self, cfg) -> str:
+        from .config import ClientAuth
+        from .passwords import hash_password
+        self.say(self.t("operator_create.1"))
+        login = self.ask(self.t("operator_create.2")).strip()
+        if not login:
+            return ""
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id.casefold() == login.casefold() for c in cfg.clients):
+            self.say(self.t("operator_create.3"))
+            return ""
+        if any(c.pseudo and c.pseudo.casefold() == login.casefold() for c in cfg.clients):
+            self.say(self.t("operator_create.4"))
+            return ""
+        pseudo = self._ask_pseudo(cfg)
+        password = None if pseudo is None else self._ask_new_password(login)
+        if password is None:
+            return ""
+        if pseudo and pseudo.casefold() == login.casefold():
+            self.say(self.t("visitor_create.3"))
+            return ""
+        cfg.clients.append(ClientAuth(id=login, password_hash=hash_password(password), pseudo=pseudo))
+        return login
+
+    def _operator_password(self, cfg) -> str:
+        from .passwords import hash_password
+        account = self._pick_account(cfg, "operator", self.t("verb.edit"))
+        if account is None:
+            return ""
+        password = self._ask_new_password(account.id)
+        if password is None:
+            return ""
+        self._warn_if_connected(account.id)
+        account.password_hash, account.token = hash_password(password), ""
+        return account.id
+
+    def _operator_toggle(self, cfg) -> str:
+        account = self._pick_account(cfg, "operator", self.t("verb.toggle"))
+        if account is None:
+            return ""
+        if account.enabled is True:
+            if [c.id for c in self._active_operators(cfg)] == [account.id]:
+                self.say(self.t("operators.last"))
+                return ""
+            if not self.yes(self.t("operator_toggle.1", id=account.id), False):
+                return ""
+            self._warn_if_connected(account.id)
+            account.enabled = False
+        else:
+            account.enabled = True
+        return account.id
+
+    def _operator_pseudo(self, cfg) -> str:
         account = self._pick_account(cfg, "operator", self.t("verb.name"))
         if account is None:
-            return False
+            return ""
         pseudo = self._ask_pseudo(cfg, account.pseudo)
         if pseudo is None or pseudo == account.pseudo:
-            return False
+            return ""
         account.pseudo = pseudo
-        return True
+        return account.id
 
-    def _save_accounts(self, original: bytes, cfg, live: bool = True) -> None:
-        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 3.2 ; `live` : relu sans redémarrer."""
+    def _operator_delete(self, cfg) -> str:
+        account = self._pick_account(cfg, "operator", self.t("verb.delete"))
+        if account is None:
+            return ""
+        if [c.id for c in self._active_operators(cfg)] == [account.id] or \
+                sum(c.role == "operator" for c in cfg.clients) == 1:
+            self.say(self.t("operators.last"))
+            return ""
+        if not self.yes(self.t("operator_delete.1", id=account.id), False):
+            return ""
+        self._warn_if_connected(account.id)
+        cfg.clients.remove(account)
+        return account.id
+
+    def _pair_account(self, login: str) -> None:
+        """QR code d'appairage du compte qui vient d'être créé (sans mot de passe)."""
+        from . import config as cfgmod
+        from .setup_wizard import show_pairing
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            show_pairing(cfg, ask=self.ask, say=self.say, user=login)
+        except PermissionError:                            # certificat réservé à la station : relu avec les droits d'administration
+            self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--empreinte",
+                                        "--compte", login), admin=True)
+        except (OSError, ValueError, cfgmod.ConfigError) as exc:
+            self.say(self.t("pairing.2", exc=exc))
+
+    def _save_accounts(self, original: bytes, cfg, live: bool = True) -> bool:
+        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 3.2 ; `live` : relu sans redémarrer.
+        Vrai si enregistré."""
         from . import config as cfgmod
         edited = cfgmod.render_toml(cfg).encode("utf-8")
         if edited == original:
             self.say(self.t("save_accounts.1"))
-            return
+            return False
         work = Path(tempfile.mkdtemp(prefix="trx-config-"))
         try:
             draft = work / "station.toml"
@@ -1133,9 +1268,9 @@ class Console:
                 cfgmod.load(draft)
             except cfgmod.ConfigError as exc:
                 self.say(self.t("save_accounts.2") + "\n  - ".join(exc.problems))
-                return
+                return False
             self.say(self.t("save_accounts.3"))
-            self._save_config(original, edited, draft, live=live)
+            return self._save_config(original, edited, draft, live=live)
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
