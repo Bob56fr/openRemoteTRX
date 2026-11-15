@@ -100,6 +100,9 @@
     voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
     no_back: "Pas de fréquence de retour mémorisée.",
     friends_unavailable: "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
+    sdr_unavailable: "SDR indisponible sur cette station (module « sdr » arrêté ou désactivé).",
+    sdr_invalid: "Réglage du SDR refusé (valeur hors limites).",
+    sdr_error: "Le module SDR n'a pas pu traiter la demande.",
     friends_error: "La présence de groupe n'a pas pu traiter la demande.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
@@ -1458,6 +1461,7 @@
         this.breizhEvents = [];                                          // journal de Breizh : relu sur la station à l'ouverture
         this._netStart(msg);
         this._friendsStart(msg);
+        this._sdrStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
@@ -1515,6 +1519,15 @@
         if (data.kind === "freedv_activity") {                         // activité FreeDV par fréquence (toutes les 10 s)
           this.freedvActivity = data;
           if (this.ui.freedvActivity) this.ui.freedvActivity(data);
+          return;
+        }
+        if (data.kind === "sdr_line") {                                 // ligne du waterfall du SDR (rubrique ouverte)
+          if (this.ui.sdrLine) this.ui.sdrLine(data);
+          return;
+        }
+        if (data.kind === "sdr_state") {                                // état du module SDR (opérateurs)
+          this.sdrState = data;
+          if (this.ui.sdrState) this.ui.sdrState(data);
           return;
         }
         if (data.kind === "friends_changed") {                         // présence de groupe : la vue a changé, on la relit
@@ -2324,6 +2337,38 @@
       const res = await this.send("breizh_log");
       if (res && res.ok && Array.isArray(res.entries)) this.breizhEvents = res.entries.slice(-BREIZH_EVENTS_MAX);
       return this.breizhEvents || [];
+    }
+
+    _sdrStart(hello) {
+      /* Module SDR (fonction « sdr », docs/protocole.md § 18) : opérateurs seulement ; la rubrique se montre si annoncé. */
+      this.sdrOffered = !!(hello && Array.isArray(hello.features) && hello.features.includes("sdr")
+        && !(hello.role === "listener"));
+      this.sdrState = null;
+      this.sdrWatching = false;
+      if (this.ui.sdrState) this.ui.sdrState(null);
+    }
+
+    async sdr(action, args) {
+      /* Commande « sdr » : watch (passerelle), state et set (module, n'agit JAMAIS sur le poste). */
+      return this.send("sdr", { action: action, args: args || {} });
+    }
+
+    async sdrWatch(on) {
+      if (!this.sdrOffered || !this.connected || this.sdrWatching === !!on) return { ok: true };
+      this.sdrWatching = !!on;
+      const res = await this.sdr("watch", { on: !!on });
+      if (!res.ok) this.sdrWatching = false;
+      return res;
+    }
+
+    async sdrSet(args) {
+      /* Réglages du SDR, vérifiés ici avec les mêmes limites que la station (sdr.js) avant l'envoi. */
+      const sx = typeof root !== "undefined" && root.TrxSdr ? root.TrxSdr : null;
+      const problem = sx ? sx.checkSettings(args) : "";
+      if (problem) return { ok: false, reason: "sdr_invalid", detail: problem };
+      const res = await this.sdr("set", args);
+      if (res.ok && res.data) { this.sdrState = Object.assign({ kind: "sdr_state" }, res.data); if (this.ui.sdrState) this.ui.sdrState(this.sdrState); }
+      return res;
     }
 
     async friends(action, args) {

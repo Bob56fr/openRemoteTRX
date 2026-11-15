@@ -31,7 +31,7 @@ BACKPORTS_SOURCES=/etc/apt/sources.list.d/trx-remote-backports.sources   # Hamli
 DESKTOP_FILE=/usr/share/applications/trx-console.desktop
 ICON_FILE=/usr/share/icons/hicolor/scalable/apps/trx-console.svg
 GNOME_EXT_DIR=/usr/share/gnome-shell/extensions/trx-distant@rf-diy.com   # indicateur de la barre du haut (lecture seule)
-COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif trx-journal-android trx-netreport)
+COMMANDS=(trx-console trx-setup trx-monitor trx-hwtest trx-qualif trx-journal-android trx-netreport trx-sdr)
 APT_PACKAGES=(python3 python3-venv python3-pip python3-dev build-essential pkg-config libffi-dev libssl-dev
               libhamlib-utils alsa-utils libportaudio2 ca-certificates)
 MIN_FREE_MB=2000
@@ -438,6 +438,18 @@ rm -f "$PIP_LOG"
 "$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \
   || fail "modules Python incomplets après installation."
 ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography, pyserial)"
+# Module SDR (docs/sdr-cahier-des-charges.md) : sdr-core compilé SEULEMENT si l'API du fabricant (propriétaire, installée
+# à la main par l'utilisateur) est présente ; liquid-dsp vient de Debian. Échec : avertissement, la station marche sans SDR.
+SDR_SRC=$RELEASE/app/trxstation/sdr/core/sdr_core.c
+if [[ -f $SDR_SRC ]] && [[ -f /usr/local/include/sdrplay_api.h || -f /usr/include/sdrplay_api.h ]]; then
+  if apt-get install -y -q --no-install-recommends libliquid-dev >>"$LOG" 2>&1 \
+     && gcc -O2 -o "$REL_VENV/bin/sdr-core" "$SDR_SRC" -I/usr/local/include -L/usr/local/lib \
+          -lliquid -lsdrplay_api -lm -lpthread -Wl,-rpath,/usr/local/lib >>"$LOG" 2>&1; then
+    ok "sdr-core compilé (module SDR : API SDRplay trouvée) ; « trx-sdr --list » donne le numéro de série du SDR"
+  else
+    warn "sdr-core non compilé (détails dans $LOG) : le module SDR restera indisponible."
+  fi
+fi
 if [[ -n $CURRENT_VERSION && $CURRENT_VERSION != "$TRX_VERSION" ]]; then backup_config_for "$TRX_VERSION"; fi
 activate_release "$TRX_VERSION" || fail "activation de la version $TRX_VERSION impossible."
 BUILDING=0

@@ -16,7 +16,9 @@ Dans `station.toml` :
 Puis redémarrer la station. Liste vide (par défaut) : ni bus, ni module, la
 station se comporte exactement comme avant.
 
-Modules fournis : `freedv_activity` (stations FreeDV actives par fréquence, d'après FreeDV Reporter lu en observateur ;
+Modules fournis : `sdr` (récepteur SDR en réception seule, waterfall pour les opérateurs ; cœur natif sdr-core
+compilé par install.sh quand l'API du fabricant est installée ; `[sdr]`, `docs/sdr-cahier-des-charges.md`),
+`freedv_activity` (stations FreeDV actives par fréquence, d'après FreeDV Reporter lu en observateur ;
 locator de la station dans `[freedv] locator` ; `docs/protocole.md` § 17), `presence` (présence de groupe),
 `cluster` (Cluster DX, voir `docs/cluster-dx.md` ; se règle
 avec TRX Console, menu 5.1, qui l'ajoute ici) et `demo`, un module factice qui se met

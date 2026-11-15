@@ -12,6 +12,13 @@ Toutes sont **désactivées** au départ. Active-les une fois la station validé
 | **Présence de groupe** | voir quels amis équipés d'openRemoteTRX sont en QSO, et les rejoindre | menu 5.3 |
 | **Breizh Audio Box** | traitement de la voix sur un autre PC du réseau local | menu 5.2 |
 | **Rediffusion** d'un enregistrement | renvoyer en émission un enregistrement de la réception | accordée à l'assistant ; en général **interdite** au service amateur |
+| **Récepteur SDR** (SDRplay) | second waterfall, d'un SDR en réception seule, à côté du TRX ; « QSY du TRX » vers une fréquence lue sur le SDR | installer d'abord l'API SDRplay du fabricant, puis la station ; `trx-sdr --list` donne le numéro de série ; `[sdr]` et « sdr » dans `[modules] run` (menu 3.2) |
+
+> **Récepteur SDR : protège son entrée.** Le SDR ne supporte pas la puissance de ton TRX. Antenne séparée, ou
+> commutateur et séquenceur qui mettent l'entrée du SDR à la masse avant toute émission : c'est à toi de le prévoir,
+> selon ton matériel. La station ne peut pas le faire à ta place (une émission au micro du poste n'est vue qu'après
+> coup). Le SDR se désigne par son **numéro de série** : sur une machine qui en a plusieurs, ne mets jamais celui
+> d'un SDR utilisé par une autre application. Branche-le sur son propre port USB, jamais sur le hub du poste.
 
 > **Sécurité.** Retransmettre à des tiers ce que la station reçoit (visiteurs) engage ta responsabilité, surtout
 > hors des bandes radioamateur ; par défaut, les visiteurs n'entendent que du silence hors de tes bandes.

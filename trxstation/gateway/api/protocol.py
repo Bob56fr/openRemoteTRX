@@ -74,7 +74,11 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "friends",                       # action (liste FRIENDS_ACTIONS) et args (objet, validé par le module)
             # FreeDV RADE V1 en réception (cahier FreeDV, lot F1) : OPÉRATEURS ; refusé pendant toute émission ;
             # on = voix décodée vers tous les clients, visiteurs compris ; n'agit JAMAIS sur le poste
-            "freedv_set")
+            "freedv_set",
+            # module SDR (docs/sdr-cahier-des-charges.md) : OPÉRATEURS ; « watch » = afficher la rubrique (lignes de
+            # waterfall envoyées à CE client), les autres actions sont relayées au module « sdr », qui n'agit JAMAIS
+            # sur le poste (un QSY du TRX vers une fréquence du SDR = set_frequency du client)
+            "sdr")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -88,10 +92,13 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "breizh",                    # Breizh Audio Box dans la chaîne d'émission (0.100.0+, [breizh] enabled)
                      "netprobe",                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
                      "friends",                   # présence de groupe « Amis » (0.118.0+, module presence)
-                     "freedv")                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
+                     "freedv",                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
+                     "sdr")                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
+SDR_ACTIONS = ("watch", "state", "set")
+MAX_SDR_ARGS_BYTES = 300
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
 
@@ -327,6 +334,16 @@ def parse_command(raw: str | bytes) -> Command:
         args = data.get("args", {})
         if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_FRIENDS_ARGS_BYTES:
             raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_FRIENDS_ARGS_BYTES} octets au plus")
+        params["action"], params["args"] = data["action"], args
+    elif name == "sdr":
+        unknown = set(data) - {"cmd", "id", "action", "args"}
+        if unknown or data.get("action") not in SDR_ACTIONS:
+            raise ProtocolError("invalid_params", f"action : une de {', '.join(SDR_ACTIONS)}")
+        args = data.get("args", {})
+        if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_SDR_ARGS_BYTES:
+            raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_SDR_ARGS_BYTES} octets au plus")
+        if data["action"] == "watch" and not isinstance(args.get("on"), bool):
+            raise ProtocolError("invalid_params", "watch : args.on vaut true ou false")
         params["action"], params["args"] = data["action"], args
     elif name == "layout_save":
         profile = data.get("profile")

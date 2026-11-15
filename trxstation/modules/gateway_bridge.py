@@ -192,9 +192,12 @@ class ModuleBridge:
             else:
                 self._retained[key].append(payload)
         only_hf = message.get("scope") == "hf_view"
-        operators = message.get("scope") == "operators"
+        only_sdr = message.get("scope") == "sdr_view"              # lignes du SDR : opérateurs qui l'affichent
+        operators = message.get("scope") in ("operators", "sdr_view")
         for session in list(self.clients()):
             if only_hf and not getattr(session, "hf_view", False):
+                continue
+            if only_sdr and not getattr(session, "sdr_view", False):
                 continue
             if operators and getattr(session, "listener", True):     # inconnu = visiteur : rien
                 continue
@@ -203,13 +206,27 @@ class ModuleBridge:
             except Exception:
                 log.exception("message du module %s non transmis", module)
 
+    def on_sdr_view(self, session, opened: bool) -> None:
+        """Un opérateur ouvre la rubrique SDR : lui renvoyer l'état retenu du module « sdr »."""
+        if not opened or getattr(session, "listener", True):
+            return
+        for key, payloads in list(self._retained.items()):
+            if not key.startswith("sdr/"):
+                continue
+            for payload in payloads:
+                try:
+                    session.send(payload)
+                except Exception:
+                    log.exception("rejeu de l'état du SDR impossible")
+                    return
+
     def on_hf_view(self, session, opened: bool) -> None:
         """Un client ouvre la vue HF : lui renvoyer les messages retenus (instantané puis changements)."""
         if not opened:
             return
         for payloads in list(self._retained.values()):
             for payload in payloads:
-                if payload["data"].get("scope") == "operators" and getattr(session, "listener", True):
+                if payload["data"].get("scope") in ("operators", "sdr_view") and getattr(session, "listener", True):
                     continue
                 try:
                     session.send(payload)

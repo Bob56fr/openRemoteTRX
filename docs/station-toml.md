@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.139.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.140.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -204,6 +204,27 @@ Se modifie : Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « Free
 | `ka9q_path` | expert | `"freedv-ka9q"` | Programme qui décode la voix et l'indicatif (freedv-ka9q, de freedv-integrations). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows). Debian et Raspberry Pi : `sudo bash compiler-freedv.sh` (dossier du paquet) les compile et les met dans le PATH ; rien à régler ensuite. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Introuvable : le mode FreeDV est refusé avec le nom du programme manquant. Exemple : `freedv-ka9q` (défaut, Debian et Windows), ou le chemin complet d'un programme compilé à part. (depuis 0.122.0) |
 | `radae_rx_path` | expert | `"radae_rx"` | Programme qui donne la synchro, le SNR et le décalage de fréquence (radae_rx, de rade_c). Un nom seul est cherché dans le PATH, puis parmi les décodeurs livrés avec la station (paquet Windows), comme freedv-ka9q. Valeurs : Chemin d'un fichier, ou nom seul ; jamais vide. Exemple : `radae_rx` (depuis 0.122.0) |
 | `locator` | courant | `""` | Locator Maidenhead de la station. Sert à la liste « Activité FreeDV » (module `freedv_activity` de `[modules] run`) : distance de chaque station et note de chance de réception. Il n'est envoyé nulle part : FreeDV Reporter est lu en simple observateur. Valeurs : 4 ou 6 caractères (JN18 ou JN18du), ou vide (liste sans distance, note moins juste). Exemple : `JN18du` (depuis 0.125.0) |
+
+## Récepteur SDR [sdr]
+
+Un récepteur SDR en parallèle du TRX, en réception seule : son waterfall s'affiche dans la page (rubrique « SDR »). Le SDR est désigné par son numéro de série. Il faut installer à la main l'API du fabricant AVANT la station, qui compile alors le programme sdr-core, et ajouter « sdr » à `[modules] run`.
+
+Se modifie : Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite depuis la page. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : la rubrique « SDR » (waterfall d'un récepteur SDR en parallèle du TRX) est proposée aux opérateurs. Il faut aussi « sdr » dans `[modules] run` et le numéro de série du SDR dans `serial`. **Sécurité** : Réception seulement : le module SDR n'a aucun droit sur le poste ; « QSY du TRX » passe par la commande habituelle de fréquence, refusée pendant une émission. Une panne du SDR n'arrête jamais la station. La protection de l'entrée du SDR contre la puissance émise par le TRX (antenne séparée, séquenceur) est à la charge de l'opérateur. (depuis 0.140.0) |
+| `driver` | expert | `"sdrplay"` | API du fabricant du SDR. Seule l'API SDRplay est prise en charge aujourd'hui ; elle s'installe à la main (logiciel du fabricant) AVANT l'installation de la station, qui compile alors le programme sdr-core. Valeurs : `sdrplay`. (depuis 0.140.0) |
+| `serial` | courant | `""` | Numéro de série du SDR de cette station. Le SDR est toujours désigné par ce numéro, jamais par son port USB : sur une machine qui a plusieurs SDR, chacun sert la bonne application. `trx-sdr --list` montre les SDR libres et ceux déjà pris par une autre application. Valeurs : Lettres et chiffres, 4 à 32 ; obligatoire quand `enabled = true`. Numéro absent au démarrage : le module attend (nouvel essai toutes les 30 s) et n'ouvre jamais un autre SDR. **Sécurité** : Ne jamais mettre le numéro d'un SDR utilisé par une autre application de la machine. Exemple : `1234567ABC` (depuis 0.140.0) |
+| `core_path` | expert | `""` | Programme sdr-core (cœur natif du module SDR). Vide : celui que l'installation a compilé (à côté de la station), sinon le PATH. Valeurs : Chemin d'un fichier, ou vide. (depuis 0.140.0) |
+| `sample_rate_hz` | courant | `2000000` | Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul. Valeurs : 2000000, 6000000 ou 8000000 (Hz). Exemple : `2000000` (depuis 0.140.0) |
+| `center_hz` | courant | `7100000` | Fréquence centrale du SDR au premier démarrage. La dernière choisie depuis la page est ensuite reprise (rangée sur la station, pas dans ce fichier). Valeurs : 1 000 à 2 000 000 000 Hz. Exemple : `7100000` (depuis 0.140.0) |
+| `antenna` | courant | `"A"` | Entrée d'antenne du SDR (RSP2 : A ou B). Valeurs : A ou B. (depuis 0.140.0) |
+| `lna_state` | expert | `2` | État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page. Valeurs : 0 à 8. (depuis 0.140.0) |
+| `gain_reduction_db` | expert | `50` | Réduction de gain de la FI au premier démarrage. Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée. Valeurs : 20 à 59 dB. (depuis 0.140.0) |
+| `fft_size` | expert | `4096` | Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin. Valeurs : Puissance de 2 de 512 à 16 384. (depuis 0.140.0) |
+| `bins` | expert | `1024` | Nombre de cases d'une ligne envoyée aux clients (chaque case garde le maximum des points qu'elle couvre). Moins de cases = moins de données mobiles. Valeurs : Puissance de 2 de 128 à fft_size. (depuis 0.140.0) |
+| `lines_per_s` | expert | `8` | Lignes de waterfall par seconde au premier démarrage ; se règle ensuite depuis la page. Valeurs : 1 à 15. (depuis 0.140.0) |
 
 ## Spectre HF du poste [spectrum]
 

@@ -152,6 +152,8 @@ class PeerManager:
         self.max_peers, self.peer_timeout_s = max_peers, peer_timeout_s
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
         self.friends_call = None                # présence de groupe : (données) -> résultat du module (ModuleBridge.call)
+        self.sdr_call = None                    # module SDR : (données) -> résultat du module (ModuleBridge.call)
+        self.on_sdr_view = None                 # (session, ouverte) -> None : état du SDR rejoué (ModuleBridge.on_sdr_view)
         self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
         self.peers: dict[str, _Peer] = {}
         self._tasks: set[asyncio.Task] = set()
@@ -205,6 +207,8 @@ class PeerManager:
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             if role != LISTENER:                        # présence de groupe : jamais pour un visiteur
                 session.friends_call = self.friends_call
+                session.sdr_call = self.sdr_call
+                session.on_sdr_view = self.on_sdr_view
                 session.on_operator_activity = self.on_operator_activity
             peer.session = session
 

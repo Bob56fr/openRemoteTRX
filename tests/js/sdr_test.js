@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
+// Tests du module SDR de la page (sdr.js) : `node tests/js/sdr_test.js`
+"use strict";
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const sdr = require(path.join(__dirname, "../../trxstation/gateway/api/static/sdr.js"));
+
+const tests = [];
+function test(name, fn) { tests.push([name, fn]); }
+
+test("ligne base64 -> cases, niveaux comme la station (frames.py)", () => {
+  const v = sdr.decodeLine(Buffer.from([0, 128, 255]).toString("base64"));
+  assert.deepEqual(Array.from(v), [0, 128, 255]);
+  assert.equal(sdr.levelDb(0), -150); assert.equal(sdr.levelDb(255), -22.5);
+  assert.equal(sdr.decodeLine(""), null); assert.equal(sdr.decodeLine(null), null);
+});
+
+test("fréquences : case, abscisse, graduations", () => {
+  assert.equal(sdr.binFreq(0, 4, 7100000, 2000000), 6350000);
+  assert.equal(sdr.freqAt(500, 1000, 14100000, 2000000), 14100000);
+  assert.equal(sdr.freqAt(0, 1000, 14100000, 2000000), 13100000);
+  assert.equal(sdr.freqAt(2000, 1000, 14100000, 2000000), 15100000);       // borné au bord
+  assert.equal(sdr.freqAt(10, 0, 1, 1), null);
+  const t = sdr.ticks(7100000, 2000000, 6);
+  assert.deepEqual(t, [6500000, 7000000, 7500000, 8000000]);             // pas de 500 kHz sur 2 MHz
+});
+
+test("couleurs : plancher noir, plancher + dynamique blanc", () => {
+  const floorV = (-110 - sdr.DB_MIN) / sdr.DB_STEP;
+  assert.equal(sdr.colorIndex(floorV, -110, 50), 0);
+  assert.equal(sdr.colorIndex(floorV + 100, -110, 50), 255);
+  assert.equal(sdr.colorIndex(floorV + 50, -110, 50), 128);
+  const values = new Uint8Array(100).fill(80); values[3] = 250;
+  assert.equal(sdr.floorDb(values), sdr.levelDb(80));
+  assert.equal(sdr.floorDb([]), null);
+});
+
+test("saisie de fréquence et limites des réglages (mêmes que la station)", () => {
+  assert.equal(sdr.parseMHz("14.1"), 14100000);
+  assert.equal(sdr.parseMHz("7,074"), 7074000);
+  assert.equal(sdr.parseMHz("14100"), 14100000);                         // en kHz
+  assert.equal(sdr.parseMHz("abc"), null); assert.equal(sdr.parseMHz("0"), null);
+  assert.equal(sdr.checkSettings({ center_hz: 14100000, lna: 3, gr: 45, rate: 8 }), "");
+  assert.match(sdr.checkSettings({ gr: 60 }), /gr/);
+  assert.match(sdr.checkSettings({ rate: 16 }), /rate/);
+  assert.match(sdr.checkSettings({ ptt: 1 }), /inconnu/);
+  assert.match(sdr.checkSettings({}), /aucun/);
+});
+
+test("ligne d'état lisible", () => {
+  assert.match(sdr.stateText(null), /attente/);
+  const run = { state: "running", serial: "170502E910", center: 7100000, fs: 2000000, lna: 2, gr: 50, overload: 1, cpu: 12.5 };
+  const t = sdr.stateText(run);
+  assert.match(t, /170502E910/); assert.match(t, /7\.100 MHz/); assert.match(t, /SURCHARGE/); assert.match(t, /CPU 12\.5/);
+  assert.match(sdr.stateText({ state: "error", code: "busy" }), /autre application/);
+  assert.match(sdr.stateText({ state: "error", code: "zz", detail: "x" }), /x/);
+  assert.equal(sdr.nextRange(80), 30);
+});
+
+let failed = 0;
+for (const [name, fn] of tests) {
+  try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }
+}
+console.log((tests.length - failed) + "/" + tests.length + " tests du module SDR (page) réussis");
+process.exit(failed ? 1 : 0);

@@ -4987,6 +4987,137 @@ ORT-5902:
 # 6000–6999 : Modules
 # ====================================================================================================
 
+ORT-6001:
+  gravite: erreur
+  titre: SDR introuvable par son numéro de série
+  message: 'Le SDR {serial} est introuvable ou déjà pris ({detail}).'
+  causes:
+  - SDR débranché, ou branché sur un hub sans alimentation suffisante
+  - SDR déjà ouvert par une autre application (un autre projet de la machine)
+  - Numéro de série faux dans [sdr] serial
+  preconisation: Lancer « trx-sdr --list » pour voir les SDR libres et leurs numéros ; corriger [sdr] serial ou
+    rebrancher le SDR. La station n'ouvre jamais un autre SDR à la place.
+  action_auto: nouvel_essai
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  codes_machine:
+  - absent
+  - busy
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6001/
+  depuis_version: 0.140.0
+  en:
+    titre: SDR not found by its serial number
+    message: 'SDR {serial} not found or already in use ({detail}).'
+    causes:
+    - SDR unplugged, or plugged into an under-powered hub
+    - SDR already opened by another application (another project on the machine)
+    - Wrong serial number in [sdr] serial
+    preconisation: Run "trx-sdr --list" to see free SDRs and their serial numbers; fix [sdr] serial or plug the SDR
+      back in. The station never opens another SDR instead.
+
+ORT-6002:
+  gravite: erreur
+  titre: Service du fabricant du SDR injoignable
+  message: 'Service du SDR injoignable : {detail}.'
+  causes:
+  - API du fabricant non installée (SDRplay API, installée à la main)
+  - Service du fabricant arrêté (sdrplay.service)
+  preconisation: Installer l'API du fabricant, puis vérifier son service (« systemctl status sdrplay »). La station
+    ne redémarre JAMAIS ce service, qui peut servir à d'autres applications de la machine.
+  action_auto: nouvel_essai
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  codes_machine:
+  - service
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6002/
+  depuis_version: 0.140.0
+  en:
+    titre: SDR vendor service unreachable
+    message: 'SDR service unreachable: {detail}.'
+    causes:
+    - Vendor API not installed (SDRplay API, installed by hand)
+    - Vendor service stopped (sdrplay.service)
+    preconisation: Install the vendor API, then check its service ("systemctl status sdrplay"). The station NEVER
+      restarts that service, which other applications on the machine may use.
+
+ORT-6003:
+  gravite: erreur
+  titre: Programme sdr-core introuvable ou inutilisable
+  message: 'sdr-core introuvable ou inutilisable ({chemin}) : {detail}.'
+  causes:
+  - sdr-core non compilé à l'installation (API du fabricant ou liquid-dsp absents à ce moment-là)
+  - Chemin faux dans [sdr] core_path
+  - Réglage refusé par sdr-core (valeur hors limites)
+  preconisation: Installer l'API du fabricant puis relancer l'installation de la station (elle compile sdr-core),
+    ou corriger [sdr] core_path.
+  action_auto: nouvel_essai
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  codes_machine:
+  - core_missing
+  - config
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6003/
+  depuis_version: 0.140.0
+  en:
+    titre: sdr-core program missing or unusable
+    message: 'sdr-core missing or unusable ({chemin}): {detail}.'
+    causes:
+    - sdr-core not built at install time (vendor API or liquid-dsp missing at that time)
+    - Wrong path in [sdr] core_path
+    - Setting refused by sdr-core (value out of range)
+    preconisation: Install the vendor API then run the station installation again (it builds sdr-core), or fix
+      [sdr] core_path.
+
+ORT-6004:
+  gravite: avertissement
+  titre: sdr-core arrêté de façon inattendue, relancé
+  message: 'sdr-core s''est arrêté ({detail}) ; relance n° {relances}.'
+  causes:
+  - SDR débranché pendant l'écoute
+  - Plantage du programme ou du pilote du fabricant
+  preconisation: Si les relances se répètent, vérifier le câble USB et le journal du module SDR ; le TRX n'est
+    jamais touché.
+  action_auto: relance_module
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  codes_machine:
+  - removed
+  - exit
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6004/
+  depuis_version: 0.140.0
+  en:
+    titre: sdr-core stopped unexpectedly, restarted
+    message: 'sdr-core stopped ({detail}); restart number {relances}.'
+    causes:
+    - SDR unplugged while listening
+    - Crash of the program or of the vendor driver
+    preconisation: If restarts repeat, check the USB cable and the SDR module log; the TRX is never touched.
+
+ORT-6005:
+  gravite: avertissement
+  titre: Échantillons du SDR perdus
+  message: 'Échantillons du SDR perdus : {perdus} en attente trop longue, {trous} trous du flux USB.'
+  causes:
+  - Station trop chargée pour la largeur choisie
+  - Port USB partagé avec un autre appareil gourmand
+  preconisation: Réduire [sdr] sample_rate_hz (2 MHz conseillé) ou lines_per_s ; brancher le SDR sur son propre
+    port racine, jamais sur le hub du poste.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  codes_machine:
+  - drops
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6005/
+  depuis_version: 0.140.0
+  en:
+    titre: SDR samples lost
+    message: 'SDR samples lost: {perdus} waiting too long, {trous} USB stream gaps.'
+    causes:
+    - Station too busy for the chosen width
+    - USB port shared with another demanding device
+    preconisation: Lower [sdr] sample_rate_hz (2 MHz advised) or lines_per_s; plug the SDR into its own root port,
+      never into the radio's hub.
+
 ORT-6401:
   gravite: erreur
   titre: Cluster DX activé mais incomplet

@@ -38,7 +38,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - **Retrait ou changement de sens** : version + 1 ; la station accepte encore l'ancienne pendant au moins une version de l'application. Un client qui ne connaît pas la version annoncée le dit à l'utilisateur et reste en réception.
 - **`hello.features`** : liste des fonctions offertes par CETTE station. Un client montre une fonction parce qu'elle y figure, jamais d'après un numéro de version.
   - toujours : `ptt`, `frequency`, `mode`, `squelch`, `functions`, `levels`, `local_release` ;
-  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce), `selcall_calibrate` (niveau de la trame et réglage automatique, depuis 0.64.0), `presence` (rôles, pseudos et `state.presence`, depuis 0.71.0 : § 13), `host` (santé de la machine `state.host` et synthèse `host_info`, depuis 0.83.0 ; jamais annoncé à un visiteur), `voice_profiles` (profils d'égaliseur de l'opérateur rangés sur la station, depuis 0.86.0 ; jamais annoncé à un visiteur), `swr` (mesure de TOS, depuis 0.90.0, `[swr] enabled` ; jamais annoncé à un visiteur), `replay` (rediffusion d'un enregistrement, depuis 0.91.0 : `hello.replay`), `breizh` (Breizh Audio Box dans la chaîne d'émission, depuis 0.100.0, `[breizh] enabled` ; jamais annoncé à un visiteur : § 14).
+  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce), `selcall_calibrate` (niveau de la trame et réglage automatique, depuis 0.64.0), `presence` (rôles, pseudos et `state.presence`, depuis 0.71.0 : § 13), `host` (santé de la machine `state.host` et synthèse `host_info`, depuis 0.83.0 ; jamais annoncé à un visiteur), `voice_profiles` (profils d'égaliseur de l'opérateur rangés sur la station, depuis 0.86.0 ; jamais annoncé à un visiteur), `swr` (mesure de TOS, depuis 0.90.0, `[swr] enabled` ; jamais annoncé à un visiteur), `replay` (rediffusion d'un enregistrement, depuis 0.91.0 : `hello.replay`), `breizh` (Breizh Audio Box dans la chaîne d'émission, depuis 0.100.0, `[breizh] enabled` ; jamais annoncé à un visiteur : § 14), `sdr` (waterfall du module SDR, depuis 0.140.0, `[sdr] enabled` et module « sdr » ; jamais annoncé à un visiteur : § 18).
 - `hello.version` : version du logiciel de la station (affichage seulement).
 
 ## 5. Émission : états, battements, coupures
@@ -298,3 +298,40 @@ les clients ne décodent rien.
   `null`, `m` mode FreeDV, `RADEV1` ou autre), `rx` (6 au plus, les plus proches en tête : `c`, `km`, `snr` en dB, `m`).
   Le QSY d'un OPÉRATEUR vers une ligne est immédiat et passe par les commandes habituelles : `set_mode` `USB` si le
   poste n'est ni en USB ni en PKTUSB, puis `set_frequency` (refusés pendant l'émission). Exemple : `module_freedv_activity`.
+
+## 18. Module SDR (station 0.140.0+, fonction `sdr`)
+
+Cahier des charges : [`docs/sdr-cahier-des-charges.md`](sdr-cahier-des-charges.md) (lot S1a : waterfall du SDR).
+Récepteur SDR en parallèle du TRX, RÉCEPTION SEULE. Le module « sdr » n'a AUCUN droit sur le poste. Annoncée dans
+`hello.features` (`sdr`) seulement pour un OPÉRATEUR, quand `[sdr] enabled` et « sdr » est dans `[modules] run`. Un
+visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteurs à décider dans la console).
+
+- **Commande** `{"cmd": "sdr", "id": 7, "action": "…", "args": {…}}` (`args` : 300 octets au plus) ; réponse
+  `{"type": "result", "id": 7, "ok": true, "action": "…", …}`, ou `ok: false` avec `reason` : `sdr_unavailable`,
+  `module_absent` (module arrêté), `timeout`, `sdr_invalid` (réglage hors limites, `detail` en français), `sdr_error`.
+  - `watch` (`args.on` booléen, traité par la PASSERELLE) : afficher ou masquer la rubrique SDR ; les lignes de
+    waterfall ne sont envoyées qu'aux opérateurs qui l'affichent ; à l'ouverture, le dernier état est renvoyé tout de
+    suite. Réponse : `on`.
+  - `state` : état du SDR (`data`, mêmes champs que `sdr_state` ci-dessous).
+  - `set` (`center_hz` 1 000 à 2 000 000 000, `lna` 0 à 8, `gr` 20 à 59 dB, `rate` 1 à 15 lignes/s ; au moins un) :
+    nouveaux réglages du SDR, gardés sur la station (`state_dir/sdr/last.json`, jamais dans station.toml) ; `data` =
+    nouvel état. Ne touche JAMAIS au poste ; envoyer une fréquence du SDR au TRX = `set_frequency` habituel (refusé
+    pendant l'émission).
+- **État** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_state", "retain": "snapshot", "scope":
+  "operators", …}}` : `state` (`starting`, `running`, `error`), `code` et `detail` (cause d'une erreur : `absent`,
+  `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
+  (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `overload` (surcharge du CAN signalée par le SDR), `overloads` (surcharges
+  comptées depuis le lancement ; état publié au plus une fois par seconde),
+  `drops` et `gaps` (échantillons perdus), `cpu` (% d'un cœur pour sdr-core, ou `null`), `restarts`, `t`.
+- **Ligne** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz,
+  "s": largeur Hz, "d": "<base64>", "t": ms}}` : `d` = une valeur par case (uint8), de la fréquence la plus basse à la
+  plus haute ; niveau en dBFS = -150 + 0,5 × valeur (0 = -150 dBFS, 255 = -22,5 dBFS). Fréquence d'une case
+  i sur n : `c - s/2 + (i + 0,5) × s / n`.
+- **Trames de sdr-core** (interne à la station, `trxstation/sdr/frames.py`) : en-tête de 12 octets `ORS1`, type
+  (uint32 petit-boutiste : 1 ligne, 2 JSON), longueur ; ligne = centre et largeur (float64), cases (uint16), réservé
+  (uint16), valeurs ; JSON = `started`, `status`, `event` (`overload`, `refused`), `error` (`absent`, `busy`,
+  `service`, `init`, `removed`, `file`), `stopped`. Commandes sur son entrée : `freq HZ`, `gain LNA GR`, `rate N`,
+  `quit`. Codes de sortie : 2 réglage refusé, 3 SDR absent ou pris, 4 service du fabricant injoignable, 5 init.
+- **Page web** (`sdr.js`, rubrique « SDR ») : waterfall, échelle, réglages (centre, LNA, réduction de gain,
+  cadence), clic = fréquence lue, « QSY du TRX » par `set_frequency`.
+- **Application** : lot S1c (le contrat Android connaît déjà la commande).

@@ -1,0 +1,123 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
+/* Module SDR dans la page (docs/sdr-cahier-des-charges.md, lot S1a ; protocole : docs/protocole.md § 18) : calculs
+   purs, testés sous Node (tests/js/sdr_test.js), sans DOM. Le dessin est dans ui.js (rubrique « SDR »).
+   Le SDR est en RÉCEPTION SEULE ; « QSY du TRX » passe par la commande habituelle set_frequency du client. */
+(function (root) {
+  "use strict";
+
+  const DB_MIN = -150, DB_STEP = 0.5;                 // niveau d'une case : -150 dBFS + 0,5 dB × valeur (0 à 255)
+  const LIMITS = { center_hz: [1000, 2000000000], lna: [0, 8], gr: [20, 59], rate: [1, 15] };
+  const RANGES = [30, 40, 50, 60, 80];                 // dynamique affichée (dB)
+  const DEFAULT_VIEW = { range: 50, auto: true, floor: -110 };
+
+  function decodeLine(b64) {
+    /* Cases uint8 d'une ligne (base64) ; null si illisible. */
+    if (typeof b64 !== "string" || !b64) return null;
+    try {
+      if (typeof root.atob === "function") {
+        const bin = root.atob(b64), out = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+      }
+      return new Uint8Array(Buffer.from(b64, "base64"));
+    } catch (e) { return null; }
+  }
+
+  const levelDb = (v) => DB_MIN + v * DB_STEP;
+
+  function floorDb(values) {
+    /* Plancher de bruit estimé : 20e centile des cases (les signaux ne le tirent pas vers le haut). */
+    if (!values || !values.length) return null;
+    const sorted = Array.from(values).sort((a, b) => a - b);
+    return levelDb(sorted[Math.floor(sorted.length * 0.2)]);
+  }
+
+  function colorIndex(v, floor, range) {
+    /* Index 0 à 255 de la palette du waterfall : du plancher (noir) au plancher + dynamique (blanc). */
+    const t = (levelDb(v) - floor) / (range > 0 ? range : 50);
+    return t <= 0 ? 0 : t >= 1 ? 255 : Math.round(t * 255);
+  }
+
+  function binFreq(i, n, center, span) {
+    return center - span / 2 + (i + 0.5) * span / n;
+  }
+
+  function freqAt(x, width, center, span) {
+    /* Fréquence (Hz, arrondie au Hz) sous l'abscisse x d'un dessin de largeur width. */
+    if (!(width > 0) || !Number.isFinite(x)) return null;
+    const f = center - span / 2 + Math.min(1, Math.max(0, x / width)) * span;
+    return Math.round(f);
+  }
+
+  function ticks(center, span, count) {
+    /* Graduations « rondes » (Hz) sur la largeur affichée : pas de 1, 2 ou 5 × 10^k. */
+    const want = count || 6, raw = span / want, p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw) || 10 * p;
+    const lo = center - span / 2, out = [];
+    for (let k = Math.ceil(lo / step); k * step <= center + span / 2; k++) out.push(k * step);
+    return out;
+  }
+
+  function formatMHz(hz, digits) {
+    return Number.isFinite(hz) ? (hz / 1e6).toFixed(digits === undefined ? 4 : digits) : "—";
+  }
+
+  function parseMHz(text) {
+    /* « 14.100 », « 14,1 » ou « 14100 » (kHz si plus de 1000) -> Hz entier, ou null. */
+    const s = String(text || "").trim().replace(",", ".");
+    if (!/^\d+(\.\d+)?$/.test(s)) return null;
+    let v = Number(s);
+    v = v >= 1000 ? v * 1e3 : v * 1e6;
+    v = Math.round(v);
+    return v >= LIMITS.center_hz[0] && v <= LIMITS.center_hz[1] ? v : null;
+  }
+
+  function checkSettings(args) {
+    /* Mêmes limites que la station (trxstation/sdr/service.py) ; renvoie un message en français, ou "". */
+    if (!args || typeof args !== "object") return "réglages invalides";
+    const names = Object.keys(args);
+    if (!names.length) return "aucun réglage";
+    for (const name of names) {
+      const lim = LIMITS[name], v = args[name];
+      if (!lim) return "réglage inconnu : " + name;
+      if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return name + " : entier de " + lim[0] + " à " + lim[1];
+    }
+    return "";
+  }
+
+  const CODE_TEXTS = {
+    absent: "SDR introuvable (débranché, ou numéro de série faux dans [sdr] serial)",
+    busy: "SDR déjà pris par une autre application",
+    service: "service du fabricant injoignable (API SDRplay installée ? sdrplay.service ?)",
+    core_missing: "programme sdr-core absent (relancer l'installation après l'API du fabricant)",
+    config: "réglage refusé par sdr-core (voir [sdr] de station.toml)",
+    removed: "SDR débranché pendant l'écoute",
+    exit: "sdr-core s'est arrêté : relance automatique",
+  };
+
+  function stateText(st) {
+    /* Ligne d'état de la rubrique. */
+    if (!st || typeof st !== "object") return "SDR : en attente de l'état…";
+    if (st.state === "running") {
+      let t = "SDR " + (st.serial || "") + " : " + formatMHz(st.center, 3) + " MHz, largeur " + formatMHz(st.fs, 0) + " MHz";
+      t += ", LNA " + st.lna + ", GR " + st.gr + " dB";
+      if (st.overload) t += " — SURCHARGE (baisser le gain)";
+      if (st.drops || st.gaps) t += " — pertes : " + (st.drops || 0) + " / " + (st.gaps || 0);
+      if (Number.isFinite(st.cpu)) t += " — CPU " + st.cpu + " %";
+      return t;
+    }
+    if (st.state === "starting") return "SDR : démarrage…";
+    if (st.state === "error") return "SDR en panne : " + (CODE_TEXTS[st.code] || st.detail || st.code || "cause inconnue");
+    return "SDR : " + String(st.state || "arrêté");
+  }
+
+  function nextRange(current) {
+    const i = RANGES.indexOf(current);
+    return RANGES[(i + 1) % RANGES.length];
+  }
+
+  const api = { DB_MIN, DB_STEP, LIMITS, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex, binFreq,
+                freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS };
+  if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
+})(typeof window !== "undefined" ? window : globalThis);

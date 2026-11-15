@@ -31,7 +31,7 @@ $KeepVersions = 2
 # Commandes lançables depuis n'importe quel terminal (comme COMMANDS d'install.sh sous Debian) : toutes celles de
 # [project.scripts] SAUF trx-gateway, trx-rigctld et trx-supervisor (une seconde instance à côté de la tâche planifiée
 # n'a rien à faire en ligne de commande). Le test test_windows_package l'impose.
-$Commands = @("trx-console", "trx-setup", "trx-monitor", "trx-hwtest", "trx-qualif", "trx-journal-android", "trx-netreport")
+$Commands = @("trx-console", "trx-setup", "trx-monitor", "trx-hwtest", "trx-qualif", "trx-journal-android", "trx-netreport", "trx-sdr")
 $BinDir = Join-Path $Base "bin"
 
 function Say([string]$Text) { Write-Host $Text }

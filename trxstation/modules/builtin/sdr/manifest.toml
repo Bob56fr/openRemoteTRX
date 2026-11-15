@@ -1,0 +1,28 @@
+# Module SDR (docs/sdr-cahier-des-charges.md, lot S1a, étape 188) : récepteur SDR en parallèle du TRX, RÉCEPTION SEULE.
+# AUCUN droit sur le poste : « envoyer cette fréquence au TRX » est une commande habituelle du client.
+# Le cœur natif sdr-core est un processus enfant du module ; le SDR est choisi par son numéro de série ([sdr] serial).
+[module]
+name = "sdr"
+version = "0.1.0"
+api = "1.0"
+entry = "trxstation.sdr.service"
+start = "auto"
+description = "Récepteur SDR : waterfall du SDR pour les opérateurs (réception seule)"
+
+[rights]
+events = []
+commands = []
+client_messages = true          # lignes de waterfall et état, aux OPÉRATEURS seulement (scope)
+verify_tokens = false
+client_commands = true          # commande « sdr » d'un OPÉRATEUR (état, réglages), relayée par la passerelle
+
+[resources]
+cpu_quota = 100       # % d'un cœur (sdr-core compris ; essai S0 : ~25 % à 2 MHz)
+memory_max_mb = 256
+nice = 15
+
+[degradation]
+levels = [4, 5]       # pause, arrêt
+
+[network]
+ports = []            # n'écoute sur aucun port

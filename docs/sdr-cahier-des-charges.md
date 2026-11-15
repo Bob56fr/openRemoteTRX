@@ -4,7 +4,8 @@
 - v2 : 2026-11-15 (étape 183), relecture commentée avec l'utilisateur : décisions marquées
   **[D 2026-11-15]**, relevé de minix-bzh (§ 2.4), découpage des lots revu (§ 15).
 - Essai S0 FAIT sur minix-bzh le 2026-11-15 (étape 184) et S0 bis en C (étape 185) : résultats et décisions au § 16.
-- Aucun code dans le dépôt à ce jour.
+- Lot S1a FAIT (étape 188, station 0.140.0) : `trxstation/sdr/` (sdr-core en C, module « sdr », `trx-sdr`),
+  commande `sdr`, rubrique « SDR » de la page ; protocole : `docs/protocole.md` § 18.
 
 ## 1. Objet et périmètre
 

@@ -116,6 +116,12 @@ intro = "<p>La station décode elle-même la voix numérique FreeDV (RADE V1) av
 ou = "Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage."
 relu = "redemarrage"
 
+[sections.sdr]
+titre = "Récepteur SDR [sdr]"
+intro = "<p>Un récepteur SDR en parallèle du TRX, en réception seule : son waterfall s'affiche dans la page (rubrique « SDR »). Le SDR est désigné par son numéro de série. Il faut installer à la main l'API du fabricant AVANT la station, qui compile alors le programme sdr-core, et ajouter « sdr » à <code>[modules] run</code>.</p>"
+ou = "Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite depuis la page."
+relu = "redemarrage"
+
 [sections.selcall]
 titre = "SELCALL [selcall]"
 intro = "<p>Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.</p>"
@@ -486,6 +492,84 @@ niveau = "expert"
 bornes = "Chemin d'un fichier, ou nom seul ; jamais vide."
 exemple = "<code>radae_rx</code>"
 depuis = "0.122.0"
+
+# ---------------------------------------------------------------- sdr
+
+[reglages."sdr.enabled"]
+role = "true : la rubrique « SDR » (waterfall d'un récepteur SDR en parallèle du TRX) est proposée aux opérateurs. Il faut aussi « sdr » dans <code>[modules] run</code> et le numéro de série du SDR dans <code>serial</code>."
+niveau = "courant"
+securite = "Réception seulement : le module SDR n'a aucun droit sur le poste ; « QSY du TRX » passe par la commande habituelle de fréquence, refusée pendant une émission. Une panne du SDR n'arrête jamais la station. La protection de l'entrée du SDR contre la puissance émise par le TRX (antenne séparée, séquenceur) est à la charge de l'opérateur."
+depuis = "0.140.0"
+
+[reglages."sdr.driver"]
+role = "API du fabricant du SDR. Seule l'API SDRplay est prise en charge aujourd'hui ; elle s'installe à la main (logiciel du fabricant) AVANT l'installation de la station, qui compile alors le programme sdr-core."
+niveau = "expert"
+bornes = "<code>sdrplay</code>."
+depuis = "0.140.0"
+
+[reglages."sdr.serial"]
+role = "Numéro de série du SDR de cette station. Le SDR est toujours désigné par ce numéro, jamais par son port USB : sur une machine qui a plusieurs SDR, chacun sert la bonne application. <code>trx-sdr --list</code> montre les SDR libres et ceux déjà pris par une autre application."
+niveau = "courant"
+bornes = "Lettres et chiffres, 4 à 32 ; obligatoire quand <code>enabled = true</code>. Numéro absent au démarrage : le module attend (nouvel essai toutes les 30 s) et n'ouvre jamais un autre SDR."
+securite = "Ne jamais mettre le numéro d'un SDR utilisé par une autre application de la machine."
+exemple = "<code>1234567ABC</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.core_path"]
+role = "Programme sdr-core (cœur natif du module SDR). Vide : celui que l'installation a compilé (à côté de la station), sinon le PATH."
+niveau = "expert"
+bornes = "Chemin d'un fichier, ou vide."
+depuis = "0.140.0"
+
+[reglages."sdr.sample_rate_hz"]
+role = "Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul."
+niveau = "courant"
+bornes = "2000000, 6000000 ou 8000000 (Hz)."
+exemple = "<code>2000000</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.center_hz"]
+role = "Fréquence centrale du SDR au premier démarrage. La dernière choisie depuis la page est ensuite reprise (rangée sur la station, pas dans ce fichier)."
+niveau = "courant"
+bornes = "1 000 à 2 000 000 000 Hz."
+exemple = "<code>7100000</code>"
+depuis = "0.140.0"
+
+[reglages."sdr.antenna"]
+role = "Entrée d'antenne du SDR (RSP2 : A ou B)."
+niveau = "courant"
+bornes = "A ou B."
+depuis = "0.140.0"
+
+[reglages."sdr.lna_state"]
+role = "État du préamplificateur (LNA) au premier démarrage : 0 = gain maximal. Se règle ensuite depuis la page."
+niveau = "expert"
+bornes = "0 à 8."
+depuis = "0.140.0"
+
+[reglages."sdr.gain_reduction_db"]
+role = "Réduction de gain de la FI au premier démarrage. Se règle ensuite depuis la page ; à augmenter en cas de surcharge signalée."
+niveau = "expert"
+bornes = "20 à 59 dB."
+depuis = "0.140.0"
+
+[reglages."sdr.fft_size"]
+role = "Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin."
+niveau = "expert"
+bornes = "Puissance de 2 de 512 à 16 384."
+depuis = "0.140.0"
+
+[reglages."sdr.bins"]
+role = "Nombre de cases d'une ligne envoyée aux clients (chaque case garde le maximum des points qu'elle couvre). Moins de cases = moins de données mobiles."
+niveau = "expert"
+bornes = "Puissance de 2 de 128 à fft_size."
+depuis = "0.140.0"
+
+[reglages."sdr.lines_per_s"]
+role = "Lignes de waterfall par seconde au premier démarrage ; se règle ensuite depuis la page."
+niveau = "expert"
+bornes = "1 à 15."
+depuis = "0.140.0"
 
 # ---------------------------------------------------------------- presence
 

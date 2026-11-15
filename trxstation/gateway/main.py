@@ -118,6 +118,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             if cfg.presence.enabled and bridge.has_client_commands("presence"):   # présence de groupe (« friends »)
                 manager.friends_call = lambda data: bridge.call("presence", data)
                 manager.on_operator_activity = bridge.operator_activity
+            if cfg.sdr.enabled and bridge.has_client_commands("sdr"):             # module SDR (opérateurs)
+                manager.sdr_call = lambda data: bridge.call("sdr", data)
+                manager.on_sdr_view = bridge.on_sdr_view
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,

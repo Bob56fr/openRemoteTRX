@@ -1960,6 +1960,8 @@
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
+      sdrState(st) { sdrRender(st); },                                         // module SDR : état (opérateurs)
+      sdrLine(data) { sdrDraw(data); },                                        // module SDR : ligne de waterfall
       freedvActivity() { fdvaRender(); },                                      // activité FreeDV (toutes les 10 s)
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
@@ -1973,6 +1975,7 @@
           fdvRender(null);                                                       // plus de rubrique ni de voyant FreeDV
           fdvaRender();                                                          // plus de liste « Activité FreeDV »
           frRender(null);                                                        // plus de rubrique « Amis »
+          sdrRender(null);                                                       // plus de rubrique « SDR »
           paintNet({ connected: false });                                        // plus d'indicateur de liaison
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
@@ -2818,6 +2821,95 @@
         if (res && res.ok) ui.log("QSY FreeDV : " + web.freedvFreqText(hz) + ".", "");
         else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
       }).catch(fail);
+    }
+
+    // ---- module SDR (sdr.js, docs/sdr-cahier-des-charges.md, fonction « sdr », OPÉRATEURS) : waterfall du SDR
+    // Lignes reçues seulement rubrique ouverte (« watch ») ; réglages du SDR relayés au module ; QSY du TRX = commande
+    // habituelle de fréquence (refusée pendant l'émission). Le SDR n'agit jamais sur le poste.
+    const sdrx = root.TrxSdr || null;
+    let sdrView = { range: sdrx ? sdrx.DEFAULT_VIEW.range : 50, floor: null }, sdrPicked = null, sdrLast = null;
+    function sdrOffered() { return !!(sdrx && client.sdrOffered && client.connected && !client.isListener()); }
+    function sdrRender(st) {
+      const on = sdrOffered();
+      $("sec-sdr").hidden = !on;
+      if (!on) { sdrPicked = null; $("sdr-qsy").hidden = true; return; }
+      const state = st || client.sdrState;
+      $("sdr-status").textContent = sdrx.stateText(state);
+      $("sdr-badge").textContent = state && state.state === "running" ? sdrx.formatMHz(state.center, 3) + " MHz"
+        : state && state.state === "error" ? "en panne" : "";
+      if (state && state.state) {
+        if (document.activeElement !== $("sdr-center") && Number.isFinite(state.center)) $("sdr-center").value = sdrx.formatMHz(state.center, 4);
+        if (document.activeElement !== $("sdr-gr") && Number.isFinite(state.gr)) $("sdr-gr").value = String(state.gr);
+        if (Number.isFinite(state.lna)) $("sdr-lna").value = String(state.lna);
+        if (Number.isFinite(state.rate)) $("sdr-rate").value = String(state.rate);
+      }
+      $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
+    }
+    function sdrAxis(center, span) {
+      const box = $("sdr-axis");
+      if (sdrLast && sdrLast.c === center && sdrLast.s === span) return;
+      box.textContent = "";
+      for (const f of sdrx.ticks(center, span, 6)) {
+        const tick = el("span", "", sdrx.formatMHz(f, f % 100000 ? 3 : 1));
+        tick.style.left = (100 * (f - (center - span / 2)) / span).toFixed(2) + "%";
+        box.appendChild(tick);
+      }
+    }
+    function sdrDraw(data) {
+      if (!sdrOffered() || !$("sec-sdr").open || !wf) return;
+      const values = sdrx.decodeLine(data.d);
+      if (!values || !values.length) return;
+      const cv = $("sdr-wf"), n = values.length;
+      if (!cv.getContext) return;
+      const g = cv.getContext("2d");
+      if (!g) return;
+      if (cv.width !== n || cv.height !== 200) { cv.width = n; cv.height = 200; }
+      const floor = sdrx.floorDb(values);
+      sdrView.floor = sdrView.floor === null ? floor : sdrView.floor * 0.9 + floor * 0.1;     // plancher lissé
+      g.drawImage(cv, 0, 0, n, cv.height - 1, 0, 1, n, cv.height - 1);                       // la plus récente en haut
+      const row = g.createImageData(n, 1);
+      for (let i = 0; i < n; i++) {
+        const k = sdrx.colorIndex(values[i], sdrView.floor - 3, sdrView.range) * 3;
+        row.data[4 * i] = wf.LUT[k]; row.data[4 * i + 1] = wf.LUT[k + 1]; row.data[4 * i + 2] = wf.LUT[k + 2]; row.data[4 * i + 3] = 255;
+      }
+      g.putImageData(row, 0, 0);
+      sdrAxis(data.c, data.s);
+      sdrLast = { c: data.c, s: data.s };
+    }
+    async function sdrSend(args) {
+      try {
+        const res = await client.sdrSet(args);
+        if (!res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn");
+      } catch (e) { ui.log("SDR : réglage non envoyé.", "warn"); }
+    }
+    if (sdrx) {
+      $("sec-sdr").addEventListener("toggle", () => {
+        if (!sdrOffered()) return;
+        client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn"); }).catch(() => {});
+      });
+      $("sdr-center-set").addEventListener("click", () => {
+        const hz = sdrx.parseMHz($("sdr-center").value);
+        if (hz === null) { ui.log("SDR : fréquence centrale illisible (ex. 14.100 en MHz).", "warn"); return; }
+        sdrSend({ center_hz: hz });
+      });
+      $("sdr-lna").addEventListener("change", () => sdrSend({ lna: Number($("sdr-lna").value) }));
+      $("sdr-gr").addEventListener("change", () => sdrSend({ gr: Number($("sdr-gr").value) }));
+      $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));
+      $("sdr-range").addEventListener("click", () => { sdrView.range = sdrx.nextRange(sdrView.range); sdrRender(null); });
+      $("sdr-wf").addEventListener("click", (ev) => {
+        if (!sdrLast) return;
+        const cv = $("sdr-wf"), width = cv.clientWidth || cv.width;
+        sdrPicked = sdrx.freqAt(ev.offsetX, width, sdrLast.c, sdrLast.s);
+        $("sdr-pick").textContent = sdrPicked ? "Fréquence : " + sdrx.formatMHz(sdrPicked, 4) + " MHz" : "";
+        $("sdr-qsy").hidden = !sdrPicked;
+      });
+      $("sdr-qsy").addEventListener("click", () => {
+        if (!sdrPicked) return;
+        client.qsy(sdrPicked).then((res) => {
+          if (res && res.ok) ui.log("QSY du TRX vers " + sdrx.formatMHz(sdrPicked, 4) + " MHz (fréquence lue sur le SDR).", "");
+          else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
+        }).catch(() => {});
+      });
     }
 
     // ---- présence de groupe « Amis » (friends.js, docs/presence-cahier-des-charges.md, fonction « friends », OPÉRATEURS)

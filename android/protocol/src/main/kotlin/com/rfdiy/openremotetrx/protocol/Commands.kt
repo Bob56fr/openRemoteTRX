@@ -238,6 +238,12 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("on", on) }
     }
 
+    /** Module SDR (fonction « sdr », docs/protocole.md § 18) : `watch` traité par la passerelle, `state` et `set`
+     *  relayés au module « sdr », qui n'agit JAMAIS sur le poste. Interface de l'application : lot S1c. */
+    data class Sdr(val action: String, val args: JsonObject? = null) : Command("sdr") {
+        override fun JsonObjectBuilder.params() { put("action", action); if (args != null) put("args", args) }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -254,7 +260,7 @@ sealed class Command(val name: String) {
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
-            "net_export", "friends", "freedv_set",
+            "net_export", "friends", "freedv_set", "sdr",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

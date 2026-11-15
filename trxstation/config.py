@@ -192,6 +192,29 @@ class Freedv:
                                       # liste « Activité FreeDV » (module freedv_activity) ; vide = sans distance
 
 
+# Cadences d'échantillonnage permises et largeur de filtre FI associée (kHz, API SDRplay), mesurées à l'essai S0.
+SDR_RATES = {2_000_000: 1536, 6_000_000: 5000, 8_000_000: 8000}
+SDR_DRIVERS = ("sdrplay",)
+
+
+@dataclass
+class Sdr:
+    """Module SDR (docs/sdr-cahier-des-charges.md) : récepteur SDR en parallèle du TRX, RÉCEPTION SEULE, lancé comme
+    module (« sdr » dans [modules] run). Le SDR est désigné par son NUMÉRO DE SÉRIE, jamais par son port."""
+    enabled: bool = False             # fonction offerte aux opérateurs (exige « sdr » dans [modules] run)
+    driver: str = "sdrplay"           # API du fabricant (installée à la main par l'utilisateur)
+    serial: str = ""                  # numéro de série du SDR de CETTE station (trx-sdr --list) ; obligatoire
+    core_path: str = ""               # programme sdr-core ; vide = installé avec la station (venv/bin), sinon le PATH
+    sample_rate_hz: int = 2_000_000   # 2, 6 ou 8 MHz : largeur du waterfall (2 MHz conseillé, voir le cahier § 16)
+    center_hz: int = 7_100_000        # fréquence centrale au démarrage (la dernière choisie depuis la page est reprise)
+    antenna: str = "A"                # entrée du RSP2 : A ou B
+    lna_state: int = 2                # état du LNA (0 = gain maximal ; 0 à 8 sur le RSP2)
+    gain_reduction_db: int = 50       # réduction de gain FI (20 à 59 dB)
+    fft_size: int = 4096              # points de la FFT (512 à 16384, puissance de 2)
+    bins: int = 1024                  # cases d'une ligne envoyée aux clients (128 à fft_size, puissance de 2)
+    lines_per_s: int = 8              # lignes de waterfall par seconde (1 à 15)
+
+
 @dataclass
 class Tools:
     hamlib_dir: str = ""           # dossier d'installation de Hamlib (Windows) ; vide = PATH
@@ -475,6 +498,7 @@ class Config:
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
     freedv: Freedv = field(default_factory=Freedv)
+    sdr: Sdr = field(default_factory=Sdr)
     bands: list[Band] = field(default_factory=list)
     clients: list[ClientAuth] = field(default_factory=list)
 
@@ -530,6 +554,7 @@ def validate(cfg: Config) -> list[str]:
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
     p += _freedv_problems(cfg.freedv)
+    p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
         p.append("[network] tls_cert et tls_key vont ensemble")
     for proxy in cfg.network.trusted_proxies:
@@ -823,6 +848,45 @@ def _freedv_problems(fd: Freedv) -> list[str]:
     return p
 
 
+_SDR_SERIAL = re.compile(r"^[A-Za-z0-9]{4,32}$")
+
+
+def _pow2(v) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool) and v > 0 and v & (v - 1) == 0
+
+
+def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
+    p = []
+    if not isinstance(sd.enabled, bool):
+        p.append("[sdr] enabled doit valoir true ou false")
+    if sd.driver not in SDR_DRIVERS:
+        p.append(f"[sdr] driver : un de {', '.join(SDR_DRIVERS)}")
+    if not isinstance(sd.serial, str) or (sd.serial and not _SDR_SERIAL.match(sd.serial)):
+        p.append("[sdr] serial : numéro de série du SDR (lettres et chiffres, 4 à 32), voir « trx-sdr --list »")
+    if not isinstance(sd.core_path, str) or any(c in sd.core_path for c in "\r\n\0"):
+        p.append("[sdr] core_path : chemin du programme sdr-core, ou vide")
+    if sd.sample_rate_hz not in SDR_RATES:
+        p.append("[sdr] sample_rate_hz : " + ", ".join(str(r) for r in SDR_RATES) + " (Hz)")
+    for name, lo, hi in (("center_hz", 1_000, 2_000_000_000), ("lna_state", 0, 8), ("gain_reduction_db", 20, 59),
+                         ("lines_per_s", 1, 15)):     # le bus limite un module à 20 messages par seconde
+        v = getattr(sd, name)
+        if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
+            p.append(f"[sdr] {name} : entier de {lo} à {hi}")
+    if sd.antenna not in ("A", "B"):
+        p.append("[sdr] antenna : A ou B")
+    if not _pow2(sd.fft_size) or not 512 <= sd.fft_size <= 16384:
+        p.append("[sdr] fft_size : puissance de 2 de 512 à 16384")
+    if not _pow2(sd.bins) or not 128 <= sd.bins <= min(16384, sd.fft_size if isinstance(sd.fft_size, int) else 16384):
+        p.append("[sdr] bins : puissance de 2 de 128 à fft_size")
+    if sd.enabled is True:
+        if not sd.serial:
+            p.append("[sdr] activé sans serial : le SDR doit être désigné par son numéro de série (« trx-sdr --list »), "
+                     "jamais pris au hasard")
+        if "sdr" not in modules.run:
+            p.append("[sdr] activé mais « sdr » absent de [modules] run : le module ne serait jamais lancé")
+    return p
+
+
 def presence_key_path(cfg: Config, config_path: str | Path) -> Path:
     """Clés de la station pour la présence : key_file (relatif = à côté de station.toml), sinon
     state_dir/presence/presence.key (écrit par le module lui-même, droits 0600)."""
@@ -917,7 +981,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "presence", "freedv", "bands", "clients"}
+                 "netprobe", "presence", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -941,6 +1005,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
+            sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
@@ -1185,6 +1250,20 @@ def render_toml(cfg: Config) -> str:
         f"ka9q_path = {_s(cfg.freedv.ka9q_path)}   # nom seul = cherché dans le PATH",
         f"radae_rx_path = {_s(cfg.freedv.radae_rx_path)}",
         f"locator = {_s(cfg.freedv.locator)}   # locator de la station (JN18du) : distances de la liste « Activité FreeDV »",
+        "",
+        "[sdr]   # récepteur SDR en parallèle du TRX (réception seule) : module « sdr » de [modules] run",
+        f"enabled = {str(cfg.sdr.enabled).lower()}",
+        f"driver = {_s(cfg.sdr.driver)}   # API du fabricant, installée à la main",
+        f"serial = {_s(cfg.sdr.serial)}   # numéro de série du SDR de cette station (trx-sdr --list)",
+        f"core_path = {_s(cfg.sdr.core_path)}   # vide = sdr-core installé avec la station",
+        f"sample_rate_hz = {cfg.sdr.sample_rate_hz}   # 2000000, 6000000 ou 8000000 (largeur du waterfall)",
+        f"center_hz = {cfg.sdr.center_hz}   # fréquence centrale au démarrage",
+        f"antenna = {_s(cfg.sdr.antenna)}   # entrée A ou B",
+        f"lna_state = {cfg.sdr.lna_state}   # 0 = gain maximal (0 à 8)",
+        f"gain_reduction_db = {cfg.sdr.gain_reduction_db}   # réduction de gain FI (20 à 59 dB)",
+        f"fft_size = {cfg.sdr.fft_size}",
+        f"bins = {cfg.sdr.bins}   # cases d'une ligne envoyée aux clients",
+        f"lines_per_s = {cfg.sdr.lines_per_s}",
         "",
     ]
     for client in cfg.clients:

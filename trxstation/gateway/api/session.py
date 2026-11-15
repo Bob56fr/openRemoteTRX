@@ -113,6 +113,11 @@ class ControlSession:
         # Présence de groupe : commande relayée au module « presence » (ModuleBridge.call), activité de l'opérateur
         # (ModuleBridge.operator_activity) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
         self.friends_call: Callable[[dict], Awaitable] | None = None
+        # Module SDR : commande relayée au module « sdr » (ModuleBridge.call) et rejeu de son état à l'ouverture de la
+        # rubrique (ModuleBridge.on_sdr_view) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
+        self.sdr_call: Callable[[dict], Awaitable] | None = None
+        self.on_sdr_view: Callable[["ControlSession", bool], None] | None = None
+        self.sdr_view = False                    # rubrique SDR affichée chez ce client : lignes de waterfall envoyées
         self.on_operator_activity: Callable[[], None] | None = None
         self.capabilities, self._send = capabilities, send
         self.memories = memories
@@ -210,7 +215,8 @@ class ControlSession:
                    "breizh": self.breizh is not None,
                    "netprobe": self.netprobe is not None,
                    "friends": self.friends_call is not None and not self.listener,
-                   "freedv": self.freedv is not None}
+                   "freedv": self.freedv is not None,
+                   "sdr": self.sdr_call is not None and not self.listener}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
@@ -547,6 +553,34 @@ class ControlSession:
             self._friends_bands(data)
         self._result(cmd.id, True, action=cmd.params["action"], data=data)
 
+    async def _sdr(self, cmd: Command) -> None:
+        """Module SDR : « watch » est traité ici (envoi des lignes à CE client) ; le reste est relayé au module, qui
+        n'agit JAMAIS sur le poste ; son refus revient tel quel."""
+        if self.sdr_call is None or self.listener:
+            self._result(cmd.id, False, reason="sdr_unavailable", detail="SDR non disponible")
+            return
+        action, args = cmd.params["action"], cmd.params["args"]
+        if action == "watch":
+            self.sdr_view = args["on"]
+            self._result(cmd.id, True, action="watch", on=self.sdr_view)
+            if self.sdr_view and self.on_sdr_view is not None:
+                try:
+                    self.on_sdr_view(self, True)          # état du SDR rejoué tout de suite
+                except Exception:
+                    emit_event(codes.ORT_6527, logger=log, trace=True, contexte="rejeu de l'état du SDR",
+                               detail="voir la trace")
+            return
+        try:
+            data = await self.sdr_call({"action": action, "args": args, "client": self.client_id})
+        except CommandRefused as exc:
+            self._result(cmd.id, False, reason=exc.code, detail=str(exc))
+            return
+        except Exception:
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"commande sdr de {self.client_id}")
+            self._result(cmd.id, False, reason="sdr_error")
+            return
+        self._result(cmd.id, True, action=action, data=data)
+
     def _friends_bands(self, view) -> None:
         """Vue des amis : `tx_ok` sur chaque fréquence partagée, d'après les [[bands]] de CETTE station (le module ne
         les connaît pas) ; seulement si la station impose ses bandes. Une indication : l'émission reste jugée à l'instant."""
@@ -595,7 +629,8 @@ class ControlSession:
             self._net_command(cmd)                               # sonde réseau : n'agit JAMAIS sur le poste
             return
         if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
-                and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))):
+                and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))
+                and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state"))):
             try:
                 self.on_operator_activity()                      # statut « En RX » de la présence de groupe
             except Exception:
@@ -603,6 +638,9 @@ class ControlSession:
                            detail="voir la trace")
         if cmd.name == "friends":
             await self._friends(cmd)                             # opérateur seulement (liste blanche des visiteurs)
+            return
+        if cmd.name == "sdr":
+            await self._sdr(cmd)                                 # opérateur seulement (liste blanche des visiteurs)
             return
         try:
             if cmd.name == "heartbeat":

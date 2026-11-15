@@ -273,6 +273,29 @@
       </div></div>
     </details>
 
+    <details id="sec-sdr" class="listener-hide" hidden>
+      <summary>SDR <span id="sdr-badge" class="note"></span></summary>
+      <div class="body">
+        <p id="sdr-status" class="note"></p>
+        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt"></canvas></div>
+        <div id="sdr-axis" class="wf-axis"></div>
+        <div class="row">
+          <span id="sdr-pick" class="note"></span>
+          <button id="sdr-qsy" class="chip" hidden title="Accorder le TRX sur cette fréquence (refusé pendant l'émission)">QSY du TRX</button>
+        </div>
+        <div class="row">
+          <label>Centre (MHz) <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
+          <button id="sdr-center-set" class="chip">Appliquer</button>
+          <label>LNA <select id="sdr-lna"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+          <label>Réduction de gain <input id="sdr-gr" type="number" min="20" max="59" step="1" size="3"></label>
+          <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
+          <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
+        </div>
+        <p class="note">Récepteur SDR en parallèle du TRX, en réception seule. LNA 0 = gain maximal ; une surcharge se
+          corrige en montant le LNA ou la réduction de gain. Le SDR n'agit jamais sur le poste.</p>
+      </div>
+    </details>
+
     <details id="sec-friends" class="listener-hide" hidden>
       <summary>Amis <span id="fr-badges" class="fr-badges"></span></summary>
       <div class="body">
@@ -802,6 +825,7 @@
 <script src="selcall.js"></script>
 <script src="layout.js"></script>
 <script src="friends.js"></script>
+<script src="sdr.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>
