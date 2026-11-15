@@ -3,7 +3,7 @@
 - v1 : 2026-11-07, rédigée par l'utilisateur.
 - v2 : 2026-11-15 (étape 183), relecture commentée avec l'utilisateur : décisions marquées
   **[D 2026-11-15]**, relevé de minix-bzh (§ 2.4), découpage des lots revu (§ 15).
-- Essai S0 FAIT sur minix-bzh le 2026-11-15 (étape 184) : résultats et décisions au § 16.
+- Essai S0 FAIT sur minix-bzh le 2026-11-15 (étape 184) et S0 bis en C (étape 185) : résultats et décisions au § 16.
 - Aucun code dans le dépôt à ce jour.
 
 ## 1. Objet et périmètre
@@ -505,8 +505,8 @@ Décisions et conséquences :
   que l'API SDRplay) ; Windows : compilé à la fabrication du zip. SoapySDR reste prévu pour les autres
   SDR (Debian fournit les modules RTL-SDR, Airspy…).
 - **Licence** : ce programme AGPL est lié à une bibliothèque propriétaire ; en tant que titulaire des
-  droits, RF-DIY.COM ajoute une EXCEPTION DE LIAISON explicite dans son en-tête (à décider par
-  l'utilisateur avant S1a).
+  droits, RF-DIY.COM ajoute une EXCEPTION DE LIAISON explicite dans son en-tête (ACCEPTÉE par
+  l'utilisateur le 2026-11-15).
 - **Cadence** : 2 MHz par défaut sur minix-bzh (et moins sur un Pi). Au-delà : waterfall calculé sur
   une partie des FFT (1 sur 4), traitement réparti sur plusieurs processus, ou canaliseur en C
   (liquid-dsp, MIT) ; à décider en S1a sur mesure. numpy n'utilise qu'un cœur pour une FFT.
@@ -514,4 +514,41 @@ Décisions et conséquences :
 - **xruns** : S1b publie le compteur de décrochages de la carte son du poste (état de la passerelle)
   pour mesurer finement l'effet du SDR.
 - **Windows** : S0 à refaire sur un PC Windows avec un RSP (pas encore fait).
+
+### 16.1 S0 bis : la même chaîne en C avec liquid-dsp (étape 185)
+
+liquid-dsp 1.7.0 (MIT, paquets Debian `libliquid1` / `libliquid-dev`, qui utilisent FFTW en simple
+précision et `libfec0`) extraits sans sudo dans `~/sdr-s0/root/` ; programme d'essai
+`bench_liquid.c` (`-O2 -march=x86-64-v3`, un seul fil), sur le vrai flux du RSP, AIS en marche.
+Les pourcentages sont rapportés à la durée du signal : au-delà de 100 %, le programme ne suit pas
+(trous dans le flux).
+
+| Cadence, canaux | numpy (§ 16) | C, un mélangeur + rééchantillonneur par canal | C, canaliseur par FFT |
+| --- | --- | --- | --- |
+| 2 MHz, 1 canal | 51 % | **23 %** | — |
+| 2 MHz, 16 canaux | 64 % | 139 % (ne suit pas) | **41 %** |
+| 6 MHz, 1 canal | — | 47 % | — |
+| 8 MHz, 1 canal | 116 % (ne suit pas) | **47 à 51 %** | 89 % |
+| 8 MHz, 16 canaux | 151 % (ne suit pas) | 441 % (ne suit pas) | 100 % (limite) |
+| 8 MHz, 64 canaux | — | — | 132 % (ne suit pas) |
+
+Le waterfall seul pèse peu (une FFT sur 4 ou toutes : 47 % contre 51 % à 8 MHz, 1 canal).
+
+Conclusions :
+
+- Le C gagne environ un facteur 2 sur numpy, PAS 3 à 5 : le travail est dominé par les FFT, que numpy
+  faisait déjà en C. Le vrai levier est ailleurs : l'algorithme et les cœurs (l'i3-N300 a 8 cœurs E
+  assez lents ; les essais n'en utilisaient qu'un).
+- Algorithme selon l'usage :
+  - fréquence unique (§ 9) : décimation et FI étroite DANS le RSP, presque gratuites pour la station ;
+  - 1 à 4 canaux : mélangeur + rééchantillonneur par canal ;
+  - écoute parallèle (§ 7) : canaliseur par FFT ou polyphase (`firpfbch` de liquid-dsp), à régler en
+    S4 (bloc plus petit que les 2^19 de l'essai, plans FFTW mesurés, un fil par groupe de canaux).
+- Cadence : 2 MHz couvre une bande HF entière (10 m compris) et la bande 2 m ; c'est le défaut.
+  8 MHz est réservé au waterfall large avec 1 à 4 canaux.
+- Charge totale estimée sur minix-bzh à 2 MHz et 16 canaux : service SDRplay ~19 % + cœur ~41 %, soit
+  environ 0,6 cœur sur 8.
+- **Décision proposée** : `sdr-core` en C avec liquid-dsp (paquet Debian, installé par install.sh ;
+  Windows : compilé à la fabrication du zip), plusieurs fils ; le module, le scan, les rapports et
+  l'apprentissage restent en Python.
 

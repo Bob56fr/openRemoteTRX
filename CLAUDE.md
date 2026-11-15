@@ -90,7 +90,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (station 0.138.0, application 0.63.0, étape 184)
+## État actuel (station 0.138.0, application 0.63.0, étape 185)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -111,7 +111,7 @@ L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvé
 
 ## En attente (décisions ou travaux à venir)
 
-- MODULE SDR (cahier de l'utilisateur du 2026-11-07, v2 relue le 2026-11-15, étape 183 : `docs/sdr-cahier-des-charges.md`) : aucun code ; module du BUS existant (pas de moteur autonome ni de console web propre), jamais d'écriture au poste, charge jugée par la PASSERELLE (brider / suspendre / reprendre), protection de l'entrée à la charge de l'opérateur (guide), SDR choisi par NUMÉRO DE SÉRIE lu par l'API, `sdrplay.service` commun jamais redémarré, deux pistes WebRTC, enregistrements hors marine ; S0 FAIT sur minix-bzh (étape 184, § 16 : cohabitation avec l'AIS OK, 0 trou jusqu'à 8 MHz, numpy suffit à 2 MHz pas à 8, Opus négligeable) ; accès au RSP par un programme C enfant du module compilé par install.sh (pas de SoapySDR pour le RSP) ; À DÉCIDER par l'utilisateur avant S1a : exception de liaison AGPL pour ce programme ; ensuite S1a.
+- MODULE SDR (cahier de l'utilisateur du 2026-11-07, v2 relue le 2026-11-15, étape 183 : `docs/sdr-cahier-des-charges.md`) : aucun code ; module du BUS existant (pas de moteur autonome ni de console web propre), jamais d'écriture au poste, charge jugée par la PASSERELLE (brider / suspendre / reprendre), protection de l'entrée à la charge de l'opérateur (guide), SDR choisi par NUMÉRO DE SÉRIE lu par l'API, `sdrplay.service` commun jamais redémarré, deux pistes WebRTC, enregistrements hors marine ; S0 FAIT sur minix-bzh (étape 184, § 16 : cohabitation avec l'AIS OK, 0 trou jusqu'à 8 MHz, numpy suffit à 2 MHz pas à 8, Opus négligeable) ; accès au RSP par un programme C enfant du module compilé par install.sh (pas de SoapySDR pour le RSP) ; exception de liaison AGPL (API du fabricant) dans l'en-tête de ce programme ACCEPTÉE par l'utilisateur le 2026-11-15 ; S0 bis (étape 185, § 16.1) : C + liquid-dsp environ 2 fois plus léger que numpy, gain surtout par l'algorithme et les cœurs ; `sdr-core` en C proposé, à confirmer par l'utilisateur avant S1a.
 
 - GUIDE DE L'OPÉRATEUR (demande du 2026-11-14 ; étape 181 : français FAIT, écrit pour le FTDX10) : traductions EN / DE / ES (`User-Guide/<langue>/`, `LANGS` et `UI` de `build_user_guide.py`, tableau de `User-Guide/README.md`) ; validation du FTDX10 sur un vrai poste (partie 3 du guide : 9 essais de sécurité, points de la fiche) puis retrait du bandeau « pas encore validé » ; ouverture du menu de réglages du FTDX10 à préciser d'après son manuel d'utilisation (non fourni) ; fiches d'autres postes dans `postes/`.
 
