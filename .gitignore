@@ -44,3 +44,6 @@ captures/
 *.jks
 *.keystore
 android/keystore.properties
+
+# PDF du guide : fabriqué par la publication GitHub Pages (scripts/build_user_guide_pdf.py)
+docs/site/guide/**/*.pdf

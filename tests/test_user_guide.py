@@ -91,3 +91,18 @@ def test_every_glossary_term_used_by_the_diagram_is_defined() -> None:
     for term in ("Passerelle", "Superviseur", "rigctld", "TRX Console", "station.toml", "ntfy", "CAT", "WebRTC",
                  "Hamlib", "TOT", "PTT", "Mode sûr"):
         assert term in glossary, f"terme absent du glossaire : {term}"
+
+
+def test_pdf_link_of_the_page_matches_the_file_printed_at_publication() -> None:
+    builder = _builder()
+    spec = importlib.util.spec_from_file_location("build_user_guide_pdf", ROOT / "scripts" / "build_user_guide_pdf.py")
+    pdf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pdf)
+    assert pdf.PDF_NAME == builder.PDF_NAME and pdf.LANGS == builder.LANGS
+    for lang in builder.LANGS:
+        page = builder.render_page(lang)
+        assert f'href="{builder.PDF_NAME.format(lang=lang)}" target="_blank"' in page
+        assert pdf.page_path(lang) in builder.build()
+    workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+    assert "python scripts/build_user_guide_pdf.py" in workflow and "playwright install" in workflow
+    assert "docs/site/guide/**/*.pdf" in (ROOT / ".gitignore").read_text(encoding="utf-8")

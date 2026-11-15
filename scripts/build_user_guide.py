@@ -30,13 +30,15 @@ LANGS = ("fr",)                      # langues publiées ; « fr » = référenc
 REPO_URL = "https://github.com/Bob56fr/openRemoteTRX"
 PART = re.compile(r"^(\d\d)-[a-z0-9-]+\.md$")
 ANNEXES = ("glossaire.md",)          # fichiers hors parties numérotées, placés avant le récapitulatif
+PDF_NAME = "guide-openRemoteTRX-{lang}.pdf"   # fabriqué à la publication par scripts/build_user_guide_pdf.py
 IMAGE = re.compile(r"^!\[([^\]]+)\]\((images/[a-z0-9-]+\.svg)\)$")
 UI = {
     "fr": {"progress": "{n} / {m} étapes cochées", "reset": "Tout décocher", "print": "Imprimer",
            "saved": "Les cases cochées sont gardées dans ce navigateur.",
            "unsaved": "Ce navigateur ne garde pas les cases : imprime la page pour garder une trace.",
            "source": "Source de ce guide sur GitHub", "footer": "Projet libre (AGPL-3.0-or-later)",
-           "top": "Haut de page", "enlarge": "ouvrir le schéma en grand"},
+           "top": "Haut de page", "enlarge": "ouvrir le schéma en grand",
+           "pdf": "Télécharger en PDF", "pdf_hint": "A4, une partie par page, à imprimer"},
 }
 
 CSS = """
@@ -87,10 +89,14 @@ button:hover{border-color:var(--accent)}
 .schema{margin:1rem 0 1.2rem;text-align:center}
 .schema-svg{display:block;width:100%;max-width:40rem;height:auto;margin:0 auto}
 figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
+.telecharger{margin:.2rem 0 1rem;font-size:.95rem}
+.telecharger a{display:inline-block;border:1px solid var(--ligne);border-radius:2rem;padding:.2rem .9rem;
+  text-decoration:none}
+.telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 @media print{
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
-  .outils button,.haut,footer{display:none}
+  .outils button,.haut,.telecharger,footer{display:none}
   a{color:#000}
   .partie{break-before:page}
 }
@@ -409,6 +415,9 @@ def render_page(lang: str, images: list[Path] | None = None) -> str:
         if anchors[path.resolve()] == "top":
             title = lines[0][2:].strip()
             body.append(f'<h1 id="top">{esc(title)}</h1>')
+            # Nouvel onglet : l'iframe du site (sandbox sans allow-downloads) ne peut pas télécharger elle-même.
+            body.append(f'<p class="telecharger"><a href="{esc(PDF_NAME.format(lang=lang))}" target="_blank" '
+                        f'rel="noopener">{esc(ui["pdf"])}</a><span>{esc(ui["pdf_hint"])}</span></p>')
             body.append(renderer.render(lines[1:]))
             if images is not None:
                 images += renderer.images

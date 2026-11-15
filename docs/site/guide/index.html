@@ -54,10 +54,14 @@ button:hover{border-color:var(--accent)}
 .schema{margin:1rem 0 1.2rem;text-align:center}
 .schema-svg{display:block;width:100%;max-width:40rem;height:auto;margin:0 auto}
 figcaption{color:var(--doux);font-size:.9rem;margin-top:.4rem}
+.telecharger{margin:.2rem 0 1rem;font-size:.95rem}
+.telecharger a{display:inline-block;border:1px solid var(--ligne);border-radius:2rem;padding:.2rem .9rem;
+  text-decoration:none}
+.telecharger span{color:var(--doux);margin-left:.5rem;font-size:.85rem}
 footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
 @media print{
   :root{--fond:#fff;--carte:#fff;--ligne:#bbb;--texte:#000;--doux:#444;--code:#f3f3f3;color-scheme:light}
-  .outils button,.haut,footer{display:none}
+  .outils button,.haut,.telecharger,footer{display:none}
   a{color:#000}
   .partie{break-before:page}
 }</style>
@@ -65,6 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
 <body>
 <main>
 <h1 id="top">Mettre en service une station openRemoteTRX : guide de l&#x27;opérateur</h1>
+<p class="telecharger"><a href="guide-openRemoteTRX-fr.pdf" target="_blank" rel="noopener">Télécharger en PDF</a><span>A4, une partie par page, à imprimer</span></p>
 <p>Ce guide t&#x27;accompagne, dans l&#x27;ordre, du déballage à la première liaison depuis l&#x27;extérieur. Il est écrit pour le <strong>Yaesu FTDX10</strong> ; les parties communes valent pour tous les postes, ce qui est propre au FTDX10 est dans <a href="#poste-ftdx10">la fiche du poste</a>.</p>
 <div class="note"><p><strong>FTDX10 : préparé, pas encore validé sur un vrai poste.</strong> Les réglages viennent du manuel CAT de Yaesu et des capacités de Hamlib. Les essais de la partie 3 servent de validation : fais-les tous, sur charge fictive, et rapporte le résultat (partie 8, « Demander de l&#x27;aide »).</p></div>
 <h3 id="top-le-parcours">Le parcours</h3>
@@ -74,7 +79,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
 <ul>
 <li>Les <strong>menus de TRX Console</strong> sont notés par leur numéro : « menu 3.1 » = thème 3, menu 1. Sous Windows, les mêmes actions sont dans le menu Démarrer &gt; <strong>TRX distant</strong> (la partie 2 donne la correspondance).</li>
 <li>Une case <strong>« Sécurité »</strong> signale un point qui touche à l&#x27;émission : ne la saute pas.</li>
-<li>Ce guide existe aussi en page web, avec un récapitulatif que l&#x27;on coche en ligne : <a href="https://bob56fr.github.io/openRemoteTRX/guide/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/guide/</a></li>
+<li>Ce guide existe aussi en page web, avec un récapitulatif que l&#x27;on coche en ligne, et en <strong>PDF</strong> à imprimer (lien « Télécharger en PDF » en haut de la page) : <a href="https://bob56fr.github.io/openRemoteTRX/guide/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/guide/</a></li>
 </ul>
 <section id="s-p-00"><h2 id="p-00" class="partie">0. Avant de commencer</h2>
 <h3 id="p-00-ce-que-tu-vas-obtenir">Ce que tu vas obtenir</h3>
