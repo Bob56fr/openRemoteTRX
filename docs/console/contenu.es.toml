@@ -303,6 +303,13 @@ modifie = "Los ajustes de presencia de la estación, guardados aparte en la carp
 admin = true
 expert = "<p>La consola deja su solicitud para el módulo « presence » (archivo <code>presence-request.json</code> de la carpeta de estado, con <code>sudo</code> si hace falta) y lee su respuesta (<code>presence/console-reply.json</code>, borrada al cabo de un minuto: puede contener una invitación). La función se activa en <code>station.toml</code> (menú 3.2): <code>[presence] enabled = true</code> y « presence » en <code>[modules] run</code>, y luego reiniciar la estación. El relé solo ve estados cifrados: ni frecuencia, ni modo, ni estado. Una invitación contiene la clave del grupo: transmítela solo a la persona invitada; solo sirve una vez y caduca a los 7 días. Detalle: <code>docs/presence-cahier-des-charges.md</code>.</p>"
 
+[menus.monitoring]
+role = "<strong>Ayudar a un operador en apuros</strong>, o <strong>recibir ayuda</strong>, sin VPN ni puerto abierto. Quien ayuda crea un <strong>código de 10 caracteres</strong> y lo dicta; el operador ayudado lo teclea; ambos comparan <strong>6 cifras</strong> de viva voz. El operador ayudado elige lo que envía (esencial, o diagnóstico con el estado de la radio; frecuencia y modo solo si lo desea). Se ven las últimas noticias y los últimos códigos de error de cada estación seguida, se pide o se acepta el <strong>modo asistencia</strong> (noticias cada 30 segundos, durante el tiempo elegido), se pausa y se termina un enlace."
+quand = "Cuando un operador necesita ayuda con su estación, o cuando usted la pide: al teléfono con quien ayuda, menú abierto en ambos lados."
+modifie = "Los enlaces, el seudónimo y lo que se envía, guardados aparte en la carpeta de estado (no en station.toml); todo pasa cifrado por el relé. Nada toca la radio: la estación que ayuda solo puede leer y PEDIR, nunca mandar; el operador ayudado puede detenerlo todo en cualquier momento."
+admin = true
+expert = "<p>La consola deja su solicitud para el módulo « monlink » (archivo <code>monlink-request.json</code> de la carpeta de estado, con <code>sudo</code> si hace falta) y lee su respuesta (<code>monlink/console-reply.json</code>, borrada tras un minuto). La función se activa en <code>station.toml</code> (menú 3.2): <code>[monitor_link] enabled = true</code> y « monlink » en <code>[modules] run</code>, luego reiniciar la estación. Todo lo enviado va enmascarado (contraseñas, direcciones, números de serie, nombre del equipo). El código sirve una vez y caduca a los 15 minutos; cifras distintas = enlace rechazado. Detalle: <code>docs/cdc-monitoring.md</code> § 17.</p>"
+
 # ------------------------------------------------------------------ solución de problemas avanzada
 
 [[expert]]

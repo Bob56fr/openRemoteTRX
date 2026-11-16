@@ -55,6 +55,7 @@ class StatusSource:
         self.status_path = Path(status_path)
         self.store = StateStore(state_dir)           # utilisé en lecture seule (safe_mode())
         self.presence_path = Path(state_dir) / "presence" / "status.json"   # module « presence » (sans clé)
+        self.monlink_path = Path(state_dir) / "monlink" / "status.json"     # module « monlink » (sans clé)
         self.watch = GatewayWatch(stale_after_s)
         self.clock, self.sleep, self.system_reader = clock, sleep, system_reader
 
@@ -65,7 +66,7 @@ class StatusSource:
         return Snapshot(status=status, gateway_fresh=self.watch.fresh(now),
                         stale_s=self.watch.age(now) if status is not None else None,
                         safe_mode=self.store.safe_mode(), system=self.system_reader(),
-                        presence=read_presence(self.presence_path))
+                        presence=read_presence(self.presence_path), monlink=read_presence(self.monlink_path))
 
     def poll_once(self, wait_s: float = 0.6) -> Snapshot:
         """Pour une capture unique (--once) : deux lectures espacées ; figée si `seq` n'a pas bougé."""
@@ -77,4 +78,5 @@ class StatusSource:
         if second.status is not None and second.status.seq != first.status.seq:
             return second
         return Snapshot(status=second.status, gateway_fresh=False, stale_s=wait_s,
-                        safe_mode=second.safe_mode, system=second.system, presence=second.presence)
+                        safe_mode=second.safe_mode, system=second.system, presence=second.presence,
+                        monlink=second.monlink)

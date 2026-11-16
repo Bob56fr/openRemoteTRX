@@ -65,7 +65,7 @@ MENU_THEMES = (
     ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
     ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate")),
-    ("5", "features", ("cluster", "breizh", "friends", "sdr")),
+    ("5", "features", ("cluster", "breizh", "friends", "sdr", "monitoring")),
     ("6", "updates", ("update", "rollback", "install_zip")),
 )
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
@@ -1634,21 +1634,28 @@ class Console:
     def friends_request(self, action: str, args: dict | None = None, *, timeout_s: float = 45.0,
                         poll_s: float = 0.5) -> dict | None:
         """Dépose la demande pour le module et attend sa réponse ; None si rien dans le délai (module arrêté)."""
-        import secrets
         from .presence.service import CONSOLE_REPLY, CONSOLE_REQUEST
+        return self.module_request(CONSOLE_REQUEST, Path("presence") / CONSOLE_REPLY, action, args,
+                                   timeout_s=timeout_s, poll_s=poll_s, silent=self.t("friends_request.3"))
+
+    def module_request(self, request_name: str, reply_rel: Path, action: str, args: dict | None, *,
+                       timeout_s: float, poll_s: float, silent: str) -> dict | None:
+        """Demande déposée pour un module (présence, monitoring) dans le dossier d'état, réponse attendue dans
+        `reply_rel` (relatif au dossier d'état) ; None et `silent` affiché si rien dans le délai (module arrêté)."""
+        import secrets
         state_dir = config_state_dir(self.config)
         ident = secrets.token_hex(8)
         body = json.dumps({"id": ident, "action": action, "args": args or {}, "at": time.time()}).encode("utf-8")
-        target = state_dir / CONSOLE_REQUEST
+        target = state_dir / request_name
         try:
             tmp = target.with_name(target.name + ".tmp")
             tmp.write_bytes(body)
             os.replace(tmp, target)
         except PermissionError:                   # dossier du compte de la station : par l'administrateur (Linux)
-            work = Path(tempfile.mkdtemp(prefix="trx-presence-"))
+            work = Path(tempfile.mkdtemp(prefix="trx-module-"))
             try:
-                (work / CONSOLE_REQUEST).write_bytes(body)
-                if self.runner.run(["install", "-m", "0644", str(work / CONSOLE_REQUEST), str(target)], admin=True) != 0:
+                (work / request_name).write_bytes(body)
+                if self.runner.run(["install", "-m", "0644", str(work / request_name), str(target)], admin=True) != 0:
                     self.say(self.t("friends_request.1"))
                     return None
             finally:
@@ -1656,7 +1663,7 @@ class Console:
         except OSError as exc:
             self.say(self.t("friends_request.2", exc=exc))
             return None
-        reply_path = state_dir / "presence" / CONSOLE_REPLY
+        reply_path = state_dir / reply_rel
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             try:
@@ -1666,7 +1673,7 @@ class Console:
             except (OSError, ValueError):
                 pass
             time.sleep(poll_s)
-        self.say(self.t("friends_request.3"))
+        self.say(silent)
         return None
 
     def _friends_do(self, action: str, args: dict | None = None) -> dict | None:
@@ -1768,6 +1775,240 @@ class Console:
             return
         if self.yes(self.t("friends_leave.3"), False) and self._friends_do("leave", {"g": g}) is not None:
             self.say(self.t("friends_leave.4"))
+
+    # ------------------------------------------------------------------ monitoring inter-stations (menu 5.5)
+
+    MON_ROLES = {"receiver": "monitoring.role.receiver", "emitter": "monitoring.role.emitter"}
+    MON_STATES = {"confirm": "monitoring.state.confirm", "active": "monitoring.state.active",
+                  "paused": "monitoring.state.paused"}
+    MON_HOURS = {"1": 1, "2": 2, "3": 4, "4": 24}
+
+    def monitoring(self) -> None:
+        """Monitoring inter-stations (docs/cdc-monitoring.md § 17) : AIDER un opérateur en difficulté, ou ÊTRE AIDÉ.
+        Le module « monlink » fait le travail ; la console lui dépose une demande (state_dir/monlink-request.json) et
+        lit sa réponse. Aucune commande vers une station n'existe : la station qui aide ne peut que lire et demander."""
+        state_dir = config_state_dir(self.config)
+        while True:
+            try:
+                status = json.loads((state_dir / "monlink" / "status.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                status = None
+            if not status or not status.get("enabled"):
+                edit_menu, start_menu = menu_number("edit_config"), menu_number("start")
+                self.say(self.t("monitoring.off", menu=edit_menu, start=start_menu))
+                return
+            self.say("\n" + self.monitoring_summary(status))
+            choice = self.ask(self.t("monitoring.menu")).strip()
+            if not choice:
+                return
+            {"1": self._mon_pseudo, "2": self._mon_view, "3": self._mon_invite, "4": self._mon_join,
+             "5": self._mon_confirm, "6": self._mon_request, "7": self._mon_answer, "8": self._mon_manage,
+             "9": self._mon_end}.get(choice, lambda: self.say(self.t("loop.unknown")))()
+
+    def monitoring_summary(self, status: dict) -> str:
+        reg = self.t("monitoring.summary.registered" if status.get("registered") else "monitoring.summary.not_registered")
+        lines = [self.t("monitoring.summary.head", pseudo=status.get("pseudo") or self.t("monitoring.summary.no_pseudo"),
+                        reg=reg)]
+        if status.get("problem"):
+            lines.append(self.t("monitoring.summary.problem", problem=status["problem"]))
+        for link in status.get("links") or []:
+            lines.append(self.t("monitoring.summary.link", pseudo=link.get("pseudo") or "?",
+                                role=self.label(self.MON_ROLES, link.get("role"), "?"),
+                                state=self.label(self.MON_STATES, link.get("state"), "?"),
+                                extra=self._mon_extra(link)))
+        if not status.get("links"):
+            lines.append(self.t("monitoring.summary.none"))
+        return "\n".join(lines)
+
+    def _mon_extra(self, link: dict) -> str:
+        extra = ""
+        if link.get("state") != "confirm":
+            age = link.get("last_rx_age")
+            extra += (self.t("monitoring.extra.never") if age is None
+                      else self.t("monitoring.extra.age", minutes=max(0, int(age) // 60)))
+        if link.get("request"):
+            extra += self.t("monitoring.extra.request")
+        if link.get("assist_left_s"):
+            extra += self.t("monitoring.extra.assist", minutes=max(1, int(link["assist_left_s"]) // 60))
+        if link.get("paused"):
+            extra += self.t("monitoring.extra.paused")
+        return extra
+
+    def _mon_do(self, action: str, args: dict | None = None) -> dict | list | None:
+        from .monlink.service import CONSOLE_REPLY, CONSOLE_REQUEST
+        self.say(self.t("monitoring.do.sent"))
+        journal_menu = menu_number("journal")
+        reply = self.module_request(CONSOLE_REQUEST, Path("monlink") / CONSOLE_REPLY, action, args, timeout_s=60.0,
+                                    poll_s=0.5, silent=self.t("monitoring.do.noreply", menu=journal_menu))
+        if reply is None:
+            return None
+        if not reply.get("ok"):
+            self.say(self.t("monitoring.do.refused", v=reply.get("message") or reply.get("error")))
+            return None
+        result = reply.get("result")
+        return {} if result is None else result
+
+    def _mon_pick(self, keep) -> dict | None:
+        """Une liaison parmi celles que `keep(liaison)` retient ; choisie d'office s'il n'y en a qu'une."""
+        view = self._mon_do("view")
+        links = [l for l in (view or {}).get("links", []) if keep(l)]
+        if not links:
+            self.say(self.t("monitoring.pick.none"))
+            return None
+        if len(links) == 1:
+            return links[0]
+        for i, l in enumerate(links, 1):
+            self.say(f"  {i}) {l.get('pseudo') or '?'} ({self.label(self.MON_ROLES, l.get('role'), '?')}, "
+                     f"{self.label(self.MON_STATES, l.get('state'), '?')})")
+        answer = self.ask(self.t("monitoring.pick.ask")).strip()
+        if answer.isdigit() and 1 <= int(answer) <= len(links):
+            return links[int(answer) - 1]
+        return None
+
+    def _mon_pseudo(self) -> None:
+        pseudo = self.ask(self.t("monitoring.pseudo.ask")).strip()
+        if pseudo and self._mon_do("pseudo", {"pseudo": pseudo}) is not None:
+            self.say(self.t("monitoring.pseudo.done", pseudo=pseudo))
+
+    def _mon_view(self) -> None:
+        view = self._mon_do("view")
+        for l in (view or {}).get("links", []):
+            self.say(self.t("monitoring.view.head", pseudo=l.get("pseudo") or "?",
+                            role=self.label(self.MON_ROLES, l.get("role"), "?"),
+                            state=self.label(self.MON_STATES, l.get("state"), "?")) + self._mon_extra(l))
+            if l.get("role") == "emitter":
+                p = l.get("profile") or {}
+                if p:
+                    self.say(self.t("monitoring.view.profile", min=p.get("events_min", "?"),
+                                    period=int(p.get("period_s", 0)) // 60,
+                                    fm=self.t("monitoring.fm.on") if p.get("freq_mode") else self.t("monitoring.fm.off")))
+                continue
+            hb, st = l.get("last_hb") or {}, l.get("last_st") or {}
+            if not hb and not st:
+                self.say(self.t("monitoring.view.nothing"))
+            if hb:
+                self.say(self.t("monitoring.view.hb", v=hb.get("v", "?"), gateway=hb.get("gateway", "?"),
+                                safe=hb.get("safe") or self.t("monitoring.safe.none")))
+            sysinfo, rig = st.get("system") or {}, st.get("rig") or {}
+            if sysinfo:
+                self.say(self.t("monitoring.view.system", cpu=sysinfo.get("cpu", "--"), mem=sysinfo.get("mem", "--"),
+                                disk=sysinfo.get("disk", "--"),
+                                temp="--" if sysinfo.get("temp") is None else f"{sysinfo['temp']} °C"))
+            if rig:
+                freq = ""
+                if rig.get("freq"):
+                    freq = f", {rig['freq'] / 1e6:.3f} MHz {rig.get('mode') or ''}".rstrip()
+                self.say(self.t("monitoring.view.rig", cat="OK" if rig.get("cat") else (rig.get("cat_error") or "?"),
+                                tx=rig.get("tx") or "?", clients=rig.get("clients", 0), freq=freq))
+            events = self._mon_do("received", {"peer": l["peer"], "limit": 10})
+            if events:
+                self.say(self.t("monitoring.view.events"))
+                for e in events:
+                    c = e.get("content") or {}
+                    self.say(self.t("monitoring.view.event", ts=str(c.get("ts", ""))[:16].replace("T", " "),
+                                    code=c.get("code", "?"), gravite=c.get("gravite", "?"),
+                                    titre=c.get("titre") or c.get("message") or ""))
+            elif events is not None:
+                self.say(self.t("monitoring.view.no_events"))
+
+    def _mon_invite(self) -> None:
+        result = self._mon_do("invite")
+        if result:
+            here = menu_number("monitoring")
+            self.say(self.t("monitoring.invite.done", code=result["code"], menu=here))
+
+    def _mon_profile(self) -> dict | None:
+        """Ce que la station AIDÉE envoie : « essentiel » ou « diagnostic » (défaut), fréquence et mode à part."""
+        self.say(self.t("monitoring.profile.menu"))
+        answer = self.ask(self.t("monitoring.profile.ask")).strip() or "2"
+        if answer not in ("1", "2"):
+            return None
+        profile = {"rig": answer == "2", "events_min": "erreur" if answer == "1" else "avertissement"}
+        profile["freq_mode"] = self.yes(self.t("monitoring.profile.fm"), False)
+        return profile
+
+    def _mon_fingerprint_ok(self, link: dict) -> bool:
+        """Les 6 chiffres comparés de vive voix ; différents = liaison refusée et effacée (intermédiaire possible)."""
+        self.say(self.t("monitoring.fp.show", fp=link.get("fingerprint", "?")))
+        if self.yes(self.t("monitoring.fp.same"), False):
+            return True
+        self._mon_do("end", {"peer": link["peer"]})
+        self.say(self.t("monitoring.fp.differ"))
+        return False
+
+    def _mon_join(self) -> None:
+        here = menu_number("monitoring")
+        self.say(self.t("monitoring.join.intro", menu=here))
+        code = self.ask(self.t("monitoring.join.ask")).strip()
+        if not code:
+            return
+        result = self._mon_do("join", {"code": code})
+        if not result:
+            return
+        self.say(self.t("monitoring.join.done", pseudo=result.get("pseudo") or "?"))
+        self._mon_finish({"peer": result["peer"], "pseudo": result.get("pseudo"), "role": "emitter",
+                          "fingerprint": result.get("fingerprint")})
+
+    def _mon_confirm(self) -> None:
+        link = self._mon_pick(lambda l: l.get("state") == "confirm")
+        if link is not None:
+            self._mon_finish(link)
+
+    def _mon_finish(self, link: dict) -> None:
+        if not self._mon_fingerprint_ok(link):
+            return
+        args: dict = {"peer": link["peer"]}
+        if link.get("role") == "emitter":
+            profile = self._mon_profile()
+            if profile is None:
+                return
+            args["profile"] = profile
+        if self._mon_do("confirm", args) is not None:
+            self.say(self.t("monitoring.confirm.done", pseudo=link.get("pseudo") or "?"))
+
+    def _mon_request(self) -> None:
+        link = self._mon_pick(lambda l: l.get("role") == "receiver" and l.get("state") == "active")
+        if link is None:
+            return
+        self.say(self.t("monitoring.request.menu"))
+        hours = self.MON_HOURS.get(self.ask(self.t("monitoring.request.ask")).strip() or "2")
+        if hours and self._mon_do("request_assist", {"peer": link["peer"], "duration_s": hours * 3600}) is not None:
+            here = menu_number("monitoring")
+            self.say(self.t("monitoring.request.done", menu=here))
+
+    def _mon_answer(self) -> None:
+        link = self._mon_pick(lambda l: l.get("role") == "emitter" and l.get("request"))
+        if link is None:
+            return
+        hours = round(int(link["request"].get("assist", 0)) / 3600, 1)
+        self.say(self.t("monitoring.answer.show", pseudo=link.get("pseudo") or "?", hours=hours))
+        accept = self.yes(self.t("monitoring.answer.ask"), False)
+        if self._mon_do("answer", {"peer": link["peer"], "accept": accept}) is not None:
+            self.say(self.t("monitoring.answer.yes", hours=hours) if accept else self.t("monitoring.answer.no"))
+
+    def _mon_manage(self) -> None:
+        link = self._mon_pick(lambda l: l.get("role") == "emitter" and l.get("state") in ("active", "paused"))
+        if link is None:
+            return
+        self.say(self.t("monitoring.manage.menu"))
+        choice = self.ask(self.t("monitoring.manage.ask")).strip()
+        if choice == "1":
+            profile = self._mon_profile()
+            done = profile is not None and self._mon_do("profile", {"peer": link["peer"], "profile": profile}) is not None
+        elif choice in ("2", "3"):
+            done = self._mon_do("pause", {"peer": link["peer"], "paused": choice == "2"}) is not None
+        else:
+            return
+        if done:
+            self.say(self.t("monitoring.manage.done"))
+
+    def _mon_end(self) -> None:
+        link = self._mon_pick(lambda l: True)
+        if link is None or not self.yes(self.t("monitoring.end.ask", pseudo=link.get("pseudo") or "?"), False):
+            return
+        purge = link.get("role") == "receiver" and self.yes(self.t("monitoring.end.purge"), True)
+        if self._mon_do("end", {"peer": link["peer"], "purge": purge}) is not None:
+            self.say(self.t("monitoring.end.done"))
 
     # ------------------------------------------------------------------ qualité du réseau (menu 2.4)
 

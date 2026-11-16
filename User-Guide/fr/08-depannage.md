@@ -34,3 +34,10 @@
 2. Depuis la page web : section « Signaler un problème » (texte relu avant l'envoi).
 3. Ouvre un ticket sur https://github.com/Bob56fr/openRemoteTRX/issues avec le formulaire **en français**
    (« Signaler un bug »), décris ce que tu faisais, ce que tu attendais, ce qui s'est passé, et joins le rapport.
+4. **Être aidé à distance** (monitoring entre stations, menu **5.5**, à activer d'abord : partie 9) : la personne qui
+   t'aide crée un code de 10 caractères et te le dicte ; tape-le au choix 4, puis comparez de vive voix les **6
+   chiffres** affichés des deux côtés. Différents : réponds « non », la liaison est effacée. Choisis ensuite ce que tu
+   envoies (« Diagnostic » conseillé ; fréquence et mode seulement si tu veux). Elle voit alors l'état de ta station
+   et ses codes d'erreur, **masqués** (ni mot de passe, ni adresse, ni numéro de série), et peut te **demander** le mode
+   assistance (nouvelles toutes les 30 secondes, pour une durée limitée) : c'est toi qui acceptes (choix 7). Elle ne
+   peut **rien commander** sur ta station. Tu arrêtes tout quand tu veux (choix 9).

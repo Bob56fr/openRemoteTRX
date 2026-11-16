@@ -70,6 +70,7 @@ class Snapshot:
     safe_mode: str | None
     system: SystemInfo = SystemInfo()
     presence: dict | None = None          # state_dir/presence/status.json (module « presence »), None : absent
+    monlink: dict | None = None           # state_dir/monlink/status.json (module « monlink »), None : absent
 
 
 # --------------------------------------------------------------------------- formats
@@ -195,10 +196,34 @@ def _sante_panel(snap: Snapshot) -> Panel:
                         "bad" if fault else "ok"))
     rows.append(Row("Mode sûr", f"ACTIF : {snap.safe_mode}" if snap.safe_mode else "non",
                     "bad" if snap.safe_mode else "ok"))
-    row = presence_row(snap.presence)
-    if row is not None:
-        rows.append(row)
+    for row in (presence_row(snap.presence), monlink_row(snap.monlink)):
+        if row is not None:
+            rows.append(row)
     return Panel("sante", "Santé", tuple(rows))
+
+
+def monlink_row(monlink: dict | None) -> Row | None:
+    """Ligne « Monitoring » (cahier § 12) : liaisons dans chaque sens, ce qui attend l'opérateur ; rien si désactivé."""
+    if not monlink or not monlink.get("enabled"):
+        return None
+    if monlink.get("problem"):
+        return Row("Monitoring", f"problème : {monlink['problem']}", "warn")
+    links = monlink.get("links") or []
+    if not links:
+        return Row("Monitoring", "aucune liaison (TRX Console, menu 5.5)", "dim")
+    helping = sum(1 for l in links if l.get("role") == "receiver" and l.get("state") != "confirm")
+    helped = sum(1 for l in links if l.get("role") == "emitter" and l.get("state") != "confirm")
+    parts = [f"vous aidez {helping} station(s)"] if helping else []
+    if helped:
+        parts.append(f"aidé par {helped}")
+    waiting = sum(1 for l in links if l.get("state") == "confirm")
+    if waiting:
+        parts.append(f"{waiting} empreinte(s) à comparer")
+    if any(l.get("request") for l in links):
+        return Row("Monitoring", ", ".join(parts + ["DEMANDE D'ASSISTANCE en attente (menu 5.5)"]), "warn")
+    if any(l.get("assist_left_s") for l in links):
+        parts.append("assistance en cours")
+    return Row("Monitoring", ", ".join(parts) or "liaisons en attente", "ok" if not waiting else "warn")
 
 
 def presence_row(presence: dict | None) -> Row | None:

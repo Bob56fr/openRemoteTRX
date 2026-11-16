@@ -100,6 +100,13 @@
      "quand": "Um die Station vor Ort zu überwachen oder während eines Tests.",
      "role": "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang,\nverbundene Clients, Dienste, Hardware, Audio, Protokoll."
     },
+    "monitoring": {
+     "admin": true,
+     "expert": "Die Konsole legt ihre Anfrage für das Modul „monlink“ ab (Datei\nmonlink-request.json im Zustandsordner, falls nötig per sudo) und liest\nseine Antwort (monlink/console-reply.json, nach einer Minute gelöscht). Die\nFunktion wird in station.toml eingeschaltet (Menü 3.2): [monitor_link]\nenabled = true und „monlink“ in [modules] run, dann die Station neu starten.\nAlles Gesendete ist maskiert (Passwörter, Adressen, Seriennummern,\nRechnername). Der Code gilt einmal und läuft nach 15 Minuten ab;\nverschiedene Ziffern = Verbindung abgelehnt. Einzelheiten:\ndocs/cdc-monitoring.md § 17.",
+     "modifie": "Die Verbindungen, der Spitzname und was gesendet wird, getrennt im\nZustandsordner abgelegt (nicht in station.toml); alles läuft verschlüsselt\nüber das Relais. Nichts berührt das Funkgerät: die helfende Station kann nur\nlesen und ANFRAGEN, nie steuern; der unterstützte Funker kann jederzeit\nalles beenden.",
+     "quand": "Wenn ein Funker Hilfe für seine Station braucht, oder wenn Sie Hilfe\nanfragen: am Telefon mit dem Helfer, Menü auf beiden Seiten offen.",
+     "role": "Einem Funker in Schwierigkeiten helfen oder Hilfe bekommen, ohne VPN und\nohne offenen Port. Der Helfer erzeugt einen Code aus 10 Zeichen und gibt ihn\ndurch; der unterstützte Funker tippt ihn ein; beide vergleichen 6 Ziffern\nmündlich. Der unterstützte Funker wählt, was gesendet wird (wesentlich, oder\nDiagnose mit dem Zustand des Funkgeräts; Frequenz und Betriebsart nur, wenn\ner will). Man sieht die letzten Nachrichten und Fehlercodes jeder\nbegleiteten Station, fragt den Assistenzmodus an oder nimmt ihn an\n(Nachrichten alle 30 Sekunden, für eine gewählte Dauer), pausiert und\nbeendet eine Verbindung."
+    },
     "network": {
      "admin": true,
      "expert": "Die Station sendet jedem verbundenen Client jede Sekunde ein Lebenszeichen\nund wartet auf das Echo; drei Lebenszeichen ohne Antwort ergeben einen\nAbbruch. Nach jedem Abbruch gleicht sie ihre eigenen Messungen (Router,\nInternet, Ping sonst TCP), die vom Client gelieferten Messwerte (darunter\nder Zugriff auf die Station per HTTPS während des Abbruchs) und die\nRegelmäßigkeit der Abbrüche ab, um zu sagen, welcher Abschnitt\nwahrscheinlich ausgefallen ist; das ist eine Wahrscheinlichkeit, nie eine\nGewissheit. Zwei Geräte mit demselben VPN-Profil nehmen sich alle 15 bis 30\ns gegenseitig die Verbindung weg: ein Profil pro Gerät. Die Messung misst\nnur: sie greift nie in das Senden ein. Dateien: Ordner netprobe im\nZustandsordner (Protokoll von 7 Tagen, Abbrüche und Statistik von 30 Tagen).\nGleiche Zusammenfassung auf der Kommandozeile: trx-netreport (--jours 30,\n--export FICHIER). Einstellungen: Abschnitt [netprobe] von station.toml\n(Menü 3.2). „Alles löschen“ verlangt sudo: die Dateien gehören dem Konto der\nStation. Details: docs/netprobe-cahier-des-charges.md.",
@@ -299,6 +306,13 @@
      "modifie": "Nothing, except one key: STOP TX forces receive. The dashboard can never\nmake the transceiver transmit.",
      "quand": "To watch the station on site, or during a test.",
      "role": "Live dashboard, in the terminal: frequency, mode, transmit or receive,\nconnected clients, services, hardware, audio, log."
+    },
+    "monitoring": {
+     "admin": true,
+     "expert": "The console leaves its request for the \"monlink\" module (file\nmonlink-request.json in the state folder, with sudo if needed) and reads its\nanswer (monlink/console-reply.json, deleted after one minute). The feature\nis enabled in station.toml (menu 3.2): [monitor_link] enabled = true and\n\"monlink\" in [modules] run, then restart the station. Everything sent is\nmasked (passwords, addresses, serial numbers, computer name). The code works\nonce and expires after 15 minutes; different digits = link refused. Details:\ndocs/cdc-monitoring.md § 17.",
+     "modifie": "Links, nickname and what is sent, stored separately in the state folder (not\nin station.toml); everything goes encrypted through the relay. Nothing\ntouches the rig: the helping station can only read and ASK, never command;\nthe helped operator can stop everything at any time.",
+     "quand": "When an operator needs help with their station, or when you ask for help: on\nthe phone with the helper, menu open on both sides.",
+     "role": "Help an operator in trouble, or get help, without VPN or open port. The\nhelper creates a 10-character code and reads it out; the helped operator\ntypes it; both compare 6 digits by voice. The helped operator chooses what\nis sent (essential, or diagnostic with the rig state; frequency and mode\nonly if they wish). You see the latest news and error codes of each followed\nstation, request or accept assistance mode (news every 30 seconds, for a\nchosen duration), pause and end a link."
     },
     "network": {
      "admin": true,
@@ -500,6 +514,13 @@
      "quand": "Para vigilar la estación in situ, o durante una prueba.",
      "role": "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción,\nclientes conectados, servicios, hardware, audio, registro."
     },
+    "monitoring": {
+     "admin": true,
+     "expert": "La consola deja su solicitud para el módulo « monlink » (archivo\nmonlink-request.json de la carpeta de estado, con sudo si hace falta) y lee\nsu respuesta (monlink/console-reply.json, borrada tras un minuto). La\nfunción se activa en station.toml (menú 3.2): [monitor_link] enabled = true\ny « monlink » en [modules] run, luego reiniciar la estación. Todo lo enviado\nva enmascarado (contraseñas, direcciones, números de serie, nombre del\nequipo). El código sirve una vez y caduca a los 15 minutos; cifras distintas\n= enlace rechazado. Detalle: docs/cdc-monitoring.md § 17.",
+     "modifie": "Los enlaces, el seudónimo y lo que se envía, guardados aparte en la carpeta\nde estado (no en station.toml); todo pasa cifrado por el relé. Nada toca la\nradio: la estación que ayuda solo puede leer y PEDIR, nunca mandar; el\noperador ayudado puede detenerlo todo en cualquier momento.",
+     "quand": "Cuando un operador necesita ayuda con su estación, o cuando usted la pide:\nal teléfono con quien ayuda, menú abierto en ambos lados.",
+     "role": "Ayudar a un operador en apuros, o recibir ayuda, sin VPN ni puerto abierto.\nQuien ayuda crea un código de 10 caracteres y lo dicta; el operador ayudado\nlo teclea; ambos comparan 6 cifras de viva voz. El operador ayudado elige lo\nque envía (esencial, o diagnóstico con el estado de la radio; frecuencia y\nmodo solo si lo desea). Se ven las últimas noticias y los últimos códigos de\nerror de cada estación seguida, se pide o se acepta el modo asistencia\n(noticias cada 30 segundos, durante el tiempo elegido), se pausa y se\ntermina un enlace."
+    },
     "network": {
      "admin": true,
      "expert": "La estación envía un latido cada segundo a cada cliente conectado y espera\nsu eco; tres latidos sin respuesta cuentan como un corte. Tras cada corte,\ncruza sus propias sondas (router, Internet, ping o si no TCP), las medidas\nentregadas por el cliente (incluido el acceso a la estación en HTTPS durante\nel corte) y la regularidad de los cortes para decir qué tramo ha fallado\nprobablemente; es una probabilidad, nunca una certeza. Dos dispositivos con\nel mismo perfil VPN se roban el enlace cada 15 a 30 s: un perfil por\ndispositivo. La sonda solo mide: nunca actúa sobre la transmisión. Archivos:\ncarpeta netprobe de la carpeta de estado (registro de 7 días, cortes y\nestadísticas de 30 días). La misma síntesis en línea de comandos:\ntrx-netreport (--jours 30, --export FICHIER). Ajustes: sección [netprobe] de\nstation.toml (menú 3.2). « Borrar todo » pide sudo: los archivos pertenecen\na la cuenta de la estación. Detalle: docs/netprobe-cahier-des-charges.md.",
@@ -699,6 +720,13 @@
      "modifie": "Rien, sauf une touche : STOP TX force la réception. Le tableau de bord ne\npeut jamais faire émettre.",
      "quand": "Pour surveiller la station sur place, ou pendant un essai.",
      "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal."
+    },
+    "monitoring": {
+     "admin": true,
+     "expert": "La console dépose sa demande pour le module « monlink » (fichier\nmonlink-request.json du dossier d'état, par sudo s'il le faut) et lit sa\nréponse (monlink/console-reply.json, effacée après une minute). La fonction\ns'active dans station.toml (menu 3.2) : [monitor_link] enabled = true et\n« monlink » dans [modules] run, puis redémarrer la station. Tout ce qui part\nest masqué (mots de passe, adresses, numéros de série, nom de la machine).\nLe code sert une fois et expire après 15 minutes ; des chiffres différents =\nliaison refusée. Détail : docs/cdc-monitoring.md § 17.",
+     "modifie": "Les liaisons, le pseudo et ce qui est envoyé, rangés à part dans le dossier\nd'état (pas dans station.toml) ; tout passe chiffré par le relais. Rien ne\ntouche au poste : la station qui aide ne peut que lire et DEMANDER, jamais\ncommander ; l'opérateur aidé peut tout arrêter à tout moment.",
+     "quand": "Quand un opérateur a besoin d'aide pour sa station, ou quand vous en\ndemandez : au téléphone avec la personne qui aide, menu ouvert des deux\ncôtés.",
+     "role": "Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert.\nCelui qui aide crée un code de 10 caractères et le dicte ; l'opérateur aidé\nle tape ; les deux comparent 6 chiffres de vive voix. L'opérateur aidé\nchoisit ce qu'il envoie (essentiel, ou diagnostic avec l'état du poste ;\nfréquence et mode seulement s'il le veut). On y voit les dernières nouvelles\net les derniers codes d'erreur de chaque station suivie, on demande ou on\naccepte le mode assistance (nouvelles toutes les 30 secondes, pour une durée\nchoisie), on met en pause et on termine une liaison."
     },
     "network": {
      "admin": true,

@@ -200,7 +200,7 @@ class Engine:
             await self.relay.call("allow", {"peer": peer})
             link.update(state="active", profile=chosen.to_dict())
             self.store.save()
-            await self._send(peer, "cf", {"profile": chosen.to_dict(), "paused": False})
+            await self._send_cf(peer)
         else:
             await self.relay.call("allow", {"peer": peer})
             link.update(state="active", checked=int(self.clock()))
@@ -222,7 +222,7 @@ class Engine:
         chosen = self._profile(profile)
         link["profile"] = chosen.to_dict()
         self.store.save()
-        await self._send(peer, "cf", {"profile": chosen.to_dict(), "paused": link["state"] == "paused"})
+        await self._send_cf(peer)
         return {"profile": chosen.to_dict()}
 
     async def pause(self, peer: object, paused: bool) -> dict:
@@ -230,8 +230,25 @@ class Engine:
         link = self._link(peer, "emitter", active=True)
         link["state"] = "paused" if paused else "active"
         self.store.save()
-        await self._send(peer, "cf", {"profile": link["profile"], "paused": paused})
+        await self._send_cf(peer)
         return {"state": link["state"]}
+
+    async def _send_cf(self, peer: str) -> bool:
+        """Profil et pause annoncés à la station qui aide. Si elle n'a pas encore confirmé l'empreinte de son côté
+        (le relais répond `not_allowed` : ordre ordinaire au téléphone), l'annonce attend et part au cycle suivant ;
+        rien d'autre ne part avant elle."""
+        link = self.store.links[peer]
+        link["cf_pending"] = True
+        self.store.save()
+        try:
+            await self._send(peer, "cf", {"profile": link["profile"], "paused": link["state"] == "paused"})
+        except RelayRefused as exc:
+            if exc.reason == "not_allowed":
+                return False
+            raise
+        link["cf_pending"] = False
+        self.store.save()
+        return True
 
     async def end(self, peer: object, *, purge: bool = False) -> dict:
         """Fin de liaison immédiate, sans l'accord de l'autre (cahier § 11) ; l'autre côté la constate au relais."""
@@ -384,7 +401,17 @@ class Engine:
         """Station AIDÉE : ce que le profil de chaque liaison permet, masqué, au rythme du profil."""
         fresh = self.journal.read()
         for peer, link in list(self.store.links.items()):
-            if link["role"] != "emitter" or link["state"] != "active" or not link.get("profile"):
+            if link["role"] != "emitter" or link["state"] not in ("active", "paused") or not link.get("profile"):
+                continue
+            if link.get("cf_pending"):
+                try:
+                    if not await self._send_cf(peer):
+                        continue                 # la station qui aide n'a pas encore confirmé : rien d'autre ne part
+                except RelayRefused as exc:
+                    if exc.reason == "not_linked":
+                        continue                 # liaison finie par l'autre côté (déjà retirée par _send)
+                    raise
+            if link["state"] != "active":
                 continue
             if link.get("request") and now - link["request"]["at"] > REQUEST_TTL_S:
                 link["request"] = None                                            # demande ignorée : expirée
@@ -416,7 +443,7 @@ class Engine:
                     self._quota_day[peer] = int(now // 86400)
                     emit_event(codes.ORT_7020, logger=log, station=_label(link, peer),
                                taille_ko=len(str(link.get("pending_ev", ""))) // 1024)
-                elif exc.reason not in ("quota", "not_linked"):
+                elif exc.reason not in ("quota", "not_linked", "not_allowed"):
                     raise
 
     async def _check_links(self, now: float) -> None:

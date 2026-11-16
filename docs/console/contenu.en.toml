@@ -303,6 +303,13 @@ modifie = "The station's presence settings, stored separately in the state folde
 admin = true
 expert = "<p>The console leaves its request for the \"presence\" module (file <code>presence-request.json</code> in the state folder, with <code>sudo</code> if needed) and reads its answer (<code>presence/console-reply.json</code>, erased after one minute: it may contain an invitation). The feature is enabled in <code>station.toml</code> (menu 3.2): <code>[presence] enabled = true</code> and \"presence\" in <code>[modules] run</code>, then restart the station. The relay only sees encrypted states: no frequency, no mode, no status. An invitation contains the group key: give it only to the invited person; it can be used only once and expires after 7 days. Details: <code>docs/presence-cahier-des-charges.md</code>.</p>"
 
+[menus.monitoring]
+role = "<strong>Help an operator in trouble</strong>, or <strong>get help</strong>, without VPN or open port. The helper creates a <strong>10-character code</strong> and reads it out; the helped operator types it; both compare <strong>6 digits</strong> by voice. The helped operator chooses what is sent (essential, or diagnostic with the rig state; frequency and mode only if they wish). You see the latest news and error codes of each followed station, request or accept <strong>assistance mode</strong> (news every 30 seconds, for a chosen duration), pause and end a link."
+quand = "When an operator needs help with their station, or when you ask for help: on the phone with the helper, menu open on both sides."
+modifie = "Links, nickname and what is sent, stored separately in the state folder (not in station.toml); everything goes encrypted through the relay. Nothing touches the rig: the helping station can only read and ASK, never command; the helped operator can stop everything at any time."
+admin = true
+expert = "<p>The console leaves its request for the \"monlink\" module (file <code>monlink-request.json</code> in the state folder, with <code>sudo</code> if needed) and reads its answer (<code>monlink/console-reply.json</code>, deleted after one minute). The feature is enabled in <code>station.toml</code> (menu 3.2): <code>[monitor_link] enabled = true</code> and \"monlink\" in <code>[modules] run</code>, then restart the station. Everything sent is masked (passwords, addresses, serial numbers, computer name). The code works once and expires after 15 minutes; different digits = link refused. Details: <code>docs/cdc-monitoring.md</code> § 17.</p>"
+
 # ------------------------------------------------------------------ advanced troubleshooting
 
 [[expert]]
