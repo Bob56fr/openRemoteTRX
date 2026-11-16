@@ -2969,11 +2969,14 @@
         if (sdrSlide.pending) sdrSlideSend({});
       }, SDR_SLIDE_MS));
     }
+    let sdrAxisWidth = -1;
     function sdrAxis(center, span) {
       const box = $("sdr-axis");
-      if (sdrLast && sdrLast.c === center && sdrLast.s === span) return;
+      const width = box.clientWidth || 0;
+      if (sdrLast && sdrLast.c === center && sdrLast.s === span && sdrAxisWidth === width) return;
+      sdrAxisWidth = width;                                                          // fenêtre redimensionnée : graduations refaites
       box.textContent = "";
-      const count = Math.max(6, Math.min(20, Math.floor((box.clientWidth || 600) / 80)));
+      const count = Math.max(6, Math.min(40, Math.floor((box.clientWidth || 600) / 55)));   // une étiquette tous les ~55 px
       const marks = sdrx.ticks(center, span, count);
       const digits = sdrx.tickDigits(marks);
       for (const f of marks) {
@@ -3051,6 +3054,12 @@
         $("sdr-here").hidden = !sdrPicked || !client.sdrAudioOffered;
       });
       $("sdr-here").addEventListener("click", () => { if (sdrPicked) sdrSend({ dfreq_hz: sdrPicked }); });
+      $("sdr-wf").addEventListener("dblclick", (ev) => {                 // double clic : le SDR écoute cette fréquence
+        if (!sdrLast) return;
+        const cv = $("sdr-wf"), width = cv.clientWidth || cv.width;
+        const hz = sdrx.freqAt(ev.offsetX, width, sdrLast.c, sdrLast.s);
+        if (hz) sdrSend({ dfreq_hz: hz });
+      });
       $("sdr-listen").addEventListener("click", () => {
         const on = !client.sdrListening;
         client.sdrListen(on).then((res) => {
@@ -3082,10 +3091,10 @@
         }
         sdrEarsChanged();
       });
-      $("sdr-qsy").addEventListener("click", () => {                     // QSY SDR -> TRX : fréquence touchée, sinon écoutée
+      $("sdr-qsy").addEventListener("click", () => {                     // QSY SDR -> TRX : la fréquence ÉCOUTÉE sur le SDR
         const st = client.sdrState || {};
-        const hz = sdrPicked || (Number.isFinite(st.dfreq) ? st.dfreq : null);
-        if (!hz) { ui.log("QSY SDR → TRX : touchez d'abord une fréquence sur le waterfall du SDR.", "warn"); return; }
+        const hz = Number.isFinite(st.dfreq) ? st.dfreq : null;
+        if (!hz) { ui.log("QSY SDR → TRX : fréquence écoutée du SDR inconnue.", "warn"); return; }
         client.qsy(hz).then((res) => {
           if (res && res.ok) ui.log("QSY SDR → TRX : TRX sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
           else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
@@ -3558,6 +3567,10 @@
           navigator.credentials.store(new window.PasswordCredential({ id: id, password: password, name: id })).catch(() => {});
         }
       } catch (e) { /* navigateur sans cette API : le gestionnaire de mots de passe suit le formulaire */ }
+    }
+    if (typeof window.fetch === "function") {                                   // autorité de la station : lien proposé
+      window.fetch("station-ca.crt", { method: "HEAD", cache: "no-store" })
+        .then((r) => { $("ca-hint").hidden = !(r && r.ok); }).catch(() => {});
     }
     $("login-form").addEventListener("submit", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); $("connect").click(); });
     $("password").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { if (ev.preventDefault) ev.preventDefault(); $("connect").click(); } });

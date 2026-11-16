@@ -43,7 +43,7 @@ SECURITY_HEADERS = {
 
 def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool = True,
              trusted_proxies: Iterable[str] = DEFAULT_PROXIES, ice_servers: Iterable[str] = (),
-             rig_audio: Iterable[str] = ()) -> web.Application:
+             rig_audio: Iterable[str] = (), station_ca: bytes | None = None) -> web.Application:
     proxies, ice, rig = tuple(trusted_proxies), list(ice_servers), list(rig_audio)
     hashing = asyncio.Semaphore(2)          # au plus 2 vérifications de mot de passe (~100 ms de calcul) en parallèle
 
@@ -84,6 +84,14 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
     async def health(_: web.Request) -> web.Response:
         return web.json_response({"ok": True})                                # n'expose aucun état
 
+    async def ca_certificate(_: web.Request) -> web.Response:
+        """Certificat PUBLIC de l'autorité de la station (DER), à installer sur un appareil ; 404 sans autorité."""
+        if not station_ca:
+            return web.json_response({"error": "no_station_ca"}, status=404, headers=SECURITY_HEADERS)
+        return web.Response(body=station_ca, content_type="application/x-x509-ca-cert",
+                            headers={**SECURITY_HEADERS,
+                                     "Content-Disposition": 'attachment; filename="openremotetrx-station-ca.crt"'})
+
     async def config(_: web.Request) -> web.Response:
         return web.json_response({"protocol": PROTOCOL_VERSION, "ice_servers": ice, "rig_audio": rig}, headers=SECURITY_HEADERS)
 
@@ -101,6 +109,7 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
     app.router.add_get("/config", config)
     app.router.add_post("/offer", offer)
     app.router.add_get("/health", health)
+    app.router.add_get("/station-ca.crt", ca_certificate)
     return app
 
 

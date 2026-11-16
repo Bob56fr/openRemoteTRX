@@ -479,5 +479,19 @@
   "operator_create.4": "  Este identificador es el seudónimo de otra cuenta: elige otro.",
   "operator_toggle.1": "Desactivar la cuenta {id} (ya no podrá conectarse)",
   "operator_delete.1": "Eliminar definitivamente la cuenta {id}",
-  "verb.toggle": "desactivar o reactivar"
+  "verb.toggle": "desactivar o reactivar",
+  "menu.certificate": "Certificado de la estación (autoridad a instalar: sin aviso, contraseña recordada)",
+  "certificate.1": "Configure primero la estación (menú 3.1).",
+  "certificate.2": "No hay certificado en la estación (HTTPS por un proxy, o solo acceso local): nada que hacer aquí.",
+  "certificate.3": "Certificado no legible aquí (permisos): su estado no se muestra, las acciones siguen siendo posibles.",
+  "certificate.4": "Certificado actual: {kind}\n  Nombres y direcciones: {hosts}\n  Válido hasta: {until}",
+  "certificate.kind_ca": "firmado por la AUTORIDAD DE LA ESTACIÓN",
+  "certificate.kind_self": "autofirmado (el navegador avisa y no recuerda la contraseña)",
+  "certificate.5": "Autoridad a instalar en cada dispositivo (PC, teléfono), una sola vez: {url}\n  Cómo hacerlo: guía del operador, parte 4.",
+  "certificate.6": "1 = rehacer el certificado, firmado por la autoridad de la estación (mismos nombres)\n2 = igual, añadiendo nombres o direcciones\nIntro = volver: ",
+  "certificate.7": "Nombres o direcciones a añadir, separados por espacios (p. ej. 10.8.0.1 station.local): ",
+  "certificate.8": "El certificado cambia: habrá que emparejar de nuevo la aplicación Android, y cada dispositivo deberá instalar la autoridad si es nueva. ¿Continuar?",
+  "certificate.9": "Error: certificado sin cambios.",
+  "certificate.10": "Certificado rehecho. Empareje de nuevo la aplicación Android (menú {menu}).",
+  "certificate.11": "¿Reiniciar la estación ahora para usarlo?"
 }

@@ -467,6 +467,8 @@ for f in "$CONF" "$CONF.bak" "$IMPORT"; do
   [[ -f $f ]] && chown root:"$SERVICE_USER" "$f" && chmod 0640 "$f"
 done
 find "$CONF_DIR/tls" -type f -exec chown root:"$SERVICE_USER" {} + -exec chmod 0640 {} +
+# clé de l'AUTORITÉ de la station (étape 195) : administrateur seul, jamais lue par la passerelle
+if [ -f "$CONF_DIR/tls/station-ca-key.pem" ]; then chown root:root "$CONF_DIR/tls/station-ca-key.pem"; chmod 0600 "$CONF_DIR/tls/station-ca-key.pem"; fi
 if [[ -z $IMPORT_SOURCE && -f $HERE/station.toml ]]; then IMPORT_SOURCE=$HERE/station.toml; fi
 if [[ -f $CONF ]]; then
   ok "configuration existante conservée : $CONF"

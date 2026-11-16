@@ -18,8 +18,26 @@ L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic
 3. Connecte-toi avec le compte créé par l'assistant (Entrée dans le mot de passe suffit).
 
 > **Mot de passe retenu par le navigateur.** Chrome n'enregistre **jamais** un mot de passe sur une page dont le
-> certificat n'est pas reconnu, même après « Continuer ». Avec le certificat créé par ta station, il faut donc le
-> retaper à chaque connexion. Seul un certificat reconnu (voir l'accès à distance, partie 5) lève cette limite.
+> certificat n'est pas reconnu, même après « Continuer ». La solution : installer une fois, sur chaque appareil,
+> l'**autorité de ta station** (ci-dessous). Ensuite, plus d'avertissement et le mot de passe est retenu.
+
+### Installer l'autorité de la station (une fois par appareil)
+
+1. Sur la station, TRX Console, menu **4.4** « Certificat de la station » : choix **1** (refaire le certificat, signé
+   par l'autorité de la station), puis redémarrer la station quand la console le propose. L'empreinte du certificat
+   change : **appaire de nouveau l'application Android** (menu 4.1).
+2. Sur l'appareil, ouvre la page de la station : sous le mot de passe, touche **« Installer le certificat de la
+   station »** (ou ouvre `https://<adresse-de-la-station>:8443/station-ca.crt`).
+3. **Windows** : ouvre le fichier téléchargé, « Installer un certificat », « Utilisateur actuel », « Placer tous les
+   certificats dans le magasin suivant », **« Autorités de certification racines de confiance »**, Terminer, puis
+   accepte l'avertissement de Windows. Ferme **toutes** les fenêtres de Chrome et rouvre-le.
+4. **Android** : Paramètres, Sécurité (ou « Sécurité et confidentialité »), Plus de paramètres de sécurité,
+   Installer depuis le stockage (ou « Chiffrement et identifiants »), **« Certificat CA »**, choisis le fichier
+   téléchargé et confirme. Rouvre Chrome.
+5. Ouvre la page : plus d'avertissement ; connecte-toi, Chrome propose d'enregistrer le mot de passe.
+
+> Cette autorité ne peut garantir **que** des adresses privées (réseau local, VPN) et les noms de ta station : même
+> si sa clé était volée, elle ne permettrait pas d'imiter un autre site (banque…) sur tes appareils.
 
 Ce que tu dois voir : fréquence et mode qui suivent le poste, S-mètre, son reçu (touche le bouton du son si le
 navigateur l'a bloqué).

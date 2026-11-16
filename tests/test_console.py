@@ -225,7 +225,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     assert len(methods) == len(set(methods))
     assert len(set(module.OLD_NUMBERS.values())) == len(module.OLD_NUMBERS)
     # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
-    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators"}
+    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "6.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
@@ -323,3 +323,35 @@ def test_language_menu_comes_first_in_yellow_and_the_station_state_is_coloured(t
     con, _, _ = console(tmp_path / "vide", running=False)
     con.color = True
     assert "\x1b[1;33mStation PAS ENCORE CONFIGURÉE" in con.header()
+
+
+def test_certificate_menu_remakes_the_certificate_with_the_station_authority(tmp_path):
+    from trxstation.setup_wizard import _make_certificate
+    cfg = dummy_config()
+    cfg.network.gateway_bind = "0.0.0.0"
+    _make_certificate(["192.168.1.10", "station"], tmp_path / "tls", cfg)
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    con, fake, out = console(tmp_path, answers=["2", "10.8.0.1", "o", "o"])
+    con.certificate()
+    text = "\n".join(out)
+    assert "AUTORITÉ DE LA STATION" in text and "192.168.1.10" in text and "/station-ca.crt" in text
+    setup = next(c for c, admin in fake.calls if "trxstation.setup_wizard" in c and admin)
+    assert setup[-2:] == ["--autorite-station", "10.8.0.1"]
+    assert ["systemctl", "restart", TARGET] in [c for c, _ in fake.calls]
+    con, fake, out = console(tmp_path, answers=["1", "n"])                    # refus : rien n'est lancé
+    con.certificate()
+    assert not any("trxstation.setup_wizard" in c for c, _ in fake.calls)
+
+
+def test_setup_wizard_switches_an_existing_station_to_its_authority(tmp_path):
+    from trxstation.gateway.api.tls import CA_CERT, certificate_hosts, generate_self_signed
+    from trxstation.setup_wizard import main as setup_main
+    cfg = dummy_config()
+    tls = tmp_path / "tls"
+    generate_self_signed(["192.168.1.10", "station"], tls / "station-cert.pem", tls / "station-key.pem")
+    cfg.network.tls_cert, cfg.network.tls_key = str(tls / "station-cert.pem"), str(tls / "station-key.pem")
+    cfg.network.gateway_bind = "0.0.0.0"
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    assert setup_main(["--output", str(tmp_path / "station.toml"), "--autorite-station", "10.8.0.1"]) == 0
+    assert (tls / CA_CERT).is_file()
+    assert certificate_hosts(tls / "station-cert.pem") == ["192.168.1.10", "10.8.0.1", "station"]

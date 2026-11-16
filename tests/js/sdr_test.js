@@ -109,6 +109,13 @@ test("graduations plus nombreuses et décimales suivant le pas", () => {
   assert.strictEqual(sdr.tickDigits([7000000]), 3);
 });
 
+test("grand écran : pas de 50 kHz sur 1,5 MHz", () => {
+  const marks = sdr.ticks(7093000, 1536000, 30);
+  assert.strictEqual(marks[1] - marks[0], 50000);
+  assert.strictEqual(sdr.tickDigits(marks), 2);
+  assert.ok(marks.length >= 25);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

@@ -245,6 +245,15 @@ def _start_sdr_governor(cfg, audio, pipeline, bridge, stop) -> list:
     return [asyncio.create_task(governor.run(stop)), asyncio.create_task(lag.run(stop))]
 
 
+def _station_ca(cfg) -> bytes | None:
+    """Certificat de l'autorité de la station (DER), proposé en téléchargement par la page ; None sans autorité."""
+    try:
+        from .api.tls import station_ca_der
+        return station_ca_der(cfg.network.tls_cert)
+    except Exception:                              # module cryptography absent : pas de téléchargement, rien d'autre
+        return None
+
+
 async def _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks):
     """Son du module SDR (seconde piste des opérateurs) ; coupé pendant TOUTE émission. None si le port est pris."""
     from ..modules.keys import key_path, load_or_create_key, module_secret
@@ -324,7 +333,8 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
     registry = ClientRegistry(cfg.clients)
     app = make_app(registry, manager, web_client=cfg.network.web_client,
                    trusted_proxies=cfg.network.trusted_proxies, ice_servers=cfg.network.ice_servers,
-                   rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device))
+                   rig_audio=real_device_names(cfg.audio.capture_device, cfg.audio.playback_device),
+                   station_ca=_station_ca(cfg))
     try:
         runner = await start_server(app, cfg.network.gateway_bind, cfg.network.gateway_port, ssl_context)
     except OSError as exc:                         # on ne quitte pas : le superviseur relancerait la passerelle en boucle

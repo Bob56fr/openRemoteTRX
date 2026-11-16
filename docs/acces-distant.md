@@ -182,3 +182,22 @@ Des comptes **visiteurs** (`role = "listener"`, TRX Console menu 4.2) écoutent 
 | Un attaquant verrouille tout le monde | l'origine vue est celle du proxy : régler `trusted_proxies` et l'en-tête du proxy |
 | Coupures régulières toutes les 15 à 30 s, signal bon | deux appareils sur le même profil VPN : un profil par appareil (section 3) |
 | « Identifiant ou mot de passe refusé » alors qu'ils sont justes | verrou après trop d'essais (attendre), ou mot de passe modifié (`--set-password`) |
+
+
+## Autorité de certification de la station (station 0.147.0+, étape 195)
+
+Un certificat auto-signé chiffre la liaison, mais le navigateur avertit à chaque appareil et **Chrome ne retient
+jamais un mot de passe** sur une page dont le certificat n'est pas reconnu. La station crée donc sa propre autorité
+(`tls/station-ca.pem`, clé `tls/station-ca-key.pem` lisible par l'administrateur seul) et signe avec elle le
+certificat de la passerelle (`station-cert.pem` = certificat de la passerelle puis autorité).
+
+- Création ou renouvellement : TRX Console menu 4.4, ou `trx-setup --output station.toml --autorite-station [NOMS…]`
+  (noms du certificat actuel plus ceux donnés) ; une nouvelle installation (`--self-signed`, assistant) l'utilise
+  d'office.
+- L'autorité est publiée (certificat PUBLIC seulement, DER) sur `https://<station>:8443/station-ca.crt` ; la page
+  propose le lien quand elle existe. À installer une fois par appareil (guide de l'opérateur, partie 4).
+- **Contraintes de nom** (`NameConstraints`, critique) : adresses privées (10/8, 172.16/12, 192.168/16, 100.64/10,
+  127/8, fd00::/8, ::1) et noms DNS de la station seulement : une clé volée ne permet pas d'imiter un site public.
+  Un nouveau nom DNS hors contraintes impose une nouvelle autorité (à réinstaller).
+- L'application Android épingle l'empreinte du certificat de la PASSERELLE : chaque nouveau certificat impose un
+  nouvel appairage (menu 4.1).

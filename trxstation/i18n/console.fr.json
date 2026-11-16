@@ -479,5 +479,19 @@
   "operator_create.4": "  Cet identifiant est le pseudo d'un autre compte : choisis-en un autre.",
   "operator_toggle.1": "Désactiver le compte {id} (il ne pourra plus se connecter)",
   "operator_delete.1": "Supprimer définitivement le compte {id}",
-  "verb.toggle": "désactiver ou réactiver"
+  "verb.toggle": "désactiver ou réactiver",
+  "menu.certificate": "Certificat de la station (autorité à installer : plus d'avertissement, mot de passe retenu)",
+  "certificate.1": "Configure d'abord la station (menu 3.1).",
+  "certificate.2": "Pas de certificat sur la station (HTTPS assuré par un proxy, ou accès local seulement) : rien à faire ici.",
+  "certificate.3": "Certificat illisible ici (droits) : son état n'est pas affiché, les actions restent possibles.",
+  "certificate.4": "Certificat actuel : {kind}\n  Noms et adresses : {hosts}\n  Valable jusqu'au : {until}",
+  "certificate.kind_ca": "signé par l'AUTORITÉ DE LA STATION",
+  "certificate.kind_self": "auto-signé (le navigateur avertit et ne retient pas le mot de passe)",
+  "certificate.5": "Autorité à installer sur chaque appareil (PC, téléphone), une seule fois : {url}\n  Marche à suivre : guide de l'opérateur, partie 4.",
+  "certificate.6": "1 = refaire le certificat, signé par l'autorité de la station (mêmes noms)\n2 = idem en ajoutant des noms ou adresses\nEntrée = retour : ",
+  "certificate.7": "Noms ou adresses à ajouter, séparés par des espaces (ex. 10.8.0.1 station.local) : ",
+  "certificate.8": "Le certificat change : l'application Android devra être appairée de nouveau, et chaque appareil devra installer l'autorité si elle est nouvelle. Continuer ?",
+  "certificate.9": "Échec : certificat inchangé.",
+  "certificate.10": "Certificat refait. Appairez de nouveau l'application Android (menu {menu}).",
+  "certificate.11": "Redémarrer la station maintenant pour l'utiliser ?"
 }

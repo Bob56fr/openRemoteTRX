@@ -59,7 +59,7 @@ MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "journal", "clear_safe_mode")),
     ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
     ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
-    ("4", "access", ("pairing", "visitors", "operators")),
+    ("4", "access", ("pairing", "visitors", "operators", "certificate")),
     ("5", "features", ("cluster", "breizh", "friends")),
     ("6", "updates", ("update", "rollback", "install_zip")),
 )
@@ -662,6 +662,64 @@ class Console:
             self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--empreinte"), admin=True)
         except (OSError, ValueError, cfgmod.ConfigError) as exc:
             self.say(self.t("pairing.2", exc=exc))
+
+    def certificate(self) -> None:
+        """Certificat HTTPS de la station : état, et passage à l'AUTORITÉ DE LA STATION (étape 195) : une fois installée
+        sur un appareil, plus d'avertissement du navigateur et le mot de passe peut être retenu. Refaire le certificat
+        change l'empreinte épinglée par l'application Android (nouvel appairage, menu 4.1)."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say(self.t("certificate.1"))
+            return
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+        except (OSError, cfgmod.ConfigError) as exc:
+            self.say(self.t("pairing.2", exc=exc))
+            return
+        n = cfg.network
+        if not n.tls_cert:
+            self.say(self.t("certificate.2"))
+            return
+        info = self._certificate_info(n.tls_cert)
+        if info is None:
+            self.say(self.t("certificate.3"))
+        else:
+            kind = self.t("certificate.kind_ca") if info["authority"] else self.t("certificate.kind_self")
+            self.say(self.t("certificate.4", kind=kind, hosts=", ".join(info["hosts"]) or "?", until=info["until"]))
+            if info["authority"] and info["hosts"]:
+                url = f"https://{info['hosts'][0]}:{n.gateway_port}/station-ca.crt"
+                self.say(self.t("certificate.5", url=url))
+        choice = self.ask(self.t("certificate.6")).strip()
+        if choice not in ("1", "2"):
+            return
+        extra = self.ask(self.t("certificate.7")).split() if choice == "2" else []
+        if not self.yes(self.t("certificate.8"), False):
+            return
+        code = self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config),
+                                           "--autorite-station", *extra), admin=True)
+        if code != 0:
+            self.say(self.t("certificate.9"))
+            return
+        pairing_menu = menu_number("pairing")
+        self.say(self.t("certificate.10", menu=pairing_menu))
+        if self.yes(self.t("certificate.11"), True):
+            self.start()
+
+    @staticmethod
+    def _certificate_info(path: str) -> dict | None:
+        """Noms, échéance et origine (autorité de la station ou non) du certificat ; None s'il est illisible."""
+        try:
+            from cryptography import x509
+
+            from .gateway.api.tls import CA_CERT
+            cert = x509.load_pem_x509_certificate(Path(path).read_bytes())
+            san = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+            hosts = [str(i) for i in san.get_values_for_type(x509.IPAddress)] + list(san.get_values_for_type(x509.DNSName))
+            ca_file = Path(path).parent / CA_CERT
+            authority = ca_file.is_file() and x509.load_pem_x509_certificate(ca_file.read_bytes()).subject == cert.issuer
+        except Exception:                                  # illisible (droits), module absent, format inattendu
+            return None
+        return {"hosts": hosts, "until": cert.not_valid_after_utc.date().isoformat(), "authority": bool(authority)}
 
     def profiles(self) -> None:
         if not self.config.exists():

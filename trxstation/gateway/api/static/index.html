@@ -172,6 +172,8 @@
         <label>Identifiant <input id="client-id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label>Mot de passe <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"></label>
         </form>
+        <p id="ca-hint" class="note" hidden>Avertissement du navigateur, mot de passe jamais retenu ?
+          <a id="ca-link" href="station-ca.crt" download>Installer le certificat de la station</a> (une fois par appareil, guide de l'opérateur partie 4).</p>
         <p class="note">Le mot de passe n'est jamais enregistré par cette page : utilise le gestionnaire de mots de passe de ton navigateur.</p>
         <label class="check"><input id="use-mic" type="checkbox" checked> Utiliser le micro (HTTPS requis)</label>
         <label>Micro <select id="mic-select"></select></label>
@@ -280,12 +282,12 @@
       <div class="body">
         <p id="sdr-status" class="note"></p>
         <p id="sdr-load" class="note sdr-load" hidden></p>
-        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div></div>
+        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div></div>
         <div id="sdr-axis" class="wf-axis"></div>
         <div class="row">
           <span id="sdr-pick" class="note"></span>
           <button id="sdr-here" class="chip" hidden title="Écouter cette fréquence avec le SDR">Écouter ici</button>
-          <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence du SDR : celle touchée sur le waterfall, sinon celle écoutée (refusé pendant l'émission)">QSY SDR → TRX</button>
+          <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence ÉCOUTÉE sur le SDR (refusé pendant l'émission)">QSY SDR → TRX</button>
           <button id="sdr-qsy-rev" class="chip" title="Le SDR écoute la fréquence du TRX (le waterfall suit si elle sort de la fenêtre)">QSY TRX → SDR</button>
         </div>
         <div id="sdr-listen-box">

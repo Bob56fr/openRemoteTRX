@@ -479,5 +479,19 @@
   "operator_create.4": "  Diese Kennung ist der Anzeigename eines anderen Kontos: wähle eine andere.",
   "operator_toggle.1": "Konto {id} deaktivieren (es kann sich nicht mehr verbinden)",
   "operator_delete.1": "Konto {id} endgültig löschen",
-  "verb.toggle": "deaktivieren oder wieder aktivieren"
+  "verb.toggle": "deaktivieren oder wieder aktivieren",
+  "menu.certificate": "Zertifikat der Station (Zertifizierungsstelle installieren: keine Warnung mehr, Passwort gespeichert)",
+  "certificate.1": "Zuerst die Station einrichten (Menü 3.1).",
+  "certificate.2": "Kein Zertifikat auf der Station (HTTPS über einen Proxy oder nur lokaler Zugriff): hier nichts zu tun.",
+  "certificate.3": "Zertifikat hier nicht lesbar (Rechte): sein Zustand wird nicht angezeigt, die Aktionen bleiben möglich.",
+  "certificate.4": "Aktuelles Zertifikat: {kind}\n  Namen und Adressen: {hosts}\n  Gültig bis: {until}",
+  "certificate.kind_ca": "von der ZERTIFIZIERUNGSSTELLE DER STATION signiert",
+  "certificate.kind_self": "selbstsigniert (der Browser warnt und speichert das Passwort nicht)",
+  "certificate.5": "Zertifizierungsstelle einmal auf jedem Gerät (PC, Telefon) installieren: {url}\n  Anleitung: Handbuch des Operators, Teil 4.",
+  "certificate.6": "1 = Zertifikat neu erstellen, von der Zertifizierungsstelle der Station signiert (gleiche Namen)\n2 = ebenso, mit zusätzlichen Namen oder Adressen\nEingabe = zurück: ",
+  "certificate.7": "Hinzuzufügende Namen oder Adressen, durch Leerzeichen getrennt (z. B. 10.8.0.1 station.local): ",
+  "certificate.8": "Das Zertifikat ändert sich: die Android-App muss neu gekoppelt werden, und jedes Gerät muss die Zertifizierungsstelle installieren, wenn sie neu ist. Fortfahren?",
+  "certificate.9": "Fehlgeschlagen: Zertifikat unverändert.",
+  "certificate.10": "Zertifikat neu erstellt. Android-App neu koppeln (Menü {menu}).",
+  "certificate.11": "Station jetzt neu starten, um es zu verwenden?"
 }

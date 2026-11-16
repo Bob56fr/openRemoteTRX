@@ -16,6 +16,13 @@
      "quand": "Beim Einrichten von Breizh, nach einer Neuinstallation von Breizh (neuer\nSchlüssel), wenn Webseite oder App einen Rückfall melden, oder um die\nVerbindung vor dem Senden zu prüfen.",
      "role": "Verbindet die Station mit Breizh Audio Box, der Sprachverarbeitung auf einem\nPC im selben lokalen Netz: die Stimme des Operators geht durch Breizh, bevor\nsie zum Transceiver gelangt. Hier erzeugst du den Kopplungsschlüssel (wird\nnur einmal angezeigt, zusammen mit Adresse und Port der Station in den\nReiter „OpenRemoteTRX“ der Einstellungen von Breizh zu übertragen), stellst\ndie IP-Adresse und den UDP-Port des Breizh-PCs ein, aktivierst oder\ndeaktivierst den Weg über Breizh, machst einen Verbindungstest ohne Ton und\nliest das Protokoll (Verbindungen, Rückfälle, Ablehnungen). Der aktuelle\nZustand der Verbindung (bereit, Senden über Breizh, Rückfall, Ablehnung,\nLaufzeit hin und zurück) steht oben."
     },
+    "certificate": {
+     "admin": true,
+     "expert": "Die Zertifizierungsstelle ist durch Namensbeschränkungen auf private\nAdressen (lokales Netz, VPN) und die Namen der Station begrenzt: selbst\ngestohlen könnte ihr Schlüssel auf den Geräten, die sie installiert haben,\nkeine andere Website vortäuschen. Ihr Schlüssel bleibt auf der Station und\nist nur für den Administrator lesbar. Sie wird wiederverwendet, solange ihre\nBeschränkungen die gewünschten Namen abdecken; ein neuer DNS-Name erfordert\neine neue Zertifizierungsstelle, die neu zu installieren ist. Ebenso auf der\nKommandozeile: trx-setup --output /etc/trx-remote/station.toml\n--autorite-station [NAMEN…].",
+     "modifie": "Die Dateien im Ordner tls der Station (Zertifizierungsstelle bei Bedarf\nerstellt, Zertifikat des Gateways neu erstellt) und bei Bedarf [network]\ntls_cert / tls_key. Der Fingerabdruck ändert sich: die Android-App muss neu\ngekoppelt werden (Menü 4.1). Die Station muss neu starten, um es zu\nverwenden (wird angeboten).",
+     "quand": "Einmal, damit der Browser nicht mehr warnt und das gespeicherte Passwort\nzurückkommt; um dem Zertifikat einen Namen oder eine Adresse (VPN, lokaler\nName) hinzuzufügen.",
+     "role": "Zeigt das HTTPS-Zertifikat der Station (Namen und Adressen, Ablauf,\nHerkunft) und erstellt es neu, von der Zertifizierungsstelle der Station\nsigniert. Ist diese Zertifizierungsstelle auf einem Gerät (PC, Telefon)\ninstalliert, warnt der Browser nicht mehr und kann das Passwort speichern\n(Chrome speichert es bei einem nicht anerkannten Zertifikat nicht). Der\nDownload-Link der Zertifizierungsstelle wird angezeigt; die Seite bietet ihn\nebenfalls an."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "Der abgesicherte Modus überdauert Neustarts und Korrekturen: er muss hier\nausdrücklich aufgehoben werden.",
@@ -201,6 +208,13 @@
      "modifie": "The key: file breizh.key next to station.toml (never inside it), with the\nconfiguration's permissions. The address, port and activation: [breizh]\nsection of station.toml, through the same checked path as menu 3.2\n(differences shown, confirmation, old version kept); the station applies\nthem on restart (offered). The test and the log change nothing.",
      "quand": "When setting up Breizh, after reinstalling Breizh (new key), when the page\nor the app report a fallback, or to check the link before transmitting.",
      "role": "Links the station to Breizh Audio Box, the voice processing that runs on a\nPC on the same local network: the operator's voice goes through Breizh\nbefore reaching the transceiver. Here you create the pairing key (shown only\nonce, to copy into the \"OpenRemoteTRX\" tab of the Breizh settings together\nwith the station address and port), set the IP address and UDP port of the\nBreizh PC, enable or disable routing through Breizh, run a link test without\naudio and read the log (connections, fallbacks, refusals). The current link\nstate (ready, transmitting through Breizh, fallback, refused, round trip) is\nshown at the top."
+    },
+    "certificate": {
+     "admin": true,
+     "expert": "The authority is limited by name constraints to private addresses (local\nnetwork, VPN) and to the station's names: even if stolen, its key could not\nimpersonate another site on the devices that installed it. Its key stays on\nthe station, readable by the administrator only. It is reused as long as its\nconstraints cover the requested names; a new DNS name needs a new authority,\nto reinstall. Same from the command line: trx-setup --output\n/etc/trx-remote/station.toml --autorite-station [NAMES…].",
+     "modifie": "The files of the station's tls folder (authority created if needed, gateway\ncertificate remade) and [network] tls_cert / tls_key if needed. The\nfingerprint changes: the Android app must be paired again (menu 4.1). The\nstation must restart to use it (offered).",
+     "quand": "Once, to stop the browser warning and get the saved password; to add a name\nor address (VPN, local name) to the certificate.",
+     "role": "Shows the station's HTTPS certificate (names and addresses, expiry, origin)\nand remakes it signed by the station authority. Once this authority is\ninstalled on a device (PC, phone), the browser no longer warns and can\nremember the password (Chrome refuses to save it with an unrecognised\ncertificate). The download link of the authority is shown; the page offers\nit too."
     },
     "clear_safe_mode": {
      "admin": true,
@@ -388,6 +402,13 @@
      "quand": "Al instalar Breizh, después de reinstalar Breizh (clave nueva), cuando la\npágina o la aplicación señalan un repliegue, o para comprobar el enlace\nantes de una transmisión.",
      "role": "Conecta la estación con Breizh Audio Box, el procesado de voz que funciona\nen un PC de la misma red local: la voz del operador pasa por Breizh antes de\nllegar al transceptor. Aquí se crea la clave de emparejamiento (mostrada una\nsola vez, que hay que copiar en la pestaña « OpenRemoteTRX » de los ajustes\nde Breizh con la dirección de la estación y el puerto), se ajustan la\ndirección IP y el puerto UDP del PC de Breizh, se activa o desactiva el paso\npor Breizh, se hace una prueba del enlace sin sonido y se lee el registro\n(conexiones, repliegues, rechazos). El estado actual del enlace (listo,\ntransmisión por Breizh, repliegue, rechazo, ida y vuelta) se muestra arriba."
     },
+    "certificate": {
+     "admin": true,
+     "expert": "La autoridad está limitada por restricciones de nombre a las direcciones\nprivadas (red local, VPN) y a los nombres de la estación: incluso robada, su\nclave no permitiría suplantar otro sitio en los dispositivos que la\ninstalaron. Su clave permanece en la estación, legible solo por el\nadministrador. Se reutiliza mientras sus restricciones cubran los nombres\npedidos; un nuevo nombre DNS exige una nueva autoridad, que hay que\nreinstalar. Lo mismo en línea de comandos: trx-setup --output\n/etc/trx-remote/station.toml --autorite-station [NOMBRES…].",
+     "modifie": "Los archivos de la carpeta tls de la estación (autoridad creada si hace\nfalta, certificado de la pasarela rehecho) y [network] tls_cert / tls_key si\nhace falta. La huella cambia: hay que emparejar de nuevo la aplicación\nAndroid (menú 4.1). La estación debe reiniciarse para usarlo (se propone).",
+     "quand": "Una vez, para que el navegador deje de avisar y recuperar la contraseña\nguardada; para añadir un nombre o una dirección (VPN, nombre local) al\ncertificado.",
+     "role": "Muestra el certificado HTTPS de la estación (nombres y direcciones,\ncaducidad, origen) y lo rehace firmado por la autoridad de la estación. Una\nvez instalada esta autoridad en un dispositivo (PC, teléfono), el navegador\ndeja de avisar y puede recordar la contraseña (Chrome se niega a guardarla\ncon un certificado no reconocido). Se muestra el enlace de descarga de la\nautoridad; la página también lo ofrece."
+    },
     "clear_safe_mode": {
      "admin": true,
      "expert": "El modo seguro sobrevive a los reinicios y a las correcciones: hay que\nquitarlo explícitamente aquí.",
@@ -573,6 +594,13 @@
      "modifie": "La clé : fichier breizh.key à côté de station.toml (jamais dedans), avec les\ndroits de la configuration. L'adresse, le port et l'activation : section\n[breizh] de station.toml, par le même chemin vérifié que le menu 3.2\n(différences montrées, confirmation, ancienne version gardée) ; la station\nles prend au redémarrage (proposé). L'essai et le journal ne modifient rien.",
      "quand": "À la mise en place de Breizh, après une réinstallation de Breizh (nouvelle\nclé), quand la page ou l'application signalent un repli, ou pour vérifier la\nliaison avant une émission.",
      "role": "Relie la station à Breizh Audio Box, le traitement de la voix qui tourne sur\nun PC du même réseau local : la voix de l'opérateur passe par Breizh avant\nd'aller au poste. On y crée la clé d'appairage (montrée une seule fois, à\nrecopier dans l'onglet « OpenRemoteTRX » des réglages de Breizh avec\nl'adresse de la station et le port), on règle l'adresse IP et le port UDP du\nPC de Breizh, on active ou désactive le passage par Breizh, on fait un essai\nde la liaison sans son et on lit le journal (connexions, replis, refus).\nL'état de la liaison en ce moment (prêt, émission par Breizh, repli, refus,\naller-retour) s'affiche en tête."
+    },
+    "certificate": {
+     "admin": true,
+     "expert": "L'autorité est limitée par des contraintes de nom aux adresses privées\n(réseau local, VPN) et aux noms de la station : même volée, sa clé ne\npermettrait pas d'usurper un autre site sur les appareils qui l'ont\ninstallée. Sa clé reste sur la station, lisible par l'administrateur seul.\nElle est réutilisée tant que ses contraintes couvrent les noms demandés ; un\nnouveau nom DNS impose une nouvelle autorité, à réinstaller. Même chose en\nligne de commande : trx-setup --output /etc/trx-remote/station.toml\n--autorite-station [NOMS…].",
+     "modifie": "Les fichiers du dossier tls de la station (autorité créée au besoin,\ncertificat de la passerelle refait) et [network] tls_cert / tls_key si\nbesoin. L'empreinte change : l'application Android doit être appairée de\nnouveau (menu 4.1). La station doit redémarrer pour l'utiliser (proposé).",
+     "quand": "Une fois, pour ne plus voir l'avertissement du navigateur et retrouver le\nmot de passe enregistré ; pour ajouter un nom ou une adresse (VPN, nom\nlocal) au certificat.",
+     "role": "Montre le certificat HTTPS de la station (noms et adresses, échéance,\norigine) et le refait signé par l'autorité de la station. Une fois cette\nautorité installée sur un appareil (PC, téléphone), le navigateur n'affiche\nplus d'avertissement et peut retenir le mot de passe (Chrome refuse de\nl'enregistrer sur un certificat non reconnu). Le lien de téléchargement de\nl'autorité est affiché ; la page le propose aussi."
     },
     "clear_safe_mode": {
      "admin": true,

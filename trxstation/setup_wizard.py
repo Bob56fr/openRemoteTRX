@@ -550,7 +550,8 @@ def ask_network(cfg: Config, tls_dir: Path | None) -> None:
     print(f"  Certificat créé pour : {', '.join(hosts)}")
     for address in hosts[:-2] or ["<adresse de ce PC>"]:
         print(f"  Adresse à ouvrir sur le téléphone : https://{address}:{n.gateway_port}")
-    print("  Le navigateur affichera un avertissement (certificat non reconnu) : c'est attendu, voir le guide.")
+    print("  Certificat signé par l'autorité de la station. Tant qu'elle n'est pas installée sur un appareil, le "
+          "navigateur avertit (c'est attendu) : lien « Installer le certificat de la station » de la page, guide partie 4.")
     from .gateway.api.tls import certificate_fingerprint
     print(f"  Empreinte du certificat (application Android) : {certificate_fingerprint(n.tls_cert)}")
 
@@ -655,13 +656,40 @@ def _pick(choices: list[str], title: str, ask: Callable[[str], str], say: Callab
     return default
 
 
-def _make_certificate(hosts: list[str], folder: Path, cfg: Config) -> None:
-    from .gateway.api.tls import generate_self_signed
+def _make_certificate(hosts: list[str], folder: Path, cfg: Config) -> bool:
+    """Certificat de la passerelle signé par l'AUTORITÉ DE LA STATION (étape 195), créée au besoin dans le même
+    dossier. Rend vrai si l'autorité vient d'être (re)créée : à installer (de nouveau) sur chaque appareil."""
+    from .gateway.api.tls import CA_CERT, ca_covers, generate_station_ca, generate_station_cert
     cert, key = folder / "station-cert.pem", folder / "station-key.pem"
-    generate_self_signed(hosts, cert, key)
+    created = not ca_covers(folder, hosts)
+    if created:                                           # absente, ou ses contraintes ne couvrent pas un nouveau nom
+        generate_station_ca(folder, hosts, label=socket.gethostname())
+        protect(folder / CA_CERT)                         # lu par la passerelle (téléchargement) ; sa clé reste 0600
+    generate_station_cert(hosts, folder, cert, key)
     protect(cert)
     protect(key)
     cfg.network.tls_cert, cfg.network.tls_key = str(cert), str(key)
+    return created
+
+
+def station_authority(cfg: Config, output: Path, hosts: list[str] | None = None,
+                      say: Callable[[str], None] = print) -> int:
+    """Passe la station à son autorité de certification (TRX Console, menu 4.4) : noms du certificat actuel PLUS
+    ceux donnés, même dossier ; empreinte affichée (l'application doit être appairée de nouveau)."""
+    from .gateway.api.tls import certificate_fingerprint, certificate_hosts
+    n = cfg.network
+    current = Path(n.tls_cert) if n.tls_cert else None
+    names = list(dict.fromkeys((certificate_hosts(current) if current else []) + list(hosts or [])))
+    if not names:
+        names = local_addresses() + [socket.gethostname(), f"{socket.gethostname()}.local"]
+    folder = current.parent if current else output.resolve().parent / "tls"
+    created = _make_certificate(names, folder, cfg)
+    write_config(cfg, output)
+    say("Certificat de la station signé par son autorité : " + ", ".join(names))
+    say("Autorité " + ("CRÉÉE : à installer sur chaque appareil" if created else "inchangée (déjà installée sur vos appareils)")
+        + f" : https://{names[0]}:{n.gateway_port}/station-ca.crt")
+    say(f"Nouvelle empreinte (application Android : appairer de nouveau, menu 4.1) : {certificate_fingerprint(n.tls_cert)}")
+    return 0
 
 
 def choose_password(login: str, ask_password: Callable[[str], str] = getpass.getpass,
@@ -779,7 +807,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tx-modes", metavar="MODE", nargs="+",
                     help="modes où l'émission est permise (ex. PKTUSB PKTLSB) ; « aucun » supprime la restriction (--output)")
     ap.add_argument("--self-signed", metavar="HÔTE", nargs="+",
-                    help="génère un certificat TLS auto-signé pour ces noms/adresses IP et l'active (--output)")
+                    help="génère un certificat TLS pour ces noms/adresses IP, signé par l'autorité de la station "
+                         "(créée au besoin), et l'active (--output)")
+    ap.add_argument("--autorite-station", metavar="HÔTE", nargs="*",
+                    help="refait le certificat de la passerelle, signé par l'autorité de la station (noms de "
+                         "l'actuel, plus ceux donnés) ; l'application devra être appairée de nouveau (--output)")
     ap.add_argument("--empreinte", action="store_true",
                     help="affiche adresse, comptes et empreinte du certificat pour appairer l'application Android (--output, lecture seule)")
     ap.add_argument("--compte", metavar="NOM", help="avec --empreinte : compte à mettre dans le QR code (sans question)")
@@ -798,6 +830,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.spectre:
             return _cli_spectrum(args)
+        if args.autorite_station is not None:
+            return station_authority(cfgmod.load(args.output), args.output, args.autorite_station)
         if args.empreinte:
             cfg, _ = cfgmod.load_unchecked(args.output)
             try:                                               # sans terminal (journal, tube) : choix par défaut
@@ -829,8 +863,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Mot de passe de « {args.set_password} » changé.")
             if args.self_signed:
                 _make_certificate(args.self_signed, args.output.resolve().parent / "tls", cfg)
-                print(f"Certificat auto-signé écrit : {cfg.network.tls_cert}\nLe navigateur affichera un avertissement (certificat non reconnu) : "
-                      "à réserver à un essai. Pour un usage durable, voir docs/acces-distant.md.")
+                print(f"Certificat écrit : {cfg.network.tls_cert}, signé par l'autorité de la station. Installer "
+                      "l'autorité sur chaque appareil (page : lien « Certificat de la station ») supprime l'avertissement "
+                      "du navigateur et lui permet de retenir le mot de passe.")
                 from .gateway.api.tls import certificate_fingerprint
                 print(f"Empreinte du certificat (application Android) : {certificate_fingerprint(cfg.network.tls_cert)}")
             write_config(cfg, args.output)

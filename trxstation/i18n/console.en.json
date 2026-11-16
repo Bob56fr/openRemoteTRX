@@ -479,5 +479,19 @@
   "operator_create.4": "  This login is another account's nickname: choose another one.",
   "operator_toggle.1": "Disable account {id} (it will no longer be able to connect)",
   "operator_delete.1": "Permanently delete account {id}",
-  "verb.toggle": "disable or re-enable"
+  "verb.toggle": "disable or re-enable",
+  "menu.certificate": "Station certificate (authority to install: no more warning, password remembered)",
+  "certificate.1": "Configure the station first (menu 3.1).",
+  "certificate.2": "No certificate on the station (HTTPS by a proxy, or local access only): nothing to do here.",
+  "certificate.3": "Certificate not readable here (permissions): its state is not shown, the actions remain possible.",
+  "certificate.4": "Current certificate: {kind}\n  Names and addresses: {hosts}\n  Valid until: {until}",
+  "certificate.kind_ca": "signed by the STATION AUTHORITY",
+  "certificate.kind_self": "self-signed (the browser warns and does not remember the password)",
+  "certificate.5": "Authority to install on each device (PC, phone), once: {url}\n  How to: operator's guide, part 4.",
+  "certificate.6": "1 = remake the certificate, signed by the station authority (same names)\n2 = same, adding names or addresses\nEnter = back: ",
+  "certificate.7": "Names or addresses to add, separated by spaces (e.g. 10.8.0.1 station.local): ",
+  "certificate.8": "The certificate changes: the Android app must be paired again, and each device must install the authority if it is new. Continue?",
+  "certificate.9": "Failed: certificate unchanged.",
+  "certificate.10": "Certificate remade. Pair the Android app again (menu {menu}).",
+  "certificate.11": "Restart the station now to use it?"
 }
