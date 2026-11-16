@@ -69,6 +69,14 @@ test("ligne d'état lisible", () => {
   assert.equal(sdr.nextRange(80), 30);
 });
 
+test("volume du SDR : courbe au carré, bornée", () => {
+  assert.strictEqual(sdr.volumeOf(100), 1);
+  assert.strictEqual(sdr.volumeOf(0), 0);
+  assert.strictEqual(sdr.volumeOf(50), 0.25);
+  assert.strictEqual(sdr.volumeOf(150), 1);
+  assert.strictEqual(sdr.volumeOf("x"), 0);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

@@ -121,6 +121,13 @@
 
   function widthLabel(hz) { return hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 1 : 0).replace(".", ",") + " kHz" : hz + " Hz"; }
 
+  // Curseur de volume 0-100 -> volume de l'élément audio : courbe au carré (l'oreille entend en décibels ;
+  // un réglage linéaire semblait sans effet sur les trois quarts de sa course). 50 % = -12 dB, 10 % = -40 dB.
+  function volumeOf(value) {
+    const v = Math.min(100, Math.max(0, Number(value) || 0)) / 100;
+    return v * v;
+  }
+
   function listenText(st, listening) {
     /* Ligne de l'écoute : fréquence, mode, filtre, squelch, niveaux. */
     if (!st || !Number.isFinite(st.dfreq)) return "";
@@ -164,6 +171,6 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

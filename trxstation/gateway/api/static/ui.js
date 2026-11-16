@@ -2861,7 +2861,7 @@
       if (!sdrSound) return;
       try {
         sdrSound.srcObject = stream || new MediaStream([track]);
-        sdrSound.volume = Number($("sdr-vol").value) / 100;
+        sdrSound.volume = sdrx.volumeOf($("sdr-vol").value);
         if (client.sdrListening) sdrSound.play().catch(() => {});
       } catch (e) { /* navigateur sans seconde piste : le waterfall reste */ }
     }
@@ -2998,7 +2998,7 @@
       $("sdr-dbw").addEventListener("change", () => sdrSend({ dbw: Number($("sdr-dbw").value) }));
       $("sdr-sql").addEventListener("input", () => { sdrSlide.held["sdr-sql"] = true; $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert"; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
       $("sdr-sql").addEventListener("change", () => { sdrSlide.held["sdr-sql"] = false; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
-      $("sdr-vol").addEventListener("input", () => { if (sdrSound) sdrSound.volume = Number($("sdr-vol").value) / 100; });
+      $("sdr-vol").addEventListener("input", () => { if (sdrSound) sdrSound.volume = sdrx.volumeOf($("sdr-vol").value); });
       $("sdr-qsy").addEventListener("click", () => {
         if (!sdrPicked) return;
         client.qsy(sdrPicked).then((res) => {

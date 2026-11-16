@@ -121,6 +121,11 @@ static void ring_push(const int16_t *xi, const int16_t *xq, unsigned int n) {
 // Chaîne : NCO (canal ramené près de 0) -> rééchantillonnage vers 48 kHz -> filtre de canal (passe-bande complexe par
 // décalage, passe-bas, décalage inverse) -> squelch (puissance du canal au-dessus du bruit estimé) -> AGC (sauf FM) ->
 // démodulation (AM : enveloppe ; FM : discriminateur ; BLU / CW : partie réelle) -> int16, blocs de 20 ms.
+// AGC (étape 191) : l'AGC de liquid-dsp ramène le signal à une énergie UNITÉ (set_signal_level n'est que son
+// estimation de départ) : le son sortait écrêté. AGC propre : enveloppe à attaque de 2 ms et retombée de 0,5 s,
+// crête ramenée à AGC_PEAK (environ -20 dBFS efficaces), gain plafonné (bruit seul pas gonflé sans fin).
+#define AGC_PEAK 0.25f
+#define AGC_FLOOR 1e-5f
 enum { M_AM = 0, M_NFM, M_USB, M_LSB, M_CW };
 static const char *MODE_NAMES[] = { "AM", "NFM", "USB", "LSB", "CW" };
 #define CW_TONE_HZ 700.0
@@ -138,7 +143,6 @@ static struct {
     nco_crcf nco, shift, unshift;            // shift et unshift avancent ensemble (phase cohérente)
     msresamp_crcf rs;
     firfilt_crcf lpf;
-    agc_crcf agc;
     freqdem fm;
     double center_shift;                 // décalage du passe-bande (Hz) à 48 kHz
     int mode;
@@ -147,6 +151,7 @@ static struct {
     int16_t out[AUDIO_BLOCK];
     unsigned int nout;
     float dc;                            // AM : suppression de la composante continue
+    float env;                           // AGC : enveloppe suivie (attaque rapide, retombée lente)
     double hang;                         // squelch : maintien après la fermeture
 } D;
 
@@ -158,7 +163,7 @@ static int mode_of(const char *name) {
 static void demod_free(void) {
     if (!D.ready) return;
     nco_crcf_destroy(D.nco); nco_crcf_destroy(D.shift); nco_crcf_destroy(D.unshift); msresamp_crcf_destroy(D.rs);
-    firfilt_crcf_destroy(D.lpf); agc_crcf_destroy(D.agc); freqdem_destroy(D.fm);
+    firfilt_crcf_destroy(D.lpf); freqdem_destroy(D.fm);
     D.ready = 0;
 }
 
@@ -188,11 +193,8 @@ static void demod_build(void) {
     nco_crcf_set_frequency(D.shift, (float)(2.0 * M_PI * D.center_shift / AUDIO_RATE));
     D.unshift = nco_crcf_create(LIQUID_NCO);
     nco_crcf_set_frequency(D.unshift, (float)(2.0 * M_PI * D.center_shift / AUDIO_RATE));
-    D.agc = agc_crcf_create();
-    agc_crcf_set_bandwidth(D.agc, 1e-3f);                        // AGC assez lent (BLU) ; l'AM et la CW s'en accommodent
-    agc_crcf_set_signal_level(D.agc, 1e-2f);
     D.fm = freqdem_create((float)(bw / 2.0 / AUDIO_RATE));
-    D.mode = mode; D.dc = 0; D.nout = 0; D.hang = 0;
+    D.mode = mode; D.dc = 0; D.nout = 0; D.hang = 0; D.env = 0;
     D.ready = 1;
 }
 
@@ -228,20 +230,24 @@ static void demod_feed(const float complex *raw, unsigned int n) {
         json_frame("{\"t\":\"event\",\"name\":\"squelch\",\"open\":%d}", open);
     }
     nco_crcf_mix_block_up(D.unshift, D.z, D.y, m);
+    const float att = 1.0f - expf(-1.0f / (0.002f * AUDIO_RATE));
+    const float rel = expf(-1.0f / (0.5f * AUDIO_RATE));
     for (unsigned int i = 0; i < m; i++) {
         float s;
         if (D.mode == M_NFM) {
             freqdem_demodulate(D.fm, D.y[i], &s);
-            s *= 0.5f;
+            s *= 0.3f;
         } else {
-            float complex a;
-            agc_crcf_execute(D.agc, D.y[i], &a);
+            float mag = cabsf(D.y[i]);
+            if (mag > D.env) D.env += att * (mag - D.env);
+            else D.env *= rel;
+            float g = AGC_PEAK / (D.env > AGC_FLOOR ? D.env : AGC_FLOOR);
             if (D.mode == M_AM) {
-                float e = cabsf(a);
+                float e = mag * g;
                 D.dc += 0.001f * (e - D.dc);
-                s = (e - D.dc) * 0.5f;
+                s = (e - D.dc) * 2.0f;           // porteuse ~AGC_PEAK : modulation à 100 % = ±AGC_PEAK, x2
             } else {
-                s = crealf(a) * 0.5f;
+                s = crealf(D.y[i]) * g;
             }
         }
         if (!open) s = 0;
