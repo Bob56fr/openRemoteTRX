@@ -180,6 +180,19 @@ class Presence:
     key_file: str = ""                # clés de la station ; vide = state_dir/presence/presence.key
 
 
+MONLINK_KEY_FILE = "monlink.key"     # dans state_dir/monlink/ quand key_file est vide
+
+
+@dataclass
+class MonitorLink:
+    """Monitoring inter-stations (docs/cdc-monitoring.md § 17) : module « monlink », sans AUCUN droit sur le poste.
+    Liaisons, profils d'envoi et pseudo sont dans state_dir/monlink/ (choisis dans TRX Console), jamais ici. Clés À
+    PART de la présence (décision de l'utilisateur du 2026-11-16) : les deux services ne peuvent pas être reliés."""
+    enabled: bool = False             # false : le module attend sans rien envoyer ni relever
+    relay_url: str = PRESENCE_DEFAULT_RELAY   # même relais que la présence (routes /v1/mon/)
+    key_file: str = ""                # clés du monitoring ; vide = state_dir/monlink/monlink.key
+
+
 @dataclass
 class Freedv:
     """FreeDV RADE V1 en RÉCEPTION (lot F1, cahier des charges FreeDV) : deux décodeurs en processus enfants de la
@@ -511,6 +524,7 @@ class Config:
     breizh: Breizh = field(default_factory=Breizh)
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
+    monitor_link: MonitorLink = field(default_factory=MonitorLink)
     freedv: Freedv = field(default_factory=Freedv)
     sdr: Sdr = field(default_factory=Sdr)
     bands: list[Band] = field(default_factory=list)
@@ -567,6 +581,7 @@ def validate(cfg: Config) -> list[str]:
     p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
+    p += _monitor_link_problems(cfg.monitor_link, cfg.modules)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
@@ -912,6 +927,28 @@ def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
     return p
 
 
+def _monitor_link_problems(ml: MonitorLink, modules: Modules) -> list[str]:
+    p = []
+    if not isinstance(ml.enabled, bool):
+        p.append("[monitor_link] enabled doit valoir true ou false")
+    if not isinstance(ml.relay_url, str) or not _PRESENCE_RELAY_RE.fullmatch(ml.relay_url):
+        p.append("[monitor_link] relay_url : adresse https:// du relais attendue (http:// seulement vers 127.0.0.1)")
+    if not isinstance(ml.key_file, str):
+        p.append("[monitor_link] key_file doit être un chemin")
+    if ml.enabled is True and "monlink" not in modules.run:
+        p.append("[monitor_link] activé mais « monlink » absent de [modules] run : le module ne serait jamais lancé")
+    return p
+
+
+def monlink_key_path(cfg: Config, config_path: str | Path) -> Path:
+    """Clés du monitoring : key_file (relatif = à côté de station.toml), sinon state_dir/monlink/monlink.key (écrit par
+    le module lui-même, droits 0600). Jamais le fichier de la présence."""
+    if cfg.monitor_link.key_file:
+        path = Path(cfg.monitor_link.key_file)
+        return path if path.is_absolute() else Path(config_path).parent / path
+    return Path(cfg.supervisor.state_dir) / "monlink" / MONLINK_KEY_FILE
+
+
 def presence_key_path(cfg: Config, config_path: str | Path) -> Path:
     """Clés de la station pour la présence : key_file (relatif = à côté de station.toml), sinon
     state_dir/presence/presence.key (écrit par le module lui-même, droits 0600)."""
@@ -1006,7 +1043,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "presence", "freedv", "sdr", "bands", "clients"}
+                 "netprobe", "presence", "monitor_link", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -1029,6 +1066,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
+            monitor_link=_build(MonitorLink, d.get("monitor_link", {}), "monitor_link", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
@@ -1270,6 +1308,11 @@ def render_toml(cfg: Config) -> str:
         f"enabled = {str(cfg.presence.enabled).lower()}",
         f"relay_url = {_s(cfg.presence.relay_url)}   # relais (https:// ; http:// seulement vers 127.0.0.1)",
         f"key_file = {_s(cfg.presence.key_file)}   # clés de la station ; vide = state_dir/presence/{PRESENCE_KEY_FILE}",
+        "",
+        "[monitor_link]   # monitoring inter-stations, assistance à distance (docs/cdc-monitoring.md § 17) : module « monlink »",
+        f"enabled = {str(cfg.monitor_link.enabled).lower()}",
+        f"relay_url = {_s(cfg.monitor_link.relay_url)}   # même relais que la présence (https://)",
+        f"key_file = {_s(cfg.monitor_link.key_file)}   # clés du monitoring ; vide = state_dir/monlink/{MONLINK_KEY_FILE}",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
         f"enabled = {str(cfg.freedv.enabled).lower()}",

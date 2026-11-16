@@ -42,6 +42,12 @@ CONVERTED = [
     "supervisor/main.py",
     "supervisor/notify.py",
     "supervisor/usb.py",
+    # étape 209 : monitoring inter-stations (module « monlink », né avec les codes)
+    "monlink/engine.py",
+    "monlink/service.py",
+    "monlink/collect.py",
+    "monlink/store.py",
+    "monlink/relay.py",
 ]
 # Exceptions motivées : (fichier, fonction).
 ALLOWED = {("supervisor/notify.py", "send")}      # envoi brut sans code, réservé aux essais (test_error_alerts)

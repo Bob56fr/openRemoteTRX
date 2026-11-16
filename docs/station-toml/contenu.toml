@@ -104,6 +104,12 @@ intro = "<p>Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa
 ou = "Menu 3.2, et ajouter « presence » à <code>[modules] run</code>. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml)."
 relu = "redemarrage"
 
+[sections.monitor_link]
+titre = "Monitoring inter-stations [monitor_link]"
+intro = "<p>Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni port ouvert : la station de l'opérateur aidé envoie, par le même relais que la présence et chiffré de bout en bout, ce que SON opérateur a accepté (battement, santé de la machine, état du poste sans fréquence ni mode par défaut, codes d'erreur), toujours masqué (mots de passe, adresses, numéros de série). La station qui aide ne peut que lire et DEMANDER : aucune commande vers la station aidée n'existe. Le module « monlink » n'a aucun droit sur le poste.</p>"
+ou = "Menu 3.2, et ajouter « monlink » à <code>[modules] run</code>. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml)."
+relu = "redemarrage"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -618,6 +624,27 @@ role = "Fichier des clés de la station pour la présence (signature et récepti
 niveau = "expert"
 securite = "Ce fichier identifie la station auprès du relais et des groupes : ne jamais le copier sur une autre station."
 depuis = "0.117.0"
+
+# ---------------------------------------------------------------- monitor_link
+
+[reglages."monitor_link.enabled"]
+role = "true : la station s'enregistre auprès du relais du monitoring, relève les messages de ses liaisons et envoie ce que chaque profil permet (« monlink » doit aussi figurer dans <code>[modules] run</code>). Sans liaison confirmée, rien ne part."
+niveau = "courant"
+securite = "Le monitoring ne fait que lire et montrer : aucun message reçu ne peut commander le poste ni la station."
+depuis = "0.159.0"
+
+[reglages."monitor_link.relay_url"]
+role = "Adresse du relais du monitoring (le même que celui de la présence)."
+niveau = "expert"
+bornes = "https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine)."
+exemple = "Relais par défaut : <code>https://rf-diy.com/orx-relay/public</code> ; essai local : <code>http://127.0.0.1:8099</code>."
+depuis = "0.159.0"
+
+[reglages."monitor_link.key_file"]
+role = "Fichier des clés de la station pour le monitoring (signature, chiffrement des liaisons). Vide : <code>monlink.key</code> dans le dossier d'état (sous-dossier <code>monlink</code>), créé par le module au premier démarrage. Relatif : à côté de station.toml. Différent des clés de la présence : les deux services ne peuvent pas être reliés."
+niveau = "expert"
+securite = "Ce fichier identifie la station auprès de ses partenaires de monitoring : ne jamais le copier sur une autre station."
+depuis = "0.159.0"
 
 # ---------------------------------------------------------------- breizh
 

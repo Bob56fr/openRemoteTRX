@@ -7455,7 +7455,6 @@ ORT-7001:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
-  prevu: true
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7001/
   depuis_version: 0.123.0
   en:
@@ -7464,6 +7463,27 @@ ORT-7001:
     causes:
     - Pairing completed or link restored
     preconisation: None.
+
+ORT-7002:
+  gravite: info
+  titre: Liaison de monitoring terminée
+  message: 'Monitoring : liaison avec {station} terminée (par {par}).'
+  causes:
+  - Fin de liaison demandée par l'une des deux stations
+  - Liaison effacée du relais
+  preconisation: Aucune. Reprendre le monitoring demande un nouvel appairage (nouveau code).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7002/
+  depuis_version: 0.159.0
+  en:
+    titre: Monitoring link ended
+    message: 'Monitoring: link with {station} ended (by {par}).'
+    causes:
+    - End of link requested by one of the two stations
+    - Link deleted from the relay
+    preconisation: None. Resuming monitoring requires a new pairing (new code).
 
 ORT-7010:
   gravite: avertissement
@@ -7498,7 +7518,6 @@ ORT-7020:
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
-  prevu: true
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7020/
   depuis_version: 0.123.0
   en:
@@ -7531,6 +7550,81 @@ ORT-7030:
     - Possible impersonation
     preconisation: Check with the remote operator, then pair again.
 
+
+ORT-7031:
+  gravite: avertissement
+  titre: Message de monitoring refusé
+  message: 'Monitoring : message de {station} refusé ({motif}).'
+  causes:
+  - Message altéré, rejoué ou chiffré avec une autre clé
+  - Demande d'appairage sans le bon code, ou invitation expirée
+  - Station distante d'une autre version du protocole
+  preconisation: Si cela se répète, terminer la liaison et refaire l'appairage en comparant l'empreinte de vive voix.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7031/
+  depuis_version: 0.159.0
+  en:
+    titre: Monitoring message refused
+    message: 'Monitoring: message from {station} refused ({motif}).'
+    causes:
+    - Message altered, replayed or encrypted with another key
+    - Pairing request without the right code, or expired invitation
+    - Remote station using another protocol version
+    preconisation: If it happens again, end the link and pair again, comparing the fingerprint by voice.
+
+ORT-7040:
+  gravite: avertissement
+  titre: Relais du monitoring injoignable
+  message: 'Monitoring : {relais} injoignable ou en refus ({detail}) ; nouvel essai au cycle suivant.'
+  causes:
+  - Accès Internet de la station coupé
+  - Relais en maintenance ou en pause
+  - Route IPv6 défaillante vers l'hébergeur
+  - Horloge de la station fausse (refus « clock »)
+  preconisation: Vérifier l'accès Internet et l'heure de la station ; le module réessaie seul, les événements attendent
+    dans sa file.
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7040/
+  depuis_version: 0.159.0
+  en:
+    titre: Monitoring relay unreachable
+    message: 'Monitoring: {relais} unreachable or refusing ({detail}); retrying at the next cycle.'
+    causes:
+    - Station Internet access down
+    - Relay under maintenance or paused
+    - Faulty IPv6 route to the host
+    - Wrong station clock ("clock" refusal)
+    preconisation: Check the station Internet access and clock; the module retries by itself, events wait in its
+      queue.
+
+ORT-7041:
+  gravite: erreur
+  titre: Fichier de clés du monitoring illisible
+  message: 'Monitoring : fichier de clés {fichier} illisible ({detail}) ; le module ne démarre pas.'
+  causes:
+  - Fichier monlink.key abîmé ou tronqué
+  - Fichier d'une autre version (format inconnu)
+  - Droits de lecture insuffisants
+  preconisation: 'Restaurer le fichier depuis une sauvegarde ; à défaut, le supprimer : une nouvelle identité est
+    créée et chaque liaison est à refaire.'
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7041/
+  depuis_version: 0.159.0
+  en:
+    titre: Monitoring key file unreadable
+    message: 'Monitoring: key file {fichier} unreadable ({detail}); the module does not start.'
+    causes:
+    - monlink.key damaged or truncated
+    - File from another version (unknown format)
+    - Insufficient read rights
+    preconisation: 'Restore the file from a backup; otherwise delete it: a new identity is created and every link
+      must be set up again.'
 
 # ====================================================================================================
 # 8000–8999 : Superviseur et processus

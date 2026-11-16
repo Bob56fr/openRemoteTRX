@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.158.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.159.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -191,6 +191,18 @@ Se modifie : Menu 3.2, et ajouter « presence » à `[modules] run`. Les groupes
 | `enabled` | courant | `false` | true : la station s'enregistre auprès du relais et échange la présence avec les groupes dont elle est membre (« presence » doit aussi figurer dans `[modules] run`). **Sécurité** : La présence ne fait que montrer : aucune donnée reçue du relais ne peut commander le poste. (depuis 0.117.0) |
 | `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais de présence. Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.117.0) |
 | `key_file` | expert | `""` | Fichier des clés de la station pour la présence (signature et réception des clés de groupe). Vide : `presence.key` dans le dossier d'état, créé par le module au premier démarrage. Relatif : à côté de station.toml. **Sécurité** : Ce fichier identifie la station auprès du relais et des groupes : ne jamais le copier sur une autre station. (depuis 0.117.0) |
+
+## Monitoring inter-stations [monitor_link]
+
+Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni port ouvert : la station de l'opérateur aidé envoie, par le même relais que la présence et chiffré de bout en bout, ce que SON opérateur a accepté (battement, santé de la machine, état du poste sans fréquence ni mode par défaut, codes d'erreur), toujours masqué (mots de passe, adresses, numéros de série). La station qui aide ne peut que lire et DEMANDER : aucune commande vers la station aidée n'existe. Le module « monlink » n'a aucun droit sur le poste.
+
+Se modifie : Menu 3.2, et ajouter « monlink » à `[modules] run`. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : la station s'enregistre auprès du relais du monitoring, relève les messages de ses liaisons et envoie ce que chaque profil permet (« monlink » doit aussi figurer dans `[modules] run`). Sans liaison confirmée, rien ne part. **Sécurité** : Le monitoring ne fait que lire et montrer : aucun message reçu ne peut commander le poste ni la station. (depuis 0.159.0) |
+| `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais du monitoring (le même que celui de la présence). Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.159.0) |
+| `key_file` | expert | `""` | Fichier des clés de la station pour le monitoring (signature, chiffrement des liaisons). Vide : `monlink.key` dans le dossier d'état (sous-dossier `monlink`), créé par le module au premier démarrage. Relatif : à côté de station.toml. Différent des clés de la présence : les deux services ne peuvent pas être reliés. **Sécurité** : Ce fichier identifie la station auprès de ses partenaires de monitoring : ne jamais le copier sur une autre station. (depuis 0.159.0) |
 
 ## FreeDV en réception [freedv]
 
