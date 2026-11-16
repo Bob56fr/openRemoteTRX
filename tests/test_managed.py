@@ -31,6 +31,45 @@ def wait_until(predicate, timeout=8.0, step=0.05):
     return False
 
 
+def parent_pid(pid: int) -> int | None:
+    """Processus parent de `pid` (Linux : /proc ; Windows : instantané des processus), None si introuvable."""
+    if POSIX:
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text()
+            return int(stat.rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            return None
+    import ctypes
+    from ctypes import wintypes
+
+    class Entry(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ProcessID", wintypes.DWORD),
+                    ("th32DefaultHeapID", ctypes.c_void_p), ("th32ModuleID", wintypes.DWORD),
+                    ("cntThreads", wintypes.DWORD), ("th32ParentProcessID", wintypes.DWORD),
+                    ("pcPriClassBase", ctypes.c_long), ("dwFlags", wintypes.DWORD), ("szExeFile", ctypes.c_char * 260)]
+    k32 = ctypes.windll.kernel32
+    k32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    snap = k32.CreateToolhelp32Snapshot(0x2, 0)                    # TH32CS_SNAPPROCESS
+    try:
+        entry = Entry()
+        entry.dwSize = ctypes.sizeof(Entry)
+        ok = k32.Process32First(snap, ctypes.byref(entry))
+        while ok:
+            if entry.th32ProcessID == pid:
+                return entry.th32ParentProcessID
+            ok = k32.Process32Next(snap, ctypes.byref(entry))
+    finally:
+        k32.CloseHandle(snap)
+    return None
+
+
+def is_gateway_of(status_pid: int, proc) -> bool:
+    """La passerelle qui publie l'état est le processus lancé, ou son enfant direct : sous Windows, le python.exe d'un
+    venv est un lanceur qui relance l'interpréteur de base (piège déjà relevé pour le pare-feu ; étape 211 : vu sur le
+    PC de test « tour radio », où les tests tournent dans un venv)."""
+    return status_pid == proc.pid or (not POSIX and parent_pid(status_pid) == proc.pid)
+
+
 def free_port():
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -203,7 +242,7 @@ def test_real_gateway_publishes_state_and_forces_rx_at_startup(tmp_path):
         assert wait_until(ready, 15), "la passerelle n'a pas publié un état valide"
         first = read_status(status_path)
         assert wait_until(lambda: read_status(status_path).seq > first.seq, 5)      # elle vit
-        assert first.pid == gateway.pid and probe.read().ptt is False
+        assert is_gateway_of(first.pid, gateway) and probe.read().ptt is False
         if POSIX:                                                  # arrêt propre : SIGTERM
             gateway.terminate()
             assert gateway.wait(10) == 0
@@ -241,11 +280,14 @@ def test_managed_backend_runs_a_real_gateway_end_to_end(tmp_path):
         status_path = tmp_path / "status.json"
         assert wait_until(lambda: (s := read_status(status_path)) is not None and s.rig.get("connected"), 15)
         pid = b.children["gateway"].proc.pid
+        old = read_status(status_path).pid                         # la VRAIE passerelle (enfant d'un lanceur de venv)
         b.kill_gateway()                                           # le superviseur tue une passerelle gelée
         assert wait_until(lambda: not alive(b, "gateway"), 5)
+        assert wait_until(lambda: not pid_alive(old), 5), "la passerelle tuée survit à son lanceur"
         b.maintain()                                               # ... et la relance
         assert alive(b, "gateway") and b.children["gateway"].proc.pid != pid
-        assert wait_until(lambda: (s := read_status(status_path)) is not None and s.pid == b.children["gateway"].proc.pid, 15)
+        assert wait_until(lambda: (s := read_status(status_path)) is not None and s.pid != old
+                          and is_gateway_of(s.pid, b.children["gateway"].proc), 15)
     finally:
         b.stop_all()
         _stop(rig)
