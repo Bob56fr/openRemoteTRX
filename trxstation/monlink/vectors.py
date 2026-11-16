@@ -63,16 +63,17 @@ def build() -> dict:
                    "from_emitter": sorted(envelope.FROM_EMITTER), "from_receiver": sorted(envelope.FROM_RECEIVER)}
 
     # -------------------------------------------------------------- requêtes signées (ce que vérifie le relais)
+    # Dans l'ordre où le relais peut les rejouer après l'appairage : autorisation, dépôt, relève.
     reqs = []
     for name, ident, route, fields, n in (
-            ("put", aided, "put", {"msg": msg}, NOW * 1000 + 1),
-            ("get", helper, "get", {"after": 0}, NOW * 1000 + 2),
-            ("allow", helper, "allow", {"peer": aided.station_id}, NOW * 1000 + 3)):
+            ("allow", helper, "allow", {"peer": aided.station_id}, NOW * 1000 + 1),
+            ("put", aided, "put", {"msg": msg}, NOW * 1000 + 2),
+            ("get", helper, "get", {"after": 0}, NOW * 1000 + 3)):
         path, body, headers = wire.build_request(ident, route, fields, t=NOW, n=n)
         reqs.append({"name": name, "station": ident.station_id, "path": path, "body": body.decode("ascii"),
                      "signed_hex": signed_bytes(path, body).hex(), "headers": headers})
     out["requests"] = reqs
-    base = reqs[0]
+    base = next(r for r in reqs if r["name"] == "put")
     out["refusals"] = [
         {"case": "signature d'une autre station", "ed_pub": b64e(other.ed_pub), "path": base["path"],
          "body": base["body"], "signature": base["headers"]["X-Orx-Signature"], "last_n": 0, "reason": "bad_signature"},
@@ -80,7 +81,7 @@ def build() -> dict:
          "body": base["body"].replace('"t":', '"t" :'), "signature": base["headers"]["X-Orx-Signature"],
          "last_n": 0, "reason": "bad_signature"},
         {"case": "compteur déjà vu", "ed_pub": b64e(aided.ed_pub), "path": base["path"], "body": base["body"],
-         "signature": base["headers"]["X-Orx-Signature"], "last_n": NOW * 1000 + 1, "reason": "replay"},
+         "signature": base["headers"]["X-Orx-Signature"], "last_n": NOW * 1000 + 2, "reason": "replay"},
         {"case": "route inconnue", "ed_pub": b64e(aided.ed_pub), "path": "/v1/mon/shell", "body": base["body"],
          "signature": base["headers"]["X-Orx-Signature"], "last_n": 0, "reason": "unknown_route"},
     ]

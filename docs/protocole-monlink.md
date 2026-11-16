@@ -49,20 +49,25 @@ croissant), même ordre des contrôles, mêmes codes d'erreur. Différences :
 - chemins `/v1/mon/<route>` ; route inconnue = 404 `unknown_route` ;
 - l'identifiant vérifié est celui du monitoring (§ 1) ; la table des stations du monitoring est **distincte** de
   celle de la présence ;
-- corps de 72 ko au plus (`too_large`).
+- corps de 72 ko au plus (`too_large`) ;
+- motifs propres au monitoring : `404 unknown_invite`, `403 not_linked`, `403 not_allowed`, `403 direction`.
+
+Mise en œuvre de référence du relais : `src/MonApi.php` du dépôt du relais (tests `tests/MonApiTest.php`, qui
+rejouent les requêtes des vecteurs octet pour octet, et `tests/e2e_monlink.py`, code de la station contre le vrai
+relais).
 
 ## 4. Points d'entrée
 
 | Route | Qui | Corps (en plus de `t`, `n`) | Effet / réponse |
 |---|---|---|---|
-| `register` | toute station | `ed`, `x`, `pow` (preuve de travail de la présence § 5, sur l'identifiant du monitoring) | crée ou rafraîchit la station ; `409 exists` si l'identifiant a une autre clé |
+| `register` | toute station | `ed`, `x`, `pow` (preuve de travail de la présence § 5, sur l'identifiant du monitoring) | crée la station (`403 pow` avec `bits` si la preuve manque) ; `409 exists` si elle l'est déjà : la station le prend pour un succès ; `400 malformed` si l'identifiant n'est pas celui du monitoring |
 | `invite/put` | receveur | `a`, `box` (2 ko au plus), `e` (≤ maintenant + 900) | range l'invitation ; 3 en cours au plus par station (`quota`) ; `409 exists` si l'adresse est prise |
-| `invite/take` | émetteur | `a` | rend `{box, e}` et l'**efface** (usage unique) ; note qui l'a prise (15 min) ; `404 unknown_invite` si absente ou expirée ; limite de débit par adresse IP |
-| `pair` | émetteur | `req` (demande du § 2.4) | exige `req.from` = la station, `req.a` prise par elle, `req.to` = l'auteur de l'invitation ; range la demande dans la boîte du receveur (type `pair`) et note les rôles de la liaison (receveur = qui a invité) ; une demande par invitation |
-| `allow` | chacun | `peer` | autorise `peer` à déposer chez soi (le receveur après confirmation de l'empreinte, l'émetteur après le choix du profil) ; 20 partenaires au plus |
-| `revoke` | chacun | `peer` | fin de liaison IMMÉDIATE dans les deux sens : les deux autorisations et les messages non relevés entre eux sont effacés |
-| `put` | chacun | `msg` (enveloppe du § 5) | exige `msg.f` = la station, l'autorisation de `msg.to`, un type permis dans ce sens (`direction`) ; quotas (§ 6) |
-| `get` | chacun | `after` (dernier identifiant reçu, 0 au départ) | `{msgs: [{id, msg}], more}` : 512 ko au plus par réponse, dans l'ordre de dépôt |
+| `invite/take` | émetteur | `a` | rend `{box, e}` et l'**efface** (usage unique) ; note qui l'a prise (15 min) ; `404 unknown_invite` si absente, expirée, déjà lue ou si c'est la sienne ; 10 lectures par minute et par adresse IP (`429 rate`) |
+| `pair` | émetteur | `req` (demande du § 2.4) | exige `req.from` = la station, `req.a` prise par elle depuis moins de 15 min, `req.to` = l'auteur de l'invitation (sinon `404 unknown_invite`) ; range la demande dans la boîte du receveur (type `pair`) et note les rôles de la liaison (receveur = qui a invité) ; une demande par invitation ; 20 liaisons au plus par station (`403 quota`) |
+| `allow` | chacun | `peer` | autorise `peer` à déposer chez soi (le receveur après confirmation de l'empreinte, l'émetteur après le choix du profil) ; `403 not_linked` sans appairage ; deux fois = sans effet |
+| `revoke` | chacun | `peer` | fin de liaison IMMÉDIATE dans les deux sens : liaison, autorisations et messages non relevés entre eux effacés ; reprendre = nouvel appairage |
+| `put` | chacun | `msg` (enveloppe du § 5), `assist` (facultatif, vrai ou faux) | exige `msg.f` = la station ; `403 not_linked` sans liaison, `403 direction` si le type n'est pas permis dans ce sens, `403 not_allowed` si le destinataire n'a pas (ou plus) autorisé l'expéditeur ; quotas (§ 6) |
+| `get` | chacun | `after` (dernier identifiant reçu, 0 au départ) | `{msgs: [{id, from, k, msg}], more}` : 512 ko et 200 messages au plus par réponse, dans l'ordre de dépôt ; `k` = `pair` pour une demande d'appairage (alors `msg` = la demande du § 2.4) |
 | `ack` | chacun | `upto` | efface les messages de sa boîte jusqu'à `upto` |
 
 ## 5. Enveloppe d'une liaison établie
