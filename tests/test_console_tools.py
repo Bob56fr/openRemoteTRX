@@ -550,3 +550,39 @@ def test_breizh_menu_shows_the_live_link_and_the_journal(tmp_path):
     text = "\n".join(out)
     assert "prêt : prochaines émissions par Breizh · route breizh · Breizh 0.10.0 · aller-retour 2 ms" in text
     assert text.count("Breizh 0.10.0 joint") >= 2                              # résumé (3 dernières) et journal
+
+
+# --------------------------------------------------------------------------- parties de l'assistant (étape 220)
+
+def test_a_wizard_part_stops_the_station_when_the_port_must_be_free_and_offers_a_restart(tmp_path):
+    path = write_config(tmp_path)
+
+    class PartRunner(Runner):
+        def run(self, cmd, *, admin=False):
+            if "--partie" in cmd:                              # la partie écrit une configuration changée
+                self.calls.append((cmd, admin))
+                path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+                return 0
+            return super().run(cmd, admin=admin)
+
+    fake = PartRunner(running=True)
+    out: list[str] = []
+    answers = iter(["o"])
+    con = Console(path, fake, ask=lambda _: next(answers), say=out.append, python="py", installed="0.37.0",
+                  home=tmp_path / "home", editor="editeur")
+    con.rig()
+    part = next(c for c, admin in fake.calls if "--partie" in c)
+    assert part[-1] == "poste" and ("--partie" in part) and any(admin for c, admin in fake.calls if "--partie" in c)
+    commands = [" ".join(c) for c, _ in fake.calls]
+    assert any("stop" in c for c in commands[:commands.index(" ".join(part))])      # arrêtée AVANT les questions
+    assert any("restart" in c or "start" in c for c in commands[commands.index(" ".join(part)) + 1:])
+
+
+def test_a_wizard_part_that_changes_nothing_says_so_and_needs_a_configuration(tmp_path):
+    con, fake, out = make(tmp_path)
+    con.bands()
+    assert "menu 2.1" in out[-1] and fake.calls == []
+    write_config(tmp_path)
+    con, fake, out = make(tmp_path)
+    con.transmit()
+    assert out[-1] == "Rien n'a été modifié." and fake.calls[-1][0][-2:] == ["--partie", "emission"]

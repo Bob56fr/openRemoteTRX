@@ -282,6 +282,42 @@ modifie = "Les fichiers du dossier <code>tls</code> de la station (autorité cr�
 admin = true
 expert = "<p>L'autorité est <strong>limitée par des contraintes de nom</strong> aux adresses privées (réseau local, VPN) et aux noms de la station : même volée, sa clé ne permettrait pas d'usurper un autre site sur les appareils qui l'ont installée. Sa clé reste sur la station, lisible par l'administrateur seul. Elle est réutilisée tant que ses contraintes couvrent les noms demandés ; un nouveau nom DNS impose une nouvelle autorité, à réinstaller. Même chose en ligne de commande : <code>trx-setup --output /etc/trx-remote/station.toml --autorite-station [NOMS…]</code>.</p>"
 
+[menus.rig]
+role = "Change le <strong>poste</strong> et sa liaison : modèle Hamlib (avec les réglages conseillés d'un poste connu), port série du CAT, débit, méthode PTT, puis un <strong>test de liaison en lecture seule</strong> (aucune émission). La station est arrêtée pendant les questions : le port série doit être libre. Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "Nouveau poste, port série changé (autre câble, autre prise USB), débit modifié dans les menus du poste, test de liaison en échec."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
+[menus.sound]
+role = "Choisit les <strong>cartes son</strong> : celle qui reçoit le son du poste et celle qui envoie la voix vers le poste. La station est arrêtée pendant les questions : une carte occupée n'apparaît pas dans la liste. Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "Pas de son reçu, voix qui ne part pas, carte son changée ou rebranchée sur une autre prise."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
+[menus.hf_spectrum]
+role = "Active ou coupe le <strong>spectre HF</strong> (waterfall du poste) par le second port série d'un Icom réglé en CI-V. Le port est vérifié station arrêtée ; il faut confirmer en tapant OUI que les réglages USB SEND / USB Keying du poste sont faits, car un second port mal réglé peut mettre le poste en émission. Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "Après avoir réglé le second port CI-V du poste, ou pour couper le spectre. Sans objet pour les postes qui ne sont pas des Icom."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
+[menus.bands]
+role = "Décide qui empêche d'émettre hors de tes bandes : la station (liste des bandes autorisées, points de départ région 1 IARU à vérifier selon ta licence) ou le poste lui-même. <strong>Liste vide = réception seule.</strong> Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "À la mise en service, après un changement de licence, ou si la station refuse une émission dans une bande permise."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
+[menus.transmit]
+role = "Règle la <strong>puissance maximale</strong> du poste (la page l'affiche en watts) et la <strong>durée maximale d'une émission</strong> (TOT, 90 s par défaut, bip 10 s avant la coupure, plafond de la station). Le superviseur coupe de toute façon au-delà du TOT absolu. Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "À la mise en service, ou pour raccourcir ou allonger la durée d'une émission."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
+[menus.access_network]
+role = "Choisit d'où l'on se connecte à la station : cette machine seulement, ou le réseau local et le VPN en <strong>HTTPS</strong> avec un certificat signé par l'autorité de la station. Un nouveau certificat impose de refaire l'appairage de l'application (menu 4.1). Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
+quand = "À la mise en service, après un changement d'adresse du PC, ou pour ouvrir la station au téléphone."
+modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
 [menus.breizh]
 role = "Relie la station à <strong>Breizh Audio Box</strong>, le traitement de la voix qui tourne sur un PC du même réseau local : la voix de l'opérateur passe par Breizh avant d'aller au poste. On y <strong>crée la clé d'appairage</strong> (montrée <strong>une seule fois</strong>, à recopier dans l'onglet « OpenRemoteTRX » des réglages de Breizh avec l'adresse de la station et le port), on règle l'<strong>adresse IP</strong> et le <strong>port UDP</strong> du PC de Breizh, on <strong>active ou désactive</strong> le passage par Breizh, on fait un <strong>essai de la liaison sans son</strong> et on lit le <strong>journal</strong> (connexions, replis, refus). L'état de la liaison en ce moment (prêt, émission par Breizh, repli, refus, aller-retour) s'affiche en tête."
 quand = "À la mise en place de Breizh, après une réinstallation de Breizh (nouvelle clé), quand la page ou l'application signalent un repli, ou pour vérifier la liaison avant une émission."

@@ -282,6 +282,42 @@ modifie = "Die Dateien im Ordner <code>tls</code> der Station (Zertifizierungsst
 admin = true
 expert = "<p>Die Zertifizierungsstelle ist durch <strong>Namensbeschränkungen</strong> auf private Adressen (lokales Netz, VPN) und die Namen der Station begrenzt: selbst gestohlen könnte ihr Schlüssel auf den Geräten, die sie installiert haben, keine andere Website vortäuschen. Ihr Schlüssel bleibt auf der Station und ist nur für den Administrator lesbar. Sie wird wiederverwendet, solange ihre Beschränkungen die gewünschten Namen abdecken; ein neuer DNS-Name erfordert eine neue Zertifizierungsstelle, die neu zu installieren ist. Ebenso auf der Kommandozeile: <code>trx-setup --output /etc/trx-remote/station.toml --autorite-station [NAMEN…]</code>.</p>"
 
+[menus.rig]
+role = "Ändert den <strong>Transceiver</strong> und seine Verbindung: Hamlib-Modell (mit den empfohlenen Einstellungen eines bekannten Transceivers), serieller CAT-Port, Baudrate, PTT-Methode, dann ein <strong>Verbindungstest nur lesend</strong> (keine Sendung). Die Station ist während der Fragen gestoppt: der serielle Port muss frei sein. Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Neuer Transceiver, geänderter serieller Port (anderes Kabel, andere USB-Buchse), im Transceiver geänderte Baudrate, fehlgeschlagener Verbindungstest."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
+[menus.sound]
+role = "Wählt die <strong>Soundkarten</strong>: die den Ton vom Transceiver empfängt und die die Stimme zum Transceiver sendet. Die Station ist während der Fragen gestoppt: eine belegte Karte erscheint nicht in der Liste. Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Kein empfangener Ton, Stimme geht nicht hinaus, Soundkarte gewechselt oder an einer anderen Buchse."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
+[menus.hf_spectrum]
+role = "Schaltet das <strong>KW-Spektrum</strong> (Wasserfall des Transceivers) über den zweiten seriellen Port eines auf CI-V eingestellten Icom ein oder aus. Der Port wird bei gestoppter Station geprüft; mit der Eingabe JA bestätigst du, dass USB SEND / USB Keying eingestellt sind, denn ein falsch eingestellter zweiter Port kann den Transceiver auf Senden schalten. Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Nach dem Einstellen des zweiten CI-V-Ports, oder um das Spektrum auszuschalten. Nicht relevant für Transceiver, die keine Icom sind."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
+[menus.bands]
+role = "Legt fest, wer das Senden außerhalb deiner Bänder verhindert: die Station (Liste erlaubter Bänder, Ausgangswerte IARU-Region 1, gemäß deiner Lizenz zu prüfen) oder der Transceiver selbst. <strong>Leere Liste = nur Empfang.</strong> Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Bei der Inbetriebnahme, nach einer Lizenzänderung oder wenn die Station eine Sendung in einem erlaubten Band ablehnt."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
+[menus.transmit]
+role = "Stellt die <strong>Höchstleistung</strong> des Transceivers (von der Seite in Watt angezeigt) und die <strong>maximale Sendedauer</strong> ein (TOT, standardmäßig 90 s, Signalton 10 s vor dem Abschalten, Obergrenze der Station). Der Supervisor schaltet jenseits des absoluten TOT ohnehin ab. Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Bei der Inbetriebnahme oder um eine Sendung zu verkürzen oder zu verlängern."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
+[menus.access_network]
+role = "Wählt, von wo die Station erreichbar ist: nur dieser Rechner, oder das lokale Netz und VPN über <strong>HTTPS</strong> mit einem von der Stationsautorität signierten Zertifikat. Ein neues Zertifikat bedeutet, die App neu zu koppeln (Menü 4.1). Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
+quand = "Bei der Inbetriebnahme, nach geänderter PC-Adresse oder um die Station für das Telefon zu öffnen."
+modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
 [menus.breizh]
 role = "Verbindet die Station mit <strong>Breizh Audio Box</strong>, der Sprachverarbeitung auf einem PC im selben lokalen Netz: die Stimme des Operators geht durch Breizh, bevor sie zum Transceiver gelangt. Hier <strong>erzeugst du den Kopplungsschlüssel</strong> (wird <strong>nur einmal</strong> angezeigt, zusammen mit Adresse und Port der Station in den Reiter „OpenRemoteTRX“ der Einstellungen von Breizh zu übertragen), stellst die <strong>IP-Adresse</strong> und den <strong>UDP-Port</strong> des Breizh-PCs ein, <strong>aktivierst oder deaktivierst</strong> den Weg über Breizh, machst einen <strong>Verbindungstest ohne Ton</strong> und liest das <strong>Protokoll</strong> (Verbindungen, Rückfälle, Ablehnungen). Der aktuelle Zustand der Verbindung (bereit, Senden über Breizh, Rückfall, Ablehnung, Laufzeit hin und zurück) steht oben."
 quand = "Beim Einrichten von Breizh, nach einer Neuinstallation von Breizh (neuer Schlüssel), wenn Webseite oder App einen Rückfall melden, oder um die Verbindung vor dem Senden zu prüfen."

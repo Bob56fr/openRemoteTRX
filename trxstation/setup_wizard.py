@@ -380,6 +380,18 @@ def choose_cat_port(ports: list[str], current: str, *, chooser: Callable[..., st
             return port
 
 
+# Parties de l'assistant (TRX Console : une partie = un menu, étape 220). L'assistant complet les enchaîne dans cet
+# ordre ; chacune ne pose que ses questions et part de la configuration existante (Entrée = réglage gardé).
+PARTS = {
+    "poste": "Poste et liaison CAT (modèle, port, débit, PTT, test de liaison)",
+    "son": "Cartes son (son reçu du poste, voix vers le poste)",
+    "spectre": "Spectre HF par le second port CI-V (Icom)",
+    "bandes": "Bandes autorisées en émission",
+    "reseau": "Accès réseau (adresse d'écoute, HTTPS, certificat)",
+    "emission": "Puissance maximale du poste et durée maximale d'une émission (TOT)",
+}
+
+
 def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Config:
     """Questions de configuration. `base` : configuration existante, dont chaque réglage est repris par défaut
     (comptes, alertes, bandes, sécurité... ne sont jamais perdus en relançant l'assistant)."""
@@ -390,9 +402,45 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
     elif is_desktop():
         cfg.supervisor.max_reboots_per_hour = 0
         print("PC de bureau : le superviseur ne redémarrera jamais ce PC (mode sûr en dernier recours).")
+    ask_rig(cfg, keep_offer=base is not None)
+    ask_audio(cfg)
+    ask_spectrum(cfg)
+    ask_bands(cfg, keep_offer=base is not None)
+    ask_network(cfg, tls_dir)
+    ask_accounts(cfg)
+    ask_transmit(cfg)
+    return cfg
+
+
+def interactive_part(part: str, base: Config, tls_dir: Path | None = None) -> Config:
+    """Une seule partie de l'assistant (`PARTS`), sur une configuration existante ; le reste n'est pas touché."""
+    if part not in PARTS:
+        raise SetupError(f"partie inconnue : {part} ({', '.join(PARTS)})")
+    cfg = copy.deepcopy(base)
+    print(f"=== trx-setup : {PARTS[part]} ===\nEntrée garde le réglage actuel ; rien n'est écrit si tu abandonnes.")
+    if part == "poste":
+        ask_rig(cfg, keep_offer=True)
+    elif part == "son":
+        ask_audio(cfg)
+    elif part == "spectre":
+        if cfg.rig.model == DUMMY_MODEL or not cfgmod.is_icom_model(cfg.rig.model):
+            print("Le spectre par un second port CI-V n'existe que sur certains Icom : rien à régler pour ce poste.")
+        ask_spectrum(cfg)
+    elif part == "bandes":
+        ask_bands(cfg, keep_offer=True)
+    elif part == "reseau":
+        ask_network(cfg, tls_dir)
+    else:
+        ask_transmit(cfg)
+    return cfg
+
+
+def ask_rig(cfg: Config, keep_offer: bool) -> None:
+    """Poste : modèle Hamlib (avec les conseils d'un poste connu), rediffusion à l'ajout d'un poste, port CAT, débit,
+    méthode PTT, puis test de liaison EN LECTURE SEULE (aucune émission)."""
     cfg.tools.hamlib_dir = ensure_hamlib() if not cfg.tools.hamlib_dir else cfg.tools.hamlib_dir
     rigs = list_rig_models(cfg.tools.hamlib_dir)
-    keep_model = (base is not None and cfg.rig.model > 0
+    keep_model = (keep_offer and cfg.rig.model > 0
                   and ask_yes_no(f"Garder le poste {cfg.rig.model} ({_model_label(rigs, cfg.rig.model)})", True))
     if not keep_model:
         cfg.rig.model = select_model(cfg.tools.hamlib_dir)
@@ -447,26 +495,33 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
                     break
                 raise SystemExit("Abandon.")
 
-    if cfg.rig.model != DUMMY_MODEL:
-        cap = choose("Audio reçu du TRX (capture)", [(d, lbl) for d, lbl in list_audio_devices("capture")],
-                     current=cfg.audio.capture_device)
-        play = choose("Audio vers le TRX (lecture)", [(d, lbl) for d, lbl in list_audio_devices("playback")],
-                      current=cfg.audio.playback_device)
-        cfg.audio.capture_device, cfg.audio.playback_device = cap, play
 
-    ask_spectrum(cfg)
-    ask_bands(cfg, keep_offer=base is not None)
-    ask_network(cfg, tls_dir)
+def ask_audio(cfg: Config) -> None:
+    """Cartes son : capture (son reçu du poste) et lecture (voix vers le poste)."""
+    if cfg.rig.model == DUMMY_MODEL:
+        return
+    cap = choose("Audio reçu du TRX (capture)", [(d, lbl) for d, lbl in list_audio_devices("capture")],
+                 current=cfg.audio.capture_device)
+    play = choose("Audio vers le TRX (lecture)", [(d, lbl) for d, lbl in list_audio_devices("playback")],
+                  current=cfg.audio.playback_device)
+    cfg.audio.capture_device, cfg.audio.playback_device = cap, play
+
+
+def ask_accounts(cfg: Config) -> None:
+    """Comptes : ceux d'avant gardés sur demande, puis ajout (un compte par appareil ; menu 4.3 ensuite)."""
     if cfg.clients:
         print("\nComptes déjà autorisés : " + ", ".join(c.id for c in cfg.clients))
         if not ask_yes_no("Les garder", True):
             cfg.clients = []
     ask_clients(cfg)
+
+
+def ask_transmit(cfg: Config) -> None:
+    """Puissance maximale du poste (affichage en watts) et durée maximale d'une émission (TOT, sous le plafond)."""
     power = ask("Puissance maximale du poste en watts (0 = inconnue : la page affichera des %)", str(cfg.rig.max_power_w))
     cfg.rig.max_power_w = int(power) if power.isdigit() and int(power) <= 2000 else cfg.rig.max_power_w
     tot = ask("Durée max d'une émission en secondes (TOT)", str(cfg.safety.tot_s))
     cfg.safety.tot_s = int(tot) if tot.isdigit() else cfg.safety.tot_s
-    return cfg
 
 
 REPLAY_WARNING = (
@@ -827,6 +882,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--adresse-civ", metavar="HEX", help="avec --spectre : adresse CI-V attendue (ex. B6) ; défaut : recherche")
     ap.add_argument("--reglages-verifies", action="store_true",
                     help="avec --spectre : USB SEND / USB Keying déjà vérifiés (pas de question)")
+    ap.add_argument("--partie", choices=tuple(PARTS),
+                    help="une seule partie de l'assistant, sur la configuration existante (--output) : "
+                         + " ; ".join(f"{k} = {v}" for k, v in PARTS.items()))
     ap.add_argument("--dummy", action="store_true",
                     help="génère sans questions une config de développement (poste factice Hamlib)")
     args = ap.parse_args(argv)
@@ -873,7 +931,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Empreinte du certificat (application Android) : {certificate_fingerprint(cfg.network.tls_cert)}")
             write_config(cfg, args.output)
             return 0
-        if args.dummy:
+        if args.partie:
+            if not args.output.exists():
+                print(f"Pas encore de configuration ({args.output}) : lancer d'abord l'assistant complet.", file=sys.stderr)
+                return 2
+            base = load_base(args.output)
+            if base is None:
+                return 2
+            cfg = interactive_part(args.partie, base, tls_dir=args.output.resolve().parent / "tls")
+        elif args.dummy:
             cfg = dummy_config()
         else:
             base = load_base(args.base or (args.output if args.output.exists() else None))

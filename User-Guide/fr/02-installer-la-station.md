@@ -47,16 +47,17 @@ Ce guide cite les menus de TRX Console (Debian). Sous Windows :
 
 | TRX Console (Debian) | Windows : menu Démarrer > TRX distant |
 |---|---|
-| 3.1 Assistant de configuration | 1 - Configuration de la station |
-| 2.1 Diagnostic | 2 - Diagnostic |
+| 2.1 Assistant de configuration | 1 - Configuration de la station |
+| 6.1 Diagnostic | 2 - Diagnostic |
 | 1.1 Démarrer / 1.2 Arrêter | 3 - Démarrer la station / 4 - Arrêter la station |
 | 1.3 Tableau de bord | 5 - Tableau de bord |
 | 2.2 Essai du poste | 6 - Essai du poste (station arrêtée d'abord) |
-| 1.4 Journal | 7 - Journaux de la station |
-| 3.2 Modifier station.toml | éditer `C:\ProgramData\trx-remote\station.toml` (Bloc-notes lancé en administrateur), puis arrêter et redémarrer la station |
+| 6.2 Journal | 7 - Journaux de la station |
+| 8.1 Modifier station.toml | éditer `C:\ProgramData\trx-remote\station.toml` (Bloc-notes lancé en administrateur), puis arrêter et redémarrer la station |
 | 4.1 Appairage d'un téléphone | `trx-setup --empreinte` dans un terminal (adresse, comptes, empreinte du certificat ; pas de QR code) |
+| 2.5 à 2.7, 3.2, 3.3, 4.5 : une partie de l'assistant | terminal lancé **en administrateur** : `trx-setup --output C:\ProgramData	rx-remote\station.toml --partie poste` (ou `son`, `spectre`, `bandes`, `emission`, `reseau`), station arrêtée pour `poste`, `son` et `spectre` |
 | 4.3 Comptes opérateurs | terminal lancé **en administrateur** : `trx-setup --output C:\ProgramData\trx-remote\station.toml --add-client NOM` (nouveau compte) ou `--set-password NOM` ; désactiver ou supprimer : éditer `station.toml` |
-| 6.1 Mise à jour | relancer `installer.cmd` d'une nouvelle version |
+| 7.1 Mise à jour | relancer `installer.cmd` d'une nouvelle version |
 
 Les autres menus de TRX Console (profils, visiteurs, Cluster DX…) sont propres à Debian ; sous Windows, leurs
 réglages se font dans `station.toml` (notice de chaque réglage : https://bob56fr.github.io/openRemoteTRX/station-toml/).

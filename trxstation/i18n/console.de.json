@@ -598,5 +598,15 @@
   "theme.safety.desc": "Temperaturschwellen des Transceivers",
   "theme.expert": "Experte und Einstellungen",
   "theme.expert.desc": "station.toml, automatische Tests, Qualifizierung, Anzeige",
-  "head.renumbered": "Menünummern in {version} geändert: Aktualisierung = {update}, abgelegtes Zip = {zip}, Diagnose = {diag}; „h“ und eine Nummer für die Hilfe zu einem Menü."
+  "head.renumbered": "Menünummern in {version} geändert: Aktualisierung = {update}, abgelegtes Zip = {zip}, Diagnose = {diag}; „h“ und eine Nummer für die Hilfe zu einem Menü.",
+  "menu.rig": "Transceiver und CAT-Verbindung (Modell, Port, Baudrate, PTT, Verbindungstest)",
+  "menu.sound": "Soundkarten (empfangener Ton vom Transceiver, Stimme zum Transceiver)",
+  "menu.hf_spectrum": "KW-Spektrum über den zweiten CI-V-Port (Icom)",
+  "menu.bands": "Zum Senden erlaubte Bänder",
+  "menu.transmit": "Höchstleistung und maximale Sendedauer (TOT)",
+  "menu.access_network": "Netzwerkzugang (Abhöradresse, HTTPS, Zertifikat)",
+  "setup_part.1": "Richte die Station zuerst mit dem vollständigen Assistenten ein (Menü {menu}).",
+  "setup_part.2": "Nichts wurde geändert.",
+  "setup_part.3": "Station zum Übernehmen neu starten",
+  "setup_part.why": "diese Einstellung (Transceiver und Soundkarte müssen frei sein)"
 }

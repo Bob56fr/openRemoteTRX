@@ -282,6 +282,42 @@ modifie = "The files of the station's <code>tls</code> folder (authority created
 admin = true
 expert = "<p>The authority is <strong>limited by name constraints</strong> to private addresses (local network, VPN) and to the station's names: even if stolen, its key could not impersonate another site on the devices that installed it. Its key stays on the station, readable by the administrator only. It is reused as long as its constraints cover the requested names; a new DNS name needs a new authority, to reinstall. Same from the command line: <code>trx-setup --output /etc/trx-remote/station.toml --autorite-station [NAMES…]</code>.</p>"
 
+[menus.rig]
+role = "Changes the <strong>transceiver</strong> and its link: Hamlib model (with the advised settings of a known transceiver), CAT serial port, speed, PTT method, then a <strong>read-only link test</strong> (no transmission). The station is stopped during the questions: the serial port must be free. The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "New transceiver, serial port changed (other cable, other USB socket), speed changed in the transceiver menus, failed link test."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
+[menus.sound]
+role = "Chooses the <strong>sound cards</strong>: the one receiving the audio from the transceiver and the one sending the voice to it. The station is stopped during the questions: a busy card does not show in the list. The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "No received audio, voice not going out, sound card changed or plugged into another socket."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
+[menus.hf_spectrum]
+role = "Turns the <strong>HF spectrum</strong> (transceiver waterfall) on or off through the second serial port of an Icom set to CI-V. The port is checked with the station stopped; you confirm by typing YES that the USB SEND / USB Keying settings are done, because a badly set second port can key the transceiver. The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "After setting the second CI-V port of the transceiver, or to turn the spectrum off. Not relevant for non-Icom transceivers."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
+[menus.bands]
+role = "Decides who prevents transmitting outside your bands: the station (list of allowed bands, IARU region 1 starting points to check against your licence) or the transceiver itself. <strong>Empty list = receive only.</strong> The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "At commissioning, after a licence change, or if the station refuses a transmission in an allowed band."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
+[menus.transmit]
+role = "Sets the transceiver <strong>maximum power</strong> (shown in watts by the page) and the <strong>maximum transmission time</strong> (TOT, 90 s by default, beep 10 s before cut-off, station ceiling). The supervisor cuts anyway beyond the absolute TOT. The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "At commissioning, or to shorten or lengthen a transmission."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
+[menus.access_network]
+role = "Chooses where the station can be reached from: this machine only, or the local network and VPN over <strong>HTTPS</strong> with a certificate signed by the station authority. A new certificate means pairing the app again (menu 4.1). The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
+quand = "At commissioning, after the PC address changed, or to open the station to the phone."
+modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
 [menus.breizh]
 role = "Links the station to <strong>Breizh Audio Box</strong>, the voice processing that runs on a PC on the same local network: the operator's voice goes through Breizh before reaching the transceiver. Here you <strong>create the pairing key</strong> (shown <strong>only once</strong>, to copy into the \"OpenRemoteTRX\" tab of the Breizh settings together with the station address and port), set the <strong>IP address</strong> and <strong>UDP port</strong> of the Breizh PC, <strong>enable or disable</strong> routing through Breizh, run a <strong>link test without audio</strong> and read the <strong>log</strong> (connections, fallbacks, refusals). The current link state (ready, transmitting through Breizh, fallback, refused, round trip) is shown at the top."
 quand = "When setting up Breizh, after reinstalling Breizh (new key), when the page or the app report a fallback, or to check the link before transmitting."

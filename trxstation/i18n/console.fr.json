@@ -598,5 +598,15 @@
   "theme.safety.desc": "seuils de température du poste",
   "theme.expert": "Expert et préférences",
   "theme.expert.desc": "station.toml, tests automatiques, qualification, indicateur",
-  "head.renumbered": "Numéros des menus changés en {version} : mise à jour = {update}, zip déposé = {zip}, diagnostic = {diag} ; « h » puis un numéro pour l'aide d'un menu."
+  "head.renumbered": "Numéros des menus changés en {version} : mise à jour = {update}, zip déposé = {zip}, diagnostic = {diag} ; « h » puis un numéro pour l'aide d'un menu.",
+  "menu.rig": "Poste et liaison CAT (modèle, port, débit, PTT, test de liaison)",
+  "menu.sound": "Cartes son (son reçu du poste, voix vers le poste)",
+  "menu.hf_spectrum": "Spectre HF par le second port CI-V (Icom)",
+  "menu.bands": "Bandes autorisées en émission",
+  "menu.transmit": "Puissance maximale et durée maximale d'une émission (TOT)",
+  "menu.access_network": "Accès réseau (adresse d'écoute, HTTPS, certificat)",
+  "setup_part.1": "Configure d'abord la station avec l'assistant complet (menu {menu}).",
+  "setup_part.2": "Rien n'a été modifié.",
+  "setup_part.3": "Redémarrer la station pour appliquer",
+  "setup_part.why": "ce réglage (le poste et la carte son doivent être libres)"
 }

@@ -64,9 +64,9 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 # nouveau menu s'ajoute EN FIN de son thème : les numéros existants ne bougent plus.
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
-    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr")),
-    ("3", "safety", ("temperature",)),
-    ("4", "access", ("pairing", "visitors", "operators", "certificate")),
+    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum")),
+    ("3", "safety", ("temperature", "bands", "transmit")),
+    ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
     ("7", "updates", ("update", "rollback", "install_zip")),
@@ -412,6 +412,51 @@ class Console:
                 self._start_station("start")
             return
         if self.yes(self.t("assistant.3")):
+            self.start()
+
+    # ------------------------------------------------------------------ parties de l'assistant (étape 220)
+
+    def rig(self) -> None:
+        self._setup_part("poste", exclusive=True)
+
+    def sound(self) -> None:
+        self._setup_part("son", exclusive=True)
+
+    def hf_spectrum(self) -> None:
+        self._setup_part("spectre", exclusive=True)
+
+    def bands(self) -> None:
+        self._setup_part("bandes")
+
+    def transmit(self) -> None:
+        self._setup_part("emission")
+
+    def access_network(self) -> None:
+        self._setup_part("reseau")
+
+    def _setup_part(self, part: str, exclusive: bool = False) -> None:
+        """Une partie de l'assistant (`trx-setup --partie`), avec les droits d'administration : mêmes questions,
+        même sauvegarde de l'ancienne configuration que l'assistant complet (menu 2.1). `exclusive` : le poste ou la
+        carte son doivent être libres (station arrêtée le temps des questions)."""
+        if not self.config.exists():
+            full = menu_number("assistant")
+            self.say(self.t("setup_part.1", menu=full))
+            return
+        was_running = self.station_running()
+        stopped = self.stop_for_exclusive_use(self.t("setup_part.why")) if exclusive else False
+        before = self.config.read_bytes()
+        code = self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--partie", part),
+                               admin=True)
+        changed = self.config.exists() and self.config.read_bytes() != before
+        if code != 0 or not changed:
+            self.say(self.t("setup_part.2"))
+            if stopped:
+                self._start_station("start")
+            return
+        if was_running:
+            if self.yes(self.t("setup_part.3"), True):
+                self.start()
+        elif self.yes(self.t("assistant.3")):
             self.start()
 
     def indicator(self) -> None:

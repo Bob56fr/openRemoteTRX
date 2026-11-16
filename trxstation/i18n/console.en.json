@@ -598,5 +598,15 @@
   "theme.safety.desc": "transceiver temperature thresholds",
   "theme.expert": "Expert and preferences",
   "theme.expert.desc": "station.toml, automatic tests, qualification, indicator",
-  "head.renumbered": "Menu numbers changed in {version}: update = {update}, dropped zip = {zip}, diagnostics = {diag}; \"h\" then a number for help on a menu."
+  "head.renumbered": "Menu numbers changed in {version}: update = {update}, dropped zip = {zip}, diagnostics = {diag}; \"h\" then a number for help on a menu.",
+  "menu.rig": "Transceiver and CAT link (model, port, speed, PTT, link test)",
+  "menu.sound": "Sound cards (audio received from the transceiver, voice to the transceiver)",
+  "menu.hf_spectrum": "HF spectrum through the second CI-V port (Icom)",
+  "menu.bands": "Bands allowed for transmission",
+  "menu.transmit": "Maximum power and maximum transmission time (TOT)",
+  "menu.access_network": "Network access (listening address, HTTPS, certificate)",
+  "setup_part.1": "First configure the station with the full wizard (menu {menu}).",
+  "setup_part.2": "Nothing was changed.",
+  "setup_part.3": "Restart the station to apply",
+  "setup_part.why": "this setting (the transceiver and sound card must be free)"
 }

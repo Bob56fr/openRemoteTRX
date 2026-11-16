@@ -97,3 +97,31 @@ def test_write_config_keeps_installer_permissions_and_never_widens_them(tmp_path
     sw.write_config(sw.dummy_config(), path)
     assert path.stat().st_mode & 0o777 == 0o600
     assert (tmp_path / "station.toml.bak").stat().st_mode & 0o007 == 0
+
+
+def test_a_part_asks_only_its_questions_and_keeps_everything_else(no_hardware, monkeypatch):
+    base = imported_base()
+    base.rig.port, base.safety.tot_s = no_hardware, 90
+    answers = iter(["60"])                                     # puissance : Entrée ; TOT : 60
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers) if "TOT" in prompt else "")
+    called = []
+    monkeypatch.setattr(sw, "test_link", lambda *a, **k: called.append("link") or {"freq": "1", "mode": "USB", "ptt": "0"})
+    cfg = sw.interactive_part("emission", base)
+    assert cfg.safety.tot_s == 60 and cfg.rig.max_power_w == 100 and called == []      # poste jamais interrogé
+    assert [c.id for c in cfg.clients] == ["phone"] and cfg.supervisor.notify_url == "https://ntfy.sh/x"
+    assert cfg.audio.capture_device == base.audio.capture_device and base.safety.tot_s == 90   # la base intacte
+    cfg = sw.interactive_part("poste", base)                   # Entrée : poste gardé, port gardé, test de liaison
+    assert cfg.rig.model == 3094 and cfg.rig.tx_modes == ["PKTUSB"] and called == ["link"]
+    with pytest.raises(sw.SetupError):
+        sw.interactive_part("inconnue", base)
+
+
+def test_part_on_the_command_line_needs_an_existing_configuration(tmp_path, no_hardware, capsys):
+    path = tmp_path / "station.toml"
+    assert sw.main(["--output", str(path), "--partie", "bandes"]) == 2
+    assert "assistant complet" in capsys.readouterr().err and not path.exists()
+    cfg = imported_base()
+    cfg.rig.port = no_hardware
+    path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    assert sw.main(["--output", str(path), "--partie", "bandes"]) == 0        # Entrée : contrôle délégué gardé
+    assert cfgmod.load(path).safety.enforce_bands is False and (tmp_path / "station.toml.bak").exists()

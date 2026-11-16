@@ -598,5 +598,15 @@
   "theme.safety.desc": "umbrales de temperatura del transceptor",
   "theme.expert": "Experto y preferencias",
   "theme.expert.desc": "station.toml, pruebas automáticas, cualificación, indicador",
-  "head.renumbered": "Números de menú cambiados en {version}: actualización = {update}, zip depositado = {zip}, diagnóstico = {diag}; «h» y un número para la ayuda de un menú."
+  "head.renumbered": "Números de menú cambiados en {version}: actualización = {update}, zip depositado = {zip}, diagnóstico = {diag}; «h» y un número para la ayuda de un menú.",
+  "menu.rig": "Transceptor y enlace CAT (modelo, puerto, velocidad, PTT, prueba del enlace)",
+  "menu.sound": "Tarjetas de sonido (audio recibido del transceptor, voz hacia el transceptor)",
+  "menu.hf_spectrum": "Espectro HF por el segundo puerto CI-V (Icom)",
+  "menu.bands": "Bandas permitidas para emitir",
+  "menu.transmit": "Potencia máxima y duración máxima de una emisión (TOT)",
+  "menu.access_network": "Acceso de red (dirección de escucha, HTTPS, certificado)",
+  "setup_part.1": "Configura primero la estación con el asistente completo (menú {menu}).",
+  "setup_part.2": "No se ha cambiado nada.",
+  "setup_part.3": "Reiniciar la estación para aplicar",
+  "setup_part.why": "este ajuste (el transceptor y la tarjeta de sonido deben estar libres)"
 }
