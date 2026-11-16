@@ -76,6 +76,8 @@ class RigService : Service() {
     private var userMuted = false
     private var focusLost = false
     private var wasMine = false
+    private var micOpen = false                                   // fil « rig » : micro réellement ouvert
+    private var micOpening: Job? = null                           // ouverture en attente de la fin du bip de prise
     private var lastNotification = ""
     private var foreground = false
     private var commListener: Any? = null                         // AudioManager.OnCommunicationDeviceChangedListener (Android 12+)
@@ -122,11 +124,12 @@ class RigService : Service() {
             override fun startAttempt() = launchAttempt()
             override fun send(text: String): Boolean = rtc.send(text)
             override fun setMicOpen(open: Boolean) {
-                if (headsetMic) headsetStep(headsetCall.micWanted(open, now())) else rtc.setMicOpen(open)
+                if (headsetMic) headsetStep(headsetCall.micWanted(open, now())) else if (open) openMicAfterBeep() else closeMic()
             }
             override fun close() {
                 attempt?.cancel()
                 attempt = null
+                closeMic()                                         // ouverture en attente annulée, état remis
                 rtc.close()
             }
             override fun alert(kind: LinkAlert) = sounds.play(kind)
@@ -287,6 +290,29 @@ class RigService : Service() {
         val cm = getSystemService(ConnectivityManager::class.java) ?: return true
         val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    /**
+     * Sur le fil « rig ». Le bip de prise (90 ms) sort du haut-parleur du téléphone au moment où la station confirme
+     * l'émission : micro ouvert tout de suite, on l'entendait parfois sur l'air (latence de sortie, écho que
+     * l'annulation n'efface pas toujours). Le micro ne s'ouvre donc que MIC_AFTER_BEEP_MS plus tard (silence envoyé
+     * jusque-là). Fermeture toujours immédiate : elle annule une ouverture en attente (même fil, pas de course).
+     */
+    private fun openMicAfterBeep() {
+        if (micOpen || micOpening?.isActive == true) return        // setMicOpen(true) revient à chaque état
+        micOpening = scope.launch {
+            delay(MIC_AFTER_BEEP_MS)
+            micOpening = null
+            micOpen = true
+            rtc.setMicOpen(true)
+        }
+    }
+
+    private fun closeMic() {
+        micOpening?.cancel()
+        micOpening = null
+        micOpen = false
+        rtc.setMicOpen(false)
     }
 
     /** Sur le fil « rig » : publie l'état, bips d'émission, notification ; fin du service si déconnecté. */
@@ -459,16 +485,16 @@ class RigService : Service() {
             HeadsetMicStep.None -> Unit
             HeadsetMicStep.Route -> routeToHeadset()
             HeadsetMicStep.OpenMic -> {
-                rtc.setMicOpen(true)
-                sounds.txBeep(true)                                    // « parlez après le bip » : micro ouvert
+                sounds.txBeep(true)                                    // « parlez après le bip »
+                openMicAfterBeep()                                     // micro ouvert une fois le bip fini
                 RigHub.publish { it.copy(headsetMic = "micro du casque : $headsetName (émission)") }
             }
             HeadsetMicStep.Release -> {
-                rtc.setMicOpen(false)
+                closeMic()
                 releaseRoute()
             }
             is HeadsetMicStep.Stop -> {
-                rtc.setMicOpen(false)
+                closeMic()
                 releaseRoute()
                 if (step.failure) sounds.refused()
                 executor.execute { session.stop(now(), step.why) }   // hors du rappel de la session en cours
@@ -673,5 +699,7 @@ class RigService : Service() {
         const val ACTION_DISCONNECT = "com.rfdiy.openremotetrx.DISCONNECT"
         private const val CHANNEL = "rig"
         private const val NOTIFICATION_ID = 1
+        /** Bip de prise 90 ms + latence de sortie et écho du haut-parleur : marge large, à peine perceptible. */
+        private const val MIC_AFTER_BEEP_MS = 400L
     }
 }

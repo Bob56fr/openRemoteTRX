@@ -47,9 +47,9 @@ class LinkSounds(private val context: Context) {
     }
 
     /**
-     * Bip d'émission, joué dès que la station annonce SA prise (KEYING, micro encore fermé) ou son retour en
-     * réception (micro fermé). Si la station passe directement en TX, la fin du bip (90 ms) peut tomber micro
-     * ouvert : l'annulation d'écho doit l'effacer (à vérifier sur charge fictive).
+     * Bip d'émission, joué dès que la station annonce SA prise ou son retour en réception (micro fermé). Le micro
+     * ne s'ouvre que 400 ms après le bip de prise (RigService.openMicAfterBeep, étape 202) : il était parfois
+     * entendu sur l'air.
      */
     fun txBeep(on: Boolean, volume: Float = 0.5f) {
         play(if (on) txOn else txOff, volume)
