@@ -499,7 +499,7 @@
   "sdr.on": "EN SERVICE",
   "sdr.off": "hors service",
   "sdr.2": "Module SDR : {state}\n  SDR de la station (numéro de série) : {serial} ({driver})\n  Largeur : {mhz} MHz   Antenne : {ant}   Plafonds du module : {cpu} % d'un cœur, {mem} Mo",
-  "sdr.3": "1 = rechercher les SDR (tous les ports USB et hubs, aucun SDR ouvert)\n2 = choisir le SDR de la station\n3 = largeur (MHz)\n4 = antenne (A ou B)\n5 = plafonds du module (processeur, mémoire)\n6 = mettre en service / hors service\nEntrée = retour : ",
+  "sdr.3": "1 = rechercher les SDR (tous les ports USB et hubs, aucun SDR ouvert)\n2 = choisir le SDR de la station\n3 = largeur (MHz)\n4 = antenne (A ou B)\n5 = plafonds du module (processeur, mémoire)\n6 = mettre en service / hors service\n7 = nouveau numéro de série d'une clé RTL-SDR (numéros d'usine en double)\nEntrée = retour : ",
   "sdr.4": "Aucun SDR reconnu (choix 1 pour le détail).",
   "sdr.5": "Numéro du SDR de cette station (Entrée = aucun changement) : ",
   "sdr.6": "Une clé RTL-SDR n'a qu'une entrée d'antenne : rien à choisir.",
@@ -509,5 +509,14 @@
   "sdr.10": "Antenne du SDR (A ou B) : ",
   "sdr.11": "Plafond de processeur du module, en % d'UN cœur (actuel {v}, Entrée = inchangé) : ",
   "sdr.12": "Plafond de mémoire du module, en Mo (actuel {v}, Entrée = inchangé) : ",
-  "sdr.13": "Choisissez d'abord le SDR de la station (choix 2)."
+  "sdr.13": "Choisissez d'abord le SDR de la station (choix 2).",
+  "sdr.14": "Il faut UNE SEULE clé RTL-SDR branchée (ici : {n}) : l'outil du fabricant ne désigne une clé que par sa position. Débranchez les autres puis recommencez.",
+  "sdr.15": "Numéro actuel : {old}. Nouveau numéro (4 à 8 lettres ou chiffres, Entrée = annuler) : ",
+  "sdr.16": "Refusé : 4 à 8 lettres ou chiffres, sans espace ni accent.",
+  "sdr.17": "Refusé : le numéro {serial} est déjà celui d'un autre SDR.",
+  "sdr.18": "Écrire le numéro {new} à la place de {old} dans la mémoire de la clé ? Sa mémoire est sauvegardée avant ; l'outil demandera encore « y » pour confirmer.",
+  "sdr.why": "écriture dans la mémoire de la clé RTL-SDR de la station",
+  "sdr.19": "Échec : clé inchangée (ou écriture refusée à la question de l'outil).",
+  "sdr.20": "Numéro écrit. DÉBRANCHEZ puis REBRANCHEZ la clé pour qu'il soit pris en compte. Mémoire d'origine sauvegardée : {backup}",
+  "sdr.21": "Redémarrer la station maintenant (après avoir rebranché la clé) ?"
 }

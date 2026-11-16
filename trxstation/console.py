@@ -689,6 +689,9 @@ class Console:
             if choice == "1":
                 self.runner.run(self.module("trxstation.sdr.devices", "--serial", sd.serial), admin=True)
                 continue
+            if choice == "7":
+                self._sdr_rename(cfg, original)
+                continue
             changed = {"2": self._sdr_choose, "3": self._sdr_rate, "4": self._sdr_antenna, "5": self._sdr_limits,
                        "6": self._sdr_toggle}.get(choice)
             if changed is None:
@@ -696,6 +699,47 @@ class Console:
                 continue
             if changed(cfg):
                 self._save_accounts(original, cfg, live=False)       # redémarrage proposé : le module relit tout
+
+    def _sdr_rename(self, cfg, original: bytes) -> None:
+        """Nouveau numéro de série d'une clé RTL-SDR (numéros d'usine en double) : rtl_eeprom ne désigne une clé que par
+        sa POSITION, donc UNE SEULE clé RTL-SDR branchée ; jamais une clé prise par un autre programme ; station
+        arrêtée si c'est la sienne ; mémoire de la clé sauvegardée avant l'écriture ; rtl_eeprom demande aussi sa
+        confirmation. La station suit le nouveau numéro si c'était sa clé."""
+        found = self._sdr_found(cfg.sdr.serial)
+        keys = [d for d in found if d.get("kind") == "rtlsdr"]
+        if len(keys) != 1:
+            self.say(self.t("sdr.14", n=len(keys)))
+            return
+        key = keys[0]
+        if key.get("state") in ("pris", "noyau"):
+            self.say(self.t("sdr.8"))
+            return
+        new = self.ask(self.t("sdr.15", old=key.get("serial") or "—")).strip()
+        if not re.fullmatch(r"[A-Za-z0-9]{4,8}", new):
+            if new:
+                self.say(self.t("sdr.16"))
+            return
+        if any(d.get("serial") == new for d in found):
+            self.say(self.t("sdr.17", serial=new))
+            return
+        if not self.yes(self.t("sdr.18", old=key.get("serial") or "—", new=new), False):
+            return
+        mine = bool(key.get("serial")) and key.get("serial") == cfg.sdr.serial
+        stopped = mine and self.stop_for_exclusive_use(self.t("sdr.why"))
+        state_dir = Path(cfg.supervisor.state_dir) / "sdr"
+        backup = state_dir / f"eeprom-{key.get('serial') or 'sans-numero'}-{time.strftime('%Y%m%d-%H%M%S')}.bin"
+        self.runner.run(["mkdir", "-p", str(state_dir)], admin=True)
+        if self.runner.run(["rtl_eeprom", "-d", "0", "-r", str(backup)], admin=True) != 0:
+            self.say(self.t("sdr.19"))
+        elif self.runner.run(["rtl_eeprom", "-d", "0", "-s", new], admin=True) != 0:
+            self.say(self.t("sdr.19"))
+        else:
+            self.say(self.t("sdr.20", backup=backup))
+            if mine:
+                cfg.sdr.serial = new
+                self._save_accounts(original, cfg, live=False)
+        if stopped and self.yes(self.t("sdr.21"), True):
+            self.start()
 
     def _sdr_found(self, serial: str) -> list[dict]:
         out = self.runner.output(self.module("trxstation.sdr.devices", "--json", "--serial", serial))

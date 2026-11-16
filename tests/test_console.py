@@ -387,3 +387,42 @@ def test_sdr_menu_chooses_a_free_sdrplay_by_serial_and_refuses_held_or_duplicate
     assert "numéro de série unique" in text                            # 3 = clé RTL au numéro en double
     cfg = cfgmod.load(tmp_path / "station.toml")
     assert cfg.sdr.serial == "170502E910" and cfg.sdr.enabled is True and "sdr" in cfg.modules.run
+
+
+def test_sdr_menu_rewrites_the_serial_of_the_only_rtl_sdr_key_and_follows_it(tmp_path):
+    import json as _json
+    cfg = dummy_config()
+    cfg.sdr.serial, cfg.sdr.driver, cfg.sdr.sample_rate_hz = "00000001", "rtlsdr", 2_048_000
+    cfg.supervisor.state_dir = str(tmp_path / "state")
+    (tmp_path / "station.toml").write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    keys = [{"kind": "rtlsdr", "model": "RTL-SDR (RTLSDRBlog Blog V4)", "serial": "00000001", "state": "station"}]
+
+    class Keys(FakeRunner):
+        def output(self, cmd):
+            return _json.dumps({"devices": keys}) if "trxstation.sdr.devices" in cmd else super().output(cmd)
+
+        def run(self, cmd, *, admin=False):
+            if cmd[0] == "install":
+                import shutil
+                shutil.copyfile(cmd[-2], cmd[-1])
+            return super().run(cmd, admin=admin)
+
+    out: list[str] = []
+    fake = Keys(running=True)
+    script = iter(["7", "RTLV4A", "o", "o", "n", ""])
+    con = Console(tmp_path / "station.toml", fake, ask=lambda _: next(script, ""), say=out.append, python="py")
+    con.sdr()
+    calls = [c for c, _ in fake.calls]
+    assert ["systemctl", "stop", TARGET] in calls                          # sa clé : station arrêtée avant
+    eeprom = [c for c in calls if c[0] == "rtl_eeprom"]
+    assert eeprom[0][:4] == ["rtl_eeprom", "-d", "0", "-r"] and eeprom[1] == ["rtl_eeprom", "-d", "0", "-s", "RTLV4A"]
+    assert all(admin for c, admin in fake.calls if c[0] == "rtl_eeprom")
+    assert cfgmod.load(tmp_path / "station.toml").sdr.serial == "RTLV4A"
+    assert any("REBRANCHEZ" in line for line in out)
+    keys.append(dict(keys[0], serial="00000002", state="libre"))         # deux clés : refus, rien n'est écrit
+    fake2 = Keys()
+    con = Console(tmp_path / "station.toml", fake2, ask=lambda _: next(iter(["7", ""])), say=out.append, python="py")
+    script2 = iter(["7", ""])
+    con.ask = lambda _: next(script2, "")
+    con.sdr()
+    assert not any(c[0] == "rtl_eeprom" for c, _ in fake2.calls) and "UNE SEULE clé" in out[-3] + out[-2] + out[-1]

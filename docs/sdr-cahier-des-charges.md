@@ -154,7 +154,28 @@ int16, CAN saturé = plus d'un pour mille d'octets à 0 ou 255, gain automatique
   pilote TV du noyau / SDR DE CETTE STATION ; avertissements : numéro en double, SDR sur le même hub que le poste.
 - SDRplay : le service du fabricant tient tous les RSP ouverts ; seuls ceux que son API PROPOSE sont libres.
 - Menu 5.4 : choix du SDR par numéro de série (refus d'un SDR pris ou au numéro en double), largeur, antenne,
-  plafonds, mise en service (« sdr » ajouté à `[modules] run`) ; redémarrage proposé.
+  plafonds, mise en service (« sdr » ajouté à `[modules] run`) ; redémarrage proposé ; choix 7 (étape 199) : nouveau
+  numéro de série d'une clé RTL-SDR (`rtl_eeprom`, UNE SEULE clé branchée car l'outil ne désigne qu'une position,
+  jamais une clé prise, station arrêtée si c'est la sienne, mémoire de la clé sauvegardée avant dans
+  `state_dir/sdr/eeprom-*.bin`, double confirmation, station.toml suit le nouveau numéro).
+
+#### 2.4.3 Plusieurs SDR à la fois : version « haut de gamme » [D 2026-11-16] (PAS MAINTENANT)
+
+Décision de l'utilisateur : la station ne gère qu'UN SDR ; plusieurs SDR simultanés (ex. RSP2pro en HF et
+RTL-SDR en VHF) sont prévus pour une future version « haut de gamme ». À garder en tête dès aujourd'hui, pour ne
+pas fermer la porte :
+
+- Configuration : `[sdr]` (un SDR) deviendra une liste `[[sdr]]` avec un NOM court par SDR (`hf`, `vhf`) ; migration
+  automatique de l'actuel `[sdr]` en premier élément (même logique que les profils de poste).
+- Un processus sdr-core PAR SDR (un SDR planté n'arrête pas les autres), un seul module « sdr » qui les mène ;
+  plafonds de charge et bridage de la passerelle par SDR puis pour l'ensemble.
+- Protocole : chaque message et chaque commande `sdr` portent l'identifiant du SDR (`id`) ; un client ancien ne voit
+  que le premier. Son : une piste par SDR écouté (débit du client), ou mélange par la station.
+- Page et application : un waterfall par SDR (onglets ou superposés), choix du SDR écouté, QSY entre SDR.
+- Licence et matériel : le service SDRplay gère plusieurs RSP ; librtlsdr plusieurs clés (numéros UNIQUES exigés :
+  choix 7 du menu 5.4).
+- Rien de tout cela n'est codé : le code actuel garde un seul `[sdr]` ; toute évolution le préserve (pas de
+  liste « à moitié »).
 - ais-rssi ouvre l'API SDRplay quelques secondes toutes les 5 minutes (relances d'AIS-catcher à
   21:12:40 et 21:17:40 le 2026-11-15) : la cohabitation de deux programmes sur l'API est vérifiée
   en S0.

@@ -499,7 +499,7 @@
   "sdr.on": "EN SERVICIO",
   "sdr.off": "fuera de servicio",
   "sdr.2": "Módulo SDR: {state}\n  SDR de la estación (número de serie): {serial} ({driver})\n  Ancho: {mhz} MHz   Antena: {ant}   Límites del módulo: {cpu} % de un núcleo, {mem} MB",
-  "sdr.3": "1 = buscar SDR (todos los puertos USB y hubs, ningún SDR abierto)\n2 = elegir el SDR de la estación\n3 = ancho (MHz)\n4 = antena (A o B)\n5 = límites del módulo (procesador, memoria)\n6 = poner en / fuera de servicio\nIntro = volver: ",
+  "sdr.3": "1 = buscar SDR (todos los puertos USB y hubs, ningún SDR abierto)\n2 = elegir el SDR de la estación\n3 = ancho (MHz)\n4 = antena (A o B)\n5 = límites del módulo (procesador, memoria)\n6 = poner en / fuera de servicio\n7 = nuevo número de serie de una llave RTL-SDR (números de fábrica duplicados)\nIntro = volver: ",
   "sdr.4": "Ningún SDR reconocido (opción 1 para el detalle).",
   "sdr.5": "Número del SDR de esta estación (Intro = sin cambios): ",
   "sdr.6": "Una llave RTL-SDR solo tiene una entrada de antena: nada que elegir.",
@@ -509,5 +509,14 @@
   "sdr.10": "Antena del SDR (A o B): ",
   "sdr.11": "Límite de procesador del módulo, en % de UN núcleo (actual {v}, Intro = sin cambios): ",
   "sdr.12": "Límite de memoria del módulo, en MB (actual {v}, Intro = sin cambios): ",
-  "sdr.13": "Elija primero el SDR de la estación (opción 2)."
+  "sdr.13": "Elija primero el SDR de la estación (opción 2).",
+  "sdr.14": "Debe haber UNA SOLA llave RTL-SDR conectada (aquí: {n}): la herramienta del fabricante solo designa una llave por su posición. Desconecte las demás y vuelva a empezar.",
+  "sdr.15": "Número actual: {old}. Nuevo número (4 a 8 letras o cifras, Intro = cancelar): ",
+  "sdr.16": "Rechazado: 4 a 8 letras o cifras, sin espacios ni acentos.",
+  "sdr.17": "Rechazado: el número {serial} ya pertenece a otro SDR.",
+  "sdr.18": "¿Escribir el número {new} en lugar de {old} en la memoria de la llave? Su memoria se guarda antes; la herramienta volverá a pedir « y » para confirmar.",
+  "sdr.why": "escritura en la memoria de la llave RTL-SDR de la estación",
+  "sdr.19": "Error: llave sin cambios (o escritura rechazada en la pregunta de la herramienta).",
+  "sdr.20": "Número escrito. DESCONECTE y VUELVA A CONECTAR la llave para que se tenga en cuenta. Memoria original guardada: {backup}",
+  "sdr.21": "¿Reiniciar la estación ahora (tras volver a conectar la llave)?"
 }

@@ -499,7 +499,7 @@
   "sdr.on": "IN BETRIEB",
   "sdr.off": "außer Betrieb",
   "sdr.2": "SDR-Modul: {state}\n  SDR der Station (Seriennummer): {serial} ({driver})\n  Breite: {mhz} MHz   Antenne: {ant}   Grenzen des Moduls: {cpu} % eines Kerns, {mem} MB",
-  "sdr.3": "1 = SDR suchen (alle USB-Ports und Hubs, kein SDR wird geöffnet)\n2 = SDR der Station wählen\n3 = Breite (MHz)\n4 = Antenne (A oder B)\n5 = Grenzen des Moduls (Prozessor, Speicher)\n6 = in / außer Betrieb nehmen\nEingabe = zurück: ",
+  "sdr.3": "1 = SDR suchen (alle USB-Ports und Hubs, kein SDR wird geöffnet)\n2 = SDR der Station wählen\n3 = Breite (MHz)\n4 = Antenne (A oder B)\n5 = Grenzen des Moduls (Prozessor, Speicher)\n6 = in / außer Betrieb nehmen\n7 = neue Seriennummer für einen RTL-SDR-Stick (doppelte Werksnummern)\nEingabe = zurück: ",
   "sdr.4": "Kein SDR erkannt (Auswahl 1 für Details).",
   "sdr.5": "Nummer des SDR dieser Station (Eingabe = keine Änderung): ",
   "sdr.6": "Ein RTL-SDR-Stick hat nur einen Antenneneingang: nichts zu wählen.",
@@ -509,5 +509,14 @@
   "sdr.10": "Antenne des SDR (A oder B): ",
   "sdr.11": "Prozessorgrenze des Moduls, in % EINES Kerns (jetzt {v}, Eingabe = unverändert): ",
   "sdr.12": "Speichergrenze des Moduls, in MB (jetzt {v}, Eingabe = unverändert): ",
-  "sdr.13": "Zuerst den SDR der Station wählen (Auswahl 2)."
+  "sdr.13": "Zuerst den SDR der Station wählen (Auswahl 2).",
+  "sdr.14": "Es darf nur EIN RTL-SDR-Stick angeschlossen sein (hier: {n}): das Werkzeug des Herstellers bezeichnet einen Stick nur über seine Position. Die anderen abziehen und neu beginnen.",
+  "sdr.15": "Aktuelle Nummer: {old}. Neue Nummer (4 bis 8 Buchstaben oder Ziffern, Eingabe = abbrechen): ",
+  "sdr.16": "Abgelehnt: 4 bis 8 Buchstaben oder Ziffern, ohne Leerzeichen oder Akzent.",
+  "sdr.17": "Abgelehnt: die Nummer {serial} gehört bereits einem anderen SDR.",
+  "sdr.18": "Die Nummer {new} statt {old} in den Speicher des Sticks schreiben? Sein Speicher wird vorher gesichert; das Werkzeug fragt noch einmal « y » zur Bestätigung.",
+  "sdr.why": "Schreiben in den Speicher des RTL-SDR-Sticks der Station",
+  "sdr.19": "Fehlgeschlagen: Stick unverändert (oder Schreiben bei der Frage des Werkzeugs abgelehnt).",
+  "sdr.20": "Nummer geschrieben. Den Stick ABZIEHEN und WIEDER ANSTECKEN, damit sie gilt. Ursprünglicher Speicher gesichert: {backup}",
+  "sdr.21": "Station jetzt neu starten (nach dem Wiederanstecken des Sticks)?"
 }

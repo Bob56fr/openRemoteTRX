@@ -499,7 +499,7 @@
   "sdr.on": "IN SERVICE",
   "sdr.off": "out of service",
   "sdr.2": "SDR module: {state}\n  Station SDR (serial number): {serial} ({driver})\n  Width: {mhz} MHz   Antenna: {ant}   Module limits: {cpu} % of one core, {mem} MB",
-  "sdr.3": "1 = search SDRs (all USB ports and hubs, no SDR opened)\n2 = choose the station SDR\n3 = width (MHz)\n4 = antenna (A or B)\n5 = module limits (processor, memory)\n6 = put in / out of service\nEnter = back: ",
+  "sdr.3": "1 = search SDRs (all USB ports and hubs, no SDR opened)\n2 = choose the station SDR\n3 = width (MHz)\n4 = antenna (A or B)\n5 = module limits (processor, memory)\n6 = put in / out of service\n7 = new serial number for an RTL-SDR dongle (duplicated factory numbers)\nEnter = back: ",
   "sdr.4": "No SDR recognised (choice 1 for details).",
   "sdr.5": "Number of this station's SDR (Enter = no change): ",
   "sdr.6": "An RTL-SDR dongle has a single antenna input: nothing to choose.",
@@ -509,5 +509,14 @@
   "sdr.10": "SDR antenna (A or B): ",
   "sdr.11": "Module processor limit, in % of ONE core (now {v}, Enter = unchanged): ",
   "sdr.12": "Module memory limit, in MB (now {v}, Enter = unchanged): ",
-  "sdr.13": "Choose the station SDR first (choice 2)."
+  "sdr.13": "Choose the station SDR first (choice 2).",
+  "sdr.14": "Exactly ONE RTL-SDR dongle must be plugged in (here: {n}): the vendor tool designates a dongle by its position only. Unplug the others and start again.",
+  "sdr.15": "Current number: {old}. New number (4 to 8 letters or digits, Enter = cancel): ",
+  "sdr.16": "Refused: 4 to 8 letters or digits, no space or accent.",
+  "sdr.17": "Refused: number {serial} already belongs to another SDR.",
+  "sdr.18": "Write number {new} instead of {old} into the dongle's memory? Its memory is backed up first; the tool will still ask « y » to confirm.",
+  "sdr.why": "writing into the memory of the station's RTL-SDR dongle",
+  "sdr.19": "Failed: dongle unchanged (or writing refused at the tool's question).",
+  "sdr.20": "Number written. UNPLUG then PLUG the dongle BACK for it to be used. Original memory backed up: {backup}",
+  "sdr.21": "Restart the station now (after plugging the dongle back)?"
 }
