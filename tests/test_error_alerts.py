@@ -113,3 +113,23 @@ def test_no_alert_is_sent_with_a_free_text_title() -> None:
                     and isinstance(node.args[0], (ast.Constant, ast.JoinedStr)):
                 bad.append(where)
     assert not bad, "alertes sans code du catalogue : " + ", ".join(bad)
+
+
+def test_alert_in_english_for_the_phone_while_the_journal_stays_in_french(caplog: pytest.LogCaptureFixture) -> None:
+    """Étape 217 : `[supervisor] notify_lang = "en"` : titre, message et marche à suivre en anglais au téléphone ; le
+    journal de la station reste en français ; une valeur mesurée (`detail`) reste telle quelle."""
+    import logging
+    from trxstation import config as cfgmod
+    sent: list = []
+    caplog.set_level(logging.INFO)
+    n = Notifier("https://ntfy.sh/x", post=lambda *a: sent.append(a), threaded=False, lang="en")
+    assert n.alert(codes.ORT_7050, station="F4XYZ (8d2eb0a8)", minutes=16) is True
+    _, title, body, _ = sent[-1]
+    assert title == "ORT-7050 Followed station silent"
+    assert "no news from F4XYZ (8d2eb0a8) for 16 min" in body and "Contact the operator" in body
+    assert "aucune nouvelle de F4XYZ" in caplog.text                   # journal en français
+    n.alert(codes.ORT_7052, "mesure de la station", key="k", station="x", code_recu="ORT-5024", titre="t")
+    assert sent[-1][2].startswith("mesure de la station")
+    assert Notifier(lang="de").lang == "fr"                            # langue absente du catalogue : français
+    _, problems = cfgmod.build({"rig": {"model": 1}, "supervisor": {"notify_lang": "de"}})
+    assert any("notify_lang" in p for p in problems)

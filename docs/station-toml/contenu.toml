@@ -987,6 +987,13 @@ niveau = "courant"
 exemple = "<code>https://ntfy.sh/mon-sujet-secret</code>"
 securite = "Choisissez un sujet difficile à deviner : quiconque le connaît lit vos alertes."
 
+[reglages."supervisor.notify_lang"]
+role = "Langue des alertes ntfy envoyées au téléphone : titre, message et marche à suivre du catalogue d'erreurs. Le journal de la station reste en français ; une valeur mesurée (détail) reste telle que la station l'écrit."
+niveau = "courant"
+bornes = "<code>fr</code> (défaut) ou <code>en</code> : les langues du catalogue d'erreurs."
+exemple = "<code>en</code>"
+depuis = "0.165.0"
+
 [reglages."supervisor.status_path"]
 role = "Fichier d'état écrit par la passerelle et lu par le superviseur, trx-monitor et TRX Console."
 niveau = "expert"

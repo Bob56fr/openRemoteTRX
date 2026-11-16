@@ -40,8 +40,9 @@ def _default_post(url: str, title: str, message: str, priority: str = "") -> Non
 class Notifier:
     def __init__(self, url: str = "", *, post: Callable[[str, str, str, str], None] | None = None,
                  clock: Callable[[], float] = time.monotonic, min_interval_s: float = 60.0,
-                 threaded: bool = True):
+                 threaded: bool = True, lang: str = "fr"):
         self.url, self._post, self._clock = url, post or _default_post, clock
+        self.lang = lang if lang in ("fr", "en") else "fr"   # langue du TÉLÉPHONE ; le journal reste en français
         self.min_interval_s, self.threaded = min_interval_s, threaded
         self._last: dict[str, float] = {}
 
@@ -59,9 +60,14 @@ class Notifier:
             emit.publish(event, logger=log, prefix="" if e and e["gravite"] == "info" else "ALERTE")
             if e is not None and not e.get("ntfy_defaut"):
                 return False
+            if self.lang != "fr" and e is not None:              # étape 217 : alerte dans la langue choisie
+                titre, message = emit.render(code, self.lang, **contexte)
+                if detail:
+                    message = detail                               # valeur mesurée : texte de la station
             body = message
             if e is not None:
-                body += f"\n\n{e['preconisation']}" + (f"\n{e['doc']}" if e.get("doc") else "")
+                texts = e if self.lang == "fr" else e.get("en", e)
+                body += f"\n\n{texts['preconisation']}" + (f"\n{e['doc']}" if e.get("doc") else "")
             priority = str(e["priorite_ntfy"]) if e is not None and e.get("priorite_ntfy") else ""
             return self._deliver(f"{code}:{key}", f"{code} {titre}", body, priority)
         except Exception:                      # une alerte ratée ne doit rien casser

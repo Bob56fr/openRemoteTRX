@@ -93,7 +93,7 @@ class MonlinkService:
         notifier = None
         if self.cfg.supervisor.notify_url:
             from ..supervisor.notify import Notifier               # le ntfy de la station (alertes de celui qui aide)
-            notifier = Notifier(self.cfg.supervisor.notify_url)
+            notifier = Notifier(self.cfg.supervisor.notify_url, lang=self.cfg.supervisor.notify_lang)
         self.engine = Engine(self.store, identity, relay, status_path=self.cfg.supervisor.status_path,
                              state_dir=self.cfg.supervisor.state_dir, clock=self.clock, monitor=self.monitor,
                              notifier=notifier, make_report=self.make_report)

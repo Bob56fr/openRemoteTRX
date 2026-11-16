@@ -17,7 +17,7 @@ class SystemActions:
     def __init__(self, cfg: Config, backend: Backend, notifier: Notifier | None = None):
         self.cfg, self.backend = cfg, backend
         self.probe = RigctlProbe(cfg.network.rigctld_host, cfg.network.rigctld_port)
-        self.notifier = notifier or Notifier(cfg.supervisor.notify_url)
+        self.notifier = notifier or Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang)
 
     def force_rx(self) -> bool:
         return self.probe.force_rx()          # direct vers rigctld, sans passer par la passerelle

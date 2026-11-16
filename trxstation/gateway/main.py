@@ -315,7 +315,7 @@ async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=N
         station_id = ""
     reports = ReportStore(Path(cfg.supervisor.state_dir) / "reports", version=__version__,   # « Signaler un problème »
                           station_id=station_id)
-    notifier = Notifier(cfg.supervisor.notify_url)
+    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang)
     netprobe = None
     if cfg.netprobe.enabled:                       # sonde de qualité réseau : mesure et affiche, n'agit jamais sur l'émission
         from ..netprobe.probe import NetProbeHub
