@@ -29,6 +29,8 @@ from .manifest import Manifest, api_compatible
 from .protocol import MAX_LINE_BYTES, ProtocolError, decode, encode
 from .tokens import TokenAuthority, TokenError
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.bus")
 
 # Commandes refusées tant que le PTT est actif (décision du projet).
@@ -220,7 +222,7 @@ class BusServer:
         except (ConnectionError, asyncio.IncompleteReadError):
             pass
         except Exception:                        # un module ne fait jamais tomber le cœur
-            log.exception("erreur sur une connexion module")
+            emit_event(codes.ORT_6527, logger=log, trace=True, contexte="connexion d'un module", detail="voir la trace")
         finally:
             if sess is not None:
                 self._close_session(sess, "déconnexion")
@@ -232,8 +234,8 @@ class BusServer:
         await asyncio.wait_for(writer.drain(), self.write_timeout_s)
 
     async def _handshake(self, reader, writer) -> ModuleSession | None:
-        async def refuse(code: str, message: str) -> None:
-            log.warning("module refusé : %s", message)
+        async def refuse(code: str, message: str, module: str = "?") -> None:
+            emit_event(codes.ORT_6503, logger=log, module=module, motif=message)
             try:
                 await self._send_now(writer, {"type": "error", "code": code,
                                               "message": message})
@@ -255,11 +257,11 @@ class BusServer:
         given = msg.get("secret")
         if manifest is None or expected is None or not isinstance(given, str) \
                 or not hmac.compare_digest(given, expected):
-            await refuse("auth", f"module {name!r} inconnu ou secret invalide")
+            await refuse("auth", f"module {name!r} inconnu ou secret invalide", name)
             return None
         api = str(msg.get("api", ""))
         if not api_compatible(api) or not api_compatible(manifest.api):
-            await refuse("api", f"{name} : API {api} incompatible avec {API_VERSION}")
+            await refuse("api", f"{name} : API {api} incompatible avec {API_VERSION}", name)
             return None
         old = self.sessions.get(name)
         if old is not None:
@@ -279,7 +281,7 @@ class BusServer:
                 msg = await sess.queue.get()
                 await self._send_now(sess.writer, msg)
         except asyncio.TimeoutError:
-            log.warning("module %s trop lent à lire : déconnecté", sess.name)
+            emit_event(codes.ORT_6507, logger=log, module=sess.name, motif="trop lent à lire ses messages : déconnecté")
             self._close_session(sess, "trop lent")
         except (ConnectionError, asyncio.CancelledError):
             pass
@@ -292,7 +294,7 @@ class BusServer:
             try:
                 msg = decode(line)
             except ProtocolError:
-                log.warning("module %s : ligne illisible ignorée", sess.name)
+                emit_event(codes.ORT_6518, logger=log, module=sess.name, detail="ligne illisible")
                 continue
             mtype = msg["type"]
             if mtype == "heartbeat":
@@ -313,7 +315,7 @@ class BusServer:
         try:
             fn(*args)
         except Exception:
-            log.exception("rappel du cœur en erreur")
+            emit_event(codes.ORT_6527, logger=log, trace=True, contexte="rappel du cœur", detail="voir la trace")
 
     # ------------------------------------------------------------- requêtes
     async def _handle_request(self, sess: ModuleSession, msg: dict) -> dict:
@@ -373,7 +375,8 @@ class BusServer:
 
             return err("unknown_op", f"opération inconnue {op!r}")
         except Exception as exc:
-            log.exception("requête %s de %s en erreur", op, sess.name)
+            emit_event(codes.ORT_6527, logger=log, trace=True, contexte=f"requête {op} de {sess.name}",
+                       detail=type(exc).__name__)
             return err("internal", str(exc))
 
     def _close_session(self, sess: ModuleSession, reason: str) -> None:

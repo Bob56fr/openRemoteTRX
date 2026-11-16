@@ -22,6 +22,8 @@ from .keys import key_path, module_secrets, read_key
 from .launcher import ModuleLauncher, RestartPolicy
 from .registry import selected_manifests
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 
@@ -36,7 +38,7 @@ def build_launcher(cfg, *, alert: Callable[..., object] | None = None,
         return None
     manifests, problems = selected_manifests(cfg.modules)
     for problem in problems:
-        log.warning("modules : %s", problem)
+        emit_event(codes.ORT_6511, logger=log, module="[modules] run", probleme=problem)
     if not manifests:
         return None
     names = [m.name for m in manifests]
@@ -66,7 +68,7 @@ def start_modules(launcher: ModuleLauncher | None) -> None:
         try:
             launcher.start(name)
         except Exception:
-            log.exception("module %s : lancement en erreur", name)
+            emit_event(codes.ORT_6501, logger=log, trace=True, module=name, detail="lancement en erreur (voir la trace)")
 
 
 def make_tick(maintain: Callable[[], None], launcher: ModuleLauncher | None) -> Callable[[], None]:
@@ -83,5 +85,5 @@ def make_tick(maintain: Callable[[], None], launcher: ModuleLauncher | None) -> 
         try:
             launcher.check()
         except Exception:
-            log.exception("surveillance des modules en erreur")
+            emit_event(codes.ORT_6527, logger=log, trace=True, contexte="surveillance des modules", detail="voir la trace")
     return tick

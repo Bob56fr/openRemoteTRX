@@ -33,6 +33,8 @@ from .bus import BusServer, CommandRefused
 from .keys import key_path, load_or_create_key, module_secrets
 from .registry import selected_manifests
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 MIN_QSY_HZ, MAX_QSY_HZ = 100_000, 3_000_000_000
@@ -67,9 +69,9 @@ class ModuleBridge:
         try:
             manifests, problems = selected_manifests(self.cfg.modules)
             for problem in problems:
-                log.warning("modules : %s", problem)
+                emit_event(codes.ORT_6511, logger=log, module="[modules] run", probleme=problem)
             if not manifests:
-                log.warning("modules : aucun module utilisable, bus non démarré")
+                emit_event(codes.ORT_6513, logger=log)
                 return False
             key = load_or_create_key(key_path(self.cfg.supervisor.state_dir))
             bus = BusServer({m.name: m for m in manifests},
@@ -79,7 +81,7 @@ class ModuleBridge:
                             port=self.port)
             await bus.start()
         except Exception as exc:          # port occupé, clé illisible… : la station continue
-            log.error("modules indisponibles (%s) : la station fonctionne sans eux", exc)
+            emit_event(codes.ORT_6514, logger=log, detail=str(exc) or type(exc).__name__)
             return False
         self.bus = bus
         self._last_ptt = self.ctrl.snapshot().state
@@ -99,7 +101,7 @@ class ModuleBridge:
             try:
                 await asyncio.wait_for(bus.stop(), 3.0)
             except Exception:
-                log.exception("arrêt du bus des modules incomplet")
+                emit_event(codes.ORT_6527, logger=log, trace=True, contexte="arrêt du bus des modules", detail="voir la trace")
 
     # ------------------------------------------------------------- état
     def state(self) -> dict:
@@ -209,7 +211,8 @@ class ModuleBridge:
             try:
                 session.send(payload)
             except Exception:
-                log.exception("message du module %s non transmis", module)
+                emit_event(codes.ORT_6527, logger=log, trace=True, contexte=f"message du module {module} vers un client",
+                           detail="non transmis")
 
     def _publish_sdr_window(self, state: dict) -> None:
         """Fenêtre du SDR vers les modules abonnés (Cluster : spots de cette fenêtre) : à chaque changement, et toutes
@@ -235,7 +238,7 @@ class ModuleBridge:
                 try:
                     session.send(payload)
                 except Exception:
-                    log.exception("rejeu de l'état du SDR impossible")
+                    emit_event(codes.ORT_6527, logger=log, trace=True, contexte="rejeu de l'état du SDR", detail="impossible")
                     return
 
     def on_hf_view(self, session, opened: bool) -> None:
@@ -251,5 +254,5 @@ class ModuleBridge:
                 try:
                     session.send(payload)
                 except Exception:
-                    log.exception("rejeu vers un client impossible")
+                    emit_event(codes.ORT_6527, logger=log, trace=True, contexte="rejeu vers un client", detail="impossible")
                     return

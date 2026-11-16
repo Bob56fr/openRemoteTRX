@@ -311,12 +311,13 @@ class BreizhLink(asyncio.DatagramProtocol):
                         await loop.create_datagram_endpoint(lambda: self, remote_addr=(self.host, self.port))
                     except OSError as exc:
                         next_socket = self.clock() + SOCKET_RETRY_S
-                        log.warning("Breizh %s:%s injoignable (%s) : nouvel essai dans %g s",
-                                    self.host, self.port, exc, SOCKET_RETRY_S)
+                        emit_event(codes.ORT_6501, logger=log, module="Breizh Audio Box",
+                                   detail=f"{self.host}:{self.port} injoignable ({exc}), nouvel essai dans "
+                                          f"{SOCKET_RETRY_S:g} s")
                 try:
                     self.tick()
                 except Exception:                       # jamais de sortie : la station continue en direct
-                    log.exception("liaison avec Breizh")
+                    emit_event(codes.ORT_6541, logger=log, trace=True, erreur="voir la trace")
                 try:
                     await asyncio.wait_for(stop.wait(), TICK_S)
                 except asyncio.TimeoutError:

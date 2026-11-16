@@ -30,6 +30,7 @@ from . import protocol as p
 from .decoder import RATE as DEC_RATE
 from .decoder import Frame, SelcallDecoder
 
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 DISABLED, STANDBY, OPEN = "disabled", "standby", "open"
@@ -97,7 +98,7 @@ class SelcallStore:
             self.status = SelcallStatus(state=state, code=code, history=history, filter_mode=mode, attenuation_db=att,
                                         send_on_tx_end=tail, tx_level_dbfs=level)
         except (OSError, ValueError, AttributeError) as exc:
-            log.warning("état SELCALL illisible (%s) : fonction désactivée", exc)
+            emit_event(codes.ORT_6807, logger=log, detail=str(exc))
 
     def add_listener(self, callback: Callable[[SelcallStatus], None]) -> None:
         self._listeners.append(callback)
@@ -114,7 +115,7 @@ class SelcallStore:
             try:
                 callback(status)
             except Exception:
-                log.exception("écouteur SELCALL en erreur")
+                emit_event(codes.ORT_6814, logger=log, trace=True, contexte="écouteur de l'état")
         return status
 
     def _save(self) -> None:
@@ -134,7 +135,7 @@ class SelcallStore:
                 Path(tmp).unlink(missing_ok=True)
                 raise
         except OSError as exc:                                      # jamais d'arrêt de la passerelle pour un fichier
-            log.warning("état SELCALL non enregistré : %s", exc)
+            emit_event(codes.ORT_6808, logger=log, detail=str(exc))
 
     # ---- actions de l'utilisateur (lot 4 : commandes des clients)
 
@@ -161,7 +162,7 @@ class SelcallStore:
             try:
                 callback(self.status)
             except Exception:
-                log.exception("écouteur SELCALL en erreur")
+                emit_event(codes.ORT_6814, logger=log, trace=True, contexte="écouteur de l'état")
 
     def set_sending(self, text: str) -> None:
         """Progression d'un appel manuel (« 2/3 », « » à la fin) : annoncée aux clients, jamais enregistrée."""
@@ -170,7 +171,7 @@ class SelcallStore:
             try:
                 callback(self.status)
             except Exception:
-                log.exception("écouteur SELCALL en erreur")
+                emit_event(codes.ORT_6814, logger=log, trace=True, contexte="écouteur de l'état")
 
     def tail_code(self) -> str | None:
         """Code à émettre en fin d'émission (à la place du roger bip), ou None."""
@@ -203,7 +204,7 @@ class SelcallStore:
         last = {"code": frame.code, "delta_hz": frame.delta_hz, "snr_db": frame.snr_db, "at": round(wall, 3)}
         s = self.status
         if s.state == STANDBY and frame.code == s.code:
-            log.warning("SELCALL : appel %s reçu (Δ %+.1f Hz, SNR %.1f dB) : audio ouvert", frame.code, frame.delta_hz, frame.snr_db)
+            emit_event(codes.ORT_6805, logger=log, delta_hz=f"{frame.delta_hz:+.1f}", snr_db=f"{frame.snr_db:.1f}")
             self._set(_replace(s, state=OPEN, last_call=last))
             return True
         return False
@@ -352,7 +353,7 @@ class SelcallReceiver:
             try:
                 self.on_frame(frame, opened)
             except Exception:
-                log.exception("écouteur des trames SELCALL en erreur")
+                emit_event(codes.ORT_6814, logger=log, trace=True, contexte="écouteur des trames")
 
     # ---- filtrage
 

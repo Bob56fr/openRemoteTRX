@@ -28,6 +28,8 @@ from pathlib import Path
 
 from .rx_engine import Callsign, EndOfOver, RadeRxEngine, RxEngineConfig, SequenceEnd, Status, Voice
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 RATE = 48000
@@ -101,7 +103,7 @@ class FreedvService:
             try:
                 fn(event)
             except Exception:
-                log.exception("abonné FreeDV en erreur")
+                emit_event(codes.ORT_6567, logger=log, trace=True, erreur="abonné")
 
     # ------------------------------------------------------------------ mode
     async def set_on(self, on: bool) -> None:
@@ -152,7 +154,7 @@ class FreedvService:
                 return
             await self._stop_engine()
             self.fault = cause or "décodeur en panne"
-        log.error("FreeDV abandonné après ses relances (%s) : son du poste remis", self.fault)
+        emit_event(codes.ORT_6563, logger=log, cause=self.fault)
         self._notify({"kind": "fault", "cause": self.fault})
 
     # ------------------------------------------------------------------ son (RxHub, boucle asyncio)

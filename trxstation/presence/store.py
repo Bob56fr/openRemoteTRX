@@ -18,6 +18,8 @@ from pathlib import Path
 
 from ..status import replace_atomic
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.presence")
 
 STATE_FILE = "presence.json"
@@ -53,7 +55,7 @@ def read_json(path: Path) -> dict | None:
     except FileNotFoundError:
         return None
     except (OSError, ValueError) as exc:
-        log.error("%s illisible (%s) : mis de côté, repart de zéro", path, exc)
+        emit_event(codes.ORT_6921, logger=log, fichier=str(path), detail=str(exc))
         try:
             os.replace(path, path.with_name(path.name + ".illisible"))
         except OSError:
@@ -85,4 +87,5 @@ class Store:
         try:
             write_json(self.folder / STATUS_FILE, status, private=False)
         except OSError as exc:
-            log.warning("état %s non écrit : %s", self.folder / STATUS_FILE, exc)
+            emit_event(codes.ORT_6528, logger=log, module="presence", fichier=str(self.folder / STATUS_FILE),
+                       detail=str(exc))

@@ -21,6 +21,8 @@ from pathlib import Path
 from .factory import factory_profile
 from .validate import Report, validate_profile
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 CLIENT_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")        # même règle que [[clients]] id dans station.toml
@@ -63,7 +65,7 @@ class LayoutStore:
                 raise ValueError(report.errors[0])
             return data, "user"
         except (OSError, ValueError) as exc:
-            log.warning("profil de « %s » illisible ou invalide (%s) : copie conservée, profil d'usine servi", client_id, exc)
+            emit_event(codes.ORT_9204, logger=log, compte=client_id, detail=str(exc))
             with contextlib.suppress(OSError):
                 os.replace(path, path.with_suffix(".corrupt"))
             return factory_profile(), "factory"

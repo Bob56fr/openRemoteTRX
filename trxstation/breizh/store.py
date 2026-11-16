@@ -19,6 +19,8 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 RETURN_GAIN_MIN, RETURN_GAIN_MAX = -20.0, 6.0
@@ -70,7 +72,8 @@ class BreizhStore:
         except FileNotFoundError:
             return BreizhSettings()
         except (OSError, ValueError, AttributeError) as exc:
-            log.warning("%s illisible (%s) : réglages par défaut", self.settings_path, exc)
+            emit_event(codes.ORT_9712, logger=log, fichier=str(self.settings_path), erreur=str(exc),
+                       repli="réglages par défaut")
             return BreizhSettings()
         return settings
 
@@ -113,12 +116,12 @@ class BreizhStore:
         try:
             _write_atomic(self.journal_path, "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in self.journal))
         except OSError as exc:
-            log.error("journal de Breizh non écrit : %s", exc)
+            emit_event(codes.ORT_1009, logger=log, journal="de Breizh Audio Box", erreur=str(exc))
         for callback in list(self._listeners):
             try:
                 callback(entry)
             except Exception:
-                log.exception("événement Breizh non transmis")
+                emit_event(codes.ORT_6541, logger=log, trace=True, erreur="événement non transmis")
         return entry
 
     def last(self, count: int = 50) -> list[dict]:

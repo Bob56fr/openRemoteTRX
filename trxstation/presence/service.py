@@ -160,35 +160,35 @@ class PresenceService:
         except FileNotFoundError:
             return
         except OSError as exc:
-            log.warning("demande de la console illisible : %s", exc)
+            emit_event(codes.ORT_4017, logger=log, demande="présence", motif=f"illisible ({exc})")
             return
         try:
             path.unlink()
         except OSError as exc:
-            log.warning("demande de la console non effacée : %s", exc)
+            emit_event(codes.ORT_4017, logger=log, demande="présence", motif=f"non effacée ({exc})")
         try:
             req = json.loads(raw.decode("utf-8"))
             ident, action, args, at = req["id"], req["action"], req.get("args") or {}, float(req["at"])
             if not isinstance(ident, str) or not isinstance(action, str) or not isinstance(args, dict):
                 raise ValueError("champs")
         except (ValueError, KeyError, TypeError, UnicodeDecodeError):
-            log.warning("demande de la console mal formée : ignorée")
+            emit_event(codes.ORT_4017, logger=log, demande="présence", motif="mal formée")
             return
         if abs(now - at) > CONSOLE_MAX_AGE_S:
-            log.warning("demande de la console trop ancienne : ignorée")
+            emit_event(codes.ORT_4017, logger=log, demande="présence", motif="trop ancienne")
             return
         try:
             reply = {"id": ident, "ok": True, "result": await self.act(action, args)}
         except ActionRefused as exc:
             reply = {"id": ident, "ok": False, "error": exc.reason, "message": str(exc)}
         except Exception:
-            log.exception("demande de la console en erreur")
+            emit_event(codes.ORT_6922, logger=log, trace=True, contexte="demande de la console", delai_s=0)
             reply = {"id": ident, "ok": False, "error": "internal", "message": "erreur du module"}
         try:
             write_json(reply_path, reply, private=False)       # lisible par le compte de la console
             self._reply_at = now
         except OSError as exc:
-            log.warning("réponse à la console non écrite : %s", exc)
+            emit_event(codes.ORT_6528, logger=log, module="presence", fichier=str(reply_path), detail=str(exc))
 
     # ------------------------------------------------------------- boucle
     async def run(self) -> None:
@@ -226,7 +226,7 @@ class PresenceService:
             try:
                 await self.check_console()
             except Exception:
-                log.exception("demande de la console en erreur")
+                emit_event(codes.ORT_6922, logger=log, trace=True, contexte="demande de la console", delai_s=0)
             await asyncio.sleep(TICK_S)
 
     async def step(self) -> float:
@@ -237,7 +237,7 @@ class PresenceService:
         except asyncio.CancelledError:
             raise
         except Exception:
-            log.exception("cycle de présence en erreur")
+            emit_event(codes.ORT_6922, logger=log, trace=True, contexte="cycle", delai_s=round(ERROR_DELAY_S))
             self.engine.problem = "internal"
             delay = ERROR_DELAY_S
         self.store.write_status({"enabled": True, "updated": int(self.clock()), **self.engine.status_summary()})
@@ -247,7 +247,7 @@ class PresenceService:
         try:
             await self.bus.run_forever()
         except Exception as exc:              # sans bus, le module continue (statut « inconnu » de la station)
-            log.warning("API interne indisponible : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="presence", detail=str(exc) or type(exc).__name__, delai_s=0)
 
 
 def setup_logging(folder: Path) -> None:
@@ -264,7 +264,7 @@ def setup_logging(folder: Path) -> None:
         handler.setFormatter(fmt)
         root.addHandler(handler)
     except OSError as exc:
-        log.warning("journal %s impossible : %s", folder / "presence.log", exc)
+        emit_event(codes.ORT_1009, logger=log, journal=str(folder / "presence.log"), erreur=str(exc))
 
 
 def main(argv: list[str] | None = None) -> int:

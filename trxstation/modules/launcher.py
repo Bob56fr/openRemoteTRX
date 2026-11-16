@@ -33,6 +33,7 @@ from ..errors import codes
 from . import API_VERSION, DEFAULT_BUS_HOST
 from .manifest import Manifest, api_compatible
 
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.launcher")
 
 BELOW_NORMAL_PRIORITY_CLASS = 0x00004000    # Windows
@@ -117,7 +118,8 @@ class ModuleLauncher:
             if not api_compatible(m.api, API_VERSION):
                 mp.state = INCOMPATIBLE
                 self._notify(mp, f"API {m.api} attendue, {API_VERSION} fournie : "
-                                 "module non lancé", codes.ORT_6502)
+                                 "module non lancé", codes.ORT_6502, version_module=m.api,
+                             version_attendue=API_VERSION)
             self.modules[m.name] = mp
         self._task: asyncio.Task | None = None
 
@@ -141,7 +143,7 @@ class ModuleLauncher:
         try:
             found = self._secrets_source()
         except Exception:
-            log.exception("secrets des modules illisibles")
+            emit_event(codes.ORT_6515, logger=log, trace=True, fichier="secrets des modules")
             found = None
         if found:
             self.secrets = dict(found)
@@ -276,14 +278,16 @@ class ModuleLauncher:
                 if len(mp.restarts) > p.max_restarts:
                     mp.state = DISABLED
                     self._notify(mp, f"arrêté {len(mp.restarts)} fois en moins de "
-                                     f"{p.window_s:.0f} s : désactivé", codes.ORT_8002)
+                                     f"{p.window_s:.0f} s : désactivé", codes.ORT_8002, n=len(mp.restarts),
+                                 fenetre_s=round(p.window_s))
                     continue
                 mp.delay_s = p.first_delay_s if mp.delay_s == 0 else \
                     min(p.max_delay_s, mp.delay_s * 2)
                 mp.next_start = now + mp.delay_s
                 mp.state = WAITING
                 self._notify(mp, f"arrêt inattendu (code {code}), "
-                                 f"relance dans {mp.delay_s:.0f} s", codes.ORT_6517)
+                                 f"relance dans {mp.delay_s:.0f} s", codes.ORT_6517, code_sortie=code,
+                             delai_s=round(mp.delay_s))
             elif mp.state == WAITING and now >= mp.next_start:
                 if not self._spawn(mp) and mp.state == WAITING:
                     mp.next_start = now + p.first_delay_s
@@ -297,13 +301,13 @@ class ModuleLauncher:
         finally:
             self.stop_all()
 
-    def _notify(self, mp: ModuleProcess, message: str, code: str) -> None:
-        log.warning("module %s : %s (%s)", mp.name, message, code)
+    def _notify(self, mp: ModuleProcess, message: str, code: str, **contexte) -> None:
+        emit_event(code, logger=log, **{"module": mp.name, "detail": message, **contexte})
         if self.notify:
             try:
                 self.notify(mp.name, mp.state, message, code)
             except Exception:
-                log.exception("notification impossible")
+                emit_event(codes.ORT_8013, logger=log, trace=True, detail=f"module {mp.name} : notification impossible")
 
 
 def generate_systemd_unit(m: Manifest, *, python: str, workdir: Path,

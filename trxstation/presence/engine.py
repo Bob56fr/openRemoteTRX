@@ -22,6 +22,8 @@ from .relay import RelayUnavailable
 from .status import OFFLINE_AFTER_S, ShackRule, StatusTracker, display_code, sort_key
 from .wire import Counter, clean_pseudo, clean_text
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.presence")
 
 DEFAULT_NEXT_IN = 90
@@ -163,7 +165,8 @@ class Engine:
             try:
                 rules.append(ShackRule(frozenset(r["days"]), r["start"], r["end"]))
             except (KeyError, TypeError, ValueError):
-                log.warning("plage « Au shack » illisible ignorée : %r", r)
+                emit_event(codes.ORT_9712, logger=log, fichier="presence.json (plage « Au shack »)", erreur=repr(r)[:120],
+                           repli="plage ignorée")
         self.tracker.rules = rules
         self.tracker.suspended_until = shack.get("suspended_until")
         once = shack.get("once")
@@ -335,7 +338,7 @@ class Engine:
             log.info("station enregistrée auprès du relais (%s)", self.me)
             return True
         self.problem = f"register_{reply.get('error') or code}"
-        log.warning("enregistrement refusé : %s %s", code, reply.get("message", ""))
+        emit_event(codes.ORT_6904, logger=log, motif=f"{code} {reply.get('message', '')}".strip())
         return False
 
     # ------------------------------------------------------------------ requête périodique
@@ -351,8 +354,9 @@ class Engine:
             reply = await self._sync(now)
         except RelayUnavailable as exc:
             self.problem = "relay_unreachable"
-            log.warning("relais injoignable : %s", exc)
-            return self._backoff()
+            delay = self._backoff()
+            emit_event(codes.ORT_6903, logger=log, detail=str(exc), delai_s=round(delay))
+            return delay
         if reply is None:
             retry, self._retry_in = self._retry_in, None
             return float(retry) if retry else self._backoff()
@@ -395,7 +399,7 @@ class Engine:
                 self.store.data["registered"] = False
             self.problem = {"clock": "clock", "pause": "relay_paused", "rate": "relay_busy"}.get(
                 reason, f"relay_error_{reason or code}")
-            log.warning("requête périodique refusée : %s %s", code, reply.get("message", ""))
+            emit_event(codes.ORT_6906, logger=log, motif=f"{code} {reply.get('message', '')}".strip())
             if isinstance(retry, int) and not isinstance(retry, bool):
                 self._retry_in = max(MIN_NEXT_IN, min(MAX_NEXT_IN, retry))
             return None
@@ -415,7 +419,7 @@ class Engine:
             try:
                 self._apply(g, rec, entry, now)
             except (Malformed, KeyError, TypeError, ValueError) as exc:     # réponse du relais incohérente : ignorée
-                log.warning("groupe %s : réponse du relais ignorée (%s)", g, exc)
+                emit_event(codes.ORT_6906, logger=log, motif=f"groupe {g} : réponse incohérente ignorée ({exc})")
         for g, rec in self.store.groups.items():
             if g not in seen and rec["status"] == "member":
                 rec["status"] = "removed"
@@ -435,7 +439,7 @@ class Engine:
             new, refused = ro.follow(current, envs, group=g, invite_admin=rec.get("invite_admin"),
                                      admin_last_seen=rec.get("admin_last_seen", now), now=now)
             for reason in refused:
-                log.warning("groupe %s : version de la liste refusée (%s)", g, reason)
+                emit_event(codes.ORT_6908, logger=log, groupe=g, motif=reason)
             if new is not None and (current is None or new.version != current.version):
                 rec["roster"] = by_version[new.version]
                 current = new
@@ -457,7 +461,7 @@ class Engine:
                     rec["old_keys"] = dict(sorted(rec["old_keys"].items(), key=lambda kv: int(kv[0]))[-OLD_KEYS_KEPT:])
                 rec["key"], rec["kv"] = b64e(key), box["kv"]
             except invite.InviteRefused as exc:
-                log.warning("groupe %s : clé remise refusée (%s)", g, exc.reason)
+                emit_event(codes.ORT_6909, logger=log, groupe=g, motif=exc.reason)
         if rec["status"] != "member" and rec["kv"] == roster.kv:
             rec["status"] = "member"
             log.info("groupe %s : adhésion validée", g)
@@ -539,7 +543,7 @@ class Engine:
                 try:
                     await self._post_ok("group/reject", {"g": g, "ids": reject})
                 except ActionRefused as exc:
-                    log.warning("groupe %s : refus non transmis (%s)", g, exc.reason)
+                    emit_event(codes.ORT_6907, logger=log, action=f"refus d'adhésion (groupe {g})", motif=exc.reason)
             if accept or remove:
                 try:
                     await self._publish(g, rec, roster, remove=remove, add=accept, reject=reject)
@@ -547,8 +551,8 @@ class Engine:
                     for t in used:
                         rec["tokens"].pop(t, None)
                 except ActionRefused as exc:
-                    log.warning("groupe %s : nouvelle liste refusée par le relais (%s), réessai au prochain cycle",
-                                g, exc.reason)
+                    emit_event(codes.ORT_6907, logger=log, action=f"nouvelle liste des membres (groupe {g}, réessai au "
+                                                                 "prochain cycle)", motif=exc.reason)
 
     async def _publish(self, g: str, rec: dict, roster: ro.Roster, *, remove: set[str], add: list[ro.Member],
                        reject: list[str], members: list[ro.Member] | None = None) -> None:

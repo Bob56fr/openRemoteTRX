@@ -37,6 +37,8 @@ from .engine import Engine
 from .feed import CONNECTED, FAILED, Feed, Source
 from .publish import SpotPublisher, sdr_window
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.cluster")
 
 STATUS_EVERY_S = 5.0
@@ -178,7 +180,7 @@ def setup_logging(folder: Path) -> None:
         handler.setFormatter(fmt)
         root.addHandler(handler)
     except OSError as exc:
-        log.warning("journal %s impossible : %s", folder / "cluster.log", exc)
+        emit_event(codes.ORT_6528, logger=log, module="cluster", fichier=str(folder / "cluster.log"), detail=str(exc))
 
 
 def load_secrets(config_path: Path) -> tuple[dict[str, str], list[str]]:
@@ -190,7 +192,7 @@ def load_secrets(config_path: Path) -> tuple[dict[str, str], list[str]]:
     if issue:
         try:
             secretstore.fix_permissions(path)
-            log.warning("secrets.toml : %s ; corrigé en 0600", issue)
+            emit_event(codes.ORT_9107, logger=log, mode=issue)
         except OSError:
             problems.append(f"secrets.toml : {issue} (correction impossible : sudo chmod 600 {path})")
     try:
@@ -265,7 +267,7 @@ class ClusterService:
         try:
             write_status(self.status_file, data)
         except OSError as exc:
-            log.warning("état %s non écrit : %s", self.status_file, exc)
+            emit_event(codes.ORT_6528, logger=log, module="cluster", fichier=str(self.status_file), detail=str(exc))
         changed = data["health"] != self._last_health
         if changed:
             self._last_health = data["health"]
@@ -296,7 +298,7 @@ class ClusterService:
         try:
             table = await asyncio.to_thread(ctymod.download, self.cty_path)
         except Exception as exc:
-            log.warning("mise à jour de cty.dat impossible : %s", exc)
+            emit_event(codes.ORT_6412, logger=log, detail=str(exc) or type(exc).__name__)
             return
         if self.engine is not None:
             self.engine.cache.cty = table
@@ -330,7 +332,7 @@ class ClusterService:
         sources, more = build_sources(c, secrets)
         self.problems += more
         for p in self.problems:
-            log.warning("%s", p)
+            emit_event(codes.ORT_6401, logger=log, probleme=p)
         table, self.cty_problem = ctymod.load_or_empty(self.cty_path)
         self.cty_entities = len(table)
         self.engine = Engine(build_cache(c, table))
@@ -357,7 +359,7 @@ class ClusterService:
         try:
             await self.bus.run_forever()
         except Exception as exc:                  # sans bus, le module continue (état dans status.json)
-            log.warning("API interne indisponible : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="cluster", detail=str(exc) or type(exc).__name__, delai_s=0)
 
 
 def main(argv: list[str] | None = None) -> int:

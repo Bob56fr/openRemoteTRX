@@ -21,6 +21,8 @@ from collections.abc import Callable
 
 from .activity import ReporterState
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.freedv.reporter")
 
 URL = "https://qso.freedv.org/socket.io/?EIO=4&transport=polling"
@@ -123,7 +125,7 @@ class ReporterClient:
                 delay = BACKOFF_S[min(failures, len(BACKOFF_S) - 1)]
                 failures += 1
                 text = str(e) if isinstance(e, ReporterError) else type(e).__name__
-                log.warning("FreeDV Reporter : %s ; nouvel essai dans %.0f s", text, delay)
+                emit_event(codes.ORT_6568, logger=log, detail=text, delai_s=round(delay))
                 with self.lock:
                     self.state.clear()
                 self._set(ERROR, f"FreeDV Reporter injoignable ({text}) ; nouvel essai dans {delay:.0f} s")

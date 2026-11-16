@@ -17,6 +17,8 @@ import sys
 
 from .client import BusRefused, ModuleClient
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.demo")
 
 
@@ -52,7 +54,7 @@ class DemoModule:
             await self.client.client_message(kind="module_state", module="demo",
                                              paused=active, text=text)
         except Exception as exc:              # le message est facultatif
-            log.warning("message au terminal refusé : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="demo", detail=f"message refusé : {exc}", delai_s=0)
 
 
 def main() -> int:

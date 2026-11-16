@@ -23,6 +23,8 @@ from typing import Any, Callable
 from . import API_VERSION, DEFAULT_BUS_HOST, DEFAULT_BUS_PORT
 from .protocol import MAX_LINE_BYTES, ProtocolError, decode, encode
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.module")
 
 
@@ -131,8 +133,8 @@ class ModuleClient:
             except BusRefused:
                 raise
             except (ConnectionError, OSError, asyncio.TimeoutError, ProtocolError) as exc:
-                log.warning("cœur injoignable (%s), nouvel essai dans %.0f s",
-                            exc or type(exc).__name__, delay)
+                emit_event(codes.ORT_6519, logger=log, module=self.module, detail=str(exc) or type(exc).__name__,
+                           delai_s=round(delay))
             if self._stopping:
                 break
             await asyncio.sleep(delay)
@@ -173,7 +175,8 @@ class ModuleClient:
                     try:
                         await _maybe_await(self.on_connect())
                     except Exception:
-                        log.exception("rappel de connexion en erreur")
+                        emit_event(codes.ORT_6527, logger=log, trace=True, contexte=f"{self.module} : rappel de connexion",
+                                   detail="voir la trace")
                 continue
             if msg.get("type") == "call":
                 await self._answer_call(msg)
@@ -187,7 +190,8 @@ class ModuleClient:
                 if self.on_event:
                     await _maybe_await(self.on_event(msg.get("name"), msg.get("data") or {}))
             except Exception:
-                log.exception("traitement de l'événement %s en erreur", msg.get("name"))
+                emit_event(codes.ORT_6527, logger=log, trace=True,
+                           contexte=f"{self.module} : événement {msg.get('name')}", detail="voir la trace")
 
     async def _answer_call(self, msg: dict) -> None:
         reply = {"type": "reply", "id": msg.get("id")}
@@ -199,12 +203,13 @@ class ModuleClient:
         except CallRefused as exc:
             reply.update(ok=False, error=exc.code, message=str(exc))
         except Exception:
-            log.exception("commande de client en erreur")
+            emit_event(codes.ORT_6527, logger=log, trace=True, contexte=f"{self.module} : commande de client",
+                       detail="voir la trace")
             reply.update(ok=False, error="internal", message="erreur du module")
         try:
             await self._send(reply)
         except (ConnectionError, OSError) as exc:
-            log.warning("réponse à une commande non envoyée : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module=self.module, detail=f"réponse non envoyée : {exc}", delai_s=0)
 
     async def _heartbeat_loop(self) -> None:
         while True:
@@ -213,7 +218,8 @@ class ModuleClient:
                 try:
                     metrics = dict(self.metrics())
                 except Exception:
-                    log.exception("métriques indisponibles")
+                    emit_event(codes.ORT_6527, logger=log, trace=True, contexte=f"{self.module} : métriques",
+                               detail="voir la trace")
             await self._send({"type": "heartbeat", "metrics": metrics})
             await asyncio.sleep(self.heartbeat_s)
 

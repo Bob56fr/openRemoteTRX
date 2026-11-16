@@ -6588,6 +6588,29 @@ ORT-6567:
     - Program defect (unforeseen case)
     preconisation: Report the problem with the station log (TRX Console menu 8).
 
+ORT-6568:
+  gravite: avertissement
+  titre: FreeDV Reporter injoignable
+  message: 'Activité FreeDV : FreeDV Reporter injoignable ({detail}) ; nouvel essai dans {delai_s} s.'
+  causes:
+  - Accès Internet de la station coupé
+  - Service FreeDV Reporter arrêté ou protocole changé
+  preconisation: Rien à faire si cela passe ; sinon vérifier l'accès Internet de la station. La liste « Activité
+    FreeDV » de la page reste vide ou périmée en attendant.
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6568/
+  depuis_version: 0.162.0
+  en:
+    titre: FreeDV Reporter unreachable
+    message: 'FreeDV activity: FreeDV Reporter unreachable ({detail}); retrying in {delai_s} s.'
+    causes:
+    - Station Internet access down
+    - FreeDV Reporter service stopped or protocol changed
+    preconisation: Nothing to do if it passes; otherwise check the station Internet access. The "FreeDV activity" list
+      of the page stays empty or outdated meanwhile.
+
 ORT-6801:
   gravite: info
   titre: 'Essai SELCALL : RIT refusé ou illisible'

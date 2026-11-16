@@ -270,7 +270,7 @@ class SdrService:
             tmp.write_text(json.dumps(asdict(self.settings)), encoding="utf-8")
             os.replace(tmp, self.folder / "last.json")
         except OSError as exc:
-            log.warning("réglages SDR non gardés : %s", exc)
+            emit_event(codes.ORT_1008, logger=log, fonction="SDR", erreur=str(exc), effet="non gardé au redémarrage")
 
     # ------------------------------------------------------------- état publié
     def snapshot(self) -> dict:
@@ -453,7 +453,7 @@ class SdrService:
             proc.stdin.write(("\n".join(lines) + "\n").encode("ascii"))
             await proc.stdin.drain()
         except (ConnectionError, OSError) as exc:
-            log.warning("réglage non transmis à sdr-core : %s", exc)
+            log.info("réglage non transmis à sdr-core (%s) : son arrêt est signalé par ORT-6004", exc)
 
     # ------------------------------------------------------------- cœur natif
     async def run_core_once(self) -> tuple[int | None, dict | None]:
@@ -475,7 +475,7 @@ class SdrService:
                 try:
                     frames = reader.feed(chunk)
                 except FrameError as exc:
-                    log.warning("flux de sdr-core illisible (%s) : relance", exc)
+                    log.info("flux de sdr-core illisible (%s) : arrêté, relance signalée par ORT-6004", exc)
                     self.proc.kill()
                     break
                 for frame in frames:
@@ -673,7 +673,7 @@ class SdrService:
         try:
             await self.bus.run_forever()
         except Exception as exc:
-            log.warning("API interne indisponible : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="sdr", detail=str(exc) or type(exc).__name__, delai_s=0)
 
 
 def setup_logging(folder: Path) -> None:
@@ -690,7 +690,7 @@ def setup_logging(folder: Path) -> None:
         handler.setFormatter(fmt)
         root.addHandler(handler)
     except OSError as exc:
-        log.warning("journal %s impossible : %s", folder / "sdr.log", exc)
+        emit_event(codes.ORT_1009, logger=log, journal=str(folder / "sdr.log"), erreur=str(exc))
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -27,6 +27,8 @@ from .. import config as cfgmod
 from ..paths import default_config_path
 from .status import WINDOWS_HINTS, summarize
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger(__name__)
 
 POLL_S = 1.0
@@ -156,7 +158,7 @@ class Tray:
                     icon.title = tooltip(self.view)
                     icon.update_menu()
             except Exception:                                  # l'indicateur ne s'arrête jamais sur une lecture ratée
-                log.exception("indicateur : mise à jour impossible")
+                emit_event(codes.ORT_9717, logger=log, trace=True, detail="mise à jour impossible (voir la trace)")
             self._stop.wait(POLL_S)
 
     def run(self) -> None:

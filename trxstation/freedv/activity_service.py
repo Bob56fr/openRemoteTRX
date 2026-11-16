@@ -37,6 +37,8 @@ from ..paths import default_config_path
 from .activity import ReporterState
 from .reporter import ReporterClient
 
+from ..errors import codes
+from ..errors.emit import emit_event
 log = logging.getLogger("trx.freedv.activity")
 PUBLISH_EVERY_S = 10.0
 FIRST_PUBLISH_S = 3.0
@@ -69,7 +71,8 @@ class ActivityService:
         try:
             await self.bus.client_message(**self.message())
         except Exception as exc:          # cœur occupé ou redémarré : la prochaine publication suivra
-            log.warning("liste non publiée : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="freedv_activity", detail=f"liste non publiée : {exc}",
+                       delai_s=0)
 
     async def run(self) -> None:
         thread = threading.Thread(target=self.reporter.run, args=(self.stop,), name="freedv-reporter", daemon=True)
@@ -91,7 +94,8 @@ class ActivityService:
         try:
             await self.bus.run_forever()
         except Exception as exc:
-            log.warning("API interne indisponible : %s", exc)
+            emit_event(codes.ORT_6519, logger=log, module="freedv_activity", detail=str(exc) or type(exc).__name__,
+                       delai_s=0)
 
 
 def setup_logging(folder: Path) -> None:
@@ -108,7 +112,7 @@ def setup_logging(folder: Path) -> None:
         handler.setFormatter(fmt)
         root.addHandler(handler)
     except OSError as exc:
-        log.warning("journal %s impossible : %s", folder / "activity.log", exc)
+        emit_event(codes.ORT_1009, logger=log, journal=str(folder / "activity.log"), erreur=str(exc))
 
 
 def main(argv: list[str] | None = None) -> int:
