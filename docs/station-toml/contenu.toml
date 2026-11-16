@@ -1025,7 +1025,14 @@ niveau = "courant"
 [reglages."supervisor.allow_local_tx"]
 role = "true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes."
 niveau = "courant"
-securite = "false : toute émission non demandée par la station est coupée."
+securite = "false : toute émission non demandée par la station est coupée. Un micro tenu enfoncé résiste alors à la coupure et mène au mode sûr en une minute environ : gardez true si quelqu'un se sert du poste sur place."
+
+[reglages."supervisor.local_tx_max_s"]
+role = "Station partagée : durée d'émission au micro du poste tolérée quand un opérateur est PRÉSENT, c'est-à-dire quand une action sur le poste (volume, fréquence, mode, sortie du mode DATA, préampli, NR...) a été vue dans les 2 minutes avant la prise ou pendant l'émission. Passé le TOT absolu, simple alerte ; à cette durée, coupure par le superviseur, puis échelle de reprise et mode sûr si l'émission résiste. Sans preuve de présence, le TOT absolu s'applique."
+niveau = "expert"
+bornes = "1 à 600 s ; jamais moins que <code>tot_abs_s</code> (le plus grand des deux s'applique)."
+securite = "Un micro coincé juste après une action sur le poste émet jusqu'à cette durée avant d'être coupé."
+depuis = "0.157.0"
 
 [reglages."supervisor.gateway_unit"]
 role = "Linux : nom du service systemd de la passerelle."

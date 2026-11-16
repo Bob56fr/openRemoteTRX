@@ -45,4 +45,8 @@ Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart 
 - **Température** : le superviseur surveille le processeur du PC et alerte au-delà de 70 °C. Celle du FTDX10 n'est
   pas lisible par la station : ventilation correcte autour du poste.
 - **Opérateur sur place** : si quelqu'un utilise le poste sur place, l'émission à distance est bloquée pendant
-  son émission puis 2 minutes ; la station ne le coupe jamais pour ce motif.
+  son émission puis 2 minutes ; la station ne le coupe jamais pour ce motif. Une émission au micro est coupée par
+  le TOT absolu (135 s), sauf si l'opérateur a touché le poste (volume, fréquence, mode, sortie du mode DATA…) dans
+  les 2 minutes avant de parler ou pendant qu'il parle : la station le sait présent et le laisse parler jusqu'à
+  5 minutes (`local_tx_max_s`), avec une simple alerte entre les deux. Le minuteur du poste, s'il est réglé plus
+  court, coupe avant. Gardez `allow_local_tx = true` : avec `false`, un micro tenu enfoncé mène au mode sûr.

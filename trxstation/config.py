@@ -260,6 +260,7 @@ class Safety:
 
 
 TEMP_MIN_C, TEMP_MAX_C = 20, 90      # bornes des seuils de température du poste
+LOCAL_TX_CEILING_S = 600             # plafond de [supervisor] local_tx_max_s (décision de l'utilisateur, 2026-11-16)
 
 
 @dataclass
@@ -284,6 +285,9 @@ class Supervisor:
     alive_every_h: float = 1.0        # battement « Station en service » par notify_url (priorité minimale) ; 0 = aucun
     allow_local_tx: bool = True       # True (« station partagée ») : l'émission locale (micro du poste) n'est pas coupée,
                                       # sauf par tot_abs_s ; False : coupée à chaque passage (jamais d'escalade si « T 0 » marche)
+    local_tx_max_s: int = 300         # station partagée, opérateur PRÉSENT (action sur le poste, gateway/safety/local.py) :
+                                      # émission locale tolérée jusque-là au lieu de tot_abs_s (étape 206) ; plafond 600 s ;
+                                      # jamais moins que tot_abs_s (le plus grand des deux s'applique)
     gateway_unit: str = "trx-gateway.service"
     rigctld_unit: str = "rigctld.service"
 
@@ -598,6 +602,10 @@ def validate(cfg: Config) -> list[str]:
     v = cfg.supervisor
     if v.tot_abs_s <= s.tot_ceiling_s:
         p.append("[supervisor] tot_abs_s doit être strictement supérieur à safety.tot_ceiling_s")
+    if isinstance(v.local_tx_max_s, bool) or not isinstance(v.local_tx_max_s, int)             or not 0 < v.local_tx_max_s <= LOCAL_TX_CEILING_S:
+        # pas de borne basse liée à tot_abs_s : une station.toml existante resterait refusée ; le superviseur prend le
+        # plus grand des deux (jamais moins que le TOT absolu)
+        p.append(f"[supervisor] local_tx_max_s doit être un entier entre 1 et {LOCAL_TX_CEILING_S} s")
     if v.max_reboots_per_hour < 0:
         p.append("[supervisor] max_reboots_per_hour ne peut pas être négatif")
     if v.stale_after_s < 0.5:
@@ -1167,6 +1175,7 @@ def render_toml(cfg: Config) -> str:
         f"disk_alert_pct = {v.disk_alert_pct}   # disque utilisé (%), dossier d'état et / : alerte ntfy seule ; 0 = aucune",
         f"alive_every_h = {v.alive_every_h}   # message « Station en service » sans sonnerie par notify_url ; 0 = aucun",
         f"allow_local_tx = {str(v.allow_local_tx).lower()}   # true : station partagée, l'émission au micro du poste n'est coupée que par tot_abs_s",
+        f"local_tx_max_s = {v.local_tx_max_s}   # station partagée, opérateur présent (action sur le poste) : émission locale tolérée jusque-là (600 au plus)",
         f"gateway_unit = {_s(v.gateway_unit)}",
         f"rigctld_unit = {_s(v.rigctld_unit)}",
         "",

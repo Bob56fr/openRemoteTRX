@@ -10,7 +10,7 @@ import asyncio
 
 from test_safety import beating, refusal, run, station, until
 
-from trxstation.gateway.safety.local import HOLD_S, SETTLE_S, LocalPresence
+from trxstation.gateway.safety.local import HOLD_S, PANEL_EXPECT_S, PRESENCE_S, SETTLE_S, LocalPresence, panel_of
 
 
 class Clock:
@@ -26,8 +26,12 @@ def presence():
     return LocalPresence(clock=clock), clock
 
 
-def see(p, *, ptt=False, freq=14_200_000, mode="USB", gateway="RX", connected=True):
-    return p.observe(connected, ptt, freq, mode, gateway)
+def see(p, *, ptt=False, freq=14_200_000, mode="USB", gateway="RX", connected=True, panel=None, writes=None):
+    return p.observe(connected, ptt, freq, mode, gateway, panel, writes)
+
+
+def knobs(af=0.5, nr=False, preamp=1):
+    return panel_of({"NR": nr}, {"AF": af, "PREAMP": preamp, "SWR": 1.1, "TEMP_METER": 31.0}, {"RIT": 0}, False, None)
 
 
 # --------------------------------------------------------------------------- logique seule
@@ -92,6 +96,104 @@ def test_a_link_loss_does_not_make_a_change_out_of_a_reconnection():
     clock.now += 10
     assert see(p, freq=14_074_000) is False               # nouvelle référence après la coupure
     assert not p.active()
+
+
+# --------------------------------------------------------------------------- présence prouvée (étape 206)
+
+def test_panel_keeps_settings_only_never_meters():
+    assert set(knobs()) == {"f:NR", "l:AF", "l:PREAMP", "o:RIT", "split"}
+
+
+def test_volume_turned_just_before_keying_proves_presence_without_blocking_remote_ptt():
+    p, clock = presence()
+    see(p, panel=knobs())
+    clock.now += 10
+    see(p, panel=knobs(af=0.7))                           # volume tourné sur le poste
+    assert not p.active()                                 # un réglage ne bloque PAS le PTT à distance (étape 34 inchangée)
+    clock.now += PRESENCE_S - 5
+    assert see(p, ptt=True, panel=knobs(af=0.7)) is True
+    assert p.transmitting and p.present
+
+
+def test_action_too_old_does_not_prove_presence_but_one_during_the_transmission_does():
+    p, clock = presence()
+    see(p, panel=knobs())
+    see(p, panel=knobs(af=0.7))
+    clock.now += PRESENCE_S + 1
+    see(p, ptt=True, panel=knobs(af=0.7))
+    assert p.transmitting and not p.present               # micro coincé longtemps après une action : pas de preuve
+    clock.now += 30
+    assert see(p, ptt=True, panel=knobs(af=0.3)) is True  # changement de l'état publié
+    assert p.present
+    see(p, ptt=False, panel=knobs(af=0.3))
+    assert not p.present                                  # fin de l'émission locale
+
+
+def test_leaving_data_mode_or_tuning_before_keying_proves_presence():
+    for change in ({"mode": "USB"}, {"freq": 14_210_000}):
+        p, clock = presence()
+        see(p, mode="PKTUSB")
+        clock.now += 10
+        see(p, **{"mode": "PKTUSB", **change})            # sortie du mode DATA pour parler au micro, ou accord
+        clock.now += 20
+        see(p, ptt=True, **{"mode": "PKTUSB", **change})
+        assert p.present
+
+
+def test_a_transmission_alone_proves_nothing():
+    p, clock = presence()
+    see(p, panel=knobs())
+    clock.now += 10
+    see(p, ptt=True, panel=knobs())
+    assert p.transmitting and not p.present
+    see(p, ptt=False, panel=knobs())
+    clock.now += 10
+    see(p, ptt=True, panel=knobs())                       # nouvelle prise peu après la précédente : toujours rien
+    assert not p.present
+
+
+def test_settings_written_by_the_station_are_not_presence():
+    p, clock = presence()
+    see(p, panel=knobs())
+    clock.now += 10
+    see(p, panel=knobs(nr=True), writes={"f:NR": clock.now - 30})   # relu tard, écrit par la station
+    see(p, ptt=True, panel=knobs(nr=True))
+    assert not p.present
+    p, clock = presence()
+    see(p, panel=knobs())
+    clock.now += 10
+    see(p, panel=knobs(preamp=0), writes={"*": clock.now - 5})       # préampli mémorisé par bande après un QSY de la station
+    see(p, ptt=True, panel=knobs(preamp=0))
+    assert not p.present
+    clock.now += PANEL_EXPECT_S
+    see(p, ptt=False, panel=knobs(preamp=0))
+    see(p, panel=knobs(preamp=1), writes={"*": clock.now - PANEL_EXPECT_S - 5})   # bien après : le poste
+    see(p, ptt=True, panel=knobs(preamp=1))
+    assert p.present
+
+
+def test_first_reading_of_a_setting_and_station_transmission_prove_nothing():
+    p, clock = presence()
+    see(p, panel={})
+    see(p, panel=knobs())                                 # réglages lus pour la première fois
+    see(p, ptt=True, panel=knobs())
+    assert not p.present
+    p, clock = presence()
+    see(p, panel=knobs())
+    see(p, gateway="TX", ptt=True, panel=knobs(preamp=0))  # pendant l'émission de la station : rien
+    clock.now += SETTLE_S + 1
+    see(p, ptt=False, panel=knobs(preamp=0))
+    see(p, ptt=True, panel=knobs(preamp=0))
+    assert not p.present
+
+
+def test_link_loss_forgets_the_settings():
+    p, clock = presence()
+    see(p, panel=knobs())
+    see(p, connected=False)
+    see(p, panel=knobs(af=0.9))                           # nouvelle référence après la coupure
+    see(p, ptt=True, panel=knobs(af=0.9))
+    assert not p.present
 
 
 # --------------------------------------------------------------------------- avec le contrôleur PTT
@@ -172,4 +274,23 @@ def test_unknown_client_cannot_release():
     async def scenario(fake):
         async with station(fake) as (ctrl, link, gate):
             assert await refusal(_release(ctrl, "intrus")) == "unknown_client"
+    run(scenario)
+
+
+def test_volume_turned_on_the_rig_then_mic_is_published_as_operator_present():
+    async def scenario(fake):
+        async with station(fake) as (ctrl, link, gate):
+            await until(lambda: "AF" in link.state.levels, timeout=5)
+            await ctrl.set_level("NR", 0.6)               # réglage de la station : pas une preuve
+            await until(lambda: link.state.levels.get("NR") == 0.6)
+            fake.ptt = 1
+            await until(lambda: ctrl.local.transmitting)
+            await asyncio.sleep(0.3)
+            assert ctrl.snapshot().local_present is False
+            fake.levels["AF"] = 0.8                       # volume tourné sur le poste pendant qu'il parle
+            await until(lambda: ctrl.snapshot().local_present, timeout=5)
+            assert ctrl.snapshot().to_dict()["local_present"] is True
+            assert fake.ptt == 1                          # la station ne coupe toujours pas l'opérateur local
+            fake.ptt = 0
+            await until(lambda: not ctrl.snapshot().local_present)
     run(scenario)

@@ -30,7 +30,7 @@ class FakeRigctld:
         self.strength = -54
         self.levels: dict[str, float] = {"ALC": 0.0, "SWR": 1.1, "RFPOWER_METER": 0.0, "COMP_METER": 0.0, "PREAMP": 10,
                                          "ATT": 0, "AGC": 3, "SQL": 0.2, "RFPOWER": 1.0, "VD_METER": 13.8, "TEMP_METER": 31.0,
-                                         "NR": 0.4, "NB": 5.0}
+                                         "NR": 0.4, "NB": 5.0, "AF": 0.5}
         self.funcs: dict[str, int] = {"NR": 0, "NB": 1, "AIP": 0, "ANF": 0, "MN": 0, "COMP": 0, "TUNER": 0, "RIT": 0, "XIT": 0}
         # Split et clarifieur, formats relevés sur un vrai rigctld (IC-7300MK2, Hamlib 5) : « Split: 0 / TX VFO: currVFO »,
         # « TX Frequency: 0 » hors split, « RIT: 20 » et « XIT: 20 » (décalage commun au RIT et au ΔTX sur ce poste).

@@ -11,6 +11,14 @@ Effet (décision de l'utilisateur) : le PTT à distance est refusé (`local_acti
 pendant l'émission locale puis HOLD_S après la dernière action locale. L'accord et le mode à distance restent
 permis. Un client peut « reprendre la main » plus tôt (`release`), jamais pendant une émission locale.
 Rien ici ne commande le poste : ce module ne fait que refuser.
+
+PRÉSENCE PROUVÉE (décision de l'utilisateur, 2026-11-16, étape 206) : une émission locale est jugée « opérateur présent »
+si une action sur le poste a été vue dans les PRESENCE_S avant sa prise ou pendant elle : fréquence ou mode (dont la
+sortie du mode DATA pour parler au micro), ou un réglage de la face avant (volume AF, préampli, ATT, AGC, squelch,
+puissance, NR, NB, fonctions, RIT / XIT, split, VFO). Le superviseur la tolère alors jusqu'à `local_tx_max_s` au lieu de
+`tot_abs_s`. Un réglage de la face avant ne sert QU'À cette preuve : il ne bloque pas le PTT à distance (comportement de
+l'étape 34 inchangé). Un réglage relu dans les PANEL_EXPECT_S après une écriture de la station (`CatLink.writes`), ou
+après un changement de fréquence ou de mode de la station (réglages mémorisés par bande du poste), n'est pas une preuve.
 """
 from __future__ import annotations
 
@@ -20,6 +28,22 @@ from collections.abc import Callable
 HOLD_S = 120.0          # durée de l'état après la dernière action locale
 EXPECT_S = 3.0          # après une commande de la station, un changement du même genre lui est attribué
 SETTLE_S = 2.0          # après une émission de la station, le poste relu peut traîner : on n'en déduit rien
+PRESENCE_S = 120.0      # action sur le poste vue au plus tant avant la prise d'une émission locale : opérateur présent
+PANEL_EXPECT_S = 60.0   # réglage écrit par la station : sa relecture peut venir tard (lectures facultatives à tour de rôle)
+PANEL_LEVELS = ("AF", "PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "NR", "NB")   # réglages, jamais les mesures (_METER...)
+
+
+def panel_of(functions: dict | None, levels: dict | None, offsets: dict | None, split: bool | None,
+             vfo: str | None) -> dict:
+    """Réglages de la face avant relus du poste, à plat (« f:NR », « l:AF », « o:RIT », « split », « vfo »)."""
+    panel: dict = {f"f:{k}": v for k, v in (functions or {}).items()}
+    panel.update({f"l:{k}": v for k, v in (levels or {}).items() if k in PANEL_LEVELS})
+    panel.update({f"o:{k}": v for k, v in (offsets or {}).items()})
+    if split is not None:
+        panel["split"] = split
+    if vfo is not None:
+        panel["vfo"] = vfo
+    return panel
 
 
 class LocalPresence:
@@ -32,6 +56,9 @@ class LocalPresence:
         self._mode: str | None = None
         self._expect = {"frequency": -1e18, "mode": -1e18}
         self._busy_until = -1e18               # station en émission ou juste après : aucune déduction
+        self._panel: dict = {}
+        self._action_at = -1e18                # dernière action sur le poste (fréquence, mode, face avant)
+        self._tx_start = 0.0                   # prise de l'émission locale en cours
 
     # ---- ce que la station commande elle-même
     def station_busy(self) -> None:
@@ -44,13 +71,17 @@ class LocalPresence:
 
     # ---- ce que la station relit du poste
     def observe(self, connected: bool, ptt: bool | None, frequency_hz: int | None, mode: str | None,
-                gateway_state: str) -> bool:
-        """Nouvel état relu. Renvoie True si une action locale vient d'être repérée (pour publier l'état)."""
+                gateway_state: str, panel: dict | None = None, writes: dict | None = None) -> bool:
+        """Nouvel état relu. Renvoie True si une action locale vient d'être repérée, ou si la présence de l'opérateur
+        vient d'être prouvée pendant une émission locale (pour publier l'état).
+        `panel` : panel_of(...) ; `writes` : CatLink.writes (même horloge que `clock`)."""
         now = self.clock()
         if not connected:
             self._freq = self._mode = None     # pas de comparaison à travers une coupure de liaison
+            self._panel = {}
             self._local_tx = False
             return False
+        was_present = self.present
         if gateway_state != "RX":
             self._busy_until = now + SETTLE_S
         idle = now >= self._busy_until
@@ -58,6 +89,7 @@ class LocalPresence:
         if ptt is True and gateway_state == "RX" and idle:
             if not self._local_tx:
                 found = True
+                self._tx_start = now
             self._local_tx = True
             self._mark("tx", now)
         elif ptt is False and self._local_tx:
@@ -75,16 +107,38 @@ class LocalPresence:
                 self._mark("mode", now)
                 found = True
             self._mode = mode
-        return found
+        if panel is not None:
+            if idle and self._panel_changed_by_hand(panel, writes or {}, now):
+                self._action_at = now
+            self._panel = dict(panel)
+        return found or self.present != was_present
+
+    def _panel_changed_by_hand(self, panel: dict, writes: dict, now: float) -> bool:
+        tuned = writes.get("*", -1e18)
+        for key, value in panel.items():
+            if key not in self._panel or self._panel[key] == value:
+                continue                       # première lecture de ce réglage : rien à comparer
+            if now - max(tuned, writes.get(key, -1e18)) < PANEL_EXPECT_S:
+                continue                       # écrit par la station (ou réglage par bande après son QSY)
+            return True
+        return False
 
     def _mark(self, reason: str, now: float) -> None:
         self.reason = reason
         self._until = now + self.hold_s
+        if reason != "tx":                     # l'émission elle-même ne prouve pas que quelqu'un est là
+            self._action_at = now
 
     # ---- état
     @property
     def transmitting(self) -> bool:
         return self._local_tx
+
+    @property
+    def present(self) -> bool:
+        """Émission locale EN COURS avec un opérateur présent (action sur le poste dans les PRESENCE_S avant la prise,
+        ou pendant l'émission). Faux hors émission locale."""
+        return self._local_tx and self._action_at >= self._tx_start - PRESENCE_S
 
     def active(self) -> bool:
         return self._local_tx or self.clock() < self._until

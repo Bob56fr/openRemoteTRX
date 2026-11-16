@@ -26,7 +26,8 @@ POWER_METER = "RFPOWER_METER"                       # lu à chaque cycle PENDANT
 TX_METERS = ("SWR", "ALC", "COMP_METER")            # lus à tour de rôle pendant l'émission
 EXTRA_FUNCTIONS = ("NR", "NB", "AIP", "COMP", "TUNER", "ANF", "MN", "RIT", "XIT")   # AIP = IP+ chez Icom ; TUNER = tuner d'antenne ; MN = notch manuel ; RIT/XIT = clarifieur
 OFFSETS = ("RIT", "XIT")                            # décalages du clarifieur, lus à tour de rôle avec les lectures facultatives
-EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER", "NR", "NB")
+EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER", "NR", "NB", "AF")
+# AF = volume du poste : jamais écrit par la station, donc le meilleur indice d'un opérateur sur place (étape 206)
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
 SLOW_REFUSAL_S = 1.5        # lecture facultative REFUSÉE après plus de 1,5 s (Hamlib a réessayé) : abandonnée aussitôt
@@ -79,6 +80,13 @@ class CatLink:
         self._extra_index = self._tx_index = 0
         self.ptt_cache_ok: bool | None = None           # cache du PTT de rigctld coupé ? (voir _disable_cache)
         self._cache_warned = False
+        # Dernière ÉCRITURE de la station par réglage (« f:NR », « l:AF », « o:RIT » ; « * » = fréquence ou mode, qui
+        # changent aussi les réglages mémorisés par bande du poste), horloge monotone. Lu par la présence sur place
+        # (safety/local.py) : un changement relu juste après une écriture de la station n'est pas une action de l'opérateur.
+        self.writes: dict[str, float] = {}
+
+    def _stamp(self, key: str) -> None:
+        self.writes[key] = time.monotonic()
 
     # ------------------------------------------------------------------ état
 
@@ -304,6 +312,7 @@ class CatLink:
     # ------------------------------------------------------------------ commandes
 
     async def set_frequency(self, hz: int) -> None:
+        self._stamp("*")
         await self.client.set_frequency(hz)
         self._refresh_now = True
 
@@ -317,6 +326,7 @@ class CatLink:
     async def set_function(self, name: str, on: bool) -> None:
         """NR, NB, IP+ (AIP), compresseur (COMP), tuner (TUNER). L'état affiché suit tout de suite, la lecture suivante le confirme."""
         self._check_known("f", name)
+        self._stamp("f:" + name)
         await self.client.set_func(name, on)
         self._update(functions={**self._state.functions, name: bool(on)})
 
@@ -325,6 +335,7 @@ class CatLink:
         caps = self.capabilities
         low = caps.level_ranges.get("RFPOWER", [0.0])[0] if caps is not None else 0.0
         value = max(float(low), float(value))
+        self._stamp("l:RFPOWER")
         await self.client.set_power_exact(value)
         self._update(levels={**self._state.levels, "RFPOWER": round(value, 3)})
 
@@ -341,6 +352,7 @@ class CatLink:
         if declared and isinstance(value, (int, float)) and not isinstance(value, bool) \
                 and not declared[0] - 1e-9 <= value <= declared[1] + 1e-9:
             raise ValueError(f"{name} : {value!r} hors de la plage du poste ({declared[0]:g} à {declared[1]:g})")
+        self._stamp("l:" + name)
         await self.client.set_level(name, value)
         decimal = name in ("SQL", "RFPOWER", "NR", "NB")
         self._update(levels={**self._state.levels, name: round(float(value), 3) if decimal else int(value)})
@@ -354,6 +366,7 @@ class CatLink:
             limit = min(limit or RIT_LIMIT_HZ, RIT_LIMIT_HZ)                 # ±500 Hz même sans descripteur du poste
         if limit and isinstance(hz, int) and not isinstance(hz, bool) and abs(hz) > limit:
             raise ValueError(f"{which} : {hz} Hz hors de la plage du poste (±{limit} Hz)")
+        self._stamp("o:" + which)
         await self.client.set_offset(which, hz)
         self._update(offsets={**self._state.offsets, which: hz})
 
@@ -365,5 +378,6 @@ class CatLink:
         caps = self.capabilities
         if caps is not None and caps.complete and mode not in caps.modes:
             raise ValueError(f"mode '{mode}' non supporté par ce poste (modes : {', '.join(caps.modes)})")
+        self._stamp("*")
         await self.client.set_mode(mode, passband_hz)
         self._refresh_now = True

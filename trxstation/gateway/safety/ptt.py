@@ -46,7 +46,7 @@ from ...errors import codes
 from ...errors.emit import by_machine, emit_event
 from ..cat import CatConnectionError, CatLink, CatProtocolError, RigError, RigState
 from ..cat.client import RIG_ENAVAIL, RIG_ENIMPL
-from .local import LocalPresence
+from .local import LocalPresence, panel_of
 from .thermal import ThermalGuard
 
 log = logging.getLogger(__name__)
@@ -111,6 +111,7 @@ class PttSnapshot:
     local_remaining_s: float | None = None   # poste utilisé sur place : PTT à distance refusé encore N s (None = libre)
     local_reason: str = ""                   # "tx" (micro du poste), "frequency", "mode"
     local_tx: bool = False                   # émission locale EN COURS (reprise de la main impossible)
+    local_present: bool = False              # émission locale avec un opérateur PRÉSENT (local.py) : superviseur, local_tx_max_s
     temp_alert: str = ""                     # température du poste : "", "warn" ou "hot" (émission refusée)
     temp_c: float | None = None              # dernière température valable (None : poste sans TEMP_METER)
 
@@ -192,7 +193,7 @@ class PttController:
                            self._last_cut_reason, self._fault, event,
                            None if local_left is None else float(math.ceil(local_left)),   # à la seconde : pas plus d'un message d'état par seconde
                            self.local.reason if local_left is not None else "", self.local.transmitting,
-                           self.thermal.level, self.thermal.temp_c)
+                           self.local.present, self.thermal.level, self.thermal.temp_c)
 
     def add_listener(self, callback: Callable[[PttSnapshot], None]) -> None:
         self._listeners.append(callback)
@@ -602,8 +603,9 @@ class PttController:
 
     def _on_rig_state(self, state: RigState) -> None:
         """Appelé par CatLink à chaque changement : lien perdu ou poste muet pendant l'émission ; poste utilisé sur place."""
+        panel = panel_of(state.functions, state.levels, state.offsets, state.split, state.vfo)
         if not self._starting and self.local.observe(state.connected, state.ptt, state.frequency_hz, state.mode,
-                                                     self._state.value):
+                                                     self._state.value, panel, getattr(self.link, "writes", None)):
             log.info("poste utilisé sur place (%s) : PTT à distance refusé pendant %.0f s après la dernière action",
                      self.local.reason, self.local.hold_s)
             self._emit("local_active")

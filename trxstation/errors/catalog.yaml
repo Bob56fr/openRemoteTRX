@@ -4145,6 +4145,58 @@ ORT-5031:
     - 'Station safety (terminal lost, radio, temperature)'
     preconisation: 'Nothing to do: trace of every cut; the precise cause carries its own code (code_cause field).'
 
+ORT-5032:
+  gravite: avertissement
+  titre: 'Émission locale longue, opérateur présent'
+  message: 'Le poste émet depuis le micro depuis {duree_s} s ; opérateur présent (action sur le poste) : coupure à
+    {limite_s} s.'
+  causes:
+  - Opérateur sur place qui parle longtemps au micro du poste
+  - Micro coincé juste après une action sur le poste
+  preconisation: 'Si personne n''est au poste : vérifier le micro et la pédale ; sinon rien à faire.'
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  codes_machine:
+  - local_tx_long
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5032/
+  depuis_version: 0.157.0
+  en:
+    titre: 'Long local transmission, operator present'
+    message: 'The rig has been transmitting from its microphone for {duree_s} s; operator present (action on the
+      rig): cut at {limite_s} s.'
+    causes:
+    - On-site operator talking for a long time on the rig microphone
+    - Microphone stuck right after an action on the rig
+    preconisation: 'If nobody is at the rig: check the microphone and the footswitch; otherwise nothing to do.'
+
+ORT-5033:
+  gravite: critique
+  titre: 'Émission locale trop longue : coupure par le superviseur'
+  message: 'Le poste émet depuis le micro depuis {duree_s} s (plafond de l''émission locale {limite_s} s) : « T 0 »
+    envoyé par le superviseur.'
+  causes:
+  - Micro ou pédale du poste coincés
+  - Opérateur sur place qui dépasse le plafond local_tx_max_s
+  preconisation: 'Contrôler le micro et la pédale du poste ; si l''émission résiste à « T 0 », l''échelle de reprise
+    puis le mode sûr suivent.'
+  action_auto: retour_rx
+  ntfy_defaut: true
+  priorite_ntfy: 5
+  codes_machine:
+  - tot_local
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5033/
+  depuis_version: 0.157.0
+  en:
+    titre: 'Local transmission too long: supervisor cut'
+    message: 'The rig has been transmitting from its microphone for {duree_s} s (local transmission ceiling {limite_s}
+      s): "T 0" sent by the supervisor.'
+    causes:
+    - Rig microphone or footswitch stuck
+    - On-site operator exceeding the local_tx_max_s ceiling
+    preconisation: 'Check the rig microphone and footswitch; if the transmission resists "T 0", the recovery ladder
+      then safe mode follow.'
+
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'

@@ -71,7 +71,7 @@
   },
   "result": [
     {"type": "result", "id": 1, "ok": true, "ptt": {"state": "KEYING", "owner": "phone", "tot_remaining_s": null, "tot_warning": false,
-      "last_cut_reason": "", "fault": "", "event": "", "local_remaining_s": null, "local_reason": "", "local_tx": false, "temp_alert": "", "temp_c": null}},
+      "last_cut_reason": "", "fault": "", "event": "", "local_remaining_s": null, "local_reason": "", "local_tx": false, "local_present": false, "temp_alert": "", "temp_c": null}},
     {"type": "result", "id": 1, "ok": false, "reason": "local_active", "detail": "poste utilisé sur place, encore 95 s"},
     {"type": "result", "id": 4, "ok": false, "reason": "tx_active", "detail": "changement de fréquence, de mode ou de réglage refusé tant que le PTT n'est pas en RX confirmé"},
     {"type": "result", "id": 5, "ok": false, "reason": "forbidden", "detail": "visiteur : réception seule, aucune commande"}

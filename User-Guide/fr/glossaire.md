@@ -59,7 +59,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **PTT en bascule** | un appui pour émettre, un appui pour revenir en réception (jamais « tant qu'on appuie ») |
 | **STOP** | retour immédiat en réception, toujours disponible |
 | **TOT** | *Time Out Timer* : durée maximale d'une émission (90 s par défaut, 120 s au plus), avec un bip 10 s avant la coupure |
-| **TOT absolu** | durée au-delà de laquelle le superviseur coupe toute émission, même celle faite au micro du poste (135 s) |
+| **TOT absolu** | durée au-delà de laquelle le superviseur coupe toute émission, même celle faite au micro du poste (135 s ; 5 minutes si l'opérateur a touché le poste juste avant ou pendant) |
 | **Battement** | le signe de vie que le téléphone envoie deux fois par seconde pendant l'émission ; s'il manque 2 s, retour en réception |
 | **Bandes autorisées** | les plages de fréquences où la station accepte d'émettre ; liste vide = réception seule |
 | **Opérateur sur place** | quelqu'un qui utilise le poste devant lui : l'émission à distance est bloquée pendant son émission puis 2 minutes |

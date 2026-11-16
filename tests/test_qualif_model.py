@@ -54,8 +54,9 @@ def test_plan_generates_tests_only_for_declared_functions_used_by_trx_remote():
             "mode_PKTUSB"} <= ids
     assert "write_level_ATT" in ids                             # ATT est écrit par TRX Remote depuis la 0.40.0 (bouton ATT)
     assert plan.by_id("write_func_TUNER").action == "manual"   # jamais automatique : peut lancer un accord
-    assert {"MON", "VOX", "SCOPE", "AF", "MICGAIN"} <= set(plan.unused)
+    assert {"MON", "VOX", "SCOPE", "MICGAIN"} <= set(plan.unused)
     assert "NR" not in plan.unused and "STRENGTH" not in plan.unused
+    assert "AF" not in plan.unused and "write_level_AF" not in ids   # volume LU depuis l'étape 206 (présence), jamais écrit
     assert plan.by_id("mode_USB").note and not plan.by_id("mode_RTTY").note
 
 

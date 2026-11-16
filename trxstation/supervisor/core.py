@@ -16,6 +16,9 @@ reprise. Le superviseur ne déclenche JAMAIS d'émission.
 « station partagée »), elle n'est pas coupée, sauf par le TOT absolu ; sans, elle est coupée à chaque passage. Dans les
 deux cas, l'échelle de reprise n'est lancée que si l'émission RÉSISTE à « T 0 » depuis STUCK_S : une émission qui
 revient après une coupure réussie est une nouvelle prise de l'opérateur, et relancer la passerelle n'y changerait rien.
+OPÉRATEUR PRÉSENT (étape 206, station partagée seulement) : si la passerelle publie `local_present` (action sur le poste
+dans les 2 minutes avant la prise ou pendant l'émission), l'émission locale est tolérée jusqu'à `local_tx_max_s` (300 s,
+plafond 600) : alerte seule passé le TOT absolu, puis « T 0 » et la même échelle si elle résiste.
 Passerelle muette pendant une émission : coupée si son dernier état connu était une émission (ou s'il est inconnu).
 
 Échelle de reprise : redémarrer la passerelle -> redémarrer rigctld -> réinitialiser l'USB ->
@@ -212,11 +215,21 @@ class Supervisor:
             duration = now - self._tx_since
             last = self.watch.status                 # dernier état publié par la passerelle (même figé)
             explained = gateway_fresh and last is not None and self._tx_explained(last)
-            if duration >= s.tot_abs_s:
+            # Opérateur PRÉSENT (étape 206) : émission locale, passerelle à jour, action sur le poste juste avant ou
+            # pendant l'émission (gateway/safety/local.py). Tolérée jusqu'à local_tx_max_s, alerte seule passé le TOT
+            # absolu. Passerelle muette = présence inconnue = règle du TOT absolu (prudence).
+            present = (s.allow_local_tx and gateway_fresh and last is not None and not explained
+                       and last.ptt.get("local_present") is True)
+            limit = max(s.tot_abs_s, s.local_tx_max_s) if present else s.tot_abs_s
+            if present and s.tot_abs_s <= duration < limit:
+                problems.append(Problem("local_tx_long", f"émission locale depuis {duration:.0f} s, opérateur présent :"
+                                        f" coupure à {limit} s", None, False))
+            if duration >= limit:
                 # Émission de la passerelle au-delà du TOT absolu : la passerelle a failli, échelle de reprise.
                 # Émission locale (micro du poste) : coupée et signalée ; l'échelle seulement si la coupure ne prend pas.
-                stuck = explained or duration >= s.tot_abs_s + STUCK_S
-                problems.append(Problem("tot_absolu", f"émission depuis {duration:.0f} s", 0 if stuck else None, True))
+                stuck = explained or duration >= limit + STUCK_S
+                problems.append(Problem("tot_local" if present else "tot_absolu",
+                                        f"émission depuis {duration:.0f} s", 0 if stuck else None, True))
             if not gateway_fresh:
                 remote = last is None or last.ptt.get("state") in ACTIVE_STATES   # inconnu = prudence : on coupe
                 if not s.allow_local_tx or remote:

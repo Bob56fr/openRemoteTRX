@@ -35,6 +35,7 @@ class World:
         self.gw_state, self.gw_owner, self.gw_fault, self.gw_clients = "RX", None, "", []
         self.cut_works, self.port_present, self.temp = True, True, None
         self.gw_temp = ""
+        self.gw_present = False                   # émission locale avec un opérateur présent (gateway/safety/local.py)
         self.boom: set[str] = set()
         self.calls: list[str] = []
         self.alerts: list[str] = []
@@ -64,7 +65,8 @@ class World:
             self.status = GatewayStatus(
                 pid=self.pid, seq=self.seq, written_at=self.wall,
                 ptt={"state": self.gw_state, "owner": self.gw_owner, "fault": self.gw_fault,
-                     "temp_alert": self.gw_temp, "temp_c": 52.0 if self.gw_temp else None},
+                     "temp_alert": self.gw_temp, "temp_c": 52.0 if self.gw_temp else None,
+                     "local_present": self.gw_present},
                 rig={}, clients=list(self.gw_clients))
         return self.sup.step()
 
@@ -92,6 +94,7 @@ class World:
         self.pid += 1
         self.frozen = False
         self.gw_state, self.gw_owner, self.gw_clients = "RX", None, []
+        self.gw_present = False                   # passerelle neuve : aucune action sur le poste vue depuis son départ
         self.gateway_up = self.heals
 
     def stop_gateway(self):
@@ -268,6 +271,87 @@ def test_local_transmission_tolerated_when_allowed_but_absolute_tot_still_applie
     assert "force_rx" not in w.calls              # l'opérateur local n'est pas coupé (la passerelle gelée, si)
     w.run(80)                                     # 140 s d'émission au total
     assert "force_rx" in w.calls
+
+
+# --------------------------------------------------------------------------- opérateur présent (étape 206)
+
+def local_operator(w, present=True):
+    w.rig = RigProbe(True, True, FREQ)            # micro du poste, la passerelle en réception
+    w.gw_present = present
+
+
+def test_present_operator_is_tolerated_until_local_tx_max_with_an_alert_only(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    local_operator(w)
+    w.run(140)
+    assert w.calls == [] and "local_tx_long" in w.alerts   # passé le TOT absolu : alerte seule, pas de « T 0 »
+    assert codes.ORT_5032 in w.codes
+    w.run(158)                                    # 298 s
+    assert w.calls == []
+    w.run(3)
+    assert "force_rx" in w.calls and w.rig.ptt is False and "tot_local" in w.alerts
+    assert codes.ORT_5033 in w.codes
+    assert "restart_gateway" not in w.calls       # la coupure a pris : rien à relancer
+
+
+def test_present_operator_whose_mic_resists_reaches_the_ladder_then_safe_mode(tmp_path):
+    w = W(tmp_path, allow_local_tx=True, max_reboots_per_hour=0)
+    w.cut_works = False                           # micro tenu : « T 0 » sans effet
+    local_operator(w)
+    w.run(304)
+    assert "force_rx" in w.calls and "restart_gateway" not in w.calls
+    w.run(2)
+    assert "restart_gateway" in w.calls
+    w.run(120)                                    # passerelle relancée sans preuve : TOT absolu, déjà dépassé
+    assert w.store.safe_mode()
+
+
+def test_no_proof_of_presence_keeps_the_absolute_tot(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    local_operator(w, present=False)
+    w.run(137)
+    assert "force_rx" in w.calls and "tot_absolu" in w.alerts and "local_tx_long" not in w.alerts
+
+
+def test_presence_is_ignored_when_the_gateway_is_silent(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    local_operator(w)
+    w.run(30)
+    w.freeze_gateway()                            # présence inconnue : prudence, règle du TOT absolu
+    w.run(110)
+    assert "force_rx" in w.calls
+
+
+def test_presence_is_ignored_for_a_gateway_transmission_and_without_shared_station(tmp_path):
+    w = W(tmp_path, allow_local_tx=True)
+    w.gateway_transmitting()
+    w.gw_present = True                           # incohérent : la passerelle émet elle-même
+    w.run(138)
+    assert "force_rx" in w.calls and "kill_gateway" in w.calls
+    w = W(tmp_path / "b", allow_local_tx=False)
+    local_operator(w)
+    w.run(3)
+    assert "force_rx" in w.calls                  # station distante seule : coupée comme avant
+
+
+def test_local_tx_max_never_below_the_absolute_tot(tmp_path):
+    w = W(tmp_path, allow_local_tx=True, tot_abs_s=400, local_tx_max_s=300)
+    local_operator(w)
+    w.run(398)
+    assert w.calls == []
+    w.run(3)
+    assert "force_rx" in w.calls
+
+
+def test_local_tx_max_setting_is_validated():
+    assert cfgmod.Supervisor().local_tx_max_s == 300
+    for bad in (0, 601, True, 2.5):
+        cfg = dummy_config()
+        cfg.supervisor.local_tx_max_s = bad
+        assert any("local_tx_max_s" in p for p in cfgmod.validate(cfg)), bad
+    cfg = dummy_config()
+    cfg.supervisor.local_tx_max_s = 600
+    assert not any("local_tx_max_s" in p for p in cfgmod.validate(cfg))
 
 
 def test_force_rx_repeated_every_pass_while_rig_keeps_transmitting(tmp_path):

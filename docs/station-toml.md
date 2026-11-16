@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.156.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.157.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -329,7 +329,8 @@ Se modifie : Menu 3.2. (au redémarrage).
 | `mem_alert_pct` | expert | `90` | Mémoire utilisée (en %) au-delà de laquelle une alerte `notify_url` est envoyée, si cela dure 60 s ; une alerte par heure au plus. Aucune autre action (ni redémarrage, ni mode sûr). Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
 | `disk_alert_pct` | expert | `70` | Disque utilisé (en %) au-delà duquel une alerte est envoyée, mesuré sur le dossier d'état et sur la racine du système ; 60 s de suite, une alerte par heure au plus. Un disque plein empêche d'écrire l'état et les journaux. Valeurs : 0 (aucune alerte) ou 50 à 99. (depuis 0.115.0) |
 | `alive_every_h` | courant | `1.0` | Message « Station en service » envoyé par `notify_url` toutes les N heures (priorité minimale) ; 0 : aucun. |
-| `allow_local_tx` | courant | `true` | true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes. **Sécurité** : false : toute émission non demandée par la station est coupée. |
+| `allow_local_tx` | courant | `true` | true (« station partagée ») : une émission faite au micro du poste n'est pas coupée à distance (seul le TOT absolu s'applique), et le PTT à distance est bloqué pendant l'émission locale puis 2 minutes. **Sécurité** : false : toute émission non demandée par la station est coupée. Un micro tenu enfoncé résiste alors à la coupure et mène au mode sûr en une minute environ : gardez true si quelqu'un se sert du poste sur place. |
+| `local_tx_max_s` | expert | `300` | Station partagée : durée d'émission au micro du poste tolérée quand un opérateur est PRÉSENT, c'est-à-dire quand une action sur le poste (volume, fréquence, mode, sortie du mode DATA, préampli, NR...) a été vue dans les 2 minutes avant la prise ou pendant l'émission. Passé le TOT absolu, simple alerte ; à cette durée, coupure par le superviseur, puis échelle de reprise et mode sûr si l'émission résiste. Sans preuve de présence, le TOT absolu s'applique. Valeurs : 1 à 600 s ; jamais moins que `tot_abs_s` (le plus grand des deux s'applique). **Sécurité** : Un micro coincé juste après une action sur le poste émet jusqu'à cette durée avant d'être coupé. (depuis 0.157.0) |
 | `gateway_unit` | expert | `"trx-gateway.service"` | Linux : nom du service systemd de la passerelle. |
 | `rigctld_unit` | expert | `"rigctld.service"` | Linux : nom du service systemd de rigctld. |
 
