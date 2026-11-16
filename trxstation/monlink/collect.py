@@ -64,14 +64,21 @@ class JournalTail:
     """Nouveaux événements du catalogue des journaux JSON de la station, fichier par fichier.
 
     `positions` (gardé par engine.py dans monlink.json) : chemin -> [taille connue, position]. Fichier plus court
-    qu'avant = rotation : relu depuis le début. Fichier jamais vu : on part de SA FIN (pas d'historique)."""
+    qu'avant = rotation : relu depuis le début. Fichier déjà là à la PREMIÈRE lecture et jamais vu : on part de sa fin
+    (pas d'historique) ; fichier apparu ENSUITE (passerelle démarrée après le module) : lu depuis son début (étape
+    213 : ses premiers événements étaient perdus)."""
 
     def __init__(self, folder: str | Path, positions: dict | None = None) -> None:
         self.folder = Path(folder)
         self.positions: dict[str, list[int]] = dict(positions or {})
+        self.lines: list[dict] = []
+        self._first = True
 
     def read(self) -> list[dict]:
+        """Événements du catalogue lus depuis la dernière fois ; `self.lines` reçoit TOUTES les lignes lues
+        (avertissements sans code compris) pour les journaux envoyés pendant le mode assistance."""
         events: list[dict] = []
+        self.lines: list[dict] = []
         for path in sorted(self.folder.glob("journal-*.jsonl")):
             key = path.name
             try:
@@ -79,9 +86,11 @@ class JournalTail:
             except OSError:
                 continue
             known = self.positions.get(key)
-            if known is None:
+            if known is None and self._first:
                 self.positions[key] = [size, size]
                 continue
+            if known is None:
+                known = [0, 0]
             pos = 0 if size < known[1] else known[1]
             if size == pos:
                 self.positions[key] = [size, pos]
@@ -96,23 +105,30 @@ class JournalTail:
             if end < 0:
                 continue                         # ligne en cours d'écriture : au prochain tour
             for raw in chunk[:end].split(b"\n"):
-                event = _event(raw)
-                if event is not None and len(events) < MAX_EVENTS_PER_READ:
-                    events.append(event)
+                line = _line(raw)
+                if line is None:
+                    continue
+                if len(self.lines) < MAX_EVENTS_PER_READ:
+                    self.lines.append(line)
+                if isinstance(line.get("code"), str) and len(events) < MAX_EVENTS_PER_READ:
+                    events.append(line)
             self.positions[key] = [size, pos + end + 1]
+        self._first = False
         return events
 
 
-def _event(raw: bytes) -> dict | None:
+def _line(raw: bytes) -> dict | None:
+    """Une ligne du journal JSON, champs connus seulement (pas de trace d'exception : chemins, variables)."""
     if not raw.strip() or len(raw) > MAX_LINE:
         return None
     try:
         line = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
         return None
-    if not isinstance(line, dict) or not isinstance(line.get("code"), str):
-        return None                              # seulement les événements du catalogue (pas le texte libre)
-    out = {k: line[k] for k in ("ts", "processus", "code", "gravite", "titre", "contexte", "module") if k in line}
+    if not isinstance(line, dict):
+        return None
+    out = {k: line[k] for k in ("ts", "processus", "niveau", "source", "code", "gravite", "titre", "contexte",
+                                "module") if k in line}
     if "message" in line:
         out["message"] = str(line["message"])[:500]
     return out

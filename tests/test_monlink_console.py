@@ -115,7 +115,7 @@ def test_menu_number_and_full_assistance_through_both_consoles(tmp_path):
     assert "vous aidez cette station" in text and "processeur 7 %" in text and "CAT OK" in text
     assert "14.200 MHz" not in text                         # fréquence masquée (réponse « non »)
 
-    text = helper.menu("6", "1")                            # demande d'assistance, 1 heure
+    text = helper.menu("6", "1", "1")                       # assistance, 1 heure
     assert "doit l'accepter" in text
     clock.t += 61
     aided.cycle()
@@ -159,7 +159,7 @@ def test_monitor_row():
                                                   {"role": "emitter", "state": "confirm"}]})
     assert "vous aidez 1" in row.text and "1 empreinte(s)" in row.text and row.level == "warn"
     row = monlink_row({"enabled": True, "links": [{"role": "emitter", "state": "active", "request": {"assist": 3600}}]})
-    assert "DEMANDE D'ASSISTANCE" in row.text and row.level == "warn"
+    assert "DEMANDE en attente" in row.text and row.level == "warn"
     row = monlink_row({"enabled": True, "problem": "relay"})
     assert "relay" in row.text and row.level == "warn"
     assert json.dumps(monlink_row({"enabled": True, "links": [{"role": "emitter", "state": "active",

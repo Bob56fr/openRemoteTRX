@@ -147,6 +147,17 @@ def test_message_variables_are_the_same_in_both_languages(catalog: dict) -> None
             assert re.fullmatch(r"[a-z][a-z0-9_]*", name), f"{code} : variable {{{name}}} mal nommée"
 
 
+def test_message_variables_never_collide_with_the_parameters_of_emit_and_alert(catalog: dict) -> None:
+    """`emit_event(code, logger=, prefixe=, trace=, **contexte)`, `Notifier.alert(code, detail, key=, **contexte)` et
+    `render(code, lang, **contexte)` : une variable nommée comme un de ces paramètres ferait planter l'émission
+    (« got multiple values for argument 'code' », étape 213 : ORT-7052). `detail` reste permis : c'est le texte
+    mesuré que `Notifier.alert` met à la place du message."""
+    reserved = {"code", "logger", "prefixe", "trace", "key", "lang"}
+    for code, entry in catalog.items():
+        clash = (_fields(entry["message"]) | _fields(entry["en"]["message"])) & reserved
+        assert not clash, f"{code} : variable(s) {sorted(clash)} réservée(s) : la renommer (ex. code_recu)"
+
+
 def test_external_module_link_codes_of_the_specification_are_present(catalog: dict) -> None:
     missing = sorted(CODES_CDC_6500 - set(catalog))
     assert not missing, f"codes de liaison avec les modules extérieurs absents : {missing}"

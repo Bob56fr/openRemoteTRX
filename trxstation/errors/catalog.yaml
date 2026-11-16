@@ -665,7 +665,7 @@ ORT-1509:
 ORT-1510:
   gravite: erreur
   titre: Installation de la nouvelle version échouée
-  message: 'L''installation a échoué (code {code}) : la version {version_active} reste active. Détails : {journal}.'
+  message: 'L''installation a échoué (code {code_sortie}) : la version {version_active} reste active. Détails : {journal}.'
   causes:
   - Échec du script d'installation (modules Python, Internet, disque)
   - Arrêt de la station impossible
@@ -681,7 +681,7 @@ ORT-1510:
   depuis_version: 0.123.0
   en:
     titre: Installing the new version failed
-    message: 'Installation failed (code {code}): version {version_active} stays active. Details: {journal}.'
+    message: 'Installation failed (code {code_sortie}): version {version_active} stays active. Details: {journal}.'
     causes:
     - Install script failure (Python modules, Internet, disk)
     - Station could not be stopped
@@ -972,7 +972,7 @@ ORT-2010:
 ORT-2011:
   gravite: avertissement
   titre: Commande refusée par le poste (RPRT)
-  message: 'rigctld a refusé « {commande} » : RPRT {code} ({signification}).'
+  message: 'rigctld a refusé « {commande} » : RPRT {code_rprt} ({signification}).'
   causes:
   - Fonction ou valeur que le poste n'accepte pas dans son état actuel (mode, bande)
   - Backend Hamlib incomplet pour ce poste
@@ -988,7 +988,7 @@ ORT-2011:
   depuis_version: 0.123.0
   en:
     titre: Command rejected by the rig (RPRT)
-    message: 'rigctld rejected "{commande}": RPRT {code} ({signification}).'
+    message: 'rigctld rejected "{commande}": RPRT {code_rprt} ({signification}).'
     causes:
     - Function or value the rig does not accept in its current state (mode, band)
     - Incomplete Hamlib backend for this rig
@@ -1115,7 +1115,7 @@ ORT-2016:
 ORT-2017:
   gravite: erreur
   titre: Le poste répond mal au test de liaison
-  message: 'Commande « {commande} » en erreur (RPRT {code}) : vérifie modèle, port et débit.'
+  message: 'Commande « {commande} » en erreur (RPRT {code_rprt}) : vérifie modèle, port et débit.'
   causes:
   - Débit série différent de celui du menu du poste (CI-V, CAT)
   - Modèle Hamlib voisin mais pas le bon
@@ -1129,7 +1129,7 @@ ORT-2017:
   depuis_version: 0.123.0
   en:
     titre: Radio answers badly to the link test
-    message: 'Command "{commande}" failed (RPRT {code}): check model, port and speed.'
+    message: 'Command "{commande}" failed (RPRT {code_rprt}): check model, port and speed.'
     causes:
     - Serial speed different from the radio menu (CI-V, CAT)
     - Close but wrong Hamlib model
@@ -2483,7 +2483,7 @@ ORT-4009:
 ORT-4010:
   gravite: info
   titre: Message du client illisible
-  message: 'Message du client {compte} refusé : {code} ({detail}).'
+  message: 'Message du client {compte} refusé : {motif} ({detail}).'
   causes:
   - Message JSON mal formé ou trop long (2 048 octets, plus pour quelques commandes)
   - Client incompatible ou modifié
@@ -2499,7 +2499,7 @@ ORT-4010:
   depuis_version: 0.123.0
   en:
     titre: Unreadable client message
-    message: 'Message from client {compte} refused: {code} ({detail}).'
+    message: 'Message from client {compte} refused: {motif} ({detail}).'
     causes:
     - Malformed or oversized JSON message (2,048 bytes, more for a few commands)
     - Incompatible or modified client
@@ -5739,7 +5739,7 @@ ORT-6507:
 ORT-6508:
   gravite: avertissement
   titre: Préfixe non enregistré
-  message: Le module {module} utilise le préfixe {prefixe}, absent du registre des modules.
+  message: Le module {module} utilise le préfixe {prefixe_inconnu}, absent du registre des modules.
   causes:
   - Module de tiers pas encore déclaré dans errors/modules.yaml
   preconisation: Déclarer le module dans le registre des préfixes.
@@ -5750,7 +5750,7 @@ ORT-6508:
   depuis_version: 0.123.0
   en:
     titre: Unregistered prefix
-    message: Module {module} uses prefix {prefixe}, which is not in the module registry.
+    message: Module {module} uses prefix {prefixe_inconnu}, which is not in the module registry.
     causes:
     - Third-party module not yet declared in errors/modules.yaml
     preconisation: Declare the module in the prefix registry.
@@ -6442,7 +6442,7 @@ ORT-6541:
 ORT-6561:
   gravite: avertissement
   titre: Décodeur FreeDV arrêté
-  message: '{decodeur} s''est arrêté (code {code}) : relance dans {delai_s} s.'
+  message: '{decodeur} s''est arrêté (code {code_sortie}) : relance dans {delai_s} s.'
   causes:
   - Plantage du décodeur
   - Processus tué (mémoire insuffisante, utilisateur)
@@ -6456,7 +6456,7 @@ ORT-6561:
   depuis_version: 0.123.0
   en:
     titre: FreeDV decoder stopped
-    message: '{decodeur} stopped (code {code}): restart in {delai_s} s.'
+    message: '{decodeur} stopped (code {code_sortie}): restart in {delai_s} s.'
     causes:
     - Decoder crash
     - Process killed (out of memory, user)
@@ -7625,6 +7625,111 @@ ORT-7041:
     - Insufficient read rights
     preconisation: 'Restore the file from a backup; otherwise delete it: a new identity is created and every link
       must be set up again.'
+
+ORT-7050:
+  gravite: avertissement
+  titre: Station suivie sans nouvelles
+  message: 'Monitoring : aucune nouvelle de {station} depuis {minutes} min.'
+  causes:
+  - Station suivie éteinte, plantée ou sans accès Internet
+  - Module « monlink » arrêté sur la station suivie
+  - Relais injoignable de l'un des deux côtés
+  preconisation: Joindre l'opérateur de la station suivie ; une fois revenue, elle renvoie ses nouvelles seule. Rien
+    n'est signalé pendant une pause qu'elle a demandée.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7050/
+  depuis_version: 0.161.0
+  en:
+    titre: Followed station silent
+    message: 'Monitoring: no news from {station} for {minutes} min.'
+    causes:
+    - Followed station switched off, crashed or without Internet access
+    - '"monlink" module stopped on the followed station'
+    - Relay unreachable on either side
+    preconisation: Contact the operator of the followed station; once back, it sends its news again by itself. Nothing
+      is reported during a pause it asked for.
+
+ORT-7051:
+  gravite: info
+  titre: Station suivie de nouveau joignable
+  message: 'Monitoring : {station} donne de nouveau des nouvelles (après {minutes} min de silence).'
+  causes:
+  - Station suivie redémarrée ou de retour sur Internet
+  preconisation: Aucune ; regarder ses derniers événements (TRX Console, menu 5.5, choix 2).
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7051/
+  depuis_version: 0.161.0
+  en:
+    titre: Followed station reachable again
+    message: 'Monitoring: {station} sends news again (after {minutes} min of silence).'
+    causes:
+    - Followed station restarted or back on the Internet
+    preconisation: None; look at its latest events (TRX Console, menu 5.5, choice 2).
+
+ORT-7052:
+  gravite: erreur
+  titre: Événement grave chez une station suivie
+  message: 'Monitoring : {station} signale {code_recu} « {titre} ».'
+  causes:
+  - Panne ou coupure de sécurité sur la station suivie (voir la page du code reçu)
+  preconisation: Ouvrir la page du code reçu, puis joindre l'opérateur de la station suivie ; au besoin, lui demander le
+    mode assistance ou son rapport de dépannage (menu 5.5, choix 6).
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7052/
+  depuis_version: 0.161.0
+  en:
+    titre: Serious event at a followed station
+    message: 'Monitoring: {station} reports {code_recu} "{titre}".'
+    causes:
+    - Failure or safety cut on the followed station (see the page of the received code)
+    preconisation: Open the page of the received code, then contact the operator of the followed station; if needed,
+      ask for assistance mode or its troubleshooting report (menu 5.5, choice 6).
+
+ORT-7053:
+  gravite: info
+  titre: Rapport de dépannage reçu
+  message: 'Monitoring : rapport de dépannage de {station} reçu ({taille_ko} ko).'
+  causes:
+  - Rapport envoyé par l'opérateur de la station suivie, ou demande acceptée
+  preconisation: Le copier sur le Bureau (TRX Console, menu 5.5, choix 10) pour le lire.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7053/
+  depuis_version: 0.161.0
+  en:
+    titre: Troubleshooting report received
+    message: 'Monitoring: troubleshooting report from {station} received ({taille_ko} kB).'
+    causes:
+    - Report sent by the operator of the followed station, or request accepted
+    preconisation: Copy it to the Desktop (TRX Console, menu 5.5, choice 10) to read it.
+
+ORT-7054:
+  gravite: avertissement
+  titre: Rapport de dépannage non envoyé
+  message: 'Monitoring : rapport de dépannage pour {station} non envoyé ({detail}).'
+  causes:
+  - Rapport impossible à fabriquer (droits, disque)
+  - Rapport trop grand ou volume du jour dépassé chez le relais
+  preconisation: Fabriquer le rapport à la main (menu 2.3) et le transmettre autrement.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-7054/
+  depuis_version: 0.161.0
+  en:
+    titre: Troubleshooting report not sent
+    message: 'Monitoring: troubleshooting report for {station} not sent ({detail}).'
+    causes:
+    - Report could not be built (rights, disk)
+    - Report too large or daily volume exceeded at the relay
+    preconisation: Build the report by hand (menu 2.3) and send it another way.
 
 # ====================================================================================================
 # 8000–8999 : Superviseur et processus

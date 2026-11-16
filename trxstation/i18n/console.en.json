@@ -524,7 +524,7 @@
   "sdr.21": "Restart the station now (after plugging the dongle back)?",
   "menu.monitoring": "Station-to-station monitoring (help an operator in trouble, or get help)",
   "monitoring.off": "\nMonitoring disabled, or \"monlink\" module never started.\nTo enable it (menu {menu}): in [monitor_link], enabled = true; in [modules], add \"monlink\" to run; then restart the station (menu {start}).",
-  "monitoring.menu": "\n  1) Choose the nickname\n  2) Links and latest news\n  3) Help someone: create an invitation code\n  4) Get help: join with a code\n  5) Compare the fingerprint of a pending link\n  6) Ask for assistance mode (helping station)\n  7) Answer an assistance request (helped station)\n  8) What is sent, pause, resume (helped station)\n  9) End a link\nChoice (Enter = back): ",
+  "monitoring.menu": "\n  1) Choose the nickname\n  2) Links and latest news\n  3) Help someone: create an invitation code\n  4) Get help: join with a code\n  5) Compare the fingerprint of a pending link\n  6) Ask for assistance mode or the troubleshooting report (helping station)\n  7) Answer a request (helped station)\n  8) What is sent, pause, resume (helped station)\n  9) End a link\n 10) Troubleshooting report: send mine (helped station), or copy the received one to the Desktop (helping station)\nChoice (Enter = back): ",
   "monitoring.summary.head": "Monitoring: nickname {pseudo}, {reg}",
   "monitoring.summary.no_pseudo": "(none: choice 1)",
   "monitoring.summary.registered": "registered with the relay",
@@ -584,5 +584,14 @@
   "monitoring.manage.done": "Done.",
   "monitoring.end.ask": "End the link with {pseudo}? Immediate; resuming it will need a new code.",
   "monitoring.end.purge": "Also delete what was received from this station?",
-  "monitoring.end.done": "Link ended."
+  "monitoring.end.done": "Link ended.",
+  "monitoring.request.kind": "\nAsk for:\n  1) assistance mode (news every 30 seconds)\n  2) the troubleshooting report (the one of menu 2.3, masked)",
+  "monitoring.request.kind_ask": "Choice (Enter = 1): ",
+  "monitoring.answer.report_show": "\n{pseudo} asks for your troubleshooting report (the one of menu 2.3: diagnostics, configuration without passwords, logs), fully masked before sending (computer name, addresses, accounts, serial numbers).",
+  "monitoring.report.queued": "Report being prepared: it leaves within the next minute (a few seconds to build).",
+  "monitoring.report.copied": "Report copied: {path}",
+  "monitoring.report.copy_failed": "Copy failed ({exc}); the report is here: {path}",
+  "monitoring.extra.silent": ", NO NEWS (alert sent)",
+  "monitoring.extra.report_due": ", troubleshooting report being prepared",
+  "monitoring.extra.reports": ", {n} report(s) received (choice 10)"
 }

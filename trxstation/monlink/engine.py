@@ -13,9 +13,12 @@ module pour une panne du relais (RelayUnavailable -> problème « relay », nouv
 from __future__ import annotations
 
 import asyncio
+import collections
 import getpass
 import hashlib
 import logging
+import os
+import re
 import socket
 import time
 from pathlib import Path
@@ -25,7 +28,7 @@ from ..errors.emit import emit_event
 from ..presence import pow as pw
 from ..presence.codec import b64d, b64e
 from ..presence.wire import clean_pseudo
-from . import collect, envelope as env, invite as inv, pairing, profiles as pr
+from . import collect, envelope as env, invite as inv, pairing, profiles as pr, snapshot
 from .redact import Redactor
 from .relay import RelayRefused, RelayUnavailable
 
@@ -38,6 +41,10 @@ REQUEST_TTL_S = 24 * 3600
 EVENTS_PER_MESSAGE = 50
 PENDING_EVENTS_MAX = 500
 ROLES = ("receiver", "emitter")
+SILENCE_MIN_S = 600                    # station suivie muette : alerte après 3 rythmes, et jamais avant 10 min
+ALERT_REPEAT_S = 30 * 60               # même alerte, même station : une fois par demi-heure au plus (cahier § 9)
+ALERTS_PER_HOUR = 20                   # plafond global des alertes du monitoring
+REPORTS_KEPT = 5                       # rapports reçus gardés par liaison
 
 
 class ActionRefused(Exception):
@@ -53,18 +60,42 @@ def _label(link: dict, peer: str) -> str:
 
 class Engine:
     def __init__(self, store, identity, relay, *, status_path: str | Path, state_dir: str | Path,
-                 clock=time.time, monitor=None, known_words: dict[str, str] | None = None) -> None:
+                 clock=time.time, monitor=None, known_words: dict[str, str] | None = None, notifier=None,
+                 make_report=None) -> None:
         self.store, self.identity, self.relay = store, identity, relay
         self.me = identity.station_id
         self.status_path, self.state_dir = Path(status_path), Path(state_dir)
         self.clock = clock
         self.monitor = monitor
+        self.notifier = notifier                  # supervisor.notify.Notifier (ntfy de la station) ; None = journal seul
+        self.make_report = make_report            # () -> octets du zip du menu 2.3 ; None = pas de rapport
         self.started = clock()
         self.problem = ""
         self.journal = collect.JournalTail(self.state_dir, store.data.get("journal"))
         self._keys: dict[str, bytes] = {}
         self._known = known_words if known_words is not None else default_known_words()
         self._quota_day: dict[str, int] = {}
+        self._snaps: dict[tuple[str, str], env.Reassembler] = {}
+        self._alerted: dict[str, float] = {}
+        self._alert_times: collections.deque[float] = collections.deque()
+
+    # ------------------------------------------------------------ alertes (station qui aide)
+    def _alert(self, code: str, key: str, **contexte) -> None:
+        """Alerte du catalogue par le ntfy de la station ; une fois par demi-heure par (code, station), 20 par heure."""
+        now = self.clock()
+        if now - self._alerted.get(f"{code}:{key}", -1e12) < ALERT_REPEAT_S:
+            return
+        while self._alert_times and now - self._alert_times[0] > 3600:
+            self._alert_times.popleft()
+        if len(self._alert_times) >= ALERTS_PER_HOUR:
+            log.info("plafond des alertes du monitoring atteint : %s non envoyée", code)
+            return
+        self._alerted[f"{code}:{key}"] = now
+        self._alert_times.append(now)
+        if self.notifier is not None:
+            self.notifier.alert(code, key=key, **contexte)
+        else:
+            emit_event(code, logger=log, **contexte)
 
     # ------------------------------------------------------------ outils
     def _link(self, peer: object, role: str | None = None, *, active: bool = False) -> dict:
@@ -267,23 +298,36 @@ class Engine:
             pr.assist_until(0, duration_s if isinstance(duration_s, int) else -1)   # bornes : 15 min à 24 h
         except pr.ProfileRefused as exc:
             raise ActionRefused("duration", str(exc)) from exc
+        await self._request(link, peer, {"assist": duration_s})
+        return {"requested": duration_s}
+
+    async def request_report(self, peer: object) -> dict:
+        """Station qui AIDE : demande le rapport de dépannage (menu 2.3, masqué) ; l'opérateur aidé accepte ou refuse."""
+        link = self._link(peer, "receiver", active=True)
+        await self._request(link, peer, {"snapshot": True})
+        return {"requested": "snapshot"}
+
+    async def _request(self, link: dict, peer: str, content: dict) -> None:
         now = self.clock()
         recent = [t for t in link.get("requests", []) if now - t < 86400]
         if len(recent) >= pr.ASSIST_REQUESTS_PER_DAY:
             raise ActionRefused("too_many", "3 demandes par jour au plus")
-        await self._send(peer, "rq", {"assist": duration_s})
+        await self._send(peer, "rq", content)
         link["requests"] = recent + [int(now)]
         self.store.save()
-        return {"requested": duration_s}
 
     async def answer(self, peer: object, accept: bool) -> dict:
-        """Station AIDÉE : réponse de SON opérateur à la demande en attente."""
+        """Station AIDÉE : réponse de SON opérateur à la demande en attente (assistance ou rapport)."""
         link = self._link(peer, "emitter", active=True)
         request = link.get("request")
         if not request:
             raise ActionRefused("no_request", "aucune demande en attente")
         link["request"] = None
-        if accept:
+        if request.get("snapshot"):
+            reply = {"accepted": bool(accept), "snapshot": True}
+            if accept:
+                link["report_due"] = True                 # fabriqué et envoyé au cycle (peut prendre du temps)
+        elif accept:
             until = pr.assist_until(self.clock(), int(request["assist"]))
             link["assist_until"] = until
             reply = {"accepted": True, "until": int(until)}
@@ -293,9 +337,26 @@ class Engine:
         await self._send(peer, "an", reply)
         return reply
 
+    def send_report(self, peer: object) -> dict:
+        """Station AIDÉE : envoyer son rapport de dépannage sans attendre de demande (au prochain cycle)."""
+        link = self._link(peer, "emitter", active=True)
+        if self.make_report is None:
+            raise ActionRefused("no_report", "rapport indisponible sur cette station")
+        link["report_due"] = True
+        self.store.save()
+        return {"queued": True}
+
     def received(self, peer: object, limit: int = 50) -> list[dict]:
         self._link(peer, "receiver")
         return self.store.recent(peer, ("ev",), limit)
+
+    def last_report(self, peer: object) -> dict:
+        """Station qui AIDE : chemin du dernier rapport reçu (la console le copie elle-même sur SON Bureau)."""
+        link = self._link(peer, "receiver")
+        reports = [r for r in link.get("reports", []) if Path(r).is_file()]
+        if not reports:
+            raise ActionRefused("no_report", "aucun rapport reçu de cette station")
+        return {"path": reports[-1]}
 
     # ------------------------------------------------------------ cycle
     async def cycle(self) -> float:
@@ -305,6 +366,7 @@ class Engine:
             await self._inbox(now)
             await self._emit(now)
             await self._check_links(now)
+            self._check_silence(now)
             if self.problem:
                 log.info("relais du monitoring de nouveau joignable")
             self.problem = ""
@@ -368,6 +430,10 @@ class Engine:
             emit_event(codes.ORT_7031, logger=log, station=_label(link, frm), motif=exc.reason)
             return
         link["window"] = window.to_dict()
+        if link["role"] == "receiver" and link.get("silent_since"):          # retour à la normale
+            self._alert(codes.ORT_7051, frm, station=_label(link, frm),
+                        minutes=int(now - link["silent_since"]) // 60)
+            link["silent_since"] = None
         link["last_rx"] = int(now)
         if kind == "end":
             self._drop(frm, by="partenaire")
@@ -376,13 +442,22 @@ class Engine:
             self._receive_as_helper(frm, link, kind, content, now)
         elif kind == "rq":
             duration = content.get("assist")
-            if isinstance(duration, int) and not isinstance(duration, bool) \
+            if content.get("snapshot") is True:
+                link["request"] = {"snapshot": True, "at": int(now)}
+            elif isinstance(duration, int) and not isinstance(duration, bool) \
                     and pr.ASSIST_MIN_S <= duration <= pr.ASSIST_MAX_S:
                 link["request"] = {"assist": duration, "at": int(now)}
         self.store.save()
 
     def _receive_as_helper(self, peer: str, link: dict, kind: str, content: dict, now: float) -> None:
-        if kind == "cf":
+        if kind == "sn":
+            self._receive_report(peer, link, content, now)
+        elif kind == "lg":
+            lines = content.get("lines") if isinstance(content.get("lines"), list) else []
+            for line in lines[:EVENTS_PER_MESSAGE]:
+                if isinstance(line, dict):
+                    self.store.keep(peer, "lg", line, now)
+        elif kind == "cf":
             link["profile"] = content.get("profile")
             link["paused"] = bool(content.get("paused"))
         elif kind in ("hb", "st"):
@@ -393,9 +468,84 @@ class Engine:
             for event in events[:EVENTS_PER_MESSAGE]:
                 if isinstance(event, dict):
                     self.store.keep(peer, "ev", event, now)
+                    if event.get("gravite") == "critique" and isinstance(event.get("code"), str):
+                        self._alert(codes.ORT_7052, f"{peer}:{event['code']}", station=_label(link, peer),
+                                    code_recu=event["code"][:16], titre=str(event.get("titre") or "")[:120])
             link["events"] = int(link.get("events", 0)) + len(events)
         elif kind == "an":
             link["answer"] = {**content, "at": int(now)}
+
+    def _receive_report(self, peer: str, link: dict, frag: dict, now: float) -> None:
+        """Fragments du rapport de dépannage ; complet = vérifié puis rangé (5 derniers gardés par liaison)."""
+        key = (peer, str(frag.get("id", ""))[:32])
+        rebuilt = self._snaps.setdefault(key, env.Reassembler())
+        try:
+            data = rebuilt.add(frag)
+            if data is None:
+                return
+            snapshot.check_received(data)
+        except (env.MessageRefused, ValueError) as exc:
+            self._snaps.pop(key, None)
+            emit_event(codes.ORT_7031, logger=log, station=_label(link, peer), motif=f"rapport : {exc}")
+            return
+        except Exception as exc:                  # zip illisible
+            self._snaps.pop(key, None)
+            emit_event(codes.ORT_7031, logger=log, station=_label(link, peer), motif=f"rapport : {type(exc).__name__}")
+            return
+        self._snaps.pop(key, None)
+        folder = self.store.folder / "rapports"
+        folder.mkdir(parents=True, exist_ok=True)
+        name = re.sub(r"[^A-Za-z0-9_-]+", "-", link.get("pseudo") or peer[:8]).strip("-") or "station"
+        path = folder / f"rapport-{name}-{time.strftime('%Y%m%d-%H%M%S', time.localtime(now))}.zip"
+        path.write_bytes(data)
+        try:
+            os.chmod(path, 0o644)                 # lisible par le compte de la console (Bureau de l'opérateur)
+        except OSError:
+            pass
+        reports = link.get("reports", []) + [str(path)]
+        for old in reports[:-REPORTS_KEPT]:
+            try:
+                Path(old).unlink()
+            except OSError:
+                pass
+        link["reports"] = reports[-REPORTS_KEPT:]
+        emit_event(codes.ORT_7053, logger=log, station=_label(link, peer), taille_ko=len(data) // 1024)
+
+    async def _send_report(self, peer: str, link: dict) -> None:
+        """Station AIDÉE : rapport du menu 2.3 fabriqué ici, entièrement masqué, envoyé en fragments."""
+        link["report_due"] = False
+        self.store.save()
+        try:
+            raw = await asyncio.to_thread(self.make_report)
+            data = await asyncio.to_thread(snapshot.redact_zip, raw, self._redactor(peer))
+        except Exception as exc:
+            emit_event(codes.ORT_7054, logger=log, station=_label(link, peer), detail=f"{type(exc).__name__}: {exc}"[:200])
+            return
+        snap_id = os.urandom(8).hex()
+        try:
+            for frag in env.split_snapshot(data, snap_id):
+                await self._send(peer, "sn", frag, assist=True)
+        except RelayRefused as exc:
+            emit_event(codes.ORT_7054, logger=log, station=_label(link, peer), detail=f"refus du relais : {exc.reason}")
+            if exc.reason not in ("quota", "too_large"):
+                raise
+        log.info("rapport de dépannage envoyé à %s (%d ko)", _label(link, peer), len(data) // 1024)
+
+    def _check_silence(self, now: float) -> None:
+        """Station qui AIDE : alerte quand une station suivie (hors pause) ne donne plus de nouvelles."""
+        for peer, link in self.store.links.items():
+            if link["role"] != "receiver" or link["state"] != "active" or link.get("paused") or link.get("silent_since"):
+                continue
+            last = link.get("last_rx")
+            if not last:
+                continue
+            period = int((link.get("profile") or {}).get("period_s") or 300)
+            answer = link.get("answer") or {}
+            if answer.get("accepted") and int(answer.get("until") or 0) > now:
+                period = pr.ASSIST_PERIOD_S
+            if now - last > max(3 * period, SILENCE_MIN_S):
+                link["silent_since"] = last
+                self._alert(codes.ORT_7050, peer, station=_label(link, peer), minutes=int(now - last) // 60)
 
     async def _emit(self, now: float) -> None:
         """Station AIDÉE : ce que le profil de chaque liaison permet, masqué, au rythme du profil."""
@@ -420,6 +570,11 @@ class Engine:
             pending = list(link.get("pending_ev", []))
             pending += [red.obj(e) for e in fresh if pr.severity_passes(str(e.get("gravite", "")), eff.events_min)]
             link["pending_ev"] = pending[-PENDING_EVENTS_MAX:]
+            if eff.logs_every_s:                 # assistance : toutes les lignes des journaux JSON
+                lines = list(link.get("pending_lg", [])) + [red.obj(l) for l in self.journal.lines]
+                link["pending_lg"] = lines[-PENDING_EVENTS_MAX:]
+            else:
+                link["pending_lg"] = []
             try:
                 if now - float(link.get("sent_hb", 0)) >= eff.period_s:
                     await self._send(peer, "hb", red.obj(collect.heartbeat(self.status_path, self.state_dir,
@@ -438,6 +593,14 @@ class Engine:
                     batch = link["pending_ev"][:EVENTS_PER_MESSAGE]
                     await self._send(peer, "ev", {"events": batch}, assist=eff.assistance)
                     link["pending_ev"] = link["pending_ev"][len(batch):]
+                if eff.logs_every_s and now - float(link.get("sent_lg", 0)) >= eff.logs_every_s:
+                    while link.get("pending_lg"):
+                        batch = link["pending_lg"][:EVENTS_PER_MESSAGE]
+                        await self._send(peer, "lg", {"lines": batch}, assist=True)
+                        link["pending_lg"] = link["pending_lg"][len(batch):]
+                    link["sent_lg"] = int(now)
+                if link.get("report_due") and self.make_report is not None:
+                    await self._send_report(peer, link)
             except RelayRefused as exc:
                 if exc.reason == "quota" and self._quota_day.get(peer) != int(now // 86400):
                     self._quota_day[peer] = int(now // 86400)
@@ -475,9 +638,11 @@ class Engine:
                 item["request"] = l.get("request")
                 until = l.get("assist_until") or 0
                 item["assist_left_s"] = int(until - now) if until > now else 0
+                item["report_due"] = bool(l.get("report_due"))
             else:
                 item.update(paused=bool(l.get("paused")), profile=l.get("profile"), events=int(l.get("events", 0)),
-                            last_hb=l.get("last_hb"), last_st=l.get("last_st"), answer=l.get("answer"))
+                            last_hb=l.get("last_hb"), last_st=l.get("last_st"), answer=l.get("answer"),
+                            reports=len(l.get("reports", [])), silent=bool(l.get("silent_since")))
             links.append(item)
         return {"id": self.me, "pseudo": self.store.data["pseudo"], "registered": self.store.data["registered"],
                 "problem": self.problem, "invites": len(self.store.data["invites"]), "links": links}

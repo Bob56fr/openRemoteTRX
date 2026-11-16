@@ -524,7 +524,7 @@
   "sdr.21": "¿Reiniciar la estación ahora (tras volver a conectar la llave)?",
   "menu.monitoring": "Monitorización entre estaciones (ayudar a un operador en apuros, o recibir ayuda)",
   "monitoring.off": "\nMonitorización desactivada, o módulo «monlink» nunca iniciado.\nPara activarla (menú {menu}): en [monitor_link], enabled = true; en [modules], añadir \"monlink\" a run; luego reiniciar la estación (menú {start}).",
-  "monitoring.menu": "\n  1) Elegir el seudónimo\n  2) Enlaces y últimas noticias\n  3) Ayudar a alguien: crear un código de invitación\n  4) Recibir ayuda: unirse con un código\n  5) Comparar la huella de un enlace pendiente\n  6) Pedir el modo asistencia (estación que ayuda)\n  7) Responder a una petición de asistencia (estación ayudada)\n  8) Lo que se envía, pausa, reanudar (estación ayudada)\n  9) Terminar un enlace\nOpción (Intro = volver): ",
+  "monitoring.menu": "\n  1) Elegir el seudónimo\n  2) Enlaces y últimas noticias\n  3) Ayudar a alguien: crear un código de invitación\n  4) Recibir ayuda: unirse con un código\n  5) Comparar la huella de un enlace pendiente\n  6) Pedir el modo asistencia o el informe de diagnóstico (estación que ayuda)\n  7) Responder a una petición (estación ayudada)\n  8) Lo que se envía, pausa, reanudar (estación ayudada)\n  9) Terminar un enlace\n 10) Informe de diagnóstico: enviar el mío (estación ayudada), o copiar en el Escritorio el recibido (estación que ayuda)\nOpción (Intro = volver): ",
   "monitoring.summary.head": "Monitorización: seudónimo {pseudo}, {reg}",
   "monitoring.summary.no_pseudo": "(ninguno: opción 1)",
   "monitoring.summary.registered": "registrada en el relé",
@@ -584,5 +584,14 @@
   "monitoring.manage.done": "Hecho.",
   "monitoring.end.ask": "¿Terminar el enlace con {pseudo}? Inmediato; retomarlo pedirá un código nuevo.",
   "monitoring.end.purge": "¿Borrar también lo recibido de esta estación?",
-  "monitoring.end.done": "Enlace terminado."
+  "monitoring.end.done": "Enlace terminado.",
+  "monitoring.request.kind": "\nPedir:\n  1) el modo asistencia (noticias cada 30 segundos)\n  2) el informe de diagnóstico (el del menú 2.3, enmascarado)",
+  "monitoring.request.kind_ask": "Opción (Intro = 1): ",
+  "monitoring.answer.report_show": "\n{pseudo} pide su informe de diagnóstico (el del menú 2.3: diagnóstico, configuración sin contraseñas, registros), totalmente enmascarado antes del envío (nombre del equipo, direcciones, cuentas, números de serie).",
+  "monitoring.report.queued": "Informe en preparación: sale en el próximo minuto (unos segundos para fabricarlo).",
+  "monitoring.report.copied": "Informe copiado: {path}",
+  "monitoring.report.copy_failed": "Copia imposible ({exc}); el informe está aquí: {path}",
+  "monitoring.extra.silent": ", SIN NOTICIAS (alerta enviada)",
+  "monitoring.extra.report_due": ", informe de diagnóstico en preparación",
+  "monitoring.extra.reports": ", {n} informe(s) recibido(s) (opción 10)"
 }

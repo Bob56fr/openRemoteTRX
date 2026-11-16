@@ -86,6 +86,21 @@ décompressé 1 Mo au plus (refus `too_large`), `q` de 1 à 2^53 − 1 par sens,
 
 Instantané : fragments `sn` `{"id", "i", "n", "h", "d"}` de 32 ko bruts, 64 au plus (2 Mo), `h` = SHA-256 du tout.
 
+Contenus (chiffrés ; le relais ne les voit pas) :
+
+| Type | Contenu |
+|---|---|
+| `cf` | `{"profile": {system, rig, freq_mode, events_min, period_s}, "paused": bool}` |
+| `hb` | `{"v", "up", "safe", "gateway": "ok" \| "stale" \| "absent"}` |
+| `st` | `{"system": {cpu, mem, disk, temp}, "rig": {cat, cat_error, tx, fault, clients[, freq, mode, …]}}` (fréquence et mode seulement si `freq_mode`) |
+| `ev` | `{"events": [ligne du journal JSON avec code, au plus 50]}` |
+| `lg` | `{"lines": [lignes du journal JSON, au plus 50]}`, seulement pendant le mode assistance |
+| `sn` | fragment du rapport de dépannage (zip du menu 2.3, entièrement masqué) |
+| `rq` | `{"assist": secondes}` (900 à 86 400) ou `{"snapshot": true}` |
+| `an` | `{"accepted": bool, "until": heure}` (assistance) ou `{"accepted": bool, "snapshot": true}` |
+
+Tout contenu de la station aidée passe par `redact.Redactor` (une instance par liaison) avant chiffrement.
+
 ## 6. Garde-fous du relais
 
 Ceux de la présence (§ 7 de son protocole : PHP autonome sans WordPress, limite de débit par fichiers, IP jamais en

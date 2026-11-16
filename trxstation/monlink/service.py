@@ -50,7 +50,9 @@ ACTIONS = {"view": ("view", ()), "pseudo": ("set_pseudo", ("pseudo",)), "invite"
            "join": ("join", ("code",)), "confirm": ("confirm", ("peer", "profile")),
            "profile": ("set_profile", ("peer", "profile")), "pause": ("pause", ("peer", "paused")),
            "end": ("end", ("peer", "purge")), "request_assist": ("request_assist", ("peer", "duration_s")),
-           "answer": ("answer", ("peer", "accept")), "received": ("received", ("peer", "limit"))}
+           "answer": ("answer", ("peer", "accept")), "received": ("received", ("peer", "limit")),
+           "request_report": ("request_report", ("peer",)), "send_report": ("send_report", ("peer",)),
+           "last_report": ("last_report", ("peer",))}
 
 
 def monlink_dir(cfg: cfgmod.Config) -> Path:
@@ -88,11 +90,28 @@ class MonlinkService:
         if self.monitor is None:
             from ..hostinfo import HostMonitor
             self.monitor = HostMonitor(self.cfg.supervisor.state_dir)
+        notifier = None
+        if self.cfg.supervisor.notify_url:
+            from ..supervisor.notify import Notifier               # le ntfy de la station (alertes de celui qui aide)
+            notifier = Notifier(self.cfg.supervisor.notify_url)
         self.engine = Engine(self.store, identity, relay, status_path=self.cfg.supervisor.status_path,
-                             state_dir=self.cfg.supervisor.state_dir, clock=self.clock, monitor=self.monitor)
+                             state_dir=self.cfg.supervisor.state_dir, clock=self.clock, monitor=self.monitor,
+                             notifier=notifier, make_report=self.make_report)
         if self.bus is not None:
             self.bus.metrics = lambda: {"links": len(self.store.links), "problem": self.engine.problem or ""}
         return self.engine
+
+    def make_report(self) -> bytes:
+        """Rapport du menu 2.3 (`report.make_report`, déjà sans mot de passe), fabriqué dans un dossier temporaire
+        avec les droits du compte du module ; masqué ensuite par le moteur avant tout envoi."""
+        import shutil
+        import tempfile
+        from ..report import make_report
+        folder = Path(tempfile.mkdtemp(prefix="trx-monlink-rapport-"))
+        try:
+            return make_report(destination=folder, config_path=self.config_path).read_bytes()
+        finally:
+            shutil.rmtree(folder, ignore_errors=True)
 
     def write_status(self) -> None:
         self.store.write_status({"enabled": True, "updated": int(self.clock()), **self.engine.view()})

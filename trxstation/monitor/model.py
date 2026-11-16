@@ -219,8 +219,13 @@ def monlink_row(monlink: dict | None) -> Row | None:
     waiting = sum(1 for l in links if l.get("state") == "confirm")
     if waiting:
         parts.append(f"{waiting} empreinte(s) à comparer")
+    silent = sum(1 for l in links if l.get("silent"))
+    if silent:
+        parts.append(f"{silent} SANS NOUVELLES")
     if any(l.get("request") for l in links):
-        return Row("Monitoring", ", ".join(parts + ["DEMANDE D'ASSISTANCE en attente (menu 5.5)"]), "warn")
+        return Row("Monitoring", ", ".join(parts + ["DEMANDE en attente (menu 5.5)"]), "warn")
+    if silent:
+        return Row("Monitoring", ", ".join(parts), "warn")
     if any(l.get("assist_left_s") for l in links):
         parts.append("assistance en cours")
     return Row("Monitoring", ", ".join(parts) or "liaisons en attente", "ok" if not waiting else "warn")

@@ -40,4 +40,7 @@
    envoies (« Diagnostic » conseillé ; fréquence et mode seulement si tu veux). Elle voit alors l'état de ta station
    et ses codes d'erreur, **masqués** (ni mot de passe, ni adresse, ni numéro de série), et peut te **demander** le mode
    assistance (nouvelles toutes les 30 secondes, pour une durée limitée) : c'est toi qui acceptes (choix 7). Elle ne
-   peut **rien commander** sur ta station. Tu arrêtes tout quand tu veux (choix 9).
+   peut **rien commander** sur ta station. Tu arrêtes tout quand tu veux (choix 9). Elle peut aussi te
+   demander ton **rapport de dépannage** (celui du point 1, entièrement masqué) ; tu peux aussi l'envoyer
+   toi-même (choix 10). De son côté, elle reçoit une alerte sur son téléphone si ta station ne donne plus
+   de nouvelles.

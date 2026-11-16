@@ -1803,7 +1803,7 @@ class Console:
                 return
             {"1": self._mon_pseudo, "2": self._mon_view, "3": self._mon_invite, "4": self._mon_join,
              "5": self._mon_confirm, "6": self._mon_request, "7": self._mon_answer, "8": self._mon_manage,
-             "9": self._mon_end}.get(choice, lambda: self.say(self.t("loop.unknown")))()
+             "9": self._mon_end, "10": self._mon_report}.get(choice, lambda: self.say(self.t("loop.unknown")))()
 
     def monitoring_summary(self, status: dict) -> str:
         reg = self.t("monitoring.summary.registered" if status.get("registered") else "monitoring.summary.not_registered")
@@ -1832,6 +1832,12 @@ class Console:
             extra += self.t("monitoring.extra.assist", minutes=max(1, int(link["assist_left_s"]) // 60))
         if link.get("paused"):
             extra += self.t("monitoring.extra.paused")
+        if link.get("silent"):
+            extra += self.t("monitoring.extra.silent")
+        if link.get("report_due"):
+            extra += self.t("monitoring.extra.report_due")
+        if link.get("reports"):
+            extra += self.t("monitoring.extra.reports", n=link["reports"])
         return extra
 
     def _mon_do(self, action: str, args: dict | None = None) -> dict | list | None:
@@ -1970,21 +1976,56 @@ class Console:
         link = self._mon_pick(lambda l: l.get("role") == "receiver" and l.get("state") == "active")
         if link is None:
             return
+        self.say(self.t("monitoring.request.kind"))
+        kind = self.ask(self.t("monitoring.request.kind_ask")).strip() or "1"
+        here = menu_number("monitoring")
+        if kind == "2":
+            if self._mon_do("request_report", {"peer": link["peer"]}) is not None:
+                self.say(self.t("monitoring.request.done", menu=here))
+            return
+        if kind != "1":
+            return
         self.say(self.t("monitoring.request.menu"))
         hours = self.MON_HOURS.get(self.ask(self.t("monitoring.request.ask")).strip() or "2")
         if hours and self._mon_do("request_assist", {"peer": link["peer"], "duration_s": hours * 3600}) is not None:
-            here = menu_number("monitoring")
             self.say(self.t("monitoring.request.done", menu=here))
 
     def _mon_answer(self) -> None:
         link = self._mon_pick(lambda l: l.get("role") == "emitter" and l.get("request"))
         if link is None:
             return
+        if link["request"].get("snapshot"):
+            self.say(self.t("monitoring.answer.report_show", pseudo=link.get("pseudo") or "?"))
+            accept = self.yes(self.t("monitoring.answer.ask"), False)
+            if self._mon_do("answer", {"peer": link["peer"], "accept": accept}) is not None:
+                self.say(self.t("monitoring.report.queued") if accept else self.t("monitoring.answer.no"))
+            return
         hours = round(int(link["request"].get("assist", 0)) / 3600, 1)
         self.say(self.t("monitoring.answer.show", pseudo=link.get("pseudo") or "?", hours=hours))
         accept = self.yes(self.t("monitoring.answer.ask"), False)
         if self._mon_do("answer", {"peer": link["peer"], "accept": accept}) is not None:
             self.say(self.t("monitoring.answer.yes", hours=hours) if accept else self.t("monitoring.answer.no"))
+
+    def _mon_report(self) -> None:
+        """Station AIDÉE : envoyer son rapport de dépannage. Station qui AIDE : copier le dernier reçu sur SON Bureau."""
+        link = self._mon_pick(lambda l: l.get("state") in ("active", "paused"))
+        if link is None:
+            return
+        if link.get("role") == "emitter":
+            if self._mon_do("send_report", {"peer": link["peer"]}) is not None:
+                self.say(self.t("monitoring.report.queued"))
+            return
+        result = self._mon_do("last_report", {"peer": link["peer"]})
+        if not result:
+            return
+        from .report import desktop_dir
+        try:
+            target = desktop_dir() / Path(result["path"]).name
+            shutil.copyfile(result["path"], target)
+        except OSError as exc:
+            self.say(self.t("monitoring.report.copy_failed", exc=exc, path=result["path"]))
+            return
+        self.say(self.t("monitoring.report.copied", path=target))
 
     def _mon_manage(self) -> None:
         link = self._mon_pick(lambda l: l.get("role") == "emitter" and l.get("state") in ("active", "paused"))

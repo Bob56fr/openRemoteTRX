@@ -524,7 +524,7 @@
   "sdr.21": "Station jetzt neu starten (nach dem Wiederanstecken des Sticks)?",
   "menu.monitoring": "Monitoring zwischen Stationen (einem Funker in Schwierigkeiten helfen oder Hilfe bekommen)",
   "monitoring.off": "\nMonitoring ausgeschaltet oder Modul „monlink“ nie gestartet.\nZum Einschalten (Menü {menu}): in [monitor_link] enabled = true; in [modules] \"monlink\" zu run hinzufügen; dann die Station neu starten (Menü {start}).",
-  "monitoring.menu": "\n  1) Spitznamen wählen\n  2) Verbindungen und letzte Nachrichten\n  3) Jemandem helfen: Einladungscode erstellen\n  4) Hilfe bekommen: mit einem Code beitreten\n  5) Fingerabdruck einer wartenden Verbindung vergleichen\n  6) Assistenzmodus anfragen (helfende Station)\n  7) Auf eine Assistenzanfrage antworten (unterstützte Station)\n  8) Was gesendet wird, Pause, Fortsetzen (unterstützte Station)\n  9) Eine Verbindung beenden\nAuswahl (Eingabe = zurück): ",
+  "monitoring.menu": "\n  1) Spitznamen wählen\n  2) Verbindungen und letzte Nachrichten\n  3) Jemandem helfen: Einladungscode erstellen\n  4) Hilfe bekommen: mit einem Code beitreten\n  5) Fingerabdruck einer wartenden Verbindung vergleichen\n  6) Assistenzmodus oder Fehlerbericht anfragen (helfende Station)\n  7) Auf eine Anfrage antworten (unterstützte Station)\n  8) Was gesendet wird, Pause, Fortsetzen (unterstützte Station)\n  9) Eine Verbindung beenden\n 10) Fehlerbericht: meinen senden (unterstützte Station) oder den empfangenen auf den Desktop kopieren (helfende Station)\nAuswahl (Eingabe = zurück): ",
   "monitoring.summary.head": "Monitoring: Spitzname {pseudo}, {reg}",
   "monitoring.summary.no_pseudo": "(keiner: Auswahl 1)",
   "monitoring.summary.registered": "beim Relais angemeldet",
@@ -584,5 +584,14 @@
   "monitoring.manage.done": "Erledigt.",
   "monitoring.end.ask": "Die Verbindung mit {pseudo} beenden? Sofort; eine Wiederaufnahme braucht einen neuen Code.",
   "monitoring.end.purge": "Auch löschen, was von dieser Station empfangen wurde?",
-  "monitoring.end.done": "Verbindung beendet."
+  "monitoring.end.done": "Verbindung beendet.",
+  "monitoring.request.kind": "\nAnfragen:\n  1) den Assistenzmodus (Nachrichten alle 30 Sekunden)\n  2) den Fehlerbericht (der aus Menü 2.3, maskiert)",
+  "monitoring.request.kind_ask": "Auswahl (Eingabe = 1): ",
+  "monitoring.answer.report_show": "\n{pseudo} fragt Ihren Fehlerbericht an (der aus Menü 2.3: Diagnose, Konfiguration ohne Passwörter, Protokolle), vor dem Senden vollständig maskiert (Rechnername, Adressen, Konten, Seriennummern).",
+  "monitoring.report.queued": "Bericht wird vorbereitet: er geht in der nächsten Minute hinaus (einige Sekunden zum Erstellen).",
+  "monitoring.report.copied": "Bericht kopiert: {path}",
+  "monitoring.report.copy_failed": "Kopieren nicht möglich ({exc}); der Bericht liegt hier: {path}",
+  "monitoring.extra.silent": ", KEINE NACHRICHT (Alarm gesendet)",
+  "monitoring.extra.report_due": ", Fehlerbericht wird vorbereitet",
+  "monitoring.extra.reports": ", {n} Bericht(e) empfangen (Auswahl 10)"
 }
