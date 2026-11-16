@@ -10,7 +10,7 @@ des fichiers d'état (passerelle, superviseur, journaux JSON) et échange des en
 - clés : `[monitor_link] key_file`, ou `state_dir/monlink/monlink.key` créé au premier démarrage (À PART de la présence) ;
 - liaisons : `state_dir/monlink/monlink.json` (0600) ; résumé : `status.json` (0644) ; reçu : `received.db` ;
 - journal : `state_dir/monlink/monlink.log`, 5 fichiers de 1 Mo, jamais de clé ;
-- TRX Console (menu 5.5, lot R3b) : demande `state_dir/monlink-request.json` déposée par la console, réponse dans
+- TRX Console (menu 6.5, lot R3b) : demande `state_dir/monlink-request.json` déposée par la console, réponse dans
   `state_dir/monlink/console-reply.json`, effacée après 60 s (même mécanisme que la présence).
 
 À la main (essai) :  python -m trxstation.monlink.service --config station.toml
@@ -103,7 +103,7 @@ class MonlinkService:
         return self.engine
 
     def make_report(self) -> bytes:
-        """Rapport du menu 2.3 (`report.make_report`, déjà sans mot de passe), fabriqué dans un dossier temporaire
+        """Rapport du menu 6.3 (`report.make_report`, déjà sans mot de passe), fabriqué dans un dossier temporaire
         avec les droits du compte du module ; masqué ensuite par le moteur avant tout envoi."""
         import shutil
         import tempfile
@@ -142,7 +142,7 @@ class MonlinkService:
 
     async def on_call(self, data: dict):
         """Commande « monitoring » d'un OPÉRATEUR de la page (lot R5), relayée par le cœur : mêmes actions que le menu
-        5.5 ; un refus revient à la page avec son motif."""
+        6.5 ; un refus revient à la page avec son motif."""
         from ..modules.client import CallRefused          # client du bus : seulement pour traduire le refus
         args = data.get("args") or {}
         if not isinstance(args, dict):

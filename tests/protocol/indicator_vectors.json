@@ -662,7 +662,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes répétées (TRX Console, menu 1.5)",
+     "text": "MODE SÛR : pannes répétées (TRX Console, menu 1.4)",
      "level": "bad"
     },
     {
@@ -706,7 +706,7 @@
    "lines": [
     {
      "key": "Station",
-     "text": "MODE SÛR : pannes (TRX Console, menu 1.5)",
+     "text": "MODE SÛR : pannes (TRX Console, menu 1.4)",
      "level": "bad"
     },
     {
@@ -2204,7 +2204,7 @@
     },
     {
      "key": "Mise à jour",
-     "text": "version 0.114.0 disponible (TRX Console, menu 6.1)",
+     "text": "version 0.114.0 disponible (TRX Console, menu 7.1)",
      "level": "warn"
     }
    ]

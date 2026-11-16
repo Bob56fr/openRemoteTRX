@@ -30,7 +30,7 @@ organisé ».
 
 ## Comment lire ce guide
 
-- Les **menus de TRX Console** sont notés par leur numéro : « menu 3.1 » = thème 3, menu 1. Sous Windows, les mêmes
+- Les **menus de TRX Console** sont notés par leur numéro : « menu 2.1 » = thème 2 (Poste et matériel), menu 1. Sous Windows, les mêmes
   actions sont dans le menu Démarrer > **TRX distant** (la partie 2 donne la correspondance).
 - Une case **« Sécurité »** signale un point qui touche à l'émission : ne la saute pas.
 - Ce guide existe aussi en page web, avec un récapitulatif que l'on coche en ligne, et en **PDF** à imprimer

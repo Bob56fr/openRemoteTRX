@@ -39,7 +39,7 @@ object StationAddress {
     }
 }
 
-/** Ce qu'apporte le QR code d'appairage (TRX Console, menu 19). Jamais de mot de passe. */
+/** Ce qu'apporte le QR code d'appairage (TRX Console, menu 4.1). Jamais de mot de passe. */
 data class Pairing(val name: String, val url: String, val user: String, val fingerprint: String)
 
 object PairingCode {

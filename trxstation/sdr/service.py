@@ -329,7 +329,7 @@ class SdrService:
             args = data.get("args") or {}
             if args.get("fs") and args["fs"] not in fs_choices(self.sd):
                 raise CallRefused("sdr_invalid", "largeur permise : " + ", ".join(f"{r / 1e6:g} MHz" for r in fs_choices(self.sd))
-                                  + " (la plus grande se règle sur la station, menu 5.4)")
+                                  + " (la plus grande se règle sur la station, menu 2.4)")
             if args.get("ant") and self.sd.driver != "sdrplay":
                 raise CallRefused("sdr_invalid", "ce SDR n'a pas de choix d'antenne")
             fs = applied_fs(self.sd, new, self._applied)

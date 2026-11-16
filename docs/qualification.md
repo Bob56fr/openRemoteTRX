@@ -24,7 +24,7 @@ trx-qualif --sans-emission           # qualification sans la phase 3 (verdict «
 trx-qualif --filtres                 # essaie AUSSI les largeurs de filtre (voir « Filtres » : réécrit les FIL d'un Icom)
 ```
 
-Depuis TRX Console : menu 2.7 « Qualification d'un poste » (choix 1 à 5 = les commandes ci-dessus ; rapports dans
+Depuis TRX Console : menu 8.3 « Qualification d'un poste » (choix 1 à 5 = les commandes ci-dessus ; rapports dans
 le dossier d'état de la station, `qualifications/`).
 
 Un rigctld qui répond déjà est REFUSÉ (c'est presque toujours celui de la station) : arrêter la station, ou

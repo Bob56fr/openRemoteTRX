@@ -381,7 +381,7 @@ ORT-1016:
   message: 'Erreur inattendue dans un écouteur ({partie}) : {erreur} ; la passerelle continue.'
   causes:
   - 'Défaut du programme (cas non prévu)'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -392,7 +392,7 @@ ORT-1016:
     message: 'Unexpected error in a listener ({partie}): {erreur}; the gateway carries on.'
     causes:
     - 'Program defect (unforeseen case)'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
 
 ORT-1017:
   gravite: avertissement
@@ -445,7 +445,7 @@ ORT-1501:
   - Limite de requêtes de GitHub atteinte
   - Réponse de GitHub inattendue ou trop grande
   - Adresse non https://
-  preconisation: Vérifier la connexion Internet ; nouvel essai automatique dans 24 h (ou menu 10, « Chercher maintenant
+  preconisation: Vérifier la connexion Internet ; nouvel essai automatique dans 24 h (ou menu 7.1, « Chercher maintenant
     »).
   action_auto: nouvel_essai
   ntfy_defaut: false
@@ -460,7 +460,7 @@ ORT-1501:
     - GitHub rate limit reached
     - Unexpected or oversized GitHub answer
     - Non-https address
-    preconisation: Check the Internet connection; automatic retry in 24 h (or menu 10, "Check now").
+    preconisation: Check the Internet connection; automatic retry in 24 h (or menu 7.1, "Check now").
 
 ORT-1502:
   gravite: avertissement
@@ -489,7 +489,7 @@ ORT-1503:
   message: 'Nouvelle version disponible : {version} (installée : {installee}).'
   causes:
   - Une version plus récente a été publiée
-  preconisation: 'TRX Console, menu 10 : lire les changements puis installer.'
+  preconisation: 'TRX Console, menu 7.1 : lire les changements puis installer.'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -500,7 +500,7 @@ ORT-1503:
     message: 'New version available: {version} (installed: {installee}).'
     causes:
     - A newer version has been published
-    preconisation: 'TRX Console, menu 10: read the changes then install.'
+    preconisation: 'TRX Console, menu 7.1: read the changes then install.'
 
 ORT-1504:
   gravite: avertissement
@@ -614,7 +614,7 @@ ORT-1508:
   - Coupure Internet pendant le téléchargement
   - Taille reçue différente de celle annoncée
   - Version retirée ou remplacée sur GitHub entre-temps
-  preconisation: Recommencer plus tard depuis le menu 10.
+  preconisation: Recommencer plus tard depuis le menu 7.1.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -629,7 +629,7 @@ ORT-1508:
     - Internet cut during the download
     - Received size differs from the announced one
     - Version withdrawn or replaced on GitHub meanwhile
-    preconisation: Try again later from menu 10.
+    preconisation: Try again later from menu 7.1.
 
 ORT-1509:
   gravite: avertissement
@@ -642,7 +642,7 @@ ORT-1509:
   - Paquet plus ancien que la version installée
   - Aucun paquet trouvé sur le Bureau, dans Téléchargements ou le dossier personnel
   preconisation: Copier le zip officiel ET son .sig sur le Bureau ; un paquet non signé ne s'installe qu'en tapant
-    OUI, s'il vient d'une source sûre. Pour revenir en arrière, le menu 11 suffit.
+    OUI, s'il vient d'une source sûre. Pour revenir en arrière, le menu 7.2 suffit.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -660,7 +660,7 @@ ORT-1509:
     - Package older than the installed version
     - No package found on the Desktop, in Downloads or the home folder
     preconisation: Copy the official zip AND its .sig to the Desktop; an unsigned package installs only after typing
-      OUI, if it comes from a safe source. To roll back, menu 11 is enough.
+      OUI, if it comes from a safe source. To roll back, menu 7.2 is enough.
 
 ORT-1510:
   gravite: erreur
@@ -2287,7 +2287,7 @@ ORT-4002:
   - Fichier visitor-kick.json illisible, mal formé ou impossible à effacer
   - Demande de plus de 10 s (horloge, console lente)
   - Identifiant qui n'est pas un visiteur connecté
-  preconisation: Refaire la demande depuis TRX Console menu 20 ; vérifier les droits du dossier d'état.
+  preconisation: Refaire la demande depuis TRX Console menu 4.2 ; vérifier les droits du dossier d'état.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -2300,7 +2300,7 @@ ORT-4002:
     - visitor-kick.json unreadable, malformed or cannot be deleted
     - Request older than 10 s (clock, slow console)
     - Identifier is not a connected listener
-    preconisation: Repeat the request from TRX Console menu 20; check the state folder permissions.
+    preconisation: Repeat the request from TRX Console menu 4.2; check the state folder permissions.
 
 ORT-4003:
   gravite: info
@@ -2415,7 +2415,7 @@ ORT-4007:
   titre: Compte désactivé ou expiré
   message: 'Compte « {compte} » {etat} sur la station : connexion refusée ou fermée.'
   causes:
-  - Compte désactivé par l'administrateur de la station (TRX Console menu 20)
+  - Compte désactivé par l'administrateur de la station (TRX Console menu 4.2)
   - Date d'expiration du compte dépassée
   preconisation: Demander à l'administrateur de la station de réactiver ou prolonger le compte.
   action_auto: refus
@@ -2430,7 +2430,7 @@ ORT-4007:
     titre: Account disabled or expired
     message: 'Account "{compte}" {etat} on the station: connection refused or closed.'
     causes:
-    - Account disabled by the station administrator (TRX Console menu 20)
+    - Account disabled by the station administrator (TRX Console menu 4.2)
     - Account expiry date passed
     preconisation: Ask the station administrator to re-enable or extend the account.
 
@@ -2512,7 +2512,7 @@ ORT-4011:
   causes:
   - Client plus récent que la station
   - Client qui n'a pas vérifié hello.features avant d'afficher une fonction
-  preconisation: Mettre à jour la station (TRX Console menu 10) ou utiliser une version du client compatible.
+  preconisation: Mettre à jour la station (TRX Console menu 7.1) ou utiliser une version du client compatible.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -2526,7 +2526,7 @@ ORT-4011:
     causes:
     - Client newer than the station
     - Client did not check hello.features before showing a feature
-    preconisation: Update the station (TRX Console menu 10) or use a compatible client version.
+    preconisation: Update the station (TRX Console menu 7.1) or use a compatible client version.
 
 ORT-4012:
   gravite: info
@@ -2826,7 +2826,7 @@ ORT-4103:
   - Rôle inconnu (une faute de frappe ne donne jamais un compte opérateur)
   - Pseudo invalide ou égal à l'identifiant d'un compte
   - Date d'expiration mal écrite
-  preconisation: Corriger le compte par TRX Console (menus 14 et 20) ou par trx-setup --set-password / --add-client.
+  preconisation: Corriger le compte par TRX Console (menus 8.1 et 4.2) ou par trx-setup --set-password / --add-client.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -2842,7 +2842,7 @@ ORT-4103:
     - Unknown role (a typo never grants an operator account)
     - Invalid nickname, or nickname equal to an account login
     - Badly written expiry date
-    preconisation: Fix the account with TRX Console (menus 14 and 20) or with trx-setup --set-password / --add-client.
+    preconisation: Fix the account with TRX Console (menus 8.1 and 4.2) or with trx-setup --set-password / --add-client.
 
 ORT-4104:
   gravite: avertissement
@@ -2960,7 +2960,7 @@ ORT-4301:
   causes:
   - '[access] max_listeners = 0 dans station.toml'
   - Fonction coupée pendant que des visiteurs écoutaient (déconnectés)
-  preconisation: 'Administrateur : régler max_listeners (TRX Console menu 20) si l''écoute des visiteurs est voulue.'
+  preconisation: 'Administrateur : régler max_listeners (TRX Console menu 4.2) si l''écoute des visiteurs est voulue.'
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -2974,7 +2974,7 @@ ORT-4301:
     causes:
     - '[access] max_listeners = 0 in station.toml'
     - Feature turned off while listeners were connected (disconnected)
-    preconisation: 'Administrator: set max_listeners (TRX Console menu 20) if listener access is wanted.'
+    preconisation: 'Administrator: set max_listeners (TRX Console menu 4.2) if listener access is wanted.'
 
 ORT-4302:
   gravite: info
@@ -3047,7 +3047,7 @@ ORT-4305:
   message: Visiteur {visiteur} déconnecté par {par}.
   causes:
   - Opérateur qui a touché « Déconnecter » (page, application)
-  - Déconnexion demandée par TRX Console (menu 20)
+  - Déconnexion demandée par TRX Console (menu 4.2)
   preconisation: Aucune.
   action_auto: refus
   ntfy_defaut: false
@@ -3061,7 +3061,7 @@ ORT-4305:
     message: Listener {visiteur} disconnected by {par}.
     causes:
     - Operator pressed "Disconnect" (page, app)
-    - Disconnection requested from TRX Console (menu 20)
+    - Disconnection requested from TRX Console (menu 4.2)
     preconisation: None.
 
 ORT-4306:
@@ -3093,7 +3093,7 @@ ORT-4307:
   causes:
   - Client visiteur modifié qui essaie de commander le poste
   - Client défectueux en boucle
-  preconisation: Vérifier le compte visiteur concerné ; le désactiver (TRX Console menu 20) si c'est une tentative
+  preconisation: Vérifier le compte visiteur concerné ; le désactiver (TRX Console menu 4.2) si c'est une tentative
     d'abus.
   action_auto: refus
   ntfy_defaut: true
@@ -3109,7 +3109,7 @@ ORT-4307:
     causes:
     - Modified listener client trying to control the rig
     - Faulty client in a loop
-    preconisation: Check the listener account; disable it (TRX Console menu 20) if it is an abuse attempt.
+    preconisation: Check the listener account; disable it (TRX Console menu 4.2) if it is an abuse attempt.
 
 ORT-4308:
   gravite: erreur
@@ -3151,7 +3151,7 @@ ORT-4309:
   causes:
   - 3 coupures pour surcharge en une heure ayant déconnecté des visiteurs
   preconisation: Corriger la cause de la surcharge puis rouvrir à la main (page de l'opérateur ou TRX Console menu
-    20), acceptée seulement au vert.
+    4.2), acceptée seulement au vert.
   action_auto: arreter_ecoute_visiteurs
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -3164,7 +3164,7 @@ ORT-4309:
     message: 'Too many cuts within one hour ({n}): the operator must reopen listener access.'
     causes:
     - 3 overload cuts within one hour that disconnected listeners
-    preconisation: Fix the overload cause then reopen by hand (operator page or TRX Console menu 20), accepted only
+    preconisation: Fix the overload cause then reopen by hand (operator page or TRX Console menu 4.2), accepted only
       when back to normal.
 
 ORT-4310:
@@ -3200,7 +3200,7 @@ ORT-4501:
   - WebRTC ou passerelle
   - Profil VPN partagé par un autre appareil
   preconisation: Lire le diagnostic dans la rubrique « Qualité du réseau » (page, application, TRX Console menu
-    23) et agir sur le tronçon indiqué.
+    6.4) et agir sur le tronçon indiqué.
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 3
@@ -3218,7 +3218,7 @@ ORT-4501:
     - Router Internet connection
     - WebRTC or gateway
     - VPN profile shared with another device
-    preconisation: Read the diagnosis under "Network quality" (page, app, TRX Console menu 23) and act on the indicated
+    preconisation: Read the diagnosis under "Network quality" (page, app, TRX Console menu 6.4) and act on the indicated
       segment.
 
 ORT-4502:
@@ -3317,7 +3317,7 @@ ORT-4506:
   titre: Historique de la sonde réseau effacé
   message: Historique de la sonde réseau effacé par {par}.
   causes:
-  - « Tout effacer » demandé par un opérateur ou TRX Console (menu 23)
+  - « Tout effacer » demandé par un opérateur ou TRX Console (menu 6.4)
   preconisation: Aucune.
   action_auto: aucune
   ntfy_defaut: false
@@ -3328,7 +3328,7 @@ ORT-4506:
     titre: Network probe history cleared
     message: Network probe history cleared by {par}.
     causes:
-    - '"Clear all" requested by an operator or TRX Console (menu 23)'
+    - '"Clear all" requested by an operator or TRX Console (menu 6.4)'
     preconisation: None.
 
 ORT-4507:
@@ -3361,7 +3361,7 @@ ORT-4508:
   causes:
   - Bureau non accessible en écriture
   - Droits du dossier d'état (opération faite par l'administrateur)
-  preconisation: Vérifier l'espace disque et les droits, puis recommencer (menu 23).
+  preconisation: Vérifier l'espace disque et les droits, puis recommencer (menu 6.4).
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -3373,7 +3373,7 @@ ORT-4508:
     causes:
     - Desktop not writable
     - State folder permissions (operation run as administrator)
-    preconisation: Check disk space and permissions, then try again (menu 23).
+    preconisation: Check disk space and permissions, then try again (menu 6.4).
 
 ORT-4509:
   gravite: erreur
@@ -4093,7 +4093,7 @@ ORT-5029:
   message: 'Contrôle du PTT : erreur inattendue dans {partie} ({erreur}) ; la sécurité d''émission continue.'
   causes:
   - 'Défaut du programme (cas non prévu)'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -4104,7 +4104,7 @@ ORT-5029:
     message: 'PTT control: unexpected error in {partie} ({erreur}); transmit safety carries on.'
     causes:
     - 'Program defect (unforeseen case)'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
 
 ORT-5030:
   gravite: avertissement
@@ -5273,7 +5273,7 @@ ORT-6401:
   - Aucune source active
   - Indicatif de l'opérateur absent (obligatoire pour les clusters telnet et le RBN)
   - '« cluster » absent de [modules] run : le module ne serait jamais lancé'
-  preconisation: Compléter par TRX Console, menu 12 (sources, indicatif) et ajouter « cluster » à [modules] run.
+  preconisation: Compléter par TRX Console, menu 5.1 (sources, indicatif) et ajouter « cluster » à [modules] run.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -5286,7 +5286,7 @@ ORT-6401:
     - No active source
     - Operator callsign missing (required for telnet clusters and RBN)
     - '"cluster" missing from [modules] run: the module would never start'
-    preconisation: Complete it with TRX Console, menu 12 (sources, callsign) and add "cluster" to [modules] run.
+    preconisation: Complete it with TRX Console, menu 5.1 (sources, callsign) and add "cluster" to [modules] run.
 
 ORT-6402:
   gravite: avertissement
@@ -6184,7 +6184,7 @@ ORT-6531:
   - Fichier illisible par le compte de la station
   - Fichier lisible par tous les comptes (droits 0640 ou 0600 attendus)
   - Clé mal formée (43 caractères attendus)
-  preconisation: Créer ou recopier la clé d'appairage avec TRX Console (menu 22) et la même clé dans Breizh Audio
+  preconisation: Créer ou recopier la clé d'appairage avec TRX Console (menu 5.2) et la même clé dans Breizh Audio
     Box ; corriger les droits du fichier.
   action_auto: repli_direct
   ntfy_defaut: false
@@ -6199,7 +6199,7 @@ ORT-6531:
     - File unreadable by the station account
     - File readable by every account (0640 or 0600 expected)
     - Malformed key (43 characters expected)
-    preconisation: Create or copy the pairing key with TRX Console (menu 22) and put the same key in Breizh Audio
+    preconisation: Create or copy the pairing key with TRX Console (menu 5.2) and put the same key in Breizh Audio
       Box; fix the file permissions.
 
 ORT-6532:
@@ -6348,7 +6348,7 @@ ORT-6538:
   - Défaut de Breizh Audio Box (nonce, JSON ou code d'erreur inconnu)
   - Versions de développement incompatibles
   preconisation: Mettre à jour Breizh Audio Box et signaler le défaut à son auteur avec le journal Breizh (TRX Console
-    menu 22).
+    menu 5.2).
   action_auto: repli_direct
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -6365,7 +6365,7 @@ ORT-6538:
     - Breizh Audio Box defect (nonce, JSON or unknown error code)
     - Incompatible development versions
     preconisation: Update Breizh Audio Box and report the defect to its author with the Breizh log (TRX Console
-      menu 22).
+      menu 5.2).
 
 ORT-6539:
   gravite: avertissement
@@ -6376,7 +6376,7 @@ ORT-6539:
   - Autre appareil qui envoie vers le port de la station (foreign)
   - Paquets rejoués ou hors session
   - Version de protocole différente
-  preconisation: Vérifier que la même clé d'appairage est dans les deux logiciels (TRX Console menu 22) ; chercher
+  preconisation: Vérifier que la même clé d'appairage est dans les deux logiciels (TRX Console menu 5.2) ; chercher
     l'appareil qui envoie sur ce port.
   action_auto: aucune
   ntfy_defaut: false
@@ -6393,7 +6393,7 @@ ORT-6539:
     - Another device sending to the station port (foreign)
     - Replayed or out-of-session packets
     - Different protocol version
-    preconisation: Check the same pairing key is in both programs (TRX Console menu 22); look for the device sending
+    preconisation: Check the same pairing key is in both programs (TRX Console menu 5.2); look for the device sending
       to this port.
 
 ORT-6540:
@@ -6791,7 +6791,7 @@ ORT-6809:
   causes:
   - '[selcall] enabled = false dans station.toml'
   - Trame d'émission indisponible (appel manuel, réglage du niveau)
-  preconisation: Activer [selcall] dans station.toml (menu 14) si vous voulez l'utiliser.
+  preconisation: Activer [selcall] dans station.toml (menu 8.1) si vous voulez l'utiliser.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 2
@@ -6805,7 +6805,7 @@ ORT-6809:
     causes:
     - '[selcall] enabled = false in station.toml'
     - Transmit frame unavailable (manual call, level setting)
-    preconisation: Enable [selcall] in station.toml (menu 14) if you want to use it.
+    preconisation: Enable [selcall] in station.toml (menu 8.1) if you want to use it.
 
 ORT-6810:
   gravite: info
@@ -6943,7 +6943,7 @@ ORT-6902:
   message: 'Présence de groupe : aucun pseudo choisi, rien n''est envoyé au relais.'
   causes:
   - '[presence] activé sans pseudo'
-  preconisation: Choisir un pseudo dans le menu 24 de TRX Console ou la rubrique « Amis » de la page.
+  preconisation: Choisir un pseudo dans le menu 5.3 de TRX Console ou la rubrique « Amis » de la page.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -6956,7 +6956,7 @@ ORT-6902:
     message: 'Group presence: no nickname chosen, nothing is sent to the relay.'
     causes:
     - '[presence] enabled without a nickname'
-    preconisation: Choose a nickname in TRX Console menu 24 or the "Friends" section of the page.
+    preconisation: Choose a nickname in TRX Console menu 5.3 or the "Friends" section of the page.
 
 ORT-6903:
   gravite: avertissement
@@ -7207,7 +7207,7 @@ ORT-6913:
   - Invitation expirée
   - Invitation pour un autre relais
   - Déjà membre de ce groupe ou demande en attente
-  preconisation: Demander un nouveau lien d'invitation à l'administrateur du groupe (menu 24 ou « Inviter » de la
+  preconisation: Demander un nouveau lien d'invitation à l'administrateur du groupe (menu 5.3 ou « Inviter » de la
     page).
   action_auto: refus
   ntfy_defaut: false
@@ -7224,7 +7224,7 @@ ORT-6913:
     - Invitation expired
     - Invitation for another relay
     - Already a member of this group or request pending
-    preconisation: Ask the group administrator for a new invitation link (menu 24 or "Invite" on the page).
+    preconisation: Ask the group administrator for a new invitation link (menu 5.3 or "Invite" on the page).
 
 ORT-6914:
   gravite: info
@@ -7356,7 +7356,7 @@ ORT-6919:
   - Module « presence » absent de [modules] run ou arrêté
   - Compte visiteur (réception seule)
   - Erreur inattendue du module
-  preconisation: Activer [presence] et ajouter « presence » à [modules] run (menu 14), puis redémarrer la station.
+  preconisation: Activer [presence] et ajouter « presence » à [modules] run (menu 8.1), puis redémarrer la station.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 2
@@ -7371,7 +7371,7 @@ ORT-6919:
     - '"presence" module missing from [modules] run or stopped'
     - Visitor account (receive only)
     - Unexpected module error
-    preconisation: Enable [presence] and add "presence" to [modules] run (menu 14), then restart the station.
+    preconisation: Enable [presence] and add "presence" to [modules] run (menu 8.1), then restart the station.
 
 ORT-6920:
   gravite: erreur
@@ -7683,7 +7683,7 @@ ORT-7051:
   message: 'Monitoring : {station} donne de nouveau des nouvelles (après {minutes} min de silence).'
   causes:
   - Station suivie redémarrée ou de retour sur Internet
-  preconisation: Aucune ; regarder ses derniers événements (TRX Console, menu 5.5, choix 2).
+  preconisation: Aucune ; regarder ses derniers événements (TRX Console, menu 6.5, choix 2).
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 2
@@ -7694,7 +7694,7 @@ ORT-7051:
     message: 'Monitoring: {station} sends news again (after {minutes} min of silence).'
     causes:
     - Followed station restarted or back on the Internet
-    preconisation: None; look at its latest events (TRX Console, menu 5.5, choice 2).
+    preconisation: None; look at its latest events (TRX Console, menu 6.5, choice 2).
 
 ORT-7052:
   gravite: erreur
@@ -7703,7 +7703,7 @@ ORT-7052:
   causes:
   - Panne ou coupure de sécurité sur la station suivie (voir la page du code reçu)
   preconisation: Ouvrir la page du code reçu, puis joindre l'opérateur de la station suivie ; au besoin, lui demander le
-    mode assistance ou son rapport de dépannage (menu 5.5, choix 6).
+    mode assistance ou son rapport de dépannage (menu 6.5, choix 6).
   action_auto: aucune
   ntfy_defaut: true
   priorite_ntfy: 4
@@ -7715,7 +7715,7 @@ ORT-7052:
     causes:
     - Failure or safety cut on the followed station (see the page of the received code)
     preconisation: Open the page of the received code, then contact the operator of the followed station; if needed,
-      ask for assistance mode or its troubleshooting report (menu 5.5, choice 6).
+      ask for assistance mode or its troubleshooting report (menu 6.5, choice 6).
 
 ORT-7053:
   gravite: info
@@ -7723,7 +7723,7 @@ ORT-7053:
   message: 'Monitoring : rapport de dépannage de {station} reçu ({taille_ko} ko).'
   causes:
   - Rapport envoyé par l'opérateur de la station suivie, ou demande acceptée
-  preconisation: Le copier sur le Bureau (TRX Console, menu 5.5, choix 10) pour le lire.
+  preconisation: Le copier sur le Bureau (TRX Console, menu 6.5, choix 10) pour le lire.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 2
@@ -7734,7 +7734,7 @@ ORT-7053:
     message: 'Monitoring: troubleshooting report from {station} received ({taille_ko} kB).'
     causes:
     - Report sent by the operator of the followed station, or request accepted
-    preconisation: Copy it to the Desktop (TRX Console, menu 5.5, choice 10) to read it.
+    preconisation: Copy it to the Desktop (TRX Console, menu 6.5, choice 10) to read it.
 
 ORT-7054:
   gravite: avertissement
@@ -7743,7 +7743,7 @@ ORT-7054:
   causes:
   - Rapport impossible à fabriquer (droits, disque)
   - Rapport trop grand ou volume du jour dépassé chez le relais
-  preconisation: Fabriquer le rapport à la main (menu 2.3) et le transmettre autrement.
+  preconisation: Fabriquer le rapport à la main (menu 6.3) et le transmettre autrement.
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -7755,7 +7755,7 @@ ORT-7054:
     causes:
     - Report could not be built (rights, disk)
     - Report too large or daily volume exceeded at the relay
-    preconisation: Build the report by hand (menu 2.3) and send it another way.
+    preconisation: Build the report by hand (menu 6.3) and send it another way.
 
 # ====================================================================================================
 # 8000–8999 : Superviseur et processus
@@ -8259,7 +8259,7 @@ ORT-8023:
   causes:
   - 'Système de fichiers /proc ou /sys inaccessible'
   - 'Défaut du programme'
-  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 2.3 de TRX Console).'
+  preconisation: 'Signaler le problème avec le rapport de dépannage (menu 6.3 de TRX Console).'
   action_auto: aucune
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -8271,7 +8271,7 @@ ORT-8023:
     causes:
     - '/proc or /sys file system unavailable'
     - 'Program defect'
-    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 2.3).'
+    preconisation: 'Report the problem with the troubleshooting report (TRX Console menu 6.3).'
 
 ORT-8024:
   gravite: erreur
@@ -8307,7 +8307,7 @@ ORT-9001:
   - Fichier TOML mal écrit (guillemet, crochet ou virgule manquant)
   - Réglage refusé par la validation (voir les entrées de la famille « station.toml »)
   - Configuration écrite pour une autre version de la station
-  preconisation: Corriger la ligne indiquée (TRX Console, menu 14) ou relancer l'assistant de configuration (menu
+  preconisation: Corriger la ligne indiquée (TRX Console, menu 8.1) ou relancer l'assistant de configuration (menu
     2). La station ne démarre pas tant que le fichier est refusé.
   action_auto: refus
   ntfy_defaut: false
@@ -8321,7 +8321,7 @@ ORT-9001:
     - Malformed TOML (missing quote, bracket or comma)
     - Setting rejected by validation (see the other station.toml entries)
     - Configuration written for another station version
-    preconisation: Fix the reported line (TRX Console, menu 14) or run the setup wizard again (menu 2). The station
+    preconisation: Fix the reported line (TRX Console, menu 8.1) or run the setup wizard again (menu 2). The station
       will not start while the file is rejected.
 
 ORT-9002:
@@ -8803,7 +8803,7 @@ ORT-9023:
   message: 'Aucun éditeur de texte trouvé : installe nano (sudo apt install nano).'
   causes:
   - Système minimal sans nano ni vi
-  preconisation: sudo apt install nano, puis menu 14 à nouveau.
+  preconisation: sudo apt install nano, puis menu 8.1 à nouveau.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -8814,7 +8814,7 @@ ORT-9023:
     message: 'No text editor found: install nano (sudo apt install nano).'
     causes:
     - Minimal system without nano or vi
-    preconisation: sudo apt install nano, then menu 14 again.
+    preconisation: sudo apt install nano, then menu 8.1 again.
 
 ORT-9101:
   gravite: erreur
@@ -8824,7 +8824,7 @@ ORT-9101:
   - Fichier de profil abîmé (TOML invalide)
   - Fichier qui n'est pas un profil (en-tête [profil] absent)
   - Droits de lecture
-  preconisation: Supprimer ce profil (menu 18) et réenregistrer le poste depuis une configuration qui fonctionne.
+  preconisation: Supprimer ce profil (menu 2.3) et réenregistrer le poste depuis une configuration qui fonctionne.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -8837,7 +8837,7 @@ ORT-9101:
     - Damaged profile file (invalid TOML)
     - File is not a profile ([profil] header missing)
     - Read permissions
-    preconisation: Delete this profile (menu 18) and save the radio again from a working configuration.
+    preconisation: Delete this profile (menu 2.3) and save the radio again from a working configuration.
 
 ORT-9102:
   gravite: erreur
@@ -8848,7 +8848,7 @@ ORT-9102:
   - Profil trop ancien dont la conversion n'est pas possible
   - Section inattendue hors du poste
   preconisation: 'Version plus récente : mettre la station à jour. Profil trop ancien : refaire la configuration
-    du poste (menu 2) puis le réenregistrer (menu 18).'
+    du poste (menu 2) puis le réenregistrer (menu 2.3).'
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -8862,7 +8862,7 @@ ORT-9102:
     - Profile too old to be converted
     - Unexpected section outside the radio settings
     preconisation: 'Newer version: update the station. Too old: redo the radio configuration (menu 2) then save
-      it again (menu 18).'
+      it again (menu 2.3).'
 
 ORT-9103:
   gravite: erreur
@@ -8871,8 +8871,8 @@ ORT-9103:
   causes:
   - Profil d'une ancienne version dont un réglage n'est plus permis
   - station.toml actuel lui-même illisible
-  preconisation: Corriger d'abord station.toml (menu 14) si c'est lui qui est en cause ; sinon refaire la configuration
-    du poste (menu 2) puis le réenregistrer (menu 18).
+  preconisation: Corriger d'abord station.toml (menu 8.1) si c'est lui qui est en cause ; sinon refaire la configuration
+    du poste (menu 2) puis le réenregistrer (menu 2.3).
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -8884,8 +8884,8 @@ ORT-9103:
     causes:
     - Profile from an old version with a setting no longer allowed
     - Current station.toml itself unreadable
-    preconisation: First fix station.toml (menu 14) if it is at fault; otherwise redo the radio configuration (menu
-      2) then save it again (menu 18).
+    preconisation: First fix station.toml (menu 8.1) if it is at fault; otherwise redo the radio configuration (menu
+      2) then save it again (menu 2.3).
 
 ORT-9104:
   gravite: info
@@ -8914,7 +8914,7 @@ ORT-9105:
   - Fichier édité à la main (TOML invalide, table [secrets] absente)
   - Entrée au nom invalide
   - Droits de lecture
-  preconisation: Ressaisir les mots de passe des sources par TRX Console, menu 12 (le fichier est réécrit proprement
+  preconisation: Ressaisir les mots de passe des sources par TRX Console, menu 5.1 (le fichier est réécrit proprement
     en 0600).
   action_auto: refus
   ntfy_defaut: false
@@ -8928,7 +8928,7 @@ ORT-9105:
     - File edited by hand (invalid TOML, missing [secrets] table)
     - Entry with an invalid name
     - Read permissions
-    preconisation: Re-enter the source passwords with TRX Console, menu 12 (the file is rewritten cleanly with mode
+    preconisation: Re-enter the source passwords with TRX Console, menu 5.1 (the file is rewritten cleanly with mode
       0600).
 
 ORT-9106:
@@ -9052,7 +9052,7 @@ ORT-9203:
   message: 'Format {format} trop récent pour cette station (format {format_station}) : mets la station à jour.'
   causes:
   - Mise en page créée par une application ou un designer plus récents que la station
-  preconisation: Mettre la station à jour (menu 10 ou 13).
+  preconisation: Mettre la station à jour (menu 7.1 ou 7.3).
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -9065,7 +9065,7 @@ ORT-9203:
     message: 'Format {format} too recent for this station (format {format_station}): update the station.'
     causes:
     - Layout created by an app or designer newer than the station
-    preconisation: Update the station (menu 10 or 13).
+    preconisation: Update the station (menu 7.1 or 7.3).
 
 ORT-9204:
   gravite: avertissement
@@ -9325,7 +9325,7 @@ ORT-9310:
   message: 'Configuration refusée par la version {version} : {suite}.'
   causes:
   - Réglage refusé par la nouvelle validation (nouvelle règle, clé retirée)
-  preconisation: Corriger station.toml (menu 14) ou relancer l'assistant ; au retour arrière, la configuration d'avant
+  preconisation: Corriger station.toml (menu 8.1) ou relancer l'assistant ; au retour arrière, la configuration d'avant
     la mise à jour est remise automatiquement si elle existe.
   action_auto: repli_config_precedente
   ntfy_defaut: false
@@ -9337,7 +9337,7 @@ ORT-9310:
     message: 'Configuration refused by version {version}: {suite}.'
     causes:
     - Setting rejected by the new validation (new rule, removed key)
-    preconisation: Fix station.toml (menu 14) or rerun the wizard; on rollback the pre-update configuration is restored
+    preconisation: Fix station.toml (menu 8.1) or rerun the wizard; on rollback the pre-update configuration is restored
       automatically when available.
 
 ORT-9311:
@@ -9370,7 +9370,7 @@ ORT-9312:
   causes:
   - 'Défaut du logiciel dans un cas non prévu (nouveau poste, nouvelle carte son, réponse inattendue)'
   - 'Fichier ou périphérique devenu inaccessible pendant l''exécution'
-  preconisation: 'Lire le message, puis envoyer le fichier indiqué (ou le rapport du menu 2.3 de TRX Console) avec
+  preconisation: 'Lire le message, puis envoyer le fichier indiqué (ou le rapport du menu 6.3 de TRX Console) avec
     la description de ce qui était en cours. Le poste a été remis en réception par l''outil s''il émettait.'
   action_auto: arret_outil
   ntfy_defaut: false
@@ -9383,7 +9383,7 @@ ORT-9312:
     causes:
     - 'Software defect in an unforeseen case (new rig, new sound card, unexpected answer)'
     - 'File or device that became unreachable while running'
-    preconisation: 'Read the message, then send the file shown (or the TRX Console menu 2.3 report) with a
+    preconisation: 'Read the message, then send the file shown (or the TRX Console menu 6.3 report) with a
       description of what was going on. The tool put the rig back to receive if it was transmitting.'
 
 ORT-9313:
@@ -9720,7 +9720,7 @@ ORT-9706:
   causes:
   - Modification à la main avec une erreur
   - Fichier en cours d'écriture (illisible un instant)
-  preconisation: Corriger station.toml (TRX Console menu 14) ; la station reprend la nouvelle liste dès que le fichier
+  preconisation: Corriger station.toml (TRX Console menu 8.1) ; la station reprend la nouvelle liste dès que le fichier
     est valide.
   action_auto: nouvel_essai
   ntfy_defaut: false
@@ -9733,7 +9733,7 @@ ORT-9706:
     causes:
     - Hand edit with an error
     - File being written (unreadable for a moment)
-    preconisation: Fix station.toml (TRX Console menu 14); the station takes the new list as soon as the file is
+    preconisation: Fix station.toml (TRX Console menu 8.1); the station takes the new list as soon as the file is
       valid.
 
 ORT-9707:
@@ -9965,7 +9965,7 @@ ORT-9717:
   - Bureau sans GNOME ou outil gnome-extensions absent
   - Extension absente (version antérieure à 0.49.0) ou pas encore connue de GNOME (reconnexion)
   - Échec de l'activation ou de la mise à jour
-  preconisation: 'Se déconnecter puis se reconnecter ; installer une version récente (menu 13). Sous Windows : relancer
+  preconisation: 'Se déconnecter puis se reconnecter ; installer une version récente (menu 7.3). Sous Windows : relancer
     installer.cmd.'
   action_auto: aucune
   ntfy_defaut: false
@@ -9979,7 +9979,7 @@ ORT-9717:
     - Desktop without GNOME or gnome-extensions tool missing
     - Extension missing (version before 0.49.0) or not yet known to GNOME (log in again)
     - Enable or refresh failure
-    preconisation: 'Log out and back in; install a recent version (menu 13). On Windows: rerun installer.cmd.'
+    preconisation: 'Log out and back in; install a recent version (menu 7.3). On Windows: rerun installer.cmd.'
 
 ORT-9718:
   gravite: info
@@ -9988,7 +9988,7 @@ ORT-9718:
   causes:
   - Version installée antérieure à 0.42.0 (tests absents)
   - pytest non installé et pas d'accès Internet
-  preconisation: Installer une version récente (menu 13) ou rétablir Internet pour installer pytest.
+  preconisation: Installer une version récente (menu 7.3) ou rétablir Internet pour installer pytest.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -10000,5 +10000,5 @@ ORT-9718:
     causes:
     - Installed version older than 0.42.0 (tests missing)
     - pytest not installed and no Internet access
-    preconisation: Install a recent version (menu 13) or restore Internet access to install pytest.
+    preconisation: Install a recent version (menu 7.3) or restore Internet access to install pytest.
 

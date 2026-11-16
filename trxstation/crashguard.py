@@ -5,7 +5,7 @@
 Avant : une erreur imprévue (ou une entrée clavier fermée) refermait la fenêtre d'un raccourci Windows ou du lanceur
 TRX Console de Debian avant qu'on ait pu lire quoi que ce soit. Désormais `@guarded("trx-hwtest")` sur le `main` :
   - erreur imprévue : message ORT-9312 en clair, trace complète enregistrée dans un fichier (joint au rapport du
-    menu 2.3), code de sortie 1 ;
+    menu 6.3), code de sortie 1 ;
   - Ctrl+C : « Interrompu », code 130 ; entrée clavier fermée : message, code 2 ;
   - si la fenêtre va se refermer toute seule (raccourci Windows, lanceur Debian avec TRX_PAUSE_ON_EXIT=1), on attend
     Entrée après une erreur pour laisser le temps de lire.

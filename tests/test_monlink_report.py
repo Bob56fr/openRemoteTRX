@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Monitoring inter-stations, lot R4 : rapport de dépannage masqué, journaux pendant l'assistance, alertes ntfy de la
-station qui aide (absence de nouvelles, retour, événement critique), menu 5.5 choix 6, 7 et 10."""
+station qui aide (absence de nouvelles, retour, événement critique), menu 6.5 choix 6, 7 et 10."""
 from __future__ import annotations
 
 import asyncio
@@ -255,7 +255,7 @@ def test_critical_event_alerts_once_per_code_and_the_hourly_ceiling(pair):
     assert len(notifier.sent) == 1 + eng_mod.ALERTS_PER_HOUR - 1                 # plafond de 20 par heure
 
 
-# ------------------------------------------------------------------ menu 5.5 (choix 6, 7, 10)
+# ------------------------------------------------------------------ menu 6.5 (choix 6, 7, 10)
 def test_console_report_round_trip(tmp_path, monkeypatch):
     from test_monlink_console import Clock as CClock, Station          # module voisin (tests/ dans sys.path)
     clock = CClock()

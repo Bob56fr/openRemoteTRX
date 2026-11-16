@@ -284,7 +284,7 @@ object RigHub {
     fun friendsDismiss() { service?.onRig { session, now -> session.friendsDismiss(now) } }
 
     // Monitoring inter-stations : relayé au module « monlink », qui n'agit jamais sur le poste ; la station qui aide
-    // ne peut que lire et DEMANDER (mêmes actions que la page et le menu 5.5 de TRX Console).
+    // ne peut que lire et DEMANDER (mêmes actions que la page et le menu 6.5 de TRX Console).
     fun monitoringWatch(on: Boolean) { service?.onRig { session, now -> session.monitoringWatch(now, on) } }
     fun monitoringRefresh() { service?.onRig { session, now -> session.monitoringRefresh(now) } }
     fun monitoringAction(action: String, args: Map<String, Any?> = emptyMap()) {

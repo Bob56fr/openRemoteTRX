@@ -56,7 +56,7 @@ Périmètre : `raise` métier, `except` qui journalise, alerte, refuse ou bascul
    - pertes réseau 5 % (`[netprobe] loss_alert_pct`) ;
    - surcharge des visiteurs 70 °C (`[access] overload_temp_c`, retour sous 60 °C).
 
-   Une station.toml DÉJÀ écrite garde ses anciennes valeurs : à corriger à la main (menu 14). Le bargraph de la page et de l'application (`hostinfo.LIMITS`) n'est pas changé : ce sont des seuils d'affichage.
+   Une station.toml DÉJÀ écrite garde ses anciennes valeurs : à corriger à la main (menu 8.1). Le bargraph de la page et de l'application (`hostinfo.LIMITS`) n'est pas changé : ce sont des seuils d'affichage.
 8. **ORT-2104** (délai CAT) : pas de changement. Une lecture qui n'aboutit pas est aujourd'hui refermée et réessayée en silence. Le cahier imaginait un compteur sur 5 min avec alerte et relance de rigctld, ce que le code ne fait pas. Les deux causes (délai dépassé, connexion fermée par rigctld) seront distinguées quand le code émettra ses événements.
 9. **ORT-2001** : la fusion est acceptée.
 10. **Passerelle sans carte son** : pas de changement pour l'instant. Pour ne plus quitter, la passerelle devrait tourner sans son et REFUSER l'émission, avec un nouveau refus dans le protocole, la page et l'application. Ce chantier est à décider à part.

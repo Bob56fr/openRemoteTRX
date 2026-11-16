@@ -60,7 +60,7 @@ def test_monitoring_command_is_relayed_for_an_operator_only():
 
 
 def test_module_answers_the_page_and_hands_the_report_in_parts(tmp_path):
-    """Le module lui-même : on_call (actions du menu 5.5) et report_part (morceaux de 30 ko, recollés à l'identique)."""
+    """Le module lui-même : on_call (actions du menu 6.5) et report_part (morceaux de 30 ko, recollés à l'identique)."""
     from trxstation import config as cfgmod
     from trxstation.devtools.fake_monlink_relay import FakeMonRelay
     from trxstation.modules.client import CallRefused

@@ -121,7 +121,7 @@ object Monitoring {
         }
     }
 
-    /** Dernières nouvelles d'une station suivie (station qui aide), comme le choix 2 du menu 5.5. */
+    /** Dernières nouvelles d'une station suivie (station qui aide), comme le choix 2 du menu 6.5. */
     fun stationLines(link: JsonObject): List<String> {
         val out = mutableListOf<String>()
         val hb = link.obj("last_hb")

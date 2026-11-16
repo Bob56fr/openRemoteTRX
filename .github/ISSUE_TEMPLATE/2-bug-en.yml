@@ -94,7 +94,7 @@ body:
     attributes:
       label: Logs
       description: |
-        Useful excerpts of the log (TRX Console, menu 1.4). The troubleshooting report (menu 2.3) is a zip without passwords: drag it into the "What happens" box above. Android app: Réglages > "Signaler un problème" (the app is in French).
+        Useful excerpts of the log (TRX Console, menu 6.2). The troubleshooting report (menu 6.3) is a zip without passwords: drag it into the "What happens" box above. Android app: Réglages > "Signaler un problème" (the app is in French).
       render: text
   - type: checkboxes
     id: confidentialite

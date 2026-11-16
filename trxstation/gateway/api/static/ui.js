@@ -3525,7 +3525,7 @@
     }
 
     // ---- monitoring inter-stations (monitoring.js, docs/cdc-monitoring.md § 17, fonction « monitoring », OPÉRATEURS) :
-    // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 5.5 de TRX Console. Le module n'agit
+    // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 6.5 de TRX Console. Le module n'agit
     // jamais sur le poste ; la station qui aide ne peut que lire et DEMANDER. Fenêtres : celles de la rubrique « Amis ».
     const mx = root.TrxMonitoring || null;
     const MO_REFRESH_MS = 15000;

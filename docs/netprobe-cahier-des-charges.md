@@ -253,7 +253,7 @@ serait propre à un VPN : c'est écarté. La station repère donc les **effets**
 ### 8.4 Documentation
 
 - `docs/acces-distant.md` : « un profil VPN par appareil, jamais partagé » (fait dans cette étape).
-- Aide du menu 19 de TRX Console (appairage d'un téléphone) : même phrase (lot 4).
+- Aide du menu 4.1 de TRX Console (appairage d'un téléphone) : même phrase (lot 4).
 
 ## 9. Affichage : indicateur discret et détail
 
@@ -382,7 +382,7 @@ réponse ; la liste des coupures est paginée. Rien n'est recalculé sur le clie
 - Commande `net_clear`. La station efface `state_dir/netprobe/` (journal, coupures, heures, appareils vus,
   avertissements ignorés). Le client vide ses 10 min en mémoire. Les mesures reprennent aussitôt.
 - Le journal de la station garde une ligne « historique réseau effacé par <compte> à <heure> ».
-- TRX Console offre la même chose (menu 23, § 12).
+- TRX Console offre la même chose (menu 6.4, § 12).
 
 ### 10.3 Export pour l'équipe de développement
 
@@ -466,7 +466,7 @@ n'est pas modifié (une passerelle arrêtée est déjà signalée par lui).
 
 ### 12.3 TRX Console et `trx-netreport`
 
-- Menu 23 « Qualité du réseau » :
+- Menu 6.4 « Qualité du réseau » :
   - synthèse 24 h et 30 jours ;
   - dernières coupures ;
   - avertissements de profil partagé ;
@@ -511,7 +511,7 @@ Reprise d'EF11, SANS la position, la seconde SIM ni les cellules des autres opé
 | 2a | FAIT (étape 137, station 0.106.0) : passerelle (`net_ping`/`net_pong`, `state.net`, `device`, D1/D2/D3, journal, heures, coupures, diagnostic sans les sondes, `net_*`, `[netprobe]`, alertes ntfy) ; partie protocole de la page (battements, résumés de 10 s, remise après une coupure, sans affichage) ; classes des commandes de l'application | passerelle, page, application |
 | 2b | FAIT (étape 138, station 0.107.0) : sondes de la station (box, Internet : ICMP sinon TCP) dans la passerelle, faits `lan_probe_down` / `internet_probe_down` du diagnostic, `state.net.probes`. L'export (`net_export`, zip anonyme) passe au lot 4 avec `trx-netreport`, qui fabrique le même rapport | passerelle |
 | 3 | FAIT (étape 139, station 0.108.0) : page : `/health` toutes les 5 s (aussi pendant une reconnexion), trous du son reçu (getStats), indicateur, accordéon, vue 30 jours, seuils (curseurs, proposition), effacement. Export : lot 4 | page |
-| 4 | FAIT (étape 140, station 0.109.0) : trx-monitor (panneau « Réseau », touche `n`, événements), TRX Console menu 23, `trx-netreport`, export anonyme (`net_export`, bouton de la page, `--export`, menu 23). Aide du menu 19 : « un profil VPN par appareil » est dans le mode d'emploi du menu 23 et `docs/acces-distant.md` | station, page |
+| 4 | FAIT (étape 140, station 0.109.0) : trx-monitor (panneau « Réseau », touche `n`, événements), TRX Console menu 6.4, `trx-netreport`, export anonyme (`net_export`, bouton de la page, `--export`, menu 6.4). Aide du menu 4.1 : « un profil VPN par appareil » est dans le mode d'emploi du menu 6.4 et `docs/acces-distant.md` | station, page |
 | 5 | FAIT (étape 141, application 0.53.0) : pastille de la barre du haut, détail, écran « Qualité du réseau » 30 jours (seuils, proposition, effacement), export partagé, « Liaison faible » en Android Auto et en mode conduite ; type de réseau du téléphone = Wi-Fi / mobile / réseau local (4G / 5G : lot 6) | Android |
 | 6 | FAIT (étape 142, application 0.54.0) : relevé de base SANS autorisation (type de réseau Wi-Fi / 4G / 5G / réseau local, RSRP / RSSNR ou SS-RSRP / SS-SINR, niveau 0 à 4, bascule de réseau, réseau sous-jacent d'un VPN) toutes les 2 s ; changement de cellule en option, autorisation de localisation déclarée dans les manifestes `debug` / `release` seulement (vérifié : absente du manifeste fusionné `play`), APPLICATION OUVERTE seulement (écran éteint, Android refuse la localisation sans service de type `location`, non ajouté) ; trx-monitor : radio du téléphone | Android, station |
 

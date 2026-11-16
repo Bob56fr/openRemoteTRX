@@ -2,7 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 /* Monitoring inter-stations dans la page (docs/cdc-monitoring.md § 17, lot R5 ; protocole : docs/protocole.md § 19) :
    calculs purs, testés sous Node (tests/js/monitoring_test.js), sans DOM. Le dessin est dans ui.js (rubrique
-   « Monitoring »). Mêmes actions que le menu 5.5 de TRX Console ; le module « monlink » n'agit jamais sur le poste et
+   « Monitoring »). Mêmes actions que le menu 6.5 de TRX Console ; le module « monlink » n'agit jamais sur le poste et
    la station qui aide ne peut que lire et DEMANDER. */
 (function (root) {
   "use strict";
@@ -35,7 +35,7 @@
   function minutes(seconds) { return Math.max(0, Math.floor((Number(seconds) || 0) / 60)); }
 
   function extra(link) {
-    /* Détails d'une liaison, dans les mots de TRX Console (menu 5.5). */
+    /* Détails d'une liaison, dans les mots de TRX Console (menu 6.5). */
     const out = [];
     if (link.state !== "confirm") {
       out.push(link.last_rx_age === null || link.last_rx_age === undefined ? "aucune nouvelle encore"
@@ -78,7 +78,7 @@
   }
 
   function stationLines(link) {
-    /* Dernières nouvelles d'une station suivie (station qui aide), comme le choix 2 du menu 5.5. */
+    /* Dernières nouvelles d'une station suivie (station qui aide), comme le choix 2 du menu 6.5. */
     const lines = [], hb = link.last_hb || {}, st = link.last_st || {};
     if (hb.v) lines.push("Station : version " + hb.v + ", passerelle " + (hb.gateway || "?") + ", mode sûr : " + (hb.safe || "non"));
     const s = st.system || {};

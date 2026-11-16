@@ -66,7 +66,7 @@ def test_failed_assistant_changes_nothing_and_restores_the_running_station(tmp_p
 def test_hwtest_needs_a_configuration_and_frees_the_port_first(tmp_path):
     con, fake, out = console(tmp_path)
     con.hwtest()
-    assert fake.calls == [] and any("menu 3.1" in line for line in out)
+    assert fake.calls == [] and any("menu 2.1" in line for line in out)
     write_config(tmp_path)
     con, fake, out = console(tmp_path, answers=["2", "n"], running=True)
     con.hwtest()
@@ -89,7 +89,7 @@ def test_hwtest_offers_a_reception_only_run_and_can_be_cancelled(tmp_path):
 def test_qualif_menu_runs_trx_qualif_with_the_chosen_mode(tmp_path):
     con, fake, out = console(tmp_path)
     con.qualif()
-    assert fake.calls == [] and any("menu 3.1" in line for line in out)
+    assert fake.calls == [] and any("menu 2.1" in line for line in out)
     write_config(tmp_path)
     con, fake, out = console(tmp_path, answers=["1"], running=True)
     con.qualif()                                                       # cahier : ne touche pas au poste
@@ -138,7 +138,7 @@ def test_diagnostic_command_line_returns_an_exit_code(tmp_path, capsys):
 def test_pairing_menu_shows_what_the_android_app_needs_and_falls_back_to_admin_rights(tmp_path, monkeypatch):
     con, fake, out = console(tmp_path)
     con.pairing()
-    assert fake.calls == [] and any("menu 3.1" in line for line in out)
+    assert fake.calls == [] and any("menu 2.1" in line for line in out)
     write_config(tmp_path)
     con, fake, out = console(tmp_path)
     con.pairing()
@@ -170,8 +170,8 @@ def test_help_key_explains_a_menu_without_running_it(tmp_path):
     con.help_menu("19")                                                # ancien numéro : accepté
     assert "Menu 4.1 : Appairer un téléphone" in "\n".join(out)
     con, _, out = console(tmp_path)
-    con.help_menu("6")
-    assert out[-1].startswith("Menu 6 : Mises à jour.")
+    con.help_menu("7")
+    assert out[-1].startswith("Menu 7 : Mises à jour.")
     con, _, out = console(tmp_path)
     con.help_menu("99")
     assert "Pas de menu 99" in out[-1]
@@ -189,20 +189,20 @@ def test_every_menu_has_help_text_shipped_with_the_station(tmp_path):
 
 def test_loop_offers_h_and_returns_to_the_menu(tmp_path):
     write_config(tmp_path)
-    con, fake, out = console(tmp_path, answers=["h 3.1", "", "q"])
+    con, fake, out = console(tmp_path, answers=["h 2.1", "", "q"])
     assert con.loop() == 0
     text = "\n".join(out)
-    assert "h) Aide sur un menu" in text and "Menu 3.1 : Assistant de configuration" in text and fake.calls == []
+    assert "h) Aide sur un menu" in text and "Menu 2.1 : Assistant de configuration" in text and fake.calls == []
 
 
 def test_main_menu_shows_themes_then_a_theme_its_menus(tmp_path):
     write_config(tmp_path)
-    con, fake, out = console(tmp_path, answers=["1", "r", "6", "q"])
+    con, fake, out = console(tmp_path, answers=["1", "r", "7", "q"])
     assert con.loop() == 0
     text = "\n".join(out)
-    assert "  1) Station  (démarrer" in text and "  6) Mises à jour" in text and "  0) Langue / Language" in text
+    assert "  1) Station  (démarrer" in text and "  7) Mises à jour" in text and "  8) Expert et préférences" in text and "  0) Langue / Language" in text
     assert "--- 1) Station ---" in text and "  2) Arrêter la station" in text and "r) Retour au menu principal" in text
-    assert "--- 6) Mises à jour ---" in text and "  3) Installer une version depuis un fichier zip" in text
+    assert "--- 7) Mises à jour ---" in text and "  3) Installer une version depuis un fichier zip" in text
     assert fake.calls == [] or all("systemctl" in c[0] and "is-active" in c[0] for c in fake.calls)
 
 
@@ -211,11 +211,11 @@ def test_direct_number_and_old_number_run_the_same_menu(tmp_path, monkeypatch):
     write_config(tmp_path)
     ran = []
     monkeypatch.setattr(module.Console, "swr_report", lambda self: ran.append("swr"))
-    con, _, out = console(tmp_path, answers=["2.5", "", "21", "", "2", "5", "", "q"])
+    con, _, out = console(tmp_path, answers=["5.4", "", "21", "", "5", "4", "", "q"])
     assert con.loop() == 0
-    assert ran == ["swr", "swr", "swr"]                              # 2.5, ancien 21, puis thème 2 > 5
-    assert "Le menu 21 est maintenant le menu 2.5" in "\n".join(out)
-    con, _, out = console(tmp_path, answers=["7", "4.9", "q"])
+    assert ran == ["swr", "swr", "swr"]                              # 5.4, ancien 21, puis thème 5 > 4
+    assert "Le menu 21 est maintenant le menu 5.4" in "\n".join(out)
+    con, _, out = console(tmp_path, answers=["9", "4.9", "q"])
     assert con.loop() == 0 and "\n".join(out).count("Choix inconnu.") == 2
 
 
@@ -227,7 +227,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
     assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate", "sdr", "monitoring"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
-    assert module.menu_number("install_zip") == "6.3" and module.UPDATE_MENU == module.menu_number("update")
+    assert module.menu_number("install_zip") == "7.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
         assert callable(getattr(module.Console, name))
 
@@ -279,7 +279,7 @@ def test_diagnostic_shows_breizh_and_visitors_without_secrets(tmp_path, monkeypa
 
 
 def test_network_menu_reports_exports_and_clears(tmp_path):
-    """Menu 23 : synthèses, export anonyme sur le Bureau, « Tout effacer » (station arrêtée : find -delete par sudo)."""
+    """Menu 6.4 : synthèses, export anonyme sur le Bureau, « Tout effacer » (station arrêtée : find -delete par sudo)."""
     import zipfile
 
     from trxstation.netprobe.store import NetStore
@@ -433,3 +433,26 @@ def test_sdr_menu_rewrites_the_serial_of_the_only_rtl_sdr_key_and_follows_it(tmp
     con.ask = lambda _: next(script2, "")
     con.sdr()
     assert not any(c[0] == "rtl_eeprom" for c, _ in fake2.calls) and "UNE SEULE clé" in out[-3] + out[-2] + out[-1]
+
+
+def test_every_menu_number_quoted_to_the_operator_exists():
+    """Renumérotation de l'étape 219 : un texte montré à l'opérateur (console, mode d'emploi, guide, codes d'erreur,
+    page, notices) ne cite jamais un menu qui n'existe pas, ni un ancien numéro à un niveau (10 à 24)."""
+    import re
+    from pathlib import Path
+    import trxstation.console as module
+    root = Path(module.__file__).resolve().parents[1]
+    valid = {module.menu_number(m) for _, _, ms in module.MENU_THEMES for m in ms}
+    files = [*root.glob("trxstation/i18n/console.*.json"), *root.glob("docs/console/contenu*.toml"),
+             *root.glob("User-Guide/**/*.md"), root / "trxstation/errors/catalog.yaml", root / "README.md",
+             root / "README.fr.md", root / "debian/LISEZMOI.txt", root / "windows/notice-windows.html",
+             *root.glob("trxstation/gateway/api/static/*.js"), root / "trxstation/gateway/api/static/index.html"]
+    word = r"(?:[Mm]enus?|Menüs?|men[úu]s?)\s+\**"
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        for m in re.finditer(word + r"(\d+(?:\.\d+)?)(?![\d.])", text):
+            number = m.group(1)
+            if "." in number:
+                assert number in valid, f"{path.name} : menu {number} inexistant"
+            else:
+                assert not 10 <= int(number) <= 24, f"{path.name} : ancien numéro de menu {number}"

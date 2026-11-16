@@ -94,7 +94,7 @@ body:
     attributes:
       label: Registros
       description: |
-        Extractos útiles del registro (TRX Console, menú 1.4). El informe de diagnóstico (menú 2.3) es un zip sin contraseñas: arrástrelo al campo «Qué ocurre» de arriba. Aplicación Android: Réglages > «Signaler un problème» (la aplicación está en francés).
+        Extractos útiles del registro (TRX Console, menú 6.2). El informe de diagnóstico (menú 6.3) es un zip sin contraseñas: arrástrelo al campo «Qué ocurre» de arriba. Aplicación Android: Réglages > «Signaler un problème» (la aplicación está en francés).
       render: text
   - type: checkboxes
     id: confidentialite

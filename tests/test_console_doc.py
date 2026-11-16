@@ -23,7 +23,7 @@ def test_every_console_menu_is_explained_and_nothing_else():
     from trxstation.console import MENU_THEMES
     assert [m[0] for m in menus] == [f"{t}.{n}" for t, _, ms in MENU_THEMES for n in range(1, len(ms) + 1)]
     content["menus"].pop("temperature")
-    with pytest.raises(doc.DocError, match="menu 3.4"):
+    with pytest.raises(doc.DocError, match="menu 3.1"):
         doc.check(menus, content)
     content = doc.load_content()
     content["menus"]["fantome"] = {"role": "", "quand": "", "modifie": "", "admin": False}

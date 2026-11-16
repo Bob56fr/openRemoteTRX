@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Profils de poste (TRX Console, menu 18) : seules les sections du poste changent, format versionné avec conversions,
+"""Profils de poste (TRX Console, menu 2.3) : seules les sections du poste changent, format versionné avec conversions,
 profil trop ancien ou trop récent refusé avec la marche à suivre, jamais pendant une émission."""
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ def test_format_conversions(tmp_path, monkeypatch):
     cfg, _ = prof.apply(station, old)
     assert cfg.rig.max_power_w == 50
     monkeypatch.setattr(prof, "MIGRATIONS", {1: None})                                 # conversion déclarée impossible
-    with pytest.raises(prof.ProfileError, match=r"trop ancien.*menu 3.1.*menu 3.3"):
+    with pytest.raises(prof.ProfileError, match=r"trop ancien.*menu 2.1.*menu 2.3"):
         prof.apply(station, old)
     monkeypatch.setattr(prof, "MIGRATIONS", {})                                        # conversion oubliée : même refus
     with pytest.raises(prof.ProfileError, match="trop ancien"):
@@ -107,7 +107,7 @@ def test_damaged_or_foreign_files_are_reported(tmp_path):
             prof.read(tmp_path / name)
 
 
-# ------------------------------------------------------------------ menu 18
+# ------------------------------------------------------------------ menu 2.3
 
 def test_menu_saves_then_loads_another_rig(tmp_path):
     path = station_text(tmp_path, max_power_w=100)

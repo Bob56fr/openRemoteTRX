@@ -6,7 +6,7 @@ Le réseau local, c'est le Wi-Fi ou le câble de la maison : le téléphone et l
 
 Dans ta box, **réserve une adresse IP** au PC de la station (réservation DHCP). Le certificat créé par l'assistant
 porte l'adresse du PC : si elle change, le navigateur et l'application ne le reconnaîtront plus. Après un
-changement d'adresse, relance l'assistant (menu 3.1) pour refaire le certificat.
+changement d'adresse, relance l'assistant (menu 2.1) pour refaire le certificat.
 
 L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic.
 

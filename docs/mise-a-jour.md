@@ -61,11 +61,11 @@ allow_prerelease = false  # true : propose aussi les pré-versions
   2 minutes après le démarrage de la station puis toutes les 24 h. Résultat :
   `/var/lib/trx-remote/update/latest.json`. Hors ligne : la dernière version connue est gardée.
 - TRX Console : cadre « NOUVELLE VERSION X DISPONIBLE » en haut du menu (noir sur jaune dans un
-  terminal), menu 6.1 marqué « <== NOUVELLE VERSION X ». **Menu 6.1** : résumé, « Voir la nature des
+  terminal), menu 7.1 marqué « <== NOUVELLE VERSION X ». **Menu 7.1** : résumé, « Voir la nature des
   changements » (notes de chaque version publiée depuis celle installée, la plus récente d'abord, 12
   versions et 16 000 caractères au plus, par pages de 20 lignes ; une Release sans paquet signé compte
   aussi), puis confirmation en tapant le numéro de version ; à jour : nouvelle recherche immédiate
-  proposée. **Menu 6.2** : retour à la version précédente. Le diagnostic (menu 2.1)
+  proposée. **Menu 7.2** : retour à la version précédente. Le diagnostic (menu 6.1)
   a une section « Mise à jour ».
 - Installation (`python -m trxstation.update.apply ... install --version X`, en root par TRX Console) :
   1. refus si le poste émet ou si on ne peut pas prouver qu'il n'émet pas (fichier d'état de la
@@ -79,7 +79,7 @@ allow_prerelease = false  # true : propose aussi les pré-versions
   `venv -> current/venv`. Une seule version précédente est gardée.
 - Conservés : `/etc/trx-remote/station.toml`, `/etc/trx-remote/tls/`, l'état de la station. Avant chaque
   changement de version : copie `station.toml.avant-<version>` (mêmes droits).
-- Retour arrière (menu 6.2, ou `sudo bash /opt/trx-remote/previous/install.sh --reactiver`) : sans
+- Retour arrière (menu 7.2, ou `sudo bash /opt/trx-remote/previous/install.sh --reactiver`) : sans
   Internet. Si l'ancienne version refuse la configuration actuelle, la copie d'avant la mise à jour est
   remise et l'autre gardée dans `station.toml.version-<version>`.
 - Échec en cours d'installation : la version incomplète est retirée et la station repart sur la

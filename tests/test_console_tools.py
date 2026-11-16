@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console : installation d'un paquet déposé (menu 13) et modification de station.toml (menu 14)."""
+"""TRX Console : installation d'un paquet déposé (menu 7.3) et modification de station.toml (menu 8.1)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -66,7 +66,7 @@ def drop(tmp_path, version, place="Desktop", signed=False):
     return package
 
 
-# --------------------------------------------------------------------------- menu 13 : paquet déposé
+# --------------------------------------------------------------------------- menu 7.3 : paquet déposé
 
 def test_packages_are_found_on_the_desktop_downloads_and_home_newest_first(tmp_path):
     (tmp_path / "home").mkdir()
@@ -116,7 +116,7 @@ def test_older_package_is_flagged_and_cancel_changes_nothing(tmp_path):
     assert fake.calls == [] and "Annulé" in out[-1]
 
 
-# --------------------------------------------------------------------------- menu 14 : station.toml
+# --------------------------------------------------------------------------- menu 8.1 : station.toml
 
 def write_config(tmp_path):
     path = tmp_path / "etc" / "station.toml"
@@ -184,10 +184,10 @@ def test_refusing_to_save_or_a_concurrent_change_writes_nothing(tmp_path):
 def test_menu_lists_the_two_new_entries(tmp_path):
     con, _, _ = make(tmp_path)
     labels = {key: label for key, label, _ in con.items}
-    assert "zip" in labels["6.3"] and "station.toml" in labels["3.2"]
+    assert "zip" in labels["7.3"] and "station.toml" in labels["8.1"]
 
 
-# --------------------------------------------------------------------------- menu 15 : tests automatiques
+# --------------------------------------------------------------------------- menu 8.2 : tests automatiques
 
 class PytestRunner(Runner):
     def __init__(self, *, pytest_ok=True, installable=True, code=0, running=True):
@@ -262,7 +262,7 @@ def test_failures_point_to_the_saved_result_and_old_versions_say_so(tmp_path):
     assert "absents de la version installée" in out[-1]
 
 
-# --------------------------------------------------------------------------- menu 16 : seuils de température
+# --------------------------------------------------------------------------- menu 3.1 : seuils de température
 
 def test_temperature_thresholds_are_written_through_the_validated_path(tmp_path):
     path = write_config(tmp_path)
@@ -347,7 +347,7 @@ def test_test_output_is_shown_as_it_comes_with_a_reminder_when_quiet(tmp_path, c
     assert log.read_bytes().decode("utf-8").replace("\r\n", "\n") == "..é fin\n"
 
 
-# --------------------------------------------------------------------------- menu 20 : visiteurs
+# --------------------------------------------------------------------------- menu 4.2 : visiteurs
 
 def _with_operator(tmp_path):
     from trxstation.config import ClientAuth
@@ -364,16 +364,17 @@ def test_visitors_menu_creates_an_account_and_opens_listening_through_the_valida
     con, fake, out = make(tmp_path, answers=[
         "2", "club1", "phone", "Radio-club", "", "", "o",            # pseudo = identifiant d'un compte : redemandé
         "1", "5", "", "90", "", "3", "o",
-        "5", "1", "Kriss F4ABC", "o",
         ""])
     con.visitors()
+    text = "\n".join(out)
+    con, _, _ = make(tmp_path, answers=["4", "1", "Kriss F4ABC", "o", ""])   # pseudo d'un opérateur : menu 4.3
+    con.operators()
     cfg = cfgmod.load(path)
     club = next(c for c in cfg.clients if c.id == "club1")
     assert club.role == "listener" and club.pseudo == "Radio-club" and club.password_hash and not club.expires
     assert cfg.access.max_listeners == 5 and cfg.access.operator_grace_s == 90 and cfg.access.listeners_need_operator
     assert cfg.access.listener_spectrum_fps == 3
     assert next(c for c in cfg.clients if c.id == "phone").pseudo == "Kriss F4ABC"
-    text = "\n".join(out)
     assert "identifiant d'un compte" in text and "Mot de passe : " in text and "FERMÉE (0)" in text
     assert "sans redémarrer" in text and not any(c[:2] == ["systemctl", "restart"] for c in fake.admin_commands())
 
@@ -407,7 +408,7 @@ def test_visitors_menu_kick_writes_a_request_for_a_connected_listener_only(tmp_p
     write_status(state / "status.json", GatewayStatus(pid=1, seq=1, written_at=time.time(), ptt={"state": "RX"}, rig={},
                  presence={"connections": [{"id": "phone", "pseudo": "Opérateur", "role": "operator", "source": "a", "since_s": 5},
                                            {"id": "club1", "pseudo": "Radio-club", "role": "listener", "source": "b", "since_s": 125}]}))
-    con, fake, out = make(tmp_path, answers=["6", "1", "o", ""])
+    con, fake, out = make(tmp_path, answers=["5", "1", "o", ""])
     con.visitors()
     assert any("Radio-club (club1, b, 2 min)" in line for line in out)
     request = json.loads((state / KICK_REQUEST).read_text(encoding="utf-8"))
@@ -467,7 +468,7 @@ def test_operators_menu_is_in_the_access_theme():
     assert menu_number("operators") == "4.3"
 
 
-# --------------------------------------------------------------------------- menu 22 : Breizh Audio Box
+# --------------------------------------------------------------------------- menu 5.2 : Breizh Audio Box
 
 def test_breizh_menu_creates_the_key_shows_it_once_and_never_again(tmp_path):
     from trxstation.breizh.keyfile import read_key

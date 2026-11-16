@@ -61,14 +61,14 @@ navigateur ; sur GitHub, imprime cette page ou recopie la liste.
 - [ ] Alertes ntfy reçues (sujet long et secret), message « Station en service » vu
 - [ ] PC réglé pour se rallumer après une coupure de courant
 - [ ] Onduleur, parafoudre, ventilation du poste
-- [ ] Je sais lever le mode sûr (menu 1.5) après avoir trouvé la cause
+- [ ] Je sais lever le mode sûr (menu 1.4) après avoir trouvé la cause
 
 ## 7. Exploitation au quotidien
 
 - [ ] Je sais démarrer, arrêter et surveiller la station
 - [ ] Je sais mettre à jour et revenir à la version précédente
 - [ ] Configuration et certificat sauvegardés ailleurs
-- [ ] Profil du poste enregistré (menu 3.3)
+- [ ] Profil du poste enregistré (menu 2.3)
 
 ## Station en service
 

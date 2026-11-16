@@ -2,8 +2,9 @@
 # Copyright (C) 2026 RF-DIY.COM
 """TRX Console : point d'entrée unique de la station pour qui ne connaît pas Linux (commande `trx-console`).
 
-Menus sur deux niveaux, par thème (MENU_THEMES) : 1 Station, 2 Dépannage et essais, 3 Configuration, 4 Accès,
-5 Fonctions, 6 Mises à jour ; « 6.3 » tapé directement ouvre un sous-menu ; 0 = langue (fr, en, de, es : trxstation/
+Menus sur deux niveaux, par thème (MENU_THEMES, rangés par intention depuis la station 0.166.0) : 1 Station, 2 Poste
+et matériel, 3 Sécurité d'émission et alertes, 4 Accès et comptes, 5 Fonctions, 6 Dépannage et assistance, 7 Mises
+à jour, 8 Expert et préférences ; « 7.3 » tapé directement ouvre un sous-menu ; 0 = langue (fr, en, de, es : trxstation/
 i18n/, choix gardé par compte). Les anciens numéros 10 à 24 (un seul niveau, jusqu'à la station 0.125.0) restent
 acceptés quelque temps avec le nouveau numéro (OLD_NUMBERS). Les textes des menus et de l'aide « h » viennent des
 catalogues de langue ; les textes à l'intérieur des menus sont encore en français (lot L2).
@@ -56,18 +57,25 @@ GNOME_EXTENSION_UUID = "trx-distant@rf-diy.com"
 GNOME_EXTENSION_DIR = Path("/usr/share/gnome-shell/extensions") / GNOME_EXTENSION_UUID
 QUIET_AFTER_S = 60.0              # tests : rappel « toujours en cours » après une minute sans rien de nouveau
 NOTES_PAGE_LINES = 20             # notes de version : affichées par pages de 20 lignes
-UPDATE_MENU = "6.1"
 GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu 0 (terminal seulement)
 # Menus par thème : (numéro du thème, identifiant du titre, [méthodes de Console dans l'ordre des sous-menus]).
 # Libellés : « menu.<méthode> » et « theme.<id> » des catalogues trxstation/i18n/console.<langue>.json.
+# Arborescence par INTENTION de l'opérateur (station 0.166.0, étape 219 ; carte des réglages du 2026-11-16). Un
+# nouveau menu s'ajoute EN FIN de son thème : les numéros existants ne bougent plus.
 MENU_THEMES = (
-    ("1", "station", ("start", "stop", "monitor", "journal", "clear_safe_mode")),
-    ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
-    ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
+    ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
+    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr")),
+    ("3", "safety", ("temperature",)),
     ("4", "access", ("pairing", "visitors", "operators", "certificate")),
-    ("5", "features", ("cluster", "breizh", "friends", "sdr", "monitoring")),
-    ("6", "updates", ("update", "rollback", "install_zip")),
+    ("5", "features", ("cluster", "breizh", "friends", "swr_report")),
+    ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
+    ("7", "updates", ("update", "rollback", "install_zip")),
+    ("8", "expert", ("edit_config", "expert", "qualif", "indicator")),
 )
+# Numéros d'avant la station 0.166.0 (deux niveaux, 0.126.0 à 0.165.0) -> méthode : rappelés dans l'en-tête
+# jusqu'à RENUMBER_NOTICE_UNTIL, jamais acceptés à la saisie (« 6.3 » désigne désormais le rapport de dépannage).
+RENUMBERED_IN = "0.166.0"
+RENUMBER_NOTICE_UNTIL = (0, 172, 0)
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
 # avec un message ; 1 à 9 ouvrent désormais un thème.
 OLD_NUMBERS = {"1": "diagnostic", "2": "assistant", "3": "monitor", "4": "hwtest", "5": "start", "6": "stop",
@@ -79,12 +87,15 @@ OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
 
 
 def menu_number(method: str) -> str:
-    """Numéro « thème.sous-menu » d'une méthode de la console (ex. « install_zip » -> « 6.3 »)."""
+    """Numéro « thème.sous-menu » d'une méthode de la console (ex. « install_zip » -> « 7.3 »)."""
     for theme, _, methods in MENU_THEMES:
         if method in methods:
             return f"{theme}.{methods.index(method) + 1}"
     raise KeyError(method)
-STATUS_FRESH_S = 10               # fichier d'état de la passerelle plus vieux : passerelle arrêtée
+
+
+UPDATE_MENU = menu_number("update")
+STATUS_FRESH_S = 10              # fichier d'état de la passerelle plus vieux : passerelle arrêtée
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
 
@@ -693,7 +704,7 @@ class Console:
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
-    # ------------------------------------------------------------------ profils de poste (menu 3.3)
+    # ------------------------------------------------------------------ profils de poste (menu 2.3)
 
     def pairing(self) -> None:
         """Adresse, comptes et empreinte du certificat à vérifier dans l'application Android. Lecture seule ;
@@ -1149,7 +1160,7 @@ class Console:
 
     def visitors(self) -> None:
         """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : réglages [access], comptes
-        role = "listener", pseudos, connectés et déconnexion. station.toml passe par le chemin validé du menu 3.2
+        role = "listener", pseudos, connectés et déconnexion. station.toml passe par le chemin validé du menu 8.1
         (réécrit dans sa forme standard) ; la passerelle le relit sans redémarrer."""
         from . import config as cfgmod
         if not self.config.exists():
@@ -1167,11 +1178,11 @@ class Console:
             if not choice:
                 return
             actions = {"1": self._visitor_settings, "2": self._visitor_create, "3": self._visitor_edit,
-                       "4": self._visitor_delete, "5": self._operator_pseudo}
-            if choice == "6":
+                       "4": self._visitor_delete}            # pseudo d'un opérateur : menu 4.3 (comptes opérateurs)
+            if choice == "5":
                 self._visitor_kick(cfg)
                 continue
-            if choice == "7":
+            if choice == "6":
                 self._visitor_reopen(cfg)
                 continue
             action = actions.get(choice)
@@ -1522,7 +1533,7 @@ class Console:
             self.say(self.t("pairing.2", exc=exc))
 
     def _save_accounts(self, original: bytes, cfg, live: bool = True) -> bool:
-        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 3.2 ; `live` : relu sans redémarrer.
+        """station.toml réécrit depuis `cfg`, validé, puis chemin du menu 8.1 ; `live` : relu sans redémarrer.
         Vrai si enregistré."""
         from . import config as cfgmod
         edited = cfgmod.render_toml(cfg).encode("utf-8")
@@ -1776,7 +1787,7 @@ class Console:
         if self.yes(self.t("friends_leave.3"), False) and self._friends_do("leave", {"g": g}) is not None:
             self.say(self.t("friends_leave.4"))
 
-    # ------------------------------------------------------------------ monitoring inter-stations (menu 5.5)
+    # ------------------------------------------------------------------ monitoring inter-stations (menu 6.5)
 
     MON_ROLES = {"receiver": "monitoring.role.receiver", "emitter": "monitoring.role.emitter"}
     MON_STATES = {"confirm": "monitoring.state.confirm", "active": "monitoring.state.active",
@@ -2051,7 +2062,7 @@ class Console:
         if self._mon_do("end", {"peer": link["peer"], "purge": purge}) is not None:
             self.say(self.t("monitoring.end.done"))
 
-    # ------------------------------------------------------------------ qualité du réseau (menu 2.4)
+    # ------------------------------------------------------------------ qualité du réseau (menu 6.4)
 
     def network(self) -> None:
         """Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 12.3) : liaisons en ce moment (fichier d'état),
@@ -2143,7 +2154,7 @@ class Console:
     def breizh(self) -> None:
         """Breizh Audio Box (docs/breizh-cahier-des-charges.md) : clé d'appairage (breizh.key, à côté de station.toml,
         créée ici et montrée UNE fois), adresse et port de Breizh et activation ([breizh] de station.toml, chemin validé
-        du menu 3.2), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
+        du menu 8.1), essai de la liaison SANS son, état publié par la passerelle, journal. Rien ici ne touche au PTT."""
         from . import config as cfgmod
         if not self.config.exists():
             self.say(self.t("breizh.1"))
@@ -2306,7 +2317,7 @@ class Console:
 
     def temperature(self) -> None:
         """Seuils de température du poste ([safety] rig_temp_warn_c, rig_temp_cut_c), écrits dans station.toml par
-        le même chemin que le menu 3.2 : copie, validation, différences, confirmation, sauvegarde."""
+        le même chemin que le menu 8.1 : copie, validation, différences, confirmation, sauvegarde."""
         from . import config as cfgmod
         if not self.config.exists():
             self.say(self.t("temperature.1"))
@@ -2426,6 +2437,9 @@ class Console:
         if release is not None:
             line += self.banner([t("head.new_version", version=release.version, installed=self.installed),
                                  t("head.new_version_menu", menu=UPDATE_MENU)])
+        if (parse_version(self.installed) or (0,)) < RENUMBER_NOTICE_UNTIL:
+            line += "\n  " + self.paint(t("head.renumbered", version=RENUMBERED_IN, update=UPDATE_MENU,
+                                          zip=menu_number("install_zip"), diag=menu_number("diagnostic")), YELLOW)
         return line
 
     def station_lines(self) -> list[str]:
@@ -2454,7 +2468,7 @@ class Console:
 
     def resolve(self, choice: str, theme: str | None = None) -> tuple[str, object] | None:
         """Choix tapé -> ("theme", numéro), ("item", (numéro, libellé, méthode)), ("old", même chose) ou None.
-        Dans un thème, « 2 » vise son 2e sous-menu ; partout, « 6.3 » vise un sous-menu ; « 13 » (ancien numéro,
+        Dans un thème, « 2 » vise son 2e sous-menu ; partout, « 7.3 » vise un sous-menu ; « 13 » (ancien numéro,
         menu principal seulement) est accepté avec un message."""
         items = {key: (key, label, fn) for key, label, fn in self.items}
         if theme is not None and choice.isdigit() and f"{theme}.{choice}" in items:

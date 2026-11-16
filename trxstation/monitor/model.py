@@ -210,7 +210,7 @@ def monlink_row(monlink: dict | None) -> Row | None:
         return Row("Monitoring", f"problème : {monlink['problem']}", "warn")
     links = monlink.get("links") or []
     if not links:
-        return Row("Monitoring", "aucune liaison (TRX Console, menu 5.5)", "dim")
+        return Row("Monitoring", "aucune liaison (TRX Console, menu 6.5)", "dim")
     helping = sum(1 for l in links if l.get("role") == "receiver" and l.get("state") != "confirm")
     helped = sum(1 for l in links if l.get("role") == "emitter" and l.get("state") != "confirm")
     parts = [f"vous aidez {helping} station(s)"] if helping else []
@@ -223,7 +223,7 @@ def monlink_row(monlink: dict | None) -> Row | None:
     if silent:
         parts.append(f"{silent} SANS NOUVELLES")
     if any(l.get("request") for l in links):
-        return Row("Monitoring", ", ".join(parts + ["DEMANDE en attente (menu 5.5)"]), "warn")
+        return Row("Monitoring", ", ".join(parts + ["DEMANDE en attente (menu 6.5)"]), "warn")
     if silent:
         return Row("Monitoring", ", ".join(parts), "warn")
     if any(l.get("assist_left_s") for l in links):

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Monitoring inter-stations, lot R3b : TRX Console menu 5.5 et ligne « Monitoring » de trx-monitor.
+"""Monitoring inter-stations, lot R3b : TRX Console menu 6.5 et ligne « Monitoring » de trx-monitor.
 
 Deux stations complètes (console + module « monlink » + faux relais) : celle qui AIDE et celle qui est AIDÉE. La
 demande de la console va directement au module (le dépôt par fichier est le même que la présence, déjà essayé)."""
@@ -75,7 +75,7 @@ class Station:
             return {"id": "x", "ok": False, "error": exc.reason, "message": str(exc)}
 
     def menu(self, *answers: str) -> str:
-        """Ouvre le menu 5.5 avec ces réponses (puis Entrée = retour) ; renvoie ce qui a été affiché."""
+        """Ouvre le menu 6.5 avec ces réponses (puis Entrée = retour) ; renvoie ce qui a été affiché."""
         self.out.clear()
         self.answers = list(answers) + [""]
         self.con.monitoring()
@@ -86,7 +86,7 @@ class Station:
 
 
 def test_menu_number_and_full_assistance_through_both_consoles(tmp_path):
-    assert menu_number("monitoring") == "5.5"
+    assert menu_number("monitoring") == "6.5"
     clock = Clock()
     relay = FakeMonRelay(clock=clock)
     helper, aided = Station(tmp_path, "helper", relay, clock), Station(tmp_path, "aided", relay, clock)
@@ -94,7 +94,7 @@ def test_menu_number_and_full_assistance_through_both_consoles(tmp_path):
     text = helper.menu("1", "Dev 56", "3")
     assert "Pseudo enregistré : Dev 56" in text
     code = re.search(r"\b([0-9A-Z]{5}-[0-9A-Z]{5})\b", text).group(1)
-    assert "15 minutes" in text and "5.5" in text
+    assert "15 minutes" in text and "6.5" in text
 
     # La station aidée confirme LA PREMIÈRE (cas ordinaire au téléphone) : aucune erreur, rien ne part encore.
     text = aided.menu("1", "F4XYZ", "4", code.lower(), "oui", "2", "non")
@@ -149,7 +149,7 @@ def test_menu_when_disabled_explains_how_to_enable(tmp_path):
     out: list[str] = []
     Console(tmp_path / "station.toml", FakeRunner(), ask=lambda _: "", say=out.append, python="py").monitoring()
     text = "\n".join(out)
-    assert "[monitor_link]" in text and "monlink" in text and "3.2" in text
+    assert "[monitor_link]" in text and "monlink" in text and "8.1" in text
 
 
 def test_monitor_row():

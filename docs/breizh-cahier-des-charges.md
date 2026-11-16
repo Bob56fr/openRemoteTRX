@@ -259,7 +259,7 @@ refuse la liaison (journal « version de Breizh incompatible »).
   Sur l'écran principal : petit voyant « BZH » vert (`ready` / `active`), orange (`fallback`), gris (autre, ou « Direct » choisi) ; toucher =
   la rubrique. Égaliseur : bandeau « Traitement par Breizh Audio Box » quand ses effets sont coupés.
 - trx-monitor : ligne « Breizh » (état, route, rtt, late, lost) ; fichier d'état : champ `breizh`.
-- TRX Console : menu 22 « Breizh Audio Box » : créer / remplacer la clé (affichée une fois, à recopier dans Breizh),
+- TRX Console : menu 5.2 « Breizh Audio Box » : créer / remplacer la clé (affichée une fois, à recopier dans Breizh),
   adresse et port, essai de LIAISON (HELLO + 5 PING, sans aucun son), dernières lignes du journal. Aide `h 22`, mode
   d'emploi de la console.
 - Superviseur : rien (Breizh ne peut pas émettre ; la passerelle reste la seule à ouvrir la porte). Pas d'alerte ntfy
@@ -327,7 +327,7 @@ pas en Python échantillon par échantillon. À mesurer sur le Raspberry Pi 4 (`
 | 2 | `breizh/link.py` (session, PING, états, journal), route dans la chaîne d'émission (porte d'entrée, époque, blocs remplacés, repli, réactivation), limiteur final, volume retour, `state.breizh`, `breizh_set` / `breizh_reactivate` / `breizh_log`, `breizh_event`, `hello.features`, `docs/protocole.md`, exemples, commutateur « Direct », tests de panne 1-17, trx-monitor | station : utilisable avec le faux Breizh |
 | 3 | Page : rubrique Breizh, voyant BZH, « Direct », effets coupés, scrambler exclusif, journal (tests Node, `TextsTest` à relancer) | page |
 | 4 | Application : écran Breizh, voyant, « Direct », `VoiceHub` en bypass, scrambler exclusif, parité | application |
-| 5 | TRX Console menu 22 (clé, essai de liaison, journal), mode d'emploi, notice (son en clair, pare-feu du PC Breizh) | station |
+| 5 | TRX Console menu 5.2 (clé, essai de liaison, journal), mode d'emploi, notice (son en clair, pare-feu du PC Breizh) | station |
 
 Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coupé) peut commencer dès le lot 1 livré
 (vecteurs + `breizh_probe.py`).
@@ -357,8 +357,8 @@ Le lot V2 de Breizh (serveur du protocole, onglet « OpenRemoteTRX », CAT coup�
   « Direct », réactivation, journal, `VoiceDsp.external`, scrambler d'émission exclu, bip du repli pendant SON émission) ;
   textes `Breizhs.STATES` comparés à `BREIZH_STATES` de client.js.
 
-- Lot 5 FAIT (étape 124, station 0.102.0) : TRX Console menu 22 (clé d'appairage créée et montrée une fois, adresse /
-  port / activation par le chemin validé du menu 14, essai sans son par `breizh_probe --sans-son`, état et journal), mode
+- Lot 5 FAIT (étape 124, station 0.102.0) : TRX Console menu 5.2 (clé d'appairage créée et montrée une fois, adresse /
+  port / activation par le chemin validé du menu 8.1, essai sans son par `breizh_probe --sans-son`, état et journal), mode
   d'emploi (`[menus.breizh]`). Tous les lots du § 12 sont faits ; reste l'essai réel avec Breizh.
 
 ## 13. Décisions de l'utilisateur sur la v1 (2026-11-04 : les 8 points acceptés)

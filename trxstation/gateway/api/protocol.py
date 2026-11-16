@@ -103,7 +103,7 @@ FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cance
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
 SDR_ACTIONS = ("watch", "listen", "state", "set")
-# Mêmes actions que le menu 5.5 de TRX Console (monlink/service.py ACTIONS), plus le rapport reçu par morceaux.
+# Mêmes actions que le menu 6.5 de TRX Console (monlink/service.py ACTIONS), plus le rapport reçu par morceaux.
 MONITORING_ACTIONS = ("view", "pseudo", "invite", "join", "confirm", "profile", "pause", "end", "request_assist",
                       "request_report", "answer", "received", "send_report", "report_part")
 MAX_MONITORING_ARGS_BYTES = 1500

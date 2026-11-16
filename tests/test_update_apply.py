@@ -389,7 +389,7 @@ def test_main_exit_codes(world, tmp_path, capsys):
     assert _main(world, FakeSystem(), "install", "--version", V, tmp_path=tmp_path) == ap.EXIT_REFUSED
 
 
-# ------------------------------------------------------------------ paquet déposé sur la machine (menu 13)
+# ------------------------------------------------------------------ paquet déposé sur la machine (menu 7.3)
 
 def dropped(tmp_path, *, version=V, signed=None, data=None, name=None):
     """Paquet posé sur le « Bureau » ; `signed` : clé privée qui signe (None = pas de .sig)."""

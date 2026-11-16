@@ -94,7 +94,7 @@ body:
     attributes:
       label: Protokolle
       description: |
-        Nützliche Auszüge aus dem Protokoll (TRX Console, Menü 1.4). Der Fehlerbericht (Menü 2.3) ist ein Zip ohne Passwörter: Ziehen Sie ihn in das Feld „Was passiert“ oben. Android-App: Réglages > „Signaler un problème“ (die App ist auf Französisch).
+        Nützliche Auszüge aus dem Protokoll (TRX Console, Menü 6.2). Der Fehlerbericht (Menü 6.3) ist ein Zip ohne Passwörter: Ziehen Sie ihn in das Feld „Was passiert“ oben. Android-App: Réglages > „Signaler un problème“ (die App ist auf Französisch).
       render: text
   - type: checkboxes
     id: confidentialite

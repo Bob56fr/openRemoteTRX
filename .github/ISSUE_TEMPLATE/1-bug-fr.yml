@@ -94,7 +94,7 @@ body:
     attributes:
       label: Journaux
       description: |
-        Extraits utiles du journal (TRX Console, menu 1.4). Le rapport de dépannage (menu 2.3) est un zip sans mot de passe : glissez-le dans la zone « Ce qui se passe » ci-dessus. Application Android : Réglages > « Signaler un problème ».
+        Extraits utiles du journal (TRX Console, menu 6.2). Le rapport de dépannage (menu 6.3) est un zip sans mot de passe : glissez-le dans la zone « Ce qui se passe » ci-dessus. Application Android : Réglages > « Signaler un problème ».
       render: text
   - type: checkboxes
     id: confidentialite

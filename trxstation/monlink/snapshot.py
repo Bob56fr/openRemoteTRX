@@ -2,7 +2,7 @@
 # Copyright (C) 2026 RF-DIY.COM
 """Rapport de dépannage envoyé par le monitoring (cahier § 10 et § 17.6, lot R4).
 
-C'est le rapport du menu 2.3 (`trxstation/report.py`, déjà sans mot de passe), fabriqué par la station AIDÉE, puis
+C'est le rapport du menu 6.3 (`trxstation/report.py`, déjà sans mot de passe), fabriqué par la station AIDÉE, puis
 REPASSÉ ENTIÈREMENT dans le masquage de la liaison (`redact.Redactor` : nom de machine, comptes, adresses, numéros de
 série, URL) avant de partir : tout fichier du zip est du texte. S'il dépasse la taille permise, les plus gros fichiers
 ne gardent que leur fin (le plus récent d'un journal est à la fin), avec une ligne qui le dit.
@@ -16,7 +16,7 @@ from .envelope import SNAP_MAX
 from .redact import Redactor
 
 KEEP_TAIL = 200 * 1024                  # fin gardée d'un fichier trop gros (octets de texte)
-CUT_NOTE = "[… début coupé pour l'envoi par le monitoring : rapport complet sur la station (menu 2.3)]\n"
+CUT_NOTE = "[… début coupé pour l'envoi par le monitoring : rapport complet sur la station (menu 6.3)]\n"
 
 
 def redact_zip(data: bytes, redactor: Redactor, *, max_bytes: int = SNAP_MAX) -> bytes:

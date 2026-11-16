@@ -2,8 +2,8 @@
 
 ## 8.1 Le premier réflexe
 
-1. **Diagnostic** (menu 2.1) : il dit ce qui ne va pas et quoi faire.
-2. **Journal** (menu 1.4) : les messages commencent par un code « ORT-NNNN ».
+1. **Diagnostic** (menu 6.1) : il dit ce qui ne va pas et quoi faire.
+2. **Journal** (menu 6.2) : les messages commencent par un code « ORT-NNNN ».
 3. Chaque code a sa page d'explication (cause, que faire) : https://bob56fr.github.io/openRemoteTRX/erreurs/
    (champ de recherche : tape le code).
 
@@ -28,13 +28,13 @@
 
 ## 8.3 Demander de l'aide
 
-1. Menu **2.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe**. Sous Windows :
+1. Menu **6.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe**. Sous Windows :
    le dossier des journaux (raccourci 7) et le résultat du diagnostic. Les traces des outils arrêtés sur une erreur
    (code ORT-9312) sont dans le dossier `plantages` du dossier d'état de la station, et le rapport les joint.
 2. Depuis la page web : section « Signaler un problème » (texte relu avant l'envoi).
 3. Ouvre un ticket sur https://github.com/Bob56fr/openRemoteTRX/issues avec le formulaire **en français**
    (« Signaler un bug »), décris ce que tu faisais, ce que tu attendais, ce qui s'est passé, et joins le rapport.
-4. **Être aidé à distance** (monitoring entre stations, menu **5.5**, à activer d'abord : partie 9) : la personne qui
+4. **Être aidé à distance** (monitoring entre stations, menu **6.5**, à activer d'abord : partie 9) : la personne qui
    t'aide crée un code de 10 caractères et te le dicte ; tape-le au choix 4, puis comparez de vive voix les **6
    chiffres** affichés des deux côtés. Différents : réponds « non », la liaison est effacée. Choisis ensuite ce que tu
    envoies (« Diagnostic » conseillé ; fréquence et mode seulement si tu veux). Elle voit alors l'état de ta station

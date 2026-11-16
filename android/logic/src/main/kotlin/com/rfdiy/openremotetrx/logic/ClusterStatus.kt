@@ -71,7 +71,7 @@ object ClusterStatus {
         val stale = elapsed > STALE_S
         return ClusterView(
             health, TITLES.getValue(health), lines, stale,
-            if (stale) "Plus de nouvelles du module Cluster DX depuis ${shortAge(elapsed)} : arrêté ? (TRX Console, menu 2.1)" else "",
+            if (stale) "Plus de nouvelles du module Cluster DX depuis ${shortAge(elapsed)} : arrêté ? (TRX Console, menu 6.1)" else "",
         )
     }
 

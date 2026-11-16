@@ -85,7 +85,7 @@ pourra pas émettre en USB / LSB.
 
 À noter dans le rapport de la [partie 3](../03-integrer-et-essayer-le-trx.md) :
 
-1. Le diagnostic (menu 2.1) trouve le poste ; fréquence et mode suivent quand tu tournes le VFO.
+1. Le diagnostic (menu 6.1) trouve le poste ; fréquence et mode suivent quand tu tournes le VFO.
 2. Voyant **VFO A / VFO B** de la page quand tu appuies sur A/B du poste.
 3. Émission sur charge fictive : la page voit puissance, **ALC** et TOS ; le niveau ALC à pleine voix (le seuil
    d'alerte de l'ALC n'a pas encore été relevé sur un Yaesu).

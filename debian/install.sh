@@ -469,7 +469,7 @@ if [[ -f $SDR_SRC ]]; then
   if (( ${#SDR_DRIVERS_FOUND[@]} )); then
     if gcc -O2 "${SDR_FLAGS[@]}" -o "$REL_VENV/bin/sdr-core" "$SDR_SRC" -I/usr/local/include -L/usr/local/lib \
          -lliquid "${SDR_LIBS[@]}" -lm -lpthread -Wl,-rpath,/usr/local/lib >>"$LOG" 2>&1; then
-      ok "sdr-core compilé (pilotes : ${SDR_DRIVERS_FOUND[*]}) ; TRX Console menu 5.4 ou « trx-sdr --list » pour choisir le SDR"
+      ok "sdr-core compilé (pilotes : ${SDR_DRIVERS_FOUND[*]}) ; TRX Console menu 2.4 ou « trx-sdr --list » pour choisir le SDR"
     else
       warn "sdr-core non compilé (détails dans $LOG) : le module SDR restera indisponible."
     fi

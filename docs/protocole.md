@@ -389,7 +389,7 @@ que lire et DEMANDER. Annoncée dans `hello.features` (`monitoring`) seulement p
 
 - `{"cmd":"monitoring","id":N,"action":…,"args":{…}}` (args : objet de 1 500 octets au plus, vérifié par le module) ;
   réponse `{"type":"result","id":N,"ok":true,"action":…,"data":…}` ou refus du module (`reason` = son motif, `ort`).
-- Actions (les mêmes que le menu 5.5 de TRX Console) : `view` (vue : pseudo, identifiant, liaisons, voir
+- Actions (les mêmes que le menu 6.5 de TRX Console) : `view` (vue : pseudo, identifiant, liaisons, voir
   `monlink.engine.Engine.view`), `pseudo` {pseudo}, `invite` -> {code, expires}, `join` {code} -> {peer, pseudo,
   fingerprint}, `confirm` {peer, profile?} (profil obligatoire pour la station aidée : `"essentiel"`,
   `"diagnostic"` ou objet {system, rig, freq_mode, events_min, period_s}), `profile` {peer, profile}, `pause` {peer,

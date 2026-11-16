@@ -12,7 +12,7 @@ les heures (s'il n'arrive plus, la station ou sa connexion est en panne).
 2. Choisis un **nom de sujet long et impossible à deviner** (par exemple 20 lettres et chiffres au hasard) :
    sur le serveur public ntfy.sh, quiconque connaît le nom lit les messages.
 3. Abonne-toi à ce sujet dans l'application ntfy.
-4. Sur la station, menu **3.2**, section `[supervisor]` : `notify_url = "https://ntfy.sh/<ton-sujet>"`. Redémarre
+4. Sur la station, menu **8.1**, section `[supervisor]` : `notify_url = "https://ntfy.sh/<ton-sujet>"`. Redémarre
    la station (menu 1.1).
 5. Vérifie : le message « Station en service » arrive dans l'heure.
 
@@ -22,7 +22,7 @@ Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (pa
 
 Après des pannes répétées que les relances n'ont pas réglées, le superviseur met la station en **mode sûr** : poste
 en réception, accès coupé, alerte envoyée. Le mode sûr **survit aux redémarrages** : il faut trouver la cause
-(menus 2.1 et 1.4), puis le lever par le menu **1.5**.
+(menus 6.1 et 6.2), puis le lever par le menu **1.4**.
 
 ## 6.3 Après une coupure de courant
 

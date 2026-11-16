@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""QR code d'appairage (TRX Console menu 19, `trx-setup --empreinte`) : contenu partagé avec l'application
+"""QR code d'appairage (TRX Console menu 4.1, `trx-setup --empreinte`) : contenu partagé avec l'application
 (tests/protocol/pairing.json, lu aussi par android/protocol PairingTest), jamais de mot de passe."""
 from __future__ import annotations
 

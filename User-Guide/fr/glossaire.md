@@ -28,16 +28,16 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **rigctld** | le programme de Hamlib qui garde la liaison avec le poste ; il n'écoute que sur le PC lui-même, jamais sur le réseau |
 | **Passerelle** (`trx-gateway`) | le cœur de la station : sert la page web, vérifie les comptes, transporte le son et **décide de l'émission** |
 | **Superviseur** (`trx-supervisor`) | le gardien indépendant : surveille la passerelle, rigctld et le PC ; il peut **seulement couper** une émission, relancer un service ou mettre la station en mode sûr ; envoie les alertes |
-| **TRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 3.1 », « 2.2 »…) |
-| **Assistant de configuration** (`trx-setup`) | les questions qui créent la configuration (menu 3.1) ; il n'interroge le poste qu'en lecture |
+| **TRX Console** (`trx-console`) | le tableau de commande de la station dans un terminal : installer, configurer, démarrer, essayer, mettre à jour, dépanner (menus numérotés « 2.1 », « 2.2 »…) |
+| **Assistant de configuration** (`trx-setup`) | les questions qui créent la configuration (menu 2.1) ; il n'interroge le poste qu'en lecture |
 | **Tableau de bord** (`trx-monitor`) | l'état en direct dans un terminal (menu 1.3) ; une seule action : STOP TX |
 | **Indicateur** | le voyant de la station dans la barre du haut (Debian) ou près de l'horloge (Windows) ; lecture seule |
 | **Essai guidé** (`trx-hwtest`) | l'essai pas à pas du vrai poste (menu 2.2) |
-| **Qualification** (`trx-qualif`) | l'exploration complète de ce que Hamlib déclare pour un poste (menu 2.7), pour experts |
+| **Qualification** (`trx-qualif`) | l'exploration complète de ce que Hamlib déclare pour un poste (menu 8.3), pour experts |
 | **`station.toml`** | le fichier de configuration de la station : poste, ports, comptes, bandes autorisées, sécurités |
-| **Profil de poste** | une configuration de poste enregistrée sous un nom, pour changer de poste (menu 3.3) |
+| **Profil de poste** | une configuration de poste enregistrée sous un nom, pour changer de poste (menu 2.3) |
 | **Module** | une fonction facultative qui tourne à côté de la passerelle (Cluster DX, présence de groupe…) |
-| **Mise à jour signée** | les paquets Debian sont signés : la mise à jour par Internet (menu 6.1) refuse un paquet dont la signature ne correspond pas ; un zip non signé (menu 6.3) demande une confirmation |
+| **Mise à jour signée** | les paquets Debian sont signés : la mise à jour par Internet (menu 7.1) refuse un paquet dont la signature ne correspond pas ; un zip non signé (menu 7.3) demande une confirmation |
 
 ## Côté utilisateur
 
@@ -64,7 +64,7 @@ Les mots du guide, rangés par thème. Le schéma des briques est dans la
 | **Bandes autorisées** | les plages de fréquences où la station accepte d'émettre ; liste vide = réception seule |
 | **Opérateur sur place** | quelqu'un qui utilise le poste devant lui : l'émission à distance est bloquée pendant son émission puis 2 minutes |
 | **Porte audio d'émission** | le passage du son vers le poste, ouvert par la passerelle seulement pendant une émission autorisée |
-| **Mode sûr** | l'état où le superviseur met la station après des pannes répétées : réception, accès coupé ; se lève par le menu 1.5 |
+| **Mode sûr** | l'état où le superviseur met la station après des pannes répétées : réception, accès coupé ; se lève par le menu 1.4 |
 | **Minuterie du poste** (TX TIME OUT TIMER) | la coupure propre au FTDX10, indépendante de la station : la dernière barrière |
 
 ## Le réseau

@@ -23,7 +23,7 @@ Choisis le VPN si tu hésites : rien n'est exposé, et le son passe.
    toutes les 15 à 30 secondes.
 3. Si le VPN arrive **sur ton réseau local** (VPN de la box) : rien à changer à la station, utilise la même adresse
    qu'à la maison. Si le VPN donne au PC de la station **une adresse à part** (Tailscale, WireGuard sur le PC) :
-   relance l'assistant (menu 3.1, accès réseau) pour que le certificat couvre aussi cette adresse, puis refais
+   relance l'assistant (menu 2.1, accès réseau) pour que le certificat couvre aussi cette adresse, puis refais
    l'appairage de l'application (menu 4.1).
 4. Sur le téléphone, en 4G, VPN actif : ouvre la même page `https://<adresse-de-la-station>:8443`.
 
@@ -59,5 +59,5 @@ Téléphone **en 4G** (Wi-Fi coupé), charge fictive sur le poste :
 4. Émission sur charge fictive : PTT, puis **STOP** ; puis émission et passage en mode avion : retour en réception.
 5. Si la page s'ouvre mais que le son ne s'établit pas : c'est l'UDP qui ne passe pas (option B) : passe au VPN.
 
-En cas de coupures répétées, le menu 2.4 (qualité du réseau) dit quel tronçon lâche : téléphone, réseau mobile,
+En cas de coupures répétées, le menu 6.4 (qualité du réseau) dit quel tronçon lâche : téléphone, réseau mobile,
 tunnel, box ou station.

@@ -2,9 +2,9 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.165.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.166.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
-`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
+`station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
 **Débutant** : seuls les réglages courant vous concernent ; l'assistant les règle pour vous. Les réglages expert ont des valeurs par défaut sûres : n'y touchez qu'en connaissance de cause. Emplacement du fichier : `/etc/trx-remote/station.toml` (Debian, Raspberry Pi), `C:\ProgramData\trx-remote\station.toml` (Windows).
 
@@ -12,7 +12,7 @@ TRX distant version 0.165.0. Page du site : https://bob56fr.github.io/openRemote
 
 Le transceiver piloté par Hamlib : modèle, liaison CAT, commande du PTT, modes et puissance.
 
-Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -29,7 +29,7 @@ Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au
 
 Les deux sens audio entre la station et le poste (interface son type Digirig, SignaLink, ou carte USB du poste).
 
-Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -43,7 +43,7 @@ Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au
 
 Comment la page web et l'application joignent la station. Voir aussi le guide d'accès distant (VPN ou port exposé avec HTTPS).
 
-Se modifie : Assistant (menu 3.1), appairage d'un téléphone (menu 4.1), ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1), appairage d'un téléphone (menu 4.1), ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -62,7 +62,7 @@ Se modifie : Assistant (menu 3.1), appairage d'un téléphone (menu 4.1), ou men
 
 Les règles que la station applique à TOUTE émission demandée à distance, indépendamment de la page et de l'application.
 
-Se modifie : Menu 3.2 ; seuils de température : menu 3.4 ; rediffusion : assistant (menu 3.1). (au redémarrage).
+Se modifie : Menu 8.1 ; seuils de température : menu 3.1 ; rediffusion : assistant (menu 2.1). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -80,7 +80,7 @@ Se modifie : Menu 3.2 ; seuils de température : menu 3.4 ; rediffusion : assist
 
 Une entrée par bande où l'émission est permise. **Liste vide = réception seule.** Les bandes proposées par l'assistant (IARU Région 1) sont un point de départ : vérifiez-les pour votre licence et votre pays.
 
-Se modifie : Assistant (menu 3.1) ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1) ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -92,7 +92,7 @@ Se modifie : Assistant (menu 3.1) ou menu 3.2. (au redémarrage).
 
 Une entrée par compte qui peut se connecter : opérateurs (contrôle complet) et visiteurs (écoute seule).
 
-Se modifie : Assistant (menu 3.1), visiteurs (menu 4.2), commande `trx-setup --add-client`. (relu sans redémarrer).
+Se modifie : Assistant (menu 2.1), visiteurs (menu 4.2), commande `trx-setup --add-client`. (relu sans redémarrer).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -125,9 +125,9 @@ Se modifie : Menu 4.2. (relu sans redémarrer).
 
 ## Mesure de TOS [swr]
 
-La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 2.5.
+La courbe de TOS de l'antenne, lancée depuis la page ou l'application : une courte porteuse FM par point. Dernière mesure : menu 5.4.
 
-Se modifie : Menu 3.2. (au redémarrage).
+Se modifie : Menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -140,7 +140,7 @@ Se modifie : Menu 3.2. (au redémarrage).
 
 Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.
 
-Se modifie : Menu 3.2 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
+Se modifie : Menu 8.1 ; la clé d'appairage se crée avec TRX Console (fichier `breizh.key` à côté de station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -157,7 +157,7 @@ Se modifie : Menu 3.2 ; la clé d'appairage se crée avec TRX Console (fichier `
 
 La station mesure en continu la liaison avec chaque téléphone ou navigateur connecté (pertes, temps aller-retour, gigue, coupures) et dit après une coupure quel tronçon a probablement lâché. Un petit indicateur l'affiche ; les statistiques des 30 derniers jours, l'effacement et l'export sont dans la page et l'application. La sonde ne fait que mesurer : elle n'agit jamais sur l'émission.
 
-Se modifie : Menu 3.2. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici. (au redémarrage).
+Se modifie : Menu 8.1. Les seuils de l'indicateur choisis dans la page ou l'application (statistiques, rubrique « Seuils ») sont rangés à part et priment sur ceux d'ici. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -184,7 +184,7 @@ Se modifie : Menu 3.2. Les seuils de l'indicateur choisis dans la page ou l'appl
 
 Un groupe d'amis équipés d'openRemoteTRX voit qui est actif sur sa station et, si chacun le veut, sur quelle fréquence et dans quel mode. Un relais sur Internet transporte des états CHIFFRÉS qu'il ne peut pas lire. Le module « presence » n'a aucun droit sur le poste : il ne peut ni émettre ni changer de fréquence ; un QSY vers un ami se fait seulement par un appui de l'opérateur, en réception.
 
-Se modifie : Menu 3.2, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+Se modifie : Menu 8.1, et ajouter « presence » à `[modules] run`. Les groupes, le pseudo et ce qui est partagé se règlent dans la page, l'application ou TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -196,7 +196,7 @@ Se modifie : Menu 3.2, et ajouter « presence » à `[modules] run`. Les groupes
 
 Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni port ouvert : la station de l'opérateur aidé envoie, par le même relais que la présence et chiffré de bout en bout, ce que SON opérateur a accepté (battement, santé de la machine, état du poste sans fréquence ni mode par défaut, codes d'erreur), toujours masqué (mots de passe, adresses, numéros de série). La station qui aide ne peut que lire et DEMANDER : aucune commande vers la station aidée n'existe. Le module « monlink » n'a aucun droit sur le poste.
 
-Se modifie : Menu 3.2, et ajouter « monlink » à `[modules] run`. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
+Se modifie : Menu 8.1, et ajouter « monlink » à `[modules] run`. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -208,7 +208,7 @@ Se modifie : Menu 3.2, et ajouter « monlink » à `[modules] run`. Pseudo, invi
 
 La station décode elle-même la voix numérique FreeDV (RADE V1) avec deux programmes de l'équipe FreeDV, lancés seulement quand l'opérateur choisit le mode FreeDV dans la page : tous les connectés, visiteurs compris, entendent alors la voix décodée à la place du son du poste, avec la synchro, le SNR et les indicatifs reçus. Réception seulement : rien n'est émis, et le poste n'est pas touché.
 
-Se modifie : Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage. (au redémarrage).
+Se modifie : Menu 8.1 ; le mode FreeDV se choisit dans la page (rubrique « FreeDV »), il n'est pas gardé au redémarrage. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -221,12 +221,12 @@ Se modifie : Menu 3.2 ; le mode FreeDV se choisit dans la page (rubrique « Free
 
 Un récepteur SDR en parallèle du TRX, en réception seule : son waterfall s'affiche dans la page (rubrique « SDR »). Le SDR est désigné par son numéro de série. Il faut installer à la main l'API du fabricant AVANT la station, qui compile alors le programme sdr-core, et ajouter « sdr » à `[modules] run`.
 
-Se modifie : Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite depuis la page. (au redémarrage).
+Se modifie : Menu 8.1 ; le centre, le gain et la cadence se règlent ensuite depuis la page. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
 | `enabled` | courant | `false` | true : la rubrique « SDR » (waterfall d'un récepteur SDR en parallèle du TRX) est proposée aux opérateurs. Il faut aussi « sdr » dans `[modules] run` et le numéro de série du SDR dans `serial`. **Sécurité** : Réception seulement : le module SDR n'a aucun droit sur le poste ; « QSY du TRX » passe par la commande habituelle de fréquence, refusée pendant une émission. Une panne du SDR n'arrête jamais la station. La protection de l'entrée du SDR contre la puissance émise par le TRX (antenne séparée, séquenceur) est à la charge de l'opérateur. (depuis 0.140.0) |
-| `driver` | expert | `"sdrplay"` | Type de SDR. `sdrplay` : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. `rtlsdr` (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 5.4 de TRX Console avec le SDR. Valeurs : `sdrplay` ou `rtlsdr`. (depuis 0.140.0) |
+| `driver` | expert | `"sdrplay"` | Type de SDR. `sdrplay` : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. `rtlsdr` (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 2.4 de TRX Console avec le SDR. Valeurs : `sdrplay` ou `rtlsdr`. (depuis 0.140.0) |
 | `serial` | courant | `""` | Numéro de série du SDR de cette station. Le SDR est toujours désigné par ce numéro, jamais par son port USB : sur une machine qui a plusieurs SDR, chacun sert la bonne application. `trx-sdr --list` montre les SDR libres et ceux déjà pris par une autre application. Valeurs : Lettres et chiffres, 4 à 32 ; obligatoire quand `enabled = true`. Numéro absent au démarrage : le module attend (nouvel essai toutes les 30 s) et n'ouvre jamais un autre SDR. **Sécurité** : Ne jamais mettre le numéro d'un SDR utilisé par une autre application de la machine. Exemple : `1234567ABC` (depuis 0.140.0) |
 | `core_path` | expert | `""` | Programme sdr-core (cœur natif du module SDR). Vide : celui que l'installation a compilé (à côté de la station), sinon le PATH. Valeurs : Chemin d'un fichier, ou vide. (depuis 0.140.0) |
 | `sample_rate_hz` | courant | `2000000` | Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul. Valeurs : SDRplay : 2000000, 6000000 ou 8000000 ; clé RTL-SDR : 1024000, 2048000 ou 2400000 (Hz). Exemple : `2000000` (depuis 0.140.0) |
@@ -246,7 +246,7 @@ Se modifie : Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite dep
 
 Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.
 
-Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -262,7 +262,7 @@ Se modifie : Assistant (menu 3.1), profils de poste (menu 3.3), ou menu 3.2. (au
 
 Squelch numérique par appel de groupe : le son reçu reste coupé jusqu'à l'appel de votre code.
 
-Se modifie : Menu 3.2 ; le code et les options se règlent depuis la page ou l'application. (au redémarrage).
+Se modifie : Menu 8.1 ; le code et les options se règlent depuis la page ou l'application. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -281,7 +281,7 @@ Se modifie : Menu 3.2 ; le code et les options se règlent depuis la page ou l'a
 
 Les spots des clusters DX, du RBN et des cibistes, affichés sur le spectre et en liste.
 
-Se modifie : Menu 3.2 ; mots de passe des sources : fichier `secrets.toml` (jamais ici). (au redémarrage).
+Se modifie : Menu 8.1 ; mots de passe des sources : fichier `secrets.toml` (jamais ici). (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -301,7 +301,7 @@ Se modifie : Menu 3.2 ; mots de passe des sources : fichier `secrets.toml` (jama
 
 Une entrée par source de spots (cluster telnet, RBN, site web).
 
-Se modifie : Menu 3.2. (au redémarrage).
+Se modifie : Menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -319,7 +319,7 @@ Se modifie : Menu 3.2. (au redémarrage).
 
 La seconde couche de sécurité, indépendante de la passerelle : elle surveille l'émission, rigctld et la machine, coupe l'émission en cas de doute et relance ce qui ne répond plus.
 
-Se modifie : Menu 3.2. (au redémarrage).
+Se modifie : Menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -351,7 +351,7 @@ Se modifie : Menu 3.2. (au redémarrage).
 
 Programmes complémentaires lancés à côté de la station (Cluster DX…), reliés par un bus local.
 
-Se modifie : Menu 3.2. (au redémarrage).
+Se modifie : Menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -364,7 +364,7 @@ Se modifie : Menu 3.2. (au redémarrage).
 
 Recherche des nouvelles versions publiées (rien n'est installé sans votre accord).
 
-Se modifie : Menu 3.2 ; installation : menu 6.1. (au redémarrage).
+Se modifie : Menu 8.1 ; installation : menu 7.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
@@ -375,7 +375,7 @@ Se modifie : Menu 3.2 ; installation : menu 6.1. (au redémarrage).
 
 Où trouver Hamlib quand il n'est pas dans le chemin du système.
 
-Se modifie : Assistant (menu 3.1) ou menu 3.2. (au redémarrage).
+Se modifie : Assistant (menu 2.1) ou menu 8.1. (au redémarrage).
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|

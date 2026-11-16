@@ -459,7 +459,7 @@ de scrypt et la limite de débit par adresse IP du relais.
 | Système | charge, mémoire, disque, température (ce que donne déjà `hostinfo.py`) | 5 min |
 | Poste | liaison CAT, émission en cours oui/non, compteurs de refus et de coupures ; **fréquence et mode masqués par défaut**, à autoriser par liaison | 5 min |
 | Événements | codes ORT des `journal-*.jsonl` avec contexte, gravité ≥ avertissement par défaut | groupés toutes les 10 s |
-| Instantané | le **rapport de dépannage du menu 2.3**, masqué, envoyé par l'opérateur lui-même, ou sur demande du receveur **acceptée** par l'opérateur | à la demande, 2 Mo au plus |
+| Instantané | le **rapport de dépannage du menu 6.3**, masqué, envoyé par l'opérateur lui-même, ou sur demande du receveur **acceptée** par l'opérateur | à la demande, 2 Mo au plus |
 
 **Mode assistance** : demandé par le receveur, accepté par l'opérateur (durée 15 min à 24 h, 2 h par défaut, retour
 seul au profil précédent) : battement et état toutes les 30 s, événements ≥ information, journaux INFO toutes les
@@ -480,11 +480,11 @@ sqlite3 de la plateforme l'a, sinon recherche simple). Alertes ntfy du § 9 avec
 | --- | --- | --- |
 | R1 — calculs | `trxstation/monlink/` sans réseau : identité, code et invitation (scrypt), demande d'appairage, empreinte, clé de liaison, enveloppes, séquences et anti-rejeu, profils, `redact.py` avec corpus piégé ; `docs/protocole-monlink.md`, `tests/protocol/monlink_vectors.json` pour le relais ; codes ORT-70xx | M1 (fait) |
 | R2 — relais | dépôt privé `openRemoteTRX-relay` : routes `/v1/mon/*` (invitation, appairage, autorisation, dépôt, relève, accusé, révocation), quotas, tests sur les vecteurs, essai de bout en bout ; déploiement chez OVH | R1 |
-| R3 — module et console | module « monlink » (`[monitor_link]`, désactivé par défaut) : envoi battement, système, poste, événements ; relève, base, alertes ; TRX Console menu 5.5 « Monitoring » en 4 langues (identité, inviter, rejoindre, liaisons, profil, prévisualisation, pause, arrêt, purge) ; notice station.toml, aide `h` | R2 |
+| R3 — module et console | module « monlink » (`[monitor_link]`, désactivé par défaut) : envoi battement, système, poste, événements ; relève, base, alertes ; TRX Console menu 6.5 « Monitoring » en 4 langues (identité, inviter, rejoindre, liaisons, profil, prévisualisation, pause, arrêt, purge) ; notice station.toml, aide `h` | R2 |
 | R4 — assistance | instantané (rapport 2.3 masqué), mode assistance demandé / accepté / expiré, ligne « Monitoring » de trx-monitor, guide de l'opérateur (« Demander de l'aide ») | R3 |
 | R5 — consultation | page web en lecture seule (sources, chronologie, événements, instantanés), puis transports directs A / B (§ 4) pour le flux continu, si l'usage le demande | R4 |
 
-Décisions de l'utilisateur pour R5 (2026-11-17) : page web seulement (pas de liaison directe tant que les quotas du relais suffisent), TOUTES les actions du menu 5.5 dans la page (un opérateur loin de sa station n'a souvent que la page), courbes plus tard, application après la page. Fait à l'étape 216 (station 0.164.0).
+Décisions de l'utilisateur pour R5 (2026-11-17) : page web seulement (pas de liaison directe tant que les quotas du relais suffisent), TOUTES les actions du menu 6.5 dans la page (un opérateur loin de sa station n'a souvent que la page), courbes plus tard, application après la page. Fait à l'étape 216 (station 0.164.0).
 
 Acceptation de la V1 (R1 à R4) : une station Debian et une station Windows, derrière deux box (dont une en 4G),
 appairées par code ; panne provoquée chez l'émetteur (poste éteint, rigctld tué) vue chez le receveur avec son code

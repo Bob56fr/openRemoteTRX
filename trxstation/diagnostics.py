@@ -504,7 +504,7 @@ def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) ->
     age = sysm.now() - float(data.get("time") or 0)
     if age > 30:
         out.append(Check(s, "Module", WARN, f"état vieux de {age:.0f} s : module arrêté ou bloqué",
-                         "Journal (menu 1.4) ; le superviseur le relance s'il s'est arrêté"))
+                         "Journal (menu 6.2) ; le superviseur le relance s'il s'est arrêté"))
         return out
     for name, src in (data.get("sources") or {}).items():
         if not isinstance(src, dict):
@@ -577,7 +577,7 @@ def check_update(sysm: System, cfg: Config | None) -> list[Check]:
     out = [Check(s, "Version installée", INFO, __version__)]
     previous = sysm.previous_version()
     if previous:
-        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 6.2)"))
+        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 7.2)"))
     if not PUBLIC_KEYS:
         out.append(Check(s, "Clé de signature", WARN, "aucune clé connue : mise à jour automatique impossible",
                          "Installe une version publiée (sudo bash install.sh)"))
@@ -602,7 +602,7 @@ def check_update(sysm: System, cfg: Config | None) -> list[Check]:
                          "systemctl status trx-update-check.timer"))
     release = state.release
     if release is not None and (parse_version(release.version) or ()) > (parse_version(__version__) or ()):
-        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 6.1 de TRX Console"))
+        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 7.1 de TRX Console"))
     elif state.ok and not stale:
         out.append(Check(s, "Recherche de mise à jour", OK, f"à jour (vérifié il y a {age_h:.0f} h)"))
     return out

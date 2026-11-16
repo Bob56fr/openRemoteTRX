@@ -278,7 +278,7 @@
       return { dot: dot, text: String(s.name || "?").slice(0, 40) + " (" + (CLUSTER_TYPES[s.type] || "flux") + ") : " + parts.join(" · ") };
     });
     return { health: health, title: CLUSTER_TITLES[health], lines: lines, stale: elapsed > CLUSTER_STALE_S,
-             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 2.1)" : "" };
+             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 6.1)" : "" };
   }
 
   // Pastille des boutons de bande : nombre de spots actifs (« 20m » du cluster -> bouton « 20 ») ; couleur du gris au rouge.
@@ -1923,9 +1923,9 @@
     }
 
     async sendProblemReport(text) {
-      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 2.3). */
+      /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 6.3). */
       const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
-      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", "");
+      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 6.3).", "");
       else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }

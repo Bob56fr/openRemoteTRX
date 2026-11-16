@@ -7,7 +7,7 @@ Merci de votre intérêt ! Les échanges se font en **français, anglais, allema
 ## Signaler un problème ou proposer une idée
 
 - Ouvrez un ticket (*Issues > New issue*) avec le formulaire de votre langue : « Signaler un bug » ou « Proposer une amélioration ».
-- Un ticket est **public** : jamais de mot de passe, de clé, d'adresse IP publique ni de nom de domaine personnel. Le rapport de dépannage de TRX Console (menu 2.3) n'en contient pas.
+- Un ticket est **public** : jamais de mot de passe, de clé, d'adresse IP publique ni de nom de domaine personnel. Le rapport de dépannage de TRX Console (menu 6.3) n'en contient pas.
 - Les codes d'erreur `ORT-NNNN` sont expliqués sur la [page des codes d'erreur](https://bob56fr.github.io/openRemoteTRX/erreurs/).
 
 ## Proposer du code
@@ -36,7 +36,7 @@ Thank you for your interest! Discussions take place in **French, English, German
 ## Reporting a problem or suggesting an idea
 
 - Open an issue (*Issues > New issue*) with the form in your language: "Report a bug" or "Suggest an improvement".
-- Issues are **public**: never post passwords, keys, public IP addresses or personal domain names. The TRX Console troubleshooting report (menu 2.3) contains none of these.
+- Issues are **public**: never post passwords, keys, public IP addresses or personal domain names. The TRX Console troubleshooting report (menu 6.3) contains none of these.
 - `ORT-NNNN` error codes are explained on the [error codes page](https://bob56fr.github.io/openRemoteTRX/erreurs/).
 
 ## Contributing code

@@ -46,11 +46,11 @@ Le détail est dans `CLAUDE.md` (« Règles de sécurité d'émission ») et `do
 
 1. Récupérez le paquet `trx-remote-debian-X.Y.Z.zip` et décompressez-le.
 2. Dans le dossier : `sudo bash install.sh` (dépendances, compte de service, services systemd).
-3. Ouvrez **TRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 3.1) : poste, ports, cartes son, accès réseau, comptes.
+3. Ouvrez **TRX Console** (menu des applications ou `trx-console`) et lancez l'**assistant de configuration** (menu 2.1) : poste, ports, cartes son, accès réseau, comptes.
 4. Faites l'**essai guidé** (menu 2.2) sur charge fictive.
 5. Sur le téléphone, ouvrez `https://<adresse-de-la-station>:8443`.
 
-Les versions suivantes s'installent depuis TRX Console (menu 6.1 par Internet, menu 6.3 depuis un fichier zip).
+Les versions suivantes s'installent depuis TRX Console (menu 7.1 par Internet, menu 7.3 depuis un fichier zip).
 
 ### Windows
 
@@ -76,7 +76,7 @@ Vous restez responsable du respect de votre licence et de la réglementation de 
 
 ## Signaler un problème, contribuer
 
-- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis TRX Console, menu 2.3 (rapport de dépannage, sans mot de passe).
+- Depuis la page : section **« Signaler un problème »** (rapport relu avant envoi), puis TRX Console, menu 6.3 (rapport de dépannage, sans mot de passe).
 - Sur GitHub : onglet *Issues*, avec le formulaire de votre langue (français, anglais, allemand, espagnol).
 - Contribuer : voir [CONTRIBUTING.md](CONTRIBUTING.md).
 

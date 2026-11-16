@@ -70,7 +70,7 @@ class Engine:
         self.clock = clock
         self.monitor = monitor
         self.notifier = notifier                  # supervisor.notify.Notifier (ntfy de la station) ; None = journal seul
-        self.make_report = make_report            # () -> octets du zip du menu 2.3 ; None = pas de rapport
+        self.make_report = make_report            # () -> octets du zip du menu 6.3 ; None = pas de rapport
         self.started = clock()
         self.problem = ""
         self.journal = collect.JournalTail(self.state_dir, store.data.get("journal"))
@@ -325,7 +325,7 @@ class Engine:
         return {"requested": duration_s}
 
     async def request_report(self, peer: object) -> dict:
-        """Station qui AIDE : demande le rapport de dépannage (menu 2.3, masqué) ; l'opérateur aidé accepte ou refuse."""
+        """Station qui AIDE : demande le rapport de dépannage (menu 6.3, masqué) ; l'opérateur aidé accepte ou refuse."""
         link = self._link(peer, "receiver", active=True)
         await self._request(link, peer, {"snapshot": True})
         return {"requested": "snapshot"}
@@ -548,7 +548,7 @@ class Engine:
         emit_event(codes.ORT_7053, logger=log, station=_label(link, peer), taille_ko=len(data) // 1024)
 
     async def _send_report(self, peer: str, link: dict) -> None:
-        """Station AIDÉE : rapport du menu 2.3 fabriqué ici, entièrement masqué, envoyé en fragments."""
+        """Station AIDÉE : rapport du menu 6.3 fabriqué ici, entièrement masqué, envoyé en fragments."""
         link["report_due"] = False
         self.store.save()
         try:

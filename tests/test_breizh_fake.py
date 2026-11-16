@@ -140,7 +140,7 @@ def test_probe_ignores_packets_from_another_address():
 
 
 def test_probe_without_sound_for_the_console(capsys):
-    """TRX Console, menu 22 : liaison et PING seulement (aucun bloc de son envoyé)."""
+    """TRX Console, menu 5.2 : liaison et PING seulement (aucun bloc de son envoyé)."""
     import argparse
 
     async def go():

@@ -531,7 +531,7 @@ class RigSession(
             if (msg.ok) {
                 val name = (msg.raw["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 log("Rapport envoyé à la station" + (if (name.isNotEmpty()) " ($name)" else "") +
-                    " : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", LogLevel.INFO)
+                    " : il sera joint au rapport de dépannage (TRX Console, menu 6.3).", LogLevel.INFO)
             } else {
                 log("Rapport non envoyé : " + refusalOf(msg), LogLevel.WARN)
             }
@@ -748,7 +748,7 @@ class RigSession(
     fun problemReport(now: Long, description: String, device: String, screen: String): String =
         ProblemReport.format(ProblemReport.Input(now, description, hello, state, connected, device, screen, rttMs, log.toList()))
 
-    /** Envoi du texte RELU par l'utilisateur ; la station le range et le joint au rapport de dépannage (menu 2.3). */
+    /** Envoi du texte RELU par l'utilisateur ; la station le range et le joint au rapport de dépannage (menu 6.3). */
     fun sendProblemReport(now: Long, text: String) {
         if (!connected || hello?.offers("bug_report") != true) return
         send(now, Command.BugReport(text.take(ProblemReport.MAX_CHARS)))
@@ -1062,7 +1062,7 @@ class RigSession(
         publish(now)
     }
 
-    /** Action de l'opérateur (mêmes actions que le menu 5.5) ; vue relue après un succès. Jamais vers le poste. */
+    /** Action de l'opérateur (mêmes actions que le menu 6.5) ; vue relue après un succès. Jamais vers le poste. */
     fun monitoringAction(now: Long, action: String, args: JsonObject = JsonObject(emptyMap())) {
         if (!monitoringOffered || !connected) return
         monitoringNotice = ""

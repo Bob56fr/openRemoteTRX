@@ -46,11 +46,11 @@ Details in `CLAUDE.md` ("Règles de sécurité d'émission") and `docs/` (in Fre
 
 1. Get the `trx-remote-debian-X.Y.Z.zip` package and unzip it.
 2. In that folder: `sudo bash install.sh` (dependencies, service account, systemd services).
-3. Open **TRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 3.1): radio, ports, sound cards, network access, accounts.
+3. Open **TRX Console** (applications menu or `trx-console`) and run the **setup wizard** (menu 2.1): radio, ports, sound cards, network access, accounts.
 4. Run the **guided test** (menu 2.2) on a dummy load.
 5. On the phone, open `https://<station-address>:8443`.
 
-Later versions are installed from TRX Console (menu 6.1 over the Internet, menu 6.3 from a zip file).
+Later versions are installed from TRX Console (menu 7.1 over the Internet, menu 7.3 from a zip file).
 
 ### Windows
 
@@ -76,7 +76,7 @@ You remain responsible for complying with your licence and your country's regula
 
 ## Reporting problems, contributing
 
-- From the page: **"Signaler un problème"** section (the report is shown before sending), then TRX Console, menu 2.3 (troubleshooting report, no passwords).
+- From the page: **"Signaler un problème"** section (the report is shown before sending), then TRX Console, menu 6.3 (troubleshooting report, no passwords).
 - On GitHub: *Issues* tab, with the form in your language (English, French, German, Spanish).
 - Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md).
 

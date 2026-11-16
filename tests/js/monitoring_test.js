@@ -37,7 +37,7 @@ test("actions d'une liaison selon le rôle et l'état ; jamais de commande vers 
   for (const forbidden of ["ptt", "toggle", "set_frequency", "restart", "shell"]) assert.ok(!all.has(forbidden));
 });
 
-test("carte d'une liaison : textes du menu 5.5, couleur « à voir » si l'opérateur doit agir", () => {
+test("carte d'une liaison : textes du menu 6.5, couleur « à voir » si l'opérateur doit agir", () => {
   const v = mx.linkView({ peer: "a", pseudo: "F4XYZ", role: "receiver", state: "active", last_rx_age: 125, silent: true, reports: 1 });
   assert.equal(v.title, "F4XYZ : vous aidez cette station, active");
   assert.deepEqual(v.details, ["dernières nouvelles il y a 2 min", "SANS NOUVELLES (alerte envoyée)", "1 rapport(s) reçu(s)"]);
