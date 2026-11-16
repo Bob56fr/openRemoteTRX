@@ -18,7 +18,8 @@ from trxstation import config as cfgmod
 from trxstation.errors import codes
 from trxstation.modules.manifest import load_manifest
 from trxstation.sdr import devices, frames
-from trxstation.sdr.service import Settings, SdrService, SetRefused, clean_settings, core_args, line_message
+from trxstation.sdr.service import (Settings, SdrService, SetRefused, clean_settings, core_args, line_message,
+                                    zoom_window)
 
 ROOT = Path(__file__).resolve().parents[1]
 FAKE = [sys.executable, "-m", "trxstation.devtools.fake_sdr_core"]
@@ -108,6 +109,54 @@ def test_core_arguments_always_name_the_serial() -> None:
     args = core_args(sd, Settings(7_100_000, 2, 50, 8))
     assert args[args.index("--serial") + 1] == "170502E910" and args[args.index("--bw") + 1] == "8000"
     assert args[args.index("--dfreq") + 1] == "7100000" and args[args.index("--mode") + 1] == "USB"
+
+
+def test_zoom_window_stays_inside_the_sdr_width_and_follows_the_listened_frequency() -> None:
+    assert zoom_window(2_000_000, 1, 300_000) == 0                       # sans zoom : toute la largeur
+    assert zoom_window(2_000_000, 4, 900_000) == 750_000                 # bornée : fenêtre de 500 kHz dans 2 MHz
+    assert zoom_window(2_000_000, 4, -900_000) == -750_000
+    assert zoom_window(2_000_000, 4, 100_000, listen_off=200_000) == 100_000   # écoute dans la fenêtre : rien ne bouge
+    assert zoom_window(2_000_000, 4, 0, listen_off=400_000) == 400_000   # écoute sortie de la fenêtre : recentrée
+    base = Settings(7_100_000, 2, 50, 8)
+    assert clean_settings({"zoom": 8, "zoom_off": -50_000}, base).zoom == 8
+    for bad in ({"zoom": 3}, {"zoom": True}, {"zoom_off": 0.5}, {"zoom_off": 9_000_000}):
+        with pytest.raises(SetRefused):
+            clean_settings(bad, base)
+
+
+def test_zoom_reaches_the_core_only_when_used() -> None:
+    sd = cfgmod.Sdr(serial="170502E910", sample_rate_hz=2_000_000)
+    assert "--zoom" not in core_args(sd, Settings(7_100_000, 2, 50, 8))    # sdr-core ancien : jamais d'argument inconnu
+    args = core_args(sd, Settings(7_100_000, 2, 50, 8, zoom=4, zoom_off=2_000_000))
+    assert args[args.index("--zoom") + 1] == "4" and args[args.index("--zoom-off") + 1] == "750000"
+
+
+def test_zoomed_waterfall_centres_on_the_listened_frequency_and_follows_it(tmp_path: Path) -> None:
+    async def wait_line(bus, c, s):
+        for _ in range(100):
+            lines = [m for m in bus.sent if m["kind"] == "sdr_line"]
+            if lines and lines[-1]["c"] == c and lines[-1]["s"] == s:
+                return True
+            await asyncio.sleep(0.05)
+        return False
+
+    async def scenario():
+        svc, bus, _ = _service(tmp_path)
+        task = asyncio.ensure_future(svc.run())
+        ok = [await wait_line(bus, 7_100_000, 2_000_000)]
+        await svc.on_call({"action": "set", "args": {"dfreq_hz": 7_300_000}})
+        res = await svc.on_call({"action": "set", "args": {"zoom": 4}})        # zoom autour de l'écoute
+        ok.append(res["zoom"] == 4 and res["zoom_off"] == 200_000)
+        ok.append(await wait_line(bus, 7_300_000, 500_000))
+        res = await svc.on_call({"action": "set", "args": {"dfreq_hz": 6_900_000}})   # écoute hors fenêtre : elle suit
+        ok.append(res["zoom_off"] == -200_000)
+        ok.append(await wait_line(bus, 6_900_000, 500_000))
+        res = await svc.on_call({"action": "set", "args": {"zoom": 1}})
+        ok.append(res["zoom_off"] == 0 and await wait_line(bus, 7_100_000, 2_000_000))
+        svc.stop()
+        await asyncio.wait_for(task, 10)
+        return ok
+    assert asyncio.run(scenario()) == [True] * 6
 
 
 # ------------------------------------------------------------------ liste des SDR (lecture seule)

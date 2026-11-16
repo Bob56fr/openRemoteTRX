@@ -30,6 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--bw", type=int, default=1536)
     ap.add_argument("--fft", type=int, default=4096)
     ap.add_argument("--agc", type=int, default=1)
+    ap.add_argument("--zoom", type=int, default=1)
+    ap.add_argument("--zoom-off", type=float, default=0)
     ap.add_argument("--fail", choices=("absent", "service", "crash"), default=None)
     ap.add_argument("--crash-after", type=float, default=1.0)
     ap.add_argument("--list", action="store_true")
@@ -46,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
         out.write(encode_json({"t": "error", "code": "service", "detail": "service SDRplay injoignable"})); out.flush()
         return 4
     state = {"freq": a.freq, "lna": a.lna, "gr": a.gr, "rate": a.rate, "agc": a.agc, "stop": False, "audio": 0,
-             "demod": None}
+             "demod": None, "zoom": a.zoom, "zoom_off": a.zoom_off}
 
     def commands() -> None:
         for line in sys.stdin:
@@ -61,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
                 state["demod"] = (int(float(parts[1])), parts[2], int(parts[3]))
             elif parts[:1] == ["agc"] and len(parts) == 2:
                 state["agc"] = int(parts[1])
+            elif parts[:1] == ["zoom"] and len(parts) == 3:
+                state["zoom"], state["zoom_off"] = int(parts[1]), float(parts[2])
             elif parts[:1] == ["rate"] and len(parts) == 2:
                 state["rate"] = float(parts[1])
             elif parts[:1] == ["quit"]:
@@ -84,7 +88,8 @@ def main(argv: list[str] | None = None) -> int:
             values = bytes(min(255, max(0, noise + rng.randint(-6, 6))) for _ in range(a.bins))
             if 0 <= carrier < a.bins:
                 values = values[:carrier] + bytes([int((-40 - DB_MIN) / DB_STEP)]) + values[carrier + 1:]
-            out.write(encode_line(state["freq"], a.fs, values))
+            zoom = max(1, state["zoom"])               # zoom : même ligne, centre et largeur de la fenêtre
+            out.write(encode_line(state["freq"] + (state["zoom_off"] if zoom > 1 else 0), a.fs / zoom, values))
             if state["audio"]:                              # son : 1 kHz à -20 dBFS, 20 ms par trame
                 import math
                 import struct
@@ -99,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
                                        "audio": state["audio"], "sql_open": 1, "chan_db": -60.0 if state["audio"] else -200,
                                        "noise_db": -95.0 if state["audio"] else -200,
                                        "gain_db": 61.5,
-                                       "overload": 0, "samples": 0, "drops": 0, "gaps": 0}))
+                                       "overload": 0, "samples": 0, "drops": 0, "gaps": 0,
+                                       "zoom": state["zoom"]}))
             out.flush()
             time.sleep(1.0 / max(1.0, state["rate"]))
         out.write(encode_json({"t": "stopped"})); out.flush()

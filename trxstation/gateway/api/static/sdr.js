@@ -12,6 +12,9 @@
   // Écoute (station 0.142.0+) : fréquence écoutée, largeur du filtre, squelch (dB au-dessus du bruit, 0 = ouvert)
   Object.assign(LIMITS, { dfreq_hz: [1000, 2000000000], dbw: [100, 15000], sql: [0, 40] });
   const MODES = ["USB", "LSB", "AM", "NFM", "CW"];
+  // Zoom du waterfall (station 0.154.0+, étape 203) : la ligne couvre fs / zoom autour de centre + zoom_off (Hz) ;
+  // la station garde la fenêtre dans la largeur du SDR et la recentre sur l'écoute quand celle-ci en sort.
+  const ZOOMS = [1, 2, 4, 8, 16], ZOOM_OFF_MAX = 5000000;
   const WIDTHS = { AM: [6000, 8000, 10000], NFM: [8000, 12500], USB: [1800, 2400, 2700, 3000], LSB: [1800, 2400, 2700, 3000],
                    CW: [250, 500, 1000] };
   const LNA_MAX = 8, GR_MAX = 59, GR_MIN = 20;
@@ -102,6 +105,12 @@
     for (const name of names) {
       if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return name + " : vrai ou faux"; continue; }
       if (name === "mode") { if (!MODES.includes(args[name])) return "mode : " + MODES.join(", "); continue; }
+      if (name === "zoom") { if (!ZOOMS.includes(args[name])) return "zoom : " + ZOOMS.join(", "); continue; }
+      if (name === "zoom_off") {
+        const v = args[name];
+        if (typeof v !== "number" || !Number.isInteger(v) || Math.abs(v) > ZOOM_OFF_MAX) return "zoom_off : entier de -" + ZOOM_OFF_MAX + " à " + ZOOM_OFF_MAX;
+        continue;
+      }
       const lim = LIMITS[name], v = args[name];
       if (!lim) return "réglage inconnu : " + name;
       if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return name + " : entier de " + lim[0] + " à " + lim[1];
@@ -208,6 +217,26 @@
     return null;
   }
 
+  function zoomStep(current, dir) {
+    /* Zoom voisin (dir +1 = plus serré, -1 = plus large), ou null au bout de l'échelle. */
+    const i = ZOOMS.indexOf(current > 0 ? current : 1), j = (i < 0 ? 0 : i) + (dir > 0 ? 1 : -1);
+    return j < 0 || j >= ZOOMS.length ? null : ZOOMS[j];
+  }
+
+  function panArgs(st, dir) {
+    /* Déplacer la fenêtre zoomée d'une demi-largeur (dir -1 vers le bas, +1 vers le haut) ; null sans zoom. La
+       station borne le décalage à la largeur du SDR. */
+    if (!st || !(st.zoom > 1) || !(st.fs > 0)) return null;
+    const off = Math.round((Number(st.zoom_off) || 0) + dir * st.fs / st.zoom / 2);
+    return { zoom_off: Math.max(-ZOOM_OFF_MAX, Math.min(ZOOM_OFF_MAX, off)) };
+  }
+
+  function zoomLabel(st) {
+    /* Libellé du zoom : « ×4 · 500 kHz » (largeur montrée). */
+    const z = st && st.zoom > 0 ? st.zoom : 1;
+    return "×" + z + (st && st.fs > 0 ? " · " + widthLabel(Math.round(st.fs / z)) : "");
+  }
+
   function nextRange(current) {
     const i = RANGES.indexOf(current);
     return RANGES[(i + 1) % RANGES.length];
@@ -215,6 +244,6 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

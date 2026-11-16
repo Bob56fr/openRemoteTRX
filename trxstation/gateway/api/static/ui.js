@@ -2878,6 +2878,14 @@
         sdrSliderLabels();
       }
       $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
+      const zoomOk = !!(state && Number.isFinite(state.zoom));                       // station 0.154.0+ : zoom du waterfall
+      $("sdr-zoom-box").hidden = !zoomOk;
+      if (zoomOk) {
+        $("sdr-zoom").textContent = sdrx.zoomLabel(state);
+        $("sdr-zoom-in").disabled = sdrx.zoomStep(state.zoom, 1) === null;
+        $("sdr-zoom-out").disabled = sdrx.zoomStep(state.zoom, -1) === null;
+        $("sdr-pan-down").disabled = $("sdr-pan-up").disabled = !(state.zoom > 1);
+      }
       $("sdr-gain").textContent = sdrx.gainText(state);
       sdrListenRender(state);
     }
@@ -3006,6 +3014,13 @@
       sdrAxis(data.c, data.s);
       sdrLast = { c: data.c, s: data.s };
     }
+    function sdrTune(hz) {
+      /* Réglages pour écouter hz : le centre ne bouge que si hz sort de la largeur ENTIÈRE du SDR (avec le zoom, la
+         fenêtre montrée est plus étroite et la station la fait suivre l'écoute). */
+      const st = client.sdrState || {};
+      if (Number.isFinite(st.center) && st.fs > 0) return sdrx.tuneArgs(hz, st.center, st.fs);
+      return sdrx.tuneArgs(hz, sdrLast ? sdrLast.c : st.center, sdrLast ? sdrLast.s : 0);
+    }
     async function sdrSend(args) {
       try {
         const res = await client.sdrSet(args);
@@ -3025,8 +3040,7 @@
       const sdrDfreqSet = () => {                  // fréquence à écouter ; le centre suit si elle sort de la fenêtre
         const hz = sdrx.parseMHz($("sdr-dfreq").value);
         if (hz === null) { ui.log("SDR : fréquence écoutée illisible (ex. 7.093 en MHz).", "warn"); return; }
-        const st = client.sdrState || {};
-        sdrSend(sdrx.tuneArgs(hz, sdrLast ? sdrLast.c : st.center, sdrLast ? sdrLast.s : 0));
+        sdrSend(sdrTune(hz));
       };
       $("sdr-center-set").addEventListener("click", sdrCenterSet);
       $("sdr-dfreq-set").addEventListener("click", sdrDfreqSet);
@@ -3046,6 +3060,15 @@
       });
       $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));
       $("sdr-range").addEventListener("click", () => { sdrView.range = sdrx.nextRange(sdrView.range); sdrRender(null); });
+      for (const [id, dir] of [["sdr-zoom-in", 1], ["sdr-zoom-out", -1]]) {
+        $(id).addEventListener("click", () => {
+          const z = sdrx.zoomStep((client.sdrState || {}).zoom, dir);
+          if (z !== null) { sdrView.floor = null; sdrSend({ zoom: z }); }          // plancher réestimé : les cases changent
+        });
+      }
+      for (const [id, dir] of [["sdr-pan-down", -1], ["sdr-pan-up", 1]]) {
+        $(id).addEventListener("click", () => { const a = sdrx.panArgs(client.sdrState, dir); if (a) sdrSend(a); });
+      }
       $("sdr-wf").addEventListener("click", (ev) => {
         if (!sdrLast) return;
         const cv = $("sdr-wf"), width = cv.clientWidth || cv.width;
@@ -3101,10 +3124,10 @@
         }).catch(() => {});
       });
       $("sdr-qsy-rev").addEventListener("click", () => {                 // QSY TRX -> SDR : le SDR écoute la fréquence du TRX
-        const rig = (client.state && client.state.rig) || {}, st = client.sdrState || {};
+        const rig = (client.state && client.state.rig) || {};
         const hz = rig.frequency_hz;
         if (!Number.isFinite(hz)) { ui.log("QSY TRX → SDR : fréquence du TRX inconnue.", "warn"); return; }
-        sdrSend(sdrx.tuneArgs(hz, sdrLast ? sdrLast.c : st.center, sdrLast ? sdrLast.s : 0));
+        sdrSend(sdrTune(hz));
         ui.log("QSY TRX → SDR : SDR sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
       });
     }

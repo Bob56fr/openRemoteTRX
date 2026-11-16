@@ -116,6 +116,22 @@ test("grand écran : pas de 50 kHz sur 1,5 MHz", () => {
   assert.ok(marks.length >= 25);
 });
 
+test("zoom du waterfall : échelle, déplacement, libellé, limites (étape 203)", () => {
+  assert.equal(sdr.zoomStep(1, 1), 2); assert.equal(sdr.zoomStep(16, 1), null);
+  assert.equal(sdr.zoomStep(1, -1), null); assert.equal(sdr.zoomStep(8, -1), 4);
+  assert.equal(sdr.zoomStep(undefined, 1), 2);                             // station sans zoom annoncé : départ à ×1
+  assert.deepEqual(sdr.panArgs({ zoom: 4, zoom_off: 100000, fs: 2000000 }, 1), { zoom_off: 350000 });
+  assert.deepEqual(sdr.panArgs({ zoom: 4, zoom_off: 0, fs: 2000000 }, -1), { zoom_off: -250000 });
+  assert.equal(sdr.panArgs({ zoom: 1, zoom_off: 0, fs: 2000000 }, 1), null);
+  assert.equal(sdr.zoomLabel({ zoom: 4, fs: 2000000 }), "×4 · 500 kHz");
+  assert.equal(sdr.checkSettings({ zoom: 8 }), "");
+  assert.equal(sdr.checkSettings({ zoom_off: -250000 }), "");
+  assert.notEqual(sdr.checkSettings({ zoom: 3 }), "");
+  assert.notEqual(sdr.checkSettings({ zoom_off: 0.5 }), "");
+  // le centre ne bouge que hors de la largeur ENTIÈRE du SDR (ui.js passe st.center et st.fs, pas la fenêtre zoomée)
+  assert.deepEqual(sdr.tuneArgs(7400000, 7100000, 2000000), { dfreq_hz: 7400000 });
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

@@ -318,6 +318,13 @@
           <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
           <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
         </div>
+        <div id="sdr-zoom-box" class="row" hidden>
+          <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur">Zoom −</button>
+          <span id="sdr-zoom" class="note"></span>
+          <button id="sdr-zoom-in" class="chip" title="Zoom avant autour de la fréquence écoutée">Zoom +</button>
+          <button id="sdr-pan-down" class="chip" title="Fenêtre zoomée vers le bas (demi-largeur)">◄</button>
+          <button id="sdr-pan-up" class="chip" title="Fenêtre zoomée vers le haut (demi-largeur)">►</button>
+        </div>
         <div class="row">
           <label class="grow" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser.">Gain RF
             <input id="sdr-rf" type="range" min="0" max="8" step="1"> <span id="sdr-rf-val" class="sdr-val"></span></label>
