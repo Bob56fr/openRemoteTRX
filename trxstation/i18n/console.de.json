@@ -40,7 +40,7 @@
   "menu.edit_config": "Konfiguration bearbeiten (station.toml)",
   "menu.profiles": "Transceiver-Profile (mehrere TRX: speichern, laden, löschen)",
   "menu.temperature": "Temperaturschwellen des Transceivers (Warnung, Abschaltung)",
-  "menu.indicator": "Anzeige in der oberen Leiste (GNOME: Zustand der Station immer sichtbar)",
+  "menu.indicator": "Stationsanzeige (obere Leiste unter Debian, neben der Uhr unter Windows)",
   "menu.pairing": "Telefon koppeln (Android-App: Adresse, Fingerabdruck, QR-Code)",
   "menu.visitors": "Besucher (nur Empfang: Konten, Höchstzahl, Verbundene)",
   "menu.cluster": "DX-Cluster (verfolgte Spots, Quellen, Test)",
@@ -643,5 +643,13 @@
   "features.sdr": "SDR-Empfänger",
   "features.breizh": "Breizh Audio Box",
   "features.netprobe": "Netzqualitätssonde",
-  "features.swr": "SWR-Messung"
+  "features.swr": "SWR-Messung",
+  "indicator.win.state": "\nAnzeige neben der Uhr (nur lesend). Bei jeder Anmeldung gestartet: {v}.",
+  "indicator.win.menu": "  1) Anzeige jetzt starten\n  2) Bei jeder Anmeldung starten oder nicht (umschalten)\nAuswahl (Eingabetaste = zurück): ",
+  "indicator.win.started": "Anzeige gestartet: wenn sie unter „^“ versteckt ist, zieh sie neben die Uhr.",
+  "indicator.win.failed": "Start unmöglich (pythonw.exe fehlt?): Station neu installieren.",
+  "indicator.win.on": "Die Anzeige startet bei jeder Anmeldung.",
+  "indicator.win.off": "Die Anzeige startet nicht mehr bei der Anmeldung.",
+  "indicator.win.failed_link": "Autostart-Verknüpfung kann nicht geändert werden ({exc}).",
+  "updates.windows": "Unter Windows wird eine neue Version installiert, indem man installer.cmd aus dem neuen Zip startet (Versionsseite des Projekts): die Konfiguration bleibt erhalten. Zurück: installer.cmd der älteren Version erneut starten."
 }

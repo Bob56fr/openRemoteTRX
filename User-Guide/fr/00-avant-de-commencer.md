@@ -43,7 +43,7 @@ Le Raspberry Pi 4 est prévu mais n'a **jamais été essayé** : ne le choisis p
 |---|---|---|
 | Démarrage | au démarrage du PC, sans ouvrir de session | à l'**ouverture de ta session** (le PC doit rester avec ta session ouverte, verrouillée si tu veux) |
 | Mises à jour | par Internet depuis TRX Console, signature vérifiée | à la main, en relançant l'installateur d'une nouvelle version |
-| Outils | TRX Console complète (menus 1 à 6) | raccourcis du menu Démarrer > TRX distant, et les mêmes commandes dans un terminal |
+| Outils | TRX Console (menus 1 à 8) | TRX Console aussi, par l'unique raccourci menu Démarrer > TRX distant (sauf les mises à jour, menus 7.x) |
 
 ## Réglementation
 

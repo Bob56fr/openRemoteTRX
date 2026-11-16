@@ -30,8 +30,8 @@ organisé ».
 
 ## Comment lire ce guide
 
-- Les **menus de TRX Console** sont notés par leur numéro : « menu 2.1 » = thème 2 (Poste et matériel), menu 1. Sous Windows, les mêmes
-  actions sont dans le menu Démarrer > **TRX distant** (la partie 2 donne la correspondance).
+- Les **menus de TRX Console** sont notés par leur numéro : « menu 2.1 » = thème 2 (Poste et matériel), menu 1. Sous Windows, le
+  raccourci menu Démarrer > **TRX distant** ouvre la même console (partie 2).
 - Une case **« Sécurité »** signale un point qui touche à l'émission : ne la saute pas.
 - Ce guide existe aussi en page web, avec un récapitulatif que l'on coche en ligne, et en **PDF** à imprimer
   (lien « Télécharger en PDF » en haut de la page) : https://bob56fr.github.io/openRemoteTRX/guide/

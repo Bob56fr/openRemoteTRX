@@ -40,7 +40,7 @@
   "menu.edit_config": "Modifier la configuration (station.toml)",
   "menu.profiles": "Profils de poste (plusieurs TRX : enregistrer, charger, supprimer)",
   "menu.temperature": "Seuils de température du poste (avertissement, coupure)",
-  "menu.indicator": "Indicateur dans la barre du haut (GNOME : état de la station en permanence)",
+  "menu.indicator": "Indicateur de la station (barre du haut sous Debian, près de l'horloge sous Windows)",
   "menu.pairing": "Appairer un téléphone (application Android : adresse, empreinte, QR code)",
   "menu.visitors": "Visiteurs en réception seule (comptes, nombre maximal, connectés)",
   "menu.cluster": "Cluster DX (spots suivis, sources, test)",
@@ -643,5 +643,13 @@
   "features.sdr": "Récepteur SDR",
   "features.breizh": "Breizh Audio Box",
   "features.netprobe": "Sonde de qualité du réseau",
-  "features.swr": "Mesure de TOS"
+  "features.swr": "Mesure de TOS",
+  "indicator.win.state": "\nIndicateur près de l'horloge (lecture seule). Lancé à chaque ouverture de session : {v}.",
+  "indicator.win.menu": "  1) Lancer l'indicateur maintenant\n  2) Lancer ou non à chaque ouverture de session (bascule)\nChoix (Entrée = retour) : ",
+  "indicator.win.started": "Indicateur lancé : s'il est caché dans « ^ », glisse-le à côté de l'horloge.",
+  "indicator.win.failed": "Lancement impossible (pythonw.exe introuvable ?) : réinstalle la station.",
+  "indicator.win.on": "L'indicateur se lancera à chaque ouverture de session.",
+  "indicator.win.off": "L'indicateur ne se lancera plus à l'ouverture de session.",
+  "indicator.win.failed_link": "Raccourci de démarrage impossible à changer ({exc}).",
+  "updates.windows": "Sous Windows, une nouvelle version s'installe en lançant installer.cmd du nouveau zip (page des versions du projet) : la configuration est gardée. Retour en arrière : relancer installer.cmd de l'ancienne version."
 }

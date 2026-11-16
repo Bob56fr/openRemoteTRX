@@ -227,7 +227,7 @@ admin = true
 expert = "<p>No effect if the transceiver does not report its temperature through Hamlib (the case of the IC-7300MK2). The operator at the transceiver's microphone is never cut for this reason.</p>"
 
 [menus.indicator]
-role = "Enables or disables the <strong>top bar indicator</strong> (GNOME desktop): a light to the left of the sound icon (green receive, red transmit, orange alert, grey station stopped, purple safe mode), the frequency or the transmit countdown, and on click the full status: transmission, frequency and filter, connected web clients, link with the transceiver, on-site operator, last cut, temperature, power supply, HF spectrum, DX Cluster, available update, version and identifier."
+role = "Enables or disables the <strong>top bar indicator</strong> (GNOME desktop): a light to the left of the sound icon (green receive, red transmit, orange alert, grey station stopped, purple safe mode), the frequency or the transmit countdown, and on click the full status: transmission, frequency and filter, connected web clients, link with the transceiver, on-site operator, last cut, temperature, power supply, HF spectrum, DX Cluster, available update, version and identifier. On Windows, this menu starts the <strong>indicator next to the clock</strong> (same colours, read only) and chooses whether it starts at each session logon."
 quand = "Once, after installation (then log out and log in again), to keep an eye on the station at all times."
 modifie = "Only your desktop display. The indicator only READS the state published by the station: it cannot control anything."
 admin = false

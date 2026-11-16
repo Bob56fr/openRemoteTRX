@@ -56,7 +56,7 @@ Les versions suivantes s'installent depuis TRX Console (menu 7.1 par Internet, m
 
 1. Installez **Hamlib 64 bits** (`hamlib-w64-X.Y.Z.exe`, [versions de Hamlib](https://github.com/Hamlib/Hamlib/releases)).
 2. Récupérez le paquet `trx-remote-windows-X.Y.Z.zip`, débloquez-le (Propriétés), extrayez-le, double-cliquez sur **`installer.cmd`**. Python est installé s'il manque (avec votre accord).
-3. Menu Démarrer > **TRX distant** : configuration, diagnostic, démarrage et arrêt de la station, tableau de bord, essai du poste, journaux.
+3. Menu Démarrer > **TRX distant** : un seul raccourci, qui ouvre TRX Console (configuration, diagnostic, démarrage et arrêt de la station, tableau de bord, essai du poste, journaux). Désinstallation : Paramètres > Applications.
 
 La station démarre à l'ouverture de session, sans fenêtre. Notice complète : `windows/notice-windows.html` (jointe au paquet).
 

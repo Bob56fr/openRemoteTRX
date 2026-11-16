@@ -92,20 +92,23 @@ Certains postes en ont deux : le premier sert à la commande (CAT), le second pe
 <tr><td>3. Logiciel</td><td>Installe TRX distant et ses modules dans <code>%LOCALAPPDATA%\Programs\TRX distant\versions\X.Y.Z</code>.</td></tr>
 <tr><td>4. Configuration</td><td>Réserve <code>C:\ProgramData\trx-remote</code> à ton compte et aux administrateurs (la configuration contient les empreintes des mots de passe).</td></tr>
 <tr><td>5. Pare-feu</td><td>Ouvre la page web (port 8443) et le son WebRTC, sur les réseaux <strong>privés</strong> seulement.</td></tr>
-<tr><td>6. Démarrage</td><td>Crée la tâche planifiée « TRX distant » (la station démarre à l'ouverture de ta session, sans fenêtre) et les raccourcis du menu Démarrer.</td></tr>
+<tr><td>6. Démarrage</td><td>Crée la tâche planifiée « TRX distant » (la station démarre à l'ouverture de ta session, sans fenêtre) le raccourci « TRX distant » du menu Démarrer et l'inscription dans Paramètres &gt; Applications (pour la désinstallation).</td></tr>
 <tr><td>7. Configuration</td><td>Propose l'assistant si la station n'est pas encore configurée, fait un diagnostic et propose de démarrer.</td></tr>
 </table>
 <p>Compte-rendu de l'installation : <code>%TEMP%\trx-remote-install.log</code>.</p>
 
 <h2 id="configurer">4. Configurer et essayer</h2>
-<p>L'assistant (raccourci <em>1 - Configuration de la station</em>) demande, dans l'ordre : le modèle du poste (liste
-Hamlib), le port COM du CAT, la méthode de PTT, les cartes son (réception et émission), les bandes autorisées, l'accès
-réseau et le premier compte (identifiant et mot de passe pour la page web). Le poste n'est interrogé qu'en lecture.</p>
+<p>Tout se fait dans <strong>TRX Console</strong>, ouverte par l'unique raccourci <em>TRX distant</em> du menu Démarrer :
+menus numérotés par thème, les mêmes que sous Debian (tape <code>h</code> puis un numéro pour l'aide d'un menu).
+L'assistant (menu <strong>2.1</strong>) demande, dans l'ordre : le modèle du poste (liste Hamlib), le port COM du CAT, la
+méthode de PTT, les cartes son (réception et émission), les bandes autorisées, l'accès réseau et le premier compte
+(identifiant et mot de passe pour la page web). Le poste n'est interrogé qu'en lecture. Une partie se refait seule
+ensuite : 2.5 poste, 2.6 cartes son, 3.2 bandes, 3.3 puissance et TOT, 4.5 accès réseau.</p>
 <ol>
-<li><strong>Diagnostic</strong> (raccourci 2) : chaque ligne est OK, à surveiller ou en échec, avec la marche à suivre.</li>
-<li><strong>Essai du poste</strong> : arrête d'abord la station (raccourci 4), puis raccourci 6. Commence par la réception seule ;
+<li><strong>Diagnostic</strong> (menu 6.1) : chaque ligne est OK, à surveiller ou en échec, avec la marche à suivre.</li>
+<li><strong>Essai du poste</strong> (menu 2.2, la station est arrêtée pendant l'essai). Commence par la réception seule ;
 l'essai d'émission demande une <strong>charge fictive</strong> et une confirmation à chaque étape (taper <code>EMETTRE</code>).</li>
-<li><strong>Démarre</strong> la station (raccourci 3) et refais un diagnostic.</li>
+<li><strong>Démarre</strong> la station (menu 1.1) et refais un diagnostic.</li>
 </ol>
 
 <h2 id="utiliser">5. Utiliser</h2>
@@ -114,18 +117,16 @@ l'essai d'émission demande une <strong>charge fictive</strong> et une confirmat
 réseau. L'adresse du PC est affichée par le diagnostic (« Adresses de ce PC »).</p>
 <table>
 <tr><th>Menu Démarrer &gt; TRX distant</th><th>Usage</th></tr>
-<tr><td>1 - Configuration de la station</td><td>Assistant (à refaire en cas de changement de poste ou d'interface ; station arrêtée de préférence).</td></tr>
-<tr><td>2 - Diagnostic</td><td>Contrôle complet, en lecture seule.</td></tr>
-<tr><td>3 - Démarrer la station</td><td>Démarre la station en arrière-plan (elle démarre aussi à chaque ouverture de session).</td></tr>
-<tr><td>4 - Arrêter la station</td><td>Arrêt propre : la passerelle s'arrête, puis le poste est remis en réception, puis Hamlib s'arrête.</td></tr>
-<tr><td>5 - Tableau de bord</td><td>État en direct (fréquence, émission, clients, services) ; touche <strong>STOP TX</strong>.</td></tr>
-<tr><td>6 - Essai du poste</td><td>Essai guidé, station arrêtée.</td></tr>
-<tr><td>7 - Journaux de la station</td><td><code>C:\ProgramData\trx-remote\logs</code> : superviseur, passerelle, rigctld.</td></tr>
-<tr><td>8 - Mode d'emploi Windows</td><td>Cette notice.</td></tr>
-<tr><td>10 - Indicateur près de l'horloge</td><td>Voyant de la station près de l'horloge (lecture seule) : gris = arrêtée, vert = en marche, <strong>rouge = émission</strong>, orange = à surveiller, violet = mode sûr. Survol : fréquence ou temps d'émission restant ; clic droit : détail, page web, tableau de bord, journaux. Il ne commande jamais la station (STOP TX : tableau de bord). Lancé à chaque ouverture de session si tu l'as demandé à l'installation. Windows le range d'abord dans « ^ » (icônes cachées) : glisse-le à côté de l'horloge.</td></tr>
-<tr><td>9 - Désinstaller</td><td>Retire le logiciel et les commandes du PATH ; la configuration est gardée sauf si tu demandes de l'effacer.</td></tr>
+<tr><td>TRX distant</td><td>Ouvre <strong>TRX Console</strong> : 1.1 démarrer, 1.2 arrêter (la passerelle s'arrête, le poste est remis en réception, Hamlib s'arrête), 1.3 tableau de bord (touche <strong>STOP TX</strong>), 2.1 configuration, 2.2 essai du poste, 3.5 alertes sur le téléphone, 4.3 comptes, 6.1 diagnostic, 6.2 journal (<code>C:\ProgramData\trx-remote\logs</code>), 6.3 rapport de dépannage, 8.4 indicateur près de l'horloge.</td></tr>
 </table>
-<p><strong>Commandes</strong> : dans un terminal ouvert APRÈS l'installation (Invite de commandes ou PowerShell), <code>trx-console</code>, <code>trx-setup</code>, <code>trx-monitor</code>, <code>trx-hwtest</code>, <code>trx-qualif</code>, <code>trx-journal-android</code> et <code>trx-netreport</code> se lancent depuis n'importe quel dossier (dossier <code>%LOCALAPPDATA%\Programs\TRX distant\bin</code> ajouté au PATH de ton compte, retiré à la désinstallation). Elles prennent la configuration <code>C:\ProgramData	rx-remote\station.toml</code> sans option. Après Ctrl+C, Windows peut demander « Terminer le programme de commandes (O/N) ? » : réponds O.</p>
+<p><strong>Indicateur près de l'horloge</strong> (lecture seule) : gris = arrêtée, vert = en marche, <strong>rouge = émission</strong>,
+orange = à surveiller, violet = mode sûr. Survol : fréquence ou temps d'émission restant ; clic droit : détail, page web,
+tableau de bord, journaux. Il ne commande jamais la station (STOP TX : tableau de bord). Lancé à chaque ouverture de
+session si tu l'as demandé à l'installation, sinon par TRX Console, menu 8.4. Windows le range d'abord dans « ^ »
+(icônes cachées) : glisse-le à côté de l'horloge.</p>
+<p><strong>Désinstaller</strong> : Paramètres &gt; Applications &gt; <em>TRX distant</em> &gt; Désinstaller. Le logiciel et les
+commandes du PATH sont retirés ; la configuration est gardée sauf si tu demandes de l'effacer.</p>
+<p><strong>Commandes</strong> : dans un terminal ouvert APRÈS l'installation (Invite de commandes ou PowerShell), <code>trx-console</code>, <code>trx-setup</code>, <code>trx-monitor</code>, <code>trx-hwtest</code>, <code>trx-qualif</code>, <code>trx-journal-android</code> et <code>trx-netreport</code> se lancent depuis n'importe quel dossier (dossier <code>%LOCALAPPDATA%\Programs\TRX distant\bin</code> ajouté au PATH de ton compte, retiré à la désinstallation). Elles prennent la configuration <code>C:\ProgramData\trx-remote\station.toml</code> sans option. Après Ctrl+C, Windows peut demander « Terminer le programme de commandes (O/N) ? » : réponds O.</p>
 <p>Pour l'accès depuis l'extérieur (VPN de ton choix, ou port exposé avec TLS), voir la documentation « Accès distant » du projet.</p>
 
 <h2 id="maj">6. Mettre à jour, revenir en arrière</h2>
@@ -142,17 +143,17 @@ l'opération, la configuration et les profils de poste sont conservés.</li>
 <tr><td>Page web injoignable depuis le téléphone</td><td>Réseau du PC en profil <strong>Public</strong> : passe-le en Privé. Vérifie l'adresse (diagnostic) et que la station tourne (tableau de bord).</td></tr>
 <tr><td>Pas de son reçu, ou silence</td><td>Autorisation du micro pour les applications de bureau ; carte du poste choisie par défaut dans Windows (voir « Son ») ; niveau de sortie USB du poste.</td></tr>
 <tr><td>« rigctld introuvable »</td><td>Installe Hamlib 64 bits dans <code>C:\Program Files\hamlib-w64-X.Y.Z</code>, ou relance l'installateur et indique son dossier.</td></tr>
-<tr><td>« Un superviseur est déjà en cours d'exécution »</td><td>La station tourne déjà (tâche planifiée) : arrête-la (raccourci 4) avant de la lancer à la main.</td></tr>
-<tr><td>La station ne démarre pas à l'ouverture de session</td><td>Planificateur de tâches &gt; « TRX distant » : dernier résultat ; puis les journaux (raccourci 7).</td></tr>
+<tr><td>« Un superviseur est déjà en cours d'exécution »</td><td>La station tourne déjà (tâche planifiée) : arrête-la (TRX Console, menu 1.2) avant de la lancer à la main.</td></tr>
+<tr><td>La station ne démarre pas à l'ouverture de session</td><td>Planificateur de tâches &gt; « TRX distant » : dernier résultat ; puis les journaux (TRX Console, menu 6.2).</td></tr>
 <tr><td>Port COM absent</td><td>Poste éteint, câble de charge seule, pilote USB manquant (Gestionnaire de périphériques).</td></tr>
 <tr><td>Émission coupée seule</td><td>Normal si : durée maximale atteinte, téléphone qui ne répond plus, fréquence hors des bandes autorisées. La raison est affichée dans la page et dans les journaux.</td></tr>
 </table>
-<p>Pour demander de l'aide : joins les fichiers du dossier des journaux (raccourci 7), le résultat du diagnostic (raccourci 2)
+<p>Pour demander de l'aide : joins le rapport de dépannage (TRX Console, menu 6.3), le résultat du diagnostic (menu 6.1)
 et le compte-rendu d'installation <code>%TEMP%\trx-remote-install.log</code>. Aucun de ces fichiers ne contient de mot de passe.</p>
 
 <h2 id="differences">8. Différences avec la version Debian</h2>
 <ul>
-<li>Les raccourcis du menu Démarrer remplacent les menus d'installation et de services de TRX Console, propres à Debian.</li>
+<li>Les mises à jour (menus 7.1 à 7.3 de TRX Console) sont propres à Debian : sous Windows, on lance <code>installer.cmd</code> du nouveau zip.</li>
 <li>Pas de mise à jour par Internet ni de vérification de signature : on installe le nouveau zip à la main.</li>
 <li>L'indicateur près de l'horloge n'affiche pas de texte (Windows ne le permet pas) : la fréquence et le temps d'émission restant sont dans l'infobulle.</li>
 <li>Pas de réinitialisation automatique du port USB par le superviseur : en cas de panne répétée, rebranche le câble.</li>

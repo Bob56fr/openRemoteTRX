@@ -227,7 +227,7 @@ admin = true
 expert = "<p>Ohne Wirkung, wenn der Transceiver seine Temperatur nicht über Hamlib liefert (so beim IC-7300MK2). Der Operator am Mikrofon des Transceivers wird aus diesem Grund nie abgeschaltet.</p>"
 
 [menus.indicator]
-role = "Schaltet die <strong>Anzeige in der oberen Leiste</strong> (GNOME-Desktop) ein oder aus: eine Lampe links vom Ton (grün Empfang, rot Senden, orange Alarm, grau Station gestoppt, violett abgesicherter Modus), die Frequenz oder der Countdown des Sendens, und per Klick der vollständige Zustand: Senden, Frequenz und Filter, verbundene Web-Clients, Verbindung zum Transceiver, Operator vor Ort, letzte Abschaltung, Temperatur, Versorgung, HF-Spektrum, DX-Cluster, verfügbares Update, Version und Kennung."
+role = "Schaltet die <strong>Anzeige in der oberen Leiste</strong> (GNOME-Desktop) ein oder aus: eine Lampe links vom Ton (grün Empfang, rot Senden, orange Alarm, grau Station gestoppt, violett abgesicherter Modus), die Frequenz oder der Countdown des Sendens, und per Klick der vollständige Zustand: Senden, Frequenz und Filter, verbundene Web-Clients, Verbindung zum Transceiver, Operator vor Ort, letzte Abschaltung, Temperatur, Versorgung, HF-Spektrum, DX-Cluster, verfügbares Update, Version und Kennung. Unter Windows startet dieses Menü die <strong>Anzeige neben der Uhr</strong> (gleiche Farben, nur lesend) und legt fest, ob sie bei jeder Anmeldung startet."
 quand = "Einmal, nach der Installation (dann ab- und wieder anmelden), um die Station ständig im Blick zu behalten."
 modifie = "Nur die Anzeige deines Desktops. Die Anzeige LIEST nur den von der Station veröffentlichten Zustand: sie kann nichts steuern."
 admin = false

@@ -21,7 +21,13 @@ $Base = if ($Destination) { $Destination } else { Join-Path $env:LOCALAPPDATA "P
 $DataDir = Join-Path $env:ProgramData "trx-remote"
 $Config = Join-Path $DataDir "station.toml"
 $LogDir = Join-Path $DataDir "logs"
+# UN SEUL raccourci (étape 222, décision du 2026-11-16) : « TRX distant » ouvre TRX Console, qui regroupe tout.
+$Shortcut = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant.lnk"
+# Dossier de 10 raccourcis des versions jusqu'à 0.168.0 : retiré à l'installation et à la désinstallation.
 $MenuDir = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\TRX distant"
+# Inscription dans Paramètres > Applications (désinstallation comme tout logiciel Windows), pour ce compte seulement.
+$UninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\TRX distant"
+$GuideUrl = "https://bob56fr.github.io/openRemoteTRX/guide/"
 # Indicateur près de l'horloge (trxstation/tray, lecture seule) : raccourci du dossier Démarrage de la session.
 $TrayStartup = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\TRX distant - indicateur.lnk"
 $FirewallGroup = "TRX distant"
@@ -138,9 +144,8 @@ function Find-Rigctld {
 }
 
 function New-Shortcut([string]$Name, [string]$Target, [string]$Arguments, [string]$Description, [string]$WorkDir) {
-    New-Item -ItemType Directory -Force -Path $MenuDir | Out-Null
     $shell = New-Object -ComObject WScript.Shell
-    $link = $shell.CreateShortcut((Join-Path $MenuDir "$Name.lnk"))
+    $link = $shell.CreateShortcut((Join-Path (Split-Path -Parent $Shortcut) "$Name.lnk"))
     $link.TargetPath = $Target
     $link.Arguments = $Arguments
     $link.Description = $Description
@@ -210,11 +215,13 @@ if ($Desinstaller) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
     Get-NetFirewallRule -Group $FirewallGroup -ErrorAction SilentlyContinue | Remove-NetFirewallRule
     if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
+    if (Test-Path -LiteralPath $Shortcut) { Remove-Item -LiteralPath $Shortcut -Force }
+    if (Test-Path -LiteralPath $UninstallKey) { Remove-Item -LiteralPath $UninstallKey -Recurse -Force }
     Remove-Commands
     Stop-Tray
     if (Test-Path -LiteralPath $TrayStartup) { Remove-Item -LiteralPath $TrayStartup -Force }
     if (Test-Path -LiteralPath $Base) { Remove-Item -LiteralPath $Base -Recurse -Force }
-    Ok "logiciel, tâche de démarrage, règles du pare-feu, raccourcis et commandes (PATH) retirés"
+    Ok "logiciel, tâche de démarrage, règles du pare-feu, raccourci, inscription dans Applications et commandes (PATH) retirés"
     if (Test-Path -LiteralPath $DataDir) {
         if (Ask-Yes "Effacer aussi la configuration (comptes, réglages du poste, profils) dans $DataDir" $false) {
             Remove-Item -LiteralPath $DataDir -Recurse -Force
@@ -386,18 +393,22 @@ Ok "la station démarre à l'ouverture de session de $me (tâche planifiée « $
 $py = Venv-Python $Current
 $ps = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
-New-Shortcut "1 - Configuration de la station" $ps "-NoExit -Command `"& '$py' -m trxstation.setup_wizard --output '$Config'`"" "Assistant : poste, ports, cartes son, réseau, comptes" $DataDir
-New-Shortcut "2 - Diagnostic" $ps "-NoExit -Command `"& '$py' -m trxstation.console --diagnostic --config '$Config'`"" "Contrôle complet, lecture seule" $DataDir
-New-Shortcut "3 - Démarrer la station" $ps "-Command `"Start-ScheduledTask -TaskName '$TaskName'; Write-Host 'Station démarrée.'; Start-Sleep 3`"" "Démarre la station en arrière-plan" $DataDir
-New-Shortcut "4 - Arrêter la station" $ps "-NoExit -Command `"& '$py' -m trxstation.supervisor.main --config '$Config' --stop`"" "Arrête la station (le poste revient en réception)" $DataDir
-New-Shortcut "5 - Tableau de bord" $ps "-NoExit -Command `"& '$py' -m trxstation.monitor.main --config '$Config'`"" "État en direct ; touche STOP TX" $DataDir
-New-Shortcut "6 - Essai du poste" $ps "-NoExit -Command `"& '$py' -m trxstation.devtools.hwtest --config '$Config'`"" "Essai guidé (arrêter la station avant)" $DataDir
-New-Shortcut "7 - Journaux de la station" "explorer.exe" "`"$LogDir`"" "Dossier des journaux" $DataDir
-New-Shortcut "8 - Mode d'emploi Windows" (Join-Path $Current "notice-windows.html") "" "Notice d'installation et d'utilisation" $DataDir
-New-Shortcut "9 - Désinstaller" $ps "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller" "Retire TRX distant" $env:TEMP
-Ok "raccourcis dans le menu Démarrer > TRX distant"
+# PowerShell -NoExit (leçon de l'étape 201) : la fenêtre reste ouverte après une erreur et se ferme quand on quitte
+# TRX Console normalement (code 0).
+New-Shortcut "TRX distant" $ps "-NoExit -Command `"& '$py' -m trxstation.console --config '$Config'; if (`$LASTEXITCODE -eq 0) { exit }`"" "TRX Console : démarrer, configurer, essayer, mettre à jour, dépanner" $DataDir
+Ok "raccourci « TRX distant » dans le menu Démarrer (TRX Console : tous les menus de la station)"
+$uninstall = "`"$ps`" -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller"
+New-Item -Path $UninstallKey -Force | Out-Null
+foreach ($pair in @(@("DisplayName", "TRX distant"), @("DisplayVersion", $Version), @("Publisher", "RF-DIY.COM"),
+                    @("InstallLocation", $Base), @("UninstallString", $uninstall), @("URLInfoAbout", $GuideUrl),
+                    @("HelpLink", $GuideUrl), @("DisplayIcon", $py))) {
+    New-ItemProperty -Path $UninstallKey -Name $pair[0] -Value $pair[1] -PropertyType String -Force | Out-Null
+}
+foreach ($flag in @("NoModify", "NoRepair")) {
+    New-ItemProperty -Path $UninstallKey -Name $flag -Value 1 -PropertyType DWord -Force | Out-Null
+}
+Ok "désinstallation : Paramètres > Applications > TRX distant"
 Install-Commands
-New-Shortcut "10 - Indicateur près de l'horloge" $pythonw "-m trxstation.tray" "Voyant de la station près de l'horloge (lecture seule)" $DataDir
 if (Ask-Yes "Afficher l'indicateur de la station près de l'horloge à chaque ouverture de session" $true) {
     $link = (New-Object -ComObject WScript.Shell).CreateShortcut($TrayStartup)
     $link.TargetPath = $pythonw
@@ -410,7 +421,7 @@ if (Ask-Yes "Afficher l'indicateur de la station près de l'horloge à chaque ou
     Ok "indicateur près de l'horloge (s'il est caché dans « ^ », glisse-le à côté de l'horloge)"
 } elseif (Test-Path -LiteralPath $TrayStartup) {
     Remove-Item -LiteralPath $TrayStartup -Force
-    Say "  Indicateur non lancé à l'ouverture de session (menu Démarrer > TRX distant > « 10 - Indicateur près de l'horloge »)."
+    Say "  Indicateur non lancé à l'ouverture de session (TRX Console, menu 8.4, pour le lancer ou le remettre)."
 }
 Ok "commandes $($Commands -join ', ') lançables depuis un NOUVEAU terminal (dossier $BinDir ajouté à ton PATH)"
 foreach ($file in @("notice-windows.html", "installer.cmd", "installer.ps1", "VERSION", "LICENSE")) {
@@ -434,12 +445,13 @@ if (Test-Path -LiteralPath $Config) {
         Ok "station démarrée (journaux : $LogDir)"
     }
 } else {
-    Warn "station non configurée : menu Démarrer > TRX distant > « 1 - Configuration de la station », puis « 3 - Démarrer »."
+    Warn "station non configurée : menu Démarrer > TRX distant (TRX Console), menu 2.1, puis menu 1.1 pour démarrer."
 }
 
 Write-Host ""
 Write-Host "Installation terminée (TRX distant $Version)." -ForegroundColor Green
 Say "Page web : https://<adresse-de-ce-PC>:$port depuis le téléphone (même réseau), ou https://localhost:$port ici."
-Say "Mode d'emploi : menu Démarrer > TRX distant > « 8 - Mode d'emploi Windows »."
+Say "Tout se fait depuis le menu Démarrer > TRX distant (TRX Console ; « h » puis un numéro = aide d'un menu)."
+Say "Guide de l'opérateur : $GuideUrl ; notice Windows : $(Join-Path $Current 'notice-windows.html')"
 try { Stop-Transcript | Out-Null } catch { }
 Pause-End

@@ -40,7 +40,7 @@
   "menu.edit_config": "Edit the configuration (station.toml)",
   "menu.profiles": "Transceiver profiles (several rigs: save, load, delete)",
   "menu.temperature": "Transceiver temperature thresholds (warning, cut-off)",
-  "menu.indicator": "Top bar indicator (GNOME: station status at all times)",
+  "menu.indicator": "Station indicator (top bar on Debian, next to the clock on Windows)",
   "menu.pairing": "Pair a phone (Android app: address, fingerprint, QR code)",
   "menu.visitors": "Receive-only visitors (accounts, maximum number, connected)",
   "menu.cluster": "DX Cluster (followed spots, sources, test)",
@@ -643,5 +643,13 @@
   "features.sdr": "SDR receiver",
   "features.breizh": "Breizh Audio Box",
   "features.netprobe": "Network quality probe",
-  "features.swr": "SWR measurement"
+  "features.swr": "SWR measurement",
+  "indicator.win.state": "\nIndicator next to the clock (read only). Started at each session logon: {v}.",
+  "indicator.win.menu": "  1) Start the indicator now\n  2) Start it or not at each session logon (toggle)\nChoice (Enter = back): ",
+  "indicator.win.started": "Indicator started: if it is hidden under \"^\", drag it next to the clock.",
+  "indicator.win.failed": "Cannot start it (pythonw.exe missing?): reinstall the station.",
+  "indicator.win.on": "The indicator will start at each session logon.",
+  "indicator.win.off": "The indicator will no longer start at session logon.",
+  "indicator.win.failed_link": "Cannot change the startup shortcut ({exc}).",
+  "updates.windows": "On Windows, a new version is installed by running installer.cmd from the new zip (project releases page): the configuration is kept. Rolling back: run installer.cmd from the older version again."
 }

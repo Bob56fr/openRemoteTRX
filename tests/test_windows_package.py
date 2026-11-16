@@ -57,9 +57,10 @@ def test_notice_describes_every_shortcut_created():
     ps = (WIN / "installer.ps1").read_text(encoding="utf-8")
     notice = (WIN / "notice-windows.html").read_text(encoding="utf-8")
     shortcuts = re.findall(r'New-Shortcut "([^"]+)"', ps)
-    assert len(shortcuts) == 10
-    for name in shortcuts:
-        assert name in notice, name
+    assert shortcuts == ["TRX distant"]                               # UN SEUL raccourci (étape 222) : TRX Console
+    assert "TRX distant" in notice and "-m trxstation.console --config" in ps
+    for old in ("1 - Configuration de la station", "9 - Désinstaller", "10 - Indicateur"):
+        assert old not in notice and old not in ps, old
     assert notice.startswith("<!doctype html>\n<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->")
     assert not re.search(r"<(script|link|img|iframe)\b", notice, re.I)               # notice autonome
 
@@ -196,3 +197,22 @@ def test_installer_copies_the_freedv_decoders_next_to_the_venv():
     ps = (WIN / "installer.ps1").read_text(encoding="utf-8-sig")
     assert '$FreedvDir = Join-Path $Here "freedv"' in ps
     assert ps.index("Copy-Item -Path $FreedvDir -Destination $Release") < ps.index("-m venv")
+
+
+def test_uninstall_goes_through_windows_settings_and_removes_everything():
+    ps = (WIN / "installer.ps1").read_text(encoding="utf-8-sig")
+    assert r'$UninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\TRX distant"' in ps
+    for name in ("DisplayName", "DisplayVersion", "UninstallString", "NoModify", "NoRepair"):
+        assert f'"{name}"' in ps, name
+    uninstall = ps.split("# ------------------------------------------------------------------ désinstallation", 1)[1].split("exit 0", 1)[0]
+    for removed in ("$MenuDir", "$Shortcut", "$UninstallKey", "$TrayStartup"):
+        assert f"Remove-Item -LiteralPath {removed}" in uninstall, removed
+    assert ps.index("if ($Essai) {") < ps.index("New-Item -Path $UninstallKey")           # l'essai ne touche pas au registre
+    assert "HKLM" not in ps                                                              # jamais pour tous les comptes
+
+
+def test_console_and_installer_agree_on_the_tray_startup_shortcut(monkeypatch, tmp_path):
+    from trxstation.console import windows_tray_startup
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    ps = (WIN / "installer.ps1").read_text(encoding="utf-8-sig")
+    assert windows_tray_startup().name in ps and "Startup" in windows_tray_startup().parts

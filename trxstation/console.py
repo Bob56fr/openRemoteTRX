@@ -125,6 +125,18 @@ def set_feature(cfg, section: str | None, module: str | None, on: bool) -> None:
         cfg.modules.run = [*run, module] if on else run
 
 
+def windows_tray_startup() -> Path:
+    """Raccourci du dossier Démarrage de la session (même nom que $TrayStartup de windows/installer.ps1)."""
+    return (Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+            / "TRX distant - indicateur.lnk")
+
+
+def windows_pythonw() -> str:
+    """pythonw.exe du même environnement (aucune fenêtre) ; à défaut, l'interpréteur courant."""
+    candidate = Path(sys.executable).with_name("pythonw.exe")
+    return str(candidate if candidate.exists() else Path(sys.executable))
+
+
 def mask_notify_url(url: str) -> str:
     """Adresse ntfy montrée sans son secret : https://ntfy.sh/abc… (qui connaît le sujet lit les alertes)."""
     if not url:
@@ -252,6 +264,16 @@ class Runner:
             print()
             return 130
 
+    def spawn(self, cmd: list[str]) -> bool:
+        """Lance un programme qui continue seul (indicateur près de l'horloge) ; vrai s'il a démarré."""
+        flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        try:
+            subprocess.Popen(cmd, creationflags=flags, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, close_fds=True)
+            return True
+        except OSError:
+            return False
+
     def run_logged(self, cmd: list[str], log_path: Path, *, cwd: Path | None = None,
                    quiet_after_s: float = QUIET_AFTER_S) -> int:
         """Affiche la sortie AU CARACTÈRE PRÈS (les points de pytest, pas ligne par ligne) ET l'enregistre aussitôt dans
@@ -319,7 +341,8 @@ class Console:
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
         self.previous, self.installed = previous, installed
         self.home = home or Path.home()
-        self.editor = editor or os.environ.get("VISUAL") or os.environ.get("EDITOR") or shutil.which("nano") or ""
+        self.editor = (editor or os.environ.get("VISUAL") or os.environ.get("EDITOR")
+                       or ("notepad.exe" if IS_WINDOWS else shutil.which("nano")) or "")
         self.app_dir = app_dir
         self.desktop = desktop
         self.addresses = addresses
@@ -395,6 +418,50 @@ class Console:
         if IS_WINDOWS:
             return self.runner.run(self.module("trxstation.supervisor.main", "--config", str(self.config), "--stop"))
         return self.runner.run(["systemctl", "stop", TARGET], admin=True)
+
+    # ------------------------------------------------------------------ écritures avec droits d'administration
+
+    def _install_file(self, src: Path, dst: Path, *, mode: str = "0644", like: Path | None = None,
+                      parents: bool = False) -> int:
+        """Copie `src` vers `dst` avec les droits d'administration ; `like` : même propriétaire que ce fichier.
+        Debian : `install` par sudo. Windows : copie directe (le compte de l'installation a les droits). 0 = réussi."""
+        if IS_WINDOWS:
+            try:
+                if parents:
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+                return 0
+            except OSError:
+                return 1
+        cmd = ["install", *(["-D"] if parents else []), "-m", mode]
+        if like is not None:
+            st = like.stat()
+            cmd += ["-o", str(st.st_uid), "-g", str(st.st_gid)]
+        return self.runner.run([*cmd, str(src), str(dst)], admin=True)
+
+    def _remove_file(self, path: Path) -> int:
+        if IS_WINDOWS:
+            try:
+                path.unlink(missing_ok=True)
+                return 0
+            except OSError:
+                return 1
+        return self.runner.run(["rm", "-f", str(path)], admin=True)
+
+    def _make_dir(self, path: Path) -> int:
+        if IS_WINDOWS:
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+                return 0
+            except OSError:
+                return 1
+        return self.runner.run(["mkdir", "-p", str(path)], admin=True)
+
+    def _windows_updates(self) -> bool:
+        """Windows : pas de mise à jour par la console (on lance installer.cmd du nouveau zip). Vrai si dit."""
+        if IS_WINDOWS:
+            self.say(self.t("updates.windows"))
+        return IS_WINDOWS
 
     def stop_for_exclusive_use(self, why: str) -> bool:
         """Arrête la station si elle tourne (port série et carte son doivent être libres). Vrai si arrêtée ici."""
@@ -633,7 +700,11 @@ class Console:
             self._save_accounts(original, cfg, live=False)
 
     def indicator(self) -> None:
-        """Extension GNOME installée par install.sh (lecture seule) : l'activer ou la désactiver pour ce compte."""
+        """Debian : extension GNOME installée par install.sh (lecture seule), activée ou désactivée pour ce compte.
+        Windows : indicateur près de l'horloge (trxstation.tray), lancé maintenant ou à chaque ouverture de session."""
+        if IS_WINDOWS:
+            self._indicator_windows()
+            return
         tool = shutil.which("gnome-extensions")
         if tool is None:
             self.say(self.t("indicator.1"))
@@ -655,6 +726,28 @@ class Console:
             code = self.runner.run([tool, "enable", GNOME_EXTENSION_UUID])
             self.say(self.t("indicator.11") if code == 0 else
                      self.t("indicator.12", code=code))
+
+    def _indicator_windows(self) -> None:
+        startup = windows_tray_startup()
+        command = [windows_pythonw(), "-m", "trxstation.tray"]
+        on = startup.exists()
+        self.say(self.t("indicator.win.state", v=self.t("ask_yes.2") if on else self.t("ask_yes.3")))
+        choice = self.ask(self.t("indicator.win.menu")).strip()
+        if choice == "1":
+            self.say(self.t("indicator.win.started") if self.runner.spawn(command) else self.t("indicator.win.failed"))
+        elif choice == "2" and on:
+            try:
+                startup.unlink()
+                self.say(self.t("indicator.win.off"))
+            except OSError as exc:
+                self.say(self.t("indicator.win.failed_link", exc=exc))
+        elif choice == "2":
+            quote = lambda s: "'" + str(s).replace("'", "''") + "'"      # chaîne PowerShell entre apostrophes
+            script = (f"$l = (New-Object -ComObject WScript.Shell).CreateShortcut({quote(startup)}); "
+                      f"$l.TargetPath = {quote(command[0])}; $l.Arguments = '-m trxstation.tray'; "
+                      f"$l.WorkingDirectory = {quote(self.config.parent)}; $l.Save()")
+            code = self.runner.run(["powershell.exe", "-NoProfile", "-Command", script])
+            self.say(self.t("indicator.win.on") if code == 0 else self.t("indicator.win.failed_link", exc=code))
 
     def cluster(self) -> None:
         if not self.config.exists():
@@ -759,6 +852,8 @@ class Console:
             self.start()
 
     def update(self) -> None:
+        if self._windows_updates():
+            return
         state = self.update_state()
         if state is None:
             self.say(self.t("update.1"))
@@ -835,6 +930,8 @@ class Console:
         return "\n" + "\n".join("  " + line for line in body)
 
     def rollback(self) -> None:
+        if self._windows_updates():
+            return
         previous = self.previous()
         if previous is None:
             self.say(self.t("rollback.1"))
@@ -848,6 +945,8 @@ class Console:
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
+        if self._windows_updates():
+            return
         packages = find_packages(self.home)
         if not packages:
             self.say(self.t("install_zip.1", home=self.home))
@@ -1005,7 +1104,7 @@ class Console:
         stopped = mine and self.stop_for_exclusive_use(self.t("sdr.why"))
         state_dir = Path(cfg.supervisor.state_dir) / "sdr"
         backup = state_dir / f"eeprom-{key.get('serial') or 'sans-numero'}-{time.strftime('%Y%m%d-%H%M%S')}.bin"
-        self.runner.run(["mkdir", "-p", str(state_dir)], admin=True)
+        self._make_dir(state_dir)
         # rtl_eeprom rend le code 1 MÊME quand il réussit (relevé sur minix-bzh, étape 200) : on vérifie le RÉSULTAT,
         # jamais le code de sortie : sauvegarde = fichier non vide ; écriture = nouveau numéro relu dans la clé
         self.runner.run(["rtl_eeprom", "-d", "0", "-r", str(backup)], admin=True)
@@ -1234,8 +1333,7 @@ class Console:
             draft = work / target.name
             draft.write_text(text, encoding="utf-8")
             st = self.config.stat()
-            code = self.runner.run(["install", "-D", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid),
-                                    "-g", str(st.st_gid), str(draft), str(target)], admin=True)
+            code = self._install_file(draft, target, mode=f"{st.st_mode & 0o777:o}", like=self.config, parents=True)
         finally:
             shutil.rmtree(work, ignore_errors=True)
         self.say(self.t("save_profile.7", name=name, target=target) if code == 0 else
@@ -1289,7 +1387,7 @@ class Console:
         if not self.yes(self.t("delete_profile.1", v=profile.name if profile else path.name), False):
             self.say(self.t("delete_profile.2"))
             return
-        code = self.runner.run(["rm", "-f", str(path)], admin=True)
+        code = self._remove_file(path)
         self.say(self.t("delete_profile.3") if code == 0 else self.t("delete_profile.4", code=code))
 
     def transmitting(self) -> bool:
@@ -1324,14 +1422,26 @@ class Console:
             return False
         st = self.config.stat()
         backup = self.config.with_name(f"{self.config.name}.avant-modification-{time.strftime('%Y%m%d-%H%M%S')}")
-        if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
-            self.say(self.t("save_config.6"))
-            return False
-        code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
-                                str(draft), str(self.config)], admin=True)
-        if code != 0:
-            self.say(self.t("save_config.7", code=code))
-            return False
+        if IS_WINDOWS:                     # ni sudo ni cp / install : le compte de l'installation a les droits (ACL)
+            try:
+                shutil.copy2(self.config, backup)
+            except OSError:
+                self.say(self.t("save_config.6"))
+                return False
+            try:
+                self.config.write_bytes(draft.read_bytes())       # en place : le fichier garde ses droits
+            except OSError as exc:
+                self.say(self.t("save_config.7", code=exc))
+                return False
+        else:
+            if self.runner.run(["cp", "-p", str(self.config), str(backup)], admin=True) != 0:
+                self.say(self.t("save_config.6"))
+                return False
+            code = self.runner.run(["install", "-m", f"{st.st_mode & 0o777:o}", "-o", str(st.st_uid), "-g",
+                                    str(st.st_gid), str(draft), str(self.config)], admin=True)
+            if code != 0:
+                self.say(self.t("save_config.7", code=code))
+                return False
         self.say(self.t("save_config.8", backup=backup))
         if live:
             self.say(self.t("save_config.9"))
@@ -1783,8 +1893,7 @@ class Console:
         try:
             request = work / REOPEN_REQUEST
             request.write_bytes(kick_request("reopen"))
-            code = self.runner.run(["install", "-m", "0644", str(request),
-                                    str(Path(cfg.supervisor.state_dir) / REOPEN_REQUEST)], admin=True)
+            code = self._install_file(request, Path(cfg.supervisor.state_dir) / REOPEN_REQUEST)
         finally:
             shutil.rmtree(work, ignore_errors=True)
         self.say(self.t("visitor_reopen.2") if code == 0 else self.t("visitor_reopen.3", code=code))
@@ -1807,8 +1916,7 @@ class Console:
         try:
             request = work / KICK_REQUEST
             request.write_bytes(kick_request(target))
-            code = self.runner.run(["install", "-m", "0644", str(request),
-                                    str(Path(cfg.supervisor.state_dir) / KICK_REQUEST)], admin=True)
+            code = self._install_file(request, Path(cfg.supervisor.state_dir) / KICK_REQUEST)
         finally:
             shutil.rmtree(work, ignore_errors=True)
         self.say(self.t("visitor_kick.4") if code == 0 else self.t("visitor_kick.5", code=code))
@@ -1885,7 +1993,7 @@ class Console:
             work = Path(tempfile.mkdtemp(prefix="trx-module-"))
             try:
                 (work / request_name).write_bytes(body)
-                if self.runner.run(["install", "-m", "0644", str(work / request_name), str(target)], admin=True) != 0:
+                if self._install_file(work / request_name, target) != 0:
                     self.say(self.t("friends_request.1"))
                     return None
             finally:
@@ -2351,7 +2459,7 @@ class Console:
             try:
                 request = work / CLEAR_REQUEST
                 request.write_bytes(kick_request("console"))
-                code = self.runner.run(["install", "-m", "0644", str(request), str(state_dir / CLEAR_REQUEST)], admin=True)
+                code = self._install_file(request, state_dir / CLEAR_REQUEST)
             finally:
                 shutil.rmtree(work, ignore_errors=True)
             self.say(self.t("network_clear.3") if code == 0
@@ -2361,8 +2469,17 @@ class Console:
         if not folder.is_dir():
             self.say(self.t("network_clear.5"))
             return
-        code = self.runner.run(["find", str(folder), "-maxdepth", "1", "-type", "f", "!", "-name", "seuils.json",
-                                "-delete"], admin=True)
+        if IS_WINDOWS:
+            try:
+                for item in folder.iterdir():
+                    if item.is_file() and item.name != "seuils.json":
+                        item.unlink()
+                code = 0
+            except OSError:
+                code = 1
+        else:
+            code = self.runner.run(["find", str(folder), "-maxdepth", "1", "-type", "f", "!", "-name", "seuils.json",
+                                    "-delete"], admin=True)
         self.say(self.t("network_clear.6") if code == 0 else self.t("network_clear.7", code=code))
 
     # ------------------------------------------------------------------ Breizh Audio Box (menu 5.2)
@@ -2469,8 +2586,7 @@ class Console:
                 os.chmod(draft, 0o600)
                 st = self.config.stat()
                 mode = (st.st_mode & 0o660) or 0o600                     # jamais lisible par les autres comptes
-                code = self.runner.run(["install", "-m", f"{mode:o}", "-o", str(st.st_uid), "-g", str(st.st_gid),
-                                        str(draft), str(path)], admin=True)
+                code = self._install_file(draft, path, mode=f"{mode:o}", like=self.config)
             else:
                 from .breizh.keyfile import write_key
                 try:

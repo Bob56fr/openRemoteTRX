@@ -40,7 +40,7 @@
   "menu.edit_config": "Modificar la configuración (station.toml)",
   "menu.profiles": "Perfiles de transceptor (varios TRX: guardar, cargar, eliminar)",
   "menu.temperature": "Umbrales de temperatura del transceptor (aviso, corte)",
-  "menu.indicator": "Indicador en la barra superior (GNOME: estado de la estación en todo momento)",
+  "menu.indicator": "Indicador de la estación (barra superior en Debian, junto al reloj en Windows)",
   "menu.pairing": "Emparejar un teléfono (aplicación Android: dirección, huella, código QR)",
   "menu.visitors": "Visitantes solo en recepción (cuentas, número máximo, conectados)",
   "menu.cluster": "DX Cluster (spots seguidos, fuentes, prueba)",
@@ -643,5 +643,13 @@
   "features.sdr": "Receptor SDR",
   "features.breizh": "Breizh Audio Box",
   "features.netprobe": "Sonda de calidad de la red",
-  "features.swr": "Medida de ROE"
+  "features.swr": "Medida de ROE",
+  "indicator.win.state": "\nIndicador junto al reloj (solo lectura). Arrancado en cada inicio de sesión: {v}.",
+  "indicator.win.menu": "  1) Arrancar el indicador ahora\n  2) Arrancarlo o no en cada inicio de sesión (alternar)\nOpción (Intro = volver): ",
+  "indicator.win.started": "Indicador arrancado: si está oculto en «^», arrástralo junto al reloj.",
+  "indicator.win.failed": "No se puede arrancar (¿falta pythonw.exe?): reinstala la estación.",
+  "indicator.win.on": "El indicador arrancará en cada inicio de sesión.",
+  "indicator.win.off": "El indicador ya no arrancará al iniciar sesión.",
+  "indicator.win.failed_link": "No se puede cambiar el acceso directo de inicio ({exc}).",
+  "updates.windows": "En Windows, una nueva versión se instala ejecutando installer.cmd del nuevo zip (página de versiones del proyecto): se conserva la configuración. Volver atrás: ejecutar de nuevo installer.cmd de la versión anterior."
 }

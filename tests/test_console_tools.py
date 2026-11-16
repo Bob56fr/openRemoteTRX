@@ -649,3 +649,45 @@ def test_features_switch_sets_enabled_and_the_module_together(tmp_path):
     con.features_switch()
     assert path.read_bytes() == before and any("REFUSÉ" in line for line in out) and "menu 5.1" in "\n".join(out)
     assert not feature_on(cfgmod.load(path), "cluster", "cluster")
+
+
+# --------------------------------------------------------------------------- TRX Console sous Windows (étape 222)
+
+def test_windows_saves_station_toml_without_sudo_cp_or_install(tmp_path, monkeypatch):
+    import trxstation.console as module
+    monkeypatch.setattr(module, "IS_WINDOWS", True)
+    path = write_config(tmp_path)
+    con, fake, _ = make(tmp_path, answers=["n", "150", "o"])
+    con.local_operator()
+    assert cfgmod.load(path).supervisor.tot_abs_s == 150
+    assert not any(c[0] in ("cp", "install", "sudo") for c, _ in fake.calls)                # aucune commande Unix
+    assert list(path.parent.glob("station.toml.avant-modification-*"))                    # sauvegarde gardée
+    target = tmp_path / "etat" / "demande.json"
+    source = tmp_path / "source.json"
+    source.write_text("{}", encoding="utf-8")
+    assert con._install_file(source, target, parents=True) == 0 and target.read_text(encoding="utf-8") == "{}"
+    assert con._remove_file(target) == 0 and not target.exists() and fake.calls == []
+
+
+def test_windows_indicator_and_updates_are_told_honestly(tmp_path, monkeypatch):
+    import trxstation.console as module
+    monkeypatch.setattr(module, "IS_WINDOWS", True)
+    monkeypatch.setenv("APPDATA", str(tmp_path / "appdata"))
+    con, fake, out = make(tmp_path, answers=["1"])
+    spawned = []
+    fake.spawn = lambda cmd: spawned.append(cmd) or True
+    con.indicator()
+    assert spawned and spawned[0][-2:] == ["-m", "trxstation.tray"] and "Indicateur lancé" in out[-1]
+    con, fake, out = make(tmp_path, answers=["2"])
+    con.indicator()
+    assert fake.calls[-1][0][0] == "powershell.exe" and "TRX distant - indicateur.lnk" in fake.calls[-1][0][-1]
+    startup = module.windows_tray_startup()
+    startup.parent.mkdir(parents=True)
+    startup.write_bytes(b"lnk")
+    con, fake, out = make(tmp_path, answers=["2"])
+    con.indicator()
+    assert not startup.exists() and "ne se lancera plus" in out[-1]
+    for menu in ("update", "rollback", "install_zip"):
+        con, fake, out = make(tmp_path)
+        getattr(con, menu)()
+        assert "installer.cmd" in out[-1] and fake.calls == []
