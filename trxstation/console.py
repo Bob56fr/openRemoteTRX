@@ -729,9 +729,13 @@ class Console:
         state_dir = Path(cfg.supervisor.state_dir) / "sdr"
         backup = state_dir / f"eeprom-{key.get('serial') or 'sans-numero'}-{time.strftime('%Y%m%d-%H%M%S')}.bin"
         self.runner.run(["mkdir", "-p", str(state_dir)], admin=True)
-        if self.runner.run(["rtl_eeprom", "-d", "0", "-r", str(backup)], admin=True) != 0:
+        # rtl_eeprom rend le code 1 MÊME quand il réussit (relevé sur minix-bzh, étape 200) : on vérifie le RÉSULTAT,
+        # jamais le code de sortie : sauvegarde = fichier non vide ; écriture = nouveau numéro relu dans la clé
+        self.runner.run(["rtl_eeprom", "-d", "0", "-r", str(backup)], admin=True)
+        if self.runner.run(["test", "-s", str(backup)], admin=True) != 0:
             self.say(self.t("sdr.19"))
-        elif self.runner.run(["rtl_eeprom", "-d", "0", "-s", new], admin=True) != 0:
+        elif (self.runner.run(["rtl_eeprom", "-d", "0", "-s", new], admin=True) is None
+              or not self._rtl_serial_is(new)):
             self.say(self.t("sdr.19"))
         else:
             self.say(self.t("sdr.20", backup=backup))
@@ -740,6 +744,15 @@ class Console:
                 self._save_accounts(original, cfg, live=False)
         if stopped and self.yes(self.t("sdr.21"), True):
             self.start()
+
+    def _rtl_serial_is(self, serial: str) -> bool:
+        """Numéro relu dans la mémoire de la clé (rtl_eeprom sans option n'écrit rien) ; droits d'administration au
+        besoin (le mot de passe vient d'être donné pour l'écriture)."""
+        cmd = ["sh", "-c", "rtl_eeprom -d 0 2>&1"]                  # l'outil écrit tout sur la sortie d'erreur
+        if not getattr(self.runner, "is_root", False):
+            cmd = ["sudo", "-n", *cmd]
+        out = self.runner.output(cmd)
+        return re.search(r"^Serial number:\s*" + re.escape(serial) + r"\s*$", out, re.M) is not None
 
     def _sdr_found(self, serial: str) -> list[dict]:
         out = self.runner.output(self.module("trxstation.sdr.devices", "--json", "--serial", serial))

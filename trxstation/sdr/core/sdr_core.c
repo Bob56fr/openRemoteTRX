@@ -54,6 +54,8 @@
 static double g_fs = 2e6, g_freq = 7.1e6;
 static int g_bw = 1536, g_lna = 2, g_gr = 50, g_fft = 4096, g_bins = 1024;
 static double g_rate = 8.0;
+static int g_zoom = 1;                  // zoom du waterfall : 1, 2, 4, 8 ou 16 (étape 200)
+static double g_zoom_off = 0;           // centre de la fenêtre zoomée par rapport au centre du SDR (Hz)
 static char g_ant = 'A';
 static int g_agc = 1;                   // AGC matériel de la FI (consigne AGC_SETPOINT_DBFS) : le SDR règle la réduction
 #define AGC_SETPOINT_DBFS (-30)
@@ -556,6 +558,9 @@ static void *command_thread(void *arg) {
         } else if (sscanf(line, "agc %d", &lna) == 1 && (lna == 0 || lna == 1)) {
             g_agc = lna;
             drv_set_agc(lna);
+        } else if (sscanf(line, "zoom %d %lf", &on, &hz) == 2 && (on == 1 || on == 2 || on == 4 || on == 8 || on == 16)
+                   && fabs(hz) <= g_fs / 2) {
+            g_zoom = on; g_zoom_off = hz;
         } else if (sscanf(line, "rate %lf", &rate) == 1 && rate >= 1 && rate <= 25) {
             g_rate = rate;
         } else if (!strncmp(line, "quit", 4)) {
@@ -590,6 +595,8 @@ static int parse_args(int argc, char **argv, int *list) {
         else if (!strcmp(a, "--fft")) g_fft = atoi(v);
         else if (!strcmp(a, "--bins")) g_bins = atoi(v);
         else if (!strcmp(a, "--rate")) g_rate = atof(v);
+        else if (!strcmp(a, "--zoom")) g_zoom = atoi(v);
+        else if (!strcmp(a, "--zoom-off")) g_zoom_off = atof(v);
         else if (!strcmp(a, "--agc")) g_agc = atoi(v);
         else if (!strcmp(a, "--dfreq")) g_dfreq = atof(v);
         else if (!strcmp(a, "--mode")) g_mode = mode_of(v);
@@ -608,7 +615,8 @@ static int parse_args(int argc, char **argv, int *list) {
     if (g_fs < 2e5 || g_fs > 10e6 || g_freq < 1e3 || g_freq > 2e9 || g_lna < 0 || g_lna > 9 || g_gr < 20 || g_gr > 59
         || !is_pow2(g_fft) || g_fft < 512 || g_fft > 16384 || !is_pow2(g_bins) || g_bins < 128 || g_bins > g_fft
         || g_rate < 1 || g_rate > 25 || (g_ant != 'A' && g_ant != 'B') || (g_agc != 0 && g_agc != 1)
-        || g_mode < 0 || g_dbw < 100 || g_dbw > 15000 || g_sql < 0 || g_sql > 40 || fabs(g_dfreq - g_freq) > g_fs / 2) {
+        || g_mode < 0 || g_dbw < 100 || g_dbw > 15000 || g_sql < 0 || g_sql > 40 || fabs(g_dfreq - g_freq) > g_fs / 2
+        || (g_zoom != 1 && g_zoom != 2 && g_zoom != 4 && g_zoom != 8 && g_zoom != 16) || fabs(g_zoom_off) > g_fs / 2) {
         fprintf(stderr, "réglage hors limites\n");
         return 0;
     }
@@ -622,6 +630,7 @@ int main(int argc, char **argv) {
     if (list) {
         int first = 1, service = 0;
         float ver = 0;
+        (void)first;
         printf("{\"devices\":[");
 #ifndef SDR_NO_SDRPLAY
         service = api_list(&first, &ver);
@@ -709,18 +718,27 @@ int main(int argc, char **argv) {
             pthread_mutex_unlock(&g_lock);
             avail -= N; consumed += N;
             if (consumed >= next_line_at && nacc > 0) {
-                // ligne : case 0 = fréquence la plus basse (FFT recentrée), max sur chaque groupe de cases
+                // ligne : case 0 = fréquence la plus basse (FFT recentrée), max sur chaque groupe de cases ;
+                // zoom (étape 200) : la ligne ne couvre que N/zoom cases de la FFT, autour de centre + décalage
+                int zoom = g_zoom, shown = N / zoom;
+                long start = N / 2 + lround(g_zoom_off * N / g_fs) - shown / 2;      // en cases recentrées (0 = bas)
+                if (start < 0) start = 0;
+                if (start > N - shown) start = N - shown;
                 for (int b = 0; b < B; b++) {
+                    long c0 = start + (long)b * shown / B, c1 = start + (long)(b + 1) * shown / B;
+                    if (c1 <= c0) c1 = c0 + 1;
                     float best = 0;
-                    for (int j = 0; j < group; j++) {
-                        int k = (b * group + j + N / 2) % N;
+                    for (long c = c0; c < c1; c++) {
+                        int k = (int)((c + N / 2) % N);
                         if (acc[k] > best) best = acc[k];
                     }
                     float db = 10.0f * log10f(best / nacc * norm + 1e-30f);
                     float q = (db - DB_MIN) / DB_STEP;
                     line[b] = q <= 0 ? 0 : q >= 255 ? 255 : (uint8_t)(q + 0.5f);
                 }
-                struct { double center, span; uint16_t bins, reserved; } __attribute__((packed)) h = { g_freq, g_fs, (uint16_t)B, 0 };
+                (void)group;
+                double lcenter = g_freq + (start + shown / 2.0 - N / 2.0) * g_fs / N, lspan = g_fs / zoom;
+                struct { double center, span; uint16_t bins, reserved; } __attribute__((packed)) h = { lcenter, lspan, (uint16_t)B, 0 };
                 write_frame(FRAME_LINE, &h, sizeof h, line, (uint32_t)B);
                 memset(acc, 0, sizeof(float) * N); nacc = 0;
                 next_line_at = consumed + per_line;
@@ -732,11 +750,11 @@ int main(int argc, char **argv) {
             json_frame("{\"t\":\"status\",\"fs\":%.0f,\"freq\":%.0f,\"lna\":%d,\"gr\":%d,\"ant\":\"%c\",\"rate\":%.1f,"
                        "\"bins\":%d,\"agc\":%d,\"gr_now\":%d,\"gain_db\":%.1f,\"overload\":%d,\"samples\":%llu,"
                        "\"drops\":%llu,\"gaps\":%llu,\"audio\":%d,\"dfreq\":%.0f,\"mode\":\"%s\",\"dbw\":%d,"
-                       "\"sql\":%.1f,\"sql_open\":%d,\"chan_db\":%.1f,\"noise_db\":%.1f}",
+                       "\"sql\":%.1f,\"sql_open\":%d,\"chan_db\":%.1f,\"noise_db\":%.1f,\"zoom\":%d}",
                        g_fs, g_freq, g_lna, g_gr, g_ant, g_rate, B, g_agc, g_gr_now, g_gain_db, g_overload,
                        (unsigned long long)g_samples, (unsigned long long)g_drops, (unsigned long long)g_gaps,
                        g_audio, g_dfreq, MODE_NAMES[g_mode], g_dbw, g_sql, g_sql_open,
-                       g_audio ? g_chan_db : -200.0, g_audio ? g_noise_db : -200.0);
+                       g_audio ? g_chan_db : -200.0, g_audio ? g_noise_db : -200.0, g_zoom);
         }
     }
 #ifndef SDR_NO_SDRPLAY

@@ -399,12 +399,19 @@ def test_sdr_menu_rewrites_the_serial_of_the_only_rtl_sdr_key_and_follows_it(tmp
 
     class Keys(FakeRunner):
         def output(self, cmd):
+            if any("rtl_eeprom" in part for part in cmd):                    # relecture de la mémoire de la clé
+                return "Serial number:\t\tRTLV4A\nSerial number enabled:\tyes"
             return _json.dumps({"devices": keys}) if "trxstation.sdr.devices" in cmd else super().output(cmd)
 
         def run(self, cmd, *, admin=False):
-            if cmd[0] == "install":
-                import shutil
-                shutil.copyfile(cmd[-2], cmd[-1])
+            if cmd[0] == "rtl_eeprom":                                       # rend 1 même quand il réussit (réel)
+                self.calls.append((cmd, admin))
+                return 1
+            return super().run(cmd, admin=admin) if cmd[0] != "install" else self._install(cmd, admin)
+
+        def _install(self, cmd, admin):
+            import shutil
+            shutil.copyfile(cmd[-2], cmd[-1])
             return super().run(cmd, admin=admin)
 
     out: list[str] = []
