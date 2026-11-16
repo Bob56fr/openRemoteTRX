@@ -412,6 +412,44 @@ def test_unsupported_readings_are_dropped_after_one_attempt_and_the_link_stays_u
     run(scenario)
 
 
+def test_too_slow_optional_reading_is_dropped_and_the_ptt_stays_readable():
+    """Yaesu FTDX10 + Hamlib 4.7.2 : « u COMP » met 2,5 s (« PR; » refusé, réessayé) ; la liaison de trx-hwtest (délai
+    2 s) tombait à chaque tour et le PTT devenait illisible (« ORT-2005 … TimeoutError »)."""
+    async def scenario(fake):
+        fake.slow["u COMP"] = 1.0
+        link = make_link(fake, timeout=0.3)
+        task = asyncio.create_task(link.run())
+        await until(lambda: fake.count_command("u COMP") == 1, 5)
+        await until(lambda: link.state.connected and "NR" in link.state.functions, 5)     # reconnectée une fois
+        ptt_reads = fake.count_command("t")
+        await asyncio.sleep(1.0)
+        assert fake.count_command("u COMP") == 1                                       # plus jamais redemandé
+        assert link.state.connected and "COMP" not in link.state.functions
+        assert fake.count_command("t") > ptt_reads and link.state.ptt is False           # PTT toujours relu
+        link.stop()
+        await asyncio.wait_for(task, 3)
+    run(scenario)
+
+
+def test_slow_refusal_is_dropped_at_once_instead_of_freezing_the_s_meter_five_times(monkeypatch):
+    """Passerelle (délai 3 s) : « u COMP » du FTDX10 répond RPRT -9 après 2,5 s ; abandonné dès le premier refus lent."""
+    from trxstation.gateway.cat import link as link_mod
+    monkeypatch.setattr(link_mod, "SLOW_REFUSAL_S", 0.2)
+
+    async def scenario(fake):
+        fake.slow["u COMP"] = 0.4
+        original = fake._reply
+        fake._reply = lambda line: "RPRT -9\n" if line.startswith("+u COMP") else original(line)
+        link = make_link(fake, timeout=2.0)
+        task = asyncio.create_task(link.run())
+        await until(lambda: fake.count_command("u COMP") == 1, 5)
+        await asyncio.sleep(1.0)
+        assert fake.count_command("u COMP") == 1 and link.state.connected
+        link.stop()
+        await asyncio.wait_for(task, 3)
+    run(scenario)
+
+
 def test_garbled_optional_reading_is_dropped_without_losing_the_link():
     async def scenario(fake):
         original = fake._reply

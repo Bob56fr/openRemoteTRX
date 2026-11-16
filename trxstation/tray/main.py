@@ -9,6 +9,8 @@ pystray et Pillow (paquet facultatif [tray]) ne sont importés qu'au lancement d
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import json
 import logging
@@ -165,6 +167,7 @@ class Tray:
         self.icon.run(setup=self._loop)
 
 
+@guarded("trx-tray")
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m trxstation.tray",
                                      description="Indicateur de la station près de l'horloge (Windows, lecture seule).")

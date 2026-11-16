@@ -14,6 +14,8 @@ d'origine n'est ni modifié ni envoyé ailleurs (il contient des données person
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import fnmatch
 import html
@@ -606,6 +608,7 @@ def report(path: Path, label: str, out: Path | None) -> int:
     return 0
 
 
+@guarded("trx-journal-android")
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="trx-journal-android", description=__doc__.splitlines()[0])
     parser.add_argument("fichier", nargs="?", type=Path, help="journal à analyser (sinon recherche et question)")

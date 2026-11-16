@@ -15,6 +15,8 @@ Les actions qui touchent au système passent par `sudo` : le mot de passe de ses
 """
 from __future__ import annotations
 
+from .crashguard import guarded
+
 import argparse
 import codecs
 import difflib
@@ -42,6 +44,9 @@ from .update.apply import previous_version
 from .update.check import Change, UpdateState, clean_text, parse_version, read_state, state_path
 
 TARGET = "trx-remote.target"
+IS_WINDOWS = sys.platform == "win32"
+WINDOWS_TASK = "TRX distant"        # tâche planifiée posée par windows/installer.ps1 ($TaskName)
+JOURNAL_LINES = 80
 IMPORT_NAME = "station.import.toml"
 CHECK_UNIT = "trx-update-check.service"
 INSTALL_LOG = "/var/log/trx-remote-install.log"
@@ -179,7 +184,7 @@ class Runner:
         self.is_root = hasattr(os, "geteuid") and os.geteuid() == 0
 
     def run(self, cmd: list[str], *, admin: bool = False) -> int:
-        if admin and not self.is_root:
+        if admin and os.name == "posix" and not self.is_root:     # Windows : pas de sudo (désactivé ou autre fenêtre)
             cmd = ["sudo", *cmd]
         try:
             return subprocess.call(cmd)
@@ -309,14 +314,37 @@ class Console:
         return any(typed(answer, w) for w in words)
 
     def station_running(self) -> bool:
+        if IS_WINDOWS:                                   # pas de systemd : verrou d'instance du superviseur
+            from .procutil import station_running
+            return station_running(self._lock_port())
         return any(self.runner.output(["systemctl", "is-active", unit]) == "active" for unit in UNITS)
+
+    def _lock_port(self) -> int:
+        from . import config as cfgmod
+        try:
+            cfg, _ = cfgmod.load_unchecked(self.config)
+            return cfg.supervisor.instance_lock_port
+        except (OSError, cfgmod.ConfigError):
+            return cfgmod.Supervisor().instance_lock_port
+
+    def _start_station(self, verb: str = "restart") -> int:
+        """Debian : systemd. Windows : tâche planifiée de l'installation (pas de sudo ni de systemctl)."""
+        if IS_WINDOWS:
+            return self.runner.run(["schtasks", "/Run", "/TN", WINDOWS_TASK])
+        return self.runner.run(["systemctl", verb, TARGET], admin=True)
+
+    def _stop_station(self) -> int:
+        """Debian : systemd. Windows : demande d'arrêt au superviseur (passerelle d'abord : retour en réception)."""
+        if IS_WINDOWS:
+            return self.runner.run(self.module("trxstation.supervisor.main", "--config", str(self.config), "--stop"))
+        return self.runner.run(["systemctl", "stop", TARGET], admin=True)
 
     def stop_for_exclusive_use(self, why: str) -> bool:
         """Arrête la station si elle tourne (port série et carte son doivent être libres). Vrai si arrêtée ici."""
         if not self.station_running():
             return False
         self.say(self.t("stop_for_exclusive_use.1", why=why))
-        self.runner.run(["systemctl", "stop", TARGET], admin=True)
+        self._stop_station()
         return True
 
     # ------------------------------------------------------------------ actions
@@ -370,7 +398,7 @@ class Console:
         if code != 0:
             self.say(self.t("assistant.2"))
             if stopped and self.config.exists():
-                self.runner.run(["systemctl", "start", TARGET], admin=True)
+                self._start_station("start")
             return
         if self.yes(self.t("assistant.3")):
             self.start()
@@ -452,16 +480,36 @@ class Console:
         if not self.config.exists():
             self.say(self.t("start.1"))
             return
-        code = self.runner.run(["systemctl", "restart", TARGET], admin=True)
+        code = self._start_station()
         self.say(self.t("start.2") if code == 0
                  else self.t("start.3"))
 
     def stop(self) -> None:
-        code = self.runner.run(["systemctl", "stop", TARGET], admin=True)
+        code = self._stop_station()
         self.say(self.t("stop.1") if code == 0 else self.t("stop.2"))
 
     def journal(self) -> None:
+        if IS_WINDOWS:
+            self._journal_windows()
+            return
         self.runner.run(["journalctl", "--no-pager", "-n", "80", "-o", "short", *[f"--unit={u}" for u in UNITS]], admin=True)
+
+    def _journal_windows(self) -> None:
+        """Windows : pas de journalctl ; dernières lignes des journaux du dossier `logs` (posé par l'installation, à
+        côté de station.toml)."""
+        folder = self.config.parent / "logs"
+        files = sorted(folder.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True) if folder.is_dir() else []
+        if not files:
+            self.say(self.t("journal.windows_none", folder=folder))
+            return
+        for path in files[:3]:
+            try:
+                lines = path.read_text(encoding="utf-8", errors="replace").splitlines()[-JOURNAL_LINES:]
+            except OSError as exc:
+                self.say(self.t("journal.windows_unreadable", path=path, exc=exc))
+                continue
+            self.say(self.t("journal.windows_file", path=path, n=len(lines)))
+            self.say("\n".join(lines))
 
     def report(self) -> None:
         from .report import make_report
@@ -2288,6 +2336,7 @@ def load_help(lang: str = "fr") -> dict[str, dict]:
     return menus if isinstance(menus, dict) else {}
 
 
+@guarded("trx-console")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-console", description="TRX Console : configuration, tests et dépannage")
     ap.add_argument("--config", type=Path, default=CONFIG_PATH)

@@ -3,6 +3,8 @@
 """trx-monitor : `trx-monitor` (TUI Textual) ou `trx-monitor --once` (capture texte, sans Textual)."""
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import sys
 from pathlib import Path
@@ -14,6 +16,7 @@ from .model import build_panels, render_plain
 from .source import StatusSource
 
 
+@guarded("trx-monitor")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-monitor", description="Tableau de bord de la station TRX")
     ap.add_argument("--config", type=Path, default=default_config_path())

@@ -88,7 +88,7 @@
     },
     "journal": {
      "admin": true,
-     "expert": "Vollständiges Protokoll: journalctl -u trx-gateway -u trx-supervisor -u\nrigctld --since \"1 hour ago\".",
+     "expert": "Vollständiges Protokoll: journalctl -u trx-gateway -u trx-supervisor -u\nrigctld --since \"1 hour ago\". Unter Windows: letzte Zeilen der Dateien im\nOrdner logs neben station.toml.",
      "modifie": "Nichts.",
      "quand": "Wenn die Diagnose einen fehlgeschlagenen Dienst meldet oder um eine\nSendeunterbrechung zu verstehen.",
      "role": "Zeigt die letzten 80 Zeilen des Protokolls der Dienste der Station."
@@ -137,7 +137,7 @@
     },
     "report": {
      "admin": false,
-     "expert": "Ohne Menü: trx-console --rapport. In der Datei station.toml des Berichts\nsind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem\nVersand, wenn du möchtest.",
+     "expert": "Ohne Menü: trx-console --rapport. In der Datei station.toml des Berichts\nsind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem\nVersand, wenn du möchtest. Der Bericht enthält auch die Spuren von\nWerkzeugen, die bei einem unerwarteten Fehler angehalten wurden (Ordner\nplantages, Code ORT-9312).",
      "modifie": "Nichts (eine Datei wird auf dem Schreibtisch angelegt).",
      "quand": "Um Hilfe zu bitten: hänge dieses Zip an deine Anfrage an.",
      "role": "Erstellt einen Fehlerbericht (Zip-Datei auf dem Schreibtisch): Diagnose,\nProtokolle, Konfiguration ohne jedes Passwort, Versionen, erkannte Hardware,\nvon der Webseite gesendete Berichte, Kennung der Station."
@@ -288,7 +288,7 @@
     },
     "journal": {
      "admin": true,
-     "expert": "Full log: journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1\nhour ago\".",
+     "expert": "Full log: journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1\nhour ago\". On Windows: last lines of the files in the logs folder next to\nstation.toml.",
      "modifie": "Nothing.",
      "quand": "When the diagnostic reports a failed service, or to understand why a\ntransmission was cut.",
      "role": "Shows the last 80 lines of the station services log."
@@ -337,7 +337,7 @@
     },
     "report": {
      "admin": false,
-     "expert": "Without the menu: trx-console --rapport. The report's station.toml file has\nits secrets masked; you may still check its content before sending it if you\nwish.",
+     "expert": "Without the menu: trx-console --rapport. The report's station.toml file has\nits secrets masked; you may still check its content before sending it if you\nwish. The report also includes the traces of tools that stopped on an\nunexpected error (plantages folder, code ORT-9312).",
      "modifie": "Nothing (a file is created on the Desktop).",
      "quand": "To ask for help: attach this zip to your request.",
      "role": "Creates a troubleshooting report (zip file on the Desktop): diagnostic,\nlogs, configuration without any password, versions, detected hardware,\nreports sent from the page, station identifier."
@@ -488,7 +488,7 @@
     },
     "journal": {
      "admin": true,
-     "expert": "Registro completo: journalctl -u trx-gateway -u trx-supervisor -u rigctld\n--since \"1 hour ago\".",
+     "expert": "Registro completo: journalctl -u trx-gateway -u trx-supervisor -u rigctld\n--since \"1 hour ago\". En Windows: últimas líneas de los archivos de la\ncarpeta logs junto a station.toml.",
      "modifie": "Nada.",
      "quand": "Cuando el diagnóstico señala un servicio con fallo, o para entender un corte\nde transmisión.",
      "role": "Muestra las 80 últimas líneas del registro de los servicios de la estación."
@@ -537,7 +537,7 @@
     },
     "report": {
      "admin": false,
-     "expert": "Sin el menú: trx-console --rapport. El archivo station.toml del informe\ntiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo\nsi quieres.",
+     "expert": "Sin el menú: trx-console --rapport. El archivo station.toml del informe\ntiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo\nsi quieres. El informe incluye también las trazas de las herramientas\ndetenidas por un error inesperado (carpeta plantages, código ORT-9312).",
      "modifie": "Nada (se crea un archivo en el Escritorio).",
      "quand": "Para pedir ayuda: adjunta este zip a tu solicitud.",
      "role": "Crea un informe de solución de problemas (archivo zip en el Escritorio):\ndiagnóstico, registros, configuración sin ninguna contraseña, versiones,\nhardware detectado, informes enviados desde la página, identificador de la\nestación."
@@ -688,7 +688,7 @@
     },
     "journal": {
      "admin": true,
-     "expert": "Journal complet : journalctl -u trx-gateway -u trx-supervisor -u rigctld\n--since \"1 hour ago\".",
+     "expert": "Journal complet : journalctl -u trx-gateway -u trx-supervisor -u rigctld\n--since \"1 hour ago\". Sous Windows : dernières lignes des fichiers du\ndossier logs placé à côté de station.toml.",
      "modifie": "Rien.",
      "quand": "Quand le diagnostic signale un service en échec, ou pour comprendre une\ncoupure d'émission.",
      "role": "Affiche les 80 dernières lignes du journal des services de la station."
@@ -737,7 +737,7 @@
     },
     "report": {
      "admin": false,
-     "expert": "Sans le menu : trx-console --rapport. Le fichier station.toml du rapport a\nses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si\ntu le souhaites.",
+     "expert": "Sans le menu : trx-console --rapport. Le fichier station.toml du rapport a\nses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si\ntu le souhaites. Le rapport joint aussi les traces des outils arrêtés sur\nune erreur inattendue (dossier plantages, code ORT-9312).",
      "modifie": "Rien (un fichier est créé sur le Bureau).",
      "quand": "Pour demander de l'aide : joins ce zip à ta demande.",
      "role": "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic,\njournaux, configuration sans aucun mot de passe, versions, matériel détecté,\nrapports envoyés depuis la page, identifiant de la station."

@@ -84,6 +84,28 @@ def _command_output(sysm: System, commands: list[list[str]]) -> str:
     return "\n".join(parts)
 
 
+MAX_CRASH_FILES = 10
+
+
+def crash_files(state_dir: Path | None) -> list[Path]:
+    """Traces des outils arrêtés sur une erreur inattendue (crashguard), les plus anciennes d'abord, sans doublon."""
+    from .crashguard import CRASH_DIR_NAME, crash_dirs
+    folders = ([state_dir / CRASH_DIR_NAME] if state_dir is not None else []) + crash_dirs()
+    found: dict[str, Path] = {}
+    for folder in folders:
+        try:
+            for path in folder.glob("*.txt"):
+                found.setdefault(path.name, path)
+        except OSError:
+            continue
+    def mtime(p: Path) -> float:
+        try:
+            return p.stat().st_mtime
+        except OSError:
+            return 0.0
+    return sorted(found.values(), key=mtime)
+
+
 def make_report(destination: Path | None = None, *, sysm: System | None = None,
                 config_path: Path = CONFIG_PATH, now: datetime.datetime | None = None) -> Path:
     sysm = sysm or System()
@@ -112,6 +134,10 @@ def make_report(destination: Path | None = None, *, sysm: System | None = None,
             text = sysm.read_text(page)
             if text is not None:
                 archive.writestr(f"rapports-page/{page.name}", text)
+        for crash in crash_files(state_dir)[-MAX_CRASH_FILES:]:      # outils arrêtés sur une erreur (ORT-9312, étape 201)
+            text = sysm.read_text(crash)
+            if text is not None:
+                archive.writestr(f"plantages/{crash.name}", text)
         log = sysm.read_text(INSTALL_LOG)
         archive.writestr("installation.log", log if log is not None else "# journal d'installation absent ou illisible\n")
     return target

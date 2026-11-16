@@ -63,3 +63,21 @@ With rigctld (model 3094, no async), `rig_get_ptt` sometimes returns immediately
 `icom_get_ptt` in the log. For safety software that re-reads PTT to confirm the radio really left transmission,
 knowing whether a value comes from the cache matters. Is there a supported way to force a fresh read (cache
 timeout setting for PTT)?
+
+---
+
+## 4. FTDX10 (model 1042, Hamlib 4.7.2, Windows): `COMP` function and level
+
+Measured on 2026-11-16 (USB, CP2105 Enhanced port, 38400 baud, rigctld with `-C cache_timeout=0`):
+
+- `u COMP` sends `PR;`; the radio answers `?;`, newcat treats it as "Rig busy" and retries 3 times: **2.45 s**, then
+  `RPRT -9`. Every other read takes about 40 ms (`f`, `m`, `t`, `l STRENGTH`, `u NB`, `u NR`, `u TUNER`, `u ANF`,
+  `u MN`, `u RIT`, `u XIT`). `COMP` is listed in both "Get functions" and "Set functions".
+- `l COMP` reads 0; `L COMP 0.5` is accepted and read back as 0.5, but `L COMP 0` is refused (`RPRT -14`) although
+  dump_caps declares `COMP(0.000000..1.000000/0.010000)`; `L COMP 0.01` works.
+- Also seen: "PTT type: None" while "Can set PTT: Y"; `get Tuning Step` declared but refused (`RPRT -11`);
+  `BAND_SELECT` / `BANDSELECT` refused; `BKINDL` accepted but not read back; frequencies of 29 kHz and 61 MHz
+  accepted outside the declared RX range; `STRENGTH` (-48) and `VD_METER` (13.4) outside their declared ranges.
+
+**Request**: use the FTDX10 form of the processor command (or drop `COMP` from its get functions), avoid the busy
+retries on a definite `?;`, and fix the lower bound of the `COMP` level.

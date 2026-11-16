@@ -405,6 +405,18 @@ class Exploration:
             self._w["not_followed"].append(name)
         self.probe(f"write_func_{name}", "write_func", name, ok, "inversé puis rétabli, relu à chaque fois" if ok else f"relectures : {steps}")
 
+    async def _restore_nearest(self, name: str, orig: float, rng) -> float | None:
+        """Valeur d'origine refusée par le poste : essaie un pas au-dessus puis au-dessous (dans la plage déclarée)."""
+        step = rng.step or (rng.high - rng.low) / 100
+        for value in (orig + step, orig - step):
+            if not rng.low <= value <= rng.high:
+                continue
+            await self.guard()
+            _, error, _ = await self._send(f"L {name} {_as_text(value, rng)}", family="L")
+            if error is None:
+                return value
+        return None
+
     async def _write_level(self, name: str) -> None:
         rng = self.profile.level_ranges[name]
         values, error, _ = await self._send(f"l {name}")
@@ -429,7 +441,11 @@ class Exploration:
                 self.probe(f"write_level_{name}", "write_level", name, False, f"commande refusée : {rprt(error)}", ms)
                 self._w["refused"].append(f"{name} ({rprt(error)})")
                 if value == orig:
-                    self._w["not_restored"].append(f"{name} (origine {orig:g})")
+                    # Étape 201 (FTDX10 : « L COMP 0 » refusé, plage déclarée 0..1) : au plus près de l'origine plutôt
+                    # que de laisser la valeur d'essai (milieu de la plage).
+                    near = await self._restore_nearest(name, orig, rng)
+                    self._w["not_restored"].append(f"{name} (origine {orig:g}" +
+                                                   (f", remis à {near:g} : le poste refuse {orig:g})" if near is not None else ")"))
                 return
             results.append(await self._poll(f"l {name}", lambda v, t=value: abs(v - t) <= tol))
         gaps = [None if r is None else abs(r - v) for r, v in zip(results, (target, orig))]

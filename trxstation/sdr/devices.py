@@ -8,6 +8,8 @@ Le numéro de série retenu est celui de l'API : sysfs le montre parfois en reta
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import json
 import os
@@ -224,6 +226,7 @@ def merge(api: list[dict], usb: list[dict]) -> list[Device]:
     return out
 
 
+@guarded("trx-sdr")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-sdr", description="SDR de la machine (lecture seule : n'ouvre aucun SDR)")
     ap.add_argument("--list", action="store_true", help="liste des SDR (par défaut)")

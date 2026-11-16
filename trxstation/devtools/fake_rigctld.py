@@ -46,6 +46,7 @@ class FakeRigctld:
         self.commands: list[str] = []
         self.errors: dict[str, int] = {}   # clé = lettre de commande (« l », « F »...) -> code RPRT
         self.delay_s = 0.0
+        self.slow: dict[str, float] = {}   # commande exacte (ex. « u COMP ») -> délai avant la réponse (Yaesu FTDX10 : 2,5 s)
         self.fail_t = 0            # les N prochaines commandes T échouent (RPRT -5)
         self.ignore_unkey = False  # « T 0 » accepté mais le PTT reste actif (poste bloqué)
         self.bare = False          # réponses SANS libellé (« 14200000 » au lieu de « Frequency: 14200000 »)
@@ -94,8 +95,9 @@ class FakeRigctld:
                     break
                 line = raw.decode(errors="replace").strip()
                 self.commands.append(line)
-                if self.delay_s:
-                    await asyncio.sleep(self.delay_s)
+                delay = self.slow.get(line.lstrip("+"), self.delay_s)
+                if delay:
+                    await asyncio.sleep(delay)
                 writer.write(self._reply(line).encode())
                 await writer.drain()
         except ConnectionError:

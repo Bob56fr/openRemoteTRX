@@ -23,11 +23,14 @@
 | Coupures toutes les 15 à 30 s | deux appareils sur le même profil VPN | un profil par appareil |
 | Émission coupée toute seule | durée maximale atteinte, téléphone qui ne répond plus, fréquence hors bandes, opérateur sur place | normal : la raison est affichée dans la page et le journal |
 | Plus rien ne répond, alerte « mode sûr » | pannes répétées | partie 6.2 |
+| Essai du poste refusé : « ORT-9313 … la station est en marche » | l'essai a besoin du poste pour lui seul | arrêter la station (menu 1.2, ou raccourci Windows 4), refaire l'essai, redémarrer la station |
+| Un outil s'arrête avec « ORT-9312 … erreur inattendue » | défaut du logiciel dans un cas non prévu (nouveau poste, carte son…) | le message indique le fichier de détail (dossier `plantages`) : le joindre à la demande d'aide (partie 8.3) |
 
 ## 8.3 Demander de l'aide
 
 1. Menu **2.3** : crée un rapport de dépannage (zip sur le Bureau) **sans aucun mot de passe**. Sous Windows :
-   le dossier des journaux (raccourci 7) et le résultat du diagnostic.
+   le dossier des journaux (raccourci 7) et le résultat du diagnostic. Les traces des outils arrêtés sur une erreur
+   (code ORT-9312) sont dans le dossier `plantages` du dossier d'état de la station, et le rapport les joint.
 2. Depuis la page web : section « Signaler un problème » (texte relu avant l'envoi).
 3. Ouvre un ticket sur https://github.com/Bob56fr/openRemoteTRX/issues avec le formulaire **en français**
    (« Signaler un bug »), décris ce que tu faisais, ce que tu attendais, ce qui s'est passé, et joins le rapport.

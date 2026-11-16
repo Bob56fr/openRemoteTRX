@@ -226,6 +226,26 @@ def test_settings_that_the_rig_rounds_or_ignores_are_told_apart():
     explore_run(scenario, setup=setup)
 
 
+def test_an_original_value_refused_by_the_rig_is_restored_as_close_as_possible():
+    """Étape 201 (FTDX10 : « L COMP 0 » refusé) : la valeur d'essai (milieu de la plage) ne reste pas sur le poste."""
+    def setup(fake):
+        original = fake._reply
+
+        def reply(line):
+            parts = line.lstrip("+").split()
+            if parts[:2] == ["L", "KEYSPD"] and float(parts[2]) == 20:
+                return "set_level: KEYSPD\nRPRT -14\n"
+            return original(line)
+        fake._reply = reply
+
+    async def scenario(ex, fake, out):
+        result = await ex.run()
+        assert abs(fake.levels["KEYSPD"] - 20) <= 1                                 # un pas de l'origine, pas le milieu
+        finding = next(f for f in result.findings if f.id == "writes_not_restored")
+        assert "KEYSPD (origine 20, remis à" in finding.title
+    explore_run(scenario, setup=setup)
+
+
 def test_replies_from_the_rigctld_cache_are_reported_and_a_slow_rig_is_not():
     async def fast(ex, fake, out):
         result = await ex.run()

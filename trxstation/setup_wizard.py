@@ -10,6 +10,8 @@ l'état du PTT, et force un retour en RX si le PTT est déjà actif.
 """
 from __future__ import annotations
 
+from .crashguard import guarded
+
 import argparse
 import copy
 import getpass
@@ -795,6 +797,7 @@ def load_base(path: Path | None) -> Config | None:
     return cfg
 
 
+@guarded("trx-setup")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-setup", description="Assistant de configuration de la station TRX")
     ap.add_argument("--output", "-o", type=Path, default=Path("station.toml"))

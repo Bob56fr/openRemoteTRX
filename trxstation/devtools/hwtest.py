@@ -26,6 +26,8 @@ coupée à la fin. Le PTT n'est jamais actif pendant qu'une question est posée.
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import asyncio
 import socket
@@ -48,6 +50,9 @@ from ..gateway.cat.capabilities import data_mode_for
 from ..gateway.safety import PttController, PttLimits, Refused
 from ..hamlib import rigctld_command
 from ..paths import default_config_path
+from ..procutil import station_running
+from ..errors import codes
+from ..errors.emit import render
 
 CLIENT = "hwtest"
 EMIT_WORD = "EMETTRE"
@@ -152,11 +157,17 @@ class HwTest:
         answer = await self.prompt(f"    Pour continuer, tape {EMIT_WORD} (autre chose = on passe) : ")
         return typed(answer, EMIT_WORD)
 
-    async def read_ptt(self) -> bool | None:
-        try:
-            return await self.link.client.get_ptt()
-        except Exception:
-            return None
+    async def read_ptt(self, wait_s: float = 0.0) -> bool | None:
+        """État du PTT relu sur le poste ; None si illisible. `wait_s` > 0 (étape 1 seulement) : nouvel essai tant que la
+        liaison se refait (lecture facultative trop lente abandonnée par CatLink : Yaesu FTDX10, « u COMP »)."""
+        end = time.monotonic() + wait_s
+        while True:
+            try:
+                return await self.link.client.get_ptt()
+            except Exception:
+                if time.monotonic() >= end:
+                    return None
+                await asyncio.sleep(0.2)
 
     async def key(self):
         """Prise d'émission, après le délai anti-rebond imposé par la couche de sécurité (0,3 s)."""
@@ -232,7 +243,7 @@ class HwTest:
         self.say(f"  Poste : {caps.manufacturer + ' ' + caps.model_name if caps and caps.model_name else 'modèle ' + str(self.cfg.rig.model)}")
         self.say(f"  Fréquence {state.frequency_hz:,} Hz".replace(",", " ") + f", mode {state.mode}, filtre {state.passband_hz} Hz")
         self.say(f"  S-mètre (dB / S9) : {samples}")
-        ptt = await self.read_ptt()
+        ptt = await self.read_ptt(wait_s=self.cat_timeout_s)
         if ptt is True:
             return self.record("CAT", False, "le poste est EN ÉMISSION alors qu'il ne devrait pas : vérifie le PTT/VOX")
         if ptt is None:
@@ -840,8 +851,14 @@ async def run_hwtest(cfg: Config, hw: HwTest, *, spawn: bool = True) -> int:
         if not _port_open(cfg):
             hw.say("rigctld n'a pas démarré (modèle, port COM ou débit incorrects ? poste éteint ?).")
             return 3
+    elif station_running(cfg.supervisor.instance_lock_port):
+        # Étape 201 : l'essai partageait le poste avec la station en marche (deux programmes qui pilotent le PTT).
+        _, message = render(codes.ORT_9313, outil="trx-hwtest",
+                            comment="TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »")
+        hw.say(f"{codes.ORT_9313} {message}")
+        return 3
     else:
-        hw.say("rigctld déjà actif : utilisé tel quel.")
+        hw.say("rigctld déjà actif (lancé hors de la station) : utilisé tel quel.")
     try:
         await hw.run()
         return hw.report()
@@ -854,6 +871,7 @@ async def run_hwtest(cfg: Config, hw: HwTest, *, spawn: bool = True) -> int:
                 proc.kill()
 
 
+@guarded("trx-hwtest")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-hwtest", description="Essai guidé sur un vrai poste")
     ap.add_argument("--config", type=Path, default=default_config_path())

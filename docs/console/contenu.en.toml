@@ -157,14 +157,14 @@ role = "Shows the last 80 lines of the station services log."
 quand = "When the diagnostic reports a failed service, or to understand why a transmission was cut."
 modifie = "Nothing."
 admin = true
-expert = "<p>Full log: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>.</p>"
+expert = "<p>Full log: <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>. On Windows: last lines of the files in the <code>logs</code> folder next to <code>station.toml</code>.</p>"
 
 [menus.report]
 role = "Creates a troubleshooting report (zip file on the Desktop): diagnostic, logs, configuration <strong>without any password</strong>, versions, detected hardware, reports sent from the page, station identifier."
 quand = "To ask for help: attach this zip to your request."
 modifie = "Nothing (a file is created on the Desktop)."
 admin = false
-expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's <code>station.toml</code> file has its secrets masked; you may still check its content before sending it if you wish.</p>"
+expert = "<p>Without the menu: <code>trx-console --rapport</code>. The report's <code>station.toml</code> file has its secrets masked; you may still check its content before sending it if you wish. The report also includes the traces of tools that stopped on an unexpected error (<code>plantages</code> folder, code ORT-9312).</p>"
 
 [menus.clear_safe_mode]
 role = "Leaves <strong>safe mode</strong>. The supervisor puts the station into it after repeated failures: transceiver in receive, access cut."

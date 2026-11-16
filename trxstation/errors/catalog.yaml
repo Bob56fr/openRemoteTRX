@@ -1291,6 +1291,31 @@ ORT-2024:
     - 'Hamlib ignoring the cache setting'
     preconisation: 'Restart the station so it starts rigctld itself, or add « -C cache_timeout=0 » to rigctld.'
 
+ORT-2025:
+  gravite: info
+  titre: 'Lecture du poste trop lente ou refusée : abandonnée'
+  message: 'Lecture de {nom} ({genre}) abandonnée pour ce poste : {detail}. Les autres lectures continuent.'
+  causes:
+  - 'Commande refusée par le poste puis réessayée par Hamlib (Yaesu FTDX10 avec Hamlib 4.7.2 : « u COMP » = 2,5 s)'
+  - 'Fonction ou niveau que le poste ne gère pas'
+  - 'Réponse illisible de rigctld'
+  preconisation: 'Rien à faire : la station cesse de demander cette valeur pour ce poste. À signaler à Hamlib si la
+    fonction existe sur le poste (docs/hamlib-rapports.md).'
+  action_auto: lecture_abandonnee
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2025/
+  depuis_version: 0.153.0
+  en:
+    titre: 'Rig reading too slow or refused: dropped'
+    message: 'Reading of {nom} ({genre}) dropped for this rig: {detail}. Other readings carry on.'
+    causes:
+    - 'Command refused by the rig then retried by Hamlib (Yaesu FTDX10 with Hamlib 4.7.2: « u COMP » = 2.5 s)'
+    - 'Function or level the rig does not support'
+    - 'Unreadable answer from rigctld'
+    preconisation: 'Nothing to do: the station stops asking for this value on this rig. Report it to Hamlib if the
+      rig does have the function (docs/hamlib-rapports.md).'
+
 ORT-2104:
   gravite: erreur
   titre: Délai de réponse CAT dépassé
@@ -9060,6 +9085,50 @@ ORT-9311:
     - requirements.lock out of date for the package
     preconisation: Do not force the installation. Try again later or from another network; if the mismatch persists,
       report it with the full message.
+
+ORT-9312:
+  gravite: erreur
+  titre: 'Outil arrêté sur une erreur inattendue'
+  message: '{outil} s''est arrêté sur une erreur inattendue : {erreur}. Détail enregistré dans {fichier}.'
+  causes:
+  - 'Défaut du logiciel dans un cas non prévu (nouveau poste, nouvelle carte son, réponse inattendue)'
+  - 'Fichier ou périphérique devenu inaccessible pendant l''exécution'
+  preconisation: 'Lire le message, puis envoyer le fichier indiqué (ou le rapport du menu 2.3 de TRX Console) avec
+    la description de ce qui était en cours. Le poste a été remis en réception par l''outil s''il émettait.'
+  action_auto: arret_outil
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9312/
+  depuis_version: 0.153.0
+  en:
+    titre: 'Tool stopped on an unexpected error'
+    message: '{outil} stopped on an unexpected error: {erreur}. Details saved in {fichier}.'
+    causes:
+    - 'Software defect in an unforeseen case (new rig, new sound card, unexpected answer)'
+    - 'File or device that became unreachable while running'
+    preconisation: 'Read the message, then send the file shown (or the TRX Console menu 2.3 report) with a
+      description of what was going on. The tool put the rig back to receive if it was transmitting.'
+
+ORT-9313:
+  gravite: avertissement
+  titre: 'Station en marche : essai du poste refusé'
+  message: '{outil} a besoin du poste pour lui seul, mais la station est en marche : arrête-la d''abord ({comment}).'
+  causes:
+  - 'Essai du poste ou qualification lancé sans arrêter la station'
+  preconisation: 'Arrêter la station (TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »), lancer
+    l''essai, puis redémarrer la station.'
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-9313/
+  depuis_version: 0.153.0
+  en:
+    titre: 'Station running: rig test refused'
+    message: '{outil} needs the rig for itself, but the station is running: stop it first ({comment}).'
+    causes:
+    - 'Rig test or qualification started without stopping the station'
+    preconisation: 'Stop the station (TRX Console menu 1.2, or the Windows shortcut « 4 - Arrêter la station »), run
+      the test, then restart the station.'
 
 ORT-9501:
   gravite: erreur

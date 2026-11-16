@@ -29,6 +29,7 @@ OFFSETS = ("RIT", "XIT")                            # décalages du clarifieur, 
 EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METER", "NR", "NB")
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
+SLOW_REFUSAL_S = 1.5        # lecture facultative REFUSÉE après plus de 1,5 s (Hamlib a réessayé) : abandonnée aussitôt
 
 
 @dataclass
@@ -243,6 +244,7 @@ class CatLink:
         return True
 
     async def _read_optional(self, kind: str, name: str) -> None:
+        started = time.monotonic()
         try:
             if kind == "o":
                 value = await self.client.get_offset(name)
@@ -251,12 +253,19 @@ class CatLink:
         except RigError as exc:
             key = f"{kind}:{name}"
             self._failures[key] = self._failures.get(key, 0) + 1
-            if exc.code in PERMANENT_ERRORS or self._failures[key] >= MAX_TRANSIENT_FAILURES:
-                self._disable(kind, name, f"RPRT {exc.code}")
+            slow = time.monotonic() - started > SLOW_REFUSAL_S     # refus après des essais répétés de Hamlib : bloque le bus
+            if exc.code in PERMANENT_ERRORS or slow or self._failures[key] >= MAX_TRANSIENT_FAILURES:
+                self._disable(kind, name, f"RPRT {exc.code}" + (f" après {time.monotonic() - started:.1f} s" if slow else ""))
             return
         except CatProtocolError as exc:
             self._disable(kind, name, str(exc))
             return
+        except CatConnectionError as exc:
+            # Lecture FACULTATIVE trop lente (Yaesu FTDX10 + Hamlib 4.7.2 : « u COMP » = « PR; » refusé par « ?; »,
+            # réessayé par Hamlib, 2,5 s) : abandonnée pour ce poste, sinon la liaison tomberait à chaque tour et le
+            # PTT deviendrait illisible. La connexion est quand même refaite (flux désynchronisé après un délai).
+            self._disable(kind, name, f"pas de réponse dans le délai ({exc})")
+            raise
         self._failures[f"{kind}:{name}"] = 0
         bucket = {"f": "functions", "l": "levels", "o": "offsets"}[kind]
         merged = dict(getattr(self._state, bucket))
@@ -268,7 +277,7 @@ class CatLink:
         if key not in self._disabled:
             self._disabled.add(key)
             what = {"f": "fonction", "l": "niveau", "o": "décalage", "s": "lecture"}.get(kind, kind)
-            log.info("lecture de %s (%s) abandonnée pour ce poste (%s)", name, what, why)
+            emit_event(codes.ORT_2025, logger=log, nom=name, genre=what, detail=why)
         if kind == "s":
             return
         bucket = {"f": "functions", "l": "levels", "o": "offsets"}[kind]     # seulement la lecture abandonnée, pas son homonyme

@@ -10,6 +10,8 @@ Lit le journal de la sonde (state_dir/netprobe) sans rien y écrire ; la station
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import sys
 from dataclasses import asdict
@@ -22,6 +24,7 @@ from ..station_id import read_station_id
 from .export import build_export, export_name, report_text, store_of
 
 
+@guarded("trx-netreport")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-netreport", description="Qualité du réseau de la station (sonde réseau)")
     ap.add_argument("--config", type=Path, default=default_config_path())

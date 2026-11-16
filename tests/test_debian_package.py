@@ -139,7 +139,7 @@ def test_pyproject_station_extra_and_console_command():
         assert module in station
     assert project["scripts"]["trx-console"] == "trxstation.console:main"
     launcher = (ROOT / "debian" / "trx-console.desktop").read_text(encoding="utf-8")
-    assert "Exec=trx-console" in launcher and "Terminal=true" in launcher
+    assert "Exec=env TRX_PAUSE_ON_EXIT=1 trx-console" in launcher and "Terminal=true" in launcher   # étape 201 : pause après une erreur
 
 
 def test_every_linked_command_exists_and_qualification_is_available():

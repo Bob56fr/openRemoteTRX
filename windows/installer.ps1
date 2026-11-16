@@ -386,12 +386,12 @@ Ok "la station démarre à l'ouverture de session de $me (tâche planifiée « $
 $py = Venv-Python $Current
 $ps = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 if (Test-Path -LiteralPath $MenuDir) { Remove-Item -LiteralPath $MenuDir -Recurse -Force }
-New-Shortcut "1 - Configuration de la station" $py "-m trxstation.setup_wizard --output `"$Config`"" "Assistant : poste, ports, cartes son, réseau, comptes" $DataDir
+New-Shortcut "1 - Configuration de la station" $ps "-NoExit -Command `"& '$py' -m trxstation.setup_wizard --output '$Config'`"" "Assistant : poste, ports, cartes son, réseau, comptes" $DataDir
 New-Shortcut "2 - Diagnostic" $ps "-NoExit -Command `"& '$py' -m trxstation.console --diagnostic --config '$Config'`"" "Contrôle complet, lecture seule" $DataDir
 New-Shortcut "3 - Démarrer la station" $ps "-Command `"Start-ScheduledTask -TaskName '$TaskName'; Write-Host 'Station démarrée.'; Start-Sleep 3`"" "Démarre la station en arrière-plan" $DataDir
 New-Shortcut "4 - Arrêter la station" $ps "-NoExit -Command `"& '$py' -m trxstation.supervisor.main --config '$Config' --stop`"" "Arrête la station (le poste revient en réception)" $DataDir
-New-Shortcut "5 - Tableau de bord" $py "-m trxstation.monitor.main --config `"$Config`"" "État en direct ; touche STOP TX" $DataDir
-New-Shortcut "6 - Essai du poste" $py "-m trxstation.devtools.hwtest --config `"$Config`"" "Essai guidé (arrêter la station avant)" $DataDir
+New-Shortcut "5 - Tableau de bord" $ps "-NoExit -Command `"& '$py' -m trxstation.monitor.main --config '$Config'`"" "État en direct ; touche STOP TX" $DataDir
+New-Shortcut "6 - Essai du poste" $ps "-NoExit -Command `"& '$py' -m trxstation.devtools.hwtest --config '$Config'`"" "Essai guidé (arrêter la station avant)" $DataDir
 New-Shortcut "7 - Journaux de la station" "explorer.exe" "`"$LogDir`"" "Dossier des journaux" $DataDir
 New-Shortcut "8 - Mode d'emploi Windows" (Join-Path $Current "notice-windows.html") "" "Notice d'installation et d'utilisation" $DataDir
 New-Shortcut "9 - Désinstaller" $ps "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $Release 'installer.ps1')`" -Desinstaller" "Retire TRX distant" $env:TEMP

@@ -86,3 +86,14 @@ Sources :
 - [Manuel CAT du FTDX10](https://rigpix.com/yaesu/ftdx10_cat_manual.pdf)
 - [FTDX10 et DigiPi](https://groups.google.com/g/digipi/c/MWWNC-LkJZM)
 - [SCU-LAN10, kit distant officiel Yaesu](https://www.wimo.com/en/scu-lan10)
+
+## Premier essai réel (FTDX10, 2026-11-16, étape 201)
+
+Windows, Hamlib 4.7.2, port CP2105 « Enhanced » (COM « Enhanced » = CAT), 38400 bauds :
+
+- CAT, exploration sans émission (`trx-qualif --explorer`) et essai du poste en réception seule : **OK**.
+- Lecture du compresseur (« u COMP ») : 2,45 s puis refus ; la station l'abandonne pour ce poste (code ORT-2025).
+  Avant la station 0.153.0, cette lecture faisait échouer l'étape 1 de l'essai du poste (« PTT illisible »).
+- « L COMP 0 » refusé : l'exploration de la station 0.152.0 a laissé le niveau du processeur de parole à 0,5 ;
+  vérifier ce réglage sur le poste après une exploration.
+- Émission : pas encore essayée (charge fictive).

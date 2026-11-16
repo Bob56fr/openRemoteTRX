@@ -13,6 +13,8 @@ Le wizard graphique (page web locale) viendra au lot Q2 ; le moteur est le même
 """
 from __future__ import annotations
 
+from ..crashguard import guarded
+
 import argparse
 import asyncio
 import contextlib
@@ -29,6 +31,9 @@ from ..config import Config
 from ..gateway.cat.capabilities import CapabilitiesError, _run_dump_caps
 from ..hamlib import rigctld_command
 from ..paths import default_config_path
+from ..procutil import station_running
+from ..errors import codes
+from ..errors.emit import render
 from ..answers import typed
 from ..gateway.cat import RigctldClient
 from .coherence import analyse_caps, render_findings
@@ -79,6 +84,10 @@ async def rigctld_session(cfg: Config, *, spawn: bool, out=print):
     host, port = cfg.network.rigctld_host, cfg.network.rigctld_port
     proc = None
     if _port_open(host, port):
+        if spawn and station_running(cfg.supervisor.instance_lock_port):
+            _, message = render(codes.ORT_9313, outil="trx-qualif",
+                                comment="TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »")
+            raise RigctldUnavailable(f"{codes.ORT_9313} {message}")
         if spawn:
             raise RigctldUnavailable(f"rigctld répond déjà sur {host}:{port} : la station tourne-t-elle ? Arrête-la "
                                      "(TRX Console, menu 1.2), ou ajoute --no-spawn pour utiliser ce rigctld.")
@@ -219,6 +228,7 @@ async def run_explore(cfg: Config, profile: HamlibProfile, dump_text: str, outpu
     return EXIT_REFUSED if result.stopped else EXIT_OK
 
 
+@guarded("trx-qualif")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-qualif", description="Qualification d'un poste pour TRX Remote")
     ap.add_argument("--config", type=Path, default=None,

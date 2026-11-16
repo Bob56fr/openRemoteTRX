@@ -157,14 +157,14 @@ role = "Affiche les 80 dernières lignes du journal des services de la station."
 quand = "Quand le diagnostic signale un service en échec, ou pour comprendre une coupure d'émission."
 modifie = "Rien."
 admin = true
-expert = "<p>Journal complet : <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>.</p>"
+expert = "<p>Journal complet : <code>journalctl -u trx-gateway -u trx-supervisor -u rigctld --since \"1 hour ago\"</code>. Sous Windows : dernières lignes des fichiers du dossier <code>logs</code> placé à côté de <code>station.toml</code>.</p>"
 
 [menus.report]
 role = "Crée un rapport de dépannage (fichier zip sur le Bureau) : diagnostic, journaux, configuration <strong>sans aucun mot de passe</strong>, versions, matériel détecté, rapports envoyés depuis la page, identifiant de la station."
 quand = "Pour demander de l'aide : joins ce zip à ta demande."
 modifie = "Rien (un fichier est créé sur le Bureau)."
 admin = false
-expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code>station.toml</code> du rapport a ses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si tu le souhaites.</p>"
+expert = "<p>Sans le menu : <code>trx-console --rapport</code>. Le fichier <code>station.toml</code> du rapport a ses secrets masqués ; vérifie quand même son contenu avant de l'envoyer si tu le souhaites. Le rapport joint aussi les traces des outils arrêtés sur une erreur inattendue (dossier <code>plantages</code>, code ORT-9312).</p>"
 
 [menus.clear_safe_mode]
 role = "Sort du <strong>mode sûr</strong>. Le superviseur y place la station après des pannes répétées : poste en réception, accès coupé."

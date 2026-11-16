@@ -48,3 +48,13 @@ def acquire_instance_lock(port: int) -> socket.socket | None:
     except OSError:
         sock.close()
         return None
+
+
+def station_running(lock_port: int) -> bool:
+    """La station (son superviseur) est-elle en marche ? Même moyen sous Debian et sous Windows : le port du verrou
+    d'instance du superviseur est-il pris ? (Sous Debian le superviseur tourne en root : le port se voit quand même.)"""
+    probe = acquire_instance_lock(lock_port)
+    if probe is None:
+        return True
+    probe.close()
+    return False

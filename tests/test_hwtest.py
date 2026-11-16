@@ -277,6 +277,22 @@ def test_no_spawn_without_rigctld_gives_a_clear_answer_and_asks_nothing(tmp_path
     run(tmp_path, scenario)
 
 
+def test_rig_test_refuses_to_share_the_rig_with_a_running_station(tmp_path):
+    """Étape 201 : « rigctld déjà actif : utilisé tel quel » alors que la station tournait (deux pilotes du PTT)."""
+    import socket
+    async def scenario(hw, fake, out, prompts):
+        holder = socket.socket()
+        holder.bind(("127.0.0.1", 0))                                                   # verrou du superviseur pris
+        hw.cfg.supervisor.instance_lock_port = holder.getsockname()[1]
+        try:
+            assert await run_hwtest(hw.cfg, hw, spawn=True) == 3
+        finally:
+            holder.close()
+        assert prompts == [] and any("ORT-9313" in line and "station est en marche" in line for line in out)
+        assert fake.ptt_set_calls == 0
+    run(tmp_path, scenario)
+
+
 def test_ambiguous_tot_and_heartbeat_combination_is_refused(tmp_path):
     cfg = dummy_config()                                                                # heartbeat 2 s par défaut
     with pytest.raises(ValueError) as exc:
