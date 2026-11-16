@@ -10,8 +10,10 @@ Il lance sdr-core (programme natif, processus enfant), lit ses trames (frames.py
      "code": ..., "detail": ..., "serial", "fs", "center", "lna", "gr", "ant", "rate", "bins", "overload", "drops",
      "gaps", "cpu", "restarts", "t"}
 Commandes d'un opérateur (droit client_commands, relayées par la passerelle) : « state », « set » (center_hz, lna, gr,
-rate, agc, dfreq_hz, mode, dbw, sql, zoom, zoom_off). Zoom du waterfall (étape 203) : la ligne ne couvre que fs/zoom,
-autour de centre + zoom_off ; la fenêtre suit la fréquence écoutée quand celle-ci en sort (zoom_window). De la passerelle seulement : « audio » (quelqu'un écoute le SDR) ; le son démodulé
+rate, agc, dfreq_hz, mode, dbw, sql, zoom, zoom_off, fs, ant). Zoom du waterfall (étape 203) : la ligne ne couvre que fs/zoom,
+autour de centre + zoom_off ; la fenêtre suit la fréquence écoutée quand celle-ci en sort (zoom_window).
+Largeur et antenne depuis la page (étape 204) : `fs` (0 = celle de station.toml, qui reste le PLAFOND posé sur la
+station) et `ant` (A ou B, SDRplay seulement ; vide = station.toml) ; un changement relance sdr-core. De la passerelle seulement : « audio » (quelqu'un écoute le SDR) ; le son démodulé
 part alors en UDP vers 127.0.0.1:[sdr] audio_port (paquets « ORSA », jeton dérivé du secret du module) ; « load »
 (niveau de bridage 0 à 5 décidé par la passerelle, load.py). Le module se bride aussi LUI-MÊME au-delà de
 [sdr] max_cpu_pct / max_mem_mb (niveaux 1 à 4) ; le niveau appliqué est le plus haut des deux (5 = sdr-core arrêté). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
@@ -59,6 +61,8 @@ SET_LIMITS.update({"dfreq_hz": (1_000, 2_000_000_000), "dbw": (100, 15_000), "sq
 MODES = ("AM", "NFM", "USB", "LSB", "CW")
 ZOOMS = (1, 2, 4, 8, 16)       # zoom du waterfall (sdr-core 0.152.0+ : « zoom Z DÉCALAGE ») ; décalage en Hz signé
 ZOOM_OFF_MAX = 5_000_000       # |zoom_off| au plus (la moitié de 10 MHz) ; borné ensuite à la largeur réelle
+ANTENNAS = ("A", "B")          # entrées du RSP2 (une clé RTL-SDR n'en a pas de choix)
+CHOICE_KEYS = ("mode", "zoom", "zoom_off", "fs", "ant")
 DEFAULT_DBW = {"AM": 8000, "NFM": 12500, "USB": 2700, "LSB": 2700, "CW": 500}
 AUDIO_MAGIC = b"ORSA"          # paquet de son vers la passerelle : magie, jeton (16), numéro (uint32), 960 int16
 AUDIO_TOKEN_BYTES = 16
@@ -81,6 +85,8 @@ class Settings:
     sql: int = 0
     zoom: int = 1              # 1 = toute la largeur
     zoom_off: int = 0          # centre de la fenêtre zoomée par rapport au centre du SDR (Hz)
+    fs: int = 0                # largeur choisie depuis la page (0 = station.toml, jamais au-delà)
+    ant: str = ""              # antenne choisie depuis la page (vide = station.toml)
 
 
 def zoom_window(fs: int, zoom: int, off: int, listen_off: int | None = None) -> int:
@@ -97,8 +103,8 @@ def zoom_window(fs: int, zoom: int, off: int, listen_off: int | None = None) -> 
 
 def clean_settings(args: dict, current: Settings) -> Settings:
     """Nouveaux réglages demandés par un opérateur ; SetRefused (message en français) si l'un est hors limites."""
-    if not isinstance(args, dict) or set(args) - set(SET_LIMITS) - set(SET_BOOLS) - {"mode", "zoom", "zoom_off"}:
-        raise SetRefused(f"réglages permis : {', '.join([*SET_LIMITS, *SET_BOOLS, 'mode', 'zoom', 'zoom_off'])}")
+    if not isinstance(args, dict) or set(args) - set(SET_LIMITS) - set(SET_BOOLS) - set(CHOICE_KEYS):
+        raise SetRefused(f"réglages permis : {', '.join([*SET_LIMITS, *SET_BOOLS, *CHOICE_KEYS])}")
     values = asdict(current)
     for name in SET_BOOLS:
         if name in args:
@@ -127,12 +133,40 @@ def clean_settings(args: dict, current: Settings) -> Settings:
         if isinstance(v, bool) or not isinstance(v, (int, float)) or int(v) != v or abs(v) > ZOOM_OFF_MAX:
             raise SetRefused(f"zoom_off : entier de -{ZOOM_OFF_MAX} à {ZOOM_OFF_MAX}")
         values["zoom_off"] = int(v)
+    if "fs" in args:
+        v = args["fs"]
+        if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10_000_000:
+            raise SetRefused("fs : largeur en Hz (0 = celle de la station)")
+        values["fs"] = v
+    if "ant" in args:
+        if args["ant"] not in ("", *ANTENNAS):
+            raise SetRefused(f"ant : {' ou '.join(ANTENNAS)}")
+        values["ant"] = args["ant"]
     return Settings(**values)
+
+
+def fs_choices(sd: cfgmod.Sdr) -> list[int]:
+    """Largeurs que la page peut choisir : celles du pilote, au plus celle de station.toml (plafond de la station)."""
+    return [r for r in cfgmod.sdr_rates(sd.driver) if r <= sd.sample_rate_hz]
+
+
+def base_fs(sd: cfgmod.Sdr, s: Settings) -> int:
+    """Largeur demandée (avant bridage) : celle choisie depuis la page si elle est permise, sinon station.toml."""
+    return s.fs if s.fs and s.fs in fs_choices(sd) else sd.sample_rate_hz
+
+
+def antenna(sd: cfgmod.Sdr, s: Settings) -> str:
+    return s.ant if s.ant in ANTENNAS and sd.driver == "sdrplay" else sd.antenna
+
+
+def applied_fs(sd: cfgmod.Sdr, s: Settings, level: int) -> int:
+    """Largeur réellement appliquée au niveau de bridage donné."""
+    return sample_rate(base_fs(sd, s), level, low_rate(sd))
 
 
 def listened(sd: cfgmod.Sdr, s: Settings, fs: int | None = None) -> int:
     """Fréquence écoutée : celle choisie si elle tient dans la largeur du SDR (95 %), sinon le centre."""
-    half = (fs or sd.sample_rate_hz) * 0.475
+    half = (fs or base_fs(sd, s)) * 0.475
     return s.dfreq_hz if s.dfreq_hz and abs(s.dfreq_hz - s.center_hz) <= half else s.center_hz
 
 
@@ -150,12 +184,12 @@ def low_rate(sd: cfgmod.Sdr) -> int:
 
 def core_args(sd: cfgmod.Sdr, s: Settings, level: int = 0) -> list[str]:
     """Arguments de sdr-core ; level = niveau de bridage appliqué (cadence du waterfall, échantillonnage)."""
-    fs = sample_rate(sd.sample_rate_hz, level, low_rate(sd))
+    fs = applied_fs(sd, s, level)
     # zoom passé seulement s'il sert : un sdr-core plus ancien refuserait l'argument (réglage refusé, code 2)
     zoom = ["--zoom", str(s.zoom), "--zoom-off", str(zoom_window(fs, s.zoom, s.zoom_off))] if s.zoom > 1 else []
     return [*zoom, "--driver", sd.driver, "--dfreq", str(listened(sd, s, fs)), "--mode", s.mode, "--dbw", str(s.dbw),
             "--sql", str(s.sql), "--serial", sd.serial, "--fs", str(fs), "--bw", str(cfgmod.SDR_RATES.get(fs, 0)),
-            "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", sd.antenna,
+            "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", antenna(sd, s),
             "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(waterfall_rate(s.rate, level)),
             "--agc", str(int(s.agc))]
 
@@ -223,7 +257,7 @@ class SdrService:
                         self.sd.agc)
         try:
             data = json.loads((self.folder / "last.json").read_text(encoding="utf-8"))
-            kept = {k: v for k, v in data.items() if (k in SET_LIMITS or k in SET_BOOLS or k in ("mode", "zoom", "zoom_off"))
+            kept = {k: v for k, v in data.items() if (k in SET_LIMITS or k in SET_BOOLS or k in CHOICE_KEYS)
                     and not (k == "dfreq_hz" and not v)}          # 0 = le centre
             return clean_settings(kept, base)
         except (OSError, ValueError, TypeError, AttributeError):
@@ -241,8 +275,10 @@ class SdrService:
     # ------------------------------------------------------------- état publié
     def snapshot(self) -> dict:
         s = self.settings
-        fs = sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))
-        return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
+        fs = applied_fs(self.sd, s, self._applied)
+        return {**self.state, "ant": antenna(self.sd, s), "fs_max": self.sd.sample_rate_hz,
+                "fs_choices": fs_choices(self.sd), "fs_set": base_fs(self.sd, s),
+                "ant_choices": list(ANTENNAS) if self.sd.driver == "sdrplay" else [], "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
                 "zoom": s.zoom, "zoom_off": zoom_window(fs, s.zoom, s.zoom_off),
                 "dfreq": listened(self.sd, s, fs), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.demodulating,
                 "restarts": self.restarts, "t": int(self.clock()), "fs": fs,
@@ -290,18 +326,25 @@ class SdrService:
                 new = clean_settings(data.get("args") or {}, self.settings)
             except SetRefused as exc:
                 raise CallRefused("sdr_invalid", str(exc)) from None
-            if ("dfreq_hz" in (data.get("args") or {})
-                    and listened(self.sd, new, sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))) != new.dfreq_hz):
-                raise CallRefused("sdr_invalid", "fréquence écoutée hors de la largeur du SDR : déplacer le centre")
-            fs = sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))
             args = data.get("args") or {}
+            if args.get("fs") and args["fs"] not in fs_choices(self.sd):
+                raise CallRefused("sdr_invalid", "largeur permise : " + ", ".join(f"{r / 1e6:g} MHz" for r in fs_choices(self.sd))
+                                  + " (la plus grande se règle sur la station, menu 5.4)")
+            if args.get("ant") and self.sd.driver != "sdrplay":
+                raise CallRefused("sdr_invalid", "ce SDR n'a pas de choix d'antenne")
+            fs = applied_fs(self.sd, new, self._applied)
+            if "dfreq_hz" in args and listened(self.sd, new, fs) != new.dfreq_hz:
+                raise CallRefused("sdr_invalid", "fréquence écoutée hors de la largeur du SDR : déplacer le centre")
             # fenêtre zoomée : recentrée sur l'écoute si le zoom change (sans décalage demandé) ou si l'écoute en sort
             listen_off = listened(self.sd, new, fs) - new.center_hz
             if "zoom" in args and "zoom_off" not in args:
                 new.zoom_off = listen_off
             new.zoom_off = zoom_window(fs, new.zoom, new.zoom_off, None if "zoom_off" in args else listen_off)
             old, self.settings = self.settings, new
-            await self._command_core(old, new)
+            if (base_fs(self.sd, old), antenna(self.sd, old)) != (base_fs(self.sd, new), antenna(self.sd, new)):
+                await self._restart_core()             # largeur ou antenne : seulement au lancement de sdr-core
+            else:
+                await self._command_core(old, new)
             self._save_settings()
             await self.publish_state()
             return self.snapshot()
@@ -333,12 +376,9 @@ class SdrService:
         self._applied = new
         log.info("bridage du module : niveau %d (%s)%s", new, LEVEL_TEXT[new],
                  f", {self.load_reason()}" if new else "")
-        fs_changed = sample_rate(self.sd.sample_rate_hz, old, low_rate(self.sd)) != sample_rate(self.sd.sample_rate_hz, new, low_rate(self.sd))
+        fs_changed = applied_fs(self.sd, self.settings, old) != applied_fs(self.sd, self.settings, new)
         if new >= TOP or old >= TOP or fs_changed:
-            if self.proc is not None and self.proc.returncode is None:
-                self._reload = True
-                await self._write_core(["quit"])        # la boucle de lecture voit la fin et relance (ou suspend)
-            self._wake.set()
+            await self._restart_core()
         else:
             lines = []
             if waterfall_rate(self.settings.rate, old) != waterfall_rate(self.settings.rate, new):
@@ -347,6 +387,13 @@ class SdrService:
                 lines.append(f"audio {int(self.demodulating)}")
             await self._write_core(lines)
         await self.publish_state()
+
+    async def _restart_core(self) -> None:
+        """Arrêt VOULU de sdr-core (nouvelle largeur, antenne, bridage) : relancé aussitôt, pas compté comme une panne."""
+        if self.proc is not None and self.proc.returncode is None:
+            self._reload = True
+            await self._write_core(["quit"])            # la boucle de lecture voit la fin et relance (ou suspend)
+        self._wake.set()
 
     def _self_measure(self) -> bool:
         """Processeur et mémoire du module (sdr-core + module) ; échelle propre au-delà des plafonds. Vrai si le
@@ -389,7 +436,7 @@ class SdrService:
             lines.append(f"rate {waterfall_rate(new.rate, self._applied)}")
         if new.agc != old.agc:
             lines.append(f"agc {int(new.agc)}")
-        fs = sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))
+        fs = applied_fs(self.sd, new, self._applied)
         if (listened(self.sd, new, fs), new.mode, new.dbw) != (listened(self.sd, old, fs), old.mode, old.dbw):
             lines.append(f"demod {listened(self.sd, new, fs)} {new.mode} {new.dbw}")
         if new.sql != old.sql:

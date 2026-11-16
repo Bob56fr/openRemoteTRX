@@ -327,7 +327,10 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
     (1, 2, 4, 8 ou 16 : la ligne du waterfall ne couvre plus que `fs / zoom`) et `zoom_off` (centre de la fenêtre
     zoomée moins le centre du SDR, Hz, entier de -5 000 000 à 5 000 000, borné par la station à la largeur du SDR) ;
     `zoom` seul recentre la fenêtre sur la fréquence écoutée, et une fréquence écoutée qui sort de la fenêtre la fait
-    suivre ; les lignes `sdr_line` portent alors le centre et la largeur de la fenêtre ; au moins un) :
+    suivre ; les lignes `sdr_line` portent alors le centre et la largeur de la fenêtre ; station 0.155.0+ : `fs`
+    (largeur en Hz, une de `fs_choices`, 0 = celle de station.toml ; jamais au-delà de station.toml, plafond posé sur
+    la station) et `ant` (`A` ou `B`, SDRplay seulement, vide = station.toml) : sdr-core est relancé (une à deux
+    secondes sans lignes) ; au moins un) :
     nouveaux réglages du SDR, gardés sur la station (`state_dir/sdr/last.json`, jamais dans station.toml) ; `data` =
     nouvel état. Ne touche JAMAIS au poste ; envoyer une fréquence du SDR au TRX = `set_frequency` habituel (refusé
     pendant l'émission).
@@ -338,7 +341,9 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
   `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
   (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `agc`, `gr_now` (réduction de gain FI réellement
   appliquée, ou `null`) et `gain_db` (gain total selon le SDR, ou `null`) (0.141.0+), `dfreq`, `mode`, `dbw`, `sql`,
-  `audio` (le module démodule), `zoom` et `zoom_off` (fenêtre du waterfall, 0.154.0+), `sql_open`, `chan_db` et `noise_db` (puissance du canal écouté et bruit estimé, dBFS,
+  `audio` (le module démodule), `zoom` et `zoom_off` (fenêtre du waterfall, 0.154.0+), `fs_max` (largeur de station.toml), `fs_choices` (largeurs
+  permises depuis un client), `fs_set` (largeur demandée avant bridage) et `ant_choices` (`["A", "B"]`, ou `[]` pour une
+  clé RTL-SDR) (0.155.0+), `sql_open`, `chan_db` et `noise_db` (puissance du canal écouté et bruit estimé, dBFS,
   ou `null`) (0.142.0+), `overload` (surcharge du CAN signalée par le SDR), `overloads` (surcharges
   comptées depuis le lancement ; état publié au plus une fois par seconde),
   `drops` et `gaps` (échantillons perdus), `cpu` (% d'un cœur pour sdr-core, ou `null`), `restarts`, `t` ;

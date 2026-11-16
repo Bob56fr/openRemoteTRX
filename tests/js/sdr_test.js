@@ -132,6 +132,24 @@ test("zoom du waterfall : échelle, déplacement, libellé, limites (étape 203)
   assert.deepEqual(sdr.tuneArgs(7400000, 7100000, 2000000), { dfreq_hz: 7400000 });
 });
 
+test("palettes, largeur et antenne du SDR (étape 204)", () => {
+  assert.equal(sdr.paletteLut("theme"), null);                            // couleurs du thème de la page
+  assert.equal(sdr.paletteLut("inconnue"), null);
+  for (const [name] of sdr.PALETTES.slice(1)) {
+    const lut = sdr.paletteLut(name);
+    assert.equal(lut.length, 768);
+    assert.deepEqual(Array.from(lut.slice(0, 3)), [0, 0, 0]);             // plancher noir partout
+  }
+  assert.deepEqual(Array.from(sdr.paletteLut("gris").slice(765)), [255, 255, 255]);
+  assert.equal(sdr.nextPalette("theme"), "classique");
+  assert.equal(sdr.nextPalette(sdr.PALETTES[sdr.PALETTES.length - 1][0]), "theme");
+  assert.equal(sdr.paletteName("chaud"), "Chaud"); assert.equal(sdr.paletteName("?"), "Thème");
+  assert.equal(sdr.rateLabel(2000000), "2 MHz"); assert.equal(sdr.rateLabel(2048000), "2,048 MHz");
+  assert.equal(sdr.checkSettings({ fs: 2000000, ant: "B" }), "");
+  assert.notEqual(sdr.checkSettings({ ant: "C" }), "");
+  assert.notEqual(sdr.checkSettings({ fs: -5 }), "");
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

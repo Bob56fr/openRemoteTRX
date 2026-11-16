@@ -15,6 +15,15 @@
   // Zoom du waterfall (station 0.154.0+, étape 203) : la ligne couvre fs / zoom autour de centre + zoom_off (Hz) ;
   // la station garde la fenêtre dans la largeur du SDR et la recentre sur l'écoute quand celle-ci en sort.
   const ZOOMS = [1, 2, 4, 8, 16], ZOOM_OFF_MAX = 5000000;
+  // Palettes du waterfall du SDR (étape 204, choix gardé dans le navigateur) : « theme » = celle du thème de la page.
+  const PALETTE_STOPS = [0, 0.2, 0.45, 0.7, 0.88, 1];
+  const PALETTES = [
+    ["theme", "Thème", null],
+    ["classique", "Classique", ["#000000", "#000080", "#0060ff", "#00e0ff", "#ffff00", "#ff2000"]],
+    ["chaud", "Chaud", ["#000000", "#3b0a45", "#8a1c4b", "#d94a1f", "#f9b233", "#ffffcc"]],
+    ["vert", "Vert", ["#000000", "#002200", "#005a10", "#10a030", "#80ff60", "#f0fff0"]],
+    ["gris", "Gris", ["#000000", "#202020", "#505050", "#909090", "#d0d0d0", "#ffffff"]],
+  ];
   const WIDTHS = { AM: [6000, 8000, 10000], NFM: [8000, 12500], USB: [1800, 2400, 2700, 3000], LSB: [1800, 2400, 2700, 3000],
                    CW: [250, 500, 1000] };
   const LNA_MAX = 8, GR_MAX = 59, GR_MIN = 20;
@@ -105,6 +114,8 @@
     for (const name of names) {
       if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return name + " : vrai ou faux"; continue; }
       if (name === "mode") { if (!MODES.includes(args[name])) return "mode : " + MODES.join(", "); continue; }
+      if (name === "fs") { const v = args[name]; if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 10000000) return "fs : largeur en Hz"; continue; }
+      if (name === "ant") { if (!["", "A", "B"].includes(args[name])) return "ant : A ou B"; continue; }
       if (name === "zoom") { if (!ZOOMS.includes(args[name])) return "zoom : " + ZOOMS.join(", "); continue; }
       if (name === "zoom_off") {
         const v = args[name];
@@ -237,6 +248,37 @@
     return "×" + z + (st && st.fs > 0 ? " · " + widthLabel(Math.round(st.fs / z)) : "");
   }
 
+  function paletteLut(name) {
+    /* Table de 256 couleurs (r, g, b à la suite) de la palette nommée ; null pour « theme » ou un nom inconnu. */
+    const entry = PALETTES.find((p) => p[0] === name);
+    if (!entry || !entry[2]) return null;
+    const stops = entry[2].map((c, i) => [PALETTE_STOPS[i], parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
+    const lut = new Uint8Array(256 * 3);
+    for (let i = 0; i < 256; i++) {
+      const x = i / 255;
+      let j = 1;
+      while (j < stops.length - 1 && x > stops[j][0]) j++;
+      const [t0, r0, g0, b0] = stops[j - 1], [t1, r1, g1, b1] = stops[j], k = Math.min(1, Math.max(0, (x - t0) / (t1 - t0)));
+      lut[3 * i] = Math.round(r0 + (r1 - r0) * k); lut[3 * i + 1] = Math.round(g0 + (g1 - g0) * k); lut[3 * i + 2] = Math.round(b0 + (b1 - b0) * k);
+    }
+    return lut;
+  }
+
+  function nextPalette(name) {
+    const i = PALETTES.findIndex((p) => p[0] === name);
+    return PALETTES[(i + 1) % PALETTES.length][0];
+  }
+
+  function paletteName(name) {
+    const entry = PALETTES.find((p) => p[0] === name);
+    return entry ? entry[1] : PALETTES[0][1];
+  }
+
+  function rateLabel(hz) {
+    /* Largeur du SDR : « 2 MHz », « 2,048 MHz ». */
+    return Number.isFinite(hz) ? String(+(hz / 1e6).toFixed(3)).replace(".", ",") + " MHz" : "—";
+  }
+
   function nextRange(current) {
     const i = RANGES.indexOf(current);
     return RANGES[(i + 1) % RANGES.length];
@@ -244,6 +286,7 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
+                PALETTES, paletteLut, nextPalette, paletteName, rateLabel, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

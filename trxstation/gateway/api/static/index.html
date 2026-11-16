@@ -317,6 +317,13 @@
           <button id="sdr-center-set" class="chip">Appliquer</button>
           <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
           <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
+          <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)">Couleurs : Thème</button>
+        </div>
+        <div id="sdr-hw-box" class="row" hidden>
+          <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 5.4). Le SDR redémarre (une à deux secondes).">Largeur
+            <select id="sdr-fs"></select></label>
+          <label id="sdr-ant-box" title="Entrée d'antenne du SDR (RSP2). Le SDR redémarre (une à deux secondes).">Antenne
+            <select id="sdr-ant"><option value="A">A</option><option value="B">B</option></select></label>
         </div>
         <div id="sdr-zoom-box" class="row" hidden>
           <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur">Zoom −</button>

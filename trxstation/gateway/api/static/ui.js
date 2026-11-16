@@ -2851,6 +2851,9 @@
     // habituelle de fréquence (refusée pendant l'émission). Le SDR n'agit jamais sur le poste.
     const sdrx = root.TrxSdr || null;
     let sdrView = { range: sdrx ? sdrx.DEFAULT_VIEW.range : 50, floor: null }, sdrPicked = null, sdrLast = null;
+    let sdrPalette = "theme", sdrLut = null;                                         // palette du waterfall du SDR (ce navigateur)
+    try { sdrPalette = store.get("trx.sdr.palette", "theme") || "theme"; } catch (e) { sdrPalette = "theme"; }
+    if (sdrx) sdrLut = sdrx.paletteLut(sdrPalette);
     function sdrOffered() { return !!(sdrx && client.sdrOffered && client.connected && !client.isListener()); }
     function sdrRender(st) {
       const on = sdrOffered();
@@ -2878,6 +2881,22 @@
         sdrSliderLabels();
       }
       $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
+      $("sdr-palette").textContent = "Couleurs : " + sdrx.paletteName(sdrPalette);
+      const hwOk = !!(state && Array.isArray(state.fs_choices));                    // station 0.155.0+ : largeur et antenne
+      $("sdr-hw-box").hidden = !hwOk;
+      if (hwOk) {
+        const sel = $("sdr-fs"), want = state.fs_choices.map(String).join(",");
+        if (sel.dataset.choices !== want) {
+          sel.textContent = "";
+          for (const hz of state.fs_choices) sel.appendChild(Object.assign(el("option", "", sdrx.rateLabel(hz)), { value: String(hz) }));
+          sel.dataset.choices = want;
+        }
+        if (Number.isFinite(state.fs_set)) sel.value = String(state.fs_set);
+        sel.disabled = state.fs_choices.length < 2;
+        const ants = Array.isArray(state.ant_choices) ? state.ant_choices : [];
+        $("sdr-ant-box").hidden = ants.length < 2;
+        if (state.ant) $("sdr-ant").value = state.ant;
+      }
       const zoomOk = !!(state && Number.isFinite(state.zoom));                       // station 0.154.0+ : zoom du waterfall
       $("sdr-zoom-box").hidden = !zoomOk;
       if (zoomOk) {
@@ -3007,8 +3026,8 @@
       g.drawImage(cv, 0, 0, n, cv.height - 1, 0, 1, n, cv.height - 1);                       // la plus récente en haut
       const row = g.createImageData(n, 1);
       for (let i = 0; i < n; i++) {
-        const k = sdrx.colorIndex(values[i], sdrView.floor - 3, sdrView.range) * 3;
-        row.data[4 * i] = wf.LUT[k]; row.data[4 * i + 1] = wf.LUT[k + 1]; row.data[4 * i + 2] = wf.LUT[k + 2]; row.data[4 * i + 3] = 255;
+        const k = sdrx.colorIndex(values[i], sdrView.floor - 3, sdrView.range) * 3, lut = sdrLut || wf.LUT;
+        row.data[4 * i] = lut[k]; row.data[4 * i + 1] = lut[k + 1]; row.data[4 * i + 2] = lut[k + 2]; row.data[4 * i + 3] = 255;
       }
       g.putImageData(row, 0, 0);
       sdrAxis(data.c, data.s);
@@ -3060,6 +3079,14 @@
       });
       $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));
       $("sdr-range").addEventListener("click", () => { sdrView.range = sdrx.nextRange(sdrView.range); sdrRender(null); });
+      $("sdr-palette").addEventListener("click", () => {
+        sdrPalette = sdrx.nextPalette(sdrPalette);
+        sdrLut = sdrx.paletteLut(sdrPalette);
+        try { store.set("trx.sdr.palette", sdrPalette); } catch (e) { /* sans stockage */ }
+        sdrRender(null);
+      });
+      $("sdr-fs").addEventListener("change", () => { sdrView.floor = null; sdrSend({ fs: Number($("sdr-fs").value) }); });
+      $("sdr-ant").addEventListener("change", () => sdrSend({ ant: $("sdr-ant").value }));
       for (const [id, dir] of [["sdr-zoom-in", 1], ["sdr-zoom-out", -1]]) {
         $(id).addEventListener("click", () => {
           const z = sdrx.zoomStep((client.sdrState || {}).zoom, dir);

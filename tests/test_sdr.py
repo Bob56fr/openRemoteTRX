@@ -19,7 +19,7 @@ from trxstation.errors import codes
 from trxstation.modules.manifest import load_manifest
 from trxstation.sdr import devices, frames
 from trxstation.sdr.service import (Settings, SdrService, SetRefused, clean_settings, core_args, line_message,
-                                    zoom_window)
+                                    zoom_window, fs_choices, base_fs, antenna)
 
 ROOT = Path(__file__).resolve().parents[1]
 FAKE = [sys.executable, "-m", "trxstation.devtools.fake_sdr_core"]
@@ -157,6 +157,57 @@ def test_zoomed_waterfall_centres_on_the_listened_frequency_and_follows_it(tmp_p
         await asyncio.wait_for(task, 10)
         return ok
     assert asyncio.run(scenario()) == [True] * 6
+
+
+def test_width_and_antenna_from_the_page_stay_under_the_station_ceiling() -> None:
+    sd = cfgmod.Sdr(serial="170502E910", sample_rate_hz=6_000_000, antenna="A")
+    assert fs_choices(sd) == [2_000_000, 6_000_000]                      # 8 MHz : seulement par station.toml
+    s = clean_settings({"fs": 2_000_000, "ant": "B"}, Settings(7_100_000, 2, 50, 8))
+    args = core_args(sd, s)
+    assert args[args.index("--fs") + 1] == "2000000" and args[args.index("--ant") + 1] == "B"
+    assert args[args.index("--bw") + 1] == "1536"
+    assert base_fs(sd, Settings(7_100_000, 2, 50, 8, fs=8_000_000)) == 6_000_000   # au-delà du plafond : ignorée
+    rtl = cfgmod.Sdr(serial="00000001", driver="rtlsdr", sample_rate_hz=2_048_000)
+    assert fs_choices(rtl) == [1_024_000, 2_048_000]
+    assert antenna(rtl, Settings(100_000_000, 0, 20, 8, ant="B")) == rtl.antenna     # clé RTL-SDR : pas de choix
+    for bad in ({"fs": -1}, {"fs": True}, {"ant": "C"}):
+        with pytest.raises(SetRefused):
+            clean_settings(bad, Settings(7_100_000, 2, 50, 8))
+
+
+def test_new_width_or_antenna_restarts_the_core_without_counting_a_failure(tmp_path: Path) -> None:
+    from trxstation.modules.client import CallRefused
+
+    async def scenario():
+        bus, emitted = FakeBus(), []
+        sd = cfgmod.Sdr(enabled=True, serial="TEST1234", lines_per_s=10, sample_rate_hz=6_000_000)
+        svc = SdrService(sd, tmp_path, bus, core_prefix=FAKE, emit=lambda code, **kw: emitted.append((code, kw)))
+        task = asyncio.ensure_future(svc.run())
+        for _ in range(100):
+            if svc.state["state"] == "running" and any(m["kind"] == "sdr_line" and m["s"] == 6_000_000 for m in bus.sent):
+                break
+            await asyncio.sleep(0.05)
+        refused = []
+        for bad in ({"fs": 8_000_000}, {"fs": 1_000_000}):
+            try:
+                await svc.on_call({"action": "set", "args": bad})
+            except CallRefused as exc:
+                refused.append(exc)
+        res = await svc.on_call({"action": "set", "args": {"fs": 2_000_000, "ant": "B"}})
+        seen = False
+        for _ in range(100):
+            if any(m["kind"] == "sdr_line" and m["s"] == 2_000_000 for m in bus.sent):
+                seen = True
+                break
+            await asyncio.sleep(0.05)
+        svc.stop()
+        await asyncio.wait_for(task, 10)
+        return res, refused, seen, emitted, svc
+    res, refused, seen, emitted, svc = asyncio.run(scenario())
+    assert len(refused) == 2 and res["fs"] == 2_000_000 and res["ant"] == "B" and res["fs_max"] == 6_000_000
+    assert res["fs_choices"] == [2_000_000, 6_000_000] and res["ant_choices"] == ["A", "B"]
+    assert seen and emitted == [] and svc.restarts == 0                 # relance voulue, pas une panne
+    assert json.loads((tmp_path / "sdr" / "last.json").read_text())["ant"] == "B"
 
 
 # ------------------------------------------------------------------ liste des SDR (lecture seule)
