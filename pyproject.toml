@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "cryptography>=41", "segno>=1.5", "pyyaml>=6"]   # cryptography : signature des paquets (build_debian_zip.py) ; pyyaml : catalogue d'erreurs (trxstation/errors/)
+dev = ["pytest>=8", "pytest-xdist>=3.5", "cryptography>=41", "segno>=1.5", "pyyaml>=6"]   # cryptography : signature des paquets (build_debian_zip.py) ; pyyaml : catalogue d'erreurs (trxstation/errors/)
 monitor = ["textual>=0.50"]
 audio = ["aiortc>=1.9", "aiohttp>=3.9", "sounddevice>=0.4", "pyserial>=3.5", "numpy>=1.24"]   # pyserial : spectre HF par le second port du poste ; numpy : SELCALL
 tls = ["cryptography>=41"]
