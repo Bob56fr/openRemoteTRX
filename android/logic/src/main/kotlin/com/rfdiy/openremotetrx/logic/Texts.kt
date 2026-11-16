@@ -64,6 +64,8 @@ object Texts {
         "sdr_error" to "Le module SDR n'a pas pu traiter la demande.",
         "sdr_audio_unavailable" to "Son du SDR indisponible sur cette connexion (recharger la page).",
         "friends_error" to "La présence de groupe n'a pas pu traiter la demande.",
+        "monitoring_unavailable" to "Monitoring indisponible sur cette station (module « monlink » arrêté ou désactivé).",
+        "monitoring_error" to "Le monitoring n'a pas pu traiter la demande.",
         "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
         "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
         "swr_busy" to "Mesure de TOS en cours : STOP pour l'arrêter.",

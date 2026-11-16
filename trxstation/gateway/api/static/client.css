@@ -54,6 +54,11 @@ button, input, select, textarea { font: inherit; }
 .txflag { border: 2px solid var(--tx); color: var(--tx); background: var(--txflag-fond); font-weight: 800; padding: 0 .4rem; border-radius: .25rem; letter-spacing: .05em; }
 .modepill { background: var(--accent); color: var(--texte-sur-accent); font-weight: 700; padding: .05rem .7rem; border-radius: .3rem; min-width: 3.2rem; text-align: center; cursor: pointer; user-select: none; }
 .badge { padding: .1rem .55rem; border-radius: 1rem; background: var(--commande-fond); font-size: .75rem; }
+/* Monitoring inter-stations (rubrique « Monitoring ») */
+.mo-card { border-left: 4px solid var(--ligne); padding: 4px 8px; margin: 6px 0; background: var(--fond-champ); }
+.mo-card.mo-ok { border-left-color: var(--succes); } .mo-card.mo-warn { border-left-color: var(--alerte); }
+.mo-card.mo-dim { opacity: .75; } .mo-title { font-weight: 600; margin: 2px 0; }
+.mo-fp { font-size: 1.8em; font-weight: 700; letter-spacing: .12em; text-align: center; margin: 8px 0; }
 .badge.ok { background: var(--succes); color: var(--succes-sur); } .badge.busy { background: var(--alerte); color: var(--alerte-sur); } .badge.bad { background: var(--erreur); color: var(--texte-sur-erreur); }
 .freq { font-size: min(4.2rem, 17vw); line-height: 1.05; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .02em; padding: .1rem 0 .25rem; color: var(--frequence); }
 #app.landscape .freq { font-size: min(4.2rem, 8vw); }

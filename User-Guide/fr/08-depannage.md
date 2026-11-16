@@ -43,4 +43,5 @@
    peut **rien commander** sur ta station. Tu arrêtes tout quand tu veux (choix 9). Elle peut aussi te
    demander ton **rapport de dépannage** (celui du point 1, entièrement masqué) ; tu peux aussi l'envoyer
    toi-même (choix 10). De son côté, elle reçoit une alerte sur son téléphone si ta station ne donne plus
-   de nouvelles.
+   de nouvelles. **Loin de ta station**, tout se fait aussi dans la page web, rubrique « Monitoring » : bouton
+   « Être aidé : j'ai un code », comparaison des 6 chiffres, choix de ce qui part, réponse aux demandes, fin.

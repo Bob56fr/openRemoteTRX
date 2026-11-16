@@ -78,7 +78,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             # module SDR (docs/sdr-cahier-des-charges.md) : OPÉRATEURS ; « watch » = afficher la rubrique (lignes de
             # waterfall envoyées à CE client), les autres actions sont relayées au module « sdr », qui n'agit JAMAIS
             # sur le poste (un QSY du TRX vers une fréquence du SDR = set_frequency du client)
-            "sdr")
+            "sdr",
+            # monitoring inter-stations (docs/cdc-monitoring.md § 17) : OPÉRATEURS ; relayé au module « monlink », qui
+            # n'a AUCUN droit sur le poste et ne peut rien commander chez une autre station (lot R5 : la page)
+            "monitoring")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -94,11 +97,16 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "friends",                   # présence de groupe « Amis » (0.118.0+, module presence)
                      "freedv",                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
                      "sdr",                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
-                     "sdr_audio")                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
+                     "sdr_audio",                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
+                     "monitoring")                # monitoring inter-stations dans la page (0.164.0+, module monlink)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
 SDR_ACTIONS = ("watch", "listen", "state", "set")
+# Mêmes actions que le menu 5.5 de TRX Console (monlink/service.py ACTIONS), plus le rapport reçu par morceaux.
+MONITORING_ACTIONS = ("view", "pseudo", "invite", "join", "confirm", "profile", "pause", "end", "request_assist",
+                      "request_report", "answer", "received", "send_report", "report_part")
+MAX_MONITORING_ARGS_BYTES = 1500
 MAX_SDR_ARGS_BYTES = 300
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
@@ -335,6 +343,14 @@ def parse_command(raw: str | bytes) -> Command:
         args = data.get("args", {})
         if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_FRIENDS_ARGS_BYTES:
             raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_FRIENDS_ARGS_BYTES} octets au plus")
+        params["action"], params["args"] = data["action"], args
+    elif name == "monitoring":
+        unknown = set(data) - {"cmd", "id", "action", "args"}
+        if unknown or data.get("action") not in MONITORING_ACTIONS:
+            raise ProtocolError("invalid_params", f"action : une de {', '.join(MONITORING_ACTIONS)}")
+        args = data.get("args", {})
+        if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_MONITORING_ARGS_BYTES:
+            raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_MONITORING_ARGS_BYTES} octets au plus")
         params["action"], params["args"] = data["action"], args
     elif name == "sdr":
         unknown = set(data) - {"cmd", "id", "action", "args"}

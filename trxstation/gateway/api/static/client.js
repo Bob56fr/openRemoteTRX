@@ -105,6 +105,8 @@
     sdr_error: "Le module SDR n'a pas pu traiter la demande.",
     sdr_audio_unavailable: "Son du SDR indisponible sur cette connexion (recharger la page).",
     friends_error: "La présence de groupe n'a pas pu traiter la demande.",
+    monitoring_unavailable: "Monitoring indisponible sur cette station (module « monlink » arrêté ou désactivé).",
+    monitoring_error: "Le monitoring n'a pas pu traiter la demande.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
     swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
@@ -1475,6 +1477,7 @@
         this.breizhEvents = [];                                          // journal de Breizh : relu sur la station à l'ouverture
         this._netStart(msg);
         this._friendsStart(msg);
+        this._monitoringStart(msg);
         this._sdrStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
@@ -2434,6 +2437,58 @@
       if (res && res.ok) this.friendsRefresh().catch(() => {});
       else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
       return res;
+    }
+
+    async monitoring(action, args) {
+      /* Monitoring inter-stations (fonction « monitoring », docs/protocole.md § 19) : relayé au module « monlink », qui
+         n'agit jamais sur le poste ; réponse { ok, action, data } ou { ok: false, reason, detail, ort }. */
+      return this.send("monitoring", { action: action, args: args || {} });
+    }
+
+    _monitoringStart(hello) {
+      this.monitoringOffered = !!(hello && Array.isArray(hello.features) && hello.features.includes("monitoring")
+                                  && hello.role !== "listener");
+      this.monitoringView = null;
+      if (this.ui.monitoring) this.ui.monitoring(null);
+      if (this.monitoringOffered) this.monitoringRefresh().catch(() => {});
+    }
+
+    async monitoringRefresh() {
+      /* Relit la vue du module (liaisons, dernières nouvelles) ; à la connexion, après une action, et toutes les 15 s
+         quand la rubrique est ouverte. */
+      if (!this.monitoringOffered || !this.connected) return null;
+      const res = await this.monitoring("view");
+      if (res && res.ok && res.data && typeof res.data === "object") {
+        this.monitoringView = res.data;
+        if (this.ui.monitoring) this.ui.monitoring(this.monitoringView);
+      }
+      return res;
+    }
+
+    async monitoringAction(action, args) {
+      /* Action de l'opérateur (inviter, rejoindre, confirmer, demander, répondre…) ; refus écrit au journal avec son
+         code, vue relue après un succès. */
+      const res = await this.monitoring(action, args);
+      if (res && res.ok) this.monitoringRefresh().catch(() => {});
+      else this.ui.log("Monitoring : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      return res;
+    }
+
+    async monitoringReport(peer) {
+      /* Dernier rapport de dépannage reçu de `peer`, par morceaux (un message du canal de données ne dépasse pas
+         64 ko) : { ok, name, bytes } ou le refus. */
+      const first = await this.monitoring("report_part", { peer: peer, part: 0 });
+      if (!first || !first.ok || !first.data) return first;
+      const parts = [first.data.data];
+      for (let i = 1; i < first.data.parts; i++) {
+        const res = await this.monitoring("report_part", { peer: peer, part: i });
+        if (!res || !res.ok || !res.data) return res;
+        parts.push(res.data.data);
+      }
+      const mx = typeof root !== "undefined" && root.TrxMonitoring ? root.TrxMonitoring : null;
+      const bytes = mx ? mx.joinParts(parts) : null;
+      if (!bytes || bytes.length !== first.data.size) return { ok: false, reason: "report_incomplete", detail: "rapport incomplet" };
+      return { ok: true, name: first.data.name, bytes: bytes };
     }
 
     async friendsQsy(member) {

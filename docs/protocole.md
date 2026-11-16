@@ -378,3 +378,25 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
   8 - `lna` ; « FI auto » = `agc`, sinon curseur « Gain FI » = 59 - `gr` ; appliqués pendant qu'on fait glisser, un
   envoi toutes les 0,3 s au plus), clic = fréquence lue, « QSY du TRX » par `set_frequency`.
 - **Application** : lot S1c (le contrat Android connaît déjà la commande).
+
+## 19. Monitoring inter-stations (station 0.164.0+, fonction `monitoring`)
+
+Cahier des charges : [`docs/cdc-monitoring.md`](cdc-monitoring.md) § 17 ; protocole entre stations :
+[`docs/protocole-monlink.md`](protocole-monlink.md). AIDER un opérateur en difficulté, ou ÊTRE AIDÉ. Le module
+« monlink » n'a AUCUN droit sur le poste et aucune commande vers une autre station n'existe : la station qui aide ne peut
+que lire et DEMANDER. Annoncée dans `hello.features` (`monitoring`) seulement pour un OPÉRATEUR, quand
+`[monitor_link] enabled` et « monlink » est dans `[modules] run` ; un visiteur reçoit `forbidden`.
+
+- `{"cmd":"monitoring","id":N,"action":…,"args":{…}}` (args : objet de 1 500 octets au plus, vérifié par le module) ;
+  réponse `{"type":"result","id":N,"ok":true,"action":…,"data":…}` ou refus du module (`reason` = son motif, `ort`).
+- Actions (les mêmes que le menu 5.5 de TRX Console) : `view` (vue : pseudo, identifiant, liaisons, voir
+  `monlink.engine.Engine.view`), `pseudo` {pseudo}, `invite` -> {code, expires}, `join` {code} -> {peer, pseudo,
+  fingerprint}, `confirm` {peer, profile?} (profil obligatoire pour la station aidée : `"essentiel"`,
+  `"diagnostic"` ou objet {system, rig, freq_mode, events_min, period_s}), `profile` {peer, profile}, `pause` {peer,
+  paused}, `end` {peer, purge?}, `request_assist` {peer, duration_s}, `request_report` {peer}, `answer` {peer, accept},
+  `received` {peer, limit?} -> derniers événements reçus, `send_report` {peer}, `report_part` {peer, part} -> {name,
+  size, parts, part, data} (dernier rapport reçu par morceaux de 30 ko en base64url : le canal de données limite un
+  message à 64 ko).
+- **Page web** (`monitoring.js`, rubrique « Monitoring ») : liaisons et dernières nouvelles, aider (code), être aidé
+  (code, empreinte, profil), demandes et réponses, pause, fin, rapport téléchargé.
+- **Application** : à venir (le contrat Android connaît déjà la commande).

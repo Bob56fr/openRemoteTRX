@@ -218,6 +218,7 @@ class ContractTest {
             "net_export" -> Command.NetExport(p("part").int)
             "friends" -> Command.Friends(p("action").content, e["args"]?.jsonObject)
             "sdr" -> Command.Sdr(p("action").content, e["args"]?.jsonObject)
+            "monitoring" -> Command.Monitoring(p("action").content, e["args"]?.jsonObject)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

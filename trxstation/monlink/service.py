@@ -52,7 +52,7 @@ ACTIONS = {"view": ("view", ()), "pseudo": ("set_pseudo", ("pseudo",)), "invite"
            "end": ("end", ("peer", "purge")), "request_assist": ("request_assist", ("peer", "duration_s")),
            "answer": ("answer", ("peer", "accept")), "received": ("received", ("peer", "limit")),
            "request_report": ("request_report", ("peer",)), "send_report": ("send_report", ("peer",)),
-           "last_report": ("last_report", ("peer",))}
+           "last_report": ("last_report", ("peer",)), "report_part": ("report_part", ("peer", "part"))}
 
 
 def monlink_dir(cfg: cfgmod.Config) -> Path:
@@ -99,6 +99,7 @@ class MonlinkService:
                              notifier=notifier, make_report=self.make_report)
         if self.bus is not None:
             self.bus.metrics = lambda: {"links": len(self.store.links), "problem": self.engine.problem or ""}
+            self.bus.on_call = self.on_call               # commande « monitoring » d'un opérateur de la page
         return self.engine
 
     def make_report(self) -> bytes:
@@ -138,6 +139,18 @@ class MonlinkService:
                 raise ActionRefused("malformed", "arguments incomplets") from exc
         self.write_status()
         return result
+
+    async def on_call(self, data: dict):
+        """Commande « monitoring » d'un OPÉRATEUR de la page (lot R5), relayée par le cœur : mêmes actions que le menu
+        5.5 ; un refus revient à la page avec son motif."""
+        from ..modules.client import CallRefused          # client du bus : seulement pour traduire le refus
+        args = data.get("args") or {}
+        if not isinstance(args, dict):
+            raise CallRefused("malformed", "arguments mal formés")
+        try:
+            return await self.act(str(data.get("action")), args)
+        except ActionRefused as exc:
+            raise CallRefused(exc.reason, str(exc)) from None
 
     async def check_console(self) -> None:
         """Demande de TRX Console : lue puis effacée, réponse dans console-reply.json (effacée après 60 s)."""

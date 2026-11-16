@@ -368,6 +368,19 @@
       </div>
     </details>
 
+    <details id="sec-monitoring" class="listener-hide" hidden>
+      <summary>Monitoring <span id="mo-badge" class="note"></span></summary>
+      <div class="body">
+        <p id="mo-status" class="note"></p>
+        <div class="row"><label class="grow">Pseudo <input id="mo-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="mo-pseudo-save" class="chip">Enregistrer</button><button id="mo-refresh" class="chip">Actualiser</button></div>
+        <div class="row"><button id="mo-invite" class="chip">Aider quelqu'un : créer un code</button><button id="mo-join" class="chip">Être aidé : j'ai un code</button></div>
+        <div id="mo-list" class="mo-list"></div>
+        <p class="note">Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert : la station aidée envoie ce
+          que SON opérateur a choisi, toujours masqué et chiffré par le relais. La station qui aide ne peut que lire et
+          demander ; rien ne commande le poste. Mêmes actions que le menu 5.5 de TRX Console.</p>
+      </div>
+    </details>
+
     <details id="sec-audio">
       <summary>Audio</summary>
       <div class="body">
@@ -875,6 +888,7 @@
 <script src="selcall.js"></script>
 <script src="layout.js"></script>
 <script src="friends.js"></script>
+<script src="monitoring.js"></script>
 <script src="sdr.js"></script>
 <script src="ui.js"></script>
 </body>

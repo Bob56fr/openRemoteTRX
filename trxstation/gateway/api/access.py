@@ -46,6 +46,7 @@ LISTENER_REFUSED = frozenset({
     "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore", "net_export",
     "friends",                      # présence de groupe : opérateurs seulement
     "sdr",                          # module SDR : opérateurs seulement (lot S1a)
+    "monitoring",                   # monitoring inter-stations : opérateurs seulement (lot R5)
     "freedv_set"})                  # mode FreeDV de la station : opérateurs seulement (le visiteur en voit l'état)
 assert LISTENER_COMMANDS <= set(COMMANDS)
 

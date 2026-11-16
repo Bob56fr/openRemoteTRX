@@ -189,6 +189,7 @@ class PeerManager:
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
         self.friends_call = None                # présence de groupe : (données) -> résultat du module (ModuleBridge.call)
         self.sdr_call = None                    # module SDR : (données) -> résultat du module (ModuleBridge.call)
+        self.monitoring_call = None             # monitoring inter-stations : (données) -> résultat du module monlink
         self.sdr_audio = None                   # SdrAudio : son du module SDR (seconde piste des opérateurs), ou None
         self.on_sdr_view = None                 # (session, ouverte) -> None : état du SDR rejoué (ModuleBridge.on_sdr_view)
         self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
@@ -245,6 +246,7 @@ class PeerManager:
             if role != LISTENER:                        # présence de groupe : jamais pour un visiteur
                 session.friends_call = self.friends_call
                 session.sdr_call = self.sdr_call
+                session.monitoring_call = self.monitoring_call
                 session.on_sdr_view = self.on_sdr_view
                 session.sdr_audio_offered = peer.sdr_track is not None
                 session.on_sdr_listen = self._sdr_listeners_changed

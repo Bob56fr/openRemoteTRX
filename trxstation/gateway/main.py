@@ -118,6 +118,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             if cfg.presence.enabled and bridge.has_client_commands("presence"):   # présence de groupe (« friends »)
                 manager.friends_call = lambda data: bridge.call("presence", data)
                 manager.on_operator_activity = bridge.operator_activity
+            if cfg.monitor_link.enabled and bridge.has_client_commands("monlink"):   # monitoring (opérateurs)
+                manager.monitoring_call = lambda data: bridge.call("monlink", data)
             if cfg.sdr.enabled and bridge.has_client_commands("sdr"):             # module SDR (opérateurs)
                 manager.sdr_call = lambda data: bridge.call("sdr", data)
                 manager.on_sdr_view = bridge.on_sdr_view

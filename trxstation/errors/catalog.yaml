@@ -2692,6 +2692,7 @@ ORT-4018:
   priorite_ntfy: 3
   codes_machine:
   - sdr_error
+  - monitoring_error
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4018/
   depuis_version: 0.126.0
   en:

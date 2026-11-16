@@ -484,6 +484,8 @@ sqlite3 de la plateforme l'a, sinon recherche simple). Alertes ntfy du § 9 avec
 | R4 — assistance | instantané (rapport 2.3 masqué), mode assistance demandé / accepté / expiré, ligne « Monitoring » de trx-monitor, guide de l'opérateur (« Demander de l'aide ») | R3 |
 | R5 — consultation | page web en lecture seule (sources, chronologie, événements, instantanés), puis transports directs A / B (§ 4) pour le flux continu, si l'usage le demande | R4 |
 
+Décisions de l'utilisateur pour R5 (2026-11-17) : page web seulement (pas de liaison directe tant que les quotas du relais suffisent), TOUTES les actions du menu 5.5 dans la page (un opérateur loin de sa station n'a souvent que la page), courbes plus tard, application après la page. Fait à l'étape 216 (station 0.164.0).
+
 Acceptation de la V1 (R1 à R4) : une station Debian et une station Windows, derrière deux box (dont une en 4G),
 appairées par code ; panne provoquée chez l'émetteur (poste éteint, rigctld tué) vue chez le receveur avec son code
 ORT en moins de 2 min en mode assistance ; instantané reçu et lisible ; arrêt de liaison effectif des deux côtés ;

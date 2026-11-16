@@ -46,6 +46,7 @@ SILENCE_MIN_S = 600                    # station suivie muette : alerte après 3
 ALERT_REPEAT_S = 30 * 60               # même alerte, même station : une fois par demi-heure au plus (cahier § 9)
 ALERTS_PER_HOUR = 20                   # plafond global des alertes du monitoring
 REPORTS_KEPT = 5                       # rapports reçus gardés par liaison
+REPORT_PART = 30 * 1024                # octets bruts par morceau du rapport envoyé à la page
 
 
 class ActionRefused(Exception):
@@ -372,6 +373,17 @@ class Engine:
     def received(self, peer: object, limit: int = 50) -> list[dict]:
         self._link(peer, "receiver")
         return self.store.recent(peer, ("ev",), limit)
+
+    def report_part(self, peer: object, part: object = 0) -> dict:
+        """Station qui AIDE : morceau `part` du dernier rapport reçu, pour la page (un message du canal de données ne
+        dépasse pas 64 ko) : `{"name", "size", "parts", "part", "data"}` (base64url de 30 ko bruts au plus)."""
+        path = Path(self.last_report(peer)["path"])
+        data = path.read_bytes()
+        parts = max(1, -(-len(data) // REPORT_PART))
+        if isinstance(part, bool) or not isinstance(part, int) or not 0 <= part < parts:
+            raise ActionRefused("part", f"morceau 0 à {parts - 1}")
+        return {"name": path.name, "size": len(data), "parts": parts, "part": part,
+                "data": b64e(data[part * REPORT_PART:(part + 1) * REPORT_PART])}
 
     def last_report(self, peer: object) -> dict:
         """Station qui AIDE : chemin du dernier rapport reçu (la console le copie elle-même sur SON Bureau)."""

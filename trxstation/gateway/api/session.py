@@ -126,6 +126,7 @@ class ControlSession:
         # Présence de groupe : commande relayée au module « presence » (ModuleBridge.call), activité de l'opérateur
         # (ModuleBridge.operator_activity) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
         self.friends_call: Callable[[dict], Awaitable] | None = None
+        self.monitoring_call: Callable[[dict], Awaitable] | None = None   # module monlink (opérateurs, lot R5)
         # Module SDR : commande relayée au module « sdr » (ModuleBridge.call) et rejeu de son état à l'ouverture de la
         # rubrique (ModuleBridge.on_sdr_view) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
         self.sdr_call: Callable[[dict], Awaitable] | None = None
@@ -231,6 +232,7 @@ class ControlSession:
                    "breizh": self.breizh is not None,
                    "netprobe": self.netprobe is not None,
                    "friends": self.friends_call is not None and not self.listener,
+                   "monitoring": self.monitoring_call is not None and not self.listener,
                    "freedv": self.freedv is not None,
                    "sdr": self.sdr_call is not None and not self.listener,
                    "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered}
@@ -570,6 +572,24 @@ class ControlSession:
             self._friends_bands(data)
         self._result(cmd.id, True, action=cmd.params["action"], data=data)
 
+    async def _monitoring(self, cmd: Command) -> None:
+        """Monitoring inter-stations (lot R5) : relayé au module « monlink », qui n'agit JAMAIS sur le poste et ne peut
+        rien commander chez une autre station ; son refus revient tel quel. Jamais pour un visiteur."""
+        if self.monitoring_call is None or self.listener:
+            self._result(cmd.id, False, reason="monitoring_unavailable", detail="monitoring non disponible")
+            return
+        try:
+            data = await self.monitoring_call({"action": cmd.params["action"], "args": cmd.params["args"],
+                                               "client": self.client_id})
+        except CommandRefused as exc:
+            self._result(cmd.id, False, reason=exc.code, detail=str(exc))
+            return
+        except Exception:
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"commande monitoring de {self.client_id}")
+            self._result(cmd.id, False, reason="monitoring_error")
+            return
+        self._result(cmd.id, True, action=cmd.params["action"], data=data)
+
     async def _sdr(self, cmd: Command) -> None:
         """Module SDR : « watch » est traité ici (envoi des lignes à CE client) ; le reste est relayé au module, qui
         n'agit JAMAIS sur le poste ; son refus revient tel quel."""
@@ -657,6 +677,7 @@ class ControlSession:
             return
         if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
                 and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))
+                and not (cmd.name == "monitoring" and cmd.params.get("action") in ("view", "received", "report_part"))
                 and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state", "listen"))):
             try:
                 self.on_operator_activity()                      # statut « En RX » de la présence de groupe
@@ -665,6 +686,9 @@ class ControlSession:
                            detail="voir la trace")
         if cmd.name == "friends":
             await self._friends(cmd)                             # opérateur seulement (liste blanche des visiteurs)
+            return
+        if cmd.name == "monitoring":
+            await self._monitoring(cmd)                          # opérateur seulement (liste blanche des visiteurs)
             return
         if cmd.name == "sdr":
             await self._sdr(cmd)                                 # opérateur seulement (liste blanche des visiteurs)

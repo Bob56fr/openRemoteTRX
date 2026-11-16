@@ -1965,6 +1965,7 @@
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
+      monitoring(view) { moRender(view); },                                    // monitoring inter-stations : vue relue
       sdrState(st) { sdrRender(st); },                                         // module SDR : état (opérateurs)
       sdrLine(data) { sdrDraw(data); },
       sdrSpots(data) { sdrOnSpots(data); },                                    // module Cluster : spots de la fenêtre du SDR                                        // module SDR : ligne de waterfall
@@ -3521,6 +3522,166 @@
       $("fr-create").addEventListener("click", frCreate);
       $("fr-join").addEventListener("click", frJoin);
       $("sec-friends").addEventListener("toggle", () => { if ($("sec-friends").open && frOffered()) client.friendsRefresh().catch(() => {}); });
+    }
+
+    // ---- monitoring inter-stations (monitoring.js, docs/cdc-monitoring.md § 17, fonction « monitoring », OPÉRATEURS) :
+    // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 5.5 de TRX Console. Le module n'agit
+    // jamais sur le poste ; la station qui aide ne peut que lire et DEMANDER. Fenêtres : celles de la rubrique « Amis ».
+    const mx = root.TrxMonitoring || null;
+    const MO_REFRESH_MS = 15000;
+    let moView = null, moTimer = null;
+    function moOffered() { return !!(mx && client.monitoringOffered && client.connected && !client.isListener()); }
+    function moDo(action, args) { return client.monitoringAction(action, args || {}); }
+    function moStopTimer() { if (moTimer) { clearInterval(moTimer); moTimer = null; } }
+
+    function moRender(view) {
+      moView = view;
+      const on = moOffered();
+      $("sec-monitoring").hidden = !on;
+      if (!on) { moStopTimer(); return; }
+      $("mo-status").textContent = mx.status(view);
+      if (view && document.activeElement !== $("mo-pseudo")) $("mo-pseudo").value = view.pseudo || "";
+      const box = $("mo-list");
+      box.textContent = "";
+      const links = (view && view.links) || [];
+      const waiting = links.filter((l) => mx.level(l) === "warn").length;
+      $("mo-badge").textContent = links.length ? " " + links.length + (waiting ? " · " + waiting + " à voir" : "") : "";
+      if (view && !links.length) box.appendChild(el("p", "note", "Aucune liaison : aidez quelqu'un (code à lui dicter) ou faites-vous aider (code reçu)."));
+      for (const l of links) box.appendChild(moCard(mx.linkView(l)));
+      if (!moTimer) moTimer = setInterval(() => { if (moOffered() && $("sec-monitoring").open) client.monitoringRefresh().catch(() => {}); }, MO_REFRESH_MS);
+    }
+
+    function moCard(v) {
+      const card = el("div", "mo-card mo-" + v.level);
+      card.appendChild(el("p", "mo-title", v.title));
+      if (v.details.length) card.appendChild(el("p", "note", v.details.join(" · ")));
+      if (v.raw.role === "receiver" && v.raw.state !== "confirm") for (const line of mx.stationLines(v.raw)) card.appendChild(el("p", "note", line));
+      const row = el("div", "row");
+      const LABELS = { fingerprint: "Comparer l'empreinte", assist: "Demander l'assistance", report: "Demander le rapport",
+                       download: "Télécharger le rapport", answer: "Répondre à la demande", send_report: "Envoyer mon rapport",
+                       profile: "Ce qui est envoyé", pause: "Pause", resume: "Reprendre", end: "Terminer", events: "Événements" };
+      const acts = v.raw.role === "receiver" && v.raw.state !== "confirm" ? ["events"].concat(v.actions) : v.actions;
+      for (const a of acts) row.appendChild(frChip(LABELS[a] || a, () => moAct(a, v.raw).catch(fail), document, a === "end" ? "danger" : "chip"));
+      card.appendChild(row);
+      return card;
+    }
+
+    function moProfileNodes() {
+      const sel = document.createElement("select");
+      for (const key of Object.keys(mx.PROFILES)) { const o = el("option", "", mx.PROFILES[key].label); o.value = key; sel.appendChild(o); }
+      sel.value = "diagnostic";
+      const fm = frCheck("Envoyer aussi la fréquence et le mode du poste", false);
+      return { nodes: [frField("Ce que vous envoyez", sel), fm.label], get: () => mx.profile(sel.value, fm.input.checked) };
+    }
+
+    function moFingerprint(link) {
+      /* Les 6 chiffres comparés de vive voix ; différents = liaison refusée et effacée. Station aidée : profil ensuite. */
+      const nodes = [el("p", "mo-fp", link.fingerprint || "?"),
+                     "Comparez ces 6 chiffres avec ceux de votre correspondant, de vive voix ou par message."];
+      let prof = null;
+      if (link.role === "emitter") {
+        prof = moProfileNodes();
+        nodes.push("Si les chiffres sont les mêmes, choisissez ce que vous envoyez (rien ne part avant) :");
+        nodes.push(...prof.nodes);
+      }
+      frDialog("Empreinte de la liaison avec " + (link.pseudo || "?"), nodes, [
+        ["Mêmes chiffres : confirmer", "chip", async () => {
+          const args = { peer: link.peer };
+          if (prof) args.profile = prof.get();
+          const res = await moDo("confirm", args);
+          if (res && res.ok) ui.log("Monitoring : liaison active avec " + (link.pseudo || "?") + ".", "");
+        }],
+        ["Chiffres différents : refuser", "danger", async () => {
+          await moDo("end", { peer: link.peer });
+          ui.log("Monitoring : chiffres différents, liaison refusée et effacée. Recommencez avec un nouveau code.", "warn");
+        }],
+        ["Plus tard", "chip", null]]);
+    }
+
+    async function moAct(action, link) {
+      if (action === "fingerprint") { moFingerprint(link); return; }
+      if (action === "events") {
+        const res = await client.monitoring("received", { peer: link.peer, limit: 20 });
+        const list = res && res.ok && Array.isArray(res.data) ? res.data : [];
+        frDialog("Derniers événements de " + (link.pseudo || "?"),
+                 list.length ? list.map((e) => el("p", "note", mx.eventLine(e))) : ["Aucun événement reçu."], [["Fermer", "chip", null]]);
+        return;
+      }
+      if (action === "assist") {
+        const sel = document.createElement("select");
+        for (const h of mx.HOURS) { const o = el("option", "", h + (h > 1 ? " heures" : " heure")); o.value = String(h); sel.appendChild(o); }
+        sel.value = "2";
+        frDialog("Demander le mode assistance", ["Nouvelles toutes les 30 secondes et tous les événements, pendant la durée choisie. L'opérateur aidé doit l'accepter.", frField("Durée", sel)],
+                 [["Demander", "chip", async () => { await moDo("request_assist", { peer: link.peer, duration_s: Number(sel.value) * 3600 }); }], ["Annuler", "chip", null]]);
+        return;
+      }
+      if (action === "report") { await moDo("request_report", { peer: link.peer }); ui.log("Monitoring : rapport demandé ; l'opérateur aidé doit l'accepter.", ""); return; }
+      if (action === "download") {
+        const res = await client.monitoringReport(link.peer);
+        if (!res || !res.ok) { ui.log("Monitoring : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn"); return; }
+        const url = URL.createObjectURL(new Blob([res.bytes], { type: "application/zip" }));
+        const a = el("a"); a.href = url; a.download = res.name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        return;
+      }
+      if (action === "answer") {
+        const req = link.request || {};
+        const text = req.snapshot
+          ? (link.pseudo || "?") + " demande votre rapport de dépannage (diagnostic, configuration sans mot de passe, journaux), entièrement masqué avant l'envoi (nom de la machine, adresses, comptes, numéros de série)."
+          : (link.pseudo || "?") + " demande le mode assistance pendant " + Math.round((req.assist || 0) / 360) / 10 + " h : des nouvelles toutes les 30 secondes et tous les événements. Fréquence et mode restent comme dans votre choix.";
+        frDialog("Demande de " + (link.pseudo || "?"), [text],
+                 [["Accepter", "chip", async () => { await moDo("answer", { peer: link.peer, accept: true }); }],
+                  ["Refuser", "danger", async () => { await moDo("answer", { peer: link.peer, accept: false }); }]]);
+        return;
+      }
+      if (action === "send_report") { await moDo("send_report", { peer: link.peer }); ui.log("Monitoring : rapport en préparation, il part dans la minute.", ""); return; }
+      if (action === "profile") {
+        const prof = moProfileNodes();
+        frDialog("Ce que vous envoyez à " + (link.pseudo || "?"), prof.nodes,
+                 [["Enregistrer", "chip", async () => { await moDo("profile", { peer: link.peer, profile: prof.get() }); }], ["Annuler", "chip", null]]);
+        return;
+      }
+      if (action === "pause" || action === "resume") { await moDo("pause", { peer: link.peer, paused: action === "pause" }); return; }
+      if (action === "end") {
+        const purge = frCheck("Effacer aussi ce qui a été reçu de cette station", true);
+        const nodes = ["Terminer la liaison avec " + (link.pseudo || "?") + " ? Immédiat ; la reprendre demandera un nouveau code."];
+        if (link.role === "receiver") nodes.push(purge.label);
+        frDialog("Terminer la liaison", nodes,
+                 [["Terminer", "danger", async () => { await moDo("end", { peer: link.peer, purge: link.role === "receiver" && purge.input.checked }); }], ["Annuler", "chip", null]]);
+      }
+    }
+
+    function moInvite() {
+      moDo("invite").then((res) => {
+        if (!res || !res.ok || !res.data) return;
+        frDialog("Aider quelqu'un", [el("p", "mo-fp", res.data.code),
+                 "Dictez ce code à l'opérateur que vous aidez (valable 15 minutes, une seule fois). Quand il l'a tapé, sa station apparaît ici : comparez alors les 6 chiffres de l'empreinte."],
+                 [["Fermer", "chip", null]]);
+      }).catch(fail);
+    }
+
+    function moJoin() {
+      const code = frInput("", 16);
+      frDialog("Être aidé", ["La station qui vous aide recevra ce que VOUS choisissez (santé de la machine, état du poste, codes d'erreur), toujours masqué. Elle ne pourra RIEN commander. Vous pourrez tout arrêter à tout moment.",
+                             frField("Code dicté par la personne qui vous aide", code)],
+               [["Rejoindre", "chip", async () => {
+                 const c = mx.normalizeCode(code.value);
+                 if (!c) { ui.log("Monitoring : code mal formé (10 caractères).", "warn"); return true; }
+                 const res = await moDo("join", { code: c });
+                 if (res && res.ok && res.data) setTimeout(() => moFingerprint({ peer: res.data.peer, pseudo: res.data.pseudo, role: "emitter", fingerprint: res.data.fingerprint }), 0);
+               }], ["Annuler", "chip", null]]);
+    }
+
+    if (mx) {
+      $("mo-refresh").addEventListener("click", () => client.monitoringRefresh().catch(fail));
+      $("mo-invite").addEventListener("click", moInvite);
+      $("mo-join").addEventListener("click", moJoin);
+      $("mo-pseudo-save").addEventListener("click", () => {
+        const p = fx ? fx.cleanPseudo($("mo-pseudo").value) : $("mo-pseudo").value.trim();
+        if (!p) { ui.log("Pseudo refusé : 16 caractères, lettres sans accent, chiffres, espace, . / _ -", "warn"); return; }
+        moDo("pseudo", { pseudo: p }).catch(fail);
+      });
+      $("sec-monitoring").addEventListener("toggle", () => { if ($("sec-monitoring").open && moOffered()) client.monitoringRefresh().catch(() => {}); });
     }
 
     // ---- spatialisation stéréo de la réception (spatial.js, docs/spatialisation-cahier-des-charges.md) : traitement de cet

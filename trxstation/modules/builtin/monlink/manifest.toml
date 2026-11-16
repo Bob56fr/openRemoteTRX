@@ -1,6 +1,7 @@
-# Module de monitoring inter-stations, mode R (docs/cdc-monitoring.md § 17, étape 209).
-# AUCUN droit : ni événement du bus, ni commande, ni message vers les pages. Il lit des fichiers d'état (passerelle,
-# superviseur, journaux JSON) et échange des enveloppes chiffrées avec le relais. Jamais de commande vers une station.
+# Module de monitoring inter-stations, mode R (docs/cdc-monitoring.md § 17, étape 209 ; page : étape 216).
+# AUCUN droit sur le poste : ni événement du bus, ni commande, ni message vers les pages. Il lit des fichiers d'état
+# (passerelle, superviseur, journaux JSON) et échange des enveloppes chiffrées avec le relais. Seul droit : recevoir
+# la commande « monitoring » d'un OPÉRATEUR de la page, relayée par le cœur (jamais d'un visiteur).
 [module]
 name = "monlink"
 version = "0.1.0"
@@ -14,7 +15,7 @@ events = []
 commands = []
 client_messages = false
 verify_tokens = false
-client_commands = false
+client_commands = true          # commande « monitoring » d'un OPÉRATEUR (page), relayée par le cœur
 
 [resources]
 cpu_quota = 10        # % d'un cœur (preuve de travail de l'enregistrement et scrypt d'un code : quelques secondes)

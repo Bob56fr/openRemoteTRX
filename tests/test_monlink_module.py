@@ -325,14 +325,16 @@ def test_configuration_section_and_separate_keys(tmp_path):
         assert "[monitor_link]" in text
 
 
-def test_manifest_gives_no_right_at_all():
+def test_manifest_gives_no_right_on_the_rig():
+    """Aucun droit sur le poste ni vers les pages ; seul droit (lot R5) : recevoir la commande « monitoring » d'un
+    OPÉRATEUR de la page, relayée par le cœur."""
     manifests, problems = selected_manifests(cfgmod.Modules(run=["monlink"]))
     assert not problems
     m = manifests[0]
     assert m.name == "monlink" and m.entry == "trxstation.monlink.service"
     rights = m.rights
     assert list(rights.events) == [] and list(rights.commands) == []
-    assert rights.client_messages is False and rights.client_commands is False
+    assert rights.client_messages is False and rights.client_commands is True
 
 
 def test_service_disabled_then_console_request(tmp_path):
