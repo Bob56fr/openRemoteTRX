@@ -277,6 +277,7 @@
       <summary>SDR <span id="sdr-badge" class="note"></span></summary>
       <div class="body">
         <p id="sdr-status" class="note"></p>
+        <p id="sdr-load" class="note sdr-load" hidden></p>
         <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div></div>
         <div id="sdr-axis" class="wf-axis"></div>
         <div class="row">
@@ -297,6 +298,12 @@
             <label title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre">Fréquence écoutée (MHz)
               <input id="sdr-dfreq" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
             <button id="sdr-dfreq-set" class="chip">Écouter cette fréquence</button>
+          </div>
+          <div class="row">
+            <label class="grow" title="Équilibre des deux sources quand on écoute le SDR : à gauche le TRX seul, à droite le SDR seul">TRX ◄ Balance ► SDR
+              <input id="sdr-bal" type="range" min="-100" max="100" step="5" value="0"></label>
+            <label title="Au casque : chaque source sur une oreille (exclusif avec la spatialisation ST)">Oreilles
+              <select id="sdr-split"></select></label>
           </div>
           <p id="sdr-listen-info" class="note"></p>
         </div>

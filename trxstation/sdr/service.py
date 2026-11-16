@@ -11,7 +11,9 @@ Il lance sdr-core (programme natif, processus enfant), lit ses trames (frames.py
      "gaps", "cpu", "restarts", "t"}
 Commandes d'un opérateur (droit client_commands, relayées par la passerelle) : « state », « set » (center_hz, lna, gr,
 rate, agc, dfreq_hz, mode, dbw, sql). De la passerelle seulement : « audio » (quelqu'un écoute le SDR) ; le son démodulé
-part alors en UDP vers 127.0.0.1:[sdr] audio_port (paquets « ORSA », jeton dérivé du secret du module). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
+part alors en UDP vers 127.0.0.1:[sdr] audio_port (paquets « ORSA », jeton dérivé du secret du module) ; « load »
+(niveau de bridage 0 à 5 décidé par la passerelle, load.py). Le module se bride aussi LUI-MÊME au-delà de
+[sdr] max_cpu_pct / max_mem_mb (niveaux 1 à 4) ; le niveau appliqué est le plus haut des deux (5 = sdr-core arrêté). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
 Réglages choisis depuis la page gardés dans state_dir/sdr/last.json (jamais dans station.toml).
 
 À la main (essai, sans bus) :  python -m trxstation.sdr.service --config station.toml --once
@@ -36,6 +38,7 @@ from ..errors.emit import emit_event
 from ..paths import default_config_path
 from .devices import core_path
 from .frames import Audio, FrameError, FrameReader, Line
+from .load import LEVEL_TEXT, TOP, Ladder, sample_rate, waterfall_rate
 
 log = logging.getLogger("trx.sdr")
 
@@ -101,9 +104,9 @@ def clean_settings(args: dict, current: Settings) -> Settings:
     return Settings(**values)
 
 
-def listened(sd: cfgmod.Sdr, s: Settings) -> int:
+def listened(sd: cfgmod.Sdr, s: Settings, fs: int | None = None) -> int:
     """Fréquence écoutée : celle choisie si elle tient dans la largeur du SDR (95 %), sinon le centre."""
-    half = sd.sample_rate_hz * 0.475
+    half = (fs or sd.sample_rate_hz) * 0.475
     return s.dfreq_hz if s.dfreq_hz and abs(s.dfreq_hz - s.center_hz) <= half else s.center_hz
 
 
@@ -114,15 +117,30 @@ def audio_token(secret: str) -> bytes:
     return hmac.new(secret.encode("ascii"), b"sdr-audio", hashlib.sha256).digest()[:AUDIO_TOKEN_BYTES]
 
 
-def core_args(sd: cfgmod.Sdr, s: Settings) -> list[str]:
-    return ["--dfreq", str(listened(sd, s)), "--mode", s.mode, "--dbw", str(s.dbw), "--sql", str(s.sql)] + ["--serial", sd.serial, "--fs", str(sd.sample_rate_hz), "--bw", str(cfgmod.SDR_RATES[sd.sample_rate_hz]),
+def core_args(sd: cfgmod.Sdr, s: Settings, level: int = 0) -> list[str]:
+    """Arguments de sdr-core ; level = niveau de bridage appliqué (cadence du waterfall, échantillonnage)."""
+    fs = sample_rate(sd.sample_rate_hz, level)
+    return ["--dfreq", str(listened(sd, s, fs)), "--mode", s.mode, "--dbw", str(s.dbw), "--sql", str(s.sql),
+            "--serial", sd.serial, "--fs", str(fs), "--bw", str(cfgmod.SDR_RATES[fs]),
             "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", sd.antenna,
-            "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(s.rate), "--agc", str(int(s.agc))]
+            "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(waterfall_rate(s.rate, level)),
+            "--agc", str(int(s.agc))]
 
 
 def line_message(line: Line, now: float) -> dict:
     return {"kind": "sdr_line", "scope": "sdr_view", "c": round(line.center_hz), "s": round(line.span_hz),
             "d": base64.b64encode(line.values).decode("ascii"), "t": int(now * 1000)}
+
+
+def proc_rss_mb(pid: int) -> float | None:
+    """Mémoire résidente d'un processus en Mo (Linux, /proc) ; None ailleurs."""
+    try:
+        for line in Path(f"/proc/{pid}/status").read_text().splitlines():
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1]) / 1024.0
+    except (OSError, IndexError, ValueError):
+        pass
+    return None
 
 
 def proc_cpu_seconds(pid: int) -> float | None:
@@ -149,6 +167,13 @@ class SdrService:
                             "fs": sd.sample_rate_hz, "ant": sd.antenna, "bins": sd.bins, "overload": 0, "overloads": 0, "drops": 0,
                             "gaps": 0, "cpu": None, "restarts": 0}
         self._cpu_mark: tuple[float, float] | None = None
+        self._self_cpu_mark: tuple[float, float] | None = None
+        # bridage (load.py) : niveau décidé par la passerelle, et le sien au-delà de ses plafonds
+        self.gw_level, self.gw_reason = 0, ""
+        self.ladder = Ladder(top=TOP - 1, clock=self.clock)       # le module ne se suspend jamais lui-même
+        self._applied = 0                      # niveau dont sdr-core a été lancé ou réglé
+        self._reload = False                   # sdr-core arrêté exprès (échantillonnage changé) : pas une panne
+        self._wake = asyncio.Event()
         self._last_loss = (0, 0)
         self._loss_reported_at = -1e9
         self._stopping = False
@@ -183,9 +208,13 @@ class SdrService:
     # ------------------------------------------------------------- état publié
     def snapshot(self) -> dict:
         s = self.settings
+        fs = sample_rate(self.sd.sample_rate_hz, self._applied)
         return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
-                "dfreq": listened(self.sd, s), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.audio_on,
-                "restarts": self.restarts, "t": int(self.clock())}
+                "dfreq": listened(self.sd, s, fs), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.demodulating,
+                "restarts": self.restarts, "t": int(self.clock()), "fs": fs,
+                "rate_eff": waterfall_rate(s.rate, self._applied), "load": self._applied,
+                "load_gw": self.gw_level, "load_self": self.ladder.level, "load_reason": self.load_reason(),
+                "max_cpu_pct": self.sd.max_cpu_pct, "max_mem_mb": self.sd.max_mem_mb}
 
     async def publish_state(self) -> None:
         await self._send({"kind": "sdr_state", "retain": "snapshot", "scope": "operators", **self.snapshot()})
@@ -207,11 +236,19 @@ class SdrService:
         action = data.get("action")
         if action == "state":
             return self.snapshot()
+        if action == "load":                   # de la PASSERELLE seulement : niveau de bridage (load.py)
+            args = data.get("args") or {}
+            level = args.get("level")
+            if isinstance(level, bool) or not isinstance(level, int) or not 0 <= level <= TOP:
+                raise CallRefused("sdr_invalid", f"load : niveau de 0 à {TOP}")
+            self.gw_level, self.gw_reason = level, str(args.get("reason") or "")[:160]
+            await self._apply_load()
+            return {"load": self.level}
         if action == "audio":                  # de la PASSERELLE seulement (un client ne peut pas l'envoyer)
             on = bool((data.get("args") or {}).get("on"))
             if on != self.audio_on:
                 self.audio_on = on
-                await self._write_core([f"audio {int(on)}"])
+                await self._write_core([f"audio {int(self.demodulating)}"])
                 await self.publish_state()
             return {"audio": self.audio_on}
         if action == "set":
@@ -219,7 +256,8 @@ class SdrService:
                 new = clean_settings(data.get("args") or {}, self.settings)
             except SetRefused as exc:
                 raise CallRefused("sdr_invalid", str(exc)) from None
-            if "dfreq_hz" in (data.get("args") or {}) and listened(self.sd, new) != new.dfreq_hz:
+            if ("dfreq_hz" in (data.get("args") or {})
+                    and listened(self.sd, new, sample_rate(self.sd.sample_rate_hz, self._applied)) != new.dfreq_hz):
                 raise CallRefused("sdr_invalid", "fréquence écoutée hors de la largeur du SDR : déplacer le centre")
             old, self.settings = self.settings, new
             await self._command_core(old, new)
@@ -228,18 +266,91 @@ class SdrService:
             return self.snapshot()
         raise CallRefused("sdr_invalid", "action inconnue (state, set)")
 
+    # ------------------------------------------------------------- bridage
+    @property
+    def level(self) -> int:
+        return max(self.gw_level, self.ladder.level)
+
+    @property
+    def demodulating(self) -> bool:
+        """sdr-core démodule : quelqu'un écoute et aucun bridage (dès le niveau 1, plus de son du SDR)."""
+        return self.audio_on and self._applied == 0
+
+    def load_reason(self) -> str:
+        if not self.level:
+            return ""
+        if self.gw_level >= self.ladder.level:
+            return "station chargée : " + (self.gw_reason or "décision de la passerelle")
+        return "module au-delà de ses plafonds : " + (self.ladder.reason or "?")
+
+    async def _apply_load(self) -> None:
+        """Applique le niveau courant : cadence du waterfall, échantillonnage (relance de sdr-core), suspension."""
+        old, new = self._applied, self.level
+        if old == new:
+            await self.publish_state()
+            return
+        self._applied = new
+        log.info("bridage du module : niveau %d (%s)%s", new, LEVEL_TEXT[new],
+                 f", {self.load_reason()}" if new else "")
+        fs_changed = sample_rate(self.sd.sample_rate_hz, old) != sample_rate(self.sd.sample_rate_hz, new)
+        if new >= TOP or old >= TOP or fs_changed:
+            if self.proc is not None and self.proc.returncode is None:
+                self._reload = True
+                await self._write_core(["quit"])        # la boucle de lecture voit la fin et relance (ou suspend)
+            self._wake.set()
+        else:
+            lines = []
+            if waterfall_rate(self.settings.rate, old) != waterfall_rate(self.settings.rate, new):
+                lines.append(f"rate {waterfall_rate(self.settings.rate, new)}")
+            if self.audio_on and (old == 0) != (new == 0):
+                lines.append(f"audio {int(self.demodulating)}")
+            await self._write_core(lines)
+        await self.publish_state()
+
+    def _self_measure(self) -> bool:
+        """Processeur et mémoire du module (sdr-core + module) ; échelle propre au-delà des plafonds. Vrai si le
+        niveau propre change."""
+        core_cpu = self.state.get("cpu")
+        mine = self._self_cpu()
+        cpu = None if core_cpu is None and mine is None else round((core_cpu or 0) + (mine or 0), 1)
+        mems = [m for m in (proc_rss_mb(os.getpid()), proc_rss_mb(self.proc.pid) if self.proc else None) if m is not None]
+        mem = round(sum(mems), 1) if mems else None
+        self.state["cpu_total"], self.state["mem_mb"] = cpu, mem
+        over = ""
+        if cpu is not None and cpu > self.sd.max_cpu_pct:
+            over = f"processeur à {cpu:.0f} % (plafond {self.sd.max_cpu_pct} %)"
+        elif mem is not None and mem > self.sd.max_mem_mb:
+            over = f"mémoire à {mem:.0f} Mo (plafond {self.sd.max_mem_mb} Mo)"
+        green = ((cpu is None or cpu <= 0.7 * self.sd.max_cpu_pct) and (mem is None or mem <= 0.9 * self.sd.max_mem_mb))
+        before = self.ladder.level
+        changed = self.ladder.step(over, green)
+        if changed and self.ladder.level > before:
+            self.emit(codes.ORT_6008, logger=log, niveau=self.ladder.level, effet=LEVEL_TEXT[self.ladder.level],
+                      cause=self.ladder.reason)
+        return changed
+
+    def _self_cpu(self) -> float | None:
+        cpu, now = proc_cpu_seconds(os.getpid()), time.monotonic()
+        if cpu is None:
+            return None
+        mark, self._self_cpu_mark = self._self_cpu_mark, (cpu, now)
+        if mark is None or now <= mark[1]:
+            return None
+        return round(100.0 * (cpu - mark[0]) / (now - mark[1]), 1)
+
     async def _command_core(self, old: Settings, new: Settings) -> None:
         lines = []
         if new.center_hz != old.center_hz:
             lines.append(f"freq {new.center_hz}")
         if (new.lna, new.gr) != (old.lna, old.gr):
             lines.append(f"gain {new.lna} {new.gr}")
-        if new.rate != old.rate:
-            lines.append(f"rate {new.rate}")
+        if waterfall_rate(new.rate, self._applied) != waterfall_rate(old.rate, self._applied):
+            lines.append(f"rate {waterfall_rate(new.rate, self._applied)}")
         if new.agc != old.agc:
             lines.append(f"agc {int(new.agc)}")
-        if (listened(self.sd, new), new.mode, new.dbw) != (listened(self.sd, old), old.mode, old.dbw):
-            lines.append(f"demod {listened(self.sd, new)} {new.mode} {new.dbw}")
+        fs = sample_rate(self.sd.sample_rate_hz, self._applied)
+        if (listened(self.sd, new, fs), new.mode, new.dbw) != (listened(self.sd, old, fs), old.mode, old.dbw):
+            lines.append(f"demod {listened(self.sd, new, fs)} {new.mode} {new.dbw}")
         if new.sql != old.sql:
             lines.append(f"sql {new.sql}")
         await self._write_core(lines)
@@ -259,8 +370,9 @@ class SdrService:
         """Lance sdr-core et lit ses trames jusqu'à son arrêt : (code de sortie, dernière erreur annoncée)."""
         self._set_state("starting")
         await self.publish_state()
+        self._applied = self.level
         self.proc = await asyncio.create_subprocess_exec(
-            *(self.core_prefix or [self.core]), *core_args(self.sd, self.settings), stdin=asyncio.subprocess.PIPE,
+            *(self.core_prefix or [self.core]), *core_args(self.sd, self.settings, self._applied), stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         err_task = asyncio.ensure_future(self._drain_stderr(self.proc))     # un tube jamais lu bloque l'enfant
         reader, error = FrameReader(), None
@@ -286,12 +398,14 @@ class SdrService:
                     kind = frame.get("t")
                     if kind == "started":
                         self._set_state("running")
-                        if self.audio_on:
+                        if self.demodulating:
                             await self._write_core(["audio 1"])     # cœur relancé pendant une écoute
                         log.info("SDR %s ouvert (API %s)", frame.get("serial"), frame.get("api"))
                         await self.publish_state()
                     elif kind == "status":
                         self._on_status(frame)
+                        if self._self_measure():
+                            await self._apply_load()
                     elif kind == "event" and frame.get("name") == "overload":
                         on = int(bool(frame.get("on")))
                         if on and not self.state["overload"]:
@@ -336,7 +450,7 @@ class SdrService:
 
     def _send_audio(self, pcm: bytes) -> None:
         """20 ms de son vers la passerelle (UDP local) ; perdu sans dommage si elle ne l'attend pas."""
-        if not self.audio_on or not self._audio_token:
+        if not self.demodulating or not self._audio_token:
             return
         self._audio_seq = (self._audio_seq + 1) & 0xFFFFFFFF
         packet = AUDIO_MAGIC + self._audio_token + self._audio_seq.to_bytes(4, "little") + pcm
@@ -426,13 +540,29 @@ class SdrService:
                     await asyncio.sleep(RETRY_CONFIG_S)
                     self.core = core_path(self.sd.core_path)
                     continue
+                if self.level >= TOP:                     # suspendu par la passerelle : sdr-core arrêté
+                    self._applied = self.level
+                    self._set_state("suspended", "load", self.load_reason())
+                    await self.publish_state()
+                    self._wake.clear()
+                    while self.level >= TOP and not self._stopping:
+                        try:
+                            await asyncio.wait_for(self._wake.wait(), 5.0)
+                        except asyncio.TimeoutError:
+                            pass
+                        self._wake.clear()
+                    continue
                 started = time.monotonic()
+                self._reload = False
                 try:
                     rc, error = await self.run_core_once()
                 except OSError as exc:
                     rc, error = None, {"code": "exit", "detail": f"lancement impossible : {exc}"}
                 if self._stopping:
                     break
+                if self._reload:                          # arrêt voulu (bridage) : relance immédiate, pas une panne
+                    self._reload = False
+                    continue
                 await asyncio.sleep(await self._after_exit(rc, error, time.monotonic() - started))
         finally:
             self._stopping = True
@@ -442,6 +572,7 @@ class SdrService:
 
     def stop(self) -> None:
         self._stopping = True
+        self._wake.set()
         if self.proc is not None and self.proc.returncode is None:
             self.proc.terminate()
 

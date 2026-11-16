@@ -5118,6 +5118,73 @@ ORT-6005:
     preconisation: Lower [sdr] sample_rate_hz (2 MHz advised) or lines_per_s; plug the SDR into its own root port,
       never into the radio's hub.
 
+ORT-6006:
+  gravite: avertissement
+  titre: Module SDR bridé par la passerelle
+  message: 'Module SDR bridé, niveau {niveau} ({effet}) : {cause}.'
+  causes:
+  - Processeur trop occupé ou trop chaud, mémoire presque pleine
+  - Boucle de la passerelle en retard (le son du poste et la sécurité d'émission passent avant le SDR)
+  - Décrochages de la carte son du poste
+  preconisation: Rien d'urgent, la station se protège seule (un cran rendu après 5 minutes au calme). Si cela revient
+    souvent, réduire [sdr] sample_rate_hz (2 MHz) ou lines_per_s, ou fermer d'autres programmes de la machine.
+  action_auto: brider_module
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6006/
+  depuis_version: 0.144.0
+  en:
+    titre: SDR module throttled by the gateway
+    message: 'SDR module throttled, level {niveau} ({effet}): {cause}.'
+    causes:
+    - Processor too busy or too hot, memory nearly full
+    - Gateway loop late (the radio's audio and transmit safety come before the SDR)
+    - Dropouts of the radio's sound card
+    preconisation: Nothing urgent, the station protects itself (one step given back after 5 quiet minutes). If it
+      happens often, lower [sdr] sample_rate_hz (2 MHz) or lines_per_s, or close other programs on the machine.
+
+ORT-6007:
+  gravite: info
+  titre: Module SDR revenu à la normale
+  message: 'Module SDR revenu à la normale : plus aucun bridage de la passerelle.'
+  causes:
+  - La station est restée assez longtemps sous ses seuils de charge
+  preconisation: Rien à faire.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 1
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6007/
+  depuis_version: 0.144.0
+  en:
+    titre: SDR module back to normal
+    message: 'SDR module back to normal: no more throttling by the gateway.'
+    causes:
+    - The station stayed under its load thresholds long enough
+    preconisation: Nothing to do.
+
+ORT-6008:
+  gravite: avertissement
+  titre: Module SDR au-delà de ses plafonds
+  message: 'Module SDR au-delà de ses plafonds, il se bride lui-même, niveau {niveau} ({effet}) : {cause}.'
+  causes:
+  - Échantillonnage trop large pour cette machine (6 ou 8 MHz)
+  - Plafonds [sdr] max_cpu_pct ou max_mem_mb trop bas pour l'usage choisi
+  preconisation: Réduire [sdr] sample_rate_hz (2 MHz conseillé) ou lines_per_s, ou relever max_cpu_pct si la machine
+    a de la marge (un cran est rendu après 5 minutes sous le plafond).
+  action_auto: brider_module
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6008/
+  depuis_version: 0.144.0
+  en:
+    titre: SDR module above its limits
+    message: 'SDR module above its limits, it throttles itself, level {niveau} ({effet}): {cause}.'
+    causes:
+    - Sample rate too wide for this machine (6 or 8 MHz)
+    - '[sdr] max_cpu_pct or max_mem_mb limits too low for the chosen use'
+    preconisation: Lower [sdr] sample_rate_hz (2 MHz advised) or lines_per_s, or raise max_cpu_pct if the machine has
+      headroom (one step given back after 5 minutes under the limit).
+
 ORT-6401:
   gravite: erreur
   titre: Cluster DX activé mais incomplet

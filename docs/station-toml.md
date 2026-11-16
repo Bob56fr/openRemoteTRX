@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.143.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.144.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 3.2, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -227,6 +227,8 @@ Se modifie : Menu 3.2 ; le centre, le gain et la cadence se règlent ensuite dep
 | `fft_size` | expert | `4096` | Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin. Valeurs : Puissance de 2 de 512 à 16 384. (depuis 0.140.0) |
 | `bins` | expert | `1024` | Nombre de cases d'une ligne envoyée aux clients (chaque case garde le maximum des points qu'elle couvre). Moins de cases = moins de données mobiles. Valeurs : Puissance de 2 de 128 à fft_size. (depuis 0.140.0) |
 | `lines_per_s` | expert | `8` | Lignes de waterfall par seconde au premier démarrage ; se règle ensuite depuis la page. Valeurs : 1 à 15. (depuis 0.140.0) |
+| `max_cpu_pct` | expert | `150` | Plafond de processeur du module SDR (sdr-core et module ensemble), en pourcentage d'UN cœur. Au-delà pendant 10 s, le module se bride lui-même par crans (waterfall ralenti, puis à 1 ligne/s, puis échantillonnage à 2 MHz) ; un cran est rendu après 5 minutes nettement sous le plafond. La passerelle bride aussi le module quand ELLE souffre, indépendamment de ce réglage. Valeurs : 20 à 800 (150 = un cœur et demi). Exemple : `150` (depuis 0.144.0) |
+| `max_mem_mb` | expert | `400` | Plafond de mémoire du module SDR (sdr-core et module ensemble), en Mo. Au-delà pendant 10 s, le module se bride lui-même comme pour `max_cpu_pct`. Valeurs : 50 à 4000. Exemple : `400` (depuis 0.144.0) |
 
 ## Spectre HF du poste [spectrum]
 

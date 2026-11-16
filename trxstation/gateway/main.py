@@ -122,6 +122,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                 manager.sdr_call = lambda data: bridge.call("sdr", data)
                 manager.on_sdr_view = bridge.on_sdr_view
                 manager.sdr_audio = await _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks)
+                tasks += _start_sdr_governor(cfg, manager.sdr_audio, pipeline, bridge, stop)
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,
@@ -232,6 +233,16 @@ def _client_sessions(manager) -> list:
     if manager is None:
         return []
     return [peer.session for peer in list(manager.peers.values()) if peer.session is not None]
+
+
+def _start_sdr_governor(cfg, audio, pipeline, bridge, stop) -> list:
+    """La passerelle bride le module SDR quand elle souffre (sdr_load.py) ; seuils sous ceux des visiteurs."""
+    from .sdr_load import SdrGovernor, limits_from_access
+    lag = LagMeter()
+    governor = SdrGovernor(system_sampler(lag), limits_from_access(cfg.access),
+                           lambda level, why: bridge.call("sdr", {"action": "load", "args": {"level": level, "reason": why}}),
+                           audio=audio, xrun_source=pipeline.source)
+    return [asyncio.create_task(governor.run(stop)), asyncio.create_task(lag.run(stop))]
 
 
 async def _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks):

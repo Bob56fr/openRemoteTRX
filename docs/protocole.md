@@ -328,14 +328,29 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
     nouvel état. Ne touche JAMAIS au poste ; envoyer une fréquence du SDR au TRX = `set_frequency` habituel (refusé
     pendant l'émission).
 - **État** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_state", "retain": "snapshot", "scope":
-  "operators", …}}` : `state` (`starting`, `running`, `error`), `code` et `detail` (cause d'une erreur : `absent`,
+  "operators", …}}` : `state` (`starting`, `running`, `error`, `suspended` = sdr-core arrêté par la station,
+  0.144.0+), `code` et `detail` (cause d'une erreur : `absent`,
   `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
   (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `agc`, `gr_now` (réduction de gain FI réellement
   appliquée, ou `null`) et `gain_db` (gain total selon le SDR, ou `null`) (0.141.0+), `dfreq`, `mode`, `dbw`, `sql`,
   `audio` (le module démodule), `sql_open`, `chan_db` et `noise_db` (puissance du canal écouté et bruit estimé, dBFS,
   ou `null`) (0.142.0+), `overload` (surcharge du CAN signalée par le SDR), `overloads` (surcharges
   comptées depuis le lancement ; état publié au plus une fois par seconde),
-  `drops` et `gaps` (échantillons perdus), `cpu` (% d'un cœur pour sdr-core, ou `null`), `restarts`, `t`.
+  `drops` et `gaps` (échantillons perdus), `cpu` (% d'un cœur pour sdr-core, ou `null`), `restarts`, `t` ;
+  0.144.0+ : `cpu_total` (sdr-core et module, % d'un cœur) et `mem_mb` (Mo), ou `null` hors Linux ; `max_cpu_pct`,
+  `max_mem_mb` (plafonds de `[sdr]`) ; `load` (niveau de bridage APPLIQUÉ, 0 à 5 : 1 son du SDR coupé, 2 waterfall à
+  la moitié de sa cadence, 3 waterfall à 1 ligne/s, 4 échantillonnage à 2 MHz, 5 module suspendu), `load_gw` (niveau
+  décidé par la passerelle), `load_self` (niveau que le module s'impose au-delà de ses plafonds, 4 au plus),
+  `load_reason` (cause, texte), `rate_eff` (cadence réellement appliquée) ; `fs` est la largeur APPLIQUÉE et
+  `audio` vaut faux dès le niveau 1.
+- **Bridage** (0.144.0+, `trxstation/sdr/load.py`, `gateway/sdr_load.py`, docs/sdr-cahier-des-charges.md § 2.3) :
+  la passerelle mesure chaque seconde sa propre santé (température, charge des cœurs, retard de sa boucle, mémoire
+  libre, décrochages de la carte son du poste) avec des seuils un cran SOUS ceux de la protection des visiteurs
+  (`[access] overload_*`) ; au-delà pendant 10 s, un cran de plus (et un autre toutes les 10 s) ; un cran rendu après
+  5 minutes nettement sous les seuils. Le niveau 1 coupe le son du SDR pour tous (passerelle) ; chaque niveau part au
+  module par l'action `load` du bus (`args.level` 0 à 5, `args.reason`), réservée à la passerelle : un client qui
+  l'envoie reçoit `invalid_params` (liste fermée des actions). Codes ORT-6006 (bridé), ORT-6007 (revenu à la normale),
+  ORT-6008 (le module se bride lui-même au-delà de `[sdr] max_cpu_pct` / `max_mem_mb`).
 - **Ligne** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz,
   "s": largeur Hz, "d": "<base64>", "t": ms}}` : `d` = une valeur par case (uint8), de la fréquence la plus basse à la
   plus haute ; niveau en dBFS = -150 + 0,5 × valeur (0 = -150 dBFS, 255 = -22,5 dBFS). Fréquence d'une case

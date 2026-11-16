@@ -163,12 +163,39 @@
       let t = "SDR " + (st.serial || "") + " : " + formatMHz(st.center, 3) + " MHz, largeur " + formatMHz(st.fs, 0) + " MHz";
       if (st.overload) t += " — SURCHARGE (baisser le gain)";
       if (st.drops || st.gaps) t += " — pertes : " + (st.drops || 0) + " / " + (st.gaps || 0);
-      if (Number.isFinite(st.cpu)) t += " — CPU " + st.cpu + " %";
+      if (Number.isFinite(st.cpu_total)) t += " — CPU " + st.cpu_total + " %";
+      else if (Number.isFinite(st.cpu)) t += " — CPU " + st.cpu + " %";
+      if (Number.isFinite(st.mem_mb)) t += ", " + Math.round(st.mem_mb) + " Mo";
       return t;
     }
+    if (st.state === "suspended") return "SDR SUSPENDU par la station : " + (st.load_reason || st.detail || "station chargée") + " (reprise automatique au calme)";
     if (st.state === "starting") return "SDR : démarrage…";
     if (st.state === "error") return "SDR en panne : " + (CODE_TEXTS[st.code] || st.detail || st.code || "cause inconnue");
     return "SDR : " + String(st.state || "arrêté");
+  }
+
+  // Bridage du module (station 0.144.0+, trxstation/sdr/load.py) : niveau appliqué et sa cause, ou vide.
+  const LOAD_TEXTS = { 1: "son du SDR coupé", 2: "waterfall ralenti", 3: "waterfall à 1 ligne/s",
+                       4: "échantillonnage à 2 MHz", 5: "module suspendu" };
+  function loadText(st) {
+    if (!st || !(st.load > 0)) return "";
+    return "Bridé (niveau " + st.load + " : " + (LOAD_TEXTS[st.load] || "?") + ")" + (st.load_reason ? " — " + st.load_reason : "")
+      + ". Un cran est rendu après 5 minutes au calme.";
+  }
+
+  // Balance TRX / SDR (-100 = TRX seul, +100 = SDR seul) -> facteurs de volume des deux sources.
+  function balanceGains(b) {
+    const v = Math.min(100, Math.max(-100, Number(b) || 0)) / 100;
+    return { trx: v > 0 ? 1 - v : 1, sdr: v < 0 ? 1 + v : 1 };
+  }
+
+  // Séparation gauche / droite : 0 = mélange (mono), 1 = TRX à gauche et SDR à droite, 2 = l'inverse.
+  // Rend la position stéréo (-1 gauche, +1 droite) de chaque source.
+  const SPLITS = [[0, "Mélange (mono)"], [1, "TRX à gauche, SDR à droite"], [2, "SDR à gauche, TRX à droite"]];
+  function splitPans(split) {
+    if (split === 1) return { trx: -1, sdr: 1 };
+    if (split === 2) return { trx: 1, sdr: -1 };
+    return null;
   }
 
   function nextRange(current) {
@@ -178,6 +205,6 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf, tuneArgs };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

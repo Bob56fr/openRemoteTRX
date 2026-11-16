@@ -430,4 +430,5 @@ audio { display: none; }
 .sdr-plot { position: relative; height: 12rem; background: var(--fond); border-radius: .25rem; overflow: hidden; cursor: crosshair; }
 .sdr-wf { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .sdr-val { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; }
+.sdr-load { color: var(--alerte); }
 .sdr-marker { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); opacity: .8; pointer-events: none; }

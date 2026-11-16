@@ -215,6 +215,8 @@ class Sdr:
     fft_size: int = 4096              # points de la FFT (512 à 16384, puissance de 2)
     bins: int = 1024                  # cases d'une ligne envoyée aux clients (128 à fft_size, puissance de 2)
     lines_per_s: int = 8              # lignes de waterfall par seconde (1 à 15)
+    max_cpu_pct: int = 150            # plafond du module (sdr-core + module), % d'UN cœur : au-delà, il se bride
+    max_mem_mb: int = 400             # plafond de mémoire du module (sdr-core + module), Mo
 
 
 @dataclass
@@ -870,7 +872,8 @@ def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
     if sd.sample_rate_hz not in SDR_RATES:
         p.append("[sdr] sample_rate_hz : " + ", ".join(str(r) for r in SDR_RATES) + " (Hz)")
     for name, lo, hi in (("center_hz", 1_000, 2_000_000_000), ("lna_state", 0, 8), ("gain_reduction_db", 20, 59),
-                         ("lines_per_s", 1, 15)):     # le bus limite un module à 20 messages par seconde
+                         ("lines_per_s", 1, 15),      # le bus limite un module à 20 messages par seconde
+                         ("max_cpu_pct", 20, 800), ("max_mem_mb", 50, 4000)):
         v = getattr(sd, name)
         if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
             p.append(f"[sdr] {name} : entier de {lo} à {hi}")
@@ -1274,6 +1277,8 @@ def render_toml(cfg: Config) -> str:
         f"fft_size = {cfg.sdr.fft_size}",
         f"bins = {cfg.sdr.bins}   # cases d'une ligne envoyée aux clients",
         f"lines_per_s = {cfg.sdr.lines_per_s}",
+        f"max_cpu_pct = {cfg.sdr.max_cpu_pct}   # plafond du module, % d'un cœur : au-delà il se bride lui-même",
+        f"max_mem_mb = {cfg.sdr.max_mem_mb}   # plafond de mémoire du module (Mo)",
         "",
     ]
     for client in cfg.clients:

@@ -584,6 +584,20 @@ niveau = "expert"
 bornes = "1 à 15."
 depuis = "0.140.0"
 
+[reglages."sdr.max_cpu_pct"]
+role = "Plafond de processeur du module SDR (sdr-core et module ensemble), en pourcentage d'UN cœur. Au-delà pendant 10 s, le module se bride lui-même par crans (waterfall ralenti, puis à 1 ligne/s, puis échantillonnage à 2 MHz) ; un cran est rendu après 5 minutes nettement sous le plafond. La passerelle bride aussi le module quand ELLE souffre, indépendamment de ce réglage."
+niveau = "expert"
+bornes = "20 à 800 (150 = un cœur et demi)."
+exemple = "<code>150</code>"
+depuis = "0.144.0"
+
+[reglages."sdr.max_mem_mb"]
+role = "Plafond de mémoire du module SDR (sdr-core et module ensemble), en Mo. Au-delà pendant 10 s, le module se bride lui-même comme pour <code>max_cpu_pct</code>."
+niveau = "expert"
+bornes = "50 à 4000."
+exemple = "<code>400</code>"
+depuis = "0.144.0"
+
 # ---------------------------------------------------------------- presence
 
 [reglages."presence.enabled"]

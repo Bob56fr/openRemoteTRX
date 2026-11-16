@@ -2564,7 +2564,8 @@
       /* Flux à jouer : le flux reçu tel quel, ou traité (AudioWorklet) si le débrouillage ou la spatialisation est en service. */
       rxStop();
       const wantScr = !!(sx && scr.rx), wantSt = stActive();
-      if (!media || (!wantScr && !wantSt)) return media;
+      const pans = !wantSt && typeof sdrSplitActive === "function" && sdrSplitActive() ? sdrx.splitPans(sdrSplit) : null;
+      if (!media || (!wantScr && !wantSt && !pans)) return media;
       try {
         const Ctx = window.AudioContext || window.webkitAudioContext;
         const ctx = audioContext48(Ctx);
@@ -2584,6 +2585,10 @@
             state.st = new AudioWorkletNode(ctx, "trx-spatial", { outputChannelCount: [2], processorOptions: stParams() });
             state.st.port.onmessage = (ev) => stStats(ev.data || {});
             head.connect(state.st); head = state.st;
+          }
+          if (pans) {                                                                   // séparation TRX / SDR (module SDR)
+            const pan = ctx.createStereoPanner(); pan.pan.value = pans.trx;
+            head.connect(pan); head = pan;
           }
           head.connect(dest);
           scrRender(); stRender();
@@ -2840,6 +2845,9 @@
       }
       const state = st || client.sdrState;
       $("sdr-status").textContent = sdrx.stateText(state);
+      const loadLine = state && state.state !== "suspended" ? sdrx.loadText(state) : "";
+      $("sdr-load").hidden = !loadLine;
+      $("sdr-load").textContent = loadLine;
       $("sdr-badge").textContent = state && state.state === "running" ? sdrx.formatMHz(state.center, 3) + " MHz"
         : state && state.state === "error" ? "en panne" : "";
       if (state && state.state) {
@@ -2858,13 +2866,54 @@
     }
     // ---- écoute du SDR (station 0.142.0+) : seconde piste, lue par son propre élément audio
     const sdrSound = typeof Audio === "function" ? new Audio() : null;
-    function sdrAttach(stream, track) {
-      if (!sdrSound) return;
+    let sdrMedia = null, sdrGraph = null;
+    let sdrSplit = 0;                                    // 0 mélange, 1 TRX à gauche / SDR à droite, 2 l'inverse
+    try { sdrSplit = Number(store.get("trx.sdr.split", "0")) || 0; } catch (e) { sdrSplit = 0; }
+    function sdrBalance() { return sdrx ? sdrx.balanceGains(client.sdrListening ? $("sdr-bal").value : 0) : { trx: 1, sdr: 1 }; }
+    function sdrSplitActive() { return !!(sdrx && sdrSplit && client.sdrListening && !stActive()); }
+    function trxVolume() { audio.volume = Math.max(0, Math.min(1, parseFloat($("volume").value) * sdrBalance().trx)); }
+    function sdrVolume() { if (sdrSound) sdrSound.volume = sdrx.volumeOf($("sdr-vol").value) * sdrBalance().sdr; }
+    function sdrStopGraph() {
+      if (!sdrGraph) return;
+      try { sdrGraph.raw.pause(); sdrGraph.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
+      if (sdrGraph.ctx.close) sdrGraph.ctx.close().catch(() => {});
+      sdrGraph = null;
+    }
+    function sdrRoute() {
+      /* Son du SDR vers son élément : tel quel, ou placé sur une oreille (séparation gauche / droite). */
+      if (!sdrSound || !sdrMedia) return;
+      sdrStopGraph();
+      let out = sdrMedia;
+      const pans = sdrSplitActive() ? sdrx.splitPans(sdrSplit) : null;
+      if (pans) {
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          const ctx = audioContext48(Ctx);
+          const raw = new Audio(); raw.muted = true; raw.srcObject = sdrMedia; raw.play().catch(() => {});   // Chrome : flux distant lu
+          const pan = ctx.createStereoPanner(); pan.pan.value = pans.sdr;
+          const dest = ctx.createMediaStreamDestination();
+          ctx.createMediaStreamSource(sdrMedia).connect(pan); pan.connect(dest);
+          if (ctx.resume) ctx.resume().catch(() => {});
+          sdrGraph = { ctx, raw };
+          out = dest.stream;
+        } catch (e) {
+          ui.log("Séparation gauche / droite impossible sur ce navigateur : son du SDR au milieu.", "warn");
+        }
+      }
       try {
-        sdrSound.srcObject = stream || new MediaStream([track]);
-        sdrSound.volume = sdrx.volumeOf($("sdr-vol").value);
+        sdrSound.srcObject = out;
+        sdrVolume();
         if (client.sdrListening) sdrSound.play().catch(() => {});
       } catch (e) { /* navigateur sans seconde piste : le waterfall reste */ }
+    }
+    function sdrAttach(stream, track) {
+      if (!sdrSound) return;
+      try { sdrMedia = stream || new MediaStream([track]); } catch (e) { return; }
+      sdrRoute();
+    }
+    function sdrEarsChanged() {
+      /* Écoute, balance ou séparation changée : les deux sources sont recalculées (TRX : sa chaîne, avec ou sans panoramique). */
+      trxVolume(); sdrRoute(); rxApply();
     }
     function sdrModeOptions(mode) {
       const sel = $("sdr-mode");
@@ -3002,6 +3051,7 @@
         client.sdrListen(on).then((res) => {
           if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail), "warn"); return; }
           if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log("Son du SDR bloqué par le navigateur : touche l'écran.", "warn")); else sdrSound.pause(); }
+          sdrEarsChanged();
           sdrRender(null);
         }).catch(() => {});
       });
@@ -3009,7 +3059,24 @@
       $("sdr-dbw").addEventListener("change", () => sdrSend({ dbw: Number($("sdr-dbw").value) }));
       $("sdr-sql").addEventListener("input", () => { sdrSlide.held["sdr-sql"] = true; $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert"; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
       $("sdr-sql").addEventListener("change", () => { sdrSlide.held["sdr-sql"] = false; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
-      $("sdr-vol").addEventListener("input", () => { if (sdrSound) sdrSound.volume = sdrx.volumeOf($("sdr-vol").value); });
+      $("sdr-vol").addEventListener("input", () => { sdrVolume(); });
+      for (const [value, label] of sdrx.SPLITS) $("sdr-split").appendChild(Object.assign(el("option", "", label), { value: String(value) }));
+      $("sdr-split").value = String(sdrSplit);
+      try { $("sdr-bal").value = store.get("trx.sdr.balance", "0"); } catch (e) { /* valeur par défaut */ }
+      $("sdr-bal").addEventListener("input", () => {
+        try { store.set("trx.sdr.balance", $("sdr-bal").value); } catch (e) { /* sans stockage */ }
+        trxVolume(); sdrVolume();
+      });
+      $("sdr-bal").addEventListener("dblclick", () => { $("sdr-bal").value = "0"; trxVolume(); sdrVolume(); });
+      $("sdr-split").addEventListener("change", () => {
+        sdrSplit = Number($("sdr-split").value) || 0;
+        try { store.set("trx.sdr.split", String(sdrSplit)); } catch (e) { /* sans stockage */ }
+        if (sdrSplit && stSet && stSet.on) {                                          // séparation et spatialisation ST exclusives
+          ui.log("Séparation TRX / SDR choisie : spatialisation ST coupée.", "");
+          stChange(Object.assign({}, stSet, { on: false }));
+        }
+        sdrEarsChanged();
+      });
       $("sdr-qsy").addEventListener("click", () => {
         if (!sdrPicked) return;
         client.qsy(sdrPicked).then((res) => {
@@ -3350,6 +3417,12 @@
       const before = stActive();
       if (next.on && !stSet.on) {
         stFailed = false;                                                           // nouvel essai à chaque mise en service
+        if (typeof sdrSplit !== "undefined" && sdrSplit) {                        // séparation TRX / SDR et ST exclusives
+          sdrSplit = 0;
+          try { store.set("trx.sdr.split", "0"); $("sdr-split").value = "0"; } catch (e) { /* sans stockage */ }
+          ui.log("Spatialisation ST en service : séparation TRX / SDR coupée.", "");
+          if (typeof sdrRoute === "function") sdrRoute();
+        }
         if (sx && scr.rx) {                                                         // débrouillage et ST exclusifs (2026-11-03)
           scr.rx = false; scrRender();
           ui.log("Spatialisation ST en service : débrouillage du scrambler coupé.", "");
@@ -3717,7 +3790,7 @@
     $("mute").addEventListener("change", (ev) => { audio.muted = ev.target.checked; });
     $("out-select").addEventListener("change", () => { store.set("trx.out", $("out-select").value); applyOutput(); });
     $("mic-select").addEventListener("change", () => { store.set("trx.mic", $("mic-select").value); ui.log("Le micro choisi s'appliquera à la prochaine connexion.", ""); });
-    $("volume").addEventListener("input", (ev) => { audio.volume = parseFloat(ev.target.value); });
+    $("volume").addEventListener("input", () => trxVolume());                        // balance TRX / SDR comprise
     $("text-size").addEventListener("change", (ev) => { store.set("trx.text", ev.target.value); applyDisplay(); });
     $("layout-select").addEventListener("change", (ev) => { store.set("trx.layout", ev.target.value); applyDisplay(); });
     const themes = root.TrxTheme || null;                                        // theme.js, chargé dans <head>

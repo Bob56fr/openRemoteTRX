@@ -84,6 +84,20 @@ test("fréquence écoutée saisie : centre déplacé seulement hors de la fenêt
   assert.deepStrictEqual(sdr.tuneArgs(7000000, undefined, 0), { center_hz: 7000000, dfreq_hz: 7000000 });
 });
 
+test("bridage, balance et séparation gauche / droite", () => {
+  assert.strictEqual(sdr.loadText({ load: 0 }), "");
+  assert.ok(sdr.loadText({ load: 2, load_reason: "station chargée : processeur à 95 %" }).includes("waterfall ralenti"));
+  assert.ok(sdr.stateText({ state: "suspended", load_reason: "station chargée : passerelle en retard" }).includes("SUSPENDU"));
+  assert.deepStrictEqual(sdr.balanceGains(0), { trx: 1, sdr: 1 });
+  assert.deepStrictEqual(sdr.balanceGains(50), { trx: 0.5, sdr: 1 });
+  assert.deepStrictEqual(sdr.balanceGains(-100), { trx: 1, sdr: 0 });
+  assert.deepStrictEqual(sdr.balanceGains(500), { trx: 0, sdr: 1 });
+  assert.strictEqual(sdr.splitPans(0), null);
+  assert.deepStrictEqual(sdr.splitPans(1), { trx: -1, sdr: 1 });
+  assert.deepStrictEqual(sdr.splitPans(2), { trx: 1, sdr: -1 });
+  assert.ok(sdr.stateText({ state: "running", serial: "X", center: 7e6, fs: 2e6, cpu_total: 40.5, mem_mb: 61.2 }).includes("61 Mo"));
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

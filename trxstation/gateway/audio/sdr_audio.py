@@ -79,6 +79,7 @@ class SdrAudio:
         self.clock = clock
         self.subscribers: set[Subscriber] = set()
         self.listeners = 0
+        self.blocked = False                      # station chargée (sdr_load.py, niveau >= 1) : son du SDR coupé
         self.packets = self.refused = 0
         self.last_packet = -1e9
         self._muted_until = -1e9                  # fin du maintien du silence après une émission
@@ -118,16 +119,29 @@ class SdrAudio:
     def unsubscribe(self, sub: Subscriber) -> None:
         self.subscribers.discard(sub)
 
+    @property
+    def active(self) -> bool:
+        """Le module doit démoduler : au moins un opérateur écoute et la station n'a pas coupé le son du SDR."""
+        return self.listeners > 0 and not self.blocked
+
     def set_listeners(self, count: int) -> None:
         """Nombre d'opérateurs qui écoutent : le module ne démodule que s'il y en a."""
-        was, self.listeners = self.listeners, max(0, count)
-        if (was > 0) != (self.listeners > 0):
-            self._ask(self.listeners > 0)
+        was = self.active
+        self.listeners = max(0, count)
+        if was != self.active:
+            self._ask(self.active)
+
+    def set_blocked(self, on: bool) -> None:
+        """Station chargée : son du SDR coupé pour tous (fondu) et démodulation arrêtée dans le module."""
+        was = self.active
+        self.blocked = bool(on)
+        if was != self.active:
+            self._ask(self.active)
 
     def tick(self) -> None:
         """Toutes les secondes : on écoute mais rien n'arrive (module relancé) -> redemander le son."""
         now = self.clock()
-        if self.listeners and now - self.last_packet > 2.0 and now - self._last_assert >= REASSERT_S:
+        if self.active and now - self.last_packet > 2.0 and now - self._last_assert >= REASSERT_S:
             self._ask(True)
 
     def _ask(self, on: bool) -> None:
@@ -147,7 +161,7 @@ class SdrAudio:
         now = self.clock()
         if self.transmitting():
             self._muted_until = now + RELEASE_S
-        target = 0.0 if now < self._muted_until or not listening else 1.0
+        target = 0.0 if now < self._muted_until or not listening or self.blocked else 1.0
         step = 0.02 / FADE_S
         start = sub.gain
         end = min(target, start + step) if target > start else max(target, start - step)

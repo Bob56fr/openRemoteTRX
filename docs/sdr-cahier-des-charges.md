@@ -85,6 +85,11 @@ présence et FreeDV.
   d'échantillonnage. Sa propre première mesure : couper la piste audio SDR des clients.
 - **Hystérésis** : reprise d'un cran seulement après N minutes au vert (comme les visiteurs : 5 min),
   sinon le système oscille.
+- **Fait (étape 192, station 0.144.0)** : niveaux 0 à 5 (`trxstation/sdr/load.py` : 1 son du SDR coupé, 2 waterfall
+  à mi-cadence, 3 waterfall à 1 ligne/s, 4 échantillonnage à 2 MHz, 5 suspendu ; les crans « décodeurs »,
+  « sdr-learner » et « canaux parallèles » s'insèreront avant le waterfall quand ces lots existeront) ; seuils de la
+  passerelle un cran sous ceux des visiteurs ; décrochages de la carte son du poste pris en compte ; plafonds du
+  module `[sdr] max_cpu_pct` / `max_mem_mb` (le module ne se suspend jamais lui-même).
 - Seule la passerelle peut envoyer ces consignes au module (bus authentifié).
 - **Superviseur = dernier recours** : il arrête les processus du module si la passerelle est muette
   ou si le module n'obéit pas ; il reste minimal (pas de logique SDR).

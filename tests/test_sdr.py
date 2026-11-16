@@ -498,3 +498,156 @@ def test_listen_command_needs_a_second_audio_track() -> None:
     assert "sdr_audio" in s.features()
     asyncio.run(s.on_message(json.dumps({"cmd": "sdr", "id": 2, "action": "listen", "args": {"on": True}})))
     assert sent[-1] == {"type": "result", "id": 2, "ok": True, "action": "listen", "on": True} and changes == [True]
+
+
+# ------------------------------------------------------------------ charge (lot S1b-2)
+class _Clock:
+    def __init__(self) -> None:
+        self.t = 0.0
+
+    def __call__(self) -> float:
+        return self.t
+
+
+def test_load_ladder_climbs_one_step_per_hold_and_comes_back_slowly() -> None:
+    from trxstation.sdr.load import Ladder
+    clock = _Clock()
+    ladder = Ladder(clock=clock)
+    for _ in range(10):                                    # 10 mesures (9 s après la première) : rien
+        clock.t += 1
+        assert not ladder.step("processeur à 99 %", False)
+    clock.t += 1
+    assert ladder.step("processeur à 99 %", False) and ladder.level == 1 and "99" in ladder.reason
+    for _ in range(60):
+        clock.t += 1
+        ladder.step("processeur à 99 %", False)
+    assert ladder.level == 5                               # plafonné
+    clock.t += 200
+    assert not ladder.step("", True)                       # au vert, mais pas assez longtemps
+    clock.t += 100
+    ladder.step("", False)                                 # pas « nettement » sous les seuils : compteur remis
+    clock.t += 299
+    assert not ladder.step("", True)
+    clock.t += 299
+    assert not ladder.step("", True)
+    clock.t += 1
+    assert ladder.step("", True) and ladder.level == 4     # un cran rendu après 5 min au vert
+    for _ in range(4):
+        clock.t += 300
+        ladder.step("", True)
+    assert ladder.level == 0 and ladder.reason == ""
+
+
+def test_load_levels_effects() -> None:
+    from trxstation.sdr.load import sample_rate, waterfall_rate
+    assert [waterfall_rate(8, n) for n in range(6)] == [8, 8, 4, 1, 1, 1]
+    assert waterfall_rate(1, 2) == 1
+    assert [sample_rate(8_000_000, n) for n in (0, 3, 4, 5)] == [8_000_000, 8_000_000, 2_000_000, 2_000_000]
+    assert sample_rate(2_000_000, 4) == 2_000_000
+    sd = cfgmod.Sdr(serial="X1234", sample_rate_hz=8_000_000)
+    args = core_args(sd, Settings(7_100_000, 2, 50, 8), 4)
+    assert args[args.index("--fs") + 1] == "2000000" and args[args.index("--rate") + 1] == "1"
+
+
+def test_gateway_governor_cuts_sdr_audio_first_then_throttles_and_resends() -> None:
+    from trxstation.gateway.api.overload import Limits, Sample
+    from trxstation.gateway.audio.sdr_audio import SdrAudio
+    from trxstation.gateway.sdr_load import RESEND_S, SdrGovernor, limits_from_access
+    from trxstation.sdr.load import Ladder
+    clock, sample, sent, emitted, asked = _Clock(), [Sample(cpu_pct=50)], [], [], []
+    audio = SdrAudio(0, b"x" * 16, lambda: False, request_audio=asked.append)
+    audio.set_listeners(1)
+    xr = type("Src", (), {"xruns": 0, "overruns": 0})()
+    gov = SdrGovernor(lambda: sample[0], Limits(), lambda lvl, why: sent.append((lvl, why)), audio=audio,
+                      xrun_source=xr, ladder=Ladder(clock=clock), emit=lambda code, **kw: emitted.append((code, kw)))
+
+    def second():
+        clock.t += 1
+        gov.measure()
+        asyncio.run(gov.push())
+    second()
+    assert sent == [(0, "")] and not audio.blocked              # premier envoi : niveau 0 (module relancé ?)
+    sample[0] = Sample(cpu_pct=95)
+    for _ in range(11):
+        second()
+    assert gov.ladder.level == 1 and audio.blocked and asked == [True, False]   # son coupé, démodulation arrêtée
+    assert sent[-1][0] == 1 and emitted[-1][0] == codes.ORT_6006
+    sample[0] = Sample(cpu_pct=10)
+    n = len(sent)
+    for _ in range(int(RESEND_S)):
+        second()
+    assert len(sent) == n + 1 and sent[-1][0] == 1             # niveau renvoyé (module relancé entre-temps)
+    for _ in range(300):
+        second()
+    assert gov.ladder.level == 0 and not audio.blocked and asked[-1] is True and emitted[-1][0] == codes.ORT_6007
+    for _ in range(20):                                          # un décrochage par seconde (carte son du poste)
+        xr.xruns += 1
+        second()
+    assert gov.ladder.level == 1 and "décrochages" in gov.ladder.reason
+    lim = limits_from_access(cfgmod.Access())
+    assert lim.cpu_pct < cfgmod.Access().overload_cpu_pct and lim.lag_ms < cfgmod.Access().overload_lag_ms
+
+
+def test_governor_never_raises_when_the_module_is_absent() -> None:
+    from trxstation.gateway.api.overload import Limits, Sample
+    from trxstation.gateway.sdr_load import SdrGovernor
+
+    def send(level, why):
+        raise ConnectionError("module absent")
+    gov = SdrGovernor(lambda: Sample(), Limits(), send)
+    gov.measure()
+    asyncio.run(gov.push())
+    assert gov._sent is None
+
+
+def test_module_applies_the_gateway_load_level_and_suspends(tmp_path: Path) -> None:
+    from trxstation.modules.client import CallRefused
+
+    async def scenario():
+        svc, bus, emitted = _service(tmp_path)
+        task = asyncio.ensure_future(svc.run())
+        for _ in range(100):
+            if svc.state["state"] == "running":
+                break
+            await asyncio.sleep(0.05)
+        await svc.on_call({"action": "audio", "args": {"on": True}})
+        assert svc.snapshot()["audio"] is True
+        await svc.on_call({"action": "load", "args": {"level": 3, "reason": "processeur à 95 %"}})
+        mid = svc.snapshot()
+        await svc.on_call({"action": "load", "args": {"level": 5, "reason": "processeur à 99 %"}})
+        for _ in range(100):
+            if svc.state["state"] == "suspended":
+                break
+            await asyncio.sleep(0.05)
+        suspended = (svc.snapshot(), svc.proc)
+        await svc.on_call({"action": "load", "args": {"level": 0}})
+        for _ in range(100):
+            if svc.state["state"] == "running":
+                break
+            await asyncio.sleep(0.05)
+        back = svc.snapshot()
+        with pytest.raises(CallRefused):
+            await svc.on_call({"action": "load", "args": {"level": 9}})
+        svc.stop()
+        await asyncio.wait_for(task, 10)
+        return mid, suspended, back, emitted
+    mid, (susp, proc), back, emitted = asyncio.run(scenario())
+    assert mid["load"] == 3 and mid["rate_eff"] == 1 and mid["audio"] is False and "95" in mid["load_reason"]
+    assert susp["state"] == "suspended" and proc is None and susp["load"] == 5
+    assert back["state"] == "running" and back["load"] == 0 and back["rate_eff"] == 10 and back["audio"] is True
+    assert emitted == []                                   # un arrêt voulu n'est pas une panne
+
+
+def test_module_throttles_itself_above_its_cpu_limit(tmp_path: Path) -> None:
+    clock = _Clock()
+    sd = cfgmod.Sdr(enabled=True, serial="TEST1234", max_cpu_pct=50)
+    emitted = []
+    svc = SdrService(sd, tmp_path, None, core_prefix=FAKE, clock=clock, emit=lambda code, **kw: emitted.append((code, kw)))
+    svc._self_cpu = lambda: 80.0                           # module seul à 80 % d'un cœur
+    for _ in range(11):
+        clock.t += 1
+        changed = svc._self_measure()
+    assert changed and svc.ladder.level == 1 and svc.level == 1 and emitted[-1][0] == codes.ORT_6008
+    assert "plafond 50" in svc.load_reason()
+    svc.gw_level, svc.gw_reason = 2, "passerelle en retard de 90 ms"
+    assert svc.level == 2 and "passerelle" in svc.load_reason()
