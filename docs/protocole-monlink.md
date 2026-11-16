@@ -94,7 +94,7 @@ Contenus (chiffrés ; le relais ne les voit pas) :
 | `hb` | `{"v", "up", "safe", "gateway": "ok" \| "stale" \| "absent"}` |
 | `st` | `{"system": {cpu, mem, disk, temp}, "rig": {cat, cat_error, tx, fault, clients[, freq, mode, …]}}` (fréquence et mode seulement si `freq_mode`) |
 | `ev` | `{"events": [ligne du journal JSON avec code, au plus 50]}` |
-| `lg` | `{"lines": [lignes du journal JSON, au plus 50]}`, seulement pendant le mode assistance |
+| `lg` | `{"lines": [lignes du journal JSON, au plus 50]}`, seulement pendant le mode assistance ; pendant celui-ci les journaux JSON gardent aussi les lignes INFO (fichier `monlink/assist-until` du dossier d'état, station 0.163.0+) |
 | `sn` | fragment du rapport de dépannage (zip du menu 2.3, entièrement masqué) |
 | `rq` | `{"assist": secondes}` (900 à 86 400) ou `{"snapshot": true}` |
 | `an` | `{"accepted": bool, "until": heure}` (assistance) ou `{"accepted": bool, "snapshot": true}` |

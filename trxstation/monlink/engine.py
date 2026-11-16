@@ -25,6 +25,7 @@ from pathlib import Path
 
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..logsetup import ASSIST_FLAG
 from ..presence import pow as pw
 from ..presence.codec import b64d, b64e
 from ..presence.wire import clean_pseudo
@@ -79,6 +80,26 @@ class Engine:
         self._alerted: dict[str, float] = {}
         self._alert_times: collections.deque[float] = collections.deque()
 
+    # ------------------------------------------------------------ lignes INFO pendant l'assistance
+    def _assist_flag(self, now: float) -> None:
+        """Échéance de la plus longue assistance accordée par l'opérateur de CETTE station (station aidée), lue par le
+        filtre des journaux JSON de la passerelle et du superviseur (`logsetup.ASSIST_FLAG`) : ils gardent alors aussi
+        les lignes INFO, envoyées à la station qui aide. Plus d'assistance = fichier effacé (filtre ordinaire)."""
+        flag = self.state_dir / ASSIST_FLAG
+        until = max((float(l.get("assist_until") or 0) for l in self.store.links.values()
+                     if l["role"] == "emitter" and l["state"] == "active"), default=0.0)
+        try:
+            if until > now:
+                text = f"{until:.0f}\n"
+                if not flag.exists() or flag.read_text(encoding="ascii") != text:
+                    flag.parent.mkdir(parents=True, exist_ok=True)
+                    flag.write_text(text, encoding="ascii")
+                    os.chmod(flag, 0o644)            # lu par le superviseur et la passerelle
+            elif flag.exists():
+                flag.unlink()
+        except OSError as exc:
+            log.info("échéance d'assistance non écrite (%s) : journaux sans lignes INFO", exc)
+
     # ------------------------------------------------------------ alertes (station qui aide)
     def _alert(self, code: str, key: str, **contexte) -> None:
         """Alerte du catalogue par le ntfy de la station ; une fois par demi-heure par (code, station), 20 par heure."""
@@ -125,6 +146,7 @@ class Engine:
         if purge:
             self.store.purge(self.clock(), peer)
         self.store.save()
+        self._assist_flag(self.clock())          # fin de liaison = fin des lignes INFO tout de suite
 
     async def _send(self, peer: str, kind: str, content: dict, *, assist: bool = False) -> None:
         """Un message chiffré vers le partenaire ; la séquence avance AVANT l'envoi (jamais deux contenus sous le même
@@ -334,6 +356,7 @@ class Engine:
         else:
             reply = {"accepted": False}
         self.store.save()
+        self._assist_flag(self.clock())
         await self._send(peer, "an", reply)
         return reply
 
@@ -383,6 +406,7 @@ class Engine:
                 del self.store.data["invites"][address]
         self.store.data["journal"] = self.journal.positions
         self.store.save()
+        self._assist_flag(now)
         fast = any(l["state"] == "confirm" or (l.get("assist_until") or 0) > now or l.get("request")
                    for l in self.store.links.values())
         return FAST_CYCLE_S if fast else CYCLE_S

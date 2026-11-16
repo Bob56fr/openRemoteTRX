@@ -231,8 +231,11 @@
     return Math.min(1, Math.max(0, (db + 54) / 114));
   }
 
-  function reasonText(code, detail) {
-    return REASONS[code] || ("Refusé (" + code + (detail ? " : " + detail : "") + ")");
+  // `ort` : code du catalogue d'erreurs joint par la station à ses refus (étape 215), affiché entre crochets ; la page
+  // publique du code se trouve en cherchant ce code sur le site des codes d'erreur du projet.
+  function reasonText(code, detail, ort) {
+    const text = REASONS[code] || ("Refusé (" + code + (detail ? " : " + detail : "") + ")");
+    return typeof ort === "string" && /^ORT-\d{4}$/.test(ort) ? text + " [" + ort + "]" : text;
   }
 
   function cutText(code) {
@@ -1585,7 +1588,7 @@
       /* Roger bip, bip de liaison perdue : réglages de la STATION (elle seule émet les bips). */
       const res = await this.send("beeps_set", changes);
       if (res.ok && res.settings) { this.beeps = res.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -1632,7 +1635,7 @@
     async _selcallCommand(cmd, params) {
       const res = await this.send(cmd, params || {});
       if (res.ok && res.status) this._setSelcall(res.status);
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -1845,7 +1848,7 @@
       if (!mine && p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : utilise STOP pour couper.", "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
       const res = await this.send("toggle");
-      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
+      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
       return res;
     }
 
@@ -1857,7 +1860,7 @@
       if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : réglage impossible.", "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
       const res = await this.send("selcall_calibrate");
-      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
+      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
       return res;
     }
 
@@ -1870,7 +1873,7 @@
       if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : appel SELCALL impossible.", "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;            // battements dès la demande, comme pour le PTT
       const res = await this.send("selcall_send");
-      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail), "warn"); }
+      if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
       return res;
     }
 
@@ -1883,13 +1886,13 @@
 
     async setFrequency(hz) {
       const res = await this.send("set_frequency", { hz: hz });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
     async setMode(mode, passband) {
       const res = await this.send("set_mode", { mode: mode, passband: passband || 0 });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -1920,7 +1923,7 @@
       /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 2.3). */
       const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
       if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", "");
-      else this.ui.log(reasonText(res.reason, res.detail), "warn");
+      else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -1929,7 +1932,7 @@
          station pendant une émission au micro du poste. */
       const res = await this.send("local_release");
       if (res.ok) this.ui.log("Main reprise : le PTT à distance est de nouveau permis.", "");
-      else this.ui.log(reasonText(res.reason, res.detail), "warn");
+      else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -1950,7 +1953,7 @@
 
     async _rigSetting(cmd, params) {
       const res = await this.send(cmd, params);
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -2096,13 +2099,13 @@
     async setOffset(name, hz) {
       /* Décalage du clarifieur (RIT, ou XIT = ΔTX qui décale l'ÉMISSION), arrondi à 10 Hz ; refusé par la station pendant l'émission. */
       const res = await this.send("set_offset", { name: name, hz: Math.round(hz / 10) * 10 });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
     async setSquelch(value) {
       const res = await this.send("set_squelch", { value: value });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -2110,38 +2113,38 @@
       const params = { name: fields.name, hz: fields.hz, mode: fields.mode, favorite: !!fields.favorite };
       if (fields.memoryId) params.memory_id = fields.memoryId;
       const res = await this.send("memory_save", params);
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
     async deleteMemory(memoryId) {
       const res = await this.send("memory_delete", { memory_id: memoryId });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
     async recallMemory(memoryId) {
       const res = await this.send("memory_recall", { memory_id: memoryId });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
     // ---- mises en page (designer) : profil de CE compte, stocké sur la station ; aucun effet sur le poste
     async getLayout() {
       const res = await this.send("layout_get");
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;                          // { ok, profile, source: "user" | "factory", warnings }
     }
 
     async saveLayout(profile) {
       const res = await this.send("layout_save", { profile: profile });
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;                          // refus : res.errors liste les problèmes, en français
     }
 
     async resetLayout() {
       const res = await this.send("layout_reset");
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -2187,7 +2190,7 @@
 
     async swrStart(lowHz, highHz, points, powerPct) {
       const res = await this.send("swr_start", { low_hz: lowHz, high_hz: highHz, points: points, power_pct: powerPct });
-      if (!res.ok) this.ui.log("Mesure de TOS : " + reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log("Mesure de TOS : " + reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -2320,7 +2323,7 @@
       let first = null;
       for (let i = 0; first === null || i < first.parts; i++) {
         const res = await this.send("net_export", { part: i });
-        if (!res || !res.ok || typeof res.data !== "string") return { error: reasonText(res && res.reason, res && res.detail) };
+        if (!res || !res.ok || typeof res.data !== "string") return { error: reasonText(res && res.reason, res && res.detail, res && res.ort) };
         if (first === null) first = res;
         parts.push(decodeBase64(res.data));
         if (i >= 99) break;
@@ -2334,7 +2337,7 @@
     /* FreeDV (fonction « freedv », opérateurs) : mode de la station en réception ; refusé pendant l'émission. */
     async freedvSet(on) {
       const res = await this.send("freedv_set", { on: !!on });
-      if (res && !res.ok) this.ui.log("FreeDV : " + reasonText(res.reason, res.detail), "warn");
+      if (res && !res.ok) this.ui.log("FreeDV : " + reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 
@@ -2429,7 +2432,7 @@
       /* Action de l'opérateur (créer, inviter, rejoindre, partage…) ; refus écrit au journal, vue relue après un succès. */
       const res = await this.friends(action, args);
       if (res && res.ok) this.friendsRefresh().catch(() => {});
-      else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail), "warn");
+      else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
       return res;
     }
 
@@ -2473,7 +2476,7 @@
       /* Réglage du spectre du poste (mode, span, ref, speed) : refusé par la station pendant l'émission ; relu sur le poste. */
       const res = await this.send("spectrum_set", { name: name, value: value });
       if (res.ok && this.state && this.state.spectrum) this.state.spectrum.settings = res.settings || this.state.spectrum.settings;
-      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail), "warn");
+      if (!res.ok) this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
 

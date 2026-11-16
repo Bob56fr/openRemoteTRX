@@ -96,6 +96,10 @@ test("fonctions pures", () => {
   assert.equal(web.parseKilohertz("0"), null); assert.equal(web.parseKilohertz("99999999999"), null);
   assert.match(web.reasonText("out_of_band"), /hors des bandes/);
   assert.match(web.reasonText("code_inconnu", "x"), /code_inconnu/);
+  // étape 215 : code du catalogue joint par la station, affiché entre crochets ; tout autre texte ignoré
+  assert.match(web.reasonText("out_of_band", "", "ORT-5107"), /hors des bandes.* \[ORT-5107\]$/);
+  assert.doesNotMatch(web.reasonText("out_of_band", "", "<b>ORT</b>"), /</);
+  assert.doesNotMatch(web.reasonText("out_of_band"), /ORT-/);
   assert.equal(web.cutText("tot"), "durée maximale d'émission atteinte"); assert.equal(web.cutText(""), "");
 });
 

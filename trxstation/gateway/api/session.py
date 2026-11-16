@@ -23,6 +23,7 @@ from collections.abc import Awaitable, Callable
 
 from ... import __version__
 from ...errors import codes
+from ...errors.emit import by_machine
 from ...hostinfo import hamlib_version, host_details, shared_monitor
 from ...layout import LayoutInvalid, LayoutStorageError, LayoutStore, validate_profile
 from ..bugreports import ReportRefused
@@ -84,6 +85,18 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         # FreeDV en réception ([freedv] enabled) : mode, synchro, SNR, indicatifs ; visiteurs compris
         **({} if getattr(pipeline, "freedv", None) is None else {"freedv": pipeline.freedv.snapshot()}),
     }
+
+
+def with_error_code(message: dict) -> dict:
+    """Refus (`result` à `ok: false`) et erreurs (`error`) : code du catalogue en plus (`ort`, étape 215), pour que la
+    page et l'application l'affichent avec le texte ; motif sans code connu = message inchangé."""
+    kind = message.get("type")
+    machine = message.get("reason") if kind == "result" and message.get("ok") is False else \
+        message.get("code") if kind == "error" else None
+    if not isinstance(machine, str) or "ort" in message:
+        return message
+    code = by_machine(machine)
+    return {**message, "ort": code} if code else message
 
 
 class ControlSession:
@@ -153,7 +166,7 @@ class ControlSession:
 
     def send(self, message: dict) -> None:
         try:
-            self._send(message)
+            self._send(with_error_code(message))
         except Exception:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"envoi vers {self.client_id}")
 

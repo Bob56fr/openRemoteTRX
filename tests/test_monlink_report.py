@@ -283,3 +283,24 @@ def test_console_report_round_trip(tmp_path, monkeypatch):
     monkeypatch.setattr("trxstation.report.desktop_dir", lambda *a, **k: desktop)
     text = helper.menu("10")
     assert "Rapport copié" in text and list(desktop.glob("rapport-F4XYZ-*.zip"))
+
+
+# ------------------------------------------------------------------ lignes INFO pendant l'assistance (étape 215)
+def test_the_aided_station_writes_and_clears_the_assistance_deadline(pair):
+    from trxstation.logsetup import ASSIST_FLAG
+    helper, aided, clock, relay, notifier, reports = pair
+    flag = aided.state_dir / ASSIST_FLAG
+    assert not flag.exists()
+    run(helper.request_assist(aided.me, 3600))
+    cycle(clock, aided)
+    run(aided.answer(helper.me, True))
+    assert abs(float(flag.read_text(encoding="ascii")) - (clock() + 3600)) < 2
+    clock.t += 3601
+    run(aided.cycle())
+    assert not flag.exists()                                               # échéance passée : effacé
+    run(helper.request_assist(aided.me, 3600))
+    cycle(clock, aided)
+    run(aided.answer(helper.me, True))
+    assert flag.exists()
+    run(aided.end(helper.me))
+    assert not flag.exists()                                               # fin de liaison : effacé tout de suite

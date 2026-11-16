@@ -8,8 +8,9 @@ Le superviseur reçoit `--log-dir` et le transmet à ses processus (passerelle, 
 
 Journal STRUCTURÉ (lot M1 du monitoring, étape 174) : `add_json_journal` ajoute un fichier JSON Lines tournant
 `<dossier d'état>/journal-<nom>.jsonl` (1 Mo x 3), un objet par ligne : avertissements et plus graves, et tout
-événement du catalogue d'erreurs (champ `event` d'`emit_event` / `Notifier.alert` : code, gravité, contexte). Lu plus
-tard par le monitor inter-stations ; jamais bloquant (dossier non inscriptible = pas de journal JSON).
+événement du catalogue d'erreurs (champ `event` d'`emit_event` / `Notifier.alert` : code, gravité, contexte) ; PENDANT
+une assistance acceptée (monitoring inter-stations, étape 215), aussi les lignes INFO (`_JournalFilter`). Lu par le
+module « monlink » ; jamais bloquant (dossier non inscriptible = pas de journal JSON).
 """
 from __future__ import annotations
 
@@ -77,11 +78,40 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(line, ensure_ascii=False, default=str)
 
 
+ASSIST_FLAG = Path("monlink") / "assist-until"      # dans le dossier d'état ; écrit par le module « monlink »
+ASSIST_CHECK_S = 5.0
+
+
 class _JournalFilter(logging.Filter):
-    """Avertissements et plus graves, ou événement du catalogue (même d'information)."""
+    """Avertissements et plus graves, ou événement du catalogue (même d'information). PENDANT UNE ASSISTANCE acceptée
+    par l'opérateur (monitoring inter-stations, étape 215), aussi les lignes INFO : le module « monlink » dépose
+    `<dossier d'état>/monlink/assist-until` (heure de fin, secondes Unix), relu toutes les 5 s au plus ; fichier absent,
+    illisible ou échéance passée = filtre ordinaire. Volume borné par la rotation (1 Mo x 3)."""
+
+    def __init__(self, folder: str | Path | None = None, *, clock=None, wall=None) -> None:
+        super().__init__()
+        import time
+        self.flag = None if folder is None else Path(folder) / ASSIST_FLAG
+        self._clock, self._wall = clock or time.monotonic, wall or time.time
+        self._checked = -1e12
+        self._until = 0.0
+
+    def _assisting(self) -> bool:
+        if self.flag is None:
+            return False
+        now = self._clock()
+        if now - self._checked >= ASSIST_CHECK_S:
+            self._checked = now
+            try:
+                self._until = float(self.flag.read_text(encoding="ascii").strip())
+            except (OSError, ValueError):
+                self._until = 0.0
+        return self._wall() < self._until
 
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.levelno >= logging.WARNING or isinstance(getattr(record, "event", None), dict)
+        if record.levelno >= logging.WARNING or isinstance(getattr(record, "event", None), dict):
+            return True
+        return record.levelno >= logging.INFO and self._assisting()
 
 
 def add_json_journal(name: str, folder: str | Path) -> Path | None:
@@ -96,7 +126,7 @@ def add_json_journal(name: str, folder: str | Path) -> Path | None:
             return None                              # jamais de dossier d'état créé ici (droits du compte trx)
         handler = logging.handlers.RotatingFileHandler(path, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
         handler.setFormatter(JsonFormatter(name))
-        handler.addFilter(_JournalFilter())
+        handler.addFilter(_JournalFilter(folder))
         handler.setLevel(logging.INFO)
         root.addHandler(handler)
         return path

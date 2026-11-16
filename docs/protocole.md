@@ -122,6 +122,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
   - fonctions absentes ou en panne : `memories_unavailable`, `unknown_memory`, `storage_error`, `layouts_unavailable`, `layout_invalid`, `layout_storage_error`, `spectrum_unavailable`, `beeps_unavailable`, `beeps_storage_error`, `selcall_unavailable`, `reports_unavailable` (et les motifs de refus d'un rapport), `freedv_unavailable`, `freedv_missing`, `freedv_storage_error`, `freedv_tx` (§ 17) ;
   - visiteur : `forbidden` (toute commande hors `get_state` et `spectrum_watch`, § 13).
 - `{"type":"error","code":"…","detail":"…"}` : message illisible, sans `id` : `too_large`, `bad_json`, `bad_message`, `unknown_command`, `invalid_params`, `rate_limited`.
+- `ort` (station 0.163.0+, facultatif) : code du catalogue d'erreurs du refus ou de l'erreur (`"ORT-5107"`), joint par la station à tout `result` à `ok: false` et à tout `error` dont le motif a un code ; page publique du code : `https://bob56fr.github.io/openRemoteTRX/erreurs/<code>/`. Un client l'affiche avec son texte (la page : « … [ORT-5107] ») ou l'ignore ; jamais de logique sur sa valeur (le motif `reason` / `code` reste la clé stable).
 
 ## 8. Messages (station -> client)
 

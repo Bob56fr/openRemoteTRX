@@ -1049,7 +1049,7 @@
       $("spot-qsy").disabled = true; $("spot-note").textContent = "QSY en cours…";
       client.qsy(target.hz, target.mode).then((res) => {
         if (res && res.ok) { ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", ""); closeSpotCard(); }
-        else { $("spot-note").textContent = "QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."); refreshSpotCard(); }
+        else { $("spot-note").textContent = "QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."); refreshSpotCard(); }
       }).catch((err) => { $("spot-note").textContent = "QSY impossible : " + err.message; refreshSpotCard(); });
     }
     function openSpotList(ids) {
@@ -1143,7 +1143,7 @@
       const hz = box.width > 0 ? hfx.frequencyAt((ev.clientX - box.left) / box.width, hfLast.lowHz, hfLast.highHz) : null;
       if (hz === null) return;
       client.qsy(hz).then((res) => {
-        if (!(res && res.ok)) ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."), "warn");
+        if (!(res && res.ok)) ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."), "warn");
       }).catch(fail);
     });
     for (const type of ["pointerup", "pointercancel"]) $("hf-plot").addEventListener(type, () => { hfDrag = null; });
@@ -1838,7 +1838,7 @@
             return;
           }
           client.netThresholds(Object.assign({ net_type: t.netType }, values)).then((res) => {
-            ui.log(res && res.ok ? "Seuils enregistrés sur la station pour « " + t.label + " »." : "Seuils refusés : " + web.reasonText(res && res.reason, res && res.detail), res && res.ok ? "" : "warn");
+            ui.log(res && res.ok ? "Seuils enregistrés sur la station pour « " + t.label + " »." : "Seuils refusés : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), res && res.ok ? "" : "warn");
             loadNetStats();
           }).catch(fail);
         });
@@ -1856,7 +1856,7 @@
       $("net-status").textContent = "Lecture…";
       client.netStats(Number($("net-days").value), $("net-device").value).then((res) => {
         if (!res || !res.ok) {
-          $("net-status").textContent = "Statistiques indisponibles : " + web.reasonText(res && res.reason, res && res.detail);
+          $("net-status").textContent = "Statistiques indisponibles : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort);
           return;
         }
         netModel = web.netStatsModel(res.stats);
@@ -1884,7 +1884,7 @@
     $("net-clear-confirm").addEventListener("click", () => {
       $("net-clear-confirm").hidden = true;
       client.netClear().then((res) => {
-        ui.log(res && res.ok ? "Historique réseau effacé (les seuils choisis sont gardés)." : "Effacement refusé : " + web.reasonText(res && res.reason, res && res.detail), res && res.ok ? "" : "warn");
+        ui.log(res && res.ok ? "Historique réseau effacé (les seuils choisis sont gardés)." : "Effacement refusé : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), res && res.ok ? "" : "warn");
         loadNetStats();
       }).catch(fail);
     });
@@ -2743,7 +2743,7 @@
     }
     function bzhSet(changes) {
       client.breizhSet(changes).then((res) => {
-        if (res && !res.ok) ui.log("Breizh : " + web.reasonText(res.reason, res.detail), "warn");
+        if (res && !res.ok) ui.log("Breizh : " + web.reasonText(res.reason, res.detail, res.ort), "warn");
       }).catch(fail);
     }
     $("bzh-gain").addEventListener("input", (ev) => {
@@ -2754,7 +2754,7 @@
     $("bzh-bypass").addEventListener("change", (ev) => bzhSet({ bypass: !!ev.target.checked }));
     $("bzh-reactivate").addEventListener("click", () => {
       client.breizhReactivate().then((res) => {
-        if (!res || !res.ok) { ui.log("Breizh : " + web.reasonText(res && res.reason, res && res.detail), "warn"); return; }
+        if (!res || !res.ok) { ui.log("Breizh : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn"); return; }
         ui.log(res.pending ? "Breizh sera repris dès qu'il répondra (à la prochaine émission)." : "Breizh repris : la prochaine émission passera par Breizh.", "");
       }).catch(fail);
     });
@@ -2843,7 +2843,7 @@
       if (client.isListener()) return;
       client.freedvQsy(hz).then((res) => {
         if (res && res.ok) ui.log("QSY FreeDV : " + web.freedvFreqText(hz) + ".", "");
-        else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
+        else if (res) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
       }).catch(fail);
     }
 
@@ -3093,14 +3093,14 @@
     async function sdrSend(args) {
       try {
         const res = await client.sdrSet(args);
-        if (!res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn");
+        if (!res.ok) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
       } catch (e) { ui.log("SDR : réglage non envoyé.", "warn"); }
     }
     if (sdrx) {
       $("sec-sdr").addEventListener("toggle", () => {
         if (!sdrOffered()) return;
         if (sdrSpotBook && $("sec-sdr").open) sdrSpotBook.clear();                  // la station rejoue les spots à l'ouverture
-        client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn"); }).catch(() => {});
+        client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); }).catch(() => {});
       });
       const sdrCenterSet = () => {
         const hz = sdrx.parseMHz($("sdr-center").value);
@@ -3169,7 +3169,7 @@
       $("sdr-listen").addEventListener("click", () => {
         const on = !client.sdrListening;
         client.sdrListen(on).then((res) => {
-          if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail), "warn"); return; }
+          if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); return; }
           if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log("Son du SDR bloqué par le navigateur : touche l'écran.", "warn")); else sdrSound.pause(); }
           sdrEarsChanged();
           sdrRender(null);
@@ -3203,7 +3203,7 @@
         if (!hz) { ui.log("QSY SDR → TRX : fréquence écoutée du SDR inconnue.", "warn"); return; }
         client.qsy(hz).then((res) => {
           if (res && res.ok) ui.log("QSY SDR → TRX : TRX sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
-          else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
+          else if (res) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
         }).catch(() => {});
       });
       $("sdr-qsy-rev").addEventListener("click", () => {                 // QSY TRX -> SDR : le SDR écoute la fréquence du TRX
@@ -3230,7 +3230,7 @@
     function frElapsed() { return client.friendsAt ? Math.max(0, (client.env.now() - client.friendsAt) / 1000) : 0; }
     function frPtt() { return typeof client._ptt === "function" && client._ptt() ? client._ptt().state : "RX"; }
     function frRigHz() { return client.state && client.state.rig ? client.state.rig.frequency_hz : NaN; }
-    function frFail(res) { if (res && !res.ok) ui.log("Amis : " + web.reasonText(res.reason, res.detail), "warn"); return res; }
+    function frFail(res) { if (res && !res.ok) ui.log("Amis : " + web.reasonText(res.reason, res.detail, res.ort), "warn"); return res; }
 
     function frChip(label, fn, doc, cls) {
       const b = (doc || document).createElement("button");
@@ -3750,7 +3750,7 @@
           if (!target || frequencyLocked()) return;
           client.qsy(target.hz, target.mode).then((res) => {
             if (res && res.ok) ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", "");
-            else ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail) : "."), "warn");
+            else ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."), "warn");
           }).catch(fail);
         });
         box.appendChild(row);

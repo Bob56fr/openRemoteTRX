@@ -83,11 +83,25 @@ def entry(code: str) -> dict | None:
 
 
 def by_machine(name: str) -> str | None:
-    """Premier code en service dont `codes_machine` contient `name` (raison de coupure, type de problème…)."""
-    for code, e in catalog().items():
-        if not e.get("deprecated") and name in (e.get("codes_machine") or ()):
-            return code
-    return None
+    """Premier code en service dont `codes_machine` contient `name` (raison de coupure, type de problème…) ; à défaut,
+    un motif générique du catalogue (`*_unavailable` -> ORT-4014, étape 215)."""
+    import fnmatch
+    if not isinstance(name, str) or not name:
+        return None
+    found = _machine_cache.get(name, "")
+    if found != "":
+        return found
+    entries = [(code, e) for code, e in catalog().items() if not e.get("deprecated")]
+    result = next((code for code, e in entries if name in (e.get("codes_machine") or ())), None)
+    if result is None:
+        result = next((code for code, e in entries for pattern in (e.get("codes_machine") or ())
+                       if "*" in pattern and fnmatch.fnmatchcase(name, pattern)), None)
+    if len(_machine_cache) < 1000:
+        _machine_cache[name] = result
+    return result
+
+
+_machine_cache: dict[str, str | None] = {}
 
 
 def render(code: str, lang: str = "fr", **contexte: Any) -> tuple[str, str]:
@@ -160,3 +174,4 @@ def _reset_for_tests() -> None:
     with _lock:
         _catalog = None
         _sinks.clear()
+        _machine_cache.clear()

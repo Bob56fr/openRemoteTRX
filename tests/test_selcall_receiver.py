@@ -275,7 +275,8 @@ def test_selcall_commands_are_refused_when_the_station_has_no_selcall():
             phone = await connect(st, "phone")
             assert phone.of_type("hello")[0]["selcall"] is None
             await phone.say(cmd="selcall_activate", id=1, code="4721")
-            assert phone.result(1) == {"type": "result", "id": 1, "ok": False, "reason": "selcall_unavailable"}
+            assert phone.result(1) == {"type": "result", "id": 1, "ok": False, "reason": "selcall_unavailable",
+                                      "ort": "ORT-6809"}               # code du catalogue (étape 215)
 
     run(scenario)
 
