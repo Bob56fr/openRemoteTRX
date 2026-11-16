@@ -382,3 +382,109 @@ Décisions prises :
 - **Serveur STUN** : serveurs publics en V1 ; serveur auto-hébergé plus tard si openRemoteTRX rencontre le succès. Les stations n'utilisent jamais d'adresse STUN en dur mais un nom sous notre domaine (CNAME, ex. `stun.rf-diy.com`, et `signal.rf-diy.com` pour le relais), pour changer de serveur sans mise à jour des stations.
 - **Serveur TURN** : reporté ; les stations en 4G/CGNAT utilisent le mode B ou attendront une version ultérieure.
 - **Catalogue** : traduit en anglais dès la bêta.
+
+## 17. Révision v2 du 2026-11-16 : relais d'abord, pour l'assistance
+
+Cette section **prime sur les sections 1 à 16** là où elles diffèrent ; ailleurs, elles restent valables. But premier
+de la V1 : qu'un développeur ou un ami expérimenté puisse **assister un opérateur en difficulté** sans VPN, sans port
+ouvert d'un côté ni de l'autre, même en 4G/CGNAT, et sans jamais avoir la main sur sa station.
+
+### 17.1 Décisions de l'utilisateur (2026-11-16)
+
+| Sujet | Cahier v1 | Décision |
+| --- | --- | --- |
+| Transport de départ | UDP silencieux (mode B), puis WebRTC (mode A) | **Boîte aux lettres chiffrée sur le relais HTTPS déjà en ligne** (`https://rf-diy.com/orx-relay/public`, celui de la présence), appelée **mode R** ; les modes A et B viendront ensuite pour le flux continu (métriques fines, logs DEBUG) |
+| Identité | mutualisée avec la présence | **Clés séparées** (`monlink.key`) : la station vue par ses partenaires de monitoring ne peut pas être reliée à son groupe d'amis, ni à `station-id` (collecte des rapports) |
+| Bibliothèques | PyNaCl, cbor2, zstandard | **`cryptography` (déjà là) + JSON + zlib** de Python : aucune dépendance nouvelle ; primitives reprises de `trxstation/presence/crypto.py` (Ed25519, X25519, XChaCha20-Poly1305 compatible libsodium) |
+| Processus | programme à part `trx-monlink` | **Module du bus « monlink »** (`[modules] run`), comme cluster, présence et SDR : processus séparé, relancé par le superviseur, priorité basse, **aucun droit sur le poste** ni commande de client |
+
+Conséquences sur la v1 : le GUID du § 3 devient l'identifiant dérivé de la clé (§ 17.2) ; le socket local du § 14
+n'est pas nécessaire en V1 (le module lit l'état publié, `journal-*.jsonl` et le catalogue) ; CBOR et JSON Schema
+remplacés par du JSON compact décrit dans `docs/protocole-monlink.md` (lot R1) avec ses vecteurs.
+
+### 17.2 Identité
+
+- `monlink.key` à côté de station.toml (0600, ACL sous Windows), JSON `{"format": 1, "ed": …, "x": …}` comme
+  `presence.key` ; il ne quitte jamais la station ; une mise à jour ne le touche jamais.
+- Identifiant : `hex(SHA-256("orx-monlink id v1\0" ‖ ed_pub)[0:16])`, 32 caractères (domaine différent de la
+  présence : deux identifiants sans lien).
+- Pseudo (mêmes règles que la présence) et indicatif facultatif, montrés aux seuls partenaires.
+- Régénérer les clés = toutes les liaisons à refaire (avertissement, mot à taper).
+
+### 17.3 Rôles dans l'assistance
+
+Le **receveur** est celui qui aide (développeur, ami) ; l'**émetteur** est la station de l'opérateur aidé. C'est
+toujours le receveur qui invite (§ 3). L'opérateur aidé n'a que trois gestes : « Rejoindre avec un code », comparer
+six chiffres au téléphone, choisir ce qu'il envoie. Il peut tout couper à tout moment (§ 11).
+
+### 17.4 Appairage par le relais
+
+1. Le receveur crée une invitation : **code de 10 caractères** (base32 sans ambiguïté, 50 bits), QR code, valable
+   15 min, une seule liaison. De ce code, **scrypt** (`hashlib.scrypt`, N = 2^15, r = 8, p = 1, sel de domaine fixe)
+   tire 48 octets : 16 pour l'**adresse** de l'invitation sur le relais, 32 pour la **clé** qui chiffre son contenu
+   (identifiant, clés publiques, pseudo du receveur). Le relais ne voit que l'adresse : retrouver le code demanderait
+   2^50 calculs scrypt.
+2. L'opérateur aidé tape le code. Sa station retrouve l'invitation (le relais l'**efface à la première lecture** :
+   usage unique), la déchiffre et dépose dans la boîte du receveur une **demande d'appairage** scellée pour la clé
+   X25519 du receveur, signée de sa clé Ed25519, avec une preuve de connaissance du code (HMAC de la clé tirée du code).
+3. Les deux consoles affichent la même **empreinte de 6 chiffres** (BLAKE2b des deux clés Ed25519 triées, § 3).
+   **C'est elle, comparée de vive voix, qui protège contre une interception**, relais compris ; le code n'empêche que
+   le détournement par un tiers. Chacun confirme de son côté ; rien n'est confirmé sans réponse sous 10 min.
+4. Le receveur déclare au relais l'émetteur autorisé (requête signée) : le relais refuse tout dépôt d'une station
+   non autorisée par le receveur. L'émetteur choisit son profil d'envoi (§ 17.6) ; **rien ne part avant**.
+
+Écart assumé avec le § 3 : « 5 essais de code erronés » n'a pas de sens sans demande adressée à une invitation
+précise (un code faux donne une autre adresse) ; il est remplacé par l'usage unique, l'expiration à 15 min, le coût
+de scrypt et la limite de débit par adresse IP du relais.
+
+### 17.5 Boîte aux lettres (mode R)
+
+- Clé de liaison : X25519 entre les deux clés statiques, HKDF-SHA256 (domaine `orx-monlink link v1`, identifiants
+  triés) ; chaque message : JSON compact, compressé zlib, chiffré XChaCha20-Poly1305 (nonce aléatoire de 24 octets),
+  données associées = émetteur ‖ receveur ‖ type ‖ numéro de séquence. Requêtes signées comme la présence (§ 3 de
+  `docs/protocole-presence.md` : `X-Orx-Station`, `X-Orx-Signature`, `t`, `n`).
+- Le relais ne voit que : deux identifiants, un type parmi quelques-uns, des tailles et des heures. Il ne déchiffre
+  rien et ne garde aucune adresse IP en base (comme la présence).
+- Dépôt par l'émetteur, relève par le receveur (toutes les 60 s, 15 s pendant une assistance), accusé de réception =
+  effacement. Anti-rejeu : numéro de séquence par liaison, fenêtre de 2 048 (§ 4).
+- Garde-fous du relais (OVH mutualisé, sans CRON) : 64 ko par dépôt, 2 Mo par jour et par liaison (10 Mo pendant une
+  assistance), boîte de 5 Mo au plus par receveur, message non relevé effacé après 7 jours, 20 liaisons par receveur.
+  Au-delà : refus `quota`, l'émetteur garde dans sa file locale (24 h, 5 Mo, événements critiques jamais jetés).
+
+### 17.6 Ce qui part en V1 (masqué par `redact.py`, § 6, toujours)
+
+| Catégorie | Contenu | Rythme par défaut |
+| --- | --- | --- |
+| Battement | version, temps de marche, état des services (passerelle, superviseur, rigctld, modules), mode sûr | 5 min |
+| Système | charge, mémoire, disque, température (ce que donne déjà `hostinfo.py`) | 5 min |
+| Poste | liaison CAT, émission en cours oui/non, compteurs de refus et de coupures ; **fréquence et mode masqués par défaut**, à autoriser par liaison | 5 min |
+| Événements | codes ORT des `journal-*.jsonl` avec contexte, gravité ≥ avertissement par défaut | groupés toutes les 10 s |
+| Instantané | le **rapport de dépannage du menu 2.3**, masqué, envoyé par l'opérateur lui-même, ou sur demande du receveur **acceptée** par l'opérateur | à la demande, 2 Mo au plus |
+
+**Mode assistance** : demandé par le receveur, accepté par l'opérateur (durée 15 min à 24 h, 2 h par défaut, retour
+seul au profil précédent) : battement et état toutes les 30 s, événements ≥ information, journaux INFO toutes les
+2 min. Trois demandes par jour et par liaison au plus (§ 10).
+
+Interdits, quel que soit le profil : toute commande vers la station aidée (PTT, fréquence, mode, redémarrage, shell),
+l'audio, le spectre ; le module n'a aucun droit sur le poste (manifeste du bus sans commande).
+
+### 17.7 Côté receveur
+
+Base `monitor_link.db` (sqlite3 de Python, WAL) dans le dossier d'état ; rétention et quotas du § 8 (FTS5 si le
+sqlite3 de la plateforme l'a, sinon recherche simple). Alertes ntfy du § 9 avec les codes ORT-70xx, règle
+« absence de nouvelles » active par défaut ; une alerte part toujours d'un code (`Notifier.alert`).
+
+### 17.8 Lots révisés (remplacent M2 à M6 du § 16)
+
+| Lot | Contenu | Dépend de |
+| --- | --- | --- |
+| R1 — calculs | `trxstation/monlink/` sans réseau : identité, code et invitation (scrypt), demande d'appairage, empreinte, clé de liaison, enveloppes, séquences et anti-rejeu, profils, `redact.py` avec corpus piégé ; `docs/protocole-monlink.md`, `tests/protocol/monlink_vectors.json` pour le relais ; codes ORT-70xx | M1 (fait) |
+| R2 — relais | dépôt privé `openRemoteTRX-relay` : routes `/v1/mon/*` (invitation, appairage, autorisation, dépôt, relève, accusé, révocation), quotas, tests sur les vecteurs, essai de bout en bout ; déploiement chez OVH | R1 |
+| R3 — module et console | module « monlink » (`[monitor_link]`, désactivé par défaut) : envoi battement, système, poste, événements ; relève, base, alertes ; TRX Console menu 5.5 « Monitoring » en 4 langues (identité, inviter, rejoindre, liaisons, profil, prévisualisation, pause, arrêt, purge) ; notice station.toml, aide `h` | R2 |
+| R4 — assistance | instantané (rapport 2.3 masqué), mode assistance demandé / accepté / expiré, ligne « Monitoring » de trx-monitor, guide de l'opérateur (« Demander de l'aide ») | R3 |
+| R5 — consultation | page web en lecture seule (sources, chronologie, événements, instantanés), puis transports directs A / B (§ 4) pour le flux continu, si l'usage le demande | R4 |
+
+Acceptation de la V1 (R1 à R4) : une station Debian et une station Windows, derrière deux box (dont une en 4G),
+appairées par code ; panne provoquée chez l'émetteur (poste éteint, rigctld tué) vue chez le receveur avec son code
+ORT en moins de 2 min en mode assistance ; instantané reçu et lisible ; arrêt de liaison effectif des deux côtés ;
+aucune perturbation de la passerelle (tests de panne existants verts avec le module tué ou saturé).
