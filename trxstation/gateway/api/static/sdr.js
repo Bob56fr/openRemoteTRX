@@ -160,6 +160,8 @@
     core_missing: "programme sdr-core absent (relancer l'installation après l'API du fabricant)",
     config: "réglage refusé par sdr-core (voir [sdr] de station.toml)",
     removed: "SDR débranché pendant l'écoute",
+    access: "clé RTL-SDR illisible par la station (droits USB : relancer l'installation de la station)",
+    duplicate: "numéro de série en double (deux clés RTL-SDR identiques : en réécrire un)",
     exit: "sdr-core s'est arrêté : relance automatique",
   };
 

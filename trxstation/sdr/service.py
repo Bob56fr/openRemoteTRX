@@ -505,11 +505,12 @@ class SdrService:
         """Journalise la cause d'un arrêt de sdr-core et renvoie le délai avant le prochain essai."""
         code = (error or {}).get("code", "")
         detail = str((error or {}).get("detail", ""))[:200]
-        if code in ("absent", "busy", "duplicate") or rc == 3:
+        if code in ("absent", "busy", "duplicate", "access") or rc == 3:
             self._set_state("error", code or "absent", detail)
             self.emit(codes.ORT_6001, logger=log, serial=self.sd.serial,
                       detail={"busy": "déjà pris par une autre application",
-                              "duplicate": "numéro de série en double (deux clés RTL-SDR identiques)"}.get(
+                              "duplicate": "numéro de série en double (deux clés RTL-SDR identiques)",
+                              "access": "illisible par le compte de la station (droits USB : relancer l'installation)"}.get(
                                   code, "absent de la liste du fabricant"))
             delay = RETRY_ABSENT_S
         elif code == "service" or rc == 4:

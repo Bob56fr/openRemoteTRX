@@ -448,11 +448,13 @@ static void rtl_list(int *first) {
 
 static void rtl_start(void) {
     uint32_t n = rtlsdr_get_device_count();
-    int idx = -1, matches = 0;
+    int idx = -1, matches = 0, unreadable = 0;
     for (uint32_t i = 0; i < n; i++) {
         char m[256] = "", p[256] = "", s[256] = "";
-        if (rtlsdr_get_device_usb_strings(i, m, p, s) == 0 && !strcmp(s, g_serial)) { idx = (int)i; matches++; }
+        if (rtlsdr_get_device_usb_strings(i, m, p, s) != 0) { unreadable++; continue; }   // droits USB insuffisants
+        if (!strcmp(s, g_serial)) { idx = (int)i; matches++; }
     }
+    if (!matches && unreadable) fatal(3, "access", "clé RTL-SDR illisible par le compte de la station : droits USB (règle udev de l'installation)");
     if (!matches) fatal(3, "absent", g_serial);
     if (matches > 1) fatal(3, "duplicate", "numéro de série en double : clé impossible à désigner");
     if (rtlsdr_open(&g_rtl, (uint32_t)idx) < 0) { g_rtl = NULL; fatal(3, "busy", g_serial); }

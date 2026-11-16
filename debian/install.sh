@@ -450,6 +450,13 @@ if [[ -f $SDR_SRC ]]; then
     "blacklist dvb_usb_rtl28xxu" "blacklist rtl2832_sdr" "blacklist rtl2832" "blacklist rtl2830" \
     > /etc/modprobe.d/trx-remote-rtlsdr.conf
   for m in rtl2832_sdr dvb_usb_rtl28xxu rtl2832; do modprobe -r "$m" >>"$LOG" 2>&1 || true; done   # clé déjà branchée : libérée
+  # le module tourne sous le compte de service (jamais la session de bureau) : clés RTL-SDR ouvertes au groupe plugdev
+  # (la règle du paquet Debian ne donne l'accès qu'à la personne connectée au bureau ; étape 198)
+  printf '%s\n' "# openRemoteTRX : clés RTL-SDR (puce RTL2832U) lisibles par le compte de la station (groupe plugdev)" \
+    'SUBSYSTEM=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838|2832", GROUP="plugdev", MODE="0660"' \
+    > /etc/udev/rules.d/60-trx-remote-rtlsdr.rules
+  udevadm control --reload-rules >>"$LOG" 2>&1 || true
+  udevadm trigger --subsystem-match=usb --attr-match=idVendor=0bda >>"$LOG" 2>&1 || true
   SDR_FLAGS=() SDR_LIBS=() SDR_DRIVERS_FOUND=()
   if [[ -f /usr/local/include/sdrplay_api.h || -f /usr/include/sdrplay_api.h ]]; then
     SDR_LIBS+=(-lsdrplay_api); SDR_DRIVERS_FOUND+=(SDRplay)
