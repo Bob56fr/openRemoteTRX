@@ -1,9 +1,12 @@
-# openRemoteTRX — Cahier des charges du module SDR (v2)
+# openRemoteTRX — Cahier des charges du module SDR (v3)
 
 - v1 : 2026-11-07, rédigée par l'utilisateur.
 - v2 : 2026-11-15 (étape 183), relecture commentée avec l'utilisateur : décisions marquées
   **[D 2026-11-15]**, relevé de minix-bzh (§ 2.4), découpage des lots revu (§ 15).
 - Essai S0 FAIT sur minix-bzh le 2026-11-15 (étape 184) et S0 bis en C (étape 185) : résultats et décisions au § 16.
+- v3 : 2026-11-16 (étape 196), demandes de l'utilisateur : clés **RTL-SDR** (§ 2.4.1), menu **5.4 « Récepteur
+  SDR »** de TRX Console avec recherche sur tous les ports USB et hubs (§ 2.4.2), autorité de certification de la
+  station (étape 195, hors SDR), lot « confort » (§ 15).
 - Lot S1a FAIT (étape 188, station 0.140.0) : `trxstation/sdr/` (sdr-core en C, module « sdr », `trx-sdr`),
   commande `sdr`, rubrique « SDR » de la page ; protocole : `docs/protocole.md` § 18.
 
@@ -122,6 +125,29 @@ Règles :
 - **`sdrplay.service` est COMMUN aux projets** : la station ne le redémarre JAMAIS (cela couperait
   l'AIS). Échelle de reprise du SDR = relancer le module, rien d'autre ; une panne du service est
   signalée (ORT-60xx) et laissée à l'opérateur. Le « reset USB » du superviseur ne vise que le poste.
+
+#### 2.4.1 Clés RTL-SDR [D 2026-11-16]
+
+- Second pilote de sdr-core : bibliothèque librtlsdr (osmocom ; licence à vérifier avant le lot : GPL 2 « ou
+  ultérieure » attendue, compatible AGPL), installée par install.sh. Clé de l'utilisateur : **RTL-SDR Blog V4**
+  (HF par son convertisseur intégré : vérifier que la version de librtlsdr de Debian 13 la prend en charge, sinon
+  la branche du fabricant compilée comme Hamlib).
+- **Numéros de série** : beaucoup de clés sortent d'usine avec le MÊME numéro (« 00000001 ») ; deux clés au même
+  numéro ne peuvent pas être désignées : la station les REFUSE. Le menu 5.4 proposera d'en réécrire un
+  (`rtl_eeprom`, écriture dans la mémoire de la clé : confirmation, une clé à la fois, jamais une clé prise).
+- Pilote TV du noyau (`dvb_usb_rtl28xxu`) : il prend la clé au branchement ; install.sh l'écarte (liste noire).
+- Limites : 8 bits, environ 2,4 MHz de large au plus (largeurs proposées selon le type de SDR).
+- Windows : pilote WinUSB (Zadig) à poser à la main, documenté.
+
+#### 2.4.2 Recherche des SDR et menu 5.4 [D 2026-11-16] (FAIT, étape 196)
+
+- `trx-sdr --list` et TRX Console menu 5.4 : TOUS les ports USB, hubs compris (sysfs), SANS ouvrir aucun SDR ;
+  type et modèle (identifiant USB, chaînes du fabricant), numéro de série, emplacement (« bus 3, port 6 -> hub,
+  port 2 »), état : libre / pris par un programme (nom du programme avec les droits d'administration) / pris par le
+  pilote TV du noyau / SDR DE CETTE STATION ; avertissements : numéro en double, SDR sur le même hub que le poste.
+- SDRplay : le service du fabricant tient tous les RSP ouverts ; seuls ceux que son API PROPOSE sont libres.
+- Menu 5.4 : choix du SDR par numéro de série (refus d'un SDR pris ou au numéro en double), largeur, antenne,
+  plafonds, mise en service (« sdr » ajouté à `[modules] run`) ; redémarrage proposé.
 - ais-rssi ouvre l'API SDRplay quelques secondes toutes les 5 minutes (relances d'AIS-catcher à
   21:12:40 et 21:17:40 le 2026-11-15) : la cohabitation de deux programmes sur l'API est vérifiée
   en S0.

@@ -493,5 +493,21 @@
   "certificate.8": "El certificado cambia: habrá que emparejar de nuevo la aplicación Android, y cada dispositivo deberá instalar la autoridad si es nueva. ¿Continuar?",
   "certificate.9": "Error: certificado sin cambios.",
   "certificate.10": "Certificado rehecho. Empareje de nuevo la aplicación Android (menú {menu}).",
-  "certificate.11": "¿Reiniciar la estación ahora para usarlo?"
+  "certificate.11": "¿Reiniciar la estación ahora para usarlo?",
+  "menu.sdr": "Receptor SDR (buscar SDR en el USB, elegir el de la estación, ajustes)",
+  "sdr.1": "Configure primero la estación (menú 3.1).",
+  "sdr.on": "EN SERVICIO",
+  "sdr.off": "fuera de servicio",
+  "sdr.2": "Módulo SDR: {state}\n  SDR de la estación (número de serie): {serial} ({driver})\n  Ancho: {mhz} MHz   Antena: {ant}   Límites del módulo: {cpu} % de un núcleo, {mem} MB",
+  "sdr.3": "1 = buscar SDR (todos los puertos USB y hubs, ningún SDR abierto)\n2 = elegir el SDR de la estación\n3 = ancho (MHz)\n4 = antena (A o B)\n5 = límites del módulo (procesador, memoria)\n6 = poner en / fuera de servicio\nIntro = volver: ",
+  "sdr.4": "Ningún SDR reconocido (opción 1 para el detalle).",
+  "sdr.5": "Número del SDR de esta estación (Intro = sin cambios): ",
+  "sdr.6": "Las llaves RTL-SDR se admitirán en la próxima versión de la estación: aún no se pueden elegir.",
+  "sdr.7": "Rechazado: este SDR no tiene un número de serie único (ausente o duplicado); no se puede designar sin riesgo de error.",
+  "sdr.8": "Rechazado: este SDR está ocupado por otra aplicación (o por el controlador TV del núcleo).",
+  "sdr.9": "Ancho en MHz ({choices}); 2 aconsejado en un PC pequeño: ",
+  "sdr.10": "Antena del SDR (A o B): ",
+  "sdr.11": "Límite de procesador del módulo, en % de UN núcleo (actual {v}, Intro = sin cambios): ",
+  "sdr.12": "Límite de memoria del módulo, en MB (actual {v}, Intro = sin cambios): ",
+  "sdr.13": "Elija primero el SDR de la estación (opción 2)."
 }

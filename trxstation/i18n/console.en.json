@@ -493,5 +493,21 @@
   "certificate.8": "The certificate changes: the Android app must be paired again, and each device must install the authority if it is new. Continue?",
   "certificate.9": "Failed: certificate unchanged.",
   "certificate.10": "Certificate remade. Pair the Android app again (menu {menu}).",
-  "certificate.11": "Restart the station now to use it?"
+  "certificate.11": "Restart the station now to use it?",
+  "menu.sdr": "SDR receiver (search SDRs on USB, choose the station's one, settings)",
+  "sdr.1": "Configure the station first (menu 3.1).",
+  "sdr.on": "IN SERVICE",
+  "sdr.off": "out of service",
+  "sdr.2": "SDR module: {state}\n  Station SDR (serial number): {serial} ({driver})\n  Width: {mhz} MHz   Antenna: {ant}   Module limits: {cpu} % of one core, {mem} MB",
+  "sdr.3": "1 = search SDRs (all USB ports and hubs, no SDR opened)\n2 = choose the station SDR\n3 = width (MHz)\n4 = antenna (A or B)\n5 = module limits (processor, memory)\n6 = put in / out of service\nEnter = back: ",
+  "sdr.4": "No SDR recognised (choice 1 for details).",
+  "sdr.5": "Number of this station's SDR (Enter = no change): ",
+  "sdr.6": "RTL-SDR dongles will be supported by the next station version: not selectable yet.",
+  "sdr.7": "Refused: this SDR has no unique serial number (missing or duplicated); it cannot be designated without risk of mistake.",
+  "sdr.8": "Refused: this SDR is held by another application (or by the kernel TV driver).",
+  "sdr.9": "Width in MHz ({choices}); 2 advised on a small PC: ",
+  "sdr.10": "SDR antenna (A or B): ",
+  "sdr.11": "Module processor limit, in % of ONE core (now {v}, Enter = unchanged): ",
+  "sdr.12": "Module memory limit, in MB (now {v}, Enter = unchanged): ",
+  "sdr.13": "Choose the station SDR first (choice 2)."
 }

@@ -225,7 +225,7 @@ def test_every_menu_has_a_number_and_old_numbers_all_lead_somewhere():
     assert len(methods) == len(set(methods))
     assert len(set(module.OLD_NUMBERS.values())) == len(module.OLD_NUMBERS)
     # Menus nés APRÈS la renumérotation par thème (étape 169) : pas d'ancien numéro.
-    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate"}
+    assert set(methods) - set(module.OLD_NUMBERS.values()) == {"qualif", "operators", "certificate", "sdr"}
     assert set(module.OLD_NUMBERS.values()) <= set(methods)
     assert module.menu_number("install_zip") == "6.3" and module.UPDATE_MENU == module.menu_number("update")
     for name in methods:
@@ -355,3 +355,35 @@ def test_setup_wizard_switches_an_existing_station_to_its_authority(tmp_path):
     assert setup_main(["--output", str(tmp_path / "station.toml"), "--autorite-station", "10.8.0.1"]) == 0
     assert (tls / CA_CERT).is_file()
     assert certificate_hosts(tls / "station-cert.pem") == ["192.168.1.10", "10.8.0.1", "station"]
+
+
+def test_sdr_menu_chooses_a_free_sdrplay_by_serial_and_refuses_held_or_duplicated_ones(tmp_path):
+    import json as _json
+    write_config(tmp_path)
+    listing = {"devices": [
+        {"kind": "sdrplay", "model": "RSP2 / RSP2pro", "serial": "170502EC10", "state": "pris", "location": "bus 3, port 3", "duplicate": False},
+        {"kind": "sdrplay", "model": "RSP2 / RSP2pro", "serial": "170502E910", "state": "libre", "location": "bus 3, port 5", "duplicate": False},
+        {"kind": "rtlsdr", "model": "RTL-SDR (RTLSDRBlog Blog V4)", "serial": "00000001", "state": "libre", "location": "bus 3, port 6", "duplicate": True}],
+        "warnings": []}
+
+    class Lister(FakeRunner):
+        def output(self, cmd):
+            return _json.dumps(listing) if "trxstation.sdr.devices" in cmd else super().output(cmd)
+
+        def run(self, cmd, *, admin=False):
+            if cmd[0] == "install":                                   # enregistrement : le brouillon validé est copié
+                import shutil
+                shutil.copyfile(cmd[-2], cmd[-1])
+            return super().run(cmd, admin=admin)
+
+    # choisir n° 1 (pris), n° 3 (RTL), n° 2 (libre, enregistré), puis mise en service (enregistrée), retour
+    script = iter(["2", "1", "2", "3", "2", "2", "o", "6", "o", ""])
+    out: list[str] = []
+    fake = Lister()
+    con = Console(tmp_path / "station.toml", fake, ask=lambda _: next(script, ""), say=out.append, python="py")
+    con.sdr()
+    text = "\n".join(out)
+    assert "pris par une autre application" in text                  # 1 = celui de l'AIS : refusé
+    assert "RTL-SDR seront prises en charge" in text                   # 3 = clé RTL : pas encore
+    cfg = cfgmod.load(tmp_path / "station.toml")
+    assert cfg.sdr.serial == "170502E910" and cfg.sdr.enabled is True and "sdr" in cfg.modules.run

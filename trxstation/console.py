@@ -60,7 +60,7 @@ MENU_THEMES = (
     ("2", "troubleshooting", ("diagnostic", "hwtest", "report", "network", "swr_report", "expert", "qualif")),
     ("3", "configuration", ("assistant", "edit_config", "profiles", "temperature", "indicator")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate")),
-    ("5", "features", ("cluster", "breizh", "friends")),
+    ("5", "features", ("cluster", "breizh", "friends", "sdr")),
     ("6", "updates", ("update", "rollback", "install_zip")),
 )
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
@@ -662,6 +662,108 @@ class Console:
             self.runner.run(self.module("trxstation.setup_wizard", "--output", str(self.config), "--empreinte"), admin=True)
         except (OSError, ValueError, cfgmod.ConfigError) as exc:
             self.say(self.t("pairing.2", exc=exc))
+
+    def sdr(self) -> None:
+        """Module SDR (docs/sdr-cahier-des-charges.md) : recherche des SDR sur TOUS les ports USB et hubs (lecture
+        seule : aucun SDR ouvert), choix du SDR de la station par son NUMÉRO DE SÉRIE, largeur, antenne, plafonds,
+        mise en service. Ne pilote jamais le SDR : seul station.toml change (redémarrage proposé)."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            self.say(self.t("sdr.1"))
+            return
+        while True:
+            try:
+                original = self.config.read_bytes()
+                cfg, _ = cfgmod.load_unchecked(self.config)
+            except (OSError, cfgmod.ConfigError) as exc:
+                self.say(self.t("pairing.2", exc=exc))
+                return
+            sd = cfg.sdr
+            state = self.t("sdr.on") if sd.enabled and "sdr" in cfg.modules.run else self.t("sdr.off")
+            mhz = sd.sample_rate_hz // 1_000_000
+            self.say(self.t("sdr.2", state=state, serial=sd.serial or "—", driver=sd.driver, mhz=mhz, ant=sd.antenna,
+                            cpu=sd.max_cpu_pct, mem=sd.max_mem_mb))
+            choice = self.ask(self.t("sdr.3")).strip()
+            if not choice:
+                return
+            if choice == "1":
+                self.runner.run(self.module("trxstation.sdr.devices", "--serial", sd.serial), admin=True)
+                continue
+            changed = {"2": self._sdr_choose, "3": self._sdr_rate, "4": self._sdr_antenna, "5": self._sdr_limits,
+                       "6": self._sdr_toggle}.get(choice)
+            if changed is None:
+                self.say(self.t("operators.4"))
+                continue
+            if changed(cfg):
+                self._save_accounts(original, cfg, live=False)       # redémarrage proposé : le module relit tout
+
+    def _sdr_found(self, serial: str) -> list[dict]:
+        out = self.runner.output(self.module("trxstation.sdr.devices", "--json", "--serial", serial))
+        try:
+            return list(json.loads(out.splitlines()[-1]).get("devices", [])) if out else []
+        except (ValueError, IndexError, AttributeError):
+            return []
+
+    def _sdr_choose(self, cfg) -> bool:
+        found = self._sdr_found(cfg.sdr.serial)
+        if not found:
+            self.say(self.t("sdr.4"))
+            return False
+        for i, d in enumerate(found, 1):
+            self.say(f"  {i}) {d.get('model', '?')}  {d.get('serial') or '—'}  [{d.get('state', '?')}]  {d.get('location') or ''}")
+        answer = self.ask(self.t("sdr.5")).strip()
+        if not answer.isdigit() or not 1 <= int(answer) <= len(found):
+            return False
+        d = found[int(answer) - 1]
+        if d.get("kind") != "sdrplay":
+            self.say(self.t("sdr.6"))
+            return False
+        if not d.get("serial") or d.get("duplicate"):
+            self.say(self.t("sdr.7"))
+            return False
+        if d.get("state") in ("pris", "noyau") and d.get("serial") != cfg.sdr.serial:
+            self.say(self.t("sdr.8"))
+            return False
+        cfg.sdr.serial, cfg.sdr.driver = d["serial"], "sdrplay"
+        return True
+
+    def _sdr_rate(self, cfg) -> bool:
+        from .config import SDR_RATES
+        answer = self.ask(self.t("sdr.9", choices=", ".join(str(r // 1_000_000) for r in SDR_RATES))).strip()
+        rate = int(answer) * 1_000_000 if answer.isdigit() else 0
+        if rate not in SDR_RATES:
+            return False
+        cfg.sdr.sample_rate_hz = rate
+        return True
+
+    def _sdr_antenna(self, cfg) -> bool:
+        answer = self.ask(self.t("sdr.10")).strip().upper()
+        if answer not in ("A", "B"):
+            return False
+        cfg.sdr.antenna = answer
+        return True
+
+    def _sdr_limits(self, cfg) -> bool:
+        cpu = self.ask(self.t("sdr.11", v=cfg.sdr.max_cpu_pct)).strip()
+        mem = self.ask(self.t("sdr.12", v=cfg.sdr.max_mem_mb)).strip()
+        if cpu.isdigit():
+            cfg.sdr.max_cpu_pct = int(cpu)
+        if mem.isdigit():
+            cfg.sdr.max_mem_mb = int(mem)
+        return cpu.isdigit() or mem.isdigit()            # bornes vérifiées à l'enregistrement (configuration validée)
+
+    def _sdr_toggle(self, cfg) -> bool:
+        if cfg.sdr.enabled and "sdr" in cfg.modules.run:
+            cfg.sdr.enabled = False
+            cfg.modules.run = [m for m in cfg.modules.run if m != "sdr"]
+            return True
+        if not cfg.sdr.serial:
+            self.say(self.t("sdr.13"))
+            return False
+        cfg.sdr.enabled = True
+        if "sdr" not in cfg.modules.run:
+            cfg.modules.run = [*cfg.modules.run, "sdr"]
+        return True
 
     def certificate(self) -> None:
         """Certificat HTTPS de la station : état, et passage à l'AUTORITÉ DE LA STATION (étape 195) : une fois installée

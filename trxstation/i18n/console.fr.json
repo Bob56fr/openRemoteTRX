@@ -493,5 +493,21 @@
   "certificate.8": "Le certificat change : l'application Android devra être appairée de nouveau, et chaque appareil devra installer l'autorité si elle est nouvelle. Continuer ?",
   "certificate.9": "Échec : certificat inchangé.",
   "certificate.10": "Certificat refait. Appairez de nouveau l'application Android (menu {menu}).",
-  "certificate.11": "Redémarrer la station maintenant pour l'utiliser ?"
+  "certificate.11": "Redémarrer la station maintenant pour l'utiliser ?",
+  "menu.sdr": "Récepteur SDR (rechercher les SDR sur l'USB, choisir celui de la station, réglages)",
+  "sdr.1": "Configure d'abord la station (menu 3.1).",
+  "sdr.on": "EN SERVICE",
+  "sdr.off": "hors service",
+  "sdr.2": "Module SDR : {state}\n  SDR de la station (numéro de série) : {serial} ({driver})\n  Largeur : {mhz} MHz   Antenne : {ant}   Plafonds du module : {cpu} % d'un cœur, {mem} Mo",
+  "sdr.3": "1 = rechercher les SDR (tous les ports USB et hubs, aucun SDR ouvert)\n2 = choisir le SDR de la station\n3 = largeur (MHz)\n4 = antenne (A ou B)\n5 = plafonds du module (processeur, mémoire)\n6 = mettre en service / hors service\nEntrée = retour : ",
+  "sdr.4": "Aucun SDR reconnu (choix 1 pour le détail).",
+  "sdr.5": "Numéro du SDR de cette station (Entrée = aucun changement) : ",
+  "sdr.6": "Les clés RTL-SDR seront prises en charge à la prochaine version de la station : pas encore sélectionnables.",
+  "sdr.7": "Refusé : ce SDR n'a pas de numéro de série unique (numéro absent ou en double) ; il ne peut pas être désigné sans risque d'erreur.",
+  "sdr.8": "Refusé : ce SDR est pris par une autre application (ou par le pilote TV du noyau).",
+  "sdr.9": "Largeur en MHz ({choices}) ; 2 conseillé sur un petit PC : ",
+  "sdr.10": "Antenne du SDR (A ou B) : ",
+  "sdr.11": "Plafond de processeur du module, en % d'UN cœur (actuel {v}, Entrée = inchangé) : ",
+  "sdr.12": "Plafond de mémoire du module, en Mo (actuel {v}, Entrée = inchangé) : ",
+  "sdr.13": "Choisissez d'abord le SDR de la station (choix 2)."
 }

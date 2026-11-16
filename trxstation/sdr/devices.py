@@ -20,6 +20,12 @@ from pathlib import Path
 VENDOR_IDS = {"1df7": "SDRplay"}
 LIST_TIMEOUT_S = 15.0
 
+# Recherche USB (étape 196) : SDR reconnus par leur identifiant USB, sur TOUS les ports, hubs compris.
+SDRPLAY_MODELS = {"2500": "RSP1", "3000": "RSP1A", "3010": "RSP2 / RSP2pro", "3020": "RSPduo", "3050": "RSPdx"}
+RTL_IDS = {("0bda", "2838"), ("0bda", "2832")}        # puce RTL2832U (clés RTL-SDR, dont la RTL-SDR Blog V4)
+RADIO_VENDORS = {"0c26", "10c4"}                       # Icom ; ponts CP210x des Yaesu : « même hub que le poste »
+TV_DRIVERS = ("dvb_usb_rtl28xxu", "rtl2832", "rtl2830")
+
 
 @dataclass(frozen=True)
 class Device:
@@ -75,6 +81,133 @@ def usb_devices(sysfs: Path = Path("/sys/bus/usb/devices")) -> list[dict]:
     return found
 
 
+def _read(path: Path) -> str:
+    try:
+        return path.read_text(errors="replace").strip()
+    except OSError:
+        return ""
+
+
+def location_text(name: str) -> str:
+    """« 3-2.1 » -> « bus 3, port 2 -> hub, port 1 » (nom sysfs : bus-port[.port du hub]…)."""
+    bus, _, path = name.partition("-")
+    ports = path.split(".") if path else []
+    if not ports:
+        return name
+    text = f"bus {bus}, port {ports[0]}"
+    for p in ports[1:]:
+        text += f" -> hub, port {p}"
+    return text
+
+
+def _holder(busnum: str, devnum: str, proc: Path) -> str:
+    """Programme qui tient l'appareil (/dev/bus/usb/BBB/DDD ouvert), "" si aucun trouvé, "?" si illisible (droits)."""
+    try:
+        target = f"/dev/bus/usb/{int(busnum):03d}/{int(devnum):03d}"
+        pids = [p for p in proc.iterdir() if p.name.isdigit()]
+    except (ValueError, OSError):
+        return "?"
+    unreadable = False
+    for pid in pids:
+        try:
+            for fd in (pid / "fd").iterdir():
+                try:
+                    if os.readlink(fd) == target:
+                        return _read(pid / "comm") or pid.name
+                except OSError:
+                    continue
+        except PermissionError:
+            unreadable = True
+        except OSError:
+            continue
+    return "?" if unreadable else ""
+
+
+def driver_of(sysfs: Path, name: str) -> str:
+    """Pilote de la première interface (« usbfs » = tenue par un programme), "" sans pilote."""
+    iface = sysfs / f"{name}:1.0" / "driver"
+    return os.path.basename(os.path.realpath(iface)) if iface.exists() else ""
+
+
+def scan_usb(sysfs: Path = Path("/sys/bus/usb/devices"), proc: Path = Path("/proc")) -> list[dict]:
+    """Tous les SDR reconnus vus par le noyau (Linux), sur tous les ports, hubs compris, SANS en ouvrir aucun :
+    [{"kind", "model", "serial", "name", "location", "driver", "holder", "radio_hub"}] ; vide ailleurs."""
+    found: list[dict] = []
+    if not sysfs.is_dir():
+        return found
+    seen = {}
+    for dev in sorted(sysfs.iterdir()):
+        vid = _read(dev / "idVendor")
+        if vid and ":" not in dev.name:
+            seen[dev.name] = (vid, _read(dev / "idProduct"), dev)
+    for name, (vid, pid, dev) in seen.items():
+        if vid == "1df7":
+            kind, model = "sdrplay", SDRPLAY_MODELS.get(pid, "SDRplay")
+        elif (vid, pid) in RTL_IDS:
+            kind = "rtlsdr"
+            label = " ".join(x for x in (_read(dev / "manufacturer"), _read(dev / "product")) if x)
+            model = f"RTL-SDR ({label})" if label else "RTL-SDR (RTL2832U)"
+        else:
+            continue
+        driver = driver_of(sysfs, name)
+        parent = name.rsplit(".", 1)[0] if "." in name else ""
+        radio_hub = bool(parent) and any(n.startswith(parent + ".") and v in RADIO_VENDORS
+                                         for n, (v, _p, _d) in seen.items() if n != name)
+        holder = _holder(_read(dev / "busnum"), _read(dev / "devnum"), proc) if kind == "rtlsdr" and driver == "usbfs" else ""
+        found.append({"kind": kind, "model": model, "serial": _read(dev / "serial"), "name": name,
+                      "location": location_text(name), "driver": driver, "holder": holder, "radio_hub": radio_hub})
+    return found
+
+
+def scan(core: str | None, configured: str = "", *, sysfs: Path = Path("/sys/bus/usb/devices"),
+         proc: Path = Path("/proc"), run=subprocess.run) -> tuple[list[dict], list[str]]:
+    """Recherche complète, en LECTURE SEULE : (SDR trouvés avec leur état, avertissements).
+    État : "libre", "pris" (avec `holder` si connu), "noyau" (pilote TV du noyau), "station" ([sdr] serial), "?".
+    SDRplay : le service du fabricant tient tous les RSP ouverts ; seuls ceux que son API PROPOSE sont libres."""
+    warnings: list[str] = []
+    usb = scan_usb(sysfs, proc)
+    api, error = api_devices(core, run) if core else ([], "sdr-core introuvable")
+    if error and any(u["kind"] == "sdrplay" for u in usb):
+        warnings.append(f"SDRplay : {error} (état des RSP inconnu)")
+    free = {d["serial"] for d in api}
+    out = []
+    for u in usb:
+        if u["kind"] == "sdrplay":
+            state = "libre" if u["serial"] in free else ("?" if error else "pris")
+        elif u["driver"] in TV_DRIVERS:
+            state = "noyau"
+        elif u["driver"] == "usbfs":
+            state = "pris"
+        else:
+            state = "libre"
+        if configured and u["serial"] == configured and state != "noyau":
+            state = "station"
+        out.append({**u, "state": state})
+    for d in api:                                          # proposé par l'API sans être vu par le noyau (Windows)
+        if not any(o["serial"] == d["serial"] for o in out):
+            out.append({"kind": "sdrplay", "model": "SDRplay", "serial": d["serial"], "name": "", "location": "",
+                        "driver": "", "holder": "", "radio_hub": False,
+                        "state": "station" if d["serial"] == configured else "libre"})
+    serials = [o["serial"] for o in out if o["serial"]]
+    doubles = {s for s in serials if serials.count(s) > 1}
+    for s in sorted(doubles):
+        warnings.append(f"numéro de série {s} en DOUBLE : ces SDR ne peuvent pas être distingués (RTL-SDR : en "
+                        "réécrire un, voir le guide)")
+    for o in out:
+        o["duplicate"] = o["serial"] in doubles
+        name = f"{o['model']} {o['serial']}".strip()
+        if o["radio_hub"]:
+            warnings.append(f"{name} branché sur le MÊME hub que le poste : à déplacer sur son propre port")
+        if o["state"] == "noyau":
+            warnings.append(f"{name} tenu par le pilote TV du noyau ({o['driver']}) : à écarter "
+                            "(l'installation de la station le fait)")
+    return out, warnings
+
+
+STATE_TEXT = {"libre": "libre", "pris": "pris par un programme", "noyau": "pris par le pilote TV du noyau",
+              "station": "SDR DE CETTE STATION", "?": "état inconnu"}
+
+
 def merge(api: list[dict], usb: list[dict]) -> list[Device]:
     """Libres = ceux de l'API ; pris = vus sur l'USB mais absents de l'API (numéro lisible ou non)."""
     free = {d["serial"] for d in api}
@@ -92,23 +225,25 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--list", action="store_true", help="liste des SDR (par défaut)")
     ap.add_argument("--core", default="", help="chemin de sdr-core (défaut : installé avec la station)")
     ap.add_argument("--json", action="store_true", help="sortie JSON")
+    ap.add_argument("--serial", default="", help="numéro du SDR de cette station (marqué dans la liste)")
     args = ap.parse_args(argv)
-    core = core_path(args.core)
-    api, error = api_devices(core) if core else ([], "sdr-core introuvable (installer l'API du fabricant puis la station)")
-    devices = merge(api, usb_devices())
+    found, warnings = scan(core_path(args.core), args.serial)
     if args.json:
-        print(json.dumps({"error": error, "devices": [d.__dict__ for d in devices]}, ensure_ascii=False))
-        return 0 if not error else 1
-    if error:
-        print(f"Attention : {error}")
-    if not devices:
-        print("Aucun SDR vu sur cette machine.")
-        return 1 if error else 0
-    print(f"{'Numéro de série':<18} {'État':<38} Port USB")
-    for d in devices:
-        state = "libre" if d.state == "libre" else "pris par une autre application"
-        print(f"{d.serial:<18} {state:<38} {d.usb_port or '—'}")
-    print("\nPour cette station : [sdr] serial = \"<numéro>\" dans station.toml (jamais celui d'un SDR pris).")
+        print(json.dumps({"devices": found, "warnings": warnings}, ensure_ascii=False))
+        return 0
+    if not found:
+        print("Aucun SDR reconnu sur cette machine (SDRplay, RTL-SDR), sur aucun port USB ni hub.")
+    else:
+        print(f"{'N°':<3} {'Type':<30} {'Numéro de série':<16} {'État':<32} Emplacement USB")
+        for i, d in enumerate(found, 1):
+            holder = d.get("holder") or ""
+            state = STATE_TEXT.get(d["state"], d["state"]) + (f" ({holder})" if holder not in ("", "?") else "")
+            print(f"{i:<3} {d['model'][:30]:<30} {(d['serial'] or '—')[:16]:<16} {state[:32]:<32} {d['location'] or '—'}")
+    for w in warnings:
+        print(f"Attention : {w}")
+    if os.name == "nt":
+        print("Windows : recherche par l'API du fabricant seulement (SDRplay) ; les clés RTL-SDR ne sont pas encore vues.")
+    print("\nLe SDR de la station se choisit par son NUMÉRO DE SÉRIE (TRX Console, menu 5.4), jamais celui d'un SDR pris.")
     return 0
 
 

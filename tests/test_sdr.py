@@ -651,3 +651,46 @@ def test_module_throttles_itself_above_its_cpu_limit(tmp_path: Path) -> None:
     assert "plafond 50" in svc.load_reason()
     svc.gw_level, svc.gw_reason = 2, "passerelle en retard de 90 ms"
     assert svc.level == 2 and "passerelle" in svc.load_reason()
+
+
+# ------------------------------------------------------------------ recherche USB (étape 196)
+def _usb(root: Path, name: str, vid: str, pid: str, serial: str = "", driver: str = "", **strings) -> None:
+    d = root / name
+    d.mkdir()
+    for key, value in (("idVendor", vid), ("idProduct", pid), ("serial", serial), ("busnum", "3"),
+                       ("devnum", str(len(list(root.iterdir())))), *strings.items()):
+        (d / key).write_text(value + "\n")
+    DRIVERS[name] = driver                    # « 3-3:1.0 » n'est pas un nom de fichier possible sous Windows
+
+
+DRIVERS: dict[str, str] = {}
+
+
+def test_usb_scan_finds_sdrplay_and_rtl_sdr_behind_hubs_and_flags_problems(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(devices, "driver_of", lambda _sysfs, name: DRIVERS.get(name, ""))
+    sysfs, proc = tmp_path / "sys", tmp_path / "proc"
+    sysfs.mkdir(); proc.mkdir()
+    _usb(sysfs, "3-3", "1df7", "3010", "170502EC10", "usbfs")                      # RSP de l'AIS
+    _usb(sysfs, "3-5", "1df7", "3010", "170502E910", "usbfs")                      # RSP de la station
+    _usb(sysfs, "3-2", "0424", "2422")                                              # hub interne du poste
+    _usb(sysfs, "3-2.1", "0c26", "0052", "IC-7300MK2 13003336", "cdc_acm")
+    _usb(sysfs, "3-2.4", "0bda", "2838", "00000001", manufacturer="RTLSDRBlog", product="Blog V4")
+    _usb(sysfs, "3-6.2", "0bda", "2838", "00000001", "dvb_usb_rtl28xxu")
+    _usb(sysfs, "3-6.3", "0bda", "2832", "RTL42", "usbfs")
+    api = lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout='{"api":3.15,"devices":[{"serial":"170502E910","hw":2}]}\n', stderr="")
+    found, warnings = devices.scan("sdr-core", "170502E910", sysfs=sysfs, proc=proc, run=api)
+    by = {d["name"]: d for d in found}
+    assert set(by) == {"3-3", "3-5", "3-2.4", "3-6.2", "3-6.3"}                    # le poste n'est pas un SDR
+    assert by["3-3"]["state"] == "pris" and by["3-5"]["state"] == "station"
+    assert by["3-2.4"]["state"] == "libre" and by["3-2.4"]["model"] == "RTL-SDR (RTLSDRBlog Blog V4)"
+    assert by["3-2.4"]["location"] == "bus 3, port 2 -> hub, port 4" and by["3-2.4"]["radio_hub"] is True
+    assert by["3-6.2"]["state"] == "noyau" and by["3-6.3"]["state"] == "pris"
+    assert by["3-2.4"]["duplicate"] and by["3-6.2"]["duplicate"] and not by["3-5"]["duplicate"]
+    text = "\n".join(warnings)
+    assert "00000001 en DOUBLE" in text and "MÊME hub que le poste" in text and "pilote TV du noyau" in text
+
+
+def test_usb_scan_never_opens_a_device_and_survives_without_sysfs(tmp_path: Path) -> None:
+    found, warnings = devices.scan(None, sysfs=tmp_path / "absent", proc=tmp_path)
+    assert found == [] and warnings == []
+    assert devices.location_text("3-6.2.1") == "bus 3, port 6 -> hub, port 2 -> hub, port 1"

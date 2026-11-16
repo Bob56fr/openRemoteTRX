@@ -31,6 +31,8 @@ L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic
 3. **Windows** : ouvre le fichier téléchargé, « Installer un certificat », « Utilisateur actuel », « Placer tous les
    certificats dans le magasin suivant », **« Autorités de certification racines de confiance »**, Terminer, puis
    accepte l'avertissement de Windows. Ferme **toutes** les fenêtres de Chrome et rouvre-le.
+   Attention : avec « Sélectionner automatiquement le magasin », Windows le range dans « Personnel », où Chrome
+   l'ignore (adresse toujours barrée de rouge) : refais l'installation en choisissant bien le magasin.
 4. **Android** : Paramètres, Sécurité (ou « Sécurité et confidentialité »), Plus de paramètres de sécurité,
    Installer depuis le stockage (ou « Chiffrement et identifiants »), **« Certificat CA »**, choisis le fichier
    téléchargé et confirme. Rouvre Chrome.

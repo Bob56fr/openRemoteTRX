@@ -149,6 +149,13 @@
      "quand": "Wenn die neue Version Probleme macht.",
      "role": "Kehrt zur vorherigen Version zurück, die beim letzten Update behalten wurde,\nohne Internet."
     },
+    "sdr": {
+     "admin": true,
+     "expert": "Ein belegter SDR (zum Beispiel von einem anderen Projekt) oder einer mit\ndoppelter Seriennummer (häufig bei RTL-SDR-Sticks ab Werk) wird abgelehnt:\ndie Station würde die Geräte verwechseln. Die Suche meldet auch einen SDR am\nselben Hub wie das Funkgerät (zu vermeiden). Ebenso auf der Kommandozeile:\ntrx-sdr --list (mit sudo wird der Name des Programms angezeigt, das einen\nRTL-SDR-Stick belegt).",
+     "modifie": "Den Abschnitt [sdr] von station.toml (und « sdr » in [modules] run bei\nInbetriebnahme), über denselben geprüften Weg wie Menü 3.2; Neustart der\nStation wird angeboten. Die Suche ändert nichts und öffnet keinen SDR.",
+     "quand": "Bei einem neuen SDR; wenn ein SDR den Port wechselt oder ein zweiter SDR\nangeschlossen wird (prüfen, dass die Station den richtigen behält); wenn der\nSDR auf einem kleinen PC zu viel verbraucht (Breite, Grenzen).",
+     "role": "Bereitet den SDR-Empfänger der Station vor (nur Empfang, neben dem TRX). Man\nsucht die SDR an allen USB-Ports, Hubs eingeschlossen (SDRplay,\nRTL-SDR-Sticks), ohne einen zu öffnen: Typ, Seriennummer, Ort (Port, Hub)\nund Zustand (frei, von einem Programm belegt, vom TV-Treiber des Kernels\nbelegt, SDR dieser Station). Man wählt den SDR der Station über seine\nSeriennummer (nie über den Port), dann die Breite (2, 6 oder 8 MHz), die\nAntenne (A oder B), die Grenzen für Prozessor und Speicher des Moduls, und\nnimmt ihn in Betrieb."
+    },
     "start": {
      "admin": true,
      "expert": "",
@@ -341,6 +348,13 @@
      "modifie": "The active version. The configuration is kept.",
      "quand": "If the new version causes problems.",
      "role": "Goes back to the previous version, kept during the last update, without\nInternet."
+    },
+    "sdr": {
+     "admin": true,
+     "expert": "An SDR that is held (for instance by another project) or whose serial number\nis duplicated (common on factory RTL-SDR dongles) is refused: the station\nwould mistake one device for the other. The search also reports an SDR\nplugged into the same hub as the radio (to avoid). Same from the command\nline: trx-sdr --list (with sudo, the name of the program holding an RTL-SDR\ndongle is shown).",
+     "modifie": "The [sdr] section of station.toml (and « sdr » in [modules] run when put in\nservice), through the same checked path as menu 3.2; station restart\noffered. The search changes nothing and opens no SDR.",
+     "quand": "When an SDR arrives; when an SDR changes port or a second SDR is plugged in\n(check the station keeps the right one); if the SDR uses too much on a small\nPC (width, limits).",
+     "role": "Prepares the station's SDR receiver (receive only, next to the TRX). It\nsearches the SDRs plugged into every USB port, hubs included (SDRplay,\nRTL-SDR dongles), without opening any: type, serial number, location (port,\nhub) and state (free, held by a program, held by the kernel TV driver, this\nstation's SDR). You choose the station SDR by its serial number (never by\nits port), then the width (2, 6 or 8 MHz), the antenna (A or B), the\nmodule's processor and memory limits, and you put it in service."
     },
     "start": {
      "admin": true,
@@ -535,6 +549,13 @@
      "quand": "Si la nueva versión da problemas.",
      "role": "Vuelve a la versión anterior, conservada en la última actualización, sin\nInternet."
     },
+    "sdr": {
+     "admin": true,
+     "expert": "Un SDR ocupado (por ejemplo por otro proyecto) o cuyo número de serie está\nduplicado (frecuente en las llaves RTL-SDR de fábrica) se rechaza: la\nestación confundiría los aparatos. La búsqueda también señala un SDR\nconectado al mismo hub que el equipo (a evitar). Lo mismo en línea de\ncomandos: trx-sdr --list (con sudo se muestra el nombre del programa que\nocupa una llave RTL-SDR).",
+     "modifie": "La sección [sdr] de station.toml (y « sdr » en [modules] run al ponerlo en\nservicio), por el mismo camino verificado que el menú 3.2; se propone\nreiniciar la estación. La búsqueda no cambia nada y no abre ningún SDR.",
+     "quand": "Al llegar un SDR; cuando un SDR cambia de puerto o se conecta un segundo SDR\n(comprobar que la estación conserva el correcto); si el SDR consume\ndemasiado en un PC pequeño (ancho, límites).",
+     "role": "Prepara el receptor SDR de la estación (solo recepción, junto al TRX). Se\nbuscan los SDR conectados a todos los puertos USB, hubs incluidos (SDRplay,\nllaves RTL-SDR), sin abrir ninguno: tipo, número de serie, ubicación\n(puerto, hub) y estado (libre, ocupado por un programa, ocupado por el\ncontrolador TV del núcleo, SDR de esta estación). Se elige el SDR de la\nestación por su número de serie (nunca por su puerto), luego el ancho (2, 6\nu 8 MHz), la antena (A o B), los límites de procesador y memoria del módulo,\ny se pone en servicio."
+    },
     "start": {
      "admin": true,
      "expert": "",
@@ -727,6 +748,13 @@
      "modifie": "La version active. La configuration est conservée.",
      "quand": "Si la nouvelle version pose problème.",
      "role": "Revient à la version précédente, gardée lors de la dernière mise à jour,\nsans Internet."
+    },
+    "sdr": {
+     "admin": true,
+     "expert": "Un SDR pris (par exemple par un autre projet) ou dont le numéro de série est\nen double (fréquent sur les clés RTL-SDR d'usine) est refusé : la station se\ntromperait d'appareil. La recherche signale aussi un SDR branché sur le même\nhub que le poste (à éviter). Même chose en ligne de commande : trx-sdr\n--list (avec sudo, le nom du programme qui tient une clé RTL-SDR est\naffiché).",
+     "modifie": "La section [sdr] de station.toml (et « sdr » dans [modules] run à la mise en\nservice), par le même chemin vérifié que le menu 3.2 ; redémarrage de la\nstation proposé. La recherche ne modifie rien et n'ouvre aucun SDR.",
+     "quand": "À l'arrivée d'un SDR ; quand un SDR change de port ou qu'un second SDR est\nbranché (vérifier que la station garde le bon) ; si le SDR consomme trop sur\nun petit PC (largeur, plafonds).",
+     "role": "Prépare le récepteur SDR de la station (réception seule, à côté du TRX). On\ny recherche les SDR branchés sur tous les ports USB, hubs compris (SDRplay,\nclés RTL-SDR), sans en ouvrir aucun : type, numéro de série, emplacement\n(port, hub) et état (libre, pris par un programme, pris par le pilote TV du\nnoyau, SDR de cette station). On choisit le SDR de la station par son numéro\nde série (jamais par son port), puis la largeur (2, 6 ou 8 MHz), l'antenne\n(A ou B), les plafonds de processeur et de mémoire du module, et on le met\nen service."
     },
     "start": {
      "admin": true,
