@@ -2873,7 +2873,7 @@
         if (!sdrDragging("sdr-rf") && Number.isFinite(state.lna)) $("sdr-rf").value = String(sdrx.rfFromLna(state.lna));
         if (!sdrDragging("sdr-if") && Number.isFinite(state.gr)) $("sdr-if").value = String(sdrx.ifFromGr(state.gr));
         $("sdr-agc").checked = state.agc !== false;
-        $("sdr-if-box").hidden = state.agc !== false;
+        $("sdr-if-box").hidden = state.agc !== false || state.driver === "rtlsdr";   // clé RTL-SDR : pas de gain FI
         if (Number.isFinite(state.rate)) $("sdr-rate").value = String(state.rate);
         sdrSliderLabels();
       }
@@ -3041,7 +3041,7 @@
         $(id).addEventListener("change", () => { sdrSlide.held[id] = false; send(); });
       }
       $("sdr-agc").addEventListener("change", () => {
-        $("sdr-if-box").hidden = $("sdr-agc").checked;
+        $("sdr-if-box").hidden = $("sdr-agc").checked || (client.sdrState || {}).driver === "rtlsdr";
         sdrSend({ agc: $("sdr-agc").checked });
       });
       $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));

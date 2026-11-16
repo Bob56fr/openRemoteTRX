@@ -73,6 +73,7 @@ def waterfall_rate(rate: int, level: int) -> int:
     return rate
 
 
-def sample_rate(configured: int, level: int) -> int:
-    """Échantillonnage appliqué au niveau donné (2 MHz au niveau 4, s'il était plus large)."""
-    return min(configured, 2_000_000) if level >= 4 else configured
+def sample_rate(configured: int, level: int, low: int = 2_000_000) -> int:
+    """Échantillonnage appliqué au niveau donné (`low` au niveau 4 : 2 MHz pour un RSP, 1,024 MHz pour une clé
+    RTL-SDR, s'il était plus large)."""
+    return min(configured, low) if level >= 4 else configured

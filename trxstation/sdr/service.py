@@ -117,11 +117,16 @@ def audio_token(secret: str) -> bytes:
     return hmac.new(secret.encode("ascii"), b"sdr-audio", hashlib.sha256).digest()[:AUDIO_TOKEN_BYTES]
 
 
+def low_rate(sd: cfgmod.Sdr) -> int:
+    """Échantillonnage le plus bas de ce pilote (niveau 4 du bridage)."""
+    return min(cfgmod.sdr_rates(sd.driver))
+
+
 def core_args(sd: cfgmod.Sdr, s: Settings, level: int = 0) -> list[str]:
     """Arguments de sdr-core ; level = niveau de bridage appliqué (cadence du waterfall, échantillonnage)."""
-    fs = sample_rate(sd.sample_rate_hz, level)
-    return ["--dfreq", str(listened(sd, s, fs)), "--mode", s.mode, "--dbw", str(s.dbw), "--sql", str(s.sql),
-            "--serial", sd.serial, "--fs", str(fs), "--bw", str(cfgmod.SDR_RATES[fs]),
+    fs = sample_rate(sd.sample_rate_hz, level, low_rate(sd))
+    return ["--driver", sd.driver, "--dfreq", str(listened(sd, s, fs)), "--mode", s.mode, "--dbw", str(s.dbw),
+            "--sql", str(s.sql), "--serial", sd.serial, "--fs", str(fs), "--bw", str(cfgmod.SDR_RATES.get(fs, 0)),
             "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", sd.antenna,
             "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(waterfall_rate(s.rate, level)),
             "--agc", str(int(s.agc))]
@@ -164,7 +169,7 @@ class SdrService:
         self.proc: asyncio.subprocess.Process | None = None
         self.restarts = 0
         self.state: dict = {"state": "starting", "code": "", "detail": "", "serial": sd.serial,
-                            "fs": sd.sample_rate_hz, "ant": sd.antenna, "bins": sd.bins, "overload": 0, "overloads": 0, "drops": 0,
+                            "fs": sd.sample_rate_hz, "driver": sd.driver, "ant": sd.antenna, "bins": sd.bins, "overload": 0, "overloads": 0, "drops": 0,
                             "gaps": 0, "cpu": None, "restarts": 0}
         self._cpu_mark: tuple[float, float] | None = None
         self._self_cpu_mark: tuple[float, float] | None = None
@@ -208,7 +213,7 @@ class SdrService:
     # ------------------------------------------------------------- état publié
     def snapshot(self) -> dict:
         s = self.settings
-        fs = sample_rate(self.sd.sample_rate_hz, self._applied)
+        fs = sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))
         return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
                 "dfreq": listened(self.sd, s, fs), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.demodulating,
                 "restarts": self.restarts, "t": int(self.clock()), "fs": fs,
@@ -257,7 +262,7 @@ class SdrService:
             except SetRefused as exc:
                 raise CallRefused("sdr_invalid", str(exc)) from None
             if ("dfreq_hz" in (data.get("args") or {})
-                    and listened(self.sd, new, sample_rate(self.sd.sample_rate_hz, self._applied)) != new.dfreq_hz):
+                    and listened(self.sd, new, sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))) != new.dfreq_hz):
                 raise CallRefused("sdr_invalid", "fréquence écoutée hors de la largeur du SDR : déplacer le centre")
             old, self.settings = self.settings, new
             await self._command_core(old, new)
@@ -292,7 +297,7 @@ class SdrService:
         self._applied = new
         log.info("bridage du module : niveau %d (%s)%s", new, LEVEL_TEXT[new],
                  f", {self.load_reason()}" if new else "")
-        fs_changed = sample_rate(self.sd.sample_rate_hz, old) != sample_rate(self.sd.sample_rate_hz, new)
+        fs_changed = sample_rate(self.sd.sample_rate_hz, old, low_rate(self.sd)) != sample_rate(self.sd.sample_rate_hz, new, low_rate(self.sd))
         if new >= TOP or old >= TOP or fs_changed:
             if self.proc is not None and self.proc.returncode is None:
                 self._reload = True
@@ -348,7 +353,7 @@ class SdrService:
             lines.append(f"rate {waterfall_rate(new.rate, self._applied)}")
         if new.agc != old.agc:
             lines.append(f"agc {int(new.agc)}")
-        fs = sample_rate(self.sd.sample_rate_hz, self._applied)
+        fs = sample_rate(self.sd.sample_rate_hz, self._applied, low_rate(self.sd))
         if (listened(self.sd, new, fs), new.mode, new.dbw) != (listened(self.sd, old, fs), old.mode, old.dbw):
             lines.append(f"demod {listened(self.sd, new, fs)} {new.mode} {new.dbw}")
         if new.sql != old.sql:
@@ -500,10 +505,12 @@ class SdrService:
         """Journalise la cause d'un arrêt de sdr-core et renvoie le délai avant le prochain essai."""
         code = (error or {}).get("code", "")
         detail = str((error or {}).get("detail", ""))[:200]
-        if code in ("absent", "busy") or rc == 3:
+        if code in ("absent", "busy", "duplicate") or rc == 3:
             self._set_state("error", code or "absent", detail)
             self.emit(codes.ORT_6001, logger=log, serial=self.sd.serial,
-                      detail="déjà pris par une autre application" if code == "busy" else "absent de la liste du fabricant")
+                      detail={"busy": "déjà pris par une autre application",
+                              "duplicate": "numéro de série en double (deux clés RTL-SDR identiques)"}.get(
+                                  code, "absent de la liste du fabricant"))
             delay = RETRY_ABSENT_S
         elif code == "service" or rc == 4:
             self._set_state("error", "service", detail)

@@ -15,6 +15,8 @@
 // - lit des commandes texte sur l'entrée standard : « freq HZ », « gain LNA GR », « rate N », « quit ».
 // Mode d'essai sans matériel : --iq-file FICHIER (IQ int16 entrelacés, rejoué en boucle au rythme réel).
 // Compilation sans l'API SDRplay (essais) : -DSDR_NO_SDRPLAY.
+// Clés RTL-SDR (étape 197) : -DSDR_RTLSDR -lrtlsdr (librtlsdr d'osmocom, GPL-2.0+ : compatible AGPL, sans exception
+// de liaison) ; choix du pilote à l'exécution par --driver sdrplay|rtlsdr.
 #include <complex.h>
 #include <errno.h>
 #include <math.h>
@@ -30,6 +32,9 @@
 #include <liquid/liquid.h>
 #ifndef SDR_NO_SDRPLAY
 #include <sdrplay_api.h>
+#endif
+#ifdef SDR_RTLSDR
+#include <rtl-sdr.h>
 #endif
 
 #define CORE_VERSION "1.0"
@@ -55,6 +60,7 @@ static int g_agc = 1;                   // AGC matériel de la FI (consigne AGC_
 static volatile int g_gr_now = -1;      // réduction de gain FI réellement appliquée (événement de l'API), -1 = inconnue
 static volatile double g_gain_db = 0;   // gain total du récepteur selon l'API (dB)
 static const char *g_serial = NULL, *g_iq_file = NULL;
+static int g_driver = 0;                // 0 = SDRplay, 1 = RTL-SDR (--driver)
 
 // ---------------------------------------------------------------- état partagé
 static volatile sig_atomic_t g_stop = 0;
@@ -291,19 +297,21 @@ static void event_cb(sdrplay_api_EventT id, sdrplay_api_TunerSelectT tuner, sdrp
     }
 }
 
-static void api_list(void) {
-    float ver = 0;
-    if (sdrplay_api_Open() != sdrplay_api_Success) { printf("{\"api\":null,\"devices\":[],\"error\":\"service\"}\n"); exit(4); }
-    sdrplay_api_ApiVersion(&ver);
+static int api_list(int *first, float *ver) {
+    /* SDR SDRplay LIBRES (le service du fabricant ne propose pas ceux qu'une autre application tient). 0 = service
+       injoignable. */
+    if (sdrplay_api_Open() != sdrplay_api_Success) return 0;
+    sdrplay_api_ApiVersion(ver);
     sdrplay_api_LockDeviceApi();
     unsigned int n = 0;
     sdrplay_api_GetDevices(g_devs, &n, 8);
     sdrplay_api_UnlockDeviceApi();
-    printf("{\"api\":%.2f,\"devices\":[", ver);
-    for (unsigned int i = 0; i < n; i++)
-        printf("%s{\"serial\":\"%s\",\"hw\":%u}", i ? "," : "", g_devs[i].SerNo, g_devs[i].hwVer);
-    printf("]}\n");
+    for (unsigned int i = 0; i < n; i++) {
+        printf("%s{\"serial\":\"%s\",\"hw\":%u,\"driver\":\"sdrplay\"}", *first ? "" : ",", g_devs[i].SerNo, g_devs[i].hwVer);
+        *first = 0;
+    }
     sdrplay_api_Close();
+    return 1;
 }
 
 static void api_start(void) {
@@ -371,6 +379,133 @@ static void api_set_agc(int on) {
 }
 #endif
 
+// ---------------------------------------------------------------- RTL-SDR (étape 197)
+#ifdef SDR_RTLSDR
+#define RTL_BUF_BYTES (16 * 16384)       // 131 072 échantillons complexes par tampon
+static rtlsdr_dev_t *g_rtl = NULL;
+static pthread_t g_rtl_thread;
+static int g_rtl_running = 0;
+
+static void rtl_cb(unsigned char *buf, uint32_t len, void *ctx) {
+    (void)ctx;
+    static int16_t xi[RTL_BUF_BYTES / 2], xq[RTL_BUF_BYTES / 2];
+    unsigned int n = len / 2, clip = 0;
+    if (n > RTL_BUF_BYTES / 2) n = RTL_BUF_BYTES / 2;
+    for (unsigned int i = 0; i < n; i++) {
+        unsigned char a = buf[2 * i], b = buf[2 * i + 1];
+        clip += (a == 0 || a == 255) + (b == 0 || b == 255);
+        xi[i] = (int16_t)(((int)a - 128) * 256 + 128);       // 8 bits non signés -> pleine échelle int16
+        xq[i] = (int16_t)(((int)b - 128) * 256 + 128);
+    }
+    int over = clip * 1000u > n * 2u;                         // plus d'un pour mille écrêté : CAN saturé
+    if (over != g_overload) {
+        g_overload = over;
+        json_frame("{\"t\":\"event\",\"name\":\"overload\",\"on\":%d}", over);
+    }
+    ring_push(xi, xq, n);
+}
+
+static void *rtl_thread(void *arg) {
+    (void)arg;
+    int r = rtlsdr_read_async(g_rtl, rtl_cb, NULL, 0, RTL_BUF_BYTES);
+    if (!g_stop) {                                            // sortie non demandée : clé débranchée
+        json_frame("{\"t\":\"error\",\"code\":\"removed\",\"detail\":\"clé RTL-SDR débranchée (%d)\"}", r);
+        g_stop = 1;
+        pthread_cond_broadcast(&g_cond);
+    }
+    return NULL;
+}
+
+static void rtl_apply_gain(void) {
+    /* AGC = gain automatique du tuner ; sinon gain manuel : LNA 0 (gain maximal) à 8 (minimal), comme le RSP. */
+    if (!g_rtl) return;
+    if (g_agc) {
+        rtlsdr_set_tuner_gain_mode(g_rtl, 0);
+    } else {
+        int gains[64], n = rtlsdr_get_tuner_gains(g_rtl, NULL);
+        if (n > 64) n = 64;
+        if (n > 0) {
+            rtlsdr_get_tuner_gains(g_rtl, gains);
+            int k = (n - 1) * (8 - (g_lna > 8 ? 8 : g_lna)) / 8;
+            rtlsdr_set_tuner_gain_mode(g_rtl, 1);
+            rtlsdr_set_tuner_gain(g_rtl, gains[k]);
+        }
+    }
+    g_gain_db = rtlsdr_get_tuner_gain(g_rtl) / 10.0;
+}
+
+static void rtl_list(int *first) {
+    uint32_t n = rtlsdr_get_device_count();
+    for (uint32_t i = 0; i < n; i++) {
+        char m[256] = "", p[256] = "", s[256] = "";
+        rtlsdr_get_device_usb_strings(i, m, p, s);
+        for (char *c = s; *c; c++) if (*c == '"' || *c == '\\' || (unsigned char)*c < 32) *c = '?';
+        for (char *c = p; *c; c++) if (*c == '"' || *c == '\\' || (unsigned char)*c < 32) *c = '?';
+        printf("%s{\"serial\":\"%s\",\"hw\":0,\"driver\":\"rtlsdr\",\"product\":\"%s\"}", *first ? "" : ",", s, p);
+        *first = 0;
+    }
+}
+
+static void rtl_start(void) {
+    uint32_t n = rtlsdr_get_device_count();
+    int idx = -1, matches = 0;
+    for (uint32_t i = 0; i < n; i++) {
+        char m[256] = "", p[256] = "", s[256] = "";
+        if (rtlsdr_get_device_usb_strings(i, m, p, s) == 0 && !strcmp(s, g_serial)) { idx = (int)i; matches++; }
+    }
+    if (!matches) fatal(3, "absent", g_serial);
+    if (matches > 1) fatal(3, "duplicate", "numéro de série en double : clé impossible à désigner");
+    if (rtlsdr_open(&g_rtl, (uint32_t)idx) < 0) { g_rtl = NULL; fatal(3, "busy", g_serial); }
+    if (rtlsdr_set_sample_rate(g_rtl, (uint32_t)g_fs) < 0) { rtlsdr_close(g_rtl); g_rtl = NULL; fatal(5, "init", "fréquence d'échantillonnage refusée"); }
+    rtlsdr_set_center_freq(g_rtl, (uint32_t)g_freq);
+    rtlsdr_set_tuner_bandwidth(g_rtl, 0);                      // largeur automatique
+    rtl_apply_gain();
+    rtlsdr_reset_buffer(g_rtl);
+    g_rtl_running = pthread_create(&g_rtl_thread, NULL, rtl_thread, NULL) == 0;
+    json_frame("{\"t\":\"started\",\"serial\":\"%s\",\"hw\":%d,\"api\":null,\"driver\":\"rtlsdr\",\"core\":\"%s\"}",
+               g_serial, (int)rtlsdr_get_tuner_type(g_rtl), CORE_VERSION);
+}
+
+static void rtl_stop(void) {
+    if (!g_rtl) return;
+    rtlsdr_cancel_async(g_rtl);
+    if (g_rtl_running) pthread_join(g_rtl_thread, NULL);
+    rtlsdr_close(g_rtl);
+    g_rtl = NULL;
+}
+#endif
+
+// ---------------------------------------------------------------- aiguillage vers le pilote choisi (--driver)
+static void drv_set_freq(double hz) {
+#ifndef SDR_NO_SDRPLAY
+    if (g_driver == 0) api_set_freq(hz);
+#endif
+#ifdef SDR_RTLSDR
+    if (g_driver == 1 && g_rtl) { rtlsdr_set_center_freq(g_rtl, (uint32_t)hz); }
+#endif
+    (void)hz;
+}
+
+static void drv_set_gain(int lna, int gr) {
+#ifndef SDR_NO_SDRPLAY
+    if (g_driver == 0) api_set_gain(lna, gr);
+#endif
+#ifdef SDR_RTLSDR
+    if (g_driver == 1) rtl_apply_gain();
+#endif
+    (void)lna; (void)gr;
+}
+
+static void drv_set_agc(int on) {
+#ifndef SDR_NO_SDRPLAY
+    if (g_driver == 0) api_set_agc(on);
+#endif
+#ifdef SDR_RTLSDR
+    if (g_driver == 1) rtl_apply_gain();
+#endif
+    (void)on;
+}
+
 // ---------------------------------------------------------------- source fichier (essais sans matériel)
 static void *file_thread(void *arg) {
     (void)arg;
@@ -403,9 +538,7 @@ static void *command_thread(void *arg) {
             pthread_mutex_lock(&g_dlock);
             g_freq = hz; g_dirty = 1;                 // le canal écouté est repéré par rapport au centre
             pthread_mutex_unlock(&g_dlock);
-#ifndef SDR_NO_SDRPLAY
-            api_set_freq(hz);
-#endif
+            drv_set_freq(hz);
         } else if (sscanf(line, "demod %lf %7s %d", &hz, mode, &bw) == 3 && mode_of(mode) >= 0 && bw >= 100
                    && bw <= 15000 && fabs(hz - g_freq) <= g_fs / 2) {
             pthread_mutex_lock(&g_dlock);
@@ -417,14 +550,10 @@ static void *command_thread(void *arg) {
             g_audio = on;
         } else if (sscanf(line, "gain %d %d", &lna, &gr) == 2 && lna >= 0 && lna <= 9 && gr >= 20 && gr <= 59) {
             g_lna = lna; g_gr = gr;
-#ifndef SDR_NO_SDRPLAY
-            api_set_gain(lna, gr);
-#endif
+            drv_set_gain(lna, gr);
         } else if (sscanf(line, "agc %d", &lna) == 1 && (lna == 0 || lna == 1)) {
             g_agc = lna;
-#ifndef SDR_NO_SDRPLAY
-            api_set_agc(lna);
-#endif
+            drv_set_agc(lna);
         } else if (sscanf(line, "rate %lf", &rate) == 1 && rate >= 1 && rate <= 25) {
             g_rate = rate;
         } else if (!strncmp(line, "quit", 4)) {
@@ -464,6 +593,11 @@ static int parse_args(int argc, char **argv, int *list) {
         else if (!strcmp(a, "--mode")) g_mode = mode_of(v);
         else if (!strcmp(a, "--dbw")) g_dbw = atoi(v);
         else if (!strcmp(a, "--sql")) g_sql = atof(v);
+        else if (!strcmp(a, "--driver")) {
+            if (!strcmp(v, "sdrplay")) g_driver = 0;
+            else if (!strcmp(v, "rtlsdr")) g_driver = 1;
+            else { fprintf(stderr, "pilote inconnu : %s\n", v); return 0; }
+        }
         else { fprintf(stderr, "argument inconnu : %s\n", a); return 0; }
     }
     if (*list) return 1;
@@ -484,10 +618,20 @@ int main(int argc, char **argv) {
     int list = 0;
     if (!parse_args(argc, argv, &list)) return 2;
     if (list) {
+        int first = 1, service = 0;
+        float ver = 0;
+        printf("{\"devices\":[");
 #ifndef SDR_NO_SDRPLAY
-        api_list();
+        service = api_list(&first, &ver);
+#endif
+#ifdef SDR_RTLSDR
+        rtl_list(&first);
+#endif
+        if (service) printf("],\"api\":%.2f}\n", ver);
+#ifndef SDR_NO_SDRPLAY
+        else printf("],\"api\":null,\"error\":\"service\"}\n");
 #else
-        printf("{\"api\":null,\"devices\":[],\"error\":\"sans API\"}\n");
+        else printf("],\"api\":null}\n");
 #endif
         return 0;
     }
@@ -499,6 +643,12 @@ int main(int argc, char **argv) {
     if (g_iq_file) {
         json_frame("{\"t\":\"started\",\"serial\":\"fichier\",\"hw\":0,\"api\":null,\"core\":\"%s\"}", CORE_VERSION);
         pthread_create(&src, NULL, file_thread, NULL);
+    } else if (g_driver == 1) {
+#ifdef SDR_RTLSDR
+        rtl_start();
+#else
+        fatal(4, "service", "sdr-core compilé sans librtlsdr (clés RTL-SDR)");
+#endif
     } else {
 #ifndef SDR_NO_SDRPLAY
         api_start();
@@ -589,6 +739,9 @@ int main(int argc, char **argv) {
     }
 #ifndef SDR_NO_SDRPLAY
     api_stop();
+#endif
+#ifdef SDR_RTLSDR
+    rtl_stop();
 #endif
     if (src) pthread_join(src, NULL);
     json_frame("{\"t\":\"stopped\"}");

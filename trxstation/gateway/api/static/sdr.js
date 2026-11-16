@@ -177,6 +177,7 @@
     }
     if (st.state === "suspended") return "SDR SUSPENDU par la station : " + (st.load_reason || st.detail || "station chargée") + " (reprise automatique au calme)";
     if (st.state === "starting") return "SDR : démarrage…";
+    if (st.state === "error" && st.code === "duplicate") return "SDR en panne : numéro de série en double (deux clés RTL-SDR identiques : en réécrire un)";
     if (st.state === "error") return "SDR en panne : " + (CODE_TEXTS[st.code] || st.detail || st.code || "cause inconnue");
     return "SDR : " + String(st.state || "arrêté");
   }

@@ -502,9 +502,9 @@ securite = "Réception seulement : le module SDR n'a aucun droit sur le poste ; 
 depuis = "0.140.0"
 
 [reglages."sdr.driver"]
-role = "API du fabricant du SDR. Seule l'API SDRplay est prise en charge aujourd'hui ; elle s'installe à la main (logiciel du fabricant) AVANT l'installation de la station, qui compile alors le programme sdr-core."
+role = "Type de SDR. <code>sdrplay</code> : RSP de SDRplay, dont l'API s'installe à la main (logiciel du fabricant) AVANT l'installation de la station. <code>rtlsdr</code> (station 0.149.0+) : clé RTL-SDR (dont la RTL-SDR Blog V4), pilote installé par la station elle-même ; le pilote TV du noyau est écarté. Se choisit au menu 5.4 de TRX Console avec le SDR."
 niveau = "expert"
-bornes = "<code>sdrplay</code>."
+bornes = "<code>sdrplay</code> ou <code>rtlsdr</code>."
 depuis = "0.140.0"
 
 [reglages."sdr.serial"]
@@ -524,7 +524,7 @@ depuis = "0.140.0"
 [reglages."sdr.sample_rate_hz"]
 role = "Largeur couverte par le waterfall du SDR (fréquence d'échantillonnage). 2 MHz couvre une bande HF entière ou la bande 2 m et charge peu la machine ; 6 et 8 MHz demandent beaucoup plus de calcul."
 niveau = "courant"
-bornes = "2000000, 6000000 ou 8000000 (Hz)."
+bornes = "SDRplay : 2000000, 6000000 ou 8000000 ; clé RTL-SDR : 1024000, 2048000 ou 2400000 (Hz)."
 exemple = "<code>2000000</code>"
 depuis = "0.140.0"
 
@@ -536,7 +536,7 @@ exemple = "<code>7100000</code>"
 depuis = "0.140.0"
 
 [reglages."sdr.antenna"]
-role = "Entrée d'antenne du SDR (RSP2 : A ou B)."
+role = "Entrée d'antenne du SDR (RSP2 : A ou B ; sans effet sur une clé RTL-SDR, qui n'en a qu'une)."
 niveau = "courant"
 bornes = "A ou B."
 depuis = "0.140.0"

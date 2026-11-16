@@ -193,8 +193,14 @@ class Freedv:
 
 
 # Cadences d'échantillonnage permises et largeur de filtre FI associée (kHz, API SDRplay), mesurées à l'essai S0.
-SDR_RATES = {2_000_000: 1536, 6_000_000: 5000, 8_000_000: 8000}
-SDR_DRIVERS = ("sdrplay",)
+SDR_RATES = {2_000_000: 1536, 6_000_000: 5000, 8_000_000: 8000}     # SDRplay : largeur -> filtre du tuner (kHz)
+RTL_RATES = (1_024_000, 2_048_000, 2_400_000)                       # clés RTL-SDR (8 bits, 2,4 MHz au plus sans pertes)
+SDR_DRIVERS = ("sdrplay", "rtlsdr")
+
+
+def sdr_rates(driver: str) -> tuple[int, ...]:
+    """Largeurs permises pour ce pilote."""
+    return RTL_RATES if driver == "rtlsdr" else tuple(SDR_RATES)
 
 
 @dataclass
@@ -202,7 +208,7 @@ class Sdr:
     """Module SDR (docs/sdr-cahier-des-charges.md) : récepteur SDR en parallèle du TRX, RÉCEPTION SEULE, lancé comme
     module (« sdr » dans [modules] run). Le SDR est désigné par son NUMÉRO DE SÉRIE, jamais par son port."""
     enabled: bool = False             # fonction offerte aux opérateurs (exige « sdr » dans [modules] run)
-    driver: str = "sdrplay"           # API du fabricant (installée à la main par l'utilisateur)
+    driver: str = "sdrplay"           # sdrplay (API du fabricant, installée à la main) ou rtlsdr (clé RTL-SDR, librtlsdr)
     serial: str = ""                  # numéro de série du SDR de CETTE station (trx-sdr --list) ; obligatoire
     core_path: str = ""               # programme sdr-core ; vide = installé avec la station (venv/bin), sinon le PATH
     sample_rate_hz: int = 2_000_000   # 2, 6 ou 8 MHz : largeur du waterfall (2 MHz conseillé, voir le cahier § 16)
@@ -869,8 +875,8 @@ def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
         p.append("[sdr] serial : numéro de série du SDR (lettres et chiffres, 4 à 32), voir « trx-sdr --list »")
     if not isinstance(sd.core_path, str) or any(c in sd.core_path for c in "\r\n\0"):
         p.append("[sdr] core_path : chemin du programme sdr-core, ou vide")
-    if sd.sample_rate_hz not in SDR_RATES:
-        p.append("[sdr] sample_rate_hz : " + ", ".join(str(r) for r in SDR_RATES) + " (Hz)")
+    if sd.sample_rate_hz not in sdr_rates(sd.driver):
+        p.append(f"[sdr] sample_rate_hz ({sd.driver}) : " + ", ".join(str(r) for r in sdr_rates(sd.driver)) + " (Hz)")
     for name, lo, hi in (("center_hz", 1_000, 2_000_000_000), ("lna_state", 0, 8), ("gain_reduction_db", 20, 59),
                          ("lines_per_s", 1, 15),      # le bus limite un module à 20 messages par seconde
                          ("max_cpu_pct", 20, 800), ("max_mem_mb", 50, 4000)):

@@ -378,8 +378,8 @@ if ! getent passwd "$SERVICE_USER" >/dev/null; then
 else
   ok "compte système $SERVICE_USER déjà présent"
 fi
-usermod -aG dialout,audio "$SERVICE_USER"
-ok "$SERVICE_USER : accès aux ports série et au son"
+usermod -aG dialout,audio,plugdev "$SERVICE_USER"
+ok "$SERVICE_USER : accès aux ports série, au son et aux clés RTL-SDR (plugdev)"
 if [[ -n $TARGET_USER ]]; then
   groups_to_add=dialout,audio,$SERVICE_USER
   getent group systemd-journal >/dev/null && groups_to_add+=,systemd-journal
@@ -438,16 +438,34 @@ rm -f "$PIP_LOG"
 "$REL_VENV/bin/python" -c 'import trxstation, aiohttp, aiortc, sounddevice, cryptography, serial' \
   || fail "modules Python incomplets après installation."
 ok "modules Python installés (aiortc, aiohttp, sounddevice, textual, cryptography, pyserial)"
-# Module SDR (docs/sdr-cahier-des-charges.md) : sdr-core compilé SEULEMENT si l'API du fabricant (propriétaire, installée
-# à la main par l'utilisateur) est présente ; liquid-dsp vient de Debian. Échec : avertissement, la station marche sans SDR.
+# Module SDR (docs/sdr-cahier-des-charges.md) : sdr-core compilé avec les pilotes disponibles : SDRplay si l'API du
+# fabricant (propriétaire, installée à la main par l'utilisateur) est présente, clés RTL-SDR par librtlsdr de Debian
+# (étape 197 ; GPL, sans exception de liaison) ; liquid-dsp vient de Debian. Échec : avertissement, la station marche
+# sans SDR. Le pilote TV du noyau prendrait les clés RTL-SDR au branchement : il est écarté (liste noire).
 SDR_SRC=$RELEASE/app/trxstation/sdr/core/sdr_core.c
-if [[ -f $SDR_SRC ]] && [[ -f /usr/local/include/sdrplay_api.h || -f /usr/include/sdrplay_api.h ]]; then
-  if apt-get install -y -q --no-install-recommends libliquid-dev >>"$LOG" 2>&1 \
-     && gcc -O2 -o "$REL_VENV/bin/sdr-core" "$SDR_SRC" -I/usr/local/include -L/usr/local/lib \
-          -lliquid -lsdrplay_api -lm -lpthread -Wl,-rpath,/usr/local/lib >>"$LOG" 2>&1; then
-    ok "sdr-core compilé (module SDR : API SDRplay trouvée) ; « trx-sdr --list » donne le numéro de série du SDR"
+if [[ -f $SDR_SRC ]]; then
+  apt-get install -y -q --no-install-recommends libliquid-dev librtlsdr-dev rtl-sdr >>"$LOG" 2>&1 \
+    || warn "paquets du module SDR (liquid-dsp, librtlsdr) non installés (détails dans $LOG)"
+  printf '%s\n' "# openRemoteTRX : clés RTL-SDR réservées à la station (module SDR), pas au pilote TV du noyau" \
+    "blacklist dvb_usb_rtl28xxu" "blacklist rtl2832_sdr" "blacklist rtl2832" "blacklist rtl2830" \
+    > /etc/modprobe.d/trx-remote-rtlsdr.conf
+  for m in rtl2832_sdr dvb_usb_rtl28xxu rtl2832; do modprobe -r "$m" >>"$LOG" 2>&1 || true; done   # clé déjà branchée : libérée
+  SDR_FLAGS=() SDR_LIBS=() SDR_DRIVERS_FOUND=()
+  if [[ -f /usr/local/include/sdrplay_api.h || -f /usr/include/sdrplay_api.h ]]; then
+    SDR_LIBS+=(-lsdrplay_api); SDR_DRIVERS_FOUND+=(SDRplay)
   else
-    warn "sdr-core non compilé (détails dans $LOG) : le module SDR restera indisponible."
+    SDR_FLAGS+=(-DSDR_NO_SDRPLAY)
+  fi
+  if [[ -f /usr/include/rtl-sdr.h ]]; then
+    SDR_FLAGS+=(-DSDR_RTLSDR); SDR_LIBS+=(-lrtlsdr); SDR_DRIVERS_FOUND+=(RTL-SDR)
+  fi
+  if (( ${#SDR_DRIVERS_FOUND[@]} )); then
+    if gcc -O2 "${SDR_FLAGS[@]}" -o "$REL_VENV/bin/sdr-core" "$SDR_SRC" -I/usr/local/include -L/usr/local/lib \
+         -lliquid "${SDR_LIBS[@]}" -lm -lpthread -Wl,-rpath,/usr/local/lib >>"$LOG" 2>&1; then
+      ok "sdr-core compilé (pilotes : ${SDR_DRIVERS_FOUND[*]}) ; TRX Console menu 5.4 ou « trx-sdr --list » pour choisir le SDR"
+    else
+      warn "sdr-core non compilé (détails dans $LOG) : le module SDR restera indisponible."
+    fi
   fi
 fi
 if [[ -n $CURRENT_VERSION && $CURRENT_VERSION != "$TRX_VERSION" ]]; then backup_config_for "$TRX_VERSION"; fi

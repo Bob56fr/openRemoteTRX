@@ -329,7 +329,8 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
     pendant l'émission).
 - **État** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_state", "retain": "snapshot", "scope":
   "operators", …}}` : `state` (`starting`, `running`, `error`, `suspended` = sdr-core arrêté par la station,
-  0.144.0+), `code` et `detail` (cause d'une erreur : `absent`,
+  0.144.0+), `driver` (`sdrplay` ou `rtlsdr`, 0.149.0+ ; une clé RTL-SDR n'a ni gain FI ni choix d'antenne), `code`
+  et `detail` (cause d'une erreur : `duplicate` = numéro de série en double, 0.149.0+, `absent`,
   `busy`, `service`, `core_missing`, `config`, `exit`, `removed` ; codes ORT-6001 à ORT-6005), `serial`, `fs`
   (largeur en Hz), `center`, `lna`, `gr`, `ant`, `rate`, `bins`, `agc`, `gr_now` (réduction de gain FI réellement
   appliquée, ou `null`) et `gain_db` (gain total selon le SDR, ou `null`) (0.141.0+), `dfreq`, `mode`, `dbw`, `sql`,
@@ -359,7 +360,8 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
   (uint32 petit-boutiste : 1 ligne, 2 JSON), longueur ; ligne = centre et largeur (float64), cases (uint16), réservé
   (uint16), valeurs ; JSON = `started`, `status`, `event` (`overload`, `refused`), `error` (`absent`, `busy`,
   `service`, `init`, `removed`, `file`), `stopped` ; type 3 (0.142.0+) : son démodulé, 960 int16 à 48 kHz, seulement
-  après `audio 1`. Commandes sur son entrée : `freq HZ`, `gain LNA GR`, `rate N`, `agc 0|1`, `demod HZ MODE LARGEUR`,
+  après `audio 1`. Option `--driver sdrplay|rtlsdr` (0.149.0+) ; `--list` rend `{"devices": [{"serial", "hw",
+  "driver", "product"?}], "api", "error"?}` (SDRplay LIBRES et clés RTL-SDR). Commandes sur son entrée : `freq HZ`, `gain LNA GR`, `rate N`, `agc 0|1`, `demod HZ MODE LARGEUR`,
   `sql DB`, `audio 0|1`, `quit`. Son du module vers la passerelle : UDP vers 127.0.0.1:`[sdr] audio_port`, paquets
   `ORSA` + jeton (16 octets, HMAC-SHA256 du secret du module sur « sdr-audio ») + numéro (uint32) + 960 int16. Codes de sortie : 2 réglage refusé, 3 SDR absent ou pris, 4 service du fabricant injoignable, 5 init.
 - **Page web** (`sdr.js`, rubrique « SDR ») : waterfall, échelle, réglages (centre, cadence ; curseur « Gain RF » =

@@ -715,28 +715,33 @@ class Console:
         if not answer.isdigit() or not 1 <= int(answer) <= len(found):
             return False
         d = found[int(answer) - 1]
-        if d.get("kind") != "sdrplay":
-            self.say(self.t("sdr.6"))
-            return False
         if not d.get("serial") or d.get("duplicate"):
             self.say(self.t("sdr.7"))
             return False
         if d.get("state") in ("pris", "noyau") and d.get("serial") != cfg.sdr.serial:
             self.say(self.t("sdr.8"))
             return False
-        cfg.sdr.serial, cfg.sdr.driver = d["serial"], "sdrplay"
+        from .config import sdr_rates
+        driver = "rtlsdr" if d.get("kind") == "rtlsdr" else "sdrplay"
+        cfg.sdr.serial, cfg.sdr.driver = d["serial"], driver
+        if cfg.sdr.sample_rate_hz not in sdr_rates(driver):            # largeur adaptée au type de SDR
+            cfg.sdr.sample_rate_hz = 2_048_000 if driver == "rtlsdr" else 2_000_000
         return True
 
     def _sdr_rate(self, cfg) -> bool:
-        from .config import SDR_RATES
-        answer = self.ask(self.t("sdr.9", choices=", ".join(str(r // 1_000_000) for r in SDR_RATES))).strip()
-        rate = int(answer) * 1_000_000 if answer.isdigit() else 0
-        if rate not in SDR_RATES:
+        from .config import sdr_rates
+        rates = sdr_rates(cfg.sdr.driver)
+        shown = [f"{r / 1e6:g}" for r in rates]
+        answer = self.ask(self.t("sdr.9", choices=", ".join(shown))).strip().replace(",", ".")
+        if answer not in shown:
             return False
-        cfg.sdr.sample_rate_hz = rate
+        cfg.sdr.sample_rate_hz = rates[shown.index(answer)]
         return True
 
     def _sdr_antenna(self, cfg) -> bool:
+        if cfg.sdr.driver == "rtlsdr":
+            self.say(self.t("sdr.6"))
+            return False
         answer = self.ask(self.t("sdr.10")).strip().upper()
         if answer not in ("A", "B"):
             return False

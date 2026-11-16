@@ -384,6 +384,6 @@ def test_sdr_menu_chooses_a_free_sdrplay_by_serial_and_refuses_held_or_duplicate
     con.sdr()
     text = "\n".join(out)
     assert "pris par une autre application" in text                  # 1 = celui de l'AIS : refusé
-    assert "RTL-SDR seront prises en charge" in text                   # 3 = clé RTL : pas encore
+    assert "numéro de série unique" in text                            # 3 = clé RTL au numéro en double
     cfg = cfgmod.load(tmp_path / "station.toml")
     assert cfg.sdr.serial == "170502E910" and cfg.sdr.enabled is True and "sdr" in cfg.modules.run

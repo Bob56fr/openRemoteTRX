@@ -126,7 +126,14 @@ Règles :
   l'AIS). Échelle de reprise du SDR = relancer le module, rien d'autre ; une panne du service est
   signalée (ORT-60xx) et laissée à l'opérateur. Le « reset USB » du superviseur ne vise que le poste.
 
-#### 2.4.1 Clés RTL-SDR [D 2026-11-16]
+#### 2.4.1 Clés RTL-SDR [D 2026-11-16] (pilote FAIT, étape 197)
+
+Vérifié le 2026-11-16 : librtlsdr 2.0.2 de Debian 13 (paquet `librtlsdr0`) reconnaît la RTL-SDR Blog V4
+(« RTL-SDR Blog V4 Detected », tuner R828D) ; licences GPL-2.0+ / GPL-3+ / MIT : compatibles AGPL, AUCUNE exception
+de liaison nécessaire. sdr-core : `-DSDR_RTLSDR`, `--driver rtlsdr`, octets non signés ramenés à la pleine échelle
+int16, CAN saturé = plus d'un pour mille d'octets à 0 ou 255, gain automatique du tuner (AGC) ou gain manuel (LNA 0 à
+8 réparti sur les gains du tuner), clé désignée par son numéro de série (refus si deux clés le partagent :
+`duplicate`), largeurs 1,024 / 2,048 / 2,4 MHz, bridage niveau 4 = 1,024 MHz.
 
 - Second pilote de sdr-core : bibliothèque librtlsdr (osmocom ; licence à vérifier avant le lot : GPL 2 « ou
   ultérieure » attendue, compatible AGPL), installée par install.sh. Clé de l'utilisateur : **RTL-SDR Blog V4**

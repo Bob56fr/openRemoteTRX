@@ -694,3 +694,23 @@ def test_usb_scan_never_opens_a_device_and_survives_without_sysfs(tmp_path: Path
     found, warnings = devices.scan(None, sysfs=tmp_path / "absent", proc=tmp_path)
     assert found == [] and warnings == []
     assert devices.location_text("3-6.2.1") == "bus 3, port 6 -> hub, port 2 -> hub, port 1"
+
+
+# ------------------------------------------------------------------ clés RTL-SDR (étape 197)
+def test_rtl_sdr_driver_rates_and_core_arguments() -> None:
+    from trxstation.sdr.service import low_rate
+    sd = cfgmod.Sdr(enabled=True, serial="00000042", driver="rtlsdr", sample_rate_hz=2_048_000)
+    problems = cfgmod._sdr_problems(sd, cfgmod.Modules(run=["sdr"]))
+    assert problems == []
+    assert cfgmod._sdr_problems(cfgmod.Sdr(driver="rtlsdr", sample_rate_hz=8_000_000), cfgmod.Modules())   # 8 MHz : RSP seulement
+    args = core_args(sd, Settings(100_000_000, 2, 50, 8))
+    assert args[args.index("--driver") + 1] == "rtlsdr" and args[args.index("--fs") + 1] == "2048000"
+    assert args[args.index("--bw") + 1] == "0"                          # filtre du tuner : propre au RSP
+    assert low_rate(sd) == 1_024_000 and core_args(sd, Settings(100_000_000, 2, 50, 8), 4)[
+        args.index("--fs") + 1] == "1024000"                            # bridage niveau 4
+
+
+def test_rtl_keys_stay_listed_when_the_sdrplay_service_is_down() -> None:
+    out = '{"devices":[{"serial":"00000042","hw":0,"driver":"rtlsdr","product":"Blog V4"}],"api":null,"error":"service"}\n'
+    found, error = devices.api_devices(sys.executable, run=lambda *a, **k: subprocess.CompletedProcess(a, 4, stdout=out, stderr=""))
+    assert [d["serial"] for d in found] == ["00000042"] and "fabricant" in error

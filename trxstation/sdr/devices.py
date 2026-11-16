@@ -56,9 +56,10 @@ def api_devices(core: str, run=subprocess.run) -> tuple[list[dict], str]:
         data = json.loads(done.stdout.strip().splitlines()[-1]) if done.stdout.strip() else {}
     except (json.JSONDecodeError, IndexError):
         return [], "réponse de sdr-core illisible"
-    if data.get("error"):
-        return [], "service du fabricant injoignable" if data["error"] == "service" else str(data["error"])
     devices = [d for d in data.get("devices", []) if isinstance(d, dict) and isinstance(d.get("serial"), str)]
+    if data.get("error"):                     # service SDRplay injoignable : les clés RTL-SDR listées restent valables
+        error = "service du fabricant injoignable" if data["error"] == "service" else str(data["error"])
+        return [d for d in devices if d.get("driver") == "rtlsdr"], error
     return devices, ""
 
 
@@ -169,7 +170,7 @@ def scan(core: str | None, configured: str = "", *, sysfs: Path = Path("/sys/bus
     api, error = api_devices(core, run) if core else ([], "sdr-core introuvable")
     if error and any(u["kind"] == "sdrplay" for u in usb):
         warnings.append(f"SDRplay : {error} (état des RSP inconnu)")
-    free = {d["serial"] for d in api}
+    free = {d["serial"] for d in api if d.get("driver", "sdrplay") == "sdrplay"}
     out = []
     for u in usb:
         if u["kind"] == "sdrplay":
@@ -185,7 +186,10 @@ def scan(core: str | None, configured: str = "", *, sysfs: Path = Path("/sys/bus
         out.append({**u, "state": state})
     for d in api:                                          # proposé par l'API sans être vu par le noyau (Windows)
         if not any(o["serial"] == d["serial"] for o in out):
-            out.append({"kind": "sdrplay", "model": "SDRplay", "serial": d["serial"], "name": "", "location": "",
+            rtl = d.get("driver") == "rtlsdr"
+            out.append({"kind": "rtlsdr" if rtl else "sdrplay",
+                        "model": f"RTL-SDR ({d.get('product') or 'RTL2832U'})" if rtl else "SDRplay",
+                        "serial": d["serial"], "name": "", "location": "",
                         "driver": "", "holder": "", "radio_hub": False,
                         "state": "station" if d["serial"] == configured else "libre"})
     serials = [o["serial"] for o in out if o["serial"]]
