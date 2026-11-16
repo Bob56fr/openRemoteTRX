@@ -223,6 +223,14 @@ cluster qui parle.
   les changements qui ont suivi, et les **rejoue** au client qui ouvre la vue :
   les spots s'affichent tout de suite.
 
+Spots sur le waterfall du **SDR** (station 0.156.0+) : la passerelle publie
+sur le bus l'événement `sdr_window` (`on`, `center` et `fs` en Hz, à chaque
+changement et toutes les 30 s ; `on: false` quand le SDR ne tourne pas) ; le
+module tient une seconde fenêtre et envoie `kind = "sdr_spots"` (même format
+que `spots`, `scope = "sdr_view"`) aux seuls opérateurs qui affichent la
+rubrique SDR. Toucher un spot fait ÉCOUTER le SDR (fréquence et mode), le
+TRX ne bouge pas.
+
 Format des messages (`{"type": "module", "module": "cluster", "data": …}`) :
 `data.kind = "spots"`, `op = "snapshot"` (avec `window` [début, fin] en kHz)
 ou `"delta"` (avec `removed`), `scope = "hf_view"`, `retain`, et `spots` en

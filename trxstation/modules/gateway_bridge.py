@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 MIN_QSY_HZ, MAX_QSY_HZ = 100_000, 3_000_000_000
 OPERATOR_ACTIVITY_EVERY_S = 30.0
+SDR_WINDOW_EVERY_S = 30.0           # fenêtre du SDR republiée aux modules au moins toutes les 30 s
 RETAIN_MAX = 500                    # messages retenus par module et par sorte (instantané + changements) pour les clients qui arrivent
 _MODE_RE = re.compile(r"[A-Za-z0-9\-]{1,16}")
 
@@ -55,6 +56,8 @@ class ModuleBridge:
         self._last_connected: bool | None = None
         self._retained: dict[str, list[dict]] = {}
         self._last_activity = float("-inf")
+        self._sdr_window: tuple | None = None          # dernière fenêtre du SDR publiée (spots du Cluster sur le SDR)
+        self._sdr_window_at = float("-inf")
 
     # ------------------------------------------------------------- cycle de vie
     async def start(self) -> bool:
@@ -182,6 +185,8 @@ class ModuleBridge:
         et rejoués au client qui ouvre la vue (il voit tout de suite les spots, sans attendre le suivant).
         """
         payload = {"type": "module", "module": module, "data": message}
+        if module == "sdr" and message.get("kind") == "sdr_state":
+            self._publish_sdr_window(message)
         retain = message.get("retain")
         key = f"{module}/{message.get('kind', '')}"     # un fil retenu par sorte de message (spots, recent…)
         if retain == "snapshot":
@@ -206,12 +211,25 @@ class ModuleBridge:
             except Exception:
                 log.exception("message du module %s non transmis", module)
 
+    def _publish_sdr_window(self, state: dict) -> None:
+        """Fenêtre du SDR vers les modules abonnés (Cluster : spots de cette fenêtre) : à chaque changement, et toutes
+        les 30 s (un module relancé la retrouve). SDR arrêté ou en panne : fenêtre fermée (on = false)."""
+        center, fs = state.get("center"), state.get("fs")
+        ok = (state.get("state") == "running" and isinstance(center, (int, float)) and isinstance(fs, (int, float))
+              and not isinstance(center, bool) and not isinstance(fs, bool) and 0 < fs <= 20_000_000 and 0 < center < 3e9)
+        window = (int(center), int(fs)) if ok else None
+        now = time.monotonic()
+        if self.bus is None or (window == self._sdr_window and now - self._sdr_window_at < SDR_WINDOW_EVERY_S):
+            return
+        self._sdr_window, self._sdr_window_at = window, now
+        self.bus.publish("sdr_window", {"on": True, "center": window[0], "fs": window[1]} if window else {"on": False})
+
     def on_sdr_view(self, session, opened: bool) -> None:
         """Un opérateur ouvre la rubrique SDR : lui renvoyer l'état retenu du module « sdr »."""
         if not opened or getattr(session, "listener", True):
             return
         for key, payloads in list(self._retained.items()):
-            if not key.startswith("sdr/"):
+            if not key.startswith("sdr/") and key != "cluster/sdr_spots":    # état du SDR et spots de sa fenêtre
                 continue
             for payload in payloads:
                 try:
@@ -226,7 +244,9 @@ class ModuleBridge:
             return
         for payloads in list(self._retained.values()):
             for payload in payloads:
-                if payload["data"].get("scope") in ("operators", "sdr_view") and getattr(session, "listener", True):
+                if payload["data"].get("scope") == "sdr_view":             # spots du SDR : rejoués par on_sdr_view
+                    continue
+                if payload["data"].get("scope") == "operators" and getattr(session, "listener", True):
                     continue
                 try:
                     session.send(payload)

@@ -17,7 +17,8 @@ from . import API_VERSION
 
 # Événements diffusés par le cœur (section 5 du cahier des charges).
 KNOWN_EVENTS = frozenset({"ptt", "freq_mode", "trx_state", "client", "degrade",
-                          "operator_activity"})   # commande d'un client OPÉRATEUR (jamais un visiteur), au plus 1 / 30 s
+                          "operator_activity",    # commande d'un client OPÉRATEUR (jamais un visiteur), au plus 1 / 30 s
+                          "sdr_window"})          # fenêtre du SDR (centre, largeur) : spots du Cluster sur le SDR (étape 205)
 # Commandes qu'un module peut être autorisé à demander au cœur.
 KNOWN_COMMANDS = frozenset({"qsy"})
 START_MODES = ("auto", "on_demand", "disabled")

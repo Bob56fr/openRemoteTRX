@@ -35,7 +35,7 @@ from . import cty as ctymod
 from .cache import SpotCache, SpotFilter
 from .engine import Engine
 from .feed import CONNECTED, FAILED, Feed, Source
-from .publish import SpotPublisher
+from .publish import SpotPublisher, sdr_window
 
 log = logging.getLogger("trx.cluster")
 
@@ -213,6 +213,8 @@ class ClusterService:
         self.seq = 0
         self._last_health: str | None = None
         self.publisher: SpotPublisher | None = None
+        self.sdr_publisher: SpotPublisher | None = None      # spots de la fenêtre du SDR (étape 205)
+        self._sdr_window: tuple[float, float] | None = None
         if bus_client is not None:
             bus_client.on_event = self._on_event
             bus_client.on_connect = bus_client.on_gap = self._resync
@@ -220,6 +222,10 @@ class ClusterService:
     async def _on_event(self, name: str, data: dict) -> None:
         if name == "freq_mode" and self.publisher is not None:
             self.publisher.set_frequency(data.get("freq"))
+        if name == "sdr_window":
+            self._sdr_window = sdr_window(data)
+            if self.sdr_publisher is not None:
+                self.sdr_publisher.set_window(self._sdr_window)
 
     async def _resync(self) -> None:
         """(Re)connexion au cœur ou événement perdu : relire la fréquence, renvoyer un instantané."""
@@ -239,7 +245,8 @@ class ClusterService:
             if self.publisher is None or self.bus is None:
                 continue
             now = time.monotonic()
-            for message in (self.publisher.tick(now), self.publisher.recent(now)):
+            sdr = self.sdr_publisher.tick(now) if self.sdr_publisher is not None else None
+            for message in (self.publisher.tick(now), self.publisher.recent(now), sdr):
                 if message is None:
                     continue
                 try:
@@ -247,6 +254,8 @@ class ClusterService:
                 except Exception as exc:          # message perdu : l'instantané suivant remettra la page d'aplomb
                     self.publisher._need_snapshot = True
                     self.publisher._recent_dirty = True
+                    if self.sdr_publisher is not None:
+                        self.sdr_publisher._need_snapshot = True
                     log.debug("spots non transmis : %s", exc)
 
     def _status(self) -> None:
@@ -326,7 +335,13 @@ class ClusterService:
         self.cty_entities = len(table)
         self.engine = Engine(build_cache(c, table))
         self.publisher = SpotPublisher(self.engine.cache)
-        self.engine.on_spot = self.publisher.on_spot
+        self.sdr_publisher = SpotPublisher(self.engine.cache, kind="sdr_spots", scope="sdr_view")
+        self.sdr_publisher.set_window(self._sdr_window)
+
+        def on_spot(s, new: bool) -> None:
+            self.publisher.on_spot(s, new)
+            self.sdr_publisher.on_spot(s, new)
+        self.engine.on_spot = on_spot
         if self.bus is not None:
             tasks.append(asyncio.ensure_future(self._publish_loop()))
         self.feed = Feed(sources, c.call, self.engine.handle_line, on_web=self.engine.handle_web,

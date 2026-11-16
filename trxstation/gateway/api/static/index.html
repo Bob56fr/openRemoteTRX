@@ -282,7 +282,7 @@
       <div class="body">
         <p id="sdr-status" class="note"></p>
         <p id="sdr-load" class="note sdr-load" hidden></p>
-        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div></div>
+        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div><div id="sdr-spot-layer" class="hf-spots"></div></div>
         <div id="sdr-axis" class="wf-axis"></div>
         <div class="row">
           <span id="sdr-pick" class="note"></span>
@@ -318,6 +318,7 @@
           <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
           <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
           <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)">Couleurs : Thème</button>
+          <button id="sdr-spots" class="chip on" title="Spots du Cluster DX sur le waterfall du SDR ; toucher un spot : le SDR l'écoute (le TRX ne bouge pas)">Spots</button>
         </div>
         <div id="sdr-hw-box" class="row" hidden>
           <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 5.4). Le SDR redémarre (une à deux secondes).">Largeur

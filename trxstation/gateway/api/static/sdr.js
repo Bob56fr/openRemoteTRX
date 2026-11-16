@@ -274,6 +274,18 @@
     return entry ? entry[1] : PALETTES[0][1];
   }
 
+  // Spots du Cluster DX sur le SDR (étape 205) : mode du spot (mode Hamlib proposé par la station) -> mode du SDR.
+  const SPOT_MODES = { USB: "USB", LSB: "LSB", AM: "AM", CW: "CW", CWR: "CW", FM: "NFM", PKTFM: "NFM", PKTUSB: "USB",
+                       PKTLSB: "LSB", RTTY: "USB", RTTYR: "LSB" };
+  function spotListen(spot, center, fs) {
+    /* Réglages pour que le SDR écoute un spot : fréquence (le centre suit s'il le faut), mode si on le sait. */
+    if (!spot || !(spot.hz > 0)) return null;
+    const args = tuneArgs(Math.round(spot.hz), center, fs);
+    const mode = SPOT_MODES[String(spot.qsyMode || "").toUpperCase()];
+    if (mode) args.mode = mode;
+    return args;
+  }
+
   function rateLabel(hz) {
     /* Largeur du SDR : « 2 MHz », « 2,048 MHz ». */
     return Number.isFinite(hz) ? String(+(hz / 1e6).toFixed(3)).replace(".", ",") + " MHz" : "—";
@@ -287,6 +299,6 @@
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
-                PALETTES, paletteLut, nextPalette, paletteName, rateLabel, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
+                PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -357,7 +357,7 @@ def test_cluster_manifest_has_no_right_on_the_rig():
     from trxstation.modules.manifest import load_manifest
     m = load_manifest(ROOT / "trxstation" / "modules" / "builtin" / "cluster" / "manifest.toml")
     assert m.entry == "trxstation.cluster.service"
-    assert not m.rights.commands and m.rights.events == frozenset({"freq_mode"}) and m.rights.client_messages
+    assert not m.rights.commands and m.rights.events == frozenset({"freq_mode", "sdr_window"}) and m.rights.client_messages
 
 
 def test_supervisor_gives_the_config_path_to_modules(tmp_path):

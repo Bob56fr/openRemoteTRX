@@ -150,6 +150,14 @@ test("palettes, largeur et antenne du SDR (étape 204)", () => {
   assert.notEqual(sdr.checkSettings({ fs: -5 }), "");
 });
 
+test("spot du Cluster écouté par le SDR (étape 205)", () => {
+  assert.deepEqual(sdr.spotListen({ hz: 7150000, qsyMode: "LSB" }, 7100000, 2000000), { dfreq_hz: 7150000, mode: "LSB" });
+  assert.deepEqual(sdr.spotListen({ hz: 7074000, qsyMode: "PKTUSB" }, 7100000, 2000000), { dfreq_hz: 7074000, mode: "USB" });
+  assert.deepEqual(sdr.spotListen({ hz: 145500000, qsyMode: "FM" }, 145000000, 2000000), { dfreq_hz: 145500000, mode: "NFM" });
+  assert.deepEqual(sdr.spotListen({ hz: 14025000, qsyMode: "" }, 7100000, 2000000), { center_hz: 14025000, dfreq_hz: 14025000 });
+  assert.equal(sdr.spotListen(null, 7100000, 2000000), null);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

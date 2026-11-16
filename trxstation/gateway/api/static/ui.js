@@ -1966,7 +1966,8 @@
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
       sdrState(st) { sdrRender(st); },                                         // module SDR : état (opérateurs)
-      sdrLine(data) { sdrDraw(data); },                                        // module SDR : ligne de waterfall
+      sdrLine(data) { sdrDraw(data); },
+      sdrSpots(data) { sdrOnSpots(data); },                                    // module Cluster : spots de la fenêtre du SDR                                        // module SDR : ligne de waterfall
       sdrStream(stream, track) { sdrAttach(stream, track); },                  // module SDR : son (seconde piste)
       freedvActivity() { fdvaRender(); },                                      // activité FreeDV (toutes les 10 s)
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
@@ -2851,6 +2852,9 @@
     // habituelle de fréquence (refusée pendant l'émission). Le SDR n'agit jamais sur le poste.
     const sdrx = root.TrxSdr || null;
     let sdrView = { range: sdrx ? sdrx.DEFAULT_VIEW.range : 50, floor: null }, sdrPicked = null, sdrLast = null;
+    const sdrSpotBook = sp ? new sp.SpotBook() : null;                            // spots du Cluster DX dans la fenêtre du SDR
+    let sdrSpotsOn = true, sdrSpotsDrawn = { c: null, s: null, at: 0, version: -1 };
+    try { sdrSpotsOn = store.get("trx.sdr.spots", "1") !== "0"; } catch (e) { sdrSpotsOn = true; }
     let sdrPalette = "theme", sdrLut = null;                                         // palette du waterfall du SDR (ce navigateur)
     try { sdrPalette = store.get("trx.sdr.palette", "theme") || "theme"; } catch (e) { sdrPalette = "theme"; }
     if (sdrx) sdrLut = sdrx.paletteLut(sdrPalette);
@@ -3032,6 +3036,52 @@
       g.putImageData(row, 0, 0);
       sdrAxis(data.c, data.s);
       sdrLast = { c: data.c, s: data.s };
+      // étiquettes refaites quand la fenêtre change, et toutes les 10 s (les spots pâlissent avec l'âge)
+      if (sdrSpotsDrawn.c !== data.c || sdrSpotsDrawn.s !== data.s || Date.now() - sdrSpotsDrawn.at > 10000) sdrDrawSpots();
+    }
+    function sdrDrawSpots() {
+      const layer = $("sdr-spot-layer");
+      layer.textContent = "";
+      sdrSpotsDrawn = { c: sdrLast ? sdrLast.c : null, s: sdrLast ? sdrLast.s : null, at: Date.now() };
+      $("sdr-spots").className = "chip" + (sdrSpotsOn ? " on" : "");
+      if (!sp || !sdrSpotBook || !sdrSpotsOn || !sdrLast || !(sdrLast.s > 0)) return;
+      const low = sdrLast.c - sdrLast.s / 2, high = sdrLast.c + sdrLast.s / 2, now = Date.now();
+      const visible = sdrSpotBook.visible(low, high);
+      const width = layer.clientWidth || $("sdr-wf").clientWidth || 0;
+      for (const s of visible) {
+        const line = el("div", "spot-line k-" + s.kind);
+        line.style.left = (((s.hz - low) / sdrLast.s) * 100).toFixed(2) + "%";
+        line.style.opacity = String(sp.opacity(sp.ageSeconds(s, now)) * 0.7);
+        layer.appendChild(line);
+      }
+      for (const tag of sp.layoutLabels(visible, low, high, width, { rows: 2, charPx: 7, padPx: 12 })) {
+        const first = sdrSpotBook.get(tag.ids[0]);
+        const age = first ? sp.ageSeconds(first, now) : 0;
+        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")
+                                    + (!tag.group && age <= sp.FRESH_S ? " fresh" : ""), tag.text);
+        button.style.left = tag.x.toFixed(1) + "px";
+        button.style.top = (2 + tag.row * 18) + "px";
+        if (!tag.group) button.style.opacity = String(sp.opacity(age));
+        const spots = tag.ids.map((id) => sdrSpotBook.get(id)).filter(Boolean);
+        button.title = spots.map((s) => s.dx + " " + s.khz.toFixed(1) + " kHz " + sp.modeLabel(s)).join("\n")
+                       + "\nToucher : le SDR écoute" + (spots.length > 1 ? " le premier" : "") + " (le TRX ne bouge pas)";
+        button.addEventListener("pointerdown", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });
+        button.addEventListener("dblclick", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });
+        button.addEventListener("click", (ev) => {
+          if (ev.stopPropagation) ev.stopPropagation();
+          const s = spots[0], st = client.sdrState || {};
+          const args = s ? sdrx.spotListen(s, st.center, st.fs) : null;
+          if (!args) return;
+          sdrSend(args);
+          ui.log("SDR sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz" + (args.mode ? " " + args.mode : "") + ").", "");
+        });
+        layer.appendChild(button);
+      }
+    }
+    function sdrOnSpots(data) {
+      if (!sp || !sdrSpotBook) return;
+      if (!sdrSpotBook.apply(Object.assign({}, data, { kind: "spots" }), Date.now())) return;
+      if ($("sec-sdr").open) sdrDrawSpots();
     }
     function sdrTune(hz) {
       /* Réglages pour écouter hz : le centre ne bouge que si hz sort de la largeur ENTIÈRE du SDR (avec le zoom, la
@@ -3049,6 +3099,7 @@
     if (sdrx) {
       $("sec-sdr").addEventListener("toggle", () => {
         if (!sdrOffered()) return;
+        if (sdrSpotBook && $("sec-sdr").open) sdrSpotBook.clear();                  // la station rejoue les spots à l'ouverture
         client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn"); }).catch(() => {});
       });
       const sdrCenterSet = () => {
@@ -3079,6 +3130,11 @@
       });
       $("sdr-rate").addEventListener("change", () => sdrSend({ rate: Number($("sdr-rate").value) }));
       $("sdr-range").addEventListener("click", () => { sdrView.range = sdrx.nextRange(sdrView.range); sdrRender(null); });
+      $("sdr-spots").addEventListener("click", () => {
+        sdrSpotsOn = !sdrSpotsOn;
+        try { store.set("trx.sdr.spots", sdrSpotsOn ? "1" : "0"); } catch (e) { /* sans stockage */ }
+        sdrDrawSpots();
+      });
       $("sdr-palette").addEventListener("click", () => {
         sdrPalette = sdrx.nextPalette(sdrPalette);
         sdrLut = sdrx.paletteLut(sdrPalette);

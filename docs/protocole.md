@@ -140,7 +140,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `net_pong` | réponse immédiate à la commande `net_ping` | `seq`, `t` (repris), `tr` (horloge monotone de la station) |
 | `net_event` | aux OPÉRATEURS : coupure close et diagnostiquée, profil VPN probablement partagé | `event` : `outage` (`outage` : `start_ms`, `end_ms` (heure Unix de la station), `duration_ms`, `diagnosis`, `basis`, `agent`, `net_type`, `kind` = `in_session` ou `disconnect`) ou `vpn_shared` (`warning` : `address`, `kind` = `same_time`, `alternate` ou `pattern`, `agents`, `since_ms`, `period_ms`) |
 | `freedv_event` | à TOUS les clients, visiteurs compris (station 0.122.0+, § 17) | `kind` : `callsign` (`callsign`, `snr_db` (entier ou `null`), `t` : heure Unix), `sequence` (fin d'une séquence de voix : `start`, `duration_s`, `note` de 1 à 5, `detail`, `callsigns`), `fault` (`cause` : décodeurs abandonnés après leurs relances, son du poste remis) |
-| `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte |
+| `module` | message d'un module (cluster DX…) | `module`, `data` (format propre au module : `docs/cluster-dx.md`) ; spots (`kind` « spots » : bande du poste ; « recent » : 30 derniers toutes bandes, depuis 0.56.0) seulement vue HF ouverte ; « sdr_spots » (0.156.0+) : même format que « spots », fenêtre du SDR, `scope` « sdr_view » = opérateurs qui affichent la rubrique SDR, rejoués à son ouverture |
 
 Les champs `functions` et `levels` de `state.rig` sont des tables ouvertes (selon le poste) ; ne compter que sur ce qu'annonce `hello.capabilities`.
 

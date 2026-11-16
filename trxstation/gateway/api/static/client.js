@@ -1532,6 +1532,10 @@
           if (this.ui.freedvActivity) this.ui.freedvActivity(data);
           return;
         }
+        if (data.kind === "sdr_spots") {                                // spots du Cluster DX dans la fenêtre du SDR
+          if (this.ui.sdrSpots) this.ui.sdrSpots(data);
+          return;
+        }
         if (data.kind === "sdr_line") {                                 // ligne du waterfall du SDR (rubrique ouverte)
           if (this.ui.sdrLine) this.ui.sdrLine(data);
           return;

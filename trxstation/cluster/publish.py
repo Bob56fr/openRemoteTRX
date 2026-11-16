@@ -16,6 +16,9 @@
 - `recent` : les 30 derniers spots TOUTES BANDES (« Tout afficher »), le plus
   récent en tête, renvoyés quand un spot arrive (au plus toutes les 5 s) ;
   même portée et même rejeu que les spots de la bande.
+- Spots du SDR (étape 205) : un second éditeur, `kind = "sdr_spots"`,
+  `scope = "sdr_view"` (opérateurs qui affichent la rubrique SDR), fenêtre =
+  celle du SDR (événement « sdr_window » de la passerelle : centre ± largeur/2).
 """
 
 from __future__ import annotations
@@ -59,9 +62,21 @@ def compact(s: Spot, now: float) -> dict:
     return out
 
 
+def sdr_window(data: dict) -> tuple[float, float] | None:
+    """(début, fin) en kHz de la fenêtre du SDR annoncée par la passerelle ; None si fermée ou illisible."""
+    if not isinstance(data, dict) or not data.get("on"):
+        return None
+    center, fs = data.get("center"), data.get("fs")
+    if (isinstance(center, bool) or isinstance(fs, bool) or not isinstance(center, (int, float))
+            or not isinstance(fs, (int, float)) or not 0 < fs <= 20e6 or not 0 < center < 3e9):
+        return None
+    return (center - fs / 2) / 1000.0, (center + fs / 2) / 1000.0
+
+
 class SpotPublisher:
-    def __init__(self, cache: SpotCache) -> None:
+    def __init__(self, cache: SpotCache, *, kind: str = "spots", scope: str = "hf_view") -> None:
         self.cache = cache
+        self.kind, self.scope = kind, scope
         self.window: tuple[float, float] | None = None
         self.sent: set[int] = set()
         self._upserts: dict[int, Spot] = {}
@@ -72,6 +87,12 @@ class SpotPublisher:
 
     def set_frequency(self, freq_hz: int | float | None) -> None:
         win = window_for(freq_hz)
+        if win != self.window:
+            self.window = win
+            self._need_snapshot = True
+
+    def set_window(self, win: tuple[float, float] | None) -> None:
+        """Fenêtre donnée directement (SDR) ; None = plus rien à envoyer."""
         if win != self.window:
             self.window = win
             self._need_snapshot = True
@@ -105,7 +126,7 @@ class SpotPublisher:
         if not upserts and not removed:
             return None
         self.sent = (self.sent - set(removed)) | {s.id for s in upserts}
-        return {"kind": "spots", "op": "delta", "scope": "hf_view", "retain": "delta",
+        return {"kind": self.kind, "op": "delta", "scope": self.scope, "retain": "delta",
                 "spots": [compact(s, now) for s in upserts], "removed": removed}
 
     def recent(self, now: float) -> dict | None:
@@ -124,5 +145,5 @@ class SpotPublisher:
         self._upserts.clear()
         self._need_snapshot = False
         self._last_snapshot = now
-        return {"kind": "spots", "op": "snapshot", "scope": "hf_view", "retain": "snapshot",
+        return {"kind": self.kind, "op": "snapshot", "scope": self.scope, "retain": "snapshot",
                 "window": [lo, hi], "spots": [compact(s, now) for s in spots]}

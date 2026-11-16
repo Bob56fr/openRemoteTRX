@@ -127,6 +127,38 @@ def test_bridge_keeps_recent_and_band_spots_apart(tmp_path):
     assert sorted((p["data"]["kind"], p["data"]["spots"][0]) for p in late.got) == [("recent", 9), ("spots", 1), ("spots", 2)]
 
 
+def test_sdr_window_gets_its_own_spots_for_operators_who_show_the_sdr(tmp_path):
+    assert pub.sdr_window({"on": True, "center": 7_100_000, "fs": 2_000_000}) == (6100.0, 8100.0)
+    for bad in ({"on": False}, {"on": True, "center": True, "fs": 2e6}, {"on": True, "center": 7e6, "fs": 0}, None):
+        assert pub.sdr_window(bad) is None
+    cache = SpotCache()
+    p = pub.SpotPublisher(cache, kind="sdr_spots", scope="sdr_view")
+    add(cache, 7150.0, "EA8AA", 0)
+    add(cache, 14205.0, "K1ABC", 0)
+    assert p.tick(0) is None                                    # SDR arrêté : rien
+    p.set_window(pub.sdr_window({"on": True, "center": 7_100_000, "fs": 2_000_000}))
+    snap = p.tick(1)
+    assert (snap["kind"], snap["scope"], snap["op"]) == ("sdr_spots", "sdr_view", "snapshot")
+    assert [s["dx"] for s in snap["spots"]] == ["EA8AA"]
+    # passerelle : fenêtre publiée aux modules, spots du SDR aux SEULS opérateurs qui affichent la rubrique SDR
+    bridge = ModuleBridge(make_cfg(tmp_path), FakeCtrl(), FakeLink(), clients=lambda: [], port=0)
+    events = []
+    bridge.bus = SimpleNamespace(publish=lambda name, data: events.append((name, data)))
+    state = {"kind": "sdr_state", "retain": "snapshot", "scope": "operators", "state": "running",
+             "center": 7_100_000, "fs": 2_000_000}
+    bridge.to_clients("sdr", state)
+    bridge.to_clients("sdr", state)                             # inchangée : pas republiée tout de suite
+    bridge.to_clients("sdr", {**state, "state": "error"})
+    assert events == [("sdr_window", {"on": True, "center": 7_100_000, "fs": 2_000_000}), ("sdr_window", {"on": False})]
+    bridge.to_clients("cluster", snap)
+    hf, sdr_op, sdr_visitor = Session(), [], []
+    bridge.on_hf_view(hf, True)
+    assert all(m["data"]["kind"] != "sdr_spots" for m in hf.got)
+    bridge.on_sdr_view(SimpleNamespace(listener=False, send=sdr_op.append), True)
+    bridge.on_sdr_view(SimpleNamespace(listener=True, send=sdr_visitor.append), True)
+    assert "sdr_spots" in [m["data"]["kind"] for m in sdr_op] and sdr_visitor == []
+
+
 def test_cb_spot_has_no_qsy_mode_guess_but_ssb_has():
     cache = SpotCache()
     s = add(cache, 27555.0, "14LG56", 0, comment="73", kind="cb")
@@ -260,7 +292,7 @@ def test_module_publishes_spots_of_the_rig_band(tmp_path, monkeypatch):
 def test_cluster_manifest_reads_the_frequency_but_commands_nothing():
     from trxstation.modules.manifest import load_manifest
     m = load_manifest(ROOT / "trxstation" / "modules" / "builtin" / "cluster" / "manifest.toml")
-    assert m.rights.events == frozenset({"freq_mode"}) and not m.rights.commands
+    assert m.rights.events == frozenset({"freq_mode", "sdr_window"}) and not m.rights.commands
 
 # ------------------------------------------------------------------ page
 
