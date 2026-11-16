@@ -2844,6 +2844,7 @@
         : state && state.state === "error" ? "en panne" : "";
       if (state && state.state) {
         if (document.activeElement !== $("sdr-center") && Number.isFinite(state.center)) $("sdr-center").value = sdrx.formatMHz(state.center, 4);
+        if (document.activeElement !== $("sdr-dfreq") && Number.isFinite(state.dfreq)) $("sdr-dfreq").value = sdrx.formatMHz(state.dfreq, 4);
         if (!sdrDragging("sdr-rf") && Number.isFinite(state.lna)) $("sdr-rf").value = String(sdrx.rfFromLna(state.lna));
         if (!sdrDragging("sdr-if") && Number.isFinite(state.gr)) $("sdr-if").value = String(sdrx.ifFromGr(state.gr));
         $("sdr-agc").checked = state.agc !== false;
@@ -2958,11 +2959,21 @@
         if (!sdrOffered()) return;
         client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail), "warn"); }).catch(() => {});
       });
-      $("sdr-center-set").addEventListener("click", () => {
+      const sdrCenterSet = () => {
         const hz = sdrx.parseMHz($("sdr-center").value);
         if (hz === null) { ui.log("SDR : fréquence centrale illisible (ex. 14.100 en MHz).", "warn"); return; }
         sdrSend({ center_hz: hz });
-      });
+      };
+      const sdrDfreqSet = () => {                  // fréquence à écouter ; le centre suit si elle sort de la fenêtre
+        const hz = sdrx.parseMHz($("sdr-dfreq").value);
+        if (hz === null) { ui.log("SDR : fréquence écoutée illisible (ex. 7.093 en MHz).", "warn"); return; }
+        const st = client.sdrState || {};
+        sdrSend(sdrx.tuneArgs(hz, sdrLast ? sdrLast.c : st.center, sdrLast ? sdrLast.s : 0));
+      };
+      $("sdr-center-set").addEventListener("click", sdrCenterSet);
+      $("sdr-dfreq-set").addEventListener("click", sdrDfreqSet);
+      $("sdr-center").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrCenterSet(); } });
+      $("sdr-dfreq").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrDfreqSet(); } });
       for (const id of ["sdr-rf", "sdr-if"]) {
         const send = () => {
           sdrSliderLabels();

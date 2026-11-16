@@ -293,6 +293,11 @@
               <input id="sdr-sql" type="range" min="0" max="30" step="1"> <span id="sdr-sql-val" class="sdr-val"></span></label>
             <label class="grow">Volume <input id="sdr-vol" type="range" min="0" max="100" step="1" value="80"></label>
           </div>
+          <div class="row">
+            <label title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre">Fréquence écoutée (MHz)
+              <input id="sdr-dfreq" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
+            <button id="sdr-dfreq-set" class="chip">Écouter cette fréquence</button>
+          </div>
           <p id="sdr-listen-info" class="note"></p>
         </div>
         <div class="row">

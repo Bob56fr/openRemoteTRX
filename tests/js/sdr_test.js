@@ -77,6 +77,13 @@ test("volume du SDR : courbe au carré, bornée", () => {
   assert.strictEqual(sdr.volumeOf("x"), 0);
 });
 
+test("fréquence écoutée saisie : centre déplacé seulement hors de la fenêtre", () => {
+  assert.deepStrictEqual(sdr.tuneArgs(7100000, 7093000, 1536000), { dfreq_hz: 7100000 });
+  assert.deepStrictEqual(sdr.tuneArgs(14200000, 7093000, 1536000), { center_hz: 14200000, dfreq_hz: 14200000 });
+  assert.deepStrictEqual(sdr.tuneArgs(7093000 + 760000, 7093000, 1536000), { center_hz: 7853000, dfreq_hz: 7853000 });
+  assert.deepStrictEqual(sdr.tuneArgs(7000000, undefined, 0), { center_hz: 7000000, dfreq_hz: 7000000 });
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

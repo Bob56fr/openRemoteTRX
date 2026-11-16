@@ -70,6 +70,13 @@
     return Number.isFinite(hz) ? (hz / 1e6).toFixed(digits === undefined ? 4 : digits) : "—";
   }
 
+  function tuneArgs(hz, center, span) {
+    /* Réglages pour écouter hz : la fréquence écoutée seule si elle est dans la fenêtre affichée (95 %), sinon le
+       centre aussi (le waterfall suit). center / span inconnus : on centre. */
+    if (Number.isFinite(center) && span > 0 && Math.abs(hz - center) <= span * 0.475) return { dfreq_hz: hz };
+    return { center_hz: hz, dfreq_hz: hz };
+  }
+
   function parseMHz(text) {
     /* « 14.100 », « 14,1 » ou « 14100 » (kHz si plus de 1000) -> Hz entier, ou null. */
     const s = String(text || "").trim().replace(",", ".");
@@ -171,6 +178,6 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf, tuneArgs };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);
