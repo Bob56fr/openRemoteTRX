@@ -118,6 +118,9 @@ class ControlSession:
         self.sdr_call: Callable[[dict], Awaitable] | None = None
         self.on_sdr_view: Callable[["ControlSession", bool], None] | None = None
         self.sdr_view = False                    # rubrique SDR affichée chez ce client : lignes de waterfall envoyées
+        self.sdr_listen = False                  # écoute du SDR (seconde piste audio) demandée par ce client
+        self.sdr_audio_offered = False           # cette connexion a une piste pour le son du SDR (posé par webrtc)
+        self.on_sdr_listen: Callable[[], None] | None = None   # PeerManager._sdr_listeners_changed
         self.on_operator_activity: Callable[[], None] | None = None
         self.capabilities, self._send = capabilities, send
         self.memories = memories
@@ -216,7 +219,8 @@ class ControlSession:
                    "netprobe": self.netprobe is not None,
                    "friends": self.friends_call is not None and not self.listener,
                    "freedv": self.freedv is not None,
-                   "sdr": self.sdr_call is not None and not self.listener}
+                   "sdr": self.sdr_call is not None and not self.listener,
+                   "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _replay_allowed(self) -> bool:
@@ -560,6 +564,16 @@ class ControlSession:
             self._result(cmd.id, False, reason="sdr_unavailable", detail="SDR non disponible")
             return
         action, args = cmd.params["action"], cmd.params["args"]
+        if action == "listen":                   # écoute du SDR : seconde piste de CETTE connexion (passerelle)
+            if not self.sdr_audio_offered:
+                self._result(cmd.id, False, reason="sdr_audio_unavailable",
+                             detail="son du SDR indisponible sur cette connexion (page à recharger ?)")
+                return
+            self.sdr_listen = args["on"]
+            if self.on_sdr_listen is not None:
+                self.on_sdr_listen()
+            self._result(cmd.id, True, action="listen", on=self.sdr_listen)
+            return
         if action == "watch":
             self.sdr_view = args["on"]
             self._result(cmd.id, True, action="watch", on=self.sdr_view)
@@ -630,7 +644,7 @@ class ControlSession:
             return
         if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
                 and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))
-                and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state"))):
+                and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state", "listen"))):
             try:
                 self.on_operator_activity()                      # statut « En RX » de la présence de groupe
             except Exception:

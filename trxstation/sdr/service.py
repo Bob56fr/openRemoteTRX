@@ -10,7 +10,8 @@ Il lance sdr-core (programme natif, processus enfant), lit ses trames (frames.py
      "code": ..., "detail": ..., "serial", "fs", "center", "lna", "gr", "ant", "rate", "bins", "overload", "drops",
      "gaps", "cpu", "restarts", "t"}
 Commandes d'un opérateur (droit client_commands, relayées par la passerelle) : « state », « set » (center_hz, lna, gr,
-rate, agc). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
+rate, agc, dfreq_hz, mode, dbw, sql). De la passerelle seulement : « audio » (quelqu'un écoute le SDR) ; le son démodulé
+part alors en UDP vers 127.0.0.1:[sdr] audio_port (paquets « ORSA », jeton dérivé du secret du module). Le module n'a AUCUN droit sur le poste et ne redémarre JAMAIS le service du fabricant (commun à la machine).
 Réglages choisis depuis la page gardés dans state_dir/sdr/last.json (jamais dans station.toml).
 
 À la main (essai, sans bus) :  python -m trxstation.sdr.service --config station.toml --once
@@ -34,7 +35,7 @@ from ..errors import codes
 from ..errors.emit import emit_event
 from ..paths import default_config_path
 from .devices import core_path
-from .frames import FrameError, FrameReader, Line
+from .frames import Audio, FrameError, FrameReader, Line
 
 log = logging.getLogger("trx.sdr")
 
@@ -49,7 +50,12 @@ STOP_GRACE_S = 3.0
 MAX_RATE = 15                  # le bus limite un module à 20 messages par seconde
 SET_LIMITS = {"center_hz": (1_000, 2_000_000_000), "lna": (0, 8), "gr": (20, 59), "rate": (1, MAX_RATE)}
 SET_BOOLS = ("agc",)           # AGC matériel de la FI
-SET_BOOLS = ("agc",)           # AGC matériel de la FI
+# Démodulation (lot S1b) : fréquence écoutée, mode, largeur du filtre, squelch (dB au-dessus du bruit, 0 = ouvert)
+SET_LIMITS.update({"dfreq_hz": (1_000, 2_000_000_000), "dbw": (100, 15_000), "sql": (0, 40)})
+MODES = ("AM", "NFM", "USB", "LSB", "CW")
+DEFAULT_DBW = {"AM": 8000, "NFM": 12500, "USB": 2700, "LSB": 2700, "CW": 500}
+AUDIO_MAGIC = b"ORSA"          # paquet de son vers la passerelle : magie, jeton (16), numéro (uint32), 960 int16
+AUDIO_TOKEN_BYTES = 16
 
 
 class SetRefused(ValueError):
@@ -63,18 +69,28 @@ class Settings:
     gr: int
     rate: int
     agc: bool = True
+    dfreq_hz: int = 0          # 0 = le centre
+    mode: str = "USB"
+    dbw: int = 2700
+    sql: int = 0
 
 
 def clean_settings(args: dict, current: Settings) -> Settings:
     """Nouveaux réglages demandés par un opérateur ; SetRefused (message en français) si l'un est hors limites."""
-    if not isinstance(args, dict) or set(args) - set(SET_LIMITS) - set(SET_BOOLS):
-        raise SetRefused(f"réglages permis : {', '.join([*SET_LIMITS, *SET_BOOLS])}")
+    if not isinstance(args, dict) or set(args) - set(SET_LIMITS) - set(SET_BOOLS) - {"mode"}:
+        raise SetRefused(f"réglages permis : {', '.join([*SET_LIMITS, *SET_BOOLS, 'mode'])}")
     values = asdict(current)
     for name in SET_BOOLS:
         if name in args:
             if not isinstance(args[name], bool):
                 raise SetRefused(f"{name} : true ou false")
             values[name] = args[name]
+    if "mode" in args:
+        if args["mode"] not in MODES:
+            raise SetRefused(f"mode : un de {', '.join(MODES)}")
+        values["mode"] = args["mode"]
+        if "dbw" not in args:
+            values["dbw"] = DEFAULT_DBW[args["mode"]]     # largeur habituelle du nouveau mode
     for name, (lo, hi) in SET_LIMITS.items():
         if name not in args:
             continue
@@ -85,8 +101,21 @@ def clean_settings(args: dict, current: Settings) -> Settings:
     return Settings(**values)
 
 
+def listened(sd: cfgmod.Sdr, s: Settings) -> int:
+    """Fréquence écoutée : celle choisie si elle tient dans la largeur du SDR (95 %), sinon le centre."""
+    half = sd.sample_rate_hz * 0.475
+    return s.dfreq_hz if s.dfreq_hz and abs(s.dfreq_hz - s.center_hz) <= half else s.center_hz
+
+
+def audio_token(secret: str) -> bytes:
+    """Jeton des paquets de son, dérivé du secret du module (la passerelle le dérive de la même clé)."""
+    import hashlib
+    import hmac
+    return hmac.new(secret.encode("ascii"), b"sdr-audio", hashlib.sha256).digest()[:AUDIO_TOKEN_BYTES]
+
+
 def core_args(sd: cfgmod.Sdr, s: Settings) -> list[str]:
-    return ["--serial", sd.serial, "--fs", str(sd.sample_rate_hz), "--bw", str(cfgmod.SDR_RATES[sd.sample_rate_hz]),
+    return ["--dfreq", str(listened(sd, s)), "--mode", s.mode, "--dbw", str(s.dbw), "--sql", str(s.sql)] + ["--serial", sd.serial, "--fs", str(sd.sample_rate_hz), "--bw", str(cfgmod.SDR_RATES[sd.sample_rate_hz]),
             "--freq", str(s.center_hz), "--lna", str(s.lna), "--gr", str(s.gr), "--ant", sd.antenna,
             "--fft", str(sd.fft_size), "--bins", str(sd.bins), "--rate", str(s.rate), "--agc", str(int(s.agc))]
 
@@ -107,7 +136,8 @@ def proc_cpu_seconds(pid: int) -> float | None:
 
 class SdrService:
     def __init__(self, sd: cfgmod.Sdr, state_dir: Path, bus=None, *, core: str | None = None,
-                 core_prefix: list[str] | None = None, clock=time.time, emit=emit_event) -> None:
+                 core_prefix: list[str] | None = None, clock=time.time, emit=emit_event,
+                 audio_secret: str = "", audio_sink=None) -> None:
         self.sd, self.bus, self.clock, self.emit = sd, bus, clock, emit
         self.core = core if core is not None else core_path(sd.core_path)
         self.core_prefix = list(core_prefix or [])     # essais : [python, -m, trxstation.devtools.fake_sdr_core]
@@ -122,6 +152,12 @@ class SdrService:
         self._last_loss = (0, 0)
         self._loss_reported_at = -1e9
         self._stopping = False
+        # son démodulé vers la passerelle : demandé par elle (action « audio ») quand un opérateur écoute
+        self.audio_on = False
+        self._audio_seq = 0
+        self._audio_token = audio_token(audio_secret) if audio_secret else b""
+        self._audio_sink = audio_sink          # essais : fonction(paquet) ; sinon UDP vers 127.0.0.1:audio_port
+        self._udp = None
 
     # ------------------------------------------------------------- réglages gardés
     def _load_settings(self) -> Settings:
@@ -129,7 +165,9 @@ class SdrService:
                         self.sd.agc)
         try:
             data = json.loads((self.folder / "last.json").read_text(encoding="utf-8"))
-            return clean_settings({k: v for k, v in data.items() if k in SET_LIMITS or k in SET_BOOLS}, base)
+            kept = {k: v for k, v in data.items() if (k in SET_LIMITS or k in SET_BOOLS or k == "mode")
+                    and not (k == "dfreq_hz" and not v)}          # 0 = le centre
+            return clean_settings(kept, base)
         except (OSError, ValueError, TypeError, AttributeError):
             return base
 
@@ -146,6 +184,7 @@ class SdrService:
     def snapshot(self) -> dict:
         s = self.settings
         return {**self.state, "center": s.center_hz, "lna": s.lna, "gr": s.gr, "rate": s.rate, "agc": s.agc,
+                "dfreq": listened(self.sd, s), "mode": s.mode, "dbw": s.dbw, "sql": s.sql, "audio": self.audio_on,
                 "restarts": self.restarts, "t": int(self.clock())}
 
     async def publish_state(self) -> None:
@@ -168,11 +207,20 @@ class SdrService:
         action = data.get("action")
         if action == "state":
             return self.snapshot()
+        if action == "audio":                  # de la PASSERELLE seulement (un client ne peut pas l'envoyer)
+            on = bool((data.get("args") or {}).get("on"))
+            if on != self.audio_on:
+                self.audio_on = on
+                await self._write_core([f"audio {int(on)}"])
+                await self.publish_state()
+            return {"audio": self.audio_on}
         if action == "set":
             try:
                 new = clean_settings(data.get("args") or {}, self.settings)
             except SetRefused as exc:
                 raise CallRefused("sdr_invalid", str(exc)) from None
+            if "dfreq_hz" in (data.get("args") or {}) and listened(self.sd, new) != new.dfreq_hz:
+                raise CallRefused("sdr_invalid", "fréquence écoutée hors de la largeur du SDR : déplacer le centre")
             old, self.settings = self.settings, new
             await self._command_core(old, new)
             self._save_settings()
@@ -190,6 +238,13 @@ class SdrService:
             lines.append(f"rate {new.rate}")
         if new.agc != old.agc:
             lines.append(f"agc {int(new.agc)}")
+        if (listened(self.sd, new), new.mode, new.dbw) != (listened(self.sd, old), old.mode, old.dbw):
+            lines.append(f"demod {listened(self.sd, new)} {new.mode} {new.dbw}")
+        if new.sql != old.sql:
+            lines.append(f"sql {new.sql}")
+        await self._write_core(lines)
+
+    async def _write_core(self, lines: list[str]) -> None:
         proc = self.proc
         if not lines or proc is None or proc.stdin is None or proc.returncode is not None:
             return                         # pris en compte au prochain lancement
@@ -225,9 +280,14 @@ class SdrService:
                     if isinstance(frame, Line):
                         await self._send(line_message(frame, self.clock()))
                         continue
+                    if isinstance(frame, Audio):
+                        self._send_audio(frame.pcm)
+                        continue
                     kind = frame.get("t")
                     if kind == "started":
                         self._set_state("running")
+                        if self.audio_on:
+                            await self._write_core(["audio 1"])     # cœur relancé pendant une écoute
                         log.info("SDR %s ouvert (API %s)", frame.get("serial"), frame.get("api"))
                         await self.publish_state()
                     elif kind == "status":
@@ -238,6 +298,9 @@ class SdrService:
                             self.state["overloads"] = self.state.get("overloads", 0) + 1
                         dirty = dirty or on != self.state["overload"]
                         self.state["overload"] = on
+                    elif kind == "event" and frame.get("name") == "squelch":
+                        self.state["sql_open"] = int(bool(frame.get("open")))
+                        dirty = True
                     elif kind == "error":
                         error = frame
                 # une surcharge du CAN peut basculer des dizaines de fois par seconde : état publié au plus 1 fois/s
@@ -254,9 +317,12 @@ class SdrService:
         return rc, error
 
     def _on_status(self, st: dict) -> None:
-        for key in ("overload", "drops", "gaps"):
+        for key in ("overload", "drops", "gaps", "sql_open"):
             if isinstance(st.get(key), int):
                 self.state[key] = st[key]
+        for key in ("chan_db", "noise_db"):                    # puissance du canal écouté et bruit estimé (dBFS)
+            v = st.get(key)
+            self.state[key] = v if isinstance(v, (int, float)) and v > -190 else None
         gr_now, gain = st.get("gr_now"), st.get("gain_db")      # gain réellement appliqué (AGC de la FI)
         self.state["gr_now"] = gr_now if isinstance(gr_now, int) and gr_now >= 0 else None
         self.state["gain_db"] = gain if isinstance(gain, (int, float)) and gain else None
@@ -267,6 +333,24 @@ class SdrService:
             self._loss_reported_at = now
             self.emit(codes.ORT_6005, logger=log, perdus=loss[0], trous=loss[1])
         self._last_loss = loss
+
+    def _send_audio(self, pcm: bytes) -> None:
+        """20 ms de son vers la passerelle (UDP local) ; perdu sans dommage si elle ne l'attend pas."""
+        if not self.audio_on or not self._audio_token:
+            return
+        self._audio_seq = (self._audio_seq + 1) & 0xFFFFFFFF
+        packet = AUDIO_MAGIC + self._audio_token + self._audio_seq.to_bytes(4, "little") + pcm
+        if self._audio_sink is not None:
+            self._audio_sink(packet)
+            return
+        try:
+            if self._udp is None:
+                import socket
+                self._udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self._udp.setblocking(False)
+            self._udp.sendto(packet, ("127.0.0.1", self.sd.audio_port))
+        except OSError:
+            pass                               # passerelle arrêtée ou tampon plein : le paquet suivant suivra
 
     def _core_cpu(self) -> float | None:
         if self.proc is None:
@@ -417,7 +501,7 @@ def main(argv: list[str] | None = None) -> int:
         bus = ModuleClient.from_env()
     log.info("démarrage : SDR %s, %d Hz", cfg.sdr.serial, cfg.sdr.sample_rate_hz)
     try:
-        asyncio.run(SdrService(cfg.sdr, state_dir, bus).run())
+        asyncio.run(SdrService(cfg.sdr, state_dir, bus, audio_secret=os.environ.get("TRX_MODULE_SECRET", "")).run())
     except KeyboardInterrupt:
         pass
     return 0

@@ -6,7 +6,8 @@ Chaque trame : en-tête de 12 octets « ORS1 », type (uint32 petit-boutiste), l
 - type 1, ligne de waterfall : centre (float64, Hz), largeur (float64, Hz), cases (uint16), réservé (uint16),
   puis une valeur uint8 par case, de la fréquence la plus basse à la plus haute ;
   niveau en dBFS = DB_MIN + valeur × DB_STEP (0 = -150 dBFS, 255 = -22,5 dBFS) ;
-- type 2, objet JSON (UTF-8) : « started », « status », « event », « error », « stopped ».
+- type 2, objet JSON (UTF-8) : « started », « status », « event », « error », « stopped » ;
+- type 3, son démodulé : 960 échantillons int16 (20 ms à 48 kHz), seulement après « audio 1 ».
 Calculs purs : aucun accès au matériel ni au réseau.
 """
 from __future__ import annotations
@@ -18,7 +19,8 @@ from dataclasses import dataclass
 MAGIC = b"ORS1"
 HEADER = struct.Struct("<4sII")
 LINE_HEAD = struct.Struct("<ddHH")
-TYPE_LINE, TYPE_JSON = 1, 2
+TYPE_LINE, TYPE_JSON, TYPE_AUDIO = 1, 2, 3
+AUDIO_BLOCK = 960            # échantillons int16 à 48 kHz (20 ms) par trame de son
 MAX_PAYLOAD = 1 << 16          # une ligne de 16 384 cases + son en-tête tient largement
 DB_MIN, DB_STEP = -150.0, 0.5
 
@@ -38,11 +40,16 @@ class Line:
         return len(self.values)
 
 
+@dataclass(frozen=True)
+class Audio:
+    pcm: bytes                 # AUDIO_BLOCK échantillons int16 petit-boutistes, mono, 48 kHz
+
+
 def level_db(value: int) -> float:
     return DB_MIN + value * DB_STEP
 
 
-def parse_payload(kind: int, payload: bytes) -> Line | dict:
+def parse_payload(kind: int, payload: bytes) -> Line | dict | Audio:
     if kind == TYPE_LINE:
         if len(payload) < LINE_HEAD.size:
             raise FrameError("ligne trop courte")
@@ -51,6 +58,10 @@ def parse_payload(kind: int, payload: bytes) -> Line | dict:
         if bins != len(values) or not bins:
             raise FrameError(f"ligne de {len(values)} cases annoncée {bins}")
         return Line(center, span, bytes(values))
+    if kind == TYPE_AUDIO:
+        if len(payload) != 2 * AUDIO_BLOCK:
+            raise FrameError(f"son de {len(payload)} octets (attendu {2 * AUDIO_BLOCK})")
+        return Audio(bytes(payload))
     if kind == TYPE_JSON:
         try:
             obj = json.loads(payload.decode("utf-8"))
@@ -68,9 +79,9 @@ class FrameReader:
     def __init__(self) -> None:
         self._buf = bytearray()
 
-    def feed(self, data: bytes) -> list[Line | dict]:
+    def feed(self, data: bytes) -> list[Line | dict | Audio]:
         self._buf += data
-        out: list[Line | dict] = []
+        out: list[Line | dict | Audio] = []
         while len(self._buf) >= HEADER.size:
             magic, kind, length = HEADER.unpack_from(self._buf)
             if magic != MAGIC:

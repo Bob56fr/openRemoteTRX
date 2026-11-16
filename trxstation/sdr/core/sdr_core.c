@@ -36,6 +36,9 @@
 #define FRAME_MAGIC "ORS1"
 #define FRAME_LINE 1
 #define FRAME_JSON 2
+#define FRAME_AUDIO 3         // son démodulé : 960 échantillons int16 à 48 kHz (20 ms)
+#define AUDIO_RATE 48000
+#define AUDIO_BLOCK 960
 #define DB_MIN (-150.0f)      // dBFS de la valeur 0 d'une case
 #define DB_STEP (0.5f)        // dB par pas (255 = -22,5 dBFS)
 #define RING_BITS 21          // 2 097 152 échantillons complexes en attente au plus
@@ -112,6 +115,143 @@ static void ring_push(const int16_t *xi, const int16_t *xq, unsigned int n) {
     g_samples += n;
     pthread_cond_signal(&g_cond);
     pthread_mutex_unlock(&g_lock);
+}
+
+// ---------------------------------------------------------------- démodulation d'UN canal (lot S1b)
+// Chaîne : NCO (canal ramené près de 0) -> rééchantillonnage vers 48 kHz -> filtre de canal (passe-bande complexe par
+// décalage, passe-bas, décalage inverse) -> squelch (puissance du canal au-dessus du bruit estimé) -> AGC (sauf FM) ->
+// démodulation (AM : enveloppe ; FM : discriminateur ; BLU / CW : partie réelle) -> int16, blocs de 20 ms.
+enum { M_AM = 0, M_NFM, M_USB, M_LSB, M_CW };
+static const char *MODE_NAMES[] = { "AM", "NFM", "USB", "LSB", "CW" };
+#define CW_TONE_HZ 700.0
+static pthread_mutex_t g_dlock = PTHREAD_MUTEX_INITIALIZER;
+static int g_audio = 0;                  // démodulation demandée (quelqu'un écoute)
+static double g_dfreq = -1;              // fréquence écoutée (Hz) ; -1 = le centre
+static int g_mode = M_USB, g_dbw = 2700; // mode et largeur du filtre (Hz)
+static double g_sql = 0;                 // seuil du squelch en dB au-dessus du bruit ; 0 = toujours ouvert
+static int g_dirty = 1;                  // réglages changés : chaîne refaite par le fil principal
+static volatile int g_sql_open = 1;
+static volatile double g_chan_db = -200, g_noise_db = -200;
+
+static struct {
+    int ready;
+    nco_crcf nco, shift, unshift;            // shift et unshift avancent ensemble (phase cohérente)
+    msresamp_crcf rs;
+    firfilt_crcf lpf;
+    agc_crcf agc;
+    freqdem fm;
+    double center_shift;                 // décalage du passe-bande (Hz) à 48 kHz
+    int mode;
+    float complex *x, *y, *z;            // tampons
+    unsigned int cap;
+    int16_t out[AUDIO_BLOCK];
+    unsigned int nout;
+    float dc;                            // AM : suppression de la composante continue
+    double hang;                         // squelch : maintien après la fermeture
+} D;
+
+static int mode_of(const char *name) {
+    for (int i = 0; i < 5; i++) if (!strcmp(name, MODE_NAMES[i])) return i;
+    return -1;
+}
+
+static void demod_free(void) {
+    if (!D.ready) return;
+    nco_crcf_destroy(D.nco); nco_crcf_destroy(D.shift); nco_crcf_destroy(D.unshift); msresamp_crcf_destroy(D.rs);
+    firfilt_crcf_destroy(D.lpf); agc_crcf_destroy(D.agc); freqdem_destroy(D.fm);
+    D.ready = 0;
+}
+
+static void demod_build(void) {
+    /* Refait la chaîne d'après les réglages (fil principal seulement). */
+    pthread_mutex_lock(&g_dlock);
+    double dfreq = g_dfreq; int mode = g_mode, bw = g_dbw;
+    g_dirty = 0;
+    pthread_mutex_unlock(&g_dlock);
+    demod_free();
+    double tone = mode == M_CW ? CW_TONE_HZ : 0.0;               // CW : porteuse entendue à 700 Hz
+    double off = dfreq - g_freq - tone;
+    D.nco = nco_crcf_create(LIQUID_NCO);
+    nco_crcf_set_frequency(D.nco, (float)(2.0 * M_PI * off / g_fs));
+    D.rs = msresamp_crcf_create((float)(AUDIO_RATE / g_fs), 60.0f);
+    double lo, hi;                                               // passe-bande du canal à 48 kHz (Hz)
+    switch (mode) {
+    case M_USB: lo = 300; hi = bw; break;
+    case M_LSB: lo = -bw; hi = -300; break;
+    case M_CW:  lo = CW_TONE_HZ - bw / 2.0; hi = CW_TONE_HZ + bw / 2.0; break;
+    default:    lo = -bw / 2.0; hi = bw / 2.0; break;           // AM, FM
+    }
+    D.center_shift = (lo + hi) / 2.0;
+    float fc = (float)((hi - lo) / 2.0 / AUDIO_RATE);
+    D.lpf = firfilt_crcf_create_kaiser(129, fc < 0.49f ? fc : 0.49f, 60.0f, 0.0f);
+    D.shift = nco_crcf_create(LIQUID_NCO);
+    nco_crcf_set_frequency(D.shift, (float)(2.0 * M_PI * D.center_shift / AUDIO_RATE));
+    D.unshift = nco_crcf_create(LIQUID_NCO);
+    nco_crcf_set_frequency(D.unshift, (float)(2.0 * M_PI * D.center_shift / AUDIO_RATE));
+    D.agc = agc_crcf_create();
+    agc_crcf_set_bandwidth(D.agc, 1e-3f);                        // AGC assez lent (BLU) ; l'AM et la CW s'en accommodent
+    agc_crcf_set_signal_level(D.agc, 1e-2f);
+    D.fm = freqdem_create((float)(bw / 2.0 / AUDIO_RATE));
+    D.mode = mode; D.dc = 0; D.nout = 0; D.hang = 0;
+    D.ready = 1;
+}
+
+static void demod_feed(const float complex *raw, unsigned int n) {
+    /* n échantillons bruts du SDR -> son à 48 kHz, envoyé par blocs de 20 ms. */
+    if (g_dirty || !D.ready) demod_build();
+    unsigned int need = n + 64;
+    if (D.cap < need) {
+        free(D.x); free(D.y); free(D.z);
+        D.x = malloc(sizeof(float complex) * need); D.y = malloc(sizeof(float complex) * need);
+        D.z = malloc(sizeof(float complex) * need); D.cap = need;
+    }
+    nco_crcf_mix_block_down(D.nco, (float complex *)raw, D.x, n);
+    unsigned int m = 0;
+    msresamp_crcf_execute(D.rs, D.x, n, D.y, &m);
+    if (!m) return;
+    // filtre de canal : décalage vers 0, passe-bas, décalage inverse
+    nco_crcf_mix_block_down(D.shift, D.y, D.z, m);
+    firfilt_crcf_execute_block(D.lpf, D.z, m, D.z);
+    double p = 0;
+    for (unsigned int i = 0; i < m; i++) p += crealf(D.z[i]) * crealf(D.z[i]) + cimagf(D.z[i]) * cimagf(D.z[i]);
+    double db = 10.0 * log10(p / m + 1e-30);                     // dBFS (entrée normalisée)
+    g_chan_db = db;
+    double dt = (double)m / AUDIO_RATE;
+    if (g_noise_db < -190 || db < g_noise_db) g_noise_db = db;   // bruit : suit les creux tout de suite,
+    else g_noise_db += 1.0 * dt;                                 // remonte lentement (1 dB/s)
+    int open = g_sql_open;
+    if (g_sql <= 0) open = 1;
+    else if (db > g_noise_db + g_sql) { open = 1; D.hang = 0.3; }
+    else if (db < g_noise_db + g_sql - 3.0) { D.hang -= dt; if (D.hang <= 0) open = 0; }
+    if (open != g_sql_open) {
+        g_sql_open = open;
+        json_frame("{\"t\":\"event\",\"name\":\"squelch\",\"open\":%d}", open);
+    }
+    nco_crcf_mix_block_up(D.unshift, D.z, D.y, m);
+    for (unsigned int i = 0; i < m; i++) {
+        float s;
+        if (D.mode == M_NFM) {
+            freqdem_demodulate(D.fm, D.y[i], &s);
+            s *= 0.5f;
+        } else {
+            float complex a;
+            agc_crcf_execute(D.agc, D.y[i], &a);
+            if (D.mode == M_AM) {
+                float e = cabsf(a);
+                D.dc += 0.001f * (e - D.dc);
+                s = (e - D.dc) * 0.5f;
+            } else {
+                s = crealf(a) * 0.5f;
+            }
+        }
+        if (!open) s = 0;
+        s = s > 1.0f ? 1.0f : s < -1.0f ? -1.0f : s;
+        D.out[D.nout++] = (int16_t)(s * 32000.0f);
+        if (D.nout == AUDIO_BLOCK) {
+            write_frame(FRAME_AUDIO, D.out, sizeof D.out, NULL, 0);
+            D.nout = 0;
+        }
+    }
 }
 
 // ---------------------------------------------------------------- SDRplay
@@ -252,11 +392,23 @@ static void *command_thread(void *arg) {
     char line[256];
     while (!g_stop && fgets(line, sizeof line, stdin)) {
         double hz; int lna, gr; double rate;
+        char mode[8]; int bw, on; double sql;
         if (sscanf(line, "freq %lf", &hz) == 1 && hz >= 1e3 && hz <= 2e9) {
-            g_freq = hz;
+            pthread_mutex_lock(&g_dlock);
+            g_freq = hz; g_dirty = 1;                 // le canal écouté est repéré par rapport au centre
+            pthread_mutex_unlock(&g_dlock);
 #ifndef SDR_NO_SDRPLAY
             api_set_freq(hz);
 #endif
+        } else if (sscanf(line, "demod %lf %7s %d", &hz, mode, &bw) == 3 && mode_of(mode) >= 0 && bw >= 100
+                   && bw <= 15000 && fabs(hz - g_freq) <= g_fs / 2) {
+            pthread_mutex_lock(&g_dlock);
+            g_dfreq = hz; g_mode = mode_of(mode); g_dbw = bw; g_dirty = 1;
+            pthread_mutex_unlock(&g_dlock);
+        } else if (sscanf(line, "sql %lf", &sql) == 1 && sql >= 0 && sql <= 40) {
+            g_sql = sql;
+        } else if (sscanf(line, "audio %d", &on) == 1 && (on == 0 || on == 1)) {
+            g_audio = on;
         } else if (sscanf(line, "gain %d %d", &lna, &gr) == 2 && lna >= 0 && lna <= 9 && gr >= 20 && gr <= 59) {
             g_lna = lna; g_gr = gr;
 #ifndef SDR_NO_SDRPLAY
@@ -302,13 +454,19 @@ static int parse_args(int argc, char **argv, int *list) {
         else if (!strcmp(a, "--bins")) g_bins = atoi(v);
         else if (!strcmp(a, "--rate")) g_rate = atof(v);
         else if (!strcmp(a, "--agc")) g_agc = atoi(v);
+        else if (!strcmp(a, "--dfreq")) g_dfreq = atof(v);
+        else if (!strcmp(a, "--mode")) g_mode = mode_of(v);
+        else if (!strcmp(a, "--dbw")) g_dbw = atoi(v);
+        else if (!strcmp(a, "--sql")) g_sql = atof(v);
         else { fprintf(stderr, "argument inconnu : %s\n", a); return 0; }
     }
     if (*list) return 1;
+    if (g_dfreq < 0) g_dfreq = g_freq;
     if (!g_serial && !g_iq_file) { fprintf(stderr, "--serial (ou --iq-file) obligatoire\n"); return 0; }
     if (g_fs < 2e5 || g_fs > 10e6 || g_freq < 1e3 || g_freq > 2e9 || g_lna < 0 || g_lna > 9 || g_gr < 20 || g_gr > 59
         || !is_pow2(g_fft) || g_fft < 512 || g_fft > 16384 || !is_pow2(g_bins) || g_bins < 128 || g_bins > g_fft
-        || g_rate < 1 || g_rate > 25 || (g_ant != 'A' && g_ant != 'B') || (g_agc != 0 && g_agc != 1)) {
+        || g_rate < 1 || g_rate > 25 || (g_ant != 'A' && g_ant != 'B') || (g_agc != 0 && g_agc != 1)
+        || g_mode < 0 || g_dbw < 100 || g_dbw > 15000 || g_sql < 0 || g_sql > 40 || fabs(g_dfreq - g_freq) > g_fs / 2) {
         fprintf(stderr, "réglage hors limites\n");
         return 0;
     }
@@ -348,6 +506,7 @@ int main(int argc, char **argv) {
     float complex *in = malloc(sizeof(float complex) * N), *out = malloc(sizeof(float complex) * N);
     float *win = malloc(sizeof(float) * N), *acc = calloc(N, sizeof(float));
     uint8_t *line = malloc(B);
+    float complex *raw = malloc(sizeof(float complex) * N);
     fftplan plan = fft_create_plan(N, in, out, LIQUID_FFT_FORWARD, 0);
     double wsum = 0;
     for (int i = 0; i < N; i++) { win[i] = 0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / (N - 1)); wsum += win[i]; }
@@ -380,6 +539,13 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < N; i++) acc[i] += crealf(out[i]) * crealf(out[i]) + cimagf(out[i]) * cimagf(out[i]);
                 nacc++;
             }
+            if (g_audio) {                                    // son démodulé : TOUS les échantillons, pas une FFT sur n
+                for (int i = 0; i < N; i++) {
+                    uint64_t k = (g_tail + i) & (RING_SIZE - 1);
+                    raw[i] = (g_ring[2 * k] + I * g_ring[2 * k + 1]) * (1.0f / 32768.0f);   // pleine échelle = 1
+                }
+                demod_feed(raw, (unsigned int)N);
+            }
             pthread_mutex_lock(&g_lock);
             g_tail += N;
             pthread_mutex_unlock(&g_lock);
@@ -407,9 +573,12 @@ int main(int argc, char **argv) {
             last_status = t;
             json_frame("{\"t\":\"status\",\"fs\":%.0f,\"freq\":%.0f,\"lna\":%d,\"gr\":%d,\"ant\":\"%c\",\"rate\":%.1f,"
                        "\"bins\":%d,\"agc\":%d,\"gr_now\":%d,\"gain_db\":%.1f,\"overload\":%d,\"samples\":%llu,"
-                       "\"drops\":%llu,\"gaps\":%llu}",
+                       "\"drops\":%llu,\"gaps\":%llu,\"audio\":%d,\"dfreq\":%.0f,\"mode\":\"%s\",\"dbw\":%d,"
+                       "\"sql\":%.1f,\"sql_open\":%d,\"chan_db\":%.1f,\"noise_db\":%.1f}",
                        g_fs, g_freq, g_lna, g_gr, g_ant, g_rate, B, g_agc, g_gr_now, g_gain_db, g_overload,
-                       (unsigned long long)g_samples, (unsigned long long)g_drops, (unsigned long long)g_gaps);
+                       (unsigned long long)g_samples, (unsigned long long)g_drops, (unsigned long long)g_gaps,
+                       g_audio, g_dfreq, MODE_NAMES[g_mode], g_dbw, g_sql, g_sql_open,
+                       g_audio ? g_chan_db : -200.0, g_audio ? g_noise_db : -200.0);
         }
     }
 #ifndef SDR_NO_SDRPLAY

@@ -94,6 +94,41 @@ class RxTrack(MediaStreamTrack):
         super().stop()
 
 
+class SdrTrack(MediaStreamTrack):
+    """Son du module SDR vers UN opérateur (seconde piste audio, lot S1b). Cadencée par sa propre horloge (20 ms) :
+    silence quand il n'écoute pas, pendant toute émission (fondu, gateway/audio/sdr_audio.py) ou en cas de manque."""
+
+    kind = "audio"
+
+    def __init__(self, audio, listening):
+        super().__init__()
+        self._audio, self._listening = audio, listening      # listening : () -> bool (la session de ce client)
+        self._sub = audio.subscribe()
+        self._pts, self._t0 = 0, None
+
+    async def recv(self):
+        if self.readyState != "live":
+            raise MediaStreamError
+        loop = asyncio.get_running_loop()
+        if self._t0 is None:
+            self._t0 = loop.time()
+        due = self._t0 + self._pts / SAMPLE_RATE
+        wait = due - loop.time()
+        if wait > 0:
+            await asyncio.sleep(wait)
+        elif wait < -0.2:
+            self._t0 += -wait                                 # boucle en retard : on ne rattrape pas en rafale
+        pcm = self._audio.next_block(self._sub, bool(self._listening()))
+        frame = pcm_to_frame(pcm)
+        frame.pts, frame.time_base = self._pts, Fraction(1, SAMPLE_RATE)
+        self._pts += FRAME_SAMPLES
+        return frame
+
+    def stop(self) -> None:
+        self._audio.unsubscribe(self._sub)
+        super().stop()
+
+
 async def receive_tx_audio(track, client_id: str, gate) -> None:
     """Micro d'un client -> porte d'émission (ou route de Breizh devant elle : même `push`). Consomme toujours la piste
     (sinon elle s'engorge)."""
@@ -125,6 +160,7 @@ class _Peer:
     role: str = OPERATOR
     session: ControlSession | None = None
     rx_track: RxTrack | None = None
+    sdr_track: SdrTrack | None = None
     tx_task: asyncio.Task | None = None
     spectrum_channel: object | None = None
     closed: bool = False
@@ -153,6 +189,7 @@ class PeerManager:
         self.on_hf_view = None                  # (session, ouverte) -> None ; posé par gateway/main (ModuleBridge.replay)
         self.friends_call = None                # présence de groupe : (données) -> résultat du module (ModuleBridge.call)
         self.sdr_call = None                    # module SDR : (données) -> résultat du module (ModuleBridge.call)
+        self.sdr_audio = None                   # SdrAudio : son du module SDR (seconde piste des opérateurs), ou None
         self.on_sdr_view = None                 # (session, ouverte) -> None : état du SDR rejoué (ModuleBridge.on_sdr_view)
         self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
         self.peers: dict[str, _Peer] = {}
@@ -209,6 +246,8 @@ class PeerManager:
                 session.friends_call = self.friends_call
                 session.sdr_call = self.sdr_call
                 session.on_sdr_view = self.on_sdr_view
+                session.sdr_audio_offered = peer.sdr_track is not None
+                session.on_sdr_listen = self._sdr_listeners_changed
                 session.on_operator_activity = self.on_operator_activity
             peer.session = session
 
@@ -238,6 +277,13 @@ class PeerManager:
             await pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type=sdp_type))
             peer.rx_track = RxTrack(self.pipeline.hub, self._listener_mix() if role == LISTENER else None)
             pc.addTrack(peer.rx_track)
+            # Seconde piste : son du SDR, pour un OPÉRATEUR dont l'offre prévoit une seconde réception audio
+            # (page 0.142.0+) ; sinon rien ne change (application, anciennes pages).
+            audio_slots = [t for t in pc.getTransceivers() if t.kind == "audio"]
+            if self.sdr_audio is not None and role != LISTENER and len(audio_slots) >= 2:
+                peer.sdr_track = SdrTrack(self.sdr_audio,
+                                          lambda: peer.session is not None and getattr(peer.session, "sdr_listen", False))
+                pc.addTrack(peer.sdr_track)
             answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
         except Exception:
@@ -326,10 +372,21 @@ class PeerManager:
             peer.tx_task.cancel()
         if peer.rx_track is not None:
             peer.rx_track.stop()
+        if peer.sdr_track is not None:
+            peer.sdr_track.stop()
+            self._sdr_listeners_changed()
         try:
             await peer.pc.close()
         except asyncio.InvalidStateError:
             pass                                                # aiortc : fermeture simultanée, sans conséquence
+
+    def _sdr_listeners_changed(self) -> None:
+        """Opérateurs qui écoutent le SDR : le module ne démodule que s'il y en a au moins un."""
+        if self.sdr_audio is None:
+            return
+        count = sum(1 for p in self.peers.values()
+                    if not p.closed and p.session is not None and getattr(p.session, "sdr_listen", False))
+        self.sdr_audio.set_listeners(count)
 
     async def close_all(self) -> None:
         for client_id in list(self.peers):

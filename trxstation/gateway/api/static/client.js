@@ -103,6 +103,7 @@
     sdr_unavailable: "SDR indisponible sur cette station (module « sdr » arrêté ou désactivé).",
     sdr_invalid: "Réglage du SDR refusé (valeur hors limites).",
     sdr_error: "Le module SDR n'a pas pu traiter la demande.",
+    sdr_audio_unavailable: "Son du SDR indisponible sur cette connexion (recharger la page).",
     friends_error: "La présence de groupe n'a pas pu traiter la demande.",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
@@ -1127,7 +1128,14 @@
       try {
         pc = new this.env.RTCPeerConnection({ iceServers: iceServers });
         this.pc = pc;
-        pc.ontrack = (ev) => this.ui.remoteStream(ev.streams && ev.streams[0] ? ev.streams[0] : null, ev.track);
+        pc.ontrack = (ev) => {
+          const stream = ev.streams && ev.streams[0] ? ev.streams[0] : null;
+          if (this.sdrTransceiver && ev.transceiver === this.sdrTransceiver) {   // son du SDR : sa propre lecture
+            if (this.ui.sdrStream) this.ui.sdrStream(stream, ev.track);
+            return;
+          }
+          this.ui.remoteStream(stream, ev.track);
+        };
         let mic = false;
         if (opts.useMic) {
           if (!this.env.isSecureContext || !this.env.getUserMedia) {
@@ -1169,6 +1177,9 @@
           }
         }
         if (!mic) pc.addTransceiver("audio", { direction: "recvonly" });
+        // Seconde réception audio : le son du SDR (station 0.142.0+, fonction « sdr_audio ») ; sans effet ailleurs
+        this.sdrTransceiver = null;
+        try { this.sdrTransceiver = pc.addTransceiver("audio", { direction: "recvonly" }); } catch (e) { this.sdrTransceiver = null; }
 
         const dc = pc.createDataChannel("control");
         this.dc = dc;
@@ -2343,8 +2354,10 @@
       /* Module SDR (fonction « sdr », docs/protocole.md § 18) : opérateurs seulement ; la rubrique se montre si annoncé. */
       this.sdrOffered = !!(hello && Array.isArray(hello.features) && hello.features.includes("sdr")
         && !(hello.role === "listener"));
+      this.sdrAudioOffered = this.sdrOffered && hello.features.includes("sdr_audio");
       this.sdrState = null;
       this.sdrWatching = false;
+      this.sdrListening = false;
       if (this.ui.sdrState) this.ui.sdrState(null);
     }
 
@@ -2358,6 +2371,14 @@
       this.sdrWatching = !!on;
       const res = await this.sdr("watch", { on: !!on });
       if (!res.ok) this.sdrWatching = false;
+      return res;
+    }
+
+    async sdrListen(on) {
+      /* Écouter le son du SDR (seconde piste de la connexion) ; la station le coupe pendant toute émission. */
+      if (!this.sdrAudioOffered || !this.connected) return { ok: false, reason: "sdr_audio_unavailable" };
+      const res = await this.sdr("listen", { on: !!on });
+      if (res.ok) this.sdrListening = !!res.on;
       return res;
     }
 

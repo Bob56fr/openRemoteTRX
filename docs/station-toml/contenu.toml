@@ -559,6 +559,13 @@ niveau = "courant"
 bornes = "true ou false."
 depuis = "0.141.0"
 
+[reglages."sdr.audio_port"]
+role = "Port UDP par lequel le module SDR envoie le son démodulé à la passerelle. Il n'écoute qu'en 127.0.0.1 (jamais sur le réseau) et n'accepte que les paquets portant le jeton du module."
+niveau = "expert"
+bornes = "1024 à 65535, différent de <code>[modules] bus_port</code>. Port déjà pris : waterfall seul (code ORT-6003)."
+exemple = "<code>47821</code>"
+depuis = "0.142.0"
+
 [reglages."sdr.fft_size"]
 role = "Nombre de points de la FFT du waterfall : plus il est grand, plus le détail est fin."
 niveau = "expert"

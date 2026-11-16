@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 
-from ..sdr.frames import DB_MIN, DB_STEP, encode_json, encode_line
+from ..sdr.frames import DB_MIN, DB_STEP, TYPE_AUDIO, encode_frame, encode_json, encode_line
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,7 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     if a.fail == "service":
         out.write(encode_json({"t": "error", "code": "service", "detail": "service SDRplay injoignable"})); out.flush()
         return 4
-    state = {"freq": a.freq, "lna": a.lna, "gr": a.gr, "rate": a.rate, "agc": a.agc, "stop": False}
+    state = {"freq": a.freq, "lna": a.lna, "gr": a.gr, "rate": a.rate, "agc": a.agc, "stop": False, "audio": 0,
+             "demod": None}
 
     def commands() -> None:
         for line in sys.stdin:
@@ -54,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
                 state["freq"] = float(parts[1])
             elif parts[:1] == ["gain"] and len(parts) == 3:
                 state["lna"], state["gr"] = int(parts[1]), int(parts[2])
+            elif parts[:1] == ["audio"] and len(parts) == 2:
+                state["audio"] = int(parts[1])
+            elif parts[:1] == ["demod"] and len(parts) == 4:
+                state["demod"] = (int(float(parts[1])), parts[2], int(parts[3]))
             elif parts[:1] == ["agc"] and len(parts) == 2:
                 state["agc"] = int(parts[1])
             elif parts[:1] == ["rate"] and len(parts) == 2:
@@ -80,11 +85,19 @@ def main(argv: list[str] | None = None) -> int:
             if 0 <= carrier < a.bins:
                 values = values[:carrier] + bytes([int((-40 - DB_MIN) / DB_STEP)]) + values[carrier + 1:]
             out.write(encode_line(state["freq"], a.fs, values))
+            if state["audio"]:                              # son : 1 kHz à -20 dBFS, 20 ms par trame
+                import math
+                import struct
+                for _ in range(max(1, int(round(50 / max(1.0, state["rate"]))))):
+                    out.write(encode_frame(TYPE_AUDIO, struct.pack("<960h", *(int(3277 * math.sin(2 * math.pi * 1000 * i / 48000))
+                                                                             for i in range(960)))))
             if now - last_status >= 1.0:
                 last_status = now
                 out.write(encode_json({"t": "status", "fs": a.fs, "freq": state["freq"], "lna": state["lna"],
                                        "gr": state["gr"], "ant": a.ant, "rate": state["rate"], "bins": a.bins,
                                        "agc": state["agc"], "gr_now": 38 if state["agc"] else state["gr"],
+                                       "audio": state["audio"], "sql_open": 1, "chan_db": -60.0 if state["audio"] else -200,
+                                       "noise_db": -95.0 if state["audio"] else -200,
                                        "gain_db": 61.5,
                                        "overload": 0, "samples": 0, "drops": 0, "gaps": 0}))
             out.flush()

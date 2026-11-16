@@ -211,6 +211,7 @@ class Sdr:
     lna_state: int = 2                # état du LNA (0 = gain maximal ; 0 à 8 sur le RSP2)
     gain_reduction_db: int = 50       # réduction de gain FI (20 à 59 dB), quand l'AGC de la FI est coupé
     agc: bool = True                  # AGC matériel de la FI : le SDR règle lui-même la réduction de gain FI
+    audio_port: int = 47821           # son démodulé du module vers la passerelle : UDP en 127.0.0.1 SEULEMENT
     fft_size: int = 4096              # points de la FFT (512 à 16384, puissance de 2)
     bins: int = 1024                  # cases d'une ligne envoyée aux clients (128 à fft_size, puissance de 2)
     lines_per_s: int = 8              # lignes de waterfall par seconde (1 à 15)
@@ -877,6 +878,10 @@ def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
         p.append("[sdr] antenna : A ou B")
     if not isinstance(sd.agc, bool):
         p.append("[sdr] agc doit valoir true ou false")
+    if isinstance(sd.audio_port, bool) or not isinstance(sd.audio_port, int) or not 1024 <= sd.audio_port <= 65535:
+        p.append("[sdr] audio_port : port de 1024 à 65535")
+    elif sd.audio_port == modules.bus_port:
+        p.append("[sdr] audio_port : différent de [modules] bus_port")
     if not _pow2(sd.fft_size) or not 512 <= sd.fft_size <= 16384:
         p.append("[sdr] fft_size : puissance de 2 de 512 à 16384")
     if not _pow2(sd.bins) or not 128 <= sd.bins <= min(16384, sd.fft_size if isinstance(sd.fft_size, int) else 16384):
@@ -1265,6 +1270,7 @@ def render_toml(cfg: Config) -> str:
         f"lna_state = {cfg.sdr.lna_state}   # 0 = gain maximal (0 à 8)",
         f"gain_reduction_db = {cfg.sdr.gain_reduction_db}   # réduction de gain FI (20 à 59 dB), AGC coupé",
         f"agc = {str(cfg.sdr.agc).lower()}   # AGC de la FI : le SDR règle lui-même la réduction de gain",
+        f"audio_port = {cfg.sdr.audio_port}   # son du module vers la passerelle (UDP, 127.0.0.1 seulement)",
         f"fft_size = {cfg.sdr.fft_size}",
         f"bins = {cfg.sdr.bins}   # cases d'une ligne envoyée aux clients",
         f"lines_per_s = {cfg.sdr.lines_per_s}",

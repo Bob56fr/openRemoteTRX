@@ -1962,6 +1962,7 @@
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
       sdrState(st) { sdrRender(st); },                                         // module SDR : état (opérateurs)
       sdrLine(data) { sdrDraw(data); },                                        // module SDR : ligne de waterfall
+      sdrStream(stream, track) { sdrAttach(stream, track); },                  // module SDR : son (seconde piste)
       freedvActivity() { fdvaRender(); },                                      // activité FreeDV (toutes les 10 s)
       recentSpots(data) { recentData = data; recentAt = Date.now(); renderRecent(); },
       clusterHealth(state) { onClusterHealth(state); },
@@ -2832,7 +2833,11 @@
     function sdrRender(st) {
       const on = sdrOffered();
       $("sec-sdr").hidden = !on;
-      if (!on) { sdrPicked = null; $("sdr-qsy").hidden = true; return; }
+      if (!on) {
+        sdrPicked = null; $("sdr-qsy").hidden = true; $("sdr-here").hidden = true;
+        if (sdrSound) { try { sdrSound.pause(); } catch (e) { /* rien */ } }
+        return;
+      }
       const state = st || client.sdrState;
       $("sdr-status").textContent = sdrx.stateText(state);
       $("sdr-badge").textContent = state && state.state === "running" ? sdrx.formatMHz(state.center, 3) + " MHz"
@@ -2848,6 +2853,50 @@
       }
       $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
       $("sdr-gain").textContent = sdrx.gainText(state);
+      sdrListenRender(state);
+    }
+    // ---- écoute du SDR (station 0.142.0+) : seconde piste, lue par son propre élément audio
+    const sdrSound = typeof Audio === "function" ? new Audio() : null;
+    function sdrAttach(stream, track) {
+      if (!sdrSound) return;
+      try {
+        sdrSound.srcObject = stream || new MediaStream([track]);
+        sdrSound.volume = Number($("sdr-vol").value) / 100;
+        if (client.sdrListening) sdrSound.play().catch(() => {});
+      } catch (e) { /* navigateur sans seconde piste : le waterfall reste */ }
+    }
+    function sdrModeOptions(mode) {
+      const sel = $("sdr-mode");
+      if (!sel.options || sel.options.length !== sdrx.MODES.length) {
+        sel.textContent = "";
+        for (const m of sdrx.MODES) sel.appendChild(Object.assign(el("option", "", m), { value: m }));
+      }
+      const widths = sdrx.WIDTHS[mode] || [];
+      const dbw = $("sdr-dbw");
+      if (dbw.dataset.mode !== mode) {
+        dbw.textContent = "";
+        for (const w of widths) dbw.appendChild(Object.assign(el("option", "", sdrx.widthLabel(w)), { value: String(w) }));
+        dbw.dataset.mode = mode;
+      }
+    }
+    function sdrListenRender(state) {
+      const offered = !!client.sdrAudioOffered;
+      $("sdr-listen-box").hidden = !offered;
+      if (!offered) return;
+      const listening = !!client.sdrListening;
+      $("sdr-listen").setAttribute("aria-pressed", listening ? "true" : "false");
+      $("sdr-listen").textContent = listening ? "🔊 Écoute en cours" : "🔈 Écouter";
+      if (state && state.mode) {
+        sdrModeOptions(state.mode);
+        $("sdr-mode").value = state.mode;
+        $("sdr-dbw").value = String(state.dbw);
+        if (!sdrDragging("sdr-sql")) $("sdr-sql").value = String(state.sql || 0);
+      }
+      $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert";
+      $("sdr-listen-info").textContent = sdrx.listenText(state, listening);
+      const left = state && sdrLast ? sdrx.markerLeft(state.dfreq, sdrLast.c, sdrLast.s) : null;
+      $("sdr-marker").hidden = left === null;
+      if (left !== null) $("sdr-marker").style.left = left + "%";
     }
     // curseurs de gain : appliqués PENDANT le glissement, au plus un envoi toutes les 0,3 s (le dernier part toujours)
     const SDR_SLIDE_MS = 300;
@@ -2934,7 +2983,22 @@
         sdrPicked = sdrx.freqAt(ev.offsetX, width, sdrLast.c, sdrLast.s);
         $("sdr-pick").textContent = sdrPicked ? "Fréquence : " + sdrx.formatMHz(sdrPicked, 4) + " MHz" : "";
         $("sdr-qsy").hidden = !sdrPicked;
+        $("sdr-here").hidden = !sdrPicked || !client.sdrAudioOffered;
       });
+      $("sdr-here").addEventListener("click", () => { if (sdrPicked) sdrSend({ dfreq_hz: sdrPicked }); });
+      $("sdr-listen").addEventListener("click", () => {
+        const on = !client.sdrListening;
+        client.sdrListen(on).then((res) => {
+          if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail), "warn"); return; }
+          if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log("Son du SDR bloqué par le navigateur : touche l'écran.", "warn")); else sdrSound.pause(); }
+          sdrRender(null);
+        }).catch(() => {});
+      });
+      $("sdr-mode").addEventListener("change", () => sdrSend({ mode: $("sdr-mode").value }));
+      $("sdr-dbw").addEventListener("change", () => sdrSend({ dbw: Number($("sdr-dbw").value) }));
+      $("sdr-sql").addEventListener("input", () => { sdrSlide.held["sdr-sql"] = true; $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert"; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
+      $("sdr-sql").addEventListener("change", () => { sdrSlide.held["sdr-sql"] = false; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
+      $("sdr-vol").addEventListener("input", () => { if (sdrSound) sdrSound.volume = Number($("sdr-vol").value) / 100; });
       $("sdr-qsy").addEventListener("click", () => {
         if (!sdrPicked) return;
         client.qsy(sdrPicked).then((res) => {

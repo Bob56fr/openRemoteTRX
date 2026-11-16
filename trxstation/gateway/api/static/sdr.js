@@ -9,6 +9,11 @@
   const DB_MIN = -150, DB_STEP = 0.5;                 // niveau d'une case : -150 dBFS + 0,5 dB × valeur (0 à 255)
   const LIMITS = { center_hz: [1000, 2000000000], lna: [0, 8], gr: [20, 59], rate: [1, 15] };
   const BOOLS = ["agc"];                               // AGC matériel de la FI (station 0.141.0+)
+  // Écoute (station 0.142.0+) : fréquence écoutée, largeur du filtre, squelch (dB au-dessus du bruit, 0 = ouvert)
+  Object.assign(LIMITS, { dfreq_hz: [1000, 2000000000], dbw: [100, 15000], sql: [0, 40] });
+  const MODES = ["USB", "LSB", "AM", "NFM", "CW"];
+  const WIDTHS = { AM: [6000, 8000, 10000], NFM: [8000, 12500], USB: [1800, 2400, 2700, 3000], LSB: [1800, 2400, 2700, 3000],
+                   CW: [250, 500, 1000] };
   const LNA_MAX = 8, GR_MAX = 59, GR_MIN = 20;
   const RANGES = [30, 40, 50, 60, 80];                 // dynamique affichée (dB)
   const DEFAULT_VIEW = { range: 50, auto: true, floor: -110 };
@@ -82,6 +87,7 @@
     if (!names.length) return "aucun réglage";
     for (const name of names) {
       if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return name + " : vrai ou faux"; continue; }
+      if (name === "mode") { if (!MODES.includes(args[name])) return "mode : " + MODES.join(", "); continue; }
       const lim = LIMITS[name], v = args[name];
       if (!lim) return "réglage inconnu : " + name;
       if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return name + " : entier de " + lim[0] + " à " + lim[1];
@@ -103,6 +109,26 @@
     else t += " · gain FI " + ifFromGr(st.gr) + "/" + (GR_MAX - GR_MIN);
     if (Number.isFinite(st.gain_db)) t += " · gain total " + st.gain_db.toFixed(1) + " dB";
     if (st.overload) t += " — SURCHARGE : baisser le gain RF";
+    return t;
+  }
+
+  function markerLeft(f, center, span) {
+    /* Position (%) du repère de la fréquence écoutée sur le waterfall, ou null hors de la largeur. */
+    if (!Number.isFinite(f) || !(span > 0)) return null;
+    const x = (f - (center - span / 2)) / span;
+    return x < 0 || x > 1 ? null : Math.round(x * 10000) / 100;
+  }
+
+  function widthLabel(hz) { return hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 1 : 0).replace(".", ",") + " kHz" : hz + " Hz"; }
+
+  function listenText(st, listening) {
+    /* Ligne de l'écoute : fréquence, mode, filtre, squelch, niveaux. */
+    if (!st || !Number.isFinite(st.dfreq)) return "";
+    let t = (listening ? "Écoute " : "Fréquence d'écoute ") + formatMHz(st.dfreq, 4) + " MHz " + (st.mode || "") + " " + widthLabel(st.dbw || 0);
+    t += st.sql ? " · squelch " + st.sql + " dB (" + (st.sql_open ? "ouvert" : "fermé") + ")" : " · squelch ouvert";
+    if (listening && Number.isFinite(st.chan_db) && Number.isFinite(st.noise_db))
+      t += " · canal " + st.chan_db.toFixed(0) + " dBFS, bruit " + st.noise_db.toFixed(0) + " dBFS";
+    if (listening && st.audio === false) t += " · en attente du son…";
     return t;
   }
 
@@ -138,6 +164,6 @@
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
                 binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
-                lnaFromRf, ifFromGr, grFromIf, gainText };
+                lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

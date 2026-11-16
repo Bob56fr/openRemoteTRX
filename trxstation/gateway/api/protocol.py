@@ -93,11 +93,12 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "netprobe",                  # sonde de qualité réseau (0.106.0+, [netprobe] enabled)
                      "friends",                   # présence de groupe « Amis » (0.118.0+, module presence)
                      "freedv",                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
-                     "sdr")                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
+                     "sdr",                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
+                     "sdr_audio")                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
-SDR_ACTIONS = ("watch", "state", "set")
+SDR_ACTIONS = ("watch", "listen", "state", "set")
 MAX_SDR_ARGS_BYTES = 300
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
@@ -342,8 +343,8 @@ def parse_command(raw: str | bytes) -> Command:
         args = data.get("args", {})
         if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_SDR_ARGS_BYTES:
             raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_SDR_ARGS_BYTES} octets au plus")
-        if data["action"] == "watch" and not isinstance(args.get("on"), bool):
-            raise ProtocolError("invalid_params", "watch : args.on vaut true ou false")
+        if data["action"] in ("watch", "listen") and not isinstance(args.get("on"), bool):
+            raise ProtocolError("invalid_params", f"{data['action']} : args.on vaut true ou false")
         params["action"], params["args"] = data["action"], args
     elif name == "layout_save":
         profile = data.get("profile")

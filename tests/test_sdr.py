@@ -106,7 +106,8 @@ def test_settings_from_an_operator_are_checked() -> None:
 def test_core_arguments_always_name_the_serial() -> None:
     sd = cfgmod.Sdr(serial="170502E910", sample_rate_hz=8_000_000)
     args = core_args(sd, Settings(7_100_000, 2, 50, 8))
-    assert args[:2] == ["--serial", "170502E910"] and args[args.index("--bw") + 1] == "8000"
+    assert args[args.index("--serial") + 1] == "170502E910" and args[args.index("--bw") + 1] == "8000"
+    assert args[args.index("--dfreq") + 1] == "7100000" and args[args.index("--mode") + 1] == "USB"
 
 
 # ------------------------------------------------------------------ liste des SDR (lecture seule)
@@ -373,3 +374,127 @@ def test_if_agc_setting_reaches_the_core_and_real_gain_is_reported(tmp_path: Pat
     auto, res, manual = asyncio.run(scenario())
     assert auto["agc"] is True and auto["gr_now"] == 38 and auto["gain_db"] == 61.5
     assert res["agc"] is False and manual["gr_now"] == 40          # le faux cœur applique la réduction choisie
+
+
+# ------------------------------------------------------------------ son du SDR (lot S1b)
+def _sdr_audio(clock, tx, asked=None):
+    from trxstation.gateway.audio.sdr_audio import SdrAudio
+    return SdrAudio(0, b"T" * 16, lambda: tx[0], request_audio=(lambda on: asked.append(on)) if asked is not None
+                    else None, clock=lambda: clock[0])
+
+
+def _packet(value: int, token: bytes = b"T" * 16, seq: int = 1) -> bytes:
+    import struct
+    return b"ORSA" + token + seq.to_bytes(4, "little") + struct.pack("<960h", *([value] * 960))
+
+
+def test_sdr_audio_packets_need_the_token_and_queues_are_bounded() -> None:
+    from trxstation.gateway.audio.sdr_audio import QUEUE_MAX
+    clock, tx = [0.0], [False]
+    audio = _sdr_audio(clock, tx)
+    sub = audio.subscribe()
+    assert audio.on_packet(_packet(100, token=b"X" * 16)) is False and audio.on_packet(b"ORSA") is False
+    for i in range(QUEUE_MAX + 5):
+        assert audio.on_packet(_packet(i, seq=i))
+    assert len(sub.queue) == QUEUE_MAX and audio.refused == 2          # le plus ancien part : retard borné
+
+
+def test_sdr_audio_is_silent_during_any_transmission_with_fades() -> None:
+    import array
+    from trxstation.gateway.audio.sdr_audio import SILENCE
+
+    def level(pcm):
+        a = array.array("h"); a.frombytes(pcm)
+        return a[0], a[-1]
+    clock, tx = [0.0], [False]
+    audio = _sdr_audio(clock, tx)
+    sub = audio.subscribe()
+    for _ in range(6):
+        audio.on_packet(_packet(1000))
+    assert audio.next_block(sub, True) != SILENCE                       # écoute normale
+    tx[0] = True                                                        # émission : fondu vers le silence (50 ms)
+    first = level(audio.next_block(sub, True))
+    assert first[0] > first[1] > 0
+    blocks = [audio.next_block(sub, True) for _ in range(3)]
+    assert blocks[-1] == SILENCE
+    tx[0] = False
+    clock[0] += 0.3                                                     # 0,3 s après : toujours le silence
+    audio.on_packet(_packet(1000)); audio.on_packet(_packet(1000))
+    assert audio.next_block(sub, True) == SILENCE
+    clock[0] += 0.3                                                     # 0,6 s : reprise en fondu
+    for _ in range(4):
+        audio.on_packet(_packet(1000))
+    rising = level(audio.next_block(sub, True))
+    assert rising[0] < rising[1] and 0 < rising[1] <= 1000
+    audio.next_block(sub, False)                                        # n'écoute plus : file vidée
+    assert audio.next_block(sub, False) == SILENCE and not sub.queue
+
+
+def test_sdr_audio_asks_the_module_only_when_someone_listens() -> None:
+    clock, tx, asked = [0.0], [False], []
+    audio = _sdr_audio(clock, tx, asked)
+    audio.set_listeners(1); audio.set_listeners(2); audio.set_listeners(1)
+    assert asked == [True]
+    clock[0] = 10.0
+    audio.tick()                                                        # rien reçu depuis 10 s : on redemande
+    assert asked == [True, True]
+    audio.on_packet(_packet(5)); audio.tick()
+    assert asked == [True, True]
+    audio.set_listeners(0)
+    assert asked == [True, True, False]
+
+
+def test_module_sends_audio_packets_with_the_gateway_token(tmp_path: Path) -> None:
+    from trxstation.gateway.audio.sdr_audio import PACKET_BYTES, SdrAudio
+    from trxstation.sdr.service import audio_token
+    got = []
+    gateway = SdrAudio(0, audio_token("secret-du-module"), lambda: False)
+    sub = gateway.subscribe()
+
+    async def scenario():
+        bus = FakeBus()
+        svc = SdrService(cfgmod.Sdr(enabled=True, serial="TEST1234"), tmp_path, bus, core_prefix=FAKE,
+                         audio_secret="secret-du-module", audio_sink=lambda p: (got.append(p), gateway.on_packet(p)))
+        task = asyncio.ensure_future(svc.run())
+        await asyncio.sleep(0.5)
+        assert got == []                                                # personne n'écoute : aucun son
+        await svc.on_call({"action": "audio", "args": {"on": True}})
+        await svc.on_call({"action": "set", "args": {"dfreq_hz": 7_150_000, "mode": "AM"}})
+        await asyncio.sleep(1.0)
+        snap = svc.snapshot()
+        svc.stop()
+        await asyncio.wait_for(task, 10)
+        return snap
+    snap = asyncio.run(scenario())
+    assert got and all(len(p) == PACKET_BYTES for p in got) and gateway.packets == len(got) and sub.queue
+    assert snap["audio"] is True and (snap["dfreq"], snap["mode"], snap["dbw"]) == (7_150_000, "AM", 8000)
+
+
+def test_listened_frequency_outside_the_sdr_width_is_refused(tmp_path: Path) -> None:
+    from trxstation.modules.client import CallRefused
+    svc, _, _ = _service(tmp_path)
+    with pytest.raises(CallRefused):
+        asyncio.run(svc.on_call({"action": "set", "args": {"dfreq_hz": 9_000_000}}))   # 2 MHz autour de 7,1 MHz
+    for bad in ({"mode": "WFM"}, {"sql": 50}, {"dbw": 50}):
+        with pytest.raises(SetRefused):
+            clean_settings(bad, Settings(7_100_000, 2, 50, 8))
+
+
+def test_listen_command_needs_a_second_audio_track() -> None:
+    from types import SimpleNamespace
+    from trxstation.gateway.api.session import ControlSession
+    ctrl = SimpleNamespace(snapshot=lambda: SimpleNamespace(state="RX"), heartbeat=lambda cid: None,
+                           config=SimpleNamespace(rig=SimpleNamespace(), safety=SimpleNamespace(allow_replay=False)))
+    sent, changes = [], []
+
+    async def call(data):
+        return {}
+    s = ControlSession("phone", ctrl, SimpleNamespace(), None, None, sent.append, role="operator")
+    s.sdr_call, s.on_sdr_listen = call, lambda: changes.append(s.sdr_listen)
+    assert "sdr_audio" not in s.features()
+    asyncio.run(s.on_message(json.dumps({"cmd": "sdr", "id": 1, "action": "listen", "args": {"on": True}})))
+    assert sent[-1]["reason"] == "sdr_audio_unavailable" and changes == []
+    s.sdr_audio_offered = True
+    assert "sdr_audio" in s.features()
+    asyncio.run(s.on_message(json.dumps({"cmd": "sdr", "id": 2, "action": "listen", "args": {"on": True}})))
+    assert sent[-1] == {"type": "result", "id": 2, "ok": True, "action": "listen", "on": True} and changes == [True]

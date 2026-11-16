@@ -121,6 +121,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             if cfg.sdr.enabled and bridge.has_client_commands("sdr"):             # module SDR (opérateurs)
                 manager.sdr_call = lambda data: bridge.call("sdr", data)
                 manager.on_sdr_view = bridge.on_sdr_view
+                manager.sdr_audio = await _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks)
             lag = LagMeter()                           # retard de la boucle : premier signe d'une station qui souffre
             a = cfg.access
             access.guard = OverloadGuard(system_sampler(lag), Limits(a.overload_temp_c, a.overload_cpu_pct,
@@ -231,6 +232,29 @@ def _client_sessions(manager) -> list:
     if manager is None:
         return []
     return [peer.session for peer in list(manager.peers.values()) if peer.session is not None]
+
+
+async def _start_sdr_audio(cfg, manager, ctrl, bridge, stop, tasks):
+    """Son du module SDR (seconde piste des opérateurs) ; coupé pendant TOUTE émission. None si le port est pris."""
+    from ..modules.keys import key_path, load_or_create_key, module_secret
+    from ..sdr.service import audio_token
+    from .audio.sdr_audio import SdrAudio, run_ticks
+
+    def transmitting() -> bool:
+        snap = ctrl.snapshot()
+        return snap.state != "RX" or bool(getattr(snap, "local_tx", False))
+
+    try:
+        key = load_or_create_key(key_path(cfg.supervisor.state_dir))
+        audio = SdrAudio(cfg.sdr.audio_port, audio_token(module_secret(key, "sdr")), transmitting,
+                         request_audio=lambda on: bridge.call("sdr", {"action": "audio", "args": {"on": on}}))
+        await audio.start()
+    except OSError as exc:
+        emit_event(codes.ORT_6003, logger=log, chemin=f"127.0.0.1:{cfg.sdr.audio_port}",
+                   detail=f"port du son du SDR indisponible ({exc}) : waterfall seul")
+        return None
+    tasks.append(asyncio.create_task(run_ticks(audio, stop)))
+    return audio
 
 
 async def _start_api(cfg: Config, ctrl, link, pipeline, capabilities, spectrum=None, access=None):

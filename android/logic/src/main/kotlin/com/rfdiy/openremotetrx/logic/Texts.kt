@@ -62,6 +62,7 @@ object Texts {
         "sdr_unavailable" to "SDR indisponible sur cette station (module « sdr » arrêté ou désactivé).",
         "sdr_invalid" to "Réglage du SDR refusé (valeur hors limites).",
         "sdr_error" to "Le module SDR n'a pas pu traiter la demande.",
+        "sdr_audio_unavailable" to "Son du SDR indisponible sur cette connexion (recharger la page).",
         "friends_error" to "La présence de groupe n'a pas pu traiter la demande.",
         "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
         "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
