@@ -95,6 +95,8 @@ data class RigState(
     val netStatus: String = "",
     /** Présence de groupe « Amis » (fonction « friends », opérateurs) ; null = pas offerte par la station. */
     val friends: FriendsState? = null,
+    /** Monitoring inter-stations (fonction « monitoring », opérateurs) ; null = pas offert par la station. */
+    val monitoring: MonitoringState? = null,
     /** FreeDV RADE V1 en réception (state.freedv, TOUS les comptes) ; null = station sans FreeDV. */
     val freedv: FreeDvView? = null,
     /** Dernier refus du mode FreeDV (montré dans sa fenêtre, là où l'on a cliqué) ; vide sinon. */
@@ -118,6 +120,19 @@ data class FriendsState(
     /** Invitation créée : (groupe, lien), à montrer ou partager une seule fois. */
     val invite: Pair<String, String>? = null,
     /** Dernier message pour l'opérateur (refus, adhésion envoyée…) ; vide = rien. */
+    val notice: String = "",
+)
+
+/**
+ * Monitoring inter-stations tel que reçu : `data` = vue du module (action « view ») ; `code` = code d'invitation à
+ * dicter (après « invite ») ; `joined` = liaison demandée avec un code (empreinte à comparer) ; `events` = (station,
+ * derniers événements reçus) ; `notice` = dernier refus ou message pour l'opérateur.
+ */
+data class MonitoringState(
+    val data: JsonObject? = null,
+    val code: String? = null,
+    val joined: JsonObject? = null,
+    val events: Pair<String, List<JsonObject>>? = null,
     val notice: String = "",
 )
 
@@ -158,6 +173,8 @@ class RigSession(
 ) {
     /** Export anonyme de la sonde reçu en entier : (nom du fichier, contenu du zip), à partager par l'application. */
     var onNetExport: ((String, ByteArray) -> Unit)? = null
+    /** Rapport de dépannage reçu d'une station suivie (monitoring), recollé : à partager par l'écran. */
+    var onMonitoringReport: ((String, ByteArray) -> Unit)? = null
     var snapshot = RigState()
         private set
     var onChange: ((RigState) -> Unit)? = null
@@ -200,6 +217,15 @@ class RigSession(
     private var friendsInviteGroup = ""
     private var friendsWatching = false
     private var friendsAskedAt = Long.MIN_VALUE / 2
+    private var monitoringOffered = false               // la station a annoncé « monitoring » (opérateur)
+    private var monitoringData: JsonObject? = null
+    private var monitoringCode: String? = null
+    private var monitoringJoined: JsonObject? = null
+    private var monitoringEvents: Pair<String, List<JsonObject>>? = null
+    private var monitoringNotice = ""
+    private var monitoringWatching = false
+    private var monitoringAskedAt = Long.MIN_VALUE / 2
+    private var monitoringReport: Triple<String, String, java.io.ByteArrayOutputStream>? = null   // (station, nom, octets)
 
     private var status = LinkStatus.DISCONNECTED
     private var attemptActive = false
@@ -409,6 +435,11 @@ class RigSession(
         friendsData = null; friendsBackPoint = null; friendsTarget = null; friendsStats = null; friendsInvite = null
         friendsNotice = ""; friendsJoinLevel = null
         if (friendsOffered) friendsAsk(now)
+        // Monitoring inter-stations : vue relue à chaque connexion (opérateurs seulement)
+        monitoringOffered = protocolOk && !msg.listener && msg.offers("monitoring")
+        monitoringData = null; monitoringCode = null; monitoringJoined = null; monitoringEvents = null
+        monitoringNotice = ""; monitoringReport = null
+        if (monitoringOffered) monitoringAsk(now)
         if (!protocolOk) {
             log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
         } else {
@@ -439,7 +470,7 @@ class RigSession(
                 }
                 if (entry.cmd == "swr_last") SwrUi.result(msg.raw["last"])?.let { swrLast = it }
             } else {
-                log("Mesure de TOS : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+                log("Mesure de TOS : " + refusalOf(msg), LogLevel.WARN)
                 if (entry.cmd == "swr_start") swr = null
             }
             publish(now)
@@ -447,13 +478,13 @@ class RigSession(
         }
         if (entry.cmd.startsWith("voice_profile")) {              // liste à jour après lecture, ajout ou suppression
             if (msg.ok) voiceProfiles = parseVoiceProfiles(msg.raw["profiles"]) ?: voiceProfiles
-            else log("Profils de voix : " + msg.detail.ifEmpty { Texts.refusal(msg.reason, msg.detail) }, LogLevel.WARN)
+            else log("Profils de voix : " + msg.detail.ifEmpty { refusalOf(msg) }, LogLevel.WARN)
             publish(now)
             return
         }
         if (entry.cmd.startsWith("breizh_")) {                  // Breizh Audio Box : journal, réactivation, réglages
             if (!msg.ok) {
-                log("Breizh : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+                log("Breizh : " + refusalOf(msg), LogLevel.WARN)
             } else if (entry.cmd == "breizh_log") {
                 (msg.raw["entries"] as? kotlinx.serialization.json.JsonArray)?.let { list ->
                     breizhEvents = list.mapNotNull { item ->
@@ -475,9 +506,14 @@ class RigSession(
                 freedvNotice = ""
                 log(if (entry.tag == "true") "Mode FreeDV : voix décodée par la station." else "Mode FreeDV quitté : son du poste.", LogLevel.INFO)
             } else {
-                freedvNotice = Texts.refusal(msg.reason, msg.detail)
+                freedvNotice = refusalOf(msg)
                 log("FreeDV : $freedvNotice", LogLevel.WARN)
             }
+            publish(now)
+            return
+        }
+        if (entry.cmd == "monitoring") {
+            onMonitoringResult(now, entry.tag, msg)
             publish(now)
             return
         }
@@ -497,7 +533,7 @@ class RigSession(
                 log("Rapport envoyé à la station" + (if (name.isNotEmpty()) " ($name)" else "") +
                     " : il sera joint au rapport de dépannage (TRX Console, menu 2.3).", LogLevel.INFO)
             } else {
-                log("Rapport non envoyé : " + Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+                log("Rapport non envoyé : " + refusalOf(msg), LogLevel.WARN)
             }
             publish(now)
             return
@@ -508,12 +544,12 @@ class RigSession(
             return
         }
         if (entry.tag == FDVA_TAG) {                                // QSY depuis la liste d'activité FreeDV
-            if (!msg.ok) freedvActivityNotice = Texts.refusal(msg.reason, msg.detail)
+            if (!msg.ok) freedvActivityNotice = refusalOf(msg)
             else if (entry.cmd == "set_frequency") log("QSY FreeDV : $fdvaTargetText.", LogLevel.INFO)
         }
         if (!msg.ok) {
             if (entry.cmd == "toggle") heartbeat.cancelGrace()
-            log(Texts.refusal(msg.reason, msg.detail), LogLevel.WARN)
+            log(refusalOf(msg), LogLevel.WARN)
         }
     }
 
@@ -559,7 +595,7 @@ class RigSession(
                 "net_stats" -> "Statistiques indisponibles : "
                 "net_export" -> "Export impossible : "
                 else -> "Refusé : "
-            } + Texts.refusal(msg.reason, msg.detail)
+            } + refusalOf(msg)
             if (cmd == "net_export") netExport = null
             return
         }
@@ -598,6 +634,7 @@ class RigSession(
 
     fun tick(now: Long, online: Boolean) {
         if (friendsOffered && friendsWatching && connected && now - friendsAskedAt >= Friends.REFRESH_MS) friendsAsk(now)
+        if (monitoringOffered && monitoringWatching && connected && now - monitoringAskedAt >= Monitoring.REFRESH_MS) monitoringAsk(now)
         val r = reconnect
         if (r != null && netOffered && net.reportDue(now)) {          // résumés hors ligne, remis au retour
             val radioNow = radio()
@@ -961,7 +998,7 @@ class RigSession(
         if (!msg.ok) {
             if (action == "qsy_mark") friendsTarget?.let { (hz, mode) -> friendsTarget = null; qsyTo(now, hz, mode) }   // sans point de retour
             if (action == "view" && msg.reason == "timeout") return
-            friendsNotice = Texts.refusal(msg.reason, msg.detail)
+            friendsNotice = refusalOf(msg)
             log("Amis : $friendsNotice", LogLevel.WARN)
             return
         }
@@ -1000,6 +1037,104 @@ class RigSession(
             }
             else -> friendsAsk(now)                                     // action réussie : vue relue
         }
+    }
+
+    // ------------------------------------------------------------------ monitoring inter-stations (opérateurs)
+
+    /** Texte d'un refus, avec le code du catalogue joint par la station (« [ORT-5116] », station 0.163.0+). */
+    private fun refusalOf(msg: Result): String =
+        Texts.withCode(Texts.refusal(msg.reason, msg.detail), (msg.raw["ort"] as? JsonPrimitive)?.contentOrNull)
+
+    private fun monitoringAsk(now: Long) {
+        monitoringAskedAt = now
+        send(now, Command.Monitoring("view"))
+    }
+
+    /** L'écran du monitoring est ouvert (ou fermé) : vue relue toutes les 15 s tant qu'il l'est. */
+    fun monitoringWatch(now: Long, on: Boolean) {
+        val was = monitoringWatching
+        monitoringWatching = on
+        if (on && !was && monitoringOffered && connected) monitoringAsk(now)
+    }
+
+    fun monitoringRefresh(now: Long) {
+        if (monitoringOffered && connected) monitoringAsk(now)
+        publish(now)
+    }
+
+    /** Action de l'opérateur (mêmes actions que le menu 5.5) ; vue relue après un succès. Jamais vers le poste. */
+    fun monitoringAction(now: Long, action: String, args: JsonObject = JsonObject(emptyMap())) {
+        if (!monitoringOffered || !connected) return
+        monitoringNotice = ""
+        send(now, Command.Monitoring(action, args))
+        publish(now)
+    }
+
+    /** Dernier rapport reçu de `peer` : morceaux demandés l'un après l'autre, puis `onMonitoringReport`. */
+    fun monitoringReport(now: Long, peer: String) {
+        if (!monitoringOffered || !connected || monitoringReport != null) return
+        monitoringReport = Triple(peer, "", java.io.ByteArrayOutputStream())
+        monitoringNotice = "Rapport en cours de téléchargement…"
+        send(now, Command.Monitoring("report_part", JsonObject(mapOf("peer" to JsonPrimitive(peer), "part" to JsonPrimitive(0)))))
+        publish(now)
+    }
+
+    fun monitoringDismiss(now: Long) {
+        monitoringCode = null; monitoringJoined = null; monitoringEvents = null; monitoringNotice = ""
+        publish(now)
+    }
+
+    private fun onMonitoringResult(now: Long, action: String, msg: Result) {
+        val data = msg.raw["data"]
+        if (!msg.ok) {
+            if (action == "report_part") monitoringReport = null
+            if (action == "view" && msg.reason == "timeout") return
+            monitoringNotice = refusalOf(msg)
+            log("Monitoring : $monitoringNotice", LogLevel.WARN)
+            return
+        }
+        when (action) {
+            "view" -> monitoringData = data as? JsonObject
+            "invite" -> {
+                monitoringCode = ((data as? JsonObject)?.get("code") as? JsonPrimitive)?.contentOrNull
+                monitoringAsk(now)
+            }
+            "join" -> {
+                monitoringJoined = data as? JsonObject
+                monitoringAsk(now)
+            }
+            "received" -> {
+                val list = (data as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+                monitoringEvents = monitoringEvents?.first.orEmpty() to list
+            }
+            "report_part" -> {
+                val current = monitoringReport ?: return
+                val part = data as? JsonObject ?: return
+                val chunk = (part["data"] as? JsonPrimitive)?.contentOrNull ?: return
+                current.third.write(java.util.Base64.getUrlDecoder().decode(chunk))
+                val index = (part["part"] as? JsonPrimitive)?.longOrNull ?: 0
+                val parts = (part["parts"] as? JsonPrimitive)?.longOrNull ?: 1
+                val name = (part["name"] as? JsonPrimitive)?.contentOrNull?.replace(Regex("[^\\w.-]"), "_") ?: "rapport.zip"
+                if (index + 1 < parts && index < 99) {
+                    monitoringReport = Triple(current.first, name, current.third)
+                    send(now, Command.Monitoring("report_part", JsonObject(mapOf("peer" to JsonPrimitive(current.first),
+                                                                                  "part" to JsonPrimitive(index + 1)))))
+                } else {
+                    monitoringReport = null
+                    monitoringNotice = "Rapport reçu : $name."
+                    onMonitoringReport?.invoke(name, current.third.toByteArray())
+                }
+            }
+            else -> monitoringAsk(now)                                    // action réussie : vue relue
+        }
+    }
+
+    /** Derniers événements reçus de `peer` (station qui aide). */
+    fun monitoringEvents(now: Long, peer: String) {
+        if (!monitoringOffered || !connected) return
+        monitoringEvents = peer to emptyList()
+        send(now, Command.Monitoring("received", JsonObject(mapOf("peer" to JsonPrimitive(peer), "limit" to JsonPrimitive(20)))))
+        publish(now)
     }
 
     // ------------------------------------------------------------------ visiteurs (opérateur seulement)
@@ -1175,7 +1310,8 @@ class RigSession(
         }
         val id = nextId++
         if (link.send(command.encode(id))) pending[id] = Pending(command.name, now,
-            tag ?: (command as? Command.Friends)?.action ?: (command as? Command.FreedvSet)?.on?.toString().orEmpty())
+            tag ?: (command as? Command.Friends)?.action ?: (command as? Command.Monitoring)?.action
+                ?: (command as? Command.FreedvSet)?.on?.toString().orEmpty())
     }
 
     private fun mineActive(): Boolean {
@@ -1272,6 +1408,8 @@ class RigSession(
             breizhEvents = if (listener) emptyList() else breizhEvents,
             net = NetUi.view(state?.net),
             netStats = netStats, netStatus = netStatus,
+            monitoring = if (monitoringOffered && !listener) MonitoringState(monitoringData, monitoringCode, monitoringJoined,
+                                                                             monitoringEvents, monitoringNotice) else null,
             friends = if (friendsOffered && !listener) FriendsState(friendsData, friendsAt, friendsBackPoint != null,
                                                                     friendsStats, friendsInvite, friendsNotice) else null,
             freedv = if (hello?.offers("freedv") == true) FreeDvs.view(state?.freedv ?: hello?.freedv, wall() / 1000.0) else null,

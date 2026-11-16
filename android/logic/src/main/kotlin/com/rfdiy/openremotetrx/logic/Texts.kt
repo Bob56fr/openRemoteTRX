@@ -138,6 +138,10 @@ object Texts {
     fun refusal(reason: String, detail: String = ""): String =
         REFUSALS[reason] ?: detail.ifBlank { "Refusé par la station ($reason)." }
 
+    /** Texte d'un refus suivi du code du catalogue (« … [ORT-5116] ») ; tout autre texte que ORT-NNNN est ignoré. */
+    fun withCode(text: String, ort: String?): String =
+        if (ort != null && Regex("^ORT-\\d{4}$").matches(ort)) "$text [$ort]" else text
+
     fun cut(reason: String): String = CUTS[reason] ?: reason
 
     fun loss(code: String): String = LOSSES[code] ?: LOSSES.getValue("client_error")

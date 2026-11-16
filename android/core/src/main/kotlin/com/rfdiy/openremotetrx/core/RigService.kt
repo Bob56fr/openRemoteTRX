@@ -135,6 +135,7 @@ class RigService : Service() {
             override fun alert(kind: LinkAlert) = sounds.play(kind)
         }, netType = { netType() }, radio = { netRadio.take() })
         session.onNetExport = { name, bytes -> RigHub.offerNetExport(name, bytes) }
+        session.onMonitoringReport = { name, bytes -> RigHub.offerMonitoringReport(name, bytes) }
         session.onChange = { state -> onState(state) }
         session.onBandSpots = { spots -> request?.let { BandStore(this).save(it.account.id, spots) } }
         RigHub.service = this

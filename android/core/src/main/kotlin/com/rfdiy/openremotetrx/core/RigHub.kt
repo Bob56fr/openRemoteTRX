@@ -283,6 +283,34 @@ object RigHub {
     fun friendsBack() { service?.onRig { session, now -> session.friendsBack(now) } }
     fun friendsDismiss() { service?.onRig { session, now -> session.friendsDismiss(now) } }
 
+    // Monitoring inter-stations : relayé au module « monlink », qui n'agit jamais sur le poste ; la station qui aide
+    // ne peut que lire et DEMANDER (mêmes actions que la page et le menu 5.5 de TRX Console).
+    fun monitoringWatch(on: Boolean) { service?.onRig { session, now -> session.monitoringWatch(now, on) } }
+    fun monitoringRefresh() { service?.onRig { session, now -> session.monitoringRefresh(now) } }
+    fun monitoringAction(action: String, args: Map<String, Any?> = emptyMap()) {
+        val json = toJson(args) as kotlinx.serialization.json.JsonObject
+        service?.onRig { session, now -> session.monitoringAction(now, action, json) }
+    }
+    fun monitoringEvents(peer: String) { service?.onRig { session, now -> session.monitoringEvents(now, peer) } }
+    fun monitoringReport(peer: String) { service?.onRig { session, now -> session.monitoringReport(now, peer) } }
+    fun monitoringDismiss() { service?.onRig { session, now -> session.monitoringDismiss(now) } }
+    private val _monitoringReport = MutableStateFlow<Pair<String, ByteArray>?>(null)
+    /** Rapport de dépannage reçu en entier : à partager par l'écran (puis `monitoringReportTaken`). */
+    val monitoringReportReady: StateFlow<Pair<String, ByteArray>?> = _monitoringReport.asStateFlow()
+    internal fun offerMonitoringReport(name: String, bytes: ByteArray) { _monitoringReport.value = name to bytes }
+    fun monitoringReportTaken() { _monitoringReport.value = null }
+
+    /** Valeurs Kotlin (texte, nombre, booléen, Map, JsonElement) -> JSON, objets imbriqués compris (profil d'envoi). */
+    private fun toJson(value: Any?): kotlinx.serialization.json.JsonElement = when (value) {
+        null -> kotlinx.serialization.json.JsonNull
+        is kotlinx.serialization.json.JsonElement -> value
+        is Boolean -> kotlinx.serialization.json.JsonPrimitive(value)
+        is Number -> kotlinx.serialization.json.JsonPrimitive(value)
+        is Map<*, *> -> kotlinx.serialization.json.JsonObject(value.entries.filter { it.value != null }
+            .associate { it.key.toString() to toJson(it.value) })
+        else -> kotlinx.serialization.json.JsonPrimitive(value.toString())
+    }
+
     fun setSquelch(value: Double) { service?.onRig { session, now -> session.setSquelch(now, value) } }
 
     fun setOffset(name: String, hz: Int) { service?.onRig { session, now -> session.setOffset(now, name, hz) } }

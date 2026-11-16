@@ -109,6 +109,8 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 /** Onglet Réglages : journal, préférences, sections du téléphone, outils de la station. */
 @Composable
 internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit = {}) {
+            var monitoringOpen by rememberSaveable { mutableStateOf(false) }   // écran « Monitoring » (opérateur)
+            if (monitoringOpen) MonitoringScreen(rig) { monitoringOpen = false }
             // Tablette : taille du texte (mémorisée sur l'appareil ; le PTT et le STOP gardent leur taille)
             if (textPct != null) Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -182,6 +184,9 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             }
             if (rig.net != null && !listener) {                             // sonde réseau (opérateur, station 0.106.0+)
                 OutlinedButton(onClick = { netOpen = true }) { Text("Qualité du réseau (30 jours)") }
+            }
+            if (rig.monitoring != null && !listener) {                      // monitoring inter-stations (opérateur, 0.164.0+)
+                OutlinedButton(onClick = { monitoringOpen = true }) { Text("Monitoring entre stations (aider, être aidé)") }
             }
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
                 OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
