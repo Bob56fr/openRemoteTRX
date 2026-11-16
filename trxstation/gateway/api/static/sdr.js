@@ -60,10 +60,17 @@
   function ticks(center, span, count) {
     /* Graduations « rondes » (Hz) sur la largeur affichée : pas de 1, 2 ou 5 × 10^k. */
     const want = count || 6, raw = span / want, p = Math.pow(10, Math.floor(Math.log10(raw)));
-    const step = [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw) || 10 * p;
+    const step = [1, 2, 5, 10].map((m) => m * p).find((s) => s >= raw * 0.8) || 10 * p;   // pas rond le plus proche
     const lo = center - span / 2, out = [];
     for (let k = Math.ceil(lo / step); k * step <= center + span / 2; k++) out.push(k * step);
     return out;
+  }
+
+  function tickDigits(marks) {
+    /* Décimales (en MHz) qui distinguent des graduations voisines : pas de 100 kHz = 1, 10 kHz = 2, 1 kHz = 3… */
+    if (!marks || marks.length < 2) return 3;
+    const step = Math.abs(marks[1] - marks[0]);
+    return Math.max(1, Math.min(4, Math.ceil(6 - Math.log10(step) - 1e-9)));
   }
 
   function formatMHz(hz, digits) {
@@ -204,7 +211,7 @@
   }
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
-                binFreq, freqAt, ticks, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
+                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

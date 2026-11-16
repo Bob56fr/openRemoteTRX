@@ -98,6 +98,17 @@ test("bridage, balance et séparation gauche / droite", () => {
   assert.ok(sdr.stateText({ state: "running", serial: "X", center: 7e6, fs: 2e6, cpu_total: 40.5, mem_mb: 61.2 }).includes("61 Mo"));
 });
 
+test("graduations plus nombreuses et décimales suivant le pas", () => {
+  const marks = sdr.ticks(7093000, 1536000, 15);
+  assert.ok(marks.length >= 10, "au moins dix graduations sur 1,5 MHz");
+  assert.strictEqual(marks[1] - marks[0], 100000);
+  assert.strictEqual(sdr.tickDigits(marks), 1);
+  assert.strictEqual(sdr.tickDigits([7000000, 7050000]), 2);
+  assert.strictEqual(sdr.tickDigits([7000000, 7010000]), 2);
+  assert.strictEqual(sdr.tickDigits([7000000, 7002000]), 3);
+  assert.strictEqual(sdr.tickDigits([7000000]), 3);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("OK    " + name); } catch (err) { failed++; console.log("ECHEC " + name + "\n      " + String(err.stack || err).split("\n").slice(0, 6).join("\n      ")); }

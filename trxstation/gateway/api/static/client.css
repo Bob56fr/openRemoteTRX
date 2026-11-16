@@ -87,6 +87,9 @@ button, input, select, textarea { font: inherit; }
 .ptt { flex: 1; min-height: 3.6rem; border: 2px solid var(--tx-bord); border-radius: .6rem; background: var(--tx-fond); color: var(--tx-texte); font-size: 1.3rem; font-weight: 800; letter-spacing: .04em; }
 .ptt.tx { background: var(--tx); border-color: var(--tx-actif-bord); color: var(--ptt-texte); }
 .stop { flex: 0 0 26%; border: 2px solid var(--stop-bord); border-radius: .6rem; background: var(--stop-fond); color: var(--stop-texte); font-weight: 800; font-size: 1.05rem; }
+.stop-sub { display: block; font-size: .62rem; font-weight: 500; line-height: 1.1; opacity: .85; white-space: nowrap; }
+.stop.holding .stop-sub { opacity: 1; font-weight: 700; }
+.login-form { display: contents; }
 button:disabled { opacity: .4; }
 
 .subrow { display: flex; align-items: center; gap: .8rem; justify-content: space-between; padding: .15rem 0; }

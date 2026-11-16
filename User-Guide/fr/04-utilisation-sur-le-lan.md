@@ -15,7 +15,11 @@ L'adresse à utiliser est affichée en tête de TRX Console et par le diagnostic
 1. Sur le téléphone ou un PC : `https://<adresse-de-la-station>:8443`
 2. Le navigateur signale un **certificat non reconnu** : c'est attendu (certificat créé par ta station, pas par une
    autorité). « Avancé » puis « Continuer ». Cela ne se fait qu'une fois par appareil.
-3. Connecte-toi avec le compte créé par l'assistant.
+3. Connecte-toi avec le compte créé par l'assistant (Entrée dans le mot de passe suffit).
+
+> **Mot de passe retenu par le navigateur.** Chrome n'enregistre **jamais** un mot de passe sur une page dont le
+> certificat n'est pas reconnu, même après « Continuer ». Avec le certificat créé par ta station, il faut donc le
+> retaper à chaque connexion. Seul un certificat reconnu (voir l'accès à distance, partie 5) lève cette limite.
 
 Ce que tu dois voir : fréquence et mode qui suivent le poste, S-mètre, son reçu (touche le bouton du son si le
 navigateur l'a bloqué).
@@ -24,7 +28,8 @@ Pour **émettre**, la page a besoin du **micro** : le navigateur le demande à l
 propose qu'en HTTPS, d'où le certificat.
 
 > **Sécurité.** Le PTT est une **bascule** : un appui pour émettre, un appui pour revenir en réception. L'état
-> affiché est celui que la station confirme, jamais une supposition. **STOP** coupe à tout moment. Une page masquée
+> affiché est celui que la station confirme, jamais une supposition. **STOP** coupe à tout moment. **STOP maintenu
+> 3 secondes** déconnecte en plus la page de la station (compte à rebours sous le mot STOP). Une page masquée
 > (autre onglet, écran verrouillé) arrête l'émission.
 
 ## 4.3 Plusieurs appareils, plusieurs utilisateurs

@@ -2973,8 +2973,11 @@
       const box = $("sdr-axis");
       if (sdrLast && sdrLast.c === center && sdrLast.s === span) return;
       box.textContent = "";
-      for (const f of sdrx.ticks(center, span, 6)) {
-        const tick = el("span", "", sdrx.formatMHz(f, f % 100000 ? 3 : 1));
+      const count = Math.max(6, Math.min(20, Math.floor((box.clientWidth || 600) / 80)));
+      const marks = sdrx.ticks(center, span, count);
+      const digits = sdrx.tickDigits(marks);
+      for (const f of marks) {
+        const tick = el("span", "", sdrx.formatMHz(f, digits));
         tick.style.left = (100 * (f - (center - span / 2)) / span).toFixed(2) + "%";
         box.appendChild(tick);
       }
@@ -3543,9 +3546,21 @@
         await refreshDevices();                                                  // les noms apparaissent une fois le micro autorisé
         await applyOutput();
         store.set("trx.client_id", clientId);
+        rememberLogin(clientId, password);                                       // le navigateur propose d'enregistrer
         $("password").value = "";                                               // ne reste pas dans la page une fois connecté
       } catch (err) { fail(err); }
     });
+    function rememberLogin(id, password) {
+      /* Proposition d'enregistrement du mot de passe (Chrome : API Credential Management). Chrome ne l'enregistre
+         JAMAIS sur une page dont le certificat n'est pas reconnu (certificat auto-signé accepté à la main). */
+      try {
+        if (window.PasswordCredential && navigator.credentials && navigator.credentials.store) {
+          navigator.credentials.store(new window.PasswordCredential({ id: id, password: password, name: id })).catch(() => {});
+        }
+      } catch (e) { /* navigateur sans cette API : le gestionnaire de mots de passe suit le formulaire */ }
+    }
+    $("login-form").addEventListener("submit", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); $("connect").click(); });
+    $("password").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { if (ev.preventDefault) ev.preventDefault(); $("connect").click(); } });
     $("disconnect").addEventListener("click", () => client.disconnect());
     $("reconnect-cancel").addEventListener("click", () => client.cancelReconnect());
     $("reconnect-select").value = ["0", "15", "30", "60"].includes(store.get("trx.reconnect", "15")) ? store.get("trx.reconnect", "15") : "15";
@@ -3556,6 +3571,32 @@
     $("armed").addEventListener("change", (ev) => client.setArmed(ev.target.checked));
     $("ptt").addEventListener("click", () => client.pressPtt().catch(fail));
     $("stop").addEventListener("click", () => client.stop().catch(fail));
+    // STOP maintenu 3 s : déconnexion de la station (le premier appui a déjà remis en réception, comme toujours)
+    const STOP_HOLD_MS = 3000, STOP_SUB = "appui long : déconnecter";
+    let stopHold = null;
+    function stopHoldCancel() {
+      if (!stopHold) return;
+      window.clearInterval(stopHold);
+      stopHold = null;
+      $("stop-sub").textContent = STOP_SUB;
+      $("stop").classList.remove("holding");
+    }
+    $("stop").addEventListener("pointerdown", () => {
+      stopHoldCancel();
+      if ($("stop").disabled) return;
+      const t0 = Date.now();
+      $("stop").classList.add("holding");
+      $("stop-sub").textContent = "déconnexion dans 3 s…";
+      stopHold = window.setInterval(() => {
+        const left = STOP_HOLD_MS - (Date.now() - t0);
+        if (left > 0) { $("stop-sub").textContent = "déconnexion dans " + Math.ceil(left / 1000) + " s…"; return; }
+        stopHoldCancel();
+        ui.log("STOP maintenu 3 s : déconnexion de la station.", "");
+        client.stop().catch(() => {}).then(() => client.disconnect());
+      }, 100);
+    });
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("stop").addEventListener(type, stopHoldCancel);
+    $("stop").addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });
     $("mode-pill").addEventListener("click", () => {                                 // USB-D <-> LSB-D ; USB -> USB-D ; LSB -> LSB-D ; autre -> USB-D
       if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait
       client.pressModePill().catch(fail);

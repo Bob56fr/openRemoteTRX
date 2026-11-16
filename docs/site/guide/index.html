@@ -344,11 +344,12 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
 <ol>
 <li>Sur le téléphone ou un PC : <code>https://&lt;adresse-de-la-station&gt;:8443</code></li>
 <li>Le navigateur signale un <strong>certificat non reconnu</strong> : c&#x27;est attendu (certificat créé par ta station, pas par une autorité). « Avancé » puis « Continuer ». Cela ne se fait qu&#x27;une fois par appareil.</li>
-<li>Connecte-toi avec le compte créé par l&#x27;assistant.</li>
+<li>Connecte-toi avec le compte créé par l&#x27;assistant (Entrée dans le mot de passe suffit).</li>
 </ol>
+<div class="note"><p><strong>Mot de passe retenu par le navigateur.</strong> Chrome n&#x27;enregistre <strong>jamais</strong> un mot de passe sur une page dont le certificat n&#x27;est pas reconnu, même après « Continuer ». Avec le certificat créé par ta station, il faut donc le retaper à chaque connexion. Seul un certificat reconnu (voir l&#x27;accès à distance, partie 5) lève cette limite.</p></div>
 <p>Ce que tu dois voir : fréquence et mode qui suivent le poste, S-mètre, son reçu (touche le bouton du son si le navigateur l&#x27;a bloqué).</p>
 <p>Pour <strong>émettre</strong>, la page a besoin du <strong>micro</strong> : le navigateur le demande à la première émission. Il ne le propose qu&#x27;en HTTPS, d&#x27;où le certificat.</p>
-<div class="note danger"><p><strong>Sécurité.</strong> Le PTT est une <strong>bascule</strong> : un appui pour émettre, un appui pour revenir en réception. L&#x27;état affiché est celui que la station confirme, jamais une supposition. <strong>STOP</strong> coupe à tout moment. Une page masquée (autre onglet, écran verrouillé) arrête l&#x27;émission.</p></div>
+<div class="note danger"><p><strong>Sécurité.</strong> Le PTT est une <strong>bascule</strong> : un appui pour émettre, un appui pour revenir en réception. L&#x27;état affiché est celui que la station confirme, jamais une supposition. <strong>STOP</strong> coupe à tout moment. <strong>STOP maintenu 3 secondes</strong> déconnecte en plus la page de la station (compte à rebours sous le mot STOP). Une page masquée (autre onglet, écran verrouillé) arrête l&#x27;émission.</p></div>
 <h3 id="p-04-43-plusieurs-appareils-plusieurs-utilisateurs">4.3 Plusieurs appareils, plusieurs utilisateurs</h3>
 <p>Règle simple : <strong>un compte par appareil</strong>, nommé d&#x27;après l&#x27;appareil (<code>PC</code>, <code>S25</code>, <code>tablette</code>…), même s&#x27;ils sont à toi. Un même compte ouvert sur un second appareil <strong>ferme la connexion du premier</strong> (et coupe son émission s&#x27;il émettait). Avec un compte par appareil, la station sait lequel émet, et tu peux retirer un seul appareil (téléphone perdu) sans toucher aux autres.</p>
 <p>Tout se fait au menu <strong>4.3 « Comptes opérateurs »</strong> de TRX Console :</p>
