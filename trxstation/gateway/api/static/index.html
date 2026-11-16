@@ -283,7 +283,8 @@
         <div class="row">
           <span id="sdr-pick" class="note"></span>
           <button id="sdr-here" class="chip" hidden title="Écouter cette fréquence avec le SDR">Écouter ici</button>
-          <button id="sdr-qsy" class="chip" hidden title="Accorder le TRX sur cette fréquence (refusé pendant l'émission)">QSY du TRX</button>
+          <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence du SDR : celle touchée sur le waterfall, sinon celle écoutée (refusé pendant l'émission)">QSY SDR → TRX</button>
+          <button id="sdr-qsy-rev" class="chip" title="Le SDR écoute la fréquence du TRX (le waterfall suit si elle sort de la fenêtre)">QSY TRX → SDR</button>
         </div>
         <div id="sdr-listen-box">
           <div class="row">

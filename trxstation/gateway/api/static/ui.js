@@ -122,6 +122,9 @@
     const fail = (e) => ui.log(e && e.message ? e.message : String(e), "bad");
     const safeJson = (text) => { try { return JSON.parse(text); } catch (e) { return null; } };
     let rxMedia = null;                                                            // flux reçu (débrouillage du scrambler)
+    // son du SDR (station 0.142.0+) : son propre élément, sur la MÊME sortie que le son reçu, coupé avec lui
+    const sdrSound = typeof Audio === "function" ? new Audio() : null;
+    function sdrMirrorOutput() { if (sdrSound) sdrSound.muted = audio.muted; }
     function audioContext48(Ctx) { try { return new Ctx({ sampleRate: 48000 }); } catch (e) { return new Ctx(); } }
     let freqEls = [], drag = null, kpText = "";
     const bandButtons = new Map();
@@ -246,6 +249,7 @@
     async function applyOutput() {
       const id = $("out-select").value;
       if (audio.setSinkId) { try { await audio.setSinkId(id); } catch (err) { ui.log("Sortie audio non applicable : " + err.message, "warn"); } }
+      if (sdrSound && sdrSound.setSinkId) { try { await sdrSound.setSinkId(id); } catch (err) { /* sortie par défaut */ } }
       if (audioCtx && audioCtx.setSinkId) { try { await audioCtx.setSinkId(id); } catch (err) { /* les alertes restent sur la sortie par défaut */ } }
       const label = id ? deviceLabel("audiooutput", id)
         : (Array.from($("out-select").options).slice(1).map((o) => o.textContent).find((t) => /^(par défaut|default)/i.test(t)) || "");
@@ -255,6 +259,7 @@
         ui.log("Sortie audio COUPÉE : « " + label + " » est une entrée audio du poste (le son reçu serait injecté dans l'émetteur). " +
                "Choisis une autre sortie, ou coche « Ce n'est pas le poste ».", "bad");
       } else { audio.muted = $("mute").checked; }
+      sdrMirrorOutput();                                                             // le son du SDR suit (jamais vers le poste)
     }
     if (!audio.setSinkId) $("out-label").hidden = true;
 
@@ -2557,6 +2562,7 @@
     function rxStop() {
       if (!rxGraph) return;
       try { rxGraph.raw.pause(); rxGraph.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
+      if (rxGraph.rawSdr) { try { rxGraph.rawSdr.pause(); rxGraph.rawSdr.srcObject = null; } catch (e) { /* déjà arrêté */ } }
       if (rxGraph.ctx.close) rxGraph.ctx.close().catch(() => {});
       rxGraph = null;
     }
@@ -2572,8 +2578,11 @@
         // Chrome : un flux WebRTC distant n'arrive à Web Audio que s'il est aussi lu par un élément (ici muet)
         const raw = new Audio(); raw.muted = true; raw.srcObject = media; raw.play().catch(() => {});
         const dest = ctx.createMediaStreamDestination();
-        const state = { ctx, raw, dest, node: null, st: null };
+        const state = { ctx, raw, dest, node: null, st: null, trxGain: null, sdrGain: null, rawSdr: null };
         rxGraph = state;
+        if (pans && sdrMedia) {                                                       // son du SDR : même chaîne, autre oreille
+          state.rawSdr = new Audio(); state.rawSdr.muted = true; state.rawSdr.srcObject = sdrMedia; state.rawSdr.play().catch(() => {});
+        }
         Promise.all([wantScr ? scrWorklet(ctx) : null, wantSt ? stWorklet(ctx) : null]).then(() => {
           if (rxGraph !== state) return;
           let head = ctx.createMediaStreamSource(media);
@@ -2587,8 +2596,15 @@
             head.connect(state.st); head = state.st;
           }
           if (pans) {                                                                   // séparation TRX / SDR (module SDR)
+            state.trxGain = ctx.createGain(); state.trxGain.gain.value = trxLevel();
             const pan = ctx.createStereoPanner(); pan.pan.value = pans.trx;
-            head.connect(pan); head = pan;
+            head.connect(state.trxGain); state.trxGain.connect(pan); head = pan;
+            if (state.rawSdr) {
+              state.sdrGain = ctx.createGain(); state.sdrGain.gain.value = sdrLevel();
+              const panSdr = ctx.createStereoPanner(); panSdr.pan.value = pans.sdr;
+              ctx.createMediaStreamSource(sdrMedia).connect(state.sdrGain); state.sdrGain.connect(panSdr); panSdr.connect(dest);
+            }
+            audio.volume = 1;                                                           // volumes : gains de la chaîne
           }
           head.connect(dest);
           scrRender(); stRender();
@@ -2618,6 +2634,7 @@
       if (rxMedia) {
         audio.srcObject = rxStream(rxMedia);
         audio.play().catch(() => {});
+        trxVolume();                                                                // gain de chaîne ou volume de l'élément
       }
       scrRender(); stRender();
     }
@@ -2839,7 +2856,7 @@
       const on = sdrOffered();
       $("sec-sdr").hidden = !on;
       if (!on) {
-        sdrPicked = null; $("sdr-qsy").hidden = true; $("sdr-here").hidden = true;
+        sdrPicked = null; $("sdr-here").hidden = true;
         if (sdrSound) { try { sdrSound.pause(); } catch (e) { /* rien */ } }
         return;
       }
@@ -2864,45 +2881,30 @@
       $("sdr-gain").textContent = sdrx.gainText(state);
       sdrListenRender(state);
     }
-    // ---- écoute du SDR (station 0.142.0+) : seconde piste, lue par son propre élément audio
-    const sdrSound = typeof Audio === "function" ? new Audio() : null;
-    let sdrMedia = null, sdrGraph = null;
+    // ---- écoute du SDR (station 0.142.0+) : seconde piste, lue par son propre élément audio (sdrSound, plus haut) ;
+    // en séparation gauche / droite, elle entre dans la chaîne Web Audio du TRX (rxStream) et l'élément se tait
+    let sdrMedia = null;
     let sdrSplit = 0;                                    // 0 mélange, 1 TRX à gauche / SDR à droite, 2 l'inverse
     try { sdrSplit = Number(store.get("trx.sdr.split", "0")) || 0; } catch (e) { sdrSplit = 0; }
     function sdrBalance() { return sdrx ? sdrx.balanceGains(client.sdrListening ? $("sdr-bal").value : 0) : { trx: 1, sdr: 1 }; }
     function sdrSplitActive() { return !!(sdrx && sdrSplit && client.sdrListening && !stActive()); }
-    function trxVolume() { audio.volume = Math.max(0, Math.min(1, parseFloat($("volume").value) * sdrBalance().trx)); }
-    function sdrVolume() { if (sdrSound) sdrSound.volume = sdrx.volumeOf($("sdr-vol").value) * sdrBalance().sdr; }
-    function sdrStopGraph() {
-      if (!sdrGraph) return;
-      try { sdrGraph.raw.pause(); sdrGraph.raw.srcObject = null; } catch (e) { /* déjà arrêté */ }
-      if (sdrGraph.ctx.close) sdrGraph.ctx.close().catch(() => {});
-      sdrGraph = null;
+    function trxLevel() { return Math.max(0, Math.min(1, parseFloat($("volume").value) * sdrBalance().trx)); }
+    function sdrLevel() { return sdrx ? sdrx.volumeOf($("sdr-vol").value) * sdrBalance().sdr : 1; }
+    function trxVolume() {
+      if (rxGraph && rxGraph.trxGain) { rxGraph.trxGain.gain.value = trxLevel(); audio.volume = 1; }
+      else audio.volume = trxLevel();
+    }
+    function sdrVolume() {
+      if (rxGraph && rxGraph.sdrGain) rxGraph.sdrGain.gain.value = sdrLevel();
+      if (sdrSound) sdrSound.volume = sdrLevel();
     }
     function sdrRoute() {
-      /* Son du SDR vers son élément : tel quel, ou placé sur une oreille (séparation gauche / droite). */
+      /* Son du SDR : lu par son élément (mélange), ou dans la chaîne du TRX (séparation : rxStream) et l'élément se tait. */
       if (!sdrSound || !sdrMedia) return;
-      sdrStopGraph();
-      let out = sdrMedia;
-      const pans = sdrSplitActive() ? sdrx.splitPans(sdrSplit) : null;
-      if (pans) {
-        try {
-          const Ctx = window.AudioContext || window.webkitAudioContext;
-          const ctx = audioContext48(Ctx);
-          const raw = new Audio(); raw.muted = true; raw.srcObject = sdrMedia; raw.play().catch(() => {});   // Chrome : flux distant lu
-          const pan = ctx.createStereoPanner(); pan.pan.value = pans.sdr;
-          const dest = ctx.createMediaStreamDestination();
-          ctx.createMediaStreamSource(sdrMedia).connect(pan); pan.connect(dest);
-          if (ctx.resume) ctx.resume().catch(() => {});
-          sdrGraph = { ctx, raw };
-          out = dest.stream;
-        } catch (e) {
-          ui.log("Séparation gauche / droite impossible sur ce navigateur : son du SDR au milieu.", "warn");
-        }
-      }
       try {
-        sdrSound.srcObject = out;
-        sdrVolume();
+        if (sdrSplitActive()) { sdrSound.pause(); sdrSound.srcObject = null; return; }
+        if (sdrSound.srcObject !== sdrMedia) sdrSound.srcObject = sdrMedia;
+        sdrVolume(); sdrMirrorOutput();
         if (client.sdrListening) sdrSound.play().catch(() => {});
       } catch (e) { /* navigateur sans seconde piste : le waterfall reste */ }
     }
@@ -2910,10 +2912,11 @@
       if (!sdrSound) return;
       try { sdrMedia = stream || new MediaStream([track]); } catch (e) { return; }
       sdrRoute();
+      if (sdrSplitActive()) rxApply();                                            // séparation déjà choisie : chaîne refaite avec le SDR
     }
     function sdrEarsChanged() {
-      /* Écoute, balance ou séparation changée : les deux sources sont recalculées (TRX : sa chaîne, avec ou sans panoramique). */
-      trxVolume(); sdrRoute(); rxApply();
+      /* Écoute ou séparation changée : chaîne du TRX refaite (avec ou sans le SDR), puis volumes. */
+      sdrRoute(); rxApply(); trxVolume(); sdrVolume();
     }
     function sdrModeOptions(mode) {
       const sel = $("sdr-mode");
@@ -3042,7 +3045,6 @@
         const cv = $("sdr-wf"), width = cv.clientWidth || cv.width;
         sdrPicked = sdrx.freqAt(ev.offsetX, width, sdrLast.c, sdrLast.s);
         $("sdr-pick").textContent = sdrPicked ? "Fréquence : " + sdrx.formatMHz(sdrPicked, 4) + " MHz" : "";
-        $("sdr-qsy").hidden = !sdrPicked;
         $("sdr-here").hidden = !sdrPicked || !client.sdrAudioOffered;
       });
       $("sdr-here").addEventListener("click", () => { if (sdrPicked) sdrSend({ dfreq_hz: sdrPicked }); });
@@ -3077,12 +3079,21 @@
         }
         sdrEarsChanged();
       });
-      $("sdr-qsy").addEventListener("click", () => {
-        if (!sdrPicked) return;
-        client.qsy(sdrPicked).then((res) => {
-          if (res && res.ok) ui.log("QSY du TRX vers " + sdrx.formatMHz(sdrPicked, 4) + " MHz (fréquence lue sur le SDR).", "");
+      $("sdr-qsy").addEventListener("click", () => {                     // QSY SDR -> TRX : fréquence touchée, sinon écoutée
+        const st = client.sdrState || {};
+        const hz = sdrPicked || (Number.isFinite(st.dfreq) ? st.dfreq : null);
+        if (!hz) { ui.log("QSY SDR → TRX : touchez d'abord une fréquence sur le waterfall du SDR.", "warn"); return; }
+        client.qsy(hz).then((res) => {
+          if (res && res.ok) ui.log("QSY SDR → TRX : TRX sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
           else if (res) ui.log(web.reasonText(res.reason, res.detail), "warn");
         }).catch(() => {});
+      });
+      $("sdr-qsy-rev").addEventListener("click", () => {                 // QSY TRX -> SDR : le SDR écoute la fréquence du TRX
+        const rig = (client.state && client.state.rig) || {}, st = client.sdrState || {};
+        const hz = rig.frequency_hz;
+        if (!Number.isFinite(hz)) { ui.log("QSY TRX → SDR : fréquence du TRX inconnue.", "warn"); return; }
+        sdrSend(sdrx.tuneArgs(hz, sdrLast ? sdrLast.c : st.center, sdrLast ? sdrLast.s : 0));
+        ui.log("QSY TRX → SDR : SDR sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
       });
     }
 
@@ -3518,7 +3529,7 @@
     $("connect").addEventListener("click", async () => {
       const clientId = $("client-id").value.trim(), password = $("password").value;
       if (!clientId || !password) { ui.log("Renseigne l'identifiant et le mot de passe.", "warn"); return; }
-      audio.muted = $("mute").checked;
+      audio.muted = $("mute").checked; sdrMirrorOutput();
       if (alertLevel !== "off") alertContext();          // le navigateur n'autorise le son qu'après un geste : on le prépare ici
       try {
         store.set("trx.mic", $("mic-select").value);
@@ -3787,7 +3798,7 @@
       try { const res = await client.deleteMemory(id); if (res.ok) closeForm(); } catch (err) { fail(err); }
     });
 
-    $("mute").addEventListener("change", (ev) => { audio.muted = ev.target.checked; });
+    $("mute").addEventListener("change", (ev) => { audio.muted = ev.target.checked || outputIsRig; sdrMirrorOutput(); });
     $("out-select").addEventListener("change", () => { store.set("trx.out", $("out-select").value); applyOutput(); });
     $("mic-select").addEventListener("change", () => { store.set("trx.mic", $("mic-select").value); ui.log("Le micro choisi s'appliquera à la prochaine connexion.", ""); });
     $("volume").addEventListener("input", () => trxVolume());                        // balance TRX / SDR comprise
