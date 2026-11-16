@@ -65,9 +65,9 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
     ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum")),
-    ("3", "safety", ("temperature", "bands", "transmit")),
+    ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network")),
-    ("5", "features", ("cluster", "breizh", "friends", "swr_report")),
+    ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
     ("7", "updates", ("update", "rollback", "install_zip")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator")),
@@ -95,6 +95,52 @@ def menu_number(method: str) -> str:
 
 
 UPDATE_MENU = menu_number("update")
+TOT_ABS_MAX_S = 600               # menu 3.4 : TOT absolu du superviseur, au plus 10 minutes depuis la console
+# Menu 5.5 « Fonctions en service » : (clé du libellé, section de station.toml portant `enabled` ou None,
+# module de [modules] run ou None, menu de ses réglages ou None). Activer = enabled ET module lancé.
+FEATURES = (
+    ("features.cluster", "cluster", "cluster", "cluster"),
+    ("features.freedv", "freedv", None, None),
+    ("features.freedv_activity", None, "freedv_activity", None),
+    ("features.selcall", "selcall", None, None),
+    ("features.presence", "presence", "presence", "friends"),
+    ("features.monlink", "monitor_link", "monlink", "monitoring"),
+    ("features.sdr", "sdr", "sdr", "sdr"),
+    ("features.breizh", "breizh", None, "breizh"),
+    ("features.netprobe", "netprobe", None, "network"),
+    ("features.swr", "swr", None, "swr_report"),
+)
+
+
+def feature_on(cfg, section: str | None, module: str | None) -> bool:
+    on = getattr(getattr(cfg, section), "enabled") is True if section else True
+    return on and (module in cfg.modules.run if module else True)
+
+
+def set_feature(cfg, section: str | None, module: str | None, on: bool) -> None:
+    if section:
+        getattr(cfg, section).enabled = on
+    if module:
+        run = [m for m in cfg.modules.run if m != module]
+        cfg.modules.run = [*run, module] if on else run
+
+
+def mask_notify_url(url: str) -> str:
+    """Adresse ntfy montrée sans son secret : https://ntfy.sh/abc… (qui connaît le sujet lit les alertes)."""
+    if not url:
+        return ""
+    scheme, _, rest = url.partition("://")
+    host, _, topic = rest.partition("/")
+    return f"{scheme}://{host}/" + (topic[:3] + "…" if topic else "")
+
+
+_NOTIFY_LINE = re.compile(r'^([+-]?\s*notify_url\s*=\s*")([^"]*)(".*)$')
+
+
+def hide_secret_line(line: str) -> str:
+    """Ligne de différences de station.toml : l'adresse ntfy (sujet secret) n'est jamais montrée en entier."""
+    m = _NOTIFY_LINE.match(line)
+    return f"{m.group(1)}{mask_notify_url(m.group(2))}{m.group(3)}" if m else line
 STATUS_FRESH_S = 10              # fichier d'état de la passerelle plus vieux : passerelle arrêtée
 HANG_DUMP_S = 600                 # tests : un test bloqué 10 minutes affiche sa pile (faulthandler de pytest)
 
@@ -458,6 +504,133 @@ class Console:
                 self.start()
         elif self.yes(self.t("assistant.3")):
             self.start()
+
+    # ------------------------------------------------------------------ écrans dédiés (étape 221)
+
+    def _load_for_edit(self):
+        """(contenu d'origine, configuration) pour un écran de réglage ; None si la station n'est pas configurée."""
+        from . import config as cfgmod
+        if not self.config.exists():
+            full = menu_number("assistant")
+            self.say(self.t("setup_part.1", menu=full))
+            return None
+        try:
+            return self.config.read_bytes(), cfgmod.load_unchecked(self.config)[0]
+        except (OSError, cfgmod.ConfigError) as exc:
+            self.say(self.t("visitors.2", config=self.config, exc=exc))
+            return None
+
+    def local_operator(self) -> None:
+        """Opérateur sur place (règles d'émission, décisions du 2026-10-27 et du 2026-11-16) : station partagée ou non,
+        TOT absolu du superviseur, durée tolérée d'une émission locale quand la présence est prouvée. Le superviseur
+        ne peut que COUPER : ces réglages ne déclenchent jamais d'émission."""
+        from .config import LOCAL_TX_CEILING_S
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        v = cfg.supervisor
+        self.say(self.t("local_operator.1"))
+        self.say(self.t("local_operator.state", shared=self.t("ask_yes.2") if v.allow_local_tx else self.t("ask_yes.3"),
+                        abs=v.tot_abs_s, present=v.local_tx_max_s))
+        v.allow_local_tx = self._ask_yes(self.t("local_operator.2"), v.allow_local_tx)
+        v.tot_abs_s = self._ask_int(self.t("local_operator.3"), v.tot_abs_s, cfg.safety.tot_ceiling_s + 1, TOT_ABS_MAX_S)
+        if v.allow_local_tx:
+            v.local_tx_max_s = self._ask_int(self.t("local_operator.4"), v.local_tx_max_s, 1, LOCAL_TX_CEILING_S)
+        self._save_accounts(original, cfg, live=False)
+
+    def alerts(self) -> None:
+        """Alertes sur le téléphone (ntfy) : adresse, langue, message « Station en service », envoi d'un essai.
+        L'adresse est un secret (qui la connaît lit les alertes) : jamais affichée en entier."""
+        while True:
+            loaded = self._load_for_edit()
+            if loaded is None:
+                return
+            original, cfg = loaded
+            v = cfg.supervisor
+            self.say(self.t("alerts.state", url=mask_notify_url(v.notify_url) or self.t("alerts.none"),
+                            lang=v.notify_lang, alive=v.alive_every_h))
+            choice = self.ask(self.t("alerts.menu")).strip()
+            if not choice:
+                return
+            if choice == "4":
+                self._alert_test(v.notify_url, v.notify_lang)
+                continue
+            if choice == "1":
+                answer = self.ask(self.t("alerts.url")).strip()
+                if not answer:
+                    continue
+                if answer == "-":
+                    v.notify_url = ""
+                elif answer.startswith(("https://", "http://")) and " " not in answer and len(answer) <= 300:
+                    v.notify_url = answer
+                else:
+                    self.say(self.t("alerts.url_bad"))
+                    continue
+            elif choice == "2":
+                answer = self.ask(self.t("alerts.lang", lang=v.notify_lang)).strip().lower()
+                if answer not in ("", "fr", "en"):
+                    self.say(self.t("alerts.lang_bad"))
+                    continue
+                v.notify_lang = answer or v.notify_lang
+            elif choice == "3":
+                answer = self.ask(self.t("alerts.alive", alive=v.alive_every_h)).strip().replace(",", ".")
+                try:
+                    hours = float(answer) if answer else v.alive_every_h
+                except ValueError:
+                    hours = -1.0
+                if hours != 0 and not 0.25 <= hours <= 168:
+                    self.say(self.t("alerts.alive_bad"))
+                    continue
+                v.alive_every_h = hours
+            else:
+                self.say(self.t("visitors.4"))
+                continue
+            self._save_accounts(original, cfg, live=False)
+
+    def _alert_test(self, url: str, lang: str) -> None:
+        """Envoie le code ORT-8025 à l'adresse donnée, tout de suite, et dit si l'envoi a échoué."""
+        from .errors import codes
+        from .supervisor import notify
+        if not url:
+            self.say(self.t("alerts.none_to_test"))
+            return
+        failures: list[str] = []
+
+        def post(target: str, title: str, message: str, priority: str = "") -> None:
+            try:
+                notify._default_post(target, title, message, priority)
+            except Exception as exc:                       # réseau, adresse, délai : le dire à l'opérateur
+                failures.append(str(exc)[:200])
+                raise
+
+        sender = notify.Notifier(url, post=post, threaded=False, min_interval_s=0, lang=lang)
+        sender.alert(codes.ORT_8025, heure=time.strftime("%H:%M"))
+        self.say(self.t("alerts.test_failed", exc=failures[0]) if failures else self.t("alerts.test_sent"))
+
+    def features_switch(self) -> None:
+        """Interrupteur « En service » de chaque fonction : son réglage enabled ET sa place dans [modules] run. Une
+        fonction qui demande d'autres réglages est refusée par la validation, avec le menu où les faire."""
+        while True:
+            loaded = self._load_for_edit()
+            if loaded is None:
+                return
+            original, cfg = loaded
+            self.say(self.t("features.title"))
+            for n, (key, section, module, menu) in enumerate(FEATURES, 1):
+                state = self.t("features.on") if feature_on(cfg, section, module) else self.t("features.off")
+                where = self.t("features.where", menu=menu_number(menu)) if menu else ""
+                label = self.t(key)
+                self.say(f"  {n:>2}) [{state}] {label}{where}")
+            answer = self.ask(self.t("features.ask")).strip()
+            if not answer:
+                return
+            if not answer.isdigit() or not 1 <= int(answer) <= len(FEATURES):
+                self.say(self.t("visitors.4"))
+                continue
+            _, section, module, _ = FEATURES[int(answer) - 1]
+            set_feature(cfg, section, module, not feature_on(cfg, section, module))
+            self._save_accounts(original, cfg, live=False)
 
     def indicator(self) -> None:
         """Extension GNOME installée par install.sh (lecture seule) : l'activer ou la désactiver pour ce compte."""
@@ -1139,7 +1312,7 @@ class Console:
         [access]) : pas de redémarrage proposé. Vrai si enregistré."""
         before = original.decode("utf-8", "replace").splitlines()
         after = edited.decode("utf-8", "replace").splitlines()
-        diff = [line for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
+        diff = [hide_secret_line(line) for line in difflib.unified_diff(before, after, "avant", "après", n=0, lineterm="")
                 if not line.startswith(("---", "+++", "@@"))]
         self.say(self.t("save_config.1") + "\n".join("  " + line for line in diff[:MAX_DIFF_LINES])
                  + (self.t("save_config.2", v=len(diff) - MAX_DIFF_LINES) if len(diff) > MAX_DIFF_LINES else ""))
@@ -1666,7 +1839,8 @@ class Console:
             except (OSError, ValueError):
                 status = None
             if not status or not status.get("enabled"):
-                self.say(self.t("friends.1"))
+                switch_menu, start_menu = menu_number("features_switch"), menu_number("start")
+                self.say(self.t("friends.1", menu=switch_menu, start=start_menu))
                 return
             self.say("\n" + self.friends_summary(status))
             choice = self.ask(self.t("friends.2")).strip()
@@ -1850,8 +2024,8 @@ class Console:
             except (OSError, ValueError):
                 status = None
             if not status or not status.get("enabled"):
-                edit_menu, start_menu = menu_number("edit_config"), menu_number("start")
-                self.say(self.t("monitoring.off", menu=edit_menu, start=start_menu))
+                switch_menu, start_menu = menu_number("features_switch"), menu_number("start")
+                self.say(self.t("monitoring.off", menu=switch_menu, start=start_menu))
                 return
             self.say("\n" + self.monitoring_summary(status))
             choice = self.ask(self.t("monitoring.menu")).strip()

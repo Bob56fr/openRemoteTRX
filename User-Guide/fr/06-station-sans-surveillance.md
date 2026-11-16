@@ -12,9 +12,10 @@ les heures (s'il n'arrive plus, la station ou sa connexion est en panne).
 2. Choisis un **nom de sujet long et impossible à deviner** (par exemple 20 lettres et chiffres au hasard) :
    sur le serveur public ntfy.sh, quiconque connaît le nom lit les messages.
 3. Abonne-toi à ce sujet dans l'application ntfy.
-4. Sur la station, menu **8.1**, section `[supervisor]` : `notify_url = "https://ntfy.sh/<ton-sujet>"`. Redémarre
-   la station (menu 1.1).
-5. Vérifie : le message « Station en service » arrive dans l'heure.
+4. Sur la station, menu **3.5** « Alertes sur le téléphone » : choix 1, colle l'adresse
+   `https://ntfy.sh/<ton-sujet>`, enregistre, accepte le redémarrage. L'écran ne montre jamais l'adresse en entier.
+5. Vérifie : choix 4, « Envoyer une alerte d'essai » ; le téléphone doit sonner tout de suite (code ORT-8025).
+   Ensuite, le message « Station en service » arrive toutes les heures (choix 3 pour changer ce rythme).
 
 Chaque alerte porte un code « ORT-NNNN » avec un lien vers son explication (partie 8).
 
@@ -49,4 +50,5 @@ Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart 
   le TOT absolu (135 s), sauf si l'opérateur a touché le poste (volume, fréquence, mode, sortie du mode DATA…) dans
   les 2 minutes avant de parler ou pendant qu'il parle : la station le sait présent et le laisse parler jusqu'à
   5 minutes (`local_tx_max_s`), avec une simple alerte entre les deux. Le minuteur du poste, s'il est réglé plus
-  court, coupe avant. Gardez `allow_local_tx = true` : avec `false`, un micro tenu enfoncé mène au mode sûr.
+  court, coupe avant. Ces réglages sont au menu **3.4** « Opérateur sur place » : gardez « station partagée » ;
+  sinon, un micro tenu enfoncé mène au mode sûr.

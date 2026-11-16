@@ -149,7 +149,7 @@ def test_menu_when_disabled_explains_how_to_enable(tmp_path):
     out: list[str] = []
     Console(tmp_path / "station.toml", FakeRunner(), ask=lambda _: "", say=out.append, python="py").monitoring()
     text = "\n".join(out)
-    assert "[monitor_link]" in text and "monlink" in text and "8.1" in text
+    assert "[monitor_link]" in text and "monlink" in text and "5.5" in text
 
 
 def test_monitor_row():

@@ -318,6 +318,24 @@ quand = "At commissioning, after the PC address changed, or to open the station 
 modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
 admin = true
 
+[menus.local_operator]
+role = "Sets what the station does when someone <strong>transmits with the transceiver microphone</strong>, in front of it. <strong>Shared station</strong> (default): such a transmission is only cut by the supervisor <strong>absolute TOT</strong> (135 s by default), or after the allowed time (300 s by default) when the operator presence is proven (they touched the transceiver just before). Otherwise any local transmission is cut at once. Remote transmission stays blocked during a local transmission and 2 minutes after."
+quand = "At commissioning, if an operator uses the transceiver on site, or if the station goes into safe mode after transmissions with the transceiver microphone."
+modifie = "The <code>[supervisor]</code> section of <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), through the checked path of menu 8.1; the station restarts on request."
+admin = true
+
+[menus.alerts]
+role = "Sets the <strong>alerts on the phone</strong> through ntfy: the address (a long secret topic: whoever knows it reads the alerts; the screen never shows it in full), the language (fr or en), the \"Station in service\" message (every N hours, silent), and <strong>sends a test alert</strong> (code ORT-8025) to check that everything arrives."
+quand = "At commissioning (guide, part 6), after changing phone or ntfy subscription, or when no alert arrives."
+modifie = "The <code>[supervisor]</code> section of <code>station.toml</code> (<code>notify_url</code>, <code>notify_lang</code>, <code>alive_every_h</code>), through the checked path of menu 8.1; the test writes nothing."
+admin = true
+
+[menus.features_switch]
+role = "Turns each station <strong>feature</strong> on or off by its number: DX Cluster, FreeDV, FreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box, network probe, SWR measurement. The switch sets both the feature and the start of its module. A feature that needs other settings is refused with the menu where to make them."
+quand = "To try or remove a feature without editing <code>station.toml</code>."
+modifie = "The feature sections (<code>enabled</code>) and <code>[modules] run</code> of <code>station.toml</code>, through the checked path of menu 8.1; the station restarts on request."
+admin = true
+
 [menus.breizh]
 role = "Links the station to <strong>Breizh Audio Box</strong>, the voice processing that runs on a PC on the same local network: the operator's voice goes through Breizh before reaching the transceiver. Here you <strong>create the pairing key</strong> (shown <strong>only once</strong>, to copy into the \"OpenRemoteTRX\" tab of the Breizh settings together with the station address and port), set the <strong>IP address</strong> and <strong>UDP port</strong> of the Breizh PC, <strong>enable or disable</strong> routing through Breizh, run a <strong>link test without audio</strong> and read the <strong>log</strong> (connections, fallbacks, refusals). The current link state (ready, transmitting through Breizh, fallback, refused, round trip) is shown at the top."
 quand = "When setting up Breizh, after reinstalling Breizh (new key), when the page or the app report a fallback, or to check the link before transmitting."

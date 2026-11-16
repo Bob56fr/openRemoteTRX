@@ -318,6 +318,24 @@ quand = "À la mise en service, après un changement d'adresse du PC, ou pour ou
 modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true
 
+[menus.local_operator]
+role = "Règle ce que fait la station quand quelqu'un <strong>émet au micro du poste</strong>, devant lui. <strong>Station partagée</strong> (défaut) : cette émission n'est coupée que par le <strong>TOT absolu</strong> du superviseur (135 s par défaut), ou après la durée tolérée (300 s par défaut) quand la présence de l'opérateur est prouvée (il a touché le poste juste avant). Sinon, toute émission locale est coupée aussitôt. L'émission à distance reste bloquée pendant une émission locale puis 2 minutes."
+quand = "À la mise en service, si un opérateur se sert du poste sur place, ou si la station passe en mode sûr après des émissions au micro du poste."
+modifie = "La section <code>[supervisor]</code> de <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), par le chemin vérifié du menu 8.1 ; la station redémarre sur ta demande."
+admin = true
+
+[menus.alerts]
+role = "Règle les <strong>alertes sur le téléphone</strong> par ntfy : l'adresse (un sujet long et secret : qui le connaît lit les alertes ; l'écran ne la montre jamais en entier), la langue (fr ou en), le message « Station en service » (toutes les N heures, sans sonnerie), et <strong>envoie une alerte d'essai</strong> (code ORT-8025) pour vérifier que tout arrive."
+quand = "À la mise en service (guide, partie 6), après un changement de téléphone ou d'abonnement ntfy, ou quand aucune alerte n'arrive."
+modifie = "La section <code>[supervisor]</code> de <code>station.toml</code> (<code>notify_url</code>, <code>notify_lang</code>, <code>alive_every_h</code>), par le chemin vérifié du menu 8.1 ; l'essai n'écrit rien."
+admin = true
+
+[menus.features_switch]
+role = "Met en service ou arrête chaque <strong>fonction</strong> de la station d'un numéro : Cluster DX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR, Breizh Audio Box, sonde réseau, mesure de TOS. L'interrupteur règle à la fois la fonction et le lancement de son module. Une fonction qui demande d'autres réglages est refusée avec le menu où les faire."
+quand = "Pour essayer ou retirer une fonction sans éditer <code>station.toml</code>."
+modifie = "Les sections des fonctions (<code>enabled</code>) et <code>[modules] run</code> de <code>station.toml</code>, par le chemin vérifié du menu 8.1 ; la station redémarre sur ta demande."
+admin = true
+
 [menus.breizh]
 role = "Relie la station à <strong>Breizh Audio Box</strong>, le traitement de la voix qui tourne sur un PC du même réseau local : la voix de l'opérateur passe par Breizh avant d'aller au poste. On y <strong>crée la clé d'appairage</strong> (montrée <strong>une seule fois</strong>, à recopier dans l'onglet « OpenRemoteTRX » des réglages de Breizh avec l'adresse de la station et le port), on règle l'<strong>adresse IP</strong> et le <strong>port UDP</strong> du PC de Breizh, on <strong>active ou désactive</strong> le passage par Breizh, on fait un <strong>essai de la liaison sans son</strong> et on lit le <strong>journal</strong> (connexions, replis, refus). L'état de la liaison en ce moment (prêt, émission par Breizh, repli, refus, aller-retour) s'affiche en tête."
 quand = "À la mise en place de Breizh, après une réinstallation de Breizh (nouvelle clé), quand la page ou l'application signalent un repli, ou pour vérifier la liaison avant une émission."

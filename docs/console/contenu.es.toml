@@ -318,6 +318,24 @@ quand = "En la puesta en servicio, tras un cambio de dirección del PC, o para a
 modifie = "La configuración de la estación (<code>station.toml</code>), con derechos de administrador; se conserva la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia a petición para aplicar el cambio."
 admin = true
 
+[menus.local_operator]
+role = "Ajusta lo que hace la estación cuando alguien <strong>emite con el micrófono del transceptor</strong>, delante de él. <strong>Estación compartida</strong> (por defecto): esa emisión solo la corta el <strong>TOT absoluto</strong> del supervisor (135 s por defecto), o tras la duración tolerada (300 s por defecto) cuando la presencia del operador está probada (tocó el transceptor justo antes). Si no, toda emisión local se corta en el acto. La emisión remota queda bloqueada durante una emisión local y 2 minutos después."
+quand = "En la puesta en servicio, si un operador usa el transceptor en el lugar, o si la estación pasa a modo seguro tras emisiones con el micrófono del transceptor."
+modifie = "La sección <code>[supervisor]</code> de <code>station.toml</code> (<code>allow_local_tx</code>, <code>tot_abs_s</code>, <code>local_tx_max_s</code>), por el camino comprobado del menú 8.1; la estación se reinicia a petición."
+admin = true
+
+[menus.alerts]
+role = "Ajusta las <strong>alertas en el teléfono</strong> por ntfy: la dirección (un tema largo y secreto: quien lo conoce lee las alertas; la pantalla nunca la muestra entera), el idioma (fr o en), el mensaje «Estación en servicio» (cada N horas, sin sonido), y <strong>envía una alerta de prueba</strong> (código ORT-8025) para comprobar que todo llega."
+quand = "En la puesta en servicio (guía, parte 6), tras cambiar de teléfono o de suscripción ntfy, o cuando no llega ninguna alerta."
+modifie = "La sección <code>[supervisor]</code> de <code>station.toml</code> (<code>notify_url</code>, <code>notify_lang</code>, <code>alive_every_h</code>), por el camino comprobado del menú 8.1; la prueba no escribe nada."
+admin = true
+
+[menus.features_switch]
+role = "Activa o para cada <strong>función</strong> de la estación con su número: DX Cluster, FreeDV, actividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh Audio Box, sonda de red, medida de ROE. El interruptor ajusta a la vez la función y el arranque de su módulo. Una función que necesita otros ajustes se rechaza indicando el menú donde hacerlos."
+quand = "Para probar o retirar una función sin editar <code>station.toml</code>."
+modifie = "Las secciones de las funciones (<code>enabled</code>) y <code>[modules] run</code> de <code>station.toml</code>, por el camino comprobado del menú 8.1; la estación se reinicia a petición."
+admin = true
+
 [menus.breizh]
 role = "Conecta la estación con <strong>Breizh Audio Box</strong>, el procesado de voz que funciona en un PC de la misma red local: la voz del operador pasa por Breizh antes de llegar al transceptor. Aquí se <strong>crea la clave de emparejamiento</strong> (mostrada <strong>una sola vez</strong>, que hay que copiar en la pestaña « OpenRemoteTRX » de los ajustes de Breizh con la dirección de la estación y el puerto), se ajustan la <strong>dirección IP</strong> y el <strong>puerto UDP</strong> del PC de Breizh, se <strong>activa o desactiva</strong> el paso por Breizh, se hace una <strong>prueba del enlace sin sonido</strong> y se lee el <strong>registro</strong> (conexiones, repliegues, rechazos). El estado actual del enlace (listo, transmisión por Breizh, repliegue, rechazo, ida y vuelta) se muestra arriba."
 quand = "Al instalar Breizh, después de reinstalar Breizh (clave nueva), cuando la página o la aplicación señalan un repliegue, o para comprobar el enlace antes de una transmisión."

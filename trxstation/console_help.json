@@ -9,6 +9,13 @@
      "quand": "Bei der Inbetriebnahme, nach geänderter PC-Adresse oder um die Station für\ndas Telefon zu öffnen.",
      "role": "Wählt, von wo die Station erreichbar ist: nur dieser Rechner, oder das\nlokale Netz und VPN über HTTPS mit einem von der Stationsautorität\nsignierten Zertifikat. Ein neues Zertifikat bedeutet, die App neu zu koppeln\n(Menü 4.1). Dieselben Fragen wie im entsprechenden Teil des vollständigen\nAssistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle\nEinstellung, der Rest der Konfiguration bleibt unberührt."
     },
+    "alerts": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Der Abschnitt [supervisor] von station.toml (notify_url, notify_lang,\nalive_every_h), über den geprüften Weg von Menü 8.1; der Test schreibt\nnichts.",
+     "quand": "Bei der Inbetriebnahme (Handbuch, Teil 6), nach einem Wechsel des Telefons\noder des ntfy-Abonnements, oder wenn kein Alarm ankommt.",
+     "role": "Stellt die Alarme auf dem Telefon über ntfy ein: die Adresse (ein langes\ngeheimes Thema: wer es kennt, liest die Alarme; der Bildschirm zeigt sie nie\nvollständig), die Sprache (fr oder en), die Meldung „Station in Betrieb“\n(alle N Stunden, ohne Ton), und sendet einen Testalarm (Code ORT-8025), um\nzu prüfen, dass alles ankommt."
+    },
     "assistant": {
      "admin": true,
      "expert": "Der Transceiver wird nur lesend abgefragt. Eine aus einer alten Station\nimportierte Konfiguration (station.import.toml) dient als Ausgangspunkt.\n\nBeim Hinzufügen eines Transceivers fragt der Assistent, ob das\nWiederaussenden von Aufnahmen erlaubt ist (App: empfangenes Audio aufnehmen\nund dann senden, Dauer begrenzt auf die maximale Sendezeit minus 5 s).\nStandardantwort: nein. Die Aussendung einer Station an Dritte weiterzusenden\nist im Amateurfunkdienst in der Regel verboten: nur zustimmen, wenn du es\nwirklich brauchst, und auf eigene Verantwortung ([safety] allow_replay).",
@@ -72,6 +79,13 @@
      "quand": "Um bei der Fehlersuche zu helfen oder zu prüfen, ob eine Installation in\nOrdnung ist.",
      "role": "Expertenmenü: startet die gesamte Reihe automatischer Tests der Software auf\nder Station."
     },
+    "features_switch": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Die Abschnitte der Funktionen (enabled) und [modules] run von station.toml,\nüber den geprüften Weg von Menü 8.1; die Station startet auf Wunsch neu.",
+     "quand": "Um eine Funktion auszuprobieren oder zu entfernen, ohne station.toml zu\nbearbeiten.",
+     "role": "Schaltet jede Funktion der Station über ihre Nummer ein oder aus:\nDX-Cluster, FreeDV, FreeDV-Aktivität, SELCALL, Gruppenpräsenz, Monitoring,\nSDR, Breizh Audio Box, Netzsonde, SWR-Messung. Der Schalter setzt zugleich\ndie Funktion und den Start ihres Moduls. Eine Funktion, die weitere\nEinstellungen braucht, wird mit dem Menü abgelehnt, in dem sie vorzunehmen\nsind."
+    },
     "friends": {
      "admin": true,
      "expert": "Die Konsole legt ihre Anfrage für das Modul „presence“ ab (Datei\npresence-request.json im Zustandsordner, falls nötig per sudo) und liest\ndessen Antwort (presence/console-reply.json, nach einer Minute gelöscht: sie\nkann eine Einladung enthalten). Die Funktion wird in station.toml aktiviert\n(Menü 8.1): [presence] enabled = true und „presence“ in [modules] run, dann\ndie Station neu starten. Das Relais sieht nur verschlüsselte Zustände: weder\nFrequenz noch Betriebsart noch Status. Eine Einladung enthält den Schlüssel\nder Gruppe: gib sie nur an die eingeladene Person weiter; sie gilt nur\neinmal und läuft nach 7 Tagen ab. Details:\ndocs/presence-cahier-des-charges.md.",
@@ -113,6 +127,13 @@
      "modifie": "Nichts.",
      "quand": "Wenn die Diagnose einen fehlgeschlagenen Dienst meldet oder um eine\nSendeunterbrechung zu verstehen.",
      "role": "Zeigt die letzten 80 Zeilen des Protokolls der Dienste der Station."
+    },
+    "local_operator": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Der Abschnitt [supervisor] von station.toml (allow_local_tx, tot_abs_s,\nlocal_tx_max_s), über den geprüften Weg von Menü 8.1; die Station startet\nauf Wunsch neu.",
+     "quand": "Bei der Inbetriebnahme, wenn ein Operator den Transceiver vor Ort benutzt,\noder wenn die Station nach Sendungen mit dem Mikrofon des Transceivers in\nden sicheren Modus geht.",
+     "role": "Legt fest, was die Station tut, wenn jemand mit dem Mikrofon des\nTransceivers sendet, direkt am Gerät. Geteilte Station (Standard): eine\nsolche Sendung wird nur durch den absoluten TOT des Supervisors abgeschaltet\n(standardmäßig 135 s), oder nach der geduldeten Dauer (standardmäßig 300 s),\nwenn die Anwesenheit des Operators nachgewiesen ist (er hat den Transceiver\nkurz zuvor bedient). Sonst wird jede lokale Sendung sofort abgeschaltet. Das\nSenden aus der Ferne bleibt während einer lokalen Sendung und 2 Minuten\ndanach gesperrt."
     },
     "monitor": {
      "admin": false,
@@ -258,6 +279,13 @@
      "quand": "At commissioning, after the PC address changed, or to open the station to\nthe phone.",
      "role": "Chooses where the station can be reached from: this machine only, or the\nlocal network and VPN over HTTPS with a certificate signed by the station\nauthority. A new certificate means pairing the app again (menu 4.1). The\nsame questions as the matching part of the full wizard (menu 2.1), and only\nthose: Enter keeps each current setting, the rest of the configuration is\nnot touched."
     },
+    "alerts": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The [supervisor] section of station.toml (notify_url, notify_lang,\nalive_every_h), through the checked path of menu 8.1; the test writes\nnothing.",
+     "quand": "At commissioning (guide, part 6), after changing phone or ntfy subscription,\nor when no alert arrives.",
+     "role": "Sets the alerts on the phone through ntfy: the address (a long secret topic:\nwhoever knows it reads the alerts; the screen never shows it in full), the\nlanguage (fr or en), the \"Station in service\" message (every N hours,\nsilent), and sends a test alert (code ORT-8025) to check that everything\narrives."
+    },
     "assistant": {
      "admin": true,
      "expert": "The transceiver is only queried read-only. A configuration imported from an\nold station (station.import.toml) is used as a starting point.\n\nWhen a transceiver is added, the wizard asks whether replay of recordings is\nallowed (app: record the received audio then send it back on transmit,\nduration limited to the maximum transmit time minus 5 s). Default answer:\nno. Retransmitting a station's signal to third parties is generally\nforbidden in the amateur service: accept only if you need it and under your\nown responsibility ([safety] allow_replay).",
@@ -321,6 +349,13 @@
      "quand": "To help with debugging, or to check that an installation is healthy.",
      "role": "Expert menu: runs the whole automatic software test suite on the station."
     },
+    "features_switch": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The feature sections (enabled) and [modules] run of station.toml, through\nthe checked path of menu 8.1; the station restarts on request.",
+     "quand": "To try or remove a feature without editing station.toml.",
+     "role": "Turns each station feature on or off by its number: DX Cluster, FreeDV,\nFreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box,\nnetwork probe, SWR measurement. The switch sets both the feature and the\nstart of its module. A feature that needs other settings is refused with the\nmenu where to make them."
+    },
     "friends": {
      "admin": true,
      "expert": "The console leaves its request for the \"presence\" module (file\npresence-request.json in the state folder, with sudo if needed) and reads\nits answer (presence/console-reply.json, erased after one minute: it may\ncontain an invitation). The feature is enabled in station.toml (menu 8.1):\n[presence] enabled = true and \"presence\" in [modules] run, then restart the\nstation. The relay only sees encrypted states: no frequency, no mode, no\nstatus. An invitation contains the group key: give it only to the invited\nperson; it can be used only once and expires after 7 days. Details:\ndocs/presence-cahier-des-charges.md.",
@@ -362,6 +397,13 @@
      "modifie": "Nothing.",
      "quand": "When the diagnostic reports a failed service, or to understand why a\ntransmission was cut.",
      "role": "Shows the last 80 lines of the station services log."
+    },
+    "local_operator": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The [supervisor] section of station.toml (allow_local_tx, tot_abs_s,\nlocal_tx_max_s), through the checked path of menu 8.1; the station restarts\non request.",
+     "quand": "At commissioning, if an operator uses the transceiver on site, or if the\nstation goes into safe mode after transmissions with the transceiver\nmicrophone.",
+     "role": "Sets what the station does when someone transmits with the transceiver\nmicrophone, in front of it. Shared station (default): such a transmission is\nonly cut by the supervisor absolute TOT (135 s by default), or after the\nallowed time (300 s by default) when the operator presence is proven (they\ntouched the transceiver just before). Otherwise any local transmission is\ncut at once. Remote transmission stays blocked during a local transmission\nand 2 minutes after."
     },
     "monitor": {
      "admin": false,
@@ -507,6 +549,13 @@
      "quand": "En la puesta en servicio, tras un cambio de dirección del PC, o para abrir\nla estación al teléfono.",
      "role": "Elige desde dónde se puede conectar a la estación: solo esta máquina, o la\nred local y la VPN en HTTPS con un certificado firmado por la autoridad de\nla estación. Un certificado nuevo obliga a emparejar de nuevo la aplicación\n(menú 4.1). Las mismas preguntas que la parte correspondiente del asistente\ncompleto (menú 2.1), y solo esas: Intro conserva cada ajuste actual, el\nresto de la configuración no se toca."
     },
+    "alerts": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La sección [supervisor] de station.toml (notify_url, notify_lang,\nalive_every_h), por el camino comprobado del menú 8.1; la prueba no escribe\nnada.",
+     "quand": "En la puesta en servicio (guía, parte 6), tras cambiar de teléfono o de\nsuscripción ntfy, o cuando no llega ninguna alerta.",
+     "role": "Ajusta las alertas en el teléfono por ntfy: la dirección (un tema largo y\nsecreto: quien lo conoce lee las alertas; la pantalla nunca la muestra\nentera), el idioma (fr o en), el mensaje «Estación en servicio» (cada N\nhoras, sin sonido), y envía una alerta de prueba (código ORT-8025) para\ncomprobar que todo llega."
+    },
     "assistant": {
      "admin": true,
      "expert": "El transceptor solo se consulta en lectura. Una configuración importada de\nuna estación anterior (station.import.toml) sirve de punto de partida.\n\nAl añadir un transceptor, el asistente pregunta si se autoriza la\nretransmisión de grabaciones (aplicación: grabar el audio recibido y luego\nreenviarlo en transmisión, con una duración limitada al tiempo máximo de\ntransmisión menos 5 s). Respuesta por defecto: no. Retransmitir a terceros\nla emisión de una estación suele estar prohibido en el servicio de\naficionados: acepta solo si lo necesitas y bajo tu responsabilidad ([safety]\nallow_replay).",
@@ -570,6 +619,13 @@
      "quand": "Para ayudar a depurar, o comprobar que una instalación está sana.",
      "role": "Menú experto: lanza todo el conjunto de pruebas automáticas del software en\nla estación."
     },
+    "features_switch": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Las secciones de las funciones (enabled) y [modules] run de station.toml,\npor el camino comprobado del menú 8.1; la estación se reinicia a petición.",
+     "quand": "Para probar o retirar una función sin editar station.toml.",
+     "role": "Activa o para cada función de la estación con su número: DX Cluster, FreeDV,\nactividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh\nAudio Box, sonda de red, medida de ROE. El interruptor ajusta a la vez la\nfunción y el arranque de su módulo. Una función que necesita otros ajustes\nse rechaza indicando el menú donde hacerlos."
+    },
     "friends": {
      "admin": true,
      "expert": "La consola deja su solicitud para el módulo « presence » (archivo\npresence-request.json de la carpeta de estado, con sudo si hace falta) y lee\nsu respuesta (presence/console-reply.json, borrada al cabo de un minuto:\npuede contener una invitación). La función se activa en station.toml (menú\n8.1): [presence] enabled = true y « presence » en [modules] run, y luego\nreiniciar la estación. El relé solo ve estados cifrados: ni frecuencia, ni\nmodo, ni estado. Una invitación contiene la clave del grupo: transmítela\nsolo a la persona invitada; solo sirve una vez y caduca a los 7 días.\nDetalle: docs/presence-cahier-des-charges.md.",
@@ -611,6 +667,13 @@
      "modifie": "Nada.",
      "quand": "Cuando el diagnóstico señala un servicio con fallo, o para entender un corte\nde transmisión.",
      "role": "Muestra las 80 últimas líneas del registro de los servicios de la estación."
+    },
+    "local_operator": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La sección [supervisor] de station.toml (allow_local_tx, tot_abs_s,\nlocal_tx_max_s), por el camino comprobado del menú 8.1; la estación se\nreinicia a petición.",
+     "quand": "En la puesta en servicio, si un operador usa el transceptor en el lugar, o\nsi la estación pasa a modo seguro tras emisiones con el micrófono del\ntransceptor.",
+     "role": "Ajusta lo que hace la estación cuando alguien emite con el micrófono del\ntransceptor, delante de él. Estación compartida (por defecto): esa emisión\nsolo la corta el TOT absoluto del supervisor (135 s por defecto), o tras la\nduración tolerada (300 s por defecto) cuando la presencia del operador está\nprobada (tocó el transceptor justo antes). Si no, toda emisión local se\ncorta en el acto. La emisión remota queda bloqueada durante una emisión\nlocal y 2 minutos después."
     },
     "monitor": {
      "admin": false,
@@ -756,6 +819,13 @@
      "quand": "À la mise en service, après un changement d'adresse du PC, ou pour ouvrir la\nstation au téléphone.",
      "role": "Choisit d'où l'on se connecte à la station : cette machine seulement, ou le\nréseau local et le VPN en HTTPS avec un certificat signé par l'autorité de\nla station. Un nouveau certificat impose de refaire l'appairage de\nl'application (menu 4.1). Les mêmes questions que la partie correspondante\nde l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque\nréglage actuel, le reste de la configuration n'est pas touché."
     },
+    "alerts": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La section [supervisor] de station.toml (notify_url, notify_lang,\nalive_every_h), par le chemin vérifié du menu 8.1 ; l'essai n'écrit rien.",
+     "quand": "À la mise en service (guide, partie 6), après un changement de téléphone ou\nd'abonnement ntfy, ou quand aucune alerte n'arrive.",
+     "role": "Règle les alertes sur le téléphone par ntfy : l'adresse (un sujet long et\nsecret : qui le connaît lit les alertes ; l'écran ne la montre jamais en\nentier), la langue (fr ou en), le message « Station en service » (toutes les\nN heures, sans sonnerie), et envoie une alerte d'essai (code ORT-8025) pour\nvérifier que tout arrive."
+    },
     "assistant": {
      "admin": true,
      "expert": "Le poste n'est interrogé qu'en lecture. Une configuration importée d'une\nancienne station (station.import.toml) sert de point de départ.\n\nÀ l'ajout d'un poste, l'assistant demande si la rediffusion\nd'enregistrements est autorisée (application : enregistrer l'audio reçu puis\nle renvoyer en émission, durée limitée au temps maximal d'émission moins 5\ns). Réponse par défaut : non. Rediffuser l'émission d'une station à des\ntiers est en général interdit au service amateur : n'accepter que si tu en\nas l'usage et sous ta responsabilité ([safety] allow_replay).",
@@ -819,6 +889,13 @@
      "quand": "Pour aider au débogage, ou vérifier qu'une installation est saine.",
      "role": "Menu expert : lance toute la suite de tests automatiques du logiciel sur la\nstation."
     },
+    "features_switch": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Les sections des fonctions (enabled) et [modules] run de station.toml, par\nle chemin vérifié du menu 8.1 ; la station redémarre sur ta demande.",
+     "quand": "Pour essayer ou retirer une fonction sans éditer station.toml.",
+     "role": "Met en service ou arrête chaque fonction de la station d'un numéro : Cluster\nDX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR,\nBreizh Audio Box, sonde réseau, mesure de TOS. L'interrupteur règle à la\nfois la fonction et le lancement de son module. Une fonction qui demande\nd'autres réglages est refusée avec le menu où les faire."
+    },
     "friends": {
      "admin": true,
      "expert": "La console dépose sa demande pour le module « presence » (fichier\npresence-request.json du dossier d'état, par sudo s'il le faut) et lit sa\nréponse (presence/console-reply.json, effacée après une minute : elle peut\ncontenir une invitation). La fonction s'active dans station.toml (menu\n8.1) : [presence] enabled = true et « presence » dans [modules] run, puis\nredémarrer la station. Le relais ne voit que des états chiffrés : ni\nfréquence, ni mode, ni statut. Une invitation contient la clé du groupe : la\ntransmettre seulement à la personne invitée ; elle ne sert qu'une fois et\nexpire après 7 jours. Détail : docs/presence-cahier-des-charges.md.",
@@ -860,6 +937,13 @@
      "modifie": "Rien.",
      "quand": "Quand le diagnostic signale un service en échec, ou pour comprendre une\ncoupure d'émission.",
      "role": "Affiche les 80 dernières lignes du journal des services de la station."
+    },
+    "local_operator": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La section [supervisor] de station.toml (allow_local_tx, tot_abs_s,\nlocal_tx_max_s), par le chemin vérifié du menu 8.1 ; la station redémarre\nsur ta demande.",
+     "quand": "À la mise en service, si un opérateur se sert du poste sur place, ou si la\nstation passe en mode sûr après des émissions au micro du poste.",
+     "role": "Règle ce que fait la station quand quelqu'un émet au micro du poste, devant\nlui. Station partagée (défaut) : cette émission n'est coupée que par le TOT\nabsolu du superviseur (135 s par défaut), ou après la durée tolérée (300 s\npar défaut) quand la présence de l'opérateur est prouvée (il a touché le\nposte juste avant). Sinon, toute émission locale est coupée aussitôt.\nL'émission à distance reste bloquée pendant une émission locale puis 2\nminutes."
     },
     "monitor": {
      "admin": false,

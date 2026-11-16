@@ -8294,6 +8294,25 @@ ORT-8024:
     - 'Program defect'
     preconisation: 'Check [modules] in station.toml, then the troubleshooting report.'
 
+ORT-8025:
+  gravite: info
+  titre: Essai des alertes
+  message: 'Essai d''alerte envoyé depuis TRX Console à {heure} : si ce message arrive sur le téléphone, les alertes de la station arriveront aussi.'
+  causes:
+  - Essai demandé dans TRX Console (menu 3.5)
+  preconisation: Aucune.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8025/
+  depuis_version: 0.168.0
+  en:
+    titre: Alert test
+    message: 'Test alert sent from TRX Console at {heure}: if this message reaches the phone, the station alerts will reach it too.'
+    causes:
+    - Test requested in TRX Console (menu 3.5)
+    preconisation: None.
+
 
 # ====================================================================================================
 # 9000–9999 : Configuration et installation

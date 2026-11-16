@@ -586,3 +586,66 @@ def test_a_wizard_part_that_changes_nothing_says_so_and_needs_a_configuration(tm
     con, fake, out = make(tmp_path)
     con.transmit()
     assert out[-1] == "Rien n'a été modifié." and fake.calls[-1][0][-2:] == ["--partie", "emission"]
+
+
+# --------------------------------------------------------------------------- écrans dédiés (étape 221)
+
+def test_local_operator_screen_changes_only_the_supervisor_rules_through_the_validated_path(tmp_path):
+    path = write_config(tmp_path)
+    con, fake, out = make(tmp_path, answers=["n", "150", "o"])           # plus partagée, TOT absolu 150 s, enregistrer
+    con.local_operator()
+    cfg = cfgmod.load(path)
+    assert cfg.supervisor.allow_local_tx is False and cfg.supervisor.tot_abs_s == 150
+    assert "ne peut que couper" in "\n".join(out)
+    con, _, out = make(tmp_path, answers=["o", "100", "", "250", "o"])  # TOT absolu sous le plafond : redemandé
+    con.local_operator()
+    cfg = cfgmod.load(path)
+    assert cfg.supervisor.allow_local_tx is True and cfg.supervisor.tot_abs_s == 150 and cfg.supervisor.local_tx_max_s == 250
+
+
+def test_alerts_screen_hides_the_secret_topic_and_sends_a_test(tmp_path, monkeypatch):
+    from trxstation.supervisor import notify
+    path = write_config(tmp_path)
+    sent = []
+    monkeypatch.setattr(notify, "_default_post", lambda url, title, message, priority="": sent.append((url, title)))
+    con, _, out = make(tmp_path, answers=["4", "1", "ftp://x", "1", "https://ntfy.sh/sujet-tres-secret-42", "o",
+                                          "3", "0,5", "o", "4", ""])
+    con.alerts()
+    cfg = cfgmod.load(path)
+    assert cfg.supervisor.notify_url == "https://ntfy.sh/sujet-tres-secret-42" and cfg.supervisor.alive_every_h == 0.5
+    text = "\n".join(out)
+    assert "Aucune adresse" in text and "Refusé" in text and "https://ntfy.sh/suj…" in text
+    assert "sujet-tres-secret" not in text                               # jamais l'adresse entière à l'écran
+    assert sent and sent[-1][0] == cfg.supervisor.notify_url and sent[-1][1].startswith("ORT-8025")
+    assert "Alerte d'essai envoyée" in text
+
+    def broken(*_a, **_k):
+        raise OSError("réseau injoignable")
+    monkeypatch.setattr(notify, "_default_post", broken)
+    con, _, out = make(tmp_path, answers=["4", ""])
+    con.alerts()
+    assert any("Échec de l'envoi : réseau injoignable" in line for line in out)
+
+
+def test_features_switch_sets_enabled_and_the_module_together(tmp_path):
+    from trxstation.console import FEATURES, feature_on
+    path = write_config(tmp_path)
+    number = str([f[0] for f in FEATURES].index("features.freedv_activity") + 1)
+    con, _, out = make(tmp_path, answers=[number, "o", ""])
+    con.features_switch()
+    cfg = cfgmod.load(path)
+    assert "freedv_activity" in cfg.modules.run
+    con, _, out = make(tmp_path, answers=[""])
+    con.features_switch()
+    shown = "\n".join(out)
+    assert "[EN SERVICE] Activité FreeDV" in shown and "[arrêt] SELCALL" in shown
+    number = str([f[0] for f in FEATURES].index("features.swr") + 1)
+    con, _, _ = make(tmp_path, answers=[number, "o", ""])
+    con.features_switch()
+    assert cfgmod.load(path).swr.enabled is False
+    cluster = str([f[0] for f in FEATURES].index("features.cluster") + 1)       # réglages manquants : refus, rien d'écrit
+    before = path.read_bytes()
+    con, _, out = make(tmp_path, answers=[cluster, ""])
+    con.features_switch()
+    assert path.read_bytes() == before and any("REFUSÉ" in line for line in out) and "menu 5.1" in "\n".join(out)
+    assert not feature_on(cfgmod.load(path), "cluster", "cluster")
