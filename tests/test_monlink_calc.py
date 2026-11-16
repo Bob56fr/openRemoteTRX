@@ -338,6 +338,22 @@ def test_signed_requests_and_refusals():
         wire.build_request(AIDED, "exec", {}, t=NOW, n=1)
 
 
+def test_a_relay_in_a_subfolder_checks_the_full_path():
+    """Relais en ligne dans un sous-dossier : le chemin SIGNÉ contient le dossier (défaut de l'étape 208)."""
+    prefix = wire.base_prefix("https://rf-diy.com/orx-relay/public/")
+    assert prefix == "/orx-relay/public" and wire.base_prefix("https://api.rf-diy.com") == ""
+    path, body, headers = wire.build_request(AIDED, "get", {"after": 0}, t=NOW, n=7, prefix=prefix)
+    assert path == "/orx-relay/public/v1/mon/get"
+    sig = headers["X-Orx-Signature"]
+    assert wire.verify_request(AIDED.ed_pub, path, body, sig, now=NOW, last_n=0)["n"] == 7
+    with pytest.raises(RequestRefused, match="bad_signature"):          # ce que voyait le relais en ligne
+        wire.verify_request(AIDED.ed_pub, path, wire.build_request(AIDED, "get", {"after": 0}, t=NOW, n=7)[1],
+                            wire.build_request(AIDED, "get", {"after": 0}, t=NOW, n=7)[2]["X-Orx-Signature"],
+                            now=NOW, last_n=0)
+    with pytest.raises(ValueError):
+        wire.build_request(AIDED, "get", {}, t=NOW, n=1, prefix="orx/")
+
+
 # ------------------------------------------------------------------ vecteurs et isolement
 def test_shared_vectors_are_up_to_date():
     """Sinon : python -m trxstation.monlink.vectors"""

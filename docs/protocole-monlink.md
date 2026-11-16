@@ -46,7 +46,9 @@ Motifs de refus côté station : `malformed`, `decrypt`, `signature`, `unknown_i
 Comme la présence (§ 3 de `docs/protocole-presence.md`) : `POST`, en-têtes `X-Orx-Station` et `X-Orx-Signature`
 (Ed25519 de `"orx-relay v1\n" ‖ "POST\n" ‖ chemin ‖ "\n" ‖ corps`), champs `t` (±600 s) et `n` (strictement
 croissant), même ordre des contrôles, mêmes codes d'erreur. Différences :
-- chemins `/v1/mon/<route>` ; route inconnue = 404 `unknown_route` ;
+- chemins `/v1/mon/<route>` ; route inconnue = 404 `unknown_route` ; le chemin SIGNÉ est le chemin complet de la
+  requête, dossier du relais compris (relais en service : `/orx-relay/public/v1/mon/<route>`), comme pour la
+  présence ;
 - l'identifiant vérifié est celui du monitoring (§ 1) ; la table des stations du monitoring est **distincte** de
   celle de la présence ;
 - corps de 72 ko au plus (`too_large`) ;

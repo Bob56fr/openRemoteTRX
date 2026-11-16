@@ -9,6 +9,8 @@ et `X-Orx-Signature`, champs `t` et `n`), mais :
 """
 from __future__ import annotations
 
+from urllib.parse import urlsplit
+
 from ..presence import crypto
 from ..presence.codec import Malformed, b64d, b64e, cjson, parse_json
 from ..presence.wire import CLOCK_TOLERANCE_S, MAX_COUNTER, RequestRefused, signed_bytes
@@ -18,11 +20,23 @@ MAX_BODY = 72 * 1024
 ROUTES = ("register", "invite/put", "invite/take", "pair", "allow", "revoke", "put", "get", "ack")
 
 
-def build_request(identity, route: str, fields: dict, *, t: int, n: int) -> tuple[str, bytes, dict[str, str]]:
-    """(chemin, corps, en-têtes) d'une requête signée vers `/v1/mon/<route>`."""
+def base_prefix(relay_url: str) -> str:
+    """Chemin du relais dans son site (`https://rf-diy.com/orx-relay/public` -> `/orx-relay/public`), signé lui aussi."""
+    return urlsplit(relay_url).path.rstrip("/")
+
+
+def build_request(identity, route: str, fields: dict, *, t: int, n: int,
+                  prefix: str = "") -> tuple[str, bytes, dict[str, str]]:
+    """(chemin, corps, en-têtes) d'une requête signée vers `<prefix>/v1/mon/<route>`.
+
+    Le chemin SIGNÉ est le chemin complet de la requête, comme pour la présence : un relais installé dans un
+    sous-dossier (`/orx-relay/public`) vérifie la signature sur ce chemin-là (défaut trouvé à l'étape 208 contre le
+    relais en ligne : `prefix` absent = `bad_signature`)."""
     if route not in ROUTES:
         raise ValueError(f"route inconnue : {route}")
-    path = PREFIX + route
+    if prefix and (not prefix.startswith("/") or prefix.endswith("/")):
+        raise ValueError("préfixe : « /dossier » sans « / » final")
+    path = prefix + PREFIX + route
     body = cjson({**fields, "t": t, "n": n})
     if len(body) > MAX_BODY:
         raise ValueError("requête trop grande")
@@ -35,7 +49,7 @@ def verify_request(ed_pub: bytes, path: str, body: bytes, signature: str, *, now
     """Ce que fait le relais (en PHP), dans le même ordre que la présence : taille, signature, horloge, rejeu."""
     if len(body) > MAX_BODY:
         raise RequestRefused("too_large")
-    if not path.startswith(PREFIX) or path[len(PREFIX):] not in ROUTES:
+    if PREFIX not in path or path.rsplit(PREFIX, 1)[1] not in ROUTES:
         raise RequestRefused("unknown_route")
     try:
         sig = b64d(signature, crypto.SIG_SIZE)
