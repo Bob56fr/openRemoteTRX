@@ -12,6 +12,12 @@ def _no_real_installation(monkeypatch, tmp_path_factory):
     de la machine qui lance les tests (étape 211 : sur le PC « tour radio », où une station est installée, le menu
     Réseau lisait le vrai fichier d'état). Un test qui vérifie les chemins par défaut retire la variable lui-même."""
     monkeypatch.setenv("TRX_REMOTE_HOME", str(tmp_path_factory.mktemp("trx-home")))
+    # Préférences de TRX Console (langue, niveau d'affichage : étape 234) : jamais celles du compte qui lance les tests.
+    from trxstation import console
+    from trxstation.console_web import server
+    prefs = tmp_path_factory.mktemp("prefs") / "console.json"
+    monkeypatch.setattr(console, "prefs_path", lambda home=None, env=None: prefs)
+    monkeypatch.setattr(server, "prefs_path", lambda home=None, env=None: prefs)
 
 
 @pytest.fixture(autouse=True)
