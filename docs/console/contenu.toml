@@ -339,9 +339,15 @@ modifie = "La section <code>[supervisor]</code> de <code>station.toml</code> (<c
 admin = true
 
 [menus.features_switch]
-role = "Met en service ou arrête chaque <strong>fonction</strong> de la station d'un numéro : Cluster DX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR, Breizh Audio Box, sonde réseau, mesure de TOS. L'interrupteur règle à la fois la fonction et le lancement de son module. Une fonction qui demande d'autres réglages est refusée avec le menu où les faire."
+role = "Met en service ou arrête chaque <strong>fonction</strong> de la station d'un numéro : Cluster DX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR, Breizh Audio Box, sonde réseau, mesure de TOS, diffusion en direct. L'interrupteur règle à la fois la fonction et le lancement de son module. Une fonction qui demande d'autres réglages est refusée avec le menu où les faire."
 quand = "Pour essayer ou retirer une fonction sans éditer <code>station.toml</code>."
 modifie = "Les sections des fonctions (<code>enabled</code>) et <code>[modules] run</code> de <code>station.toml</code>, par le chemin vérifié du menu 8.1 ; la station redémarre sur ta demande."
+admin = true
+
+[menus.diffusion]
+role = "Fait entendre le son du TRX à quelques <strong>auditeurs sur Internet</strong>, sans compte sur la station : ils écoutent sur la page d'un <strong>serveur de diffusion</strong> et ne joignent jamais la station. On y voit l'<strong>état</strong> (en direct ou non, canal, auditeurs, temps restant, qui l'a lancée), on <strong>lance</strong> une diffusion (canal <strong>privé</strong> par défaut, avec identifiant et mot de passe, ou public ; durée, 1 heure par défaut ; votre voix pendant vos émissions, <strong>non</strong> par défaut) et on l'<strong>arrête</strong>. On y lit ou on change le <strong>mot de passe des auditeurs</strong> (« En générer un » : ceux qui écoutent ne sont pas coupés), on règle le <strong>serveur</strong> (adresse, nom de la station, codec, <strong>diffusion hors des bandes autorisées</strong> : non par défaut, silence pour les auditeurs) et on enregistre ses <strong>secrets</strong> (mot de passe source et clé, jamais affichés). Un <strong>avertissement</strong> est à confirmer au tout premier lancement."
+quand = "Pour faire écouter le poste à des amis ou à un club, le temps d'une soirée ou d'un concours ; à la mise en place, avec ce que vous a donné l'administrateur du serveur."
+modifie = "<code>[diffusion]</code> de <code>station.toml</code> (serveur, station, codec, hors bandes) par le chemin vérifié du menu 8.1, et le fichier <code>diffusion.key</code> (0600, lisible seulement par le service). Rien ne touche au poste : le module « diffusion » n'a aucun droit sur lui ; ce qui est diffusé est de votre responsabilité."
 admin = true
 
 [menus.breizh]

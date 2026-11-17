@@ -69,7 +69,7 @@ MENU_THEMES = (
     ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
-    ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch")),
+    ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
     ("7", "updates", ("update", "rollback", "install_zip")),
     ("8", "expert", ("edit_config", "expert", "qualif", "indicator")),
@@ -122,6 +122,7 @@ FEATURES = (
     ("features.selcall", "selcall", None, None),
     ("features.presence", "presence", "presence", "friends"),
     ("features.monlink", "monitor_link", "monlink", "monitoring"),
+    ("features.diffusion", "diffusion", "diffusion", "diffusion"),
     ("features.sdr", "sdr", "sdr", "sdr"),
     ("features.breizh", "breizh", None, "breizh"),
     ("features.netprobe", "netprobe", None, "network"),
@@ -2304,6 +2305,202 @@ class Console:
     MON_STATES = {"confirm": "monitoring.state.confirm", "active": "monitoring.state.active",
                   "paused": "monitoring.state.paused"}
     MON_HOURS = {"1": 1, "2": 2, "3": 4, "4": 24}
+
+    # ---- diffusion en direct (docs/diffusion-cahier-des-charges.md § 12.3, lot D3) : menu 5.6
+    def diffusion(self) -> None:
+        """Diffusion en direct : état, lancer / arrêter, identifiants des auditeurs, réglages du serveur et secrets.
+        Lancer et arrêter passent par le module « diffusion » (demande déposée, comme la page) ; le module n'a AUCUN
+        droit sur le poste et la console ne peut déclencher aucune émission. Le mot de passe source n'est JAMAIS
+        déposé dans une demande (fichier lisible) : la console l'écrit elle-même dans diffusion.key (0600)."""
+        state_dir = config_state_dir(self.config)
+        while True:
+            try:
+                status = json.loads((state_dir / "diffusion" / "status.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                status = None
+            self.say("\n" + self.diffusion_summary(status))
+            choice = self.ask(self.t("diffusion.menu")).strip()
+            if not choice:
+                return
+            {"1": self._dif_start, "2": self._dif_stop, "3": self._dif_reveal, "4": self._dif_generate,
+             "5": self._dif_settings, "6": self._dif_secrets}.get(choice, lambda: self.say(self.t("loop.unknown")))()
+
+    def diffusion_summary(self, status: dict | None) -> str:
+        if not status:
+            return self.t("diffusion.no_module", menu=menu_number("features_switch"), start=menu_number("start"))
+        if not status.get("enabled"):
+            return self.t("diffusion.off", menu=menu_number("features_switch"))
+        lines = []
+        if status.get("problem"):
+            lines.append(self.t("diffusion.problem", v=status["problem"]))
+        if status.get("active"):
+            remaining = status.get("remaining_s")
+            left = self.t("diffusion.unlimited") if remaining is None else f"{int(remaining) // 60} min"
+            n = status.get("listeners")
+            lines.append(self.t("diffusion.live", access=self.t(f"diffusion.access.{status.get('access', 'prive')}"),
+                                operator=status.get("operator") or "?", left=left,
+                                listeners="?" if n is None else n,
+                                voice=self.t("ask_yes.2") if status.get("voice") else self.t("ask_yes.3")))
+        else:
+            last = status.get("last_stop") or {}
+            cause = last.get("cause")
+            causes = ("operator", "duration", "overload", "gateway_restart", "auth", "disabled", "station_stop")
+            text = self.t(f"diffusion.cause.{cause}") if cause in causes else ""
+            lines.append(self.t("diffusion.idle") + (self.t("diffusion.last", cause=text) if text else ""))
+        lines.append(self.t("diffusion.bands_on") if status.get("outside_bands") else self.t("diffusion.bands_off"))
+        if status.get("listen_page"):
+            lines.append(self.t("diffusion.page", url=status["listen_page"]))
+        return "\n".join(lines)
+
+    def _dif_do(self, action: str, args: dict | None = None, *, quiet: bool = False) -> dict | None:
+        """Demande au module ; refus dit en clair (sauf `quiet`) ; None si le module ne répond pas."""
+        from .diffusion.service import CONSOLE_REPLY, CONSOLE_REQUEST
+        reply = self.module_request(CONSOLE_REQUEST, Path("diffusion") / CONSOLE_REPLY, action, args, timeout_s=20.0,
+                                    poll_s=0.5, silent="" if quiet else self.t("diffusion.noreply",
+                                                                              menu=menu_number("journal")))
+        if reply is not None and not reply.get("ok") and not quiet and reply.get("error") != "confirm_required":
+            self.say(self.t("diffusion.refused", v=reply.get("message") or reply.get("error")))
+        return reply
+
+    def _dif_start(self) -> None:
+        """Canal (privé par défaut), durée (1 h par défaut, 0 = sans limite), voix émise (non par défaut), pseudo."""
+        self.say(self.t("diffusion.access_list"))
+        access = "public" if self.ask(self.t("diffusion.ask_access")).strip() == "2" else "prive"
+        hours = self._ask_int(self.t("diffusion.ask_hours"), 1, 0, 24)
+        voice = self._ask_yes(self.t("diffusion.ask_voice"), False)
+        pseudo = self.ask(self.t("diffusion.ask_pseudo")).strip()[:32]
+        args = {"access": access, "hours": None if hours == 0 else hours, "voice": voice, "meta": ["pseudo"]}
+        if pseudo:
+            args["pseudo"] = pseudo
+        reply = self._dif_do("start", args)
+        if reply is not None and reply.get("error") == "confirm_required":
+            self.say(self.t("diffusion.warning"))
+            if not self.yes(self.t("diffusion.confirm"), False):
+                self.say(self.t("diffusion.not_started"))
+                return
+            reply = self._dif_do("start", {**args, "confirm": True})
+        if reply is not None and reply.get("ok"):
+            page = (reply.get("result") or {}).get("listen_page") or ""
+            self.say(self.t("diffusion.started", url=page))
+
+    def _dif_stop(self) -> None:
+        if self.yes(self.t("diffusion.ask_stop"), False):
+            reply = self._dif_do("stop")
+            if reply is not None and reply.get("ok"):
+                self.say(self.t("diffusion.stopped"))
+
+    def _dif_show_listener(self, data: dict) -> None:
+        self.say(self.t("diffusion.listener", user=data.get("listener_user") or "?",
+                        password=data.get("listener_password") or self.t("diffusion.no_password")))
+
+    def _dif_reveal(self) -> None:
+        reply = self._dif_do("reveal")
+        if reply is not None and reply.get("ok"):
+            self._dif_show_listener(reply.get("result") or {})
+
+    def _dif_generate(self) -> None:
+        if not self.yes(self.t("diffusion.ask_generate"), False):
+            return
+        reply = self._dif_do("listener", {"generate": True})
+        if reply is not None and reply.get("ok"):
+            self.say(self.t("diffusion.new_password"))
+            self._dif_show_listener(reply.get("result") or {})
+
+    def _dif_settings(self) -> None:
+        """[diffusion] de station.toml : serveur, nom de la station, codec, hors bandes, port des sources."""
+        from .diffusion.protocol import CODECS, STATION_NAME
+        while True:
+            loaded = self._load_for_edit()
+            if loaded is None:
+                return
+            original, cfg = loaded
+            d = cfg.diffusion
+            self.say(self.t("diffusion.settings_state", server=d.server or "—", station=d.station or "—",
+                            codec=d.codec, port=d.source_port,
+                            bands=self.t("ask_yes.2") if d.outside_bands else self.t("ask_yes.3")))
+            choice = self.ask(self.t("diffusion.settings_menu")).strip()
+            if not choice:
+                return
+            if choice == "1":
+                answer = self.ask(self.t("diffusion.ask_server")).strip().lower()
+                if not answer:
+                    continue
+                if not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?", answer):
+                    self.say(self.t("diffusion.bad_value"))
+                    continue
+                d.server = answer
+            elif choice == "2":
+                answer = self.ask(self.t("diffusion.ask_station")).strip().lower()
+                if not answer:
+                    continue
+                if not STATION_NAME.fullmatch(answer):
+                    self.say(self.t("diffusion.bad_value"))
+                    continue
+                d.station = answer
+            elif choice == "3":
+                answer = self.ask(self.t("diffusion.ask_codec", codec=d.codec)).strip().lower()
+                if answer and answer not in CODECS:
+                    self.say(self.t("diffusion.bad_value"))
+                    continue
+                d.codec = answer or d.codec
+            elif choice == "4":
+                self.say(self.t("diffusion.bands_explain"))
+                d.outside_bands = self._ask_yes(self.t("diffusion.ask_bands"), d.outside_bands)
+            elif choice == "5":
+                d.source_port = self._ask_int(self.t("diffusion.ask_port"), d.source_port, 1, 65535)
+            else:
+                self.say(self.t("visitors.4"))
+                continue
+            self._save_accounts(original, cfg, live=False)
+
+    def _dif_secrets(self) -> None:
+        """Mot de passe source et clé des métadonnées, donnés par l'administrateur du serveur : écrits dans
+        diffusion.key (0600, au compte du service), jamais affichés, jamais déposés dans une demande au module.
+        Les identifiants des auditeurs sont gardés (relus auprès du module s'il tourne)."""
+        from .config import diffusion_key_path
+        from .diffusion import keyfile
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        _, cfg = loaded
+        self.say(self.t("diffusion.secrets_explain"))
+        self.hint = {"kind": "password"}
+        source = self.ask(self.t("diffusion.ask_source")).strip()
+        if not source:
+            self.say(self.t("diffusion.secrets_unchanged"))
+            return
+        self.hint = {"kind": "password"}
+        meta_key = self.ask(self.t("diffusion.ask_meta_key")).strip().lower()
+        current = self._dif_do("reveal", quiet=True)
+        data = (current or {}).get("result") or {} if (current or {}).get("ok") else {}
+        try:
+            secrets_ = keyfile.check(keyfile.Secrets(source, meta_key, data.get("listener_user") or "auditeur",
+                                                     data.get("listener_password") or ""))
+        except keyfile.KeyFileError as exc:
+            self.say(self.t("diffusion.secrets_bad", v=str(exc)))
+            return
+        path = diffusion_key_path(cfg, self.config)
+        if os.name == "posix":
+            work = Path(tempfile.mkdtemp(prefix="trx-diffusion-"))
+            try:
+                draft = work / "diffusion.key"
+                keyfile.save(draft, secrets_)                          # 0600 dès la création
+                owner = path.parent if path.parent.exists() else config_state_dir(self.config)
+                code = self._install_file(draft, path, mode="600", like=owner, parents=True)
+            finally:
+                shutil.rmtree(work, ignore_errors=True)
+        else:
+            try:
+                keyfile.save(path, secrets_)
+                code = 0
+            except OSError:
+                code = 1
+        if code != 0:
+            self.say(self.t("diffusion.secrets_failed", code=code))
+            return
+        self.say(self.t("diffusion.secrets_saved", file=path.name))
+        if not data.get("listener_password"):
+            self.say(self.t("diffusion.secrets_listener_note"))
 
     def monitoring(self) -> None:
         """Monitoring inter-stations (docs/cdc-monitoring.md § 17) : AIDER un opérateur en difficulté, ou ÊTRE AIDÉ.

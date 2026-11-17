@@ -5541,6 +5541,25 @@ ORT-6109:
     preconisation: Read the reason shown; stop the running broadcast, set up the feature (menu 8.1) or fix the
       request.
 
+ORT-6110:
+  gravite: erreur
+  titre: 'Erreur inattendue : module de diffusion'
+  message: 'Diffusion : erreur inattendue ({contexte}) ; le module continue.'
+  causes:
+  - Défaut du programme (cas non prévu)
+  preconisation: Signaler le problème avec le journal de la station (menu 6.3 de TRX Console).
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6110/
+  depuis_version: 0.190.0
+  en:
+    titre: 'Unexpected error: broadcast module'
+    message: 'Broadcast: unexpected error ({contexte}); the module goes on.'
+    causes:
+    - Program defect (unforeseen case)
+    preconisation: Report the problem with the station log (menu 6.3 of TRX Console).
+
 ORT-6401:
   gravite: erreur
   titre: Cluster DX activé mais incomplet

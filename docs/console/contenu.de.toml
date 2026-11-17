@@ -339,9 +339,15 @@ modifie = "Der Abschnitt <code>[supervisor]</code> von <code>station.toml</code>
 admin = true
 
 [menus.features_switch]
-role = "Schaltet jede <strong>Funktion</strong> der Station über ihre Nummer ein oder aus: DX-Cluster, FreeDV, FreeDV-Aktivität, SELCALL, Gruppenpräsenz, Monitoring, SDR, Breizh Audio Box, Netzsonde, SWR-Messung. Der Schalter setzt zugleich die Funktion und den Start ihres Moduls. Eine Funktion, die weitere Einstellungen braucht, wird mit dem Menü abgelehnt, in dem sie vorzunehmen sind."
+role = "Schaltet jede <strong>Funktion</strong> der Station über ihre Nummer ein oder aus: DX-Cluster, FreeDV, FreeDV-Aktivität, SELCALL, Gruppenpräsenz, Monitoring, SDR, Breizh Audio Box, Netzsonde, SWR-Messung, Live-Übertragung. Der Schalter setzt zugleich die Funktion und den Start ihres Moduls. Eine Funktion, die weitere Einstellungen braucht, wird mit dem Menü abgelehnt, in dem sie vorzunehmen sind."
 quand = "Um eine Funktion auszuprobieren oder zu entfernen, ohne <code>station.toml</code> zu bearbeiten."
 modifie = "Die Abschnitte der Funktionen (<code>enabled</code>) und <code>[modules] run</code> von <code>station.toml</code>, über den geprüften Weg von Menü 8.1; die Station startet auf Wunsch neu."
+admin = true
+
+[menus.diffusion]
+role = "Lässt einige <strong>Hörer im Internet</strong> den Ton des TRX hören, ohne Konto auf der Station: Sie hören auf der Seite eines <strong>Sendeservers</strong> zu und erreichen die Station nie. Angezeigt wird der <strong>Zustand</strong> (auf Sendung oder nicht, Kanal, Hörer, Restzeit, wer gestartet hat); man <strong>startet</strong> eine Übertragung (standardmäßig <strong>privater</strong> Kanal mit Benutzername und Passwort, oder öffentlich; Dauer, standardmäßig 1 Stunde; Ihre Stimme beim Senden, standardmäßig <strong>nein</strong>) und <strong>beendet</strong> sie. Man liest oder ändert das <strong>Passwort der Hörer</strong> („Eines erzeugen“: wer schon zuhört, wird nicht getrennt), stellt den <strong>Server</strong> ein (Adresse, Name der Station, Codec, <strong>Übertragung außerhalb der erlaubten Bänder</strong>: standardmäßig nein, Stille für die Hörer) und speichert seine <strong>Geheimnisse</strong> (Quellpasswort und Schlüssel, nie angezeigt). Beim allerersten Start ist eine <strong>Warnung</strong> zu bestätigen."
+quand = "Um Freunden oder einem Club das Gerät für einen Abend oder einen Contest hörbar zu machen; bei der Einrichtung, mit den Angaben des Server-Administrators."
+modifie = "<code>[diffusion]</code> in <code>station.toml</code> (Server, Station, Codec, außerhalb der Bänder) über den geprüften Weg von Menü 8.1, und die Datei <code>diffusion.key</code> (0600, nur für den Dienst lesbar). Nichts berührt das Gerät: das Modul „diffusion“ hat kein Recht darauf; was Sie übertragen, liegt in Ihrer Verantwortung."
 admin = true
 
 [menus.breizh]

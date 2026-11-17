@@ -65,6 +65,13 @@
      "quand": "Nach der Installation, nach jeder Änderung und als erster Schritt, sobald\netwas nicht stimmt.",
      "role": "Vollständige Prüfung der Station, nur lesend: System, Software,\nKonfiguration, Hardware (serielle Schnittstellen, Soundkarten), Dienste,\nHF-Spektrum, DX-Cluster, Netzwerkzugang und Updates. Am Ende drei Zeilen\n„Modi der Station“: Breizh Audio Box (aktiviert oder nicht, Zustand der\nVerbindung), Mithören der Besucher (offen oder geschlossen, Höchstzahl) und\nBesucherkonten (Anzeigename, deaktiviert, abgelaufen), ohne jedes Geheimnis."
     },
+    "diffusion": {
+     "admin": true,
+     "expert": "",
+     "modifie": "[diffusion] in station.toml (Server, Station, Codec, außerhalb der Bänder)\nüber den geprüften Weg von Menü 8.1, und die Datei diffusion.key (0600, nur\nfür den Dienst lesbar). Nichts berührt das Gerät: das Modul „diffusion“ hat\nkein Recht darauf; was Sie übertragen, liegt in Ihrer Verantwortung.",
+     "quand": "Um Freunden oder einem Club das Gerät für einen Abend oder einen Contest\nhörbar zu machen; bei der Einrichtung, mit den Angaben des\nServer-Administrators.",
+     "role": "Lässt einige Hörer im Internet den Ton des TRX hören, ohne Konto auf der\nStation: Sie hören auf der Seite eines Sendeservers zu und erreichen die\nStation nie. Angezeigt wird der Zustand (auf Sendung oder nicht, Kanal,\nHörer, Restzeit, wer gestartet hat); man startet eine Übertragung\n(standardmäßig privater Kanal mit Benutzername und Passwort, oder\nöffentlich; Dauer, standardmäßig 1 Stunde; Ihre Stimme beim Senden,\nstandardmäßig nein) und beendet sie. Man liest oder ändert das Passwort der\nHörer („Eines erzeugen“: wer schon zuhört, wird nicht getrennt), stellt den\nServer ein (Adresse, Name der Station, Codec, Übertragung außerhalb der\nerlaubten Bänder: standardmäßig nein, Stille für die Hörer) und speichert\nseine Geheimnisse (Quellpasswort und Schlüssel, nie angezeigt). Beim\nallerersten Start ist eine Warnung zu bestätigen."
+    },
     "edit_config": {
      "admin": true,
      "expert": "In nano: Strg+O und dann Eingabetaste zum Speichern, Strg+X zum Beenden. Die\nSicherungskopien heißen station.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nBeschreibung ALLER Einstellungen (Zweck, Standardwert, Grenzen, Sicherheit,\nMenü, das sie ändert):\nhttps://bob56fr.github.io/openRemoteTRX/station-toml/, auch auf der Website\nrf-diy.com.",
@@ -84,7 +91,7 @@
      "expert": "",
      "modifie": "Die Abschnitte der Funktionen (enabled) und [modules] run von station.toml,\nüber den geprüften Weg von Menü 8.1; die Station startet auf Wunsch neu.",
      "quand": "Um eine Funktion auszuprobieren oder zu entfernen, ohne station.toml zu\nbearbeiten.",
-     "role": "Schaltet jede Funktion der Station über ihre Nummer ein oder aus:\nDX-Cluster, FreeDV, FreeDV-Aktivität, SELCALL, Gruppenpräsenz, Monitoring,\nSDR, Breizh Audio Box, Netzsonde, SWR-Messung. Der Schalter setzt zugleich\ndie Funktion und den Start ihres Moduls. Eine Funktion, die weitere\nEinstellungen braucht, wird mit dem Menü abgelehnt, in dem sie vorzunehmen\nsind."
+     "role": "Schaltet jede Funktion der Station über ihre Nummer ein oder aus:\nDX-Cluster, FreeDV, FreeDV-Aktivität, SELCALL, Gruppenpräsenz, Monitoring,\nSDR, Breizh Audio Box, Netzsonde, SWR-Messung, Live-Übertragung. Der\nSchalter setzt zugleich die Funktion und den Start ihres Moduls. Eine\nFunktion, die weitere Einstellungen braucht, wird mit dem Menü abgelehnt, in\ndem sie vorzunehmen sind."
     },
     "friends": {
      "admin": true,
@@ -342,6 +349,13 @@
      "quand": "After installation, after every change, and as a first reflex whenever\nsomething is wrong.",
      "role": "Full check of the station, read-only: system, software, configuration,\nhardware (serial ports, sound cards), services, HF spectrum, DX Cluster,\nnetwork access and updates. At the end, three \"Station modes\" lines: Breizh\nAudio Box (enabled or not, link state), visitor listening (open or closed,\nmaximum number) and visitor accounts (nickname, disabled, expired), without\nany secret."
     },
+    "diffusion": {
+     "admin": true,
+     "expert": "",
+     "modifie": "[diffusion] in station.toml (server, station, codec, outside bands) through\nthe checked path of menu 8.1, and the diffusion.key file (0600, readable by\nthe service only). Nothing touches the rig: the \"diffusion\" module has no\nright on it; what you broadcast is your responsibility.",
+     "quand": "To let friends or a club hear the rig for an evening or a contest; at setup\ntime, with what the server administrator gave you.",
+     "role": "Lets a few listeners on the Internet hear the TRX audio, without an account\non the station: they listen on the page of a broadcast server and never\nreach the station. It shows the status (on air or not, channel, listeners,\ntime left, who started it), starts a broadcast (private channel by default,\nwith username and password, or public; duration, 1 hour by default; your\nvoice while you transmit, no by default) and stops it. It shows or changes\nthe listeners' password (\"Generate one\": those already listening are not cut\noff), sets the server (address, station name, codec, broadcast outside the\nallowed bands: no by default, silence for the listeners) and saves its\nsecrets (source password and key, never shown). A warning must be confirmed\nat the very first start."
+    },
     "edit_config": {
      "admin": true,
      "expert": "In nano: Ctrl+O then Enter to save, Ctrl+X to quit. Backup copies are named\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nReference of ALL settings (role, default value, limits, safety, menu that\nchanges them): https://bob56fr.github.io/openRemoteTRX/station-toml/, also\non the rf-diy.com site.",
@@ -361,7 +375,7 @@
      "expert": "",
      "modifie": "The feature sections (enabled) and [modules] run of station.toml, through\nthe checked path of menu 8.1; the station restarts on request.",
      "quand": "To try or remove a feature without editing station.toml.",
-     "role": "Turns each station feature on or off by its number: DX Cluster, FreeDV,\nFreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box,\nnetwork probe, SWR measurement. The switch sets both the feature and the\nstart of its module. A feature that needs other settings is refused with the\nmenu where to make them."
+     "role": "Turns each station feature on or off by its number: DX Cluster, FreeDV,\nFreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box,\nnetwork probe, SWR measurement, live broadcast. The switch sets both the\nfeature and the start of its module. A feature that needs other settings is\nrefused with the menu where to make them."
     },
     "friends": {
      "admin": true,
@@ -619,6 +633,13 @@
      "quand": "Después de la instalación, después de cada cambio y como primer reflejo en\ncuanto algo va mal.",
      "role": "Control completo de la estación, en solo lectura: sistema, software,\nconfiguración, hardware (puertos serie, tarjetas de sonido), servicios,\nespectro HF, DX Cluster, acceso a la red y actualizaciones. Al final del\nbalance, tres líneas « Modos de la estación »: Breizh Audio Box (activado o\nno, estado del enlace), escucha de los visitantes (abierta o cerrada, número\nmáximo) y cuentas de visitantes (seudónimo, desactivada, caducada), sin\nningún secreto."
     },
+    "diffusion": {
+     "admin": true,
+     "expert": "",
+     "modifie": "[diffusion] de station.toml (servidor, estación, códec, fuera de bandas) por\nel camino verificado del menú 8.1, y el archivo diffusion.key (0600, legible\nsolo por el servicio). Nada toca el equipo: el módulo «diffusion» no tiene\nningún derecho sobre él; lo que difunde es su responsabilidad.",
+     "quand": "Para que unos amigos o un club oigan el equipo durante una velada o un\nconcurso; en la puesta en marcha, con lo que le dio el administrador del\nservidor.",
+     "role": "Hace oír el sonido del TRX a unos pocos oyentes en Internet, sin cuenta en\nla estación: escuchan en la página de un servidor de difusión y nunca llegan\na la estación. Se ve el estado (en directo o no, canal, oyentes, tiempo\nrestante, quién la inició), se inicia una difusión (canal privado por\ndefecto, con usuario y contraseña, o público; duración, 1 hora por defecto;\nsu voz durante sus emisiones, no por defecto) y se detiene. Se lee o se\ncambia la contraseña de los oyentes («Generar una»: los que ya escuchan no\nse cortan), se ajusta el servidor (dirección, nombre de la estación, códec,\ndifusión fuera de las bandas autorizadas: no por defecto, silencio para los\noyentes) y se guardan sus secretos (contraseña de la fuente y clave, nunca\nmostrados). Hay que confirmar una advertencia en el primerísimo inicio."
+    },
     "edit_config": {
      "admin": true,
      "expert": "En nano: Ctrl+O y luego Intro para guardar, Ctrl+X para salir. Las copias de\nseguridad se llaman station.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nReferencia de TODOS los ajustes (función, valor por defecto, límites,\nseguridad, menú que los modifica):\nhttps://bob56fr.github.io/openRemoteTRX/station-toml/, también en el sitio\nrf-diy.com.",
@@ -638,7 +659,7 @@
      "expert": "",
      "modifie": "Las secciones de las funciones (enabled) y [modules] run de station.toml,\npor el camino comprobado del menú 8.1; la estación se reinicia a petición.",
      "quand": "Para probar o retirar una función sin editar station.toml.",
-     "role": "Activa o para cada función de la estación con su número: DX Cluster, FreeDV,\nactividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh\nAudio Box, sonda de red, medida de ROE. El interruptor ajusta a la vez la\nfunción y el arranque de su módulo. Una función que necesita otros ajustes\nse rechaza indicando el menú donde hacerlos."
+     "role": "Activa o para cada función de la estación con su número: DX Cluster, FreeDV,\nactividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh\nAudio Box, sonda de red, medida de ROE, difusión en directo. El interruptor\najusta a la vez la función y el arranque de su módulo. Una función que\nnecesita otros ajustes se rechaza indicando el menú donde hacerlos."
     },
     "friends": {
      "admin": true,
@@ -896,6 +917,13 @@
      "quand": "Après l'installation, après chaque changement, et en premier réflexe dès que\nquelque chose ne va pas.",
      "role": "Contrôle complet de la station, en lecture seule : système, logiciels,\nconfiguration, matériel (ports série, cartes son), services, spectre HF,\nCluster DX, accès réseau et mises à jour. En fin de bilan, trois lignes\n« Modes de la station » : Breizh Audio Box (activé ou non, état de la\nliaison), écoute des visiteurs (ouverte ou fermée, nombre maximal) et\ncomptes visiteurs (pseudo, désactivé, expiré), sans aucun secret."
     },
+    "diffusion": {
+     "admin": true,
+     "expert": "",
+     "modifie": "[diffusion] de station.toml (serveur, station, codec, hors bandes) par le\nchemin vérifié du menu 8.1, et le fichier diffusion.key (0600, lisible\nseulement par le service). Rien ne touche au poste : le module « diffusion »\nn'a aucun droit sur lui ; ce qui est diffusé est de votre responsabilité.",
+     "quand": "Pour faire écouter le poste à des amis ou à un club, le temps d'une soirée\nou d'un concours ; à la mise en place, avec ce que vous a donné\nl'administrateur du serveur.",
+     "role": "Fait entendre le son du TRX à quelques auditeurs sur Internet, sans compte\nsur la station : ils écoutent sur la page d'un serveur de diffusion et ne\njoignent jamais la station. On y voit l'état (en direct ou non, canal,\nauditeurs, temps restant, qui l'a lancée), on lance une diffusion (canal\nprivé par défaut, avec identifiant et mot de passe, ou public ; durée, 1\nheure par défaut ; votre voix pendant vos émissions, non par défaut) et on\nl'arrête. On y lit ou on change le mot de passe des auditeurs (« En générer\nun » : ceux qui écoutent ne sont pas coupés), on règle le serveur (adresse,\nnom de la station, codec, diffusion hors des bandes autorisées : non par\ndéfaut, silence pour les auditeurs) et on enregistre ses secrets (mot de\npasse source et clé, jamais affichés). Un avertissement est à confirmer au\ntout premier lancement."
+    },
     "edit_config": {
      "admin": true,
      "expert": "Dans nano : Ctrl+O puis Entrée pour enregistrer, Ctrl+X pour quitter. Les\ncopies de sauvegarde s'appellent\nstation.toml.avant-modification-AAAAMMJJ-HHMMSS.\n\nNotice de TOUS les réglages (rôle, valeur par défaut, bornes, sécurité, menu\nqui les modifie) : https://bob56fr.github.io/openRemoteTRX/station-toml/,\naussi sur le site rf-diy.com.",
@@ -915,7 +943,7 @@
      "expert": "",
      "modifie": "Les sections des fonctions (enabled) et [modules] run de station.toml, par\nle chemin vérifié du menu 8.1 ; la station redémarre sur ta demande.",
      "quand": "Pour essayer ou retirer une fonction sans éditer station.toml.",
-     "role": "Met en service ou arrête chaque fonction de la station d'un numéro : Cluster\nDX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR,\nBreizh Audio Box, sonde réseau, mesure de TOS. L'interrupteur règle à la\nfois la fonction et le lancement de son module. Une fonction qui demande\nd'autres réglages est refusée avec le menu où les faire."
+     "role": "Met en service ou arrête chaque fonction de la station d'un numéro : Cluster\nDX, FreeDV, activité FreeDV, SELCALL, présence de groupe, monitoring, SDR,\nBreizh Audio Box, sonde réseau, mesure de TOS, diffusion en direct.\nL'interrupteur règle à la fois la fonction et le lancement de son module.\nUne fonction qui demande d'autres réglages est refusée avec le menu où les\nfaire."
     },
     "friends": {
      "admin": true,

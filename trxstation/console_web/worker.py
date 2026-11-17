@@ -60,6 +60,7 @@ REFUSED_KEYS = frozenset({
     "alerts.url_bad", "alerts.lang_bad", "alerts.alive_bad", "alerts.test_failed", "indicator.win.failed_link",
     "remote_console.admins_bad", "remote_console.account_bad", "apply_result.1", "apply_result.2", "apply_result.3",
     "save_profile.8", "breizh_new_key.3",
+    "diffusion.refused", "diffusion.noreply", "diffusion.bad_value", "diffusion.secrets_bad", "diffusion.secrets_failed",
 })
 # Réussites (vert) : ce qui vient d'être enregistré, installé ou envoyé.
 DONE_KEYS = frozenset({
@@ -67,11 +68,13 @@ DONE_KEYS = frozenset({
     "friends_leave.2", "breizh_new_key.4", "run_tests.10", "monitoring.pseudo.done", "alerts.test_sent",
     "update.18", "update.18.page", "update.18.local", "install_zip.14", "install_zip.14.page", "install_zip.14.local",
     "rollback.4", "rollback.4.page", "rollback.4.local",
+    "diffusion.started", "diffusion.stopped", "diffusion.new_password", "diffusion.secrets_saved",
 })
 UNCHANGED_KEYS = frozenset({
     "hwtest.5", "qualif.4", "update.17", "install_zip.6", "install_zip.11", "install_zip.13", "edit_config.5",
     "edit_config.8", "choose_profile.2", "save_profile.3", "save_profile.6", "delete_profile.2", "save_config.4",
     "save_accounts.1", "temperature.6",
+    "diffusion.not_started", "diffusion.secrets_unchanged",
 })
 
 

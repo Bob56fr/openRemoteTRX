@@ -42,6 +42,13 @@ FRAME_S = au.BLOCK / 48000            # 20 ms
 AUDIO_QUEUE = 50                      # 1 s au plus en attente
 NO_AUDIO_ALERT_S = 5.0                # plus de son de la passerelle : alerte (silence envoyé)
 FATAL_STATUSES = (401, 404)           # mot de passe ou station refusés : pas de nouvel essai
+# TRX Console (menu 5.6) : demande déposée dans state_dir, réponse dans state_dir/diffusion (même mécanisme que la
+# présence et le monitoring). La réponse peut porter le mot de passe des AUDITEURS (« reveal ») : effacée vite.
+CONSOLE_REQUEST = "diffusion-request.json"
+CONSOLE_REPLY = "console-reply.json"
+CONSOLE_MAX_AGE_S = 120.0
+CONSOLE_REPLY_KEEP_S = 15.0
+TICK_S = 1.0
 
 
 class ActionRefused(Exception):
@@ -88,6 +95,7 @@ class DiffusionService:
         self._session: dict[str, Any] | None = None   # diffusion en cours
         self.last_stop: dict[str, Any] | None = None
         self._bus_seen = False
+        self._reply_at: float | None = None
         self._meta_dirty = False
         self._last_audio = 0.0
 
@@ -434,9 +442,69 @@ class DiffusionService:
         else:
             log.info("[diffusion] hors service : le module attend sans rien envoyer")
         self.write_status()
+        ticks = 0
         while True:
-            await asyncio.sleep(10)
-            self.write_status()                        # « updated » : trx-monitor voit un module vivant
+            await asyncio.sleep(TICK_S)
+            try:
+                await self.check_console()
+            except Exception:
+                emit_event(codes.ORT_6110, logger=log, trace=True, contexte="demande de TRX Console")
+            ticks += 1
+            if ticks % 10 == 0:
+                self.write_status()                    # « updated » : trx-monitor voit un module vivant
+
+    async def check_console(self) -> None:
+        """Demande de TRX Console : lue puis effacée ; réponse dans state_dir/diffusion/console-reply.json (0644 : le
+        compte de la console la lit), effacée après 15 s. Mêmes actions que la page, opérateur « TRX Console »."""
+        import json
+        from ..presence.store import write_json
+        reply_path = self.folder / CONSOLE_REPLY
+        now = self.clock()
+        if self._reply_at is not None and now - self._reply_at > CONSOLE_REPLY_KEEP_S:
+            try:
+                reply_path.unlink()
+            except OSError:
+                pass
+            self._reply_at = None
+        path = Path(self.cfg.supervisor.state_dir) / CONSOLE_REQUEST
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            log.info("demande de la console illisible : %s", exc)
+            return
+        try:
+            path.unlink()
+        except OSError as exc:
+            log.info("demande de la console non effacée : %s", exc)
+        try:
+            req = json.loads(raw.decode("utf-8"))
+            ident, action, args, at = req["id"], req["action"], req.get("args") or {}, float(req["at"])
+            if not isinstance(ident, str) or not isinstance(action, str) or not isinstance(args, dict):
+                raise ValueError("champs")
+        except (ValueError, KeyError, TypeError, UnicodeDecodeError):
+            log.info("demande de la console mal formée : ignorée")
+            return
+        if abs(now - at) > CONSOLE_MAX_AGE_S:
+            log.info("demande de la console trop ancienne : ignorée")
+            return
+        if action == "stop":
+            args = {"operator": "TRX Console"}                 # jamais une cause choisie par la demande
+        elif action == "start":
+            args = {**args, "operator": "TRX Console"}
+        try:
+            reply = {"id": ident, "ok": True, "result": await self.act(action, args)}
+        except ActionRefused as exc:
+            reply = {"id": ident, "ok": False, "error": exc.reason, "message": str(exc)}
+        except Exception:
+            emit_event(codes.ORT_6110, logger=log, trace=True, contexte=f"action « {action[:20]} » de TRX Console")
+            reply = {"id": ident, "ok": False, "error": "internal", "message": "erreur du module"}
+        try:
+            write_json(reply_path, reply, private=False)
+            self._reply_at = now
+        except OSError as exc:
+            log.info("réponse à la console non écrite : %s", exc)
 
     async def _bus_forever(self) -> None:
         try:

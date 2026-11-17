@@ -279,7 +279,8 @@ def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop, manager=None
         return not cfg.tx_allowed(freq)
 
     out = DiffusionOut(cfg.diffusion.audio_port, audio_token(module_secret(key, "diffusion")), pipeline.hub,
-                       pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded, muted)
+                       pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded, muted,
+                       alert=getattr(manager, "alert", None))
     if manager is not None:                        # commande des opérateurs et état publié (lot D2)
         manager.diffusion_call = lambda data: bridge.call("diffusion", data)
         manager.diffusion_status = out.summary

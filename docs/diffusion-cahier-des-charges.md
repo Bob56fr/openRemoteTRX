@@ -143,8 +143,14 @@ métadonnées est à écrire par celui qui monte son propre VPS.
     durée, reconnexion, surcharge).
 - **D2** (fait, étape 245) Commandes client et page (panneau de lancement, indicateur), `docs/protocole.md` § 20,
   `hello.features`, `state.diffusion` (opérateurs), réglage `outside_bands` (§ 12.1).
-- **D3** TRX Console (menu 5.6 et interrupteur 5.5, § 12.2 et 12.3), trx-monitor, ntfy, indicateurs GNOME /
-  Windows, guide de l'opérateur ; la ligne « Diffusion » du tableau de bord : conversation de la console web (§ 12.5).
+- **D3** (fait en grande partie, étape 246) TRX Console : interrupteur 5.5 et menu **5.6** (état, lancer avec
+  avertissement au premier lancement, arrêter, identifiants des auditeurs voir / générer, réglages `[diffusion]` dont
+  hors bandes, secrets du serveur dans `diffusion.key` écrit par la console elle-même en 0600 au compte du service,
+  jamais par une demande au module) ; alertes ntfy de la PASSERELLE au début (ORT-6101) et à la fin (ORT-6102, avec la
+  cause) ; guide de l'opérateur (partie 9). RESTE de la proposition du § 12.3 (à valider) : lien et QR code des
+  canaux, « Dernières diffusions », essai de liaison avec le serveur, qualité et durée par défaut réglables ;
+  indicateurs GNOME / Windows. La ligne « Diffusion » du tableau de bord et de trx-monitor : conversation de la
+  console web (§ 12.5).
 - **D4** Application Android : indicateur, lancement, arrêt (parité).
 - **D5** VPS, dépôt privé `openRemoteTRX-vps` : FAIT le 2026-11-17 (§ 2.1) ; reste l'essai avec la vraie station
   (D1b) et la page sur iPhone (anciens Safari et Opus : option MP3).

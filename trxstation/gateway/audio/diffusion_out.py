@@ -17,25 +17,37 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
+import time
 from collections.abc import Awaitable, Callable
 
 from ...diffusion import audio as au
+from ...errors import codes
 from .listeners import ListenerMix
 
 log = logging.getLogger("trx.diffusion.out")
 
 POLL_S = 2.0
+# Alerte de fin (ntfy) : cause d'arrêt en clair (mêmes causes que le module, docs/protocole.md § 20)
+STOP_TEXTS = {"operator": "arrêt par un opérateur", "duration": "fin de la durée", "overload": "station surchargée",
+              "gateway_restart": "passerelle relancée", "auth": "source refusée", "disabled": "fonction mise hors service",
+              "station_stop": "arrêt de la station"}
+
+
+def _duration(seconds: float) -> str:
+    m = int(max(seconds, 0) // 60)
+    return f"{m // 60} h {m % 60:02d} min" if m >= 60 else f"{m} min"
 
 
 class DiffusionOut:
     def __init__(self, port: int, token: bytes, hub, tap, transmitting: Callable[[], bool],
                  call: Callable[[dict], Awaitable], overloaded: Callable[[], bool] = lambda: False,
-                 muted: Callable[[], bool] | None = None) -> None:
+                 muted: Callable[[], bool] | None = None, alert: Callable[..., None] | None = None) -> None:
         self.port, self.token, self.hub, self.tap = port, token, hub, tap
         self.transmitting = transmitting          # () -> bool : émission en cours (n'importe laquelle)
         self.call = call                          # (data) -> coroutine : commande vers le module
         self.overloaded = overloaded              # () -> bool : garde de surcharge des visiteurs déclenchée
         self.muted = muted                        # () -> bool : réception hors bandes (et non permise) : silence
+        self.alert = alert                        # Notifier.alert : ntfy au début et à la fin d'une diffusion (§ 8)
         self.voice = False
         self.packets = 0
         self.status: dict | None = None           # dernier état du module (state.diffusion des opérateurs)
@@ -47,8 +59,10 @@ class DiffusionOut:
             status = await self.call({"action": "status"})
         except Exception:                          # module absent, relancé ou lent : on n'envoie rien
             status = None
+        before = self.status
         self.status = status if isinstance(status, dict) else None
         active = isinstance(status, dict) and status.get("active") is True
+        self._announce(before, self.status)
         if active and self.overloaded():
             try:
                 await self.call({"action": "stop", "args": {"cause": "overload"}})
@@ -60,6 +74,26 @@ class DiffusionOut:
             self._feed = asyncio.ensure_future(self._feed_loop())
         elif not active and self._feed is not None:
             await self.close_feed()
+
+    def _announce(self, before: dict | None, now: dict | None) -> None:
+        """Alerte ntfy quand une diffusion commence ou s'arrête (vu d'un tour à l'autre ; module muet = rien)."""
+        if self.alert is None or now is None:
+            return
+        was, is_ = bool(before and before.get("active")), bool(now.get("active"))
+        try:
+            if is_ and not was:
+                left = now.get("remaining_s")
+                self.alert(codes.ORT_6101, operateur=str(now.get("operator") or "?"),
+                           acces="publique" if now.get("access") == "public" else "privée",
+                           duree="sans limite" if left is None else _duration(left + 59),
+                           voix="oui" if now.get("voice") else "non")
+            elif was and not is_:
+                cause = (now.get("last_stop") or {}).get("cause")
+                started = before.get("started") if before else None
+                self.alert(codes.ORT_6102, cause=STOP_TEXTS.get(cause, cause or "?"),
+                           duree=_duration(time.time() - started) if isinstance(started, (int, float)) else "?")
+        except Exception:                         # une alerte ne doit jamais gêner le son
+            log.info("alerte de diffusion non envoyée")
 
     def summary(self) -> dict | None:
         """state.diffusion : ce qu'une page d'opérateur affiche (indicateur, rubrique) ; jamais un secret."""

@@ -339,9 +339,15 @@ modifie = "La sección <code>[supervisor]</code> de <code>station.toml</code> (<
 admin = true
 
 [menus.features_switch]
-role = "Activa o para cada <strong>función</strong> de la estación con su número: DX Cluster, FreeDV, actividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh Audio Box, sonda de red, medida de ROE. El interruptor ajusta a la vez la función y el arranque de su módulo. Una función que necesita otros ajustes se rechaza indicando el menú donde hacerlos."
+role = "Activa o para cada <strong>función</strong> de la estación con su número: DX Cluster, FreeDV, actividad FreeDV, SELCALL, presencia de grupo, monitorización, SDR, Breizh Audio Box, sonda de red, medida de ROE, difusión en directo. El interruptor ajusta a la vez la función y el arranque de su módulo. Una función que necesita otros ajustes se rechaza indicando el menú donde hacerlos."
 quand = "Para probar o retirar una función sin editar <code>station.toml</code>."
 modifie = "Las secciones de las funciones (<code>enabled</code>) y <code>[modules] run</code> de <code>station.toml</code>, por el camino comprobado del menú 8.1; la estación se reinicia a petición."
+admin = true
+
+[menus.diffusion]
+role = "Hace oír el sonido del TRX a unos pocos <strong>oyentes en Internet</strong>, sin cuenta en la estación: escuchan en la página de un <strong>servidor de difusión</strong> y nunca llegan a la estación. Se ve el <strong>estado</strong> (en directo o no, canal, oyentes, tiempo restante, quién la inició), se <strong>inicia</strong> una difusión (canal <strong>privado</strong> por defecto, con usuario y contraseña, o público; duración, 1 hora por defecto; su voz durante sus emisiones, <strong>no</strong> por defecto) y se <strong>detiene</strong>. Se lee o se cambia la <strong>contraseña de los oyentes</strong> («Generar una»: los que ya escuchan no se cortan), se ajusta el <strong>servidor</strong> (dirección, nombre de la estación, códec, <strong>difusión fuera de las bandas autorizadas</strong>: no por defecto, silencio para los oyentes) y se guardan sus <strong>secretos</strong> (contraseña de la fuente y clave, nunca mostrados). Hay que confirmar una <strong>advertencia</strong> en el primerísimo inicio."
+quand = "Para que unos amigos o un club oigan el equipo durante una velada o un concurso; en la puesta en marcha, con lo que le dio el administrador del servidor."
+modifie = "<code>[diffusion]</code> de <code>station.toml</code> (servidor, estación, códec, fuera de bandas) por el camino verificado del menú 8.1, y el archivo <code>diffusion.key</code> (0600, legible solo por el servicio). Nada toca el equipo: el módulo «diffusion» no tiene ningún derecho sobre él; lo que difunde es su responsabilidad."
 admin = true
 
 [menus.breizh]

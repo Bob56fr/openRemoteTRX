@@ -339,9 +339,15 @@ modifie = "The <code>[supervisor]</code> section of <code>station.toml</code> (<
 admin = true
 
 [menus.features_switch]
-role = "Turns each station <strong>feature</strong> on or off by its number: DX Cluster, FreeDV, FreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box, network probe, SWR measurement. The switch sets both the feature and the start of its module. A feature that needs other settings is refused with the menu where to make them."
+role = "Turns each station <strong>feature</strong> on or off by its number: DX Cluster, FreeDV, FreeDV activity, SELCALL, group presence, monitoring, SDR, Breizh Audio Box, network probe, SWR measurement, live broadcast. The switch sets both the feature and the start of its module. A feature that needs other settings is refused with the menu where to make them."
 quand = "To try or remove a feature without editing <code>station.toml</code>."
 modifie = "The feature sections (<code>enabled</code>) and <code>[modules] run</code> of <code>station.toml</code>, through the checked path of menu 8.1; the station restarts on request."
+admin = true
+
+[menus.diffusion]
+role = "Lets a few <strong>listeners on the Internet</strong> hear the TRX audio, without an account on the station: they listen on the page of a <strong>broadcast server</strong> and never reach the station. It shows the <strong>status</strong> (on air or not, channel, listeners, time left, who started it), <strong>starts</strong> a broadcast (<strong>private</strong> channel by default, with username and password, or public; duration, 1 hour by default; your voice while you transmit, <strong>no</strong> by default) and <strong>stops</strong> it. It shows or changes the <strong>listeners' password</strong> (\"Generate one\": those already listening are not cut off), sets the <strong>server</strong> (address, station name, codec, <strong>broadcast outside the allowed bands</strong>: no by default, silence for the listeners) and saves its <strong>secrets</strong> (source password and key, never shown). A <strong>warning</strong> must be confirmed at the very first start."
+quand = "To let friends or a club hear the rig for an evening or a contest; at setup time, with what the server administrator gave you."
+modifie = "<code>[diffusion]</code> in <code>station.toml</code> (server, station, codec, outside bands) through the checked path of menu 8.1, and the <code>diffusion.key</code> file (0600, readable by the service only). Nothing touches the rig: the \"diffusion\" module has no right on it; what you broadcast is your responsibility."
 admin = true
 
 [menus.breizh]
