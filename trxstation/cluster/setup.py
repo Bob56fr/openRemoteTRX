@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Callable
 
 from .. import config as cfgmod
-from .. import secretstore
+from .. import formhint, secretstore
 from ..answers import yes_no
 from ..paths import default_config_path
 from .bandplan import BAND_NAMES, MODES
@@ -68,7 +68,9 @@ class ClusterEditor:
 
     def yes(self, question: str, default: bool) -> bool:
         while True:
-            answer = self.ask(f"{question} ({'O/n' if default else 'o/N'}) : ").strip()
+            text = f"{question} ({'O/n' if default else 'o/N'}) : "
+            formhint.emit("yesno", question.strip(), text, default=default)       # console web : Oui / Non
+            answer = self.ask(text).strip()
             if not answer:
                 return default
             if yes_no(answer) is not None:
@@ -228,7 +230,11 @@ class ClusterEditor:
         prompt = ("Mot de passe ou clé (rien ne s'affiche ; Entrée = garder l'actuel, « - » = supprimer) : " if has
                   else "Mot de passe ou clé, si le serveur en demande un (rien ne s'affiche ; Entrée = aucun) : ")
         while True:
-            value = self.ask_secret(prompt)
+            if formhint.enabled() and self.ask_secret is getpass.getpass:   # console web : champ masqué de la page
+                formhint.emit("password", prompt, prompt)
+                value = input(prompt)
+            else:
+                value = self.ask_secret(prompt)
             if not value:
                 return
             if value == "-" and has:

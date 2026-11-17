@@ -26,6 +26,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from . import config as cfgmod
+from . import formhint
 from .answers import typed, yes_no
 from .audio_devices import list_audio_devices, parse_audio_list  # noqa: F401 (parse_audio_list réexporté)
 from .config import DEFAULT_BANDS_R1, DUMMY_MODEL, ClientAuth, Config, Rig
@@ -255,6 +256,7 @@ def ask_spectrum(cfg: Config) -> None:
     ports = [p for p in list_serial_ports() if p.strip().lower() != cfg.rig.port.strip().lower()]
     port = choose("Second port du poste (CI-V)", [(p, p) for p in ports], current=cfg.spectrum.port or None)
     print("\n" + USB_SEND_WARNING)
+    _expect(kind="word", word="OUI")
     if not typed(ask("Tape OUI si ces réglages sont vérifiés", ""), "OUI"):
         disable_spectrum(cfg)
         print("Second port non ouvert : spectre désactivé (mode normal).")
@@ -272,10 +274,27 @@ def ask_spectrum(cfg: Config) -> None:
 
 # --------------------------------------------------------------------------- dialogue
 
+# Nature de la PROCHAINE question (console web en formulaires, `formhint`) : posée par les fonctions qui savent
+# ce qu'elles demandent (choix, oui / non, nombre, mot à taper), lue et effacée par `ask`.
+_hint: dict | None = None
+
+
+def _expect(**hint) -> None:
+    global _hint
+    _hint = hint
+
+
 def ask(prompt: str, default: str | None = None) -> str:
+    global _hint
+    hint, _hint = (_hint or {}), None
     suffix = f" [{default}]" if default else ""
+    text = f"{prompt}{suffix} : "
     while True:
-        answer = input(f"{prompt}{suffix} : ").strip()
+        fields = {"kind": "text", "prompt": prompt, **hint}
+        if default is not None:
+            fields.setdefault("default", default)
+        formhint.emit(fields.pop("kind"), fields.pop("prompt"), text, **fields)
+        answer = input(text).strip()
         if answer:
             return answer
         if default is not None:
@@ -283,6 +302,7 @@ def ask(prompt: str, default: str | None = None) -> str:
 
 
 def ask_yes_no(prompt: str, default: bool = False) -> bool:
+    _expect(kind="yesno", default=default)
     answer = ask(f"{prompt} ({'O/n' if default else 'o/N'})", "o" if default else "n")
     return yes_no(answer) is True
 
@@ -295,11 +315,14 @@ def choose(title: str, options: list[tuple[str, str]], manual_label: str = "Sais
                   [(v, lbl) for v, lbl in options if v != current]
         if not any(v == current for v, _ in options):
             options = [(current, f"{current}  (réglage actuel, introuvable pour l'instant)")] + options
-    print(f"\n{title}")
-    for i, (_, label) in enumerate(options, 1):
-        print(f"  {i}) {label}")
-    print(f"  m) {manual_label}")
+    if not formhint.enabled():                   # page : titre et liste deviennent le formulaire
+        print(f"\n{title}")
+        for i, (_, label) in enumerate(options, 1):
+            print(f"  {i}) {label}")
+        print(f"  m) {manual_label}")
     while True:
+        _expect(kind="choice", prompt=title,
+                choices=[[str(i), label] for i, (_, label) in enumerate(options, 1)] + [["m", manual_label]])
         answer = ask("Choix", "1" if options else "m")
         if answer.lower() == "m":
             return ask("Valeur")
@@ -521,6 +544,7 @@ def ask_number(prompt: str, current: int, low: int, high: int, why: str = "") ->
     réponse hors limites ne doit jamais aller jusqu'à l'enregistrement (message technique de la validation)."""
     current = min(max(current, low), high)
     while True:
+        _expect(kind="int", low=low, high=high, current=current)
         answer = ask(f"{prompt} (de {low} à {high})", str(current))
         if answer.isdigit() and low <= int(answer) <= high:
             return int(answer)
@@ -767,6 +791,8 @@ def station_authority(cfg: Config, output: Path, hosts: list[str] | None = None,
 def choose_password(login: str, ask_password: Callable[[str], str] = getpass.getpass,
                     say: Callable[[str], None] = print) -> str:
     """Saisie masquée avec double saisie et règle de robustesse ; Entrée = en générer un fort."""
+    if ask_password is getpass.getpass and formhint.enabled():
+        ask_password = _form_password                       # page : champ masqué du navigateur, pas de terminal
     while True:
         first = ask_password("  Mot de passe (Entrée = en générer un fort) : ")
         if not first:
@@ -782,6 +808,11 @@ def choose_password(login: str, ask_password: Callable[[str], str] = getpass.get
             say("  Les deux saisies diffèrent, recommence.")
             continue
         return first
+
+
+def _form_password(prompt: str) -> str:
+    formhint.emit("password", prompt.strip(), prompt, generate="Entrée" in prompt)
+    return input(prompt)
 
 
 def _check_login_and_password(cfg: Config, name: str, password: str, existing: bool) -> None:
@@ -814,7 +845,7 @@ def set_password(cfg: Config, name: str, password: str | None = None) -> str:
 def ask_clients(cfg: Config) -> None:
     print("\nClients autorisés à se connecter (smartphone, voiture...). Entrée pour terminer.")
     while True:
-        name = input("Identifiant du client (ex. phone) : ").strip()
+        name = ask("Identifiant du client (ex. phone, Entrée = terminer)", "")
         if not name:
             return
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name) or any(c.id == name for c in cfg.clients):

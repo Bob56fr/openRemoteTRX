@@ -6,7 +6,7 @@
 "use strict";
 (function () {
   const $ = (s) => document.querySelector(s);
-  let ui = (k) => k, send = () => {}, inTerminal = () => {}, wantTerminal = false, flow = null, asking = null, sudo = null, running = null, outPre = null;
+  let ui = (k) => k, send = () => {}, inTerminal = () => {}, wantTerminal = false, flow = null, asking = null, sudo = null, running = null, outPre = null, lastAsked = null;
   const QR = /[█▀▄]{6}/;
 
   function el(tag, cls, text) {
@@ -23,6 +23,7 @@
   }
   function answer(value, label) {
     if (!asking) return;
+    lastAsked = asking;                                 // « answered » arrive après : la question y reste connue
     asking = null;
     send({ type: "flow_answer", value, label: label || "" });
     renderForm();
@@ -93,6 +94,13 @@
     o.buf = "";
     o.partial.textContent = "";
   }
+  // Réponse à une question d'un outil posée en formulaire (étape 236) : même bloc qu'une réponse tapée.
+  function outAnswer(o, q, value) {
+    const qa = el("div", "ln qa");
+    qa.append(el("span", "q", String(q.prompt || "").replace(/\s*:\s*$/, "")));
+    qa.append(el("span", "ans", value || "↵"));
+    follow(o, () => o.box.insertBefore(qa, o.partial));
+  }
   function outEnd(o) {
     follow(o, () => {
       if (o.buf) outLine(o, o.buf);
@@ -123,8 +131,11 @@
       if (ev.intro && ev.intro.trim()) l.append(el(QR.test(ev.intro) ? "pre" : "div", QR.test(ev.intro) ? "qr" : "msg", ev.intro.replace(/^\n+/, "")));
       asking = ev;
     } else if (ev.type === "answered") {
+      const q = asking || lastAsked;
+      lastAsked = null;
+      if (q && q.tool && outPre) outAnswer(outPre, q, ev.value);    // question d'un outil : dans sa sortie, à sa place
+      else if (ev.value) l.append(el("div", "me", ev.value));
       asking = null;
-      if (ev.value) l.append(el("div", "me", ev.value));
     } else if (ev.type === "run") {
       running = ev.cmd || "…";
       const box = el("div", "cmd");
@@ -265,6 +276,7 @@
       focus = b;
     } else {
       const input = textField("text");
+      if (q.default) input.value = q.default;           // valeur actuelle proposée (Entrée = la garder)
       row.append(input, button(ui("web.flow.send"), "primary", () => answer(input.value)));
       focus = input;
     }

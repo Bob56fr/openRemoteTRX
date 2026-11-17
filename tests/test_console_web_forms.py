@@ -129,6 +129,69 @@ def test_after_an_installation_the_page_never_says_to_press_q(tmp_path, monkeypa
             assert "(q)" not in text and word in text and "{" not in text
 
 
+# ---------------------------------------------------------------- questions des outils (étape 236, W3b)
+
+def test_a_tool_question_becomes_a_form_and_its_prompt_is_not_repeated():
+    from trxstation import formhint
+    channel = Collect()
+    runner = WebRunner(channel)
+    stream = worker.ToolStream(runner)
+    hint = {"kind": "choice", "prompt": "Port CAT", "echo": "Choix [1] : ",
+            "choices": [["1", "/dev/ttyUSB0"], ["m", "Saisir à la main"]], "evil": "x"}
+    line = formhint.MARK + json.dumps(hint) + "\n"
+    whole = "Avant\n" + line + "Choix [1] : "
+    for i in range(0, len(whole), 3):                 # coupé n'importe où, la marque comprise
+        stream.feed(whole[i:i + 3])
+    stream.feed("", final=True)
+    out = "".join(m["data"] for m in channel.messages if m["type"] == "out")
+    forms = [m for m in channel.messages if m["type"] == "form"]
+    assert out == "Avant\n" and len(forms) == 1 and runner.tool_asking
+    f = forms[0]
+    assert f["tool"] and f["kind"] == "choice" and f["choices"][0] == ["1", "/dev/ttyUSB0"] and "evil" not in f
+
+
+def test_the_answer_to_a_tool_question_goes_to_the_tool_not_to_the_menu():
+    runner = WebRunner(Collect())
+    fed = []
+    runner.feed = fed.append
+    inbox = Inbox(iter([json.dumps({"type": "answer", "value": "2"}), json.dumps({"type": "answer", "value": "x"})]), runner)
+    runner.tool_asking = True
+    inbox.run()
+    assert fed == ["2\n"] and inbox.answers.get() == "x"
+
+
+def test_the_wizard_announces_its_questions_only_to_the_page(monkeypatch, capsys):
+    from trxstation import formhint, setup_wizard
+    answers = iter(["2", "o"])
+    monkeypatch.setattr("builtins.input", lambda prompt="": (print(prompt, end=""), next(answers))[1])
+    monkeypatch.delenv(formhint.ENV, raising=False)
+    assert setup_wizard.choose("Port", [("a", "A"), ("b", "B")]) == "b"
+    assert formhint.MARK not in capsys.readouterr().out
+    answers = iter(["2", "o", "7"])
+    monkeypatch.setenv(formhint.ENV, "1")
+    assert setup_wizard.choose("Port", [("a", "A"), ("b", "B")]) == "b"
+    assert setup_wizard.ask_yes_no("Sûr", False) is True
+    assert setup_wizard.ask_number("Watts", 5, 0, 10) == 7
+    out = capsys.readouterr().out
+    hints = [json.loads(part.split("\n", 1)[0]) for part in out.split(formhint.MARK)[1:]]   # invite sans fin de ligne avant
+    assert [h["kind"] for h in hints] == ["choice", "yesno", "int"]
+    assert hints[0]["choices"] == [["1", "A"], ["2", "B"], ["m", "Saisir à la main"]] and "1) A" not in out
+    assert hints[2]["low"] == 0 and hints[2]["high"] == 10 and hints[2]["current"] == 5
+
+
+def test_worker_plays_a_wizard_part_with_forms(tmp_path):
+    from trxstation import config as cfgmod
+    # 3.3 = trx-setup --partie emission : puissance 50 W, TOT gardé, station NON démarrée
+    events, errors = run_worker(tmp_path, "3.3", ["50", "", "n"])
+    tool = [e for e in events if e["type"] == "form" and e.get("tool")]
+    assert [f["kind"] for f in tool] == ["int", "int"] and tool[0]["high"] == 2000
+    out = "".join(e["data"] for e in events if e["type"] == "out")
+    assert "(de 0 à 2000)" not in out and "\x1e" not in out              # invites remplacées par les formulaires
+    assert cfgmod.load(tmp_path / "station.toml").rig.max_power_w == 50
+    runs = [e["cmd"] for e in events if e["type"] == "run"]           # « n » : station PAS démarrée (rien d'autre)
+    assert len(runs) == 1 and runs[0].endswith("--partie emission")
+
+
 def test_every_key_that_colours_a_message_exists():
     from trxstation.i18n import catalog
     fr = catalog("fr", "console")

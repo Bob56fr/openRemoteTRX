@@ -34,6 +34,7 @@ import sys
 import threading
 from pathlib import Path
 
+from .. import formhint
 from ..console import CONFIG_PATH, Console, Runner
 
 SUDO_TRIES = 3
@@ -106,7 +107,10 @@ class Inbox(threading.Thread):
             except ValueError:
                 continue
             kind, value = msg.get("type"), msg.get("value")
-            if kind == "answer" and isinstance(value, str):
+            if kind == "answer" and isinstance(value, str) and self.runner.tool_asking:
+                self.runner.tool_asking = False
+                self.runner.feed(value[:4096].replace("\n", " ") + "\n")
+            elif kind == "answer" and isinstance(value, str):
                 self.answers.put(value[:4096])
             elif kind == "password" and isinstance(value, str):
                 self.passwords.put(value[:256])
@@ -141,8 +145,11 @@ class WebRunner(Runner):
         self.password: str | None = None
         self.child: subprocess.Popen | None = None
         self.lock = threading.Lock()
-        # sudo : mot de passe lu sur l'entrée (-S), jamais le cache (-k), aucune invite (-p "") ; remplacé dans les tests
-        self.sudo = ["sudo", "-S", "-k", "-p", "", "--"]
+        # sudo : mot de passe lu sur l'entrée (-S), jamais le cache (-k), aucune invite (-p "") ; remplacé dans les
+        # tests. sudo vide l'environnement : `env` redonne à l'outil ce qu'il lui faut (questions en formulaires).
+        self.sudo = ["sudo", "-S", "-k", "-p", "", "--", "env", f"{formhint.ENV}=1", "PYTHONUNBUFFERED=1",
+                     "PYTHONIOENCODING=utf-8"]
+        self.tool_asking = False                   # une question d'un outil attend sa réponse (formulaire)
         self.use_sudo = os.name == "posix" and not self.is_root     # Windows : pas de sudo (comme la console texte)
 
     def feed(self, data: str) -> None:
@@ -208,15 +215,78 @@ class WebRunner(Runner):
             except OSError:
                 pass
         decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        stream = ToolStream(self)
         while chunk := child.stdout.read1(4096):
-            text = ANSI.sub("", decoder.decode(chunk))
-            if text:
-                self.channel.send({"type": "out", "data": text})
+            stream.feed(ANSI.sub("", decoder.decode(chunk)))
+        stream.feed(decoder.decode(b"", final=True), final=True)
+        self.tool_asking = False
         code = child.wait()
         with self.lock:
             self.child = None
         self.channel.send({"type": "end", "code": code})
         return code
+
+
+class ToolStream:
+    """Sortie d'un outil : texte envoyé tel quel, sauf les lignes `formhint.MARK` (question annoncée), changées en
+    formulaire ; l'invite que l'outil écrit juste après (`echo`) n'est pas répétée dans la sortie."""
+
+    def __init__(self, runner: WebRunner) -> None:
+        self.runner, self.buf, self.echo = runner, "", ""
+
+    def out(self, text: str) -> None:
+        if self.echo and text:
+            if text.startswith(self.echo):
+                text, self.echo = text[len(self.echo):], ""
+            elif self.echo.startswith(text):
+                self.echo, text = self.echo[len(text):], ""
+            else:
+                self.echo = ""
+        if text:
+            self.runner.channel.send({"type": "out", "data": text})
+
+    def feed(self, text: str, final: bool = False) -> None:
+        self.buf += text
+        while (i := self.buf.find(formhint.MARK)) >= 0:
+            j = self.buf.find("\n", i)
+            if j < 0:
+                if not final:                            # ligne marquée pas encore complète
+                    self.out(self.buf[:i])
+                    self.buf = self.buf[i:]
+                    return
+                break
+            self.out(self.buf[:i])
+            line, self.buf = self.buf[i + len(formhint.MARK):j], self.buf[j + 1:]
+            self.question(line)
+        start = -1 if final else self.buf.find(formhint.MARK[0])
+        if start < 0 or not formhint.MARK.startswith(self.buf[start:]):
+            self.out(self.buf)
+            self.buf = ""
+        else:                                            # début possible d'une marque : attendre la suite
+            self.out(self.buf[:start])
+            self.buf = self.buf[start:]
+
+    def question(self, line: str) -> None:
+        try:
+            hint = json.loads(line)
+        except ValueError:
+            return
+        if not isinstance(hint, dict) or not isinstance(hint.get("prompt"), str):
+            return
+        echo = hint.pop("echo", "")
+        self.echo = echo if isinstance(echo, str) else ""
+        allowed = {k: hint[k] for k in ("kind", "choices", "default", "low", "high", "current", "word", "generate")
+                   if k in hint}
+        if allowed.get("kind") not in ("choice", "text", "int", "yesno", "password", "word"):
+            allowed["kind"] = "text"
+        choices = allowed.get("choices")
+        if choices is not None:                          # [[valeur, libellé]] seulement, libellés sans marge
+            allowed["choices"] = [[str(c[0]), str(c[1]).strip()] for c in choices
+                                  if isinstance(c, list) and len(c) == 2][:200] if isinstance(choices, list) else []
+        form = classify(hint["prompt"], [], allowed)
+        form["tool"] = True
+        self.runner.tool_asking = True
+        self.runner.channel.send(form)
 
 
 def command_name(cmd: list[str]) -> str:
@@ -283,7 +353,7 @@ def classify(prompt: str, said: list[tuple[int, str]], hint: dict | None) -> dic
         break
     if "kind" not in form:
         form["kind"] = "choice" if choices else "text"
-    if form["kind"] == "choice":
+    if form["kind"] == "choice" and not form["choices"]:          # liste donnée par l'outil : gardée
         form["choices"], form["hide"], form["rewrite"] = choices, hide, rewrite
     intro = next((text for ident, text in form["rewrite"] if ident == 0), None)
     if intro is None and len(parts) > 1 and 0 not in form["hide"]:
