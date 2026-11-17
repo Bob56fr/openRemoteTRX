@@ -28,18 +28,58 @@
     renderForm();
   }
 
-  // Lignes du diagnostic et des bilans : [OK] vert, [ATTENTION] orange, [ERREUR] rouge, « == Titre == » en gras
-  const TONES = [[/^\s*\[(OK)\]/, "ok"], [/^\s*\[(ATTENTION|WARNING|WARN|ACHTUNG|AVISO)\]/i, "warn"],
-    [/^\s*\[(ERREUR|ERROR|FEHLER|ÉCHEC|FAIL)\]/i, "bad"], [/^\s*==.*==\s*$/, "head"]];
+  // Mise en forme des lignes (messages et sortie des commandes), d'après des signes communs aux quatre langues :
+  // « === Titre === » titre, [OK] vert, [ATTENTION] ou « ! » orange, [ERREUR] rouge, « -> conseil » en retrait.
+  const TONES = [[/^\s*={2,}.*={2,}\s*$/, "head"], [/^\s*\[(OK)\]/, "ok"],
+    [/^\s*(!|\[(ATTENTION|WARNING|WARN|ACHTUNG|AVISO)\])/i, "warn"],
+    [/^\s*\[(ERREUR|ERROR|FEHLER|ÉCHEC|FAIL)\]|^\s*(Erreur|Error|Fehler)\b/i, "bad"], [/^\s*->/, "hint"]];
+  const toneOf = (line) => { const t = TONES.find(([re]) => re.test(line)); return t ? t[1] : ""; };
   function message(text) {
     const box = el("div", "msg");
     const lines = text.split("\n");
     lines.forEach((line, i) => {
-      const tone = TONES.find(([re]) => re.test(line));
-      box.append(tone ? el("span", "tone " + tone[1], line) : document.createTextNode(line));
+      const tone = toneOf(line);
+      box.append(tone ? el("span", "tone " + tone, line) : document.createTextNode(line));
       if (i < lines.length - 1) box.append(document.createTextNode("\n"));
     });
     return box;
+  }
+
+  // Sortie d'une commande, ligne par ligne : la question d'un outil (texte avant ce que l'opérateur a tapé) et sa
+  // réponse sont mises en évidence ; la ligne en cours (question qui attend) reste visible.
+  function newOut(parent) {
+    const o = { box: el("div", "out"), buf: "", partial: el("div", "ln partial") };
+    o.box.append(o.partial);
+    parent.append(o.box);
+    return o;
+  }
+  function outLine(o, text) {
+    const tone = toneOf(text);
+    const line = el("div", "ln" + (tone ? " " + tone : "") + (text.trim() ? "" : " blank"), text);
+    o.box.insertBefore(line, o.partial);
+  }
+  function outWrite(o, data) {
+    const parts = (o.buf + data).split("\n");
+    o.buf = parts.pop();
+    for (const p of parts) outLine(o, p);
+    o.partial.textContent = o.buf;
+  }
+  function outTyped(o, data) {
+    const qa = el("div", "ln qa");
+    const question = o.buf.replace(/\s+$/, "");
+    const m = question.match(/^([\s\S]*?)(\s*\[[^\]]*\])?(\s*:)?$/);
+    qa.append(el("span", "q", m ? m[1] : question));
+    if (m && m[2]) qa.append(el("span", "def", m[2].trim()));
+    const value = data.replace(/\n$/, "");
+    qa.append(el("span", "ans", value || "↵"));
+    o.box.insertBefore(qa, o.partial);
+    o.buf = "";
+    o.partial.textContent = "";
+  }
+  function outEnd(o) {
+    if (o.buf) outLine(o, o.buf);
+    o.buf = "";
+    o.partial.remove();
   }
 
   // ---------------------------------------------------------------- journal du menu
@@ -69,17 +109,17 @@
       running = ev.cmd || "…";
       const box = el("div", "cmd");
       box.append(el("div", "cmd-name", ui("web.flow.running").replace("{cmd}", running)));
-      outPre = el("pre", "out");
-      box.append(outPre);
+      if (ev.admin) box.firstChild.append(el("span", "admin", "🔒 sudo"));
+      outPre = newOut(box);
       l.append(box);
     } else if (ev.type === "out") {
-      if (!outPre) { outPre = el("pre", "out"); l.append(outPre); }
-      outPre.textContent += String(ev.data || "").replace(/\r/g, "");
+      if (!outPre) outPre = newOut(l);
+      outWrite(outPre, String(ev.data || "").replace(/\r/g, ""));
     } else if (ev.type === "typed") {
-      if (outPre) outPre.textContent += ev.data;
+      if (outPre) outTyped(outPre, String(ev.data || ""));
     } else if (ev.type === "end") {
       running = null;
-      if (outPre && ev.code) outPre.classList.add("failed");
+      if (outPre) { outEnd(outPre); if (ev.code) outPre.box.classList.add("failed"); }
       outPre = null;
     } else if (ev.type === "done") {
       running = null; asking = null; sudo = null;

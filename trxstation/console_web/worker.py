@@ -149,14 +149,15 @@ class WebRunner(Runner):
         return None
 
     def run(self, cmd: list[str], *, admin: bool = False) -> int:
-        first = b""
-        if admin and self.use_sudo:
+        first, shown = b"", command_name(cmd)
+        elevated = admin and self.use_sudo
+        if elevated:
             password = self.sudo_password()
             if password is None:
                 self.channel.send({"type": "out", "data": self.t("web.sudo_refused") + "\n"})
                 return 1
             cmd, first = [*self.sudo, *cmd], (password + "\n").encode()
-        self.channel.send({"type": "run", "cmd": Path(cmd[0]).name if cmd else ""})
+        self.channel.send({"type": "run", "cmd": shown, "admin": elevated})
         env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8", "TRX_CONSOLE_FORMS": "1"}
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         try:
@@ -185,6 +186,29 @@ class WebRunner(Runner):
             self.child = None
         self.channel.send({"type": "end", "code": code})
         return code
+
+
+def command_name(cmd: list[str]) -> str:
+    """Nom montré à l'opérateur : la commande de la station (`trx-setup`) plutôt que `python -m …`, son option
+    principale en plus (« trx-setup --partie puissance »)."""
+    if not cmd:
+        return ""
+    if len(cmd) >= 3 and cmd[1] == "-m":
+        module, rest = cmd[2], cmd[3:]
+        name = module.rsplit(".", 1)[-1]
+        try:
+            from importlib.metadata import entry_points
+            for ep in entry_points(group="console_scripts"):
+                if ep.value.split(":", 1)[0] == module:
+                    name = ep.name
+                    break
+        except Exception:
+            pass
+        extra = [a for a in rest if a.startswith("--") and a not in ("--config", "--output")]
+        if "--partie" in rest:
+            extra = ["--partie", rest[rest.index("--partie") + 1]] if rest.index("--partie") + 1 < len(rest) else extra
+        return " ".join([name, *extra[:2]])
+    return Path(cmd[0]).name
 
 
 def classify(prompt: str, said: list[tuple[int, str]], hint: dict | None) -> dict:

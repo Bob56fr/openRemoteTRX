@@ -146,10 +146,23 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow .qr{align-self:flex-start;margin:4px 0;padding:10px;background:#000;color:#fff;font:14px/1 var(--f-mono);border-radius:8px}
 .flow .cmd{border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .flow .cmd-name{font:600 12px var(--f-mono);color:var(--muted);padding:6px 10px;background:var(--panel2)}
-.flow pre.out{margin:0;padding:8px 10px;max-height:340px;overflow:auto;background:var(--term-bg);color:#cfe6df;font:12.5px/1.4 var(--f-mono);
-  white-space:pre-wrap;overflow-wrap:anywhere}
-.flow pre.out:empty{display:none}
-.flow pre.out.failed{border-left:4px solid #e5484d}
+.flow .out{padding:10px 12px;max-height:420px;overflow:auto;background:var(--term-bg);color:#cfe6df;font:13px/1.5 var(--f-mono);
+  white-space:pre-wrap;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:2px}
+.flow .out.failed{border-left:4px solid #e5484d}
+.flow .out .ln.blank{height:.5em}
+.flow .out .ln.head{color:#53f3d8;font-weight:700;margin-top:6px;padding-bottom:4px;border-bottom:1px solid #1d2e34}
+.flow .out .ln.head:first-child{margin-top:0}
+.flow .out .ln.ok{color:#4ade80}
+.flow .out .ln.warn{color:#ffb340;background:rgba(255,179,64,.08);border-left:3px solid #ffb340;padding:2px 8px;border-radius:4px;margin:3px 0}
+.flow .out .ln.bad{color:#ff6b5e;font-weight:700;background:rgba(255,107,94,.1);border-left:3px solid #ff6b5e;padding:2px 8px;border-radius:4px;margin:3px 0}
+.flow .out .ln.hint{color:#9cc2bb;padding-left:18px;font-style:italic}
+.flow .out .ln.qa{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:5px 0;padding:6px 8px;border-radius:6px;background:rgba(83,243,216,.06)}
+.flow .out .qa .q{color:#e6f6f2;font-weight:600}
+.flow .out .qa .def{color:#7fb3a9;font-size:12px;border:1px solid #2a3f46;border-radius:6px;padding:0 6px}
+.flow .out .qa .ans{margin-left:auto;color:#04201c;background:#53f3d8;font-weight:700;border-radius:999px;padding:0 10px}
+.flow .out .ln.partial{color:#e6f6f2;font-weight:600}
+.flow .out .ln.partial:empty{display:none}
+.flow .cmd-name .admin{margin-left:10px;font-weight:600;color:var(--amber)}
 .flow .done{align-self:center;font:600 12px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px}
 .flow-form{border-top:1px solid var(--line);padding:14px 18px;display:grid;gap:10px;background:var(--panel2)}
 .flow-form:empty{display:none}
