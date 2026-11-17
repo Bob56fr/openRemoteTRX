@@ -1,0 +1,87 @@
+{
+ "protocole": "diffusion openRemoteTRX v1 (docs/protocole-diffusion.md) : X-Orx-Signature = HMAC-SHA256(clé, MÉTHODE + \"\\n\" + chemin + \"\\n\" + corps) en hexadécimal minuscule ; corps = octets UTF-8 exacts envoyés (JSON compact, sans échappement des accents). Fabriqué par python -m trxstation.diffusion.vectors : ne pas modifier à la main.",
+ "signatures": [
+  {
+   "nom": "meta privée, pseudo seul",
+   "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+   "methode": "POST",
+   "chemin": "/api/v1/bob56fr/meta",
+   "corps": "{\"v\":1,\"station\":\"bob56fr\",\"ts_ms\":1800000000000,\"acces\":\"prive\",\"meta\":{\"pseudo\":\"BOB-56-FR\"}}",
+   "signature": "e40dc05f45c49bae7712b662883fd08133461750f461e369c81953f1dda5f92a"
+  },
+  {
+   "nom": "meta publique, tous les champs",
+   "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+   "methode": "POST",
+   "chemin": "/api/v1/bob56fr/meta",
+   "corps": "{\"v\":1,\"station\":\"bob56fr\",\"ts_ms\":1800000001000,\"acces\":\"public\",\"meta\":{\"pseudo\":\"BOB-56-FR\",\"indicatif\":\"F4XYZ\",\"frequence_hz\":7074000,\"mode\":\"USB\",\"bande\":\"40m\",\"tx\":false,\"s_metre\":\"S9+20\",\"message\":\"Écoute du soir\"}}",
+   "signature": "3d4e6b72126f3b13802fa8b9ee30debcd4bad15f6589623f80bb992ad4ee6e34"
+  },
+  {
+   "nom": "nouveau mot de passe des auditeurs",
+   "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+   "methode": "POST",
+   "chemin": "/api/v1/bob56fr/auditeur",
+   "corps": "{\"v\":1,\"station\":\"bob56fr\",\"ts_ms\":1800000002000,\"user\":\"auditeur\",\"password\":\"Abcdef123456\"}",
+   "signature": "33beb0eb2b71e949e88447dfbbaf4e7da917615c236dad9a8bf33dbceecf2fd4"
+  }
+ ],
+ "source": {
+  "hote": "diffusion.example.org",
+  "port": 8443,
+  "station": "bob56fr",
+  "acces": "prive",
+  "codec": "opus",
+  "mot_de_passe": "MotSource42",
+  "nom": "BOB-56-FR",
+  "requete": "PUT /bob56fr-prive HTTP/1.1\r\nHost: diffusion.example.org:8443\r\nAuthorization: Basic c291cmNlOk1vdFNvdXJjZTQy\r\nContent-Type: audio/ogg\r\nIce-Public: 0\r\nIce-Name: BOB-56-FR\r\nUser-Agent: openRemoteTRX\r\n\r\n"
+ },
+ "meta_refusees": [
+  {
+   "nom": "champ inconnu",
+   "meta": {
+    "adresse_ip": "192.0.2.1"
+   }
+  },
+  {
+   "nom": "texte trop long",
+   "meta": {
+    "pseudo": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   }
+  },
+  {
+   "nom": "fréquence négative",
+   "meta": {
+    "frequence_hz": -1
+   }
+  },
+  {
+   "nom": "booléen pris pour un entier",
+   "meta": {
+    "frequence_hz": true
+   }
+  },
+  {
+   "nom": "texte pris pour un booléen",
+   "meta": {
+    "tx": "oui"
+   }
+  },
+  {
+   "nom": "caractère de contrôle",
+   "meta": {
+    "message": "a\u0007b"
+   }
+  }
+ ],
+ "reconnexion_s": [
+  2,
+  4,
+  8,
+  16,
+  32,
+  60,
+  60,
+  60
+ ]
+}

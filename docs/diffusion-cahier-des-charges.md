@@ -1,4 +1,4 @@
-# Diffusion en direct du TRX vers des internautes : cahier des charges (v2, décisions du 2026-11-17 prises)
+# Diffusion en direct du TRX vers des internautes : cahier des charges (v3, serveur fait et protocole figé le 2026-11-17)
 
 Demande de l'utilisateur (2026-11-17) : un petit service de diffusion « lowcost, lowtech », comme un podcast en direct
 (pas de différé), pour faire entendre le son du TRX à quelques internautes (moins de 5 au départ) qui n'ont AUCUN compte
@@ -27,7 +27,11 @@ tiers, un petit VPS.
    - lancement par **tous les opérateurs**, **jamais les visiteurs** ;
    - mot de passe des auditeurs **fixe** jusqu'à ce que l'opérateur le change : c'est lui qui envoie les invitations
      aux auditeurs, de son côté (la station ne les envoie pas) ;
-   - HTTPS par Caddy : accepté, à vérifier au lot D5.
+   - HTTPS par Caddy : accepté, à vérifier au lot D5 (vérifié : voir § 11, la SOURCE ne passe pas par Caddy).
+10. Protocole (2026-11-17, « go » de l'utilisateur sur le brouillon) : métadonnées renvoyées au moins toutes les 30 s
+    pendant une diffusion (nombre d'auditeurs) ; mots de passe des auditeurs en lettres et chiffres seulement (à
+    dicter) ; identifiants des auditeurs renvoyés à chaque lancement privé (serveur sans sauvegarde) ; anti-rejeu par
+    `ts_ms` strictement croissant, sans nonce. Contrat : `docs/protocole-diffusion.md`.
 
 ## 2. POC (fait le 2026-11-17, hors dépôt, « tests concluants » de l'utilisateur)
 
@@ -48,6 +52,16 @@ Leçons : le retard tient surtout à la réserve d'Icecast (`burst-size`) ; une 
 (« Mountpoint in use ») ; un arrêt du serveur coupe la source (`ConnectionResetError`) : il faut se reconnecter seul ;
 le titre ICY (`/admin/metadata`) ne marche qu'en MP3 et ne porte qu'une ligne ; sous Git Bash, un argument `/montage`
 est changé en chemin Windows (`MSYS_NO_PATHCONV=1`).
+
+### 2.1 Serveur de référence (lot D5, fait le 2026-11-17)
+
+VPS OVH (Debian 13, paquets Debian seulement : correctifs automatiques), dépôt privé `openRemoteTRX-vps` (déploiement
+idempotent) : Caddy (HTTPS Let's Encrypt, 443) pour les auditeurs, Icecast 2.4.4 (réserve 4 ko, 5 auditeurs par
+montage, aucune page d'état publique), service des métadonnées `orx-meta` (bibliothèque standard), page des
+auditeurs `/ecoute/<station>` (FR / EN, connexion par cookie pour le montage privé, lecteurs type VLC par
+identifiant). Essais par Internet : 0,14 à 0,19 s entre l'envoi et la réception (auditeur connecté), privé / public,
+mauvais mot de passe source refusé, montage occupé = 403, changement du mot de passe des auditeurs sans couper ceux
+qui écoutent (18 vérifications).
 
 ## 3. Principe et sécurité (bloquant)
 
@@ -118,16 +132,26 @@ métadonnées est à écrire par celui qui monte son propre VPS.
 ## 10. Lots
 
 - **D0** POC : fait (§ 2).
-- **D1** Station : module « diffusion », `[diffusion]` de station.toml, `diffusion.key`, son par UDP local, encodage
-  PyAV, envoi, reconnexion, durée, état publié, codes ORT ; faux Icecast `devtools/fake_icecast.py` ; tests (aucun
-  droit sur le poste, voix émise seulement avec l'option, arrêt en fin de durée, reconnexion, surcharge).
+- **D1** Station, en deux étapes :
+  - **D1a** (fait, étape 242) : protocole public `docs/protocole-diffusion.md`, calculs purs
+    `trxstation/diffusion/protocol.py` (signature, corps, métadonnées permises, requête source brute, durée, mot de
+    passe généré), vecteurs `tests/protocol/diffusion_vectors.json` (mêmes octets que le serveur).
+  - **D1b** : module « diffusion », `[diffusion]` de station.toml, `diffusion.key`, son par UDP local, encodage
+    PyAV, envoi en flux brut TLS, reconnexion, durée, état publié, codes ORT ; faux Icecast
+    `devtools/fake_icecast.py` ; tests (aucun droit sur le poste, voix émise seulement avec l'option, arrêt en fin de
+    durée, reconnexion, surcharge).
 - **D2** Commandes client et page (panneau de lancement, indicateur), `docs/protocole.md`, `hello.features`.
 - **D3** TRX Console (menu, interrupteur 5.5), trx-monitor, ntfy, indicateurs GNOME / Windows, guide de l'opérateur.
 - **D4** Application Android : indicateur, lancement, arrêt (parité).
-- **D5** VPS, dépôt privé `openRemoteTRX-vps` : Debian 13, Caddy (TLS), Icecast (réserve 4 ko, plafond), service des
-  métadonnées, page publique des auditeurs (lecteur + métadonnées), sauvegardes.
+- **D5** VPS, dépôt privé `openRemoteTRX-vps` : FAIT le 2026-11-17 (§ 2.1) ; reste l'essai avec la vraie station
+  (D1b) et la page sur iPhone (anciens Safari et Opus : option MP3).
 
 ## 11. Questions de la v1 : toutes tranchées (§ 1.9)
 
-Reste à vérifier au lot D5 : un `PUT` en flux continu à travers Caddy (TLS jusqu'à Icecast pour la source et les
-auditeurs). Le lot D1 peut commencer sur demande de l'utilisateur.
+Vérifié au lot D5 (2026-11-17) : un `PUT` en flux continu NE PASSE PAS à travers Caddy. Icecast 2.4.4 (celui de
+Debian) ne comprend pas l'envoi « chunked » (les en-têtes des morceaux corrompent les pages Ogg : l'auditeur ne reçoit
+rien), et Caddy transmet toujours ainsi un corps de longueur inconnue (sans longueur ni chunked, le corps est perdu).
+Décision : la station envoie en FLUX BRUT, comme libshout, en TLS DIRECTEMENT à Icecast sur un port à part (8443 sur
+le serveur de référence, certificat de Caddy recopié chaque jour) ; les auditeurs restent derrière Caddy (443). Ce
+choix marche avec n'importe quel Icecast (§ 9). Icecast 2.5 (dépôt Xiph) écarté : rien pour Debian 13, et hors des
+correctifs automatiques.
