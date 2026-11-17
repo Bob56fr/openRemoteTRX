@@ -58,11 +58,19 @@
     const line = el("div", "ln" + (tone ? " " + tone : "") + (text.trim() ? "" : " blank"), text);
     o.box.insertBefore(line, o.partial);
   }
+  // Le cadre suit la fin de la sortie, sauf si l'opérateur est remonté pour relire (il reprend en bas).
+  function follow(o, change) {
+    const b = o.box, atEnd = b.scrollHeight - b.scrollTop - b.clientHeight < 40;
+    change();
+    if (atEnd) b.scrollTop = b.scrollHeight;
+  }
   function outWrite(o, data) {
-    const parts = (o.buf + data).split("\n");
-    o.buf = parts.pop();
-    for (const p of parts) outLine(o, p);
-    o.partial.textContent = o.buf;
+    follow(o, () => {
+      const parts = (o.buf + data).split("\n");
+      o.buf = parts.pop();
+      for (const p of parts) outLine(o, p);
+      o.partial.textContent = o.buf;
+    });
   }
   function outTyped(o, data) {
     const qa = el("div", "ln qa");
@@ -72,7 +80,7 @@
     if (m && m[2]) qa.append(el("span", "def", m[2].trim()));
     const value = data.replace(/\n$/, "");
     qa.append(el("span", "ans", value || "↵"));
-    o.box.insertBefore(qa, o.partial);
+    follow(o, () => o.box.insertBefore(qa, o.partial));
     o.buf = "";
     o.partial.textContent = "";
   }
