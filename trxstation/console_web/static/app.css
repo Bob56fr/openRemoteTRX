@@ -146,7 +146,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow .qr{align-self:flex-start;margin:4px 0;padding:10px;background:#000;color:#fff;font:14px/1 var(--f-mono);border-radius:8px}
 .flow .cmd{border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .flow .cmd-name{font:600 12px var(--f-mono);color:var(--muted);padding:6px 10px;background:var(--panel2)}
-.flow .out{padding:10px 12px;max-height:420px;overflow:auto;background:var(--term-bg);color:#cfe6df;font:13px/1.5 var(--f-mono);
+.flow .out{padding:10px 12px;max-height:calc(100vh - 250px);max-height:calc(100dvh - 250px);overflow:auto;background:var(--term-bg);color:#cfe6df;font:13px/1.5 var(--f-mono);
   white-space:pre-wrap;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:2px}
 .flow .out.failed{border-left:4px solid #e5484d}
 .flow .out .ln.blank{height:.5em}
@@ -186,3 +186,5 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow .tone.head{font-weight:700;color:var(--accent)}
 .flow-tab{right:auto;left:max(16px,env(safe-area-inset-left,0px))}
 .flow-tab.ask{animation:pulse 1.4s infinite;border-color:#53f3d8}
+.flow-form .choices.tool:empty{display:none}
+.flow-form .choices.tool{max-height:40vh;overflow:auto}

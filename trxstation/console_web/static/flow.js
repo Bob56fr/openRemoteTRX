@@ -148,9 +148,12 @@
   // ---------------------------------------------------------------- question en cours
   function renderForm() {
     const f = $("#flow-form");
-    f.replaceChildren();
     $("#flow-stop").textContent = ui(flow && flow.done ? "web.flow.close" : "web.flow.stop");
     $("#flow-term").textContent = "⌨ " + ui("web.flow.terminal");
+    const tool = flow && !sudo && !asking && running;
+    if (tool && f.dataset.mode === "tool") { toolChoices(); return; }   // la ligne en cours de frappe reste
+    f.replaceChildren();
+    f.dataset.mode = tool ? "tool" : "";
     if (!flow) return;
     if (sudo) return sudoForm(f);
     if (asking) return questionForm(f, asking);
@@ -161,7 +164,34 @@
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { send({ type: "flow_stdin", data: input.value + "\n" }); input.value = ""; }
       });
-      f.append(input);
+      f.append(el("div", "choices tool"), input);
+      toolChoices();
+    }
+  }
+  // Un outil lancé par le menu (ex. Cluster DX) affiche « a) … b) … » puis attend : ses choix deviennent des boutons.
+  const TOOL_CHOICE = /^\s{0,8}([0-9]{1,2}|[a-zA-Z])\)\s+(\S.*)$/;
+  function toolChoices() {
+    const box = $("#flow-form .choices.tool");
+    if (!box) return;
+    const found = [];
+    if (outPre && outPre.buf.trim()) {                       // une question attend (ligne sans fin)
+      let n = outPre.partial.previousElementSibling;
+      while (n && n.classList.contains("blank")) n = n.previousElementSibling;
+      while (n) {
+        const m = TOOL_CHOICE.exec(n.textContent);
+        if (!m) break;
+        found.unshift([m[1], m[2].trim()]);
+        n = n.previousElementSibling;
+      }
+    }
+    const sig = JSON.stringify(found);
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.replaceChildren();
+    for (const [v, label] of found) {
+      const b = button("", "choice", () => send({ type: "flow_stdin", data: v + "\n" }));
+      b.append(el("span", "k", v), el("span", "", label));
+      box.append(b);
     }
   }
   function sudoForm(f) {
