@@ -25,6 +25,22 @@ from textual.widgets import Footer, Static, Tree
 
 from .console import MENU_THEMES, Console
 
+
+class MenuTree(Tree):
+    """Arbre des menus, souris comprise : un clic sur un MENU ne fait que le choisir (son aide s'affiche) ; un second
+    clic sur le menu déjà choisi, ou un double-clic, l'ouvre. Un clic sur un thème le déplie ou le replie."""
+
+    async def _on_click(self, event) -> None:
+        meta = event.style.meta
+        if "line" in meta and not meta.get("toggle", False):
+            node = self.get_node_at_line(meta["line"])
+            if node is not None and not node.children and node.data and node.data[0] != "theme" \
+                    and meta["line"] != self.cursor_line:
+                event.prevent_default()                   # le clic de Tree (choisir ET ouvrir) n'a pas lieu
+                async with self.lock:
+                    self.cursor_line = meta["line"]          # choisi : l'aide s'affiche, rien n'est lancé
+        # sinon : Textual appelle ensuite le _on_click de Tree lui-même (second clic, thème, flèche de pliage)
+
 # Pictogrammes des thèmes (identifiants de MENU_THEMES). Console texte Linux (TERM=linux) : sans pictogramme.
 THEME_ICONS = {"station": "📡", "hardware": "📻", "safety": "🚨", "access": "🔑", "features": "✨",
                "troubleshooting": "🔧", "updates": "🔄", "expert": "🔬"}
@@ -81,7 +97,7 @@ class ConsoleApp(App):
     def compose(self) -> ComposeResult:
         yield Static(id="status")
         with Horizontal(id="body"):
-            yield Tree("TRX Console", id="menus")
+            yield MenuTree("TRX Console", id="menus")
             with VerticalScroll(id="help-box"):
                 yield Static(id="help")
         yield Static(id="hint")
@@ -96,7 +112,9 @@ class ConsoleApp(App):
         self.bind("f5", "refresh_all", description=self.con.t("tui.refresh"))
         self.refresh_all()
         self.set_interval(STATUS_EVERY_S, self.refresh_status)
-        self.query_one(Tree).focus()
+        tree = self.query_one(Tree)
+        self.watch(tree, "hover_line", self.on_hover_line, init=False)
+        tree.focus()
 
     def refresh_all(self) -> None:
         self.refresh_status()
@@ -219,7 +237,16 @@ class ConsoleApp(App):
     def on_tree_node_highlighted(self, event: Tree.NodeHighlighted) -> None:
         if self.digit_theme is not None and self.theme_of(event.node) != self.digit_theme:
             self.digit_theme = None                        # parti ailleurs aux flèches : retour à la liste des thèmes
-        data = event.node.data
+        self.show_help(event.node)
+
+    def on_hover_line(self, line: int) -> None:
+        """Souris : l'aide suit le pointeur ; hors de l'arbre, elle revient au menu choisi."""
+        tree = self.query_one(Tree)
+        node = tree.get_node_at_line(line) if line >= 0 else None
+        self.show_help(node if node is not None else tree.cursor_node)
+
+    def show_help(self, node) -> None:
+        data = node.data if node is not None else None
         if not data:
             return
         if data[0] == "theme":

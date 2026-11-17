@@ -194,3 +194,29 @@ def test_keypad_plus_and_minus_work_by_their_character(tmp_path):
             await pilot.pause(0.2)
             assert not any(n.is_expanded for n in themes)
     asyncio.run(scenario())
+
+
+def test_mouse_hover_shows_the_help_one_click_chooses_a_second_click_opens(tmp_path):
+    con = console(tmp_path)
+    ran = []
+    con.run_item = lambda item: ran.append(item[0]) or True
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        app.paused = contextlib.nullcontext
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            await pilot.press("enter")                            # thème 1 déplié : lignes 2 à 5 = 1.1 à 1.4
+            await pilot.pause(0.2)
+            help_box = app.query_one("#help")
+            await pilot.hover("#menus", offset=(12, 3))           # survol de 1.2
+            await pilot.pause(0.2)
+            assert "Arrêter la station" in str(help_box.render()) and ran == []
+            await pilot.click("#menus", offset=(12, 4))           # un clic sur 1.3 : choisi, rien de lancé
+            await pilot.pause(0.2)
+            assert ran == [] and app.query_one("Tree").cursor_node.data[0] == "1.3"
+            assert "Tableau de bord" in str(help_box.render())
+            await pilot.click("#menus", offset=(12, 4))           # second clic : ouvert
+            await pilot.pause(0.2)
+        assert ran == ["1.3"]
+    asyncio.run(scenario())

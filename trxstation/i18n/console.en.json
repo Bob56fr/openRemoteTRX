@@ -654,7 +654,7 @@
   "updates.windows": "On Windows, a new version is installed by running installer.cmd from the new zip (project releases page): the configuration is kept. Rolling back: run installer.cmd from the older version again.",
   "tui.quit": "Quit",
   "tui.refresh": "Refresh",
-  "tui.hint": "Digit: theme, then digit: menu (0 = language) · ↑↓ and Enter · + / -: expand / collapse all · r or Esc: back · q: quit · text console: trx-console --texte",
+  "tui.hint": "Digit: theme then menu (0 = language) · ↑↓ Enter · mouse: hover = help, click = choose, 2nd click = open · + / -: expand / collapse all · r or Esc: back · q: quit",
   "tui.back": "Back",
   "tui.expand_all": "Expand all",
   "tui.collapse_all": "Collapse all",
