@@ -73,7 +73,7 @@ def test_packages_carry_the_lock(tmp_path):
 def test_a_stale_lock_is_refused(tmp_path):
     (tmp_path / "scripts").mkdir()
     (tmp_path / "pyproject.toml").write_text((ROOT / "pyproject.toml").read_text(encoding="utf-8").replace(
-        '"numpy>=1.24"]', '"numpy>=1.25"]'), encoding="utf-8")
+        '"numpy>=1.24"', '"numpy>=1.25"'), encoding="utf-8")                # liste de la station modifiée
     (tmp_path / "requirements.lock").write_bytes(LOCK.read_bytes())
     assert not build_lock.is_fresh(tmp_path)
 

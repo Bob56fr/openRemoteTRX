@@ -54,7 +54,15 @@ terminal : sudo, nano, essai du poste, tableau de bord.
 | W2 | Windows (pywinpty ou nouvelle fenêtre), raccourci « TRX distant » qui propose écran plein ou page |
 | W3 | Écrans web natifs pour les menus les plus utilisés (comptes 4.3, alertes 3.5, fonctions 5.5), formulaires validés |
 
-## 5. Décisions demandées à l'utilisateur
+## 5. Décisions de l'utilisateur (2026-11-17)
+
+1. Programme à part, 127.0.0.1, jeton, tunnel SSH : **oui**.
+2. Menus dans un terminal intégré : **oui, pour le moment** (formulaires du lot W3 selon l'usage).
+3. Windows : **pywinpty**, même écran que sous Debian (« sinon on se perd quand on donne des conseils à quelqu'un
+   par téléphone »). Lot W2 fusionné dans W1.
+4. Rendu : maquette retouchée (5 colonnes, bulle d'aide au survol, panneau du bas sur téléphone) puis validée.
+
+## 6. Questions d'origine
 
 1. Programme à part `trx-console --web`, 127.0.0.1 + jeton, tunnel SSH pour un autre PC : d'accord ?
 2. Menus dans un terminal intégré (xterm.js livré avec la station) plutôt que des formulaires : d'accord ?

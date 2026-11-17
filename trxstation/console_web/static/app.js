@@ -1,0 +1,263 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
+// Console web de la station : état (relu toutes les 3 s), tuiles des thèmes, bulle d'aide (survol à la souris,
+// premier toucher au doigt), terminal intégré relié à LA console texte de la session. « Ouvrir le menu » tape son
+// numéro dans cette console, seulement quand elle attend au menu (sinon il répondrait à une question en cours).
+"use strict";
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const HOVER = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  let state = null, lang = null, pinned = null, term = null, fit = null, ws = null, toastTimer = null;
+  const ui = (k, vars) => {
+    let s = (state && state.ui && state.ui[k]) || k;
+    for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b);
+    return s;
+  };
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  // ---------------------------------------------------------------- état
+  async function refresh() {
+    try {
+      const r = await fetch("/api/state", { credentials: "same-origin", cache: "no-store" });
+      if (!r.ok) return;
+      state = await r.json();
+    } catch (e) { return; }
+    header();
+    if (state.lang !== lang) { lang = state.lang; document.documentElement.lang = lang; texts(); tiles(); }
+    $("#term-state").textContent = state.idle ? "" : "…";
+  }
+  function header() {
+    $("#title").textContent = ui("web.title");
+    $("#sub").textContent = "TRX distant " + state.version;
+    const pills = $("#pills");
+    pills.replaceChildren();
+    const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
+    if (!state.configured) pill("warn", ui("web.not_configured"));
+    else pill(state.running ? "on" : "off", ui(state.running ? "web.running" : "web.stopped"));
+    if (state.running) pill(state.ptt !== "RX" ? "tx" : "", ui(state.ptt !== "RX" ? "web.tx" : "web.rx"));
+    if (state.update) pill("warn", ui("web.update", { version: state.update }));
+    const rig = state.rig || {};
+    $("#freq").textContent = rig.frequency_hz ? fmtFreq(rig.frequency_hz) : "--.---.--";
+    const meta = [];
+    if (rig.connected) {
+      if (rig.mode) meta.push(rig.mode);
+      if (typeof rig.strength_db === "number") meta.push(sText(rig.strength_db));
+      if (typeof rig.vd === "number") meta.push(rig.vd.toFixed(1).replace(".", ",") + " V");
+    } else meta.push(ui("web.no_rig"));
+    $("#meta").textContent = meta.join(" · ");
+    const first = $("#first");
+    first.hidden = state.configured;
+    first.textContent = ui("web.first_use", { menu: state.assistant });
+  }
+  function fmtFreq(hz) {
+    const s = String(Math.round(hz / 10)).padStart(6, "0");      // 14 205 000 Hz -> 14.205.00
+    return s.slice(0, -5) + "." + s.slice(-5, -2) + "." + s.slice(-2);
+  }
+  function sText(db) { return db >= 0 ? (db === 0 ? "S9" : "S9+" + db) : "S" + Math.max(0, Math.round(9 + db / 6)); }
+  function texts() {
+    $("#q").placeholder = ui("web.search");
+    $("#all").textContent = ui("web.expand");
+    $("#none").textContent = ui("web.collapse");
+    $("#lang").textContent = "🌐 " + ui("web.language");
+    $("#term-label").textContent = ui("web.terminal");
+    $("#term-toggle").textContent = ui("web.hide");
+    $("#term-tab").textContent = "▸ " + ui("web.show");
+  }
+
+  // ---------------------------------------------------------------- tuiles
+  function tiles() {
+    const grid = $("#grid");
+    grid.replaceChildren();
+    state.themes.forEach((th, i) => {
+      const card = el("article", "card");
+      card.dataset.t = th.number;
+      card.style.setProperty("--c", th.color);
+      card.style.animationDelay = i * 45 + "ms";
+      const head = el("header");
+      head.dataset.toggle = th.number;
+      const titles = el("div");
+      titles.append(el("div", "num", th.number), el("h2", "", th.title));
+      head.append(el("span", "ico", th.icon), titles, el("span", "count", String(th.items.length)));
+      head.title = th.summary;
+      const list = el("ul", "items");
+      for (const it of th.items) {
+        const li = el("li"), b = el("button");
+        b.type = "button";
+        b.dataset.k = it.key;
+        b.append(el("span", "k", it.key), document.createTextNode(it.short));
+        li.append(b);
+        list.append(li);
+      }
+      card.append(head, list);
+      grid.append(card);
+    });
+    filter();
+  }
+  function find(key) {
+    for (const th of state.themes) for (const it of th.items) if (it.key === key) return [th, it];
+    return [null, null];
+  }
+
+  // ---------------------------------------------------------------- bulle d'aide
+  function showHelp(key, anchor, pin) {
+    const [th, it] = find(key);
+    if (!it || !anchor) return;
+    const pop = $("#help");
+    pop.replaceChildren(el("span", "eyebrow", th.icon + " " + th.title + " · " + it.key), el("h3", "", it.label));
+    for (const [k, v] of [["web.role", it.role], ["web.when", it.when], ["web.changes", it.changes]]) {
+      if (v) pop.append(el("span", "lbl", ui(k)), el("p", "", v));
+    }
+    if (it.admin) pop.append(el("span", "tag", ui("web.admin")));
+    if (pin) {
+      const b = el("button", "btn open", ui("web.open") + " " + it.key + " ▸");
+      b.type = "button";
+      b.addEventListener("click", () => openMenu(it.key));
+      pop.append(b);
+    } else pop.append(el("span", "hint", ui(HOVER ? "web.click_open" : "web.tap_open")));
+    pop.classList.toggle("pinned", !!pin);
+    pop.classList.add("on");
+    if (innerWidth <= 700) return;                                  // téléphone : panneau du bas (CSS)
+    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, gap = 12;
+    const right = r.right + gap + w <= innerWidth - 8;
+    pop.style.left = (right ? r.right + gap : Math.max(8, r.left - gap - w)) + "px";
+    pop.style.top = Math.min(Math.max(8, r.top + r.height / 2 - 28), innerHeight - h - 8) + "px";
+  }
+  function hideHelp(force) {
+    if (force) pinned = null;
+    if (!pinned) $("#help").classList.remove("on", "pinned");
+  }
+
+  // ---------------------------------------------------------------- ouvrir un menu
+  async function openMenu(key) {
+    hideHelp(true);
+    showTerm(true);
+    try {
+      const r = await fetch("/api/open", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
+      if (r.status === 409) toast(ui("web.busy"));
+    } catch (e) { /* le terminal dira le reste */ }
+    if (term) term.focus();
+  }
+  function toast(text) {
+    const t = $("#toast");
+    t.textContent = text;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 5000);
+  }
+
+  // ---------------------------------------------------------------- terminal intégré
+  function showTerm(on) {
+    $("#term").classList.toggle("show", on);
+    $("#term-tab").hidden = on;
+    if (on && fit) setTimeout(() => { fit.fit(); sendSize(); }, 320);
+  }
+  function sendSize() {
+    if (ws && ws.readyState === 1 && term) ws.send(JSON.stringify({ type: "resize", rows: term.rows, cols: term.cols }));
+  }
+  function connect() {
+    ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+    ws.onopen = () => { term.reset(); sendSize(); };
+    ws.onmessage = (ev) => {
+      let m;
+      try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.type === "output") term.write(m.data);
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+  }
+  function startTerm() {
+    term = new Terminal({ fontFamily: getComputedStyle(document.body).getPropertyValue("--f-mono") || "monospace",
+      fontSize: 14, cursorBlink: true, convertEol: false, scrollback: 5000,
+      theme: { background: "#0b1115", foreground: "#cfe6df", cursor: "#53f3d8" } });
+    fit = new FitAddon.FitAddon();
+    term.loadAddon(fit);
+    term.open($("#term-body"));
+    term.onData((d) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "input", data: d })); });
+    addEventListener("resize", () => { if ($("#term").classList.contains("show")) { fit.fit(); sendSize(); } });
+    showTerm(false);                                              // replié au départ : l'onglet « Terminal » reste
+    connect();
+  }
+
+  // ---------------------------------------------------------------- recherche, boutons, souris
+  function filter() {
+    const q = $("#q").value.trim().toLowerCase();
+    for (const card of document.querySelectorAll(".card")) {
+      const th = state.themes.find((x) => x.number === card.dataset.t);
+      let any = !q;
+      card.querySelectorAll(".items li").forEach((li, k) => {
+        const it = th.items[k];
+        const hit = !q || [it.label, it.role, it.when, th.title].join(" ").toLowerCase().includes(q);
+        li.hidden = !hit;
+        any = any || hit;
+      });
+      card.hidden = !any;
+      if (q) card.classList.remove("closed");
+    }
+  }
+  $("#q").addEventListener("input", filter);
+  $("#all").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.remove("closed")));
+  $("#none").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.add("closed")));
+  $("#lang").addEventListener("click", () => openMenu("0"));
+  $("#term-toggle").addEventListener("click", () => showTerm(false));
+  $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".items button");
+    if (b) {
+      if (HOVER || pinned === b.dataset.k) openMenu(b.dataset.k);
+      else {
+        pinned = b.dataset.k;
+        document.querySelectorAll(".items button").forEach((x) => x.classList.toggle("sel", x === b));
+        showHelp(pinned, b, true);
+      }
+      return;
+    }
+    if (e.target.closest("#help") || e.target.closest("#term") || e.target.closest("#term-tab")) return;
+    const h = e.target.closest("[data-toggle]");
+    if (h) h.closest(".card").classList.toggle("closed");
+    hideHelp(true);
+  });
+  document.addEventListener("mouseover", (e) => {
+    const b = e.target.closest(".items button");
+    if (b && !pinned) showHelp(b.dataset.k, b, false);
+  });
+  document.addEventListener("mouseout", (e) => {
+    if (e.target.closest(".items button") && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".items button"))) hideHelp(false);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideHelp(true); });
+  addEventListener("scroll", () => hideHelp(false), { passive: true });
+
+  // ---------------------------------------------------------------- fond du bandeau : waterfall discret
+  (function waterfall() {
+    const cv = $("#wf"), ctx = cv.getContext("2d");
+    let w = 1, h = 1, row = 0;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const peaks = [0.18, 0.33, 0.52, 0.71, 0.86];
+    function draw() {
+      ctx.drawImage(cv, 0, 0, w, h - 1, 0, 1, w, h - 1);
+      for (let x = 0; x < w; x += 2) {
+        let v = Math.random() * 0.18;
+        for (const p of peaks) { const d = Math.abs(x / w - p) * 90; v += Math.exp(-d * d) * (0.55 + 0.45 * Math.sin(row / 9 + p * 20)); }
+        v = Math.min(1, v);
+        ctx.fillStyle = "hsl(" + (190 - v * 120) + " 90% " + (8 + v * 45) + "%)";
+        ctx.fillRect(x, 0, 2, 1);
+      }
+      row++;
+    }
+    function size() {
+      w = cv.width = Math.max(1, cv.clientWidth); h = cv.height = Math.max(1, cv.clientHeight);
+      ctx.fillStyle = "#050b0e"; ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < h; i++) draw();
+    }
+    new ResizeObserver(size).observe(cv.parentElement);
+    function loop() { draw(); requestAnimationFrame(loop); }
+    if (!reduce) requestAnimationFrame(loop);
+  })();
+
+  refresh().then(() => { startTerm(); });
+  setInterval(refresh, 3000);
+})();

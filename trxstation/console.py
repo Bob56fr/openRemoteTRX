@@ -95,6 +95,10 @@ def menu_number(method: str) -> str:
 
 
 UPDATE_MENU = menu_number("update")
+# Console web (étape 229) : la console texte tourne dans le terminal intégré de la page ; elle écrit cette séquence
+# OSC (invisible) quand elle attend au menu, seul moment où la page peut taper un numéro de menu à sa place.
+WEB_MODE = os.environ.get("TRX_CONSOLE_WEB") == "1"
+WEB_IDLE_MARK = "\x1b]777;trx-idle\x07"
 TOT_ABS_MAX_S = 600               # menu 3.4 : TOT absolu du superviseur, au plus 10 minutes depuis la console
 # Menu 5.5 « Fonctions en service » : (clé du libellé, section de station.toml portant `enabled` ou None,
 # module de [modules] run ou None, menu de ses réglages ou None). Activer = enabled ET module lancé.
@@ -2958,6 +2962,9 @@ class Console:
                 self.show_main()
             else:
                 self.show_theme(theme)
+            if WEB_MODE:                                   # console web : la page sait qu'elle peut ouvrir un menu
+                sys.stdout.write(WEB_IDLE_MARK)
+                sys.stdout.flush()
             try:
                 choice = self.ask(self.t("loop.choice")).strip().lower()
             except EOFError:
@@ -2967,7 +2974,7 @@ class Console:
             if choice in ("r", "") and theme is not None:
                 theme = None
                 continue
-            if choice == "0" and theme is None:
+            if choice == "0":                            # langue, depuis le menu principal ou un thème
                 try:
                     self.language()
                 except EOFError:
@@ -3019,7 +3026,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--rapport", action="store_true", help="crée le rapport de dépannage puis sortie")
     ap.add_argument("--texte", action="store_true",
                     help="console texte (menus numérotés au clavier) au lieu de l'écran plein avec pictogrammes")
+    ap.add_argument("--web", action="store_true",
+                    help="console dans le navigateur (127.0.0.1 seulement, adresse à usage unique ; autre PC : tunnel SSH)")
+    ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
     args = ap.parse_args(argv)
+    if args.web:
+        from .console_web.server import run
+        return run(args.config, args.port)
     if args.diagnostic:
         checks = run_all(path=args.config)
         print(format_checks(checks, color=sys.stdout.isatty()))

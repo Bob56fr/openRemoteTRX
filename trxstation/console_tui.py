@@ -109,6 +109,7 @@ class ConsoleApp(App):
         self.bind("escape", "back", show=False)
         self.bind("plus", "expand_all", description=self.con.t("tui.expand_all"), key_display="+")
         self.bind("minus", "collapse_all", description=self.con.t("tui.collapse_all"), key_display="-")
+        self.bind("w", "web", description=self.con.t("tui.web"))
         self.bind("f5", "refresh_all", description=self.con.t("tui.refresh"))
         self.refresh_all()
         self.set_interval(STATUS_EVERY_S, self.refresh_status)
@@ -208,6 +209,16 @@ class ConsoleApp(App):
         tree.move_cursor(leaf)
         self.digit_theme = None                            # après le menu, on repart de la liste des thèmes
         self.run_menu(leaf.data)
+
+    def action_web(self) -> None:
+        """w : la même console dans le navigateur (`trx-console --web`, 127.0.0.1, adresse à usage unique)."""
+        import sys
+        if os.environ.get("SSH_CONNECTION"):               # pas de navigateur de ce côté : la commande à taper
+            self.notify(self.con.t("tui.web_ssh"), timeout=12)
+            return
+        cmd = [sys.executable, "-m", "trxstation.console", "--web", "--config", str(self.con.config)]
+        started = self.con.runner.spawn(cmd)
+        self.notify(self.con.t("tui.web_started") if started else self.con.t("tui.web_failed"), timeout=8)
 
     def action_expand_all(self) -> None:
         """+ : tous les thèmes dépliés, pour voir tous les menus d'un coup."""

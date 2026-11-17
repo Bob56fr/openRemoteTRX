@@ -465,7 +465,14 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
 <li>Un nouvel appareil, un mot de passe à changer, un téléphone perdu : menu <strong>4.3</strong> (comptes opérateurs).</li>
 <li>Tout reprendre (nouveau poste, nouveau PC) : menu <strong>2.1</strong> ; comptes et sécurités sont repris.</li>
 <li>Le mode d&#x27;emploi complet de TRX Console : <a href="https://bob56fr.github.io/openRemoteTRX/console/" target="_blank" rel="noopener noreferrer">https://bob56fr.github.io/openRemoteTRX/console/</a> (ou la touche <code>h</code> dans la console : <code>h 8.1</code>).</li>
-</ul><p class="haut"><a href="#top">Haut de page</a></p></section>
+</ul>
+<h3 id="p-07-75-la-console-dans-le-navigateur">7.5 La console dans le navigateur</h3>
+<p>Les mêmes menus, dans une page web : état de la station en direct, thèmes en tuiles, recherche (« ntfy », « TOT »…), aide de chaque menu au survol de la souris (au premier toucher sur une tablette). Le menu choisi se déroule dans le terminal en bas de la page, exactement comme dans TRX Console (mot de passe de session compris, demandé une fois pour la session). Même page sous Debian et sous Windows.</p>
+<ul>
+<li><strong>Sur le PC de la station</strong> : touche <strong>w</strong> dans l&#x27;écran plein de TRX Console, ou <code>trx-console --web</code> dans un terminal. Le navigateur s&#x27;ouvre tout seul.</li>
+<li><strong>Depuis un autre PC</strong> : connecte-toi en SSH à la station et lance <code>trx-console --web</code> ; il affiche une adresse et la commande <code>ssh -L …</code> à lancer sur ton PC (un tunnel vers la page). Lance-la, puis ouvre l&#x27;adresse dans ton navigateur.</li>
+</ul>
+<div class="note danger"><p><strong>Sécurité.</strong> La page n&#x27;est jamais visible du réseau : elle n&#x27;écoute que sur la station elle-même, et l&#x27;adresse affichée ne sert qu&#x27;une fois. Elle s&#x27;arrête seule après 30 minutes sans page ouverte. Ce n&#x27;est pas la page de pilotage du poste (port 8443) : celle-ci ne peut pas modifier la configuration.</p></div><p class="haut"><a href="#top">Haut de page</a></p></section>
 <section id="s-p-08"><h2 id="p-08" class="partie">8. Dépannage</h2>
 <h3 id="p-08-81-le-premier-réflexe">8.1 Le premier réflexe</h3>
 <ol>

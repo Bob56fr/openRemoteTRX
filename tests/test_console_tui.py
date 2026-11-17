@@ -220,3 +220,22 @@ def test_mouse_hover_shows_the_help_one_click_chooses_a_second_click_opens(tmp_p
             await pilot.pause(0.2)
         assert ran == ["1.3"]
     asyncio.run(scenario())
+
+
+def test_w_starts_the_web_console_or_explains_over_ssh(tmp_path, monkeypatch):
+    con = console(tmp_path)
+    spawned = []
+    con.runner.spawn = lambda cmd: spawned.append(cmd) or True
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            monkeypatch.delenv("SSH_CONNECTION", raising=False)
+            await pilot.press("w")
+            await pilot.pause(0.2)
+            monkeypatch.setenv("SSH_CONNECTION", "a b c d")
+            await pilot.press("w")
+            await pilot.pause(0.2)
+    asyncio.run(scenario())
+    assert len(spawned) == 1 and spawned[0][-3:-1] == ["--web", "--config"]
