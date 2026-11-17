@@ -16,6 +16,7 @@ import asyncio
 import hmac
 import json
 import os
+import re
 import secrets
 import sys
 import time
@@ -245,37 +246,57 @@ class WebConsole:
     # ------------------------------------------------------------------ lancement
 
     async def serve(self, *, open_browser: bool = True, announce: Callable[[str], None] = print,
-                    fixed_port: bool = False) -> None:
-        """fixed_port (raccourci « Console de la station », étape 230) : le tunnel SSH du PC vise CE port ; un autre
-        port ne mènerait nulle part. L'adresse est aussi écrite sur une ligne `URL_MARK` lue par le lanceur."""
+                    socket_path: str | None = None) -> bool:
+        """socket_path (raccourci « Console de la station », étape 230) : la console écoute sur un socket Unix PRIVÉ
+        (0600, nom aléatoire choisi par le lanceur) au bout du tunnel SSH du PC, jamais sur un port : chaque ouverture
+        a sa propre console, même si une autre tourne encore. `self.port` reste le port du PC (en-tête Host).
+        L'adresse est aussi écrite sur une ligne `URL_MARK` lue par le lanceur. Faux si la console n'a pas démarré."""
         from ..asyncio_noise import install_quiet_handler
         install_quiet_handler(asyncio.get_running_loop())   # Windows : page fermée brutalement = bruit, pas une panne
         runner = web.AppRunner(self.app(), access_log=None)
         await runner.setup()
         site = None
-        for port in range(self.port, self.port + (1 if fixed_port else 20)):    # port occupé : le suivant
+        if socket_path is not None:
+            if not SOCKET_RE.fullmatch(socket_path) or os.path.lexists(socket_path):
+                announce(SOCKET_REFUSED.format(path=socket_path))
+                await runner.cleanup()
+                return False
+            old = os.umask(0o077)                           # socket lisible par ce compte seul (et donc par son sshd)
             try:
-                site = web.TCPSite(runner, "127.0.0.1", port)
+                site = web.UnixSite(runner, socket_path)
                 await site.start()
-                self.port = port
-                break
-            except OSError:
-                site = None
-        if site is None and fixed_port:
-            announce(PORT_TAKEN.format(port=self.port))
-            return
+            finally:
+                os.umask(old)
+        else:
+            for port in range(self.port, self.port + 20):    # port occupé : le suivant
+                try:
+                    site = web.TCPSite(runner, "127.0.0.1", port)
+                    await site.start()
+                    self.port = port
+                    break
+                except OSError:
+                    site = None
         if site is None:
             announce("Aucun port libre entre {} et {} : console web non lancée.".format(self.port, self.port + 19))
-            return
+            await runner.cleanup()
+            return False
         url = f"http://127.0.0.1:{self.port}/?t={self.token}"
-        announce(UI_START.format(url=url, port=self.port))
-        if fixed_port:
+        if socket_path is not None:
             announce(f"{URL_MARK} {url}")
+        else:
+            announce(UI_START.format(url=url, port=self.port))
         if open_browser and not os.environ.get("SSH_CONNECTION"):
             try:
                 webbrowser.open(url)
             except Exception:
                 pass
+        if os.name == "posix":                              # fenêtre du PC fermée = SIGHUP : arrêt propre (socket effacé)
+            import signal
+            for sig in (signal.SIGHUP, signal.SIGTERM):
+                try:
+                    asyncio.get_running_loop().add_signal_handler(sig, self.stop.set)
+                except (NotImplementedError, RuntimeError, ValueError):
+                    pass
         watchdog = asyncio.create_task(self.watchdog())
         try:
             await self.stop.wait()
@@ -284,6 +305,12 @@ class WebConsole:
             if self.terminal is not None:
                 self.terminal.close()
             await runner.cleanup()
+            if socket_path is not None:
+                try:
+                    os.unlink(socket_path)
+                except OSError:
+                    pass
+        return True
 
 
 UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.language", "web.open", "web.busy",
@@ -302,13 +329,16 @@ EXPIRED_PAGE = ("<!doctype html><meta charset=utf-8><title>TRX Console</title>"
 
 
 URL_MARK = "TRX-CONSOLE-URL"
-PORT_TAKEN = ("\nLa console web est déjà ouverte sur cette station (port {port} pris) : ferme l'autre fenêtre « Console "
-              "de la station », ou attends 30 minutes qu'elle s'arrête seule.\n")
+SOCKET_RE = re.compile(r"/tmp/trx-console-[0-9a-f]{32}\.sock")
+SOCKET_REFUSED = "Raccourci : socket refusé ({path}) : nom inattendu ou déjà présent. Relance le raccourci."
 
 
-def run(config: Path, port: int = DEFAULT_PORT, *, fixed_port: bool = False) -> int:
+def run(config: Path, port: int = DEFAULT_PORT, *, socket_path: str | None = None) -> int:
+    started = True
     try:
-        asyncio.run(WebConsole(config, port=port).serve(fixed_port=fixed_port))
+        started = asyncio.run(WebConsole(config, port=port).serve(socket_path=socket_path))
     except KeyboardInterrupt:
         pass
+    if not started:
+        return 1
     return 0

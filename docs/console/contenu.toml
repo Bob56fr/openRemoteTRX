@@ -321,7 +321,7 @@ modifie = "La configuration de la station (<code>station.toml</code>), avec les 
 admin = true
 
 [menus.remote_console]
-role = "Offre aux opérateurs, dans la page de pilotage, un <strong>raccourci « Console de la station »</strong> pour PC Windows : un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC, sans rien taper. Au premier lancement, le raccourci se range, se pose sur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il ne contient que l'adresse, le compte SSH et les ports. Station Debian ou Raspberry Pi seulement (serveur SSH)."
+role = "Offre aux opérateurs, dans la page de pilotage, un <strong>raccourci « Console de la station »</strong> pour PC Windows : un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC, sans rien taper. Au premier lancement, le raccourci se range, se pose sur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il ne contient que l'adresse, le compte SSH et les ports. Station Debian ou Raspberry Pi seulement (serveur SSH). Le bouton de téléchargement est dans la <strong>page de pilotage</strong> (celle où l'on écoute et émet), rubrique « Raccourci TRX Console (PC Windows) », pas dans cette console."
 quand = "Pour administrer la station depuis un autre PC (Windows) sans connaître SSH."
 modifie = "La configuration de la station (<code>station.toml</code>, section <code>[remote_console]</code>), avec les droits d'administration ; l'ancienne version est gardée. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true

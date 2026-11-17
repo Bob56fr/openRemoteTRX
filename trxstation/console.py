@@ -3060,13 +3060,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--web", action="store_true",
                     help="console dans le navigateur (127.0.0.1 seulement, adresse à usage unique ; autre PC : tunnel SSH)")
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
-    ap.add_argument("--raccourci", action="store_true",
-                    help="avec --web : lancé par le raccourci « Console de la station » d'un PC (port fixe, sans navigateur)")
+    ap.add_argument("--raccourci", metavar="SOCKET",
+                    help="avec --web : lancé par le raccourci « Console de la station » d'un PC (socket Unix privé "
+                         "au bout du tunnel SSH, sans navigateur)")
     args = ap.parse_args(argv)
     if args.web:
         from .console_web.server import run
         if args.raccourci:
-            return run(args.config, args.port, fixed_port=True)
+            return run(args.config, args.port, socket_path=args.raccourci)
         return run(args.config, args.port)
     if args.diagnostic:
         checks = run_all(path=args.config)

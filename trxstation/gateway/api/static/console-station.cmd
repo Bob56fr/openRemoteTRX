@@ -22,6 +22,7 @@ $Installed = Join-Path $Home2 "console-$Safe.cmd"
 $Key = Join-Path (Join-Path $env:USERPROFILE '.ssh') "trx-console-$Safe"
 $NoKey = Join-Path $Home2 "sans-cle-$Safe"
 try { $Host.UI.RawUI.WindowTitle = $Name } catch { }
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }   # accents de la station (UTF-8)
 
 function Say([string] $Text, [string] $Color = 'Gray') { Write-Host $Text -ForegroundColor $Color }
 
@@ -84,10 +85,12 @@ if (-not (Test-Path -LiteralPath $Key) -and -not (Test-Path -LiteralPath $NoKey)
     Say ""
 }
 
-$Command = "trx-console --web --raccourci --port $WebPort"
-if ($env:TRX_CONSOLE_REMOTE) { $Command = $env:TRX_CONSOLE_REMOTE }       # essais seulement
+# Une console PAR ouverture, sur un socket Unix privé au nom aléatoire (jamais un port pris sur la station).
+$Socket = '/tmp/trx-console-' + (-join (1..32 | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })) + '.sock'
+$Command = "trx-console --web --port $WebPort --raccourci $Socket"
+if ($env:TRX_CONSOLE_REMOTE) { $Command = $env:TRX_CONSOLE_REMOTE -replace '@SOCKET@', $Socket }   # essais seulement
 $SshArgs = @('-tt', '-p', "$SshPort", '-o', 'StrictHostKeyChecking=accept-new', '-o', 'ExitOnForwardFailure=yes',
-             '-L', "$($WebPort):127.0.0.1:$($WebPort)")
+             '-o', 'LogLevel=ERROR', '-L', "$($WebPort):$Socket")
 if (Test-Path -LiteralPath $Key) { $SshArgs += @('-i', $Key) }
 $SshArgs += @("$User@$Station", $Command)
 
@@ -98,8 +101,8 @@ $Opened = $false
     if (-not $Opened -and $Line -match 'TRX-CONSOLE-URL (http://127\.0\.0\.1:\d+/\?t=[A-Za-z0-9_-]+)') {
         $Opened = $true
         Say "Console ouverte dans le navigateur. Ferme cette fenêtre quand tu as fini." Green
-        if (-not $env:TRX_CONSOLE_NO_BROWSER) { Start-Process $Matches[1] }
-    } elseif ($Line -notmatch 'TRX-CONSOLE-URL|^Console web de la station|usage unique|Depuis un autre PC|Ctrl\+C pour') {
+        if ($env:TRX_CONSOLE_NO_BROWSER) { Write-Host $Matches[1] } else { Start-Process $Matches[1] }
+    } elseif ($Line -notmatch 'TRX-CONSOLE-URL') {
         Write-Host $Line
     }
 }
@@ -108,6 +111,7 @@ if ($Opened) { exit 0 }
 Say ""
 Say "La console n'a pas pu s'ouvrir (code $Code)." Red
 Say "  - la station est-elle allumée et joignable à l'adresse $Station ?"
-Say "  - une autre fenêtre « Console de la station » est-elle déjà ouverte ? Ferme-la."
+Say "  - une autre fenêtre « Console de la station » est-elle déjà ouverte sur ce PC ? Ferme-la."
+Say "  - la station a-t-elle la version 0.176.0 ou plus récente ?"
 Say "  - mot de passe SSH refusé ? C'est celui du compte $User de la station."
 exit 1

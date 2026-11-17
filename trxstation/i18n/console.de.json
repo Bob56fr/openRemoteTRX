@@ -697,5 +697,5 @@
   "remote_console.user_bad": "„{user}“ ist kein Linux-Kontoname (Kleinbuchstaben, Ziffern, _ . -).",
   "remote_console.port": "Port des SSH-Servers der Station",
   "remote_console.no_sshd": "Achtung: kein SSH-Server auf dieser Station gefunden. Installieren: sudo apt install openssh-server",
-  "remote_console.done": "Nach dem Neustart der Station: Bedienseite auf dem PC, Rubrik „Console de la station“, „Télécharger le raccourci (Windows)“, dann Doppelklick auf die Datei."
+  "remote_console.done": "Nach dem Neustart der Station: Bedienseite auf dem PC, Rubrik „Raccourci TRX Console (PC Windows)“, „Télécharger le raccourci (Windows)“, dann Doppelklick auf die Datei."
 }

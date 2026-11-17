@@ -321,7 +321,7 @@ modifie = "The station configuration (<code>station.toml</code>), with administr
 admin = true
 
 [menus.remote_console]
-role = "Offers operators, in the control page, a <strong>“Console de la station” shortcut</strong> for Windows PCs: a double-click opens an SSH connection with a tunnel, starts the web console on the station and opens it in the PC browser, without typing anything. On first run, the shortcut files itself away, goes on the Desktop and offers an SSH key (no SSH password afterwards). It only holds the address, SSH account and ports. Debian or Raspberry Pi station only (SSH server)."
+role = "Offers operators, in the control page, a <strong>“Console de la station” shortcut</strong> for Windows PCs: a double-click opens an SSH connection with a tunnel, starts the web console on the station and opens it in the PC browser, without typing anything. On first run, the shortcut files itself away, goes on the Desktop and offers an SSH key (no SSH password afterwards). It only holds the address, SSH account and ports. Debian or Raspberry Pi station only (SSH server). The download button is in the <strong>control page</strong> (the one used to listen and transmit), “Raccourci TRX Console (PC Windows)” section, not in this console."
 quand = "To administer the station from another (Windows) PC without knowing SSH."
 modifie = "The station configuration (<code>station.toml</code>, <code>[remote_console]</code> section), with administrator rights; the previous version is kept. The station is restarted on request to take the change."
 admin = true

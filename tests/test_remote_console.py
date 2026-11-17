@@ -82,28 +82,43 @@ def test_powershell_part_of_the_launcher_parses(tmp_path):
     assert done.returncode == 0, done.stdout + done.stderr
 
 
-def test_web_console_in_shortcut_mode_keeps_its_port_and_prints_the_address(tmp_path, monkeypatch):
-    import socket
+def test_shortcut_mode_refuses_an_unexpected_socket_name(tmp_path):
+    from trxstation.console_web.server import WebConsole
+    path = write_config(tmp_path)
+    lines: list[str] = []
+    for bad in ("/etc/passwd", "/tmp/trx-console-1234.sock", str(tmp_path / "x.sock")):
+        lines.clear()
+        assert asyncio.run(WebConsole(path, port=8765).serve(open_browser=False, announce=lines.append,
+                                                             socket_path=bad)) is False
+        assert "socket refusé" in lines[-1]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="socket Unix (station Debian)")
+def test_shortcut_mode_serves_a_private_socket_and_removes_it(tmp_path):
+    import secrets
+    import stat
+
+    import aiohttp
 
     from trxstation.console_web.server import URL_MARK, WebConsole
     path = write_config(tmp_path)
+    sock = f"/tmp/trx-console-{secrets.token_hex(16)}.sock"
     lines: list[str] = []
 
     async def scenario():
-        with socket.socket() as busy:
-            busy.bind(("127.0.0.1", 0))
-            busy.listen()
-            port = busy.getsockname()[1]
-            await WebConsole(path, port=port).serve(open_browser=False, announce=lines.append, fixed_port=True)
-            assert "déjà ouverte" in lines[-1]                       # port pris : jamais un autre (tunnel)
-        lines.clear()
-        wc = WebConsole(path, port=port)
-        task = asyncio.create_task(wc.serve(open_browser=False, announce=lines.append, fixed_port=True))
-        while len(lines) < 2:
+        wc = WebConsole(path, port=8765)
+        token = wc.token
+        task = asyncio.create_task(wc.serve(open_browser=False, announce=lines.append, socket_path=sock))
+        while not lines:
             await asyncio.sleep(0.05)
+        assert lines == [f"{URL_MARK} http://127.0.0.1:8765/?t={token}"]
+        assert stat.S_IMODE(os.stat(sock).st_mode) & 0o077 == 0              # privé : ce compte seul
+        async with aiohttp.ClientSession(connector=aiohttp.UnixConnector(path=sock)) as http:
+            r = await http.get(f"http://127.0.0.1:8765/?t={token}", allow_redirects=False)
+            assert r.status == 302                                          # jeton accepté au bout du socket
         wc.stop.set()
-        await task
-        assert wc.port == port and lines[1] == f"{URL_MARK} http://127.0.0.1:{port}/?t={wc.token}"
+        assert await task is True
+        assert not os.path.exists(sock)                                     # effacé à l'arrêt
     asyncio.run(scenario())
 
 
@@ -112,8 +127,9 @@ def test_shortcut_option_of_the_console(tmp_path, monkeypatch):
     import trxstation.console_web.server as server
     started = []
     monkeypatch.setattr(server, "run", lambda config, port, **kw: started.append((port, kw)) or 0)
-    assert module.main(["--config", str(tmp_path / "station.toml"), "--web", "--raccourci", "--port", "8800"]) == 0
-    assert started == [(8800, {"fixed_port": True})]
+    sock = "/tmp/trx-console-" + "a" * 32 + ".sock"
+    assert module.main(["--config", str(tmp_path / "station.toml"), "--web", "--port", "8800", "--raccourci", sock]) == 0
+    assert started == [(8800, {"socket_path": sock})]
 
 
 def test_menu_4_6_is_last_of_the_access_theme():

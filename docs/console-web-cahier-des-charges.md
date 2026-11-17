@@ -67,7 +67,8 @@ terminal : sudo, nano, essai du poste, tableau de bord.
 Demande de l'utilisateur (2026-11-17) : le tunnel SSH à la main n'est pas ergonomique pour un non-informaticien.
 Décision : la page de pilotage offre aux OPÉRATEURS un lanceur Windows (`console-station.cmd`, modèle servi par la
 station et rempli par la page : adresse par laquelle le PC joint la station, compte et ports de `[remote_console]`,
-aucun secret). Il lance `ssh -tt -L port:127.0.0.1:port compte@station trx-console --web --raccourci`, lit la ligne
+aucun secret). Il lance `ssh -tt -L port:/tmp/trx-console-<aléa>.sock compte@station trx-console --web --raccourci
+<socket>` (une console par ouverture, socket Unix privé, aucun port de la station), lit la ligne
 `TRX-CONSOLE-URL` et ouvre l'adresse dans le navigateur du PC ; au premier lancement il se range dans
 `%LOCALAPPDATA%\OpenRemoteTRX`, pose un raccourci sur le Bureau et propose une clé SSH ed25519 (privée sur le PC,
 publique ajoutée à `authorized_keys` de la station avec le mot de passe SSH une dernière fois). Le mot de passe sudo

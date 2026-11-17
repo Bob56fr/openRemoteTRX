@@ -321,7 +321,7 @@ modifie = "La configuración de la estación (<code>station.toml</code>), con de
 admin = true
 
 [menus.remote_console]
-role = "Ofrece a los operadores, en la página de control, un <strong>acceso directo «Console de la station»</strong> para PC Windows: un doble clic abre una conexión SSH con un túnel, arranca la consola web en la estación y la abre en el navegador del PC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece en el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo contiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o Raspberry Pi (servidor SSH)."
+role = "Ofrece a los operadores, en la página de control, un <strong>acceso directo «Console de la station»</strong> para PC Windows: un doble clic abre una conexión SSH con un túnel, arranca la consola web en la estación y la abre en el navegador del PC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece en el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo contiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o Raspberry Pi (servidor SSH). El botón de descarga está en la <strong>página de control</strong> (la de escuchar y transmitir), sección «Raccourci TRX Console (PC Windows)», no en esta consola."
 quand = "Para administrar la estación desde otro PC (Windows) sin saber SSH."
 modifie = "La configuración de la estación (<code>station.toml</code>, sección <code>[remote_console]</code>), con derechos de administrador; se guarda la versión anterior. La estación se reinicia si lo pides para aplicar el cambio."
 admin = true
