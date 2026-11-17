@@ -140,6 +140,7 @@
       <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
       <button id="bzh-ind" class="chip bzh-ind listener-hide" hidden title="Breizh Audio Box : touche pour ouvrir sa rubrique">BZH</button>
       <button id="fdv-ind" class="chip fdv-ind" hidden title="FreeDV : touche pour ouvrir sa rubrique">FDV</button>
+      <button id="dif-ind" class="chip dif-ind listener-hide" hidden title="Diffusion en direct : touche pour ouvrir sa rubrique">DIFFUSION</button>
       <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
       <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
@@ -388,6 +389,28 @@
         <p class="note">Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert : la station aidée envoie ce
           que SON opérateur a choisi, toujours masqué et chiffré par le relais. La station qui aide ne peut que lire et
           demander ; rien ne commande le poste. Mêmes actions que le menu 6.5 de TRX Console.</p>
+      </div>
+    </details>
+
+    <details id="sec-diffusion" class="listener-hide" hidden>
+      <summary>Diffusion en direct <span id="dif-badge" class="note"></span></summary>
+      <div class="body">
+        <p id="dif-status" class="note"></p>
+        <div id="dif-form">
+          <div class="row"><label class="check"><input type="radio" name="dif-access" id="dif-prive" value="prive" checked> Privée (identifiant et mot de passe)</label><label class="check"><input type="radio" name="dif-access" id="dif-public" value="public"> Publique</label></div>
+          <div class="row"><label>Durée <select id="dif-hours"></select></label><label class="check"><input id="dif-voice" type="checkbox"> Diffuser aussi ma voix pendant mes émissions</label></div>
+          <div class="row" id="dif-meta"></div>
+          <div class="row"><label class="grow">Pseudo <input id="dif-pseudo" maxlength="32" autocomplete="off" spellcheck="false"></label><label>Indicatif <input id="dif-indicatif" maxlength="16" autocomplete="off" spellcheck="false"></label></div>
+          <div class="row"><label class="grow">Message <input id="dif-message" maxlength="140" autocomplete="off"></label></div>
+          <div class="row"><button id="dif-start" class="chip">Lancer la diffusion</button></div>
+        </div>
+        <div class="row"><button id="dif-stop" class="chip dif-stop" hidden>Arrêter la diffusion</button></div>
+        <div class="row"><span class="note">Page des auditeurs :</span> <a id="dif-page" target="_blank" rel="noopener noreferrer"></a> <button id="dif-copy" class="chip">Copier l'adresse</button></div>
+        <div class="row"><span class="note">Auditeurs de la diffusion privée : identifiant</span> <code id="dif-user">—</code> <button id="dif-reveal" class="chip">Voir le mot de passe</button> <button id="dif-generate" class="chip">En générer un nouveau</button> <code id="dif-password"></code></div>
+        <p class="note">Faire entendre le son du TRX à quelques internautes sans compte sur la station, par un serveur de
+          diffusion : ils ne joignent jamais la station. Privée par défaut (c'est vous qui transmettez l'adresse et
+          l'identifiant), 1 heure par défaut ; pendant vos émissions, silence sauf si vous cochez « Diffuser aussi ma
+          voix ». Tout opérateur peut arrêter une diffusion ; elle ne reprend jamais seule.</p>
       </div>
     </details>
 
@@ -899,6 +922,7 @@
 <script src="layout.js"></script>
 <script src="friends.js"></script>
 <script src="monitoring.js"></script>
+<script src="diffusion.js"></script>
 <script src="sdr.js"></script>
 <script src="ui.js"></script>
 </body>

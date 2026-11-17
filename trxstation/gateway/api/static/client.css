@@ -442,3 +442,8 @@ audio { display: none; }
 /* fréquence écoutée : pointillé vert et orange, lisible sur toutes les couleurs du waterfall */
 .sdr-marker { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; pointer-events: none;
   background: repeating-linear-gradient(to bottom, var(--succes) 0 6px, var(--alerte) 6px 12px); box-shadow: 0 0 2px var(--contour); }
+
+/* Diffusion en direct (lot D2) : indicateur toujours visible pendant une diffusion, bouton d'arrêt */
+.dif-ind.live { background: var(--danger-fond); color: var(--tx-texte); border-color: var(--tx-actif-bord); font-weight: 600; }
+.dif-ind.retry { background: var(--alerte-fond); color: var(--alerte-texte); border-color: var(--alerte-vive); }
+.dif-stop { background: var(--stop-fond); color: var(--stop-texte); border-color: var(--stop-bord); }

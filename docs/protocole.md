@@ -38,7 +38,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 - **Retrait ou changement de sens** : version + 1 ; la station accepte encore l'ancienne pendant au moins une version de l'application. Un client qui ne connaît pas la version annoncée le dit à l'utilisateur et reste en réception.
 - **`hello.features`** : liste des fonctions offertes par CETTE station. Un client montre une fonction parce qu'elle y figure, jamais d'après un numéro de version.
   - toujours : `ptt`, `frequency`, `mode`, `squelch`, `functions`, `levels`, `local_release` ;
-  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce), `selcall_calibrate` (niveau de la trame et réglage automatique, depuis 0.64.0), `presence` (rôles, pseudos et `state.presence`, depuis 0.71.0 : § 13), `host` (santé de la machine `state.host` et synthèse `host_info`, depuis 0.83.0 ; jamais annoncé à un visiteur), `voice_profiles` (profils d'égaliseur de l'opérateur rangés sur la station, depuis 0.86.0 ; jamais annoncé à un visiteur), `swr` (mesure de TOS, depuis 0.90.0, `[swr] enabled` ; jamais annoncé à un visiteur), `replay` (rediffusion d'un enregistrement, depuis 0.91.0 : `hello.replay`), `breizh` (Breizh Audio Box dans la chaîne d'émission, depuis 0.100.0, `[breizh] enabled` ; jamais annoncé à un visiteur : § 14), `sdr` (waterfall du module SDR, depuis 0.140.0, `[sdr] enabled` et module « sdr » ; jamais annoncé à un visiteur : § 18), `sdr_audio` (son du SDR sur une seconde piste, depuis 0.142.0 : seulement si l'offre du client prévoit une seconde réception audio ; § 18), `remote_console` (lien vers TRX Console sur le réseau, depuis 0.178.0, `[remote_console] enabled`, opérateurs marqués `admin` seulement : `hello.remote_console`).
+  - selon la station : `memories`, `layouts`, `spectrum` (second port CI-V actif), `beeps`, `bug_report`, `selcall` (`[selcall] enabled`, depuis 0.61.0), `selcall_send` (appel manuel et trame de fin, depuis 0.63.0 ; un client n'offre « Envoyer SELCALL » que si la station l'annonce), `selcall_calibrate` (niveau de la trame et réglage automatique, depuis 0.64.0), `presence` (rôles, pseudos et `state.presence`, depuis 0.71.0 : § 13), `host` (santé de la machine `state.host` et synthèse `host_info`, depuis 0.83.0 ; jamais annoncé à un visiteur), `voice_profiles` (profils d'égaliseur de l'opérateur rangés sur la station, depuis 0.86.0 ; jamais annoncé à un visiteur), `swr` (mesure de TOS, depuis 0.90.0, `[swr] enabled` ; jamais annoncé à un visiteur), `replay` (rediffusion d'un enregistrement, depuis 0.91.0 : `hello.replay`), `breizh` (Breizh Audio Box dans la chaîne d'émission, depuis 0.100.0, `[breizh] enabled` ; jamais annoncé à un visiteur : § 14), `sdr` (waterfall du module SDR, depuis 0.140.0, `[sdr] enabled` et module « sdr » ; jamais annoncé à un visiteur : § 18), `sdr_audio` (son du SDR sur une seconde piste, depuis 0.142.0 : seulement si l'offre du client prévoit une seconde réception audio ; § 18), `remote_console` (lien vers TRX Console sur le réseau, depuis 0.178.0, `[remote_console] enabled`, opérateurs marqués `admin` seulement : `hello.remote_console`), `diffusion` (diffusion en direct vers un serveur Icecast, depuis 0.189.0, `[diffusion] enabled` et module « diffusion » ; jamais annoncé à un visiteur : § 20).
 - `hello.version` : version du logiciel de la station (affichage seulement).
 
 ## 5. Émission : états, battements, coupures
@@ -400,3 +400,46 @@ que lire et DEMANDER. Annoncée dans `hello.features` (`monitoring`) seulement p
 - **Page web** (`monitoring.js`, rubrique « Monitoring ») : liaisons et dernières nouvelles, aider (code), être aidé
   (code, empreinte, profil), demandes et réponses, pause, fin, rapport téléchargé.
 - **Application** : à venir (le contrat Android connaît déjà la commande).
+
+## 20. Diffusion en direct (station 0.189.0+, fonction `diffusion`)
+
+Cahier des charges : [`docs/diffusion-cahier-des-charges.md`](diffusion-cahier-des-charges.md) ; protocole entre la
+station et le serveur : [`docs/protocole-diffusion.md`](protocole-diffusion.md). Faire entendre le son du TRX à quelques
+internautes sans compte sur la station, par un serveur de diffusion. Le module « diffusion » n'a AUCUN droit sur le
+poste. Annoncée dans `hello.features` (`diffusion`) seulement pour un OPÉRATEUR, quand `[diffusion] enabled` et
+« diffusion » est dans `[modules] run` ; un visiteur reçoit `forbidden`. Tout opérateur peut lancer ou arrêter une
+diffusion, y compris celle d'un autre.
+
+- `{"cmd":"diffusion","id":N,"action":…,"args":{…}}` (args : objet de 600 octets au plus) ; réponse
+  `{"type":"result","id":N,"ok":true,"action":…,"data":…}` (`data` = état de la diffusion, sauf `listener` et
+  `reveal`) ou refus.
+- La PASSERELLE fabrique les arguments transmis au module : liste fermée par action, nom de l'opérateur (pseudo ou
+  identifiant du compte) ajouté par elle ; un client ne choisit jamais la cause d'un arrêt.
+- Actions :
+  - `status` : état (mêmes champs que `state.diffusion`) ;
+  - `start` {access `prive` (défaut) | `public`, hours 1 à 24 (défaut 1) ou `null` = sans limite, voice (défaut
+    false : SILENCE pendant les émissions), meta [champs choisis parmi pseudo, indicatif, frequence_hz, mode, bande,
+    tx, s_metre, message ; défaut : pseudo], pseudo, indicatif, message, confirm} ; la PREMIÈRE diffusion de la
+    station est refusée (`diffusion_confirm_required`) tant que l'opérateur n'a pas confirmé l'avertissement de
+    responsabilité (cahier § 1.1) : le client l'affiche puis renvoie `start` avec `"confirm": true` ; la station
+    s'en souvient ;
+  - `stop` : arrête la diffusion en cours (cause « opérateur ») ;
+  - `listener` {user?, password? | generate: true} -> {listener_user, listener_password} : identifiants des
+    auditeurs du montage privé, fixes ensuite ;
+  - `reveal` -> {listener_user, listener_password} : le mot de passe, à la demande de l'opérateur (seules réponses
+    qui le portent ; jamais dans `state`).
+- Refus : ceux du module, préfixés par la passerelle : `diffusion_busy`, `diffusion_disabled`,
+  `diffusion_no_secrets`, `diffusion_confirm_required`, `diffusion_malformed`, `diffusion_unknown_action` (code
+  ORT-6109), `diffusion_unavailable` (pas de module), `diffusion_error` (ORT-4018) ; plus `module_absent`, `timeout`.
+- `state.diffusion` (opérateurs seulement, absent sinon ; exemple `state_diffusion` de `tests/protocol/messages.json`) :
+  `enabled`, `active`, `accepted`, `outside_bands` (`[diffusion] outside_bands` : false = silence pour les auditeurs
+  hors des `[[bands]]`, appliqué par la passerelle), `codec`, `problem`, `last_stop` {cause, at}, `listen_page` ;
+  pendant une diffusion,
+  `access`, `voice`, `phase` (`connexion`, `en_direct`, `nouvel_essai`), `listeners` (nombre donné par le serveur,
+  donnée non fiable), `operator`, `remaining_s` (null = sans limite), `stream_url`, `listener_user`, `meta_choice`.
+  Causes d'arrêt : `operator`, `duration`, `overload`, `gateway_restart`, `auth`, `disabled`, `station_stop`.
+- **Page web** (`diffusion.js`, rubrique « Diffusion en direct », indicateur « DIFFUSION » de l'en-tête, toujours
+  visible pendant une diffusion) : lancement (accès, durée, voix, informations diffusées), avertissement au premier
+  lancement, arrêt, adresse de la page des auditeurs, identifiant et mot de passe des auditeurs (sur demande, en
+  générer un).
+- **Application** : à venir (lot D4 ; le contrat Android connaît déjà la commande).

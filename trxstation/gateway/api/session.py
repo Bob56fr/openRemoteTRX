@@ -51,7 +51,7 @@ SWR_BLOCKED = frozenset({"set_frequency", "set_mode", "set_function", "set_level
 
 
 def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
-                role: str = OPERATOR, net: dict | None = None) -> dict:
+                role: str = OPERATOR, net: dict | None = None, diffusion: dict | None = None) -> dict:
     """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients.
     `access` (AccessControl, facultatif) : présence ; pour un visiteur, pseudos à la place des identifiants."""
     rig, ptt = link.state, ctrl.snapshot()
@@ -84,6 +84,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         **({} if net is None else {"net": net}),
         # FreeDV en réception ([freedv] enabled) : mode, synchro, SNR, indicatifs ; visiteurs compris
         **({} if getattr(pipeline, "freedv", None) is None else {"freedv": pipeline.freedv.snapshot()}),
+        # diffusion en direct (module « diffusion ») : OPÉRATEURS seulement, si la station l'emploie
+        **({} if listener or diffusion is None else {"diffusion": diffusion}),
     }
 
 
@@ -127,6 +129,10 @@ class ControlSession:
         # (ModuleBridge.operator_activity) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
         self.friends_call: Callable[[dict], Awaitable] | None = None
         self.monitoring_call: Callable[[dict], Awaitable] | None = None   # module monlink (opérateurs, lot R5)
+        # Diffusion en direct (lot D2) : commande relayée au module « diffusion » et état résumé pour state ; posés par
+        # gateway/main, None sans le module. Jamais pour un visiteur.
+        self.diffusion_call: Callable[[dict], Awaitable] | None = None
+        self.diffusion_status: Callable[[], dict | None] | None = None
         # Module SDR : commande relayée au module « sdr » (ModuleBridge.call) et rejeu de son état à l'ouverture de la
         # rubrique (ModuleBridge.on_sdr_view) ; posés par gateway/main, None sans le module. Jamais pour un visiteur.
         self.sdr_call: Callable[[dict], Awaitable] | None = None
@@ -236,6 +242,7 @@ class ControlSession:
                    "netprobe": self.netprobe is not None,
                    "friends": self.friends_call is not None and not self.listener,
                    "monitoring": self.monitoring_call is not None and not self.listener,
+                   "diffusion": self.diffusion_call is not None and not self.listener,
                    "freedv": self.freedv is not None,
                    "sdr": self.sdr_call is not None and not self.listener,
                    "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered}
@@ -259,7 +266,13 @@ class ControlSession:
                 net = self.probe.state()
             except Exception:
                 emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"état pour {self.client_id}")
-        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net)
+        diffusion = None
+        if self.diffusion_status is not None and not self.listener:
+            try:
+                diffusion = self.diffusion_status()
+            except Exception:
+                diffusion = None
+        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net, diffusion)
 
     async def close(self) -> None:
         """Idempotent. Désenregistre le client : coupe l'émission s'il en était propriétaire."""
@@ -601,6 +614,42 @@ class ControlSession:
             return
         self._result(cmd.id, True, action=cmd.params["action"], data=data)
 
+    def _diffusion_args(self, action: str, args: dict) -> dict:
+        """Arguments transmis au module : liste FERMÉE par action, fabriquée ici. Un client ne peut ni choisir la
+        cause d'un arrêt (surcharge…), ni se faire passer pour un autre opérateur."""
+        who = self.client_id
+        if self.access is not None:
+            try:
+                who = self.access.pseudo(self.client_id) or self.client_id
+            except Exception:
+                who = self.client_id
+        allowed = {"start": ("access", "hours", "voice", "meta", "pseudo", "indicatif", "message", "confirm"),
+                   "listener": ("user", "password", "generate")}.get(action, ())
+        out = {k: args[k] for k in allowed if k in args}
+        if action in ("start", "stop"):
+            out["operator"] = str(who)[:32]
+        return out
+
+    async def _diffusion(self, cmd: Command) -> None:
+        """Diffusion en direct (lot D2) : relayée au module « diffusion », qui n'agit JAMAIS sur le poste. Ses refus
+        reviennent préfixés (« diffusion_busy »…) : codes du catalogue (ORT-6109). Jamais pour un visiteur."""
+        if self.diffusion_call is None or self.listener:
+            self._result(cmd.id, False, reason="diffusion_unavailable", detail="diffusion non disponible")
+            return
+        action = cmd.params["action"]
+        try:
+            data = await self.diffusion_call({"action": action, "args": self._diffusion_args(action, cmd.params["args"]),
+                                              "client": self.client_id})
+        except CommandRefused as exc:
+            reason = exc.code if exc.code in ("module_absent", "timeout", "forbidden") else f"diffusion_{exc.code}"
+            self._result(cmd.id, False, reason=reason, detail=str(exc))
+            return
+        except Exception:
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"commande diffusion de {self.client_id}")
+            self._result(cmd.id, False, reason="diffusion_error")
+            return
+        self._result(cmd.id, True, action=action, data=data)
+
     async def _sdr(self, cmd: Command) -> None:
         """Module SDR : « watch » est traité ici (envoi des lignes à CE client) ; le reste est relayé au module, qui
         n'agit JAMAIS sur le poste ; son refus revient tel quel."""
@@ -689,7 +738,8 @@ class ControlSession:
         if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
                 and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))
                 and not (cmd.name == "monitoring" and cmd.params.get("action") in ("view", "received", "report_part"))
-                and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state", "listen"))):
+                and not (cmd.name == "sdr" and cmd.params.get("action") in ("watch", "state", "listen"))
+                and not (cmd.name == "diffusion" and cmd.params.get("action") in ("status", "reveal"))):
             try:
                 self.on_operator_activity()                      # statut « En RX » de la présence de groupe
             except Exception:
@@ -700,6 +750,9 @@ class ControlSession:
             return
         if cmd.name == "monitoring":
             await self._monitoring(cmd)                          # opérateur seulement (liste blanche des visiteurs)
+            return
+        if cmd.name == "diffusion":
+            await self._diffusion(cmd)                           # opérateur seulement (liste blanche des visiteurs)
             return
         if cmd.name == "sdr":
             await self._sdr(cmd)                                 # opérateur seulement (liste blanche des visiteurs)

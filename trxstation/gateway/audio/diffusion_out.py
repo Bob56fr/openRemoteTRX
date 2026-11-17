@@ -3,9 +3,9 @@
 """Son de la diffusion en direct : la passerelle le donne au module « diffusion » (docs/diffusion-cahier-des-charges.md
 § 3, lot D1b). L'inverse du son du SDR (sdr_audio.py).
 
-- Le MÊME son que celui des visiteurs (`ListenerMix` : son du poste, voix de l'opérateur pendant ses émissions), mais
-  SANS le silence hors bandes des visiteurs : la diffusion ne filtre pas les bandes (décision § 1.1, responsabilité
-  de l'opérateur).
+- Le MÊME son que celui des visiteurs (`ListenerMix` : son du poste, voix de l'opérateur pendant ses émissions). Hors
+  des [[bands]] : silence pour les auditeurs, sauf `[diffusion] outside_bands = true` (décision de l'utilisateur du
+  2026-11-17 : l'opérateur décide ; même principe que les visiteurs, réglage indépendant).
 - Voix émise : seulement si l'opérateur l'a demandé au lancement (option `voice`) ; sinon SILENCE pendant TOUTE
   émission (client, micro du poste, SELCALL, TOS). Décidé ICI, sur l'état du PTT de la passerelle.
 - Rien n'est envoyé hors diffusion : la passerelle demande l'état du module toutes les 2 s.
@@ -29,13 +29,16 @@ POLL_S = 2.0
 
 class DiffusionOut:
     def __init__(self, port: int, token: bytes, hub, tap, transmitting: Callable[[], bool],
-                 call: Callable[[dict], Awaitable], overloaded: Callable[[], bool] = lambda: False) -> None:
+                 call: Callable[[dict], Awaitable], overloaded: Callable[[], bool] = lambda: False,
+                 muted: Callable[[], bool] | None = None) -> None:
         self.port, self.token, self.hub, self.tap = port, token, hub, tap
         self.transmitting = transmitting          # () -> bool : émission en cours (n'importe laquelle)
         self.call = call                          # (data) -> coroutine : commande vers le module
         self.overloaded = overloaded              # () -> bool : garde de surcharge des visiteurs déclenchée
+        self.muted = muted                        # () -> bool : réception hors bandes (et non permise) : silence
         self.voice = False
         self.packets = 0
+        self.status: dict | None = None           # dernier état du module (state.diffusion des opérateurs)
         self._feed: asyncio.Task | None = None
 
     async def poll(self) -> None:
@@ -44,6 +47,7 @@ class DiffusionOut:
             status = await self.call({"action": "status"})
         except Exception:                          # module absent, relancé ou lent : on n'envoie rien
             status = None
+        self.status = status if isinstance(status, dict) else None
         active = isinstance(status, dict) and status.get("active") is True
         if active and self.overloaded():
             try:
@@ -56,6 +60,16 @@ class DiffusionOut:
             self._feed = asyncio.ensure_future(self._feed_loop())
         elif not active and self._feed is not None:
             await self.close_feed()
+
+    def summary(self) -> dict | None:
+        """state.diffusion : ce qu'une page d'opérateur affiche (indicateur, rubrique) ; jamais un secret."""
+        s = self.status
+        if s is None:
+            return None
+        keys = ("enabled", "active", "accepted", "outside_bands", "codec", "problem", "last_stop", "listen_page",
+                "access", "voice",
+                "phase", "listeners", "operator", "remaining_s", "stream_url", "listener_user", "meta_choice")
+        return {k: s.get(k) for k in keys if k in s}
 
     async def close_feed(self) -> None:
         feed, self._feed = self._feed, None
@@ -74,7 +88,7 @@ class DiffusionOut:
 
     async def _feed_loop(self) -> None:
         queue = self.hub.subscribe()
-        mix = ListenerMix(self.tap, None)          # pas de silence hors bandes (cahier § 1.1)
+        mix = ListenerMix(self.tap, self.muted)    # silence hors bandes, sauf [diffusion] outside_bands
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setblocking(False)
         seq = 0

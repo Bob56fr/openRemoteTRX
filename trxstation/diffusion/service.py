@@ -102,9 +102,12 @@ class DiffusionService:
                                "codec": self.df.codec, "problem": self.problem or None, "last_stop": self.last_stop}
         if self.df.server and self.df.station:
             out["listen_page"] = p.listen_page(self.df.server, self.df.station)
+        out["accepted"] = self.accepted()
+        out["outside_bands"] = bool(self.df.outside_bands)        # appliqué par la passerelle (silence hors bandes)
         if s is not None:
             out.update({k: s[k] for k in ("access", "voice", "started", "ends", "phase", "listeners", "operator",
                                           "meta_choice")})
+            out["remaining_s"] = None if s["ends"] is None else max(0, int(s["ends"] - self.clock()))
             out["stream_url"] = p.stream_url(self.df.server, self.df.station, s["access"])
             if s["access"] == "prive":
                 out["listener_user"] = s["listener_user"]          # le mot de passe : jamais ici
@@ -160,6 +163,10 @@ class DiffusionService:
             return self.status()
         if action == "start":
             return await self.start(args)
+        if action == "listener":
+            return self.set_listener(args)
+        if action == "reveal":
+            return self.reveal()
         if action == "stop":
             cause = args.get("cause", "operator")
             if cause not in ("operator", "overload", "disabled", "station_stop"):
@@ -169,6 +176,47 @@ class DiffusionService:
             return self.status()
         raise ActionRefused("unknown_action", f"action inconnue : {action}")
 
+    # ------------------------------------------------------------- avertissement et auditeurs
+    def accepted(self) -> bool:
+        """L'avertissement du cahier § 1.1 (responsabilité de l'opérateur) a-t-il été confirmé une fois ?"""
+        return (self.folder / "accepted.json").exists()
+
+    def _accept(self, operator: str) -> None:
+        from ..presence.store import write_json
+        write_json(self.folder / "accepted.json", {"by": operator, "at": int(self.clock())}, private=False)
+
+    def _secrets(self) -> keyfile.Secrets:
+        try:
+            return keyfile.read(self.key_path)
+        except (keyfile.KeyFileError, OSError) as exc:
+            emit_event(codes.ORT_6105, logger=log, fichier=str(self.key_path), detail=str(exc)[:200])
+            raise ActionRefused("no_secrets", f"secrets de la diffusion illisibles : {exc}") from None
+
+    def set_listener(self, args: dict) -> dict:
+        """Identifiant et mot de passe des auditeurs du montage privé : choisis par l'opérateur ou générés ; FIXES
+        ensuite (cahier § 1.9). Pris par le serveur au prochain lancement privé (ou tout de suite si une diffusion
+        privée est en cours). Seule réponse qui contient le mot de passe, avec `reveal`."""
+        sec = self._secrets()
+        user = args.get("user", sec.listener_user)
+        password = p.new_listener_password() if args.get("generate") is True else args.get("password")
+        if not isinstance(user, str) or not p.LISTENER_USER.match(user):
+            raise ActionRefused("malformed", "identifiant des auditeurs : 1 à 32 caractères A-Z a-z 0-9 . _ -")
+        if not isinstance(password, str) or not p.LISTENER_PASSWORD.match(password):
+            raise ActionRefused("malformed", "mot de passe des auditeurs : 8 à 64 lettres ou chiffres")
+        sec = keyfile.Secrets(sec.source_password, sec.meta_key, user, password)
+        keyfile.save(self.key_path, sec)
+        s = self._session
+        if s is not None:
+            s["secrets"], s["listener_user"] = sec, user
+            if s["access"] == "prive":
+                s["resend_listener"] = True
+        self.write_status()
+        return {"listener_user": user, "listener_password": password}
+
+    def reveal(self) -> dict:
+        sec = self._secrets()
+        return {"listener_user": sec.listener_user, "listener_password": sec.listener_password or None}
+
     # ------------------------------------------------------------- lancement et arrêt
     async def start(self, args: dict) -> dict:
         if not self.df.enabled:
@@ -177,6 +225,10 @@ class DiffusionService:
             raise ActionRefused("unavailable", self.problem)
         if self.active:
             raise ActionRefused("busy", "une diffusion est déjà en cours")
+        if not self.accepted():
+            if args.get("confirm") is not True:
+                raise ActionRefused("confirm_required", "avertissement à confirmer avant la première diffusion")
+            self._accept(str(args.get("operator") or "opérateur")[:32])
         access = args.get("access", p.DEFAULT_ACCESS)
         hours = args.get("hours", p.DEFAULT_HOURS)
         voice = args.get("voice", False)
@@ -191,15 +243,11 @@ class DiffusionService:
             fixed = p.check_meta({k: args.get(k) for k in ("pseudo", "indicatif", "message")})
         except p.DiffusionRefused as exc:
             raise ActionRefused("malformed", str(exc)) from None
-        try:
-            secrets = keyfile.read(self.key_path)
-            if access == "prive" and not secrets.listener_password:
-                secrets = keyfile.Secrets(secrets.source_password, secrets.meta_key, secrets.listener_user,
-                                          p.new_listener_password())
-                keyfile.save(self.key_path, secrets)       # fixe ensuite, jusqu'à ce que l'opérateur le change
-        except (keyfile.KeyFileError, OSError) as exc:
-            emit_event(codes.ORT_6105, logger=log, fichier=str(self.key_path), detail=str(exc)[:200])
-            raise ActionRefused("no_secrets", f"secrets de la diffusion illisibles : {exc}") from None
+        secrets = self._secrets()
+        if access == "prive" and not secrets.listener_password:
+            secrets = keyfile.Secrets(secrets.source_password, secrets.meta_key, secrets.listener_user,
+                                      p.new_listener_password())
+            keyfile.save(self.key_path, secrets)           # fixe ensuite, jusqu'à ce que l'opérateur le change
         now = self.clock()
         operator = str(args.get("operator") or "opérateur")[:32]
         self.values.update(fixed)
@@ -220,6 +268,7 @@ class DiffusionService:
         task, self._task = self._task, None
         if s is None:
             return
+        self.last_stop = {"cause": cause, "at": int(self.clock())}   # aussitôt : jamais « arrêtée » sans cause
         if task is not None and task is not asyncio.current_task():
             task.cancel()
             try:
@@ -231,7 +280,6 @@ class DiffusionService:
                  "disabled": "fonction mise hors service", "station_stop": "arrêt de la station"}
         emit_event(codes.ORT_6102, logger=log, cause=texts.get(cause, cause),
                    duree=fmt_duration(self.clock() - s["started"]))
-        self.last_stop = {"cause": cause, "at": int(self.clock())}
         self.write_status()
 
     def _drain_audio(self) -> None:
@@ -349,14 +397,16 @@ class DiffusionService:
     async def _meta_loop(self, s: dict, meta: MetaClient) -> None:
         """Métadonnées : au lancement, à chaque changement (au plus 1 par seconde), au moins toutes les 30 s."""
         refused = False
-        if s["access"] == "prive":
-            sec: keyfile.Secrets = s["secrets"]
-            status = await meta.send_listener(sec.listener_user, sec.listener_password)
-            if status != 200:
-                refused = True
-                emit_event(codes.ORT_6107, logger=log, serveur=self.df.server, statut=status or "sans réponse")
+        s["resend_listener"] = s["access"] == "prive"
         last = -p.META_REFRESH_S
         while self._session is s:
+            if s.get("resend_listener"):               # au lancement privé, et quand l'opérateur change le mot
+                s["resend_listener"] = False
+                sec: keyfile.Secrets = s["secrets"]
+                status = await meta.send_listener(sec.listener_user, sec.listener_password)
+                if status != 200:
+                    refused = True
+                    emit_event(codes.ORT_6107, logger=log, serveur=self.df.server, statut=status or "sans réponse")
             now = time.monotonic()                     # cadence : horloge monotone (l'heure murale peut sauter)
             if (self._meta_dirty and now - last >= p.META_MIN_INTERVAL_S) or now - last >= p.META_REFRESH_S:
                 self._meta_dirty = False

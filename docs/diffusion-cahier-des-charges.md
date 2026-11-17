@@ -1,4 +1,4 @@
-# Diffusion en direct du TRX vers des internautes : cahier des charges (v3, serveur fait, protocole figé et module de la station fait le 2026-11-17)
+# Diffusion en direct du TRX vers des internautes : cahier des charges (v4, décisions du 2026-11-17 sur les bandes, la console et le vocabulaire)
 
 Demande de l'utilisateur (2026-11-17) : un petit service de diffusion « lowcost, lowtech », comme un podcast en direct
 (pas de différé), pour faire entendre le son du TRX à quelques internautes (moins de 5 au départ) qui n'ont AUCUN compte
@@ -8,8 +8,9 @@ tiers, un petit VPS.
 ## 1. Décisions de l'utilisateur (2026-11-17)
 
 1. **Responsabilité** : des milliers de SDR en ligne permettent déjà d'écouter n'importe quelle fréquence ; activer la
-   rediffusion de son TRX est de la **responsabilité de l'opérateur**. La station ne filtre pas les bandes ; elle
-   affiche un avertissement clair à l'activation et le journalise.
+   rediffusion de son TRX est de la **responsabilité de l'opérateur**. Elle affiche un avertissement clair au premier
+   lancement et le journalise. REMPLACÉ en partie par le § 11 (décisions du 2026-11-17) : ce qui est diffusé hors des
+   bandes autorisées, c'est l'opérateur qui le décide (`[diffusion] outside_bands`).
 2. **Voix émise par l'opérateur** : diffusée seulement si l'opérateur le demande EXPRESSÉMENT ; **désactivée par
    défaut**. Sans l'option, l'émission = silence pour les auditeurs.
 3. **Durée** : 24 h/24 possible mais **pas par défaut** ; **1 h par défaut** ; l'opérateur choisit une durée en heures
@@ -140,8 +141,10 @@ métadonnées est à écrire par celui qui monte son propre VPS.
     PyAV, envoi en flux brut TLS, reconnexion, durée, état publié, codes ORT ; faux Icecast
     `devtools/fake_icecast.py` ; tests (aucun droit sur le poste, voix émise seulement avec l'option, arrêt en fin de
     durée, reconnexion, surcharge).
-- **D2** Commandes client et page (panneau de lancement, indicateur), `docs/protocole.md`, `hello.features`.
-- **D3** TRX Console (menu, interrupteur 5.5), trx-monitor, ntfy, indicateurs GNOME / Windows, guide de l'opérateur.
+- **D2** (fait, étape 245) Commandes client et page (panneau de lancement, indicateur), `docs/protocole.md` § 20,
+  `hello.features`, `state.diffusion` (opérateurs), réglage `outside_bands` (§ 12.1).
+- **D3** TRX Console (menu 5.6 et interrupteur 5.5, § 12.2 et 12.3), trx-monitor, ntfy, indicateurs GNOME /
+  Windows, guide de l'opérateur ; la ligne « Diffusion » du tableau de bord : conversation de la console web (§ 12.5).
 - **D4** Application Android : indicateur, lancement, arrêt (parité).
 - **D5** VPS, dépôt privé `openRemoteTRX-vps` : FAIT le 2026-11-17 (§ 2.1) ; reste l'essai avec la vraie station
   (D1b) et la page sur iPhone (anciens Safari et Opus : option MP3).
@@ -160,3 +163,38 @@ Trouvé au lot D1b (2026-11-17) : Icecast 2.4.4, quand il fait lui-même le TLS,
 garde le montage occupé pour toujours quand une source ferme PROPREMENT sa session TLS (close_notify, ce que fait
 asyncio). Corrigé des deux côtés : sur le serveur de référence, stunnel tient le TLS du port des sources et transmet
 en clair à Icecast (fin TCP normale) ; la station ferme sans close_notify (compatibilité avec un Icecast nu).
+
+## 12. Décisions de l'utilisateur du 2026-11-17 : bandes, TRX Console, vocabulaire (v4)
+
+1. **Ce qui est diffusé, c'est l'opérateur qui le décide** : il est juridiquement responsable de sa station, le
+   logiciel ne choisit pas à sa place. La décision « pas de filtre de bandes » (§ 1.1) est remplacée par un
+   interrupteur des réglages de la diffusion, « Diffuser aussi hors des bandes autorisées » (`[diffusion]
+   outside_bands`) :
+   - non : SILENCE pour les auditeurs quand la réception sort des `[[bands]]` de station.toml, SANS arrêter la
+     diffusion ; le son revient dès que le poste rentre dans une bande autorisée ; fréquence inconnue : silence (comme
+     `listener_muted` des visiteurs) ;
+   - oui : tout est diffusé, quelle que soit la fréquence ;
+   - même principe que `[access] listeners_outside_bands` des visiteurs (défaut false), réglages INDÉPENDANTS ;
+   - valeur par défaut : pas encore tranchée par l'utilisateur ; `false` proposé et appliqué (étape 245), comme
+     pour les visiteurs.
+2. **Rangement dans TRX Console** : le thème 4 « Accès et comptes » regroupe ceux qui se CONNECTENT à la station ;
+   le thème 5 « Fonctions » regroupe ce que la station ENVOIE vers l'extérieur : la diffusion y va. Interrupteur du
+   service dans le menu 5.5 ; menu de la diffusion en **5.6** (ajouté en fin de thème), dans les quatre langues
+   (lot D3).
+3. **Arborescence proposée du 5.6 « Diffusion en direct »** (proposition, pas encore validée en détail) :
+   - État : en cours ou non, canal, auditeurs privé / public, temps restant, qui l'a lancée, serveur joignable.
+   - Lancer ou arrêter : canal, durée (1 h par défaut), avertissement au premier lancement ; tout opérateur peut
+     arrêter.
+   - Canal privé : identifiant et mot de passe des auditeurs (« En générer un »), lien et QR code ; changer le mot
+     de passe ne coupe pas ceux qui écoutent déjà.
+   - Canal public : lien et QR code.
+   - Ce qui est diffusé : l'interrupteur hors bandes (point 1), la voix émise (non par défaut), les informations
+     montrées, la qualité, la durée par défaut.
+   - Serveur : adresse, identifiant de la station, clé (fichier à part, jamais affichée), essai de liaison.
+   - Dernières diffusions : début, durée, nombre maximal d'auditeurs.
+4. **Vocabulaire commun** : « visiteurs » = UNIQUEMENT les comptes de la station (page, application, menu 4.2) ;
+   « auditeurs » = UNIQUEMENT la diffusion. Dans le tableau de bord, l'ancien « Auditeurs » s'appelle déjà
+   « Écoutes du poste » (étape 243). Le nombre d'auditeurs par canal vient de la réponse `auditeurs` du protocole
+   (`docs/protocole-diffusion.md` § 3.1), avec au plus 30 s de retard ; il est seulement affiché.
+5. **Partage du travail** : la conversation de la console web reprend elle-même le titre du menu 4.2 et la ligne
+   « Diffusion » du tableau de bord ; les deux conversations se préviennent avant de livrer (numéros d'étape).

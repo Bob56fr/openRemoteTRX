@@ -1980,6 +1980,7 @@
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh
+          difRender(null);                                                       // plus de rubrique ni d'indicateur DIFFUSION
           fdvRender(null);                                                       // plus de rubrique ni de voyant FreeDV
           fdvaRender();                                                          // plus de liste « Activité FreeDV »
           frRender(null);                                                        // plus de rubrique « Amis »
@@ -2106,6 +2107,7 @@
         paintHost(v);
         paintNet(v);
         bzhRender(v);
+        difRender(v);
         fdvRender(v);
         fdvaRender();
         paintMini(v);
@@ -3693,6 +3695,108 @@
         moDo("pseudo", { pseudo: p }).catch(fail);
       });
       $("sec-monitoring").addEventListener("toggle", () => { if ($("sec-monitoring").open && moOffered()) client.monitoringRefresh().catch(() => {}); });
+    }
+
+    // ---- diffusion en direct (diffusion.js, docs/diffusion-cahier-des-charges.md, lot D2) : opérateurs seulement ;
+    // l'état vient de state.diffusion à chaque message state ; indicateur « DIFFUSION » toujours visible pendant une
+    // diffusion ; l'avertissement de responsabilité est confirmé une fois (la station s'en souvient).
+    const dfx = root.TrxDiffusion || null;
+    let difFormReady = false;
+    const difMetaBoxes = [];
+
+    function difBuildForm() {
+      difFormReady = true;
+      const sel = $("dif-hours");
+      sel.replaceChildren();
+      for (const h of dfx.HOURS) {
+        const o = document.createElement("option");
+        o.value = h === null ? "none" : String(h);
+        o.textContent = dfx.hoursLabel(h);
+        if (h === dfx.DEFAULT_HOURS) o.selected = true;
+        sel.appendChild(o);
+      }
+      const box = $("dif-meta");
+      box.replaceChildren(el("span", "note", "Informations diffusées :"));
+      difMetaBoxes.length = 0;
+      for (const [key, label] of dfx.META) {
+        const lab = el("label", "check", "");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = key;
+        cb.checked = dfx.DEFAULT_META.includes(key);
+        difMetaBoxes.push(cb);
+        lab.appendChild(cb);
+        lab.appendChild(el("span", "", " " + label));
+        box.appendChild(lab);
+      }
+    }
+
+    function difRender(v) {
+      const d = dfx && v && v.connected ? v.diffusion : null;
+      $("sec-diffusion").hidden = !d;
+      const ind = d ? dfx.indicator(d) : null;
+      $("dif-ind").hidden = !ind;
+      if (ind) {
+        $("dif-ind").textContent = ind.text;
+        $("dif-ind").className = "chip dif-ind listener-hide " + ind.level;
+        $("dif-ind").title = ind.title;
+      }
+      if (!d) return;
+      if (!difFormReady) difBuildForm();
+      $("dif-status").textContent = dfx.status(d);
+      $("dif-badge").textContent = d.active ? "● en direct" : "";
+      $("dif-form").hidden = !!d.active || d.enabled === false || !!d.problem;
+      $("dif-stop").hidden = !d.active;
+      $("dif-page").textContent = d.listen_page || "—";
+      if (d.listen_page) $("dif-page").href = d.listen_page;
+      if (d.listener_user) $("dif-user").textContent = d.listener_user;
+    }
+
+    function difReport(res, okText) {
+      if (res && res.ok) { if (okText) ui.log(okText, ""); return true; }
+      ui.log("Diffusion : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      return false;
+    }
+
+    async function difStart() {
+      const form = { access: $("dif-public").checked ? "public" : "prive", hours: $("dif-hours").value,
+                     voice: $("dif-voice").checked, meta: difMetaBoxes.filter((b) => b.checked).map((b) => b.value),
+                     pseudo: $("dif-pseudo").value, indicatif: $("dif-indicatif").value, message: $("dif-message").value };
+      const r = dfx.startArgs(form);
+      if (r.error) { ui.log("Diffusion : " + r.error, "warn"); return; }
+      let res = await client.diffusion("start", r.args);
+      if (res && !res.ok && res.reason === "diffusion_confirm_required") {
+        if (!window.confirm(dfx.WARNING)) return;
+        res = await client.diffusion("start", Object.assign({}, r.args, { confirm: true }));
+      }
+      difReport(res, "Diffusion lancée.");
+    }
+
+    function difShowPassword(data) {
+      if (!data) return;
+      $("dif-user").textContent = data.listener_user || "—";
+      $("dif-password").textContent = data.listener_password || "(aucun : généré au premier lancement privé)";
+    }
+
+    if (dfx) {
+      $("dif-ind").addEventListener("click", () => { $("sec-diffusion").open = true; $("sec-diffusion").scrollIntoView({ block: "start" }); });
+      $("dif-start").addEventListener("click", () => { difStart().catch(fail); });
+      $("dif-stop").addEventListener("click", () => {
+        if (!window.confirm("Arrêter la diffusion en direct ?")) return;
+        client.diffusion("stop").then((res) => difReport(res, "Diffusion arrêtée.")).catch(fail);
+      });
+      $("dif-reveal").addEventListener("click", () => {
+        client.diffusion("reveal").then((res) => { if (difReport(res, "")) difShowPassword(res.data); }).catch(fail);
+      });
+      $("dif-generate").addEventListener("click", () => {
+        if (!window.confirm("Générer un nouveau mot de passe pour les auditeurs ? L'ancien ne servira plus (ceux qui écoutent ne sont pas coupés) : à retransmettre à vos auditeurs.")) return;
+        client.diffusion("listener", { generate: true })
+          .then((res) => { if (difReport(res, "Nouveau mot de passe des auditeurs.")) difShowPassword(res.data); }).catch(fail);
+      });
+      $("dif-copy").addEventListener("click", async () => {
+        const a = $("dif-page").textContent;
+        try { await navigator.clipboard.writeText(a); ui.log("Adresse de la page des auditeurs copiée.", ""); } catch (e) { fail(e); }
+      });
     }
 
     // ---- spatialisation stéréo de la réception (spatial.js, docs/spatialisation-cahier-des-charges.md) : traitement de cet

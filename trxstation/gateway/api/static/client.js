@@ -107,6 +107,14 @@
     friends_error: "La présence de groupe n'a pas pu traiter la demande.",
     monitoring_unavailable: "Monitoring indisponible sur cette station (module « monlink » arrêté ou désactivé).",
     monitoring_error: "Le monitoring n'a pas pu traiter la demande.",
+    diffusion_unavailable: "Diffusion indisponible sur cette station (module « diffusion » arrêté ou hors service).",
+    diffusion_error: "La diffusion n'a pas pu traiter la demande.",
+    diffusion_busy: "Une diffusion est déjà en cours : l'arrêter d'abord.",
+    diffusion_disabled: "Diffusion hors service ([diffusion] enabled = false, menu 8.1).",
+    diffusion_no_secrets: "Secrets de la diffusion absents ou illisibles (serveur, mot de passe source, clé) : régler la fonction.",
+    diffusion_confirm_required: "Avertissement de responsabilité à confirmer avant la première diffusion.",
+    diffusion_malformed: "Réglage de la diffusion refusé (durée, texte ou mot de passe).",
+    diffusion_unknown_action: "Action de diffusion inconnue de la station (mise à jour ?).",
     voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
     voice_profile_refused: "Profil d'égaliseur refusé par la station.",
     swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
@@ -1478,6 +1486,8 @@
         this._netStart(msg);
         this._friendsStart(msg);
         this._monitoringStart(msg);
+        this.diffusionOffered = !!(Array.isArray(msg.features) && msg.features.includes("diffusion")
+                                   && msg.role !== "listener");
         this._sdrStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
@@ -1760,6 +1770,8 @@
         indicators: indicatorsView(fn, lv, rig, this._caps()),
         host: this.isListener() ? null : hostView(this.state && this.state.host),
         breizh: this.isListener() ? null : breizhView(this.state && this.state.breizh),
+        // diffusion en direct : opérateurs seulement (state.diffusion absent pour un visiteur ou sans le module)
+        diffusion: this.isListener() || !this.diffusionOffered ? null : (this.state && this.state.diffusion) || null,
         net: netView(this.state && this.state.net),                  // sonde réseau : la liaison de CE client
         freedv: freedvView(this.state && this.state.freedv, Date.now() / 1000),   // FreeDV : tous, visiteurs compris
         memories: this.memories, rig: rig,
@@ -2437,6 +2449,12 @@
       if (res && res.ok) this.friendsRefresh().catch(() => {});
       else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
       return res;
+    }
+
+    async diffusion(action, args) {
+      /* Diffusion en direct (fonction « diffusion », docs/protocole.md § 20) : relayée au module « diffusion », qui
+         n'agit jamais sur le poste ; réponse { ok, action, data } ou { ok: false, reason, detail, ort }. */
+      return this.send("diffusion", { action: action, args: args || {} });
     }
 
     async monitoring(action, args) {

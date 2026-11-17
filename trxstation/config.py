@@ -217,6 +217,10 @@ class Diffusion:
     audio_port: int = 47822           # son de la passerelle vers le module : UDP en 127.0.0.1 SEULEMENT
     key_file: str = ""                # vide = state_dir/diffusion/diffusion.key
     tls: bool = True                  # false SEULEMENT vers 127.0.0.1 (faux serveur d'essai)
+    # Décision de l'utilisateur (2026-11-17) : l'opérateur décide ce qui est diffusé. false : SILENCE pour les auditeurs
+    # quand la réception sort des [[bands]] (ou fréquence inconnue), sans arrêter la diffusion ; true : tout est diffusé.
+    # Même principe que [access] listeners_outside_bands des visiteurs, réglages indépendants.
+    outside_bands: bool = False
 
 
 @dataclass
@@ -990,7 +994,7 @@ _SERVER_NAME_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?")
 def _diffusion_problems(df: Diffusion, modules: Modules, sdr: Sdr) -> list[str]:
     from .diffusion.protocol import CODECS, STATION_NAME   # calculs purs, sans dépendance
     p = []
-    for name in ("enabled", "tls"):
+    for name in ("enabled", "tls", "outside_bands"):
         if not isinstance(getattr(df, name), bool):
             p.append(_t("bool", where="[diffusion]", name=name))
     if not isinstance(df.server, str) or (df.server and not _SERVER_NAME_RE.fullmatch(df.server)):
@@ -1445,6 +1449,7 @@ def render_toml(cfg: Config) -> str:
         f"audio_port = {cfg.diffusion.audio_port}   # son de la passerelle vers le module (UDP, 127.0.0.1 seulement)",
         f"key_file = {_s(cfg.diffusion.key_file)}   # secrets ; vide = state_dir/diffusion/diffusion.key (0600)",
         f"tls = {str(cfg.diffusion.tls).lower()}   # false seulement vers 127.0.0.1 (faux serveur d'essai)",
+        f"outside_bands = {str(cfg.diffusion.outside_bands).lower()}   # false : silence hors des [[bands]] ; true : tout diffuser",
         "",
         "[remote_console]   # TRX Console sur le réseau (HTTPS, comptes opérateurs admin = true) : menu 4.6",
         f"enabled = {str(cfg.remote_console.enabled).lower()}",

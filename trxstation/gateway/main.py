@@ -132,7 +132,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir))
             tasks += [asyncio.create_task(watcher.run(stop)), asyncio.create_task(lag.run(stop))]
             if cfg.diffusion.enabled and bridge.has_client_commands("diffusion"):   # diffusion en direct (lot D1b)
-                tasks.append(_start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop))
+                tasks.append(_start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop, manager, link))
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()
@@ -254,9 +254,9 @@ def _start_sdr_governor(cfg, audio, pipeline, bridge, stop) -> list:
     return [asyncio.create_task(governor.run(stop)), asyncio.create_task(lag.run(stop))]
 
 
-def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop):
-    """Son du TRX vers le module « diffusion » (même son que les visiteurs, sans filtre de bandes) ; voix émise
-    seulement si l'opérateur l'a demandé ; arrêt de la diffusion si la station est surchargée."""
+def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop, manager=None, link=None):
+    """Son du TRX vers le module « diffusion » (même son que les visiteurs ; hors bandes : silence sauf
+    [diffusion] outside_bands) ; voix émise seulement si l'opérateur l'a demandé ; arrêt si la station est surchargée."""
     from ..diffusion.audio import audio_token
     from ..modules.keys import key_path, load_or_create_key, module_secret
     from .audio.diffusion_out import DiffusionOut
@@ -270,8 +270,19 @@ def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop):
         return bool(guard is not None and guard.suspended)
 
     key = load_or_create_key(key_path(cfg.supervisor.state_dir))
+    def muted() -> bool:                           # même règle que les visiteurs, réglage de la diffusion
+        if cfg.diffusion.outside_bands:
+            return False
+        freq = getattr(getattr(link, "state", None), "frequency_hz", None)
+        if not isinstance(freq, (int, float)) or isinstance(freq, bool) or freq <= 0:
+            return True                            # fréquence inconnue : silence, par prudence
+        return not cfg.tx_allowed(freq)
+
     out = DiffusionOut(cfg.diffusion.audio_port, audio_token(module_secret(key, "diffusion")), pipeline.hub,
-                       pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded)
+                       pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded, muted)
+    if manager is not None:                        # commande des opérateurs et état publié (lot D2)
+        manager.diffusion_call = lambda data: bridge.call("diffusion", data)
+        manager.diffusion_status = out.summary
     return asyncio.create_task(out.run(stop))
 
 

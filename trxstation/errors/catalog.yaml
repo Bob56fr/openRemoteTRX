@@ -2693,6 +2693,7 @@ ORT-4018:
   codes_machine:
   - sdr_error
   - monitoring_error
+  - diffusion_error
   doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4018/
   depuis_version: 0.126.0
   en:
@@ -5503,6 +5504,42 @@ ORT-6108:
     - Rig sound card unplugged
     preconisation: Check the gateway and the rig audio (menu 6.1); the broadcast takes the audio back as soon as it
       returns.
+
+ORT-6109:
+  gravite: avertissement
+  titre: Diffusion refusée
+  message: 'Diffusion : demande refusée ({detail}).'
+  causes:
+  - Une diffusion est déjà en cours (diffusion_busy)
+  - Fonction hors service dans station.toml (diffusion_disabled)
+  - Secrets de la diffusion absents ou illisibles (diffusion_no_secrets)
+  - Avertissement de responsabilité pas encore confirmé (diffusion_confirm_required)
+  - Réglage refusé, ex. durée hors de 1 à 24 h ou mot de passe trop court (diffusion_malformed)
+  preconisation: Lire le motif affiché ; arrêter la diffusion en cours, régler la fonction (menu 8.1) ou corriger la
+    demande.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - diffusion_busy
+  - diffusion_disabled
+  - diffusion_no_secrets
+  - diffusion_confirm_required
+  - diffusion_malformed
+  - diffusion_unknown_action
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6109/
+  depuis_version: 0.189.0
+  en:
+    titre: Broadcast refused
+    message: 'Broadcast: request refused ({detail}).'
+    causes:
+    - A broadcast is already running (diffusion_busy)
+    - Feature switched off in station.toml (diffusion_disabled)
+    - Broadcast secrets missing or unreadable (diffusion_no_secrets)
+    - Responsibility warning not yet confirmed (diffusion_confirm_required)
+    - Setting refused, e.g. duration outside 1 to 24 h or password too short (diffusion_malformed)
+    preconisation: Read the reason shown; stop the running broadcast, set up the feature (menu 8.1) or fix the
+      request.
 
 ORT-6401:
   gravite: erreur

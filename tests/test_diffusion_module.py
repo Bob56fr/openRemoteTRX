@@ -154,7 +154,7 @@ def test_start_private_sends_raw_audio_and_metadata(tmp_path):
 async def _start_private_sends_raw_audio_and_metadata(tmp_path):
     fake, service = await started(tmp_path)
     try:
-        st = await service.act("start", {"access": "prive", "pseudo": "BOB-56-FR", "operator": "pc"})
+        st = await service.act("start", {"confirm": True, "access": "prive", "pseudo": "BOB-56-FR", "operator": "pc"})
         assert st["active"] and st["access"] == "prive" and st["voice"] is False
         await until(lambda: "/bob56fr-prive" in fake.live())
         assert fake.requests[-1] == "PUT /bob56fr-prive HTTP/1.1"
@@ -170,7 +170,7 @@ async def _start_private_sends_raw_audio_and_metadata(tmp_path):
         assert status["active"] and status["listener_user"] == "auditeur"
         assert pw not in json.dumps(status) and "MotSource42" not in json.dumps(status)
         with pytest.raises(sv.ActionRefused):
-            await service.act("start", {})                          # une seule diffusion à la fois
+            await service.act("start", {"confirm": True})                          # une seule diffusion à la fois
         await service.act("stop", {"operator": "tel"})
         assert not service.active and service.last_stop["cause"] == "operator"
         await until(lambda: not fake.live())
@@ -188,7 +188,7 @@ async def _wrong_token_and_inactive_audio_are_ignored(tmp_path):
     try:
         feed(service, 5)
         assert service.audio.empty()                                # hors diffusion : rien gardé
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         service.on_packet(au.pack(au.audio_token("intrus"), 1, au.SILENCE))
         assert service.audio.empty()
     finally:
@@ -203,7 +203,7 @@ def test_silence_keeps_the_source_alive_without_gateway_audio(tmp_path):
 async def _silence_keeps_the_source_alive_without_gateway_audio(tmp_path):
     fake, service = await started(tmp_path)
     try:
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         await until(lambda: "/bob56fr-public" in fake.live())
         await until(lambda: len(fake.received["/bob56fr-public"]) > 300, timeout=8)   # Icecast coupe une source muette
     finally:
@@ -218,7 +218,7 @@ def test_reconnects_after_a_server_drop(tmp_path):
 async def _reconnects_after_a_server_drop(tmp_path):
     fake, service = await started(tmp_path)
     try:
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         await until(lambda: "/bob56fr-public" in fake.live())
         n = len(fake.requests)
         await fake.drop()
@@ -236,7 +236,7 @@ def test_refused_source_password_stops_without_retrying(tmp_path):
 async def _refused_source_password_stops_without_retrying(tmp_path):
     fake, service = await started(tmp_path, secrets=keyfile.Secrets("faux", KEY))
     try:
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         await until(lambda: not service.active)
         assert service.last_stop["cause"] == "auth" and fake.statuses == [401]
     finally:
@@ -251,7 +251,7 @@ async def _duration_ends_the_broadcast(tmp_path):
     clock = Clock()
     fake, service = await started(tmp_path, clock=clock)
     try:
-        await service.act("start", {"access": "public", "hours": 1})
+        await service.act("start", {"confirm": True, "access": "public", "hours": 1})
         await until(lambda: "/bob56fr-public" in fake.live())
         clock.t += 3601
         await until(lambda: not service.active)
@@ -268,7 +268,7 @@ async def _gateway_comeback_stops_and_nothing_resumes(tmp_path):
     fake, service = await started(tmp_path)
     try:
         await service.on_connect()                                  # premier contact : rien
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         await service.on_connect()                                  # retour de la passerelle (relance, mode sûr)
         assert not service.active and service.last_stop["cause"] == "gateway_restart"
         fresh = sv.DiffusionService(service.cfg, tmp_path / "station.toml", clock=Clock())
@@ -285,7 +285,7 @@ async def _refusals(tmp_path):
     fake, service = await started(tmp_path, secrets=None)
     try:
         with pytest.raises(sv.ActionRefused) as exc:
-            await service.act("start", {})
+            await service.act("start", {"confirm": True})
         assert exc.value.reason == "no_secrets"                      # ORT-6105
         keyfile.save(service.key_path, SECRETS)
         for bad in ({"access": "tous"}, {"hours": 0}, {"hours": 25}, {"voice": "oui"}, {"meta": ["adresse_ip"]},
@@ -296,7 +296,7 @@ async def _refusals(tmp_path):
             await service.act("format", {})
         service.df.enabled = False
         with pytest.raises(sv.ActionRefused) as exc:
-            await service.act("start", {})
+            await service.act("start", {"confirm": True})
         assert exc.value.reason == "disabled"
     finally:
         await fake.stop()
@@ -309,7 +309,7 @@ def test_metadata_follow_the_operator_choice_and_the_rig(tmp_path):
 async def _metadata_follow_the_operator_choice_and_the_rig(tmp_path):
     fake, service = await started(tmp_path)
     try:
-        await service.act("start", {"access": "public", "pseudo": "BOB", "meta": ["pseudo", "frequence_hz", "bande",
+        await service.act("start", {"confirm": True, "access": "public", "pseudo": "BOB", "meta": ["pseudo", "frequence_hz", "bande",
                                                                                    "mode", "tx"]})
         await service.on_event("freq_mode", {"freq": 7074000, "mode": "USB"})
         await service.on_event("ptt", {"active": True, "state": "TX"})
@@ -388,7 +388,7 @@ async def _gateway_sends_packets_the_module_accepts(tmp_path):
     fake, service = await started(tmp_path)
     service.token = au.audio_token("partagé")
     try:
-        await service.act("start", {"access": "public"})
+        await service.act("start", {"confirm": True, "access": "public"})
         assert await service.open_audio()
         hub = FakeHub()
 
@@ -415,3 +415,50 @@ def test_overloaded_status_never_carries_secrets(tmp_path):
     service = sv.DiffusionService(cfg, tmp_path / "station.toml")
     st = service.status()
     assert st["active"] is False and "listen_page" in st and "source_password" not in json.dumps(st)
+
+
+async def _first_launch_needs_the_warning_confirmed_once(tmp_path):
+    fake, service = await started(tmp_path)
+    try:
+        assert service.status()["accepted"] is False
+        with pytest.raises(sv.ActionRefused) as exc:
+            await service.act("start", {"access": "public"})
+        assert exc.value.reason == "confirm_required" and not service.active
+        st = await service.act("start", {"access": "public", "confirm": True, "hours": 2, "operator": "pc"})
+        assert st["accepted"] is True and 7190 <= st["remaining_s"] <= 7200
+        await service.act("stop", {})
+        st = await service.act("start", {"access": "public"})       # ensuite : plus de confirmation demandée
+        assert st["active"]
+    finally:
+        await service.stop("station_stop")
+        await fake.stop()
+
+
+def test_first_launch_needs_the_warning_confirmed_once(tmp_path):
+    asyncio.run(_first_launch_needs_the_warning_confirmed_once(tmp_path))
+
+
+async def _listener_password_chosen_generated_revealed_and_resent(tmp_path):
+    fake, service = await started(tmp_path)
+    try:
+        out = await service.act("listener", {"generate": True})
+        assert p.LISTENER_PASSWORD.match(out["listener_password"]) and out["listener_user"] == "auditeur"
+        assert (await service.act("reveal", {}))["listener_password"] == out["listener_password"]
+        assert out["listener_password"] not in json.dumps(service.status())
+        for bad in ({"password": "court"}, {"password": "avec espace 12"}, {"user": "a b", "password": "Abcdefgh2345"}):
+            with pytest.raises(sv.ActionRefused):
+                await service.act("listener", bad)
+        await service.act("start", {"access": "prive", "confirm": True})
+        await until(lambda: fake.listener_updates)
+        assert fake.listener_updates[-1]["password"] == out["listener_password"]
+        await service.act("listener", {"user": "amis", "password": "Nouveau23456"})   # pendant la diffusion privée
+        await until(lambda: fake.listener_updates[-1]["password"] == "Nouveau23456")
+        assert fake.listener_updates[-1]["user"] == "amis"
+        assert keyfile.read(service.key_path).listener_user == "amis"
+    finally:
+        await service.stop("station_stop")
+        await fake.stop()
+
+
+def test_listener_password_chosen_generated_revealed_and_resent(tmp_path):
+    asyncio.run(_listener_password_chosen_generated_revealed_and_resent(tmp_path))

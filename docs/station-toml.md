@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.188.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.189.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -222,6 +222,7 @@ Se modifie : Menu 8.1, et ajouter « diffusion » à `[modules] run`. Protocole 
 | `audio_port` | expert | `47822` | Port UDP par lequel la passerelle donne le son au module, en 127.0.0.1 seulement (paquets signés d'un jeton). À changer seulement si un autre programme le prend. Valeurs : 1024 à 65535, différent de [modules] bus_port et de [sdr] audio_port (depuis 0.188.0) |
 | `key_file` | expert | `""` | Fichier des secrets de la diffusion (mot de passe source, clé des métadonnées, identifiant et mot de passe des auditeurs). Vide : `diffusion.key` dans le dossier d'état (sous-dossier `diffusion`). Relatif : à côté de station.toml. **Sécurité** : Droits 0600 exigés sous Linux : un fichier lisible par d'autres comptes est refusé. Ne jamais le joindre à un message. (depuis 0.188.0) |
 | `tls` | expert | `true` | true : connexions chiffrées et certificat du serveur vérifié. false seulement vers 127.0.0.1 (faux serveur d'essai, `python -m trxstation.devtools.fake_icecast`). **Sécurité** : Refusé vers tout autre serveur : le mot de passe source passerait en clair. (depuis 0.188.0) |
+| `outside_bands` | courant | `false` | false (défaut) : silence pour les auditeurs quand la réception sort des bandes autorisées (`[[bands]]`) ou que la fréquence est inconnue, sans arrêter la diffusion : le son revient dès que le poste rentre dans une bande. true : tout est diffusé, quelle que soit la fréquence. Indépendant de `[access] listeners_outside_bands` (visiteurs). **Sécurité** : Ce qui est diffusé est de la responsabilité de l'opérateur (décision de l'utilisateur du 2026-11-17). (depuis 0.189.0) |
 
 ## TRX Console sur le réseau [remote_console]
 

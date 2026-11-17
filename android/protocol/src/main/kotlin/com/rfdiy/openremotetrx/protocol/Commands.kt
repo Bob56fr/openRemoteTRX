@@ -246,6 +246,12 @@ sealed class Command(val name: String) {
 
     /** Monitoring inter-stations (fonction « monitoring », docs/protocole.md § 19) : relayé au module « monlink » de la
      *  station, qui n'agit JAMAIS sur le poste ; `args` vérifié par le module. Réponse `action`, `data`. */
+    /** Diffusion en direct (fonction « diffusion », docs/protocole.md § 20) : relayée au module « diffusion » de la
+     *  station (aucun droit sur le poste) ; actions status, start, stop, listener, reveal. Opérateurs seulement. */
+    data class Diffusion(val action: String, val args: JsonObject? = null) : Command("diffusion") {
+        override fun JsonObjectBuilder.params() { put("action", action); if (args != null) put("args", args) }
+    }
+
     data class Monitoring(val action: String, val args: JsonObject? = null) : Command("monitoring") {
         override fun JsonObjectBuilder.params() { put("action", action); if (args != null) put("args", args) }
     }
@@ -266,7 +272,7 @@ sealed class Command(val name: String) {
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
-            "net_export", "friends", "freedv_set", "sdr", "monitoring",
+            "net_export", "friends", "freedv_set", "sdr", "monitoring", "diffusion",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

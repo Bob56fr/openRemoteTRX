@@ -81,7 +81,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "sdr",
             # monitoring inter-stations (docs/cdc-monitoring.md § 17) : OPÉRATEURS ; relayé au module « monlink », qui
             # n'a AUCUN droit sur le poste et ne peut rien commander chez une autre station (lot R5 : la page)
-            "monitoring")
+            "monitoring",
+            # diffusion en direct (docs/diffusion-cahier-des-charges.md) : OPÉRATEURS ; relayée au module « diffusion »,
+            # qui n'a AUCUN droit sur le poste ; la passerelle fabrique les arguments (liste fermée par action)
+            "diffusion")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -99,6 +102,7 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "sdr",                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
                      "sdr_audio",                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
                      "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
+                     "diffusion",                 # diffusion en direct vers un serveur Icecast (0.189.0+, module diffusion)
                      "remote_console")            # lien vers TRX Console sur le réseau (0.178.0+, opérateurs admin)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
@@ -108,6 +112,9 @@ SDR_ACTIONS = ("watch", "listen", "state", "set")
 MONITORING_ACTIONS = ("view", "pseudo", "invite", "join", "confirm", "profile", "pause", "end", "request_assist",
                       "request_report", "answer", "received", "send_report", "report_part")
 MAX_MONITORING_ARGS_BYTES = 1500
+# Diffusion en direct : état, lancement, arrêt, identifiants des auditeurs (choisis, générés, montrés sur demande).
+DIFFUSION_ACTIONS = ("status", "start", "stop", "listener", "reveal")
+MAX_DIFFUSION_ARGS_BYTES = 600
 MAX_SDR_ARGS_BYTES = 300
 SPECTRUM_SETTINGS = ("mode", "span", "ref", "speed", "filter")   # valeurs vérifiées par la liste fermée de spectrum/civ.py ;
                                                                  # filter = préréglage FIL1/2/3 du poste (port B)
@@ -352,6 +359,14 @@ def parse_command(raw: str | bytes) -> Command:
         args = data.get("args", {})
         if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_MONITORING_ARGS_BYTES:
             raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_MONITORING_ARGS_BYTES} octets au plus")
+        params["action"], params["args"] = data["action"], args
+    elif name == "diffusion":
+        unknown = set(data) - {"cmd", "id", "action", "args"}
+        if unknown or data.get("action") not in DIFFUSION_ACTIONS:
+            raise ProtocolError("invalid_params", f"action : une de {', '.join(DIFFUSION_ACTIONS)}")
+        args = data.get("args", {})
+        if not isinstance(args, dict) or len(json.dumps(args, ensure_ascii=False)) > MAX_DIFFUSION_ARGS_BYTES:
+            raise ProtocolError("invalid_params", f"args : objet JSON de {MAX_DIFFUSION_ARGS_BYTES} octets au plus")
         params["action"], params["args"] = data["action"], args
     elif name == "sdr":
         unknown = set(data) - {"cmd", "id", "action", "args"}

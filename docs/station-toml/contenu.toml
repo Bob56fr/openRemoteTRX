@@ -714,6 +714,12 @@ niveau = "expert"
 securite = "Droits 0600 exigés sous Linux : un fichier lisible par d'autres comptes est refusé. Ne jamais le joindre à un message."
 depuis = "0.188.0"
 
+[reglages."diffusion.outside_bands"]
+role = "false (défaut) : silence pour les auditeurs quand la réception sort des bandes autorisées (<code>[[bands]]</code>) ou que la fréquence est inconnue, sans arrêter la diffusion : le son revient dès que le poste rentre dans une bande. true : tout est diffusé, quelle que soit la fréquence. Indépendant de <code>[access] listeners_outside_bands</code> (visiteurs)."
+niveau = "courant"
+securite = "Ce qui est diffusé est de la responsabilité de l'opérateur (décision de l'utilisateur du 2026-11-17)."
+depuis = "0.189.0"
+
 [reglages."diffusion.tls"]
 role = "true : connexions chiffrées et certificat du serveur vérifié. false seulement vers 127.0.0.1 (faux serveur d'essai, <code>python -m trxstation.devtools.fake_icecast</code>)."
 niveau = "expert"
