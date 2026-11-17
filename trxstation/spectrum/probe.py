@@ -19,6 +19,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 
+from ..i18n import tool_translator
 from .civ import (BROADCAST, CONTROLLERS, NG, OK, Frame, FrameReader, ScopeAssembler, Sweep, bcd_le,
                   encode_request)
 
@@ -55,14 +56,31 @@ MESSAGES = {
 }
 
 
+def _t(_key: str, **fields) -> str:
+    """Texte montré à l'opérateur dans la langue de l'outil (lot L3 : `checks.<langue>.json`), lu à chaque appel."""
+    return tool_translator("checks")(_key, **fields)
+
+
+def fallback() -> str:
+    """FALLBACK dans la langue de l'outil (la constante, en français, reste pour les appelants existants)."""
+    return _t("probe.fallback")
+
+
+def usb_send_warning() -> str:
+    """USB_SEND_WARNING dans la langue de l'outil (la constante, en français, reste pour les appelants existants)."""
+    return _t("probe.usb_send_warning")
+
+
 class CheckFailed(Exception):
     def __init__(self, code: str, detail: str = ""):
         self.code, self.detail = code, detail
         super().__init__(f"{code}: {detail}")
 
     def message(self, port: str, expected: int | None = None) -> str:
-        text = MESSAGES.get(self.code, self.code).format(port=port, detail=self.detail,
-                                                         expected=f"{expected:02X}h" if expected is not None else "?")
+        # dans la langue de l'outil (clés probe.<code>) ; MESSAGES, en français, reste la référence
+        template = _t(f"probe.{self.code}") if self.code in MESSAGES else self.code
+        text = template.format(port=port, detail=self.detail,
+                               expected=f"{expected:02X}h" if expected is not None else "?")
         return text[0].upper() + text[1:]
 
 
@@ -175,7 +193,7 @@ def check(port: CivPort, cat_freq: Callable[[], int | None], *, attempts: int = 
             raise CheckFailed("no_answer")
         if cat is None or mine == cat:
             return settings                         # CAT illisible : identité et spectre suffisent
-        seen = f"{mine} Hz contre {cat} Hz"
+        seen = _t("probe.freq_pair", mine=mine, cat=cat)
         if attempt + 1 < attempts:
             sleep(0.3)
     raise CheckFailed("other_rig", seen)

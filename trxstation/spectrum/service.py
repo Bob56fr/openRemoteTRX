@@ -42,7 +42,7 @@ from collections.abc import Callable
 from ..config import Spectrum, parse_civ_address
 from .civ import (FILTERS, LEVEL_MAX, OK, SCOPE_MODE, SCOPE_REF, SCOPE_SPAN, SCOPE_SPEED, Sweep, decode_mode_filter,
                   decode_setting, encode_mode_filter, encode_setting)
-from .probe import FALLBACK, SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, open_serial
+from .probe import SCOPE_DISPLAY, SCOPE_OUTPUT, CheckFailed, CivPort, check, fallback, open_serial
 from ..errors import codes
 from ..errors.emit import emit_event
 
@@ -144,7 +144,7 @@ class SpectrumService:
                 log.info("spectre HF reçu sur %s", self.cfg.port)
 
     def _fail(self, exc: CheckFailed) -> None:
-        self._set("error", exc.code, f"{exc.message(self.cfg.port, self.address)} {FALLBACK}")
+        self._set("error", exc.code, f"{exc.message(self.cfg.port, self.address)} {fallback()}")
 
     def _on_sweep(self, sweep: Sweep) -> None:
         with self._lock:

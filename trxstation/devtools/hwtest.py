@@ -23,6 +23,10 @@ true : avec async=1, Hamlib ne doit pas renvoyer un état d'émission gardé en 
 
 Chaque étape d'émission exige de taper EMETTRE. Quoi qu'il arrive (erreur, Ctrl+C), l'émission est
 coupée à la fin. Le PTT n'est jamais actif pendant qu'une question est posée.
+
+Langues (lot L3) : tout ce que l'essai montre ou demande vient de `trxstation/i18n/hwtest.<langue>.json` (`_t`,
+langue de TRX Console par `TRX_LANG`, sinon menu 0, sinon le système). Les mots de confirmation affichés sont
+ceux de la langue ; le mot français (EMETTRE, OUI) reste TOUJOURS accepté, rien d'autre.
 """
 from __future__ import annotations
 
@@ -49,34 +53,51 @@ from ..gateway.cat import Capabilities, CatLink, load_capabilities
 from ..gateway.cat.capabilities import data_mode_for
 from ..gateway.safety import PttController, PttLimits, Refused
 from ..hamlib import rigctld_command
+from ..i18n import catalog, tool_translator
 from ..paths import default_config_path
 from ..procutil import station_running
 from ..errors import codes
 from ..errors.emit import render
 
 CLIENT = "hwtest"
-EMIT_WORD = "EMETTRE"
-
-PREFLIGHT = """
-================  ESSAI SUR UN VRAI POSTE : À LIRE AVANT DE CONTINUER  ================
- 1. L'ANTENNE est DÉBRANCHÉE : une CHARGE FICTIVE (50 ohms, puissance suffisante) est connectée.
- 2. La PUISSANCE d'émission du poste est au MINIMUM (5 W ou moins).
- 3. Le VOX est désactivé. La TEMPORISATION D'ÉMISSION (TOT) INTERNE du poste est réglée
-    (1 à 3 minutes) : c'est le dernier filet si l'ordinateur, le logiciel ou le câble USB lâche.
- 4. Les SONS WINDOWS (notifications) ne partent PAS vers la carte son du poste : ni sortie par
-    défaut, ni sons système, ni autre logiciel (WSJT-X, HRD...) qui utilise le poste.
- 5. Tu restes PRÈS DU POSTE : tu peux couper l'alimentation ou débrancher la charge à tout moment.
- 6. Ta licence t'autorise à émettre sur la fréquence affichée.
-=========================================================================================
-"""
+EMIT_WORD = "EMETTRE"           # mot français : toujours accepté, quelle que soit la langue
+YES_WORD = "OUI"
 
 
-RX_ONLY_NOTICE = """
-================  ESSAI EN RÉCEPTION SEULE : AUCUNE ÉMISSION  ================
- Le poste est relu, la fréquence, la largeur du filtre et l'écran du spectre sont changés puis remis.
- Tu restes près du poste : deux étapes te demandent d'agir sur lui (touches MENU puis EXIT).
-==============================================================================
-"""
+def _t(_key: str, **fields) -> str:
+    """Texte montré à l'opérateur dans la langue de l'outil (`trxstation/i18n/hwtest.<langue>.json`, français en
+    référence). Lu À CHAQUE APPEL (jamais au chargement du module : les tests changent la langue après l'import)."""
+    return tool_translator("hwtest")(_key, **fields)
+
+
+def emit_word() -> str:
+    """Mot de confirmation d'émission AFFICHÉ (celui de la langue)."""
+    return _t("word.emit")
+
+
+def typed_emit(answer: str | None) -> bool:
+    """Confirmation d'émission : le mot de la langue OU le mot français EMETTRE, en entier ; rien d'autre."""
+    return any(typed(answer, word) for word in {emit_word(), EMIT_WORD})
+
+
+def typed_yes(answer: str | None) -> bool:
+    """Confirmation du préambule : le mot de la langue OU le mot français OUI, en entier ; rien d'autre."""
+    return any(typed(answer, word) for word in {_t("word.yes"), YES_WORD})
+
+
+def preflight_text() -> str:
+    """Consignes de sécurité avant toute émission (charge fictive…), dans la langue de l'outil."""
+    return _t("notice.preflight")
+
+
+# Texte FRANÇAIS des consignes, gardé pour les outils qui l'importent encore (trx-qualif) : préférer preflight_text().
+PREFLIGHT = catalog("fr", "hwtest").get("notice.preflight", "")
+
+
+def _declined(answer: str) -> bool:
+    """Question « [O/n] » : seul un non explicite (n, non, no, nein) refuse ; Entrée ou autre chose = oui."""
+    return yes_no(answer) is False
+
 
 # Largeurs essayées en plus de celles que Hamlib déclare (par famille de modes, pas par modèle de poste).
 EXTRA_WIDTHS = {
@@ -100,6 +121,11 @@ def filter_candidates(mode: str | None, declared: list[int] | None) -> list[int]
 
 def khz(width: int) -> str:
     return f"{width / 1000:g}k" if width >= 1000 else f"{width} Hz"
+
+
+def _hz(value: int) -> str:
+    """14 200 000 (espaces entre les milliers, comme avant la traduction)."""
+    return f"{value:,}".replace(",", " ")
 
 
 @dataclass
@@ -133,8 +159,7 @@ class HwTest:
         self._link_task: asyncio.Task | None = None
         self.heartbeat_timeout_s = cfg.safety.heartbeat_timeout_ms / 1000
         if tot_s < self.heartbeat_timeout_s + 1.0:
-            raise ValueError(f"le TOT d'essai ({tot_s:g} s) doit dépasser d'au moins 1 s le délai de heartbeat "
-                             f"({self.heartbeat_timeout_s:g} s), sinon l'exercice de panne est ambigu")
+            raise ValueError(_t("init.tot_ambiguous", tot=f"{tot_s:g}", heartbeat=f"{self.heartbeat_timeout_s:g}"))
 
     # ------------------------------------------------------------------ utilitaires
 
@@ -147,15 +172,16 @@ class HwTest:
 
     def record(self, name: str, ok: bool | None, detail: str) -> bool:
         self.results.append(StageResult(name, ok, detail))
-        tag = {True: "OK     ", False: "ÉCHEC  ", None: "IGNORÉ "}[ok]
-        self.say(f"  [{tag}] {name} : {detail}")
+        tags = {True: _t("tag.ok"), False: _t("tag.fail"), None: _t("tag.skipped")}
+        width = max(7, *(len(t) for t in tags.values()))
+        self.say(_t("record.line", tag=tags[ok].ljust(width), name=name, detail=detail))
         return ok is not False
 
     async def confirm_emission(self, what: str) -> bool:
-        self.say(f"\n>>> {what}")
-        self.say("    Charge fictive branchée, puissance minimale, tu es près du poste.")
-        answer = await self.prompt(f"    Pour continuer, tape {EMIT_WORD} (autre chose = on passe) : ")
-        return typed(answer, EMIT_WORD)
+        self.say(_t("emit.title", what=what))
+        self.say(_t("emit.reminder"))
+        answer = await self.prompt(_t("emit.prompt", word=emit_word()))
+        return typed_emit(answer)
 
     async def read_ptt(self, wait_s: float = 0.0) -> bool | None:
         """État du PTT relu sur le poste ; None si illisible. `wait_s` > 0 (étape 1 seulement) : nouvel essai tant que la
@@ -188,13 +214,13 @@ class HwTest:
             try:
                 self.caps = await load_capabilities(cfg.rig.model, cfg.tools.hamlib_dir)
             except Exception as exc:
-                self.say(f"  (capacités du poste indisponibles : {exc})")
+                self.say(_t("setup.no_caps", error=exc))
         caps = self.caps
         try:
             self.pipeline = AudioPipeline(cfg.audio)
             await self.pipeline.start()
         except AudioConfigError as exc:
-            self.record("Audio (ouverture)", False, str(exc))
+            self.record(_t("stage.audio_open"), False, str(exc))
             return False
         self.link = CatLink(cfg.network.rigctld_host, cfg.network.rigctld_port, capabilities=caps, timeout=2.0)
         limits = PttLimits(tot_s=self.tot_s, warn_before_s=min(5.0, self.tot_s / 2),
@@ -212,7 +238,7 @@ class HwTest:
             try:
                 await self.ctrl.close()
             except Exception as exc:
-                self.say(f"!!! coupure finale en erreur : {exc!r}")
+                self.say(_t("teardown.cut_error", error=repr(exc)))
         if self.pipeline is not None:
             await self.pipeline.stop()
         if self.link is not None:
@@ -223,7 +249,8 @@ class HwTest:
     # ------------------------------------------------------------------ étape 1 : CAT
 
     async def stage_cat(self) -> bool:
-        self.say("\n--- Étape 1 : liaison CAT (lecture seule, aucune émission) ---")
+        self.say(_t("cat.title"))
+        name = _t("stage.cat")
         deadline = time.monotonic() + self.cat_timeout_s
         while time.monotonic() < deadline:
             if self.link.state.connected and self.link.state.frequency_hz is not None:
@@ -231,29 +258,32 @@ class HwTest:
             await asyncio.sleep(0.1)
         state = self.link.state
         if not state.connected:
-            return self.record("CAT", False, "rigctld injoignable : est-il lancé ? (trx-rigctld --config ...)")
+            return self.record(name, False, _t("cat.unreachable"))
         if state.frequency_hz is None:
-            return self.record("CAT", False, f"rigctld répond mais pas le poste ({state.last_error or 'pas de réponse'}) : "
-                                             "vérifie modèle, port COM, débit, poste allumé, câble USB")
+            return self.record(name, False, _t("cat.no_rig", error=state.last_error or _t("cat.no_answer")))
         samples = []
         for _ in range(5):
             samples.append(self.link.state.strength_db)
             await asyncio.sleep(0.2)
         caps = self.caps
-        self.say(f"  Poste : {caps.manufacturer + ' ' + caps.model_name if caps and caps.model_name else 'modèle ' + str(self.cfg.rig.model)}")
-        self.say(f"  Fréquence {state.frequency_hz:,} Hz".replace(",", " ") + f", mode {state.mode}, filtre {state.passband_hz} Hz")
-        self.say(f"  S-mètre (dB / S9) : {samples}")
+        rig = (caps.manufacturer + " " + caps.model_name if caps and caps.model_name
+               else _t("cat.model_number", model=self.cfg.rig.model))
+        self.say(_t("cat.rig", rig=rig))
+        self.say(_t("cat.frequency", freq=_hz(state.frequency_hz), mode=state.mode, passband=state.passband_hz))
+        self.say(_t("cat.smeter", samples=samples))
         ptt = await self.read_ptt(wait_s=self.cat_timeout_s)
         if ptt is True:
-            return self.record("CAT", False, "le poste est EN ÉMISSION alors qu'il ne devrait pas : vérifie le PTT/VOX")
+            return self.record(name, False, _t("cat.transmitting"))
         if ptt is None:
-            return self.record("CAT", False, "l'état du PTT n'est pas lisible : l'émission serait refusée par sécurité")
-        return self.record("CAT", True, f"{state.frequency_hz:,} Hz {state.mode}, PTT lisible et en réception".replace(",", " "))
+            return self.record(name, False, _t("cat.ptt_unreadable"))
+        # Le texte d'avant la traduction passait tout entier dans replace(",", " ") : gardé tel quel.
+        return self.record(name, True, _t("cat.ok", freq=f"{state.frequency_hz:,}", mode=state.mode).replace(",", " "))
 
     # ------------------------------------------------------------------ étape 2 : audio RX
 
     async def stage_rx_audio(self) -> bool:
-        self.say(f"\n--- Étape 2 : audio reçu ({self.rx_listen_s:.0f} s ; aucune émission) ---")
+        self.say(_t("rx.title", seconds=f"{self.rx_listen_s:.0f}"))
+        name = _t("stage.rx_audio")
         queue = self.pipeline.hub.subscribe(maxsize=500)
         levels, wav = [], WavSink(self.record_wav)
         try:
@@ -269,15 +299,15 @@ class HwTest:
             self.pipeline.hub.unsubscribe(queue)
             wav.close()
         if not levels:
-            return self.record("Audio RX", False, "aucune trame reçue de la carte son : périphérique de capture inactif ?")
+            return self.record(name, False, _t("rx.no_frames"))
         mean, peak = sum(levels) / len(levels), max(levels)
-        self.say(f"  Niveau : moyen {mean:.0f} dBFS, crête {peak:.0f} dBFS ({len(levels)} trames) ; écoute {self.record_wav}")
+        self.say(_t("rx.level", mean=f"{mean:.0f}", peak=f"{peak:.0f}", frames=len(levels), wav=self.record_wav))
         if peak <= FLOOR_DB + 1:
-            return self.record("Audio RX", False, "silence total : mauvais périphérique, sortie USB du poste coupée, ou volume nul")
+            return self.record(name, False, _t("rx.silence"))
         if peak > -3:
-            return self.record("Audio RX", True, f"ATTENTION saturation (crête {peak:.0f} dBFS) : baisse le niveau de sortie USB du poste ou rx_gain_db")
-        hint = f" ; suggestion rx_gain_db ≈ {max(-40, min(20, round(-30 - mean)))}" if abs(mean + 30) > 10 else ""
-        return self.record("Audio RX", True, f"moyen {mean:.0f} dBFS, crête {peak:.0f} dBFS{hint}")
+            return self.record(name, True, _t("rx.saturation", peak=f"{peak:.0f}"))
+        hint = _t("rx.hint", gain=max(-40, min(20, round(-30 - mean)))) if abs(mean + 30) > 10 else ""
+        return self.record(name, True, _t("rx.ok", mean=f"{mean:.0f}", peak=f"{peak:.0f}", hint=hint))
 
     # ------------------------------------------------------------------ SELCALL en réception (facultatif)
 
@@ -309,7 +339,7 @@ class HwTest:
             await self.ctrl.set_function("RIT", hz != 0)
             return True
         except Exception as exc:
-            self.say(f"  RIT refusé par le poste ({exc}) : décale la SOURCE de {hz:+d} Hz à la main.")
+            self.say(_t("selcall.rit_refused", error=exc, offset=f"{hz:+d}"))
             return False
 
     async def stage_selcall_rx(self) -> bool:
@@ -317,43 +347,46 @@ class HwTest:
         relevé, puis RIT à +300 et -300 Hz. Le RIT d'origine est TOUJOURS remis (sur l'IC-7300 il partage son
         décalage avec le ΔTX : un décalage oublié déplacerait les émissions des étapes suivantes)."""
         from ..selcall import protocol as sp
-        self.say("\n--- SELCALL en réception (facultatif ; aucune émission) ---")
-        answer = await self.prompt("  As-tu une source de trame SELCALL (second poste, fichier joué près du micro d'un autre poste) ? [o/N] : ")
-        if answer.lower() not in ("o", "oui"):
-            return self.record("SELCALL", None, "ignoré")
+        name = _t("stage.selcall")
+        self.say(_t("selcall.title"))
+        answer = await self.prompt(_t("selcall.source", yn=_t("yn.default_no")))
+        if yes_no(answer) is not True:
+            return self.record(name, None, _t("detail.skipped"))
         try:
-            code = sp.validate_code(await self.prompt("  Code que la source va envoyer : "))
+            code = sp.validate_code(await self.prompt(_t("selcall.code")))
         except sp.CodeError as exc:
-            return self.record("SELCALL", None, f"ignoré ({exc})")
+            return self.record(name, None, _t("detail.skipped_because", error=exc))
         try:                                       # RIT d'origine relu SUR LE POSTE (l'état suivi ne le contient pas toujours)
             rit0 = await self.link.client.get_offset("RIT")
             fn0 = await self.link.client.get_func("RIT")
         except Exception as exc:                   # illisible : on ne le touche pas, décalage de la source à la main
-            self.say(f"  RIT du poste illisible ({exc}) : il ne sera pas modifié.")
+            self.say(_t("selcall.rit_unreadable", error=exc))
             rit0 = fn0 = None
         details, ok, touched = [], True, False
         try:
             for offset in self.SELCALL_OFFSETS_HZ:
                 if offset:
-                    if await self.prompt(f"  Essai avec un décalage de {offset:+d} Hz ? [O/n] : ") in ("n", "N", "non"):
-                        details.append(f"{offset:+d} Hz ignoré")
+                    if _declined(await self.prompt(_t("selcall.offset_prompt", offset=f"{offset:+d}",
+                                                      yn=_t("yn.default_yes")))):
+                        details.append(_t("selcall.offset_skipped", offset=f"{offset:+d}"))
                         continue
                     if rit0 is None:
-                        self.say(f"  Décale la SOURCE de {offset:+d} Hz à la main.")
+                        self.say(_t("selcall.shift_source", offset=f"{offset:+d}"))
                     else:
                         touched = True
                         await self._set_rit(offset)
-                self.say(f"  Fais envoyer la trame {code} maintenant ({self.selcall_listen_s:.0f} s d'écoute)…")
+                self.say(_t("selcall.send_now", code=code, seconds=f"{self.selcall_listen_s:.0f}"))
                 frames = await self._selcall_listen(code)
                 good = [f for f in frames if f.valid and f.code == code]
                 others = [f.code or f.reason for f in frames if not (f.valid and f.code == code)]
-                label = f"{offset:+d} Hz" if offset else "sans décalage"
+                label = f"{offset:+d} Hz" if offset else _t("selcall.no_offset")
                 if good:
                     f = good[0]
-                    details.append(f"{label} : décodé (Δ {f.delta_hz:+.0f} Hz, S/B {f.snr_db:.0f} dB)")
+                    details.append(_t("selcall.decoded", label=label, delta=f"{f.delta_hz:+.0f}", snr=f"{f.snr_db:.0f}"))
                 else:
                     ok = False
-                    details.append(f"{label} : RIEN" + (f" (trames : {', '.join(map(str, others[:3]))})" if others else ""))
+                    details.append(_t("selcall.nothing", label=label)
+                                   + (_t("selcall.frames", frames=", ".join(map(str, others[:3]))) if others else ""))
                 self.say("  " + details[-1])
         finally:
             if touched:
@@ -361,16 +394,17 @@ class HwTest:
                     await self.ctrl.set_offset("RIT", rit0)
                     await self.ctrl.set_function("RIT", fn0)
                 except Exception as exc:
-                    self.say(f"  ATTENTION : RIT non remis ({exc}) : remets le RIT / ΔTX du poste à {rit0} Hz À LA MAIN.")
-        return self.record("SELCALL", ok, " ; ".join(details))
+                    self.say(_t("selcall.rit_not_restored", error=exc, rit=rit0))
+        return self.record(name, ok, " ; ".join(details))
 
     # ------------------------------------------------------------------ étape 3 : accord
 
     async def stage_tuning(self) -> bool:
-        self.say("\n--- Étape 3 : changement de fréquence (réception seulement) ---")
-        answer = await self.prompt("  Décaler la fréquence de +1 kHz puis la rétablir ? [O/n] : ")
-        if answer.lower() in ("n", "non"):
-            return self.record("Accord", None, "ignoré")
+        self.say(_t("tuning.title"))
+        name = _t("stage.tuning")
+        answer = await self.prompt(_t("tuning.prompt", yn=_t("yn.default_yes")))
+        if _declined(answer):
+            return self.record(name, None, _t("detail.skipped"))
         original = self.link.state.frequency_hz
         target = original + 1000
         try:
@@ -379,9 +413,9 @@ class HwTest:
             await self.ctrl.set_frequency(original)
             ok2 = await self._wait_freq(original)
         except Exception as exc:
-            return self.record("Accord", False, f"commande refusée : {exc}")
-        return self.record("Accord", ok1 and ok2, f"{original} -> {target} -> {original} Hz relus sur le poste"
-                           if ok1 and ok2 else "la fréquence relue ne correspond pas à la commande")
+            return self.record(name, False, _t("detail.command_refused", error=exc))
+        return self.record(name, ok1 and ok2, _t("tuning.ok", original=original, target=target)
+                           if ok1 and ok2 else _t("detail.freq_mismatch"))
 
     # ------------------------------------------------------------------ réception : largeurs de filtre
 
@@ -394,19 +428,20 @@ class HwTest:
         return self.link.state.passband_hz
 
     async def stage_filters(self) -> bool:
-        self.say("\n--- Largeurs de filtre (réception seulement) ---")
+        self.say(_t("filters.title"))
+        name = _t("stage.filters")
         mode, original = self.link.state.mode, self.link.state.passband_hz
         if not mode or not original:
-            return self.record("Largeurs de filtre", None, "mode ou largeur du filtre illisible")
+            return self.record(name, None, _t("filters.unreadable"))
         declared = (self.caps.filters.get(mode) if self.caps is not None and self.caps.filters else None) or []
         candidates = filter_candidates(mode, declared)
-        self.say(f"  Mode {mode}, largeur actuelle {khz(original)} ; Hamlib déclare : "
-                 f"{', '.join(khz(w) for w in declared) or 'rien'}")
-        self.say("  ATTENTION : sur certains postes (Icom), chaque largeur envoyée est ÉCRITE dans le préréglage de filtre\n"
-                 "  choisi (FIL1, FIL2 ou FIL3) : tes réglages de filtre du poste peuvent être remplacés.")
-        answer = await self.prompt(f"  Essayer {', '.join(khz(w) for w in candidates)} puis remettre {khz(original)} ? [o/N] : ")
+        self.say(_t("filters.current", mode=mode, width=khz(original),
+                    declared=", ".join(khz(w) for w in declared) or _t("filters.nothing")))
+        self.say(_t("filters.icom_warning"))
+        answer = await self.prompt(_t("filters.prompt", widths=", ".join(khz(w) for w in candidates),
+                                      original=khz(original), yn=_t("yn.default_no")))
         if yes_no(answer) is not True:
-            return self.record("Largeurs de filtre", None, "ignoré")
+            return self.record(name, None, _t("detail.skipped"))
         accepted, changed = [], []
         try:
             for width in candidates:
@@ -414,20 +449,20 @@ class HwTest:
                 got = await self._wait_passband(width)
                 (accepted if got == width else changed).append((width, got))
         except Exception as exc:
-            return self.record("Largeurs de filtre", False, f"commande refusée : {exc}")
+            return self.record(name, False, _t("detail.command_refused", error=exc))
         finally:
             try:
                 await self.ctrl.set_mode(mode, original)
                 await self._wait_passband(original)
             except Exception as exc:
-                self.say(f"  !!! largeur d'origine non remise ({exc}) : remets-la sur le poste")
-        detail = "acceptées telles quelles : " + (", ".join(khz(w) for w, _ in accepted) or "aucune")
+                self.say(_t("filters.not_restored", error=exc))
+        detail = _t("filters.accepted", widths=", ".join(khz(w) for w, _ in accepted) or _t("filters.none"))
         if changed:
-            detail += " ; ramenées par le poste : " + ", ".join(f"{khz(w)} -> {khz(g) if g else '?'}" for w, g in changed)
+            detail += _t("filters.changed", widths=", ".join(f"{khz(w)} -> {khz(g) if g else '?'}" for w, g in changed))
         extra = [w for w, _ in accepted if w not in declared]
         if extra:
-            detail += f" ; NON déclarées par Hamlib mais acceptées : {', '.join(khz(w) for w in extra)}"
-        return self.record("Largeurs de filtre", bool(accepted), detail)
+            detail += _t("filters.undeclared", widths=", ".join(khz(w) for w in extra))
+        return self.record(name, bool(accepted), detail)
 
     # ------------------------------------------------------------------ réception : écran du spectre
 
@@ -439,21 +474,21 @@ class HwTest:
 
     async def stage_scope_screen(self) -> bool:
         sp = self.cfg.spectrum
-        name = "Écran du spectre"
+        name = _t("stage.scope")
         if not (sp.enabled and sp.source == "civ_port" and sp.port):
-            self.say("\n  (Écran du spectre : pas de spectre par le second port dans station.toml, étape sautée)")
+            self.say(_t("scope.not_configured"))
             return True
-        self.say("\n--- Écran du spectre par le second port (réception seulement) ---")
-        answer = await self.prompt("  Mesurer le spectre écran normal, puis poste sur un menu ? [O/n] : ")
-        if answer.lower() in ("n", "non"):
-            return self.record(name, None, "ignoré")
+        self.say(_t("scope.title"))
+        answer = await self.prompt(_t("scope.prompt", yn=_t("yn.default_yes")))
+        if _declined(answer):
+            return self.record(name, None, _t("detail.skipped"))
         from ..spectrum.probe import SCOPE_DISPLAY, SCOPE_OUTPUT, CivPort, open_serial
         try:
             ser = await asyncio.to_thread(self.scope_opener or open_serial, sp.port, sp.baud)
         except ImportError:
-            return self.record(name, None, "module pyserial absent")
+            return self.record(name, None, _t("scope.no_pyserial"))
         except (OSError, ValueError) as exc:
-            return self.record(name, False, f"ouverture de {sp.port} impossible : {exc}")
+            return self.record(name, False, _t("scope.open_failed", port=sp.port, error=exc))
         port = CivPort(ser, cfgmod.parse_civ_address(sp.civ_address))
         before: dict[int, int | None] = {}
         try:
@@ -461,20 +496,20 @@ class HwTest:
             if await self.read_ptt() is True:
                 ser.close()
                 await self.ctrl.force_rx("spectrum_port_keyed")
-                return self.record(name, False, f"l'ouverture de {sp.port} met le poste en ÉMISSION (réglage USB SEND) : coupé")
+                return self.record(name, False, _t("scope.keyed", port=sp.port))
             before = {sub: await asyncio.to_thread(port.read_setting, sub) for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT)}
             if None in before.values():
-                return self.record(name, False, f"le poste ne répond pas aux réglages du spectre sur {sp.port}")
+                return self.record(name, False, _t("scope.no_answer", port=sp.port))
             for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT):
                 await asyncio.to_thread(port.set_setting, sub, 1)
             s = self.scope_measure_s
             normal = await asyncio.to_thread(self._count_sweeps, port, s)
-            await self.prompt("  Mets le poste sur un MENU (touche MENU), puis appuie sur Entrée : ")
+            await self.prompt(_t("scope.menu_prompt"))
             on_menu = await asyncio.to_thread(self._count_sweeps, port, s)
             shown = await asyncio.to_thread(port.read_setting, SCOPE_DISPLAY)
             await asyncio.to_thread(port.set_setting, SCOPE_DISPLAY, 1)   # renvoi de « spectre allumé »
             resent = await asyncio.to_thread(self._count_sweeps, port, s)
-            await self.prompt("  Remets le poste sur son écran habituel (touche EXIT), puis Entrée : ")
+            await self.prompt(_t("scope.exit_prompt"))
             back = await asyncio.to_thread(self._count_sweeps, port, s)
         finally:
             for sub, value in before.items():
@@ -490,15 +525,15 @@ class HwTest:
         rate = lambda n: f"{n / s:.1f}/s"                           # noqa: E731
         silent = lambda n: n <= max(1, normal * 0.2)                # un balayage déjà en route ne compte pas  # noqa: E731
         if normal == 0:
-            verdict = "aucun balayage même écran normal : spectre éteint ou port mal réglé"
+            verdict = _t("scope.verdict_none")
         elif not silent(on_menu):
-            verdict = "le poste envoie le spectre même sur un menu"
+            verdict = _t("scope.verdict_menu")
         elif not silent(resent):
-            verdict = "le renvoi de « spectre allumé » RAMÈNE le spectre depuis un menu : la station peut le faire"
+            verdict = _t("scope.verdict_resend")
         else:
-            verdict = "rien ne ramène le spectre depuis un menu : il faut que l'écran du poste montre le spectre"
-        return self.record(name, normal > 0, f"écran normal {rate(normal)}, sur un menu {rate(on_menu)} (affichage lu : "
-                                             f"{shown}), après renvoi {rate(resent)}, retour {rate(back)} ; {verdict}")
+            verdict = _t("scope.verdict_screen")
+        return self.record(name, normal > 0, _t("scope.detail", normal=rate(normal), menu=rate(on_menu), shown=shown,
+                                                resent=rate(resent), back=rate(back), verdict=verdict))
 
     async def _wait_mode(self, mode: str, timeout: float = 3.0) -> bool:
         end = time.monotonic() + timeout
@@ -513,24 +548,24 @@ class HwTest:
         freq = self.link.state.frequency_hz
         if freq is None or not self.cfg.safety.enforce_bands or not self.cfg.bands or self.cfg.tx_allowed(freq):
             return
-        self.say("\n--- Fréquence d'essai ---")
-        self.say(f"  Le poste est sur {freq:,} Hz, hors des bandes d'émission autorisées.".replace(",", " "))
+        name = _t("stage.band")
+        self.say(_t("band.title"))
+        self.say(_t("band.outside", freq=_hz(freq)))
         centres = [round((b.low_mhz + b.high_mhz) / 2 * 1000) * 1000 for b in self.cfg.bands]
         for i, (band, centre) in enumerate(zip(self.cfg.bands, centres), 1):
-            self.say(f"   {i:>2}) {band.name:<5} {centre:,} Hz".replace(",", " "))
-        answer = await self.prompt("  Numéro de la bande d'essai (Entrée = ne pas changer) : ")
+            self.say(f"   {i:>2}) {band.name:<5} {_hz(centre)} Hz")
+        answer = await self.prompt(_t("band.prompt"))
         if not answer.isdigit() or not 1 <= int(answer) <= len(centres):
-            self.record("Bande d'essai", None, "fréquence inchangée")
+            self.record(name, None, _t("band.unchanged"))
             return
         target = centres[int(answer) - 1]
         try:
             await self.ctrl.set_frequency(target)
         except Exception as exc:
-            self.record("Bande d'essai", False, f"accord refusé : {exc}")
+            self.record(name, False, _t("band.refused", error=exc))
             return
         ok = await self._wait_freq(target)
-        self.record("Bande d'essai", ok, f"accordé sur {target:,} Hz".replace(",", " ") if ok
-                    else "la fréquence relue ne correspond pas à la commande")
+        self.record(name, ok, _t("band.tuned", freq=_hz(target)) if ok else _t("detail.freq_mismatch"))
 
     async def stage_tx_mode(self) -> None:
         """Si `tx_modes` est défini et que le poste est dans un autre mode : propose le mode autorisé correspondant."""
@@ -541,24 +576,25 @@ class HwTest:
         target = data_mode_for(mode, allowed)
         if target not in allowed:
             target = allowed[0]
-        self.say("\n--- Mode d'émission ---")
+        name = _t("stage.tx_mode")
+        self.say(_t("txmode.title"))
         if self.caps and self.caps.complete and target not in self.caps.modes:
-            self.record("Mode d'émission", False, f"{target} n'existe pas sur ce poste (modes : {', '.join(self.caps.modes)})")
+            self.record(name, False, _t("txmode.absent", target=target, modes=", ".join(self.caps.modes)))
             return
-        answer = await self.prompt(f"  Le poste est en {mode}, mode non autorisé à l'émission ({', '.join(allowed)}). "
-                                   f"Passer en {target} ? [O/n] : ")
-        if answer.lower() in ("n", "non"):
-            self.record("Mode d'émission", None, "inchangé : l'émission sera refusée")
+        answer = await self.prompt(_t("txmode.prompt", mode=mode, allowed=", ".join(allowed), target=target,
+                                      yn=_t("yn.default_yes")))
+        if _declined(answer):
+            self.record(name, None, _t("txmode.unchanged"))
             return
         try:
             await self.ctrl.set_mode(target)
         except Exception as exc:
-            self.record("Mode d'émission", False, f"changement refusé : {exc}")
+            self.record(name, False, _t("txmode.refused", error=exc))
             return
         ok = await self._wait_mode(target)
         if ok:
             self._mode_to_restore = mode
-        self.record("Mode d'émission", ok, f"{mode} -> {target}" if ok else "le mode relu ne correspond pas à la commande")
+        self.record(name, ok, f"{mode} -> {target}" if ok else _t("detail.mode_mismatch"))
 
     async def _offer_data_mode(self) -> None:
         """L'audio USB n'est émis, en général, qu'en mode données (Icom : USB-D, Hamlib PKTUSB)."""
@@ -566,29 +602,28 @@ class HwTest:
         target = data_mode_for(mode, self.caps.modes if self.caps else ())
         if not target or not self.caps or target not in self.caps.modes:
             return
-        answer = await self.prompt(f"  Le poste est en {mode}. Pour que l'audio USB soit émis il faut en général le "
-                                   f"mode données ({target}) ; l'y mettre ? [O/n] : ")
-        if answer.lower() in ("n", "non"):
+        answer = await self.prompt(_t("datamode.prompt", mode=mode, target=target, yn=_t("yn.default_yes")))
+        if _declined(answer):
             return
         try:
             await self.ctrl.set_mode(target)
         except Exception as exc:
-            self.say(f"  changement de mode refusé : {exc}")
+            self.say(_t("datamode.refused", error=exc))
             return
         if await self._wait_mode(target):
             self._mode_to_restore = mode
-            self.say(f"  Mode {target} actif (le mode {mode} sera rétabli à la fin).")
+            self.say(_t("datamode.active", target=target, mode=mode))
         else:
-            self.say("  le mode relu ne correspond pas à la commande")
+            self.say(_t("datamode.mismatch"))
 
     async def _restore_mode(self) -> None:
         if self._mode_to_restore and self.ctrl is not None and self.ctrl.snapshot().state == "RX":
             try:
                 await self.ctrl.set_mode(self._mode_to_restore)
                 await self._wait_mode(self._mode_to_restore)
-                self.say(f"  Mode {self._mode_to_restore} rétabli.")
+                self.say(_t("mode.restored", mode=self._mode_to_restore))
             except Exception as exc:
-                self.say(f"  mode d'origine non rétabli ({exc}) : vérifie le poste")
+                self.say(_t("mode.not_restored", error=exc))
             self._mode_to_restore = None
 
     async def _wait_freq(self, hz: int, timeout: float = 3.0) -> bool:
@@ -602,8 +637,9 @@ class HwTest:
     # ------------------------------------------------------------------ étape 4 : PTT
 
     async def stage_ptt(self) -> bool:
-        if not await self.confirm_emission("Étape 4 : PTT, 3 cycles de porteuse SANS audio (en SSB : aucun signal)"):
-            return self.record("PTT", None, "non confirmé : ignoré")
+        name = _t("stage.ptt")
+        if not await self.confirm_emission(_t("ptt.what")):
+            return self.record(name, None, _t("detail.not_confirmed"))
         keys, unkeys = [], []
         for n in range(1, self.cycles + 1):
             await asyncio.sleep(self.REKEY_GAP_S)
@@ -612,7 +648,7 @@ class HwTest:
                 await self.ctrl.toggle(CLIENT)
             except Refused as exc:
                 await self.ctrl.force_rx("hwtest")
-                return self.record("PTT", False, f"prise d'émission refusée au cycle {n} : {exc}")
+                return self.record(name, False, _t("ptt.refused", cycle=n, error=exc))
             keys.append(time.monotonic() - t0)
             await self.sleep_with_heartbeat(self.hold_s)
             tx_seen = await self.read_ptt()
@@ -620,44 +656,49 @@ class HwTest:
             await self.ctrl.toggle(CLIENT)
             unkeys.append(time.monotonic() - t1)
             rx_seen = await self.read_ptt()
-            self.say(f"  cycle {n} : prise {keys[-1] * 1000:.0f} ms, coupure {unkeys[-1] * 1000:.0f} ms "
-                     f"(poste relu : TX={tx_seen}, puis TX={rx_seen})")
+            self.say(_t("ptt.cycle", cycle=n, key=f"{keys[-1] * 1000:.0f}", unkey=f"{unkeys[-1] * 1000:.0f}",
+                        tx=tx_seen, rx=rx_seen))
             if tx_seen is not True or rx_seen is not False or self.ctrl.snapshot().state != "RX":
                 await self.ctrl.force_rx("hwtest")
-                return self.record("PTT", False, f"cycle {n} : l'état relu sur le poste ne correspond pas aux ordres")
+                return self.record(name, False, _t("ptt.mismatch", cycle=n))
         slow = max(keys + unkeys)
-        return self.record("PTT", True, f"{self.cycles} cycles, prise max {max(keys) * 1000:.0f} ms, "
-                           f"coupure max {max(unkeys) * 1000:.0f} ms" + (" (LENT : > 1 s)" if slow > 1.0 else ""))
+        return self.record(name, True, _t("ptt.ok", cycles=self.cycles, key=f"{max(keys) * 1000:.0f}",
+                                          unkey=f"{max(unkeys) * 1000:.0f}")
+                           + (_t("ptt.slow") if slow > 1.0 else ""))
 
     # ------------------------------------------------------------------ étape 5 : audio TX
 
     async def stage_tx_audio(self) -> bool:
-        if not await self.confirm_emission("Étape 5 : audio d'émission, tonalité 1 kHz à niveau croissant (faible puissance)"):
-            return self.record("Audio TX", None, "non confirmé : ignoré")
+        name = _t("stage.tx_audio")
+        if not await self.confirm_emission(_t("txaudio.what")):
+            return self.record(name, None, _t("detail.not_confirmed"))
         await self._offer_data_mode()
-        self.say("  Surveille la puissance et l'ALC sur le poste : l'ALC doit rester à peine visible.")
+        self.say(_t("txaudio.watch"))
         lines = []
         for level in self.tx_levels_db:
             try:
                 await self.key()
             except Refused as exc:
                 await self.ctrl.force_rx("hwtest")
-                return self.record("Audio TX", False, f"prise d'émission refusée : {exc}")
+                return self.record(name, False, _t("detail.key_refused", error=exc))
             sent, readings = await self._send_tone(level)
             await self.ctrl.toggle(CLIENT)
             swr = readings.get("SWR")
-            line = f"{level:.0f} dBFS : {sent} trames passées ; " + ", ".join(
-                f"{k}={v:.2f}" for k, v in readings.items()) if readings else f"{level:.0f} dBFS : {sent} trames passées (aucun niveau lisible)"
+            if readings:
+                line = _t("txaudio.line", level=f"{level:.0f}", sent=sent,
+                          readings=", ".join(f"{k}={v:.2f}" for k, v in readings.items()))
+            else:
+                line = _t("txaudio.line_none", level=f"{level:.0f}", sent=sent)
             self.say(f"  {line}")
             lines.append(line)
             if swr is not None and swr > 2.0:
-                return self.record("Audio TX", False, f"ROS {swr:.1f} > 2 : charge/antenne en défaut, essai interrompu")
+                return self.record(name, False, _t("txaudio.high_swr", swr=f"{swr:.1f}"))
             if sent < 0.9 * (self.tx_seconds / FRAME_S):
-                return self.record("Audio TX", False, f"seulement {sent} trames passées la porte : audio d'émission non transmis")
+                return self.record(name, False, _t("txaudio.not_sent", sent=sent))
             if level != self.tx_levels_db[-1]:
-                if (await self.prompt("  Niveau suivant, plus fort ? [O/n] : ")).lower() in ("n", "non"):
+                if _declined(await self.prompt(_t("txaudio.next", yn=_t("yn.default_yes")))):
                     break
-        return self.record("Audio TX", True, f"{len(lines)} niveau(x) essayé(s) ; dernier : {lines[-1]}")
+        return self.record(name, True, _t("txaudio.ok", count=len(lines), last=lines[-1]))
 
     async def _send_tone(self, level_db: float) -> tuple[int, dict[str, float]]:
         frames, sent, pos = int(self.tx_seconds / FRAME_S), 0, 0
@@ -687,7 +728,7 @@ class HwTest:
             await self.key()
         except Refused as exc:
             await self.ctrl.force_rx("hwtest")
-            return self.record(name, False, f"prise d'émission refusée : {exc}")
+            return self.record(name, False, _t("detail.key_refused", error=exc))
         t0 = time.monotonic()
         await trigger()
         deadline = time.monotonic() + expected_s + tolerance_s + 3.0
@@ -698,14 +739,14 @@ class HwTest:
         released = await self.read_ptt()
         if snap.state != "RX" or released is not False:
             await self.ctrl.force_rx("hwtest")
-            return self.record(name, False, "L'ÉMISSION N'A PAS ÉTÉ COUPÉE dans le délai : voir le superviseur")
+            return self.record(name, False, _t("detail.not_cut"))
         ok = snap.last_cut_reason == expected_reason and abs(elapsed - expected_s) <= tolerance_s
-        return self.record(name, ok, f"coupée en {elapsed:.1f} s par « {snap.last_cut_reason} » "
-                                     f"(attendu : {expected_reason}, ~{expected_s:.1f} s)")
+        return self.record(name, ok, _t("drill.cut", elapsed=f"{elapsed:.1f}", reason=snap.last_cut_reason,
+                                        expected=expected_reason, expected_s=f"{expected_s:.1f}"))
 
     async def stage_drills(self) -> bool:
-        if not await self.confirm_emission("Étape 6 : exercices de panne (porteuse sans audio : perte du heartbeat, TOT, déconnexion)"):
-            return self.record("Pannes", None, "non confirmé : ignoré")
+        if not await self.confirm_emission(_t("drills.what")):
+            return self.record(_t("stage.drills"), None, _t("detail.not_confirmed"))
 
         async def nothing() -> None:                       # aucun heartbeat : le client « se tait »
             return None
@@ -719,9 +760,9 @@ class HwTest:
         async def disconnect() -> None:
             await self.ctrl.disconnect_client(CLIENT)
 
-        ok = await self._drill("Panne : perte du heartbeat", "heartbeat", self.heartbeat_timeout_s, 1.0, nothing)
-        ok &= await self._drill(f"Panne : TOT ({self.tot_s:.0f} s)", "tot", self.tot_s, 1.5, heartbeats_until_tot)
-        ok &= await self._drill("Panne : déconnexion du client", "client_disconnected", 0.0, 1.0, disconnect)
+        ok = await self._drill(_t("drill.heartbeat"), "heartbeat", self.heartbeat_timeout_s, 1.0, nothing)
+        ok &= await self._drill(_t("drill.tot", tot=f"{self.tot_s:.0f}"), "tot", self.tot_s, 1.5, heartbeats_until_tot)
+        ok &= await self._drill(_t("drill.disconnect"), "client_disconnected", 0.0, 1.0, disconnect)
         self.ctrl.connect_client(CLIENT)
         return ok
 
@@ -729,19 +770,18 @@ class HwTest:
 
     async def stage_rig_unkey(self) -> bool:
         """Le poste repasse en réception de lui-même : la relecture du PTT (pas une valeur en cache) doit le voir."""
-        name = "Coupure par le poste (" + ("spectre activé, async=1" if self.cfg.spectrum.enabled else "spectre désactivé") + ")"
-        if not await self.confirm_emission("Étape 7 : coupure faite SUR LE POSTE (porteuse sans audio)"):
-            return self.record(name, None, "non confirmé : ignoré")
-        self.say("  Quand « COUPE MAINTENANT » s'affiche, appuie sur la touche TRANSMIT du poste pour repasser en réception.")
-        self.say(f"  La station doit s'en apercevoir seule (relecture toutes les {self.ctrl.limits.rig_poll_s:g} s). "
-                 f"Sinon, le TOT de l'essai coupe au bout de {self.tot_s:g} s.")
-        await self.prompt("  Prêt ? Entrée pour commencer : ")                      # question posée AVANT la prise d'émission
+        name = _t("unkey.name", spectrum=_t("unkey.spectrum_on" if self.cfg.spectrum.enabled else "unkey.spectrum_off"))
+        if not await self.confirm_emission(_t("unkey.what")):
+            return self.record(name, None, _t("detail.not_confirmed"))
+        self.say(_t("unkey.howto"))
+        self.say(_t("unkey.poll", poll=f"{self.ctrl.limits.rig_poll_s:g}", tot=f"{self.tot_s:g}"))
+        await self.prompt(_t("unkey.ready"))                                      # question posée AVANT la prise d'émission
         try:
             await self.key()
         except Refused as exc:
             await self.ctrl.force_rx("hwtest")
-            return self.record(name, False, f"prise d'émission refusée : {exc}")
-        self.say("  >>> COUPE MAINTENANT sur le poste (touche TRANSMIT) <<<")
+            return self.record(name, False, _t("detail.key_refused", error=exc))
+        self.say(_t("unkey.now"))
         t0 = time.monotonic()
         deadline = t0 + self.tot_s + 3.0
         while self.ctrl.snapshot().state != "RX" and time.monotonic() < deadline:
@@ -751,31 +791,29 @@ class HwTest:
         snap = self.ctrl.snapshot()
         if snap.state != "RX":
             await self.ctrl.force_rx("hwtest")
-            return self.record(name, False, "L'ÉMISSION N'A PAS ÉTÉ COUPÉE dans le délai : voir le superviseur")
+            return self.record(name, False, _t("detail.not_cut"))
         reason = snap.last_cut_reason
         if reason == "rig_reported_rx":
-            return self.record(name, True, f"vue en {elapsed:.1f} s après le signal (ton temps de réaction compris)")
+            return self.record(name, True, _t("unkey.seen", elapsed=f"{elapsed:.1f}"))
         if reason == "tot":
-            return self.record(name, False, "PAS VUE : le TOT de l'essai a coupé. Si tu as bien appuyé sur TRANSMIT, la "
-                                            "relecture du PTT renvoie un état ancien : NE PAS activer le spectre")
-        return self.record(name, False, f"coupée par « {reason} » au lieu d'être vue comme une coupure du poste "
-                                        "(fréquence ou mode touchés ?) : recommence")
+            return self.record(name, False, _t("unkey.not_seen"))
+        return self.record(name, False, _t("unkey.other", reason=reason))
 
     # ------------------------------------------------------------------ déroulement
 
     async def run(self) -> list[StageResult]:
         if self.rx_only:
-            self.say(RX_ONLY_NOTICE)
+            self.say(_t("notice.rx_only"))
         else:
-            self.say(PREFLIGHT)
-            if not typed(await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : "), "OUI"):
-                self.say("Essai annulé.")
+            self.say(preflight_text())
+            if not typed_yes(await self.prompt(_t("preflight.prompt", word=_t("word.yes")))):
+                self.say(_t("run.cancelled"))
                 return []
         try:
             if not await self.setup():
                 return self.results
             if not await self.stage_cat():
-                self.say("\nLiaison CAT impossible : on s'arrête ici (aucune émission n'a été tentée).")
+                self.say(_t("run.cat_failed"))
                 return self.results
             if not self.only_rig_unkey:
                 await self.stage_rx_audio()
@@ -789,10 +827,9 @@ class HwTest:
             await self.stage_band()
             await self.stage_tx_mode()
             if self.cfg.safety.enforce_bands and not self.cfg.bands:
-                self.record("PTT / Audio TX / Pannes", None, "aucune bande autorisée dans station.toml : émission impossible")
+                self.record(_t("stage.tx_all"), None, _t("run.no_bands"))
             elif self.cfg.safety.enforce_bands and not self.cfg.tx_allowed(self.link.state.frequency_hz or 0):
-                self.record("PTT / Audio TX / Pannes", False,
-                            f"{self.link.state.frequency_hz} Hz hors des bandes autorisées : accorde le poste dans une bande autorisée")
+                self.record(_t("stage.tx_all"), False, _t("run.out_of_band", freq=self.link.state.frequency_hz))
             elif self.only_rig_unkey:
                 await self.stage_rig_unkey()
             else:
@@ -800,21 +837,22 @@ class HwTest:
                     if await self.stage_tx_audio():
                         await self.stage_drills()
                     else:                                    # ROS élevé, audio non transmis... : plus aucune émission
-                        self.record("Pannes", None, "ignoré : l'étape audio TX a échoué, on n'émet plus")
+                        self.record(_t("stage.drills"), None, _t("run.drills_skipped"))
         finally:
             await self._restore_mode()
             await self.teardown()
             self.say("")
-            self.say("Retour en réception demandé au poste.")
+            self.say(_t("run.back_to_rx"))
         return self.results
 
     def report(self) -> int:
-        self.say("\n================  BILAN  ================")
+        self.say(_t("report.title"))
+        tags = {True: _t("tag.ok"), False: _t("tag.fail"), None: _t("tag.skipped")}
+        width = max(6, *(len(t) for t in tags.values()))
         for r in self.results:
-            self.say(f"  {'OK    ' if r.ok else 'IGNORÉ' if r.ok is None else 'ÉCHEC '}  {r.name}")
+            self.say(f"  {tags[r.ok if r.ok is None else bool(r.ok)].ljust(width)}  {r.name}")
         failed = [r for r in self.results if r.ok is False]
-        self.say("\n" + ("Tout ce qui a été essayé fonctionne." if not failed else
-                         f"{len(failed)} étape(s) en échec : copie ce bilan pour le diagnostic."))
+        self.say("\n" + (_t("report.all_ok") if not failed else _t("report.failed", count=len(failed))))
         return 1 if failed else 0
 
 
@@ -833,13 +871,12 @@ async def run_hwtest(cfg: Config, hw: HwTest, *, spawn: bool = True) -> int:
     proc = None
     if not _port_open(cfg):
         if not spawn:
-            hw.say("rigctld ne répond pas sur "
-                   f"{cfg.network.rigctld_host}:{cfg.network.rigctld_port} : lance-le (trx-rigctld) ou retire --no-spawn.")
+            hw.say(_t("cli.no_rigctld", host=cfg.network.rigctld_host, port=cfg.network.rigctld_port))
             return 3
         try:
-            hw.say("Démarrage de rigctld...")
-            hw.say("  (PTT par RTS/DTR : ouvrir le port peut déclencher une émission brève : charge fictive branchée)"
-                   if cfg.rig.ptt_type in ("RTS", "DTR") else "")
+            hw.say(_t("cli.starting_rigctld"))
+            serial_ptt = cfg.rig.ptt_type in ("RTS", "DTR")
+            hw.say(_t("cli.rts_dtr_warning") if serial_ptt else "")
             proc = subprocess.Popen(rigctld_command(cfg))
         except FileNotFoundError as exc:
             hw.say(str(exc))
@@ -849,16 +886,15 @@ async def run_hwtest(cfg: Config, hw: HwTest, *, spawn: bool = True) -> int:
                 break
             await asyncio.sleep(0.1)
         if not _port_open(cfg):
-            hw.say("rigctld n'a pas démarré (modèle, port COM ou débit incorrects ? poste éteint ?).")
+            hw.say(_t("cli.rigctld_failed"))
             return 3
     elif station_running(cfg.supervisor.instance_lock_port):
         # Étape 201 : l'essai partageait le poste avec la station en marche (deux programmes qui pilotent le PTT).
-        _, message = render(codes.ORT_9313, outil="trx-hwtest",
-                            comment="TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »")
+        _, message = render(codes.ORT_9313, outil="trx-hwtest", comment=_t("cli.stop_station"))
         hw.say(f"{codes.ORT_9313} {message}")
         return 3
     else:
-        hw.say("rigctld déjà actif (lancé hors de la station) : utilisé tel quel.")
+        hw.say(_t("cli.rigctld_running"))
     try:
         await hw.run()
         return hw.report()
@@ -887,28 +923,28 @@ def main(argv: list[str] | None = None) -> int:
     try:
         cfg = cfgmod.load(args.config)
     except cfgmod.ConfigError as exc:
-        print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
+        print(_t("cli.config_invalid") + "\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2
     except OSError as exc:
-        print(f"Configuration illisible ({args.config}) : {exc}. Indique-la avec --config station.toml.", file=sys.stderr)
+        print(_t("cli.config_unreadable", path=args.config, error=exc), file=sys.stderr)
         return 2
     levels = tuple(args.tx_levels)
     if any(v > -12 for v in levels):
-        print("Refusé : un niveau d'essai supérieur à -12 dBFS n'est pas autorisé (risque de saturation).", file=sys.stderr)
+        print(_t("cli.level_too_high"), file=sys.stderr)
         return 2
     if not 2.0 <= args.tot <= 60.0:
-        print("--tot doit être compris entre 2 et 60 secondes.", file=sys.stderr)
+        print(_t("cli.tot_range"), file=sys.stderr)
         return 2
     try:
         hw = HwTest(cfg, tot_s=args.tot, tx_levels_db=levels, only_rig_unkey=args.coupure_poste,
                     rx_only=args.reception_seule)
     except ValueError as exc:
-        print(f"--tot : {exc}", file=sys.stderr)
+        print(_t("cli.tot_error", error=exc), file=sys.stderr)
         return 2
     try:
         return asyncio.run(run_hwtest(cfg, hw, spawn=not args.no_spawn))
     except KeyboardInterrupt:
-        print("\nInterrompu : l'émission a été coupée.", file=sys.stderr)
+        print(_t("cli.interrupted"), file=sys.stderr)
         return 130
 
 

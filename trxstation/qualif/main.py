@@ -34,16 +34,16 @@ from ..paths import default_config_path
 from ..procutil import station_running
 from ..errors import codes
 from ..errors.emit import render
-from ..answers import typed
 from ..gateway.cat import RigctldClient
 from .coherence import analyse_caps, render_findings
 from .explore import Exploration
 from .explore_report import write_report as write_explore_report
-from .plan import build_plan, render_plan
+from .plan import build_plan, render_plan_shown
 from .profile import HamlibProfile, hamlib_version, parse_profile
 from .results import IN_VALIDATION, REFUSE, compute_verdict
 from .runner import Qualification
 from .sheet import load_catalog
+from .texts import _t, lang, typed_yes
 from .trace import TraceProxy
 
 EXIT_OK, EXIT_REFUSED, EXIT_CONFIG, EXIT_HAMLIB, EXIT_INCOMPLETE = 0, 1, 2, 3, 4
@@ -69,8 +69,9 @@ def load_profile(cfg: Config | None, model: int | None = None, hamlib_dir: str =
 
 
 def render_plan_with_findings(profile: HamlibProfile) -> str:
-    return (render_plan(build_plan(profile), profile) + "\n\nIncohérences de dump_caps (aucune commande envoyée au poste) :\n"
-            + render_findings(analyse_caps(profile)))
+    """Option --plan : MONTRÉ à l'opérateur, dans sa langue."""
+    return (render_plan_shown(build_plan(profile), profile) + "\n\n" + _t("main.plan_findings") + "\n"
+            + render_findings(analyse_caps(profile), shown=True))
 
 
 class RigctldUnavailable(Exception):
@@ -85,17 +86,15 @@ async def rigctld_session(cfg: Config, *, spawn: bool, out=print):
     proc = None
     if _port_open(host, port):
         if spawn and station_running(cfg.supervisor.instance_lock_port):
-            _, message = render(codes.ORT_9313, outil="trx-qualif",
-                                comment="TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »")
+            _, message = render(codes.ORT_9313, lang(), outil="trx-qualif", comment=_t("main.stop_station_how"))
             raise RigctldUnavailable(f"{codes.ORT_9313} {message}")
         if spawn:
-            raise RigctldUnavailable(f"rigctld répond déjà sur {host}:{port} : la station tourne-t-elle ? Arrête-la "
-                                     "(TRX Console, menu 1.2), ou ajoute --no-spawn pour utiliser ce rigctld.")
+            raise RigctldUnavailable(_t("main.rigctld_busy", host=host, port=port))
     elif not spawn:
-        raise RigctldUnavailable(f"rigctld ne répond pas sur {host}:{port} : lance-le (trx-rigctld) ou retire --no-spawn.")
+        raise RigctldUnavailable(_t("main.rigctld_absent", host=host, port=port))
     else:
         try:
-            out("Démarrage de rigctld…")
+            out(_t("main.rigctld_start"))
             proc = subprocess.Popen(rigctld_command(cfg))
         except FileNotFoundError as exc:
             raise RigctldUnavailable(str(exc)) from exc
@@ -105,7 +104,7 @@ async def rigctld_session(cfg: Config, *, spawn: bool, out=print):
             await asyncio.sleep(0.1)
         if not _port_open(host, port):
             _stop(proc)
-            raise RigctldUnavailable("rigctld n'a pas démarré (modèle, port COM ou débit incorrects ? poste éteint ?).")
+            raise RigctldUnavailable(_t("main.rigctld_failed"))
     try:
         yield host, port
     finally:
@@ -132,9 +131,9 @@ def find_config(cwd: Path | None = None) -> Path:
 def check_catalogue(directory: Path, out=print) -> int:
     catalog = load_catalog(directory)
     count = sum(len(v) for v in catalog.sheets.values())
-    out(f"{count} fiche(s) valide(s) dans {directory}")
+    out(_t("main.catalogue_count", count=count, directory=directory))
     for name, problems in catalog.problems.items():
-        out(f"  ÉCARTÉE {name} :")
+        out(_t("main.catalogue_rejected", name=name))
         for p in problems:
             out(f"    - {p}")
     return EXIT_REFUSED if catalog.problems else EXIT_OK
@@ -167,7 +166,7 @@ async def run_qualif(cfg: Config, profile: HamlibProfile, dump_text: str, output
     for line in q.summary():
         out(line)
     q.write_report(directory)
-    out(f"\nRapport : {directory}")
+    out(_t("main.report", directory=directory))
     verdict = compute_verdict(q.checks).status
     return EXIT_OK if verdict == IN_VALIDATION else EXIT_REFUSED if verdict == REFUSE else EXIT_INCOMPLETE
 
@@ -186,12 +185,13 @@ Option --lecture-seule : ni fréquence ni réglage changés, lectures seulement.
 async def run_explore(cfg: Config, profile: HamlibProfile, dump_text: str, output: Path, *, spawn: bool = True,
                       ask=input, out=print, writes: bool = True, burst: int = 300, settle_s: float = 1.5) -> int:
     install_quiet_handler(asyncio.get_running_loop())
-    out(f"Exploration : {profile.name} (Hamlib {profile.hamlib_version or '?'}, backend {profile.backend_status or '?'})")
-    out(EXPLORE_PREFLIGHT)
-    if not typed(await asyncio.to_thread(ask, "Tape OUI pour commencer : "), "OUI"):
-        out("Exploration annulée.")
+    out(_t("explore.title", name=profile.name, hamlib=profile.hamlib_version or "?", backend=profile.backend_status or "?"))
+    out(_t("explore.preflight"))
+    # Confirmation : le mot de la langue OU le mot français OUI, rien d'autre (jamais « oui » par défaut).
+    if not typed_yes(await asyncio.to_thread(ask, _t("explore.confirm", word=_t("word.yes")))):
+        out(_t("explore.cancelled"))
         return EXIT_INCOMPLETE
-    firmware = (await asyncio.to_thread(ask, "Version du firmware affichée par le poste (Entrée si inconnue) : ")).strip()
+    firmware = (await asyncio.to_thread(ask, _t("ask.firmware"))).strip()
     if not (len(firmware) <= 20 and all(c.isalnum() or c in ".-_ " for c in firmware)):
         firmware = ""
     journal: list[str] = []
@@ -216,15 +216,15 @@ async def run_explore(cfg: Config, profile: HamlibProfile, dump_text: str, outpu
         out(str(exc))
         return EXIT_HAMLIB
     except ConnectionError as exc:                        # liaison impossible : rien n'a été écrit
-        out(f"Exploration impossible : {exc}")
+        out(_t("explore.impossible", error=exc))
         return EXIT_HAMLIB
-    say("\n================  CONSTATS DE L'EXPLORATION  ================")
-    say(render_findings(result.findings))
+    say(_t("explore.findings_title"))
+    say(render_findings(result.findings, shown=True))
     if result.restored is False:
-        say("!!! Fréquence ou mode d'origine NON rétablis : vérifie le poste.")
+        say(_t("explore.not_restored"))
     directory = write_explore_report(output / f"explore-{profile.model}-{datetime.now():%Y%m%d-%H%M%S}", profile, result,
                                      dump_text=dump_text, journal=journal, proxy=proxy, firmware=firmware)
-    out(f"\nRapport : {directory}")
+    out(_t("main.report", directory=directory))
     return EXIT_REFUSED if result.stopped else EXIT_OK
 
 
@@ -250,10 +250,10 @@ def main(argv: list[str] | None = None) -> int:
         return check_catalogue(args.catalogue)
     if args.modele is not None:
         if not args.plan:
-            print("--modele ne sert qu'avec --plan (les autres essais prennent le modèle de station.toml).", file=sys.stderr)
+            print(_t("args.modele_needs_plan"), file=sys.stderr)
             return EXIT_CONFIG
         if not 1 <= args.modele <= 99_999:
-            print("--modele : numéro de modèle Hamlib invalide (voir rigctl -l).", file=sys.stderr)
+            print(_t("args.modele_invalid"), file=sys.stderr)
             return EXIT_CONFIG
         try:
             profile, _ = load_profile(None, args.modele)
@@ -263,28 +263,25 @@ def main(argv: list[str] | None = None) -> int:
         print(render_plan_with_findings(profile))
         return EXIT_OK
     if args.explorer and (args.sans_emission or args.filtres):
-        print("--explorer n'émet jamais et ne touche pas aux filtres : --sans-emission et --filtres sont pour la qualification.",
-              file=sys.stderr)
+        print(_t("args.explorer_options"), file=sys.stderr)
         return EXIT_CONFIG
     if args.lecture_seule and not args.explorer:
-        print("--lecture-seule ne sert qu'avec --explorer.", file=sys.stderr)
+        print(_t("args.read_only_needs_explorer"), file=sys.stderr)
         return EXIT_CONFIG
     config_path = args.config or find_config()
     try:
         cfg = cfgmod.load(config_path)
     except FileNotFoundError:
-        print(f"Configuration introuvable : {config_path}\n"
-              "  Indique-la avec --config CHEMIN (exemple : --config station.toml), ou crée-la avec trx-setup.",
-              file=sys.stderr)
+        print(_t("args.config_missing", path=config_path), file=sys.stderr)
         return EXIT_CONFIG
     except cfgmod.ConfigError as exc:
-        print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
+        print(_t("args.config_invalid") + "\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return EXIT_CONFIG
     if not 100 <= args.cycles <= 100_000:
-        print("--cycles doit être compris entre 100 et 100 000.", file=sys.stderr)
+        print(_t("args.cycles"), file=sys.stderr)
         return EXIT_CONFIG
     if not 2.0 <= args.tot <= 60.0:
-        print("--tot doit être compris entre 2 et 60 secondes.", file=sys.stderr)
+        print(_t("args.tot"), file=sys.stderr)
         return EXIT_CONFIG
     try:
         profile, text = load_profile(cfg)
@@ -305,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"--tot : {exc}", file=sys.stderr)
         return EXIT_CONFIG
     except KeyboardInterrupt:
-        print("\nInterrompu : l'émission a été coupée.", file=sys.stderr)
+        print(_t("main.interrupted"), file=sys.stderr)
         return 130
 
 

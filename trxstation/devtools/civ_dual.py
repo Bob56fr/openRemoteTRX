@@ -44,7 +44,7 @@ from pathlib import Path
 from . import civ_scope
 from .civ_scope import CONTROLLER, ScopeProbe, bcd_le, open_serial, station_running
 from ..answers import typed
-from ..spectrum.probe import USB_SEND_WARNING
+from ..spectrum.probe import usb_send_warning
 from .hamlib_scope import RIGCTLD_PORT, RigctlLink, first_value, rigctld_probe_command, wait_port
 
 SECOND_CONTROLLER = 0xE1
@@ -56,7 +56,6 @@ LOG_ASYNC = re.compile(r"icom_process_async_frame entered")
 LOG_SCOPE = re.compile(r"spectrum|scope", re.IGNORECASE)
 LOG_TROUBLE = re.compile(r"unknown async|read again|!= buf|timed out|WaitForMultipleObjects", re.IGNORECASE)
 
-MENU_CHECK = USB_SEND_WARNING
 
 
 class TransmitDetected(RuntimeError):
@@ -267,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     if cfg.rig.ptt_port and cfg.rig.ptt_port.strip().lower() == args.port_b.strip().lower():
         print(f"--port-b {args.port_b} est le port PTT de station.toml : refusé.", file=sys.stderr)
         return 2
-    print(MENU_CHECK)
+    print(usb_send_warning())                        # dans la langue de l'outil (lot L3)
     if not args.reglages_verifies:
         try:
             answer = input("Tape OUI si ces réglages sont vérifiés : ")

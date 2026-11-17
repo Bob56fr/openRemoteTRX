@@ -13,6 +13,8 @@
   sur demande explicite.
 - Filtres (bandes, continents, liste noire) et durées de vie.
 - Rien n'est écrit avant « Enregistrer » ; station.toml est validée avant.
+
+Textes en quatre langues (lot L3) : `trxstation/i18n/cluster.<langue>.json`, langue de TRX Console (`TRX_LANG`).
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ from typing import Callable
 from .. import config as cfgmod
 from .. import formhint, secretstore
 from ..answers import yes_no
+from ..i18n import tool_translator
 from ..paths import default_config_path
 from .bandplan import BAND_NAMES, MODES
 from .cty import CONTINENTS
@@ -38,11 +41,24 @@ from .tester import SourceReport, check_source
 from .text import check_own_call, own_call_problem
 
 KIND_LABELS = {"telnet": "cluster", "rbn": "RBN", "web": "CB (web)"}
-FLUX = (("telnet", "Clusters radioamateurs : spots DX saisis par des opérateurs", True),
-        ("rbn", "RBN : stations CW repérées automatiquement (beaucoup de spots, CW seulement)", False),
-        ("web", "Cluster DX des cibistes (clusterdx.org, bande des 11 m)", False))
-MODE_LABELS = {"SSB": "BLU (SSB)", "AM": "AM", "FM": "FM", "FREEDV": "FreeDV", "CW": "CW (télégraphie)"}
+# (type de source, cochée par défaut) ; libellé : clé `flux.<type>` du catalogue
+FLUX = (("telnet", True), ("rbn", False), ("web", False))
 _HOSTPORT = re.compile(r"([A-Za-z0-9.-]{1,253}):(\d{1,5})")
+
+
+def _t(key: str, **fields) -> str:
+    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par TRX Console, sinon
+    menu 0, sinon le système) ; catalogues `trxstation/i18n/cluster.<langue>.json`, le français en référence.
+    Lu À CHAQUE APPEL (jamais au chargement du module : les tests changent la langue après l'import)."""
+    return tool_translator("cluster")(key, **fields)
+
+
+def flux_label(kind: str) -> str:
+    return _t(f"flux.{kind}")
+
+
+def mode_label(mode: str) -> str:
+    return _t(f"mode.{mode}")
 
 
 def run_check(src: Source, call: str, password: str | None) -> SourceReport:
@@ -68,14 +84,15 @@ class ClusterEditor:
 
     def yes(self, question: str, default: bool) -> bool:
         while True:
-            text = f"{question} ({'O/n' if default else 'o/N'}) : "
+            text = _t("yesno.prompt", question=question,
+                      choices=_t("yesno.default_yes") if default else _t("yesno.default_no"))
             formhint.emit("yesno", question.strip(), text, default=default)       # console web : Oui / Non
             answer = self.ask(text).strip()
             if not answer:
                 return default
             if yes_no(answer) is not None:
                 return bool(yes_no(answer))
-            self.say("Répondre o ou n.")
+            self.say(_t("yesno.retry"))
 
     def choose(self, question: str, count: int, *, allow_empty: bool = True) -> int | None:
         """Numéro de 1 à count (renvoyé à partir de 0) ; Entrée = None."""
@@ -85,30 +102,33 @@ class ClusterEditor:
                 return None
             if answer.isdigit() and 1 <= int(answer) <= count:
                 return int(answer) - 1
-            self.say(f"Numéro de 1 à {count}.")
+            self.say(_t("choose.range", count=count))
 
     # ------------------------------------------------------------------ affichage
 
     def describe(self, s: cfgmod.ClusterSource) -> str:
         where = s.url if s.type == "web" else f"{s.host}:{s.port}"
-        pw = "mot de passe ****" if s.secret and s.secret in self.secrets else (
-            "mot de passe ABSENT" if s.secret else "sans mot de passe")
-        prio = f"priorité {s.priority}, " if s.type == "telnet" else ""
-        state = "actif   " if s.enabled else "inactif "
+        pw = _t("describe.pw_set") if s.secret and s.secret in self.secrets else (
+            _t("describe.pw_missing") if s.secret else _t("describe.pw_none"))
+        prio = _t("describe.priority", priority=s.priority) if s.type == "telnet" else ""
+        state = f"{_t('describe.on') if s.enabled else _t('describe.off'):<8}"
         return f"[{state}] {s.name:<14} {KIND_LABELS[s.type]:<9} {where:<34} {prio}{pw}"
 
     def show(self) -> None:
         c = self.c
-        self.say(f"\n=== Cluster DX : {'ACTIVÉ' if c.enabled else 'désactivé'} — indicatif {c.call or '(aucun)'}, cibiste {c.cb_call or '(aucun)'} ===")
+        none = _t("show.none")
+        self.say(_t("show.header", state=_t("show.on") if c.enabled else _t("show.off"),
+                    call=c.call or none, cb_call=c.cb_call or none))
         if not c.source:
-            self.say("  (aucune source)")
+            self.say(_t("show.no_source"))
         for i, s in enumerate(self.ordered(), start=1):
             self.say(f"  {i}. {self.describe(s)}")
-        modes = " ".join(c.modes) if c.modes else "tous (" + " ".join(MODES) + ")"
-        self.say(f"  Modes suivis : {modes} ; numérique (FT8...) toujours écarté")
-        self.say(f"  Bandes : {' '.join(c.bands) or 'toutes'} ; continents des spotteurs : "
-                 f"{' '.join(c.continents) or 'tous'} ; liste noire : {' '.join(c.blacklist) or 'vide'}")
-        self.say(f"  Durées de vie : {c.ttl_min:g} min (cluster, CB), {c.rbn_ttl_min:g} min (RBN)")
+        modes = " ".join(c.modes) if c.modes else _t("show.all_modes", modes=" ".join(MODES))
+        self.say(_t("show.modes", modes=modes))
+        self.say(_t("show.filters", bands=" ".join(c.bands) or _t("show.all_bands"),
+                    continents=" ".join(c.continents) or _t("word.all"),
+                    blacklist=" ".join(c.blacklist) or _t("word.empty")))
+        self.say(_t("show.ttl", ttl=f"{c.ttl_min:g}", rbn_ttl=f"{c.rbn_ttl_min:g}"))
 
     def ordered(self) -> list[cfgmod.ClusterSource]:
         order = {"telnet": 0, "rbn": 1, "web": 2}
@@ -118,35 +138,35 @@ class ClusterEditor:
 
     def flux(self) -> None:
         """Quels spots recevoir, et dans quels modes ; ajoute ou désactive les sources correspondantes."""
-        self.say("\nQuels spots voulez-vous recevoir ?")
+        self.say(_t("flux.title"))
         wanted = {}
-        for kind, label, default in FLUX:
+        for kind, default in FLUX:
             has = [s for s in self.c.source if s.type == kind]
             current = any(s.enabled for s in has) if has else default
-            wanted[kind] = self.yes(f"  {label}", current)
-        self.say("Modes suivis (le numérique, FT8, FT4, RTTY..., est toujours écarté) :")
+            wanted[kind] = self.yes("  " + flux_label(kind), current)
+        self.say(_t("flux.modes_title"))
         followed = []
         for mode in MODES:
             default = (mode in self.c.modes) if self.c.modes else (mode != "CW" or wanted["rbn"])
-            if self.yes(f"  {MODE_LABELS[mode]}", default):
+            if self.yes("  " + mode_label(mode), default):
                 followed.append(mode)
         if not followed:
-            self.say("Aucun mode choisi : tous les modes sont gardés.")
+            self.say(_t("flux.no_mode"))
         if wanted["rbn"] and followed and "CW" not in followed:
-            self.say("ATTENTION : le RBN ne fournit que de la CW ; sans la CW il n'apporte rien.")
-            if self.yes("  Ajouter la CW aux modes suivis", True):
+            self.say(_t("flux.rbn_cw_only"))
+            if self.yes("  " + _t("flux.add_cw"), True):
                 followed.append("CW")
         self.c.modes = [] if set(followed) in (set(MODES), set()) else [m for m in MODES if m in followed]
         self.dirty = True
-        for kind, _, _ in FLUX:
+        for kind, _ in FLUX:
             has = [s for s in self.c.source if s.type == kind]
             for s in has:
                 s.enabled = wanted[kind]
             if wanted[kind] and not has:
-                self.say(f"\nAjout d'une source « {KIND_LABELS[kind]} » :")
+                self.say(_t("flux.adding", kind=KIND_LABELS[kind]))
                 self.add_source(kind)
                 if kind == "telnet" and any(s.type == "telnet" for s in self.c.source) \
-                        and self.yes("Ajouter un cluster de secours (bascule automatique)", True):
+                        and self.yes(_t("flux.backup"), True):
                     self.add_source("telnet")
 
     # ------------------------------------------------------------------ sources
@@ -156,7 +176,7 @@ class ClusterEditor:
         if self.c.cb_call:
             return
         while True:
-            answer = self.ask("Votre indicatif de cibiste (facultatif, Entrée = aucun) : ").strip().upper()
+            answer = self.ask(_t("call.cb_ask")).strip().upper()
             if not answer:
                 return
             if own_call_problem(answer):
@@ -170,7 +190,7 @@ class ClusterEditor:
         if self.c.call:
             return True
         while True:
-            answer = self.ask("Votre indicatif radioamateur (le seul envoyé aux clusters et au RBN) : ").strip().upper()
+            answer = self.ask(_t("call.ask")).strip().upper()
             if not answer:
                 return False
             try:
@@ -195,8 +215,8 @@ class ClusterEditor:
         known = [k for k in known if (k.host, k.port, k.url) not in used]
         for i, k in enumerate(known, start=1):
             self.say(f"  {i}. {k.name:<12} {k.address:<34} {k.where}")
-        self.say(f"  {len(known) + 1}. autre serveur (saisie libre)")
-        idx = self.choose("Choix (Entrée = abandon) : ", len(known) + 1)
+        self.say(_t("server.other", n=len(known) + 1))
+        idx = self.choose(_t("ask.choice_or_cancel"), len(known) + 1)
         if idx is None:
             return None
         if idx < len(known):
@@ -206,29 +226,28 @@ class ClusterEditor:
 
     def ask_address(self, kind: str, current: str = "") -> tuple[str, str, int, str] | None:
         while True:
-            hint = f" (Entrée = {current})" if current else ""
+            hint = _t("ask.enter_keeps", current=current) if current else ""
             if kind == "web":
-                url = self.ask(f"Adresse de la page (https://…){hint} : ").strip() or current
+                url = self.ask(_t("address.url_ask", hint=hint)).strip() or current
                 if not url:
                     return None
                 if re.fullmatch(r"https://[A-Za-z0-9.-]+(:\d+)?(/[^\s\"']*)?", url):
                     return self._free_name(url.split("/")[2].split(".")[0]), "", 0, url
-                self.say("Adresse refusée : https:// obligatoire, sans espace.")
+                self.say(_t("address.url_refused"))
             else:
-                text = self.ask(f"Serveur HÔTE:PORT (ex. dxc.exemple.org:7300){hint} : ").strip() or current
+                text = self.ask(_t("address.hostport_ask", hint=hint)).strip() or current
                 if not text:
                     return None
                 m = _HOSTPORT.fullmatch(text)
                 if m and 1 <= int(m.group(2)) <= 65535:
                     return self._free_name(m.group(1).split(".")[0]), m.group(1), int(m.group(2)), ""
-                self.say("Format attendu HÔTE:PORT, port de 1 à 65535.")
+                self.say(_t("address.hostport_refused"))
 
     def ask_password(self, s: cfgmod.ClusterSource) -> None:
         if s.type == "web":
             return
         has = bool(s.secret and s.secret in self.secrets)
-        prompt = ("Mot de passe ou clé (rien ne s'affiche ; Entrée = garder l'actuel, « - » = supprimer) : " if has
-                  else "Mot de passe ou clé, si le serveur en demande un (rien ne s'affiche ; Entrée = aucun) : ")
+        prompt = _t("password.ask_change") if has else _t("password.ask_new")
         while True:
             if formhint.enabled() and self.ask_secret is getpass.getpass:   # console web : champ masqué de la page
                 formhint.emit("password", prompt, prompt)
@@ -245,7 +264,7 @@ class ClusterEditor:
             try:
                 secretstore.check_value(value)
             except secretstore.SecretsError as exc:
-                self.say(f"Refusé : {exc}")
+                self.say(_t("password.refused", reason=exc))
                 continue
             s.secret = s.secret or s.name
             self.secrets[s.secret] = value
@@ -257,30 +276,30 @@ class ClusterEditor:
         src = Source(s.name, s.type, s.host, s.port, s.priority, True, s.call,
                      self.secrets.get(s.secret) if s.secret else None, s.url)
         while True:
-            self.say(f"Test de {s.name} ({src.address}) : connexion, identification, un spot (60 s au plus)...")
+            self.say(_t("test.running", name=s.name, address=src.address))
             report = self.check(src, s.call or self.c.call, src.password)
-            self.say(f"  Résultat : {report.message}")
+            self.say(_t("test.result", message=report.message))
             if report.sample:
-                self.say(f"  Exemple : {report.sample}")
+                self.say(_t("test.sample", sample=report.sample))
             if report.ok:
                 return True
-            self.say("  1) Réessayer   2) Enregistrer quand même   3) Abandonner cette source")
-            idx = self.choose("Choix : ", 3, allow_empty=False)
+            self.say(_t("test.choices"))
+            idx = self.choose(_t("ask.choice"), 3, allow_empty=False)
             if idx == 1:
-                return self.yes("La source ne fonctionne pas aujourd'hui. L'enregistrer quand même", False)
+                return self.yes(_t("test.save_anyway"), False)
             if idx == 2:
                 return False
 
     def add_source(self, kind: str | None = None) -> None:
         if kind is None:
-            for i, (k, label, _) in enumerate(FLUX, start=1):
-                self.say(f"  {i}. {label}")
-            idx = self.choose("Type de source (Entrée = abandon) : ", len(FLUX))
+            for i, (k, _) in enumerate(FLUX, start=1):
+                self.say(f"  {i}. {flux_label(k)}")
+            idx = self.choose(_t("source.kind_ask"), len(FLUX))
             if idx is None:
                 return
             kind = FLUX[idx][0]
         if kind != "web" and not self.ensure_call():
-            self.say("Sans indicatif, pas de cluster ni de RBN.")
+            self.say(_t("source.no_call"))
             return
         if kind == "web":
             self.ensure_cb_call()
@@ -291,34 +310,34 @@ class ClusterEditor:
         s = cfgmod.ClusterSource(name=self._free_name(name), type=kind, host=host, port=port, url=url,
                                  priority=1 + max((x.priority for x in self.c.source if x.type == kind), default=0))
         if kind != "web":
-            answer = self.ask(f"Indicatif pour cette source (Entrée = {self.c.call}) : ").strip().upper()
+            answer = self.ask(_t("source.call_ask", call=self.c.call)).strip().upper()
             if answer and answer != self.c.call:
                 if not own_call_problem(answer):
                     s.call = answer
                 else:
-                    self.say("Indicatif invalide : celui de la station est gardé.")
+                    self.say(_t("source.call_invalid"))
         before = dict(self.secrets)
         self.ask_password(s)
         if self.test(s):
             self.c.source.append(s)
             self.dirty = True
-            self.say(f"Source {s.name} ajoutée.")
+            self.say(_t("source.added", name=s.name))
         else:
             self.secrets = before
-            self.say("Source non ajoutée.")
+            self.say(_t("source.not_added"))
 
-    def pick_existing(self, verb: str) -> cfgmod.ClusterSource | None:
+    def pick_existing(self, prompt_key: str) -> cfgmod.ClusterSource | None:
         items = self.ordered()
         if not items:
-            self.say("Aucune source.")
+            self.say(_t("source.none"))
             return None
         for i, s in enumerate(items, start=1):
             self.say(f"  {i}. {self.describe(s)}")
-        idx = self.choose(f"Source à {verb} (Entrée = abandon) : ", len(items))
+        idx = self.choose(_t(prompt_key), len(items))
         return None if idx is None else items[idx]
 
     def modify_source(self) -> None:
-        s = self.pick_existing("modifier")
+        s = self.pick_existing("pick.modify")
         if s is None:
             return
         work = copy.deepcopy(s)
@@ -329,21 +348,21 @@ class ClusterEditor:
             return
         _, work.host, work.port, work.url = picked
         if work.type != "web":
-            answer = self.ask(f"Indicatif pour cette source (Entrée = {work.call or self.c.call}) : ").strip().upper()
+            answer = self.ask(_t("source.call_ask", call=work.call or self.c.call)).strip().upper()
             if answer:
                 work.call = "" if answer == self.c.call else (answer if not own_call_problem(answer) else work.call)
         self.ask_password(work)
         if self.test(work):
             self.c.source[self.c.source.index(s)] = work
             self.dirty = True
-            self.say("Source modifiée.")
+            self.say(_t("source.modified"))
         else:
             self.secrets = before
-            self.say("Modification abandonnée.")
+            self.say(_t("source.modify_cancelled"))
 
     def delete_source(self) -> None:
-        s = self.pick_existing("supprimer")
-        if s is None or not self.yes(f"Supprimer {s.name}", False):
+        s = self.pick_existing("pick.delete")
+        if s is None or not self.yes(_t("source.delete_ask", name=s.name), False):
             return
         self.c.source.remove(s)
         if s.secret and not any(x.secret == s.secret for x in self.c.source):
@@ -351,11 +370,11 @@ class ClusterEditor:
         self.dirty = True
 
     def raise_priority(self) -> None:
-        s = self.pick_existing("passer en premier (clusters)")
+        s = self.pick_existing("pick.first")
         if s is None:
             return
         if s.type != "telnet":
-            self.say("La priorité ne concerne que les clusters (le RBN et la page CB ont chacun leur connexion).")
+            self.say(_t("source.priority_clusters_only"))
             return
         group = [s] + [x for x in sorted(self.c.source, key=lambda x: x.priority) if x.type == "telnet" and x is not s]
         for i, x in enumerate(group, start=1):
@@ -363,15 +382,15 @@ class ClusterEditor:
         self.dirty = True
 
     def toggle_source(self) -> None:
-        s = self.pick_existing("activer ou désactiver")
+        s = self.pick_existing("pick.toggle")
         if s is not None:
             s.enabled = not s.enabled
             self.dirty = True
 
     def _ask_list(self, question: str, allowed: tuple[str, ...], current: list[str]) -> list[str]:
         while True:
-            answer = self.ask(f"{question} [{' '.join(allowed)}] (Entrée = {' '.join(current) or 'tous'}, "
-                              "« - » = tous) : ").strip().upper()
+            answer = self.ask(_t("list.ask", question=question, allowed=" ".join(allowed),
+                                 current=" ".join(current) or _t("word.all"))).strip().upper()
             if not answer:
                 return current
             if answer == "-":
@@ -381,39 +400,38 @@ class ClusterEditor:
             if not bad:
                 lookup = {a.upper(): a for a in allowed}
                 return [lookup[x] for x in dict.fromkeys(items)]
-            self.say(f"Inconnu : {' '.join(bad)}")
+            self.say(_t("list.unknown", items=" ".join(bad)))
 
     def filters(self) -> None:
         c = self.c
-        c.bands = self._ask_list("Bandes", BAND_NAMES, c.bands)
-        c.continents = self._ask_list("Continents des spotteurs (EU = ce qui est entendu en Europe)",
-                                      CONTINENTS, c.continents)
-        answer = self.ask(f"Liste noire (indicatifs séparés par des espaces, « XX* » = préfixe ; Entrée = "
-                          f"{' '.join(c.blacklist) or 'vide'}, « - » = vider) : ").strip().upper()
+        c.bands = self._ask_list(_t("filters.bands"), BAND_NAMES, c.bands)
+        c.continents = self._ask_list(_t("filters.continents"), CONTINENTS, c.continents)
+        answer = self.ask(_t("filters.blacklist_ask",
+                             current=" ".join(c.blacklist) or _t("word.empty"))).strip().upper()
         if answer == "-":
             c.blacklist = []
         elif answer:
             items = answer.replace(",", " ").split()
             good = [x for x in items if re.fullmatch(r"[A-Z0-9/]{1,15}\*?", x)]
             if len(good) != len(items):
-                self.say("Entrées invalides ignorées.")
+                self.say(_t("filters.blacklist_bad"))
             c.blacklist = good
-        for key, label in (("ttl_min", "Durée de vie des spots de cluster et CB (minutes, 1 à 120)"),
-                           ("rbn_ttl_min", "Durée de vie des spots du RBN (minutes, 1 à 120)")):
-            answer = self.ask(f"{label} (Entrée = {getattr(c, key):g}) : ").strip().replace(",", ".")
+        for key, label in (("ttl_min", "filters.ttl"), ("rbn_ttl_min", "filters.rbn_ttl")):
+            answer = self.ask(_t("filters.ttl_ask", label=_t(label),
+                                 current=f"{getattr(c, key):g}")).strip().replace(",", ".")
             try:
                 if answer and 1 <= float(answer) <= 120:
                     setattr(c, key, float(answer))
                 elif answer:
-                    self.say("Hors plage : valeur gardée.")
+                    self.say(_t("filters.out_of_range"))
             except ValueError:
-                self.say("Nombre attendu : valeur gardée.")
+                self.say(_t("filters.not_a_number"))
         self.dirty = True
 
     def change_cb_call(self) -> None:
         old, self.c.cb_call = self.c.cb_call, ""
         self.ensure_cb_call()
-        if not self.c.cb_call and old and not self.yes("Supprimer l'indicatif de cibiste", False):
+        if not self.c.cb_call and old and not self.yes(_t("call.cb_delete"), False):
             self.c.cb_call = old
         self.dirty = True
 
@@ -437,7 +455,7 @@ class ClusterEditor:
         self.cfg.modules.run = run
         problems = cfgmod.validate(self.cfg)
         if problems:
-            self.say("Enregistrement impossible :\n  - " + "\n  - ".join(problems))
+            self.say(_t("save.impossible", problems="\n  - ".join(problems)))
             return False
         used = {s.secret for s in self.c.source if s.secret}
         if set(self.secrets) - used:
@@ -445,48 +463,43 @@ class ClusterEditor:
             self.secrets_changed = True
         self.write(self.cfg, self.secrets if self.secrets_changed else None)
         self.dirty = self.secrets_changed = False
-        self.say("Enregistré. Redémarrer la station pour appliquer (TRX Console, menu 1.1).")
+        self.say(_t("save.done"))
         return True
 
     # ------------------------------------------------------------------ menu
 
+    # Lettres du menu : LES MÊMES dans toutes les langues (la console web en fait des boutons) ; libellés traduits.
+    ACTIONS = (("f", "flux", "flux"), ("a", "add", "add_source"), ("m", "modify", "modify_source"),
+               ("s", "delete", "delete_source"), ("p", "first", "raise_priority"), ("d", "toggle", "toggle_source"),
+               ("r", "filters", "filters"), ("i", "call", "change_call"), ("c", "cb_call", "change_cb_call"),
+               ("e", "module", "_toggle_module"))
+
     def run(self) -> int:
         if not self.c.source:
-            self.say("Cluster DX : première configuration.")
+            self.say(_t("run.first_time"))
             self.flux()
-            if self.c.source and self.yes("Activer le Cluster DX", True):
+            if self.c.source and self.yes(_t("run.enable"), True):
                 self.c.enabled = True
-        actions = {
-            "f": ("Spots et modes suivis (radioamateurs, RBN, CB)", self.flux),
-            "a": ("Ajouter une source", self.add_source),
-            "m": ("Modifier une source (adresse, indicatif, mot de passe)", self.modify_source),
-            "s": ("Supprimer une source", self.delete_source),
-            "p": ("Passer un cluster en premier (priorité)", self.raise_priority),
-            "d": ("Activer ou désactiver une source", self.toggle_source),
-            "r": ("Filtres et durées de vie", self.filters),
-            "i": ("Changer l'indicatif radioamateur", self.change_call),
-            "c": ("Changer l'indicatif de cibiste", self.change_cb_call),
-            "e": ("Activer ou désactiver le Cluster DX", self._toggle_module),
-        }
+        actions = {letter: (key, getattr(self, method)) for letter, key, method in self.ACTIONS}
         while True:
             self.show()
-            for key, (label, _) in actions.items():
-                self.say(f"  {key}) {label}")
-            self.say("  w) Enregistrer et quitter\n  q) Quitter sans enregistrer")
+            for letter, (key, _) in actions.items():
+                self.say(f"  {letter}) {_t('menu.' + key)}")
+            self.say(_t("menu.save_quit"))
             try:
-                choice = self.ask("Choix : ").strip().lower()
+                choice = self.ask(_t("ask.choice")).strip().lower()
             except EOFError:
                 return 1
             if choice == "w":
                 if self.save():
                     return 0
             elif choice == "q":
-                if not self.dirty or self.yes("Les changements seront perdus. Quitter", False):
+                if not self.dirty or self.yes(_t("run.quit_lose"), False):
                     return 1
             elif choice in actions:
                 actions[choice][1]()
             else:
-                self.say("Choix inconnu.")
+                self.say(_t("run.unknown"))
 
     def _toggle_module(self) -> None:
         self.c.enabled = not self.c.enabled
@@ -502,20 +515,20 @@ def main(argv: list[str] | None = None) -> int:
     try:
         cfg = cfgmod.load(args.config)
     except FileNotFoundError:
-        print(f"{args.config} absente : configure d'abord la station (assistant).", file=sys.stderr)
+        print(_t("main.no_config", path=args.config), file=sys.stderr)
         return 2
     except (cfgmod.ConfigError, OSError) as exc:
-        print(f"Configuration illisible ({args.config}) : {exc}", file=sys.stderr)
+        print(_t("main.bad_config", path=args.config, reason=exc), file=sys.stderr)
         return 2
     try:
         secrets = secretstore.load(secretstore.path_for(args.config))
     except secretstore.SecretsError as exc:
-        print(f"secrets.toml : {exc}. Lancer en administrateur (sudo).", file=sys.stderr)
+        print(_t("main.bad_secrets", reason=exc), file=sys.stderr)
         return 2
     try:
         return ClusterEditor(cfg, args.config, secrets=secrets).run()
     except KeyboardInterrupt:
-        print("\nInterrompu : rien n'a été enregistré.")
+        print(_t("main.interrupted"))
         return 130
 
 

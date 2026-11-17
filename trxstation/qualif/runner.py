@@ -30,14 +30,18 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..answers import typed, yes_no
+from ..answers import yes_no
 from ..config import Config
+from ..devtools import hwtest as _hwtest
 from ..devtools.hwtest import PREFLIGHT, HwTest
+from ..i18n import Translator, tool_translator
 from ..gateway.cat.client import FLOAT_LEVELS, HAMLIB_ERRORS, INT_LEVELS, POWER_STEPS, RigError
-from .plan import DECLARATIF, FIXE, GENERE, SOCLE, TestPlan, build_plan, core_modes, label, render_plan
+from .plan import (DECLARATIF, FIXE, GENERE, SOCLE, SOCLE_ITEMS, TestPlan, build_plan, core_modes, label, render_plan,
+                   shown_label, shown_note)
 from .profile import HamlibProfile
-from .results import Check, compute_verdict, draft_sheet
+from .results import Check, compute_verdict, draft_sheet, latest
 from .sheet import render_sheet
+from .texts import _fr, _t, both, has, term, typed_yes
 from .trace import TraceProxy
 
 DEFAULT_BANDS_MHZ = ((3.5, 3.8), (7.0, 7.2), (14.0, 14.35), (21.0, 21.45), (28.0, 29.7))
@@ -58,6 +62,13 @@ HW_MAP = {"CAT": ("cat", SOCLE), "Audio RX": ("audio_rx", SOCLE), "Audio (ouvert
 # Échecs dus à l'installation (configuration, câble, carte son) et non au poste : qualification
 # INCOMPLÈTE plutôt que refus, pour ne jamais refuser un poste sur une erreur de réglage.
 SETUP_FAILURES = {"Audio (ouverture)", "PTT / Audio TX / Pannes"}
+# Noms des étapes de trx-hwtest (affichés dans la langue de l'outil) -> nom français de HW_MAP : la correspondance et le
+# rapport ne doivent JAMAIS dépendre de la langue. Clés de hwtest.<langue>.json, puis clés de qualif.<langue>.json.
+HW_KEYS = {"stage.cat": "CAT", "stage.rx_audio": "Audio RX", "stage.audio_open": "Audio (ouverture)", "stage.ptt": "PTT",
+           "stage.tx_all": "PTT / Audio TX / Pannes", "stage.tx_audio": "Audio TX",
+           "drill.heartbeat": "Panne : perte du heartbeat", "drill.disconnect": "Panne : déconnexion du client",
+           "stage.drills": "Pannes", "stage.band": "Bande d'essai", "stage.tx_mode": "Mode d'émission"}
+OWN_KEYS = {"hw.tx_all": "PTT / Audio TX / Pannes", "hw.drills": "Pannes", "hw.cat_loss": "Panne : perte de la liaison CAT"}
 
 
 def _yes(answer: str) -> bool | None:
@@ -94,29 +105,63 @@ class Qualification(HwTest):
         self._orig: dict = {}
         self._own_record = False
         self._write_ok: set[str] = set()
+        self._shown: dict[str, tuple[str, str]] = {}   # id -> (nom, détail) MONTRÉS, dans la langue de l'outil (bilan)
         user_out = self.out
         self.out = lambda text: (self.journal.append(text), user_out(text))[-1]
 
     # ------------------------------------------------------------------ résultats
 
-    def record(self, name: str, ok: bool | None, detail: str) -> bool:
+    def french_name(self, name: str) -> str:
+        """Nom français d'une étape de trx-hwtest montrée dans une autre langue (sinon le nom tel quel)."""
+        if name in HW_MAP or name.startswith("Panne : TOT"):
+            return name
+        tot = f"{self.tot_s:.0f}"
+        shown, fr = tool_translator("hwtest"), Translator("fr", "hwtest")
+        if shown("drill.tot", tot=tot) == name:
+            return fr("drill.tot", tot=tot)
+        for key, french_text in HW_KEYS.items():
+            if shown(key) == name:
+                return french_text
+        for key, french_text in OWN_KEYS.items():
+            if _t(key) == name:
+                return french_text
+        return name
+
+    def record(self, name: str, ok: bool | None, detail: str, shown_detail: str | None = None) -> bool:
+        shown_name, shown_detail = name, detail if shown_detail is None else shown_detail
+        name = self.french_name(name)
         mapped = None if self._own_record else HW_MAP.get(name)
         if mapped is None and not self._own_record and name.startswith("Panne : TOT"):
             mapped = ("drill_tot", FIXE)
         if mapped is not None:
             stored = ok
-            if ok is False and (name in SETUP_FAILURES or (name == "CAT" and "pas lisible" not in detail)):
-                detail += " — à corriger avant de conclure (qualification incomplète)"
+            unreadable = "pas lisible" in detail or detail == tool_translator("hwtest")("cat.ptt_unreadable")
+            if ok is False and (name in SETUP_FAILURES or (name == "CAT" and not unreadable)):
+                detail += _fr("check.setup_failure")
+                shown_detail += _t("check.setup_failure")
                 stored = None
             self.checks.append(Check(mapped[0], name, mapped[1], stored, detail))
+            self._shown[mapped[0]] = (shown_name, shown_detail)
         # La valeur renvoyée pilote le déroulé (arrêt après un échec) : c'est toujours le résultat RÉEL.
-        return super().record(name, ok, detail)
+        return super().record(shown_name, ok, shown_detail)
 
-    def check(self, item_id: str, name: str, category: str, ok: bool | None, detail: str, **data) -> bool:
+    def check(self, item_id: str, name: str | tuple[str, str], category: str, ok: bool | None,
+              detail: str | tuple[str, str], **data) -> bool:
+        """Résultat d'un test : enregistré en français (rapport), montré dans la langue de l'outil. `name` et `detail`
+        peuvent être des couples (français, montré), comme ceux de both()."""
+        detail, shown_detail = detail if isinstance(detail, tuple) else (detail, detail)
+        item = self.plan.by_id(item_id)
+        if isinstance(name, tuple):
+            name, shown_name = name
+        elif item is not None:
+            shown_name = shown_label(item, self.profile)
+        else:
+            shown_name = _t(f"check.{item_id}") if has(f"check.{item_id}") else name
         self.checks.append(Check(item_id, name, category, ok, detail, data))
+        self._shown[item_id] = (shown_name, shown_detail)
         self._own_record = True
         try:
-            return super().record(name, ok, detail)
+            return super().record(shown_name, ok, shown_detail)
         finally:
             self._own_record = False
 
@@ -152,7 +197,7 @@ class Qualification(HwTest):
             self._orig["freq"] = await client.get_frequency()
             self._orig["mode"] = await client.get_mode()
         except Exception as exc:
-            self.say(f"  (état initial illisible : {_rprt(exc)})")
+            self.say(_t("run.snapshot_unreadable", error=_rprt(exc)))
         for item in self._items("write_func"):
             try:
                 self._orig["funcs"][item.target] = await client.get_func(item.target)
@@ -173,7 +218,7 @@ class Qualification(HwTest):
             try:
                 await self.ctrl.set_function(name, on)
             except Exception as exc:
-                problems.append(f"{label(name)} ({_rprt(exc)})")
+                problems.append(f"{term(name)} ({_rprt(exc)})")
         for name, value in self._orig["levels"].items():
             restore = self._level_value(name, value)
             if restore is None:
@@ -181,27 +226,26 @@ class Qualification(HwTest):
             try:
                 await self.ctrl.set_level(name, restore)
             except Exception as exc:
-                problems.append(f"{label(name)} ({_rprt(exc)})")
+                problems.append(f"{term(name)} ({_rprt(exc)})")
         if "mode" in self._orig:
             mode, width = self._orig["mode"]
             try:
                 await self.ctrl.set_mode(mode, 0)      # jamais de largeur explicite : elle réécrirait un préréglage FIL (Icom)
                 now = await self._poll(self.link.client.get_mode, lambda v: v[0] == mode)
                 if not isinstance(now, Exception) and now is not None and now[0] == mode and now[1] != width:
-                    text = (f"filtre du mode {mode} : {width} Hz avant l'essai, {now[1]} Hz maintenant (filtre par défaut "
-                            "du mode, préréglages du poste intacts) : re-sélectionne ton filtre sur le poste")
+                    text = _t("restore.filter", mode=mode, before=width, now=now[1])
                     self.say(f"  {text[0].upper()}{text[1:]}.")
                     if text not in self.manual_restore:
                         self.manual_restore.append(text)
             except Exception as exc:
-                problems.append(f"mode ({_rprt(exc)})")
+                problems.append(_t("restore.mode", error=_rprt(exc)))
         if "freq" in self._orig:
             try:
                 await self.ctrl.set_frequency(self._orig["freq"])
             except Exception as exc:
-                problems.append(f"fréquence ({_rprt(exc)})")
+                problems.append(_t("restore.freq", error=_rprt(exc)))
         if problems:
-            self.say("  !!! état d'origine NON rétabli pour : " + ", ".join(problems) + " : vérifie le poste")
+            self.say(_t("restore.failed", items=", ".join(problems)))
 
     @staticmethod
     def _level_value(name: str, value: float):
@@ -218,7 +262,7 @@ class Qualification(HwTest):
     # ------------------------------------------------------------------ phase 1 : automatique
 
     async def phase_auto(self) -> None:
-        self.say("\n=== Phase 1 : tests automatiques (réception seulement, aucune émission) ===")
+        self.say(_t("phase1.title"))
         self.note("PHASE 1")
         await self._snapshot()
         try:
@@ -234,7 +278,7 @@ class Qualification(HwTest):
     async def test_frequency(self) -> None:
         bands = [(b.low_mhz, b.high_mhz) for b in self.cfg.bands] or list(DEFAULT_BANDS_MHZ)
         targets = [round((low + high) / 2 * 1000) * 1000 + FREQ_OFFSET_HZ for low, high in bands][:8]
-        accepted, refused, diffs, lines = 0, [], [], []
+        accepted, refused, diffs, reads = 0, [], [], []
         self.note("TEST freq_rw")
         for target in targets:
             try:
@@ -246,21 +290,24 @@ class Qualification(HwTest):
             read = await self._poll(self.link.client.get_frequency, lambda v, t=target: v == t)
             if isinstance(read, Exception) or read is None:
                 diffs.append(math.inf)
-                lines.append(f"{_mhz(target)} -> illisible")
+                reads.append((target, None))
             else:
                 diffs.append(abs(read - target))
-                lines.append(f"{_mhz(target)} -> {_mhz(read)}")
+                reads.append((target, read))
         needed = min(2, len(targets))
         worst = max(diffs) if diffs else math.inf
         ok = accepted >= needed and worst <= MAX_RESOLUTION_HZ
         resolution = 1 if worst == 0 else (int(worst) if worst <= MAX_RESOLUTION_HZ else None)
-        detail = f"{accepted}/{len(targets)} fréquences acceptées ; " + ", ".join(lines)
-        if refused:
-            detail += " ; refusées (hors couverture ?) : " + ", ".join(refused)
-        if ok and worst > 0:
-            detail += f" ; résolution du poste ≈ {int(worst)} Hz"
+        def detail(tr) -> str:
+            lines = [f"{_mhz(t)} -> {_mhz(r) if r is not None else tr('freq.unreadable')}" for t, r in reads]
+            text = tr("freq.accepted", accepted=accepted, total=len(targets)) + ", ".join(lines)
+            if refused:
+                text += tr("freq.refused", items=", ".join(refused))
+            if ok and worst > 0:
+                text += tr("freq.resolution", hz=int(worst))
+            return text
         data = {"resolution_hz": resolution} if resolution else {}
-        self.check("freq_rw", "Fréquence : écriture et relecture", SOCLE, ok, detail, **data)
+        self.check("freq_rw", "Fréquence : écriture et relecture", SOCLE, ok, (detail(_fr), detail(_t)), **data)
 
     async def test_modes(self) -> None:
         modes = self.profile.modes or self.caps.modes
@@ -271,31 +318,30 @@ class Qualification(HwTest):
             try:
                 await self.ctrl.set_mode(mode)
             except Exception as exc:
-                self.check(f"mode_{mode}", f"Mode {mode}", GENERE, False, f"commande refusée : {_rprt(exc)}")
+                self.check(f"mode_{mode}", f"Mode {mode}", GENERE, False, both("detail.refused", error=_rprt(exc)))
                 continue
             read = await self._poll(self.link.client.get_mode, lambda v, m=mode: v[0] == m)
             ok = not isinstance(read, Exception) and read is not None and read[0] == mode
             if ok:
                 passed.add(mode)
             got = _rprt(read) if isinstance(read, Exception) else (read[0] if read else "?")
-            self.check(f"mode_{mode}", f"Mode {mode}", GENERE, ok, f"relu : {got}")
+            self.check(f"mode_{mode}", f"Mode {mode}", GENERE, ok, both("detail.read_back", value=got))
         if passed:
-            self.manual_restore.append("modes essayés (" + ", ".join(m for m in modes if m in passed) + ") : chacun a pu "
-                                       "reprendre son filtre par défaut (préréglages intacts) ; re-sélectionne tes filtres habituels")
+            self.manual_restore.append(_t("restore.modes", modes=", ".join(m for m in modes if m in passed)))
         missing = [m for m in core if m not in passed]
-        self.check("mode_rw", "Mode : écriture et relecture", SOCLE, not missing,
-                   f"modes du socle relus : {', '.join(m for m in core if m in passed) or 'aucun'}"
-                   + (f" ; en échec : {', '.join(missing)}" if missing else ""))
+
+        def detail(tr) -> str:
+            return (tr("mode.core_read", modes=", ".join(m for m in core if m in passed) or tr("mode.none"))
+                    + (tr("mode.failed", modes=", ".join(missing)) if missing else ""))
+        self.check("mode_rw", "Mode : écriture et relecture", SOCLE, not missing, (detail(_fr), detail(_t)))
 
     async def test_filters(self) -> None:
         if not self.filters_test:
-            self.check("filters", "Filtres (largeur de bande)", FIXE, None,
-                       "non fait : envoyer une largeur peut RÉÉCRIRE les préréglages de filtre du poste (Icom : FIL1/2/3) ; "
-                       "relancer avec --filtres pour l'essayer en connaissance de cause")
+            self.check("filters", "Filtres (largeur de bande)", FIXE, None, both("filters.not_done"))
             return
         filters = {m: w for m, w in self.caps.filters.items() if m in core_modes(self.profile)}
         if not filters:
-            self.check("filters", "Filtres (largeur de bande)", FIXE, None, "Hamlib ne déclare aucune largeur pour ces modes")
+            self.check("filters", "Filtres (largeur de bande)", FIXE, None, both("filters.none_declared"))
             return
         self.note("TEST filters")
         # Un Icom choisit FIL1/2/3 et relit la largeur RÉGLÉE dans le poste : une valeur différente de Hamlib n'est
@@ -315,16 +361,20 @@ class Qualification(HwTest):
                 lines.append(f"{mode} {width}->{got}")
                 got_widths.append(got)
             if None in got_widths:
-                bad.append(f"{mode} : mode ou largeur illisible après la commande")
+                bad.append(("filters.unreadable", {"mode": mode}))
             elif got_widths != list(widths):
                 if len(set(got_widths)) == len(widths):
                     adjusted.append(mode)
                 else:
-                    bad.append(f"{mode} : les largeurs demandées ne sélectionnent pas des filtres distincts ({got_widths})")
-        detail = ("en échec : " + ", ".join(bad) + " ; ") * bool(bad) + "relus : " + ", ".join(lines)
-        if adjusted and not bad:
-            detail += f" ; largeurs du poste différentes de Hamlib pour {', '.join(adjusted)} (réglages FIL du poste)"
-        self.check("filters", "Filtres (largeur de bande)", FIXE, not bad, detail)
+                    bad.append(("filters.not_distinct", {"mode": mode, "widths": got_widths}))
+
+        def detail(tr) -> str:
+            failed = [tr(b[0], **b[1]) if isinstance(b, tuple) else b for b in bad]
+            text = tr("filters.failed", items=", ".join(failed)) * bool(bad) + tr("filters.read", items=", ".join(lines))
+            if adjusted and not bad:
+                text += tr("filters.adjusted", modes=", ".join(adjusted))
+            return text
+        self.check("filters", "Filtres (largeur de bande)", FIXE, not bad, (detail(_fr), detail(_t)))
 
     async def test_reads(self) -> None:
         self.note("TEST lectures")
@@ -335,13 +385,13 @@ class Qualification(HwTest):
             except Exception as exc:
                 self.check(item.id, item.label, GENERE, False, _rprt(exc))
                 continue
-            self.check(item.id, item.label, GENERE, True, f"valeur lue : {value}")
+            self.check(item.id, item.label, GENERE, True, both("detail.value_read", value=value))
 
     async def test_writes(self) -> None:
         self.note("TEST écritures")
         for item in self.plan.items:
             if item.action == "manual":
-                self.check(item.id, item.label, GENERE, None, item.note)
+                self.check(item.id, item.label, GENERE, None, (item.note, shown_note(item)))
             elif item.action == "write_func":
                 await self._write_func(item.id, item.label, item.target)
             elif item.action == "write_level":
@@ -351,35 +401,34 @@ class Qualification(HwTest):
         client = self.link.client
         orig = self._orig.get("funcs", {}).get(name)
         if orig is None:
-            self.check(item_id, name_label, GENERE, False, "état initial illisible : écriture non tentée")
+            self.check(item_id, name_label, GENERE, False, both("write.func_unreadable"))
             return
         steps = []
         for target in (not orig, orig):
             try:
                 await self.ctrl.set_function(name, target)
             except Exception as exc:
-                self.check(item_id, name_label, GENERE, False, f"commande refusée : {_rprt(exc)}")
+                self.check(item_id, name_label, GENERE, False, both("detail.refused", error=_rprt(exc)))
                 return
             read = await self._poll(lambda: client.get_func(name), lambda v, t=target: v == t)
             steps.append(read == target)
         ok = all(steps)
         if ok:
             self._write_ok.add(name)
-        self.check(item_id, name_label, GENERE, ok, "activé puis rétabli, relu à chaque fois" if ok
-                   else "la valeur relue ne suit pas la commande")
+        self.check(item_id, name_label, GENERE, ok, both("write.func_ok" if ok else "write.not_followed"))
 
     async def _write_level(self, item_id: str, name_label: str, name: str) -> None:
         client = self.link.client
         orig = self._orig.get("levels", {}).get(name)
         if orig is None:
-            self.check(item_id, name_label, GENERE, False, "valeur initiale illisible : écriture non tentée")
+            self.check(item_id, name_label, GENERE, False, both("write.level_unreadable"))
             return
         restore = self._level_value(name, orig)
         if restore is None:
-            why = "hors des paliers de TRX Remote : non modifiée" if name == "RFPOWER" else "hors plage : non modifiée"
-            self.check(item_id, name_label, GENERE, None, f"valeur actuelle {orig} {why}")
+            self.check(item_id, name_label, GENERE, None,
+                       both("write.power_off_steps" if name == "RFPOWER" else "write.out_of_range", value=orig))
             return
-        note = ""
+        notes: list[tuple[str, dict]] = []
         if name == "SQL":
             target, tol = (0.3 if abs(orig - 0.3) > 0.1 else 0.6), 0.02
         elif name == "RFPOWER":
@@ -404,7 +453,7 @@ class Qualification(HwTest):
                 choices.sort(key=lambda v: v == 0)      # AGC arrêtée (0 = OFF) en dernier recours seulement
             target, tol = (choices[0] if choices else restore), 0.5
             if not choices:
-                note = " (valeur inchangée : autres valeurs inconnues de Hamlib)"
+                notes.append(("write.note_unchanged", {}))
         # NR, NB : beaucoup de postes refusent le NIVEAU quand la FONCTION est arrêtée (IC-7300MK2 : RPRT -9 pour NB).
         # La fonction est mise en marche le temps de l'essai, puis remise (elle fait aussi partie de l'état relevé).
         switched = False
@@ -413,16 +462,19 @@ class Qualification(HwTest):
                 if not await client.get_func(name):
                     await self.ctrl.set_function(name, True)
                     switched = True
-                    note += f" (fonction {name} mise en marche le temps de l'essai)"
+                    notes.append(("write.note_switched", {"name": name}))
             except Exception:
                 pass
+        def note(tr) -> str:
+            return "".join(tr(k, **f) for k, f in notes)
         results = []
         try:
             for value in (target, restore):
                 try:
                     await self.ctrl.set_level(name, value)
                 except Exception as exc:
-                    self.check(item_id, name_label, GENERE, False, f"commande refusée : {_rprt(exc)}{note}")
+                    self.check(item_id, name_label, GENERE, False,
+                               tuple(tr("detail.refused", error=_rprt(exc)) + note(tr) for tr in (_fr, _t)))
                     return
                 read = await self._poll(lambda: client.get_level(name), lambda v, t=value: abs(v - t) <= tol)
                 results.append(None if isinstance(read, Exception) else read)
@@ -431,15 +483,17 @@ class Qualification(HwTest):
                 try:
                     await self.ctrl.set_function(name, False)
                 except Exception as exc:
-                    self.say(f"  !!! fonction {name} non remise à l'arrêt ({_rprt(exc)}) : vérifie le poste")
+                    self.say(_t("write.func_left_on", name=name, error=_rprt(exc)))
         ok = all(r is not None and abs(r - v) <= tol for r, v in zip(results, (target, restore)))
         if ok:
             self._write_ok.add(name)
-        self.check(item_id, name_label, GENERE, ok, f"{restore} -> {target} -> {restore}, relu {results}{note}")
+        self.check(item_id, name_label, GENERE, ok,
+                   tuple(tr("write.level_detail", restore=restore, target=target, results=results) + note(tr)
+                         for tr in (_fr, _t)))
 
     async def test_endurance(self) -> None:
         cycles = self.endurance_cycles
-        self.say(f"  Endurance : {cycles} lectures de fréquence…")
+        self.say(_t("endurance.start", cycles=cycles))
         self.note(f"TEST endurance {cycles}")
         latencies, errors, first_error = [], 0, ""
         for i in range(cycles):
@@ -458,32 +512,33 @@ class Qualification(HwTest):
                 self.say(f"    {i + 1}/{cycles}")
         done = len(latencies) + errors
         self.check("cat_endurance", "Endurance de la liaison CAT", SOCLE, errors == 0 and done == cycles,
-                   f"{len(latencies)}/{cycles} lectures réussies, {errors} erreur(s)" + (f" (1re : {first_error})" if first_error else ""))
+                   tuple(tr("endurance.detail", done=len(latencies), cycles=cycles, errors=errors)
+                         + (tr("endurance.first", error=first_error) if first_error else "") for tr in (_fr, _t)))
         if len(latencies) < 10:
-            self.check("latency", "Temps de réponse CAT", FIXE, False, "pas assez de mesures")
+            self.check("latency", "Temps de réponse CAT", FIXE, False, both("latency.too_few"))
             return
-        source = "lectures de fréquence"
+        source = both("latency.source_freq")
         if statistics.median(latencies) < CACHE_MS:
             # rigctld 5 répond à « f » depuis son cache : ce n'est pas le temps de réponse du POSTE. Le S-mètre, lui,
             # est toujours demandé au poste.
             measured = await self._strength_latencies(LATENCY_SAMPLES) if "STRENGTH" in self.profile.get_levels else []
             if len(measured) < 10:
                 self.check("latency", "Temps de réponse CAT", FIXE, None,
-                           f"fréquence servie par le cache de rigctld (médiane {statistics.median(latencies):.2f} ms) "
-                           "et pas de S-mètre pour mesurer le poste : temps de réponse inconnu")
+                           both("latency.cache_only", median=f"{statistics.median(latencies):.2f}"))
                 return
-            latencies, source = measured, (f"S-mètre, {len(measured)} lectures ; la fréquence vient du cache de rigctld "
-                                           f"(médiane {statistics.median(latencies):.2f} ms)")
+            latencies, source = measured, both("latency.source_smeter", count=len(measured),
+                                               median=f"{statistics.median(latencies):.2f}")
         ordered = sorted(latencies)
         p50 = statistics.median(ordered)
         p95 = ordered[min(len(ordered) - 1, math.ceil(0.95 * len(ordered)) - 1)]
         data = {"latence_cat_ms": round(p50, 2), "latence_cat_p95_ms": round(p95, 2)}
-        rate = ""
+        rate = ("", "")
         if p95 > 0:                       # une mesure nulle ne donne pas une cadence : on n'en écrit pas
             data["polling_max_hz"] = round(1000 / p95, 1)
-            rate = f" (≈ {data['polling_max_hz']:g} lectures/s)"
+            rate = both("latency.rate", rate=f"{data['polling_max_hz']:g}")
         self.check("latency", "Temps de réponse CAT", FIXE, True,
-                   f"médiane {p50:.1f} ms, 95 % sous {p95:.1f} ms, max {ordered[-1]:.1f} ms{rate} ({source})", **data)
+                   tuple(tr("latency.detail", p50=f"{p50:.1f}", p95=f"{p95:.1f}", max=f"{ordered[-1]:.1f}", rate=r, source=src)
+                         for tr, r, src in ((_fr, rate[0], source[0]), (_t, rate[1], source[1]))), **data)
 
     async def _strength_latencies(self, count: int) -> list[float]:
         found = []
@@ -499,14 +554,16 @@ class Qualification(HwTest):
     # ------------------------------------------------------------------ phase 2 : guidée
 
     async def phase_guided(self) -> None:
-        self.say("\n=== Phase 2 : vérifications visuelles (aucune émission) ===")
-        if (await self.prompt("  Faire les vérifications visuelles (quelques questions) ? [O/n] : ")).lower() in ("n", "non"):
-            self.check("decl_skipped", "Vérifications visuelles", DECLARATIF, None, "non faites")
+        self.say(_t("phase2.title"))
+        # Aucune émission dans cette phase : Entrée = oui, comme avant ; « n » (ou le non d'une autre langue) = on passe.
+        answer = await self.prompt(_t("phase2.ask", yn=_t("yesno.default_yes")))
+        if answer.lower() in ("n", "non") or yes_no(answer) is False:
+            self.check("decl_skipped", "Vérifications visuelles", DECLARATIF, None, both("phase2.not_done"))
             return
-        self.say("  Réponds o (oui), n (non), ou Entrée si tu ne sais pas. Ces réponses sont notées comme déclaratives.")
+        self.say(_t("phase2.how"))
         freq = self.link.state.frequency_hz
-        answer = await self.prompt(f"  L'afficheur du poste indique-t-il {_mhz(freq)} MHz ? : ")
-        self.check("decl_freq", "Afficheur : fréquence", DECLARATIF, _yes(answer), f"question : {_mhz(freq)} MHz")
+        answer = await self.prompt(_t("phase2.freq", freq=_mhz(freq)))
+        self.check("decl_freq", "Afficheur : fréquence", DECLARATIF, _yes(answer), both("phase2.freq_detail", freq=_mhz(freq)))
         await self._snapshot()
         try:
             for name in [n for n in ("NR", "NB", "AIP", "COMP") if n in self._write_ok]:
@@ -516,72 +573,72 @@ class Qualification(HwTest):
                 try:
                     await self.ctrl.set_function(name, not orig)
                 except Exception as exc:
-                    self.say(f"  {label(name)} : commande refusée ({_rprt(exc)})")
+                    self.say(_t("phase2.refused", what=term(name), error=_rprt(exc)))
                     continue
                 await asyncio.sleep(0.5)
-                state = "ACTIVÉ" if not orig else "DÉSACTIVÉ"
-                answer = await self.prompt(f"  Sur le poste, {label(name)} est-il maintenant {state} ? : ")
-                self.check(f"decl_func_{name}", f"Afficheur : {label(name)}", DECLARATIF, _yes(answer), f"attendu : {state}")
+                state = "phase2.on" if not orig else "phase2.off"
+                answer = await self.prompt(_t("phase2.func", what=term(name), state=_t(state)))
+                self.check(f"decl_func_{name}", (f"Afficheur : {label(name)}", _t("check.decl_func", what=term(name))),
+                           DECLARATIF, _yes(answer),
+                           tuple(tr("phase2.expected", state=tr(state)) for tr in (_fr, _t)))
                 await self.ctrl.set_function(name, orig)
         finally:
             await self._restore()
-        answer = await self.prompt(f"  Ouvre {self.record_wav} : entends-tu le son du poste ? : ")
-        self.check("decl_audio_rx", "Écoute du son reçu", DECLARATIF, _yes(answer), f"fichier : {self.record_wav}")
+        answer = await self.prompt(_t("phase2.audio", path=self.record_wav))
+        self.check("decl_audio_rx", "Écoute du son reçu", DECLARATIF, _yes(answer), both("phase2.audio_detail", path=self.record_wav))
 
     # ------------------------------------------------------------------ phase 3 : émission
 
     async def phase_tx(self) -> None:
-        self.say("\n=== Phase 3 : émission (chaque étape demande une confirmation) ===")
+        self.say(_t("phase3.title"))
         self.note("PHASE 3")
         await self.stage_band()
         await self.stage_tx_mode()
         freq = self.link.state.frequency_hz or 0
         if self.cfg.safety.enforce_bands and not self.cfg.bands:
-            self.record("PTT / Audio TX / Pannes", None, "aucune bande autorisée dans station.toml : émission impossible")
+            self.record(_t("hw.tx_all"), None, *both("phase3.no_bands"))
         elif self.cfg.safety.enforce_bands and not self.cfg.tx_allowed(freq):
-            self.record("PTT / Audio TX / Pannes", False, f"{freq} Hz hors des bandes autorisées : accorde le poste dans une bande autorisée")
+            self.record(_t("hw.tx_all"), False, *both("phase3.out_of_band", freq=freq))
         elif await self.stage_ptt():
             if await self.stage_tx_audio():
                 await self.stage_drills()
             else:
-                self.record("Pannes", None, "ignoré : l'étape audio TX a échoué, on n'émet plus")
-                self.record("Panne : perte de la liaison CAT", None, "ignoré : l'étape audio TX a échoué")
+                self.record(_t("hw.drills"), None, *both("phase3.drills_skipped"))
+                self.record(_t("hw.cat_loss"), None, *both("phase3.cat_loss_skipped"))
 
     async def stage_drills(self) -> bool:
         ok = await super().stage_drills()
-        if self.results and self.results[-1].name == "Pannes":          # exercices non confirmés
-            return self.record("Panne : perte de la liaison CAT", None, "non confirmé : ignoré")
+        if self.results and self.french_name(self.results[-1].name) == "Pannes":          # exercices non confirmés
+            return self.record(_t("hw.cat_loss"), None, *both("phase3.not_confirmed"))
         if self.proxy is None:
-            return self.record("Panne : perte de la liaison CAT", None, "relais de trace absent : exercice impossible")
-        if not await self.confirm_emission(f"Panne : perte de la liaison CAT pendant l'émission (coupure de {self.cat_cut_s:g} s ; "
-                                           "le poste reste en émission jusqu'au retour de la liaison)"):
-            return self.record("Panne : perte de la liaison CAT", None, "non confirmé : ignoré")
+            return self.record(_t("hw.cat_loss"), None, *both("phase3.no_proxy"))
+        if not await self.confirm_emission(_t("phase3.cat_cut_what", s=f"{self.cat_cut_s:g}")):
+            return self.record(_t("hw.cat_loss"), None, *both("phase3.not_confirmed"))
 
         async def cut() -> None:
             await self.proxy.interrupt(self.cat_cut_s)
 
-        ok &= await self._drill("Panne : perte de la liaison CAT", "cat_down", self.cat_cut_s, self.cat_cut_s + 3.0, cut)
+        ok &= await self._drill(_t("hw.cat_loss"), "cat_down", self.cat_cut_s, self.cat_cut_s + 3.0, cut)
         return ok
 
     # ------------------------------------------------------------------ USB (facultatif, en réception)
 
     async def test_usb_replug(self, wait_s: float = 30.0) -> None:
-        answer = await self.prompt("\n  Tester la reprise après débranchement du câble USB du poste ? [o/N] : ")
+        answer = await self.prompt(_t("usb.ask", yn=_t("yesno.default_no")))
         if _yes(answer) is not True:
-            self.check("usb_replug", "Reprise après débranchement USB", FIXE, None, "non demandé")
+            self.check("usb_replug", "Reprise après débranchement USB", FIXE, None, both("usb.not_asked"))
             return
         self.note("TEST usb_replug")
-        self.say("  Débranche MAINTENANT le câble USB du poste (côté ordinateur)…")
+        self.say(_t("usb.unplug"))
         lost = await self._wait_state(lambda s: not s.connected or s.frequency_hz is None, wait_s)
         if not lost:
-            self.check("usb_replug", "Reprise après débranchement USB", FIXE, False, f"aucune perte détectée en {wait_s:.0f} s")
+            self.check("usb_replug", "Reprise après débranchement USB", FIXE, False, both("usb.no_loss", s=f"{wait_s:.0f}"))
             return
-        await self.prompt("  Perte détectée. Rebranche le câble, puis appuie sur Entrée : ")
+        await self.prompt(_t("usb.replug"))
         t0 = time.monotonic()
         back = await self._wait_state(lambda s: s.connected and s.frequency_hz is not None, wait_s)
         self.check("usb_replug", "Reprise après débranchement USB", FIXE, back,
-                   f"liaison reprise en {time.monotonic() - t0:.1f} s" if back else
-                   "le poste ne répond plus : rigctld doit être relancé (le superviseur le fait en service normal)")
+                   both("usb.back", s=f"{time.monotonic() - t0:.1f}") if back else both("usb.lost"))
 
     async def _wait_state(self, condition, timeout: float) -> bool:
         end = time.monotonic() + timeout
@@ -594,34 +651,35 @@ class Qualification(HwTest):
     # ------------------------------------------------------------------ déroulement
 
     async def ask_firmware(self) -> None:
-        answer = (await asyncio.to_thread(self.ask, "Version du firmware affichée par le poste (Entrée si inconnue) : ")).strip()
+        answer = (await asyncio.to_thread(self.ask, _t("ask.firmware"))).strip()
         if answer and len(answer) <= 20 and all(c.isalnum() or c in ".-_ " for c in answer):
             self.firmware = answer
 
     async def run(self) -> list:
-        self.say(f"Qualification : {self.profile.name} (Hamlib {self.profile.hamlib_version or '?'}, "
-                 f"backend {self.profile.backend_status or '?'})")
-        self.say(PREFLIGHT)
-        if not typed(await asyncio.to_thread(self.ask, "Tape OUI pour confirmer ces 6 points : "), "OUI"):
-            self.say("Qualification annulée.")
+        self.say(_t("run.title", name=self.profile.name, hamlib=self.profile.hamlib_version or "?",
+                    backend=self.profile.backend_status or "?"))
+        # Consignes de sécurité de trx-hwtest, dans la langue de l'outil quand il sait les traduire.
+        self.say(getattr(_hwtest, "preflight_text", lambda: PREFLIGHT)())
+        # Le mot de la langue OU le mot français OUI, en entier ; rien d'autre (jamais « oui » par défaut).
+        if not typed_yes(await asyncio.to_thread(self.ask, _t("run.confirm", word=_t("word.yes")))):
+            self.say(_t("run.cancelled"))
             return []
         await self.ask_firmware()
         try:
             if not await self.setup():
                 return self.results
             if not await self.stage_cat():
-                self.say("\nLiaison CAT impossible : on s'arrête ici (aucune émission n'a été tentée).")
+                self.say(_t("run.no_cat"))
                 return self.results
             await self.phase_auto()
             await self.stage_rx_audio()
             await self.phase_guided()
             if self.no_tx:
-                self.say("\n=== Phase 3 : émission NON faite (--sans-emission) ===")
-                why = "non fait : qualification sans émission (--sans-emission)"
+                self.say(_t("phase3.no_tx_title"))
                 for item_id, name, category in (("ptt_cycle", "PTT activé puis désactivé, avec relecture", SOCLE),
                                                 ("cat_loss_rx", "Retour en réception sur perte de la liaison CAT", SOCLE),
                                                 ("audio_tx", "Audio en émission", FIXE)):
-                    self.check(item_id, name, category, None, why)
+                    self.check(item_id, name, category, None, both("phase3.no_tx"))
             else:
                 await self.phase_tx()
             await self._restore_mode()
@@ -629,29 +687,51 @@ class Qualification(HwTest):
         finally:
             await self._restore_mode()
             await self.teardown()
-            self.say("\nRetour en réception demandé au poste.")
+            self.say(_t("run.back_to_rx"))
         return self.results
 
     # ------------------------------------------------------------------ rapport
 
     def summary(self) -> list[str]:
+        """Bilan MONTRÉ à l'opérateur, dans la langue de l'outil (le rapport, lui, reste en français)."""
         verdict = compute_verdict(self.checks)
-        lines = ["", "================  BILAN DE QUALIFICATION  ================"]
-        titles = {SOCLE: "Socle", FIXE: "Tests fixes", GENERE: "Tests générés", DECLARATIF: "Déclaratif"}
-        latest = {c.id: c for c in self.checks}
+        lines = ["", _t("summary.title")]
+        by_id = latest(self.checks)
+        tags = {True: _t("summary.ok"), None: _t("summary.skipped"), False: _t("summary.failed")}
+        width = max(6, *(len(t) for t in tags.values()))
         for category in (SOCLE, FIXE, GENERE, DECLARATIF):
-            items = [c for c in latest.values() if c.category == category]
+            items = [c for c in by_id.values() if c.category == category]
             if items:
-                lines.append(f"{titles[category]} :")
-                lines += [f"  {'OK    ' if c.ok else 'IGNORÉ' if c.ok is None else 'ÉCHEC '}  {c.label}" for c in items]
-        lines.append(f"\nVerdict proposé : {verdict.status.upper()}")
-        lines += [f"  - {r}" for r in verdict.reasons]
+                lines.append(_t(f"summary.category.{category}"))
+                lines += [f"  {tags[bool(c.ok) if c.ok is not None else None].ljust(width)}  {self._shown_label(c)}"
+                          for c in items]
+        lines.append(_t("summary.verdict", status=_t(f"verdict.{verdict.status}")))
+        lines += [f"  - {r}" for r in self._shown_reasons(by_id)]
         if self.plan.unused:
-            lines.append("Disponible dans Hamlib, non exploité par TRX Remote : " + ", ".join(self.plan.unused))
+            lines.append(_t("summary.unused", names=", ".join(self.plan.unused)))
         if self.manual_restore:
-            lines.append("\nÀ REMETTRE À LA MAIN sur le poste :")
+            lines.append(_t("summary.manual"))
             lines += [f"  - {m}" for m in self.manual_restore]
         return lines
+
+    def _shown_label(self, check: Check) -> str:
+        return self._shown.get(check.id, (check.label, ""))[0]
+
+    def _shown_reasons(self, by_id: dict[str, Check]) -> list[str]:
+        """Raisons du verdict (même calcul que compute_verdict), dans la langue de l'outil."""
+        failed, missing = [], []
+        for item_id, _ in SOCLE_ITEMS:
+            check = by_id.get(item_id)
+            if check is None or check.ok is None:
+                missing.append(_t(f"check.{item_id}"))
+            elif check.ok is False:
+                detail = self._shown.get(item_id, ("", check.detail))[1]
+                failed.append(_t("verdict.failed_item", label=_t(f"check.{item_id}"), detail=detail))
+        if failed:
+            return failed
+        if missing:
+            return [_t("verdict.missing_item", label=m) for m in missing]
+        return [_t("verdict.ok")]
 
     def write_report(self, directory: Path) -> Path:
         directory = Path(directory)

@@ -13,6 +13,8 @@ import hashlib
 import hmac
 import secrets
 
+from .i18n import tool_translator
+
 SCRYPT_N, SCRYPT_R, SCRYPT_P, SALT_BYTES, KEY_BYTES = 2 ** 15, 8, 1, 16, 32
 MAXMEM = 128 * 1024 * 1024
 MIN_LENGTH = 12
@@ -57,15 +59,17 @@ def verify_password(password: str, stored: str) -> bool:
 
 
 def password_problem(password: str, login: str = "") -> str | None:
-    """None si le mot de passe est acceptable, sinon la raison du refus (en français)."""
+    """None si le mot de passe est acceptable, sinon la raison du refus, dans la langue de l'outil (lot L3 :
+    catalogues `trxstation/i18n/checks.<langue>.json`, lus à chaque appel)."""
+    t = tool_translator("checks")
     if len(password) < MIN_LENGTH:
-        return f"{MIN_LENGTH} caractères au minimum (une phrase de passe longue est préférable)"
+        return t("password.too_short", min=MIN_LENGTH)
     if len(set(password)) < 5:
-        return "trop répétitif (au moins 5 caractères différents)"
+        return t("password.repetitive")
     if login and login.lower() in password.lower():
-        return "ne doit pas contenir l'identifiant"
+        return t("password.contains_login")
     if password.strip() != password:
-        return "ne doit pas commencer ni finir par une espace"
+        return t("password.spaces")
     return None
 
 

@@ -3,8 +3,12 @@
 """Diagnostic complet de la station (commande `trx-console --diagnostic`).
 
 Chaque test rend un résultat : OK, ATTENTION (fonctionne mais à surveiller), ERREUR (bloquant) ou INFO,
-avec une phrase en français courant et, si possible, le geste qui corrige. Aucun test ne déclenche
+avec une phrase en langage courant et, si possible, le geste qui corrige. Aucun test ne déclenche
 d'émission ni ne modifie le système : le diagnostic se contente de lire.
+
+Textes dans la langue de l'outil (lot L3) : catalogues `trxstation/i18n/diagnostic.<langue>.json`, le français en
+référence. Restent tels quels : noms de services, fichiers, commandes, réglages, et les textes venus d'ailleurs
+(validation de station.toml, conseils du son du bureau, messages des modules, sorties des commandes).
 
 Tous les accès au système passent par `System` : les tests le remplacent par un faux.
 """
@@ -28,6 +32,7 @@ from .audio_devices import card_name, desktop_audio_advice, list_audio_devices, 
 from .config import Config
 from .fsperm import SERVICE_GROUP
 from .hamlib import find_tool
+from .i18n import tool_translator
 from .paths import default_config_path
 from .ports import list_serial_ports
 
@@ -37,13 +42,22 @@ UNITS = ("rigctld.service", "trx-gateway.service", "trx-supervisor.service")
 MM_RULE = PurePosixPath("/etc/udev/rules.d/99-trx-remote-modemmanager.rules")
 BRLTTY_RULE_NAMES = ("85-brltty.rules",)
 UDEV_SYSTEM_DIRS = (PurePosixPath("/usr/lib/udev/rules.d"), PurePosixPath("/lib/udev/rules.d"))
-MODULES = (("aiohttp", "serveur web de la station", True), ("aiortc", "audio WebRTC", True),
-           ("sounddevice", "accès aux cartes son", True), ("cryptography", "certificat HTTPS", False),
-           ("textual", "tableau de bord trx-monitor", False), ("serial", "spectre HF par le second port du poste (pyserial)", False))
+# (module, indispensable) ; son rôle : clé « module.role.<module> » des catalogues
+MODULES = (("aiohttp", True), ("aiortc", True), ("sounddevice", True), ("cryptography", False),
+           ("textual", False), ("serial", False))
 
 OK, WARN, FAIL, INFO = "ok", "warn", "fail", "info"
+# Marques en français (référence) ; affichées dans la langue de l'outil par la clé « label.<état> », toutes reconnues
+# et colorées par la page (TONES de console_web/static/flow.js).
 LABELS = {OK: "[OK]", WARN: "[ATTENTION]", FAIL: "[ERREUR]", INFO: "[INFO]"}
 COLORS = {OK: "\033[32m", WARN: "\033[33m", FAIL: "\033[31m", INFO: "\033[36m"}
+CLUSTER_STATES = ("connected", "connecting", "reconnecting", "failed", "disabled")   # clés « cluster.state.<état> »
+
+
+def _t(key: str, **fields) -> str:
+    """Texte montré à l'opérateur, dans la langue de l'outil (`TRX_LANG` posée par TRX Console, sinon menu 0, sinon
+    le système) ; lu À CHAQUE APPEL (les tests changent la langue après l'import)."""
+    return tool_translator("diagnostic")(key, **fields)
 
 
 @dataclass(frozen=True)
@@ -153,38 +167,38 @@ class System:
 
 
 def check_system(sysm: System) -> list[Check]:
-    s = "Système"
+    s = _t("section.system")
     out: list[Check] = []
     release = sysm.read_text("/etc/os-release")
     if release is None:
-        out.append(Check(s, "Système d'exploitation", INFO, f"{sysm.platform} (hors Debian : diagnostic partiel)"))
+        out.append(Check(s, _t("name.os"), INFO, _t("system.os_partial", platform=sysm.platform)))
     else:
         info = dict(re.findall(r'^(\w+)="?([^"\n]*)"?$', release, re.M))
         name, ident, version = info.get("PRETTY_NAME", "?"), info.get("ID", ""), info.get("VERSION_ID", "0")
         family = f"{ident} {info.get('ID_LIKE', '')}"
         major = int(re.match(r"\d*", version).group() or 0)
         if "debian" in family and major >= 12:
-            out.append(Check(s, "Système d'exploitation", OK, name))
+            out.append(Check(s, _t("name.os"), OK, name))
         elif "debian" in family or "raspbian" in family:
-            out.append(Check(s, "Système d'exploitation", WARN, f"{name} : Debian 12 ou plus récent est conseillé"))
+            out.append(Check(s, _t("name.os"), WARN, _t("system.debian_old", name=name)))
         else:
-            out.append(Check(s, "Système d'exploitation", WARN, f"{name} : seul Debian (et Raspberry Pi OS) est testé"))
+            out.append(Check(s, _t("name.os"), WARN, _t("system.not_debian", name=name)))
     version = sys.version_info
     out.append(Check(s, "Python", OK if version >= (3, 11) else FAIL, f"{version.major}.{version.minor}.{version.micro}",
-                     "" if version >= (3, 11) else "Python 3.11 ou plus récent est nécessaire (Debian 12 et plus)"))
+                     "" if version >= (3, 11) else _t("fix.python")))
     try:
         free_gb = sysm.free_bytes("/") / 1e9
         status = OK if free_gb >= 1 else WARN if free_gb >= 0.3 else FAIL
-        out.append(Check(s, "Espace disque", status, f"{free_gb:.1f} Go libres",
-                         "" if status == OK else "Libère de la place (corbeille, Téléchargements)"))
+        out.append(Check(s, _t("name.disk"), status, _t("system.disk_free", free=f"{free_gb:.1f}"),
+                         "" if status == OK else _t("fix.disk")))
     except OSError:
         pass
     from .cpu_temp import read_cpu_temp
     temp = read_cpu_temp(getattr(sysm, "sys_root", "/sys"))     # processeur (coretemp...), jamais la carte mère
     if temp is not None:
         celsius = temp.celsius
-        out.append(Check(s, "Température du processeur", OK if celsius < 80 else WARN, f"{celsius:.0f} °C ({temp.source})",
-                         "" if celsius < 80 else "Vérifie la ventilation du PC"))
+        out.append(Check(s, _t("name.cpu_temp"), OK if celsius < 80 else WARN, f"{celsius:.0f} °C ({temp.source})",
+                         "" if celsius < 80 else _t("fix.cpu_temp")))
     return out
 
 
@@ -195,57 +209,57 @@ def hamlib_version(text: str) -> tuple[int, ...] | None:
 
 
 def check_software(sysm: System, cfg: Config | None) -> list[Check]:
-    s = "Logiciels"
+    s = _t("section.software")
     out: list[Check] = []
-    for module, role, needed in MODULES:
+    for module, needed in MODULES:
+        role = _t(f"module.role.{module}")
         if sysm.module_present(module):
-            out.append(Check(s, f"Module {module}", OK, role))
+            out.append(Check(s, _t("name.module", module=module), OK, role))
         else:
-            out.append(Check(s, f"Module {module}", FAIL if needed else WARN, f"absent : {role} indisponible",
-                             "Relance l'installation : sudo bash install.sh"))
+            out.append(Check(s, _t("name.module", module=module), FAIL if needed else WARN,
+                             _t("software.module_missing", role=role), _t("fix.reinstall")))
     hamlib_dir = cfg.tools.hamlib_dir if cfg else ""
     rigctld = sysm.find_tool("rigctld", hamlib_dir)
     if rigctld is None:
-        out.append(Check(s, "Hamlib (rigctld)", FAIL, "introuvable", "sudo apt install libhamlib-utils"))
+        out.append(Check(s, "Hamlib (rigctld)", FAIL, _t("software.not_found"), "sudo apt install libhamlib-utils"))
     else:
         _, text = sysm.run([rigctld, "--version"])
         out.append(Check(s, "Hamlib (rigctld)", OK, (text.strip().splitlines() or [rigctld])[0]))
         if cfg is not None and cfg.spectrum.enabled and cfg.spectrum.source == "rigctld":
             version = hamlib_version(text)
             if version is None:
-                out.append(Check(s, "Spectre HF", WARN, "version de Hamlib illisible : le spectre exige Hamlib 4.6 ou plus"))
+                out.append(Check(s, _t("name.spectrum"), WARN, _t("software.hamlib_unreadable")))
             elif version < (4, 6):
-                out.append(Check(s, "Spectre HF", FAIL, f"Hamlib {'.'.join(map(str, version))} trop ancien : 4.6 ou plus "
-                                 "nécessaire (rigctld refuserait de démarrer)", "Mets Hamlib à jour, ou [spectrum] enabled = false"))
+                out.append(Check(s, _t("name.spectrum"), FAIL,
+                                 _t("software.hamlib_too_old", version=".".join(map(str, version))),
+                                 _t("fix.hamlib_update")))
             else:
-                out.append(Check(s, "Spectre HF", OK, "Hamlib assez récent (diffusion locale du spectre)"))
+                out.append(Check(s, _t("name.spectrum"), OK, _t("software.hamlib_ok")))
     return out
 
 
 def check_config(sysm: System, path: Path) -> tuple[list[Check], Config | None]:
-    s = "Configuration"
+    s = _t("section.config")
+    name = _t("name.config_file")
     if not sysm.exists(path):
-        return [Check(s, "Fichier de configuration", WARN, f"{path} absent : station pas encore configurée",
-                      "TRX Console, menu « Assistant de configuration »")], None
+        return [Check(s, name, WARN, _t("config.absent", path=path), _t("fix.assistant"))], None
     try:
         cfg = cfgmod.load(path)
     except cfgmod.ConfigError as exc:
-        return [Check(s, "Fichier de configuration", FAIL, f"{path} invalide : " + " ; ".join(exc.problems),
-                      "TRX Console, menu « Assistant de configuration »")], None
+        return [Check(s, name, FAIL, _t("config.invalid", path=path, problems=" ; ".join(exc.problems)),
+                      _t("fix.assistant"))], None
     except PermissionError:
-        return [Check(s, "Fichier de configuration", WARN, f"{path} illisible pour ce compte",
-                      "Déconnecte-toi puis reconnecte-toi (groupe trx), ou relance l'installation")], None
-    out = [Check(s, "Fichier de configuration", OK, str(path))]
+        return [Check(s, name, WARN, _t("config.unreadable", path=path), _t("fix.relogin_or_reinstall"))], None
+    out = [Check(s, name, OK, str(path))]
     st = sysm.stat(path)
     gid, _ = sysm.group_members(SERVICE_GROUP)
     if st is not None and gid is not None and not (st.st_gid == gid and st.st_mode & 0o040):
-        out.append(Check(s, "Droits du fichier", FAIL, "le service (compte trx) ne peut pas le lire",
+        out.append(Check(s, _t("name.file_rights"), FAIL, _t("config.service_cannot_read"),
                          f"sudo chgrp {SERVICE_GROUP} {path} && sudo chmod 640 {path}"))
     elif st is not None and st.st_mode & 0o007:
-        out.append(Check(s, "Droits du fichier", WARN, "lisible par tous les comptes (empreintes des mots de passe)",
-                         f"sudo chmod 640 {path}"))
+        out.append(Check(s, _t("name.file_rights"), WARN, _t("config.world_readable"), f"sudo chmod 640 {path}"))
     for warning in cfgmod.warnings(cfg):
-        out.append(Check(s, "Réglage", WARN, warning))
+        out.append(Check(s, _t("name.setting"), WARN, warning))
     return out, cfg
 
 
@@ -271,36 +285,37 @@ def _membership(sysm: System, user: str, group: str) -> str:
 
 
 def check_hardware(sysm: System, cfg: Config | None) -> list[Check]:
-    s = "Matériel"
+    s = _t("section.hardware")
     out: list[Check] = []
     linux = sysm.platform.startswith("linux")
     if linux:
         user = sysm.user()
-        for group, role in (("dialout", "ports série (tests du poste)"), (SERVICE_GROUP, "lecture de la configuration")):
+        for group, role in (("dialout", _t("hardware.role_dialout")), (SERVICE_GROUP, _t("hardware.role_trx"))):
             state = _membership(sysm, user, group)
             if state == "ok":
-                out.append(Check(s, f"Groupe {group}", OK, role))
+                out.append(Check(s, _t("name.group", group=group), OK, role))
             elif state == "relogin":
-                out.append(Check(s, f"Groupe {group}", WARN, f"accordé à {user}, actif à la prochaine session",
-                                 "Déconnecte-toi puis reconnecte-toi (étape 4 du guide)"))
+                out.append(Check(s, _t("name.group", group=group), WARN, _t("hardware.group_relogin", user=user),
+                                 _t("fix.group_relogin")))
             else:
-                out.append(Check(s, f"Groupe {group}", WARN, f"{user} n'en fait pas partie : {role} impossible",
-                                 f"sudo usermod -aG {group} {user}, puis déconnexion et reconnexion"))
+                out.append(Check(s, _t("name.group", group=group), WARN,
+                                 _t("hardware.group_absent", user=user, role=role),
+                                 _t("fix.group_add", group=group, user=user)))
     ports = sysm.serial_ports()
-    out.append(Check(s, "Ports série détectés", INFO if ports else WARN, ", ".join(ports) or "aucun",
-                     "" if ports else "Allume le poste et vérifie le câble USB (pas un câble de charge seule)"))
+    out.append(Check(s, _t("name.serial_ports"), INFO if ports else WARN, ", ".join(ports) or _t("common.none"),
+                     "" if ports else _t("fix.serial_ports")))
     if cfg is not None and cfg.rig.model != cfgmod.DUMMY_MODEL and cfg.rig.port:
         models = _hamlib_models(sysm, cfg)
         if models and cfg.rig.model not in models:
-            out.append(Check(s, "Modèle du poste", FAIL, f"{cfg.rig.model} inconnu de ce Hamlib",
-                             "Choisis un modèle proche dans l'assistant, ou installe un Hamlib plus récent"))
+            out.append(Check(s, _t("name.rig_model"), FAIL, _t("hardware.model_unknown", model=cfg.rig.model),
+                             _t("fix.model_unknown")))
         elif models:
-            out.append(Check(s, "Modèle du poste", OK, f"{cfg.rig.model} : {models[cfg.rig.model]}"))
+            out.append(Check(s, _t("name.rig_model"), OK, f"{cfg.rig.model} : {models[cfg.rig.model]}"))
         if sysm.exists(cfg.rig.port):
-            out.append(Check(s, "Port CAT", OK, cfg.rig.port))
+            out.append(Check(s, _t("name.cat_port"), OK, cfg.rig.port))
         else:
-            out.append(Check(s, "Port CAT", FAIL, f"{cfg.rig.port} absent : poste éteint ou débranché",
-                             "Allume le poste, vérifie le câble, puis relance le diagnostic"))
+            out.append(Check(s, _t("name.cat_port"), FAIL, _t("hardware.cat_absent", port=cfg.rig.port),
+                             _t("fix.cat_absent")))
     if linux:
         out += _check_usb_intruders(sysm)
         out += _check_audio(sysm, cfg)
@@ -308,68 +323,62 @@ def check_hardware(sysm: System, cfg: Config | None) -> list[Check]:
 
 
 def _check_usb_intruders(sysm: System) -> list[Check]:
-    s = "Matériel"
+    s = _t("section.hardware")
     out: list[Check] = []
     code, state = sysm.run(["systemctl", "is-active", "ModemManager"])
     if state.strip() == "active" and not sysm.exists(MM_RULE):
-        out.append(Check(s, "ModemManager", WARN, "actif : il peut « tester » le port du poste et perturber le CAT",
-                         "Relance l'installation : elle lui fait ignorer les ports série"))
+        out.append(Check(s, "ModemManager", WARN, _t("hardware.modemmanager"), _t("fix.modemmanager")))
     for name in BRLTTY_RULE_NAMES:
         system_rule = any(sysm.exists(d / name) for d in UDEV_SYSTEM_DIRS)
         if system_rule and not sysm.exists(PurePosixPath("/etc/udev/rules.d") / name):
-            out.append(Check(s, "brltty", WARN, "peut s'approprier certains adaptateurs série USB (CP210x, CH340)",
-                             "Relance l'installation et réponds non à la question sur l'afficheur braille"))
+            out.append(Check(s, "brltty", WARN, _t("hardware.brltty"), _t("fix.brltty")))
     return out
 
 
 def _check_audio(sysm: System, cfg: Config | None) -> list[Check]:
-    s = "Matériel"
+    s = _t("section.hardware")
     out: list[Check] = []
     captures = sysm.audio_devices("capture")
     playbacks = sysm.audio_devices("playback")
-    out.append(Check(s, "Cartes son", INFO if captures else WARN,
-                     f"{len(captures)} entrée(s), {len(playbacks)} sortie(s)",
-                     "" if captures else "Branche le câble USB du poste (il contient souvent la carte son)"))
+    out.append(Check(s, _t("name.sound_cards"), INFO if captures else WARN,
+                     _t("audio.count", inputs=len(captures), outputs=len(playbacks)),
+                     "" if captures else _t("fix.sound_cards")))
     if cfg is not None:
         for kind, spec, devices in (("capture", cfg.audio.capture_device, captures),
-                                    ("lecture", cfg.audio.playback_device, playbacks)):
+                                    ("playback", cfg.audio.playback_device, playbacks)):
+            label = _t(f"name.card_{kind}")
             for name in real_device_names(spec):
                 wanted = name.lower()
                 found = any(wanted == d.lower() or wanted in d.lower() or wanted in lbl.lower() for d, lbl in devices)
                 if found:
-                    out.append(Check(s, f"Carte son ({kind})", OK, name))
+                    out.append(Check(s, label, OK, name))
                     continue
                 # Absente de la liste du son, mais la carte est-elle branchée ? Une carte OCCUPÉE (station en marche,
                 # son du bureau PipeWire) n'apparaît pas dans la liste de PortAudio ; le noyau, lui, la voit toujours.
                 hardware = _alsa_hardware(sysm, kind)
                 card = _card_of(name, hardware)
                 if card is None:
-                    out.append(Check(s, f"Carte son ({kind})", FAIL, name,
-                                     "Poste éteint ou débranché ? Sinon rechoisis-la dans l'assistant"))
+                    out.append(Check(s, label, FAIL, name, _t("fix.card_missing")))
                 elif _gateway_active(sysm):
-                    out.append(Check(s, f"Carte son ({kind})", OK, f"{name} : utilisée par la station"))
+                    out.append(Check(s, label, OK, _t("audio.used_by_station", name=name)))
                 else:
-                    out.append(Check(s, f"Carte son ({kind})", WARN,
-                                     f"{name} : branchée ({card}) mais occupée par un autre programme, sans doute le son "
-                                     "du bureau (PipeWire)",
-                                     desktop_audio_advice("linux") + "\nPuis relance le diagnostic."))
+                    out.append(Check(s, label, WARN, _t("audio.busy", name=name, card=card),
+                                     desktop_audio_advice("linux") + "\n" + _t("fix.rerun")))
     code, _ = sysm.run(["pgrep", "-x", "pipewire"])
     if code == 0:
         specs = real_device_names(cfg.audio.capture_device, cfg.audio.playback_device) if cfg is not None else []
         cards = {card_name(spec).lower() for spec in specs} - {""}
         taken = []
-        for target, label in (("@DEFAULT_AUDIO_SINK@", "sortie"), ("@DEFAULT_AUDIO_SOURCE@", "entrée")):
+        for target, label in (("@DEFAULT_AUDIO_SINK@", "out"), ("@DEFAULT_AUDIO_SOURCE@", "in")):
             code, text = sysm.run(["wpctl", "inspect", target])
             if code == 0 and any(c and c in text.lower() for c in cards):
                 taken.append(label)
         if taken:
-            out.append(Check(s, "Son du bureau (PipeWire)", WARN,
-                             f"la carte du poste est la {' et l'.join(taken)} son par défaut du bureau",
+            which = "both" if len(taken) == 2 else taken[0]
+            out.append(Check(s, _t("name.pipewire"), WARN, _t(f"audio.desktop_default_{which}"),
                              desktop_audio_advice("linux")))
         else:
-            out.append(Check(s, "Son du bureau (PipeWire)", INFO,
-                             "actif : il peut occuper la carte son du poste quand une session est ouverte",
-                             "Si la station n'a pas de son, voir « Dépannage » dans le guide"))
+            out.append(Check(s, _t("name.pipewire"), INFO, _t("audio.pipewire_active"), _t("fix.pipewire")))
     return out
 
 
@@ -387,7 +396,7 @@ def _card_of(spec: str, hardware: list[tuple[str, str]]) -> str | None:
         dev = re.search(r"DEV=(\d+)", device)
         name, _, number = label.rpartition(" (carte ")
         if name.strip().lower() == card_name and (m is None or (dev and dev.group(1) == m.group(2))):
-            return f"carte {number.rstrip(')')}"
+            return _t("audio.card_number", number=number.rstrip(")"))
     return None
 
 
@@ -402,37 +411,39 @@ def _last_line(text: str) -> str:
 
 
 def check_services(sysm: System, cfg: Config | None) -> list[Check]:
-    s = "Services"
+    s = _t("section.services")
     if not sysm.platform.startswith("linux") or sysm.which("systemctl") is None:
-        return [Check(s, "Services", INFO, "systemd absent : services non vérifiés")]
+        return [Check(s, s, INFO, _t("services.no_systemd"))]
     out: list[Check] = []
     for unit in UNITS:
         active = _last_line(sysm.run(["systemctl", "is-active", unit])[1])
         enabled = _last_line(sysm.run(["systemctl", "is-enabled", unit])[1])
         if active == "active":
-            out.append(Check(s, unit, OK, f"en marche ({enabled})"))
+            out.append(Check(s, unit, OK, _t("services.running", enabled=enabled)))
         elif active == "failed":
-            out.append(Check(s, unit, FAIL, "en échec", f"journalctl -u {unit} -n 50 (menu « Journal » de TRX Console)"))
+            out.append(Check(s, unit, FAIL, _t("services.failed"), _t("fix.service_failed", unit=unit)))
         elif enabled in ("enabled", "static", "indirect"):
-            out.append(Check(s, unit, WARN, f"arrêté ({active or 'inconnu'})", "Menu « Démarrer la station »"))
+            out.append(Check(s, unit, WARN, _t("services.stopped", state=active or _t("common.unknown")),
+                             _t("fix.start")))
         else:
-            out.append(Check(s, unit, WARN, f"non installé ou désactivé ({enabled or 'inconnu'})",
-                             "Relance l'installation : sudo bash install.sh"))
+            out.append(Check(s, unit, WARN, _t("services.not_installed", state=enabled or _t("common.unknown")),
+                             _t("fix.reinstall")))
     if cfg is not None:
         safe_path = Path(cfg.supervisor.state_dir) / "safe_mode"
         safe = sysm.read_text(safe_path)
         if safe is None and sysm.exists(safe_path):
-            safe = "raison illisible (droits du fichier)"     # présent mais illisible : il est bien actif
+            safe = _t("services.safe_unreadable")     # présent mais illisible : il est bien actif
         if safe is not None:
-            out.append(Check(s, "Mode sûr", FAIL, f"ACTIF : {safe.strip() or 'raison inconnue'}",
-                             "Corrige la cause, puis menu « Sortir du mode sûr »"))
+            out.append(Check(s, _t("name.safe_mode"), FAIL,
+                             _t("services.safe_active", reason=safe.strip() or _t("services.reason_unknown")),
+                             _t("fix.safe_mode")))
         mtime = sysm.mtime(cfg.supervisor.status_path)
         if mtime is None:
-            out.append(Check(s, "État de la passerelle", WARN, "aucun fichier d'état : passerelle arrêtée"))
+            out.append(Check(s, _t("name.gateway_state"), WARN, _t("services.no_state")))
         else:
             age = sysm.now() - mtime
-            out.append(Check(s, "État de la passerelle", OK if age < 5 else WARN,
-                             "publié à l'instant" if age < 5 else f"figé depuis {age:.0f} s"))
+            out.append(Check(s, _t("name.gateway_state"), OK if age < 5 else WARN,
+                             _t("services.state_fresh") if age < 5 else _t("services.state_stale", age=f"{age:.0f}")))
     return out
 
 
@@ -440,10 +451,9 @@ def check_spectrum(sysm: System, cfg: Config | None) -> list[Check]:
     """Spectre HF par le second port CI-V : état publié par la passerelle (vérifié par elle à chaque ouverture)."""
     if cfg is None or not cfg.spectrum.enabled or cfg.spectrum.source != "civ_port":
         return []
-    s, name = "Spectre HF", f"Second port {cfg.spectrum.port}"
+    s, name = _t("section.spectrum"), _t("name.second_port", port=cfg.spectrum.port)
     if not sysm.module_present("serial"):
-        return [Check(s, name, FAIL, "module pyserial absent : le spectre ne peut pas fonctionner (mode normal)",
-                      "Relance l'installation (sudo bash install.sh), ou : pip install pyserial")]
+        return [Check(s, name, FAIL, _t("spectrum.no_pyserial"), _t("fix.pyserial"))]
     text = sysm.read_text(cfg.supervisor.status_path)
     try:
         sp = json.loads(text).get("spectrum", {}) if text else {}
@@ -451,60 +461,57 @@ def check_spectrum(sysm: System, cfg: Config | None) -> list[Check]:
         sp = {}
     state = sp.get("state") if isinstance(sp, dict) else None
     if not state:
-        return [Check(s, name, INFO, "état inconnu : passerelle arrêtée (vérifié à son démarrage)")]
+        return [Check(s, name, INFO, _t("spectrum.unknown"))]
     if state == "ok":
-        return [Check(s, name, OK, f"spectre reçu ({sp.get('fps', '?')} balayages/s)")]
+        return [Check(s, name, OK, _t("spectrum.ok", fps=sp.get("fps", "?")))]
     if state == "error":
-        return [Check(s, name, FAIL, f"PROBLÈME DE CONFIGURATION : {str(sp.get('message', ''))[:300]}",
-                      f"Corrige le réglage du poste, puis vérifie : trx-setup --spectre {cfg.spectrum.port} "
-                      "(station arrêtée) ; ou trx-setup --spectre off")]
-    return [Check(s, name, INFO, "en attente de la réception confirmée pour ouvrir le port"
-                  if state == "waiting" else "vérification en cours")]
+        return [Check(s, name, FAIL, _t("spectrum.config_problem", message=str(sp.get("message", ""))[:300]),
+                      _t("fix.spectrum", port=cfg.spectrum.port))]
+    return [Check(s, name, INFO, _t("spectrum.waiting") if state == "waiting" else _t("spectrum.checking"))]
 
 
-CLUSTER_STATE_TEXT = {"connected": "connecté", "connecting": "connexion en cours", "reconnecting": "en reconnexion",
-                      "failed": "EN ÉCHEC", "disabled": "désactivé"}
+def _cluster_state_text(state: str) -> str:
+    return _t(f"cluster.state.{state}") if state in CLUSTER_STATES else state
 
 
 def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) -> list[Check]:
     """Module Cluster DX : sources, droits de secrets.toml, état publié par le module (sans rien lui demander)."""
     if cfg is None:
         return []
-    s, c = "Cluster DX", cfg.cluster
+    s, c = _t("section.cluster"), cfg.cluster
+    module = _t("name.cluster_module")
     if not c.enabled:
-        return [Check(s, "Module", INFO, "désactivé", "TRX Console, menu 5.1")] if c.source else []
+        return [Check(s, module, INFO, _t("cluster.disabled"), _t("fix.cluster_menu"))] if c.source else []
     active = [x for x in c.source if x.enabled]
-    out = [Check(s, "Sources", OK if active else FAIL,
-                 f"{len(active)} source(s) active(s) : {', '.join(x.name for x in active)}" if active
-                 else "aucune source active", "" if active else "TRX Console, menu 5.1")]
+    out = [Check(s, _t("name.cluster_sources"), OK if active else FAIL,
+                 _t("cluster.sources_active", count=len(active), names=", ".join(x.name for x in active)) if active
+                 else _t("cluster.no_source"), "" if active else _t("fix.cluster_menu"))]
     from .secretstore import path_for
     spath = path_for(path)
     named = sorted({x.secret for x in active if x.secret})
     st = sysm.stat(spath)
     if named and st is None:
-        out.append(Check(s, "secrets.toml", FAIL, f"absent alors que {', '.join(named)} y est attendu : "
-                         "connexion sans mot de passe", "Ressaisir le mot de passe : TRX Console, menu 5.1"))
+        out.append(Check(s, "secrets.toml", FAIL, _t("cluster.secrets_absent", names=", ".join(named)),
+                         _t("fix.cluster_password")))
     elif st is not None:
         mode = st.st_mode & 0o777
         if sysm.platform != "win32" and mode & 0o077:
-            out.append(Check(s, "secrets.toml", FAIL, f"droits {oct(mode)[2:]} : mots de passe lisibles par d'autres "
-                             "comptes", f"sudo chmod 600 {spath} && sudo chown {cfg.modules.run_as} {spath}"))
+            out.append(Check(s, "secrets.toml", FAIL, _t("cluster.secrets_rights", mode=oct(mode)[2:]),
+                             f"sudo chmod 600 {spath} && sudo chown {cfg.modules.run_as} {spath}"))
         else:
-            out.append(Check(s, "secrets.toml", OK, "présent, lisible par le seul compte de la station"
-                             if sysm.platform != "win32" else "présent"))
+            out.append(Check(s, "secrets.toml", OK, _t("cluster.secrets_ok_unix")
+                             if sysm.platform != "win32" else _t("cluster.secrets_ok")))
     text = sysm.read_text(Path(cfg.supervisor.state_dir) / "cluster" / "status.json")
     try:
         data = json.loads(text) if text else None
     except ValueError:
         data = None
     if not isinstance(data, dict):
-        out.append(Check(s, "Module", WARN, "aucun état publié : module pas encore lancé, ou station arrêtée",
-                         "Vérifier [modules] run et démarrer la station (menu 1.1)"))
+        out.append(Check(s, module, WARN, _t("cluster.no_state"), _t("fix.cluster_run")))
         return out
     age = sysm.now() - float(data.get("time") or 0)
     if age > 30:
-        out.append(Check(s, "Module", WARN, f"état vieux de {age:.0f} s : module arrêté ou bloqué",
-                         "Journal (menu 6.2) ; le superviseur le relance s'il s'est arrêté"))
+        out.append(Check(s, module, WARN, _t("cluster.state_old", age=f"{age:.0f}"), _t("fix.cluster_journal")))
         return out
     for name, src in (data.get("sources") or {}).items():
         if not isinstance(src, dict):
@@ -512,58 +519,57 @@ def check_cluster(sysm: System, cfg: Config | None, path: Path = CONFIG_PATH) ->
         state = str(src.get("state", ""))
         level = OK if state == "connected" else FAIL if state == "failed" else WARN
         why = "" if state == "connected" else f" ({str(src.get('message', ''))[:160]})" if src.get("message") else ""
-        out.append(Check(s, f"Source {str(name)[:32]}", level,
-                         f"{CLUSTER_STATE_TEXT.get(state, state)}{why}",
-                         "" if level == OK else "Tester la source : TRX Console, menu 5.1"))
+        out.append(Check(s, _t("name.cluster_source", name=str(name)[:32]), level,
+                         f"{_cluster_state_text(state)}{why}",
+                         "" if level == OK else _t("fix.cluster_test")))
     counters = data.get("counters") or {}
     last = counters.get("last_spot_age_s")
     if last is None:
-        out.append(Check(s, "Dernier spot", WARN, "aucun spot reçu depuis le démarrage du module"))
+        out.append(Check(s, _t("name.last_spot"), WARN, _t("cluster.no_spot")))
     else:
-        out.append(Check(s, "Dernier spot", OK if last < 900 else WARN,
-                         f"il y a {last:.0f} s ; {counters.get('per_minute', 0)} spot(s)/min, "
-                         f"{counters.get('cache', 0)} en mémoire, {counters.get('malformed', 0)} ligne(s) illisible(s)"))
+        out.append(Check(s, _t("name.last_spot"), OK if last < 900 else WARN,
+                         _t("cluster.last_spot", age=f"{last:.0f}", per_minute=counters.get("per_minute", 0),
+                            cache=counters.get("cache", 0), malformed=counters.get("malformed", 0))))
     cty = data.get("cty") or {}
     if cty.get("problem"):
-        out.append(Check(s, "cty.dat", WARN, f"{str(cty['problem'])[:200]} : pays inconnus, filtre de continent inopérant",
-                         "Accès à https://www.country-files.com nécessaire (mise à jour automatique)"))
+        out.append(Check(s, "cty.dat", WARN, _t("cluster.cty", problem=str(cty["problem"])[:200]), _t("fix.cty")))
     return out
 
 
 def check_network(sysm: System, cfg: Config | None) -> list[Check]:
-    s = "Réseau"
+    s = _t("section.network")
     out: list[Check] = []
     addresses = sysm.local_addresses()
-    out.append(Check(s, "Adresses de ce PC", INFO if addresses else WARN, ", ".join(addresses) or "aucune",
-                     "" if addresses else "Vérifie la connexion réseau (câble ou Wi-Fi)"))
+    out.append(Check(s, _t("name.addresses"), INFO if addresses else WARN, ", ".join(addresses) or _t("common.none_f"),
+                     "" if addresses else _t("fix.network")))
     if cfg is None:
         return out
     n = cfg.network
     problem = cfgmod.exposure_problem(cfg)
     if problem:
-        out.append(Check(s, "Sécurité de l'accès", FAIL, problem, "Menu « Assistant de configuration », étape Accès"))
+        out.append(Check(s, _t("name.access_security"), FAIL, problem, _t("fix.access_step")))
     scheme = "https" if n.tls_cert else "http"
     if n.gateway_bind in ("0.0.0.0", "::"):
-        urls = [f"{scheme}://{a}:{n.gateway_port}" for a in addresses] or [f"{scheme}://<adresse>:{n.gateway_port}"]
-        out.append(Check(s, "Accès depuis le téléphone", INFO, " ou ".join(urls)))
+        urls = ([f"{scheme}://{a}:{n.gateway_port}" for a in addresses]
+                or [f"{scheme}://{_t('network.address_placeholder')}:{n.gateway_port}"])
+        out.append(Check(s, _t("name.phone_access"), INFO, _t("network.or").join(urls)))
     elif cfgmod.is_loopback(n.gateway_bind):
-        out.append(Check(s, "Accès depuis le téléphone", INFO, "désactivé : station joignable depuis ce PC seulement",
-                         "Menu « Assistant de configuration », étape Accès"))
+        out.append(Check(s, _t("name.phone_access"), INFO, _t("network.local_only"), _t("fix.access_step")))
     if n.tls_cert:
         present = sysm.exists(n.tls_cert) and sysm.exists(n.tls_key)
-        out.append(Check(s, "Certificat HTTPS", OK if present else FAIL, n.tls_cert,
-                         "" if present else "Menu « Assistant de configuration », étape Accès"))
+        out.append(Check(s, _t("name.https_cert"), OK if present else FAIL, n.tls_cert,
+                         "" if present else _t("fix.access_step")))
     host = "127.0.0.1" if n.gateway_bind in ("0.0.0.0", "::") else n.gateway_bind
     if cfg.clients and not problem:
         if sysm.can_connect(host, n.gateway_port):
-            out.append(Check(s, "Port de la station", OK, f"{n.gateway_port} en écoute"))
+            out.append(Check(s, _t("name.station_port"), OK, _t("network.port_listening", port=n.gateway_port)))
         else:
-            out.append(Check(s, "Port de la station", WARN, f"{n.gateway_port} fermé : passerelle arrêtée ou API refusée",
-                             "Menu « Journal » pour la raison"))
+            out.append(Check(s, _t("name.station_port"), WARN, _t("network.port_closed", port=n.gateway_port),
+                             _t("fix.journal_reason")))
     if sysm.which("ufw"):
         _, text = sysm.run(["ufw", "status"])
         if "active" in text.lower() and "inactive" not in text.lower():
-            out.append(Check(s, "Pare-feu (ufw)", WARN, f"actif : le port {n.gateway_port} doit être ouvert",
+            out.append(Check(s, _t("name.firewall"), WARN, _t("network.ufw", port=n.gateway_port),
                              f"sudo ufw allow {n.gateway_port}/tcp"))
     return out
 
@@ -573,38 +579,39 @@ def check_update(sysm: System, cfg: Config | None) -> list[Check]:
     from .update.check import clean_text, parse_state, parse_version, state_path
     from .update.pubkey import PUBLIC_KEYS
 
-    s = "Mise à jour"
-    out = [Check(s, "Version installée", INFO, __version__)]
+    s = _t("section.update")
+    search = _t("name.update_search")
+    out = [Check(s, _t("name.installed"), INFO, __version__)]
     previous = sysm.previous_version()
     if previous:
-        out.append(Check(s, "Version précédente", INFO, f"{previous} gardée (retour possible : menu 7.2)"))
+        out.append(Check(s, _t("name.previous"), INFO, _t("update.previous", version=previous)))
     if not PUBLIC_KEYS:
-        out.append(Check(s, "Clé de signature", WARN, "aucune clé connue : mise à jour automatique impossible",
-                         "Installe une version publiée (sudo bash install.sh)"))
+        out.append(Check(s, _t("name.signing_key"), WARN, _t("update.no_key"), _t("fix.install_published")))
     if cfg is None:
         return out
     if not cfg.update.enabled:
-        out.append(Check(s, "Recherche de mise à jour", INFO, "désactivée ([update] enabled = false)"))
+        out.append(Check(s, search, INFO, _t("update.disabled")))
         return out
     text = sysm.read_text(state_path(cfg.supervisor.state_dir))
     state = parse_state(text) if text is not None else None
     if state is None:
-        out.append(Check(s, "Recherche de mise à jour", INFO, "pas encore faite (2 minutes après le démarrage)"))
+        out.append(Check(s, search, INFO, _t("update.not_yet")))
         return out
     age_h = max(0.0, sysm.now() - state.checked_at) / 3600
     stale = state.ok and age_h > 72
     if not state.ok:
-        out.append(Check(s, "Recherche de mise à jour", WARN,
-                         f"dernière recherche impossible : {clean_text(state.error, 200, single_line=True)}",
-                         "Vérifie la connexion Internet ; nouvel essai automatique dans 24 h"))
+        out.append(Check(s, search, WARN,
+                         _t("update.failed", error=clean_text(state.error, 200, single_line=True)),
+                         _t("fix.internet")))
     elif stale:
-        out.append(Check(s, "Recherche de mise à jour", WARN, f"dernière recherche il y a {age_h / 24:.0f} jours",
+        out.append(Check(s, search, WARN, _t("update.stale", days=f"{age_h / 24:.0f}"),
                          "systemctl status trx-update-check.timer"))
     release = state.release
     if release is not None and (parse_version(release.version) or ()) > (parse_version(__version__) or ()):
-        out.append(Check(s, "Nouvelle version", INFO, f"{release.version} disponible", "Menu 7.1 de TRX Console"))
+        out.append(Check(s, _t("name.new_version"), INFO, _t("update.available", version=release.version),
+                         _t("fix.update_menu")))
     elif state.ok and not stale:
-        out.append(Check(s, "Recherche de mise à jour", OK, f"à jour (vérifié il y a {age_h:.0f} h)"))
+        out.append(Check(s, search, OK, _t("update.up_to_date", hours=f"{age_h:.0f}")))
     return out
 
 
@@ -635,15 +642,15 @@ def format_checks(checks: Iterable[Check], color: bool = False) -> str:
         if check.section != section:
             section = check.section
             lines.append(f"\n== {section} ==")
-        label = LABELS[check.status]
+        label = _t(f"label.{check.status}")
         if color:
             label = f"{COLORS[check.status]}{label}\033[0m"
-        lines.append(f"  {label} {check.name} : {check.message}")
+        lines.append("  " + _t("format.line", label=label, name=check.name, message=check.message))
         if check.fix and check.status in (WARN, FAIL):
             lines.append("      -> " + check.fix.replace("\n", "\n         "))
-    lines.append(f"\nBilan : {counts[OK]} OK, {counts[WARN]} à surveiller, {counts[FAIL]} erreur(s).")
+    lines.append("\n" + _t("format.summary", ok=counts[OK], warn=counts[WARN], fail=counts[FAIL]))
     if counts[FAIL] == 0 and counts[WARN] == 0:
-        lines.append("Tout est vert.")
+        lines.append(_t("format.all_green"))
     return "\n".join(lines).lstrip("\n")
 
 

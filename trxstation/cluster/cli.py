@@ -26,6 +26,7 @@ import time
 from pathlib import Path
 
 from .. import paths
+from ..i18n import tool_translator
 from . import clusterdx, cty as ctymod
 from .bandplan import BAND_NAMES, MODES
 from .cache import Spot, SpotCache, SpotFilter
@@ -38,6 +39,12 @@ from .text import check_own_call
 DEFAULT_CLUSTERS = ("on0dxk", "db0sue")
 
 
+def _t(key: str, **fields) -> str:
+    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3, `trxstation/i18n/cluster.<langue>.json`) ;
+    lu à chaque appel."""
+    return tool_translator("cluster")(key, **fields)
+
+
 def default_cty_path() -> Path:
     return paths.default_state_dir() / "cluster" / "cty.dat"
 
@@ -45,7 +52,7 @@ def default_cty_path() -> Path:
 def _hostport(text: str) -> tuple[str, int]:
     host, sep, port = text.rpartition(":")
     if not sep or not host or not port.isdigit() or not 1 <= int(port) <= 65535:
-        raise argparse.ArgumentTypeError(f"forme attendue HÔTE:PORT, reçu {text!r}")
+        raise argparse.ArgumentTypeError(_t("cli.hostport", text=repr(text)))
     return host, int(port)
 
 
@@ -58,11 +65,11 @@ def build_sources(args: argparse.Namespace) -> list[Source]:
     for name in dict.fromkeys(names):                      # sans doublon, ordre gardé
         k = by_name(name)
         if k is None:
-            raise SystemExit(f"serveur inconnu : {name} (voir --serveurs)")
+            raise SystemExit(_t("cli.unknown_server", name=name))
         sources.append(Source(k.name, k.kind, k.host, k.port, priority=len(sources) + 1, url=k.url))
     if args.mot_de_passe and sources:
         first = sources[0]
-        pw = getpass.getpass(f"Mot de passe pour {first.name} (rien ne s'affiche) : ")
+        pw = getpass.getpass(_t("cli.password", name=first.name))
         sources[0] = Source(first.name, first.kind, first.host, first.port, first.priority,
                             password=pw or None)
     return sources
@@ -71,7 +78,7 @@ def build_sources(args: argparse.Namespace) -> list[Source]:
 def format_spot(s: Spot, new: bool) -> str:
     mode = (s.mode or "?") + ("*" if s.mode_guessed else "")
     where = f"{s.country or '?'}/{s.continent or '?'}"
-    more = f" ({s.count} spotteurs)" if s.count > 1 else ""
+    more = _t("cli.spotters", count=s.count) if s.count > 1 else ""
     tag = {"rbn": "RBN", "cb": "CB "}.get(s.kind, "DX ")
     mark = "+" if new else "~"
     return (f"{time.strftime('%H:%M:%S')} {mark} {tag} {s.freq_khz:>10.1f}  {s.dx:<12} {mode:<6} "
@@ -81,39 +88,38 @@ def format_spot(s: Spot, new: bool) -> str:
 def status_line(engine: Engine, feed: Feed) -> str:
     c = engine.counters()
     states = " ".join(f"{name}={st.state}" for name, st in feed.states.items() if st.state != "disabled")
-    age = "jamais" if c["last_spot_age_s"] is None else f"{c['last_spot_age_s']:.0f} s"
-    return (f"-- {time.strftime('%H:%M:%S')}  {states} | {c['per_minute']}/min, reçus {c['received']}, "
-            f"mal formés {c['malformed']}, filtrés {c['filtered']}, doublons {c['duplicates']}, "
-            f"cache {c['cache']}, dernier spot il y a {age}")
+    age = _t("cli.never") if c["last_spot_age_s"] is None else f"{c['last_spot_age_s']:.0f} s"
+    return _t("cli.status", time=time.strftime("%H:%M:%S"), states=states, per_minute=c["per_minute"],
+              received=c["received"], malformed=c["malformed"], filtered=c["filtered"],
+              duplicates=c["duplicates"], cache=c["cache"], age=age)
 
 
 def summary(engine: Engine, feed: Feed, elapsed: float) -> list[str]:
-    out = [f"Bilan après {elapsed / 60:.1f} min :"]
+    out = [_t("cli.summary", minutes=f"{elapsed / 60:.1f}")]
     c = engine.counters()
-    out.append(f"  spots lus {c['received']}, mal formés {c['malformed']}, filtrés {c['filtered']}, "
-               f"doublons {c['duplicates']}, en cache {c['cache']}")
+    out.append(_t("cli.summary_counts", received=c["received"], malformed=c["malformed"], filtered=c["filtered"],
+                  duplicates=c["duplicates"], cache=c["cache"]))
     worst = 0
     for name, st in feed.streams.items():
         rec = ", ".join(f"{d:.0f} s" for d in st.recover_s) or "-"
-        out.append(f"  flux {name} : coupures {st.losses}, rattrapées {st.recovered} (reprise : {rec})")
+        out.append(_t("cli.summary_stream", name=name, losses=st.losses, recovered=st.recovered, recover=rec))
         worst = max(worst, st.unrecovered)
     for name, st in feed.states.items():
         if st.last_code and st.state != CONNECTED:
-            out.append(f"  {name} : {st.state}, dernier motif : {st.last_message}")
-    out.append("  RÉSULTAT : aucune coupure non rattrapée." if worst == 0 else
-               f"  RÉSULTAT : {worst} coupure(s) NON rattrapée(s) à la fin de l'essai.")
+            out.append(_t("cli.summary_state", name=name, state=st.state, message=st.last_message))
+    out.append(_t("cli.result_ok") if worst == 0 else _t("cli.result_bad", count=worst))
     return out
 
 
 def verify_servers(timeout: float = 8.0) -> int:
-    print(f"Serveurs proposés (vérifiés le {VERIFIED_ON}) : connexion et lecture de la bannière, rien n'est envoyé.")
+    print(_t("cli.verify_title", date=VERIFIED_ON))
     bad = 0
     for k in KNOWN:
         if k.kind == "web":
             try:
                 page, now = clusterdx.fetch(k.url, timeout=timeout * 2)
                 spots, wrong = clusterdx.parse_page(page, now)
-                print(f"  OK  {k.name:<12} {k.url}  {len(spots)} spots lisibles, {wrong} illisibles")
+                print(f"  OK  {k.name:<12} {k.url}  " + _t("cli.verify_web", spots=len(spots), wrong=wrong))
             except Exception as exc:
                 bad += 1
                 print(f"  --  {k.name:<12} {k.url}  {exc}")
@@ -138,12 +144,12 @@ async def run(args: argparse.Namespace, call: str, sources: list[Source]) -> int
     if args.maj_cty or (not args.cty and ctymod.is_stale(cty_path)):
         try:
             await asyncio.to_thread(ctymod.download, cty_path)
-            print(f"cty.dat mis à jour : {cty_path}")
+            print(_t("cli.cty_updated", path=cty_path))
         except Exception as exc:                         # sans cty.dat, on continue sans pays
-            print(f"Mise à jour de cty.dat impossible : {exc}")
+            print(_t("cli.cty_failed", reason=exc))
     table, problem = ctymod.load_or_empty(cty_path)
     if problem:
-        print(f"ATTENTION : {problem}" + ("; filtre de continent INOPÉRANT" if args.continent else ""))
+        print(_t("cli.warning", problem=problem) + (_t("cli.continent_off") if args.continent else ""))
     flt = SpotFilter(bands=frozenset(args.bandes or ()), modes=frozenset(m.upper() for m in args.modes or ()),
                      continents=frozenset(c.upper() for c in args.continent or ()),
                      blacklist=frozenset(c.upper() for c in args.liste_noire or ()))
@@ -155,7 +161,7 @@ async def run(args: argparse.Namespace, call: str, sources: list[Source]) -> int
             print(format_spot(s, new), flush=True)
 
     def on_state(src: Source, st: SourceState) -> None:
-        extra = f" (nouvel essai dans {st.retry_in_s:.0f} s)" if st.retry_in_s else ""
+        extra = _t("cli.retry_in", seconds=f"{st.retry_in_s:.0f}") if st.retry_in_s else ""
         why = f" — {st.last_message}" if st.state != CONNECTED and st.last_message else ""
         kind = f" [{st.cluster_type}]" if st.state == CONNECTED and st.cluster_type else ""
         print(f"-- {time.strftime('%H:%M:%S')}  {src.name} ({src.address}) : {st.state}{kind}{why}{extra}",
@@ -207,25 +213,25 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     if args.serveurs:
-        print(f"Serveurs proposés (vérifiés le {VERIFIED_ON}) :")
+        print(_t("cli.servers_title", date=VERIFIED_ON))
         for k in KNOWN:
             print(f"  {k.name:<12} {k.address:<31} {k.software:<9} {k.where}")
         return 0
     if args.verifier_serveurs:
         return verify_servers()
     if args.duree_vie <= 0 or args.duree_vie_rbn <= 0:
-        print("les durées de vie doivent être positives", file=sys.stderr)
+        print(_t("cli.ttl_positive"), file=sys.stderr)
         return 2
     sources = build_sources(args)
     if not sources:
-        print("aucune source", file=sys.stderr)
+        print(_t("cli.no_source"), file=sys.stderr)
         return 2
     call = ""
     if any(s.kind != "web" for s in sources):              # la page des cibistes ne demande aucun indicatif
         try:
             call = check_own_call(args.indicatif)
         except ValueError as exc:
-            print(f"{exc}. Exemple : --indicatif F4XXX", file=sys.stderr)
+            print(_t("cli.call_example", reason=exc), file=sys.stderr)
             return 2
     try:
         return asyncio.run(run(args, call, sources))

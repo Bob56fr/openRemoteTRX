@@ -38,7 +38,7 @@ from .migrate import is_desktop
 from .passwords import generate_password, hash_password, password_problem
 from .ports import list_serial_ports
 from .rig_hints import RigHint, checklist_lines, hint_for, port_label, port_role, usb_voice_question, windows_port_advice
-from .spectrum.probe import USB_SEND_WARNING, CheckFailed, CivPort, check, detect_address, open_serial
+from .spectrum.probe import CheckFailed, CivPort, check, detect_address, open_serial, usb_send_warning
 
 TEST_TCP_PORT = 4533  # port temporaire, distinct de celui du service (4532)
 
@@ -262,7 +262,7 @@ def ask_spectrum(cfg: Config) -> None:
         return
     ports = [p for p in list_serial_ports() if p.strip().lower() != cfg.rig.port.strip().lower()]
     port = choose(_t("spectrum.port"), [(p, p) for p in ports], current=cfg.spectrum.port or None)
-    print("\n" + USB_SEND_WARNING)
+    print("\n" + usb_send_warning())
     word = _t("word.yes")
     _expect(kind="word", word=word)
     if not _typed_yes(ask(_t("spectrum.type_word", word=word), "")):
@@ -1007,7 +1007,7 @@ def _cli_spectrum(args) -> int:
         if address is None:
             print(_t("cli_spectrum.bad_address"), file=sys.stderr)
             return 2
-    print(USB_SEND_WARNING)
+    print(usb_send_warning())
     if not args.reglages_verifies and not _typed_yes(input(_t("spectrum.type_word", word=_t("word.yes")) + _t("ask.colon"))):
         print(_t("cli_spectrum.cancelled"))
         return 2

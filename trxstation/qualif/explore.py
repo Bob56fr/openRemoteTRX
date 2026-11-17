@@ -37,6 +37,7 @@ from ..gateway.cat.client import (FUNC_RE, HAMLIB_ERRORS, LEVEL_RE, CatConnectio
 from .coherence import ATTENTION, BLOQUANT, HAMLIB, INFO, POSTE, TRX, Finding, analyse_caps
 from .plan import WRITE_FUNCS, WRITE_LEVELS
 from .profile import HamlibProfile, LevelRange
+from .texts import _t
 
 # Écritures essayées par l'exploration : réglages de RÉCEPTION ou de manipulation sans effet sur l'émission.
 # Liste FERMÉE (fail-safe) : jamais VOX, TUNER, SEND_MORSE, SEND_VOICE_MEM, SBKIN/FBKIN, TRANSCEIVE, MICGAIN,
@@ -62,7 +63,15 @@ REFUSALS = (-1, -4, -9, -11, -12, -15, -17)
 
 
 class TxDetected(Exception):
-    """Le poste est en émission (ou son PTT est illisible) : l'exploration s'arrête sans rien écrire."""
+    """Le poste est en émission (ou son PTT est illisible) : l'exploration s'arrête sans rien écrire.
+    `key` / `fields` : même cause dans la langue de l'outil (affichage) ; le texte (français) va au rapport."""
+
+    def __init__(self, text: str, key: str = "", **fields) -> None:
+        super().__init__(text)
+        self.key, self.fields = key, fields
+
+    def shown(self) -> str:
+        return _t(f"stop.{self.key}", **self.fields) if self.key else str(self)
 
 
 @dataclass
@@ -167,9 +176,10 @@ class Exploration:
         values, error, _ = await self._send("t")
         raw = None if values is None else values.get("PTT", values.get("#1"))
         if error is not None or raw is None:
-            raise TxDetected(f"état PTT illisible ({rprt(error) if error else 'réponse vide'})")
+            raise TxDetected(f"état PTT illisible ({rprt(error) if error else 'réponse vide'})", "ptt_unreadable",
+                             error=rprt(error) if error else _t("stop.empty_reply"))
         if str(raw).strip() != "0":
-            raise TxDetected(f"le poste est en émission (PTT = {raw}) : micro du poste ?")
+            raise TxDetected(f"le poste est en émission (PTT = {raw}) : micro du poste ?", "transmitting", ptt=raw)
 
     async def _poll(self, line: str, expect: Callable[[float], bool]) -> float | None:
         end = time.monotonic() + self.settle_s
@@ -187,7 +197,7 @@ class Exploration:
     # ------------------------------------------------------------------ étapes
 
     async def step_ptt_idle(self) -> None:
-        self.out("  PTT au repos…")
+        self.out(_t("explore.ptt_idle"))
         for _ in range(10):
             await self.guard()
         self.probe("ptt_idle", "ptt", "t", True, "10 lectures : réception")
@@ -198,11 +208,11 @@ class Exploration:
             self._orig["freq"] = await self.client.get_frequency()
             self._orig["mode"] = await self.client.get_mode()
         except (RigError, CatConnectionError, CatProtocolError) as exc:
-            self.find("snapshot", BLOQUANT, POSTE, "Fréquence ou mode d'origine illisibles", rprt(exc))
-            raise TxDetected("état d'origine illisible : rien ne sera modifié") from exc
+            self.find("snapshot", BLOQUANT, POSTE, "Fréquence ou mode d'origine illisibles", rprt(exc), key="snapshot")
+            raise TxDetected("état d'origine illisible : rien ne sera modifié", "snapshot") from exc
 
     async def step_can(self) -> None:
-        self.out("  Indicateurs « Can get … » de Hamlib…")
+        self.out(_t("explore.can"))
         lies, extras = [], []
         for key, line in CAN_PROBES:
             declared = self.profile.can.get(key)
@@ -224,14 +234,16 @@ class Exploration:
         if lies:
             self.find("can_declared_but_refused", ATTENTION, HAMLIB, "Déclaré « Can … : Y » mais refusé par le poste : " + ", ".join(lies),
                       "Hamlib annonce la lecture, le poste (ou le backend) la refuse : ne pas s'en servir.",
-                      "Declared \"Can ...: Y\" but the command fails: " + ", ".join(lies))
+                      "Declared \"Can ...: Y\" but the command fails: " + ", ".join(lies),
+                      key="can_declared_but_refused", args={"names": ", ".join(lies)})
         if extras:
             self.find("can_undeclared_but_works", INFO, HAMLIB, "Déclaré « N » mais le poste répond : " + ", ".join(extras),
                       "La réponse peut venir d'une valeur par défaut de Hamlib : à vérifier sur l'afficheur.",
-                      "Declared \"N\" but the command answers: " + ", ".join(extras))
+                      "Declared \"N\" but the command answers: " + ", ".join(extras),
+                      key="can_undeclared_but_works", args={"names": ", ".join(extras)})
 
     async def step_reads(self) -> None:
-        self.out("  Lecture de tout ce que Hamlib déclare…")
+        self.out(_t("explore.reads"))
         p = self.profile
         groups = (("read_func", "u", p.get_functions, FUNC_RE, {}), ("read_level", "l", p.get_levels, LEVEL_RE, p.get_level_ranges),
                   ("read_param", "p", p.get_params, LEVEL_RE, {}))
@@ -270,14 +282,17 @@ class Exploration:
                 self.probe(f"{kind}_{name}", kind, name, ok, detail, ms)
         if refused:
             self.find("reads_refused", ATTENTION, HAMLIB, f"{len(refused)} lecture(s) déclarée(s) mais refusée(s)",
-                      ", ".join(refused), f"{len(refused)} declared read(s) fail", ", ".join(refused))
+                      ", ".join(refused), f"{len(refused)} declared read(s) fail", ", ".join(refused),
+                      key="reads_refused", args={"count": len(refused)})
         if unstable:
             self.find("reads_unstable", INFO, POSTE, "Lectures instables (deux lectures de suite différentes) : " + ", ".join(unstable),
-                      "Normal pour un appareil de mesure ; anormal pour un réglage (cache de Hamlib ? réponse décalée ?).")
+                      "Normal pour un appareil de mesure ; anormal pour un réglage (cache de Hamlib ? réponse décalée ?).",
+                      key="reads_unstable", args={"names": ", ".join(unstable)})
         if outside:
             self.find("reads_outside_range", INFO, HAMLIB, "Valeurs lues hors de la plage déclarée : " + ", ".join(outside),
                       "La plage de dump_caps ne décrit pas les valeurs réelles : ne pas s'en servir pour l'affichage.",
-                      "Values read outside the declared range: " + ", ".join(outside))
+                      "Values read outside the declared range: " + ", ".join(outside),
+                      key="reads_outside_range", args={"names": ", ".join(outside)})
 
     async def _set_freq(self, hz: int) -> tuple[BaseException | None, int | None]:
         await self.guard()
@@ -295,7 +310,7 @@ class Exploration:
         if not ranges:
             self.probe("coverage", "coverage", "", None, "aucune plage de réception déclarée")
             return
-        self.out("  Couverture en réception (bords et hors couverture)…")
+        self.out(_t("explore.coverage"))
         low, high = min(r.low_hz for r in ranges), max(r.high_hz for r in ranges)
         for name, target in (("bas", low + 1000), ("haut", high - 1000)):
             error, read = await self._set_freq(target)
@@ -303,8 +318,10 @@ class Exploration:
             detail = rprt(error) if error else f"demandé {target} Hz, relu {read}"
             self.probe(f"coverage_{name}", "coverage", str(target), ok, detail)
             if not ok:
+                edge = {"bas": "low", "haut": "high"}[name] + ("" if error else "_read")
                 self.find(f"coverage_edge_{name}", ATTENTION, HAMLIB, f"Bord {name} de la couverture déclarée non accepté ({target} Hz)",
-                          detail, f"Declared RX range edge not accepted ({target} Hz)", detail)
+                          detail, f"Declared RX range edge not accepted ({target} Hz)", detail,
+                          key=f"coverage_edge_{edge}", args={"target": target, "read": read})
         outside = [high + OUT_OF_RANGE_STEP_HZ] + ([low - 1000] if low > 2000 else [])
         for target in outside:
             error, read = await self._set_freq(target)
@@ -313,16 +330,18 @@ class Exploration:
             elif read == target:
                 self.probe(f"coverage_out_{target}", "coverage", str(target), True, "acceptée et appliquée (couverture plus large que déclarée)")
                 self.find(f"coverage_wider_{target}", INFO, HAMLIB, f"{target} Hz accepté hors de la couverture déclarée",
-                          "Le poste reçoit plus large que dump_caps ne le dit.", f"{target} Hz accepted outside the declared RX ranges")
+                          "Le poste reçoit plus large que dump_caps ne le dit.", f"{target} Hz accepted outside the declared RX ranges",
+                          key="coverage_wider", args={"target": target})
             else:
                 self.probe(f"coverage_out_{target}", "coverage", str(target), False, f"acceptée SANS erreur mais non appliquée (relu {read})")
                 self.find(f"coverage_silent_{target}", ATTENTION, HAMLIB, f"Fréquence hors couverture acceptée sans erreur mais non appliquée ({target} Hz)",
                           f"rigctld répond RPRT 0, le poste reste sur {read} Hz : une erreur doit se voir.",
-                          f"Out-of-range frequency {target} Hz returns RPRT 0 but is not applied (rig stays on {read} Hz)")
+                          f"Out-of-range frequency {target} Hz returns RPRT 0 but is not applied (rig stays on {read} Hz)",
+                          key="coverage_silent", args={"target": target, "read": read})
         await self.restore_freq()
 
     async def step_sync(self) -> None:
-        self.out("  Commande inconnue et resynchronisation…")
+        self.out(_t("explore.sync"))
         _, error, _ = await self._send(f"l {UNKNOWN_LEVEL}")
         values, error2, _ = await self._send("f")
         freq = _number(values.get("Frequency", values.get("#1"))) if values else None
@@ -330,7 +349,8 @@ class Exploration:
         if error is None:
             self.probe("sync_unknown", "sync", UNKNOWN_LEVEL, False, "niveau inexistant accepté (RPRT 0)")
             self.find("sync_unknown_accepted", ATTENTION, HAMLIB, f"Un niveau inexistant ({UNKNOWN_LEVEL}) est accepté sans erreur",
-                      "", f"Unknown level {UNKNOWN_LEVEL} returns RPRT 0")
+                      "", f"Unknown level {UNKNOWN_LEVEL} returns RPRT 0", key="sync_unknown_accepted",
+                      args={"name": UNKNOWN_LEVEL})
         else:
             self.probe("sync_unknown", "sync", UNKNOWN_LEVEL, True, f"refusé : {rprt(error)}")
         ok = error2 is None and freq is not None and (expected is None or int(freq) == expected)
@@ -338,7 +358,8 @@ class Exploration:
         if not ok:
             self.find("sync_lost", ATTENTION, HAMLIB, "Après une commande refusée, la réponse suivante est fausse ou absente",
                       f"attendu {expected}, relu {freq if error2 is None else rprt(error2)}",
-                      "After a rejected command the next reply is wrong or missing")
+                      "After a rejected command the next reply is wrong or missing", key="sync_lost",
+                      args={"expected": expected, "read": freq if error2 is None else rprt(error2)})
 
     def _writable_levels(self) -> list[str]:
         p = self.profile
@@ -358,7 +379,7 @@ class Exploration:
             return
         if not funcs and not levels:
             return
-        self.out(f"  Écritures avec relecture : {', '.join(funcs + levels)}…")
+        self.out(_t("explore.writes", names=", ".join(funcs + levels)))
         self._w = {"not_restored": [], "not_followed": [], "refused": [], "rounded": []}
         for name in funcs:
             await self._write_func(name)
@@ -368,16 +389,20 @@ class Exploration:
         if w["not_followed"]:
             self.find("writes_not_followed", ATTENTION, HAMLIB, "Réglages acceptés mais la relecture ne suit pas : " + ", ".join(w["not_followed"]),
                       "La commande est peut-être ignorée ou relue dans un cache : ne pas l'exploiter sans essai sur l'afficheur.",
-                      "Settings accepted (RPRT 0) but the read-back does not follow: " + ", ".join(w["not_followed"]))
+                      "Settings accepted (RPRT 0) but the read-back does not follow: " + ", ".join(w["not_followed"]),
+                      key="writes_not_followed", args={"names": ", ".join(w["not_followed"])})
         if w["refused"]:
             self.find("writes_refused", INFO, POSTE, "Réglages refusés par le poste dans son état actuel : " + ", ".join(w["refused"]),
-                      "Souvent selon le mode (ex. délai de break-in en CW seulement) : à refaire dans le mode concerné.")
+                      "Souvent selon le mode (ex. délai de break-in en CW seulement) : à refaire dans le mode concerné.",
+                      key="writes_refused", args={"names": ", ".join(w["refused"])})
         if w["rounded"]:
             self.find("writes_rounded", INFO, POSTE, "Pas réel plus grossier que le pas déclaré : " + ", ".join(w["rounded"]),
-                      "Le poste arrondit la valeur demandée : afficher la valeur RELUE, pas la valeur envoyée.")
+                      "Le poste arrondit la valeur demandée : afficher la valeur RELUE, pas la valeur envoyée.",
+                      key="writes_rounded", args={"names": ", ".join(w["rounded"])})
         if w["not_restored"]:
             self.find("writes_not_restored", ATTENTION, POSTE, "Valeur d'origine NON rétablie : " + ", ".join(w["not_restored"]),
-                      "Vérifier ces réglages sur le poste.")
+                      "Vérifier ces réglages sur le poste.", key="writes_not_restored",
+                      args={"names": ", ".join(w["not_restored"])})
 
     async def _write_func(self, name: str) -> None:
         values, error, _ = await self._send(f"u {name}")
@@ -465,7 +490,7 @@ class Exploration:
     async def step_burst(self) -> None:
         if self.burst <= 0:
             return
-        self.out(f"  Rafale de {self.burst} lectures mêlées…")
+        self.out(_t("explore.burst", count=self.burst))
         expected_freq, modes = self._orig.get("freq"), set(self.profile.modes)
         cycle = ["f", "m", "t"] + (["l STRENGTH"] if "STRENGTH" in self.profile.get_levels else [])
         errors, wrong, first = 0, 0, ""
@@ -478,7 +503,7 @@ class Exploration:
                 continue
             raw = values.get("#1")
             if line == "t" and str(raw).strip() != "0":
-                raise TxDetected(f"le poste est passé en émission pendant la rafale (PTT = {raw})")
+                raise TxDetected(f"le poste est passé en émission pendant la rafale (PTT = {raw})", "burst_tx", ptt=raw)
             bad = ((line == "f" and (_number(raw) is None or (expected_freq is not None and int(_number(raw)) != expected_freq)))
                    or (line == "m" and modes and raw not in modes)
                    or (line == "l STRENGTH" and _number(raw) is None))
@@ -491,14 +516,16 @@ class Exploration:
         if wrong:
             self.find("burst_shifted", ATTENTION, HAMLIB, f"{wrong} réponse(s) incohérente(s) pendant une rafale de lectures",
                       f"1re : {first}. Réponses décalées ou valeurs d'un cache : limiter la cadence de lecture.",
-                      f"{wrong} inconsistent replies during a burst of mixed reads (first: {first})")
+                      f"{wrong} inconsistent replies during a burst of mixed reads (first: {first})",
+                      key="burst_shifted", args={"count": wrong, "first": first})
         elif errors:
-            self.find("burst_errors", ATTENTION, POSTE, f"{errors} erreur(s) pendant une rafale de lectures", first)
+            self.find("burst_errors", ATTENTION, POSTE, f"{errors} erreur(s) pendant une rafale de lectures", first,
+                      key="burst_errors", args={"count": errors})
 
     async def step_reconnect(self) -> None:
         if self.reconnects <= 0:
             return
-        self.out("  Reconnexions à rigctld…")
+        self.out(_t("explore.reconnect"))
         times, failures = [], []
         for _ in range(self.reconnects):
             await self.client.close()
@@ -514,7 +541,8 @@ class Exploration:
                    f"{len(times)}/{self.reconnects} reconnexions" + (f" ; échecs : {', '.join(failures)}" if failures else ""),
                    round(statistics.median(times), 1) if times else None)
         if failures:
-            self.find("reconnect_failed", ATTENTION, TRX, "Reconnexion à rigctld en échec", ", ".join(failures))
+            self.find("reconnect_failed", ATTENTION, TRX, "Reconnexion à rigctld en échec", ", ".join(failures),
+                      key="reconnect_failed")
 
     async def restore_freq(self) -> None:
         if "freq" in self._orig:
@@ -549,8 +577,9 @@ class Exploration:
                 await step()
         except TxDetected as exc:
             self.result.stopped = str(exc)
-            self.find("stopped_tx", BLOQUANT, POSTE, "Exploration arrêtée", f"{exc} ; rien n'a été remis en état.")
-            self.out(f"  !!! ARRÊT : {exc}")
+            self.find("stopped_tx", BLOQUANT, POSTE, "Exploration arrêtée", f"{exc} ; rien n'a été remis en état.",
+                      key="stopped_tx", args={"cause": exc.shown()})
+            self.out(_t("explore.stopped", cause=exc.shown()))
             self.result.timings = {k: _stats(v) for k, v in self._times.items() if v}
             return self.result
         try:
@@ -559,7 +588,8 @@ class Exploration:
             self.result.stopped, self.result.restored = str(exc), False
         if self.result.restored is False:
             self.find("not_restored", ATTENTION, POSTE, "Fréquence ou mode d'origine non rétablis",
-                      f"origine : {self._orig.get('freq')} Hz, {self._orig.get('mode')}")
+                      f"origine : {self._orig.get('freq')} Hz, {self._orig.get('mode')}", key="not_restored",
+                      args={"freq": self._orig.get("freq"), "mode": self._orig.get("mode")})
         self.result.timings = {k: _stats(v) for k, v in self._times.items() if v}
         self._cache_finding()
         return self.result
@@ -577,7 +607,9 @@ class Exploration:
                   "Un changement fait SUR le poste (bouton, émission au micro) peut se voir avec retard. Le PTT relu peut "
                   "être celui du cache : la station ne doit pas s'y fier seule (ni pour couper, ni pour conclure qu'elle a coupé).",
                   "Replies faster than a serial round trip (cache): " + ", ".join(
-                      {"fréquence": "frequency", "mode": "mode", "PTT": "PTT"}[c] for c in cached))
+                      {"fréquence": "frequency", "mode": "mode", "PTT": "PTT"}[c] for c in cached),
+                  key="rigctld_cache", args={"ms": f"{CACHE_MS:g}", "names": [
+                      {"fréquence": "frequency", "mode": "mode", "PTT": "ptt"}[c] for c in cached]})
 
 
 # Niveaux qui bougent seuls (mesures) : deux lectures différentes ne sont pas un défaut.

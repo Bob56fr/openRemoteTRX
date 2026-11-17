@@ -19,6 +19,7 @@ from dataclasses import asdict, dataclass
 from ..gateway.cat.client import WRITABLE_FUNCS, WRITABLE_LEVELS
 from ..gateway.cat.link import EXTRA_FUNCTIONS, EXTRA_LEVELS, POWER_METER, TX_METERS
 from .profile import HamlibProfile
+from .texts import _t, term
 
 SOCLE, GENERE, FIXE, DECLARATIF = "socle", "genere", "fixe", "declaratif"
 
@@ -134,7 +135,8 @@ def build_plan(profile: HamlibProfile) -> TestPlan:
 
 
 def render_plan(plan: TestPlan, profile: HamlibProfile) -> str:
-    """Texte lisible du cahier de test (option --plan)."""
+    """Texte lisible du cahier de test (fichier plan.txt du rapport : toujours en français ; affichage :
+    render_plan_shown)."""
     lines = [f"Cahier de test : {profile.name} (modèle Hamlib {profile.model}, "
              f"backend {profile.backend_status or 'statut inconnu'}, Hamlib {profile.hamlib_version or '?'})", ""]
     titles = {SOCLE: "Socle obligatoire (un échec refuse le poste)", FIXE: "Tests fixes (communs à tous les postes)",
@@ -146,4 +148,55 @@ def render_plan(plan: TestPlan, profile: HamlibProfile) -> str:
         lines.append("")
     if plan.unused:
         lines.append("Déclaré par Hamlib, non exploité par TRX Remote : " + ", ".join(plan.unused))
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- affichage traduit (lot L3)
+
+def shown_level_label(name: str, profile: HamlibProfile) -> str:
+    both = name in profile.get_functions or name in profile.set_functions
+    return _t("plan.level", what=term(name)) if both else term(name)
+
+
+def shown_label(item: PlanItem, profile: HamlibProfile) -> str:
+    """Libellé d'un test du cahier dans la langue de l'outil (le libellé enregistré reste en français)."""
+    if item.action == "fixed":
+        return _t(f"check.{item.id}")
+    if item.action == "mode":
+        return _t("plan.mode", mode=item.target)
+    if item.action == "read_func":
+        return _t("plan.read", what=term(item.target))
+    if item.action == "read_level":
+        return _t("plan.read", what=shown_level_label(item.target, profile))
+    if item.action in ("write_func", "manual"):
+        return _t("plan.write", what=term(item.target))
+    if item.action == "write_level":
+        return _t("plan.write", what=shown_level_label(item.target, profile))
+    return item.label
+
+
+def shown_note(item: PlanItem) -> str:
+    if not item.note:
+        return ""
+    if item.action == "mode":
+        return _t("plan.note.core")
+    if item.action == "read_level":
+        return _t("plan.note.tx_only")
+    if item.action == "manual" and item.target in NO_AUTO_WRITE:
+        return _t("plan.note.no_auto", why=_t(f"plan.no_auto.{item.target}"))
+    return item.note
+
+
+def render_plan_shown(plan: TestPlan, profile: HamlibProfile) -> str:
+    """Cahier de test MONTRÉ à l'opérateur (option --plan) dans sa langue ; en français, identique à render_plan."""
+    lines = [_t("plan.title", name=profile.name, model=profile.model,
+                backend=profile.backend_status or _t("plan.status_unknown"), hamlib=profile.hamlib_version or "?"), ""]
+    for category in (SOCLE, FIXE, GENERE):
+        lines.append(_t(f"plan.category.{category}"))
+        for item in plan.of(category):
+            note = shown_note(item)
+            lines.append(f"  - {shown_label(item, profile)}" + (f"  ({note})" if note else ""))
+        lines.append("")
+    if plan.unused:
+        lines.append(_t("plan.unused", names=", ".join(plan.unused)))
     return "\n".join(lines)

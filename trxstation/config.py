@@ -17,8 +17,17 @@ from dataclasses import dataclass, field, fields
 from datetime import date
 from pathlib import Path
 
+from .i18n import tool_translator
 from .passwords import is_valid_hash
 from .paths import default_state_dir, default_status_path
+
+
+def _t(_key: str, **fields) -> str:
+    """Message montré à l'opérateur (problème bloquant, avertissement), dans la langue de l'outil (lot L3) :
+    catalogues `trxstation/i18n/checks.<langue>.json`, le français en référence. Lu À CHAQUE APPEL (jamais au
+    chargement du module). Les noms de réglages ([safety] tot_s…) restent tels quels dans toutes les langues."""
+    return tool_translator("checks")(_key, **fields)       # `_key` : un champ du texte peut s'appeler `key`
+
 
 SCHEMA_VERSION = 1
 DUMMY_MODEL = 1  # modèle factice Hamlib : simule un poste, sans matériel
@@ -451,55 +460,54 @@ def validate_cluster(c: Cluster, modules: "Modules") -> list[str]:
     p: list[str] = []
     for name in ("enabled", "cty_update"):
         if not isinstance(getattr(c, name), bool):
-            p.append(f"[cluster] {name} doit valoir true ou false")
+            p.append(_t("bool", where="[cluster]", name=name))
     for key, values, allowed in (("modes", c.modes, MODES), ("bands", c.bands, BAND_NAMES),
                                  ("continents", c.continents, CONTINENTS)):
         if not isinstance(values, list) or any(v not in allowed for v in values):
-            p.append(f"[cluster] {key} : valeurs possibles {' '.join(allowed)} (numérique exclu)")
+            p.append(_t("cluster.values", key=key, allowed=' '.join(allowed)))
     if not isinstance(c.blacklist, list) or any(not isinstance(b, str) or not re.fullmatch(r"[A-Z0-9/]{1,15}\*?", b)
                                                 for b in c.blacklist):
-        p.append("[cluster] blacklist : indicatifs en majuscules, « XX* » pour un préfixe")
+        p.append(_t("cluster.blacklist"))
     if c.cb_call and own_call_problem(c.cb_call):
         p.append(f"[cluster] cb_call : {own_call_problem(c.cb_call)}")
     for key in ("ttl_min", "rbn_ttl_min"):
         v = getattr(c, key)
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not 1 <= v <= 120:
-            p.append(f"[cluster] {key} : de 1 à 120 minutes")
+            p.append(_t("cluster.ttl", key=key))
     names: set[str] = set()
     for s in c.source:
         label = f"[[cluster.source]] « {s.name} »"
         if not isinstance(s.name, str) or not _CLUSTER_NAME_RE.fullmatch(s.name):
-            p.append(f"[[cluster.source]] name {s.name!r} : lettres, chiffres, - et _ (32 au plus)")
+            p.append(_t("cluster.source_name", name=repr(s.name)))
         elif s.name in names:
-            p.append(f"{label} : nom en double")
+            p.append(_t("cluster.source_duplicate", label=label))
         names.add(s.name)
         if s.type not in CLUSTER_SOURCE_TYPES:
-            p.append(f"{label} : type {' ou '.join(CLUSTER_SOURCE_TYPES)} attendu")
+            p.append(_t("cluster.source_type", label=label, types=' ou '.join(CLUSTER_SOURCE_TYPES)))
         elif s.type == "web":
             if not isinstance(s.url, str) or not re.fullmatch(r"https://[A-Za-z0-9.-]+(:\d+)?(/[^\s\"']*)?", s.url):
-                p.append(f"{label} : url https://… attendue")
+                p.append(_t("cluster.source_url", label=label))
         else:
             if not isinstance(s.host, str) or not re.fullmatch(r"[A-Za-z0-9.-]{1,253}", s.host or ""):
-                p.append(f"{label} : host (nom ou adresse du serveur) attendu")
+                p.append(_t("cluster.source_host", label=label))
             if isinstance(s.port, bool) or not isinstance(s.port, int) or not 1 <= s.port <= 65535:
-                p.append(f"{label} : port de 1 à 65535")
+                p.append(_t("cluster.source_port", label=label))
         if s.call and own_call_problem(s.call):
             p.append(f"{label} : call : {own_call_problem(s.call)}")
         if s.secret and (not isinstance(s.secret, str) or not _CLUSTER_NAME_RE.fullmatch(s.secret)):
-            p.append(f"{label} : secret = NOM du mot de passe dans secrets.toml (lettres, chiffres, - et _)")
+            p.append(_t("cluster.source_secret", label=label))
         if not isinstance(s.enabled, bool):
-            p.append(f"{label} : enabled doit valoir true ou false")
+            p.append(_t("bool_at", where=label, name="enabled"))
         if isinstance(s.priority, bool) or not isinstance(s.priority, int) or not 1 <= s.priority <= 99:
-            p.append(f"{label} : priority de 1 à 99")
+            p.append(_t("cluster.source_priority", label=label))
     if c.enabled is True:
         active = [s for s in c.source if s.enabled is True]
         if not active:
-            p.append("[cluster] activé sans aucune source active")
+            p.append(_t("cluster.no_source"))
         if any(s.type != "web" and not s.call for s in active) and own_call_problem(c.call):
-            p.append("[cluster] call : VOTRE indicatif est obligatoire pour se connecter aux clusters et au RBN "
-                     f"({own_call_problem(c.call)})")
+            p.append(_t("cluster.call_required", problem=own_call_problem(c.call)))
         if "cluster" not in modules.run:
-            p.append("[cluster] activé mais « cluster » absent de [modules] run : le module ne serait jamais lancé")
+            p.append(_t("module_not_run", where="[cluster]", module="cluster"))
     return p
 
 
@@ -556,41 +564,41 @@ def validate(cfg: Config) -> list[str]:
     """Retourne la liste des erreurs bloquantes (vide si la config est valide)."""
     p: list[str] = []
     if cfg.schema_version != SCHEMA_VERSION:
-        p.append(f"schema_version {cfg.schema_version} non supporté (attendu : {SCHEMA_VERSION})")
+        p.append(_t("schema_version", version=cfg.schema_version, expected=SCHEMA_VERSION))
 
     r = cfg.rig
     if not isinstance(r.model, int) or r.model <= 0:
-        p.append("[rig] model : numéro Hamlib requis (voir `rigctl -l`)")
+        p.append(_t("rig.model"))
     elif r.model != DUMMY_MODEL and not r.port:
-        p.append("[rig] port : requis pour un vrai poste")
+        p.append(_t("rig.port"))
     if not 0 <= r.max_power_w <= 2000:
-        p.append("[rig] max_power_w doit être compris entre 0 et 2000 (0 = inconnue)")
+        p.append(_t("rig.max_power_w"))
     for mode in r.tx_modes:
         if not re.fullmatch(r"[A-Za-z0-9\-]{1,16}", mode):
-            p.append(f"[rig] tx_modes : « {mode} » n'est pas un nom de mode valide")
+            p.append(_t("rig.tx_modes", mode=mode))
     if r.ptt_type not in PTT_TYPES:
-        p.append(f"[rig] ptt_type '{r.ptt_type}' invalide (choix : {', '.join(PTT_TYPES)})")
+        p.append(_t("rig.ptt_type", ptt_type=r.ptt_type, choices=', '.join(PTT_TYPES)))
     if r.speed is not None and r.speed <= 0:
-        p.append("[rig] speed doit être positif")
+        p.append(_t("positive", where="[rig]", name="speed"))
 
     if cfg.audio.sample_rate != 48000:
-        p.append("[audio] sample_rate : seul 48000 est géré")
+        p.append(_t("audio.sample_rate"))
     for name in ("rx_gain_db", "tx_gain_db"):
         if not -40 <= getattr(cfg.audio, name) <= 20:
-            p.append(f"[audio] {name} doit rester entre -40 et +20 dB")
+            p.append(_t("audio.gain", name=name))
     seen: set[str] = set()
     for client in cfg.clients:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", client.id):
-            p.append(f"[[clients]] identifiant invalide : {client.id!r} (lettres, chiffres, _ et -, 32 max)")
+            p.append(_t("clients.id_invalid", id=repr(client.id)))
         elif client.id in seen:
-            p.append(f"[[clients]] identifiant en double : {client.id}")
+            p.append(_t("clients.id_duplicate", id=client.id))
         seen.add(client.id)
         if bool(client.password_hash) == bool(client.token):
-            p.append(f"[[clients]] {client.id} : il faut exactement un secret (password_hash, ou à défaut token)")
+            p.append(_t("clients.one_secret", id=client.id))
         elif client.password_hash and not is_valid_hash(client.password_hash):
-            p.append(f"[[clients]] {client.id} : password_hash invalide (refais trx-setup --set-password {client.id})")
+            p.append(_t("clients.bad_hash", id=client.id))
         elif client.token and len(client.token) < 16:
-            p.append(f"[[clients]] {client.id} : jeton trop court (16 caractères minimum)")
+            p.append(_t("clients.short_token", id=client.id))
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
     p += _swr_problems(cfg.swr)
@@ -602,142 +610,135 @@ def validate(cfg: Config) -> list[str]:
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
-        p.append("[network] tls_cert et tls_key vont ensemble")
+        p.append(_t("network.tls_pair"))
     for proxy in cfg.network.trusted_proxies:
         try:
             ipaddress.ip_network(proxy, strict=False)
         except ValueError:
-            p.append(f"[network] trusted_proxies : « {proxy} » n'est pas une adresse IP ou un réseau CIDR")
+            p.append(_t("network.trusted_proxies", proxy=proxy))
     for server in cfg.network.ice_servers:
         if not re.fullmatch(r"(stun|turn)s?:[^\s]+", server):
-            p.append(f"[network] ice_servers : « {server} » doit commencer par stun: ou turn:")
+            p.append(_t("network.ice_servers", server=server))
 
     n = cfg.network
     if n.rigctld_host not in ("127.0.0.1", "localhost", "::1"):
-        p.append("[network] rigctld_host doit rester local : rigctld n'a aucune authentification")
+        p.append(_t("network.rigctld_host"))
     for name, port in (("rigctld_port", n.rigctld_port), ("gateway_port", n.gateway_port)):
         if not 1 <= port <= 65535:
-            p.append(f"[network] {name} hors plage")
+            p.append(_t("out_of_range", where="[network]", name=name))
 
     s = cfg.safety
     if not 0 < s.tot_s <= s.tot_ceiling_s:
-        p.append(f"Durée maximale d'une émission (TOT) de {s.tot_s} s refusée : elle doit être comprise entre 1 et "
-                 f"{s.tot_ceiling_s} s, le plafond de cette station ([safety] tot_s, plafond tot_ceiling_s)")
+        p.append(_t("safety.tot", tot=s.tot_s, ceiling=s.tot_ceiling_s))
     if not 0 < s.warn_before_s < s.tot_s:
-        p.append(f"Le bip d'avertissement ({s.warn_before_s} s avant la coupure) doit sonner pendant l'émission : "
-                 f"moins que la durée maximale ({s.tot_s} s) ([safety] warn_before_s)")
+        p.append(_t("safety.warn_before", warn=s.warn_before_s, tot=s.tot_s))
     if s.heartbeat_interval_ms <= 0 or s.heartbeat_timeout_ms < 2 * s.heartbeat_interval_ms:
-        p.append("[safety] heartbeat_timeout_ms doit valoir au moins 2x heartbeat_interval_ms")
+        p.append(_t("safety.heartbeat"))
     if not isinstance(s.allow_replay, bool):
-        p.append("[safety] allow_replay doit valoir true ou false")
+        p.append(_t("bool", where="[safety]", name="allow_replay"))
     if not TEMP_MIN_C <= s.rig_temp_warn_c < s.rig_temp_cut_c <= TEMP_MAX_C:
-        p.append(f"Seuils de température du poste refusés ({s.rig_temp_warn_c} et {s.rig_temp_cut_c} °C) : "
-                 f"l'avertissement doit être plus bas que la coupure, les deux entre {TEMP_MIN_C} et {TEMP_MAX_C} °C "
-                 "([safety] rig_temp_warn_c, rig_temp_cut_c)")
+        p.append(_t("safety.rig_temp", warn=s.rig_temp_warn_c, cut=s.rig_temp_cut_c, low=TEMP_MIN_C, high=TEMP_MAX_C))
 
     v = cfg.supervisor
     if v.tot_abs_s <= s.tot_ceiling_s:
-        p.append("[supervisor] tot_abs_s doit être strictement supérieur à safety.tot_ceiling_s")
+        p.append(_t("supervisor.tot_abs"))
     if isinstance(v.local_tx_max_s, bool) or not isinstance(v.local_tx_max_s, int)             or not 0 < v.local_tx_max_s <= LOCAL_TX_CEILING_S:
         # pas de borne basse liée à tot_abs_s : une station.toml existante resterait refusée ; le superviseur prend le
         # plus grand des deux (jamais moins que le TOT absolu)
-        p.append(f"[supervisor] local_tx_max_s doit être un entier entre 1 et {LOCAL_TX_CEILING_S} s")
+        p.append(_t("supervisor.local_tx_max", ceiling=LOCAL_TX_CEILING_S))
     if v.max_reboots_per_hour < 0:
-        p.append("[supervisor] max_reboots_per_hour ne peut pas être négatif")
+        p.append(_t("not_negative", where="[supervisor]", name="max_reboots_per_hour"))
     if v.stale_after_s < 0.5:
-        p.append("[supervisor] stale_after_s doit valoir au moins 0,5 s (la passerelle écrit toutes les 0,25 s)")
+        p.append(_t("supervisor.stale_after"))
     for name in ("poll_interval_s", "recovery_wait_s", "healthy_reset_s", "rigctld_fail_s", "temp_alert_c"):
         if getattr(v, name) <= 0:
-            p.append(f"[supervisor] {name} doit être positif")
+            p.append(_t("positive", where="[supervisor]", name=name))
     for name in ("startup_grace_s", "mismatch_grace_s"):
         if getattr(v, name) < 0:
-            p.append(f"[supervisor] {name} ne peut pas être négatif")
+            p.append(_t("not_negative", where="[supervisor]", name=name))
     for name in ("mem_alert_pct", "disk_alert_pct"):
         value = getattr(v, name)
         if isinstance(value, bool) or not isinstance(value, int) or not (value == 0 or 50 <= value <= 99):
-            p.append(f"[supervisor] {name} doit valoir 0 (aucune alerte) ou un entier de 50 à 99 (%)")
+            p.append(_t("supervisor.alert_pct", name=name))
     if v.alive_every_h != 0 and not 0.25 <= v.alive_every_h <= 168:
-        p.append("[supervisor] alive_every_h doit valoir 0 (aucun battement) ou entre 0,25 et 168 heures")
+        p.append(_t("supervisor.alive_every_h"))
     if v.service_mode not in ("auto", "systemd", "managed"):
-        p.append("[supervisor] service_mode doit valoir auto, systemd ou managed")
+        p.append(_t("supervisor.service_mode"))
     if not 1 <= v.instance_lock_port <= 65535:
-        p.append("[supervisor] instance_lock_port hors plage")
+        p.append(_t("out_of_range", where="[supervisor]", name="instance_lock_port"))
     if not v.status_path or not v.state_dir:
-        p.append("[supervisor] status_path et state_dir sont requis")
+        p.append(_t("supervisor.paths"))
     if v.notify_url and not v.notify_url.startswith(("https://", "http://")):
-        p.append("[supervisor] notify_url doit commencer par http:// ou https://")
+        p.append(_t("supervisor.notify_url"))
     if v.notify_lang not in ("fr", "en"):
-        p.append("[supervisor] notify_lang doit valoir fr ou en (langues du catalogue d'erreurs)")
+        p.append(_t("supervisor.notify_lang"))
 
     m = cfg.modules
     for name in m.run:
         if not re.fullmatch(r"[a-z][a-z0-9_-]{1,31}", name):
-            p.append(f"[modules] run : « {name} » n'est pas un nom de module valide")
+            p.append(_t("modules.run_name", name=name))
     if len(set(m.run)) != len(m.run):
-        p.append("[modules] run : un module est cité deux fois")
+        p.append(_t("modules.run_twice"))
     if not 1024 <= m.bus_port <= 65535:
-        p.append("[modules] bus_port hors plage (1024 à 65535)")
+        p.append(_t("modules.bus_port_range"))
     elif m.bus_port in (n.gateway_port, n.rigctld_port, v.instance_lock_port):
-        p.append("[modules] bus_port doit différer de gateway_port, rigctld_port et instance_lock_port")
+        p.append(_t("modules.bus_port_clash"))
     if m.run_as and not re.fullmatch(r"[a-z_][a-z0-9_-]{0,31}", m.run_as):
-        p.append(f"[modules] run_as : « {m.run_as} » n'est pas un nom de compte valide")
+        p.append(_t("modules.run_as", account=m.run_as))
     elif m.run_as == "root":
-        p.append("[modules] run_as : un module ne doit jamais tourner en root")
+        p.append(_t("modules.run_as_root"))
 
     for name in ("enabled", "allow_prerelease"):
         if not isinstance(getattr(cfg.update, name), bool):
-            p.append(f"[update] {name} doit valoir true ou false")
+            p.append(_t("bool", where="[update]", name=name))
 
     sc = cfg.selcall
     for name in ("enabled", "send_on_tx_end", "notify_on_call"):
         if not isinstance(getattr(sc, name), bool):
-            p.append(f"[selcall] {name} doit valoir true ou false")
+            p.append(_t("bool", where="[selcall]", name=name))
     ranges = {"manual_repeat": (1, 5), "manual_gap_ms": (200, 3000), "attenuation_db": (6, 60),
               "audio_delay_ms": (250, 1000), "history_size": (1, 50)}
     for name, (lo, hi) in ranges.items():
         v = getattr(sc, name)
         if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
-            p.append(f"[selcall] {name} : entier de {lo} à {hi} attendu")
+            p.append(_t("int_range_expected", where="[selcall]", name=name, low=lo, high=hi))
     if sc.filter_mode not in SELCALL_FILTER_MODES:
-        p.append(f"[selcall] filter_mode : {' | '.join(SELCALL_FILTER_MODES)} attendu")
+        p.append(_t("selcall.filter_mode", modes=' | '.join(SELCALL_FILTER_MODES)))
     if not isinstance(sc.tx_level_dbfs, (int, float)) or isinstance(sc.tx_level_dbfs, bool) or not -30 <= sc.tx_level_dbfs <= -1:
-        p.append("[selcall] tx_level_dbfs : de -30 à -1 dBFS (sous le seuil d'ALC)")
+        p.append(_t("selcall.tx_level"))
 
     sp = cfg.spectrum
     reserved = sorted(set(_conf_keys(r.extra_conf)) & set(RESERVED_RIGCTLD_CONF))
     if reserved:
-        p.append(f"[rig] extra_conf : {', '.join(reserved)} interdit(s) ici (réglé par [spectrum] ; le serveur de "
-                 "commandes UDP de Hamlib n'a aucune authentification)")
+        p.append(_t("rig.extra_conf_reserved", keys=', '.join(reserved)))
     if set(_conf_keys(r.extra_conf)) & set(SAFETY_RIGCTLD_CONF):
-        p.append("[rig] extra_conf : cache_timeout interdit (la station coupe le cache de rigctld : sinon la relecture "
-                 "du PTT renvoie la valeur commandée au lieu de l'état réel du poste)")
+        p.append(_t("rig.extra_conf_cache"))
     if not isinstance(sp.enabled, bool):
-        p.append("[spectrum] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[spectrum]", name="enabled"))
     if isinstance(sp.data_port, bool) or not isinstance(sp.data_port, int) or not 1024 <= sp.data_port <= 65535:
-        p.append("[spectrum] data_port hors plage (1024 à 65535)")
+        p.append(_t("spectrum.data_port"))
     if isinstance(sp.max_fps, bool) or not isinstance(sp.max_fps, int) or not 1 <= sp.max_fps <= 20:
-        p.append("[spectrum] max_fps : de 1 à 20 images par seconde")
+        p.append(_t("spectrum.max_fps"))
     if sp.source not in SPECTRUM_SOURCES:
-        p.append(f"[spectrum] source : {' ou '.join(SPECTRUM_SOURCES)} attendu")
+        p.append(_t("spectrum.source", sources=' ou '.join(SPECTRUM_SOURCES)))
     if sp.enabled is True and sp.source == "civ_port":
         same = {x.strip().lower() for x in (r.port, r.ptt_port) if x and x.strip()}
         if not isinstance(sp.port, str) or not sp.port.strip():
-            p.append("[spectrum] port : second port du poste à indiquer (ex. COM7), ou enabled = false")
+            p.append(_t("spectrum.port_missing"))
         elif sp.port.strip().lower() in same:
-            p.append(f"[spectrum] port {sp.port} : c'est le port CAT ou PTT du poste ; il faut le SECOND port, réglé en CI-V")
+            p.append(_t("spectrum.port_is_cat", port=sp.port))
         if not isinstance(sp.civ_address, str) or parse_civ_address(sp.civ_address) is None:
-            p.append("[spectrum] civ_address : adresse CI-V du poste en hexadécimal, de 01 à DF (ex. B6)")
+            p.append(_t("spectrum.civ_address"))
         if sp.baud not in CIV_BAUDS:
-            p.append(f"[spectrum] baud : {', '.join(map(str, CIV_BAUDS))}")
+            p.append(_t("spectrum.baud", bauds=', '.join(map(str, CIV_BAUDS))))
         if not is_icom_model(r.model):
-            p.append("[spectrum] source civ_port : postes Icom seulement (modèle Hamlib 3xxx)")
+            p.append(_t("spectrum.icom_only"))
     if sp.enabled is True and sp.source == "rigctld" and r.speed and r.speed < SPECTRUM_MIN_SPEED:
-        p.append(f"[spectrum] le spectre exige [rig] speed = {SPECTRUM_MIN_SPEED} au moins (débit actuel {r.speed}) : "
-                 "à un débit plus bas, il saturerait la liaison et retarderait les ordres du PTT")
+        p.append(_t("spectrum.speed", min_speed=SPECTRUM_MIN_SPEED, speed=r.speed))
 
     for b in cfg.bands:
         if not 0 < b.low_mhz < b.high_mhz:
-            p.append(f"[[bands]] '{b.name}' : bornes invalides")
+            p.append(_t("bands.limits", name=b.name))
     p += validate_cluster(cfg.cluster, cfg.modules)
     return p
 
@@ -747,25 +748,25 @@ def _client_problems(client: ClientAuth, clients: list[ClientAuth]) -> list[str]
     jamais donner un compte opérateur."""
     p, where = [], f"[[clients]] {client.id}"
     if client.role not in ROLES:
-        p.append(f"{where} : role « {client.role} » inconnu (operator ou listener)")
+        p.append(_t("clients.role", where=where, role=client.role))
     if not isinstance(client.pseudo, str) or len(client.pseudo) > PSEUDO_MAX or client.pseudo != client.pseudo.strip() \
             or any(ord(ch) < 32 or ord(ch) == 127 for ch in client.pseudo):
-        p.append(f"{where} : pseudo invalide ({PSEUDO_MAX} caractères au plus, sans caractère de contrôle ni espace autour)")
+        p.append(_t("clients.pseudo_invalid", where=where, max=PSEUDO_MAX))
     elif client.pseudo and any(client.pseudo.casefold() == other.id.casefold() for other in clients):
-        p.append(f"{where} : le pseudo « {client.pseudo} » est l'identifiant d'un compte (il serait montré aux autres connectés)")
+        p.append(_t("clients.pseudo_is_id", where=where, pseudo=client.pseudo))
     if not isinstance(client.enabled, bool):
-        p.append(f"{where} : enabled doit valoir true ou false")
+        p.append(_t("bool_at", where=where, name="enabled"))
     if not isinstance(client.admin, bool):
-        p.append(f"{where} : admin doit valoir true ou false")
+        p.append(_t("bool_at", where=where, name="admin"))
     elif client.admin and client.role != "operator":
-        p.append(f"{where} : un visiteur ne peut pas être administrateur (admin = true réservé aux opérateurs)")
+        p.append(_t("clients.listener_admin", where=where))
     if not isinstance(client.expires, str) or (client.expires and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", client.expires)):
-        p.append(f"{where} : expires doit être une date AAAA-MM-JJ")
+        p.append(_t("clients.expires_format", where=where))
     elif client.expires:
         try:
             date.fromisoformat(client.expires)
         except ValueError:
-            p.append(f"{where} : expires « {client.expires} » n'est pas une date valide")
+            p.append(_t("clients.expires_invalid", where=where, expires=client.expires))
     return p
 
 
@@ -776,24 +777,24 @@ def _access_problems(a: Access) -> list[str]:
                             ("overload_lag_ms", 20, 2000), ("overload_mem_pct", 1, 50)):
         value = getattr(a, name)
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
-            p.append(f"[access] {name} doit être un entier entre {low} et {high}")
+            p.append(_t("int_between", where="[access]", name=name, low=low, high=high))
     for name in ("listeners_need_operator", "listeners_outside_bands"):
         if not isinstance(getattr(a, name), bool):
-            p.append(f"[access] {name} doit valoir true ou false")
+            p.append(_t("bool", where="[access]", name=name))
     return p
 
 
 def _swr_problems(s: Swr) -> list[str]:
     p = []
     if not isinstance(s.enabled, bool):
-        p.append("[swr] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[swr]", name="enabled"))
     for name, low, high in (("max_power_pct", 5, 50), ("max_points", 2, 200)):
         value = getattr(s, name)
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
-            p.append(f"[swr] {name} doit être un entier entre {low} et {high}")
+            p.append(_t("int_between", where="[swr]", name=name, low=low, high=high))
     value = s.point_tx_max_s
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.5 <= value <= 3.0:
-        p.append("[swr] point_tx_max_s doit être un nombre entre 0.5 et 3")
+        p.append(_t("number_between", where="[swr]", name="point_tx_max_s", low="0.5", high="3"))
     return p
 
 
@@ -813,9 +814,9 @@ def _netprobe_problems(n: Netprobe) -> list[str]:
     p = []
     for name in ("enabled", "vpn_shared_warn"):
         if not isinstance(getattr(n, name), bool):
-            p.append(f"[netprobe] {name} doit valoir true ou false")
+            p.append(_t("bool", where="[netprobe]", name=name))
     if not _number(n.heartbeat_interval_s) or not 0.5 <= n.heartbeat_interval_s <= 10:
-        p.append("[netprobe] heartbeat_interval_s doit être un nombre entre 0.5 et 10")
+        p.append(_t("number_between", where="[netprobe]", name="heartbeat_interval_s", low="0.5", high="10"))
     for name, low, high in (("outage_missed_beats", 2, 20), ("rtt_warn_ms", 20, 5000), ("rtt_alert_ms", 20, 5000),
                             ("alert_outage_s", 0, 3600), ("alert_cooldown_s", 30, 86400),
                             ("log_retention_days", 1, 30), ("stats_retention_days", 7, 90),
@@ -823,21 +824,21 @@ def _netprobe_problems(n: Netprobe) -> list[str]:
                             ("sinr_warn_db", -20, 30), ("sinr_alert_db", -20, 30)):
         value = getattr(n, name)
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
-            p.append(f"[netprobe] {name} doit être un entier entre {low} et {high}")
+            p.append(_t("int_between", where="[netprobe]", name=name, low=low, high=high))
     for name in ("loss_warn_pct", "loss_alert_pct"):
         value = getattr(n, name)
         if not _number(value) or not 0.1 <= value <= 100:
-            p.append(f"[netprobe] {name} doit être un nombre entre 0.1 et 100")
+            p.append(_t("number_between", where="[netprobe]", name=name, low="0.1", high="100"))
     if not p:
         for warn, alert in (("loss_warn_pct", "loss_alert_pct"), ("rtt_warn_ms", "rtt_alert_ms")):
             if getattr(n, warn) >= getattr(n, alert):
-                p.append(f"[netprobe] {warn} doit être plus petit que {alert}")
+                p.append(_t("netprobe.warn_below_alert", warn=warn, alert=alert))
         if n.rsrp_alert_dbm >= n.rsrp_warn_dbm or n.sinr_alert_db >= n.sinr_warn_db:
-            p.append("[netprobe] les seuils d'alerte du signal doivent être plus bas que ceux d'avertissement")
+            p.append(_t("netprobe.signal_thresholds"))
     if not isinstance(n.lan_target, str) or (n.lan_target != "auto" and not _ip_text(n.lan_target)):
-        p.append('[netprobe] lan_target : adresse IP attendue (ou "auto")')
+        p.append(_t("netprobe.lan_target"))
     if not isinstance(n.internet_target, str) or (n.internet_target and not _ip_text(n.internet_target)):
-        p.append('[netprobe] internet_target : adresse IP attendue (ou "" : aucune)')
+        p.append(_t("netprobe.internet_target"))
     return p
 
 
@@ -853,42 +854,41 @@ def breizh_host_allowed(host: str) -> bool:
 def _breizh_problems(b: Breizh, cfg: Config) -> list[str]:
     p = []
     if not isinstance(b.enabled, bool):
-        p.append("[breizh] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[breizh]", name="enabled"))
     if not isinstance(b.host, str) or (b.host and not breizh_host_allowed(b.host)):
-        p.append("[breizh] host : adresse IP privée du PC de Breizh attendue (10.x, 172.16-31.x, 192.168.x, "
-                 "169.254.x, 127.x, fd00::/8, fe80::/10) ; ni nom d'hôte ni adresse publique (le micro circule en clair)")
+        p.append(_t("breizh.host_private"))
     elif b.enabled is True and not b.host:
-        p.append("[breizh] host : adresse du PC de Breizh requise (ou enabled = false)")
+        p.append(_t("breizh.host_required"))
     if not isinstance(b.key_file, str):
-        p.append("[breizh] key_file doit être un chemin")
+        p.append(_t("path", where="[breizh]", name="key_file"))
     ints = {"port": (1024, 65535), "block_timeout_ms": (15, 100), "lost_ms": (50, 500)}
     for name, (low, high) in ints.items():
         value = getattr(b, name)
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
-            p.append(f"[breizh] {name} doit être un entier entre {low} et {high}")
+            p.append(_t("int_between", where="[breizh]", name=name, low=low, high=high))
     if (isinstance(b.block_timeout_ms, int) and isinstance(b.lost_ms, int)
             and not isinstance(b.lost_ms, bool) and b.lost_ms <= b.block_timeout_ms):
-        p.append("[breizh] lost_ms doit être plus grand que block_timeout_ms")
+        p.append(_t("breizh.lost_ms"))
     value = b.fallback_gain_db
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not -20 <= value <= 0:
-        p.append("[breizh] fallback_gain_db doit être un nombre entre -20 et 0 dB")
+        p.append(_t("breizh.fallback_gain"))
     value = b.reactivate_after_s
     if isinstance(value, bool) or not isinstance(value, int) or not (value == 0 or 30 <= value <= 3600):
-        p.append("[breizh] reactivate_after_s doit valoir 0 (seulement à la main) ou un entier entre 30 et 3600")
+        p.append(_t("breizh.reactivate"))
     if isinstance(b.host, str) and b.host and is_loopback(b.host) and b.port in (
             cfg.network.gateway_port, cfg.network.rigctld_port, cfg.modules.bus_port, cfg.supervisor.instance_lock_port):
-        p.append("[breizh] port : déjà pris sur cette machine (passerelle, rigctld, bus des modules ou superviseur)")
+        p.append(_t("breizh.port_taken"))
     return p
 
 
 def _presence_problems(pr: Presence) -> list[str]:
     p = []
     if not isinstance(pr.enabled, bool):
-        p.append("[presence] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[presence]", name="enabled"))
     if not isinstance(pr.relay_url, str) or not _PRESENCE_RELAY_RE.fullmatch(pr.relay_url):
-        p.append("[presence] relay_url : adresse https:// du relais attendue (http:// seulement vers 127.0.0.1)")
+        p.append(_t("relay_url", where="[presence]"))
     if not isinstance(pr.key_file, str):
-        p.append("[presence] key_file doit être un chemin")
+        p.append(_t("path", where="[presence]", name="key_file"))
     return p
 
 
@@ -898,13 +898,13 @@ _LOCATOR = re.compile(r"^[A-R]{2}[0-9]{2}([A-X]{2})?$")
 def _freedv_problems(fd: Freedv) -> list[str]:
     p = []
     if not isinstance(fd.enabled, bool):
-        p.append("[freedv] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[freedv]", name="enabled"))
     for name in ("ka9q_path", "radae_rx_path"):
         value = getattr(fd, name)
         if not isinstance(value, str) or not value.strip() or any(c in value for c in "\r\n\0"):
-            p.append(f"[freedv] {name} : chemin du programme (ou son nom, cherché dans le PATH) attendu")
+            p.append(_t("freedv.program", name=name))
     if not isinstance(fd.locator, str) or (fd.locator.strip() and not _LOCATOR.match(fd.locator.strip().upper())):
-        p.append("[freedv] locator : locator Maidenhead de 4 ou 6 caractères attendu (ex. JN18 ou JN18du), ou vide")
+        p.append(_t("freedv.locator"))
     return p
 
 
@@ -918,52 +918,51 @@ def _pow2(v) -> bool:
 def _sdr_problems(sd: Sdr, modules: Modules) -> list[str]:
     p = []
     if not isinstance(sd.enabled, bool):
-        p.append("[sdr] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[sdr]", name="enabled"))
     if sd.driver not in SDR_DRIVERS:
-        p.append(f"[sdr] driver : un de {', '.join(SDR_DRIVERS)}")
+        p.append(_t("sdr.driver", drivers=', '.join(SDR_DRIVERS)))
     if not isinstance(sd.serial, str) or (sd.serial and not _SDR_SERIAL.match(sd.serial)):
-        p.append("[sdr] serial : numéro de série du SDR (lettres et chiffres, 4 à 32), voir « trx-sdr --list »")
+        p.append(_t("sdr.serial"))
     if not isinstance(sd.core_path, str) or any(c in sd.core_path for c in "\r\n\0"):
-        p.append("[sdr] core_path : chemin du programme sdr-core, ou vide")
+        p.append(_t("sdr.core_path"))
     if sd.sample_rate_hz not in sdr_rates(sd.driver):
-        p.append(f"[sdr] sample_rate_hz ({sd.driver}) : " + ", ".join(str(r) for r in sdr_rates(sd.driver)) + " (Hz)")
+        p.append(_t("sdr.sample_rate", driver=sd.driver, rates=", ".join(str(r) for r in sdr_rates(sd.driver))))
     for name, lo, hi in (("center_hz", 1_000, 2_000_000_000), ("lna_state", 0, 8), ("gain_reduction_db", 20, 59),
                          ("lines_per_s", 1, 15),      # le bus limite un module à 20 messages par seconde
                          ("max_cpu_pct", 20, 800), ("max_mem_mb", 50, 4000)):
         v = getattr(sd, name)
         if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
-            p.append(f"[sdr] {name} : entier de {lo} à {hi}")
+            p.append(_t("int_range", where="[sdr]", name=name, low=lo, high=hi))
     if sd.antenna not in ("A", "B"):
-        p.append("[sdr] antenna : A ou B")
+        p.append(_t("sdr.antenna"))
     if not isinstance(sd.agc, bool):
-        p.append("[sdr] agc doit valoir true ou false")
+        p.append(_t("bool", where="[sdr]", name="agc"))
     if isinstance(sd.audio_port, bool) or not isinstance(sd.audio_port, int) or not 1024 <= sd.audio_port <= 65535:
-        p.append("[sdr] audio_port : port de 1024 à 65535")
+        p.append(_t("sdr.audio_port_range"))
     elif sd.audio_port == modules.bus_port:
-        p.append("[sdr] audio_port : différent de [modules] bus_port")
+        p.append(_t("sdr.audio_port_bus"))
     if not _pow2(sd.fft_size) or not 512 <= sd.fft_size <= 16384:
-        p.append("[sdr] fft_size : puissance de 2 de 512 à 16384")
+        p.append(_t("sdr.fft_size"))
     if not _pow2(sd.bins) or not 128 <= sd.bins <= min(16384, sd.fft_size if isinstance(sd.fft_size, int) else 16384):
-        p.append("[sdr] bins : puissance de 2 de 128 à fft_size")
+        p.append(_t("sdr.bins"))
     if sd.enabled is True:
         if not sd.serial:
-            p.append("[sdr] activé sans serial : le SDR doit être désigné par son numéro de série (« trx-sdr --list »), "
-                     "jamais pris au hasard")
+            p.append(_t("sdr.no_serial"))
         if "sdr" not in modules.run:
-            p.append("[sdr] activé mais « sdr » absent de [modules] run : le module ne serait jamais lancé")
+            p.append(_t("module_not_run", where="[sdr]", module="sdr"))
     return p
 
 
 def _monitor_link_problems(ml: MonitorLink, modules: Modules) -> list[str]:
     p = []
     if not isinstance(ml.enabled, bool):
-        p.append("[monitor_link] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[monitor_link]", name="enabled"))
     if not isinstance(ml.relay_url, str) or not _PRESENCE_RELAY_RE.fullmatch(ml.relay_url):
-        p.append("[monitor_link] relay_url : adresse https:// du relais attendue (http:// seulement vers 127.0.0.1)")
+        p.append(_t("relay_url", where="[monitor_link]"))
     if not isinstance(ml.key_file, str):
-        p.append("[monitor_link] key_file doit être un chemin")
+        p.append(_t("path", where="[monitor_link]", name="key_file"))
     if ml.enabled is True and "monlink" not in modules.run:
-        p.append("[monitor_link] activé mais « monlink » absent de [modules] run : le module ne serait jamais lancé")
+        p.append(_t("module_not_run", where="[monitor_link]", module="monlink"))
     return p
 
 
@@ -973,20 +972,19 @@ SSH_USER_RE = re.compile(r"[a-z_][a-z0-9_.-]{0,31}")
 def _remote_console_problems(cfg: Config) -> list[str]:
     rc, p = cfg.remote_console, []
     if not isinstance(rc.enabled, bool):
-        p.append("[remote_console] enabled doit valoir true ou false")
+        p.append(_t("bool", where="[remote_console]", name="enabled"))
     if not isinstance(rc.account, str) or (rc.account and not SSH_USER_RE.fullmatch(rc.account)):
-        p.append(f"[remote_console] account : « {rc.account} » n'est pas un nom de compte (minuscules, chiffres, _ . -)")
+        p.append(_t("remote_console.account", account=rc.account))
     if isinstance(rc.port, bool) or not isinstance(rc.port, int) or not 1024 <= rc.port <= 65535:
-        p.append(f"[remote_console] port doit être un numéro de port entre 1024 et 65535 (lu : {rc.port})")
+        p.append(_t("remote_console.port_range", port=rc.port))
     elif rc.port in (cfg.network.gateway_port, cfg.network.rigctld_port):
-        p.append(f"[remote_console] port {rc.port} déjà pris par la station (page de pilotage ou rigctld) : choisis-en un autre")
+        p.append(_t("remote_console.port_taken", port=rc.port))
     if isinstance(rc.idle_min, bool) or not isinstance(rc.idle_min, int) or not 5 <= rc.idle_min <= 240:
-        p.append(f"[remote_console] idle_min doit être entre 5 et 240 minutes (lu : {rc.idle_min})")
+        p.append(_t("remote_console.idle_min", idle=rc.idle_min))
     if rc.enabled is True:
         admins = [c.id for c in cfg.clients if c.admin is True and c.role == "operator" and c.password_hash]
         if not admins:
-            p.append("[remote_console] activé sans aucun compte opérateur administrateur (admin = true, avec un mot de "
-                     "passe) : personne ne pourrait se connecter (menu 4.6)")
+            p.append(_t("remote_console.no_admin"))
     return p
 
 
@@ -1046,45 +1044,39 @@ def exposure_problem(cfg: Config) -> str:
     n = cfg.network
     if is_loopback(n.gateway_bind) or (n.tls_cert and n.tls_key) or n.allow_insecure_http:
         return ""
-    return (f"L'API écouterait sur {n.gateway_bind} SANS chiffrement : mots de passe en clair sur le réseau. "
-            "Configure tls_cert/tls_key, mets un proxy HTTPS devant (gateway_bind = 127.0.0.1), ou, si le trafic est déjà "
-            "chiffré par un VPN, allow_insecure_http = true.")
+    return _t("network.exposure", bind=n.gateway_bind)
 
 
 def warnings(cfg: Config) -> list[str]:
     """Points non bloquants mais à connaître."""
     w: list[str] = []
     if cfg.safety.enforce_bands and not cfg.bands:
-        w.append("Aucune bande autorisée : l'émission sera IMPOSSIBLE (réception seule).")
+        w.append(_t("warn.no_band"))
     if not cfg.safety.enforce_bands:
-        w.append("Contrôle des bandes DÉSACTIVÉ : seul le poste empêche d'émettre hors des bandes (vérifie son réglage, "
-                 "p. ex. « TX limit » sur un Icom).")
+        w.append(_t("warn.bands_off"))
     if cfg.rig.model != DUMMY_MODEL:
         if not cfg.audio.capture_device or not cfg.audio.playback_device:
-            w.append("Périphériques audio non définis : pas d'audio tant qu'ils ne sont pas renseignés.")
+            w.append(_t("warn.no_audio"))
     problem = exposure_problem(cfg)
     if problem:
         w.append(problem)
     if cfg.spectrum.enabled and cfg.spectrum.source == "rigctld" and cfg.rig.port and not cfg.rig.speed:
-        w.append(f"[spectrum] activé avec le débit par défaut de Hamlib : indique [rig] speed = {SPECTRUM_MIN_SPEED} "
-                 "(et le même débit CI-V dans le menu du poste).")
+        w.append(_t("warn.spectrum_speed", min_speed=SPECTRUM_MIN_SPEED))
     if any(c.token for c in cfg.clients):
-        w.append("Des clients utilisent encore un jeton en clair : remplace-le par un mot de passe haché "
-                 "(trx-setup --set-password NOM).")
+        w.append(_t("warn.token"))
     if not cfg.clients:
-        w.append("Aucun client autorisé ([[clients]]) : aucun accès distant (trx-setup --add-client NOM).")
+        w.append(_t("warn.no_client"))
     if cfg.rig.model != DUMMY_MODEL and not cfg.supervisor.notify_url:
-        w.append("Aucune URL d'alerte (notify_url) : les récupérations du superviseur ne seront pas notifiées.")
+        w.append(_t("warn.no_notify"))
     if cfg.rig.ptt_type in ("RTS", "DTR"):
-        w.append("PTT par RTS/DTR : vérifie que l'ouverture du port ne déclenche pas une émission "
-                 "brève au démarrage ou au reset USB.")
+        w.append(_t("warn.ptt_rts_dtr"))
     return w
 
 
 def _build(cls, data: dict, section: str, problems: list[str]):
     known = {f.name for f in fields(cls)}
     for key in sorted(set(data) - known):
-        problems.append(f"[{section}] clé inconnue : {key}")
+        problems.append(_t("unknown_key", section=section, key=key))
     return cls(**{k: v for k, v in data.items() if k in known})
 
 
@@ -1092,7 +1084,7 @@ def _build_cluster(data: dict, problems: list[str]) -> Cluster:
     data = dict(data)
     sources = data.pop("source", [])
     if not isinstance(sources, list):
-        problems.append("[[cluster.source]] : tableau de sources attendu")
+        problems.append(_t("cluster.sources_table"))
         sources = []
     cluster = _build(Cluster, data, "cluster", problems)
     cluster.source = [_build(ClusterSource, s, "cluster.source", problems) for s in sources]
@@ -1110,7 +1102,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
                  "netprobe", "presence", "monitor_link", "remote_console", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
-        problems.append(f"clé inconnue à la racine : {key}")
+        problems.append(_t("unknown_root_key", key=key))
     try:
         cfg = Config(
             schema_version=d.get("schema_version", SCHEMA_VERSION),
@@ -1139,7 +1131,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             clients=[_build(ClientAuth, c, "clients", problems) for c in d.get("clients", [])],
         )
     except TypeError as exc:  # champ obligatoire manquant (ex. Band sans nom)
-        raise ConfigError(problems + [f"structure invalide : {exc}"]) from exc
+        raise ConfigError(problems + [_t("bad_structure", error=exc)]) from exc
     return cfg, problems + validate(cfg)
 
 
@@ -1154,7 +1146,7 @@ def _read_toml(path: str | Path) -> dict:
     try:
         return tomllib.loads(Path(path).read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        raise ConfigError([f"TOML illisible : {exc}"]) from exc
+        raise ConfigError([_t("toml_unreadable", error=exc)]) from exc
 
 
 def load(path: str | Path) -> Config:
