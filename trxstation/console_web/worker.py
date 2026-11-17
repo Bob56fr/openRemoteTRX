@@ -43,6 +43,37 @@ PROMPT_PAIR = re.compile(r"(?:^|[(,;]\s*)(Entrée|Enter|Eingabe|Intro|[a-zA-Z0-9
 ENTER_WORDS = {"entrée", "enter", "eingabe", "intro"}
 ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
+# Messages de la console qui disent un REFUS ou un échec (rouge dans la page) ou un ABANDON sans changement (orange),
+# reconnus par leur clé de traduction : même résultat dans les quatre langues (étape 235). Une clé ajoutée ici doit
+# exister (test).
+REFUSED_KEYS = frozenset({
+    "loop.unknown", "ask_int.2", "ask_yes.4", "ask_pseudo.5", "ask_pseudo.6", "ask_new_password.3",
+    "report.1", "update.3", "edit_config.2", "edit_config.3", "edit_config.6", "pairing.2",
+    "save_profile.1", "save_profile.4", "load_profile.2", "load_profile.3", "load_profile.4",
+    "save_config.5", "save_config.6", "save_config.7", "visitors.2", "visitors.4",
+    "visitor_create.2", "visitor_create.3", "save_accounts.2", "operators.2", "operators.4", "operators.last",
+    "operator_create.3", "operator_create.4", "friends_request.1", "friends_request.2", "friends_do.2",
+    "network.4", "network_export.2", "breizh.2", "breizh.4", "breizh_new_key.2", "breizh_settings.6",
+    "temperature.2", "temperature.7", "run_tests.4", "certificate.9", "sdr.7", "sdr.8", "sdr.16", "sdr.17",
+    "sdr.19", "monitoring.do.refused", "monitoring.fp.differ", "monitoring.report.copy_failed",
+    "alerts.url_bad", "alerts.lang_bad", "alerts.alive_bad", "alerts.test_failed", "indicator.win.failed_link",
+    "remote_console.admins_bad", "remote_console.account_bad",
+})
+UNCHANGED_KEYS = frozenset({
+    "hwtest.5", "qualif.4", "update.17", "install_zip.6", "install_zip.11", "install_zip.13", "edit_config.5",
+    "edit_config.8", "choose_profile.2", "save_profile.3", "save_profile.6", "delete_profile.2", "save_config.4",
+    "save_accounts.1", "temperature.6",
+})
+
+
+def tone_of(keys: list[str]) -> str:
+    """Ton d'un message d'après les clés de traduction lues pour l'écrire."""
+    if any(k in REFUSED_KEYS for k in keys):
+        return "bad"
+    if any(k in UNCHANGED_KEYS for k in keys):
+        return "unchanged"
+    return ""
+
 
 class Channel:
     """Lignes JSON vers le serveur (sortie standard d'origine) ; un verrou : plusieurs fils écrivent."""
@@ -295,13 +326,19 @@ def main(argv: list[str] | None = None) -> int:
 
     def say(text: str) -> None:
         text = ANSI.sub("", str(text))
-        said.append((channel.send({"type": "say", "text": text}), text))
+        message = {"type": "say", "text": text}
+        tone = tone_of(con.t.used)
+        con.t.used.clear()
+        if tone:
+            message["tone"] = tone
+        said.append((channel.send(message), text))
         del said[:-40]
 
     def ask(prompt: str) -> str:
         hint, con.hint = con.hint, None
         form = classify(ANSI.sub("", prompt), said, hint)
         said.clear()
+        con.t.used.clear()
         channel.send(form)
         answer = inbox.answers.get()
         if answer is None:

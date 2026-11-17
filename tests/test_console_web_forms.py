@@ -105,6 +105,26 @@ def test_worker_plays_a_settings_menu_with_numbers_and_yes_no(tmp_path):
     assert kinds[:3] == ["choice", "int", "yesno"] and events[-1]["type"] == "done"
 
 
+def test_a_refusal_is_marked_and_the_pseudo_equal_to_the_login_is_refused_at_its_question(tmp_path):
+    # 4.2 > 2 (créer) : identifiant « essai », pseudo « ESSAI » refusé TOUT DE SUITE (avant le mot de passe), redemandé,
+    # puis « - » = abandon. Le refus arrive marqué « bad » (rouge dans la page).
+    events, errors = run_worker(tmp_path, "4.2", ["2", "essai", "ESSAI", "-", ""])
+    forms = [e for e in events if e["type"] == "form"]
+    assert not any(f["kind"] == "password" for f in forms), "mot de passe demandé avant le refus du pseudo"
+    refused = [e for e in events if e["type"] == "say" and e.get("tone") == "bad"]
+    assert len(refused) == 1 and "pseudo" in refused[0]["text"].lower() and events[-1]["type"] == "done"
+    assert not any(e.get("tone") for e in events if e["type"] == "say" and e is not refused[0])
+
+
+def test_every_key_that_colours_a_message_exists():
+    from trxstation.i18n import catalog
+    fr = catalog("fr", "console")
+    assert not (worker.REFUSED_KEYS | worker.UNCHANGED_KEYS) - fr.keys()
+    assert not worker.REFUSED_KEYS & worker.UNCHANGED_KEYS
+    assert worker.tone_of(["visitors.3", "ask_pseudo.6"]) == "bad" and worker.tone_of(["save_accounts.1"]) == "unchanged"
+    assert worker.tone_of(["visitors.3"]) == ""
+
+
 # ---------------------------------------------------------------- commandes et sudo
 
 FAKE_SUDO = r'''

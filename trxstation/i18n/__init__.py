@@ -42,8 +42,13 @@ class Translator:
     def __init__(self, lang: str = DEFAULT, domain: str = "console") -> None:
         self.lang = lang if lang in LANGS else DEFAULT
         self.domain = domain
+        # Clés lues depuis le dernier message affiché : la console web en déduit un refus (rouge) ou un abandon,
+        # quelle que soit la langue (étape 235). Vidée par celui qui la lit ; bornée.
+        self.used: list[str] = []
 
     def __call__(self, _key: str, **fields) -> str:
+        self.used.append(_key)
+        del self.used[:-20]
         text = catalog(self.lang, self.domain).get(_key)
         if text is None:
             text = catalog(DEFAULT, self.domain).get(_key, _key)

@@ -101,6 +101,7 @@
       const box = QR.test(text) ? el("pre", "qr", text) : message(text);
       box.dataset.id = ev.id;
       if (/ORT-\d{4}/.test(text)) box.classList.add("warn");
+      if (ev.tone === "bad" || ev.tone === "unchanged") box.classList.add(ev.tone);   // refus : bien visible
       l.append(box);
     } else if (ev.type === "form") {
       for (const id of ev.hide || []) { const m = l.querySelector('[data-id="' + id + '"]'); if (m) m.remove(); }

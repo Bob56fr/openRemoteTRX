@@ -1779,8 +1779,9 @@ class Console:
         return before != (a.max_listeners, a.listeners_need_operator, a.operator_grace_s, a.listeners_outside_bands,
                           a.listener_spectrum_fps)
 
-    def _ask_pseudo(self, cfg, current: str = "") -> str | None:
-        """Pseudo montré aux autres connectés ; None = abandon."""
+    def _ask_pseudo(self, cfg, current: str = "", login: str = "") -> str | None:
+        """Pseudo montré aux autres connectés ; None = abandon. `login` : identifiant du compte en création (pas
+        encore dans la configuration), refusé comme pseudo dès la question."""
         from .config import PSEUDO_MAX
         while True:
             answer = self.ask(self.t("ask_pseudo.1", pseudo_max=PSEUDO_MAX)
@@ -1791,7 +1792,7 @@ class Console:
                 return current
             if len(answer) > PSEUDO_MAX or any(ord(ch) < 32 for ch in answer):
                 self.say(self.t("ask_pseudo.5", pseudo_max=PSEUDO_MAX))
-            elif any(answer.casefold() == c.id.casefold() for c in cfg.clients):
+            elif any(answer.casefold() == c.id.casefold() for c in cfg.clients) or answer.casefold() == login.casefold():
                 self.say(self.t("ask_pseudo.6"))
             else:
                 return answer
@@ -1851,7 +1852,7 @@ class Console:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id == login for c in cfg.clients):
             self.say(self.t("visitor_create.2"))
             return False
-        pseudo = self._ask_pseudo(cfg)
+        pseudo = self._ask_pseudo(cfg, login=login)
         expires = None if pseudo is None else self._ask_expiry("")
         password = None if expires is None else self._ask_new_password(login)
         if password is None:
@@ -1962,7 +1963,7 @@ class Console:
         if any(c.pseudo and c.pseudo.casefold() == login.casefold() for c in cfg.clients):
             self.say(self.t("operator_create.4"))
             return ""
-        pseudo = self._ask_pseudo(cfg)
+        pseudo = self._ask_pseudo(cfg, login=login)
         password = None if pseudo is None else self._ask_new_password(login)
         if password is None:
             return ""
