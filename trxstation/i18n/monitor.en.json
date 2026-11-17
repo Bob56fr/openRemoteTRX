@@ -93,7 +93,7 @@
   "label.mic_gate": "Mic gate",
   "gate.open": "OPEN (transmitting)",
   "gate.closed": "closed",
-  "label.listeners": "Listeners",
+  "label.listeners": "Rig audio streams",
   "label.frames": "Frames",
   "frames.text": "captured {rx} · mic sent to the rig {tx}",
   "label.losses": "Losses",
@@ -190,5 +190,17 @@
   "app.key_stop": "STOP TX",
   "app.key_net": "Network (detail)",
   "app.key_quit": "Quit",
-  "app.stop_line": "STOP TX: {message}"
+  "app.stop_line": "STOP TX: {message}",
+  "device.page": "web page ({os})",
+  "device.page_unknown": "web page",
+  "device.app": "Android app {version}",
+  "conn.transmitting": " · TRANSMITTING",
+  "label.other_streams": "Other streams",
+  "other_streams.text": "{n} (station tool: rig test…)",
+  "label.app": "Application",
+  "app.breizh": "Breizh Audio Box linked",
+  "label.console": "Console",
+  "console.network": "{account} (TRX Console over the network, {source}, {duration})",
+  "console.local": "TRX Console in the station's browser",
+  "net.silent": "no measurement (client without network probe)"
 }

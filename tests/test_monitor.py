@@ -131,7 +131,7 @@ def test_audio_panel():
                 "tx_dropped_not_owner": 0}
     p = panel(snap(st), "audio")
     assert row(p, "Porte micro").text == "fermée" and row(p, "Porte micro").level == "ok"
-    assert row(p, "Auditeurs").text == "2" and "-30 dBFS" in row(p, "Réception").text
+    assert row(p, "Écoutes du poste").text == "2" and "-30 dBFS" in row(p, "Réception").text
     st.audio.update(rx_frames=1500, tx_frames=240)
     assert "capturées 1500" in row(panel(snap(st), "audio"), "Trames").text and "passées au poste 240" in row(panel(snap(st), "audio"), "Trames").text
     st.audio.pop("rx_frames"), st.audio.pop("tx_frames")
@@ -380,6 +380,34 @@ def test_connexion_panel_lists_operators_and_listeners_read_only():
     closed = panel(snap(replace(status(), presence={"listeners": 0, "max_listeners": 0, "connections": []})), "connexion")
     assert row(closed, "Visiteurs").text == "écoute fermée"
     assert not [r for r in panel(snap(status()), "connexion").rows if r.label == "Visiteurs"]    # ancienne passerelle : rien
+
+
+def test_connexion_panel_says_who_is_connected_with_which_device():
+    # Étape 241 : type d'appareil, qui émet, écoutes qui ne sont pas des connexions (outil local), Breizh reliée
+    from dataclasses import replace
+    st = replace(status(state="TX", owner="S25", clients=("S25", "PC")), presence={
+        "operators": 2, "listeners": 1, "max_listeners": 3, "connections": [
+            {"id": "S25", "pseudo": "Bob", "role": "operator", "source": "10.0.0.5", "since_s": 600, "agent": "android 0.66.0"},
+            {"id": "PC", "pseudo": "Bob", "role": "operator", "source": "192.0.2.21", "since_s": 60, "agent": "page Windows"},
+            {"id": "club", "pseudo": "Club", "role": "listener", "source": "198.51.100.7", "since_s": 0, "agent": ""}]},
+        audio={"listeners": 4}, breizh={"state": "active", "route": "breizh"})
+    p = panel(snap(st), "connexion")
+    ops = [r for r in p.rows if r.label == "Opérateur"]
+    assert ops[0].text == "Bob (S25, application Android 0.66.0, 10.0.0.5, 00:10) · ÉMET" and ops[0].level == "bad"
+    assert ops[1].text == "Bob (PC, page web (Windows), 192.0.2.21, 00:01)" and ops[1].level == "info"
+    assert row(p, "Visiteur").text == "Club (club, 198.51.100.7, 00:00)"
+    assert row(p, "Autres écoutes").text.startswith("1 (outil")
+    assert row(p, "Application").text == "Breizh Audio Box reliée"
+    quiet = replace(st, audio={"listeners": 3}, breizh={"state": "connecting"})
+    assert not [r for r in panel(snap(quiet), "connexion").rows if r.label in ("Autres écoutes", "Application")]
+
+
+def test_a_client_that_never_answered_the_network_probe_is_not_an_outage():
+    from dataclasses import replace
+    st = replace(status(), net={"enabled": True, "clients": [
+        {"id": "diffusion-poc", "role": "listener", "agent": "", "level": "red", "outage": False, "silent": True}]})
+    r = panel(snap(st), "reseau").rows[0]
+    assert "mesure indisponible" in r.text and r.level == "dim"
 
 
 def test_network_panel_and_events():

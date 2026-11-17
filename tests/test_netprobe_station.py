@@ -522,3 +522,23 @@ def test_session_sends_the_export_in_parts(tmp_path):
             await phone.say(cmd="net_export", id=2, part=first["parts"])
             assert phone.result(2)["ok"] is False
     run(scenario)
+
+
+def test_a_client_that_never_answers_is_silent_not_in_outage(tmp_path):
+    # Étape 241 : un outil sans sonde réseau (client d'essai de la diffusion) ne répond jamais aux net_ping : ni
+    # coupure, ni alerte, ni journal ; le tableau de bord dit « mesure indisponible ». Dès le premier écho, il est
+    # mesuré comme les autres.
+    clock = Clock()
+    hub, alerts = make_hub(tmp_path, clock, alert_outage_s=5)
+    peer = Peer(hub, clock, client_id="outil", agent="")
+    peer.answer = False
+    peer.run(120)
+    summary = peer.probe.summary()
+    assert summary["silent"] is True and summary["outage"] is False
+    assert alerts == [] and hub.store.outages() == [] and peer.of_type("net_event") == []
+    peer.answer = True
+    peer.run(2)
+    assert peer.probe.summary()["silent"] is False
+    peer.answer = False
+    peer.run(6)
+    assert peer.probe.summary()["outage"] is True                       # après un premier écho : vraie coupure

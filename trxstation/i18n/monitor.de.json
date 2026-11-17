@@ -93,7 +93,7 @@
   "label.mic_gate": "Mikrofon-Tor",
   "gate.open": "OFFEN (Senden)",
   "gate.closed": "geschlossen",
-  "label.listeners": "Zuhörer",
+  "label.listeners": "Empfangsströme",
   "label.frames": "Frames",
   "frames.text": "erfasst {rx} · Mikrofon an das Gerät {tx}",
   "label.losses": "Verluste",
@@ -190,5 +190,17 @@
   "app.key_stop": "STOP TX",
   "app.key_net": "Netzwerk (Details)",
   "app.key_quit": "Beenden",
-  "app.stop_line": "STOP TX: {message}"
+  "app.stop_line": "STOP TX: {message}",
+  "device.page": "Webseite ({os})",
+  "device.page_unknown": "Webseite",
+  "device.app": "Android-App {version}",
+  "conn.transmitting": " · SENDET",
+  "label.other_streams": "Weitere Empfänger",
+  "other_streams.text": "{n} (Stationswerkzeug: Gerätetest…)",
+  "label.app": "Anwendung",
+  "app.breizh": "Breizh Audio Box verbunden",
+  "label.console": "Konsole",
+  "console.network": "{account} (TRX Console über das Netzwerk, {source}, {duration})",
+  "console.local": "TRX Console im Browser der Station",
+  "net.silent": "keine Messung (Client ohne Netzsonde)"
 }

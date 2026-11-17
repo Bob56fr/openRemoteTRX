@@ -302,6 +302,9 @@ def public_outage(o: dict) -> dict:
     return {k: o.get(k) for k in ("start_ms", "end_ms", "duration_ms", "diagnosis", "basis", "agent", "net_type", "kind")}
 
 
+SILENT_AFTER_MS = 10_000          # aucun écho après 10 s : client sans sonde réseau (tableau de bord)
+
+
 class ClientProbe:
     def __init__(self, hub: NetProbeHub, client_id: str, role: str, device: str, agent: str, source: str, send,
                  journal: bool) -> None:
@@ -318,6 +321,9 @@ class ClientProbe:
         self.next_window = self.opened_mono + WINDOW_MS
         self.last_echo_wall: int | None = None
         self.outage_start_wall: int | None = None
+        # Premier écho reçu ? Avant lui, le client ne mesure peut-être pas le réseau (outil, client d'essai) : ni
+        # coupure, ni alerte de pertes ; le tableau de bord dit « mesure indisponible » (étape 241).
+        self.echoed = False
         self.last_outage: dict | None = None
         self.last_outage_mono: int | None = None
         self.last_report: dict | None = None
@@ -342,12 +348,14 @@ class ClientProbe:
             beat = [self.seq, now, None]
             self.beats.append(beat)
             self.by_seq[self.seq] = beat
-            for event in self.detector.ping(self.seq, now):
-                self._outage_event(event)
+            if self.echoed:
+                for event in self.detector.ping(self.seq, now):
+                    self._outage_event(event)
             self.send({"type": "net_ping", "seq": self.seq, "t": now})
             self.next_ping = now + self.interval_ms
-        for event in self.detector.tick(now):
-            self._outage_event(event)
+        if self.echoed:
+            for event in self.detector.tick(now):
+                self._outage_event(event)
         while self.beats and now - self.beats[0][1] > KEEP_BEATS_MS:
             old = self.beats.popleft()
             self.by_seq.pop(old[0], None)
@@ -374,6 +382,7 @@ class ClientProbe:
             return                                   # écho inconnu, falsifié ou en double : ignoré
         now = self.hub.mono_ms()
         beat[2] = now
+        self.echoed = True
         self.last_echo_wall = self.hub.wall_ms()
         for event in self.detector.pong(params["seq"], now):
             self._outage_event(event)
@@ -416,7 +425,7 @@ class ClientProbe:
         in_outage = self.detector.start_ms is not None or (
             self.last_outage_mono is not None and now - self.last_outage_mono < 60_000)   # pertes dues à la coupure : déjà alertée
         if s60["loss_pct"] is not None and s60["loss_pct"] >= th["loss_alert"] and s60["expected"] >= 30:
-            if not self._loss_alerted and self.journal and not in_outage:
+            if not self._loss_alerted and self.journal and not in_outage and self.echoed:
                 self._loss_alerted = True
                 self.hub.loss_alert(self, s60["loss_pct"])
         elif s60["loss_pct"] is not None and s60["loss_pct"] < th["loss_warn"]:
@@ -475,5 +484,6 @@ class ClientProbe:
         return {"id": self.client_id, "role": self.role, "agent": self.agent, "net_type": self.net_type,
                 "level": self.state()["level"], "loss_pct": s60["loss_pct"], "rtt_ms": s60["rtt_p95_ms"],
                 "outage": self.detector.start_ms is not None,
+                "silent": not self.echoed and self.hub.mono_ms() - self.opened_mono > SILENT_AFTER_MS,
                 # radio du téléphone (application, lot 6) : dernier résumé reçu ; None pour la page
                 "rsrp_dbm": report.get("rsrp_dbm"), "sinr_db": report.get("sinr_db"), "signal_level": report.get("signal_level")}

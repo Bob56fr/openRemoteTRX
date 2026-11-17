@@ -240,7 +240,8 @@ class WebConsole:
         self.close_session("nouvelle connexion")
         self.failures.pop(source, None)
         now = self.clock()
-        self.session = {"id": secrets.token_urlsafe(32), "account": account, "created": now, "last": now}
+        self.session = {"id": secrets.token_urlsafe(32), "account": account, "created": now, "last": now,
+                        "source": source}
         self.notify(codes.ORT_4022, compte=account, source=source)
         response = web.json_response({"ok": True})
         response.set_cookie(COOKIE, self.session["id"], httponly=True, secure=True, samesite="Strict", path="/")
@@ -410,10 +411,24 @@ class WebConsole:
         self.dash_log.t = t
         self.dash_log.observe(snap)
         ptt = snap.status.ptt.get("state") if snap.status is not None and isinstance(snap.status.ptt, dict) else None
+        panels = [{"key": p.key, "title": p.title, "rows": [[r.label, r.text, r.level] for r in p.rows]}
+                  for p in build_panels(snap, net_detail, t=t)]
+        for p in panels:                                  # la console elle-même : qui la tient en ce moment
+            if p["key"] == "connexion":
+                p["rows"].append(self.console_row(t))
         return {"ok": True, "fresh": snap.gateway_fresh, "ptt": ptt or "", "safe_mode": snap.safe_mode or "",
-                "panels": [{"key": p.key, "title": p.title, "rows": [[r.label, r.text, r.level] for r in p.rows]}
-                           for p in build_panels(snap, net_detail, t=t)],
+                "panels": panels,
                 "log": self.dash_log.entries()[-DASH_LOG:]}          # [{text, level}] : rouge = level bad
+
+    def console_row(self, t) -> list:
+        """Ligne « Console » : session réseau (compte, adresse, durée) ou navigateur de la station (mode local)."""
+        s = self.session
+        if self.network and s is not None:
+            since = int(self.clock() - s["created"])
+            duration = f"{since // 3600:02d}:{since % 3600 // 60:02d}"
+            return [t("label.console"), t("console.network", account=s["account"], source=s.get("source", "?"),
+                                          duration=duration), "info"]
+        return [t("label.console"), t("console.local"), "info"]
 
     @staticmethod
     def dash_translator():

@@ -93,7 +93,7 @@
   "label.mic_gate": "Porte micro",
   "gate.open": "OUVERTE (émission)",
   "gate.closed": "fermée",
-  "label.listeners": "Auditeurs",
+  "label.listeners": "Écoutes du poste",
   "label.frames": "Trames",
   "frames.text": "capturées {rx} · micro passées au poste {tx}",
   "label.losses": "Pertes",
@@ -190,5 +190,17 @@
   "app.key_stop": "STOP TX",
   "app.key_net": "Réseau (détail)",
   "app.key_quit": "Quitter",
-  "app.stop_line": "STOP TX : {message}"
+  "app.stop_line": "STOP TX : {message}",
+  "device.page": "page web ({os})",
+  "device.page_unknown": "page web",
+  "device.app": "application Android {version}",
+  "conn.transmitting": " · ÉMET",
+  "label.other_streams": "Autres écoutes",
+  "other_streams.text": "{n} (outil de la station : essai du poste…)",
+  "label.app": "Application",
+  "app.breizh": "Breizh Audio Box reliée",
+  "label.console": "Console",
+  "console.network": "{account} (TRX Console sur le réseau, {source}, {duration})",
+  "console.local": "TRX Console dans le navigateur de la station",
+  "net.silent": "mesure indisponible (client sans sonde réseau)"
 }

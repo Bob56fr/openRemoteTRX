@@ -164,10 +164,42 @@ def _connexion_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         Row(t("label.transmitter"), str(owner) if owner else "—", "bad" if owner else "dim"),
         Row(t("label.last_cut"), cut_reason_text(reason, t) if reason else "—", "info" if reason else "dim"),
     ]
-    return Panel("connexion", title, tuple(rows + _visitor_rows(status.presence, t)))
+    return Panel("connexion", title, tuple(rows + _visitor_rows(status.presence, t, owner=owner)
+                                           + _other_rows(status, t)))
 
 
-def _visitor_rows(presence: dict, t: Translator | None = None) -> list[Row]:
+def device_text(agent, t: Translator | None = None) -> str:
+    """Type d'appareil déclaré par le client : « page Windows » -> page web (Windows), « android 0.66.0 » ->
+    application Android 0.66.0 ; vide si inconnu."""
+    t = translator(t)
+    agent = str(agent or "").strip()
+    if not agent:
+        return ""
+    if agent.lower().startswith("android"):
+        return t("device.app", version=agent[7:].strip()).strip()
+    if agent.lower().startswith("page"):
+        rest = agent[4:].strip()
+        return t("device.page", os=rest) if rest else t("device.page_unknown")
+    return agent
+
+
+def _other_rows(status, t: Translator) -> list[Row]:
+    """Ce qui écoute ou se relie à la station sans être une connexion de la page ou de l'application : outil local
+    (essai du poste…), Breizh Audio Box reliée."""
+    rows: list[Row] = []
+    audio = status.audio if isinstance(status.audio, dict) else {}
+    presence = status.presence if isinstance(status.presence, dict) else {}
+    streams = audio.get("listeners")
+    people = (presence.get("operators") or 0) + (presence.get("listeners") or 0) if presence else len(status.clients)
+    if isinstance(streams, int) and streams > people:
+        rows.append(Row(t("label.other_streams"), t("other_streams.text", n=streams - people), "info"))
+    breizh = getattr(status, "breizh", None)
+    if isinstance(breizh, dict) and breizh.get("state") in ("ready", "active"):
+        rows.append(Row(t("label.app"), t("app.breizh"), "ok"))
+    return rows
+
+
+def _visitor_rows(presence: dict, t: Translator | None = None, owner=None) -> list[Row]:
     """Visiteurs en réception seule (docs/visiteurs-cahier-des-charges.md) : lecture seule, aucune action ici."""
     if not isinstance(presence, dict) or not presence:
         return []
@@ -187,8 +219,12 @@ def _visitor_rows(presence: dict, t: Translator | None = None) -> list[Row]:
         if isinstance(c, dict):
             since = int(c.get("since_s") or 0)
             role = t("role.listener") if c.get("role") == "listener" else t("role.operator")
-            rows.append(Row(role, f"{c.get('pseudo', '?')} ({c.get('id', '?')}, {c.get('source', '?')}, "
-                                  f"{since // 3600:02d}:{since % 3600 // 60:02d})", "info"))
+            device = device_text(c.get("agent"), t)
+            parts = [str(c.get("id", "?"))] + ([device] if device else []) + [str(c.get("source", "?")),
+                                                                               f"{since // 3600:02d}:{since % 3600 // 60:02d}"]
+            sending = owner is not None and c.get("id") == owner
+            rows.append(Row(role, f"{c.get('pseudo', '?')} ({', '.join(parts)})" + (t("conn.transmitting") if sending else ""),
+                            "bad" if sending else "info"))
     return rows
 
 
@@ -468,6 +504,10 @@ def _reseau_panel(snap: Snapshot, detail: bool = False, t: Translator | None = N
             label, level = "?", "warn"
         if c.get("outage"):
             label, level = t("net.outage"), "bad"
+        if c.get("silent"):                       # n'a jamais répondu : outil sans sonde, pas une coupure
+            rows.append(Row(str(c.get("id", "?")) + (t("net.listener") if c.get("role") == "listener" else ""),
+                            t("net.silent") + (f" · {c['agent']}" if c.get("agent") else ""), "dim"))
+            continue
         who = str(c.get("id", "?")) + (t("net.listener") if c.get("role") == "listener" else "")
         text = t("net.client", level=label, type=_net_type(c.get("net_type"), t), loss=_value(c.get("loss_pct"), "%"),
                  rtt=_value(c.get("rtt_ms"), "ms")) + (f" · {c['agent']}" if c.get("agent") else "")

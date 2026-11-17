@@ -112,6 +112,7 @@ class Connection:
     source: str = ""
     since: float = 0.0               # horloge monotone
     open: bool = False               # canal de contrôle ouvert (session démarrée)
+    agent: str = ""                  # « page Windows », « android 0.66.0 »… (déclaré par le client, tableau de bord)
 
 
 @dataclass
@@ -163,7 +164,7 @@ class AccessControl:
     def operator_present(self) -> bool:
         return any(c.role == OPERATOR and c.open for c in self.connections.values())
 
-    def admit(self, client_id: str, source: str = "") -> Connection:
+    def admit(self, client_id: str, source: str = "", agent: str = "") -> Connection:
         """Appelé APRÈS la vérification du mot de passe et la fermeture d'une ancienne connexion du même compte, sans
         attente entre la vérification et l'enregistrement (boucle asyncio : pas de course entre deux offres)."""
         reason = self._problem(client_id)
@@ -188,7 +189,8 @@ class AccessControl:
         elif sum(c.role == OPERATOR for c in others) >= s.max_operators:
             raise AccessRefused("operators_full")
         self._numbers += 1
-        conn = Connection(client_id, role, _secret(self.accounts[client_id]), self._numbers, source[:64], self.clock())
+        conn = Connection(client_id, role, _secret(self.accounts[client_id]), self._numbers, source[:64], self.clock(),
+                          agent=agent[:64])
         self.connections[client_id] = conn
         return conn
 
@@ -266,7 +268,7 @@ class AccessControl:
                "people": list(people.values())}
         if role == OPERATOR:
             out["connections"] = [{"id": c.client_id, "pseudo": self.pseudo(c.client_id), "role": c.role,
-                                   "source": c.source, "since_s": int(now - c.since)} for c in live]
+                                   "source": c.source, "since_s": int(now - c.since), "agent": c.agent} for c in live]
         return out
 
 

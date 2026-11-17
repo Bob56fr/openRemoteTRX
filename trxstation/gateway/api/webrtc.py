@@ -207,7 +207,7 @@ class PeerManager:
         """AccessRefused (access.py) : compte désactivé, quota atteint, opérateur absent..."""
         await self.close_peer(client_id)                        # reconnexion : l'ancienne connexion est remplacée
         if self.access is not None:
-            role = self.access.admit(client_id, source).role    # SANS attente jusqu'à l'enregistrement : pas de course
+            role = self.access.admit(client_id, source, agent).role    # SANS attente jusqu'à l'enregistrement : pas de course
         elif len(self.peers) >= self.max_peers:
             raise PeerLimitError(f"{self.max_peers} connexions simultanées au maximum")
         else:

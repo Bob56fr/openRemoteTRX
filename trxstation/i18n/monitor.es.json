@@ -93,7 +93,7 @@
   "label.mic_gate": "Puerta del micro",
   "gate.open": "ABIERTA (transmisión)",
   "gate.closed": "cerrada",
-  "label.listeners": "Oyentes",
+  "label.listeners": "Escuchas del equipo",
   "label.frames": "Tramas",
   "frames.text": "capturadas {rx} · micro enviadas al equipo {tx}",
   "label.losses": "Pérdidas",
@@ -190,5 +190,17 @@
   "app.key_stop": "STOP TX",
   "app.key_net": "Red (detalle)",
   "app.key_quit": "Salir",
-  "app.stop_line": "STOP TX: {message}"
+  "app.stop_line": "STOP TX: {message}",
+  "device.page": "página web ({os})",
+  "device.page_unknown": "página web",
+  "device.app": "aplicación Android {version}",
+  "conn.transmitting": " · TRANSMITE",
+  "label.other_streams": "Otras escuchas",
+  "other_streams.text": "{n} (herramienta de la estación: prueba del equipo…)",
+  "label.app": "Aplicación",
+  "app.breizh": "Breizh Audio Box enlazada",
+  "label.console": "Consola",
+  "console.network": "{account} (TRX Console en red, {source}, {duration})",
+  "console.local": "TRX Console en el navegador de la estación",
+  "net.silent": "sin medida (cliente sin sonda de red)"
 }
