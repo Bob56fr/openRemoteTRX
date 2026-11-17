@@ -14,6 +14,34 @@
     for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b);
     return s;
   };
+  // Drapeaux des langues (étape 241), dessinés en SVG : Windows n'affiche pas les drapeaux en emoji (« FR »).
+  // Langue inconnue : son code en lettres.
+  const FLAGS = {
+    fr: [["rect", { width: 20, height: 40, fill: "#002395" }], ["rect", { x: 20, width: 20, height: 40, fill: "#fff" }],
+      ["rect", { x: 40, width: 20, height: 40, fill: "#ED2939" }]],
+    de: [["rect", { width: 60, height: 14, fill: "#000" }], ["rect", { y: 13, width: 60, height: 14, fill: "#DD0000" }],
+      ["rect", { y: 26, width: 60, height: 14, fill: "#FFCE00" }]],
+    es: [["rect", { width: 60, height: 40, fill: "#AA151B" }], ["rect", { y: 10, width: 60, height: 20, fill: "#F1BF00" }]],
+    en: [["rect", { width: 60, height: 40, fill: "#012169" }],
+      ["path", { d: "M0,0 L60,40 M60,0 L0,40", stroke: "#fff", "stroke-width": 8 }],
+      ["path", { d: "M0,0 L60,40 M60,0 L0,40", stroke: "#C8102E", "stroke-width": 3 }],
+      ["path", { d: "M30,0 V40 M0,20 H60", stroke: "#fff", "stroke-width": 13 }],
+      ["path", { d: "M30,0 V40 M0,20 H60", stroke: "#C8102E", "stroke-width": 8 }]],
+  };
+  function flag(code) {
+    const shapes = FLAGS[code];
+    if (!shapes) return document.createTextNode(code.toUpperCase());
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 60 40");
+    svg.setAttribute("aria-hidden", "true");
+    for (const [tag, attrs] of shapes) {
+      const s = document.createElementNS(ns, tag);
+      for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, String(v));
+      svg.append(s);
+    }
+    return svg;
+  }
   function el(tag, cls, text) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -71,7 +99,9 @@
     langs.replaceChildren();
     langs.setAttribute("aria-label", ui("web.language"));
     for (const [code, name] of state.langs || []) {
-      const b = el("button", "seg" + (code === state.lang ? " on" : ""), code.toUpperCase());
+      const b = el("button", "seg flag" + (code === state.lang ? " on" : ""));
+      b.append(flag(code));
+      b.setAttribute("aria-label", name);
       b.type = "button";
       b.dataset.lang = code;
       b.title = name;
