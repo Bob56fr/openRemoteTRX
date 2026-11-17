@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
 // Console web de la station : état (relu toutes les 3 s), tuiles des thèmes, bulle d'aide (survol à la souris,
-// premier toucher au doigt), terminal intégré relié à LA console texte de la session. « Ouvrir le menu » tape son
-// numéro dans cette console, seulement quand elle attend au menu (sinon il répondrait à une question en cours).
+// premier toucher au doigt), terminal intégré relié à LA console texte de la session. « Ouvrir le menu » ouvre le
+// menu EN FORMULAIRES (flow.js, étape 235) ; le tableau de bord et l'éditeur passent par le terminal, où le numéro
+// n'est tapé que quand la console attend au menu (sinon il répondrait à une question en cours).
 "use strict";
 (function () {
   const $ = (s) => document.querySelector(s);
@@ -81,6 +82,7 @@
     $("#logout").hidden = !state.network;
     $("#term-label").textContent = ui("web.terminal");
     $("#term-toggle").textContent = ui("web.hide");
+    $("#term-max").textContent = ui("web.max");
     $("#term-tab").textContent = "▸ " + ui("web.show");
   }
 
@@ -151,15 +153,21 @@
   }
 
   // ---------------------------------------------------------------- ouvrir un menu
-  async function openMenu(key) {
+  async function openMenu(key, inTerminal) {
     hideHelp(true);
-    showTerm(true);
+    if (window.TRXFlow.busy()) { toast(ui("web.flow.busy")); return; }
+    let answer = null;
     try {
       const r = await fetch("/api/open", { method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
-      if (r.status === 409) toast(ui("web.busy"));
-    } catch (e) { /* le terminal dira le reste */ }
-    if (term) term.focus();
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, terminal: !!inTerminal }) });
+      answer = await r.json().catch(() => null);
+      if (r.status === 409) { toast(ui(answer && answer.busy === "flow" ? "web.flow.busy" : "web.busy")); showTerm(answer && answer.busy !== "flow"); return; }
+    } catch (e) { return; }
+    if (answer && answer.mode === "terminal") {
+      $("#term").classList.toggle("max", !!answer.full);
+      showTerm(true);
+      if (term) term.focus();
+    }
   }
   function toast(text) {
     const t = $("#toast");
@@ -173,6 +181,7 @@
   function showTerm(on) {
     $("#term").classList.toggle("show", on);
     $("#term-tab").hidden = on;
+    if (!on) $("#term").classList.remove("max");
     if (on && fit) setTimeout(() => { fit.fit(); sendSize(); }, 320);
   }
   function sendSize() {
@@ -185,6 +194,8 @@
       let m;
       try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.type === "output") term.write(m.data);
+      if (m.type === "flow_start") window.TRXFlow.open(m.flow);
+      if (m.type === "flow") window.TRXFlow.event(m.event);
       if (m.type === "expired") location.reload();                 // session fermée : retour à la connexion
     };
     ws.onclose = () => setTimeout(connect, 2000);
@@ -237,6 +248,13 @@
     location.reload();
   });
   $("#term-toggle").addEventListener("click", () => showTerm(false));
+  $("#term-max").addEventListener("click", () => {
+    $("#term").classList.toggle("max");
+    if (fit) setTimeout(() => { fit.fit(); sendSize(); }, 320);
+    if (term) term.focus();
+  });
+  window.TRXFlow.init(ui, (m) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); },
+    (key) => openMenu(key, true));
   $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
   document.addEventListener("click", (e) => {
     const b = e.target.closest(".items button");
@@ -249,7 +267,8 @@
       }
       return;
     }
-    if (e.target.closest("#help") || e.target.closest("#term") || e.target.closest("#term-tab")) return;
+    if (e.target.closest("#help") || e.target.closest("#term") || e.target.closest("#term-tab")
+        || e.target.closest("#flow")) return;
     const h = e.target.closest("[data-toggle]");
     if (h) h.closest(".card").classList.toggle("closed");
     hideHelp(true);

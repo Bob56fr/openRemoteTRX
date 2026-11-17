@@ -41,13 +41,20 @@
 
 <section class="term" id="term" aria-label="Terminal">
   <div class="bar"><span id="term-label"></span><span class="state" id="term-state"></span>
-    <button type="button" id="term-toggle"></button></div>
+    <button type="button" id="term-max"></button><button type="button" id="term-toggle"></button></div>
   <div class="term-body" id="term-body"></div>
 </section>
 <button type="button" class="term-tab" id="term-tab" hidden></button>
 
+<section class="flow" id="flow" aria-label="Menu" aria-live="polite">
+  <header><span class="fkey" id="flow-key"></span><h2 id="flow-title"></h2><button type="button" class="btn" id="flow-term"></button><button type="button" class="btn" id="flow-stop"></button></header>
+  <div class="flow-log" id="flow-log"></div>
+  <div class="flow-form" id="flow-form"></div>
+</section>
+
 <script src="/static/vendor/xterm.js"></script>
 <script src="/static/vendor/addon-fit.js"></script>
+<script src="/static/flow.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

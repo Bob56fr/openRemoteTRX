@@ -414,6 +414,8 @@ class Console:
         if level is None:
             level = load_level(self.lang_file, self.config.exists()) if ask is input else "expert"
         self.level = level if level in LEVELS else "normal"
+        # Nature de la PROCHAINE question (étape 235) : lue par la console web en formulaires, ignorée au terminal.
+        self.hint: dict | None = None
 
     def visible(self, method: str) -> bool:
         """Menu montré au niveau choisi ? « Sortir du mode sûr » n'encombre le niveau Basic que si la station y est."""
@@ -452,12 +454,14 @@ class Console:
         return [self.python, "-m", name, *args]
 
     def pause(self) -> None:
+        self.hint = {"kind": "pause"}
         try:
             self.ask("\n" + self.t("loop.pause"))
         except EOFError:
             pass
 
     def yes(self, question: str, default: bool = True) -> bool:
+        self.hint = {"kind": "yesno", "default": default}
         answer = self.ask(f"{question} ({self.t('yes.default_yes') if default else self.t('yes.default_no')}) : ").strip()
         return default if not answer else yes_no(answer) is True
 
@@ -1139,6 +1143,7 @@ class Console:
         extra: list[str] = []
         if not signed:
             self.say(self.t("install_zip.10"))
+            self.hint = {"kind": "word", "word": self.t("word.yes")}
             if not self.typed_word(self.ask(self.t("install_zip.type_word", word=self.t("word.yes"))), "word.yes", "OUI"):
                 self.say(self.t("install_zip.11"))
                 return
@@ -1740,6 +1745,7 @@ class Console:
 
     def _ask_int(self, question: str, current: int, low: int, high: int) -> int:
         while True:
+            self.hint = {"kind": "int", "low": low, "high": high, "current": current}
             answer = self.ask(self.t("ask_int.1", question=question, low=low, high=high, current=current)).strip()
             if not answer:
                 return current
@@ -1749,6 +1755,7 @@ class Console:
 
     def _ask_yes(self, question: str, current: bool) -> bool:
         while True:
+            self.hint = {"kind": "yesno", "default": current}
             answer = self.ask(self.t("ask_yes.1", question=question, v=self.t("ask_yes.2") if current else self.t("ask_yes.3"))).strip()
             if not answer:
                 return current
@@ -1792,6 +1799,7 @@ class Console:
     def _ask_new_password(self, login: str) -> str | None:
         from .passwords import generate_password, password_problem
         while True:
+            self.hint = {"kind": "password", "generate": True, "abandon": "-"}
             answer = self.ask(self.t("ask_new_password.1")).strip()
             if answer == "-":
                 return None
@@ -2277,6 +2285,7 @@ class Console:
         view = self._friends_do("view", {"g": g}) or {}
         role = (view.get("groups") or [{}])[0].get("role")
         if role == "a" and self.yes(self.t("friends_leave.1"), False):
+            self.hint = {"kind": "word", "word": self.t("word.delete")}
             if self.typed_word(self.ask(self.t("friends_leave.type_word", word=self.t("word.delete"))), "word.delete", "SUPPRIMER") and self._friends_do("delete", {"g": g}) is not None:
                 self.say(self.t("friends_leave.2"))
             return
@@ -2619,6 +2628,7 @@ class Console:
     def _network_clear(self, state_dir: Path) -> None:
         from .gateway.access_watch import kick_request
         from .netprobe.probe import CLEAR_REQUEST
+        self.hint = {"kind": "word", "word": self.t("word.erase")}
         answer = self.ask(self.t("network_clear.1", word=self.t("word.erase"))).strip()
         if not self.typed_word(answer, "word.erase", "EFFACER", exact=True):
             self.say(self.t("network_clear.2"))

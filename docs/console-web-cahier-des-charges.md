@@ -62,6 +62,20 @@ terminal : sudo, nano, essai du poste, tableau de bord.
    par téléphone »). Lot W2 fusionné dans W1.
 4. Rendu : maquette retouchée (5 colonnes, bulle d'aide au survol, panneau du bas sur téléphone) puis validée.
 
+## 5 quater. Menus en formulaires (lot W3a, étape 235)
+
+Demande de l'utilisateur (2026-11-17) : une page « sans le terminal », quitte à ne représenter que ce qui se passe
+dans la console. Décision : la station joue LE MÊME code de menu dans un processus enfant (`console_web/worker.py`),
+« dire » et « demander » remplacés par des messages JSON ; la page les dessine (`static/flow.js`). Nature d'une
+question : `Console.hint` (oui/non, nombre et bornes, mot de passe, mot de confirmation, pause) sinon lignes
+« 1) … » avant l'invite et « x = … » de l'invite ; réponse libre toujours offerte. Commandes lancées par un menu :
+sortie au fil de l'eau, ligne de réponse pour un outil qui pose une question. sudo : mot de passe demandé dans la
+page une fois par session (mémoire du serveur, oublié à la fermeture), vérifié par `sudo -S -k true`, passé par
+l'entrée standard à chaque commande (`sudo -S -k`, jamais le cache : il ne peut pas tomber dans l'entrée de la
+commande). Restent au terminal : tableau de bord 1.3 (plein écran) et éditeur 8.1. Suite : W3b (assistant 2.1 et ses
+parties en vrais formulaires : questions de `setup_wizard` annoncées par une marque), W3c (tableau de bord natif dans
+la page, éditeur de station.toml).
+
 ## 5 ter. TRX Console sur le réseau (étape 233)
 
 Décisions de l'utilisateur (2026-11-17), le raccourci des étapes 230-231 étant « beaucoup trop compliqué en pratique » : une page HTTPS servie en permanence sur le réseau local ou le VPN (port 8444, certificat de la station), connexion avec un compte OPÉRATEUR marqué `admin = true` (choix 1), session fermée après 30 min sans action ; le mot de passe sudo reste demandé dans le terminal, une fois par session (choix 2) ; raccourci retiré (choix 3), menu 4.6 repris. Garde-fous : adresses privées seulement, 5 échecs = 15 min de blocage par adresse, alerte ntfy à chaque connexion (ORT-4022) et à chaque blocage (ORT-4023), une seule session (une nouvelle connexion ferme l'ancienne et son terminal), 8 h au plus. Service : `trx-console-web@<compte>` (Debian, jamais root, groupe trx), enfant du superviseur sous Windows ; relancé 30 s après une installation (elle peut tourner dans son propre terminal).

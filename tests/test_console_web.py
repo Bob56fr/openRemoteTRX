@@ -114,13 +114,14 @@ def test_state_lists_the_eight_themes_with_icons_and_help(tmp_path):
 def test_open_types_the_menu_only_when_the_console_waits_at_the_menu(tmp_path):
     async def body(wc, client):
         origin = await login(wc, client)
-        r = await client.post("/api/open", json={"key": "2.1"}, headers=origin)
+        r = await client.post("/api/open", json={"key": "2.1", "terminal": True}, headers=origin)
         assert r.status == 409 and (await r.json())["busy"]              # pas encore au menu : rien tapé
         term = FakeTerminal.made[-1]
         assert term.cmd[-3:-1] == ["--texte", "--config"] and term.env["TRX_CONSOLE_WEB"] == "1"
         assert term.written == []
         wc.on_output("menu…" + IDLE_MARK)                               # la console attend au menu
-        assert (await client.post("/api/open", json={"key": "2.1"}, headers=origin)).status == 200
+        r = await client.post("/api/open", json={"key": "2.1", "terminal": True}, headers=origin)
+        assert r.status == 200 and (await r.json())["mode"] == "terminal"
         assert term.written == ["2.1\r"]
         assert (await client.post("/api/open", json={"key": "3.3"}, headers=origin)).status == 409   # 2.1 en cours
         assert (await client.post("/api/open", json={"key": "9.9"}, headers=origin)).status == 400

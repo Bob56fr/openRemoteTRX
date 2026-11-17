@@ -37,6 +37,7 @@ from ..console import MENU_THEMES, Console, load_help, menu_level, menu_number
 from ..i18n import LEVELS, load_lang, load_level, prefs_path, save_level
 from ..errors import codes
 from ..errors.emit import emit_event
+from .flow import Flow
 from .terminal import IDLE_MARK, Terminal, make_terminal
 
 log = logging.getLogger(__name__)
@@ -51,11 +52,13 @@ FAIL_LIMIT, FAIL_WINDOW_S, BLOCK_S = 5, 15 * 60, 15 * 60     # 5 échecs en 15 m
 GLOBAL_FAIL_LIMIT = 30             # échecs toutes adresses confondues en 15 min : connexions suspendues 15 min
 STATIC_FILES = {"app.js": "application/javascript", "app.css": "text/css", "login.js": "application/javascript",
                 "vendor/xterm.js": "application/javascript", "vendor/xterm.css": "text/css",
-                "vendor/addon-fit.js": "application/javascript"}
+                "vendor/addon-fit.js": "application/javascript", "flow.js": "application/javascript"}
 THEME_ICONS = {"station": "📡", "hardware": "📻", "safety": "🚨", "access": "🔑", "features": "✨",
                "troubleshooting": "🔧", "updates": "🔄", "expert": "🔬"}
 THEME_COLORS = {"station": "#2fd3c0", "hardware": "#5aa9ff", "safety": "#ff6b5e", "access": "#ffb340",
                 "features": "#c084fc", "troubleshooting": "#4ade80", "updates": "#38bdf8", "expert": "#94a3b8"}
+# Menus qui dessinent tout l'écran (tableau de bord, éditeur de texte) : toujours dans le terminal (étape 235)
+TERMINAL_MENUS = {"monitor", "edit_config"}
 # style-src 'unsafe-inline' : xterm.js pose ses propres styles (grille du terminal) ; AUCUN script en ligne permis.
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
        "font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -87,6 +90,10 @@ class WebConsole:
         self.idle = False                                # la console attend au menu : un menu peut être ouvert
         self.last_client = clock()
         self.stop = asyncio.Event()
+        self.flow: Flow | None = None                    # menu ouvert en formulaires (étape 235)
+        self.flow_factory: Callable[..., Flow] = Flow
+        self.sudo_password: str | None = None            # mot de passe sudo de la session, en mémoire seulement
+        self.sudo_pending: str | None = None
 
     # ------------------------------------------------------------------ application
 
@@ -154,6 +161,9 @@ class WebConsole:
         if self.terminal is not None:
             self.terminal.close()
         self.terminal, self.idle = None, False
+        self.stop_flow()
+        self.flow = None
+        self.sudo_password = self.sudo_pending = None
         self.scrollback.clear()
         self.scroll_len = 0
         for ws in list(self.clients):
@@ -276,6 +286,7 @@ class WebConsole:
                 label, method = items[key]
                 help_ = texts.get(method, {})
                 entries.append({"key": key, "label": label, "short": label.split(" (", 1)[0],
+                                "mode": "terminal" if method in TERMINAL_MENUS else "form",
                                 "level": menu_level(method), "visible": con.visible(method),
                                 "role": help_.get("role", ""), "when": help_.get("quand", ""),
                                 "changes": help_.get("modifie", ""), "admin": bool(help_.get("admin"))})
@@ -319,19 +330,86 @@ class WebConsole:
         if not self.has_session(request) or not self.same_origin(request):
             raise web.HTTPForbidden()
         try:
-            key = str((await request.json()).get("key", ""))
+            data = await request.json()
+            key, in_terminal = str(data.get("key", "")), data.get("terminal") is True
         except (ValueError, AttributeError):
             raise web.HTTPBadRequest()
-        valid = {"0"} | {f"{n}.{i}" for n, _, ms in MENU_THEMES for i in range(1, len(ms) + 1)}
-        if key not in valid:
+        methods = {"0": "language"} | {f"{n}.{i}": m for n, _, ms in MENU_THEMES for i, m in enumerate(ms, 1)}
+        if key not in methods:
             raise web.HTTPBadRequest()
-        self.ensure_terminal()
-        if not self.idle:                                 # un menu est en cours : ne jamais taper dans ses questions
+        if self.flow is not None and self.flow.alive:     # un seul menu à la fois, formulaires ou terminal
+            return web.json_response({"ok": False, "busy": "flow"}, status=409)
+        if in_terminal or methods[key] in TERMINAL_MENUS:
+            self.ensure_terminal()
+            if not self.idle:                             # un menu est en cours : ne jamais taper dans ses questions
+                return web.json_response({"ok": False, "busy": True}, status=409)
+            self.idle = False
+            self.touch()
+            self.terminal.write(key + "\r")
+            return web.json_response({"ok": True, "mode": "terminal", "full": methods[key] == "monitor"})
+        if self.terminal is not None and self.terminal.alive and not self.idle:
             return web.json_response({"ok": False, "busy": True}, status=409)
-        self.idle = False
         self.touch()
-        self.terminal.write(key + "\r")
-        return web.json_response({"ok": True})
+        await self.start_flow(key)
+        return web.json_response({"ok": True, "mode": "form"})
+
+    # ------------------------------------------------------------------ menus en formulaires (étape 235)
+
+    async def start_flow(self, key: str) -> None:
+        con = self.console_factory(self.config)
+        label = con.t("menu.language") if key == "0" else next(lbl for k, lbl, _ in con.items if k == key)
+        self.flow = self.flow_factory(key, label, self.config, self.on_flow_event)
+        self.broadcast({"type": "flow_start", "flow": self.flow.summary()})
+        await self.flow.start()
+
+    def stop_flow(self) -> None:
+        if self.flow is not None:
+            self.flow.stop()
+
+    def on_flow_event(self, event: dict) -> None:
+        kind = event.get("type")
+        if kind == "sudo":
+            if event.get("retry") == 0 and self.sudo_password is not None and self.flow is not None:
+                self.flow.password(self.sudo_password)     # déjà donné dans cette session : pas redemandé
+                return
+            self.sudo_password = None
+        elif kind == "sudo_ok":
+            if self.sudo_pending is not None:
+                self.sudo_password, self.sudo_pending = self.sudo_pending, None
+            return
+        elif kind == "sudo_bad":
+            self.sudo_password = self.sudo_pending = None
+        if kind in ("sudo", "sudo_bad") and self.flow is not None:
+            self.flow.events.append(event)               # rejoué à une page qui se reconnecte (aucun secret)
+        self.broadcast({"type": "flow", "event": event})
+
+    def broadcast(self, message: dict) -> None:
+        for ws in list(self.clients):
+            asyncio.ensure_future(self._send(ws, message))
+
+    def flow_message(self, data: dict) -> None:
+        flow = self.flow
+        if flow is None:
+            return
+        kind = data.get("type")
+        if kind == "flow_stop":
+            self.touch()
+            flow.stop()
+            return
+        if not flow.alive:
+            return
+        if kind == "flow_answer" and isinstance(data.get("value"), str):
+            self.touch()
+            label = data.get("label") if isinstance(data.get("label"), str) else ""
+            flow.answer(data["value"][:4096], label[:200])
+        elif kind == "flow_stdin" and isinstance(data.get("data"), str):
+            self.touch()
+            flow.stdin(data["data"][:4096])
+        elif kind == "flow_password" and isinstance(data.get("value"), str):
+            self.touch()
+            self.sudo_pending = data["value"][:256]
+            flow.password(self.sudo_pending)
+            flow.record({"type": "sudo_sent"})            # la question du mot de passe est close (jamais la valeur)
 
     # ------------------------------------------------------------------ terminal
 
@@ -375,6 +453,8 @@ class WebConsole:
         self.ensure_terminal()
         self.clients.add(ws)
         await self._send(ws, {"type": "output", "data": "".join(self.scrollback)})
+        if self.flow is not None:
+            await self._send(ws, {"type": "flow_start", "flow": self.flow.summary()})
         try:
             async for msg in ws:
                 if msg.type != WSMsgType.TEXT:
@@ -383,7 +463,9 @@ class WebConsole:
                     data = json.loads(msg.data)
                 except ValueError:
                     continue
-                if data.get("type") == "input" and isinstance(data.get("data"), str) and self.terminal is not None:
+                if str(data.get("type", "")).startswith("flow_"):
+                    self.flow_message(data)
+                elif data.get("type") == "input" and isinstance(data.get("data"), str) and self.terminal is not None:
                     self.idle = False                     # quelqu'un tape : la console n'attend plus au menu
                     self.touch()
                     self.terminal.write(data["data"][:4096])
@@ -455,6 +537,7 @@ class WebConsole:
             watchdog.cancel()
             if self.terminal is not None:
                 self.terminal.close()
+            self.stop_flow()
             await runner.cleanup()
         return True
 
@@ -463,7 +546,11 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.running", "web.stopped", "web.not_configured", "web.tx", "web.rx", "web.update", "web.role",
            "web.when", "web.changes", "web.admin", "web.terminal", "web.hide", "web.show", "web.click_open",
            "web.tap_open", "web.no_rig", "web.first_use", "web.logout", "web.level", "level.basic", "level.normal",
-           "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc")
+           "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc", "web.flow.close",
+           "web.flow.stop", "web.flow.send", "web.flow.free", "web.flow.yes", "web.flow.no", "web.flow.continue",
+           "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
+           "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
+           "web.flow.busy")
 
 UI_START = ("\nConsole web de la station : {url}\n"
             "  Adresse à usage unique, à ouvrir sur CETTE machine (navigateur ouvert tout seul s'il y en a un).\n"
