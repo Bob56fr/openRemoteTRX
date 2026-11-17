@@ -139,5 +139,11 @@
   "probe.silent": "no more spectrum data on {port} for {detail} s (transceiver screen on a menu or on a screen other than the spectrum, spectrum off on the transceiver, setting changed, or cable).",
   "probe.port_lost": "port {port} lost ({detail}).",
   "probe.no_pyserial": "pyserial module missing: pip install pyserial (spectrum disabled).",
-  "probe.internal": "internal spectrum error ({detail})."
+  "probe.internal": "internal spectrum error ({detail}).",
+  "diffusion.server": "[diffusion] server: name of the broadcast server (letters, digits, dots and hyphens)",
+  "diffusion.station": "[diffusion] station: 2 to 32 characters a-z, 0-9 and -",
+  "diffusion.codec": "[diffusion] codec: opus or mp3",
+  "diffusion.audio_port_clash": "[diffusion] audio_port: must differ from [modules] bus_port and [sdr] audio_port",
+  "diffusion.tls_local": "[diffusion] tls = false only towards 127.0.0.1 (test server): on the Internet the source password would travel in clear text",
+  "diffusion.incomplete": "[diffusion] enabled without server or station: nothing could be broadcast"
 }

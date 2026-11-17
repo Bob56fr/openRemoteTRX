@@ -139,5 +139,11 @@
   "probe.silent": "ningún dato del espectro en {port} desde hace {detail} s (pantalla del equipo en un menú o en otra pantalla que no es el espectro, espectro apagado en el equipo, ajuste cambiado o cable).",
   "probe.port_lost": "puerto {port} perdido ({detail}).",
   "probe.no_pyserial": "falta el módulo pyserial: pip install pyserial (espectro desactivado).",
-  "probe.internal": "error interno del espectro ({detail})."
+  "probe.internal": "error interno del espectro ({detail}).",
+  "diffusion.server": "[diffusion] server: nombre del servidor de difusión (letras, cifras, puntos y guiones)",
+  "diffusion.station": "[diffusion] station: de 2 a 32 caracteres a-z, 0-9 y -",
+  "diffusion.codec": "[diffusion] codec: opus o mp3",
+  "diffusion.audio_port_clash": "[diffusion] audio_port: distinto de [modules] bus_port y de [sdr] audio_port",
+  "diffusion.tls_local": "[diffusion] tls = false solo hacia 127.0.0.1 (servidor de prueba): en Internet la contraseña de la fuente viajaría sin cifrar",
+  "diffusion.incomplete": "[diffusion] activada sin server ni station: no se podría difundir nada"
 }

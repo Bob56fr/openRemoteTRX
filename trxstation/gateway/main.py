@@ -131,11 +131,18 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                                                                       a.overload_lag_ms, a.overload_mem_pct))
             watcher = AccessWatcher(access, registry, manager, config_path, Path(cfg.supervisor.state_dir))
             tasks += [asyncio.create_task(watcher.run(stop)), asyncio.create_task(lag.run(stop))]
+            if cfg.diffusion.enabled and bridge.has_client_commands("diffusion"):   # diffusion en direct (lot D1b)
+                tasks.append(_start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop))
         await bridge.start()                       # [modules] run vide : rien ; toute erreur : la station continue
         log.info("passerelle démarrée (RX), état publié dans %s", cfg.supervisor.status_path)
         await stop.wait()
     finally:
         log.info("arrêt : coupure de l'émission")
+        if cfg.diffusion.enabled:                  # diffusion en cours : arrêtée avec sa cause (journal, alerte)
+            try:
+                await asyncio.wait_for(bridge.call("diffusion", {"action": "stop", "args": {"cause": "station_stop"}}), 2)
+            except Exception:
+                pass
         await bridge.stop()
         await spectrum.stop()                      # réglages du spectre remis, second port fermé
         if runner is not None:
@@ -245,6 +252,27 @@ def _start_sdr_governor(cfg, audio, pipeline, bridge, stop) -> list:
                            lambda level, why: bridge.call("sdr", {"action": "load", "args": {"level": level, "reason": why}}),
                            audio=audio, xrun_source=pipeline.source)
     return [asyncio.create_task(governor.run(stop)), asyncio.create_task(lag.run(stop))]
+
+
+def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop):
+    """Son du TRX vers le module « diffusion » (même son que les visiteurs, sans filtre de bandes) ; voix émise
+    seulement si l'opérateur l'a demandé ; arrêt de la diffusion si la station est surchargée."""
+    from ..diffusion.audio import audio_token
+    from ..modules.keys import key_path, load_or_create_key, module_secret
+    from .audio.diffusion_out import DiffusionOut
+
+    def transmitting() -> bool:
+        snap = ctrl.snapshot()
+        return snap.state != "RX" or bool(getattr(snap, "local_tx", False))
+
+    def overloaded() -> bool:
+        guard = getattr(access, "guard", None)
+        return bool(guard is not None and guard.suspended)
+
+    key = load_or_create_key(key_path(cfg.supervisor.state_dir))
+    out = DiffusionOut(cfg.diffusion.audio_port, audio_token(module_secret(key, "diffusion")), pipeline.hub,
+                       pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded)
+    return asyncio.create_task(out.run(stop))
 
 
 def _station_ca(cfg) -> bytes | None:

@@ -139,5 +139,11 @@
   "probe.silent": "plus aucune donnée du spectre sur {port} depuis {detail} s (écran du poste sur un menu ou un autre écran que le spectre, spectre éteint sur le poste, réglage modifié ou câble).",
   "probe.port_lost": "port {port} perdu ({detail}).",
   "probe.no_pyserial": "module pyserial absent : pip install pyserial (spectre désactivé).",
-  "probe.internal": "erreur interne du spectre ({detail})."
+  "probe.internal": "erreur interne du spectre ({detail}).",
+  "diffusion.server": "[diffusion] server : nom du serveur de diffusion (lettres, chiffres, points et tirets)",
+  "diffusion.station": "[diffusion] station : 2 à 32 caractères a-z, 0-9 et -",
+  "diffusion.codec": "[diffusion] codec : opus ou mp3",
+  "diffusion.audio_port_clash": "[diffusion] audio_port : différent de [modules] bus_port et de [sdr] audio_port",
+  "diffusion.tls_local": "[diffusion] tls = false seulement vers 127.0.0.1 (faux serveur d'essai) : sur Internet, le mot de passe source passerait en clair",
+  "diffusion.incomplete": "[diffusion] activée sans server ni station : rien ne pourrait être diffusé"
 }

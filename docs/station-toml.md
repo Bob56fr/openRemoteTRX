@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.187.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.188.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -204,6 +204,24 @@ Se modifie : Menu 8.1, et ajouter « monlink » à `[modules] run`. Pseudo, invi
 | `enabled` | courant | `false` | true : la station s'enregistre auprès du relais du monitoring, relève les messages de ses liaisons et envoie ce que chaque profil permet (« monlink » doit aussi figurer dans `[modules] run`). Sans liaison confirmée, rien ne part. **Sécurité** : Le monitoring ne fait que lire et montrer : aucun message reçu ne peut commander le poste ni la station. (depuis 0.159.0) |
 | `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais du monitoring (le même que celui de la présence). Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.159.0) |
 | `key_file` | expert | `""` | Fichier des clés de la station pour le monitoring (signature, chiffrement des liaisons). Vide : `monlink.key` dans le dossier d'état (sous-dossier `monlink`), créé par le module au premier démarrage. Relatif : à côté de station.toml. Différent des clés de la présence : les deux services ne peuvent pas être reliés. **Sécurité** : Ce fichier identifie la station auprès de ses partenaires de monitoring : ne jamais le copier sur une autre station. (depuis 0.159.0) |
+
+## Diffusion en direct [diffusion]
+
+Faire entendre le son du TRX à quelques internautes qui n'ont AUCUN compte sur la station, comme un podcast en direct : la station envoie le son à un serveur de diffusion (Icecast), et les auditeurs l'écoutent sur la page de ce serveur ou dans VLC. Ils ne joignent jamais la station. Fermée par défaut, privée par défaut (identifiant et mot de passe d'auditeur), 1 heure par défaut ; la voix émise par l'opérateur n'est diffusée que s'il le demande. Le module « diffusion » n'a aucun droit sur le poste. Aucun serveur n'est imposé : celui que donne l'administrateur du serveur, avec le mot de passe source et la clé des métadonnées (fichier à part, jamais dans station.toml).
+
+Se modifie : Menu 8.1, et ajouter « diffusion » à `[modules] run`. Protocole : `docs/protocole-diffusion.md` du dépôt. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : le module « diffusion » accepte qu'un opérateur lance une diffusion. Aucune diffusion ne démarre seule, ni au démarrage, ni après une relance de la passerelle ou un mode sûr. **Sécurité** : Activer la rediffusion de son TRX est de la responsabilité de l'opérateur (la station ne filtre pas les bandes). (depuis 0.188.0) |
+| `server` | courant | `""` | Nom du serveur de diffusion, donné par son administrateur. Vide : aucune diffusion possible (aucun serveur imposé). Exemple : server = "diffusion.example.org" (depuis 0.188.0) |
+| `station` | courant | `""` | Nom de la station sur ce serveur (2 à 32 caractères a-z, 0-9 et -), donné par son administrateur : il forme l'adresse de la page des auditeurs (`https://<serveur>/ecoute/<station>`) et des flux. Exemple : station = "f4xyz" (depuis 0.188.0) |
+| `source_port` | expert | `8443` | Port TLS où la station envoie le son, directement au serveur Icecast (pas le port 443 : un mandataire HTTP ne sait pas relayer une source). Valeurs : 1 à 65535 (depuis 0.188.0) |
+| `api_port` | expert | `443` | Port HTTPS des métadonnées (pseudo, fréquence…) et du nombre d'auditeurs. Valeurs : 1 à 65535 (depuis 0.188.0) |
+| `codec` | courant | `"opus"` | `opus` (32 kb/s, le plus léger, par défaut) ou `mp3` (64 kb/s : anciens iPhone, applications de radio). (depuis 0.188.0) |
+| `audio_port` | expert | `47822` | Port UDP par lequel la passerelle donne le son au module, en 127.0.0.1 seulement (paquets signés d'un jeton). À changer seulement si un autre programme le prend. Valeurs : 1024 à 65535, différent de [modules] bus_port et de [sdr] audio_port (depuis 0.188.0) |
+| `key_file` | expert | `""` | Fichier des secrets de la diffusion (mot de passe source, clé des métadonnées, identifiant et mot de passe des auditeurs). Vide : `diffusion.key` dans le dossier d'état (sous-dossier `diffusion`). Relatif : à côté de station.toml. **Sécurité** : Droits 0600 exigés sous Linux : un fichier lisible par d'autres comptes est refusé. Ne jamais le joindre à un message. (depuis 0.188.0) |
+| `tls` | expert | `true` | true : connexions chiffrées et certificat du serveur vérifié. false seulement vers 127.0.0.1 (faux serveur d'essai, `python -m trxstation.devtools.fake_icecast`). **Sécurité** : Refusé vers tout autre serveur : le mot de passe source passerait en clair. (depuis 0.188.0) |
 
 ## TRX Console sur le réseau [remote_console]
 

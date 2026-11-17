@@ -139,5 +139,11 @@
   "probe.silent": "seit {detail} s keine Spektrumdaten mehr auf {port} (Display des Funkgeräts in einem Menü oder auf einer anderen Anzeige als dem Spektrum, Spektrum am Funkgerät aus, Einstellung geändert oder Kabel).",
   "probe.port_lost": "Port {port} verloren ({detail}).",
   "probe.no_pyserial": "Modul pyserial fehlt: pip install pyserial (Spektrum deaktiviert).",
-  "probe.internal": "interner Fehler des Spektrums ({detail})."
+  "probe.internal": "interner Fehler des Spektrums ({detail}).",
+  "diffusion.server": "[diffusion] server: Name des Sendeservers (Buchstaben, Ziffern, Punkte und Bindestriche)",
+  "diffusion.station": "[diffusion] station: 2 bis 32 Zeichen a-z, 0-9 und -",
+  "diffusion.codec": "[diffusion] codec: opus oder mp3",
+  "diffusion.audio_port_clash": "[diffusion] audio_port: muss sich von [modules] bus_port und [sdr] audio_port unterscheiden",
+  "diffusion.tls_local": "[diffusion] tls = false nur zu 127.0.0.1 (Testserver): im Internet ginge das Quellpasswort im Klartext",
+  "diffusion.incomplete": "[diffusion] aktiviert ohne server oder station: es könnte nichts gesendet werden"
 }

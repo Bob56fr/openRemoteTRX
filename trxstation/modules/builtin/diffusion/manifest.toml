@@ -1,0 +1,29 @@
+# Module de diffusion en direct (docs/diffusion-cahier-des-charges.md, lot D1b, étape 244).
+# AUCUN droit sur le poste : ni commande, ni message vers les pages. Il reçoit le son de la passerelle (UDP local,
+# jeton dérivé de son secret) et lit deux événements pour les métadonnées choisies par l'opérateur (fréquence, mode,
+# émission en cours). Ordres (lancer, arrêter, état) : de la passerelle, relayés par le cœur (jamais d'un visiteur).
+[module]
+name = "diffusion"
+version = "0.1.0"
+api = "1.0"
+entry = "trxstation.diffusion.service"
+start = "auto"
+description = "Diffusion en direct du son du TRX vers un serveur Icecast (auditeurs sans compte sur la station)"
+
+[rights]
+events = ["freq_mode", "ptt"]     # lecture seule : métadonnées
+commands = []
+client_messages = false
+verify_tokens = false
+client_commands = true            # lancer / arrêter / état : par la passerelle (opérateurs), jamais un visiteur
+
+[resources]
+cpu_quota = 25        # % d'un cœur : encodage Opus ≈ 1,2 % (POC), MP3 ≈ 2,2 %
+memory_max_mb = 128
+nice = 10
+
+[degradation]
+levels = [4, 5]       # pause, arrêt
+
+[network]
+ports = []            # n'écoute que le son de la passerelle en 127.0.0.1 ([diffusion] audio_port) ; sorties vers le serveur

@@ -1,4 +1,4 @@
-# Diffusion en direct du TRX vers des internautes : cahier des charges (v3, serveur fait et protocole figé le 2026-11-17)
+# Diffusion en direct du TRX vers des internautes : cahier des charges (v3, serveur fait, protocole figé et module de la station fait le 2026-11-17)
 
 Demande de l'utilisateur (2026-11-17) : un petit service de diffusion « lowcost, lowtech », comme un podcast en direct
 (pas de différé), pour faire entendre le son du TRX à quelques internautes (moins de 5 au départ) qui n'ont AUCUN compte
@@ -136,7 +136,7 @@ métadonnées est à écrire par celui qui monte son propre VPS.
   - **D1a** (fait, étape 242) : protocole public `docs/protocole-diffusion.md`, calculs purs
     `trxstation/diffusion/protocol.py` (signature, corps, métadonnées permises, requête source brute, durée, mot de
     passe généré), vecteurs `tests/protocol/diffusion_vectors.json` (mêmes octets que le serveur).
-  - **D1b** : module « diffusion », `[diffusion]` de station.toml, `diffusion.key`, son par UDP local, encodage
+  - **D1b** (fait, étape 244) : module « diffusion », `[diffusion]` de station.toml, `diffusion.key`, son par UDP local, encodage
     PyAV, envoi en flux brut TLS, reconnexion, durée, état publié, codes ORT ; faux Icecast
     `devtools/fake_icecast.py` ; tests (aucun droit sur le poste, voix émise seulement avec l'option, arrêt en fin de
     durée, reconnexion, surcharge).
@@ -155,3 +155,8 @@ Décision : la station envoie en FLUX BRUT, comme libshout, en TLS DIRECTEMENT �
 le serveur de référence, certificat de Caddy recopié chaque jour) ; les auditeurs restent derrière Caddy (443). Ce
 choix marche avec n'importe quel Icecast (§ 9). Icecast 2.5 (dépôt Xiph) écarté : rien pour Debian 13, et hors des
 correctifs automatiques.
+
+Trouvé au lot D1b (2026-11-17) : Icecast 2.4.4, quand il fait lui-même le TLS, tourne en boucle à 100 % d'un cœur et
+garde le montage occupé pour toujours quand une source ferme PROPREMENT sa session TLS (close_notify, ce que fait
+asyncio). Corrigé des deux côtés : sur le serveur de référence, stunnel tient le TLS du port des sources et transmet
+en clair à Icecast (fin TCP normale) ; la station ferme sans close_notify (compatibilité avec un Icecast nu).

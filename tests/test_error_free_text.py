@@ -48,6 +48,11 @@ CONVERTED = [
     "monlink/collect.py",
     "monlink/store.py",
     "monlink/relay.py",
+    # étape 244 : diffusion en direct (module « diffusion », né avec les codes ; son vers le module)
+    "diffusion/service.py",
+    "diffusion/source.py",
+    "diffusion/meta.py",
+    "gateway/audio/diffusion_out.py",
     # étape 214 : partie 2b, lot 1 (bus et pont des modules, Cluster DX, SELCALL)
     "modules/bus.py",
     "modules/client.py",

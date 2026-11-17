@@ -42,6 +42,12 @@ non fiable (affichée, jamais exécutée).
 - Icecast répond `HTTP/1.0 200 OK` puis ne dit plus rien. La réponse se lit sur la prise elle-même : un client HTTP
   qui « lit la réponse » ferme souvent sa connexion, et l'envoi suivant en ouvrirait une autre, sans requête.
 - Refus : `401` (mot de passe source), `403` (montage occupé : une autre source y est déjà), coupure.
+- **Fin : fermer la connexion SANS « close_notify » TLS** (fin TCP nette). Icecast 2.4.4, quand il fait lui-même le
+  TLS, tourne en boucle à 100 % d'un cœur sur un close_notify et garde le montage occupé pour toujours : toute
+  reconnexion reçoit alors 403 (essai du 2026-11-17, avec le client asyncio de la station). Côté serveur, le TLS du
+  port des sources se confie à un terminateur TCP (stunnel sur le serveur de référence, qui transmet en clair à
+  Icecast en 127.0.0.1) plutôt qu'au TLS d'Icecast ; la connexion s'établit aussi bien plus vite (0,4 s au lieu de
+  3 s).
 - Opus : Ogg, pages de 100 ms, 32 kb/s mono, 48 kHz (MP3 : 64 kb/s). Mesuré sur le serveur de référence : 0,14 à
   0,19 s entre l'envoi d'un échantillon et sa réception par un auditeur connecté ; un nouvel auditeur reçoit environ
   1 s de réserve (`burst-size` 4 ko) ; un navigateur met quelques secondes à démarrer la lecture.

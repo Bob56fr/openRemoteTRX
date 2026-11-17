@@ -226,6 +226,14 @@ ORT_6005 = "ORT-6005"   # avertissement : Échantillons du SDR perdus
 ORT_6006 = "ORT-6006"   # avertissement : Module SDR bridé par la passerelle
 ORT_6007 = "ORT-6007"   # info : Module SDR revenu à la normale
 ORT_6008 = "ORT-6008"   # avertissement : Module SDR au-delà de ses plafonds
+ORT_6101 = "ORT-6101"   # info : Diffusion en direct lancée
+ORT_6102 = "ORT-6102"   # info : Diffusion en direct arrêtée
+ORT_6103 = "ORT-6103"   # erreur : Serveur de diffusion refuse la station
+ORT_6104 = "ORT-6104"   # avertissement : Liaison avec le serveur de diffusion perdue
+ORT_6105 = "ORT-6105"   # erreur : Secrets de la diffusion illisibles
+ORT_6106 = "ORT-6106"   # erreur : Port du son de la diffusion indisponible
+ORT_6107 = "ORT-6107"   # avertissement : Métadonnées refusées par le serveur de diffusion
+ORT_6108 = "ORT-6108"   # avertissement : Plus de son de la passerelle pour la diffusion
 ORT_6401 = "ORT-6401"   # erreur : Cluster DX activé mais incomplet
 ORT_6402 = "ORT-6402"   # avertissement : Serveur de spots injoignable
 ORT_6403 = "ORT-6403"   # info : Connexion au cluster fermée par le serveur
@@ -468,7 +476,8 @@ ALL: frozenset[str] = frozenset({
     ORT_5501, ORT_5502, ORT_5503, ORT_5504, ORT_5505, ORT_5506, ORT_5507, ORT_5508,
     ORT_5509, ORT_5510, ORT_5511, ORT_5512, ORT_5801, ORT_5802, ORT_5803, ORT_5804,
     ORT_5805, ORT_5806, ORT_5901, ORT_5902, ORT_6001, ORT_6002, ORT_6003, ORT_6004,
-    ORT_6005, ORT_6006, ORT_6007, ORT_6008, ORT_6401, ORT_6402, ORT_6403, ORT_6404,
+    ORT_6005, ORT_6006, ORT_6007, ORT_6008, ORT_6101, ORT_6102, ORT_6103, ORT_6104,
+    ORT_6105, ORT_6106, ORT_6107, ORT_6108, ORT_6401, ORT_6402, ORT_6403, ORT_6404,
     ORT_6405, ORT_6406, ORT_6407, ORT_6408, ORT_6409, ORT_6410, ORT_6411, ORT_6412,
     ORT_6413, ORT_6501, ORT_6502, ORT_6503, ORT_6504, ORT_6505, ORT_6506, ORT_6507,
     ORT_6508, ORT_6511, ORT_6512, ORT_6513, ORT_6514, ORT_6515, ORT_6516, ORT_6517,

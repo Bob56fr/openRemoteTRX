@@ -204,6 +204,22 @@ class MonitorLink:
 
 
 @dataclass
+class Diffusion:
+    """Diffusion en direct du TRX vers des internautes (docs/diffusion-cahier-des-charges.md, docs/protocole-diffusion.md) :
+    module « diffusion », sans AUCUN droit sur le poste. Aucun serveur imposé (rien par défaut). Secrets (mot de passe
+    source, clé des métadonnées, identifiants des auditeurs) dans key_file (0600), JAMAIS ici."""
+    enabled: bool = False             # false : le module attend sans rien envoyer
+    server: str = ""                  # nom du serveur de diffusion (ex. diffusion.example.org)
+    station: str = ""                 # nom de la station sur ce serveur (a-z 0-9 -), donné par son administrateur
+    source_port: int = 8443           # port TLS des sources (Icecast lui-même, pas le port 443)
+    api_port: int = 443               # HTTPS des métadonnées et de la page des auditeurs
+    codec: str = "opus"               # opus (défaut, 32 kb/s) ou mp3 (64 kb/s : anciens iPhone, applications de radio)
+    audio_port: int = 47822           # son de la passerelle vers le module : UDP en 127.0.0.1 SEULEMENT
+    key_file: str = ""                # vide = state_dir/diffusion/diffusion.key
+    tls: bool = True                  # false SEULEMENT vers 127.0.0.1 (faux serveur d'essai)
+
+
+@dataclass
 class RemoteConsole:
     """TRX Console sur le réseau (étape 233, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
     sur le réseau local ou le VPN, connexion avec un compte OPÉRATEUR marqué `admin = true`, session fermée après
@@ -548,6 +564,7 @@ class Config:
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
     monitor_link: MonitorLink = field(default_factory=MonitorLink)
+    diffusion: Diffusion = field(default_factory=Diffusion)
     remote_console: RemoteConsole = field(default_factory=RemoteConsole)
     freedv: Freedv = field(default_factory=Freedv)
     sdr: Sdr = field(default_factory=Sdr)
@@ -606,6 +623,7 @@ def validate(cfg: Config) -> list[str]:
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
     p += _monitor_link_problems(cfg.monitor_link, cfg.modules)
+    p += _diffusion_problems(cfg.diffusion, cfg.modules, cfg.sdr)
     p += _remote_console_problems(cfg)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
@@ -966,6 +984,49 @@ def _monitor_link_problems(ml: MonitorLink, modules: Modules) -> list[str]:
     return p
 
 
+_SERVER_NAME_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?")
+
+
+def _diffusion_problems(df: Diffusion, modules: Modules, sdr: Sdr) -> list[str]:
+    from .diffusion.protocol import CODECS, STATION_NAME   # calculs purs, sans dépendance
+    p = []
+    for name in ("enabled", "tls"):
+        if not isinstance(getattr(df, name), bool):
+            p.append(_t("bool", where="[diffusion]", name=name))
+    if not isinstance(df.server, str) or (df.server and not _SERVER_NAME_RE.fullmatch(df.server)):
+        p.append(_t("diffusion.server"))
+    if not isinstance(df.station, str) or (df.station and not STATION_NAME.fullmatch(df.station)):
+        p.append(_t("diffusion.station"))
+    if df.codec not in CODECS:
+        p.append(_t("diffusion.codec"))
+    for name in ("source_port", "api_port", "audio_port"):
+        v = getattr(df, name)
+        low = 1024 if name == "audio_port" else 1
+        if isinstance(v, bool) or not isinstance(v, int) or not low <= v <= 65535:
+            p.append(_t("int_range", where="[diffusion]", name=name, low=low, high=65535))
+    if df.audio_port in (modules.bus_port, sdr.audio_port):
+        p.append(_t("diffusion.audio_port_clash"))
+    if not isinstance(df.key_file, str):
+        p.append(_t("path", where="[diffusion]", name="key_file"))
+    if df.tls is False and df.server not in ("127.0.0.1", "localhost"):
+        p.append(_t("diffusion.tls_local"))
+    if df.enabled is True:
+        if "diffusion" not in modules.run:
+            p.append(_t("module_not_run", where="[diffusion]", module="diffusion"))
+        if not df.server or not df.station:
+            p.append(_t("diffusion.incomplete"))
+    return p
+
+
+def diffusion_key_path(cfg: "Config", config_path: str | Path) -> Path:
+    """Secrets de la diffusion : key_file (relatif = à côté de station.toml), sinon state_dir/diffusion/diffusion.key
+    (0600). Jamais dans station.toml (cahier § 3)."""
+    if cfg.diffusion.key_file:
+        path = Path(cfg.diffusion.key_file)
+        return path if path.is_absolute() else Path(config_path).parent / path
+    return Path(cfg.supervisor.state_dir) / "diffusion" / "diffusion.key"
+
+
 SSH_USER_RE = re.compile(r"[a-z_][a-z0-9_.-]{0,31}")
 
 
@@ -1100,7 +1161,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "presence", "monitor_link", "remote_console", "freedv", "sdr", "bands", "clients"}
+                 "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(_t("unknown_root_key", key=key))
     try:
@@ -1124,6 +1185,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
             monitor_link=_build(MonitorLink, d.get("monitor_link", {}), "monitor_link", problems),
+            diffusion=_build(Diffusion, d.get("diffusion", {}), "diffusion", problems),
             remote_console=_build(RemoteConsole, _remote_console_compat(d), "remote_console", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
@@ -1372,6 +1434,17 @@ def render_toml(cfg: Config) -> str:
         f"enabled = {str(cfg.monitor_link.enabled).lower()}",
         f"relay_url = {_s(cfg.monitor_link.relay_url)}   # même relais que la présence (https://)",
         f"key_file = {_s(cfg.monitor_link.key_file)}   # clés du monitoring ; vide = state_dir/monlink/{MONLINK_KEY_FILE}",
+        "",
+        "[diffusion]   # diffusion en direct vers des internautes (docs/diffusion-cahier-des-charges.md) : module « diffusion »",
+        f"enabled = {str(cfg.diffusion.enabled).lower()}",
+        f"server = {_s(cfg.diffusion.server)}   # serveur de diffusion (aucun par défaut)",
+        f"station = {_s(cfg.diffusion.station)}   # nom de la station sur ce serveur (a-z 0-9 -)",
+        f"source_port = {cfg.diffusion.source_port}   # port TLS des sources (Icecast)",
+        f"api_port = {cfg.diffusion.api_port}   # HTTPS des métadonnées",
+        f"codec = {_s(cfg.diffusion.codec)}   # opus ou mp3",
+        f"audio_port = {cfg.diffusion.audio_port}   # son de la passerelle vers le module (UDP, 127.0.0.1 seulement)",
+        f"key_file = {_s(cfg.diffusion.key_file)}   # secrets ; vide = state_dir/diffusion/diffusion.key (0600)",
+        f"tls = {str(cfg.diffusion.tls).lower()}   # false seulement vers 127.0.0.1 (faux serveur d'essai)",
         "",
         "[remote_console]   # TRX Console sur le réseau (HTTPS, comptes opérateurs admin = true) : menu 4.6",
         f"enabled = {str(cfg.remote_console.enabled).lower()}",

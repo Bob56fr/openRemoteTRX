@@ -5326,6 +5326,184 @@ ORT-6008:
     preconisation: Lower [sdr] sample_rate_hz (2 MHz advised) or lines_per_s, or raise max_cpu_pct if the machine has
       headroom (one step given back after 5 minutes under the limit).
 
+ORT-6101:
+  gravite: info
+  titre: Diffusion en direct lancée
+  message: 'Diffusion : lancée par {operateur} ({acces}, {duree}, voix émise : {voix}).'
+  causes:
+  - Un opérateur a lancé la diffusion depuis la page, l'application ou TRX Console
+  preconisation: Rien à faire ; l'indicateur « DIFFUSION » reste visible tant qu'elle dure.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6101/
+  depuis_version: 0.188.0
+  en:
+    titre: Live broadcast started
+    message: 'Broadcast: started by {operateur} ({acces}, {duree}, transmitted voice: {voix}).'
+    causes:
+    - An operator started the broadcast from the page, the app or TRX Console
+    preconisation: Nothing to do; the "BROADCAST" indicator stays visible while it lasts.
+
+ORT-6102:
+  gravite: info
+  titre: Diffusion en direct arrêtée
+  message: 'Diffusion : arrêtée ({cause}) après {duree}.'
+  causes:
+  - Arrêt par un opérateur
+  - Fin de la durée choisie au lancement
+  - Station surchargée, passerelle relancée, mode sûr ou fonction mise hors service
+  - Mot de passe source refusé par le serveur
+  preconisation: Rien à faire si l'arrêt était voulu ; sinon voir la cause et relancer la diffusion.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6102/
+  depuis_version: 0.188.0
+  en:
+    titre: Live broadcast stopped
+    message: 'Broadcast: stopped ({cause}) after {duree}.'
+    causes:
+    - Stopped by an operator
+    - End of the duration chosen at start
+    - Station overloaded, gateway restarted, safe mode or feature switched off
+    - Source password refused by the server
+    preconisation: Nothing to do if the stop was intended; otherwise check the cause and start the broadcast again.
+
+ORT-6103:
+  gravite: erreur
+  titre: Serveur de diffusion refuse la station
+  message: 'Diffusion : {serveur} refuse la source (HTTP {statut}) ; diffusion arrêtée.'
+  causes:
+  - Mot de passe source faux ou changé sur le serveur (401)
+  - Nom de station inconnu du serveur
+  preconisation: Vérifier [diffusion] station et le mot de passe source de diffusion.key avec l'administrateur du
+    serveur.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6103/
+  depuis_version: 0.188.0
+  en:
+    titre: Broadcast server refuses the station
+    message: 'Broadcast: {serveur} refuses the source (HTTP {statut}); broadcast stopped.'
+    causes:
+    - Wrong source password or changed on the server (401)
+    - Station name unknown to the server
+    preconisation: Check [diffusion] station and the source password in diffusion.key with the server administrator.
+
+ORT-6104:
+  gravite: avertissement
+  titre: Liaison avec le serveur de diffusion perdue
+  message: 'Diffusion : liaison avec {serveur} perdue ({detail}) ; nouvel essai dans {delai} s.'
+  causes:
+  - Accès Internet de la station coupé
+  - Serveur de diffusion redémarré ou en maintenance
+  - Montage encore occupé par une connexion précédente (403)
+  preconisation: Rien à faire si cela ne dure pas ; le module se reconnecte seul (2 à 60 s entre deux essais).
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6104/
+  depuis_version: 0.188.0
+  en:
+    titre: Link to the broadcast server lost
+    message: 'Broadcast: link to {serveur} lost ({detail}); retrying in {delai} s.'
+    causes:
+    - Station Internet access down
+    - Broadcast server restarted or under maintenance
+    - Mount still held by a previous connection (403)
+    preconisation: Nothing to do if it does not last; the module reconnects by itself (2 to 60 s between attempts).
+
+ORT-6105:
+  gravite: erreur
+  titre: Secrets de la diffusion illisibles
+  message: 'Diffusion : fichier {fichier} illisible ({detail}) ; aucune diffusion possible.'
+  causes:
+  - Fichier diffusion.key absent (fonction jamais réglée)
+  - Fichier abîmé ou modifié à la main
+  - Droits trop larges (lisible par d'autres comptes)
+  preconisation: Régler la diffusion (serveur, mot de passe source, clé des métadonnées) ; droits 0600 sous Linux.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6105/
+  depuis_version: 0.188.0
+  en:
+    titre: Broadcast secrets unreadable
+    message: 'Broadcast: file {fichier} unreadable ({detail}); no broadcast possible.'
+    causes:
+    - diffusion.key missing (feature never set up)
+    - File damaged or edited by hand
+    - Permissions too wide (readable by other accounts)
+    preconisation: Set up the broadcast (server, source password, metadata key); permissions 0600 on Linux.
+
+ORT-6106:
+  gravite: erreur
+  titre: Port du son de la diffusion indisponible
+  message: 'Diffusion : port du son {chemin} indisponible ({detail}) ; aucune diffusion possible.'
+  causes:
+  - Port déjà pris par un autre programme
+  - Module « diffusion » lancé deux fois
+  preconisation: Changer [diffusion] audio_port (menu 8.1) ou arrêter l'autre programme, puis redémarrer la station.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6106/
+  depuis_version: 0.188.0
+  en:
+    titre: Broadcast audio port unavailable
+    message: 'Broadcast: audio port {chemin} unavailable ({detail}); no broadcast possible.'
+    causes:
+    - Port already used by another program
+    - The diffusion module started twice
+    preconisation: Change [diffusion] audio_port (menu 8.1) or stop the other program, then restart the station.
+
+ORT-6107:
+  gravite: avertissement
+  titre: Métadonnées refusées par le serveur de diffusion
+  message: 'Diffusion : métadonnées refusées par {serveur} ({statut}) ; le son continue.'
+  causes:
+  - Clé des métadonnées fausse (401)
+  - Horloge de la station décalée de plus de 2 minutes (400)
+  - Serveur injoignable en HTTPS
+  preconisation: Vérifier la clé des métadonnées de diffusion.key et l'heure de la station.
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6107/
+  depuis_version: 0.188.0
+  en:
+    titre: Metadata refused by the broadcast server
+    message: 'Broadcast: metadata refused by {serveur} ({statut}); audio goes on.'
+    causes:
+    - Wrong metadata key (401)
+    - Station clock off by more than 2 minutes (400)
+    - Server unreachable over HTTPS
+    preconisation: Check the metadata key in diffusion.key and the station clock.
+
+ORT-6108:
+  gravite: avertissement
+  titre: Plus de son de la passerelle pour la diffusion
+  message: 'Diffusion : aucun son reçu de la passerelle depuis {secondes} s ; silence envoyé aux auditeurs.'
+  causes:
+  - Passerelle arrêtée ou relancée
+  - Carte son du poste débranchée
+  preconisation: Vérifier la passerelle et le son du poste (menu 6.1) ; la diffusion reprend le son dès son retour.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-6108/
+  depuis_version: 0.188.0
+  en:
+    titre: No more gateway audio for the broadcast
+    message: 'Broadcast: no audio from the gateway for {secondes} s; silence sent to listeners.'
+    causes:
+    - Gateway stopped or restarted
+    - Rig sound card unplugged
+    preconisation: Check the gateway and the rig audio (menu 6.1); the broadcast takes the audio back as soon as it
+      returns.
+
 ORT-6401:
   gravite: erreur
   titre: Cluster DX activé mais incomplet
