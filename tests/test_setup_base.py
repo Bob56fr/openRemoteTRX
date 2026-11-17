@@ -125,3 +125,25 @@ def test_part_on_the_command_line_needs_an_existing_configuration(tmp_path, no_h
     path.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
     assert sw.main(["--output", str(path), "--partie", "bandes"]) == 0        # Entrée : contrôle délégué gardé
     assert cfgmod.load(path).safety.enforce_bands is False and (tmp_path / "station.toml.bak").exists()
+
+
+def test_tot_out_of_the_station_ceiling_is_asked_again_with_a_clear_reason(no_hardware, monkeypatch, capsys):
+    base = imported_base()
+    base.rig.port = no_hardware
+    answers = iter(["5000", "100", "200", "abc", "60"])           # puissance refusée puis 100 W ; TOT refusé puis 60 s
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+    cfg = sw.interactive_part("emission", base)
+    assert cfg.rig.max_power_w == 100 and cfg.safety.tot_s == 60
+    out = capsys.readouterr().out
+    assert "Refusé : un nombre entier de 0 à 2000." in out
+    assert "Refusé : un nombre entier de 11 à 120. Au plus 120 s : c'est le plafond de cette station" in out
+    assert "<=" not in out and "il faut" not in out
+
+
+def test_validation_messages_about_the_tot_are_readable():
+    cfg = sw.dummy_config()
+    cfg.safety.tot_s = 200
+    problems = cfgmod.validate(cfg)
+    assert any(p.startswith("Durée maximale d'une émission (TOT) de 200 s refusée : elle doit être comprise entre 1 et 120 s")
+               for p in problems)
+    assert not any("<=" in p for p in problems)

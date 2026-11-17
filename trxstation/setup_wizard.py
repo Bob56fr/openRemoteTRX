@@ -516,12 +516,27 @@ def ask_accounts(cfg: Config) -> None:
     ask_clients(cfg)
 
 
+def ask_number(prompt: str, current: int, low: int, high: int, why: str = "") -> int:
+    """Nombre entier entre `low` et `high`, redemandé avec une explication claire tant qu'il n'y est pas : une
+    réponse hors limites ne doit jamais aller jusqu'à l'enregistrement (message technique de la validation)."""
+    current = min(max(current, low), high)
+    while True:
+        answer = ask(f"{prompt} (de {low} à {high})", str(current))
+        if answer.isdigit() and low <= int(answer) <= high:
+            return int(answer)
+        print(f"  Refusé : un nombre entier de {low} à {high}." + (f" {why}" if why else ""))
+
+
 def ask_transmit(cfg: Config) -> None:
     """Puissance maximale du poste (affichage en watts) et durée maximale d'une émission (TOT, sous le plafond)."""
-    power = ask("Puissance maximale du poste en watts (0 = inconnue : la page affichera des %)", str(cfg.rig.max_power_w))
-    cfg.rig.max_power_w = int(power) if power.isdigit() and int(power) <= 2000 else cfg.rig.max_power_w
-    tot = ask("Durée max d'une émission en secondes (TOT)", str(cfg.safety.tot_s))
-    cfg.safety.tot_s = int(tot) if tot.isdigit() else cfg.safety.tot_s
+    s = cfg.safety
+    cfg.rig.max_power_w = ask_number("Puissance maximale du poste en watts (0 = inconnue : la page affichera des %)",
+                                     cfg.rig.max_power_w, 0, 2000)
+    s.tot_s = ask_number("Durée maximale d'une émission en secondes (TOT)", s.tot_s, s.warn_before_s + 1,
+                         s.tot_ceiling_s,
+                         f"Au plus {s.tot_ceiling_s} s : c'est le plafond de cette station (tot_ceiling_s, réglé dans "
+                         f"station.toml) ; au moins {s.warn_before_s + 1} s, car le bip d'avertissement sonne "
+                         f"{s.warn_before_s} s avant la coupure.")
 
 
 REPLAY_WARNING = (
@@ -821,7 +836,8 @@ def dummy_config() -> Config:
 def write_config(cfg: Config, output: Path) -> None:
     problems = cfgmod.validate(cfg)
     if problems:
-        raise SetupError("configuration invalide :\n  - " + "\n  - ".join(problems))
+        raise SetupError("la configuration n'a PAS été enregistrée (station.toml inchangé), ces réglages sont "
+                         "refusés :\n  - " + "\n  - ".join(problems))
     output.parent.mkdir(parents=True, exist_ok=True)
     previous = output.stat() if output.exists() else None
     if previous is not None:

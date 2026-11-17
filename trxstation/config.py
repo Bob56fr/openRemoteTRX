@@ -605,15 +605,19 @@ def validate(cfg: Config) -> list[str]:
 
     s = cfg.safety
     if not 0 < s.tot_s <= s.tot_ceiling_s:
-        p.append("[safety] il faut 0 < tot_s <= tot_ceiling_s")
+        p.append(f"Durée maximale d'une émission (TOT) de {s.tot_s} s refusée : elle doit être comprise entre 1 et "
+                 f"{s.tot_ceiling_s} s, le plafond de cette station ([safety] tot_s, plafond tot_ceiling_s)")
     if not 0 < s.warn_before_s < s.tot_s:
-        p.append("[safety] warn_before_s doit être entre 0 et tot_s")
+        p.append(f"Le bip d'avertissement ({s.warn_before_s} s avant la coupure) doit sonner pendant l'émission : "
+                 f"moins que la durée maximale ({s.tot_s} s) ([safety] warn_before_s)")
     if s.heartbeat_interval_ms <= 0 or s.heartbeat_timeout_ms < 2 * s.heartbeat_interval_ms:
         p.append("[safety] heartbeat_timeout_ms doit valoir au moins 2x heartbeat_interval_ms")
     if not isinstance(s.allow_replay, bool):
         p.append("[safety] allow_replay doit valoir true ou false")
     if not TEMP_MIN_C <= s.rig_temp_warn_c < s.rig_temp_cut_c <= TEMP_MAX_C:
-        p.append(f"[safety] il faut {TEMP_MIN_C} <= rig_temp_warn_c < rig_temp_cut_c <= {TEMP_MAX_C} (°C)")
+        p.append(f"Seuils de température du poste refusés ({s.rig_temp_warn_c} et {s.rig_temp_cut_c} °C) : "
+                 f"l'avertissement doit être plus bas que la coupure, les deux entre {TEMP_MIN_C} et {TEMP_MAX_C} °C "
+                 "([safety] rig_temp_warn_c, rig_temp_cut_c)")
 
     v = cfg.supervisor
     if v.tot_abs_s <= s.tot_ceiling_s:
