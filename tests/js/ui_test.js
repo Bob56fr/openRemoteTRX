@@ -115,7 +115,7 @@ Object.assign(globalThis, {
       analysers.push(node); return node;
     }
   },
-  location: { origin: "https://station:8443" },
+  location: { origin: "https://station:8443", hostname: "192.168.1.50" },
   localStorage: { getItem: (k) => (storage.has(k) ? storage.get(k) : null), setItem: (k, v) => storage.set(k, String(v)) },
   MediaStream: class { constructor(tracks) { this.tracks = tracks; } },
   fetch: async (url, options) => {
@@ -146,6 +146,7 @@ global.TrxSpots = require(path.join(STATIC, "spots.js"));
 global.TrxVoice = require(path.join(STATIC, "voice.js"));
 global.TrxSwr = require(path.join(STATIC, "swr.js"));
 global.TrxFriends = require(path.join(STATIC, "friends.js"));
+global.TrxConsoleLink = require(path.join(STATIC, "console_link.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -1445,8 +1446,10 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
     connections: [{ id: "club1", pseudo: "Club", role: "listener", source: "198.51.100.7", since_s: 30 }] };
   $("client-id").value = "phone"; $("password").value = "mot de passe";
   await $("connect").click(); await wait();
-  send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [] });
+  send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [],
+         remote_console: { user: "bob", ssh_port: 22, web_port: 8765 } });
   await wait(30);
+  assert.equal($("sec-console").hidden, false);                                    // raccourci de la console : opérateur
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"], presence });
   await wait(30);
   assert.equal($("presence").hidden, false); assert.equal($("presence").textContent, "🎧 1");
@@ -1481,6 +1484,7 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   await $("connect").click(); await wait();
   send({ type: "hello", protocol: 1, client_id: "club1", role: "listener", pseudo: "Club", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [] });
   await wait(30);
+  assert.equal($("sec-console").hidden, true);                                     // jamais pour un visiteur
   send({ type: "state", ptt: { state: "TX", owner: "Kriss" }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: [],
          presence: { operators: 1, listeners: 1, max_listeners: 5, grace_remaining_s: 45, suspended: null, people: presence.people } });
   await wait(30);
