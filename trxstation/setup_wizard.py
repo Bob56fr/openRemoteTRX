@@ -531,11 +531,14 @@ def ask_audio(cfg: Config) -> None:
 
 
 def ask_accounts(cfg: Config) -> None:
-    """Comptes : ceux d'avant gardés sur demande, puis ajout (un compte par appareil ; menu 4.3 ensuite)."""
+    """Comptes : ceux d'avant TOUJOURS gardés (l'ancienne question « Les garder », non = tout effacer, coupait tout
+    accès à distance : retirée à la demande de l'utilisateur, étape 239) ; ajout seulement si l'opérateur le veut.
+    Supprimer un compte ou changer un mot de passe : un par un, menus 4.3 (opérateurs) et 4.2 (visiteurs)."""
     if cfg.clients:
-        print("\nComptes déjà autorisés : " + ", ".join(c.id for c in cfg.clients))
-        if not ask_yes_no("Les garder", True):
-            cfg.clients = []
+        print("\nComptes déjà autorisés (gardés) : " + ", ".join(c.id for c in cfg.clients))
+        print("  Supprimer un compte ou changer un mot de passe : TRX Console, menu 4.3 (opérateurs) ou 4.2 (visiteurs).")
+        if not ask_yes_no("Ajouter d'autres comptes que ceux déjà présents", False):
+            return
     ask_clients(cfg)
 
 

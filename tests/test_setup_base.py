@@ -147,3 +147,29 @@ def test_validation_messages_about_the_tot_are_readable():
     assert any(p.startswith("Durée maximale d'une émission (TOT) de 200 s refusée : elle doit être comprise entre 1 et 120 s")
                for p in problems)
     assert not any("<=" in p for p in problems)
+
+
+def test_existing_accounts_are_always_kept_and_more_are_added_only_on_request(monkeypatch, capsys):
+    # Étape 239 : plus de « Les garder » (non = tout effacer) ; « Ajouter d'autres comptes » (Non par défaut)
+    cfg = sw.dummy_config()
+    cfg.clients = [ClientAuth(id="S25", password_hash=hash_password("Motdepasse-tres-long-1"))]
+    answers = iter([""])
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+    sw.ask_accounts(cfg)
+    assert [c.id for c in cfg.clients] == ["S25"]
+    out = capsys.readouterr().out
+    assert "gardés" in out and "4.3" in out
+    answers = iter(["o", "PC", ""])              # oui, identifiant, Entrée = terminer
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+    monkeypatch.setattr(sw, "choose_password", lambda login: "Motdepasse-tres-long-2")
+    sw.ask_accounts(cfg)
+    assert [c.id for c in cfg.clients] == ["S25", "PC"]
+
+
+def test_first_installation_asks_the_first_account_directly(monkeypatch):
+    cfg = sw.dummy_config()
+    cfg.clients = []
+    prompts = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": (prompts.append(prompt), "")[1])
+    sw.ask_accounts(cfg)
+    assert len(prompts) == 1 and prompts[0].startswith("Identifiant du client")
