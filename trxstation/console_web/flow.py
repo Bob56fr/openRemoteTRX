@@ -23,8 +23,9 @@ MAX_LINE = 1 << 20                # une ligne du worker (sortie d'une commande d
 
 class Flow:
     def __init__(self, key: str, label: str, config: Path, on_event: Callable[[dict], None],
-                 python: str = sys.executable) -> None:
+                 python: str = sys.executable, network: bool = False) -> None:
         self.key, self.label, self.config, self.on_event, self.python = key, label, config, on_event, python
+        self.network = network                      # console sur le réseau (service relancé après une installation)
         self.events: list[dict] = []
         self.proc: asyncio.subprocess.Process | None = None
         self.done = False
@@ -40,7 +41,8 @@ class Flow:
 
     async def start(self) -> None:
         cmd = [self.python, "-m", "trxstation.console_web.worker", "--config", str(self.config), "--key", self.key]
-        env = dict(os.environ, TRX_CONSOLE_WEB="1", PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
+        env = dict(os.environ, TRX_CONSOLE_WEB="1", PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8",
+                   TRX_CONSOLE_PAGE="network" if self.network else "local")
         extra: dict = {}
         if os.name == "posix":
             extra["start_new_session"] = True          # aucun terminal de contrôle : sudo et getpass n'y lisent rien

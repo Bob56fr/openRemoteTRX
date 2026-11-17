@@ -380,7 +380,7 @@ class WebConsole:
     async def start_flow(self, key: str) -> None:
         con = self.console_factory(self.config)
         label = con.t("menu.language") if key == "0" else next(lbl for k, lbl, _ in con.items if k == key)
-        self.flow = self.flow_factory(key, label, self.config, self.on_flow_event)
+        self.flow = self.flow_factory(key, label, self.config, self.on_flow_event, network=self.network)
         self.broadcast({"type": "flow_start", "flow": self.flow.summary()})
         await self.flow.start()
 

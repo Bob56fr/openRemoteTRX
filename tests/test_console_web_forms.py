@@ -116,6 +116,19 @@ def test_a_refusal_is_marked_and_the_pseudo_equal_to_the_login_is_refused_at_its
     assert not any(e.get("tone") for e in events if e["type"] == "say" and e is not refused[0])
 
 
+def test_after_an_installation_the_page_never_says_to_press_q(tmp_path, monkeypatch):
+    from trxstation.console import Console
+    con = Console(tmp_path / "station.toml", ask=lambda p: "", say=lambda s: None, lang="fr")
+    monkeypatch.delenv("TRX_CONSOLE_PAGE", raising=False)
+    assert "(q)" in con.t(con.reopen_key("install_zip.14"), version="1.2.3")       # console texte : inchangé
+    for page, word in (("network", "F5"), ("local", "trx-console --web")):
+        monkeypatch.setenv("TRX_CONSOLE_PAGE", page)
+        for key, fields in (("update.18", {"version": "1"}), ("install_zip.14", {"version": "1"}),
+                            ("rollback.4", {"previous": "1"})):
+            text = con.t(con.reopen_key(key), **fields)
+            assert "(q)" not in text and word in text and "{" not in text
+
+
 def test_every_key_that_colours_a_message_exists():
     from trxstation.i18n import catalog
     fr = catalog("fr", "console")
@@ -196,7 +209,7 @@ def test_sudo_refused_three_times_or_abandoned_runs_nothing(tmp_path):
 class FakeFlow:
     made: list = []
 
-    def __init__(self, key, label, config, on_event):
+    def __init__(self, key, label, config, on_event, network=False):
         self.key, self.label, self.on_event = key, label, on_event
         self.events, self.done, self.answers, self.passwords, self.stopped = [], False, [], [], False
         FakeFlow.made.append(self)

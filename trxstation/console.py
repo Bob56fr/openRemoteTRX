@@ -1065,7 +1065,8 @@ class Console:
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "install",
                                            "--version", release.version), admin=True)
-        self.say(self._apply_result(code, self.t("update.18", version=release.version)))
+        done = self.t(self.reopen_key("update.18"), version=release.version)       # page : jamais « Quitte (q) »
+        self.say(self._apply_result(code, done))
 
     def search_now(self) -> UpdateState | None:
         """Recherche immédiate par le service de la station (compte trx, jamais root) ; rien n'est installé."""
@@ -1114,7 +1115,8 @@ class Console:
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "rollback"),
                                admin=True)
-        self.say(self._apply_result(code, self.t("rollback.4", previous=previous)))
+        done = self.t(self.reopen_key("rollback.4"), previous=previous)       # page : jamais « Quitte (q) »
+        self.say(self._apply_result(code, done))
 
     def install_zip(self) -> None:
         """Paquet zip déposé sur la machine : choisi dans une liste, vérifié, installé comme une mise à jour."""
@@ -1154,7 +1156,8 @@ class Console:
             return
         code = self.runner.run(self.module("trxstation.update.apply", "--config", str(self.config), "local",
                                            "--zip", str(path), *extra), admin=True)
-        self.say(self._apply_result(code, self.t("install_zip.14", version=version)))
+        done = self.t(self.reopen_key("install_zip.14"), version=version)       # page : jamais « Quitte (q) »
+        self.say(self._apply_result(code, done))
 
     def edit_config(self) -> None:
         """station.toml modifiée sur une COPIE (nano), validée, différences montrées, puis enregistrée par sudo
@@ -2921,6 +2924,13 @@ class Console:
         if release is None or (parse_version(release.version) or ()) <= (parse_version(self.installed) or ()):
             return None
         return release
+
+    def reopen_key(self, key: str) -> str:
+        """Message « Quitte TRX Console (q) et rouvre-la » : dans la page (menus en formulaires), la clé
+        `<clé>.page` (console sur le réseau relancée seule, actualiser la page) ou `<clé>.local` (relancer
+        trx-console --web)."""
+        page = os.environ.get("TRX_CONSOLE_PAGE")
+        return f"{key}.{'page' if page == 'network' else 'local'}" if page else key
 
     def _apply_result(self, code: int, success: str) -> str:
         if code == upd.EXIT_OK:

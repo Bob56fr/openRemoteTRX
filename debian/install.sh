@@ -148,7 +148,7 @@ install_services() {   # units de la version active (dossier systeme/ donné), a
 # sa moindre panne ferait redémarrer le Pi, alors que systemd sait déjà le relancer (WatchdogSec de son unité).
 hardware_watchdog() {
   local model
-  model=$(tr -d '\0' </proc/device-tree/model 2>/dev/null || true)
+  model=$( { tr -d '\0' </proc/device-tree/model; } 2>/dev/null || true)
   if [[ $model != "Raspberry Pi"* || ! -e /dev/watchdog ]]; then
     return 0
   fi

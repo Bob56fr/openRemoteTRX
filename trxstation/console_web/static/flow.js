@@ -48,10 +48,20 @@
   // Sortie d'une commande, ligne par ligne : la question d'un outil (texte avant ce que l'opérateur a tapé) et sa
   // réponse sont mises en évidence ; la ligne en cours (question qui attend) reste visible.
   function newOut(parent) {
-    const o = { box: el("div", "out"), buf: "", partial: el("div", "ln partial") };
+    const o = { box: el("div", "out"), buf: "", partial: el("div", "ln partial"), stick: true };
     o.box.append(o.partial);
     parent.append(o.box);
+    // L'opérateur remonte : on ne bouge plus ; il redescend en bas : on suit de nouveau.
+    o.box.addEventListener("scroll", () => {
+      o.stick = o.box.scrollHeight - o.box.scrollTop - o.box.clientHeight < 24;
+    });
+    if (window.ResizeObserver) new ResizeObserver(() => bottom(o)).observe(o.box);
     return o;
+  }
+  function bottom(o) {
+    if (!o.stick) return;
+    o.box.scrollTop = o.box.scrollHeight;
+    requestAnimationFrame(() => { if (o.stick) o.box.scrollTop = o.box.scrollHeight; });
   }
   function outLine(o, text) {
     const tone = toneOf(text);
@@ -60,9 +70,8 @@
   }
   // Le cadre suit la fin de la sortie, sauf si l'opérateur est remonté pour relire (il reprend en bas).
   function follow(o, change) {
-    const b = o.box, atEnd = b.scrollHeight - b.scrollTop - b.clientHeight < 40;
     change();
-    if (atEnd) b.scrollTop = b.scrollHeight;
+    bottom(o);
   }
   function outWrite(o, data) {
     follow(o, () => {
@@ -85,9 +94,11 @@
     o.partial.textContent = "";
   }
   function outEnd(o) {
-    if (o.buf) outLine(o, o.buf);
-    o.buf = "";
-    o.partial.remove();
+    follow(o, () => {
+      if (o.buf) outLine(o, o.buf);
+      o.buf = "";
+      o.partial.remove();
+    });
   }
 
   // ---------------------------------------------------------------- journal du menu
