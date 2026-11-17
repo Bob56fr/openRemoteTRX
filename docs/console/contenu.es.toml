@@ -18,6 +18,7 @@ en un terminal.</p>
 <p>Los menús están ordenados por tema (Estación, Transceptor y hardware, Seguridad de emisión y alertas, Acceso y cuentas, Funciones, Diagnóstico y asistencia,
 Actualizaciones, Experto y preferencias; números cambiados en 0.166.0): escribe el número del tema y luego el del menú, o directamente los dos, por ejemplo <code>4.1</code>
 para emparejar un teléfono. <code>0</code> cambia el idioma de la consola (français, English, Deutsch, Español).</p>
+<p><strong>Pantalla completa</strong> (desde la versión 0.170.0): a la izquierda, los temas con su pictograma; flechas para elegir, Intro para desplegar un tema o abrir un menú; a la derecha, la ayuda del menú elegido; arriba, el estado de la estación. El menú abierto se desarrolla como en la consola de texto y luego vuelve la pantalla. Funciona por SSH y en Windows. <code>trx-console --texte</code> conserva la consola de texto (menús numerados con el teclado, descrita abajo); <code>TRX_CONSOLE_SANS_ICONES=1</code> quita los pictogramas.</p>
 <p><strong>¿Dudas sobre un menú?</strong> Escribe <code>h</code> y su número (por ejemplo <code>h 4.1</code>):
 la consola muestra, sin ejecutar nada, para qué sirve ese menú, cuándo usarlo y qué modifica (los textos de esta página).</p>
 <p>Nunca transmite por sí misma: los únicos menús que pueden poner el transceptor en transmisión son la prueba

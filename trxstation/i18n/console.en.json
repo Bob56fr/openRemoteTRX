@@ -651,5 +651,8 @@
   "indicator.win.on": "The indicator will start at each session logon.",
   "indicator.win.off": "The indicator will no longer start at session logon.",
   "indicator.win.failed_link": "Cannot change the startup shortcut ({exc}).",
-  "updates.windows": "On Windows, a new version is installed by running installer.cmd from the new zip (project releases page): the configuration is kept. Rolling back: run installer.cmd from the older version again."
+  "updates.windows": "On Windows, a new version is installed by running installer.cmd from the new zip (project releases page): the configuration is kept. Rolling back: run installer.cmd from the older version again.",
+  "tui.quit": "Quit",
+  "tui.refresh": "Refresh",
+  "tui.hint": "↑↓ choose · Enter open the menu · q quit · text console: trx-console --texte"
 }

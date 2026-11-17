@@ -651,5 +651,8 @@
   "indicator.win.on": "Die Anzeige startet bei jeder Anmeldung.",
   "indicator.win.off": "Die Anzeige startet nicht mehr bei der Anmeldung.",
   "indicator.win.failed_link": "Autostart-Verknüpfung kann nicht geändert werden ({exc}).",
-  "updates.windows": "Unter Windows wird eine neue Version installiert, indem man installer.cmd aus dem neuen Zip startet (Versionsseite des Projekts): die Konfiguration bleibt erhalten. Zurück: installer.cmd der älteren Version erneut starten."
+  "updates.windows": "Unter Windows wird eine neue Version installiert, indem man installer.cmd aus dem neuen Zip startet (Versionsseite des Projekts): die Konfiguration bleibt erhalten. Zurück: installer.cmd der älteren Version erneut starten.",
+  "tui.quit": "Beenden",
+  "tui.refresh": "Aktualisieren",
+  "tui.hint": "↑↓ wählen · Eingabe Menü öffnen · q beenden · Textkonsole: trx-console --texte"
 }

@@ -651,5 +651,8 @@
   "indicator.win.on": "El indicador arrancará en cada inicio de sesión.",
   "indicator.win.off": "El indicador ya no arrancará al iniciar sesión.",
   "indicator.win.failed_link": "No se puede cambiar el acceso directo de inicio ({exc}).",
-  "updates.windows": "En Windows, una nueva versión se instala ejecutando installer.cmd del nuevo zip (página de versiones del proyecto): se conserva la configuración. Volver atrás: ejecutar de nuevo installer.cmd de la versión anterior."
+  "updates.windows": "En Windows, una nueva versión se instala ejecutando installer.cmd del nuevo zip (página de versiones del proyecto): se conserva la configuración. Volver atrás: ejecutar de nuevo installer.cmd de la versión anterior.",
+  "tui.quit": "Salir",
+  "tui.refresh": "Actualizar",
+  "tui.hint": "↑↓ elegir · Intro abrir el menú · q salir · consola de texto: trx-console --texte"
 }

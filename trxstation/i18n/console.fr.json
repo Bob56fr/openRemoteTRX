@@ -651,5 +651,8 @@
   "indicator.win.on": "L'indicateur se lancera à chaque ouverture de session.",
   "indicator.win.off": "L'indicateur ne se lancera plus à l'ouverture de session.",
   "indicator.win.failed_link": "Raccourci de démarrage impossible à changer ({exc}).",
-  "updates.windows": "Sous Windows, une nouvelle version s'installe en lançant installer.cmd du nouveau zip (page des versions du projet) : la configuration est gardée. Retour en arrière : relancer installer.cmd de l'ancienne version."
+  "updates.windows": "Sous Windows, une nouvelle version s'installe en lançant installer.cmd du nouveau zip (page des versions du projet) : la configuration est gardée. Retour en arrière : relancer installer.cmd de l'ancienne version.",
+  "tui.quit": "Quitter",
+  "tui.refresh": "Actualiser",
+  "tui.hint": "↑↓ choisir · Entrée ouvrir le menu · q quitter · console texte : trx-console --texte"
 }

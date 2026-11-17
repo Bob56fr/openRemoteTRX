@@ -2973,6 +2973,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--config", type=Path, default=CONFIG_PATH)
     ap.add_argument("--diagnostic", action="store_true", help="diagnostic complet puis sortie")
     ap.add_argument("--rapport", action="store_true", help="crée le rapport de dépannage puis sortie")
+    ap.add_argument("--texte", action="store_true",
+                    help="console texte (menus numérotés au clavier) au lieu de l'écran plein avec pictogrammes")
     args = ap.parse_args(argv)
     if args.diagnostic:
         checks = run_all(path=args.config)
@@ -2983,7 +2985,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Rapport créé : {make_report(config_path=args.config)}")
         return 0
     try:
-        return Console(args.config).loop()
+        console = Console(args.config)
+        if not args.texte and sys.stdin.isatty() and sys.stdout.isatty():
+            try:
+                from .console_tui import run_tui
+            except ImportError:                          # Textual absent : console texte
+                pass
+            else:
+                return run_tui(console)
+        return console.loop()
     except KeyboardInterrupt:
         print()
         return 130
