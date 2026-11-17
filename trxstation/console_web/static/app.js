@@ -155,7 +155,7 @@
   // ---------------------------------------------------------------- ouvrir un menu
   async function openMenu(key, inTerminal) {
     hideHelp(true);
-    if (window.TRXFlow.busy()) { toast(ui("web.flow.busy")); return; }
+    if (window.TRXFlow.busy()) { window.TRXFlow.show(); toast(ui("web.flow.busy")); return; }
     let answer = null;
     try {
       const r = await fetch("/api/open", { method: "POST", credentials: "same-origin",
@@ -257,6 +257,8 @@
     (key) => openMenu(key, true));
   $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
   document.addEventListener("click", (e) => {
+    // clic dans la page, hors du panneau du menu : le panneau se range (le menu continue, onglet en bas à droite)
+    if (window.TRXFlow.shown() && !e.target.closest("#flow") && !e.target.closest("#flow-tab")) window.TRXFlow.hide();
     const b = e.target.closest(".items button");
     if (b) {
       if (HOVER || pinned === b.dataset.k) openMenu(b.dataset.k);
@@ -280,7 +282,11 @@
   document.addEventListener("mouseout", (e) => {
     if (e.target.closest(".items button") && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".items button"))) hideHelp(false);
   });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideHelp(true); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (window.TRXFlow.shown()) window.TRXFlow.hide();
+    hideHelp(true);
+  });
   addEventListener("scroll", () => hideHelp(false), { passive: true });
 
   // ---------------------------------------------------------------- fond du bandeau : waterfall discret

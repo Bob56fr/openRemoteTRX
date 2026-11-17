@@ -743,5 +743,6 @@
   "web.flow.running": "Commande en cours : {cmd}",
   "web.flow.terminal": "Ouvrir dans le terminal",
   "web.max": "Plein écran",
-  "web.flow.busy": "Un menu est déjà ouvert : termine-le ou arrête-le d'abord."
+  "web.flow.busy": "Un menu est déjà ouvert : termine-le ou arrête-le d'abord.",
+  "web.flow.tab": "Menu {key} en cours"
 }

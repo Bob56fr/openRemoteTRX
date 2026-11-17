@@ -743,5 +743,6 @@
   "web.flow.running": "Befehl läuft: {cmd}",
   "web.flow.terminal": "Im Terminal öffnen",
   "web.max": "Vollbild",
-  "web.flow.busy": "Ein Menü ist bereits geöffnet: zuerst beenden oder abbrechen."
+  "web.flow.busy": "Ein Menü ist bereits geöffnet: zuerst beenden oder abbrechen.",
+  "web.flow.tab": "Menü {key} läuft"
 }

@@ -201,7 +201,7 @@
     log().replaceChildren();
     for (const ev of summary.events || []) add(ev);
     if (summary.done) flow.done = true;
-    $("#flow").classList.add("show");
+    show();
     renderForm();
     scroll();
   }
@@ -210,17 +210,39 @@
     add(ev);
     renderForm();
     scroll();
+    if (!shown()) tab();                                // panneau masqué : l'onglet signale une question en attente
+  }
+  // Panneau masqué par un clic dans la page (le menu continue) ; l'onglet du bas le rouvre.
+  function shown() { return $("#flow").classList.contains("show"); }
+  function show() {
+    if (!flow) return;
+    $("#flow").classList.add("show");
+    $("#flow-tab").hidden = true;
+  }
+  function tab() {
+    const t = $("#flow-tab");
+    t.hidden = !(flow && !flow.done);
+    t.textContent = "▸ " + ui("web.flow.tab").replace("{key}", flow ? flow.key : "");
+    t.classList.toggle("ask", !!(asking || sudo));
+  }
+  function hide() {
+    if (!flow || !shown()) return;
+    $("#flow").classList.remove("show");
+    if (flow.done) flow = null;
+    tab();
   }
   function close() {
     if (flow && !flow.done) { send({ type: "flow_stop" }); return; }
     flow = null;
     $("#flow").classList.remove("show");
+    $("#flow-tab").hidden = true;
   }
   function busy() { return !!(flow && !flow.done); }
   window.TRXFlow = {
     init(uiFn, sendFn, terminalFn) {
       ui = uiFn; send = sendFn; inTerminal = terminalFn;
       $("#flow-stop").addEventListener("click", close);
+      $("#flow-tab").addEventListener("click", show);
       $("#flow-term").addEventListener("click", () => {
         if (!flow) return;
         if (flow.done) { const key = flow.key; close(); inTerminal(key); return; }
@@ -228,6 +250,6 @@
         send({ type: "flow_stop" });
       });
     },
-    open, event, busy,
+    open, event, busy, hide, show, shown,
   };
 })();

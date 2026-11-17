@@ -743,5 +743,6 @@
   "web.flow.running": "Orden en curso: {cmd}",
   "web.flow.terminal": "Abrir en el terminal",
   "web.max": "Pantalla completa",
-  "web.flow.busy": "Ya hay un menú abierto: termínalo o detenlo primero."
+  "web.flow.busy": "Ya hay un menú abierto: termínalo o detenlo primero.",
+  "web.flow.tab": "Menú {key} en curso"
 }

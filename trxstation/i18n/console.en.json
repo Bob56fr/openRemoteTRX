@@ -743,5 +743,6 @@
   "web.flow.running": "Command running: {cmd}",
   "web.flow.terminal": "Open in the terminal",
   "web.max": "Full screen",
-  "web.flow.busy": "A menu is already open: finish or stop it first."
+  "web.flow.busy": "A menu is already open: finish or stop it first.",
+  "web.flow.tab": "Menu {key} running"
 }

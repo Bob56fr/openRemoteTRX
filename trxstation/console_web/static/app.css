@@ -171,3 +171,5 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow .tone.warn{color:var(--amber);font-weight:600}
 .flow .tone.bad{color:#e5484d;font-weight:700}
 .flow .tone.head{font-weight:700;color:var(--accent)}
+.flow-tab{right:auto;left:max(16px,env(safe-area-inset-left,0px))}
+.flow-tab.ask{animation:pulse 1.4s infinite;border-color:#53f3d8}
