@@ -75,7 +75,7 @@ MENU_THEMES = (
 # Numéros d'avant la station 0.166.0 (deux niveaux, 0.126.0 à 0.165.0) -> méthode : rappelés dans l'en-tête
 # jusqu'à RENUMBER_NOTICE_UNTIL, jamais acceptés à la saisie (« 6.3 » désigne désormais le rapport de dépannage).
 RENUMBERED_IN = "0.166.0"
-RENUMBER_NOTICE_UNTIL = (0, 172, 0)
+RENUMBER_NOTICE_UNTIL = (0, 180, 0)
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
 # avec un message ; 1 à 9 ouvrent désormais un thème.
 OLD_NUMBERS = {"1": "diagnostic", "2": "assistant", "3": "monitor", "4": "hwtest", "5": "start", "6": "stop",

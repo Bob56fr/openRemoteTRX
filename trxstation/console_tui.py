@@ -2,7 +2,9 @@
 # Copyright (C) 2026 RF-DIY.COM
 """TRX Console plein écran (Textual) : même arborescence, mêmes menus que la console texte (console.py).
 
-À gauche, l'arbre des thèmes et de leurs menus, avec un pictogramme par thème ; à droite, l'aide du menu sélectionné
+À gauche, l'arbre des thèmes et de leurs menus, avec un pictogramme par thème ; flèches et Entrée, ou les CHIFFRES
+comme dans la console texte (un chiffre ouvre un thème, 0 = langue ; dans un thème ouvert, un chiffre lance son menu ;
+r ou Échap = retour aux thèmes ; + / - déplient ou replient tous les thèmes) ; à droite, l'aide du menu sélectionné
 (textes de la touche « h », console_help.json) ; en tête, l'état de la station. Entrée sur un menu met l'écran plein
 en pause (`App.suspend`) et déroule le menu EXACTEMENT comme la console texte, dans le même terminal (questions, mot de
 passe sudo, éditeur, outils lancés), puis revient à l'arbre. Aucune logique de menu n'est recopiée ici.
@@ -69,6 +71,9 @@ class ConsoleApp(App):
         self.icons = icons_wanted() if icons is None else icons
         self.title = "TRX Console"
         self.ran: list[str] = []                      # menus ouverts (journal de la session, tests)
+        # Thème choisi par un CHIFFRE : le chiffre suivant lance un de ses menus. Jamais déduit de la position du
+        # curseur (tout déplié, « 4 » doit ouvrir le thème 4, pas lancer le menu 1.4).
+        self.digit_theme: str | None = None
         self._bindings_ready = False
 
     # ------------------------------------------------------------------ construction
@@ -84,7 +89,11 @@ class ConsoleApp(App):
 
     def on_mount(self) -> None:
         self.bind("q", "quit", description=self.con.t("tui.quit"))
-        self.bind("r", "refresh_all", description=self.con.t("tui.refresh"))
+        self.bind("r", "back", description=self.con.t("tui.back"))
+        self.bind("escape", "back", show=False)
+        self.bind("plus", "expand_all", description=self.con.t("tui.expand_all"), key_display="+")
+        self.bind("minus", "collapse_all", description=self.con.t("tui.collapse_all"), key_display="-")
+        self.bind("f5", "refresh_all", description=self.con.t("tui.refresh"))
         self.refresh_all()
         self.set_interval(STATUS_EVERY_S, self.refresh_status)
         self.query_one(Tree).focus()
@@ -134,7 +143,77 @@ class ConsoleApp(App):
 
     # ------------------------------------------------------------------ arbre
 
+    # ------------------------------------------------------------------ chiffres (comme la console texte)
+
+    def theme_of(self, node) -> str | None:
+        """Thème d'un nœud de l'arbre (le thème lui-même ou celui d'un de ses menus), sinon None."""
+        if node is None or not node.data:
+            return None
+        if node.data[0] == "theme":
+            return node.data[1]
+        parent = node.parent
+        return parent.data[1] if parent is not None and parent.data and parent.data[0] == "theme" else None
+
+    def on_key(self, event) -> None:
+        if event.character and event.character.isdigit():
+            event.stop()
+            self.digit(event.character)
+
+    def digit(self, ch: str) -> None:
+        tree = self.query_one(Tree)
+        theme = self.digit_theme
+        if theme is None:                                 # liste des thèmes : un chiffre ouvre un thème, 0 = langue
+            if ch == "0":
+                self.run_menu(tree.root.children[0].data)
+                return
+            node = next((n for n in tree.root.children if n.data and n.data[0] == "theme" and n.data[1] == ch), None)
+            if node is None:
+                self.bell()
+                return
+            for other in tree.root.children:
+                if other is not node:
+                    other.collapse()
+            node.expand()
+            self.digit_theme = ch
+            self.call_after_refresh(tree.move_cursor, node)
+            return
+        parent = next(n for n in tree.root.children if n.data and n.data[0] == "theme" and n.data[1] == theme)
+        leaf = next((n for n in parent.children if n.data and n.data[0] == f"{theme}.{ch}"), None)
+        if leaf is None:
+            self.bell()
+            return
+        tree.move_cursor(leaf)
+        self.digit_theme = None                            # après le menu, on repart de la liste des thèmes
+        self.run_menu(leaf.data)
+
+    def action_expand_all(self) -> None:
+        """+ : tous les thèmes dépliés, pour voir tous les menus d'un coup."""
+        self.digit_theme = None
+        for node in self.query_one(Tree).root.children:
+            if node.children:
+                node.expand()
+
+    def action_collapse_all(self) -> None:
+        """- : tous les thèmes repliés (même effet que r)."""
+        self.action_back()
+
+    def action_back(self) -> None:
+        """r ou Échap : thèmes repliés, curseur sur le thème où l'on était (comme « r » de la console texte)."""
+        tree = self.query_one(Tree)
+        theme = self.digit_theme or self.theme_of(tree.cursor_node)
+        self.digit_theme = None
+        target = None
+        for node in tree.root.children:
+            if node.data and node.data[0] == "theme":
+                node.collapse()
+                if node.data[1] == theme:
+                    target = node
+        if target is not None:
+            self.call_after_refresh(tree.move_cursor, target)
+
     def on_tree_node_highlighted(self, event: Tree.NodeHighlighted) -> None:
+        if self.digit_theme is not None and self.theme_of(event.node) != self.digit_theme:
+            self.digit_theme = None                        # parti ailleurs aux flèches : retour à la liste des thèmes
         data = event.node.data
         if not data:
             return

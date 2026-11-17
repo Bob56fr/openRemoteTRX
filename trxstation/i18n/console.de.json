@@ -654,5 +654,8 @@
   "updates.windows": "Unter Windows wird eine neue Version installiert, indem man installer.cmd aus dem neuen Zip startet (Versionsseite des Projekts): die Konfiguration bleibt erhalten. Zurück: installer.cmd der älteren Version erneut starten.",
   "tui.quit": "Beenden",
   "tui.refresh": "Aktualisieren",
-  "tui.hint": "↑↓ wählen · Eingabe Menü öffnen · q beenden · Textkonsole: trx-console --texte"
+  "tui.hint": "Ziffer: Thema, dann Ziffer: Menü (0 = Sprache) · ↑↓ und Eingabe · + / -: alle auf- / zuklappen · r oder Esc: zurück · q: beenden · Textkonsole: trx-console --texte",
+  "tui.back": "Zurück",
+  "tui.expand_all": "Alle aufklappen",
+  "tui.collapse_all": "Alle zuklappen"
 }

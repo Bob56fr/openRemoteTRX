@@ -654,5 +654,8 @@
   "updates.windows": "En Windows, una nueva versión se instala ejecutando installer.cmd del nuevo zip (página de versiones del proyecto): se conserva la configuración. Volver atrás: ejecutar de nuevo installer.cmd de la versión anterior.",
   "tui.quit": "Salir",
   "tui.refresh": "Actualizar",
-  "tui.hint": "↑↓ elegir · Intro abrir el menú · q salir · consola de texto: trx-console --texte"
+  "tui.hint": "Cifra: tema, luego cifra: menú (0 = idioma) · ↑↓ e Intro · + / -: desplegar / plegar todo · r o Esc: volver · q: salir · consola de texto: trx-console --texte",
+  "tui.back": "Volver",
+  "tui.expand_all": "Desplegar todo",
+  "tui.collapse_all": "Plegar todo"
 }

@@ -108,3 +108,71 @@ def test_labels_icons_and_text_mode_choice(tmp_path, monkeypatch):
     assert module.main(["--config", str(path)]) == 0
     assert module.main(["--config", str(path), "--texte"]) == 0
     assert started == ["plein", "texte"]
+
+
+def test_digits_open_a_theme_then_run_its_menu_like_the_text_console(tmp_path):
+    con = console(tmp_path)
+    ran = []
+    con.run_item = lambda item: ran.append(item[0]) or True
+    con.language = lambda: ran.append("langue")
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        app.paused = contextlib.nullcontext
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            await pilot.press("3")                               # thème 3 ouvert, les autres repliés
+            await pilot.pause(0.2)
+            tree = app.query_one("Tree")
+            assert tree.cursor_node.data == ("theme", "3") and tree.cursor_node.is_expanded
+            await pilot.press("2")                               # menu 3.2 lancé
+            await pilot.pause(0.2)
+            await pilot.press("9")                               # pas de menu 3.9 : rien
+            await pilot.pause(0.1)
+            await pilot.press("r")                               # retour aux thèmes
+            await pilot.pause(0.2)
+            assert app.digit_theme is None
+            await pilot.press("0")                               # langue
+            await pilot.pause(0.2)
+            await pilot.press("7", "1")                          # 7.1 au clavier, comme « 7 » puis « 1 »
+            await pilot.pause(0.2)
+        assert ran == ["3.2", "langue", "7.1"]
+    asyncio.run(scenario())
+
+
+def test_plus_and_minus_expand_and_collapse_every_theme(tmp_path):
+    con = console(tmp_path)
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            themes = [n for n in app.query_one("Tree").root.children if n.children]
+            await pilot.press("plus")
+            await pilot.pause(0.2)
+            assert all(n.is_expanded for n in themes) and len(themes) == len(MENU_THEMES)
+            await pilot.press("minus")
+            await pilot.pause(0.2)
+            assert not any(n.is_expanded for n in themes)
+    asyncio.run(scenario())
+
+
+def test_when_everything_is_unfolded_a_digit_still_chooses_a_theme_first(tmp_path):
+    con = console(tmp_path)
+    ran = []
+    con.run_item = lambda item: ran.append(item[0]) or True
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        app.paused = contextlib.nullcontext
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            await pilot.press("plus")                             # tout déplié, curseur sur le thème 1
+            await pilot.pause(0.2)
+            await pilot.press("4")                                # thème 4, PAS le menu 1.4
+            await pilot.pause(0.2)
+            assert ran == [] and app.query_one("Tree").cursor_node.data == ("theme", "4")
+            await pilot.press("3")
+            await pilot.pause(0.2)
+        assert ran == ["4.3"]
+    asyncio.run(scenario())
