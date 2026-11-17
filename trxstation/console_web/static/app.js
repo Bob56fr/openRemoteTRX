@@ -275,7 +275,11 @@
   $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
   document.addEventListener("click", (e) => {
     // clic dans la page, hors du panneau du menu : le panneau se range (le menu continue, onglet en bas à droite)
-    if (window.TRXFlow.shown() && !e.target.closest("#flow") && !e.target.closest("#flow-tab")) window.TRXFlow.hide();
+    // Chemin du clic mémorisé AU MOMENT du clic : un bouton du panneau remplacé par la question suivante n'est plus
+    // dans la page quand le clic arrive ici (e.target.closest le croirait dehors et rangerait le panneau).
+    const path = e.composedPath ? e.composedPath() : [];
+    const inside = (id) => path.some((n) => n && n.id === id) || !!e.target.closest("#" + id);
+    if (window.TRXFlow.shown() && !inside("flow") && !inside("flow-tab")) window.TRXFlow.hide();
     const b = e.target.closest(".items button");
     if (b) {
       if (HOVER || pinned === b.dataset.k) openMenu(b.dataset.k);
@@ -287,7 +291,7 @@
       return;
     }
     if (e.target.closest("#help") || e.target.closest("#term") || e.target.closest("#term-tab")
-        || e.target.closest("#flow")) return;
+        || inside("flow")) return;
     const h = e.target.closest("[data-toggle]");
     if (h) h.closest(".card").classList.toggle("closed");
     hideHelp(true);
