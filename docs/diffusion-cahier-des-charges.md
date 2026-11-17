@@ -1,4 +1,4 @@
-# Diffusion en direct du TRX vers des internautes : cahier des charges (v1)
+# Diffusion en direct du TRX vers des internautes : cahier des charges (v2, décisions du 2026-11-17 prises)
 
 Demande de l'utilisateur (2026-11-17) : un petit service de diffusion « lowcost, lowtech », comme un podcast en direct
 (pas de différé), pour faire entendre le son du TRX à quelques internautes (moins de 5 au départ) qui n'ont AUCUN compte
@@ -22,6 +22,12 @@ tiers, un petit VPS.
 8. **Serveur** : un **petit VPS** (Icecast). Son code et sa configuration vont dans un **dépôt privé à part**
    (`openRemoteTRX-vps`) ; dans ce dépôt public restent le module de la station et le protocole (§ 9), pour qu'un autre
    utilisateur puisse monter son propre serveur. Aucun serveur imposé : adresse dans station.toml, rien par défaut.
+9. Réponses au § 11 de la v1 (2026-11-17) :
+   - **pas de reprise** après un redémarrage du PC (ou Pi) qui fait tourner trx-gateway ;
+   - lancement par **tous les opérateurs**, **jamais les visiteurs** ;
+   - mot de passe des auditeurs **fixe** jusqu'à ce que l'opérateur le change : c'est lui qui envoie les invitations
+     aux auditeurs, de son côté (la station ne les envoie pas) ;
+   - HTTPS par Caddy : accepté, à vérifier au lot D5.
 
 ## 2. POC (fait le 2026-11-17, hors dépôt, « tests concluants » de l'utilisateur)
 
@@ -57,7 +63,9 @@ est changé en chemin Windows (`MSYS_NO_PATHCONV=1`).
   dans station.toml, jamais affichés en entier.
 - La charge est jugée par la passerelle comme pour les visiteurs (`gateway/api/overload.py`) : en surcharge, la
   diffusion s'arrête avec la cause.
-- Une diffusion **ne reprend pas seule** après un redémarrage de la station ou un mode sûr (proposition, § 10).
+- Une diffusion **ne reprend jamais seule** après un redémarrage du PC ou du Pi de la station (décision § 1.9), ni
+  après un mode sûr. Proposition du cahier, faute d'avis : une relance de la passerelle par le superviseur (panne)
+  arrête aussi la diffusion, avec sa cause (fail-safe : la diffusion ne survit pas à ce qui l'a autorisée).
 
 ## 4. Son
 
@@ -76,8 +84,9 @@ est changé en chemin Windows (`MSYS_NO_PATHCONV=1`).
 
 - Choisi AVANT le lancement, figé pendant la diffusion : **privé** (défaut) ou **public**.
 - Privé : identifiant + mot de passe d'auditeur demandés par le lecteur (authentification du montage d'Icecast).
-  Lot D1 : un identifiant et un mot de passe d'auditeur par station, changeables, générables. Comptes nominatifs :
-  plus tard si utile.
+  Un identifiant et un mot de passe d'auditeur par station, **fixes** jusqu'à ce que l'opérateur les change (« En
+  générer un » proposé) ; l'opérateur les transmet lui-même à ses auditeurs (la station montre l'adresse d'écoute et
+  l'identifiant à copier, le mot de passe sur demande). Comptes nominatifs : plus tard si utile.
 - Public : adresse simple à partager ; jamais inscrit dans un annuaire (`Ice-Public: 0`).
 - Plafond d'auditeurs réglé sur le VPS (5 pour commencer).
 
@@ -93,7 +102,8 @@ la page des auditeurs ; en MP3, elles forment aussi le titre ICY.
 - **Indicateur toujours visible** dès qu'une diffusion est active : page (en-tête, pastille rouge « DIFFUSION » + nombre
   d'auditeurs + temps restant), application Android (bandeau), Android Auto (sous-titre), TRX Console (en-tête),
   trx-monitor, indicateur GNOME et Windows. Alerte ntfy au début et à la fin.
-- Lancement et arrêt : opérateurs seulement (jamais les visiteurs), depuis la page, l'application ou TRX Console ;
+- Lancement et arrêt : TOUS les opérateurs (jamais les visiteurs, commande hors de leur liste blanche), depuis la
+  page, l'application ou TRX Console ; tout opérateur peut arrêter la diffusion lancée par un autre ;
   avertissement du § 1.1 à confirmer au premier lancement.
 - Fonction **hors service par défaut** : interrupteur du menu 5.5 ; réglages (serveur, codec, mots de passe) dans un
   nouveau menu en FIN du thème 5 (4 langues).
@@ -117,10 +127,7 @@ métadonnées est à écrire par celui qui monte son propre VPS.
 - **D5** VPS, dépôt privé `openRemoteTRX-vps` : Debian 13, Caddy (TLS), Icecast (réserve 4 ko, plafond), service des
   métadonnées, page publique des auditeurs (lecteur + métadonnées), sauvegardes.
 
-## 11. Questions ouvertes (réponses attendues avant D1)
+## 11. Questions de la v1 : toutes tranchées (§ 1.9)
 
-1. Reprise après un redémarrage de la station : jamais (proposé) ou reprise de la diffusion en cours ?
-2. Lancement par TOUT opérateur, ou par les comptes administrateurs seulement ?
-3. Mot de passe des auditeurs : fixe jusqu'à ce que l'opérateur le change (proposé), ou nouveau à chaque diffusion ?
-4. TLS jusqu'à Icecast (source et auditeurs en HTTPS par Caddy) : à vérifier au lot D5 (un `PUT` en flux continu à
-   travers le mandataire).
+Reste à vérifier au lot D5 : un `PUT` en flux continu à travers Caddy (TLS jusqu'à Icecast pour la source et les
+auditeurs). Le lot D1 peut commencer sur demande de l'utilisateur.
