@@ -2767,6 +2767,67 @@ ORT-4021:
     - 'Account disabled or expired, station overloaded'
     preconisation: 'Nothing to do if the rule is intended; the precise cause carries its own code (code_cause field).'
 
+ORT-4022:
+  gravite: info
+  titre: 'Connexion à TRX Console sur le réseau'
+  message: '{compte} s''est connecté à TRX Console depuis {source}.'
+  causes:
+  - 'Un opérateur administrateur a ouvert TRX Console dans son navigateur'
+  preconisation: 'Rien à faire si c''est toi. Sinon : change tout de suite le mot de passe de ce compte (menu 4.3) et retire-lui le droit d''administration (menu 4.6).'
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4022/
+  depuis_version: 0.178.0
+  en:
+    titre: 'TRX Console network login'
+    message: '{compte} logged in to TRX Console from {source}.'
+    causes:
+    - 'An administrator operator opened TRX Console in their browser'
+    preconisation: 'Nothing to do if it was you. Otherwise: change this account password at once (menu 4.3) and remove its administration right (menu 4.6).'
+
+ORT-4023:
+  gravite: avertissement
+  titre: 'Connexions à TRX Console bloquées'
+  message: 'Trop d''échecs de connexion à TRX Console depuis {source} : connexions refusées pendant {minutes} minutes.'
+  causes:
+  - 'Mot de passe oublié ou mal tapé plusieurs fois'
+  - 'Quelqu''un essaie de deviner un mot de passe sur le réseau'
+  preconisation: 'Si ce n''est pas toi : vérifie qui a accès à ton réseau ou à ton VPN, et change les mots de passe des comptes administrateurs (menu 4.3).'
+  action_auto: refus
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4023/
+  depuis_version: 0.178.0
+  en:
+    titre: 'TRX Console logins blocked'
+    message: 'Too many failed TRX Console logins from {source}: logins refused for {minutes} minutes.'
+    causes:
+    - 'Password forgotten or mistyped several times'
+    - 'Someone is trying to guess a password on the network'
+    preconisation: 'If it was not you: check who can reach your network or VPN, and change the administrator account passwords (menu 4.3).'
+
+ORT-4024:
+  gravite: erreur
+  titre: 'TRX Console sur le réseau non démarrée'
+  message: 'TRX Console sur le réseau n''a pas démarré : {raison}.'
+  causes:
+  - 'Pas de certificat HTTPS, ou certificat illisible par le compte de la console'
+  - 'Port déjà pris, configuration invalide ou service arrêté dans le menu 4.6'
+  preconisation: 'Ouvre le menu 4.6 sur la station (TRX Console) : il vérifie le certificat (menu 4.4), le port et le compte, puis relance le service.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-4024/
+  depuis_version: 0.178.0
+  en:
+    titre: 'TRX Console on the network not started'
+    message: 'TRX Console on the network did not start: {raison}.'
+    causes:
+    - 'No HTTPS certificate, or certificate unreadable by the console account'
+    - 'Port already taken, invalid configuration or service stopped in menu 4.6'
+    preconisation: 'Open menu 4.6 on the station (TRX Console): it checks the certificate (menu 4.4), the port and the account, then restarts the service.'
+
 ORT-4101:
   gravite: erreur
   titre: 'Certificat TLS inutilisable : API non démarrée'

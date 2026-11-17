@@ -321,9 +321,9 @@ modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administra
 admin = true
 
 [menus.remote_console]
-role = "Bietet Operatoren auf der Bedienseite eine <strong>Verknüpfung „Console de la station“</strong> für Windows-PCs: Ein Doppelklick öffnet eine SSH-Verbindung mit Tunnel, startet die Webkonsole auf der Station und öffnet sie im Browser des PCs, ohne etwas einzutippen. Beim ersten Start legt sich die Verknüpfung ab, erscheint auf dem Desktop und bietet einen SSH-Schlüssel an (danach kein SSH-Passwort mehr). Sie enthält nur Adresse, SSH-Konto und Ports. Nur für Debian- oder Raspberry-Pi-Stationen (SSH-Server). Die Download-Schaltfläche ist auf der <strong>Bedienseite</strong> (zum Hören und Senden), Rubrik „Raccourci TRX Console (PC Windows)“, nicht in dieser Konsole."
-quand = "Um die Station von einem anderen (Windows-)PC zu verwalten, ohne SSH zu kennen."
-modifie = "Die Konfiguration der Station (<code>station.toml</code>, Abschnitt <code>[remote_console]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+role = "Stellt <strong>TRX Console im Netzwerk</strong> bereit: dieselben Menüs im Browser jedes PCs, Tablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung, unter <code>https://&lt;station&gt;:8444/</code>. Anmeldung mit einem <strong>als Administrator markierten Operatorkonto</strong> (hier gewählt); die Sitzung endet nach 30 Minuten ohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung abgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung sendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der Bedienseite angemeldeter Administrator findet dort auch den Link."
+quand = "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>[remote_console]</code> und die Markierung <code>admin</code> der Konten), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Unter Debian wird der Dienst <code>trx-console-web@konto</code> gestartet oder gestoppt; unter Windows wird die Station neu gestartet."
 admin = true
 
 [menus.local_operator]

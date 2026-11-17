@@ -1,0 +1,24 @@
+[Unit]
+Description=TRX Console sur le réseau (HTTPS, comptes administrateurs), sous le compte %i
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/trx-remote/station.toml
+
+[Service]
+Type=simple
+# Compte de l'opérateur qui administre (menu 4.6), jamais root : sudo reste demandé dans le terminal de la page.
+# Pas de NoNewPrivileges ni de ProtectSystem : les menus d'administration passent par sudo, comme dans un terminal.
+User=%i
+SupplementaryGroups=trx
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=~
+ExecStart=/opt/trx-remote/venv/bin/python -m trxstation.console --reseau --config /etc/trx-remote/station.toml
+KillSignal=SIGTERM
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=10
+# 2 = configuration, certificat ou port refusés : relancer ne changerait rien (menu 4.6).
+RestartPreventExitStatus=2
+
+[Install]
+WantedBy=multi-user.target

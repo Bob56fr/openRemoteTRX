@@ -231,16 +231,13 @@
       </div>
     </details>
 
-    <details id="sec-console" class="listener-hide" hidden>
-      <summary>Raccourci TRX Console (PC Windows)</summary>
+    <details id="sec-console" class="listener-hide" hidden open>
+      <summary>TRX Console (administration)</summary>
       <div class="body">
-        <p class="note">Administrer la station (TRX Console) depuis ce PC Windows sans rien taper : télécharge le raccourci,
-          puis double-clique dessus : TRX Console s'ouvre dans le navigateur. La première fois, il pose
-          « Console de la station » sur le Bureau et propose une clé SSH
-          pour ne plus demander le mot de passe SSH. Il ne contient aucun mot de passe. Si le navigateur avertit
-          (« fichier dangereux »), choisis « Conserver », puis Windows : « Informations complémentaires », « Exécuter quand même ».</p>
-        <div class="row"><button id="rc-download">Télécharger le raccourci (Windows)</button></div>
-        <p id="rc-status" class="note"></p>
+        <p class="note">Régler et dépanner la station depuis ce navigateur : mêmes menus que TRX Console. Connexion avec ton
+          identifiant et ton mot de passe ; le mot de passe sudo de la station est demandé une fois, au premier menu
+          d'administration.</p>
+        <div class="row"><a id="rc-open" class="chip" href="#" target="_blank" rel="noopener">Ouvrir TRX Console</a></div>
       </div>
     </details>
 
@@ -903,7 +900,6 @@
 <script src="friends.js"></script>
 <script src="monitoring.js"></script>
 <script src="sdr.js"></script>
-<script src="console_link.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

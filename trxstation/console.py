@@ -171,6 +171,11 @@ def windows_pythonw() -> str:
     return str(candidate if candidate.exists() else Path(sys.executable))
 
 
+def console_url(host: str, port: int) -> str:
+    """Adresse de TRX Console sur le réseau (étape 232)."""
+    return "https://" + (f"[{host}]" if ":" in host else host) + f":{port}/"
+
+
 def mask_notify_url(url: str) -> str:
     """Adresse ntfy montrée sans son secret : https://ntfy.sh/abc… (qui connaît le sujet lit les alertes)."""
     if not url:
@@ -647,34 +652,88 @@ class Console:
         self._save_accounts(original, cfg, live=False)
 
     def remote_console(self) -> None:
-        """Console depuis un autre PC (étape 230) : la page de pilotage offre aux opérateurs un raccourci Windows qui
-        ouvre la console web par un tunnel SSH. Seuls le compte et les ports sont rangés (aucun secret)."""
+        """TRX Console sur le réseau (étape 232) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du
+        service (Debian). La console tourne sous ce compte, jamais root : sudo reste demandé dans le terminal."""
         from .config import SSH_USER_RE
-        self.say(self.t("remote_console.1"))
-        if os.name == "nt":
-            self.say(self.t("remote_console.windows"))
-            return
         loaded = self._load_for_edit()
         if loaded is None:
             return
         original, cfg = loaded
-        v = cfg.remote_console
+        v, net = cfg.remote_console, cfg.network
+        old_account = v.account
+        operators = [c for c in cfg.clients if c.role == "operator" and c.password_hash]
+        self.say(self.t("remote_console.1"))
         self.say(self.t("remote_console.state", on=self.t("ask_yes.2") if v.enabled else self.t("ask_yes.3"),
-                        user=v.ssh_user or "—", port=v.ssh_port))
+                        port=v.port, admins=", ".join(c.id for c in operators if c.admin) or "—"))
         v.enabled = self._ask_yes(self.t("remote_console.2"), v.enabled)
         if v.enabled:
-            current = v.ssh_user or os.environ.get("SUDO_USER") or getpass.getuser()
+            if not operators:
+                accounts_menu = menu_number("operators")
+                self.say(self.t("remote_console.no_operator", menu=accounts_menu))
+                return
             while True:
-                answer = self.ask(self.t("remote_console.user", current=current)).strip() or current
-                if SSH_USER_RE.fullmatch(answer):
-                    v.ssh_user = answer
+                for n, c in enumerate(operators, 1):
+                    self.say(f"  {n}) {c.id}" + (f"  [{self.t('remote_console.admin_mark')}]" if c.admin else ""))
+                answer = self.ask(self.t("remote_console.admins")).strip()
+                if not answer:
+                    chosen = {c.id for c in operators if c.admin}
+                else:
+                    picks = answer.replace(",", " ").split()
+                    if not all(x.isdigit() and 1 <= int(x) <= len(operators) for x in picks):
+                        self.say(self.t("remote_console.admins_bad"))
+                        continue
+                    chosen = {operators[int(x) - 1].id for x in picks}
+                if chosen:
                     break
-                self.say(self.t("remote_console.user_bad", user=answer))
-            v.ssh_port = self._ask_int(self.t("remote_console.port"), v.ssh_port, 1, 65535)
-            if not any(Path(d, "sshd").exists() for d in ("/usr/sbin", "/usr/bin", "/sbin")):
-                self.say(self.t("remote_console.no_sshd"))
-        if self._save_accounts(original, cfg, live=False) and v.enabled:
-            self.say(self.t("remote_console.done"))
+                self.say(self.t("remote_console.admins_none"))
+            for c in cfg.clients:
+                c.admin = c.id in chosen
+            if not IS_WINDOWS:
+                current = v.account or os.environ.get("SUDO_USER") or getpass.getuser()
+                while True:
+                    answer = self.ask(self.t("remote_console.account", current=current)).strip() or current
+                    if SSH_USER_RE.fullmatch(answer) and answer != "root":
+                        v.account = answer
+                        break
+                    self.say(self.t("remote_console.account_bad", user=answer))
+            cert_menu, network_menu = menu_number("certificate"), menu_number("access_network")
+            if not (net.tls_cert and net.tls_key):
+                self.say(self.t("remote_console.no_tls", menu=cert_menu))
+            if net.gateway_bind in ("127.0.0.1", "::1", "localhost"):
+                self.say(self.t("remote_console.local_only", menu=network_menu))
+        if not self._save_accounts(original, cfg, live=not IS_WINDOWS):
+            return
+        if not IS_WINDOWS:
+            self._remote_console_service(v.enabled, v.account, old_account)
+        if v.enabled:
+            from .setup_wizard import local_addresses
+            urls = "  ".join(console_url(h, v.port) for h in local_addresses() or ["<station>"])
+            self.say(self.t("remote_console.done", urls=urls))
+
+    def _remote_console_service(self, on: bool, account: str, old_account: str) -> None:
+        """Debian / Pi : service systemd `trx-console-web@<compte>` (sous ce compte, groupe trx pour lire la
+        configuration et le certificat). Sous Windows, c'est le superviseur qui lance la console (mode géré)."""
+        def systemctl(*args: str) -> int:
+            # Dans le terminal de TRX Console sur le réseau, arrêter ou relancer son service tuerait ce menu même :
+            # l'ordre part 5 s plus tard, par systemd (la page se reconnecte).
+            later = ["systemd-run", "--quiet", "--on-active=5"] if os.environ.get("TRX_CONSOLE_WEB") else []
+            return self.runner.run([*later, "systemctl", *args], admin=True)
+
+        if old_account and (old_account != account or not on):
+            systemctl("disable", "--now", f"trx-console-web@{old_account}")
+        if not on:
+            self.say(self.t("remote_console.stopped"))
+            return
+        try:
+            import grp
+            members = grp.getgrnam("trx").gr_mem
+        except (ImportError, KeyError):
+            members = None
+        if members is not None and account not in members:
+            self.runner.run(["usermod", "-aG", "trx", account], admin=True)
+        self.runner.run(["systemctl", "enable", f"trx-console-web@{account}"], admin=True)
+        if systemctl("restart", f"trx-console-web@{account}") != 0:
+            self.say(self.t("remote_console.service_failed", account=account))
 
     def alerts(self) -> None:
         """Alertes sur le téléphone (ntfy) : adresse, langue, message « Station en service », envoi d'un essai.
@@ -3060,15 +3119,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--web", action="store_true",
                     help="console dans le navigateur (127.0.0.1 seulement, adresse à usage unique ; autre PC : tunnel SSH)")
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
-    ap.add_argument("--raccourci", metavar="SOCKET",
-                    help="avec --web : lancé par le raccourci « Console de la station » d'un PC (socket Unix privé "
-                         "au bout du tunnel SSH, sans navigateur)")
+    ap.add_argument("--reseau", action="store_true",
+                    help="TRX Console sur le réseau (service : HTTPS, comptes administrateurs, [remote_console])")
     args = ap.parse_args(argv)
     if args.web:
         from .console_web.server import run
-        if args.raccourci:
-            return run(args.config, args.port, socket_path=args.raccourci)
         return run(args.config, args.port)
+    if args.reseau:
+        from .console_web.server import run_network
+        return run_network(args.config)
     if args.diagnostic:
         checks = run_all(path=args.config)
         print(format_checks(checks, color=sys.stdout.isatty()))

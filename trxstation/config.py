@@ -79,6 +79,7 @@ class ClientAuth:
     pseudo: str = ""               # nom montré aux autres connectés (jamais l'identifiant) ; plusieurs comptes peuvent le partager
     enabled: bool = True           # false : connexion refusée, connexion en cours fermée
     expires: str = ""              # AAAA-MM-JJ : refusé après ce jour (heure locale de la station) ; vide = jamais
+    admin: bool = False            # true : peut aussi ouvrir TRX Console sur le réseau ([remote_console], menu 4.6)
 
     def __post_init__(self) -> None:
         if isinstance(self.expires, date):      # date TOML écrite sans guillemets : expires = 2026-12-31
@@ -195,13 +196,15 @@ class MonitorLink:
 
 @dataclass
 class RemoteConsole:
-    """Raccourci « Console de la station » (étape 230) : la page de pilotage offre aux OPÉRATEURS un lanceur Windows
-    qui ouvre la console web (trx-console --web) par un tunnel SSH. Le lanceur ne contient que l'adresse, le compte et
-    les ports : aucun secret. Réglé par le menu 4.6 de TRX Console."""
-    enabled: bool = False             # false : bouton absent de la page
-    ssh_user: str = ""                # compte SSH de la station (celui de l'opérateur qui administre)
-    ssh_port: int = 22                # port du serveur SSH de la station
-    web_port: int = 8765              # port de la console web, le même sur le PC (tunnel) et sur la station
+    """TRX Console sur le réseau (étape 232, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
+    sur le réseau local ou le VPN, connexion avec un compte OPÉRATEUR marqué `admin = true`, session fermée après
+    `idle_min` minutes sans action. Programme à part de la passerelle, sous le compte Linux `account` (jamais root) :
+    le mot de passe sudo reste demandé dans le terminal, une fois par session. Réglé par le menu 4.6.
+    (0.176.0-0.177.0 : raccourci SSH ; ses clés ssh_user / ssh_port / web_port sont reprises ou ignorées.)"""
+    enabled: bool = False             # false : service arrêté
+    account: str = ""                 # compte Linux sous lequel tourne la console (Debian, Pi) ; vide sous Windows
+    port: int = 8444                  # port HTTPS de la console (adresse d'écoute : [network] gateway_bind)
+    idle_min: int = 30                # session fermée après ce temps sans action (minutes)
 
 
 @dataclass
@@ -595,7 +598,7 @@ def validate(cfg: Config) -> list[str]:
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
     p += _monitor_link_problems(cfg.monitor_link, cfg.modules)
-    p += _remote_console_problems(cfg.remote_console)
+    p += _remote_console_problems(cfg)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
@@ -752,6 +755,10 @@ def _client_problems(client: ClientAuth, clients: list[ClientAuth]) -> list[str]
         p.append(f"{where} : le pseudo « {client.pseudo} » est l'identifiant d'un compte (il serait montré aux autres connectés)")
     if not isinstance(client.enabled, bool):
         p.append(f"{where} : enabled doit valoir true ou false")
+    if not isinstance(client.admin, bool):
+        p.append(f"{where} : admin doit valoir true ou false")
+    elif client.admin and client.role != "operator":
+        p.append(f"{where} : un visiteur ne peut pas être administrateur (admin = true réservé aux opérateurs)")
     if not isinstance(client.expires, str) or (client.expires and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", client.expires)):
         p.append(f"{where} : expires doit être une date AAAA-MM-JJ")
     elif client.expires:
@@ -963,19 +970,39 @@ def _monitor_link_problems(ml: MonitorLink, modules: Modules) -> list[str]:
 SSH_USER_RE = re.compile(r"[a-z_][a-z0-9_.-]{0,31}")
 
 
-def _remote_console_problems(rc: RemoteConsole) -> list[str]:
-    p = []
+def _remote_console_problems(cfg: Config) -> list[str]:
+    rc, p = cfg.remote_console, []
     if not isinstance(rc.enabled, bool):
         p.append("[remote_console] enabled doit valoir true ou false")
-    if not isinstance(rc.ssh_user, str) or (rc.ssh_user and not SSH_USER_RE.fullmatch(rc.ssh_user)):
-        p.append(f"[remote_console] ssh_user : « {rc.ssh_user} » n'est pas un nom de compte (minuscules, chiffres, _ . -)")
-    elif rc.enabled is True and not rc.ssh_user:
-        p.append("[remote_console] activé sans ssh_user : il faut le compte SSH de la station (menu 4.6)")
-    for name, low in (("ssh_port", 1), ("web_port", 1024)):
-        value = getattr(rc, name)
-        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= 65535:
-            p.append(f"[remote_console] {name} doit être un numéro de port entre {low} et 65535 (lu : {value})")
+    if not isinstance(rc.account, str) or (rc.account and not SSH_USER_RE.fullmatch(rc.account)):
+        p.append(f"[remote_console] account : « {rc.account} » n'est pas un nom de compte (minuscules, chiffres, _ . -)")
+    if isinstance(rc.port, bool) or not isinstance(rc.port, int) or not 1024 <= rc.port <= 65535:
+        p.append(f"[remote_console] port doit être un numéro de port entre 1024 et 65535 (lu : {rc.port})")
+    elif rc.port in (cfg.network.gateway_port, cfg.network.rigctld_port):
+        p.append(f"[remote_console] port {rc.port} déjà pris par la station (page de pilotage ou rigctld) : choisis-en un autre")
+    if isinstance(rc.idle_min, bool) or not isinstance(rc.idle_min, int) or not 5 <= rc.idle_min <= 240:
+        p.append(f"[remote_console] idle_min doit être entre 5 et 240 minutes (lu : {rc.idle_min})")
+    if rc.enabled is True:
+        admins = [c.id for c in cfg.clients if c.admin is True and c.role == "operator" and c.password_hash]
+        if not admins:
+            p.append("[remote_console] activé sans aucun compte opérateur administrateur (admin = true, avec un mot de "
+                     "passe) : personne ne pourrait se connecter (menu 4.6)")
     return p
+
+
+def _remote_console_compat(d: dict) -> dict:
+    """[remote_console] des versions 0.176.0 et 0.177.0 (raccourci SSH) : ssh_user devient account, les ports SSH et
+    du tunnel sont oubliés, et le service n'est PAS mis en marche sans un choix fait au menu 4.6."""
+    rc = d.get("remote_console")
+    if not isinstance(rc, dict) or not ({"ssh_user", "ssh_port", "web_port"} & set(rc)):
+        return rc if isinstance(rc, dict) else {}
+    rc = dict(rc)
+    user = rc.pop("ssh_user", "")
+    rc.pop("ssh_port", None)
+    rc.pop("web_port", None)
+    rc.setdefault("account", user)
+    rc["enabled"] = False
+    return rc
 
 
 def monlink_key_path(cfg: Config, config_path: str | Path) -> Path:
@@ -1105,7 +1132,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
             monitor_link=_build(MonitorLink, d.get("monitor_link", {}), "monitor_link", problems),
-            remote_console=_build(RemoteConsole, d.get("remote_console", {}), "remote_console", problems),
+            remote_console=_build(RemoteConsole, _remote_console_compat(d), "remote_console", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
@@ -1354,11 +1381,11 @@ def render_toml(cfg: Config) -> str:
         f"relay_url = {_s(cfg.monitor_link.relay_url)}   # même relais que la présence (https://)",
         f"key_file = {_s(cfg.monitor_link.key_file)}   # clés du monitoring ; vide = state_dir/monlink/{MONLINK_KEY_FILE}",
         "",
-        "[remote_console]   # raccourci « Console de la station » offert aux opérateurs par la page (menu 4.6)",
+        "[remote_console]   # TRX Console sur le réseau (HTTPS, comptes opérateurs admin = true) : menu 4.6",
         f"enabled = {str(cfg.remote_console.enabled).lower()}",
-        f"ssh_user = {_s(cfg.remote_console.ssh_user)}   # compte SSH de la station",
-        f"ssh_port = {cfg.remote_console.ssh_port}   # port SSH de la station",
-        f"web_port = {cfg.remote_console.web_port}   # port de la console web (même numéro sur le PC, par le tunnel)",
+        f"account = {_s(cfg.remote_console.account)}   # compte Linux de la console (jamais root) ; vide sous Windows",
+        f"port = {cfg.remote_console.port}   # https://<station>:{cfg.remote_console.port}/",
+        f"idle_min = {cfg.remote_console.idle_min}   # session fermée après ce temps sans action (minutes)",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
         f"enabled = {str(cfg.freedv.enabled).lower()}",
@@ -1399,6 +1426,8 @@ def render_toml(cfg: Config) -> str:
             lines.append("enabled = false")
         if client.expires:
             lines.append(f"expires = {_s(client.expires)}")
+        if client.admin is True:
+            lines.append("admin = true   # peut ouvrir TRX Console sur le réseau")
         lines.append("")
     for b in cfg.bands:
         lines += ["[[bands]]", f"name = {_s(b.name)}", f"low_mhz = {b.low_mhz}",

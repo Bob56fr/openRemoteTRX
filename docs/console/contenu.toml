@@ -321,9 +321,9 @@ modifie = "La configuration de la station (<code>station.toml</code>), avec les 
 admin = true
 
 [menus.remote_console]
-role = "Offre aux opérateurs, dans la page de pilotage, un <strong>raccourci « Console de la station »</strong> pour PC Windows : un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC, sans rien taper. Au premier lancement, le raccourci se range, se pose sur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il ne contient que l'adresse, le compte SSH et les ports. Station Debian ou Raspberry Pi seulement (serveur SSH). Le bouton de téléchargement est dans la <strong>page de pilotage</strong> (celle où l'on écoute et émet), rubrique « Raccourci TRX Console (PC Windows) », pas dans cette console."
-quand = "Pour administrer la station depuis un autre PC (Windows) sans connaître SSH."
-modifie = "La configuration de la station (<code>station.toml</code>, section <code>[remote_console]</code>), avec les droits d'administration ; l'ancienne version est gardée. La station est redémarrée sur ta demande pour prendre le changement."
+role = "Met <strong>TRX Console sur le réseau</strong> : les mêmes menus dans le navigateur de n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH ni raccourci, à l'adresse <code>https://&lt;station&gt;:8444/</code>. On s'y connecte avec un <strong>compte opérateur marqué administrateur</strong> (choisis ici) ; la session se ferme après 30 minutes sans action ; le mot de passe sudo de la station reste demandé une fois par session. 5 échecs bloquent l'adresse 15 minutes et chaque connexion envoie une alerte ntfy. Jamais joignable depuis Internet. Un administrateur connecté à la page de pilotage y trouve aussi le lien."
+quand = "Pour administrer la station depuis un autre appareil, sans connaître SSH."
+modifie = "La configuration de la station (<code>station.toml</code> : <code>[remote_console]</code> et la marque <code>admin</code> des comptes), avec les droits d'administration ; l'ancienne version est gardée. Sous Debian, le service <code>trx-console-web@compte</code> est mis en marche ou arrêté ; sous Windows, la station est redémarrée."
 admin = true
 
 [menus.local_operator]

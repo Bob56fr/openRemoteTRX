@@ -116,6 +116,10 @@ class ManagedBackend:
         self._commands = commands or {}
         self._port_open = port_open or self._rigctld_answers
         self.children = {"rigctld": _Child("rigctld"), "gateway": _Child("gateway")}
+        # TRX Console sur le réseau (étape 232, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
+        # service systemd à part). Indépendante du mode sûr : c'est justement par elle qu'on dépanne.
+        if getattr(getattr(cfg, "remote_console", None), "enabled", False) is True:
+            self.children["console_web"] = _Child("console_web")
         self.rigctld_adopted = False
 
     # ------------------------------------------------------------------ commandes
@@ -125,6 +129,9 @@ class ManagedBackend:
             return self._commands[name]
         if name == "rigctld":
             return rigctld_command(self.cfg)         # résolu à la demande : pas besoin de Hamlib si adopté
+        if name == "console_web":
+            command = [sys.executable, "-m", "trxstation.console", "--reseau"]
+            return command + (["--config", str(self.config_path)] if self.config_path is not None else [])
         command = [sys.executable, "-m", "trxstation.gateway.main", "--parent-pid", str(os.getpid())]
         if self.config_path is not None:
             command += ["--config", str(self.config_path)]
@@ -219,6 +226,8 @@ class ManagedBackend:
             emit_event(codes.ORT_8008, logger=log, raison="mode sûr mémorisé, la passerelle n'est pas lancée")
         else:
             self._spawn(gateway)
+        if "console_web" in self.children:
+            self._spawn(self.children["console_web"])
 
     def maintain(self) -> None:
         now = self._clock()
@@ -231,6 +240,9 @@ class ManagedBackend:
                 continue
             if child.name == "gateway" and self._safe_mode():
                 child.stopped = child.safe_mode_hold = True
+                continue
+            if child.name == "console_web" and child.proc.returncode == 2:
+                child.stopped = True                     # configuration ou certificat refusés : ORT-4024, menu 4.6
                 continue
             if now - child.last_start < self.restart_delay_s:
                 continue
@@ -257,6 +269,9 @@ class ManagedBackend:
                 emit_event(codes.ORT_5027, logger=log, trace=True, moment="arrêt de la station")
         rig.stopped = True
         self._terminate(rig)
+        if "console_web" in self.children:
+            self.children["console_web"].stopped = True
+            self._terminate(self.children["console_web"])
 
     # ------------------------------------------------------------------ actions du superviseur
 

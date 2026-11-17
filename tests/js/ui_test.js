@@ -146,7 +146,6 @@ global.TrxSpots = require(path.join(STATIC, "spots.js"));
 global.TrxVoice = require(path.join(STATIC, "voice.js"));
 global.TrxSwr = require(path.join(STATIC, "swr.js"));
 global.TrxFriends = require(path.join(STATIC, "friends.js"));
-global.TrxConsoleLink = require(path.join(STATIC, "console_link.js"));
 const FACTORY = require("./factory_profile.json");                                     // copie du profil d'usine (vérifiée par pytest)
 require(path.join(STATIC, "ui.js"));
 
@@ -1447,9 +1446,10 @@ step("visiteurs : opérateur (🎧 N, Déconnecter avec confirmation), puis comp
   $("client-id").value = "phone"; $("password").value = "mot de passe";
   await $("connect").click(); await wait();
   send({ type: "hello", protocol: 1, client_id: "phone", role: "operator", capabilities: { modes: ["USB"] }, tx_modes: [], memories: [],
-         remote_console: { user: "bob", ssh_port: 22, web_port: 8765 } });
+         remote_console: { port: 8444 } });
   await wait(30);
-  assert.equal($("sec-console").hidden, false);                                    // raccourci de la console : opérateur
+  assert.equal($("sec-console").hidden, false);                                    // lien vers TRX Console : administrateur
+  assert.equal($("rc-open").href, "https://192.168.1.50:8444/");
   send({ type: "state", ptt: { state: "RX", owner: null }, rig: { connected: true, frequency_hz: 14200000, mode: "USB" }, clients: ["phone"], presence });
   await wait(30);
   assert.equal($("presence").hidden, false); assert.equal($("presence").textContent, "🎧 1");

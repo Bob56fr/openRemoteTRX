@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TRX Console</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="wrap">
+  <form class="login" id="login" autocomplete="on">
+    <h1 id="l-title">TRX Console</h1>
+    <label><span id="l-id">Identifiant</span>
+      <input id="id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label><span id="l-password">Mot de passe</span>
+      <input id="password" name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn primary" id="l-submit" type="submit">Se connecter</button>
+    <p class="err" id="l-error" role="alert" hidden></p>
+    <p class="note" id="l-note"></p>
+  </form>
+</div>
+<script src="/static/login.js"></script>
+</body>
+</html>

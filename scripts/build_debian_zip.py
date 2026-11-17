@@ -39,6 +39,7 @@ SYSTEM_FILES = {                                   # dossier systeme/ du zip <- 
     "trx-remote.target": "systemd/trx-remote.target",
     "trx-update-check.service": "systemd/trx-update-check.service",
     "trx-update-check.timer": "systemd/trx-update-check.timer",
+    "trx-console-web@.service": "systemd/trx-console-web@.service",
     "trx-remote-tmpfiles.conf": "debian/trx-remote-tmpfiles.conf",
     "99-trx-remote-modemmanager.rules": "debian/99-trx-remote-modemmanager.rules",
     "trx-console.desktop": "debian/trx-console.desktop",

@@ -111,8 +111,8 @@ ou = "Menu 8.1, et ajouter « monlink » à <code>[modules] run</code>. Pseudo, 
 relu = "redemarrage"
 
 [sections.remote_console]
-titre = "Raccourci de la console [remote_console]"
-intro = "<p>Pour administrer une station Debian ou Raspberry Pi depuis un PC Windows sans rien taper : la page de pilotage offre aux OPÉRATEURS (jamais aux visiteurs) un raccourci « Console de la station ». Un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC. Le raccourci ne contient que l'adresse de la station, le compte et les ports : aucun mot de passe ni clé.</p>"
+titre = "TRX Console sur le réseau [remote_console]"
+intro = "<p>TRX Console dans le navigateur, depuis n'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH : <code>https://&lt;station&gt;:8444/</code>. On s'y connecte avec un compte <strong>opérateur marqué administrateur</strong> (<code>admin = true</code> dans <code>[[clients]]</code>) ; la session se ferme après 30 minutes sans action. La console tourne sous un compte Linux ordinaire, jamais root : le mot de passe sudo reste demandé dans le terminal, une fois par session. Jamais joignable depuis Internet (adresses publiques refusées).</p>"
 ou = "Menu 4.6 de TRX Console."
 relu = "redemarrage"
 
@@ -400,6 +400,13 @@ niveau = "courant"
 role = "Date de fin du compte (AAAA-MM-JJ, heure de la station) ; vide : jamais."
 niveau = "courant"
 
+[reglages."clients.admin"]
+role = "true : ce compte opérateur peut aussi ouvrir TRX Console sur le réseau (<code>[remote_console]</code>, menu 4.6). Les autres opérateurs pilotent le poste mais n'administrent pas la station."
+niveau = "courant"
+bornes = "Opérateurs seulement (jamais un visiteur)."
+securite = "Le mot de passe d'un compte administrateur ouvre la configuration de la station : à ne pas prêter."
+depuis = "0.178.0"
+
 # ---------------------------------------------------------------- access
 
 [reglages."access.max_listeners"]
@@ -653,29 +660,29 @@ securite = "Ce fichier identifie la station auprès de ses partenaires de monito
 depuis = "0.159.0"
 
 [reglages."remote_console.enabled"]
-role = "true : le bouton « Raccourci de la console » apparaît dans les Réglages de la page, pour les opérateurs seulement."
+role = "true : la station sert TRX Console en HTTPS sur le réseau (service <code>trx-console-web@compte</code> sous Debian, processus du superviseur sous Windows)."
 niveau = "courant"
-securite = "La console web n'écoute jamais sur le réseau (127.0.0.1) : le raccourci passe par SSH, avec le mot de passe ou la clé SSH du compte."
-depuis = "0.176.0"
+securite = "Un compte administrateur vaut presque un accès SSH à la station : mot de passe solide, réseau local ou VPN seulement. 5 échecs bloquent l'adresse 15 minutes ; chaque connexion envoie une alerte ntfy."
+depuis = "0.178.0"
 
-[reglages."remote_console.ssh_user"]
-role = "Compte SSH de la station, celui avec lequel on administre (il doit pouvoir lancer <code>trx-console</code> et sudo)."
+[reglages."remote_console.account"]
+role = "Compte Linux sous lequel tourne la console (celui de l'opérateur qui administre : il doit pouvoir utiliser sudo et faire partie du groupe <code>trx</code>). Vide sous Windows."
 niveau = "courant"
-bornes = "Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Obligatoire quand <code>enabled = true</code>."
-exemple = "<code>ssh_user = \"pi\"</code>"
-depuis = "0.176.0"
+bornes = "Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Jamais root."
+exemple = "<code>account = \"pi\"</code>"
+depuis = "0.178.0"
 
-[reglages."remote_console.ssh_port"]
-role = "Port du serveur SSH de la station."
+[reglages."remote_console.port"]
+role = "Port HTTPS de la console. L'adresse d'écoute est celle de la page de pilotage (<code>[network] gateway_bind</code>), avec le même certificat."
 niveau = "expert"
-bornes = "1 à 65535."
-depuis = "0.176.0"
+bornes = "1024 à 65535, différent du port de la page de pilotage et de rigctld."
+depuis = "0.178.0"
 
-[reglages."remote_console.web_port"]
-role = "Port de la console web, le même sur le PC et sur la station (tunnel SSH). À changer seulement s'il est déjà pris sur le PC."
+[reglages."remote_console.idle_min"]
+role = "Durée sans action (menu ouvert, touche tapée) après laquelle la session se ferme : il faut se reconnecter."
 niveau = "expert"
-bornes = "1024 à 65535."
-depuis = "0.176.0"
+bornes = "5 à 240 minutes."
+depuis = "0.178.0"
 
 # ---------------------------------------------------------------- breizh
 

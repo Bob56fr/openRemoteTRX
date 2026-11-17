@@ -321,9 +321,9 @@ modifie = "The station configuration (<code>station.toml</code>), with administr
 admin = true
 
 [menus.remote_console]
-role = "Offers operators, in the control page, a <strong>“Console de la station” shortcut</strong> for Windows PCs: a double-click opens an SSH connection with a tunnel, starts the web console on the station and opens it in the PC browser, without typing anything. On first run, the shortcut files itself away, goes on the Desktop and offers an SSH key (no SSH password afterwards). It only holds the address, SSH account and ports. Debian or Raspberry Pi station only (SSH server). The download button is in the <strong>control page</strong> (the one used to listen and transmit), “Raccourci TRX Console (PC Windows)” section, not in this console."
-quand = "To administer the station from another (Windows) PC without knowing SSH."
-modifie = "The station configuration (<code>station.toml</code>, <code>[remote_console]</code> section), with administrator rights; the previous version is kept. The station is restarted on request to take the change."
+role = "Puts <strong>TRX Console on the network</strong>: the same menus in the browser of any PC, tablet or phone on the local network or VPN, without SSH or shortcut, at <code>https://&lt;station&gt;:8444/</code>. Login with an <strong>operator account marked administrator</strong> (chosen here); the session closes after 30 minutes without action; the station sudo password is still asked once per session. 5 failures block the address for 15 minutes and every login sends an ntfy alert. Never reachable from the Internet. An administrator logged in to the control page also finds the link there."
+quand = "To administer the station from another device, without knowing SSH."
+modifie = "The station configuration (<code>station.toml</code>: <code>[remote_console]</code> and the <code>admin</code> mark of the accounts), with administrator rights; the previous version is kept. On Debian, the <code>trx-console-web@account</code> service is started or stopped; on Windows, the station is restarted."
 admin = true
 
 [menus.local_operator]

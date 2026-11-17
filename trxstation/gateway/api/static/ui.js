@@ -1988,7 +1988,7 @@
           presenceOpen = false; $("presence-dialog").hidden = true;
         }
         renderSelcall(value ? client.selcall : null);
-        rcRender();                                                              // raccourci « Console de la station »
+        rcRender();                                                              // lien vers TRX Console (administrateurs)
         const version = value && client.hello ? versionLabel(client.hello.version) : "";
         $("version").textContent = version; $("version").hidden = !version;        // version de la station, à droite de « Connecté »
         if ($("bug-report") && !$("bug-report").hidden) $("bug-send").disabled = !value;   // « Envoyer à la station » : connecté seulement
@@ -3528,31 +3528,15 @@
     // ---- monitoring inter-stations (monitoring.js, docs/cdc-monitoring.md § 17, fonction « monitoring », OPÉRATEURS) :
     // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 6.5 de TRX Console. Le module n'agit
     // jamais sur le poste ; la station qui aide ne peut que lire et DEMANDER. Fenêtres : celles de la rubrique « Amis ».
-    // Raccourci « Console de la station » (étape 230) : opérateurs, station qui l'offre (hello.remote_console)
-    const rcx = root.TrxConsoleLink || null;
-    function rcSettings() {
-      if (!rcx || !client.connected || client.isListener()) return null;
-      return rcx.settings(client.hello, window.location.hostname);
+    // TRX Console sur le réseau (étape 232) : lien pour les opérateurs ADMINISTRATEURS (hello.remote_console)
+    function rcRender() {
+      const rc = client.connected && !client.isListener() && client.hello ? client.hello.remote_console : null;
+      const port = rc && Number.isInteger(rc.port) && rc.port >= 1024 && rc.port <= 65535 ? rc.port : null;
+      const host = String(window.location.hostname || "");
+      $("sec-console").hidden = !port || !host;
+      // toujours en HTTPS (même certificat), sur l'adresse par laquelle cet appareil joint déjà la station
+      if (port && host) $("rc-open").href = "https:" + "//" + (host.includes(":") ? "[" + host + "]" : host) + ":" + port + "/";
     }
-    function rcRender() { $("sec-console").hidden = !rcSettings(); }
-    $("rc-download").addEventListener("click", () => {
-      const s = rcSettings();
-      if (!s) return;
-      window.fetch("console-station.cmd", { cache: "no-store" })
-        .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-        .then((template) => {
-          const text = rcx.build(template, s);
-          if (!text) throw new Error("modèle du raccourci illisible");
-          const link = el("a", "");
-          link.href = URL.createObjectURL(new Blob([text], { type: "application/octet-stream" }));
-          link.download = rcx.fileName(s);
-          link.click();
-          window.setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-          $("rc-status").textContent = "Raccourci téléchargé : double-clique dessus (dossier Téléchargements). Compte SSH : "
-            + s.user + ", station : " + s.host + ".";
-        })
-        .catch((err) => { $("rc-status").textContent = "Téléchargement impossible : " + err.message; });
-    });
 
     const mx = root.TrxMonitoring || null;
     const MO_REFRESH_MS = 15000;

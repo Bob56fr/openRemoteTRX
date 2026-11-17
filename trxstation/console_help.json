@@ -187,9 +187,9 @@
     "remote_console": {
      "admin": true,
      "expert": "",
-     "modifie": "Die Konfiguration der Station (station.toml, Abschnitt [remote_console]),\nmit Administratorrechten; die vorherige Fassung bleibt erhalten. Die Station\nwird auf Wunsch neu gestartet, um die Änderung zu übernehmen.",
-     "quand": "Um die Station von einem anderen (Windows-)PC zu verwalten, ohne SSH zu\nkennen.",
-     "role": "Bietet Operatoren auf der Bedienseite eine Verknüpfung „Console de la\nstation“ für Windows-PCs: Ein Doppelklick öffnet eine SSH-Verbindung mit\nTunnel, startet die Webkonsole auf der Station und öffnet sie im Browser des\nPCs, ohne etwas einzutippen. Beim ersten Start legt sich die Verknüpfung ab,\nerscheint auf dem Desktop und bietet einen SSH-Schlüssel an (danach kein\nSSH-Passwort mehr). Sie enthält nur Adresse, SSH-Konto und Ports. Nur für\nDebian- oder Raspberry-Pi-Stationen (SSH-Server). Die Download-Schaltfläche\nist auf der Bedienseite (zum Hören und Senden), Rubrik „Raccourci TRX\nConsole (PC Windows)“, nicht in dieser Konsole."
+     "modifie": "Die Konfiguration der Station (station.toml: [remote_console] und die\nMarkierung admin der Konten), mit Administratorrechten; die vorherige\nFassung bleibt erhalten. Unter Debian wird der Dienst trx-console-web@konto\ngestartet oder gestoppt; unter Windows wird die Station neu gestartet.",
+     "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.",
+     "role": "Stellt TRX Console im Netzwerk bereit: dieselben Menüs im Browser jedes PCs,\nTablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung,\nunter https://<station>:8444/. Anmeldung mit einem als Administrator\nmarkierten Operatorkonto (hier gewählt); die Sitzung endet nach 30 Minuten\nohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung\nabgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung\nsendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der\nBedienseite angemeldeter Administrator findet dort auch den Link."
     },
     "report": {
      "admin": false,
@@ -464,9 +464,9 @@
     "remote_console": {
      "admin": true,
      "expert": "",
-     "modifie": "The station configuration (station.toml, [remote_console] section), with\nadministrator rights; the previous version is kept. The station is restarted\non request to take the change.",
-     "quand": "To administer the station from another (Windows) PC without knowing SSH.",
-     "role": "Offers operators, in the control page, a “Console de la station” shortcut\nfor Windows PCs: a double-click opens an SSH connection with a tunnel,\nstarts the web console on the station and opens it in the PC browser,\nwithout typing anything. On first run, the shortcut files itself away, goes\non the Desktop and offers an SSH key (no SSH password afterwards). It only\nholds the address, SSH account and ports. Debian or Raspberry Pi station\nonly (SSH server). The download button is in the control page (the one used\nto listen and transmit), “Raccourci TRX Console (PC Windows)” section, not\nin this console."
+     "modifie": "The station configuration (station.toml: [remote_console] and the admin mark\nof the accounts), with administrator rights; the previous version is kept.\nOn Debian, the trx-console-web@account service is started or stopped; on\nWindows, the station is restarted.",
+     "quand": "To administer the station from another device, without knowing SSH.",
+     "role": "Puts TRX Console on the network: the same menus in the browser of any PC,\ntablet or phone on the local network or VPN, without SSH or shortcut, at\nhttps://<station>:8444/. Login with an operator account marked administrator\n(chosen here); the session closes after 30 minutes without action; the\nstation sudo password is still asked once per session. 5 failures block the\naddress for 15 minutes and every login sends an ntfy alert. Never reachable\nfrom the Internet. An administrator logged in to the control page also finds\nthe link there."
     },
     "report": {
      "admin": false,
@@ -741,9 +741,9 @@
     "remote_console": {
      "admin": true,
      "expert": "",
-     "modifie": "La configuración de la estación (station.toml, sección [remote_console]),\ncon derechos de administrador; se guarda la versión anterior. La estación se\nreinicia si lo pides para aplicar el cambio.",
-     "quand": "Para administrar la estación desde otro PC (Windows) sin saber SSH.",
-     "role": "Ofrece a los operadores, en la página de control, un acceso directo «Console\nde la station» para PC Windows: un doble clic abre una conexión SSH con un\ntúnel, arranca la consola web en la estación y la abre en el navegador del\nPC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece\nen el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo\ncontiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o\nRaspberry Pi (servidor SSH). El botón de descarga está en la página de\ncontrol (la de escuchar y transmitir), sección «Raccourci TRX Console (PC\nWindows)», no en esta consola."
+     "modifie": "La configuración de la estación (station.toml: [remote_console] y la marca\nadmin de las cuentas), con derechos de administrador; se guarda la versión\nanterior. En Debian se arranca o se para el servicio trx-console-web@cuenta;\nen Windows se reinicia la estación.",
+     "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH.",
+     "role": "Pone TRX Console en la red: los mismos menús en el navegador de cualquier\nPC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo,\nen https://<station>:8444/. Conexión con una cuenta de operador marcada\nadministradora (elegida aquí); la sesión se cierra tras 30 minutos sin\nacción; la contraseña sudo de la estación se sigue pidiendo una vez por\nsesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una\nalerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la\npágina de control también encuentra allí el enlace."
     },
     "report": {
      "admin": false,
@@ -1018,9 +1018,9 @@
     "remote_console": {
      "admin": true,
      "expert": "",
-     "modifie": "La configuration de la station (station.toml, section [remote_console]),\navec les droits d'administration ; l'ancienne version est gardée. La station\nest redémarrée sur ta demande pour prendre le changement.",
-     "quand": "Pour administrer la station depuis un autre PC (Windows) sans connaître SSH.",
-     "role": "Offre aux opérateurs, dans la page de pilotage, un raccourci « Console de la\nstation » pour PC Windows : un double-clic ouvre une connexion SSH avec un\ntunnel, lance la console web sur la station et l'ouvre dans le navigateur du\nPC, sans rien taper. Au premier lancement, le raccourci se range, se pose\nsur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il\nne contient que l'adresse, le compte SSH et les ports. Station Debian ou\nRaspberry Pi seulement (serveur SSH). Le bouton de téléchargement est dans\nla page de pilotage (celle où l'on écoute et émet), rubrique « Raccourci TRX\nConsole (PC Windows) », pas dans cette console."
+     "modifie": "La configuration de la station (station.toml : [remote_console] et la marque\nadmin des comptes), avec les droits d'administration ; l'ancienne version\nest gardée. Sous Debian, le service trx-console-web@compte est mis en marche\nou arrêté ; sous Windows, la station est redémarrée.",
+     "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.",
+     "role": "Met TRX Console sur le réseau : les mêmes menus dans le navigateur de\nn'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH\nni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec un\ncompte opérateur marqué administrateur (choisis ici) ; la session se ferme\naprès 30 minutes sans action ; le mot de passe sudo de la station reste\ndemandé une fois par session. 5 échecs bloquent l'adresse 15 minutes et\nchaque connexion envoie une alerte ntfy. Jamais joignable depuis Internet.\nUn administrateur connecté à la page de pilotage y trouve aussi le lien."
     },
     "report": {
      "admin": false,

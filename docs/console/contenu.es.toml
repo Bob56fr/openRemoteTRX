@@ -321,9 +321,9 @@ modifie = "La configuración de la estación (<code>station.toml</code>), con de
 admin = true
 
 [menus.remote_console]
-role = "Ofrece a los operadores, en la página de control, un <strong>acceso directo «Console de la station»</strong> para PC Windows: un doble clic abre una conexión SSH con un túnel, arranca la consola web en la estación y la abre en el navegador del PC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece en el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo contiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o Raspberry Pi (servidor SSH). El botón de descarga está en la <strong>página de control</strong> (la de escuchar y transmitir), sección «Raccourci TRX Console (PC Windows)», no en esta consola."
-quand = "Para administrar la estación desde otro PC (Windows) sin saber SSH."
-modifie = "La configuración de la estación (<code>station.toml</code>, sección <code>[remote_console]</code>), con derechos de administrador; se guarda la versión anterior. La estación se reinicia si lo pides para aplicar el cambio."
+role = "Pone <strong>TRX Console en la red</strong>: los mismos menús en el navegador de cualquier PC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo, en <code>https://&lt;station&gt;:8444/</code>. Conexión con una <strong>cuenta de operador marcada administradora</strong> (elegida aquí); la sesión se cierra tras 30 minutos sin acción; la contraseña sudo de la estación se sigue pidiendo una vez por sesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una alerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la página de control también encuentra allí el enlace."
+quand = "Para administrar la estación desde otro dispositivo, sin saber SSH."
+modifie = "La configuración de la estación (<code>station.toml</code>: <code>[remote_console]</code> y la marca <code>admin</code> de las cuentas), con derechos de administrador; se guarda la versión anterior. En Debian se arranca o se para el servicio <code>trx-console-web@cuenta</code>; en Windows se reinicia la estación."
 admin = true
 
 [menus.local_operator]

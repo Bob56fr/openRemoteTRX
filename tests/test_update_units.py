@@ -41,7 +41,7 @@ def test_timer_runs_at_start_then_every_day_with_the_station():
 def test_install_script_installs_enables_and_removes_the_timer():
     units = re.search(r"^UNITS=\((.*)\)", INSTALL, re.M).group(1).split()
     helpers = re.search(r"^HELPER_UNITS=\((.*?)\)", INSTALL, re.M).group(1).split()
-    assert "trx-update-check.timer" in units and helpers == ["trx-update-check.service"]
+    assert "trx-update-check.timer" in units and helpers == ["trx-update-check.service", "trx-console-web@.service"]
     assert 'for unit in "${UNITS[@]}" "${HELPER_UNITS[@]}"; do install' in INSTALL
     assert 'for unit in "${HELPER_UNITS[@]}"; do rm -f' in INSTALL
     for unit in units + helpers:

@@ -195,7 +195,7 @@ class ControlSession:
                    "freedv": self.freedv.snapshot() if self.freedv is not None else None,
                    # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
-                   # raccourci « Console de la station » (étape 230) : opérateurs seulement, aucun secret
+                   # TRX Console sur le réseau (étape 232) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
                    "features": self.features()})
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
@@ -242,10 +242,12 @@ class ControlSession:
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _remote_console(self) -> dict | None:
-        rc = getattr(self.ctrl.config, "remote_console", None)
-        if self.listener or rc is None or rc.enabled is not True or not rc.ssh_user:
+        cfg = self.ctrl.config
+        rc = getattr(cfg, "remote_console", None)
+        if self.listener or rc is None or rc.enabled is not True:
             return None
-        return {"user": rc.ssh_user, "ssh_port": rc.ssh_port, "web_port": rc.web_port}
+        admin = any(c.id == self.client_id and c.admin is True for c in cfg.clients)
+        return {"port": rc.port} if admin else None
 
     def _replay_allowed(self) -> bool:
         return not self.listener and self.ctrl.config.safety.allow_replay is True

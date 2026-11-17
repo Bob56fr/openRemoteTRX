@@ -24,6 +24,7 @@
   async function refresh() {
     try {
       const r = await fetch("/api/state", { credentials: "same-origin", cache: "no-store" });
+      if (r.status === 403) { location.reload(); return; }              // session fermée (réseau) : page de connexion
       if (!r.ok) return;
       state = await r.json();
     } catch (e) { return; }
@@ -64,6 +65,8 @@
     $("#all").textContent = ui("web.expand");
     $("#none").textContent = ui("web.collapse");
     $("#lang").textContent = "🌐 " + ui("web.language");
+    $("#logout").textContent = ui("web.logout");
+    $("#logout").hidden = !state.network;
     $("#term-label").textContent = ui("web.terminal");
     $("#term-toggle").textContent = ui("web.hide");
     $("#term-tab").textContent = "▸ " + ui("web.show");
@@ -167,6 +170,7 @@
       let m;
       try { m = JSON.parse(ev.data); } catch (e) { return; }
       if (m.type === "output") term.write(m.data);
+      if (m.type === "expired") location.reload();                 // session fermée : retour à la connexion
     };
     ws.onclose = () => setTimeout(connect, 2000);
   }
@@ -203,6 +207,10 @@
   $("#all").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.remove("closed")));
   $("#none").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.add("closed")));
   $("#lang").addEventListener("click", () => openMenu("0"));
+  $("#logout").addEventListener("click", async () => {
+    try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch (e) { /* page rechargée */ }
+    location.reload();
+  });
   $("#term-toggle").addEventListener("click", () => showTerm(false));
   $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
   document.addEventListener("click", (e) => {

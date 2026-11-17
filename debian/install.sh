@@ -21,7 +21,7 @@ LOG=/var/log/trx-remote-install.log
 SERVICE_USER=trx
 UNIT_DIR=/etc/systemd/system
 UNITS=(rigctld.service trx-gateway.service trx-supervisor.service trx-update-check.timer trx-remote.target)
-HELPER_UNITS=(trx-update-check.service)   # lancées par un timer : copiées, jamais activées
+HELPER_UNITS=(trx-update-check.service trx-console-web@.service)   # copiées, jamais activées ici (timer ; menu 4.6)
 TMPFILES=/etc/tmpfiles.d/trx-remote.conf
 MM_RULE=/etc/udev/rules.d/99-trx-remote-modemmanager.rules
 WATCHDOG_CONF=/etc/systemd/system.conf.d/trx-remote-watchdog.conf   # watchdog matériel du Raspberry Pi (tenu par systemd)
@@ -167,6 +167,7 @@ start_if_configured() {
     else
       warn "la station n'a pas démarré : TRX Console, menus « Diagnostic » et « Journal »"
     fi
+    restart_network_console
   elif [[ -f $CONF ]]; then
     warn "configuration incomplète : la station démarrera après l'assistant de TRX Console"
   else
@@ -200,6 +201,17 @@ backup_config_for() {  # copie de station.toml prise avant de passer à la versi
   done
 }
 
+# TRX Console sur le réseau (menu 4.6) : relancée sur la nouvelle version 30 s APRÈS l'installation, jamais tout de
+# suite : cette installation peut tourner dans le terminal de cette console même (menu 7.1 ou 7.3 depuis le navigateur).
+restart_network_console() {
+  local link
+  for link in "$UNIT_DIR"/multi-user.target.wants/trx-console-web@*.service; do
+    [[ -L $link ]] || continue
+    systemd-run --quiet --on-active=30 systemctl try-restart "$(basename "$link")" >/dev/null 2>&1 || true
+    ok "TRX Console sur le réseau : relancée dans 30 s sur cette version (reconnexion dans le navigateur)"
+  done
+}
+
 # ------------------------------------------------------------------ désinstallation
 
 uninstall() {
@@ -208,6 +220,9 @@ uninstall() {
   for unit in "${UNITS[@]}"; do
     systemctl disable "$unit" >/dev/null 2>&1 || true
     rm -f "$UNIT_DIR/$unit"
+  done
+  for link in "$UNIT_DIR"/multi-user.target.wants/trx-console-web@*.service; do
+    [[ -L $link ]] && systemctl disable --now "$(basename "$link")" >/dev/null 2>&1 || true
   done
   for unit in "${HELPER_UNITS[@]}"; do rm -f "$UNIT_DIR/$unit"; done
   systemctl daemon-reload
