@@ -37,6 +37,11 @@ intégré** (xterm.js, MIT, livré avec la station : aucun accès Internet) reli
 `trx-console --texte --menu X.Y` (nouvelle option : un seul menu puis sortie). Tout marche donc comme dans un
 terminal : sudo, nano, essai du poste, tableau de bord.
 
+- **Un seul terminal pour toute la session**, où les menus se déroulent l'un après l'autre (pas un terminal neuf par
+  menu). Raison : sudo retient le mot de passe PAR TERMINAL (15 minutes sous Debian, délai relancé à chaque usage) ;
+  un terminal par menu ferait redemander le mot de passe à chaque menu. Comme dans la console texte : un mot de passe
+  au premier menu d'administration, puis plus rien tant qu'on s'en sert. Pas de règle sudoers sans mot de passe
+  (`NOPASSWD`) : tout programme lancé sous le compte de l'opérateur pourrait alors écrire dans /etc.
 - Debian / Pi : pseudo-terminal de la bibliothèque standard (`pty`).
 - Windows : ConPTY par `pywinpty` (MIT, nouvelle dépendance, Windows seulement), ou en attendant ouverture du menu dans
   une nouvelle fenêtre de console.
