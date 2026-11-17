@@ -268,3 +268,27 @@ def test_the_page_scripts_are_served(tmp_path):
 def test_unused_imports_stay_honest():
     assert worker.CHOICE_LINE.match("  1) Démarrer") and not worker.CHOICE_LINE.match("1) collé au bord")
     assert FakeTerminal
+
+
+def test_the_page_changes_the_language_in_the_same_preferences_as_menu_0(tmp_path, monkeypatch):
+    """Étape 235 : boutons FR / EN / DE / ES de la page ; la console du terminal qui attend est relancée."""
+    import trxstation.console_web.server as server
+    prefs = tmp_path / "prefs" / "console.json"
+    monkeypatch.setattr(server, "prefs_path", lambda: prefs)
+
+    async def run():
+        wc = make(tmp_path)
+        test_server = TestServer(wc.app(), host="127.0.0.1", port=wc.port)
+        async with TestClient(test_server) as client:
+            origin = await login(wc, client)
+            data = await (await client.get("/api/state")).json()
+            assert [c for c, _ in data["langs"]] == ["fr", "en", "de", "es"]
+            wc.ensure_terminal()
+            wc.on_output("menu" + IDLE_MARK)
+            term = wc.terminal
+            assert (await client.post("/api/lang", json={"lang": "de"})).status == 403          # sans Origin
+            assert (await client.post("/api/lang", json={"lang": "xx"}, headers=origin)).status == 400
+            assert (await client.post("/api/lang", json={"lang": "de"}, headers=origin)).status == 200
+            assert json.loads(prefs.read_text(encoding="utf-8"))["lang"] == "de"
+            assert not term.alive and wc.terminal is None                                    # relancée en allemand
+    asyncio.run(run())

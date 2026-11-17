@@ -125,7 +125,7 @@ def console_menus(lang: str = "fr") -> list[tuple[str, str, str, str, str]]:
     sys.path.insert(0, str(ROOT))
     from trxstation.console import MENU_THEMES, Console
     con = Console(ROOT / "absent" / "station.toml", update_state=lambda: None, previous=lambda: None, home=ROOT,
-                  editor="nano", lang=lang)
+                  editor="nano", lang=lang, level="expert")   # jamais de préférences écrites dans le dépôt
     titles = {theme: con.t(f"theme.{tid}") for theme, tid, _ in MENU_THEMES}
     return [(key, label, fn.__name__, key.split(".")[0], titles[key.split(".")[0]]) for key, label, fn in con.items]
 

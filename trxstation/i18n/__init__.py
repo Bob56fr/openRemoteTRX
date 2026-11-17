@@ -132,13 +132,13 @@ LEVELS = ("basic", "normal", "expert")
 
 
 def load_level(path: Path, configured: bool) -> str:
-    """Niveau choisi (menu 0) ; sinon Basic sur une station pas encore configurée, Normal sur une station déjà en
-    place (rien ne disparaît d'un coup pour qui connaît ses menus). Le défaut est enregistré tout de suite : la fin
-    de l'assistant ne fait pas passer un débutant en Normal."""
+    """Niveau choisi (menu 0 ou boutons de la page) ; sinon Basic, station configurée ou non (décision de
+    l'utilisateur, étape 235 : moins de menus, moins de clics). Le défaut est enregistré tout de suite.
+    `configured` n'est plus utilisé (gardé pour les appelants)."""
     level = _prefs(path).get("level")
     if level in LEVELS:
         return level
-    level = "normal" if configured else "basic"
+    level = "basic"
     _save_pref(path, "level", level)
     return level
 

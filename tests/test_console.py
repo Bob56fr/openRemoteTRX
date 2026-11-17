@@ -281,7 +281,7 @@ def test_display_level_hides_menus_without_forbidding_them(tmp_path):
     fresh = tmp_path / "neuf.json"
     assert load_level(fresh, configured=False) == "basic" and json.loads(fresh.read_text())["level"] == "basic"
     assert load_level(fresh, configured=True) == "basic"                  # le défaut enregistré ne bouge plus
-    assert load_level(tmp_path / "ancien.json", configured=True) == "normal"
+    assert load_level(tmp_path / "ancien.json", configured=True) == "basic"               # Basic partout (étape 235)
 
 
 def test_diagnostic_shows_breizh_and_visitors_without_secrets(tmp_path, monkeypatch):

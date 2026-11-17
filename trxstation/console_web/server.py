@@ -34,7 +34,7 @@ from aiohttp import WSMsgType, web
 
 from .. import __version__
 from ..console import MENU_THEMES, Console, load_help, menu_level, menu_number
-from ..i18n import LEVELS, load_lang, load_level, prefs_path, save_level
+from ..i18n import LANGS, LEVELS, NAMES, load_lang, load_level, prefs_path, save_lang, save_level
 from ..errors import codes
 from ..errors.emit import emit_event
 from .flow import Flow
@@ -104,6 +104,7 @@ class WebConsole:
         app.router.add_get("/api/state", self.state)
         app.router.add_post("/api/open", self.open_menu)
         app.router.add_post("/api/level", self.set_level)
+        app.router.add_post("/api/lang", self.set_lang)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -305,7 +306,7 @@ class WebConsole:
                 "ptt": ptt.get("state") or "RX", "update": release.version if release is not None else None,
                 "idle": self.idle and self.terminal is not None and self.terminal.alive,
                 "assistant": menu_number("assistant"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
-                "level": con.level,
+                "level": con.level, "langs": [[code, NAMES[code]] for code in LANGS],
                 "network": self.network}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
@@ -325,6 +326,27 @@ class WebConsole:
             raise web.HTTPBadRequest()
         self.touch()
         return web.json_response({"ok": save_level(prefs_path(), level)})
+
+    async def set_lang(self, request: web.Request) -> web.StreamResponse:
+        """Langue choisie dans la page (étape 235) : le même fichier de préférences que le menu 0. La console du
+        terminal, si elle attend à son menu, est relancée dans la nouvelle langue."""
+        if not self.has_session(request) or not self.same_origin(request):
+            raise web.HTTPForbidden()
+        try:
+            lang = str((await request.json()).get("lang", ""))
+        except (ValueError, AttributeError):
+            raise web.HTTPBadRequest()
+        if lang not in LANGS:
+            raise web.HTTPBadRequest()
+        self.touch()
+        saved = save_lang(prefs_path(), lang)
+        if self.terminal is not None and self.terminal.alive and self.idle:
+            self.terminal.close()
+            self.terminal, self.idle = None, False
+            self.scrollback.clear()
+            self.scroll_len = 0
+            self.broadcast({"type": "output", "data": "\x1bc"})          # écran du terminal effacé
+        return web.json_response({"ok": saved})
 
     async def open_menu(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request) or not self.same_origin(request):

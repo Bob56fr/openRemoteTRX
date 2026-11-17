@@ -67,7 +67,16 @@
     $("#q").placeholder = ui("web.search");
     $("#all").textContent = ui("web.expand");
     $("#none").textContent = ui("web.collapse");
-    $("#lang").textContent = "🌐 " + ui("web.language");
+    const langs = $("#langs");
+    langs.replaceChildren();
+    langs.setAttribute("aria-label", ui("web.language"));
+    for (const [code, name] of state.langs || []) {
+      const b = el("button", "seg" + (code === state.lang ? " on" : ""), code.toUpperCase());
+      b.type = "button";
+      b.dataset.lang = code;
+      b.title = name;
+      langs.append(b);
+    }
     const levels = $("#levels");
     levels.replaceChildren();
     levels.setAttribute("aria-label", ui("web.level"));
@@ -233,7 +242,15 @@
   $("#q").addEventListener("input", filter);
   $("#all").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.remove("closed")));
   $("#none").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.add("closed")));
-  $("#lang").addEventListener("click", () => openMenu("0"));
+  $("#langs").addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-lang]");
+    if (!b || b.dataset.lang === state.lang) return;
+    try {
+      await fetch("/api/lang", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lang: b.dataset.lang }) });
+    } catch (err) { return; }
+    refresh();
+  });
   $("#levels").addEventListener("click", async (e) => {
     const b = e.target.closest("button[data-level]");
     if (!b || b.dataset.level === state.level) return;
