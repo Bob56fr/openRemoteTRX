@@ -680,6 +680,8 @@
   "web.tx": "ÉMISSION",
   "web.rx": "Réception",
   "web.update": "Version {version} disponible",
+  "web.version": "Version du logiciel {version}",
+  "web.update_open": "Ouvrir la mise à jour (menu {menu})",
   "web.role": "À quoi il sert",
   "web.when": "Quand",
   "web.changes": "Ce qu'il modifie",

@@ -680,6 +680,8 @@
   "web.tx": "TRANSMITTING",
   "web.rx": "Receiving",
   "web.update": "Version {version} available",
+  "web.version": "Software version {version}",
+  "web.update_open": "Open the update (menu {menu})",
   "web.role": "What it is for",
   "web.when": "When",
   "web.changes": "What it changes",

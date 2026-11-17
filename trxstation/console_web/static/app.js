@@ -65,14 +65,23 @@
   }
   function header() {
     $("#title").textContent = ui("web.title");
-    $("#sub").textContent = "TRX distant " + state.version;
+    $("#sub").textContent = ui("web.version", { version: state.version });
     const pills = $("#pills");
     pills.replaceChildren();
     const pill = (cls, text) => { const p = el("span", "pill " + cls); p.append(el("span", "dot"), document.createTextNode(text)); pills.append(p); };
     if (!state.configured) pill("warn", ui("web.not_configured"));
     else pill(state.running ? "on" : "off", ui(state.running ? "web.running" : "web.stopped"));
     if (state.running) pill(state.ptt !== "RX" ? "tx" : "", ui(state.ptt !== "RX" ? "web.tx" : "web.rx"));
-    if (state.update) pill("warn", ui("web.update", { version: state.update }));
+    if (state.update) {                                   // nouvelle version publiée : un clic ouvre la mise à jour
+      pill("warn update", ui("web.update", { version: state.update }));
+      const p = pills.lastChild;
+      p.setAttribute("role", "button");
+      p.tabIndex = 0;
+      p.title = ui("web.update_open", { menu: state.update_menu });
+      const go = () => openMenu(state.update_menu);
+      p.addEventListener("click", go);
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    }
     const rig = state.rig || {};
     $("#freq").textContent = rig.frequency_hz ? fmtFreq(rig.frequency_hz) : "--.---.--";
     const meta = [];

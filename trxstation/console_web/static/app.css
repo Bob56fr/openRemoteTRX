@@ -43,6 +43,10 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
 .vfo{text-align:right;display:grid;gap:2px}
 .freq{font:700 clamp(1.7rem,5vw,2.6rem)/1 var(--f-mono);color:var(--vfo-ink);text-shadow:0 0 14px rgba(83,243,216,.45);font-variant-numeric:tabular-nums}
 .meta{font:500 12px var(--f-mono);color:#9cc2bb;letter-spacing:.05em}
+.vfo .site{font:500 12px var(--f-mono);color:#53f3d8;letter-spacing:.05em;text-decoration:none;opacity:.85}
+.vfo .site:hover{opacity:1;text-decoration:underline}
+.pill.update{cursor:pointer;border-color:#ffb340;background:rgba(255,179,64,.18)}
+.pill.update:hover,.pill.update:focus-visible{background:rgba(255,179,64,.32);outline:none}
 
 .tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .search{flex:1 1 280px;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px}

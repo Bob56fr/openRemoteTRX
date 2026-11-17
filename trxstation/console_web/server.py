@@ -316,7 +316,7 @@ class WebConsole:
                         "mode": rig.get("mode"), "strength_db": rig.get("strength_db"), "vd": levels.get("VD_METER")},
                 "ptt": ptt.get("state") or "RX", "update": release.version if release is not None else None,
                 "idle": self.idle and self.terminal is not None and self.terminal.alive,
-                "assistant": menu_number("assistant"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
+                "assistant": menu_number("assistant"), "update_menu": menu_number("update"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
                 "level": con.level, "langs": [[code, NAMES[code]] for code in LANGS],
                 "network": self.network}
 
@@ -646,7 +646,7 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.stop", "web.flow.send", "web.flow.free", "web.flow.yes", "web.flow.no", "web.flow.continue",
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
-           "web.flow.busy", "web.flow.tab", "web.dash.stop", "web.dash.net", "web.dash.close", "web.dash.stale",
+           "web.flow.busy", "web.flow.tab", "web.version", "web.update_open", "web.dash.stop", "web.dash.net", "web.dash.close", "web.dash.stale",
            "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint")
 
 UI_START = ("\nConsole web de la station : {url}\n"
