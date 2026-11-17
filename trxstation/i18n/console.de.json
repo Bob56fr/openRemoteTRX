@@ -49,7 +49,7 @@
   "menu.update": "Update von TRX distant",
   "menu.rollback": "Zur vorherigen Version zurückkehren",
   "menu.install_zip": "Version aus einer Zip-Datei installieren (Schreibtisch, Downloads)",
-  "menu.language": "Langue / Language / Sprache / Idioma",
+  "menu.language": "Langue et niveau / Language & level / Sprache & Stufe / Idioma y nivel",
   "loop.help_main": "h) Hilfe zu einem Menü (z. B. „h 4.1“)",
   "loop.help_theme": "h) Hilfe zu einem Menü (z. B. „h 1“ oder „h {example}“)",
   "loop.back": "r) Zurück zum Hauptmenü",
@@ -711,5 +711,17 @@
   "web.login.submit": "Anmelden",
   "web.login.bad": "Abgelehnt: Kennung oder Passwort falsch, oder Konto ohne Administratorrecht.",
   "web.login.blocked": "Zu viele Versuche: in {minutes} Min. erneut versuchen.",
-  "web.login.note": "Dein Operatorkonto der Station (in Menü 4.6 als Administrator markiert). Sitzung endet nach einer Zeit ohne Aktion."
+  "web.login.note": "Dein Operatorkonto der Station (in Menü 4.6 als Administrator markiert). Sitzung endet nach einer Zeit ohne Aktion.",
+  "head.level": "Anzeigestufe: {level} (Menü 0 zum Ändern)",
+  "level.title": "Anzeigestufe (aktuell: {level}): blendet Menüs zur Vereinfachung aus, ohne etwas zu verbieten.",
+  "level.basic": "Einfach",
+  "level.normal": "Normal",
+  "level.expert": "Experte",
+  "level.basic.desc": "Inbetriebnahme, Bedienung, Hilfe anfordern",
+  "level.normal.desc": "alle üblichen Einstellungen",
+  "level.expert.desc": "dazu Feineinstellungen und Entwicklerwerkzeuge",
+  "level.prompt": "Stufe (Enter = beibehalten): ",
+  "level.saved": "Anzeigestufe: {level}.",
+  "level.hidden_menu": "Menü {key} (Stufe {level}): auf der gewählten Stufe ausgeblendet, trotzdem geöffnet.",
+  "web.level": "Anzeigestufe"
 }

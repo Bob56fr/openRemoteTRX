@@ -7,7 +7,7 @@
 (function () {
   const $ = (s) => document.querySelector(s);
   const HOVER = matchMedia("(hover: hover) and (pointer: fine)").matches;
-  let state = null, lang = null, pinned = null, term = null, fit = null, ws = null, toastTimer = null;
+  let state = null, lang = null, level = null, pinned = null, term = null, fit = null, ws = null, toastTimer = null;
   const ui = (k, vars) => {
     let s = (state && state.ui && state.ui[k]) || k;
     for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b);
@@ -29,7 +29,9 @@
       state = await r.json();
     } catch (e) { return; }
     header();
-    if (state.lang !== lang) { lang = state.lang; document.documentElement.lang = lang; texts(); tiles(); }
+    if (state.lang !== lang || state.level !== level) {
+      lang = state.lang; level = state.level; document.documentElement.lang = lang; texts(); tiles();
+    }
     $("#term-state").textContent = state.idle ? "" : "…";
   }
   function header() {
@@ -65,6 +67,16 @@
     $("#all").textContent = ui("web.expand");
     $("#none").textContent = ui("web.collapse");
     $("#lang").textContent = "🌐 " + ui("web.language");
+    const levels = $("#levels");
+    levels.replaceChildren();
+    levels.setAttribute("aria-label", ui("web.level"));
+    for (const lv of ["basic", "normal", "expert"]) {
+      const b = el("button", "seg" + (lv === state.level ? " on" : ""), ui("level." + lv));
+      b.type = "button";
+      b.dataset.level = lv;
+      b.title = ui("level." + lv + ".desc");
+      levels.append(b);
+    }
     $("#logout").textContent = ui("web.logout");
     $("#logout").hidden = !state.network;
     $("#term-label").textContent = ui("web.terminal");
@@ -85,7 +97,9 @@
       head.dataset.toggle = th.number;
       const titles = el("div");
       titles.append(el("div", "num", th.number), el("h2", "", th.title));
-      head.append(el("span", "ico", th.icon), titles, el("span", "count", String(th.items.length)));
+      const shown = th.items.filter((it) => it.visible).length;
+      card.dataset.shown = String(shown);
+      head.append(el("span", "ico", th.icon), titles, el("span", "count", shown ? String(shown) : ""));
       head.title = th.summary;
       const list = el("ul", "items");
       for (const it of th.items) {
@@ -93,6 +107,7 @@
         b.type = "button";
         b.dataset.k = it.key;
         b.append(el("span", "k", it.key), document.createTextNode(it.short));
+        if (!it.visible) { li.classList.add("other"); b.append(el("span", "lvl", ui("level." + it.level))); }
         li.append(b);
         list.append(li);
       }
@@ -192,10 +207,11 @@
     const q = $("#q").value.trim().toLowerCase();
     for (const card of document.querySelectorAll(".card")) {
       const th = state.themes.find((x) => x.number === card.dataset.t);
-      let any = !q;
+      let any = false;
       card.querySelectorAll(".items li").forEach((li, k) => {
         const it = th.items[k];
-        const hit = !q || [it.label, it.role, it.when, th.title].join(" ").toLowerCase().includes(q);
+        // sans recherche : les menus du niveau choisi ; une recherche trouve TOUS les menus (les autres grisés)
+        const hit = q ? [it.label, it.role, it.when, th.title].join(" ").toLowerCase().includes(q) : it.visible;
         li.hidden = !hit;
         any = any || hit;
       });
@@ -207,6 +223,15 @@
   $("#all").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.remove("closed")));
   $("#none").addEventListener("click", () => document.querySelectorAll(".card").forEach((c) => c.classList.add("closed")));
   $("#lang").addEventListener("click", () => openMenu("0"));
+  $("#levels").addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-level]");
+    if (!b || b.dataset.level === state.level) return;
+    try {
+      await fetch("/api/level", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ level: b.dataset.level }) });
+    } catch (err) { return; }
+    refresh();
+  });
   $("#logout").addEventListener("click", async () => {
     try { await fetch("/api/logout", { method: "POST", credentials: "same-origin" }); } catch (e) { /* page rechargée */ }
     location.reload();

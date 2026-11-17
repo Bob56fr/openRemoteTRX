@@ -33,7 +33,8 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 from .. import __version__
-from ..console import MENU_THEMES, Console, load_help, menu_number
+from ..console import MENU_THEMES, Console, load_help, menu_level, menu_number
+from ..i18n import LEVELS, load_lang, load_level, prefs_path, save_level
 from ..errors import codes
 from ..errors.emit import emit_event
 from .terminal import IDLE_MARK, Terminal, make_terminal
@@ -75,7 +76,10 @@ class WebConsole:
         self.blocked: dict[str, float] = {}
         self.notify = notify or (lambda *a, **k: None)
         self.terminal_factory, self.clock = terminal_factory, clock
-        self.console_factory = console_factory or (lambda path: Console(path, ask=lambda _p: "", say=lambda _t: None))
+        # Langue et niveau du compte (menu 0, mêmes préférences que la console texte de la page)
+        self.console_factory = console_factory or (lambda path: Console(
+            path, ask=lambda _p: "", say=lambda _t: None, lang=load_lang(prefs_path()),
+            level=load_level(prefs_path(), path.exists())))
         self.terminal: Terminal | None = None
         self.scrollback: deque[str] = deque()
         self.scroll_len = 0
@@ -92,6 +96,7 @@ class WebConsole:
         app.router.add_get("/static/{name:.+}", self.static)
         app.router.add_get("/api/state", self.state)
         app.router.add_post("/api/open", self.open_menu)
+        app.router.add_post("/api/level", self.set_level)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -271,6 +276,7 @@ class WebConsole:
                 label, method = items[key]
                 help_ = texts.get(method, {})
                 entries.append({"key": key, "label": label, "short": label.split(" (", 1)[0],
+                                "level": menu_level(method), "visible": con.visible(method),
                                 "role": help_.get("role", ""), "when": help_.get("quand", ""),
                                 "changes": help_.get("modifie", ""), "admin": bool(help_.get("admin"))})
             themes.append({"number": number, "id": theme_id, "title": t(f"theme.{theme_id}"),
@@ -288,12 +294,26 @@ class WebConsole:
                 "ptt": ptt.get("state") or "RX", "update": release.version if release is not None else None,
                 "idle": self.idle and self.terminal is not None and self.terminal.alive,
                 "assistant": menu_number("assistant"), "ui": {k: t(k) for k in UI_KEYS}, "themes": themes,
+                "level": con.level,
                 "network": self.network}
 
     async def state(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request):
             raise web.HTTPForbidden()
         return web.json_response(await asyncio.to_thread(self.describe))
+
+    async def set_level(self, request: web.Request) -> web.StreamResponse:
+        """Niveau d'affichage (étape 234) : le même fichier de préférences que le menu 0 de la console."""
+        if not self.has_session(request) or not self.same_origin(request):
+            raise web.HTTPForbidden()
+        try:
+            level = str((await request.json()).get("level", ""))
+        except (ValueError, AttributeError):
+            raise web.HTTPBadRequest()
+        if level not in LEVELS:
+            raise web.HTTPBadRequest()
+        self.touch()
+        return web.json_response({"ok": save_level(prefs_path(), level)})
 
     async def open_menu(self, request: web.Request) -> web.StreamResponse:
         if not self.has_session(request) or not self.same_origin(request):
@@ -442,7 +462,8 @@ class WebConsole:
 UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.language", "web.open", "web.busy",
            "web.running", "web.stopped", "web.not_configured", "web.tx", "web.rx", "web.update", "web.role",
            "web.when", "web.changes", "web.admin", "web.terminal", "web.hide", "web.show", "web.click_open",
-           "web.tap_open", "web.no_rig", "web.first_use", "web.logout")
+           "web.tap_open", "web.no_rig", "web.first_use", "web.logout", "web.level", "level.basic", "level.normal",
+           "level.expert", "level.basic.desc", "level.normal.desc", "level.expert.desc")
 
 UI_START = ("\nConsole web de la station : {url}\n"
             "  Adresse à usage unique, à ouvrir sur CETTE machine (navigateur ouvert tout seul s'il y en a un).\n"

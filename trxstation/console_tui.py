@@ -23,7 +23,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Static, Tree
 
-from .console import MENU_THEMES, Console
+from .console import MENU_THEMES, Console, menu_level
 
 
 class MenuTree(Tree):
@@ -144,13 +144,18 @@ class ConsoleApp(App):
                            data=("0", t("menu.language"), self.con.language))
         items = {key: (key, label, fn) for key, label, fn in self.con.items}
         first = None
+        shown = self.con.visible_themes()
         for number, theme_id, methods in MENU_THEMES:
+            if number not in shown:                    # niveau choisi au menu 0 (étape 234) : thème sans menu montré
+                continue
             title = self.con.menu_label(number, t(f"theme.{theme_id}"))
             # Thèmes repliés : la hiérarchie se lit d'un coup d'œil ; Entrée ou → déplie.
             node = tree.root.add(f"{self.icon(theme_id)}{number}  {title}", data=("theme", number), expand=False)
             for n in range(1, len(methods) + 1):
                 key = f"{number}.{n}"
                 _, label, fn = items[key]
+                if not self.con.visible(fn.__name__):
+                    continue
                 leaf = node.add_leaf(f"{key}  {self.con.menu_label(key, short_label(label))}", data=(key, label, fn))
                 if first is None and not self.con.config.exists() and methods[n - 1] == "assistant":
                     first = leaf
@@ -203,8 +208,15 @@ class ConsoleApp(App):
             return
         parent = next(n for n in tree.root.children if n.data and n.data[0] == "theme" and n.data[1] == theme)
         leaf = next((n for n in parent.children if n.data and n.data[0] == f"{theme}.{ch}"), None)
-        if leaf is None:
-            self.bell()
+        if leaf is None:                                   # caché à ce niveau : ouvert quand même, comme « 3.3 » tapé
+            item = next((i for i in self.con.items if i[0] == f"{theme}.{ch}"), None)
+            if item is None:
+                self.bell()
+                return
+            self.digit_theme = None
+            self.notify(self.con.t("level.hidden_menu", key=item[0],
+                                   level=self.con.t(f"level.{menu_level(item[2].__name__)}")), timeout=6)
+            self.run_menu(item)
             return
         tree.move_cursor(leaf)
         self.digit_theme = None                            # après le menu, on repart de la liste des thèmes

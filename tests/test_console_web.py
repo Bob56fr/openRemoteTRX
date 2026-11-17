@@ -201,3 +201,25 @@ def test_windows_terminal_runs_a_console_program(tmp_path):
         await asyncio.wait_for(done.wait(), 20)
     asyncio.run(run())
     assert "fenetre-ok" in "".join(out)
+
+
+def test_state_follows_the_display_level_and_the_page_can_change_it(tmp_path, monkeypatch):
+    """Étape 234 : chaque menu porte son niveau ; la page enregistre le niveau choisi (mêmes préférences que le menu 0)."""
+    import trxstation.console_web.server as server
+    prefs = tmp_path / "prefs" / "console.json"
+    monkeypatch.setattr(server, "prefs_path", lambda: prefs)
+
+    async def body(wc, client):
+        wc.console_factory = lambda p: Console(p, ask=lambda _q: "", say=lambda _t: None, installed="0.179.0",
+                                               level="basic")
+        origin = await login(wc, client)
+        data = await (await client.get("/api/state")).json()
+        assert data["level"] == "basic" and data["ui"]["level.expert"] == "Expert"
+        items = {it["key"]: it for th in data["themes"] for it in th["items"]}
+        assert items["2.1"]["visible"] is True and items["3.1"]["level"] == "expert" and items["3.1"]["visible"] is False
+        assert items["5.1"]["visible"] is False and items["5.1"]["level"] == "normal"
+        assert (await client.post("/api/level", json={"level": "expert"})).status == 403          # sans Origin
+        assert (await client.post("/api/level", json={"level": "root"}, headers=origin)).status == 400
+        assert (await client.post("/api/level", json={"level": "expert"}, headers=origin)).status == 200
+        assert json.loads(prefs.read_text(encoding="utf-8"))["level"] == "expert"
+    scenario(tmp_path, body)

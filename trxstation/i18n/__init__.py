@@ -100,13 +100,50 @@ def load_lang(path: Path, env: dict[str, str] | None = None) -> str:
     return system_lang(env)
 
 
+def _prefs(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_pref(path: Path, key: str, value: str) -> bool:
+    data = _prefs(path)
+    data[key] = value
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data) + "\n", encoding="utf-8")
+        return True
+    except OSError:
+        return False
+
+
 def save_lang(path: Path, lang: str) -> bool:
     """Enregistre le choix ; False si le fichier ne peut pas être écrit (la langue vaut alors pour cette session)."""
     if lang not in LANGS:
         return False
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"lang": lang}) + "\n", encoding="utf-8")
-        return True
-    except OSError:
+    return _save_pref(path, "lang", lang)
+
+
+# Niveaux d'affichage de TRX Console (étape 234, décisions de l'utilisateur du 2026-11-17) : ils CACHENT des menus pour
+# ne pas noyer un débutant, ils ne protègent rien (un numéro tapé ouvre toujours son menu).
+LEVELS = ("basic", "normal", "expert")
+
+
+def load_level(path: Path, configured: bool) -> str:
+    """Niveau choisi (menu 0) ; sinon Basic sur une station pas encore configurée, Normal sur une station déjà en
+    place (rien ne disparaît d'un coup pour qui connaît ses menus). Le défaut est enregistré tout de suite : la fin
+    de l'assistant ne fait pas passer un débutant en Normal."""
+    level = _prefs(path).get("level")
+    if level in LEVELS:
+        return level
+    level = "normal" if configured else "basic"
+    _save_pref(path, "level", level)
+    return level
+
+
+def save_level(path: Path, level: str) -> bool:
+    if level not in LEVELS:
         return False
+    return _save_pref(path, "level", level)

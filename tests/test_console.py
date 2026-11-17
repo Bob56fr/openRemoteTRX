@@ -200,7 +200,7 @@ def test_main_menu_shows_themes_then_a_theme_its_menus(tmp_path):
     con, fake, out = console(tmp_path, answers=["1", "r", "7", "q"])
     assert con.loop() == 0
     text = "\n".join(out)
-    assert "  1) Station  (démarrer" in text and "  7) Mises à jour" in text and "  8) Expert et préférences" in text and "  0) Langue / Language" in text
+    assert "  1) Station  (démarrer" in text and "  7) Mises à jour" in text and "  8) Expert et préférences" in text and "  0) Langue et niveau / Language & level" in text
     assert "--- 1) Station ---" in text and "  2) Arrêter la station" in text and "r) Retour au menu principal" in text
     assert "--- 7) Mises à jour ---" in text and "  3) Installer une version depuis un fichier zip" in text
     assert fake.calls == [] or all("systemctl" in c[0] and "is-active" in c[0] for c in fake.calls)
@@ -239,7 +239,7 @@ def test_language_menu_switches_the_console_and_remembers_it(tmp_path):
     import json
     write_config(tmp_path)
     prefs = tmp_path / "prefs" / "console.json"
-    con, _, out = console(tmp_path, answers=["0", "3", "q"])
+    con, _, out = console(tmp_path, answers=["0", "3", "", "q"])           # Entrée : niveau gardé
     con.lang_file = prefs
     assert con.loop() == 0
     text = "\n".join(out)
@@ -250,6 +250,38 @@ def test_language_menu_switches_the_console_and_remembers_it(tmp_path):
     con, _, out = console(tmp_path, answers=["0", "9", "q"])
     con.lang_file = prefs
     assert con.loop() == 0 and "Choix inconnu." in "\n".join(out) and con.t.lang == "fr"
+
+
+def test_display_level_hides_menus_without_forbidding_them(tmp_path):
+    """Étape 234 : Basic cache les thèmes et menus avancés ; un numéro tapé ouvre quand même son menu, signalé."""
+    import json
+
+    from trxstation.console import BASIC_MENUS, EXPERT_MENUS, MENU_THEMES, menu_level
+    from trxstation.i18n import load_level
+    write_config(tmp_path)
+    prefs = tmp_path / "prefs" / "console.json"
+    con, _, out = console(tmp_path, answers=["0", "", "1", "2", "r", "3.1", "", "q"])
+    con.lang_file = prefs
+
+    def temperature():                                                   # menu Expert, sans ses questions
+        out.append("menu 3.1 ouvert")
+    con.temperature = temperature
+    assert con.loop() == 0
+    text = "\n".join(out)
+    assert con.level == "basic" and json.loads(prefs.read_text())["level"] == "basic"
+    after = text.split("Niveau d'affichage : Basic.", 1)[1]
+    main = after.split("--- 2)")[0]
+    assert "  1) Station" in main and "  8) Expert" not in main and "  3) Sécurité" not in main
+    theme2 = after.split("--- 2)", 1)[1].split("r)", 1)[0]
+    assert "2) Essai du poste" in theme2 and "3) Profils" not in theme2   # thème 2 sans ses menus Normal
+    assert "Menu 3.1 (niveau Expert) : caché au niveau choisi, ouvert quand même." in text
+    assert "Niveau d'affichage : Basic (menu 0 pour changer)" in text
+    methods = {m for _, _, ms in MENU_THEMES for m in ms}
+    assert BASIC_MENUS <= methods and EXPERT_MENUS <= methods and menu_level("alerts") == "normal"
+    fresh = tmp_path / "neuf.json"
+    assert load_level(fresh, configured=False) == "basic" and json.loads(fresh.read_text())["level"] == "basic"
+    assert load_level(fresh, configured=True) == "basic"                  # le défaut enregistré ne bouge plus
+    assert load_level(tmp_path / "ancien.json", configured=True) == "normal"
 
 
 def test_diagnostic_shows_breizh_and_visitors_without_secrets(tmp_path, monkeypatch):
@@ -317,7 +349,7 @@ def test_language_menu_comes_first_in_yellow_and_the_station_state_is_coloured(t
     text = "\n".join(out)
     assert "\x1b[1;32mStation en marche\x1b[0m" in text
     menu = [line for line in text.splitlines() if line.strip()[:2] in ("0)", "1)", "6)") or "\x1b[1;33m0)" in line]
-    assert "\x1b[1;33m0) Langue / Language" in menu[0] and menu[1].strip().startswith("1) Station")
+    assert "\x1b[1;33m0) Langue et niveau / Language & level" in menu[0] and menu[1].strip().startswith("1) Station")
     con, _, out = console(tmp_path, running=False)
     con.color = True
     assert "\x1b[1;31mStation arrêtée\x1b[0m" in con.header()

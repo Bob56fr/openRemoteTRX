@@ -38,6 +38,7 @@ from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
 from .i18n import LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
+from .i18n import LEVELS, load_level, save_level
 from .paths import default_state_dir
 from . import profiles as prof
 from .station_id import read_station_id
@@ -85,6 +86,17 @@ OLD_NUMBERS = {"1": "diagnostic", "2": "assistant", "3": "monitor", "4": "hwtest
                "17": "indicator", "18": "profiles", "19": "pairing", "20": "visitors", "21": "swr_report",
                "22": "breizh", "23": "network", "24": "friends"}
 OLD_ACCEPTED = tuple(str(n) for n in range(10, 25))
+
+
+# Niveau de chaque menu (étape 234) : Basic = mettre en service, utiliser, demander de l'aide ; Expert = réglages fins et
+# outils de développement ; tout le reste = Normal. « 0 » (langue et niveau) est toujours montré.
+BASIC_MENUS = frozenset({"start", "stop", "monitor", "clear_safe_mode", "assistant", "hwtest", "pairing", "operators",
+                         "diagnostic", "report", "update"})
+EXPERT_MENUS = frozenset({"temperature", "edit_config", "expert", "qualif"})
+
+
+def menu_level(method: str) -> str:
+    return "basic" if method in BASIC_MENUS else "expert" if method in EXPERT_MENUS else "normal"
 
 
 def menu_number(method: str) -> str:
@@ -380,7 +392,7 @@ class Console:
                  home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
                  desktop: Callable[[], Path] | None = None, color: bool | None = None,
                  addresses: Callable[[], list[str]] | None = None, lang: str | None = None,
-                 lang_file: Path | None = None) -> None:
+                 lang_file: Path | None = None, level: str | None = None) -> None:
         self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
         self.color = color if color is not None else (say is print and sys.stdout.isatty())
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
@@ -398,6 +410,25 @@ class Console:
             lang = load_lang(self.lang_file) if ask is input else "fr"
         self.t = Translator(lang)
         self._share_language()
+        # Niveau (étape 234) : choisi au menu 0 ; les tests (ask factice) voient tous les menus.
+        if level is None:
+            level = load_level(self.lang_file, self.config.exists()) if ask is input else "expert"
+        self.level = level if level in LEVELS else "normal"
+
+    def visible(self, method: str) -> bool:
+        """Menu montré au niveau choisi ? « Sortir du mode sûr » n'encombre le niveau Basic que si la station y est."""
+        if method == "clear_safe_mode" and self.level == "basic":
+            return self.in_safe_mode()
+        return LEVELS.index(menu_level(method)) <= LEVELS.index(self.level)
+
+    def in_safe_mode(self) -> bool:
+        try:
+            return (config_state_dir(self.config) / "safe_mode").exists()
+        except Exception:                               # en-tête et menus : jamais d'exception pour un affichage
+            return False
+
+    def visible_themes(self) -> set[str]:
+        return {theme for theme, _, methods in MENU_THEMES if any(self.visible(m) for m in methods)}
 
     def _share_language(self) -> None:
         try:
@@ -2910,6 +2941,7 @@ class Console:
         if release is not None:
             line += self.banner([t("head.new_version", version=release.version, installed=self.installed),
                                  t("head.new_version_menu", menu=UPDATE_MENU)])
+        line += "\n  " + t("head.level", level=t(f"level.{self.level}"))
         if (parse_version(self.installed) or (0,)) < RENUMBER_NOTICE_UNTIL:
             line += "\n  " + self.paint(t("head.renumbered", version=RENUMBERED_IN, update=UPDATE_MENU,
                                           zip=menu_number("install_zip"), diag=menu_number("diagnostic")), YELLOW)
@@ -2955,25 +2987,41 @@ class Console:
         return None
 
     def language(self) -> None:
-        """Menu 0 : langue de la console, gardée pour ce compte de l'ordinateur."""
+        """Menu 0 : langue de la console, puis niveau d'affichage (Basic, Normal, Expert), gardés pour ce compte de
+        l'ordinateur. Entrée garde chaque choix."""
         t = self.t
         self.say("\n" + t("lang.title"))
         self.say(t("lang.current", name=NAMES[t.lang]))
         for n, code in enumerate(LANGS, 1):
             self.say(f"  {n}) {NAMES[code]} ({code})")
         choice = self.ask(t("lang.prompt")).strip().lower()
+        if choice:
+            code = LANGS[int(choice) - 1] if choice.isdigit() and 1 <= int(choice) <= len(LANGS) else choice
+            if code not in LANGS:
+                self.say(t("loop.unknown"))
+                return
+            self.t = Translator(code)
+            self._share_language()
+            saved = save_lang(self.lang_file, code)
+            self.say(self.t("lang.saved", name=NAMES[code]) if saved else self.t("lang.not_saved", path=self.lang_file))
+            if code != "fr":
+                self.say(self.t("lang.partial"))
+        self.choose_level()
+
+    def choose_level(self) -> None:
+        t = self.t
+        self.say("\n" + t("level.title", level=t(f"level.{self.level}")))
+        for n, level in enumerate(LEVELS, 1):
+            self.say(f"  {n}) {t(f'level.{level}')} : {t(f'level.{level}.desc')}")
+        choice = self.ask(t("level.prompt")).strip()
         if not choice:
             return
-        code = LANGS[int(choice) - 1] if choice.isdigit() and 1 <= int(choice) <= len(LANGS) else choice
-        if code not in LANGS:
+        if not (choice.isdigit() and 1 <= int(choice) <= len(LEVELS)):
             self.say(t("loop.unknown"))
             return
-        self.t = Translator(code)
-        self._share_language()
-        saved = save_lang(self.lang_file, code)
-        self.say(self.t("lang.saved", name=NAMES[code]) if saved else self.t("lang.not_saved", path=self.lang_file))
-        if code != "fr":
-            self.say(self.t("lang.partial"))
+        self.level = LEVELS[int(choice) - 1]
+        saved = save_level(self.lang_file, self.level)
+        self.say(t("level.saved", level=t(f"level.{self.level}")) if saved else t("lang.not_saved", path=self.lang_file))
 
     def help_menu(self, key: str = "", theme: str | None = None) -> None:
         """Touche « h » : à quoi sert un menu, quand s'en servir, ce qu'il modifie. Mêmes textes que le mode d'emploi
@@ -3014,7 +3062,10 @@ class Console:
     def show_main(self) -> None:
         self.say(self.header())
         self.say("  " + self.paint(f"0) {self.t('menu.language')}", YELLOW))     # en tête : retrouvable dans toute langue
+        shown = self.visible_themes()
         for number, title, desc in self.themes():
+            if number not in shown:
+                continue
             self.say(f"  {number}) {self.menu_label(number, title)}" + (f"  ({desc})" if desc else ""))
         self.say("  " + self.t("loop.help_main"))
         self.say("  " + self.t("loop.quit"))
@@ -3022,8 +3073,9 @@ class Console:
     def show_theme(self, theme: str) -> None:
         title = next(self.t(f"theme.{tid}") for th, tid, _ in MENU_THEMES if th == theme)
         self.say(f"\n--- {theme}) {title} ---")
-        for key, label, _ in self.items:
-            if key.startswith(theme + "."):
+        everything = theme not in self.visible_themes()      # thème caché, tapé quand même : tous ses menus
+        for key, label, fn in self.items:
+            if key.startswith(theme + ".") and (everything or self.visible(fn.__name__)):
                 self.say(f"  {key.split('.')[1]}) {self.menu_label(key, label)}")
         self.say("  " + self.t("loop.help_theme", example=f"{theme}.1"))
         self.say("  " + self.t("loop.back"))
@@ -3088,6 +3140,8 @@ class Console:
                 continue
             if kind == "old":
                 self.say(self.t("loop.moved", old=choice, new=value[0], label=value[1]))
+            elif not self.visible(value[2].__name__):          # caché à ce niveau : ouvert quand même, signalé
+                self.say(self.t("level.hidden_menu", key=value[0], level=self.t(f"level.{menu_level(value[2].__name__)}")))
             if not self.run_item(value):
                 return 0
 

@@ -49,7 +49,7 @@
   "menu.update": "Update TRX distant",
   "menu.rollback": "Go back to the previous version",
   "menu.install_zip": "Install a version from a zip file (Desktop, Downloads)",
-  "menu.language": "Langue / Language / Sprache / Idioma",
+  "menu.language": "Langue et niveau / Language & level / Sprache & Stufe / Idioma y nivel",
   "loop.help_main": "h) Help on a menu (e.g. \"h 4.1\")",
   "loop.help_theme": "h) Help on a menu (e.g. \"h 1\" or \"h {example}\")",
   "loop.back": "r) Back to the main menu",
@@ -711,5 +711,17 @@
   "web.login.submit": "Log in",
   "web.login.bad": "Refused: wrong login or password, or account without administration right.",
   "web.login.blocked": "Too many attempts: try again in {minutes} min.",
-  "web.login.note": "Your station operator account (marked administrator in menu 4.6). Session closed after a while without action."
+  "web.login.note": "Your station operator account (marked administrator in menu 4.6). Session closed after a while without action.",
+  "head.level": "Display level: {level} (menu 0 to change)",
+  "level.title": "Display level (current: {level}): it hides menus to keep things simple, without forbidding anything.",
+  "level.basic": "Basic",
+  "level.normal": "Normal",
+  "level.expert": "Expert",
+  "level.basic.desc": "commissioning, daily use, asking for help",
+  "level.normal.desc": "all the usual settings",
+  "level.expert.desc": "plus fine settings and development tools",
+  "level.prompt": "Level (Enter = keep): ",
+  "level.saved": "Display level: {level}.",
+  "level.hidden_menu": "Menu {key} ({level} level): hidden at the chosen level, opened anyway.",
+  "web.level": "Display level"
 }

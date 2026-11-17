@@ -49,7 +49,7 @@
   "menu.update": "Actualización de TRX distant",
   "menu.rollback": "Volver a la versión anterior",
   "menu.install_zip": "Instalar una versión desde un archivo zip (Escritorio, Descargas)",
-  "menu.language": "Langue / Language / Sprache / Idioma",
+  "menu.language": "Langue et niveau / Language & level / Sprache & Stufe / Idioma y nivel",
   "loop.help_main": "h) Ayuda sobre un menú (p. ej. « h 4.1 »)",
   "loop.help_theme": "h) Ayuda sobre un menú (p. ej. « h 1 » o « h {example} »)",
   "loop.back": "r) Volver al menú principal",
@@ -711,5 +711,17 @@
   "web.login.submit": "Conectarse",
   "web.login.bad": "Rechazado: identificador o contraseña incorrectos, o cuenta sin derecho de administración.",
   "web.login.blocked": "Demasiados intentos: vuelve a probar en {minutes} min.",
-  "web.login.note": "Tu cuenta de operador de la estación (marcada administradora en el menú 4.6). Sesión cerrada tras un tiempo sin acción."
+  "web.login.note": "Tu cuenta de operador de la estación (marcada administradora en el menú 4.6). Sesión cerrada tras un tiempo sin acción.",
+  "head.level": "Nivel de visualización: {level} (menú 0 para cambiar)",
+  "level.title": "Nivel de visualización (actual: {level}): oculta menús para simplificar, sin prohibir nada.",
+  "level.basic": "Básico",
+  "level.normal": "Normal",
+  "level.expert": "Experto",
+  "level.basic.desc": "puesta en servicio, uso, pedir ayuda",
+  "level.normal.desc": "todos los ajustes habituales",
+  "level.expert.desc": "además, ajustes finos y herramientas de desarrollo",
+  "level.prompt": "Nivel (Intro = mantener): ",
+  "level.saved": "Nivel de visualización: {level}.",
+  "level.hidden_menu": "Menú {key} (nivel {level}): oculto en el nivel elegido, abierto de todos modos.",
+  "web.level": "Nivel de visualización"
 }

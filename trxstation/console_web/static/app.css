@@ -121,3 +121,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .login .err{margin:0;color:#e5484d;font-weight:600}
 .login .note{margin:0;color:var(--muted,#7a8a90);font-size:13px}
+/* Niveaux Basic / Normal / Expert (étape 234) */
+.levels{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.levels .seg{font:600 13px var(--f-body);padding:9px 12px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.levels .seg+.seg{border-left:1px solid var(--line)}
+.levels .seg.on{background:var(--accent);color:#fff}
+.items li.other button{opacity:.55}
+.items .lvl{margin-left:8px;font:600 10px var(--f-body);text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--muted)}

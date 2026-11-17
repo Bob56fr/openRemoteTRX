@@ -239,3 +239,24 @@ def test_w_starts_the_web_console_or_explains_over_ssh(tmp_path, monkeypatch):
             await pilot.pause(0.2)
     asyncio.run(scenario())
     assert len(spawned) == 1 and spawned[0][-3:-1] == ["--web", "--config"]
+
+
+def test_basic_level_tree_hides_advanced_themes_but_a_digit_still_opens_a_hidden_menu(tmp_path):
+    """Étape 234 : niveau Basic = thèmes 3, 5 et 8 absents de l'arbre ; « 2 » puis « 3 » ouvre quand même le 2.3."""
+    con = console(tmp_path)
+    con.level = "basic"
+    opened = []
+
+
+    async def scenario():
+        app = ConsoleApp(con, icons=False)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            shown = labels(app.query_one("Tree").root)
+            assert not any(text.startswith(("3  ", "5  ", "8  ")) for text in shown)
+            assert any(text.startswith("2.1  ") for text in shown) and not any(text.startswith("2.3  ") for text in shown)
+            app.run_menu = lambda item: opened.append(item[0])
+            await pilot.press("2", "3")
+            await pilot.pause(0.1)
+    asyncio.run(scenario())
+    assert opened == ["2.3"]

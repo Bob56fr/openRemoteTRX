@@ -49,7 +49,7 @@
   "menu.update": "Mise à jour de TRX distant",
   "menu.rollback": "Revenir à la version précédente",
   "menu.install_zip": "Installer une version depuis un fichier zip (Bureau, Téléchargements)",
-  "menu.language": "Langue / Language / Sprache / Idioma",
+  "menu.language": "Langue et niveau / Language & level / Sprache & Stufe / Idioma y nivel",
   "loop.help_main": "h) Aide sur un menu (ex. « h 4.1 »)",
   "loop.help_theme": "h) Aide sur un menu (ex. « h 1 » ou « h {example} »)",
   "loop.back": "r) Retour au menu principal",
@@ -711,5 +711,17 @@
   "web.login.submit": "Se connecter",
   "web.login.bad": "Refusé : identifiant ou mot de passe faux, ou compte sans droit d'administration.",
   "web.login.blocked": "Trop d'essais : réessaie dans {minutes} min.",
-  "web.login.note": "Ton compte opérateur de la station (marqué administrateur au menu 4.6). Session fermée après un temps sans action."
+  "web.login.note": "Ton compte opérateur de la station (marqué administrateur au menu 4.6). Session fermée après un temps sans action.",
+  "head.level": "Niveau d'affichage : {level} (menu 0 pour changer)",
+  "level.title": "Niveau d'affichage (actuel : {level}) : il cache des menus pour simplifier, sans rien interdire.",
+  "level.basic": "Basic",
+  "level.normal": "Normal",
+  "level.expert": "Expert",
+  "level.basic.desc": "mettre en service, utiliser, demander de l'aide",
+  "level.normal.desc": "tous les réglages courants",
+  "level.expert.desc": "en plus, réglages fins et outils de développement",
+  "level.prompt": "Niveau (Entrée = garder) : ",
+  "level.saved": "Niveau d'affichage : {level}.",
+  "level.hidden_menu": "Menu {key} (niveau {level}) : caché au niveau choisi, ouvert quand même.",
+  "web.level": "Niveau d'affichage"
 }
