@@ -195,8 +195,10 @@ def test_worker_plays_a_wizard_part_with_forms(tmp_path):
 def test_every_key_that_colours_a_message_exists():
     from trxstation.i18n import catalog
     fr = catalog("fr", "console")
-    assert not (worker.REFUSED_KEYS | worker.UNCHANGED_KEYS) - fr.keys()
-    assert not worker.REFUSED_KEYS & worker.UNCHANGED_KEYS
+    assert not (worker.REFUSED_KEYS | worker.UNCHANGED_KEYS | worker.DONE_KEYS) - fr.keys()
+    assert not worker.REFUSED_KEYS & worker.UNCHANGED_KEYS and not worker.DONE_KEYS & (worker.REFUSED_KEYS | worker.UNCHANGED_KEYS)
+    assert worker.tone_of(["save_config.8"]) == "success"
+    assert worker.tone_of(["install_zip.14.page", "apply_result.3"]) == "bad"     # échec de l'installation : rouge
     assert worker.tone_of(["visitors.3", "ask_pseudo.6"]) == "bad" and worker.tone_of(["save_accounts.1"]) == "unchanged"
     assert worker.tone_of(["visitors.3"]) == ""
 

@@ -58,7 +58,15 @@ REFUSED_KEYS = frozenset({
     "temperature.2", "temperature.7", "run_tests.4", "certificate.9", "sdr.7", "sdr.8", "sdr.16", "sdr.17",
     "sdr.19", "monitoring.do.refused", "monitoring.fp.differ", "monitoring.report.copy_failed",
     "alerts.url_bad", "alerts.lang_bad", "alerts.alive_bad", "alerts.test_failed", "indicator.win.failed_link",
-    "remote_console.admins_bad", "remote_console.account_bad",
+    "remote_console.admins_bad", "remote_console.account_bad", "apply_result.1", "apply_result.2", "apply_result.3",
+    "save_profile.8", "breizh_new_key.3",
+})
+# Réussites (vert) : ce qui vient d'être enregistré, installé ou envoyé.
+DONE_KEYS = frozenset({
+    "lang.saved", "save_config.8", "save_profile.7", "delete_profile.3", "friends_pseudo.2", "friends_share.3",
+    "friends_leave.2", "breizh_new_key.4", "run_tests.10", "monitoring.pseudo.done", "alerts.test_sent",
+    "update.18", "update.18.page", "update.18.local", "install_zip.14", "install_zip.14.page", "install_zip.14.local",
+    "rollback.4", "rollback.4.page", "rollback.4.local",
 })
 UNCHANGED_KEYS = frozenset({
     "hwtest.5", "qualif.4", "update.17", "install_zip.6", "install_zip.11", "install_zip.13", "edit_config.5",
@@ -73,6 +81,8 @@ def tone_of(keys: list[str]) -> str:
         return "bad"
     if any(k in UNCHANGED_KEYS for k in keys):
         return "unchanged"
+    if any(k in DONE_KEYS for k in keys):
+        return "success"
     return ""
 
 

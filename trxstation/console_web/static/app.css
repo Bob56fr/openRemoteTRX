@@ -142,6 +142,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* jamais comprimé par la colonne : un cadre de commande (overflow:hidden) coupait le bas de sa sortie */
 .flow-log>*{flex-shrink:0}
 .flow .msg{white-space:pre-wrap;overflow-wrap:anywhere}
+/* Trois sortes de texte bien distinctes (étape 237) : INFORMATION (carte grise), RÉUSSITE (vert ✔), QUESTION (en bas,
+   cadre de la couleur d'accent avec « ? » ; mot de confirmation en rouge). */
+.flow .msg:not(.qr){padding:8px 12px;border-radius:10px;background:var(--panel2);border-left:4px solid color-mix(in srgb,var(--muted) 50%,transparent)}
+.flow .msg.success{position:relative;padding-left:34px;font-weight:600;border-left-color:#16a34a;background:color-mix(in srgb,#16a34a 13%,transparent)}
+.flow .msg.success::before{content:"✔";position:absolute;left:12px;top:8px;color:#16a34a}
+.flow-form .prompt{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;font:600 1.05rem/1.4 var(--f-body);color:var(--ink);border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 13%,var(--panel))}
+.flow-form .prompt::before{content:"?";flex:none;display:grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:.85em;margin-top:.1em}
+.flow-form .prompt.word{border-left-color:#e5484d;background:color-mix(in srgb,#e5484d 12%,var(--panel))}
+.flow-form .prompt.word::before{content:"!";background:#e5484d}
 .flow .msg.bad{padding:8px 12px 8px 34px;border-radius:10px;position:relative;font-weight:600;color:#e5484d;border:1px solid color-mix(in srgb,#e5484d 55%,transparent);background:color-mix(in srgb,#e5484d 12%,transparent)}
 .flow .msg.bad::before{content:"✖";position:absolute;left:12px;top:8px}
 .flow .msg.unchanged{padding:8px 12px;border-radius:10px;border-left:4px solid var(--amber);background:color-mix(in srgb,var(--amber) 12%,transparent)}
