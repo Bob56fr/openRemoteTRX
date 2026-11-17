@@ -26,7 +26,8 @@
                "restarts": 0, "cause": null, "fault": null, "calls": [], "sequences": []},
     "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
-    "replay": {"max_s": 85}
+    "replay": {"max_s": 85},
+    "remote_console": null
   },
   "state": {
     "type": "state",

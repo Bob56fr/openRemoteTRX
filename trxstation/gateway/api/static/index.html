@@ -730,6 +730,18 @@
       </div>
     </details>
 
+    <details id="sec-console" class="listener-hide" hidden>
+      <summary>Console de la station</summary>
+      <div class="body">
+        <p class="note">Administrer la station (TRX Console) depuis ce PC Windows sans rien taper : télécharge le raccourci,
+          puis double-clique dessus. La première fois, il pose « Console de la station » sur le Bureau et propose une clé SSH
+          pour ne plus demander le mot de passe SSH. Il ne contient aucun mot de passe. Si le navigateur avertit
+          (« fichier dangereux »), choisis « Conserver », puis Windows : « Informations complémentaires », « Exécuter quand même ».</p>
+        <div class="row"><button id="rc-download">Télécharger le raccourci (Windows)</button></div>
+        <p id="rc-status" class="note"></p>
+      </div>
+    </details>
+
     <details id="sec-bug" class="listener-hide">
       <summary>Signaler un problème</summary>
       <div class="body">
@@ -890,6 +902,7 @@
 <script src="friends.js"></script>
 <script src="monitoring.js"></script>
 <script src="sdr.js"></script>
+<script src="console_link.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

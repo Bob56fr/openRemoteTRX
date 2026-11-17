@@ -62,6 +62,17 @@ terminal : sudo, nano, essai du poste, tableau de bord.
    par téléphone »). Lot W2 fusionné dans W1.
 4. Rendu : maquette retouchée (5 colonnes, bulle d'aide au survol, panneau du bas sur téléphone) puis validée.
 
+## 5 bis. Raccourci « Console de la station » (étape 230)
+
+Demande de l'utilisateur (2026-11-17) : le tunnel SSH à la main n'est pas ergonomique pour un non-informaticien.
+Décision : la page de pilotage offre aux OPÉRATEURS un lanceur Windows (`console-station.cmd`, modèle servi par la
+station et rempli par la page : adresse par laquelle le PC joint la station, compte et ports de `[remote_console]`,
+aucun secret). Il lance `ssh -tt -L port:127.0.0.1:port compte@station trx-console --web --raccourci`, lit la ligne
+`TRX-CONSOLE-URL` et ouvre l'adresse dans le navigateur du PC ; au premier lancement il se range dans
+`%LOCALAPPDATA%\OpenRemoteTRX`, pose un raccourci sur le Bureau et propose une clé SSH ed25519 (privée sur le PC,
+publique ajoutée à `authorized_keys` de la station avec le mot de passe SSH une dernière fois). Le mot de passe sudo
+reste demandé dans la console. Menu 4.6 ; station Debian ou Pi seulement (serveur SSH).
+
 ## 6. Questions d'origine
 
 1. Programme à part `trx-console --web`, 127.0.0.1 + jeton, tunnel SSH pour un autre PC : d'accord ?

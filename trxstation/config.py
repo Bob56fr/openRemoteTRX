@@ -194,6 +194,17 @@ class MonitorLink:
 
 
 @dataclass
+class RemoteConsole:
+    """Raccourci « Console de la station » (étape 230) : la page de pilotage offre aux OPÉRATEURS un lanceur Windows
+    qui ouvre la console web (trx-console --web) par un tunnel SSH. Le lanceur ne contient que l'adresse, le compte et
+    les ports : aucun secret. Réglé par le menu 4.6 de TRX Console."""
+    enabled: bool = False             # false : bouton absent de la page
+    ssh_user: str = ""                # compte SSH de la station (celui de l'opérateur qui administre)
+    ssh_port: int = 22                # port du serveur SSH de la station
+    web_port: int = 8765              # port de la console web, le même sur le PC (tunnel) et sur la station
+
+
+@dataclass
 class Freedv:
     """FreeDV RADE V1 en RÉCEPTION (lot F1, cahier des charges FreeDV) : deux décodeurs en processus enfants de la
     passerelle (trxstation/freedv/). Le choix du mode FreeDV (voix décodée à la place du son du poste) se fait depuis
@@ -526,6 +537,7 @@ class Config:
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
     monitor_link: MonitorLink = field(default_factory=MonitorLink)
+    remote_console: RemoteConsole = field(default_factory=RemoteConsole)
     freedv: Freedv = field(default_factory=Freedv)
     sdr: Sdr = field(default_factory=Sdr)
     bands: list[Band] = field(default_factory=list)
@@ -583,6 +595,7 @@ def validate(cfg: Config) -> list[str]:
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
     p += _monitor_link_problems(cfg.monitor_link, cfg.modules)
+    p += _remote_console_problems(cfg.remote_console)
     p += _freedv_problems(cfg.freedv)
     p += _sdr_problems(cfg.sdr, cfg.modules)
     if bool(cfg.network.tls_cert) != bool(cfg.network.tls_key):
@@ -947,6 +960,24 @@ def _monitor_link_problems(ml: MonitorLink, modules: Modules) -> list[str]:
     return p
 
 
+SSH_USER_RE = re.compile(r"[a-z_][a-z0-9_.-]{0,31}")
+
+
+def _remote_console_problems(rc: RemoteConsole) -> list[str]:
+    p = []
+    if not isinstance(rc.enabled, bool):
+        p.append("[remote_console] enabled doit valoir true ou false")
+    if not isinstance(rc.ssh_user, str) or (rc.ssh_user and not SSH_USER_RE.fullmatch(rc.ssh_user)):
+        p.append(f"[remote_console] ssh_user : « {rc.ssh_user} » n'est pas un nom de compte (minuscules, chiffres, _ . -)")
+    elif rc.enabled is True and not rc.ssh_user:
+        p.append("[remote_console] activé sans ssh_user : il faut le compte SSH de la station (menu 4.6)")
+    for name, low in (("ssh_port", 1), ("web_port", 1024)):
+        value = getattr(rc, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= 65535:
+            p.append(f"[remote_console] {name} doit être un numéro de port entre {low} et 65535 (lu : {value})")
+    return p
+
+
 def monlink_key_path(cfg: Config, config_path: str | Path) -> Path:
     """Clés du monitoring : key_file (relatif = à côté de station.toml), sinon state_dir/monlink/monlink.key (écrit par
     le module lui-même, droits 0600). Jamais le fichier de la présence."""
@@ -1050,7 +1081,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
                  "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
-                 "netprobe", "presence", "monitor_link", "freedv", "sdr", "bands", "clients"}
+                 "netprobe", "presence", "monitor_link", "remote_console", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(f"clé inconnue à la racine : {key}")
     try:
@@ -1074,6 +1105,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
             monitor_link=_build(MonitorLink, d.get("monitor_link", {}), "monitor_link", problems),
+            remote_console=_build(RemoteConsole, d.get("remote_console", {}), "remote_console", problems),
             freedv=_build(Freedv, d.get("freedv", {}), "freedv", problems),
             sdr=_build(Sdr, d.get("sdr", {}), "sdr", problems),
             bands=[_build(Band, b, "bands", problems) for b in d.get("bands", [])],
@@ -1321,6 +1353,12 @@ def render_toml(cfg: Config) -> str:
         f"enabled = {str(cfg.monitor_link.enabled).lower()}",
         f"relay_url = {_s(cfg.monitor_link.relay_url)}   # même relais que la présence (https://)",
         f"key_file = {_s(cfg.monitor_link.key_file)}   # clés du monitoring ; vide = state_dir/monlink/{MONLINK_KEY_FILE}",
+        "",
+        "[remote_console]   # raccourci « Console de la station » offert aux opérateurs par la page (menu 4.6)",
+        f"enabled = {str(cfg.remote_console.enabled).lower()}",
+        f"ssh_user = {_s(cfg.remote_console.ssh_user)}   # compte SSH de la station",
+        f"ssh_port = {cfg.remote_console.ssh_port}   # port SSH de la station",
+        f"web_port = {cfg.remote_console.web_port}   # port de la console web (même numéro sur le PC, par le tunnel)",
         "",
         "[freedv]   # FreeDV RADE V1 en réception : décodeurs freedv-ka9q et radae_rx (le mode se choisit depuis la page)",
         f"enabled = {str(cfg.freedv.enabled).lower()}",

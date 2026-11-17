@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.175.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.176.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -203,6 +203,19 @@ Se modifie : Menu 8.1, et ajouter « monlink » à `[modules] run`. Pseudo, invi
 | `enabled` | courant | `false` | true : la station s'enregistre auprès du relais du monitoring, relève les messages de ses liaisons et envoie ce que chaque profil permet (« monlink » doit aussi figurer dans `[modules] run`). Sans liaison confirmée, rien ne part. **Sécurité** : Le monitoring ne fait que lire et montrer : aucun message reçu ne peut commander le poste ni la station. (depuis 0.159.0) |
 | `relay_url` | expert | `"https://rf-diy.com/orx-relay/public"` | Adresse du relais du monitoring (le même que celui de la présence). Valeurs : https:// obligatoire ; http:// seulement vers 127.0.0.1 ou localhost (essais avec un relais sur la même machine). Exemple : Relais par défaut : `https://rf-diy.com/orx-relay/public` ; essai local : `http://127.0.0.1:8099`. (depuis 0.159.0) |
 | `key_file` | expert | `""` | Fichier des clés de la station pour le monitoring (signature, chiffrement des liaisons). Vide : `monlink.key` dans le dossier d'état (sous-dossier `monlink`), créé par le module au premier démarrage. Relatif : à côté de station.toml. Différent des clés de la présence : les deux services ne peuvent pas être reliés. **Sécurité** : Ce fichier identifie la station auprès de ses partenaires de monitoring : ne jamais le copier sur une autre station. (depuis 0.159.0) |
+
+## Raccourci de la console [remote_console]
+
+Pour administrer une station Debian ou Raspberry Pi depuis un PC Windows sans rien taper : la page de pilotage offre aux OPÉRATEURS (jamais aux visiteurs) un raccourci « Console de la station ». Un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC. Le raccourci ne contient que l'adresse de la station, le compte et les ports : aucun mot de passe ni clé.
+
+Se modifie : Menu 4.6 de TRX Console. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : le bouton « Raccourci de la console » apparaît dans les Réglages de la page, pour les opérateurs seulement. **Sécurité** : La console web n'écoute jamais sur le réseau (127.0.0.1) : le raccourci passe par SSH, avec le mot de passe ou la clé SSH du compte. (depuis 0.176.0) |
+| `ssh_user` | courant | `""` | Compte SSH de la station, celui avec lequel on administre (il doit pouvoir lancer `trx-console` et sudo). Valeurs : Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Obligatoire quand `enabled = true`. Exemple : `ssh_user = "pi"` (depuis 0.176.0) |
+| `ssh_port` | expert | `22` | Port du serveur SSH de la station. Valeurs : 1 à 65535. (depuis 0.176.0) |
+| `web_port` | expert | `8765` | Port de la console web, le même sur le PC et sur la station (tunnel SSH). À changer seulement s'il est déjà pris sur le PC. Valeurs : 1024 à 65535. (depuis 0.176.0) |
 
 ## FreeDV en réception [freedv]
 

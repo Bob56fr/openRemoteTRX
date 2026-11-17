@@ -320,6 +320,12 @@ quand = "À la mise en service, après un changement d'adresse du PC, ou pour ou
 modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true
 
+[menus.remote_console]
+role = "Offre aux opérateurs, dans la page de pilotage, un <strong>raccourci « Console de la station »</strong> pour PC Windows : un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC, sans rien taper. Au premier lancement, le raccourci se range, se pose sur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il ne contient que l'adresse, le compte SSH et les ports. Station Debian ou Raspberry Pi seulement (serveur SSH)."
+quand = "Pour administrer la station depuis un autre PC (Windows) sans connaître SSH."
+modifie = "La configuration de la station (<code>station.toml</code>, section <code>[remote_console]</code>), avec les droits d'administration ; l'ancienne version est gardée. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
 [menus.local_operator]
 role = "Règle ce que fait la station quand quelqu'un <strong>émet au micro du poste</strong>, devant lui. <strong>Station partagée</strong> (défaut) : cette émission n'est coupée que par le <strong>TOT absolu</strong> du superviseur (135 s par défaut), ou après la durée tolérée (300 s par défaut) quand la présence de l'opérateur est prouvée (il a touché le poste juste avant). Sinon, toute émission locale est coupée aussitôt. L'émission à distance reste bloquée pendant une émission locale puis 2 minutes."
 quand = "À la mise en service, si un opérateur se sert du poste sur place, ou si la station passe en mode sûr après des émissions au micro du poste."

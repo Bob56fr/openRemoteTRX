@@ -22,6 +22,7 @@ import argparse
 import codecs
 import difflib
 import json
+import getpass
 import os
 import re
 import shutil
@@ -66,7 +67,7 @@ MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
     ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
-    ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network")),
+    ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch")),
     ("6", "troubleshooting", ("diagnostic", "journal", "report", "network", "monitoring")),
     ("7", "updates", ("update", "rollback", "install_zip")),
@@ -644,6 +645,36 @@ class Console:
         if v.allow_local_tx:
             v.local_tx_max_s = self._ask_int(self.t("local_operator.4"), v.local_tx_max_s, 1, LOCAL_TX_CEILING_S)
         self._save_accounts(original, cfg, live=False)
+
+    def remote_console(self) -> None:
+        """Console depuis un autre PC (étape 230) : la page de pilotage offre aux opérateurs un raccourci Windows qui
+        ouvre la console web par un tunnel SSH. Seuls le compte et les ports sont rangés (aucun secret)."""
+        from .config import SSH_USER_RE
+        self.say(self.t("remote_console.1"))
+        if os.name == "nt":
+            self.say(self.t("remote_console.windows"))
+            return
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        v = cfg.remote_console
+        self.say(self.t("remote_console.state", on=self.t("ask_yes.2") if v.enabled else self.t("ask_yes.3"),
+                        user=v.ssh_user or "—", port=v.ssh_port))
+        v.enabled = self._ask_yes(self.t("remote_console.2"), v.enabled)
+        if v.enabled:
+            current = v.ssh_user or os.environ.get("SUDO_USER") or getpass.getuser()
+            while True:
+                answer = self.ask(self.t("remote_console.user", current=current)).strip() or current
+                if SSH_USER_RE.fullmatch(answer):
+                    v.ssh_user = answer
+                    break
+                self.say(self.t("remote_console.user_bad", user=answer))
+            v.ssh_port = self._ask_int(self.t("remote_console.port"), v.ssh_port, 1, 65535)
+            if not any(Path(d, "sshd").exists() for d in ("/usr/sbin", "/usr/bin", "/sbin")):
+                self.say(self.t("remote_console.no_sshd"))
+        if self._save_accounts(original, cfg, live=False) and v.enabled:
+            self.say(self.t("remote_console.done"))
 
     def alerts(self) -> None:
         """Alertes sur le téléphone (ntfy) : adresse, langue, message « Station en service », envoi d'un essai.
@@ -3029,9 +3060,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--web", action="store_true",
                     help="console dans le navigateur (127.0.0.1 seulement, adresse à usage unique ; autre PC : tunnel SSH)")
     ap.add_argument("--port", type=int, default=8765, help="avec --web : port local (8765 par défaut)")
+    ap.add_argument("--raccourci", action="store_true",
+                    help="avec --web : lancé par le raccourci « Console de la station » d'un PC (port fixe, sans navigateur)")
     args = ap.parse_args(argv)
     if args.web:
         from .console_web.server import run
+        if args.raccourci:
+            return run(args.config, args.port, fixed_port=True)
         return run(args.config, args.port)
     if args.diagnostic:
         checks = run_all(path=args.config)

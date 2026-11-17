@@ -320,6 +320,12 @@ quand = "En la puesta en servicio, tras un cambio de dirección del PC, o para a
 modifie = "La configuración de la estación (<code>station.toml</code>), con derechos de administrador; se conserva la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia a petición para aplicar el cambio."
 admin = true
 
+[menus.remote_console]
+role = "Ofrece a los operadores, en la página de control, un <strong>acceso directo «Console de la station»</strong> para PC Windows: un doble clic abre una conexión SSH con un túnel, arranca la consola web en la estación y la abre en el navegador del PC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece en el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo contiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o Raspberry Pi (servidor SSH)."
+quand = "Para administrar la estación desde otro PC (Windows) sin saber SSH."
+modifie = "La configuración de la estación (<code>station.toml</code>, sección <code>[remote_console]</code>), con derechos de administrador; se guarda la versión anterior. La estación se reinicia si lo pides para aplicar el cambio."
+admin = true
+
 [menus.local_operator]
 role = "Ajusta lo que hace la estación cuando alguien <strong>emite con el micrófono del transceptor</strong>, delante de él. <strong>Estación compartida</strong> (por defecto): esa emisión solo la corta el <strong>TOT absoluto</strong> del supervisor (135 s por defecto), o tras la duración tolerada (300 s por defecto) cuando la presencia del operador está probada (tocó el transceptor justo antes). Si no, toda emisión local se corta en el acto. La emisión remota queda bloqueada durante una emisión local y 2 minutos después."
 quand = "En la puesta en servicio, si un operador usa el transceptor en el lugar, o si la estación pasa a modo seguro tras emisiones con el micrófono del transceptor."

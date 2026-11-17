@@ -320,6 +320,12 @@ quand = "Bei der Inbetriebnahme, nach geänderter PC-Adresse oder um die Station
 modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
 admin = true
 
+[menus.remote_console]
+role = "Bietet Operatoren auf der Bedienseite eine <strong>Verknüpfung „Console de la station“</strong> für Windows-PCs: Ein Doppelklick öffnet eine SSH-Verbindung mit Tunnel, startet die Webkonsole auf der Station und öffnet sie im Browser des PCs, ohne etwas einzutippen. Beim ersten Start legt sich die Verknüpfung ab, erscheint auf dem Desktop und bietet einen SSH-Schlüssel an (danach kein SSH-Passwort mehr). Sie enthält nur Adresse, SSH-Konto und Ports. Nur für Debian- oder Raspberry-Pi-Stationen (SSH-Server)."
+quand = "Um die Station von einem anderen (Windows-)PC zu verwalten, ohne SSH zu kennen."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>, Abschnitt <code>[remote_console]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
 [menus.local_operator]
 role = "Legt fest, was die Station tut, wenn jemand <strong>mit dem Mikrofon des Transceivers sendet</strong>, direkt am Gerät. <strong>Geteilte Station</strong> (Standard): eine solche Sendung wird nur durch den <strong>absoluten TOT</strong> des Supervisors abgeschaltet (standardmäßig 135 s), oder nach der geduldeten Dauer (standardmäßig 300 s), wenn die Anwesenheit des Operators nachgewiesen ist (er hat den Transceiver kurz zuvor bedient). Sonst wird jede lokale Sendung sofort abgeschaltet. Das Senden aus der Ferne bleibt während einer lokalen Sendung und 2 Minuten danach gesperrt."
 quand = "Bei der Inbetriebnahme, wenn ein Operator den Transceiver vor Ort benutzt, oder wenn die Station nach Sendungen mit dem Mikrofon des Transceivers in den sicheren Modus geht."

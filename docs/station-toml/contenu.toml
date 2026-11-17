@@ -110,6 +110,12 @@ intro = "<p>Pour AIDER un opérateur en difficulté, ou ÊTRE AIDÉ, sans VPN ni
 ou = "Menu 8.1, et ajouter « monlink » à <code>[modules] run</code>. Pseudo, invitations, liaisons et profils d'envoi se règlent dans TRX Console (rangés à part, pas dans station.toml)."
 relu = "redemarrage"
 
+[sections.remote_console]
+titre = "Raccourci de la console [remote_console]"
+intro = "<p>Pour administrer une station Debian ou Raspberry Pi depuis un PC Windows sans rien taper : la page de pilotage offre aux OPÉRATEURS (jamais aux visiteurs) un raccourci « Console de la station ». Un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC. Le raccourci ne contient que l'adresse de la station, le compte et les ports : aucun mot de passe ni clé.</p>"
+ou = "Menu 4.6 de TRX Console."
+relu = "redemarrage"
+
 [sections.spectrum]
 titre = "Spectre HF du poste [spectrum]"
 intro = "<p>Le spectre et le waterfall HF du poste dans la page et l'application, par un second port du poste (Icom) ou par Hamlib.</p>"
@@ -645,6 +651,31 @@ role = "Fichier des clés de la station pour le monitoring (signature, chiffreme
 niveau = "expert"
 securite = "Ce fichier identifie la station auprès de ses partenaires de monitoring : ne jamais le copier sur une autre station."
 depuis = "0.159.0"
+
+[reglages."remote_console.enabled"]
+role = "true : le bouton « Raccourci de la console » apparaît dans les Réglages de la page, pour les opérateurs seulement."
+niveau = "courant"
+securite = "La console web n'écoute jamais sur le réseau (127.0.0.1) : le raccourci passe par SSH, avec le mot de passe ou la clé SSH du compte."
+depuis = "0.176.0"
+
+[reglages."remote_console.ssh_user"]
+role = "Compte SSH de la station, celui avec lequel on administre (il doit pouvoir lancer <code>trx-console</code> et sudo)."
+niveau = "courant"
+bornes = "Nom de compte Linux : minuscules, chiffres, _ . - (32 caractères au plus). Obligatoire quand <code>enabled = true</code>."
+exemple = "<code>ssh_user = \"pi\"</code>"
+depuis = "0.176.0"
+
+[reglages."remote_console.ssh_port"]
+role = "Port du serveur SSH de la station."
+niveau = "expert"
+bornes = "1 à 65535."
+depuis = "0.176.0"
+
+[reglages."remote_console.web_port"]
+role = "Port de la console web, le même sur le PC et sur la station (tunnel SSH). À changer seulement s'il est déjà pris sur le PC."
+niveau = "expert"
+bornes = "1024 à 65535."
+depuis = "0.176.0"
 
 # ---------------------------------------------------------------- breizh
 

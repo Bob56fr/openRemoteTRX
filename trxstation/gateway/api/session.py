@@ -195,6 +195,8 @@ class ControlSession:
                    "freedv": self.freedv.snapshot() if self.freedv is not None else None,
                    # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
+                   # raccourci « Console de la station » (étape 230) : opérateurs seulement, aucun secret
+                   "remote_console": self._remote_console(),
                    "features": self.features()})
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
         if self.beeps is not None:
@@ -229,6 +231,7 @@ class ControlSession:
                    "voice_profiles": self.voices is not None,
                    "swr": self.swr is not None and self.ctrl.config.swr.enabled,
                    "replay": self._replay_allowed(),
+                   "remote_console": self._remote_console() is not None,
                    "breizh": self.breizh is not None,
                    "netprobe": self.netprobe is not None,
                    "friends": self.friends_call is not None and not self.listener,
@@ -237,6 +240,12 @@ class ControlSession:
                    "sdr": self.sdr_call is not None and not self.listener,
                    "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
+
+    def _remote_console(self) -> dict | None:
+        rc = getattr(self.ctrl.config, "remote_console", None)
+        if self.listener or rc is None or rc.enabled is not True or not rc.ssh_user:
+            return None
+        return {"user": rc.ssh_user, "ssh_port": rc.ssh_port, "web_port": rc.web_port}
 
     def _replay_allowed(self) -> bool:
         return not self.listener and self.ctrl.config.safety.allow_replay is True

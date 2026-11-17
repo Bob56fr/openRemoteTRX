@@ -98,7 +98,8 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "freedv",                    # FreeDV RADE V1 en réception (0.122.0+, [freedv] enabled)
                      "sdr",                       # module SDR : waterfall du SDR (0.140.0+, [sdr] enabled, module sdr)
                      "sdr_audio",                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
-                     "monitoring")                # monitoring inter-stations dans la page (0.164.0+, module monlink)
+                     "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
+                     "remote_console")            # raccourci « Console de la station » (0.176.0+, [remote_console])
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500

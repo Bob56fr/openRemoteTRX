@@ -184,6 +184,13 @@
      "quand": "Vor der Nutzung eines neuen Transceiver-Modells oder um einen Bericht für\ndie Hamlib-Entwickler vorzubereiten.",
      "role": "Qualifizierung eines Transceivers mit trx-qualif, für Experten, die mit\neinem nie getesteten, aber von Hamlib unterstützten Transceiver so weit wie\nmöglich gehen wollen. Auswahl 1: Testplan und Unstimmigkeiten von Hamlib,\nohne den Transceiver zu berühren. Auswahl 2: Erkundung ohne Senden (alles,\nwas Hamlib angibt, wird gelesen und mit den Antworten des Transceivers\nverglichen). Auswahl 3: dasselbe, nur lesend. Auswahl 4: Qualifizierung ohne\nSenden. Auswahl 5: vollständige Qualifizierung."
     },
+    "remote_console": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Die Konfiguration der Station (station.toml, Abschnitt [remote_console]),\nmit Administratorrechten; die vorherige Fassung bleibt erhalten. Die Station\nwird auf Wunsch neu gestartet, um die Änderung zu übernehmen.",
+     "quand": "Um die Station von einem anderen (Windows-)PC zu verwalten, ohne SSH zu\nkennen.",
+     "role": "Bietet Operatoren auf der Bedienseite eine Verknüpfung „Console de la\nstation“ für Windows-PCs: Ein Doppelklick öffnet eine SSH-Verbindung mit\nTunnel, startet die Webkonsole auf der Station und öffnet sie im Browser des\nPCs, ohne etwas einzutippen. Beim ersten Start legt sich die Verknüpfung ab,\nerscheint auf dem Desktop und bietet einen SSH-Schlüssel an (danach kein\nSSH-Passwort mehr). Sie enthält nur Adresse, SSH-Konto und Ports. Nur für\nDebian- oder Raspberry-Pi-Stationen (SSH-Server)."
+    },
     "report": {
      "admin": false,
      "expert": "Ohne Menü: trx-console --rapport. In der Datei station.toml des Berichts\nsind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem\nVersand, wenn du möchtest. Der Bericht enthält auch die Spuren von\nWerkzeugen, die bei einem unerwarteten Fehler angehalten wurden (Ordner\nplantages, Code ORT-9312).",
@@ -453,6 +460,13 @@
      "modifie": "Nothing in the configuration. Choices 2 and 4 change the frequency and a few\nreceive settings of the transceiver, then put them back; the exploration\nnever changes the mode. Only choice 5 transmits (dummy load, confirmation\nEMETTRE at each step). The station is stopped during the test.",
      "quand": "Before using a new transceiver model, or to prepare a report for the Hamlib\ndevelopers.",
      "role": "Transceiver qualification with trx-qualif, for an expert who wants to go as\nfar as possible with a transceiver never tested but known to Hamlib. Choice\n1: test plan and Hamlib inconsistencies, without touching the transceiver.\nChoice 2: exploration without transmission (everything Hamlib declares is\nread and compared with the transceiver's answers). Choice 3: the same,\nread-only. Choice 4: qualification without transmission. Choice 5: full\nqualification."
+    },
+    "remote_console": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The station configuration (station.toml, [remote_console] section), with\nadministrator rights; the previous version is kept. The station is restarted\non request to take the change.",
+     "quand": "To administer the station from another (Windows) PC without knowing SSH.",
+     "role": "Offers operators, in the control page, a “Console de la station” shortcut\nfor Windows PCs: a double-click opens an SSH connection with a tunnel,\nstarts the web console on the station and opens it in the PC browser,\nwithout typing anything. On first run, the shortcut files itself away, goes\non the Desktop and offers an SSH key (no SSH password afterwards). It only\nholds the address, SSH account and ports. Debian or Raspberry Pi station\nonly (SSH server)."
     },
     "report": {
      "admin": false,
@@ -724,6 +738,13 @@
      "quand": "Antes de usar un modelo de transceptor nuevo, o para preparar un informe\npara los desarrolladores de Hamlib.",
      "role": "Cualificación de un transceptor con trx-qualif, para un experto que quiere\nllegar lo más lejos posible con un transceptor nunca probado pero conocido\npor Hamlib. Opción 1: plan de pruebas e incoherencias de Hamlib, sin tocar\nel transceptor. Opción 2: exploración sin transmisión (todo lo que Hamlib\ndeclara se lee y se compara con las respuestas del transceptor). Opción 3:\nlo mismo, solo lectura. Opción 4: cualificación sin transmisión. Opción 5:\ncualificación completa."
     },
+    "remote_console": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuración de la estación (station.toml, sección [remote_console]),\ncon derechos de administrador; se guarda la versión anterior. La estación se\nreinicia si lo pides para aplicar el cambio.",
+     "quand": "Para administrar la estación desde otro PC (Windows) sin saber SSH.",
+     "role": "Ofrece a los operadores, en la página de control, un acceso directo «Console\nde la station» para PC Windows: un doble clic abre una conexión SSH con un\ntúnel, arranca la consola web en la estación y la abre en el navegador del\nPC, sin teclear nada. En el primer uso, el acceso directo se guarda, aparece\nen el Escritorio y propone una clave SSH (después, sin contraseña SSH). Solo\ncontiene la dirección, la cuenta SSH y los puertos. Solo estaciones Debian o\nRaspberry Pi (servidor SSH)."
+    },
     "report": {
      "admin": false,
      "expert": "Sin el menú: trx-console --rapport. El archivo station.toml del informe\ntiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo\nsi quieres. El informe incluye también las trazas de las herramientas\ndetenidas por un error inesperado (carpeta plantages, código ORT-9312).",
@@ -993,6 +1014,13 @@
      "modifie": "Rien dans la configuration. Les choix 2 et 4 changent la fréquence et\nquelques réglages de réception du poste, puis les remettent ; le mode n'est\njamais changé par l'exploration. Seul le choix 5 fait émettre (charge\nfictive, confirmation EMETTRE à chaque étape). La station est arrêtée\npendant l'essai.",
      "quand": "Avant d'utiliser un nouveau modèle de poste, ou pour préparer un rapport aux\ndéveloppeurs de Hamlib.",
      "role": "Qualification d'un poste avec trx-qualif, pour un expert qui veut aller le\nplus loin possible avec un poste jamais essayé mais connu de Hamlib. Choix\n1 : cahier de test et incohérences de Hamlib, sans toucher au poste. Choix\n2 : exploration sans émission (tout ce que Hamlib déclare est lu et comparé\naux réponses du poste). Choix 3 : la même chose en lecture seule. Choix 4 :\nqualification sans émission. Choix 5 : qualification complète."
+    },
+    "remote_console": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuration de la station (station.toml, section [remote_console]),\navec les droits d'administration ; l'ancienne version est gardée. La station\nest redémarrée sur ta demande pour prendre le changement.",
+     "quand": "Pour administrer la station depuis un autre PC (Windows) sans connaître SSH.",
+     "role": "Offre aux opérateurs, dans la page de pilotage, un raccourci « Console de la\nstation » pour PC Windows : un double-clic ouvre une connexion SSH avec un\ntunnel, lance la console web sur la station et l'ouvre dans le navigateur du\nPC, sans rien taper. Au premier lancement, le raccourci se range, se pose\nsur le Bureau et propose une clé SSH (plus de mot de passe SSH ensuite). Il\nne contient que l'adresse, le compte SSH et les ports. Station Debian ou\nRaspberry Pi seulement (serveur SSH)."
     },
     "report": {
      "admin": false,

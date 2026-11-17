@@ -687,5 +687,15 @@
   "tui.web": "Page web",
   "tui.web_started": "Console web lancée : elle s'ouvre dans le navigateur.",
   "tui.web_failed": "Console web impossible à lancer.",
-  "tui.web_ssh": "Connexion SSH : lance « trx-console --web » sur la station, puis le tunnel SSH indiqué (guide, partie 7)."
+  "tui.web_ssh": "Connexion SSH : lance « trx-console --web » sur la station, puis le tunnel SSH indiqué (guide, partie 7).",
+  "menu.remote_console": "Console depuis un autre PC",
+  "remote_console.1": "Console depuis un autre PC : la page de pilotage offre aux opérateurs un raccourci pour PC Windows. Un double-clic ouvre une connexion SSH avec un tunnel, lance la console web sur la station et l'ouvre dans le navigateur du PC. Le raccourci ne contient que l'adresse, le compte SSH et les ports : aucun mot de passe.",
+  "remote_console.windows": "Station Windows : pas de serveur SSH fourni. Sur ce PC, utilise le raccourci « TRX distant » (touche w : la même console dans le navigateur).",
+  "remote_console.state": "  Raccourci offert : {on} ; compte SSH : {user} ; port SSH : {port}",
+  "remote_console.2": "Offrir le raccourci « Console de la station » dans la page (opérateurs seulement)",
+  "remote_console.user": "Compte SSH de la station, celui avec lequel tu administres [{current}] : ",
+  "remote_console.user_bad": "« {user} » n'est pas un nom de compte Linux (minuscules, chiffres, _ . -).",
+  "remote_console.port": "Port du serveur SSH de la station",
+  "remote_console.no_sshd": "Attention : serveur SSH introuvable sur cette station. Installe-le : sudo apt install openssh-server",
+  "remote_console.done": "Après le redémarrage de la station : page de pilotage sur le PC, rubrique « Console de la station », « Télécharger le raccourci (Windows) », puis double-clic sur le fichier."
 }

@@ -687,5 +687,15 @@
   "tui.web": "Página web",
   "tui.web_started": "Consola web arrancada: se abre en el navegador.",
   "tui.web_failed": "No se puede arrancar la consola web.",
-  "tui.web_ssh": "Conexión SSH: ejecuta «trx-console --web» en la estación y luego el túnel SSH indicado (guía, parte 7)."
+  "tui.web_ssh": "Conexión SSH: ejecuta «trx-console --web» en la estación y luego el túnel SSH indicado (guía, parte 7).",
+  "menu.remote_console": "Consola desde otro PC",
+  "remote_console.1": "Consola desde otro PC: la página de control ofrece a los operadores un acceso directo para PC Windows. Un doble clic abre una conexión SSH con un túnel, arranca la consola web en la estación y la abre en el navegador del PC. El acceso directo solo contiene la dirección, la cuenta SSH y los puertos: ninguna contraseña.",
+  "remote_console.windows": "Estación Windows: no incluye servidor SSH. En este PC, usa el acceso directo «TRX distant» (tecla w: la misma consola en el navegador).",
+  "remote_console.state": "  Acceso directo ofrecido: {on}; cuenta SSH: {user}; puerto SSH: {port}",
+  "remote_console.2": "Ofrecer el acceso directo «Console de la station» en la página (solo operadores)",
+  "remote_console.user": "Cuenta SSH de la estación, la que usas para administrar [{current}]: ",
+  "remote_console.user_bad": "«{user}» no es un nombre de cuenta Linux (minúsculas, cifras, _ . -).",
+  "remote_console.port": "Puerto del servidor SSH de la estación",
+  "remote_console.no_sshd": "Atención: no se encuentra servidor SSH en esta estación. Instálalo: sudo apt install openssh-server",
+  "remote_console.done": "Tras reiniciar la estación: página de control en el PC, sección «Console de la station», «Télécharger le raccourci (Windows)», y doble clic en el archivo."
 }

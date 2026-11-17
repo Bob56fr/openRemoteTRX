@@ -244,13 +244,16 @@ class WebConsole:
 
     # ------------------------------------------------------------------ lancement
 
-    async def serve(self, *, open_browser: bool = True, announce: Callable[[str], None] = print) -> None:
+    async def serve(self, *, open_browser: bool = True, announce: Callable[[str], None] = print,
+                    fixed_port: bool = False) -> None:
+        """fixed_port (raccourci « Console de la station », étape 230) : le tunnel SSH du PC vise CE port ; un autre
+        port ne mènerait nulle part. L'adresse est aussi écrite sur une ligne `URL_MARK` lue par le lanceur."""
         from ..asyncio_noise import install_quiet_handler
         install_quiet_handler(asyncio.get_running_loop())   # Windows : page fermée brutalement = bruit, pas une panne
         runner = web.AppRunner(self.app(), access_log=None)
         await runner.setup()
         site = None
-        for port in range(self.port, self.port + 20):    # port occupé : le suivant
+        for port in range(self.port, self.port + (1 if fixed_port else 20)):    # port occupé : le suivant
             try:
                 site = web.TCPSite(runner, "127.0.0.1", port)
                 await site.start()
@@ -258,11 +261,16 @@ class WebConsole:
                 break
             except OSError:
                 site = None
+        if site is None and fixed_port:
+            announce(PORT_TAKEN.format(port=self.port))
+            return
         if site is None:
             announce("Aucun port libre entre {} et {} : console web non lancée.".format(self.port, self.port + 19))
             return
         url = f"http://127.0.0.1:{self.port}/?t={self.token}"
         announce(UI_START.format(url=url, port=self.port))
+        if fixed_port:
+            announce(f"{URL_MARK} {url}")
         if open_browser and not os.environ.get("SSH_CONNECTION"):
             try:
                 webbrowser.open(url)
@@ -293,9 +301,14 @@ EXPIRED_PAGE = ("<!doctype html><meta charset=utf-8><title>TRX Console</title>"
                 "<code>trx-console --web</code> sur la station et ouvrir la nouvelle adresse.</p>")
 
 
-def run(config: Path, port: int = DEFAULT_PORT) -> int:
+URL_MARK = "TRX-CONSOLE-URL"
+PORT_TAKEN = ("\nLa console web est déjà ouverte sur cette station (port {port} pris) : ferme l'autre fenêtre « Console "
+              "de la station », ou attends 30 minutes qu'elle s'arrête seule.\n")
+
+
+def run(config: Path, port: int = DEFAULT_PORT, *, fixed_port: bool = False) -> int:
     try:
-        asyncio.run(WebConsole(config, port=port).serve())
+        asyncio.run(WebConsole(config, port=port).serve(fixed_port=fixed_port))
     except KeyboardInterrupt:
         pass
     return 0

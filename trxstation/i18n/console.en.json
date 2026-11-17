@@ -687,5 +687,15 @@
   "tui.web": "Web page",
   "tui.web_started": "Web console started: it opens in the browser.",
   "tui.web_failed": "Cannot start the web console.",
-  "tui.web_ssh": "SSH connection: run \"trx-console --web\" on the station, then the SSH tunnel it shows (guide, part 7)."
+  "tui.web_ssh": "SSH connection: run \"trx-console --web\" on the station, then the SSH tunnel it shows (guide, part 7).",
+  "menu.remote_console": "Console from another PC",
+  "remote_console.1": "Console from another PC: the control page offers operators a shortcut for Windows PCs. A double-click opens an SSH connection with a tunnel, starts the web console on the station and opens it in the PC's browser. The shortcut only holds the address, SSH account and ports: no password.",
+  "remote_console.windows": "Windows station: no SSH server provided. On this PC, use the “TRX distant” shortcut (key w: the same console in the browser).",
+  "remote_console.state": "  Shortcut offered: {on}; SSH account: {user}; SSH port: {port}",
+  "remote_console.2": "Offer the “Console de la station” shortcut in the page (operators only)",
+  "remote_console.user": "Station SSH account, the one you administer with [{current}]: ",
+  "remote_console.user_bad": "“{user}” is not a Linux account name (lowercase, digits, _ . -).",
+  "remote_console.port": "Station SSH server port",
+  "remote_console.no_sshd": "Warning: no SSH server found on this station. Install it: sudo apt install openssh-server",
+  "remote_console.done": "Once the station has restarted: control page on the PC, “Console de la station” section, “Télécharger le raccourci (Windows)”, then double-click the file."
 }
