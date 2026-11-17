@@ -196,7 +196,7 @@ class MonitorLink:
 
 @dataclass
 class RemoteConsole:
-    """TRX Console sur le réseau (étape 232, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
+    """TRX Console sur le réseau (étape 233, décisions de l'utilisateur du 2026-11-17) : la console web servie en HTTPS
     sur le réseau local ou le VPN, connexion avec un compte OPÉRATEUR marqué `admin = true`, session fermée après
     `idle_min` minutes sans action. Programme à part de la passerelle, sous le compte Linux `account` (jamais root) :
     le mot de passe sudo reste demandé dans le terminal, une fois par session. Réglé par le menu 4.6.

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""TRX Console sur le réseau (étape 232) : [remote_console] et `admin` des comptes, connexion d'un opérateur
+"""TRX Console sur le réseau (étape 233) : [remote_console] et `admin` des comptes, connexion d'un opérateur
 ADMINISTRATEUR seulement, une session à la fois, fermée après le délai sans action, blocage après 5 échecs, adresses
 publiques refusées, alerte à chaque connexion, lien de la page pour les administrateurs seulement, menu 4.6, service."""
 from __future__ import annotations

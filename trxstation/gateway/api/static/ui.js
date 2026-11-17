@@ -3528,7 +3528,7 @@
     // ---- monitoring inter-stations (monitoring.js, docs/cdc-monitoring.md § 17, fonction « monitoring », OPÉRATEURS) :
     // aider un opérateur en difficulté ou être aidé ; mêmes actions que le menu 6.5 de TRX Console. Le module n'agit
     // jamais sur le poste ; la station qui aide ne peut que lire et DEMANDER. Fenêtres : celles de la rubrique « Amis ».
-    // TRX Console sur le réseau (étape 232) : lien pour les opérateurs ADMINISTRATEURS (hello.remote_console)
+    // TRX Console sur le réseau (étape 233) : lien pour les opérateurs ADMINISTRATEURS (hello.remote_console)
     function rcRender() {
       const rc = client.connected && !client.isListener() && client.hello ? client.hello.remote_console : null;
       const port = rc && Number.isInteger(rc.port) && rc.port >= 1024 && rc.port <= 65535 ? rc.port : null;

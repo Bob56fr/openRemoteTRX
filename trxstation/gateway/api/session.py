@@ -195,7 +195,7 @@ class ControlSession:
                    "freedv": self.freedv.snapshot() if self.freedv is not None else None,
                    # rediffusion d'un enregistrement (application) : accordée sur la station, durée bornée au TOT - 5 s
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
-                   # TRX Console sur le réseau (étape 232) : lien pour les opérateurs administrateurs seulement
+                   # TRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
                    "features": self.features()})
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)

@@ -116,7 +116,7 @@ class ManagedBackend:
         self._commands = commands or {}
         self._port_open = port_open or self._rigctld_answers
         self.children = {"rigctld": _Child("rigctld"), "gateway": _Child("gateway")}
-        # TRX Console sur le réseau (étape 232, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
+        # TRX Console sur le réseau (étape 233, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
         # service systemd à part). Indépendante du mode sûr : c'est justement par elle qu'on dépanne.
         if getattr(getattr(cfg, "remote_console", None), "enabled", False) is True:
             self.children["console_web"] = _Child("console_web")

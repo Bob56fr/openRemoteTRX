@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""Serveur de la console web : `trx-console --web` (cette machine) ou `trx-console --reseau` (réseau, étape 232).
+"""Serveur de la console web : `trx-console --web` (cette machine) ou `trx-console --reseau` (réseau, étape 233).
 
 Sécurité (cahier § 2 et § 5 ter, décisions de l'utilisateur du 2026-11-17) :
   * mode local : 127.0.0.1 seulement, jeton à usage unique dans l'adresse ouverte, échangé contre un cookie de

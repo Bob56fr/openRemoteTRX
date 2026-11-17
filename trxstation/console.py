@@ -172,7 +172,7 @@ def windows_pythonw() -> str:
 
 
 def console_url(host: str, port: int) -> str:
-    """Adresse de TRX Console sur le réseau (étape 232)."""
+    """Adresse de TRX Console sur le réseau (étape 233)."""
     return "https://" + (f"[{host}]" if ":" in host else host) + f":{port}/"
 
 
@@ -652,7 +652,7 @@ class Console:
         self._save_accounts(original, cfg, live=False)
 
     def remote_console(self) -> None:
-        """TRX Console sur le réseau (étape 232) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du
+        """TRX Console sur le réseau (étape 233) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du
         service (Debian). La console tourne sous ce compte, jamais root : sudo reste demandé dans le terminal."""
         from .config import SSH_USER_RE
         loaded = self._load_for_edit()

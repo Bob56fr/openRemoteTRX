@@ -62,11 +62,11 @@ terminal : sudo, nano, essai du poste, tableau de bord.
    par téléphone »). Lot W2 fusionné dans W1.
 4. Rendu : maquette retouchée (5 colonnes, bulle d'aide au survol, panneau du bas sur téléphone) puis validée.
 
-## 5 ter. TRX Console sur le réseau (étape 232)
+## 5 ter. TRX Console sur le réseau (étape 233)
 
 Décisions de l'utilisateur (2026-11-17), le raccourci des étapes 230-231 étant « beaucoup trop compliqué en pratique » : une page HTTPS servie en permanence sur le réseau local ou le VPN (port 8444, certificat de la station), connexion avec un compte OPÉRATEUR marqué `admin = true` (choix 1), session fermée après 30 min sans action ; le mot de passe sudo reste demandé dans le terminal, une fois par session (choix 2) ; raccourci retiré (choix 3), menu 4.6 repris. Garde-fous : adresses privées seulement, 5 échecs = 15 min de blocage par adresse, alerte ntfy à chaque connexion (ORT-4022) et à chaque blocage (ORT-4023), une seule session (une nouvelle connexion ferme l'ancienne et son terminal), 8 h au plus. Service : `trx-console-web@<compte>` (Debian, jamais root, groupe trx), enfant du superviseur sous Windows ; relancé 30 s après une installation (elle peut tourner dans son propre terminal).
 
-## 5 bis. Raccourci « Console de la station » (étapes 230-231, ABANDONNÉ à l'étape 232)
+## 5 bis. Raccourci « Console de la station » (étapes 230-231, ABANDONNÉ à l'étape 233)
 
 Demande de l'utilisateur (2026-11-17) : le tunnel SSH à la main n'est pas ergonomique pour un non-informaticien.
 Décision : la page de pilotage offre aux OPÉRATEURS un lanceur Windows (`console-station.cmd`, modèle servi par la
