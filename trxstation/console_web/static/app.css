@@ -139,6 +139,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:540px){.flow header{flex-wrap:wrap}.flow header h2{flex-basis:100%;order:-1}}
 .flow .fkey{font:600 13px var(--f-mono);color:var(--accent)}
 .flow-log{overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px;min-height:0}
+/* jamais comprimé par la colonne : un cadre de commande (overflow:hidden) coupait le bas de sa sortie */
+.flow-log>*{flex-shrink:0}
 .flow .msg{white-space:pre-wrap;overflow-wrap:anywhere}
 .flow .msg.bad{padding:8px 12px 8px 34px;border-radius:10px;position:relative;font-weight:600;color:#e5484d;border:1px solid color-mix(in srgb,#e5484d 55%,transparent);background:color-mix(in srgb,#e5484d 12%,transparent)}
 .flow .msg.bad::before{content:"✖";position:absolute;left:12px;top:8px}
