@@ -173,11 +173,15 @@ def test_windows_journal_shows_the_log_files(tmp_path, monkeypatch):
 
 def test_sudo_only_on_debian(monkeypatch):
     seen = []
-    monkeypatch.setattr(con_mod.subprocess, "call", lambda cmd: seen.append(cmd) or 0)
+    envs = []
+    monkeypatch.setattr(con_mod.subprocess, "call", lambda cmd, env=None: seen.append(cmd) or envs.append(env) or 0)
     runner = Runner()
     runner.is_root = False
     runner.run(["outil"], admin=True)
     assert (seen[-1][0] == "sudo") == (con_mod.os.name == "posix")
+    assert envs[-1]["TRX_LANG"] == runner.t.lang                       # outils dans la langue de la console (L3)
+    if con_mod.os.name == "posix":
+        assert seen[-1][:3] == ["sudo", "env", f"TRX_LANG={runner.t.lang}"]   # sudo vide l'environnement
 
 
 def test_report_contains_the_crash_files(tmp_path, monkeypatch):

@@ -37,7 +37,7 @@ from pathlib import Path
 from . import __version__
 from .diagnostics import CONFIG_PATH, UNITS, exit_code, format_checks, run_all
 from .answers import typed, yes_no
-from .i18n import LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
+from .i18n import ENV_LANG, LANGS, NAMES, Translator, load_lang, prefs_path, save_lang
 from .i18n import LEVELS, load_level, save_level
 from .paths import default_state_dir
 from . import profiles as prof
@@ -304,10 +304,11 @@ class Runner:
         self.is_root = hasattr(os, "geteuid") and os.geteuid() == 0
 
     def run(self, cmd: list[str], *, admin: bool = False) -> int:
+        lang = f"{ENV_LANG}={self.t.lang}"                 # outils dans la langue de la console (lot L3, étape 240)
         if admin and os.name == "posix" and not self.is_root:     # Windows : pas de sudo (désactivé ou autre fenêtre)
-            cmd = ["sudo", *cmd]
+            cmd = ["sudo", "env", lang, *cmd]                      # sudo vide l'environnement : `env` le redonne
         try:
-            return subprocess.call(cmd)
+            return subprocess.call(cmd, env={**os.environ, ENV_LANG: self.t.lang})
         except FileNotFoundError:
             print(self.t("runner.not_found", cmd=cmd[0]))
             return 127

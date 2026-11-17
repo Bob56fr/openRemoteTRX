@@ -232,9 +232,11 @@ class WebRunner(Runner):
             if password is None:
                 self.channel.send({"type": "out", "data": self.t("web.sudo_refused") + "\n"})
                 return 1
-            cmd, first = [*self.sudo, *cmd], (password + "\n").encode()
+            lang = [f"TRX_LANG={self.t.lang}"] if "env" in self.sudo else []    # langue des outils (lot L3)
+            cmd, first = [*self.sudo, *lang, *cmd], (password + "\n").encode()
         self.channel.send({"type": "run", "cmd": shown, "admin": elevated})
-        env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8", "TRX_CONSOLE_FORMS": "1"}
+        env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8", "TRX_CONSOLE_FORMS": "1",
+               "TRX_LANG": self.t.lang}
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         try:
             child = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

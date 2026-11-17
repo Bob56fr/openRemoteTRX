@@ -237,3 +237,4 @@ body.dash-open{overflow:hidden}
 .dash-log h3{margin:0 0 8px;font:600 .8rem/1.2 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .dash-log ol{list-style:none;margin:0;padding:0;max-height:32vh;overflow:auto;font:13px/1.5 var(--f-mono)}
 .dash-log li.hot{color:#e5484d;font-weight:700}
+.dash-log li.good{color:#16a34a;font-weight:600}

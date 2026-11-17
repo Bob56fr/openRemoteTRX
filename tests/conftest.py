@@ -18,6 +18,9 @@ def _no_real_installation(monkeypatch, tmp_path_factory):
     prefs = tmp_path_factory.mktemp("prefs") / "console.json"
     monkeypatch.setattr(console, "prefs_path", lambda home=None, env=None: prefs)
     monkeypatch.setattr(server, "prefs_path", lambda home=None, env=None: prefs)
+    # Outils traduits (lot L3, étape 240) : en français dans les tests, quelle que soit la langue de la machine ; un
+    # test d'une autre langue pose TRX_LANG lui-même.
+    monkeypatch.setenv("TRX_LANG", "fr")
 
 
 @pytest.fixture(autouse=True)

@@ -11,6 +11,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .i18n import tool_translator
+
+
+def _t(key: str, **fields) -> str:
+    """Texte de l'assistant dans la langue de l'outil (domaine « setup », lu à chaque appel)."""
+    return tool_translator("setup")(key, **fields)
+
 
 @dataclass(frozen=True)
 class RigHint:
@@ -19,9 +26,11 @@ class RigHint:
     ptt_type: str                     # méthode PTT proposée
     usb_voice_question: str           # question : la voix (BLU, FM...) part-elle aussi par l'USB ?
     checklist: tuple[str, ...]        # menus du poste à régler avant d'aller plus loin
+    texts: str = ""                   # préfixe des traductions (`hint.<texts>.check.N`, `.usb_voice`) ; "" = français ci-dessus
 
 
-# Noms et chemins des menus : tableau des menus du manuel CAT du FTDX10 (Yaesu 2308-F, « Table 2 (MENU Chart) »).
+# Textes en français (référence, tests) ; à l'écran : `checklist_lines` / `usb_voice_question` (langue de l'outil,
+# catalogue trxstation/i18n/setup.<langue>.json, clés hint.yaesu_ftdx.*). Noms et chemins des menus : tableau des menus du manuel CAT du FTDX10 (Yaesu 2308-F, « Table 2 (MENU Chart) »).
 _YAESU_CHECKLIST = (
     "OPERATION SETTING > GENERAL : CAT RATE = 38400 bps (même valeur que le débit ci-dessous)",
     "OPERATION SETTING > GENERAL : CAT TIME OUT TIMER = 1000 msec ; CAT RTS = ENABLE (contrôle de flux RTS/CTS de Hamlib)",
@@ -35,7 +44,7 @@ _YAESU_CHECKLIST = (
 )
 
 HINTS: dict[int, RigHint] = {
-    model: RigHint(name=name, speed=38400, ptt_type="RIG", checklist=_YAESU_CHECKLIST,
+    model: RigHint(name=name, speed=38400, ptt_type="RIG", checklist=_YAESU_CHECKLIST, texts="yaesu_ftdx",
                    usb_voice_question="SSB MOD SOURCE (et AM, FM) = REAR et REAR SELECT = USB sont réglés sur le poste")
     for model, name in ((1042, "Yaesu FTDX10"), (1040, "Yaesu FTDX101D"), (1044, "Yaesu FTDX101MP"))
 }
@@ -49,6 +58,17 @@ def hint_for(model: int) -> RigHint | None:
     return HINTS.get(model)
 
 
+def checklist_lines(hint: RigHint) -> list[str]:
+    """Menus du poste à régler, dans la langue de l'outil (français si le poste n'a pas de traductions)."""
+    if not hint.texts:
+        return list(hint.checklist)
+    return [_t(f"hint.{hint.texts}.check.{i}") for i in range(1, len(hint.checklist) + 1)]
+
+
+def usb_voice_question(hint: RigHint) -> str:
+    return _t(f"hint.{hint.texts}.usb_voice") if hint.texts else hint.usb_voice_question
+
+
 def port_role(port: str) -> str:
     """« enhanced » (CAT), « standard » (PTT/CW, pas de CAT) ou « » (inconnu : Windows, autre interface)."""
     match = _CP2105.search(port)
@@ -60,12 +80,11 @@ def port_role(port: str) -> str:
 def port_label(port: str) -> str:
     role = port_role(port)
     if role == "enhanced":
-        return f"{port}   <- Enhanced COM Port : CAT"
+        return _t("hint.port_enhanced", port=port)
     if role == "standard":
-        return f"{port}   (Standard COM Port : PTT/CW, pas le CAT)"
+        return _t("hint.port_standard", port=port)
     return port
 
 
 def windows_port_advice() -> str:
-    return ("Sous Windows : Gestionnaire de périphériques > Ports (COM et LPT) : prendre le port nommé "
-            "« Silicon Labs Dual CP2105 USB to UART Bridge: Enhanced COM Port » pour le CAT.")
+    return _t("hint.windows_port")

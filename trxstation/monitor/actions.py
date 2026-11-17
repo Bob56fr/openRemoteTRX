@@ -8,11 +8,13 @@ fonctionne même si la passerelle est gelée.
 from __future__ import annotations
 
 from ..config import Config
+from ..i18n import Translator
 from ..supervisor.rigctl import RigctlProbe
+from .model import translator
 
 
-def stop_tx(cfg: Config) -> tuple[bool, str]:
+def stop_tx(cfg: Config, t: Translator | None = None) -> tuple[bool, str]:
     probe = RigctlProbe(cfg.network.rigctld_host, cfg.network.rigctld_port, timeout=1.0)
-    if probe.force_rx():
-        return True, "PTT coupé : ordre « T 0 » envoyé, le poste n'est pas en émission"
-    return False, "ÉCHEC : le poste n'est pas confirmé en réception (rigctld injoignable ou poste bloqué)"
+    ok = probe.force_rx()
+    t = translator(t)
+    return (True, t("stop.ok")) if ok else (False, t("stop.failed"))

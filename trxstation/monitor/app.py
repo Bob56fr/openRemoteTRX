@@ -15,7 +15,8 @@ from textual.binding import Binding
 from textual.containers import Container
 from textual.widgets import Footer, Header, RichLog, Static
 
-from .model import EventLog, Panel, Snapshot, build_panels
+from ..i18n import Translator
+from .model import EventLog, Panel, Snapshot, build_panels, translator
 from .source import StatusSource
 
 STYLES = {"ok": "green", "warn": "yellow", "bad": "bold red", "dim": "dim", "info": ""}
@@ -40,13 +41,17 @@ class MonitorApp(App):
     #flash { height: 1; padding: 0 1; }
     #log { height: 1fr; border: round $secondary; }
     """
-    BINDINGS = [Binding("s", "stop_tx", "STOP TX", priority=True), Binding("n", "net_detail", "Réseau (détail)"),
-                Binding("q", "quit", "Quitter")]
+    BINDINGS: list[Binding] = []          # posées dans __init__, dans la langue de l'outil
 
-    def __init__(self, source: StatusSource, stop_tx: Callable[[], tuple[bool, str]], interval_s: float = 0.25):
+    def __init__(self, source: StatusSource, stop_tx: Callable[[], tuple[bool, str]], interval_s: float = 0.25,
+                 t: Translator | None = None):
         super().__init__()
+        self.t = translator(t)
+        self._bindings.bind("s", "stop_tx", self.t("app.key_stop"), priority=True)
+        self._bindings.bind("n", "net_detail", self.t("app.key_net"))
+        self._bindings.bind("q", "quit", self.t("app.key_quit"))
         self.source, self.stop_tx, self.interval_s = source, stop_tx, interval_s
-        self.events = EventLog()
+        self.events = EventLog(t=self.t)
         self.net_detail = False
 
     def compose(self) -> ComposeResult:
@@ -64,7 +69,7 @@ class MonitorApp(App):
 
     def refresh_view(self) -> None:
         snapshot: Snapshot = self.source.poll()
-        for panel in build_panels(snapshot, self.net_detail):
+        for panel in build_panels(snapshot, self.net_detail, self.t):
             widget = self.query_one(f"#{panel.key}", Static)
             widget.border_title = panel.title
             widget.update(render_markup(panel))
@@ -79,9 +84,9 @@ class MonitorApp(App):
     async def action_stop_tx(self) -> None:
         ok, message = await asyncio.to_thread(self.stop_tx)   # I/O réseau : hors de la boucle d'affichage
         self.query_one("#flash", Static).update(f"[{'green' if ok else 'bold red'}]{escape(message)}[/]")
-        self.query_one("#log", RichLog).write(f"STOP TX : {message}")
+        self.query_one("#log", RichLog).write(self.t("app.stop_line", message=message))
 
 
-def run_tui(source: StatusSource, stop_tx: Callable[[], tuple[bool, str]]) -> int:
-    MonitorApp(source, stop_tx).run()
+def run_tui(source: StatusSource, stop_tx: Callable[[], tuple[bool, str]], t: Translator | None = None) -> int:
+    MonitorApp(source, stop_tx, t=t).run()
     return 0

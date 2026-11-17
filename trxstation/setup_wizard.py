@@ -33,13 +33,26 @@ from .config import DEFAULT_BANDS_R1, DUMMY_MODEL, ClientAuth, Config, Rig
 from .fsperm import protect
 from .gateway.cat.capabilities import ALL_DATA_MODES, CapabilitiesError, _run_dump_caps, parse_dump_caps
 from .hamlib import find_tool
+from .i18n import tool_translator
 from .migrate import is_desktop
 from .passwords import generate_password, hash_password, password_problem
 from .ports import list_serial_ports
-from .rig_hints import RigHint, hint_for, port_label, port_role, windows_port_advice
+from .rig_hints import RigHint, checklist_lines, hint_for, port_label, port_role, usb_voice_question, windows_port_advice
 from .spectrum.probe import USB_SEND_WARNING, CheckFailed, CivPort, check, detect_address, open_serial
 
 TEST_TCP_PORT = 4533  # port temporaire, distinct de celui du service (4532)
+
+
+def _t(key: str, **fields) -> str:
+    """Texte montré à l'opérateur, dans la langue de l'outil (lot L3 : `TRX_LANG` posée par TRX Console, sinon
+    menu 0, sinon le système) ; catalogues `trxstation/i18n/setup.<langue>.json`, le français en référence.
+    Lu À CHAQUE APPEL (jamais au chargement du module : les tests changent la langue après l'import)."""
+    return tool_translator("setup")(key, **fields)
+
+
+def _typed_yes(answer: str | None) -> bool:
+    """Mot de confirmation : celui de la langue choisie OU le mot français OUI (toujours accepté, comme TRX Console)."""
+    return any(typed(answer, word) for word in {_t("word.yes"), "OUI"})
 
 
 class SetupError(RuntimeError):
@@ -64,8 +77,7 @@ def parse_rig_list(text: str) -> list[tuple[int, str, str]]:
 def list_rig_models(hamlib_dir: str = "") -> list[tuple[int, str, str]]:
     rigctl = find_tool("rigctl", hamlib_dir)
     if rigctl is None:
-        raise SetupError("`rigctl` introuvable : installe Hamlib (Linux : sudo apt install libhamlib-utils ; "
-                         "Windows : décompresse hamlib-w64 et renseigne son dossier).")
+        raise SetupError(_t("hamlib.rigctl_missing_windows"))
     out = subprocess.run([rigctl, "-l"], capture_output=True, text=True, timeout=30).stdout
     return parse_rig_list(out)
 
@@ -75,14 +87,13 @@ def ensure_hamlib() -> str:
     if find_tool("rigctl"):
         return ""
     if sys.platform != "win32":
-        raise SetupError("`rigctl` introuvable : installe Hamlib (sudo apt install libhamlib-utils).")
-    print("\nHamlib est introuvable. Télécharge hamlib-w64-*.zip (hamlib.github.io), décompresse-le, "
-          "puis indique son dossier.")
+        raise SetupError(_t("hamlib.rigctl_missing_linux"))
+    print(_t("hamlib.download"))
     while True:
-        folder = ask("Dossier de Hamlib (celui qui contient bin\\rigctl.exe)")
+        folder = ask(_t("hamlib.folder"))
         if find_tool("rigctl", folder):
             return folder
-        print("rigctl.exe introuvable dans ce dossier, réessaie.")
+        print(_t("hamlib.not_in_folder"))
 
 
 # --------------------------------------------------------------------------- test de liaison
@@ -115,7 +126,7 @@ def _temp_rigctld(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> Iter
     """rigctld temporaire (127.0.0.1:TEST_TCP_PORT) ; donne la connexion, arrête rigctld en sortant."""
     rigctld = find_tool("rigctld", hamlib_dir)
     if rigctld is None:
-        raise SetupError("`rigctld` introuvable : installe Hamlib ou renseigne son dossier.")
+        raise SetupError(_t("link.rigctld_missing"))
     command = [rigctld, *rig.rigctld_args("127.0.0.1", TEST_TCP_PORT)[1:]]
     proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     sock = None
@@ -123,16 +134,16 @@ def _temp_rigctld(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> Iter
         deadline = time.monotonic() + timeout
         while sock is None:
             if proc.poll() is not None:
-                raise SetupError(f"rigctld s'est arrêté : {(proc.stderr.read() or '').strip()[:300]}")
+                raise SetupError(_t("link.rigctld_stopped", error=(proc.stderr.read() or '').strip()[:300]))
             try:
                 sock = socket.create_connection(("127.0.0.1", TEST_TCP_PORT), 0.5)
             except OSError:
                 if time.monotonic() > deadline:
-                    raise SetupError("rigctld ne répond pas (délai dépassé).")
+                    raise SetupError(_t("link.timeout"))
                 time.sleep(0.3)
         yield sock
     except (OSError, ValueError) as exc:
-        raise SetupError(f"échec de la communication : {exc}") from exc
+        raise SetupError(_t("link.comm_failed", error=exc)) from exc
     finally:
         if sock:
             sock.close()
@@ -150,8 +161,7 @@ def test_link(rig: Rig, timeout: float = 10.0, hamlib_dir: str = "") -> dict[str
         for key, cmd in (("freq", "f"), ("mode", "m"), ("ptt", "t")):
             code, values = _query(sock, cmd)
             if code != 0:
-                raise SetupError(f"commande '{cmd}' en erreur (RPRT {code}) : "
-                                 "vérifie modèle, port et débit.")
+                raise SetupError(_t("link.command_failed", cmd=cmd, code=code))
             result[key] = next(iter(values.values()), "")
         if result["ptt"] == "1":  # fail-safe : on ne peut que couper
             _query(sock, "T 0")
@@ -176,11 +186,11 @@ def check_spectrum_port(cfg: Config, port: str, address: int | None = None, baud
     avant et après l'ouverture (actif = coupure et refus), poste qui répond, spectre disponible, même fréquence que
     sur le port CAT. Renvoie l'adresse CI-V vérifiée ; SetupError sinon. N'émet jamais."""
     if not cfgmod.is_icom_model(cfg.rig.model):
-        raise SetupError("spectre par le second port : postes Icom seulement (modèle Hamlib 3xxx).")
+        raise SetupError(_t("spectrum.icom_only"))
     if port.strip().lower() in {p.strip().lower() for p in (cfg.rig.port, cfg.rig.ptt_port) if p}:
-        raise SetupError(f"{port} est le port CAT ou PTT du poste : il faut le SECOND port, réglé en CI-V.")
+        raise SetupError(_t("spectrum.same_port", port=port))
     if link is None and _station_running(cfg):
-        raise SetupError("la station tourne (rigctld tient le port CAT) : arrête-la d'abord (TRX Console).")
+        raise SetupError(_t("spectrum.station_running"))
     with (link() if link is not None else _temp_rigctld(cfg.rig, hamlib_dir=cfg.tools.hamlib_dir)) as sock:
         def ptt() -> str:
             code, values = _query(sock, "t")
@@ -195,16 +205,14 @@ def check_spectrum_port(cfg: Config, port: str, address: int | None = None, baud
 
         def refuse_keyed(when: str) -> None:
             _query(sock, "T 0")                    # on ne peut que couper
-            raise SetupError(f"DANGER : le poste est passé en ÉMISSION {when} de {port}. Un réglage « USB SEND » ou "
-                             "« USB Keying » du poste utilise ce port : corrige-le avant toute nouvelle tentative. "
-                             "Coupure envoyée ; spectre NON activé.")
+            raise SetupError(_t("spectrum.keyed", when=_t(when), port=port))
 
         if ptt() != "0":
-            raise SetupError("le poste n'est pas en réception confirmée (PTT actif ou illisible) : essai annulé.")
+            raise SetupError(_t("spectrum.not_rx"))
         try:
             ser = opener(port, baud)
         except ImportError as exc:
-            raise SetupError("module pyserial absent : pip install pyserial") from exc
+            raise SetupError(_t("spectrum.no_pyserial")) from exc
         except (OSError, ValueError) as exc:
             raise SetupError(CheckFailed("open_failed", str(exc)).message(port)) from exc
         try:
@@ -212,14 +220,14 @@ def check_spectrum_port(cfg: Config, port: str, address: int | None = None, baud
                 time.sleep(settle_s)
                 if ptt() != "0":
                     ser.close()
-                    refuse_keyed("à l'ouverture")
+                    refuse_keyed("spectrum.when_open")
             civ = CivPort(ser, address or 0)
             if address is None:
                 address = detect_address(civ)
                 if address is None:
                     raise SetupError(CheckFailed("no_answer").message(port))
                 civ.address = address
-                say(f"  Poste trouvé sur {port} à l'adresse CI-V {address:02X}h.")
+                say(_t("spectrum.found", port=port, address=f"{address:02X}"))
             try:
                 check(civ, freq)
             except CheckFailed as exc:
@@ -228,7 +236,7 @@ def check_spectrum_port(cfg: Config, port: str, address: int | None = None, baud
             ser.close()
         time.sleep(settle_s)
         if ptt() != "0":
-            refuse_keyed("à la fermeture")
+            refuse_keyed("spectrum.when_close")
     return address
 
 
@@ -246,30 +254,29 @@ def ask_spectrum(cfg: Config) -> None:
     if cfg.rig.model == DUMMY_MODEL or not cfgmod.is_icom_model(cfg.rig.model):
         return
     current = cfg.spectrum.enabled and cfg.spectrum.source == "civ_port"
-    print("\nSpectre HF (waterfall du poste) : certains Icom (IC-7300MK2...) ont un SECOND port série USB, "
-          "réglable en CI-V, qui le transmet sans toucher au port CAT.")
-    if not ask_yes_no("Ce poste a-t-il un second port réglé en CI-V à utiliser pour le spectre", current):
+    print(_t("spectrum.intro"))
+    if not ask_yes_no(_t("spectrum.question"), current):
         if current:
             disable_spectrum(cfg)
-            print("Spectre désactivé : un seul port, sans waterfall HF.")
+            print(_t("spectrum.disabled"))
         return
     ports = [p for p in list_serial_ports() if p.strip().lower() != cfg.rig.port.strip().lower()]
-    port = choose("Second port du poste (CI-V)", [(p, p) for p in ports], current=cfg.spectrum.port or None)
+    port = choose(_t("spectrum.port"), [(p, p) for p in ports], current=cfg.spectrum.port or None)
     print("\n" + USB_SEND_WARNING)
-    _expect(kind="word", word="OUI")
-    if not typed(ask("Tape OUI si ces réglages sont vérifiés", ""), "OUI"):
+    word = _t("word.yes")
+    _expect(kind="word", word=word)
+    if not _typed_yes(ask(_t("spectrum.type_word", word=word), "")):
         disable_spectrum(cfg)
-        print("Second port non ouvert : spectre désactivé (mode normal).")
+        print(_t("spectrum.not_opened"))
         return
     try:
         address = check_spectrum_port(cfg, port, cfgmod.parse_civ_address(cfg.spectrum.civ_address) if current else None)
     except SetupError as exc:
         disable_spectrum(cfg)
-        print(f"  PROBLÈME DE CONFIGURATION : {exc}\n  Spectre désactivé : la station fonctionnera en mode normal "
-              "(un seul port, sans waterfall HF). Corrige le réglage puis : trx-setup --spectre " + port)
+        print(_t("spectrum.problem", error=exc, port=port))
         return
     apply_spectrum(cfg, port, address)
-    print(f"  OK : spectre disponible sur {port} (adresse CI-V {address:02X}h). La station le revérifiera à chaque démarrage.")
+    print(_t("spectrum.ok", port=port, address=f"{address:02X}"))
 
 
 # --------------------------------------------------------------------------- dialogue
@@ -288,7 +295,7 @@ def ask(prompt: str, default: str | None = None) -> str:
     global _hint
     hint, _hint = (_hint or {}), None
     suffix = f" [{default}]" if default else ""
-    text = f"{prompt}{suffix} : "
+    text = f"{prompt}{suffix}{_t('ask.colon')}"
     while True:
         fields = {"kind": "text", "prompt": prompt, **hint}
         if default is not None:
@@ -303,18 +310,21 @@ def ask(prompt: str, default: str | None = None) -> str:
 
 def ask_yes_no(prompt: str, default: bool = False) -> bool:
     _expect(kind="yesno", default=default)
-    answer = ask(f"{prompt} ({'O/n' if default else 'o/N'})", "o" if default else "n")
+    shown = _t("yesno.default_yes") if default else _t("yesno.default_no")
+    answer = ask(f"{prompt} ({shown})", _t("yesno.yes_letter") if default else _t("yesno.no_letter"))
     return yes_no(answer) is True
 
 
-def choose(title: str, options: list[tuple[str, str]], manual_label: str = "Saisir à la main",
+def choose(title: str, options: list[tuple[str, str]], manual_label: str | None = None,
            current: str = "") -> str:
-    """Menu numéroté. `current` (valeur déjà réglée) est placé en tête et proposé par défaut."""
+    """Menu numéroté. `current` (valeur déjà réglée) est placé en tête et proposé par défaut.
+    `manual_label` : libellé du choix « m » (défaut : « Saisir à la main » dans la langue de l'outil)."""
+    manual_label = manual_label or _t("choose.manual")
     if current:
-        options = [(v, f"{lbl}  (réglage actuel)") for v, lbl in options if v == current] + \
+        options = [(v, _t("choose.current", label=lbl)) for v, lbl in options if v == current] + \
                   [(v, lbl) for v, lbl in options if v != current]
         if not any(v == current for v, _ in options):
-            options = [(current, f"{current}  (réglage actuel, introuvable pour l'instant)")] + options
+            options = [(current, _t("choose.current_missing", value=current))] + options
     if not formhint.enabled():                   # page : titre et liste deviennent le formulaire
         print(f"\n{title}")
         for i, (_, label) in enumerate(options, 1):
@@ -323,34 +333,34 @@ def choose(title: str, options: list[tuple[str, str]], manual_label: str = "Sais
     while True:
         _expect(kind="choice", prompt=title,
                 choices=[[str(i), label] for i, (_, label) in enumerate(options, 1)] + [["m", manual_label]])
-        answer = ask("Choix", "1" if options else "m")
+        answer = ask(_t("choose.prompt"), "1" if options else "m")
         if answer.lower() == "m":
-            return ask("Valeur")
+            return ask(_t("choose.value"))
         if answer.isdigit() and 1 <= int(answer) <= len(options):
             return options[int(answer) - 1][0]
-        print("Choix invalide.")
+        print(_t("choose.invalid"))
 
 
 def select_model(hamlib_dir: str = "") -> int:
     rigs = list_rig_models(hamlib_dir)
-    print(f"\n{len(rigs)} modèles connus de Hamlib. (« dummy » = poste factice pour tester sans matériel)")
+    print(_t("model.count", count=len(rigs)))
     while True:
-        term = ask("Marque ou modèle à chercher (ex. ic-7300, ft-991, dummy)").lower()
+        term = ask(_t("model.search")).lower()
         found = [r for r in rigs if term in f"{r[1]} {r[2]}".lower()]
         if not found:
-            print("Aucun résultat, essaie un autre terme.")
+            print(_t("model.none"))
             continue
         shown = found[:20]
         if len(found) > len(shown):
-            print(f"({len(found)} résultats, 20 premiers affichés : affine ta recherche si besoin)")
-        picked = choose("Modèles trouvés", [(str(n), f"{n:>5}  {mfg} {model}") for n, mfg, model in shown],
-                        manual_label="Nouvelle recherche")
+            print(_t("model.truncated", count=len(found)))
+        picked = choose(_t("model.found"), [(str(n), f"{n:>5}  {mfg} {model}") for n, mfg, model in shown],
+                        manual_label=_t("model.new_search"))
         if picked.isdigit() and any(int(picked) == n for n, _, _ in rigs):
             return int(picked)
 
 
 def _model_label(rigs: list[tuple[int, str, str]], model: int) -> str:
-    return next((f"{mfg} {name}" for n, mfg, name in rigs if n == model), "modèle inconnu de ce Hamlib")
+    return next((f"{mfg} {name}" for n, mfg, name in rigs if n == model), _t("model.unknown"))
 
 
 def data_modes_for_model(model: int, hamlib_dir: str = "", *, dump=_run_dump_caps) -> list[str]:
@@ -373,16 +383,15 @@ def apply_rig_hint(cfg: Config, hint: RigHint, *, data_modes: Callable[[], list[
     Fail-safe : sans réponse « oui » explicite, émission limitée aux modes données (sinon le poste modulerait avec son
     propre micro, celui de la pièce, et non avec l'audio du client)."""
     yes_no_fn = yes_no_fn or ask_yes_no
-    say(f"\n{hint.name} : réglages du poste conseillés (NON VALIDÉS sur un vrai poste, docs/postes/) :")
-    for line in hint.checklist:
+    say(_t("hint.title", name=hint.name))
+    for line in checklist_lines(hint):
         say(f"  - {line}")
-    if yes_no_fn(hint.usb_voice_question, False):
+    if yes_no_fn(usb_voice_question(hint), False):
         cfg.rig.tx_modes = []
-        say("Émission permise dans tous les modes (la voix part par l'USB).")
+        say(_t("hint.all_modes"))
     else:
         cfg.rig.tx_modes = data_modes()
-        say("Émission limitée aux modes données : " + ", ".join(cfg.rig.tx_modes)
-            + " (relancer trx-setup après avoir réglé le poste pour l'ouvrir aux autres modes).")
+        say(_t("hint.data_only", modes=", ".join(cfg.rig.tx_modes)))
 
 
 def choose_cat_port(ports: list[str], current: str, *, chooser: Callable[..., str] | None = None,
@@ -393,18 +402,17 @@ def choose_cat_port(ports: list[str], current: str, *, chooser: Callable[..., st
     if sys.platform == "win32" and ports:
         say(windows_port_advice())
     while True:
-        port = chooser("Port CAT du TRX (de préférence /dev/serial/by-id/...)",
-                       [(p, port_label(p)) for p in ordered], current=current)
+        port = chooser(_t("cat.port"), [(p, port_label(p)) for p in ordered], current=current)
         if port_role(port) != "standard":
             return port
-        say("ATTENTION : ce port est le « Standard COM Port » (PTT/CW par RTS/DTR) : le poste n'y répond pas en CAT et "
-            "ses lignes RTS/DTR peuvent le mettre en émission.")
-        if yes_no_fn("Le prendre quand même", False):
+        say(_t("cat.standard_warning"))
+        if yes_no_fn(_t("cat.take_anyway"), False):
             return port
 
 
 # Parties de l'assistant (TRX Console : une partie = un menu, étape 220). L'assistant complet les enchaîne dans cet
 # ordre ; chacune ne pose que ses questions et part de la configuration existante (Entrée = réglage gardé).
+# Textes en français pour l'aide argparse ; à l'écran, `parts.<partie>` du catalogue (langue de l'outil).
 PARTS = {
     "poste": "Poste et liaison CAT (modèle, port, débit, PTT, test de liaison)",
     "son": "Cartes son (son reçu du poste, voix vers le poste)",
@@ -419,12 +427,12 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
     """Questions de configuration. `base` : configuration existante, dont chaque réglage est repris par défaut
     (comptes, alertes, bandes, sécurité... ne sont jamais perdus en relançant l'assistant)."""
     cfg = copy.deepcopy(base) if base is not None else Config()
-    print("=== trx-setup : configuration de la station ===")
+    print(_t("wizard.title"))
     if base is not None:
-        print("Configuration existante reprise : Entrée garde le réglage actuel.")
+        print(_t("wizard.existing"))
     elif is_desktop():
         cfg.supervisor.max_reboots_per_hour = 0
-        print("PC de bureau : le superviseur ne redémarrera jamais ce PC (mode sûr en dernier recours).")
+        print(_t("wizard.desktop"))
     ask_rig(cfg, keep_offer=base is not None)
     ask_audio(cfg)
     ask_spectrum(cfg)
@@ -438,16 +446,16 @@ def interactive(base: Config | None = None, tls_dir: Path | None = None) -> Conf
 def interactive_part(part: str, base: Config, tls_dir: Path | None = None) -> Config:
     """Une seule partie de l'assistant (`PARTS`), sur une configuration existante ; le reste n'est pas touché."""
     if part not in PARTS:
-        raise SetupError(f"partie inconnue : {part} ({', '.join(PARTS)})")
+        raise SetupError(_t("part.unknown", part=part, parts=", ".join(PARTS)))
     cfg = copy.deepcopy(base)
-    print(f"=== trx-setup : {PARTS[part]} ===\nEntrée garde le réglage actuel ; rien n'est écrit si tu abandonnes.")
+    print(_t("part.title", title=_t(f"parts.{part}")))
     if part == "poste":
         ask_rig(cfg, keep_offer=True)
     elif part == "son":
         ask_audio(cfg)
     elif part == "spectre":
         if cfg.rig.model == DUMMY_MODEL or not cfgmod.is_icom_model(cfg.rig.model):
-            print("Le spectre par un second port CI-V n'existe que sur certains Icom : rien à régler pour ce poste.")
+            print(_t("part.no_spectrum"))
         ask_spectrum(cfg)
     elif part == "bandes":
         ask_bands(cfg, keep_offer=True)
@@ -464,16 +472,16 @@ def ask_rig(cfg: Config, keep_offer: bool) -> None:
     cfg.tools.hamlib_dir = ensure_hamlib() if not cfg.tools.hamlib_dir else cfg.tools.hamlib_dir
     rigs = list_rig_models(cfg.tools.hamlib_dir)
     keep_model = (keep_offer and cfg.rig.model > 0
-                  and ask_yes_no(f"Garder le poste {cfg.rig.model} ({_model_label(rigs, cfg.rig.model)})", True))
+                  and ask_yes_no(_t("rig.keep", model=cfg.rig.model, label=_model_label(rigs, cfg.rig.model)), True))
     if not keep_model:
         cfg.rig.model = select_model(cfg.tools.hamlib_dir)
         cfg.rig.tx_modes = []
         maker = next((m for n, m, _ in rigs if n == cfg.rig.model), "")
         if maker.lower() == "icom":
-            print("\nIcom : l'audio USB n'est émis qu'en MODES DONNÉES (USB-D, LSB-D, AM-D, FM-D). Dans un autre mode, le poste modulerait avec son propre micro.")
-            if ask_yes_no("Limiter l'émission à ces modes données (recommandé)", True):
+            print(_t("rig.icom_data"))
+            if ask_yes_no(_t("rig.limit_data"), True):
                 cfg.rig.tx_modes = data_modes_for_model(cfg.rig.model, cfg.tools.hamlib_dir)
-                print("Modes d'émission permis : " + ", ".join(cfg.rig.tx_modes))
+                print(_t("rig.tx_modes", modes=", ".join(cfg.rig.tx_modes)))
     hint = hint_for(cfg.rig.model)                         # poste connu de l'assistant (Yaesu FTDX10/101...)
     if hint is not None and not keep_model:
         apply_rig_hint(cfg, hint, data_modes=lambda: data_modes_for_model(cfg.rig.model, cfg.tools.hamlib_dir))
@@ -483,49 +491,49 @@ def ask_rig(cfg: Config, keep_offer: bool) -> None:
     if cfg.rig.model != DUMMY_MODEL:
         cfg.rig.port = choose_cat_port(list_serial_ports(), cfg.rig.port)
         default_speed = cfg.rig.speed or (hint.speed if hint else None)
-        speed = ask("Débit série (Entrée = " + (f"{default_speed}" if default_speed else "défaut Hamlib du modèle") + ")",
+        speed = ask(_t("rig.speed", default=default_speed if default_speed else _t("rig.speed_hamlib")),
                     str(default_speed) if default_speed else "auto")
         cfg.rig.speed = int(speed) if speed.isdigit() else None
 
-        ptt = choose("Méthode PTT", [("RIG", "CAT (commande envoyée au poste)"),
-                                     ("RTS", "ligne RTS du port série"),
-                                     ("DTR", "ligne DTR du port série"),
-                                     ("GPIO", "broche GPIO du Pi"),
-                                     ("NONE", "aucune (réception seule)")],
-                     manual_label="Autre type Hamlib", current=cfg.rig.ptt_type)
+        ptt = choose(_t("ptt.title"), [("RIG", _t("ptt.rig")),
+                                       ("RTS", _t("ptt.rts")),
+                                       ("DTR", _t("ptt.dtr")),
+                                       ("GPIO", _t("ptt.gpio")),
+                                       ("NONE", _t("ptt.none"))],
+                     manual_label=_t("ptt.other"), current=cfg.rig.ptt_type)
         cfg.rig.ptt_type = ptt.upper()
         if cfg.rig.ptt_type in ("RTS", "DTR"):
-            cfg.rig.ptt_port = ask("Port de la ligne PTT", cfg.rig.ptt_port or cfg.rig.port)
+            cfg.rig.ptt_port = ask(_t("ptt.port"), cfg.rig.ptt_port or cfg.rig.port)
         elif cfg.rig.ptt_type in ("GPIO", "GPION"):
-            cfg.rig.ptt_port = ask("Identifiant GPIO (voir doc Hamlib)", cfg.rig.ptt_port or None)
+            cfg.rig.ptt_port = ask(_t("ptt.gpio_id"), cfg.rig.ptt_port or None)
         else:
             cfg.rig.ptt_port = ""
     else:
         cfg.rig.port = ""
 
     while True:
-        print("\nTest de liaison (lecture seule, aucune émission)...")
+        print(_t("link.testing"))
         try:
             res = test_link(cfg.rig, hamlib_dir=cfg.tools.hamlib_dir)
-            print(f"  OK : fréquence {res['freq']} Hz, mode {res['mode']}, PTT {res['ptt']}")
+            print(_t("link.ok", freq=res['freq'], mode=res['mode'], ptt=res['ptt']))
             if res.get("ptt_forced_rx"):
-                print("  ATTENTION : le PTT était actif, retour en réception forcé.")
+                print(_t("link.forced_rx"))
             break
         except SetupError as exc:
-            print(f"  ÉCHEC : {exc}")
-            if not ask_yes_no("Réessayer", True):
-                if ask_yes_no("Continuer sans test (déconseillé)", False):
+            print(_t("link.failed", error=exc))
+            if not ask_yes_no(_t("link.retry"), True):
+                if ask_yes_no(_t("link.skip"), False):
                     break
-                raise SystemExit("Abandon.")
+                raise SystemExit(_t("link.abandon"))
 
 
 def ask_audio(cfg: Config) -> None:
     """Cartes son : capture (son reçu du poste) et lecture (voix vers le poste)."""
     if cfg.rig.model == DUMMY_MODEL:
         return
-    cap = choose("Audio reçu du TRX (capture)", [(d, lbl) for d, lbl in list_audio_devices("capture")],
+    cap = choose(_t("audio.capture"), [(d, lbl) for d, lbl in list_audio_devices("capture")],
                  current=cfg.audio.capture_device)
-    play = choose("Audio vers le TRX (lecture)", [(d, lbl) for d, lbl in list_audio_devices("playback")],
+    play = choose(_t("audio.playback"), [(d, lbl) for d, lbl in list_audio_devices("playback")],
                   current=cfg.audio.playback_device)
     cfg.audio.capture_device, cfg.audio.playback_device = cap, play
 
@@ -535,9 +543,9 @@ def ask_accounts(cfg: Config) -> None:
     accès à distance : retirée à la demande de l'utilisateur, étape 239) ; ajout seulement si l'opérateur le veut.
     Supprimer un compte ou changer un mot de passe : un par un, menus 4.3 (opérateurs) et 4.2 (visiteurs)."""
     if cfg.clients:
-        print("\nComptes déjà autorisés (gardés) : " + ", ".join(c.id for c in cfg.clients))
-        print("  Supprimer un compte ou changer un mot de passe : TRX Console, menu 4.3 (opérateurs) ou 4.2 (visiteurs).")
-        if not ask_yes_no("Ajouter d'autres comptes que ceux déjà présents", False):
+        print(_t("accounts.kept", accounts=", ".join(c.id for c in cfg.clients)))
+        print(_t("accounts.how"))
+        if not ask_yes_no(_t("accounts.add_more"), False):
             return
     ask_clients(cfg)
 
@@ -548,54 +556,42 @@ def ask_number(prompt: str, current: int, low: int, high: int, why: str = "") ->
     current = min(max(current, low), high)
     while True:
         _expect(kind="int", low=low, high=high, current=current)
-        answer = ask(f"{prompt} (de {low} à {high})", str(current))
+        answer = ask(_t("number.range", prompt=prompt, low=low, high=high), str(current))
         if answer.isdigit() and low <= int(answer) <= high:
             return int(answer)
-        print(f"  Refusé : un nombre entier de {low} à {high}." + (f" {why}" if why else ""))
+        print(_t("number.refused", low=low, high=high) + (f" {why}" if why else ""))
 
 
 def ask_transmit(cfg: Config) -> None:
     """Puissance maximale du poste (affichage en watts) et durée maximale d'une émission (TOT, sous le plafond)."""
     s = cfg.safety
-    cfg.rig.max_power_w = ask_number("Puissance maximale du poste en watts (0 = inconnue : la page affichera des %)",
-                                     cfg.rig.max_power_w, 0, 2000)
-    s.tot_s = ask_number("Durée maximale d'une émission en secondes (TOT)", s.tot_s, s.warn_before_s + 1,
-                         s.tot_ceiling_s,
-                         f"Au plus {s.tot_ceiling_s} s : c'est le plafond de cette station (tot_ceiling_s, réglé dans "
-                         f"station.toml) ; au moins {s.warn_before_s + 1} s, car le bip d'avertissement sonne "
-                         f"{s.warn_before_s} s avant la coupure.")
-
-
-REPLAY_WARNING = (
-    "\nRediffusion d'un enregistrement (application) : l'opérateur enregistre l'audio REÇU (2 minutes au plus,\n"
-    "limité au temps maximal d'émission) puis le renvoie en émission, par exemple pour faire écouter sa modulation\n"
-    "à un correspondant. RÉGLEMENTATION : rediffuser l'émission d'une station à des tiers est en général INTERDIT\n"
-    "au service amateur ; l'usage reste sous ta seule responsabilité. Désactivée par défaut."
-)
+    cfg.rig.max_power_w = ask_number(_t("transmit.power"), cfg.rig.max_power_w, 0, 2000)
+    s.tot_s = ask_number(_t("transmit.tot"), s.tot_s, s.warn_before_s + 1, s.tot_ceiling_s,
+                         _t("transmit.tot_why", ceiling=s.tot_ceiling_s, low=s.warn_before_s + 1, warn=s.warn_before_s))
 
 
 def ask_replay(cfg: Config) -> None:
     """Accordée UNE FOIS, à l'ajout du poste, seulement à la demande expresse de l'opérateur (décision du 2026-11-02)."""
-    print(REPLAY_WARNING)
-    cfg.safety.allow_replay = ask_yes_no("Autoriser la rediffusion d'enregistrements sur ce poste (sous ta responsabilité)", False)
+    print(_t("replay.warning"))
+    cfg.safety.allow_replay = ask_yes_no(_t("replay.question"), False)
 
 
 def ask_bands(cfg: Config, keep_offer: bool = False) -> None:
     if keep_offer:
-        current = ("délégué au poste" if not cfg.safety.enforce_bands
-                   else f"par la station, {len(cfg.bands)} bande(s)" if cfg.bands else "par la station, AUCUNE bande (réception seule)")
-        if ask_yes_no(f"\nContrôle des bandes d'émission : {current}. Le garder", True):
+        current = (_t("bands.delegated") if not cfg.safety.enforce_bands
+                   else _t("bands.station", count=len(cfg.bands)) if cfg.bands else _t("bands.station_none"))
+        if ask_yes_no(_t("bands.keep", current=current), True):
             return
-    print("\nContrôle des bandes d'émission. Beaucoup de postes l'assurent déjà eux-mêmes (réglage « TX limit » des Icom).")
-    if ask_yes_no("Le poste interdit-il déjà d'émettre hors des bandes amateur (la station n'a alors pas à le vérifier)", False):
+    print(_t("bands.intro"))
+    if ask_yes_no(_t("bands.rig_limits"), False):
         cfg.safety.enforce_bands = False
     else:
         cfg.safety.enforce_bands = True
-        print("Bandes autorisées en émission : points de départ région 1 IARU, À VÉRIFIER selon ta licence.")
-        if ask_yes_no("Charger ces bandes par défaut (tu pourras les éditer dans station.toml)", False):
+        print(_t("bands.defaults_intro"))
+        if ask_yes_no(_t("bands.load"), False):
             cfg.bands = list(DEFAULT_BANDS_R1)
         elif not cfg.bands:
-            print("Aucune bande chargée : réception seule tant que station.toml n'est pas complété.")
+            print(_t("bands.none"))
 
 
 def local_addresses(run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
@@ -619,15 +615,15 @@ def local_addresses(run: Callable[..., subprocess.CompletedProcess] = subprocess
 
 def ask_network(cfg: Config, tls_dir: Path | None) -> None:
     n = cfg.network
-    print("\nAccès à la station depuis d'autres appareils (téléphone, tablette).")
-    options = [("local", "Cette machine seulement (127.0.0.1) : essais sur ce PC"),
-               ("lan", "Réseau local ou VPN, en HTTPS avec un certificat généré ici (recommandé)")]
+    print(_t("network.intro"))
+    options = [("local", _t("network.local")),
+               ("lan", _t("network.lan"))]
     current = ""
     if n.gateway_bind not in ("127.0.0.1", "") or n.tls_cert:
         current = "keep"
-        options.insert(0, ("keep", f"Garder le réglage actuel ({n.gateway_bind}:{n.gateway_port}, "
-                                   f"{'HTTPS' if n.tls_cert else 'sans HTTPS'})"))
-    picked = choose("Accès", options, manual_label="Adresse d'écoute à la main", current=current)
+        options.insert(0, ("keep", _t("network.keep", bind=n.gateway_bind, port=n.gateway_port,
+                                      https=_t("network.with_https") if n.tls_cert else _t("network.without_https"))))
+    picked = choose(_t("network.title"), options, manual_label=_t("network.manual"), current=current)
     if picked == "keep":
         return
     if picked == "local":
@@ -641,18 +637,16 @@ def ask_network(cfg: Config, tls_dir: Path | None) -> None:
     try:
         _make_certificate(hosts, folder, cfg)
     except ImportError:
-        print("  Module « cryptography » absent : certificat impossible. Accès limité à cette machine "
-              "(relance l'installation pour l'ajouter).")
+        print(_t("network.no_crypto"))
         n.gateway_bind = "127.0.0.1"
         return
     n.gateway_bind, n.allow_insecure_http = "0.0.0.0", False
-    print(f"  Certificat créé pour : {', '.join(hosts)}")
-    for address in hosts[:-2] or ["<adresse de ce PC>"]:
-        print(f"  Adresse à ouvrir sur le téléphone : https://{address}:{n.gateway_port}")
-    print("  Certificat signé par l'autorité de la station. Tant qu'elle n'est pas installée sur un appareil, le "
-          "navigateur avertit (c'est attendu) : lien « Installer le certificat de la station » de la page, guide partie 4.")
+    print(_t("network.cert_for", hosts=", ".join(hosts)))
+    for address in hosts[:-2] or [_t("network.this_pc")]:
+        print(_t("network.open_on_phone", address=address, port=n.gateway_port))
+    print(_t("network.ca_note"))
     from .gateway.api.tls import certificate_fingerprint
-    print(f"  Empreinte du certificat (application Android) : {certificate_fingerprint(n.tls_cert)}")
+    print(_t("network.fingerprint", fingerprint=certificate_fingerprint(n.tls_cert)))
 
 
 def pairing_lines(cfg: Config, addresses: Callable[[], list[str]] | None = None) -> list[str]:
@@ -660,23 +654,19 @@ def pairing_lines(cfg: Config, addresses: Callable[[], list[str]] | None = None)
     certificat. JAMAIS de mot de passe (seule son empreinte scrypt est connue). OSError si le certificat est illisible."""
     from .gateway.api.tls import certificate_fingerprint
     n = cfg.network
-    lines = ["Appairage d'un téléphone (application openRemoteTRX)"]
+    lines = [_t("pairing.title")]
     if n.gateway_bind in ("127.0.0.1", "localhost", "::1", ""):
-        return lines + ["  La station n'est accessible que depuis cette machine (127.0.0.1) : aucun téléphone ne peut s'y connecter.",
-                        "  Pour l'ouvrir au réseau local ou à un VPN : assistant de configuration, « Réseau local ou VPN, en HTTPS »."]
+        return lines + [_t("pairing.local_only"), _t("pairing.open_lan")]
     hosts = _pairing_hosts(cfg, addresses)
     scheme = "https" if n.tls_cert else "http"
-    lines.append("  Adresse : " + (", ".join(f"{scheme}://{h}:{n.gateway_port}" for h in hosts) or
-                                   f"{scheme}://<adresse de ce PC>:{n.gateway_port}"))
-    lines.append("  Comptes : " + (", ".join(c.id for c in cfg.clients) or "aucun (en créer un : assistant de configuration)")
-                 + "  (mot de passe : celui choisi à la création ; il n'est enregistré nulle part en clair)")
+    lines.append(_t("pairing.address", addresses=", ".join(f"{scheme}://{h}:{n.gateway_port}" for h in hosts) or
+                    f"{scheme}://{_t('network.this_pc')}:{n.gateway_port}"))
+    lines.append(_t("pairing.accounts", accounts=", ".join(c.id for c in cfg.clients) or _t("pairing.no_account")))
     if not n.tls_cert:
-        lines.append("  Pas de certificat sur la station (HTTPS assuré par un proxy, ou absent) : l'empreinte à épingler "
-                     "dans l'application est celle du certificat du proxy.")
+        lines.append(_t("pairing.no_cert"))
         return lines
     fingerprint = certificate_fingerprint(n.tls_cert)       # 32 octets : deux lignes de 16, plus faciles à comparer
-    return lines + ["  Empreinte du certificat (SHA-256), à comparer avec celle que montre l'application :",
-                    "    " + fingerprint[:47], "    " + fingerprint[48:]]
+    return lines + [_t("pairing.fingerprint"), "    " + fingerprint[:47], "    " + fingerprint[48:]]
 
 
 def _pairing_hosts(cfg: Config, addresses: Callable[[], list[str]] | None = None) -> list[str]:
@@ -728,28 +718,29 @@ def show_pairing(cfg: Config, ask: Callable[[str], str] = input, say: Callable[[
     hosts = _pairing_hosts(cfg, addresses)
     if not hosts:
         return
-    host = _pick(hosts, "Adresse à mettre dans le QR code", ask, say, default=hosts[0])
+    host = _pick(hosts, _t("pairing.qr_address"), ask, say, default=hosts[0])
     accounts = [c.id for c in cfg.clients]
     if user is None or user not in accounts:
-        user = _pick(accounts, "Compte à mettre dans le QR code", ask, say, default="") if accounts else ""
+        user = _pick(accounts, _t("pairing.qr_account"), ask, say, default="") if accounts else ""
     lines = qr_lines(pairing_uri(hostname(), f"https://{host}:{n.gateway_port}", user, certificate_fingerprint(n.tls_cert)))
     if lines is None:
-        say("  QR code indisponible (paquet « segno » absent : réinstaller la station, menu 7.3) : saisir l'empreinte ci-dessus.")
+        say(_t("pairing.no_segno"))
         return
-    say("  QR code à scanner avec l'application (« Scanner le QR code ») ; il ne contient AUCUN mot de passe :")
+    say(_t("pairing.qr_intro"))
     say("\n".join("  " + line for line in lines))
-    say(f"  ({host}:{n.gateway_port}, compte : {user or 'à saisir dans l application'})")
+    say(_t("pairing.qr_footer", host=host, port=n.gateway_port, account=user or _t("pairing.account_in_app")))
 
 
 def _pick(choices: list[str], title: str, ask: Callable[[str], str], say: Callable[[str], None], default: str) -> str:
     """Un seul choix : pris d'office. Sinon liste numérotée ; Entrée ou réponse invalide = `default`."""
     if len(choices) == 1:
         return choices[0]
-    say(f"  {title} :")
+    say(_t("pick.title", title=title))
     for i, choice in enumerate(choices, 1):
         say(f"    {i}) {choice}")
-    hint = f"Entrée = {choices.index(default) + 1}" if default in choices else "Entrée = aucun, à saisir dans l'application"
-    answer = ask(f"  Numéro ({hint}) : ").strip()
+    hint = (_t("pick.enter_default", number=choices.index(default) + 1) if default in choices
+            else _t("pick.enter_none"))
+    answer = ask(_t("pick.number", hint=hint)).strip()
     if answer.isdigit() and 1 <= int(answer) <= len(choices):
         return choices[int(answer) - 1]
     return default
@@ -784,10 +775,10 @@ def station_authority(cfg: Config, output: Path, hosts: list[str] | None = None,
     folder = current.parent if current else output.resolve().parent / "tls"
     created = _make_certificate(names, folder, cfg)
     write_config(cfg, output)
-    say("Certificat de la station signé par son autorité : " + ", ".join(names))
-    say("Autorité " + ("CRÉÉE : à installer sur chaque appareil" if created else "inchangée (déjà installée sur vos appareils)")
-        + f" : https://{names[0]}:{n.gateway_port}/station-ca.crt")
-    say(f"Nouvelle empreinte (application Android : appairer de nouveau, menu 4.1) : {certificate_fingerprint(n.tls_cert)}")
+    say(_t("authority.signed", names=", ".join(names)))
+    url = f"https://{names[0]}:{n.gateway_port}/station-ca.crt"
+    say(_t("authority.created", url=url) if created else _t("authority.unchanged", url=url))
+    say(_t("authority.fingerprint", fingerprint=certificate_fingerprint(n.tls_cert)))
     return 0
 
 
@@ -797,35 +788,35 @@ def choose_password(login: str, ask_password: Callable[[str], str] = getpass.get
     if ask_password is getpass.getpass and formhint.enabled():
         ask_password = _form_password                       # page : champ masqué du navigateur, pas de terminal
     while True:
-        first = ask_password("  Mot de passe (Entrée = en générer un fort) : ")
+        first = ask_password(_t("password.first"))
         if not first:
             generated = generate_password()
-            say(f"  Mot de passe généré : {generated}")
-            say("  Note-le maintenant : il n'est PAS enregistré en clair (seule son empreinte l'est).")
+            say(_t("password.generated", password=generated))
+            say(_t("password.note"))
             return generated
         problem = password_problem(first, login)
         if problem:
-            say(f"  Refusé : {problem}.")
+            say(_t("password.refused", problem=problem))
             continue
-        if ask_password("  Confirme le mot de passe : ") != first:
-            say("  Les deux saisies diffèrent, recommence.")
+        if ask_password(_t("password.confirm")) != first:
+            say(_t("password.differ"))
             continue
         return first
 
 
 def _form_password(prompt: str) -> str:
-    formhint.emit("password", prompt.strip(), prompt, generate="Entrée" in prompt)
+    formhint.emit("password", prompt.strip(), prompt, generate=prompt == _t("password.first"))
     return input(prompt)
 
 
 def _check_login_and_password(cfg: Config, name: str, password: str, existing: bool) -> None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name):
-        raise SetupError(f"[[clients]] identifiant invalide : {name!r} (lettres, chiffres, _ et -, 32 max)")
+        raise SetupError(_t("clients.invalid_id", name=repr(name)))
     if existing != any(c.id == name for c in cfg.clients):
-        raise SetupError(f"[[clients]] identifiant {'inconnu' if existing else 'en double'} : {name}")
+        raise SetupError(_t("clients.unknown" if existing else "clients.duplicate", name=name))
     problem = password_problem(password, name)
     if problem:
-        raise SetupError(f"mot de passe refusé : {problem}")
+        raise SetupError(_t("clients.password_refused", problem=problem))
 
 
 def add_client(cfg: Config, name: str, password: str | None = None) -> str:
@@ -846,13 +837,13 @@ def set_password(cfg: Config, name: str, password: str | None = None) -> str:
 
 
 def ask_clients(cfg: Config) -> None:
-    print("\nClients autorisés à se connecter (smartphone, voiture...). Entrée pour terminer.")
+    print(_t("clients.intro"))
     while True:
-        name = ask("Identifiant du client (ex. phone, Entrée = terminer)", "")
+        name = ask(_t("clients.ask"), "")
         if not name:
             return
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name) or any(c.id == name for c in cfg.clients):
-            print("  Identifiant invalide ou déjà utilisé (lettres, chiffres, _ et -, 32 max).")
+            print(_t("clients.invalid"))
             continue
         add_client(cfg, name, choose_password(name))
 
@@ -870,18 +861,17 @@ def dummy_config() -> Config:
 def write_config(cfg: Config, output: Path) -> None:
     problems = cfgmod.validate(cfg)
     if problems:
-        raise SetupError("la configuration n'a PAS été enregistrée (station.toml inchangé), ces réglages sont "
-                         "refusés :\n  - " + "\n  - ".join(problems))
+        raise SetupError(_t("write.refused", problems="\n  - ".join(problems)))
     output.parent.mkdir(parents=True, exist_ok=True)
     previous = output.stat() if output.exists() else None
     if previous is not None:
         backup = output.with_suffix(output.suffix + ".bak")
         shutil.copy2(output, backup)                # copy2 garde les droits : la sauvegarde reste protégée
-        print(f"Ancienne configuration sauvegardée : {backup}")
+        print(_t("write.backup", path=backup))
     output.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
     protect(output, previous)   # le fichier contient les empreintes des mots de passe : root + groupe trx, 0640 au plus
     cfgmod.load(output)  # relecture : garantit que le fichier écrit est bien valide
-    print(f"Configuration écrite : {output}")
+    print(_t("write.done", path=output))
     for w in cfgmod.warnings(cfg):
         print(f"  ! {w}")
 
@@ -893,10 +883,10 @@ def load_base(path: Path | None) -> Config | None:
     try:
         cfg, problems = cfgmod.load_unchecked(path)
     except (OSError, cfgmod.ConfigError) as exc:
-        print(f"Configuration {path} illisible, on repart de zéro : {exc}")
+        print(_t("base.unreadable", path=path, error=exc))
         return None
     if problems:
-        print(f"Configuration reprise de {path}, à compléter :")
+        print(_t("base.incomplete", path=path))
         for problem in problems:
             print(f"  - {problem}")
     return cfg
@@ -948,42 +938,39 @@ def main(argv: list[str] | None = None) -> int:
             try:                                               # sans terminal (journal, tube) : choix par défaut
                 show_pairing(cfg, ask=input if sys.stdin.isatty() else (lambda _prompt: ""), user=args.compte)
             except (OSError, ValueError) as exc:
-                print(f"Certificat illisible ({cfg.network.tls_cert}) : {exc}", file=sys.stderr)
+                print(_t("main.cert_unreadable", cert=cfg.network.tls_cert, error=exc), file=sys.stderr)
                 return 1
             return 0
         if args.add_client or args.set_password or args.self_signed or args.tx_modes or args.bands or args.max_power is not None:
             cfg = cfgmod.load(args.output)
             if args.max_power is not None:
                 if not 0 <= args.max_power <= 2000:
-                    print("--max-power : une valeur de 0 à 2000 watts est attendue.", file=sys.stderr)
+                    print(_t("main.max_power_range"), file=sys.stderr)
                     return 2
                 cfg.rig.max_power_w = args.max_power
-                print("Puissance maximale du poste : " + (f"{args.max_power} W" if args.max_power else "inconnue (affichage en %)"))
+                print(_t("main.max_power", value=f"{args.max_power} W" if args.max_power else _t("main.power_unknown")))
             if args.bands:
                 cfg.safety.enforce_bands = args.bands == "on"
-                print("Contrôle des bandes par la station : " + ("ACTIVÉ" if cfg.safety.enforce_bands else
-                      "DÉSACTIVÉ (le poste doit l'assurer : vérifie son réglage « TX limit » ou équivalent)"))
+                print(_t("main.bands_on") if cfg.safety.enforce_bands else _t("main.bands_off"))
             if args.tx_modes:
                 cfg.rig.tx_modes = [] if [m.lower() for m in args.tx_modes] == ["aucun"] else list(args.tx_modes)
-                print("Émission permise dans les modes : " + (", ".join(cfg.rig.tx_modes) or "tous (aucune restriction)"))
+                print(_t("main.tx_modes", modes=", ".join(cfg.rig.tx_modes) or _t("main.all_modes")))
             if args.add_client:
                 add_client(cfg, args.add_client, choose_password(args.add_client))
-                print(f"Client « {args.add_client} » ajouté.")
+                print(_t("main.client_added", name=args.add_client))
             if args.set_password:
                 set_password(cfg, args.set_password, choose_password(args.set_password))
-                print(f"Mot de passe de « {args.set_password} » changé.")
+                print(_t("main.password_changed", name=args.set_password))
             if args.self_signed:
                 _make_certificate(args.self_signed, args.output.resolve().parent / "tls", cfg)
-                print(f"Certificat écrit : {cfg.network.tls_cert}, signé par l'autorité de la station. Installer "
-                      "l'autorité sur chaque appareil (page : lien « Certificat de la station ») supprime l'avertissement "
-                      "du navigateur et lui permet de retenir le mot de passe.")
+                print(_t("main.cert_written", cert=cfg.network.tls_cert))
                 from .gateway.api.tls import certificate_fingerprint
-                print(f"Empreinte du certificat (application Android) : {certificate_fingerprint(cfg.network.tls_cert)}")
+                print(_t("main.fingerprint", fingerprint=certificate_fingerprint(cfg.network.tls_cert)))
             write_config(cfg, args.output)
             return 0
         if args.partie:
             if not args.output.exists():
-                print(f"Pas encore de configuration ({args.output}) : lancer d'abord l'assistant complet.", file=sys.stderr)
+                print(_t("main.no_config", path=args.output), file=sys.stderr)
                 return 2
             base = load_base(args.output)
             if base is None:
@@ -996,13 +983,13 @@ def main(argv: list[str] | None = None) -> int:
             cfg = interactive(base, tls_dir=args.output.resolve().parent / "tls")
         write_config(cfg, args.output)
     except cfgmod.ConfigError as exc:
-        print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
+        print(_t("main.invalid", problems="\n  - ".join(exc.problems)), file=sys.stderr)
         return 2
     except SetupError as exc:
-        print(f"Erreur : {exc}", file=sys.stderr)
+        print(_t("main.error", error=exc), file=sys.stderr)
         return 1
     except (KeyboardInterrupt, EOFError):
-        print("\nInterrompu, rien n'a été écrit.", file=sys.stderr)
+        print(_t("main.interrupted"), file=sys.stderr)
         return 130
     return 0
 
@@ -1012,29 +999,27 @@ def _cli_spectrum(args) -> int:
     if args.spectre.strip().lower() == "off":
         disable_spectrum(cfg)
         write_config(cfg, args.output)
-        print("Spectre HF désactivé : un seul port, sans waterfall HF. Redémarre la station pour l'appliquer.")
+        print(_t("cli_spectrum.off"))
         return 0
     address = None
     if args.adresse_civ:
         address = cfgmod.parse_civ_address(args.adresse_civ)
         if address is None:
-            print("--adresse-civ : un nombre hexadécimal de 01 à DF est attendu (ex. B6).", file=sys.stderr)
+            print(_t("cli_spectrum.bad_address"), file=sys.stderr)
             return 2
     print(USB_SEND_WARNING)
-    if not args.reglages_verifies and not typed(input("Tape OUI si ces réglages sont vérifiés : "), "OUI"):
-        print("Annulé : le second port n'a pas été ouvert, configuration inchangée.")
+    if not args.reglages_verifies and not _typed_yes(input(_t("spectrum.type_word", word=_t("word.yes")) + _t("ask.colon"))):
+        print(_t("cli_spectrum.cancelled"))
         return 2
-    print(f"Vérification de {args.spectre} (lecture seule, aucune émission)...")
+    print(_t("cli_spectrum.checking", port=args.spectre))
     try:
         address = check_spectrum_port(cfg, args.spectre, address)
     except SetupError as exc:
-        print(f"PROBLÈME DE CONFIGURATION : {exc}\nSpectre NON activé : la station reste en mode normal "
-              "(un seul port, sans waterfall HF).", file=sys.stderr)
+        print(_t("cli_spectrum.problem", error=exc), file=sys.stderr)
         return 1
     apply_spectrum(cfg, args.spectre, address)
     write_config(cfg, args.output)
-    print(f"OK : spectre HF activé sur {args.spectre} (adresse CI-V {address:02X}h). Redémarre la station ; "
-          "elle revérifiera ce port à chaque démarrage et reviendra au mode normal en cas de problème.")
+    print(_t("cli_spectrum.ok", port=args.spectre, address=f"{address:02X}"))
     return 0
 
 

@@ -36,7 +36,7 @@ def make(tmp_path):
 def test_the_dashboard_is_drawn_by_the_page_and_stop_tx_can_only_cut(tmp_path, monkeypatch):
     calls = []
 
-    def fake_stop(cfg):
+    def fake_stop(cfg, t=None):
         calls.append(cfg.network.rigctld_port)
         return True, "PTT coupé"
 
@@ -57,13 +57,13 @@ def test_the_dashboard_is_drawn_by_the_page_and_stop_tx_can_only_cut(tmp_path, m
             radio = next(p for p in data["panels"] if p["key"] == "radio")
             assert ["PTT", "ÉMISSION", "bad"] in radio["rows"]
             assert {p["key"] for p in data["panels"]} == {"radio", "audio", "connexion", "sante", "materiel", "reseau"}
-            assert any("trx-monitor démarré" in line for line in data["log"])
+            assert any("trx-monitor démarré" in e["text"] for e in data["log"])
             assert (await client.post("/api/stop_tx")).status == 403               # autre origine : refusé
             assert calls == []
             answer = await (await client.post("/api/stop_tx", headers=origin)).json()
             assert answer == {"ok": True, "message": "PTT coupé"} and calls == [4532]
             data = await (await client.get("/api/dashboard")).json()
-            assert any("STOP TX : PTT coupé" in line for line in data["log"])
+            assert any("STOP TX : PTT coupé" in e["text"] and e["level"] == "bad" for e in data["log"])
             net = await (await client.get("/api/dashboard?net=1")).json()
             assert net["ok"]
     asyncio.run(run())

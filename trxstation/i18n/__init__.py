@@ -105,6 +105,24 @@ def load_lang(path: Path, env: dict[str, str] | None = None) -> str:
     return system_lang(env)
 
 
+ENV_LANG = "TRX_LANG"             # langue passée par TRX Console aux outils qu'elle lance (sudo compris, étape 240)
+
+
+def tool_lang(env: dict[str, str] | None = None) -> str:
+    """Langue d'un OUTIL (trx-setup, trx-monitor…, lot L3) : celle que lui passe TRX Console (`TRX_LANG`), sinon le
+    choix du menu 0 du compte qui le lance, sinon celle du système, sinon le français."""
+    env = os.environ if env is None else env
+    lang = env.get(ENV_LANG, "")
+    if lang in LANGS:
+        return lang
+    return load_lang(prefs_path(env=env), env)
+
+
+def tool_translator(domain: str, env: dict[str, str] | None = None) -> "Translator":
+    """Traducteur d'un outil : textes de `trxstation/i18n/<domain>.<langue>.json`, français si une clé manque."""
+    return Translator(tool_lang(env), domain)
+
+
 def _prefs(path: Path) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))

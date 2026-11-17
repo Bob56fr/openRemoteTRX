@@ -37,7 +37,8 @@
     }
     body.replaceChildren(...(data.panels || []).map(panel));
     const log = $("#dash-log-lines");
-    log.replaceChildren(...(data.log || []).slice().reverse().map((line) => el("li", /STOP TX|FIGÉE|INJOIGNABLE|DÉFAUT|MODE SÛR|PROFIL VPN/.test(line) ? "hot" : "", line)));
+    // Niveau donné par la station (quelle que soit la langue) : grave = rouge, retour à la normale = vert
+    log.replaceChildren(...(data.log || []).slice().reverse().map((e) => el("li", e.level === "bad" ? "hot" : e.level === "ok" ? "good" : "", e.text)));
     const tx = TX.includes(data.ptt);
     $("#dash-stop").classList.toggle("live", tx);          // émission en cours : STOP bien visible
     $("#dash").classList.toggle("tx", tx);
@@ -75,7 +76,7 @@
       const answer = await r.json().catch(() => ({ ok: false, message: "?" }));
       flash(answer.message || "?", !!answer.ok);
     } catch (e) {
-      flash("STOP TX : station injoignable", false);
+      flash("STOP TX : ✖", false);                       // station injoignable : la page n'a pas de réponse
     } finally {
       b.disabled = false;
       poll();

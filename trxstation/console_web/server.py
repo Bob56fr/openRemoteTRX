@@ -406,12 +406,19 @@ class WebConsole:
                                             cfg.supervisor.stale_after_s)
             self.dash_log = EventLog()
         snap = self.dash_source.poll()
+        t = self.dash_translator()                       # langue de la page (lot L3), relue à chaque appel
+        self.dash_log.t = t
         self.dash_log.observe(snap)
         ptt = snap.status.ptt.get("state") if snap.status is not None and isinstance(snap.status.ptt, dict) else None
         return {"ok": True, "fresh": snap.gateway_fresh, "ptt": ptt or "", "safe_mode": snap.safe_mode or "",
                 "panels": [{"key": p.key, "title": p.title, "rows": [[r.label, r.text, r.level] for r in p.rows]}
-                           for p in build_panels(snap, net_detail)],
-                "log": list(self.dash_log.lines)[-DASH_LOG:]}
+                           for p in build_panels(snap, net_detail, t=t)],
+                "log": self.dash_log.entries()[-DASH_LOG:]}          # [{text, level}] : rouge = level bad
+
+    @staticmethod
+    def dash_translator():
+        from ..i18n import Translator
+        return Translator(load_lang(prefs_path()), "monitor")
 
     async def dashboard(self, request: web.Request) -> web.StreamResponse:
         """Lecture seule, rafraîchie par la page. Ne prolonge pas la session : seule une action le fait."""
@@ -432,9 +439,10 @@ class WebConsole:
         except (cfgmod.ConfigError, OSError):
             return web.json_response({"ok": False, "message": "station.toml illisible : STOP TX impossible d'ici "
                                                               "(bouton STOP de la page de pilotage)"})
-        ok, message = await asyncio.to_thread(stop_tx, cfg)
+        t = self.dash_translator()
+        ok, message = await asyncio.to_thread(stop_tx, cfg, t)
         if self.dash_log is not None:
-            self.dash_log.lines.append(f"{time.strftime('%H:%M:%S')}  STOP TX : {message}")
+            self.dash_log.record(t("app.stop_line", message=message), "bad")   # toujours bien visible
         return web.json_response({"ok": ok, "message": message})
 
     # ------------------------------------------------------------------ menus en formulaires (étape 235)
