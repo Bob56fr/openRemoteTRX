@@ -437,7 +437,7 @@ class WebConsole:
 
     def on_exit(self) -> None:
         self.idle = False
-        self.on_output("\r\n[TRX Console terminée : actualiser la page pour la relancer]\r\n")
+        self.on_output("\r\n[TRX Console terminée : actualiser la page pour la relancer en faisant F5 dans votre navigateur web]\r\n")
 
     async def _send(self, ws: web.WebSocketResponse, message: dict) -> None:
         try:
