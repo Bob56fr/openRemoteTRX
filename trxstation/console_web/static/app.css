@@ -202,3 +202,38 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .flow-tab.ask{animation:pulse 1.4s infinite;border-color:#53f3d8}
 .flow-form .choices.tool:empty{display:none}
 .flow-form .choices.tool{max-height:40vh;overflow:auto}
+/* Éditeur de station.toml dans le panneau (menu 8.1, étape 238) */
+.flow.wide{width:min(1100px,100%)}
+.flow-form .editor{width:100%;box-sizing:border-box;height:min(62vh,720px);resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--term-bg);color:#cfe6df;font:13px/1.5 var(--f-mono);tab-size:4;white-space:pre;overflow:auto}
+.flow-form .editor:focus{outline:2px solid var(--accent);outline-offset:1px}
+.flow-form .prompt.edit::before{content:"i";font-style:italic;font-family:Georgia,serif}
+/* Tableau de bord dans la page (menu 1.3, étape 238) : panneaux de trx-monitor */
+.dash{position:fixed;inset:0;z-index:30;overflow:auto;background:var(--bg);padding:14px max(16px,env(safe-area-inset-left,0px)) 24px}
+.dash[hidden]{display:none}
+body.dash-open{overflow:hidden}
+.dash header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.dash header h2{flex:1 1 220px;margin:0;font:600 1.25rem/1.25 var(--f-display)}
+.dash .btn.stop{font-weight:800;letter-spacing:.04em;color:#fff;background:#c92a2a;border-color:#c92a2a;padding:10px 18px}
+.dash .btn.stop.live{animation:stoppulse 1.2s infinite}
+@keyframes stoppulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.7)}70%{box-shadow:0 0 0 12px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+.dash .btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.dash.tx{box-shadow:inset 0 0 0 4px #e5484d}
+.dash-flash{margin:0 0 10px;padding:10px 14px;border-radius:10px;font-weight:600}
+.dash-flash.ok{background:color-mix(in srgb,#16a34a 15%,transparent);color:var(--ink)}
+.dash-flash.bad{background:color-mix(in srgb,#e5484d 15%,transparent);color:#e5484d}
+.dash-stale{margin:0 0 10px;padding:10px 14px;border-radius:10px;font-weight:600;color:#e5484d;background:color-mix(in srgb,#e5484d 12%,transparent)}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:12px}
+.dcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.dcard h3{margin:0 0 8px;font:600 .8rem/1.2 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.drows{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:0;font-size:14px}
+.drows dt{color:var(--muted)}
+.drows dd{margin:0;overflow-wrap:anywhere;font-family:var(--f-mono);font-size:13px}
+.drows dd.lv-ok{color:#16a34a;font-weight:600}
+.drows dd.lv-warn{color:var(--amber);font-weight:600}
+.drows dd.lv-bad{color:#e5484d;font-weight:700}
+.drows dd.lv-dim{color:var(--muted)}
+.dash-error{color:#e5484d;font-weight:600}
+.dash-log{margin-top:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.dash-log h3{margin:0 0 8px;font:600 .8rem/1.2 var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dash-log ol{list-style:none;margin:0;padding:0;max-height:32vh;overflow:auto;font:13px/1.5 var(--f-mono)}
+.dash-log li.hot{color:#e5484d;font-weight:700}

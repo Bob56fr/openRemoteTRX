@@ -52,13 +52,19 @@ FAIL_LIMIT, FAIL_WINDOW_S, BLOCK_S = 5, 15 * 60, 15 * 60     # 5 échecs en 15 m
 GLOBAL_FAIL_LIMIT = 30             # échecs toutes adresses confondues en 15 min : connexions suspendues 15 min
 STATIC_FILES = {"app.js": "application/javascript", "app.css": "text/css", "login.js": "application/javascript",
                 "vendor/xterm.js": "application/javascript", "vendor/xterm.css": "text/css",
-                "vendor/addon-fit.js": "application/javascript", "flow.js": "application/javascript"}
+                "vendor/addon-fit.js": "application/javascript", "flow.js": "application/javascript",
+                "dash.js": "application/javascript"}
 THEME_ICONS = {"station": "📡", "hardware": "📻", "safety": "🚨", "access": "🔑", "features": "✨",
                "troubleshooting": "🔧", "updates": "🔄", "expert": "🔬"}
 THEME_COLORS = {"station": "#2fd3c0", "hardware": "#5aa9ff", "safety": "#ff6b5e", "access": "#ffb340",
                 "features": "#c084fc", "troubleshooting": "#4ade80", "updates": "#38bdf8", "expert": "#94a3b8"}
 # Menus qui dessinent tout l'écran (tableau de bord, éditeur de texte) : toujours dans le terminal (étape 235)
-TERMINAL_MENUS = {"monitor", "edit_config"}
+# Menus qui ne s'ouvrent qu'au terminal intégré : plus aucun depuis l'étape 238 (lot W3c). Le tableau de bord (1.3)
+# est dessiné par la page elle-même (DASHBOARD) ; station.toml (8.1) se modifie dans un champ de la page.
+TERMINAL_MENUS: frozenset[str] = frozenset()
+DASHBOARD = "monitor"
+MAX_EDIT = 512 * 1024                            # station.toml modifiée dans la page : taille maximale
+DASH_LOG = 100                                   # lignes du journal du tableau de bord envoyées à la page
 # style-src 'unsafe-inline' : xterm.js pose ses propres styles (grille du terminal) ; AUCUN script en ligne permis.
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
        "font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -94,6 +100,8 @@ class WebConsole:
         self.flow_factory: Callable[..., Flow] = Flow
         self.sudo_password: str | None = None            # mot de passe sudo de la session, en mémoire seulement
         self.sudo_pending: str | None = None
+        self.dash_source = None                          # tableau de bord natif (étape 238) : lecteur du bus d'état
+        self.dash_log = None
 
     # ------------------------------------------------------------------ application
 
@@ -105,6 +113,8 @@ class WebConsole:
         app.router.add_post("/api/open", self.open_menu)
         app.router.add_post("/api/level", self.set_level)
         app.router.add_post("/api/lang", self.set_lang)
+        app.router.add_get("/api/dashboard", self.dashboard)
+        app.router.add_post("/api/stop_tx", self.stop_tx)
         app.router.add_get("/ws", self.websocket)
         if self.network:
             app.router.add_post("/api/login", self.login)
@@ -287,7 +297,8 @@ class WebConsole:
                 label, method = items[key]
                 help_ = texts.get(method, {})
                 entries.append({"key": key, "label": label, "short": label.split(" (", 1)[0],
-                                "mode": "terminal" if method in TERMINAL_MENUS else "form",
+                                "mode": ("dashboard" if method == DASHBOARD else
+                                         "terminal" if method in TERMINAL_MENUS else "form"),
                                 "level": menu_level(method), "visible": con.visible(method),
                                 "role": help_.get("role", ""), "when": help_.get("quand", ""),
                                 "changes": help_.get("modifie", ""), "admin": bool(help_.get("admin"))})
@@ -359,6 +370,9 @@ class WebConsole:
         methods = {"0": "language"} | {f"{n}.{i}": m for n, _, ms in MENU_THEMES for i, m in enumerate(ms, 1)}
         if key not in methods:
             raise web.HTTPBadRequest()
+        if methods[key] == DASHBOARD and not in_terminal:  # lecture seule : jamais en conflit avec un menu en cours
+            self.touch()
+            return web.json_response({"ok": True, "mode": "dashboard"})
         if self.flow is not None and self.flow.alive:     # un seul menu à la fois, formulaires ou terminal
             return web.json_response({"ok": False, "busy": "flow"}, status=409)
         if in_terminal or methods[key] in TERMINAL_MENUS:
@@ -374,6 +388,54 @@ class WebConsole:
         self.touch()
         await self.start_flow(key)
         return web.json_response({"ok": True, "mode": "form"})
+
+    # ------------------------------------------------------------------ tableau de bord natif (étape 238)
+
+    def dash_snapshot(self, net_detail: bool) -> dict:
+        """Mêmes panneaux et même journal que trx-monitor (`monitor/model.py`), en données pour la page."""
+        from .. import config as cfgmod
+        from ..monitor.model import EventLog, build_panels
+        from ..monitor.source import StatusSource
+        if self.dash_source is None:
+            try:
+                cfg = cfgmod.load(self.config)
+            except (cfgmod.ConfigError, OSError) as exc:
+                problems = getattr(exc, "problems", None) or [str(exc)]
+                return {"ok": False, "error": "; ".join(problems)[:500]}
+            self.dash_source = StatusSource(cfg.supervisor.status_path, cfg.supervisor.state_dir,
+                                            cfg.supervisor.stale_after_s)
+            self.dash_log = EventLog()
+        snap = self.dash_source.poll()
+        self.dash_log.observe(snap)
+        ptt = snap.status.ptt.get("state") if snap.status is not None and isinstance(snap.status.ptt, dict) else None
+        return {"ok": True, "fresh": snap.gateway_fresh, "ptt": ptt or "", "safe_mode": snap.safe_mode or "",
+                "panels": [{"key": p.key, "title": p.title, "rows": [[r.label, r.text, r.level] for r in p.rows]}
+                           for p in build_panels(snap, net_detail)],
+                "log": list(self.dash_log.lines)[-DASH_LOG:]}
+
+    async def dashboard(self, request: web.Request) -> web.StreamResponse:
+        """Lecture seule, rafraîchie par la page. Ne prolonge pas la session : seule une action le fait."""
+        if not self.has_session(request):
+            raise web.HTTPForbidden()
+        return web.json_response(await asyncio.to_thread(self.dash_snapshot, request.query.get("net") == "1"))
+
+    async def stop_tx(self, request: web.Request) -> web.StreamResponse:
+        """STOP TX du tableau de bord : « T 0 » direct à rigctld (`monitor/actions.py`), comme la touche s de
+        trx-monitor. Ne peut que COUPER une émission, jamais en déclencher une."""
+        if not self.has_session(request) or not self.same_origin(request):
+            raise web.HTTPForbidden()
+        from .. import config as cfgmod
+        from ..monitor.actions import stop_tx
+        self.touch()
+        try:
+            cfg = cfgmod.load(self.config)
+        except (cfgmod.ConfigError, OSError):
+            return web.json_response({"ok": False, "message": "station.toml illisible : STOP TX impossible d'ici "
+                                                              "(bouton STOP de la page de pilotage)"})
+        ok, message = await asyncio.to_thread(stop_tx, cfg)
+        if self.dash_log is not None:
+            self.dash_log.lines.append(f"{time.strftime('%H:%M:%S')}  STOP TX : {message}")
+        return web.json_response({"ok": ok, "message": message})
 
     # ------------------------------------------------------------------ menus en formulaires (étape 235)
 
@@ -424,6 +486,10 @@ class WebConsole:
             self.touch()
             label = data.get("label") if isinstance(data.get("label"), str) else ""
             flow.answer(data["value"][:4096], label[:200])
+        elif kind == "flow_edit":                          # éditeur de station.toml dans la page (8.1)
+            self.touch()
+            text = data.get("text")
+            flow.edit(text[:MAX_EDIT] if isinstance(text, str) and data.get("cancel") is not True else None)
         elif kind == "flow_stdin" and isinstance(data.get("data"), str):
             self.touch()
             flow.stdin(data["data"][:4096])
@@ -572,7 +638,8 @@ UI_KEYS = ("web.title", "web.search", "web.expand", "web.collapse", "web.languag
            "web.flow.stop", "web.flow.send", "web.flow.free", "web.flow.yes", "web.flow.no", "web.flow.continue",
            "web.flow.generate", "web.flow.confirm", "web.flow.cancel", "web.flow.keep", "web.flow.sudo",
            "web.flow.sudo_bad", "web.flow.input", "web.flow.done", "web.flow.running", "web.flow.terminal", "web.max",
-           "web.flow.busy", "web.flow.tab")
+           "web.flow.busy", "web.flow.tab", "web.dash.stop", "web.dash.net", "web.dash.close", "web.dash.stale",
+           "web.dash.log", "web.edit.save", "web.edit.cancel", "web.edit.hint")
 
 UI_START = ("\nConsole web de la station : {url}\n"
             "  Adresse à usage unique, à ouvrir sur CETTE machine (navigateur ouvert tout seul s'il y en a un).\n"

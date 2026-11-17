@@ -187,6 +187,7 @@
   "edit_config.2": "{config} kann nicht gelesen werden ({exc}).\nWenn du gerade zur Gruppe „trx“ hinzugefügt wurdest, melde dich ab und wieder an.",
   "edit_config.3": "Kein Texteditor gefunden: installiere nano (sudo apt install nano).",
   "edit_config.4": "Bearbeitung von {config} (auf einer Kopie: nichts wird vor deiner Bestätigung geändert).\nIn nano: Strg+O dann Eingabetaste zum Speichern, Strg+X zum Beenden.",
+  "edit_config.4.page": "Bearbeitung von {config} (auf einer Kopie: nichts wird vor deiner Bestätigung geändert).",
   "edit_config.5": "Keine Änderung: station.toml wurde nicht geändert.",
   "edit_config.6": "Konfiguration ABGELEHNT (die Station würde nicht starten):\n  - ",
   "edit_config.7": "Bearbeitung fortsetzen",
@@ -750,5 +751,13 @@
   "web.flow.terminal": "Im Terminal öffnen",
   "web.max": "Vollbild",
   "web.flow.busy": "Ein Menü ist bereits geöffnet: zuerst beenden oder abbrechen.",
-  "web.flow.tab": "Menü {key} läuft"
+  "web.flow.tab": "Menü {key} läuft",
+  "web.dash.stop": "STOP TX",
+  "web.dash.net": "Netzwerk (Details)",
+  "web.dash.close": "Schließen",
+  "web.dash.stale": "Gateway eingefroren oder abwesend: die Werte sind nicht mehr aktuell.",
+  "web.dash.log": "Protokoll",
+  "web.edit.save": "Prüfen und speichern",
+  "web.edit.cancel": "Abbrechen",
+  "web.edit.hint": "Text bearbeiten, dann „Prüfen und speichern“: die Station prüft alles und zeigt die Unterschiede vor dem Schreiben; bei Fehlern wird nichts geschrieben."
 }

@@ -187,6 +187,7 @@
   "edit_config.2": "Cannot read {config} ({exc}).\nIf you were just added to the « trx » group, log out and log back in.",
   "edit_config.3": "No text editor found: install nano (sudo apt install nano).",
   "edit_config.4": "Editing {config} (on a copy: nothing changes before you confirm).\nIn nano: Ctrl+O then Enter to save, Ctrl+X to quit.",
+  "edit_config.4.page": "Editing {config} (on a copy: nothing changes before you confirm).",
   "edit_config.5": "No change: station.toml was not modified.",
   "edit_config.6": "Configuration REFUSED (the station would not start):\n  - ",
   "edit_config.7": "Resume editing",
@@ -750,5 +751,13 @@
   "web.flow.terminal": "Open in the terminal",
   "web.max": "Full screen",
   "web.flow.busy": "A menu is already open: finish or stop it first.",
-  "web.flow.tab": "Menu {key} running"
+  "web.flow.tab": "Menu {key} running",
+  "web.dash.stop": "STOP TX",
+  "web.dash.net": "Network (detail)",
+  "web.dash.close": "Close",
+  "web.dash.stale": "Gateway frozen or absent: values are no longer up to date.",
+  "web.dash.log": "Log",
+  "web.edit.save": "Check and save",
+  "web.edit.cancel": "Cancel",
+  "web.edit.hint": "Edit the text, then “Check and save”: the station checks everything and shows the differences before writing; nothing is written if it is wrong."
 }

@@ -83,6 +83,14 @@ redonné à travers sudo par `env`) ; au terminal, rien ne change. Le worker (`T
 formulaire `tool: true`, retire l'invite répétée de la sortie et renvoie la réponse sur l'entrée de l'outil ; la page
 inscrit la réponse dans la sortie, sous sa question. Champs acceptés : liste fermée, choix limités à 200.
 
+W3c FAIT (étape 238, station 0.182.0) : plus aucun menu réservé au terminal (`TERMINAL_MENUS` vide). TABLEAU DE BORD
+(1.3) dessiné par la page : `/api/dashboard` (lecture seule, ne prolonge pas la session) renvoie les panneaux et le
+journal de trx-monitor (`monitor/model.py` : `build_panels`, `EventLog`), la page (`static/dash.js`) les redessine
+toutes les 0,7 s ; STOP TX = `/api/stop_tx` (session + même origine) = `monitor/actions.stop_tx` (« T 0 » direct à
+rigctld, ne peut que couper). STATION.TOML (8.1) : le worker remplace nano par la page (`WEB_EDITOR`) : le texte part
+dans un champ, revient modifié (512 ko au plus) ou annulé, remplace la COPIE de travail ; la console vérifie,
+montre les différences et enregistre par sudo exactement comme avec nano (fins de ligne d'origine gardées).
+
 ## 5 ter. TRX Console sur le réseau (étape 233)
 
 Décisions de l'utilisateur (2026-11-17), le raccourci des étapes 230-231 étant « beaucoup trop compliqué en pratique » : une page HTTPS servie en permanence sur le réseau local ou le VPN (port 8444, certificat de la station), connexion avec un compte OPÉRATEUR marqué `admin = true` (choix 1), session fermée après 30 min sans action ; le mot de passe sudo reste demandé dans le terminal, une fois par session (choix 2) ; raccourci retiré (choix 3), menu 4.6 repris. Garde-fous : adresses privées seulement, 5 échecs = 15 min de blocage par adresse, alerte ntfy à chaque connexion (ORT-4022) et à chaque blocage (ORT-4023), une seule session (une nouvelle connexion ferme l'ancienne et son terminal), 8 h au plus. Service : `trx-console-web@<compte>` (Debian, jamais root, groupe trx), enfant du superviseur sous Windows ; relancé 30 s après une installation (elle peut tourner dans son propre terminal).

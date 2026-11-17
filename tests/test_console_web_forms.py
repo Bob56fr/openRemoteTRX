@@ -316,7 +316,7 @@ def test_server_opens_menus_in_forms_one_at_a_time_and_keeps_sudo_for_the_sessio
             origin = await login(wc, client)
             data = await (await client.get("/api/state")).json()
             modes = {it["key"]: it["mode"] for th in data["themes"] for it in th["items"]}
-            assert modes["4.2"] == "form" and modes["1.3"] == "terminal" and {"monitor", "edit_config"} == TERMINAL_MENUS
+            assert modes["4.2"] == "form" and modes["1.3"] == "dashboard" and modes["8.1"] == "form" and not TERMINAL_MENUS
             r = await client.post("/api/open", json={"key": "4.2"}, headers=origin)
             assert r.status == 200 and (await r.json())["mode"] == "form"
             flow = FakeFlow.made[-1]

@@ -53,9 +53,22 @@
 </section>
 <button type="button" class="term-tab flow-tab" id="flow-tab" hidden></button>
 
+<section class="dash" id="dash" aria-label="Tableau de bord" hidden>
+  <header><h2 id="dash-title"></h2>
+    <button type="button" class="btn stop" id="dash-stop"></button>
+    <button type="button" class="btn" id="dash-net"></button>
+    <button type="button" class="btn" id="dash-term"></button>
+    <button type="button" class="btn" id="dash-close"></button></header>
+  <div class="dash-flash" id="dash-flash" role="status" hidden></div>
+  <p class="dash-stale" id="dash-stale" hidden></p>
+  <div class="dash-grid" id="dash-grid"></div>
+  <section class="dash-log"><h3 id="dash-log-title"></h3><ol id="dash-log-lines"></ol></section>
+</section>
+
 <script src="/static/vendor/xterm.js"></script>
 <script src="/static/vendor/addon-fit.js"></script>
 <script src="/static/flow.js"></script>
+<script src="/static/dash.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

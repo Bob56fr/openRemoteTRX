@@ -109,6 +109,11 @@ class Flow:
         self.record({"type": "answered", "value": shown})
         return True
 
+    def edit(self, text: str | None) -> None:
+        """Texte de station.toml modifié dans la page (None = annulé). Jamais gardé dans la suite des messages."""
+        self._write({"type": "edit", "cancel": True} if text is None else {"type": "edit", "text": text})
+        self.record({"type": "edited", "cancel": text is None})
+
     def stdin(self, data: str) -> None:
         self._write({"type": "stdin", "data": data})
         self.record({"type": "typed", "data": data})

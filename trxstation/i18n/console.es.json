@@ -187,6 +187,7 @@
   "edit_config.2": "No se puede leer {config} ({exc}).\nSi acaban de añadirte al grupo «trx», cierra la sesión y vuelve a abrirla.",
   "edit_config.3": "No se encuentra ningún editor de texto: instala nano (sudo apt install nano).",
   "edit_config.4": "Modificación de {config} (sobre una copia: nada cambia antes de tu confirmación).\nEn nano: Ctrl+O e Intro para guardar, Ctrl+X para salir.",
+  "edit_config.4.page": "Modificación de {config} (sobre una copia: nada cambia antes de tu confirmación).",
   "edit_config.5": "Ninguna modificación: station.toml no ha cambiado.",
   "edit_config.6": "Configuración RECHAZADA (la estación no arrancaría):\n  - ",
   "edit_config.7": "Seguir modificando",
@@ -750,5 +751,13 @@
   "web.flow.terminal": "Abrir en el terminal",
   "web.max": "Pantalla completa",
   "web.flow.busy": "Ya hay un menú abierto: termínalo o detenlo primero.",
-  "web.flow.tab": "Menú {key} en curso"
+  "web.flow.tab": "Menú {key} en curso",
+  "web.dash.stop": "STOP TX",
+  "web.dash.net": "Red (detalle)",
+  "web.dash.close": "Cerrar",
+  "web.dash.stale": "Pasarela congelada o ausente: los valores ya no están al día.",
+  "web.dash.log": "Registro",
+  "web.edit.save": "Comprobar y guardar",
+  "web.edit.cancel": "Cancelar",
+  "web.edit.hint": "Modifica el texto y luego «Comprobar y guardar»: la estación lo comprueba todo y muestra las diferencias antes de escribir; no se escribe nada si es incorrecto."
 }

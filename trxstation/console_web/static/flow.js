@@ -6,7 +6,7 @@
 "use strict";
 (function () {
   const $ = (s) => document.querySelector(s);
-  let ui = (k) => k, send = () => {}, inTerminal = () => {}, wantTerminal = false, flow = null, asking = null, sudo = null, running = null, outPre = null, lastAsked = null;
+  let ui = (k) => k, send = () => {}, inTerminal = () => {}, wantTerminal = false, flow = null, asking = null, sudo = null, running = null, outPre = null, lastAsked = null, editing = null;
   const QR = /[█▀▄]{6}/;
 
   function el(tag, cls, text) {
@@ -146,6 +146,10 @@
     } else if (ev.type === "out") {
       if (!outPre) outPre = newOut(l);
       outWrite(outPre, String(ev.data || "").replace(/\r/g, ""));
+    } else if (ev.type === "edit") {                    // menu 8.1 : station.toml dans un champ de la page
+      editing = ev;
+    } else if (ev.type === "edited") {
+      editing = null;
     } else if (ev.type === "typed") {
       if (outPre) outTyped(outPre, String(ev.data || ""));
     } else if (ev.type === "end") {
@@ -169,16 +173,37 @@
   }
 
   // ---------------------------------------------------------------- question en cours
+  // Éditeur de station.toml (menu 8.1, étape 238) : le texte revient à la station, qui le vérifie, montre les
+  // différences et demande confirmation avant d'écrire (même chemin qu'avec nano).
+  function editForm(f) {
+    f.append(el("p", "prompt edit", (editing.name || "station.toml") + " — " + ui("web.edit.hint")));
+    const ta = el("textarea", "editor");
+    ta.value = editing.text || "";
+    ta.spellcheck = false;
+    ta.setAttribute("autocapitalize", "off");
+    ta.setAttribute("autocomplete", "off");
+    const row = el("div", "row");
+    const done = (message) => { editing = null; send(message); renderForm(); };
+    row.append(button(ui("web.edit.save"), "primary", () => done({ type: "flow_edit", text: ta.value })),
+      button(ui("web.edit.cancel"), "", () => done({ type: "flow_edit", cancel: true })));
+    f.append(ta, row);
+    ta.setSelectionRange(0, 0);                         // début du fichier, pas la fin
+    ta.focus();
+    ta.scrollTop = 0;
+  }
   function renderForm() {
     const f = $("#flow-form");
     $("#flow-stop").textContent = ui(flow && flow.done ? "web.flow.close" : "web.flow.stop");
     $("#flow-term").textContent = "⌨ " + ui("web.flow.terminal");
+    $("#flow").classList.toggle("wide", !!(editing && flow && !flow.done));   // éditeur : panneau élargi
     const tool = flow && !sudo && !asking && running;
     if (tool && f.dataset.mode === "tool") { toolChoices(); return; }   // la ligne en cours de frappe reste
+    if (editing && !flow.done && f.dataset.mode === "edit") return;     // le texte en cours de modification reste
     f.replaceChildren();
     f.dataset.mode = tool ? "tool" : "";
     if (!flow) return;
     if (sudo) return sudoForm(f);
+    if (editing && !flow.done) { f.dataset.mode = "edit"; return editForm(f); }
     if (asking) return questionForm(f, asking);
     if (running) {
       const input = el("input", "line");
@@ -297,7 +322,7 @@
   // ---------------------------------------------------------------- panneau
   function open(summary) {
     flow = { key: summary.key, label: summary.label, done: !!summary.done };
-    asking = sudo = running = outPre = null;
+    asking = sudo = running = outPre = editing = null;
     $("#flow-key").textContent = summary.key;
     $("#flow-title").textContent = summary.label;
     log().replaceChildren();

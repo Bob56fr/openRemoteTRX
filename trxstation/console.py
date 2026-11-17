@@ -1179,7 +1179,8 @@ class Console:
         try:
             draft.write_bytes(original)
             os.chmod(draft, 0o600)                         # contient les empreintes des mots de passe
-            self.say(self.t("edit_config.4", config=self.config))
+            intro = self.t(self.page_key("edit_config.4"), config=self.config)   # page : pas de mode d'emploi de nano
+            self.say(intro)
             while True:
                 self.runner.run([self.editor, str(draft)])
                 edited = draft.read_bytes()
@@ -2924,6 +2925,11 @@ class Console:
         if release is None or (parse_version(release.version) or ()) <= (parse_version(self.installed) or ()):
             return None
         return release
+
+    @staticmethod
+    def page_key(key: str) -> str:
+        """Variante `<clé>.page` d'un message quand le menu tourne dans la page (console web en formulaires)."""
+        return f"{key}.page" if os.environ.get("TRX_CONSOLE_PAGE") else key
 
     def reopen_key(self, key: str) -> str:
         """Message « Quitte TRX Console (q) et rouvre-la » : dans la page (menus en formulaires), la clé

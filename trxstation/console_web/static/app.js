@@ -164,6 +164,11 @@
   // ---------------------------------------------------------------- ouvrir un menu
   async function openMenu(key, inTerminal) {
     hideHelp(true);
+    const item = state && state.themes.flatMap((th) => th.items).find((it) => it.key === key);
+    if (item && item.mode === "dashboard" && !inTerminal) {    // 1.3 : tableau de bord dessiné par la page
+      window.TRXDash.open(key + "  " + item.label);
+      return;
+    }
     if (window.TRXFlow.busy()) { window.TRXFlow.show(); toast(ui("web.flow.busy")); return; }
     let answer = null;
     try {
@@ -272,6 +277,10 @@
   });
   window.TRXFlow.init(ui, (m) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); },
     (key) => openMenu(key, true));
+  window.TRXDash.init(ui, () => {
+    const item = state && state.themes.flatMap((th) => th.items).find((it) => it.mode === "dashboard");
+    if (item) openMenu(item.key, true);
+  });
   $("#term-tab").addEventListener("click", () => { showTerm(true); if (term) term.focus(); });
   document.addEventListener("click", (e) => {
     // clic dans la page, hors du panneau du menu : le panneau se range (le menu continue, onglet en bas à droite)
@@ -305,6 +314,7 @@
   });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    if (window.TRXDash.shown()) { window.TRXDash.close(); return; }
     if (window.TRXFlow.shown()) window.TRXFlow.hide();
     hideHelp(true);
   });

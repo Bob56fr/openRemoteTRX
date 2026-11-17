@@ -75,6 +75,9 @@ UNCHANGED_KEYS = frozenset({
 })
 
 
+WEB_EDITOR = "trx-console-web-editor"           # « éditeur » de la console dans la page (menu 8.1, étape 238)
+
+
 def tone_of(keys: list[str]) -> str:
     """Ton d'un message d'après les clés de traduction lues pour l'écrire."""
     if any(k in REFUSED_KEYS for k in keys):
@@ -109,6 +112,7 @@ class Inbox(threading.Thread):
         self.stream, self.runner = stream, runner
         self.answers: queue.Queue[str | None] = queue.Queue()
         self.passwords: queue.Queue[str | None] = queue.Queue()
+        self.edits: queue.Queue[str | None] = queue.Queue()      # texte modifié dans la page ; "" = annulé
 
     def run(self) -> None:
         for line in self.stream:
@@ -122,11 +126,15 @@ class Inbox(threading.Thread):
                 self.runner.feed(value[:4096].replace("\n", " ") + "\n")
             elif kind == "answer" and isinstance(value, str):
                 self.answers.put(value[:4096])
+            elif kind == "edit":
+                text = msg.get("text")
+                self.edits.put(text[:512 * 1024] if isinstance(text, str) and msg.get("cancel") is not True else "")
             elif kind == "password" and isinstance(value, str):
                 self.passwords.put(value[:256])
             elif kind == "stdin" and isinstance(msg.get("data"), str):
                 self.runner.feed(msg["data"][:4096])
         self.answers.put(None)                     # serveur parti : la question en cours se termine (EOFError)
+        self.edits.put(None)
         self.passwords.put(None)
 
 
@@ -196,7 +204,27 @@ class WebRunner(Runner):
         self.channel.send({"type": "sudo_bad"})
         return None
 
+    def edit(self, path: Path) -> int:
+        """« Éditeur » du menu 8.1 dans la page : le texte part dans un champ de la page, revient modifié (ou
+        annulé) et remplace la COPIE de travail ; la console vérifie ensuite comme avec nano."""
+        assert self.inbox is not None
+        raw = path.read_bytes()
+        crlf = b"\r\n" in raw
+        self.channel.send({"type": "edit", "name": path.name, "text": raw.decode("utf-8", "replace")})
+        text = self.inbox.edits.get()
+        if text is None:
+            return 1                                     # serveur parti
+        if text == "":                                   # annulé : copie inchangée (« Aucune modification »)
+            return 0
+        text = text.replace("\r\n", "\n")
+        data = (text.replace("\n", "\r\n") if crlf else text).encode("utf-8")
+        if data.replace(b"\r\n", b"\n") != raw.replace(b"\r\n", b"\n"):
+            path.write_bytes(data)
+        return 0
+
     def run(self, cmd: list[str], *, admin: bool = False) -> int:
+        if cmd and cmd[0] == WEB_EDITOR:
+            return self.edit(Path(cmd[1]))
         first, shown = b"", command_name(cmd)
         elevated = admin and self.use_sudo
         if elevated:
@@ -427,6 +455,7 @@ def main(argv: list[str] | None = None) -> int:
 
     con = Console(args.config, runner=runner, ask=ask, say=say, lang=load_lang(prefs_path()),
                   level=load_level(prefs_path(), args.config.exists()))
+    con.editor = WEB_EDITOR                            # menu 8.1 : champ de la page à la place de nano
     fn = find_item(con, args.key)
     inbox.start()
     if fn is None:
