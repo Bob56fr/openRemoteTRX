@@ -129,7 +129,7 @@ admin = true
 expert = "<p>El transceptor solo se consulta en lectura. Una configuración importada de una estación anterior (<code>station.import.toml</code>) sirve de punto de partida.</p><p>Al añadir un transceptor, el asistente pregunta si se autoriza la <strong>retransmisión de grabaciones</strong> (aplicación: grabar el audio recibido y luego reenviarlo en transmisión, con una duración limitada al tiempo máximo de transmisión menos 5 s). Respuesta por defecto: no. Retransmitir a terceros la emisión de una estación suele estar prohibido en el servicio de aficionados: acepta solo si lo necesitas y bajo tu responsabilidad (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
-role = "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción, clientes conectados, servicios, hardware, audio, registro."
+role = "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción, clientes conectados, servicios, hardware, audio, registro. Se abre en una <strong>pestaña nueva</strong> o ventana (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console sigue abierta al lado; por SSH sin tmux, se abre en el mismo terminal."
 quand = "Para vigilar la estación in situ, o durante una prueba."
 modifie = "Nada, salvo una tecla: <strong>STOP TX</strong> fuerza la recepción. El panel nunca puede hacer transmitir."
 admin = false

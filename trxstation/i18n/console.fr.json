@@ -657,5 +657,7 @@
   "tui.hint": "Chiffre : thème, puis chiffre : menu (0 = langue) · ↑↓ et Entrée · + / - : tout déplier / replier · r ou Échap : retour · q : quitter · console texte : trx-console --texte",
   "tui.back": "Retour",
   "tui.expand_all": "Tout déplier",
-  "tui.collapse_all": "Tout replier"
+  "tui.collapse_all": "Tout replier",
+  "monitor.new_window": "Tableau de bord ouvert dans un nouvel onglet ou une nouvelle fenêtre ; TRX Console reste ici.",
+  "monitor.tmux_tip": "(Connexion SSH : le tableau de bord s'ouvre ici. Astuce : lance TRX Console dans tmux, il s'ouvrira alors dans une autre fenêtre de tmux.)"
 }

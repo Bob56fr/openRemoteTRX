@@ -657,5 +657,7 @@
   "tui.hint": "Ziffer: Thema, dann Ziffer: Menü (0 = Sprache) · ↑↓ und Eingabe · + / -: alle auf- / zuklappen · r oder Esc: zurück · q: beenden · Textkonsole: trx-console --texte",
   "tui.back": "Zurück",
   "tui.expand_all": "Alle aufklappen",
-  "tui.collapse_all": "Alle zuklappen"
+  "tui.collapse_all": "Alle zuklappen",
+  "monitor.new_window": "Übersicht in einem neuen Tab oder Fenster geöffnet; TRX Console bleibt hier.",
+  "monitor.tmux_tip": "(SSH-Verbindung: die Übersicht öffnet sich hier. Tipp: TRX Console in tmux starten, dann öffnet sie sich in einem anderen tmux-Fenster.)"
 }

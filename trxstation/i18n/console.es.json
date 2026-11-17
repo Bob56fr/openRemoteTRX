@@ -657,5 +657,7 @@
   "tui.hint": "Cifra: tema, luego cifra: menú (0 = idioma) · ↑↓ e Intro · + / -: desplegar / plegar todo · r o Esc: volver · q: salir · consola de texto: trx-console --texte",
   "tui.back": "Volver",
   "tui.expand_all": "Desplegar todo",
-  "tui.collapse_all": "Plegar todo"
+  "tui.collapse_all": "Plegar todo",
+  "monitor.new_window": "Panel abierto en una pestaña o ventana nueva; TRX Console sigue aquí.",
+  "monitor.tmux_tip": "(Conexión SSH: el panel se abre aquí. Consejo: arranca TRX Console dentro de tmux y se abrirá en otra ventana de tmux.)"
 }

@@ -125,6 +125,35 @@ def set_feature(cfg, section: str | None, module: str | None, on: bool) -> None:
         cfg.modules.run = [*run, module] if on else run
 
 
+NEW_CONSOLE = "<nouvelle-console>"        # marque de new_terminal_command : Windows, nouvelle fenêtre de console
+
+
+def new_terminal_command(cmd: list[str], *, title: str = "trx-monitor", environ: dict | None = None,
+                         windows: bool | None = None, which: Callable[[str], str | None] = shutil.which) -> list[str] | None:
+    """Commande qui lance `cmd` dans un NOUVEL onglet ou une nouvelle fenêtre de terminal, sinon None (rester ici).
+    tmux / screen d'abord (marche aussi en SSH) ; Windows : onglet de Windows Terminal, sinon nouvelle console ;
+    bureau Linux (jamais en SSH : la fenêtre s'ouvrirait sur l'écran de la station) : onglet de GNOME Terminal, sinon
+    x-terminal-emulator."""
+    env = os.environ if environ is None else environ
+    windows = IS_WINDOWS if windows is None else windows
+    if env.get("TMUX") and which("tmux"):
+        import shlex
+        return ["tmux", "new-window", "-n", title, shlex.join(cmd)]
+    if env.get("STY") and which("screen"):
+        return ["screen", "-X", "screen", "-t", title, *cmd]
+    if windows:
+        if env.get("WT_SESSION") and which("wt"):
+            return ["wt", "-w", "0", "new-tab", "--title", title, *cmd]
+        return [NEW_CONSOLE, *cmd]                     # Runner.spawn : nouvelle fenêtre de console
+    if env.get("SSH_CONNECTION") or not (env.get("DISPLAY") or env.get("WAYLAND_DISPLAY")):
+        return None
+    if which("gnome-terminal"):
+        return ["gnome-terminal", "--tab", "--title", title, "--", *cmd]
+    if which("x-terminal-emulator"):
+        return ["x-terminal-emulator", "-e", *cmd]
+    return None
+
+
 def windows_tray_startup() -> Path:
     """Raccourci du dossier Démarrage de la session (même nom que $TrayStartup de windows/installer.ps1)."""
     return (Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
@@ -266,6 +295,12 @@ class Runner:
 
     def spawn(self, cmd: list[str]) -> bool:
         """Lance un programme qui continue seul (indicateur près de l'horloge) ; vrai s'il a démarré."""
+        if cmd and cmd[0] == NEW_CONSOLE:              # programme interactif dans sa propre fenêtre (Windows)
+            try:
+                subprocess.Popen(cmd[1:], creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0), close_fds=True)
+                return True
+            except OSError:
+                return False
         flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         try:
             subprocess.Popen(cmd, creationflags=flags, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -758,7 +793,16 @@ class Console:
             self.start()
 
     def monitor(self) -> None:
-        self.runner.run(self.module("trxstation.monitor.main", "--config", str(self.config)))
+        """Tableau de bord : dans un NOUVEL onglet ou une nouvelle fenêtre quand c'est possible (TRX Console reste ici),
+        sinon dans ce terminal comme avant (SSH sans tmux)."""
+        cmd = self.module("trxstation.monitor.main", "--config", str(self.config))
+        opener = new_terminal_command(cmd, title="trx-monitor")
+        if opener is not None and self.runner.spawn(opener):
+            self.say(self.t("monitor.new_window"))
+            return
+        if os.environ.get("SSH_CONNECTION") and not os.environ.get("TMUX"):
+            self.say(self.t("monitor.tmux_tip"))
+        self.runner.run(cmd)
 
     def hwtest(self) -> None:
         if not self.config.exists():

@@ -140,7 +140,7 @@
      "expert": "",
      "modifie": "Nichts, bis auf eine Taste: STOP TX erzwingt Empfang. Die Übersicht kann\nniemals Senden auslösen.",
      "quand": "Um die Station vor Ort zu überwachen oder während eines Tests.",
-     "role": "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang,\nverbundene Clients, Dienste, Hardware, Audio, Protokoll."
+     "role": "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang,\nverbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in\neinem neuen Tab oder Fenster (Windows Terminal, GNOME Terminal, tmux,\nscreen): TRX Console bleibt daneben offen; über SSH ohne tmux öffnet sie\nsich im selben Terminal."
     },
     "monitoring": {
      "admin": true,
@@ -410,7 +410,7 @@
      "expert": "",
      "modifie": "Nothing, except one key: STOP TX forces receive. The dashboard can never\nmake the transceiver transmit.",
      "quand": "To watch the station on site, or during a test.",
-     "role": "Live dashboard, in the terminal: frequency, mode, transmit or receive,\nconnected clients, services, hardware, audio, log."
+     "role": "Live dashboard, in the terminal: frequency, mode, transmit or receive,\nconnected clients, services, hardware, audio, log. It opens in a new tab or\nwindow (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console stays\nopen next to it; over SSH without tmux, it opens in the same terminal."
     },
     "monitoring": {
      "admin": true,
@@ -680,7 +680,7 @@
      "expert": "",
      "modifie": "Nada, salvo una tecla: STOP TX fuerza la recepción. El panel nunca puede\nhacer transmitir.",
      "quand": "Para vigilar la estación in situ, o durante una prueba.",
-     "role": "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción,\nclientes conectados, servicios, hardware, audio, registro."
+     "role": "Panel en directo, en el terminal: frecuencia, modo, transmisión o recepción,\nclientes conectados, servicios, hardware, audio, registro. Se abre en una\npestaña nueva o ventana (Windows Terminal, GNOME Terminal, tmux, screen):\nTRX Console sigue abierta al lado; por SSH sin tmux, se abre en el mismo\nterminal."
     },
     "monitoring": {
      "admin": true,
@@ -950,7 +950,7 @@
      "expert": "",
      "modifie": "Rien, sauf une touche : STOP TX force la réception. Le tableau de bord ne\npeut jamais faire émettre.",
      "quand": "Pour surveiller la station sur place, ou pendant un essai.",
-     "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal."
+     "role": "Tableau de bord en direct, dans le terminal : fréquence, mode, émission ou\nréception, clients connectés, services, matériel, audio, journal. Il s'ouvre\ndans un nouvel onglet ou une nouvelle fenêtre (Windows Terminal, GNOME\nTerminal, tmux, screen) : TRX Console reste ouverte à côté ; en SSH sans\ntmux, il s'ouvre dans le même terminal."
     },
     "monitoring": {
      "admin": true,

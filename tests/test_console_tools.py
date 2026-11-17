@@ -691,3 +691,35 @@ def test_windows_indicator_and_updates_are_told_honestly(tmp_path, monkeypatch):
         con, fake, out = make(tmp_path)
         getattr(con, menu)()
         assert "installer.cmd" in out[-1] and fake.calls == []
+
+
+# --------------------------------------------------------------------------- tableau de bord à part (étape 226)
+
+def test_dashboard_opens_in_a_new_tab_or_window_when_the_terminal_allows_it():
+    from trxstation.console import NEW_CONSOLE, new_terminal_command
+    cmd = ["py", "-m", "trxstation.monitor.main"]
+    found = lambda name: f"/usr/bin/{name}"
+    none = lambda name: None
+    assert new_terminal_command(cmd, environ={"TMUX": "x", "SSH_CONNECTION": "a"}, windows=False, which=found)[:3] == [
+        "tmux", "new-window", "-n"]
+    assert new_terminal_command(cmd, environ={"WT_SESSION": "1"}, windows=True, which=found)[:4] == ["wt", "-w", "0", "new-tab"]
+    assert new_terminal_command(cmd, environ={}, windows=True, which=none) == [NEW_CONSOLE, *cmd]
+    assert new_terminal_command(cmd, environ={"DISPLAY": ":0"}, windows=False, which=found)[:2] == ["gnome-terminal", "--tab"]
+    assert new_terminal_command(cmd, environ={"DISPLAY": ":0", "SSH_CONNECTION": "a"}, windows=False, which=found) is None
+    assert new_terminal_command(cmd, environ={}, windows=False, which=found) is None        # Pi sans bureau
+
+
+def test_monitor_menu_uses_the_new_tab_and_falls_back_to_this_terminal(tmp_path, monkeypatch):
+    import trxstation.console as module
+    write_config(tmp_path)
+    con, fake, out = make(tmp_path)
+    fake.spawn = lambda cmd: fake.calls.append((cmd, "spawn")) or True
+    monkeypatch.setattr(module, "new_terminal_command", lambda cmd, title: ["tmux", "new-window", "x"])
+    con.monitor()
+    assert fake.calls[-1] == (["tmux", "new-window", "x"], "spawn") and "nouvel onglet" in out[-1]
+    monkeypatch.setattr(module, "new_terminal_command", lambda cmd, title: None)
+    monkeypatch.setenv("SSH_CONNECTION", "a b c d")
+    monkeypatch.delenv("TMUX", raising=False)
+    con, fake, out = make(tmp_path)
+    con.monitor()
+    assert "trxstation.monitor.main" in fake.calls[-1][0] and "tmux" in out[-1]

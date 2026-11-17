@@ -129,7 +129,7 @@ admin = true
 expert = "<p>Der Transceiver wird nur lesend abgefragt. Eine aus einer alten Station importierte Konfiguration (<code>station.import.toml</code>) dient als Ausgangspunkt.</p><p>Beim Hinzufügen eines Transceivers fragt der Assistent, ob das <strong>Wiederaussenden von Aufnahmen</strong> erlaubt ist (App: empfangenes Audio aufnehmen und dann senden, Dauer begrenzt auf die maximale Sendezeit minus 5 s). Standardantwort: nein. Die Aussendung einer Station an Dritte weiterzusenden ist im Amateurfunkdienst in der Regel verboten: nur zustimmen, wenn du es wirklich brauchst, und auf eigene Verantwortung (<code>[safety] allow_replay</code>).</p>"
 
 [menus.monitor]
-role = "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang, verbundene Clients, Dienste, Hardware, Audio, Protokoll."
+role = "Live-Übersicht im Terminal: Frequenz, Betriebsart, Senden oder Empfang, verbundene Clients, Dienste, Hardware, Audio, Protokoll. Sie öffnet sich in einem <strong>neuen Tab</strong> oder Fenster (Windows Terminal, GNOME Terminal, tmux, screen): TRX Console bleibt daneben offen; über SSH ohne tmux öffnet sie sich im selben Terminal."
 quand = "Um die Station vor Ort zu überwachen oder während eines Tests."
 modifie = "Nichts, bis auf eine Taste: <strong>STOP TX</strong> erzwingt Empfang. Die Übersicht kann niemals Senden auslösen."
 admin = false

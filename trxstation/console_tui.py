@@ -155,9 +155,14 @@ class ConsoleApp(App):
         return parent.data[1] if parent is not None and parent.data and parent.data[0] == "theme" else None
 
     def on_key(self, event) -> None:
+        # Caractère reçu, quelle que soit la touche : chiffres du pavé numérique, et + / - du pavé que certains
+        # terminaux ne nomment pas « plus » / « minus » (le raccourci ne les voit pas).
         if event.character and event.character.isdigit():
             event.stop()
             self.digit(event.character)
+        elif event.character in ("+", "-"):
+            event.stop()
+            self.action_expand_all() if event.character == "+" else self.action_collapse_all()
 
     def digit(self, ch: str) -> None:
         tree = self.query_one(Tree)

@@ -176,3 +176,21 @@ def test_when_everything_is_unfolded_a_digit_still_chooses_a_theme_first(tmp_pat
             await pilot.pause(0.2)
         assert ran == ["4.3"]
     asyncio.run(scenario())
+
+
+def test_keypad_plus_and_minus_work_by_their_character(tmp_path):
+    con = console(tmp_path)
+
+    async def scenario():
+        from textual import events
+        app = ConsoleApp(con, icons=False)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            themes = [n for n in app.query_one("Tree").root.children if n.children]
+            app.on_key(events.Key("kp_add", "+"))                 # nom de touche inconnu, caractère « + »
+            await pilot.pause(0.2)
+            assert all(n.is_expanded for n in themes)
+            app.on_key(events.Key("kp_subtract", "-"))
+            await pilot.pause(0.2)
+            assert not any(n.is_expanded for n in themes)
+    asyncio.run(scenario())

@@ -657,5 +657,7 @@
   "tui.hint": "Digit: theme, then digit: menu (0 = language) · ↑↓ and Enter · + / -: expand / collapse all · r or Esc: back · q: quit · text console: trx-console --texte",
   "tui.back": "Back",
   "tui.expand_all": "Expand all",
-  "tui.collapse_all": "Collapse all"
+  "tui.collapse_all": "Collapse all",
+  "monitor.new_window": "Dashboard opened in a new tab or window; TRX Console stays here.",
+  "monitor.tmux_tip": "(SSH connection: the dashboard opens here. Tip: start TRX Console inside tmux, it will then open in another tmux window.)"
 }
