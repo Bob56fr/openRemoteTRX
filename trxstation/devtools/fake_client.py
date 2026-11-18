@@ -68,7 +68,9 @@ class ClickTrack(ToneTrack):
 
 class FakeClient:
     def __init__(self, base_url: str, client_id: str, password: str, *, track: ToneTrack | None = None,
-                 record_wav: str | None = None):
+                 record_wav: str | None = None, ssl=None):
+        """`ssl` : passé à aiohttp (None = vérification normale ; `aiohttp.Fingerprint` = certificat épinglé)."""
+        self.ssl = ssl
         self._recorder = WavSink(record_wav) if record_wav else None
         self.base_url, self.client_id, self.password = base_url.rstrip("/"), client_id, password
         self.track = track or ToneTrack(active=False)
@@ -123,7 +125,8 @@ class FakeClient:
         async with aiohttp.ClientSession() as http:
             async with http.post(f"{self.base_url}/offer", json={
                     "client_id": self.client_id, "password": self.password,
-                    "sdp": self.pc.localDescription.sdp, "type": self.pc.localDescription.type}) as response:
+                    "sdp": self.pc.localDescription.sdp, "type": self.pc.localDescription.type},
+                    ssl=self.ssl) as response:
                 if response.status != 200:
                     try:
                         reason = (await response.json()).get("error", "")

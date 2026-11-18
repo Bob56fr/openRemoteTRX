@@ -104,7 +104,18 @@ Rapport : `<session>.zip` dans DOSSIER (`qualification.json` format 1, `rapport.
 `empreintes.sha256`, dossiers `explore-*`, `qualif-*`, `essais/`). Verdict PROPOSÉ : `refuse` (un essai ou Q1 en
 échec), `incomplet`, `validation_en_cours` ; `valide` reste une décision de l'équipe.
 
-Pas encore : configuration de session isolée de celle du PC, client automatique, mesures ALC, jumeau rejouable.
+Essais AUTOMATIQUES (choix 8, étape 254, `qualif/autodrills.py`) : un client automatique (le faux client WebRTC
+des tests, micro MUET, certificat de la passerelle ÉPINGLÉ par son empreinte) se connecte à la station avec un compte
+opérateur (demandé une fois, mot de passe masqué) et joue A1 STOP (≤ 0,5 s), A2 battements arrêtés (≤ 3 s), A3
+connexion fermée (≤ 3 s), A4 fréquence juste hors d'une bande (émission refusée, fréquence remise), A5 TOT (± 2 s).
+Il ne parle qu'à la PASSERELLE : aucune commande au poste, toutes les sécurités de la station s'appliquent. Chaque
+essai exige le mot EMETTRE (ou celui de la langue) tapé par l'opérateur ; poste pas en réception au départ = essai non
+joué ; en fin d'essai, quoi qu'il arrive : « stop », connexion fermée, réception relue sur le poste, sinon échec et
+alerte « COUPE LE POSTE ». Un essai automatique en échec REFUSE le poste ; ils restent facultatifs pour le verdict
+(les essais à la main éprouvent la vraie page et la vraie application). Tests : `tests/test_qualif_autodrills.py`
+(station complète en un processus, pannes de l'outil comprises).
+
+Pas encore : configuration de session isolée de celle du PC, mesures ALC, jumeau rejouable.
 
 ## Exploration d'un poste jamais essayé (`--explorer`, étape 175)
 

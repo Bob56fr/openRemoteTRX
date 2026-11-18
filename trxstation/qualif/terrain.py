@@ -207,6 +207,12 @@ def judge(drill: Drill, m: dict, *, tot_s: float) -> tuple[str, str]:
     return ("echec", "émission vue") if m["tx_seen"] else ("non_mesure", "déclaratif (aucune mesure pendant l'arrêt du PC)")
 
 
+def all_drills() -> tuple[Drill, ...]:
+    """Essais à la main puis essais automatiques (lot T2)."""
+    from .autodrills import AUTO_DRILLS
+    return DRILLS + AUTO_DRILLS
+
+
 def final_result(measured: str, declared_ok: bool | None) -> str:
     if measured == "echec" or declared_ok is False:
         return "echec"
@@ -355,8 +361,9 @@ def verdict(session: Session) -> tuple[str, list[str]]:
     """Verdict PROPOSÉ (la décision reste à l'éditeur) et ses raisons."""
     reasons = []
     results = {d.id: session.drills.get(d.id, {}).get("result") for d in DRILLS}
-    if any(r == "echec" for r in results.values()):
-        return "refuse", [f"essai {k} en échec" for k, r in results.items() if r == "echec"]
+    failed = [k for k, v in session.drills.items() if v.get("result") == "echec"]   # automatiques compris
+    if failed:
+        return "refuse", [f"essai {k} en échec" for k in failed]
     qualif = [r for r in session.runs if r.get("kind") == "qualif"]
     if not qualif:
         reasons.append("qualification Q1 non faite")
@@ -456,7 +463,7 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "poste": {"fabricant": session.manufacturer, "nom": session.model_name, "hamlib_model": session.model,
                   "backend": session.backend_status},
         "reglages": settings,
-        "essais": [{"id": d.id, "facultatif": d.optional, **session.drills.get(d.id, {})} for d in DRILLS],
+        "essais": [{"id": d.id, "facultatif": d.optional, **session.drills.get(d.id, {})} for d in all_drills()],
         "runs": session.runs,
         "releves": session.snapshots,
         "remise_en_etat": _restore_summary(session),
@@ -556,7 +563,8 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             return "✓" if ok else " "
         out(_t("terrain.menu2", before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
                qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
-               total=len(DRILLS), after=tick(session.snapshots.get("apres")),
+               total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
+               auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
         choice = ask(_t("terrain.choice")).strip().lower()
         if choice in ("2", "3", "4") and running:
@@ -573,6 +581,11 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             if not running:
                 out(_t("terrain.need_running"))
             drills_menu(session, cfg, state_dir, ask=ask, out=out)
+        elif choice == "8":
+            if not running:
+                out(_t("terrain.need_running"))
+            from .autodrills import auto_menu
+            auto_menu(session, cfg, state_dir, ask=ask, out=out)
         elif choice == "6":
             take_snapshot(session, "apres", snapshot, out=out)
             show_differences(session, out=out)

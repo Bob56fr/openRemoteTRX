@@ -239,6 +239,7 @@ Aucune n'est plus compliquée que ce que la station fait déjà ; le seul point 
 
 VERSION 0 FAITE (étape 252, station 0.194.0, `docs/qualification.md` § « Valise de qualification v0 ») : session, enchaînement des outils existants, essais du § 5.4 JOUÉS À LA MAIN et chronométrés par l'observateur (repère tapé au moment de l'action), rapport zip et empreintes. Aucun chemin d'émission nouveau.
 Étape 253 (station 0.195.0) : relevés avant / après en lecture seule et différences (§ 5.2, 5.6), dossiers de photos, station du PC arrêtée / démarrée par la valise, menu 8.3 choix 6. Reste du lot T1 : configuration de session isolée de celle du PC ; puis T2 (client automatique), T3, T5.
+Étape 254 (station 0.196.0) : T2 FAIT pour les essais 1, 2 (TOT), 3, 4 et 5 du § 5.4 (`qualif/autodrills.py`) ; l'essai 6 (deux clients) n'est pas automatisé : il demande deux comptes ; le TOT est celui de la station, pas un TOT réduit de session (pas encore de configuration de session).
 
 
 | Lot | Contenu | Dépend de |
