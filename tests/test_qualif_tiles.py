@@ -140,3 +140,30 @@ def test_the_observer_tells_the_page_each_ptt_change():
     for v in (0, 0, 1, 1, None, 0):
         obs._note(v)
     assert seen == [0, 1, None, 0]
+
+
+def test_the_suitcase_starts_its_own_station_not_the_installed_task(tmp_path, monkeypatch):
+    """Essai du 2026-11-18 : « d » lançait la tâche planifiée « TRX distant », absente sur un PC de qualification
+    (et qui démarrerait la station installée, avec SA configuration). Configuration propre = son superviseur."""
+    import os
+    import subprocess
+    import pytest
+    if os.name != "nt":
+        pytest.skip("démarrage propre à Windows (systemd sous Linux)")
+    launched = []
+    monkeypatch.setattr(subprocess, "Popen", lambda cmd, **kw: launched.append((cmd, kw)))
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: launched.append((cmd, kw)) or SimpleNamespace(returncode=0))
+    config = tmp_path / "qualif" / "station.toml"
+    config.parent.mkdir()
+    config.write_text("", encoding="utf-8")
+    assert terrain.own_station_config(config) and not terrain.own_station_config(None)
+    assert terrain.station_control(config, True) == 0
+    cmd, kw = launched[0]
+    assert cmd[1:3] == ["-m", "trxstation.supervisor.main"] and str(config.resolve()) in cmd
+    assert cmd[-1] == str(config.parent.resolve() / "logs") and (config.parent / "logs").is_dir()
+    launched.clear()
+    terrain.station_control(config, False)                     # arrêt : --stop avec SA configuration
+    assert "--stop" in launched[0][0] and str(config) in launched[0][0]
+    launched.clear()
+    terrain.station_control(None, True)                        # station installée : sa tâche planifiée
+    assert launched[0][0][:2] == ["schtasks", "/Run"]

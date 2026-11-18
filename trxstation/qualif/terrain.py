@@ -812,12 +812,36 @@ def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) ->
     return True
 
 
+def own_station_config(config_path: Path | None) -> bool:
+    """La valise tourne avec une AUTRE station.toml que celle de l'installation (dossier de qualification)."""
+    if config_path is None:
+        return False
+    from ..paths import default_config_path
+    try:
+        return config_path.resolve() != default_config_path().resolve()
+    except OSError:
+        return True
+
+
 def station_control(config_path: Path | None, start: bool) -> int:
     """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
     import subprocess
     import sys
     from ..console import TARGET, WINDOWS_TASK
     if os.name == "nt":
+        if start and own_station_config(config_path):
+            # Station de la VALISE (sa propre station.toml) : jamais la tâche planifiée de l'installation, qui
+            # démarrerait la station installée avec SA configuration, ou n'existe pas (essai du 2026-11-18 :
+            # « Le fichier spécifié est introuvable »). Superviseur lancé comme 2-demarrer-station.cmd.
+            folder = config_path.resolve().parent
+            (folder / "logs").mkdir(exist_ok=True)
+            try:
+                subprocess.Popen([sys.executable, "-m", "trxstation.supervisor.main", "--config",
+                                  str(config_path.resolve()), "--log-dir", str(folder / "logs")],
+                                 cwd=str(folder), creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
+            except OSError:
+                return 1
+            return 0
         if start:
             cmd = ["schtasks", "/Run", "/TN", WINDOWS_TASK]
         else:
