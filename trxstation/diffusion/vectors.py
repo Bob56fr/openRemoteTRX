@@ -23,6 +23,8 @@ SIGNED = [
      lambda: p.meta_body(STATION, 1800000001000, "public", {
          "pseudo": "BOB-56-FR", "indicatif": "F4XYZ", "frequence_hz": 7074000, "mode": "USB", "bande": "40m",
          "tx": False, "s_metre": "S9+20", "message": "Écoute du soir"})),
+    ("meta publique, silence hors bandes", "meta",
+     lambda: p.meta_body(STATION, 1800000003000, "public", {"pseudo": "BOB-56-FR"}, "hors_bandes")),
     ("nouveau mot de passe des auditeurs", "auditeur",
      lambda: p.listener_body(STATION, 1800000002000, "auditeur", "Abcdef123456")),
 ]
@@ -58,6 +60,7 @@ def build() -> dict:
                                     "BOB-56-FR").decode("utf-8"),
     }
     out["meta_refusees"] = [{"nom": n, "meta": m} for n, m in META_REFUSED]
+    out["silences"] = list(p.SILENCE_REASONS)
     out["reconnexion_s"] = [p.backoff(i) for i in range(1, 9)]
     return out
 

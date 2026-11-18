@@ -41,6 +41,7 @@ log = logging.getLogger("trx.diffusion")
 FRAME_S = au.BLOCK / 48000            # 20 ms
 AUDIO_QUEUE = 50                      # 1 s au plus en attente
 NO_AUDIO_ALERT_S = 5.0                # plus de son de la passerelle : alerte (silence envoyé)
+NO_AUDIO_SILENCE_S = 2.0              # plus de son de la passerelle : raison « pas_de_son » dite aux auditeurs
 FATAL_STATUSES = (401, 404)           # mot de passe ou station refusés : pas de nouvel essai
 # TRX Console (menu 5.6) : demande déposée dans state_dir, réponse dans state_dir/diffusion (même mécanisme que la
 # présence et le monitoring). La réponse peut porter le mot de passe des AUDITEURS (« reveal ») : effacée vite.
@@ -115,6 +116,7 @@ class DiffusionService:
         if s is not None:
             out.update({k: s[k] for k in ("access", "voice", "started", "ends", "phase", "listeners", "operator",
                                           "meta_choice")})
+            out["silence"] = s.get("silence")                   # raison d'un silence voulu, dite aux auditeurs
             out["remaining_s"] = None if s["ends"] is None else max(0, int(s["ends"] - self.clock()))
             out["stream_url"] = p.stream_url(self.df.server, self.df.station, s["access"])
             if s["access"] == "prive":
@@ -155,6 +157,22 @@ class DiffusionService:
         elif name == "ptt" and isinstance(data, dict):
             self.values["tx"] = bool(data.get("active"))
             self._meta_dirty = True
+
+    def silence_reason(self) -> str | None:
+        """Pourquoi les auditeurs n'entendent rien (protocol.SILENCE_REASONS), None si le son passe. Même règle que la
+        passerelle (diffusion_out : silence hors [[bands]] sauf outside_bands, voix de l'opérateur non cochée) ;
+        fréquence encore inconnue : rien d'affirmé."""
+        s = self._session
+        if s is None:
+            return None
+        if s.get("phase") == "en_direct" and time.monotonic() - self._last_audio > NO_AUDIO_SILENCE_S:
+            return "pas_de_son"
+        if self.values.get("tx") and not s.get("voice"):
+            return "emission"
+        freq = self.values.get("frequence_hz")
+        if not self.df.outside_bands and isinstance(freq, int) and not self.cfg.tx_allowed(freq):
+            return "hors_bandes"
+        return None
 
     async def on_call(self, data: dict):
         from ..modules.client import CallRefused          # client du bus : seulement pour traduire le refus
@@ -198,7 +216,8 @@ class DiffusionService:
             return keyfile.read(self.key_path)
         except (keyfile.KeyFileError, OSError) as exc:
             emit_event(codes.ORT_6105, logger=log, fichier=str(self.key_path), detail=str(exc)[:200])
-            raise ActionRefused("no_secrets", f"secrets de la diffusion illisibles : {exc}") from None
+            raise ActionRefused("no_secrets", f"secrets du serveur absents ou illisibles ({exc}) : TRX Console, "
+                                              "menu 5.6, choix 6") from None
 
     def set_listener(self, args: dict) -> dict:
         """Identifiant et mot de passe des auditeurs du montage privé : choisis par l'opérateur ou générés ; FIXES
@@ -369,7 +388,7 @@ class DiffusionService:
         loop = asyncio.get_running_loop()
         t0 = loop.time()
         sent = 0                                          # blocs envoyés depuis t0 : le débit suit l'horloge
-        self._last_audio = loop.time()
+        self._last_audio = time.monotonic()
         alerted = False
         try:
             while True:
@@ -379,14 +398,14 @@ class DiffusionService:
                     return "connexion fermée par le serveur"
                 try:
                     pcm = await asyncio.wait_for(self.audio.get(), FRAME_S * 2)
-                    self._last_audio = loop.time()
+                    self._last_audio = time.monotonic()
                     alerted = False
                 except asyncio.TimeoutError:
                     behind = int((loop.time() - t0) / FRAME_S) - sent
                     if behind <= 0:
                         continue
                     pcm = au.SILENCE * min(behind, 10)    # pas de son de la passerelle : silence (Icecast coupe
-                    if not alerted and loop.time() - self._last_audio > NO_AUDIO_ALERT_S:   # une source muette)
+                    if not alerted and time.monotonic() - self._last_audio > NO_AUDIO_ALERT_S:   # une source muette)
                         alerted = True
                         emit_event(codes.ORT_6108, logger=log, secondes=int(NO_AUDIO_ALERT_S))
                 sent += len(pcm) // au.PCM_BYTES
@@ -415,11 +434,17 @@ class DiffusionService:
                 if status != 200:
                     refused = True
                     emit_event(codes.ORT_6107, logger=log, serveur=self.df.server, statut=status or "sans réponse")
+            silence = self.silence_reason()
+            if silence != s.get("silence"):            # dit aux auditeurs dès que possible (au plus 1 par seconde)
+                s["silence"] = silence
+                self._meta_dirty = True
+                self.write_status()
             now = time.monotonic()                     # cadence : horloge monotone (l'heure murale peut sauter)
             if (self._meta_dirty and now - last >= p.META_MIN_INTERVAL_S) or now - last >= p.META_REFRESH_S:
                 self._meta_dirty = False
                 last = now
-                status, counts = await meta.send_meta(s["access"], p.pick_meta(s["meta_choice"], self.values))
+                status, counts = await meta.send_meta(s["access"], p.pick_meta(s["meta_choice"], self.values),
+                                                     s.get("silence"))
                 if status == 200:
                     refused = False
                     if counts is not None and counts.get(s["access"]) != s["listeners"]:

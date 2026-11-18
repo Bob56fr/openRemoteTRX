@@ -63,6 +63,15 @@ test("avertissement du cahier § 1.1", () => {
   assert.match(dfx.status({ active: true, outside_bands: true, phase: "en_direct", remaining_s: 60 }), /hors bandes diffusé/);
 });
 
+test("raison du silence des auditeurs (étape 247)", () => {
+  const d = { active: true, access: "public", phase: "en_direct", remaining_s: 60, silence: "hors_bandes" };
+  assert.match(dfx.status(d), /SILENCE pour les auditeurs : réception hors des bandes autorisées/);
+  assert.match(dfx.indicator(d).text, /🔇/);
+  assert.match(dfx.indicator(d).title, /Silence pour les auditeurs/);
+  assert.doesNotMatch(dfx.indicator({ ...d, silence: null }).text, /🔇/);
+  assert.match(dfx.status({ ...d, silence: "emission" }), /voix non diffusée/);
+});
+
 let failed = 0;
 for (const [name, fn] of tests) {
   try { fn(); console.log("ok   " + name); } catch (e) { failed++; console.log("ÉCHEC " + name + "\n" + e.stack); }

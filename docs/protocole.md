@@ -436,7 +436,10 @@ diffusion, y compris celle d'un autre.
   hors des `[[bands]]`, appliqué par la passerelle), `codec`, `problem`, `last_stop` {cause, at}, `listen_page` ;
   pendant une diffusion,
   `access`, `voice`, `phase` (`connexion`, `en_direct`, `nouvel_essai`), `listeners` (nombre donné par le serveur,
-  donnée non fiable), `operator`, `remaining_s` (null = sans limite), `stream_url`, `listener_user`, `meta_choice`.
+  donnée non fiable), `operator`, `remaining_s` (null = sans limite), `stream_url`, `listener_user`, `meta_choice`,
+  `silence` (depuis 0.191.0 : raison d'un silence voulu pour les auditeurs, `hors_bandes`, `emission` = opérateur en
+  émission sans sa voix diffusée, `pas_de_son` = plus de son du poste ; null quand le son passe ; aussi envoyée au
+  serveur, `docs/protocole-diffusion.md` § 3.1).
   Causes d'arrêt : `operator`, `duration`, `overload`, `gateway_restart`, `auth`, `disabled`, `station_stop`.
 - **Page web** (`diffusion.js`, rubrique « Diffusion en direct », indicateur « DIFFUSION » de l'en-tête, toujours
   visible pendant une diffusion) : lancement (accès, durée, voix, informations diffusées), avertissement au premier

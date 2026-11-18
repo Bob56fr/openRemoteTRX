@@ -92,6 +92,17 @@ non fiable (affichée, jamais exécutée).
   | `s_metre` | texte | 8 (ex. `S9+20`) |
   | `message` | texte | 140 |
 
+- `silence` (facultatif, hors de `meta`, depuis la station 0.191.0) : pourquoi les auditeurs n'entendent rien en ce
+  moment, pour le leur dire. TOUJOURS envoyé quand il s'applique (aucune donnée personnelle), absent quand le son
+  passe. Valeurs : `hors_bandes` (réception hors des bandes autorisées, `[diffusion] outside_bands = false`),
+  `emission` (l'opérateur émet et sa voix n'est pas diffusée), `pas_de_son` (le son du poste n'arrive plus au module
+  depuis 2 s). Le serveur refuse (400) une autre valeur ; un serveur plus ancien l'ignore. Exemple signé : vecteur
+  « meta publique, silence hors bandes ».
+
+  ```json
+  {"v":1,"station":"bob56fr","ts_ms":1800000003000,"acces":"public","meta":{"pseudo":"BOB-56-FR"},"silence":"hors_bandes"}
+  ```
+
 - Réponse : `{"ok":true,"auditeurs":{"prive":N,"public":M}}` (`auditeurs` = `null` si Icecast ne répond pas). La
   station la vérifie (entiers de 0 à 10 000, sinon ignorée) et ne fait que l'afficher.
 
@@ -113,7 +124,8 @@ non fiable (affichée, jamais exécutée).
   l'adresse que l'opérateur transmet ; la station l'affiche avec l'identifiant (le mot de passe sur demande).
 - Lecteurs (VLC, applications de radio) : `https://<serveur>/<station>-prive` (identifiant demandé) ou `-public`.
 - Service de la page (serveur de référence) : `GET /api/v1/<station>/etat` → `{"en_direct":false}` ou
-  `{"en_direct":true,"acces":…,"montage":…,"meta":{…},"maj":<s>,"auditeurs":N}` ; montage privé sans connexion :
+  `{"en_direct":true,"acces":…,"montage":…,"meta":{…},"silence":…,"maj":<s>,"auditeurs":N,"places":P}` (`silence` :
+  dernière raison reçue de la station, null si le son passe ; `places` : auditeurs au plus par montage) ; montage privé sans connexion :
   401 `{"en_direct":true,"acces":"prive","connexion":true}`. `POST /api/v1/<station>/connexion`
   `{"user","password"}` : cookie de 12 h (HttpOnly, Secure, SameSite=Strict) ; 5 échecs d'une même adresse en 10 min
   = 429.

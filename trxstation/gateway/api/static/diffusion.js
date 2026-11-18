@@ -38,6 +38,13 @@
 
   function hoursLabel(h) { return h === null ? "Sans limite (24 h/24)" : h + " h"; }
 
+  /* Raison d'un silence voulu (la station la dit aussi aux auditeurs, docs/protocole-diffusion.md § 3.1). */
+  const SILENCES = {
+    hors_bandes: "réception hors des bandes autorisées",
+    emission: "émission en cours, voix non diffusée",
+    pas_de_son: "le son du poste n'arrive plus",
+  };
+
   /* Indicateur de l'en-tête : toujours visible pendant une diffusion (cahier § 8). null hors diffusion. */
   function indicator(d) {
     if (!d || d.active !== true) return null;
@@ -46,12 +53,15 @@
     const parts = ["DIFFUSION"];
     if (n !== null) parts.push("🎧 " + n);
     parts.push(remaining(d.remaining_s));
+    if (SILENCES[d.silence]) parts.push("🔇");
     return {
       text: parts.join(" · "),
       level: live ? "live" : "retry",
       title: "Diffusion en direct (" + (d.access === "public" ? "publique" : "privée") + ", " +
              (PHASES[d.phase] || d.phase || "") + (n !== null ? ", " + n + " auditeur" + (n > 1 ? "s" : "") : "") +
-             ", reste " + remaining(d.remaining_s) + "). Touche : sa rubrique",
+             ", reste " + remaining(d.remaining_s) + ")" +
+             (SILENCES[d.silence] ? ". Silence pour les auditeurs : " + SILENCES[d.silence] : "") +
+             ". Touche : sa rubrique",
     };
   }
 
@@ -65,7 +75,8 @@
       return "En cours" + who + " : " + (d.access === "public" ? "publique" : "privée") + ", " +
              (PHASES[d.phase] || d.phase) + ", reste " + remaining(d.remaining_s) +
              (d.voice ? ", voix émise diffusée" : ", voix émise NON diffusée") +
-             (d.outside_bands ? ", hors bandes diffusé" : ", silence hors des bandes autorisées") + ".";
+             (d.outside_bands ? ", hors bandes diffusé" : ", silence hors des bandes autorisées") + "." +
+             (SILENCES[d.silence] ? " En ce moment, SILENCE pour les auditeurs : " + SILENCES[d.silence] + "." : "");
     }
     const last = d.last_stop && STOPS[d.last_stop.cause] ? " Dernière : " + STOPS[d.last_stop.cause] + "." : "";
     return "Aucune diffusion en cours." + last;

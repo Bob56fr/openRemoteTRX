@@ -102,7 +102,8 @@ class DiffusionOut:
             return None
         keys = ("enabled", "active", "accepted", "outside_bands", "codec", "problem", "last_stop", "listen_page",
                 "access", "voice",
-                "phase", "listeners", "operator", "remaining_s", "stream_url", "listener_user", "meta_choice")
+                "phase", "listeners", "operator", "remaining_s", "stream_url", "listener_user", "meta_choice",
+                "silence")
         return {k: s.get(k) for k in keys if k in s}
 
     async def close_feed(self) -> None:

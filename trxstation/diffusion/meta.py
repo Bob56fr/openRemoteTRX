@@ -47,9 +47,10 @@ class MetaClient:
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             return None, None
 
-    async def send_meta(self, access: str, meta: dict[str, Any]) -> tuple[int | None, dict[str, int] | None]:
+    async def send_meta(self, access: str, meta: dict[str, Any],
+                        silence: str | None = None) -> tuple[int | None, dict[str, int] | None]:
         """Envoie les métadonnées ; renvoie (statut HTTP ou None, nombre d'auditeurs vérifié ou None)."""
-        status, obj = await self._post("meta", p.meta_body(self.station, self._ts(), access, meta))
+        status, obj = await self._post("meta", p.meta_body(self.station, self._ts(), access, meta, silence))
         return status, (p.parse_meta_reply(obj) if status == 200 else None)
 
     async def send_listener(self, user: str, password: str) -> int | None:

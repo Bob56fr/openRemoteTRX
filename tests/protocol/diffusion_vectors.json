@@ -18,6 +18,14 @@
    "signature": "3d4e6b72126f3b13802fa8b9ee30debcd4bad15f6589623f80bb992ad4ee6e34"
   },
   {
+   "nom": "meta publique, silence hors bandes",
+   "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+   "methode": "POST",
+   "chemin": "/api/v1/bob56fr/meta",
+   "corps": "{\"v\":1,\"station\":\"bob56fr\",\"ts_ms\":1800000003000,\"acces\":\"public\",\"meta\":{\"pseudo\":\"BOB-56-FR\"},\"silence\":\"hors_bandes\"}",
+   "signature": "6711be3514aaa1d44f2c3fe963fe5c9f55424452c091c6272788175f8bebc435"
+  },
+  {
    "nom": "nouveau mot de passe des auditeurs",
    "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
    "methode": "POST",
@@ -73,6 +81,11 @@
     "message": "a\u0007b"
    }
   }
+ ],
+ "silences": [
+  "hors_bandes",
+  "emission",
+  "pas_de_son"
  ],
  "reconnexion_s": [
   2,

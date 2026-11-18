@@ -143,6 +143,10 @@ métadonnées est à écrire par celui qui monte son propre VPS.
     durée, reconnexion, surcharge).
 - **D2** (fait, étape 245) Commandes client et page (panneau de lancement, indicateur), `docs/protocole.md` § 20,
   `hello.features`, `state.diffusion` (opérateurs), réglage `outside_bands` (§ 12.1).
+- **Raison du silence** (étape 247, demande du 2026-11-18 : « indiquer dans le player pourquoi il n'y a pas de son ») :
+  champ `silence` des métadonnées (`hors_bandes`, `emission`, `pas_de_son`, protocole § 3.1), menu 5.6, page de
+  pilotage (🔇) ; page des auditeurs du serveur reprise du POC (S-mètre, waterfall du son joué, pastilles,
+  auditeurs / places ; pas de « retard visé » : Ogg Opus hors MediaSource dans Chrome).
 - **D3** (fait en grande partie, étape 246) TRX Console : interrupteur 5.5 et menu **5.6** (état, lancer avec
   avertissement au premier lancement, arrêter, identifiants des auditeurs voir / générer, réglages `[diffusion]` dont
   hors bandes, secrets du serveur dans `diffusion.key` écrit par la console elle-même en 0600 au compte du service,

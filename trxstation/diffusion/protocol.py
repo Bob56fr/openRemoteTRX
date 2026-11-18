@@ -52,6 +52,9 @@ META_FIELDS: dict[str, tuple[Any, ...]] = {
     "message": (str, 140),
 }
 DEFAULT_META_CHOICE = ("pseudo",)       # cahier § 1.6 : pseudo seul par défaut
+# Raison d'un silence VOULU, toujours envoyée (aucune donnée personnelle), pour l'expliquer aux auditeurs (§ 3.1) :
+# réception hors des bandes autorisées, opérateur en émission sans sa voix diffusée, plus de son du poste.
+SILENCE_REASONS = ("hors_bandes", "emission", "pas_de_son")
 
 
 class DiffusionRefused(ValueError):
@@ -169,9 +172,15 @@ def _body(obj: dict[str, Any]) -> bytes:
     return data
 
 
-def meta_body(station: str, ts_ms: int, access: str, meta: dict[str, Any]) -> bytes:
-    return _body({"v": VERSION, "station": check_station(station), "ts_ms": int(ts_ms),
-                  "acces": check_access(access), "meta": check_meta(meta)})
+def meta_body(station: str, ts_ms: int, access: str, meta: dict[str, Any], silence: str | None = None) -> bytes:
+    """`silence` : raison d'un silence voulu (SILENCE_REASONS), champ absent quand le son passe."""
+    obj = {"v": VERSION, "station": check_station(station), "ts_ms": int(ts_ms), "acces": check_access(access),
+           "meta": check_meta(meta)}
+    if silence is not None:
+        if silence not in SILENCE_REASONS:
+            raise DiffusionRefused("silence : " + ", ".join(SILENCE_REASONS))
+        obj["silence"] = silence
+    return _body(obj)
 
 
 def listener_body(station: str, ts_ms: int, user: str, password: str) -> bytes:
