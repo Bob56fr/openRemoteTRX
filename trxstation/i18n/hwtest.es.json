@@ -165,5 +165,7 @@
   "cli.tot_range": "--tot debe estar entre 2 y 60 segundos.",
   "cli.tot_error": "--tot: {error}",
   "cli.interrupted": "\nInterrumpido: la transmisión se ha cortado.",
-  "txaudio.no_power": "ninguna potencia medida en ningún nivel ({last}): el audio no llega al equipo. Casi siempre el NIVEL ES DEMASIADO BAJO: volumen de la salida en el sistema (Windows: Configuración de sonido, poner 100 y desactivar las mejoras de audio), nivel de modulación USB del equipo (Icom: USB MOD Level); si no, el modo datos (algunos equipos solo toman la modulación USB en modo datos), la fuente de modulación (Icom: DATA MOD = USB) o la tarjeta de sonido elegida"
+  "txaudio.no_power": "ninguna potencia medida en ningún nivel ({last}): el audio no llega al equipo. Casi siempre el NIVEL ES DEMASIADO BAJO: volumen de la salida en el sistema (Windows: Configuración de sonido, poner 100 y desactivar las mejoras de audio), nivel de modulación USB del equipo (Icom: USB MOD Level); si no, el modo datos (algunos equipos solo toman la modulación USB en modo datos), la fuente de modulación (Icom: DATA MOD = USB) o la tarjeta de sonido elegida",
+  "txaudio.alc_stop": "  ALC a {alc}: nos detenemos aquí; nivel aconsejado ≈ {advice} dBFS.",
+  "txaudio.advice": "; nivel de envío aconsejado ≈ {advice} dBFS"
 }

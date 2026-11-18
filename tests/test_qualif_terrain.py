@@ -220,7 +220,7 @@ def _menu(tmp_path, answers, *, running=False, snapshots=None):
 
 
 def test_the_menu_runs_the_existing_tools_and_quits(tmp_path):
-    code, calls, _ = _menu(tmp_path, ["2", "3", "4", "a", "d", "q"])
+    code, calls, _ = _menu(tmp_path, ["2", "c", "CHARGE", "3", "4", "a", "d", "q"])
     assert code == 0
     assert calls == ["explore", ("qualif", False), ("qualif", True), ("station", False), ("station", True)]
     assert (tmp_path / "s" / "photos" / "avant").is_dir() and (tmp_path / "s" / "photos" / "apres").is_dir()
@@ -492,3 +492,57 @@ def test_relaunching_the_kit_offers_to_resume_today_s_session(tmp_path):
     again = terrain._resume_or_new(today, 3085, ask=lambda p: "", out=lambda s: None)
     assert again == folder                                    # Entrée = reprendre
     assert terrain._resume_or_new(today, 3085, ask=lambda p: "n", out=lambda s: None).name.startswith("terrain-3085-")
+
+
+
+# --------------------------------------------------------------------------- parties antenne / charge, T3 (étape 263)
+
+def test_no_transmitting_part_without_the_dummy_load_confirmed(tmp_path):
+    code, calls, shown = _menu(tmp_path, ["3", "8", "5", "c", "charge?", "3", "q"])
+    assert calls == [] and shown.count("CHARGE FICTIVE (choix c)") == 4     # 3 refus, puis mot faux, puis refus
+
+
+def test_the_antenna_part_locks_transmissions_again_until_charge(tmp_path):
+    rx = {"freq_hz": 7_100_000, "mode": "LSB", "level_dbfs": -40.0, "zeros_pct": 0.0, "s_metre_db": -20,
+          "verdict": "ok", "problems": []}
+    from trxstation.setup_wizard import dummy_config
+    from types import SimpleNamespace
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path)
+    profile = SimpleNamespace(model=3094, hamlib_version="4.7.2", backend_status="Stable",
+                              caps=SimpleNamespace(model_name="IC-7300", manufacturer="Icom"))
+    calls, shown = [], []
+    answers = iter(["c", "CHARGE", "r", "", "3", "c", "CHARGE", "3", "7", "q"])
+    terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(answers),
+                        out=shown.append, station=lambda: False, qualify=lambda no_tx: calls.append(no_tx),
+                        receive=lambda: rx, explore=lambda: None)
+    assert calls == [False]                                   # une seule qualification : après le second « CHARGE »
+    text = "\n".join(map(str, shown))
+    assert "ACTION DEMANDÉE : branche l'ANTENNE" in text and "7.100 MHz LSB" in text and ": OK." in text
+    data = json.loads((tmp_path / "s" / "qualification.json").read_text(encoding="utf-8"))
+    assert data["reception_antenne"]["verdict"] == "ok"
+
+
+@pytest.mark.parametrize("level,zeros,verdict", [(-40, 0, "ok"), (-80, 2, "faible"), (-3, 0, "sature"),
+                                                 (-120, 100, "silence"), (None, None, "silence")])
+def test_reception_on_the_antenna_is_judged(level, zeros, verdict):
+    assert terrain.judge_reception(level, zeros) == verdict
+
+
+def test_spectrum_check_reads_the_scope_tool_summary(tmp_path):
+    from trxstation.setup_wizard import dummy_config
+    cfg = dummy_config()
+    cfg.rig.model, cfg.rig.port = 3085, "COM11"
+
+    def fake_run(cmd):
+        out = Path(cmd[cmd.index("--sortie") + 1])
+        out.mkdir(parents=True)
+        (out / "resume.txt").write_text("Port COM11, 115200 bauds, adresse du poste A4h\n"
+                                        "Durée 8.0 s ; trames du spectre 40 ; balayages complets 12 (1.5/s)", encoding="utf-8")
+        assert "civ_scope" in " ".join(cmd) and "COM11" in cmd
+        return SimpleNamespace(stdout="")
+    from types import SimpleNamespace
+    result = terrain.spectrum_check(cfg, tmp_path, run=fake_run)
+    assert result["verdict"] == "ok" and result["sweeps"] == 12 and result["which"] == "port CAT"
+    cfg.rig.model = 1042                                      # Yaesu : rien d'envoyé
+    assert terrain.spectrum_check(cfg, tmp_path, run=lambda c: 1 / 0)["verdict"] == "non_propose"

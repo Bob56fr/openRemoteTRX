@@ -125,6 +125,22 @@ alerte « COUPE LE POSTE ». Un essai automatique en échec REFUSE le poste ; il
 
 Pas encore : configuration de session isolée de celle du PC, mesures ALC, jumeau rejouable.
 
+## Valise : parties antenne / charge, bon mode, lot T3 (étape 263)
+
+Règles de l'utilisateur (2026-11-18) appliquées :
+- **Parties** : `r` = réception sur ANTENNE (aucune émission : 7,100 MHz LSB réglés par la CAT, son et S-mètre mesurés,
+  fréquence et mode d'origine remis ; verdict ok / faible < -65 dBFS / saturé > -6 dBFS / silence) ; `c` = passage sur
+  la CHARGE FICTIVE, confirmé en tapant `CHARGE`. Les choix qui émettent (3, 5, 8) sont REFUSÉS tant que la charge
+  n'est pas confirmée, et de nouveau après chaque passage par `r`. Déroulé conseillé affiché : 9, 1, r, 2, s, c, 3, d,
+  8, 5, a, 6, 7.
+- **Bon mode** : les écritures de la qualification se font en USB si le poste est en CW / FM (mode d'origine remis à
+  la fin) ; un réglage refusé est réessayé dans le mode où il existe (`MODE_FOR` : compresseur en USB / LSB / AM,
+  réglages CW en CW), le résultat dit « essayé en … ».
+- **Montée du niveau d'émission** (valise) : paliers -40, -30, -24, -18, -12, -6 dBFS, arrêt dès qu'une puissance est
+  mesurée ET que l'ALC atteint 0,5 ; niveau d'envoi conseillé dans le résultat (`trx-hwtest`, `alc_stop`).
+- **Spectre** (`s`, sans émission) : Icom = relevé de 8 s par `devtools/civ_scope` (lecture seule) sur le second port
+  s'il est réglé, sinon sur le port CAT (faisabilité) ; autre marque = « non proposé par la CAT ».
+
 ## Comparer deux qualifications du même poste (`--comparer`, étape 260)
 
 ```

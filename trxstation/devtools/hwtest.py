@@ -143,7 +143,10 @@ class HwTest:
                  tx_levels_db: tuple[float, ...] = (-40.0, -30.0, -24.0), cat_timeout_s: float = 10.0,
                  record_wav: str = "hwtest_rx.wav", cycles: int = 3, capabilities: Capabilities | None = None,
                  only_rig_unkey: bool = False, rx_only: bool = False, scope_opener: Callable | None = None,
-                 scope_measure_s: float = 3.0, selcall_listen_s: float = 20.0):
+                 scope_measure_s: float = 3.0, selcall_listen_s: float = 20.0, alc_stop: float | None = None):
+        """`alc_stop` : montée du niveau d'émission (valise, lot T3) : arrêt dès qu'une puissance est mesurée ET que
+        l'ALC atteint ce seuil ; le niveau précédent est conseillé (None = comme avant, tous les paliers)."""
+        self.alc_stop, self.tx_level_advice = alc_stop, None
         self.cfg, self.ask, self.out = cfg, ask, out
         self.only_rig_unkey, self.rx_only = only_rig_unkey, rx_only
         self.scope_opener, self.scope_measure_s = scope_opener, scope_measure_s
@@ -678,6 +681,7 @@ class HwTest:
         lines = []
         powers: list[float | None] = []
         self.audio_no_power = False
+        previous_good: float | None = None
         for level in self.tx_levels_db:
             try:
                 await self.key()
@@ -699,6 +703,13 @@ class HwTest:
                 return self.record(name, False, _t("txaudio.high_swr", swr=f"{swr:.1f}"))
             if sent < 0.9 * (self.tx_seconds / FRAME_S):
                 return self.record(name, False, _t("txaudio.not_sent", sent=sent))
+            power, alc = readings.get("RFPOWER_METER") or 0.0, readings.get("ALC")
+            if self.alc_stop is not None and power > 0 and alc is not None:
+                if alc >= self.alc_stop:                 # ALC hors de la zone correcte : on s'arrête là
+                    self.tx_level_advice = previous_good if previous_good is not None else level
+                    self.say(_t("txaudio.alc_stop", alc=f"{alc:.2f}", advice=f"{self.tx_level_advice:.0f}"))
+                    break
+                previous_good = level
             if level != self.tx_levels_db[-1]:
                 if _declined(await self.prompt(_t("txaudio.next", yn=_t("yn.default_yes")))):
                     break
@@ -707,7 +718,10 @@ class HwTest:
             # étape 255 : « OK » à tort). Jamais un succès.
             self.audio_no_power = True           # voie radio saine, modulation absente : exercices sans audio permis
             return self.record(name, False, _t("txaudio.no_power", last=lines[-1]))
-        return self.record(name, True, _t("txaudio.ok", count=len(lines), last=lines[-1]))
+        if self.alc_stop is not None and self.tx_level_advice is None and previous_good is not None:
+            self.tx_level_advice = previous_good         # puissance vue, ALC jamais au seuil : dernier palier
+        advice = _t("txaudio.advice", advice=f"{self.tx_level_advice:.0f}") if self.tx_level_advice is not None else ""
+        return self.record(name, True, _t("txaudio.ok", count=len(lines), last=lines[-1]) + advice)
 
     async def _send_tone(self, level_db: float) -> tuple[int, dict[str, float]]:
         frames, sent, pos = int(self.tx_seconds / FRAME_S), 0, 0

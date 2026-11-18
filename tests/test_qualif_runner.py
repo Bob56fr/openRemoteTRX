@@ -375,3 +375,40 @@ def test_the_qualification_takes_back_control_after_its_own_changes_but_never_du
     self, local, said, released = tool(local_tx=True)
     Qualification.release_own_changes(self)
     assert not released and local.active() and "refusée" in said[-1]
+
+
+
+def test_a_setting_refused_in_the_work_mode_is_retried_in_the_mode_where_it_exists():
+    """Règle de l'utilisateur (2026-11-18) : le compresseur n'existe qu'en USB / LSB / AM ; un refus en CW ou en FM
+    n'est pas un échec du poste. Nouvel essai dans le bon mode, puis retour au mode d'origine."""
+    import asyncio
+    from types import SimpleNamespace
+    from trxstation.qualif.results import Check
+    from trxstation.qualif.runner import Qualification
+    modes = []
+    state = SimpleNamespace(mode="FM")
+
+    async def set_mode(mode, width=0):
+        modes.append(mode)
+        state.mode = mode
+
+    async def poll(read, expect):
+        return await read()
+
+    async def get_mode():
+        return (state.mode, 0)
+
+    async def get_func(name):
+        return False
+    self = SimpleNamespace(checks=[], link=SimpleNamespace(state=state, client=SimpleNamespace(get_mode=get_mode,
+                                                                                              get_func=get_func)),
+                           profile=SimpleNamespace(modes=("USB", "LSB", "FM", "CW")), ctrl=SimpleNamespace(set_mode=set_mode),
+                           _poll=poll, _orig={"funcs": {}, "levels": {}}, say=lambda s: None, _mode_suffix=None)
+
+    async def write_func(item_id, label, name):
+        ok = state.mode in ("USB", "LSB", "AM")
+        self.checks.append(Check(item_id, label, "genere", ok, "activé puis rétabli" if ok else "commande refusée : RPRT -9"))
+    self._write_func = write_func
+    item = SimpleNamespace(action="write_func", id="write_func_COMP", label="Compresseur", target="COMP")
+    asyncio.run(Qualification._write_in_its_mode(self, item))
+    assert [c.ok for c in self.checks] == [True] and modes == ["USB", "FM"]

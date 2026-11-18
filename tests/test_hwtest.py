@@ -232,6 +232,26 @@ def test_operator_can_stop_raising_the_level(tmp_path):
     run(tmp_path, scenario, answers={"plus fort": "n", EMIT_WORD: [EMIT_WORD, EMIT_WORD, "non"]})
 
 
+def test_the_level_rises_until_the_alc_threshold_and_a_level_is_advised(tmp_path):
+    """Valise (lot T3) : arrêt dès que la puissance est là ET que l'ALC atteint le seuil ; niveau conseillé."""
+    async def scenario(hw, fake, out, prompts):
+        fake.levels["ALC"] = 0.6
+        results = await hw.run()
+        tx = next(r for r in results if r.name == "Audio TX")
+        assert tx.ok and "1 niveau(x)" in tx.detail and "conseillé ≈ -40 dBFS" in tx.detail
+        assert any("ALC à 0.60" in line for line in out)
+    run(tmp_path, scenario, alc_stop=0.5, tx_levels_db=(-40.0, -30.0, -24.0))
+
+
+def test_without_the_alc_threshold_the_last_level_with_power_is_advised(tmp_path):
+    async def scenario(hw, fake, out, prompts):
+        fake.levels["ALC"] = 0.2
+        results = await hw.run()
+        tx = next(r for r in results if r.name == "Audio TX")
+        assert tx.ok and "2 niveau(x)" in tx.detail and "conseillé ≈ -30 dBFS" in tx.detail
+    run(tmp_path, scenario, alc_stop=0.5)
+
+
 def test_transmission_is_cut_even_if_the_run_crashes(tmp_path):
     async def scenario(hw, fake, out, prompts):
         async def boom():

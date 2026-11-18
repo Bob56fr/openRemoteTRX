@@ -88,6 +88,14 @@ def _mhz(hz: int | None) -> str:
     return f"{int(text[:-6])}.{text[-6:-3]}.{text[-3:-1]}"
 
 
+WORK_MODE = "USB"                     # mode de travail des écritures (règle de l'utilisateur : pas en CW ni en FM)
+WORK_MODES = {"USB", "LSB", "PKTUSB", "PKTLSB", "AM"}
+MODE_FOR = {                          # réglages qui n'existent que dans certains modes (règles de l'utilisateur, 2026-11-18)
+    "COMP": ("USB", "LSB", "AM"),
+    "BKINDL": ("CW",), "KEYSPD": ("CW",), "CWPITCH": ("CW",), "SBKIN": ("CW",), "FBKIN": ("CW",),
+}
+
+
 class Qualification(HwTest):
     def __init__(self, cfg: Config, *, profile: HamlibProfile, dump_text: str = "", proxy: TraceProxy | None = None,
                  endurance_cycles: int = 1000, cat_cut_s: float = 1.5, settle_s: float = 2.0, no_tx: bool = False,
@@ -150,6 +158,9 @@ class Qualification(HwTest):
         """Résultat d'un test : enregistré en français (rapport), montré dans la langue de l'outil. `name` et `detail`
         peuvent être des couples (français, montré), comme ceux de both()."""
         detail, shown_detail = detail if isinstance(detail, tuple) else (detail, detail)
+        suffix = getattr(self, "_mode_suffix", None)
+        if suffix:
+            detail, shown_detail = detail + suffix[0], shown_detail + suffix[1]
         item = self.plan.by_id(item_id)
         if isinstance(name, tuple):
             name, shown_name = name
@@ -389,13 +400,62 @@ class Qualification(HwTest):
 
     async def test_writes(self) -> None:
         self.note("TEST écritures")
+        await self._work_mode()
         for item in self.plan.items:
             if item.action == "manual":
                 self.check(item.id, item.label, GENERE, None, (item.note, shown_note(item)))
-            elif item.action == "write_func":
-                await self._write_func(item.id, item.label, item.target)
-            elif item.action == "write_level":
-                await self._write_level(item.id, item.label, item.target)
+            elif item.action in ("write_func", "write_level"):
+                await self._write_in_its_mode(item)
+
+    async def _work_mode(self) -> None:
+        """Règle de l'utilisateur (2026-11-18) : ne pas rester en CW / FM pendant les écritures (beaucoup de réglages
+        n'y existent pas) : le poste passe en USB le temps des écritures ; le mode d'origine est remis par _restore."""
+        mode = (self._orig.get("mode") or (None, None))[0]
+        if mode is None or mode in WORK_MODES or WORK_MODE not in self.profile.modes:
+            return
+        try:
+            await self.ctrl.set_mode(WORK_MODE, 0)
+            await self._poll(self.link.client.get_mode, lambda v: v[0] == WORK_MODE)
+            self.say(_t("write.work_mode", mode=mode, work=WORK_MODE))
+        except Exception as exc:
+            self.say(_t("write.work_mode_failed", error=_rprt(exc)))
+
+    async def _write_in_its_mode(self, item) -> None:
+        """Écriture ; si le poste la REFUSE, nouvel essai dans le mode où ce réglage existe (MODE_FOR : compresseur en
+        USB / LSB / AM, réglages CW en CW), puis retour au mode de travail. Le résultat dit dans quel mode."""
+        write = self._write_func if item.action == "write_func" else self._write_level
+        before = len(self.checks)
+        await write(item.id, item.label, item.target)
+        last = self.checks[-1] if len(self.checks) > before else None
+        current = self.link.state.mode
+        modes = [m for m in MODE_FOR.get(item.target, ()) if m != current and m in self.profile.modes]
+        if last is None or last.ok is not False or "refus" not in last.detail or not modes:
+            return
+        target = modes[0]
+        try:
+            await self.ctrl.set_mode(target, 0)
+            await self._poll(self.link.client.get_mode, lambda v: v[0] == target)
+        except Exception:
+            return
+        try:
+            client = self.link.client
+            key = "funcs" if item.action == "write_func" else "levels"
+            try:
+                self._orig[key][item.target] = await (client.get_func(item.target) if key == "funcs"
+                                                      else client.get_level(item.target))
+            except Exception:
+                pass
+            self.checks.pop()                            # le refus dans le mauvais mode est remplacé par le nouvel essai
+            self._mode_suffix = both("write.in_mode", mode=target)
+            await write(item.id, item.label, item.target)
+        finally:
+            self._mode_suffix = None
+            if current:
+                try:
+                    await self.ctrl.set_mode(current, 0)
+                    await self._poll(self.link.client.get_mode, lambda v: v[0] == current)
+                except Exception as exc:
+                    self.say(_t("write.work_mode_failed", error=_rprt(exc)))
 
     async def _write_func(self, item_id: str, name_label: str, name: str) -> None:
         client = self.link.client

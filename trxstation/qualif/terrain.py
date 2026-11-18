@@ -240,6 +240,9 @@ class Session:
     snapshots: dict[str, dict] = field(default_factory=dict)
     crashers: list[str] = field(default_factory=list)       # lectures qui font tomber rigctld (constat Hamlib)
     audio: dict = field(default_factory=dict)               # dernier contrôle de la carte son du poste (choix 9)
+    connection: str = ""                                    # « antenne » ou « charge » (confirmé par l'opérateur)
+    reception: dict = field(default_factory=dict)           # mesure de réception sur antenne (choix r)
+    spectrum: dict = field(default_factory=dict)            # contrôle du spectre HF (choix s)
 
     FILE = "session.json"
 
@@ -479,6 +482,8 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "releves": session.snapshots,
         "lectures_qui_font_tomber_rigctld": session.crashers,
         "carte_son": session.audio,
+        "reception_antenne": session.reception,
+        "spectre": session.spectrum,
         "remise_en_etat": _restore_summary(session),
         "photos": sorted(p.relative_to(session.folder).as_posix() for p in (session.folder / "photos").rglob("*")
                          if p.is_file()) if (session.folder / "photos").is_dir() else [],
@@ -592,6 +597,100 @@ def show_audio_check(result: dict, out: Callable[[str], None]) -> None:
     out(_t("terrain.audio.ok" if not result["problems"] else "terrain.audio.ko"))
 
 
+RX_FREQ_HZ, RX_MODE = 7_100_000, "LSB"   # règle de l'utilisateur : réception sur 7 MHz (ou 3,5), pas 28 MHz sans QRM
+RX_LOW_DBFS, RX_HIGH_DBFS = -65.0, -6.0
+TX_LEVELS_DB = (-40.0, -30.0, -24.0, -18.0, -12.0, -6.0)
+ALC_STOP = 0.5
+LOAD_WORD = "CHARGE"
+
+
+def judge_reception(level: float | None, zeros: float | None) -> str:
+    """ok, faible, sature ou silence : le son reçu sur ANTENNE (un faible niveau sur charge fictive ne prouve rien)."""
+    if level is None or (zeros is not None and zeros >= SILENCE_ZEROS_PCT):
+        return "silence"
+    if level < RX_LOW_DBFS:
+        return "faible"
+    if level > RX_HIGH_DBFS:
+        return "sature"
+    return "ok"
+
+
+def reception_on_antenna(cfg, *, sd=None, seconds: float = 4.0, freq_hz: int = RX_FREQ_HZ, mode: str = RX_MODE) -> dict:
+    """Réception sur ANTENNE, station arrêtée, SANS émission : fréquence et mode de réception réglés par la CAT (rigctld
+    lancé pour l'occasion), son mesuré, S-mètre lu, fréquence et mode d'origine remis."""
+    from ..gateway.cat.client import RigctldClient
+    from . import main as qmain
+
+    async def go():
+        async with qmain.rigctld_session(cfg, spawn=True, out=lambda s: None) as (h, p):
+            client = RigctldClient(h, p, timeout=3.0)
+            await client.connect()
+            try:
+                if await client.get_ptt():
+                    raise ObserverError("poste en émission : rien n'est changé")
+                orig_freq, (orig_mode, _) = await client.get_frequency(), await client.get_mode()
+                try:
+                    await client.set_frequency(freq_hz)
+                    await client.set_mode(mode, 0)
+                    await asyncio.sleep(1.0)
+                    check = await asyncio.to_thread(audio_check, cfg, sd=sd, seconds=seconds, windows=False)
+                    strength = await client.get_strength()
+                finally:
+                    await client.set_frequency(orig_freq)
+                    await client.set_mode(orig_mode, 0)
+                return check, strength, orig_freq, orig_mode
+            finally:
+                await client.close()
+    check, strength, orig_freq, orig_mode = asyncio.run(go())
+    cap = check.get("capture") or {}
+    verdict = judge_reception(cap.get("level_dbfs"), cap.get("zeros_pct"))
+    return {"freq_hz": freq_hz, "mode": mode, "level_dbfs": cap.get("level_dbfs"), "zeros_pct": cap.get("zeros_pct"),
+            "s_metre_db": strength, "verdict": verdict, "problems": check.get("problems", []),
+            "origine": {"freq_hz": orig_freq, "mode": orig_mode}}
+
+
+def spectrum_check(cfg, folder: Path, *, run=None) -> dict:
+    """Spectre HF, station arrêtée, SANS émission : poste Icom = relevé de 8 s par `devtools/civ_scope` (lecture seule,
+    aucune commande d'émission n'y existe) sur le second port s'il est réglé, sinon sur le port CAT (faisabilité :
+    l'IC-705 n'a pas de CI-V sur son second port) ; autre marque : non proposé par la CAT."""
+    import subprocess
+    import sys
+    from ..config import is_icom_model
+    if not is_icom_model(cfg.rig.model):
+        return {"verdict": "non_propose", "detail": "pas de données du spectre par la CAT de ce constructeur"}
+    port = cfg.spectrum.port or cfg.rig.port
+    which = "second port" if cfg.spectrum.port else "port CAT"
+    out = folder / "spectre"
+    cmd = [sys.executable, "-m", "trxstation.devtools.civ_scope", "--port", port, "--duree", "8", "--sortie", str(out)]
+    if cfg.spectrum.civ_address:
+        cmd += ["--adresse", cfg.spectrum.civ_address]
+    run = run or (lambda c: subprocess.run(c, capture_output=True, text=True, timeout=60))
+    try:
+        result = run(cmd)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return {"verdict": "erreur", "port": port, "which": which, "detail": str(exc)[:160]}
+    summary = ""
+    try:
+        summary = (out / "resume.txt").read_text(encoding="utf-8")
+    except OSError:
+        summary = (getattr(result, "stdout", "") or "")[-600:]
+    sweeps = re.search(r"balayages complets (\d+)", summary)
+    count = int(sweeps.group(1)) if sweeps else 0
+    return {"verdict": "ok" if count > 0 else "aucune_donnee", "port": port, "which": which, "sweeps": count,
+            "detail": " ; ".join(summary.strip().splitlines()[:2])[:200] if summary.strip() else ""}
+
+
+def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) -> bool:
+    out(_t("terrain.load.action"))
+    if (ask(_t("terrain.load.prompt", word=LOAD_WORD)) or "").strip().upper() != LOAD_WORD:
+        out(_t("terrain.load.refused"))
+        return False
+    session.connection = "charge"
+    session.save()
+    out(_t("terrain.load.done"))
+    return True
+
+
 def station_control(config_path: Path | None, start: bool) -> int:
     """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
     import subprocess
@@ -631,7 +730,8 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 config_path: Path | None = None, ask: Ask = input, out: Callable[[str], None] = print,
                 explore: Callable | None = None, qualify: Callable | None = None,
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
-                snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None) -> int:
+                snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None,
+                receive: Callable[[], dict] | None = None, scope: Callable[[], dict] | None = None) -> int:
     from . import main as qmain
     folder = session_dir or _resume_or_new(output, profile.model, ask=ask, out=out)
     caps = profile.caps
@@ -642,11 +742,14 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     state_dir = Path(cfg.supervisor.state_dir)
     explore = explore or (lambda: asyncio.run(qmain.run_explore(cfg, profile, dump_text, folder)))
     qualify = qualify or (lambda no_tx: asyncio.run(qmain.run_qualif(
-        cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False)))
+        cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False,
+        tx_levels_db=TX_LEVELS_DB, alc_stop=ALC_STOP)))
     station = station or (lambda: qmain.station_running(cfg.supervisor.instance_lock_port))
     control = control or (lambda start: station_control(config_path, start))
     snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out, skip=tuple(session.crashers))))
     sound = sound or (lambda: audio_check(cfg))
+    receive = receive or (lambda: reception_on_antenna(cfg))
+    scope = scope or (lambda: spectrum_check(cfg, folder))
     while True:
         note_runs(session)
         running = station()
@@ -662,9 +765,36 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
                auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
+        out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum),
+               connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
         choice = ask(_t("terrain.choice")).strip().lower()
-        if choice in ("1", "2", "3", "4", "6", "9") and running:
+        if choice in ("1", "2", "3", "4", "6", "9", "r", "s") and running:
             out(_t("terrain.need_stopped"))
+        elif choice in ("3", "5", "8") and session.connection != "charge":
+            out(_t("terrain.need_load"))                 # aucune émission sans la charge fictive CONFIRMÉE
+        elif choice == "c":
+            confirm_load(session, ask=ask, out=out)
+        elif choice == "r":
+            out(_t("terrain.rx.action", freq=f"{RX_FREQ_HZ / 1e6:.3f}", mode=RX_MODE))
+            if yes_no(ask(_t("terrain.rx.prompt"))) is not False:
+                session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
+                session.save()
+                try:
+                    rx = receive()
+                except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
+                    out(_t("terrain.rx.failed", error=exc))
+                else:
+                    session.reception = {"at": _now(), **rx}
+                    session.save()
+                    out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
+                           freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
+        elif choice == "s":
+            out(_t("terrain.scope.title"))
+            sp = scope()
+            session.spectrum = {"at": _now(), **sp}
+            session.save()
+            out(_t(f"terrain.scope.{sp['verdict']}", port=sp.get("port", ""), which=sp.get("which", ""),
+                   sweeps=sp.get("sweeps", 0), detail=sp.get("detail", "")))
         elif choice == "1":
             take_snapshot(session, "avant", snapshot, out=out)
         elif choice == "2":

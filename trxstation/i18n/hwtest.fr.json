@@ -165,5 +165,7 @@
   "cli.tot_range": "--tot doit être compris entre 2 et 60 secondes.",
   "cli.tot_error": "--tot : {error}",
   "cli.interrupted": "\nInterrompu : l'émission a été coupée.",
-  "txaudio.no_power": "aucune puissance mesurée à aucun niveau ({last}) : le son n'arrive pas au poste. Le plus souvent un NIVEAU TROP FAIBLE : volume de la sortie dans le système (Windows : Paramètres du son, mettre 100 et désactiver les améliorations audio), niveau de modulation USB du poste (Icom : USB MOD Level) ; sinon le mode données (certains postes ne prennent la modulation USB qu'en mode données), la source de modulation (Icom : DATA MOD = USB) ou la carte son choisie"
+  "txaudio.no_power": "aucune puissance mesurée à aucun niveau ({last}) : le son n'arrive pas au poste. Le plus souvent un NIVEAU TROP FAIBLE : volume de la sortie dans le système (Windows : Paramètres du son, mettre 100 et désactiver les améliorations audio), niveau de modulation USB du poste (Icom : USB MOD Level) ; sinon le mode données (certains postes ne prennent la modulation USB qu'en mode données), la source de modulation (Icom : DATA MOD = USB) ou la carte son choisie",
+  "txaudio.alc_stop": "  ALC à {alc} : on s'arrête là ; niveau conseillé ≈ {advice} dBFS.",
+  "txaudio.advice": " ; niveau d'envoi conseillé ≈ {advice} dBFS"
 }
