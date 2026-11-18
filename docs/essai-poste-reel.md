@@ -37,6 +37,9 @@ Arrêt d'urgence : `Ctrl+C` dans le terminal (l'émission est coupée), sinon co
   - la carte son du poste (« USB Audio CODEC ») n'est **ni la sortie ni l'entrée par défaut** ;
   - Paramètres > Personnalisation > Thèmes > Sons : schéma **« Aucun son »** (sinon une notification Windows pourrait partir en émission) ;
   - propriétés de la carte son > Avancé : format **48000 Hz, 16 bits** ; désactiver les améliorations audio ;
+  - sortie de la carte du poste : **volume à 100** (un volume réduit donne une émission sans puissance : vu à 38 sur
+    l'IC-7300MK2, 2026-11-18) ; le niveau se dose sur le poste (USB MOD Level) ; le nom (« 2- USB Audio Device ») change
+    avec la prise USB ;
   - Paramètres > Confidentialité > Microphone : **autoriser les applications de bureau** (sinon la capture renvoie du silence).
 - **Veille / hibernation** désactivées pendant l'essai.
 

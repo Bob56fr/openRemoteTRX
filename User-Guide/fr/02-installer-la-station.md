@@ -37,7 +37,11 @@ ferme la connexion SSH, reconnecte-toi et tape `trx-console`.
    - réseau de la maison en profil **Privé** (le pare-feu n'ouvre la station que sur les réseaux privés) ;
    - **veille et hibernation désactivées** (Paramètres > Système > Alimentation) ;
    - *Paramètres > Confidentialité > Microphone* : accès autorisé aux applications de bureau (sinon le son reçu du
-     poste est un silence).
+     poste est un silence) ;
+   - carte son du poste (*Paramètres > Système > Son*, sortie « Haut-parleurs » du poste) : **volume à 100**,
+     **améliorations audio désactivées**, format 16 bits 48000 Hz ; le niveau d'émission se dose sur le poste (Icom :
+     USB MOD Level). Un volume réduit (38 vu sur un PC) donne une émission sans puissance. Son nom (« 2- USB Audio
+     Device »…) change si le câble du poste passe sur une autre prise USB : refaire alors le menu 2.6.
 
 La notice complète (`notice-windows.html`) est dans le paquet.
 

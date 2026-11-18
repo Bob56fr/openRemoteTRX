@@ -165,5 +165,5 @@
   "cli.tot_range": "--tot must be between 2 and 60 seconds.",
   "cli.tot_error": "--tot: {error}",
   "cli.interrupted": "\nInterrupted: transmission has been cut.",
-  "txaudio.no_power": "no power measured at any level ({last}): the audio does not reach the rig (rig sound card, USB modulation source, data mode)"
+  "txaudio.no_power": "no power measured at any level ({last}): the audio does not reach the rig. Most often the LEVEL IS TOO LOW: output volume in the system (Windows: Sound settings, set 100 and turn audio enhancements off), the rig's USB modulation level (Icom: USB MOD Level); otherwise the data mode (some rigs only take USB modulation in data mode), the modulation source (Icom: DATA MOD = USB) or the chosen sound card"
 }

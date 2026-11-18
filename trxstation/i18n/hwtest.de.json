@@ -165,5 +165,5 @@
   "cli.tot_range": "--tot muss zwischen 2 und 60 Sekunden liegen.",
   "cli.tot_error": "--tot: {error}",
   "cli.interrupted": "\nUnterbrochen: die Aussendung wurde abgeschaltet.",
-  "txaudio.no_power": "bei keinem Pegel Leistung gemessen ({last}): der Ton erreicht das Gerät nicht (Soundkarte des Geräts, USB-Modulationsquelle, Datenbetrieb)"
+  "txaudio.no_power": "bei keinem Pegel Leistung gemessen ({last}): der Ton erreicht das Gerät nicht. Meist ist der PEGEL ZU NIEDRIG: Ausgabelautstärke im System (Windows: Soundeinstellungen, auf 100 stellen und Audioverbesserungen ausschalten), USB-Modulationspegel des Geräts (Icom: USB MOD Level); sonst der Datenbetrieb (manche Geräte nehmen die USB-Modulation nur im Datenbetrieb), die Modulationsquelle (Icom: DATA MOD = USB) oder die gewählte Soundkarte"
 }
