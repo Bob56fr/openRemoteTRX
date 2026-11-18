@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Valise de qualification</title>
+<link rel="stylesheet" href="/static/valise.css">
+<script src="/static/valise.js" defer></script>
+</head>
+<body>
+<header id="bandeau">
+  <div class="ident">
+    <div id="titre" class="titre"></div>
+    <div id="poste" class="poste"></div>
+    <div id="details" class="details"></div>
+  </div>
+  <div class="voyants">
+    <span id="v-station" class="voyant"></span>
+    <span id="v-branchement" class="voyant"></span>
+    <span id="v-pilote" class="voyant pilote"></span>
+  </div>
+  <button id="stop" class="stop" type="button">STOP</button>
+</header>
+<div id="avis" class="avis" hidden></div>
+<main>
+  <section id="zone" class="zone"></section>
+  <section class="recent">
+    <h2 id="t-recent"></h2>
+    <pre id="recent"></pre>
+  </section>
+  <details class="journal">
+    <summary id="t-journal"></summary>
+    <pre id="journal"></pre>
+  </details>
+</main>
+<div id="intervention" class="fond" hidden>
+  <div class="fenetre" role="alertdialog" aria-modal="true" aria-labelledby="iv-titre">
+    <h2 id="iv-titre"></h2>
+    <h3 id="iv-t-why"></h3>
+    <p id="iv-why"></p>
+    <h3 id="iv-t-what"></h3>
+    <p id="iv-what" class="quoi"></p>
+    <p id="iv-rule" class="regle"></p>
+    <label id="iv-label" for="iv-mot"></label>
+    <input id="iv-mot" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <p id="iv-erreur" class="erreur" hidden></p>
+    <div class="actions">
+      <button id="iv-valider" type="button" class="principal"></button>
+      <button id="iv-passer" type="button"></button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

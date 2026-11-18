@@ -24,8 +24,8 @@ from typing import Callable
 
 from ..answers import typed
 from ..i18n import tool_translator
-from .bus import ask_word, bus_of
-from .terrain import Drill, Observer, Session, _iso, _redactor, journal_lines
+from .bus import CHOICE, SECRET, ask_typed, ask_word, bus_of
+from .terrain import Drill, Observer, Session, _iso, _redactor, drill_choices, journal_lines
 from .texts import _t
 
 AUTO_DRILLS: tuple[Drill, ...] = (
@@ -126,7 +126,9 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     if drill.kind == "auto_out_of_band" and out_of_band_frequency(cfg) is None:
         out(_t("terrain.auto.no_bands"))
         return {}
-    if not _confirmed(await asyncio.to_thread(ask_word, ask, _t("terrain.auto.confirm"), "EMETTRE")):
+    context = (_t(f"terrain.drill.{drill.id}.title").strip() + "\n"
+               + _t(f"terrain.drill.{drill.id}.how", tot=f"{tot_s:.0f}").strip())
+    if not _confirmed(await asyncio.to_thread(ask_word, ask, _t("terrain.auto.confirm"), "EMETTRE", context=context)):
         out(_t("terrain.auto.cancelled"))
         return {}
     if await Observer(host, port, period=period).read_once() is None:
@@ -276,6 +278,8 @@ def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], st
     if not client_id:
         return
     prompt = _t("terrain.auto.password")
+    if secret is None and bus_of(ask) is not None:    # valise : champ masqué de la page ou getpass du terminal
+        secret = lambda p: ask_typed(ask, p, SECRET)      # noqa: E731
     if secret is None:
         from .. import formhint
         if formhint.enabled():                    # console web : champ masqué de la page
@@ -291,7 +295,8 @@ def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], st
         for n, d in enumerate(AUTO_DRILLS, 1):
             r = session.drills.get(d.id, {}).get("result")
             out(f"  {n}  {_t(f'terrain.drill.{d.id}.title').strip()}  [{_t('terrain.result.' + r) if r else '-'}]")
-        choice = ask(_t("terrain.drills_choice")).strip().lower()
+        choice = ask_typed(ask, _t("terrain.drills_choice"), CHOICE,
+                           choices=drill_choices(session, AUTO_DRILLS)).strip().lower()
         if choice in ("r", "q", ""):
             return
         if choice == "t":

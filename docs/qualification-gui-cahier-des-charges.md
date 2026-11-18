@@ -67,6 +67,13 @@ mode par réglage, aucune écriture hors liste fermée, poste remis comme au dé
   FAIT (étape 279, station 0.215.0) : `trxstation/qualif/bus.py`, `evenements.jsonl` ; seul changement visible : le
   choix « r » demande le mot ANTENNE au lieu de « (O/n) ».
 - **G2** : page en mode manuel (tuiles, fenêtre d'intervention, STOP, mesures, journal), français et anglais.
+  Coupé en deux (accord de l'utilisateur, 2026-11-18). **G2a** FAIT (étape 280, station 0.216.0) :
+  `trx-qualif --terrain --page` (le terminal n'affiche plus que le journal, la page répond), `qualif/page/`
+  (serveur aiohttp dans un fil à part, protections de la console web locale), menu en boutons, questions texte /
+  oui-non / « c'est fait » / secret, fenêtre d'intervention (source `fenetre` du bus, collage et valeur posée par
+  script refusés : une touche frappée par lettre au moins), bip, STOP (T 0 puis `Bus.request_stop` = Ctrl+C
+  simulé dans le fil principal, retour au menu). **G2b** à faire : tuiles par thème, mesures en direct, journal
+  replié, « Tout lancer », « Relancer les échecs ».
 - **G3** : API de pilotage et `trx-qualif --pilote` ; refus des mots de sécurité par l'API (test).
 - **G4** : note en direct, brouillon de fiche publique, rapport depuis la page.
 

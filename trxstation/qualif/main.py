@@ -297,6 +297,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--terrain", action="store_true",
                     help="valise de qualification sur place : session, essais de sécurité chronométrés, rapport pour Claude")
     ap.add_argument("--session", type=Path, metavar="DOSSIER", help="avec --terrain : reprendre une session existante")
+    ap.add_argument("--page", action="store_true",
+                    help="avec --terrain : la valise dans une page du navigateur de CE PC (le terminal n'affiche que le journal)")
     ap.add_argument("--comparer", type=Path, nargs=2, metavar=("A", "B"),
                     help="comparer deux rapports de la valise (zip ou dossier de session) du même poste")
     args = ap.parse_args(argv)
@@ -320,6 +322,9 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
     if args.explorer and (args.sans_emission or args.filtres):
         print(_t("args.explorer_options"), file=sys.stderr)
+        return EXIT_CONFIG
+    if args.page and not args.terrain:
+        print(_t("args.page_needs_terrain"), file=sys.stderr)
         return EXIT_CONFIG
     if args.terrain and (args.explorer or args.plan or args.sans_emission or args.lecture_seule):
         print(_t("args.terrain_options"), file=sys.stderr)
@@ -353,6 +358,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.terrain:
         from .terrain import run_terrain
         try:
+            if args.page:
+                from ..monitor.actions import stop_tx
+                from .page.server import run_with_page
+                from .texts import french
+                return run_with_page(
+                    lambda bus: run_terrain(cfg, profile, text, args.output, session_dir=args.session,
+                                            config_path=config_path, bus=bus),
+                    stop_tx=lambda: stop_tx(cfg), lang="fr" if french() else "en")
             return run_terrain(cfg, profile, text, args.output, session_dir=args.session, config_path=config_path)
         except KeyboardInterrupt:
             print(_t("main.interrupted"), file=sys.stderr)

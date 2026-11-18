@@ -81,6 +81,12 @@ trx-qualif --terrain --output DOSSIER --session DOSSIER/terrain-…   # reprendr
 
 Depuis TRX Console : menu 8.3, choix 6 (étape 253 ; la station n'est pas arrêtée par la console, la valise s'en charge).
 
+Bus et page (étapes 279-280, valise graphique, `docs/qualification-gui-cahier-des-charges.md`) : tout passe par le
+bus `qualif/bus.py` (historique `evenements.jsonl` dans le dossier de la session). `trx-qualif --terrain --page`
+ouvre la valise dans le navigateur de CE PC (127.0.0.1, adresse à usage unique) : menu en boutons, fenêtre
+d'intervention pour CHARGE / ANTENNE / EMETTRE (tapés au clavier, collage refusé, bip), STOP toujours visible
+(« T 0 » puis essai interrompu, retour au menu) ; le terminal n'affiche plus que le journal.
+
 Menu (étape 253) : 1 relevé du poste AVANT, 2 exploration, 3 qualification avec émission, 4 sans émission (station
 ARRÊTÉE pour 2 à 4 : refusés sinon, les outils lancent leur rigctld), 5 essais de sécurité chronométrés (station EN
 MARCHE), 6 relevé APRÈS et différences, 7 rapport zip, a / d arrêter / démarrer la station du PC (comme les menus 1.2

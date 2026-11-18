@@ -30,7 +30,7 @@ from typing import Callable
 
 from .. import __version__
 from ..answers import yes_no
-from .bus import DONE, YES_NO, Bus, KeyboardClient, ask_typed, ask_word, bus_of
+from .bus import CHOICE, DONE, YES_NO, Bus, KeyboardClient, QuestionStopped, ask_typed, ask_word, bus_of
 from .texts import _t
 
 FORMAT = 1
@@ -784,7 +784,9 @@ def filters_check(cfg, *, civ=None) -> dict:
 
 def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) -> bool:
     out(_t("terrain.load.action"))
-    if (ask_word(ask, _t("terrain.load.prompt", word=LOAD_WORD), LOAD_WORD) or "").strip().upper() != LOAD_WORD:
+    answer = ask_word(ask, _t("terrain.load.prompt", word=LOAD_WORD), LOAD_WORD,
+                      context=_t("terrain.load.action").strip())
+    if (answer or "").strip().upper() != LOAD_WORD:
         out(_t("terrain.load.refused"))
         return False
     session.connection = "charge"
@@ -828,6 +830,22 @@ def _resume_or_new(output: Path, model: int, *, ask: Ask, out: Callable[[str], N
     return output / f"terrain-{model}-{dt.datetime.now():%Y%m%d-%H%M}"
 
 
+MENU_KEYS = ("9", "1", "r", "2", "s", "f", "c", "3", "4", "d", "8", "5", "a", "6", "7", "q")
+
+
+def menu_choices(session: "Session", done: set, folder: Path) -> list[dict]:
+    """Menu de la valise pour la page (lot G2a) : clés, fait ou non, compteurs ; les libellés sont ceux de la page."""
+    fait = {"9": bool(session.audio and not session.audio.get("problems")), "1": bool(session.snapshots.get("avant")),
+            "2": "explore" in done, "3": "qualif" in done, "6": bool(session.snapshots.get("apres")),
+            "r": bool(session.reception), "s": bool(session.spectrum), "f": bool(session.filters),
+            "c": session.connection == "charge"}
+    info = {"5": f"{sum(1 for d in DRILLS if d.id in session.drills)}/{len(DRILLS)}",
+            "8": f"{sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills)}/{len(all_drills()) - len(DRILLS)}",
+            "7": str(sum(1 for p in (folder / "photos").rglob("*") if p.is_file()))}
+    return [{"cle": k, **({"fait": fait[k]} if k in fait else {}), **({"info": info[k]} if k in info else {})}
+            for k in MENU_KEYS]
+
+
 def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
                 config_path: Path | None = None, ask: Ask | None = None, out: Callable[[str], None] | None = None,
                 bus: Bus | None = None,
@@ -867,105 +885,114 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     if missing:
         out(_t("terrain.bands_missing", bands=", ".join(missing)))
     while True:
-        note_runs(session)
-        running = station()
-        out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
-        out(_t("terrain.station_running" if running else "terrain.station_stopped"))
-        done = {r["kind"] for r in session.runs}
+        try:
+            note_runs(session)
+            running = station()
+            out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
+            out(_t("terrain.station_running" if running else "terrain.station_stopped"))
+            done = {r["kind"] for r in session.runs}
 
-        def tick(ok) -> str:
-            return "x" if ok else " "
-        out(_t("terrain.menu2", sound=tick(session.audio and not session.audio.get("problems")),
-               before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
-               qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
-               total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
-               auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
-               photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
-        out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum), fil=tick(session.filters),
-               connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
-        choice = ask(_t("terrain.choice")).strip().lower()
-        if choice in ("1", "2", "3", "4", "6", "9", "r", "s", "f") and running:
-            out(_t("terrain.need_stopped"))
-        elif choice in ("3", "5", "8") and session.connection != "charge":
-            out(_t("terrain.need_load"))                 # aucune émission sans la charge fictive CONFIRMÉE
-        elif choice == "c":
-            confirm_load(session, ask=ask, out=out)
-        elif choice == "r":
-            out(_t("terrain.rx.action"))
-            # Mot ANTENNE tapé par un humain (lot G1) : plus de « O/n » validé par Entrée.
-            if (ask_word(ask, _t("terrain.rx.prompt", word=ANTENNA_WORD), ANTENNA_WORD) or "").strip().upper() \
-                    != ANTENNA_WORD:
-                out(_t("terrain.rx.refused"))
-            else:
-                try:
-                    wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
-                except ValueError:
-                    wanted = None
-                    out(_t("terrain.rx.freq_invalid"))
-                session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
-                session.save()
-                try:
-                    rx = receive(wanted)
-                except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
-                    out(_t("terrain.rx.failed", error=exc))
+            def tick(ok) -> str:
+                return "x" if ok else " "
+            out(_t("terrain.menu2", sound=tick(session.audio and not session.audio.get("problems")),
+                   before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
+                   qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
+                   total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
+                   auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
+                   photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
+            out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum), fil=tick(session.filters),
+                   connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
+            bus.status(poste=f"{caps.manufacturer} {caps.model_name}".strip(), modele=profile.model,
+                       hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
+                       branchement=session.connection or "inconnu")
+            choice = ask_typed(ask, _t("terrain.choice"), CHOICE,
+                               choices=menu_choices(session, done, folder)).strip().lower()
+            if choice in ("1", "2", "3", "4", "6", "9", "r", "s", "f") and running:
+                out(_t("terrain.need_stopped"))
+            elif choice in ("3", "5", "8") and session.connection != "charge":
+                out(_t("terrain.need_load"))                 # aucune émission sans la charge fictive CONFIRMÉE
+            elif choice == "c":
+                confirm_load(session, ask=ask, out=out)
+            elif choice == "r":
+                out(_t("terrain.rx.action"))
+                # Mot ANTENNE tapé par un humain (lot G1) : plus de « O/n » validé par Entrée.
+                if (ask_word(ask, _t("terrain.rx.prompt", word=ANTENNA_WORD), ANTENNA_WORD,
+                             context=_t("terrain.rx.action").strip()) or "").strip().upper() != ANTENNA_WORD:
+                    out(_t("terrain.rx.refused"))
                 else:
-                    session.reception = {"at": _now(), **rx}
+                    try:
+                        wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
+                    except ValueError:
+                        wanted = None
+                        out(_t("terrain.rx.freq_invalid"))
+                    session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
                     session.save()
-                    out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
-                           freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
-        elif choice == "f":
-            out(_t("terrain.fil.title"))
-            try:
-                result = filters()
-            except Exception as exc:                     # noqa: BLE001 : port occupé, pyserial absent…
-                result = {"verdict": "erreur", "detail": str(exc)[:160]}
-            session.filters = {"at": _now(), **result}
-            session.save()
-            out(_t(f"terrain.fil.{result['verdict']}", detail=result.get("detail", ""),
-                   origine=result.get("origine", "")))
-        elif choice == "s":
-            out(_t("terrain.scope.title"))
-            sp = scope()
-            session.spectrum = {"at": _now(), **sp}
-            session.save()
-            out(_t(f"terrain.scope.{sp['verdict']}", port=sp.get("port", ""), which=sp.get("which", ""),
-                   sweeps=sp.get("sweeps", 0), detail=sp.get("detail", "")))
-        elif choice == "1":
-            take_snapshot(session, "avant", snapshot, out=out)
-        elif choice == "2":
-            explore()
-        elif choice == "3":
-            qualify(False)
-        elif choice == "4":
-            qualify(True)
-        elif choice == "5":
-            if not running:
-                out(_t("terrain.need_running"))
-            drills_menu(session, cfg, state_dir, ask=ask, out=out)
-        elif choice == "9":
-            out(_t("terrain.audio.title"))
-            result = sound()
-            show_audio_check(result, out)
-            session.audio = {"at": _now(), **result}
-            session.save()
-        elif choice == "8":
-            if not running:
-                out(_t("terrain.need_running"))
-            from .autodrills import auto_menu
-            auto_menu(session, cfg, state_dir, ask=ask, out=out)
-        elif choice == "6":
-            take_snapshot(session, "apres", snapshot, out=out)
-            show_differences(session, out=out)
-        elif choice == "7":
-            target = build_report(session, settings=settings_of(cfg), out_dir=output)
-            out(_t("terrain.report_done", path=target))
-        elif choice == "a":
-            out(_t("terrain.control_done" if control(False) == 0 else "terrain.control_failed"))
-        elif choice == "d":
-            out(_t("terrain.control_done" if control(True) == 0 else "terrain.control_failed"))
-        elif choice in ("q", "0", ""):
-            out(_t("terrain.bye", folder=folder))
-            return 0
+                    try:
+                        rx = receive(wanted)
+                    except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
+                        out(_t("terrain.rx.failed", error=exc))
+                    else:
+                        session.reception = {"at": _now(), **rx}
+                        session.save()
+                        out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
+                               freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
+            elif choice == "f":
+                out(_t("terrain.fil.title"))
+                try:
+                    result = filters()
+                except Exception as exc:                     # noqa: BLE001 : port occupé, pyserial absent…
+                    result = {"verdict": "erreur", "detail": str(exc)[:160]}
+                session.filters = {"at": _now(), **result}
+                session.save()
+                out(_t(f"terrain.fil.{result['verdict']}", detail=result.get("detail", ""),
+                       origine=result.get("origine", "")))
+            elif choice == "s":
+                out(_t("terrain.scope.title"))
+                sp = scope()
+                session.spectrum = {"at": _now(), **sp}
+                session.save()
+                out(_t(f"terrain.scope.{sp['verdict']}", port=sp.get("port", ""), which=sp.get("which", ""),
+                       sweeps=sp.get("sweeps", 0), detail=sp.get("detail", "")))
+            elif choice == "1":
+                take_snapshot(session, "avant", snapshot, out=out)
+            elif choice == "2":
+                explore()
+            elif choice == "3":
+                qualify(False)
+            elif choice == "4":
+                qualify(True)
+            elif choice == "5":
+                if not running:
+                    out(_t("terrain.need_running"))
+                drills_menu(session, cfg, state_dir, ask=ask, out=out)
+            elif choice == "9":
+                out(_t("terrain.audio.title"))
+                result = sound()
+                show_audio_check(result, out)
+                session.audio = {"at": _now(), **result}
+                session.save()
+            elif choice == "8":
+                if not running:
+                    out(_t("terrain.need_running"))
+                from .autodrills import auto_menu
+                auto_menu(session, cfg, state_dir, ask=ask, out=out)
+            elif choice == "6":
+                take_snapshot(session, "apres", snapshot, out=out)
+                show_differences(session, out=out)
+            elif choice == "7":
+                target = build_report(session, settings=settings_of(cfg), out_dir=output)
+                out(_t("terrain.report_done", path=target))
+            elif choice == "a":
+                out(_t("terrain.control_done" if control(False) == 0 else "terrain.control_failed"))
+            elif choice == "d":
+                out(_t("terrain.control_done" if control(True) == 0 else "terrain.control_failed"))
+            elif choice in ("q", "0", ""):
+                out(_t("terrain.bye", folder=folder))
+                return 0
+        except (KeyboardInterrupt, QuestionStopped):
+            if not bus.consume_stop():              # Ctrl+C au terminal : la valise s'arrête, comme avant
+                raise
+            out(_t("terrain.stopped"))                # STOP de la page : essai interrompu, retour au menu
 
 
 # --------------------------------------------------------------------------- relevé du poste (lecture seule)
@@ -1098,6 +1125,15 @@ def show_differences(session: "Session", *, out: Callable[[str], None]) -> list[
     return diff
 
 
+def drill_choices(session: "Session", drills) -> list[dict]:
+    """Liste d'essais pour la page : numéro, titre (langue de l'outil), résultat ; puis « t » (tous) et « r »."""
+    rows = []
+    for n, d in enumerate(drills, 1):
+        r = session.drills.get(d.id, {}).get("result")
+        rows.append({"cle": str(n), "texte": _t(f"terrain.drill.{d.id}.title").strip(), "etat": r or ""})
+    return rows + [{"cle": "t", "libelle": "tous"}, {"cle": "r", "libelle": "retour"}]
+
+
 def drills_menu(session: Session, cfg, state_dir: Path, *, ask: Ask, out: Callable[[str], None]) -> None:
     out(_t("terrain.drills_intro"))
     while True:
@@ -1105,7 +1141,7 @@ def drills_menu(session: Session, cfg, state_dir: Path, *, ask: Ask, out: Callab
             r = session.drills.get(d.id, {}).get("result")
             label = _t(f"terrain.drill.{d.id}.title").strip()
             out(f"  {n:2d}  {label}  [{_t('terrain.result.' + r) if r else '-'}]")
-        choice = ask(_t("terrain.drills_choice")).strip().lower()
+        choice = ask_typed(ask, _t("terrain.drills_choice"), CHOICE, choices=drill_choices(session, DRILLS)).strip().lower()
         if choice in ("r", "q", ""):
             return
         if choice == "t":
