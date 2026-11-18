@@ -535,9 +535,9 @@
         "fabricant": "Icom",
         "modele": "IC-7300MK2",
         "hamlib_model": 3094,
-        "statut": "validation_en_cours",
-        "resume": "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13). Requalifié le 2026-11-19 avec le nouveau déroulé (réception sur antenne, émissions sur charge fictive) : toute la sécurité d'émission validée ; restent le split, les filtres et les essais au téléphone.",
-        "resume_en": "Reference rig of the project: station in service since 2026-10 (Debian 13). Requalified on 2026-11-19 with the new flow (receive on antenna, transmissions on dummy load): all transmit safety validated; split, filters and phone drills remain."
+        "statut": "restreint",
+        "resume": "Poste de référence du projet, VALIDÉ AVEC RESTRICTIONS le 2026-11-19 : toutes les sécurités d'émission, la réception, le son, les filtres FIL1/2/3, le spectre HF, le coupleur, le split, le TOS et le NB essayés sur le vrai poste. Restrictions (Hamlib) : pas de voyant VFO A / B, pas de température du poste (seuils de température sans effet). Le son de la station ne module qu'en mode données (choix d'Icom).",
+        "resume_en": "Reference rig of the project, VALIDATED WITH RESTRICTIONS on 2026-11-19: all transmit safety, receive, audio, FIL1/2/3 filters, HF spectrum, tuner, split, SWR and NB tried on the real rig. Restrictions (Hamlib): no VFO A / B indicator, no rig temperature (temperature thresholds have no effect). The station audio only modulates in data modes (Icom design)."
       },
       "essais": [
         {
@@ -742,9 +742,9 @@
           "note_en": "On antenna: -28.5 dBFS on 7.061 MHz (S9). « USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port."
         },
         "audio_tx": {
-          "etat": "partiel",
-          "note": "En mode données seulement (PKTUSB, DATA MOD = USB). Niveau d'envoi conseillé ≈ -18 dBFS pour USB MOD Level 30 % (ALC 0,59 à -12 dBFS). Windows : volume de la sortie à 100, améliorations désactivées.",
-          "note_en": "Data modes only (PKTUSB, DATA MOD = USB). Advised send level ≈ -18 dBFS for USB MOD Level 30 % (ALC 0.59 at -12 dBFS). Windows: output volume 100, enhancements off."
+          "etat": "valide",
+          "note": "Par l'USB en mode données (PKTUSB / PKTLSB), seul mode d'émission de la station sur un Icom. Réglages lus par le second port (1A 05 00 85 / 00 84) : DATA MOD = USB, DATA OFF MOD = MIC,ACC. Le poste n'accepte la prise USB que dans UN des deux (« You cannot select the same terminal ») : le son de l'USB module soit en mode données, soit en phonie, jamais les deux ; en phonie, c'est le micro du poste. Niveau d'envoi conseillé ≈ -18 dBFS pour USB MOD Level 30 % (ALC 0,59 à -12 dBFS). Windows : volume de la sortie à 100, améliorations désactivées.",
+          "note_en": "Over USB in data modes (PKTUSB / PKTLSB), the station's only transmit modes on an Icom. Settings read through the second port (1A 05 00 85 / 00 84): DATA MOD = USB, DATA OFF MOD = MIC,ACC. The rig accepts the USB jack in only ONE of the two (« You cannot select the same terminal »): USB audio modulates either in data modes or in voice modes, never both; in voice modes the rig microphone is used. Advised send level ≈ -18 dBFS for USB MOD Level 30 % (ALC 0.59 at -12 dBFS). Windows: output volume 100, enhancements off."
         },
         "spectre_hf": {
           "etat": "valide",
