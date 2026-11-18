@@ -83,9 +83,29 @@ ETATS = {   # état : (symbole, français, anglais)
     "valide": ("✓", "validé", "validated"),
     "partiel": ("◐", "partiel", "partial"),
     "echec": ("✗", "ne fonctionne pas", "does not work"),
-    "non_teste": ("?", "pas encore essayé", "not tried yet"),
-    "non_declare": ("·", "non proposé par Hamlib", "not offered by Hamlib"),
+    "non_teste": ("?", "non testé", "not tested"),
+    "non_declare": ("·", "non disponible", "not available"),
 }
+NOTE_MARK = {"non_teste": "1", "non_declare": "2"}          # renvoi vers la note de bas de page
+CAUSES = {   # qui empêche la fonction (état « non_declare ») : (français, anglais)
+    "hamlib": ("Hamlib", "Hamlib"),
+    "poste": ("le poste", "the rig"),
+    "trx_distant": ("TRX distant", "TRX Remote"),
+}
+FOOTNOTES = (
+    ("(1) Non testé : la fonction existe peut-être, mais aucun essai réel ne l'a encore prouvée avec TRX distant sur ce "
+     "poste. Elle peut marcher ; tant qu'elle n'est pas essayée, on ne l'affirme pas.",
+     "(1) Not tested: the feature may exist, but no real test has proved it yet with TRX Remote on this rig. It may "
+     "work; until it is tested, we do not claim it."),
+    ("(2) Non disponible : la fonction ne peut pas être utilisée à distance aujourd'hui, et la cause est indiquée : "
+     "Hamlib (la bibliothèque qui parle au poste ne la propose pas pour ce modèle), le poste lui-même (sa liaison CAT "
+     "ne la donne pas, ex. aucune donnée de spectre HF par la CAT du Yaesu FTDX10) ou TRX distant (pas encore "
+     "programmée). Une nouvelle version de Hamlib, du micrologiciel du poste ou de TRX distant peut la rendre disponible.",
+     "(2) Not available: the feature cannot be used remotely today, and the cause is shown: Hamlib (the library that "
+     "talks to the rig does not offer it for this model), the rig itself (its CAT link does not provide it, e.g. no HF "
+     "spectrum data over the Yaesu FTDX10 CAT) or TRX Remote (not programmed yet). A new version of Hamlib, of the rig "
+     "firmware or of TRX Remote may make it available."),
+)
 STATUTS = {"valide": ("validé", "validated"), "restreint": ("validé avec restrictions", "validated with restrictions"),
            "validation_en_cours": ("validation en cours", "validation in progress"), "refuse": ("refusé", "refused")}
 COMPARED = ("valide", "restreint", "validation_en_cours")
@@ -161,6 +181,8 @@ def check(rigs: list[dict]) -> None:
                 problems.append(f"{name} : {fid} : état inconnu {entry.get('etat')!r}")
             elif entry["etat"] in NEEDS_NOTE and not (entry.get("note") and entry.get("note_en")):
                 problems.append(f"{name} : {fid} : un état « {entry['etat']} » exige note et note_en")
+            elif entry["etat"] == "non_declare" and entry.get("cause") not in CAUSES:
+                problems.append(f"{name} : {fid} : « non disponible » exige une cause ({', '.join(CAUSES)})")
         missing = known - set(funcs)
         if missing:
             problems.append(f"{name} : fonctions sans état : {', '.join(sorted(missing))}")
@@ -177,9 +199,27 @@ def _bi(fr: str, en: str) -> str:
     return f'<span class="fr-t">{e(fr)}</span><span class="en-t">{e(en)}</span>'
 
 
-def _etat(etat: str) -> str:
+def _label(entry: dict) -> str:
+    """Libellé d'un état, renvoi de note en exposant et cause d'une fonction non disponible."""
+    etat = entry["etat"]
     sym, fr, en = ETATS[etat]
-    return f'<td class="e e-{etat}">{sym} {_bi(fr, en)}</td>'
+    text = f"{sym} {_bi(fr, en)}"
+    if etat in NOTE_MARK:
+        text += f'<sup><a href="#note{NOTE_MARK[etat]}">({NOTE_MARK[etat]})</a></sup>'
+    if etat == "non_declare" and entry.get("cause") in CAUSES:
+        cfr, cen = CAUSES[entry["cause"]]
+        text += " (" + _bi(cfr, cen) + ")"
+    return text
+
+
+def _etat(entry: dict) -> str:
+    return f'<td class="e e-{entry["etat"]}">{_label(entry)}</td>'
+
+
+def _footnotes(anchor: bool) -> str:
+    return ('<div class="notes">' + "".join(
+        f'<p{f" id=note{i}" if anchor else ""}><small>{_bi(fr, en)}</small></p>'
+        for i, (fr, en) in enumerate(FOOTNOTES, 1)) + "</div>")
 
 
 def _rig_title(rig: dict) -> str:
@@ -211,7 +251,7 @@ def _table1(rig: dict) -> list[str]:
             note = entry.get("note", "")
             out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>'
                        f'<td>{_bi("proposé" if declared else "non proposé", "offered" if declared else "not offered")}</td>'
-                       f'{_etat(entry["etat"])}<td>{_bi(note, entry.get("note_en", note))}</td></tr>')
+                       f'{_etat(entry)}<td>{_bi(note, entry.get("note_en", note))}</td></tr>')
     out.append("</table></div>")
     hamlib = rig.get("hamlib", {})
     if hamlib.get("non_exploite"):
@@ -241,14 +281,11 @@ def _table2(rigs: list[dict]) -> list[str]:
             cells = []
             for r in shown:
                 entry = r["fonctions"][fid]
-                if entry["etat"] in ("valide", "partiel"):
-                    note = entry.get("note", "")
-                    cells.append(f'<td class="e e-{entry["etat"]}" title="{html.escape(note)}">{ETATS[entry["etat"]][0]} '
-                                 f'{_bi(ETATS[entry["etat"]][1], ETATS[entry["etat"]][2])}</td>')
-                else:
-                    cells.append("<td>—</td>")
+                note = entry.get("note", "")
+                cells.append(f'<td class="e e-{entry["etat"]}" title="{html.escape(note)}">{_label(entry)}</td>')
             out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>{"".join(cells)}</tr>')
     out.append("</table></div>")
+    out.append(_footnotes(anchor=True))
     return out
 
 
@@ -270,14 +307,15 @@ def render(rigs: list[dict]) -> str:
            f"<p>{legend}</p>",
            f'<p class="themes"><button type="button" data-t="tous">{_bi("Tous les thèmes", "All topics")}</button>{themes}</p>',
            f'<h2>{_bi("Comparaison des postes", "Rig comparison")}</h2>',
-           "<p>" + _bi("Seulement ce qui est validé ou partiel ; — = non disponible avec TRX distant (pas encore essayé, "
-                       "en échec ou non proposé par Hamlib : voir la fiche du poste).",
-                       "Validated or partial only; — = not available with TRX Remote (not tried yet, failed or not offered "
-                       "by Hamlib: see the rig sheet).") + "</p>"]
+           "<p>" + _bi("Postes validés ou en cours de validation ; le détail de chaque case est dans la fiche du poste "
+                       "(survol d'une case = remarque).",
+                       "Validated rigs or rigs being validated; each cell is detailed in the rig sheet (hover a cell = "
+                       "note).") + "</p>"]
     out += _table2(rigs)
     out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et TRX distant", "Each rig: Hamlib and TRX Remote")}</h2>')
     for rig in rigs:
         out += _table1(rig)
+    out.append(_footnotes(anchor=False))
     out += ["<footer>",
             f'<p><a href="../erreurs/">{_bi("Codes d’erreur", "Error codes")}</a> · <a href="../guide/">'
             f'{_bi("Guide de l’opérateur", "Operator guide")}</a> · <a href="data.json">data.json</a> · '

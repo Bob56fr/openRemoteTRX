@@ -438,5 +438,16 @@
   "terrain.fil.echec": "  !!! Filtros: {detail}; filtro original {origine}. Comprobar en el equipo.",
   "terrain.fil.non_propose": "  No aplicable: {detail}.",
   "terrain.fil.pas_de_port": "  Prueba imposible: {detail}.",
-  "terrain.fil.erreur": "  Prueba imposible: {detail}"
+  "terrain.fil.erreur": "  Prueba imposible: {detail}",
+  "split.label": "Split (transmitir en el otro VFO)",
+  "split.what": "Split: TÚ activas el split en el equipo (la prueba no escribe ni split ni frecuencia), 1,5 s de transmisión en split, luego una segunda transmisión durante la cual TÚ apagas el split (la estación debe cortar)",
+  "split.not_declared": "split no declarado por Hamlib",
+  "split.ok": "recepción {rx} MHz, transmisión leída {tx} MHz: transmisión en split OK (potencia {power}), recepción sin cambio; split apagado por el operador durante la transmisión: corte por la estación ({reason}, {cut} s con el tiempo de reacción)",
+  "split.ko": "recepción {rx} MHz, transmisión {tx} MHz: transmisión 1 {first} (potencia {power}); segunda transmisión: {reason} tras {cut} s (esperado split_changed)",
+  "split.setup": "  ACCIÓN NECESARIA: ajusta el OTRO VFO a tu frecuencia de transmisión (misma banda, p. ej. +5 kHz), activa el SPLIT (tecla SPLIT), vuelve a tu frecuencia de recepción y pulsa Intro (n = saltar): ",
+  "split.now": "  >>> PULSA AHORA SPLIT para apagarlo (el equipo transmite); la estación debe cortar sola (espera de {s} s como máximo).",
+  "split.skipped": "split no probado (saltado por el operador)",
+  "split.not_on": "split leído APAGADO (recepción {rx} MHz): activarlo en el equipo antes de responder",
+  "split.refused_unreadable": "frecuencia de transmisión del split ILEGIBLE: transmisión rechazada por la estación ({reason}); seguro, pero split inutilizable a distancia con este equipo",
+  "split.refused_out": "transmisión del split en {tx} MHz, fuera de las bandas permitidas: rechazo de la estación ({reason}, esperado out_of_band)"
 }

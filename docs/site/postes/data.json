@@ -293,12 +293,12 @@
       "en": "does not work"
     },
     "non_teste": {
-      "fr": "pas encore essayé",
-      "en": "not tried yet"
+      "fr": "non testé",
+      "en": "not tested"
     },
     "non_declare": {
-      "fr": "non proposé par Hamlib",
-      "en": "not offered by Hamlib"
+      "fr": "non disponible",
+      "en": "not available"
     }
   },
   "postes": [
@@ -378,6 +378,7 @@
         },
         "vfo": {
           "etat": "non_declare",
+          "cause": "hamlib",
           "note": "« Can get VFO: N ».",
           "note_en": "« Can get VFO: N »."
         },
@@ -468,7 +469,8 @@
           "note_en": "8.2 V on battery (outside the declared 0..1 range)."
         },
         "temperature": {
-          "etat": "non_declare"
+          "etat": "non_declare",
+          "cause": "hamlib"
         },
         "audio_rx": {
           "etat": "partiel",
@@ -538,6 +540,14 @@
         "resume_en": "Reference rig of the project: station in service since 2026-10 (Debian 13). Requalified on 2026-11-19 with the new flow (receive on antenna, transmissions on dummy load): all transmit safety validated; split, filters and phone drills remain."
       },
       "essais": [
+        {
+          "date": "2026-11-19",
+          "station": "0.208.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Split (touche SPLIT de l'opérateur, émission puis coupure par la station) et coupleur pas à pas avec l'opérateur : marche / arrêt relus, émissions FM 20 W sur antenne réelle désaccordée (TOS 2,7 coupleur à l'arrêt, accord au PTT sur 40 m), réglages du coupleur lus par le second port",
+          "quoi_en": "Split (operator SPLIT key, transmission then cut by the station) and tuner step by step with the operator: on / off read back, FM 20 W transmissions on a real mistuned antenna (SWR 2.7 tuner off, tuning on PTT on 40 m), tuner settings read through the second port"
+        },
         {
           "date": "2026-11-19",
           "station": "0.204.0",
@@ -610,7 +620,9 @@
           "note_en": "8 bands written and read back to the hertz."
         },
         "split": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Split mis par l'opérateur (touche SPLIT, VFO B réglé au poste) : fréquence d'émission relue par la station (28,365 MHz pour une réception sur 28,360), émission en split, réception inchangée ; split éteint pendant l'émission : coupure par la station (split_changed). Attention : « S 1 VFOB » de Hamlib 4.7.2 ÉCHANGE les VFO sur ce poste (la fréquence de réception change) : la station n'écrit jamais le split.",
+          "note_en": "Split set by the operator (SPLIT key, VFO B set at the rig): transmit frequency read back by the station (28.365 MHz for receive on 28.360), split transmission, receive unchanged; split switched off while transmitting: cut by the station (split_changed). Caution: Hamlib 4.7.2 « S 1 VFOB » SWAPS the VFOs on this rig (the receive frequency changes): the station never writes the split."
         },
         "rit": {
           "etat": "valide",
@@ -622,6 +634,7 @@
         },
         "vfo": {
           "etat": "non_declare",
+          "cause": "hamlib",
           "note": "« Can get VFO: N » : voyant VFO A / B absent.",
           "note_en": "« Can get VFO: N »: no VFO A / B indicator."
         },
@@ -684,8 +697,8 @@
         },
         "tuner": {
           "etat": "valide",
-          "note": "Mis en marche puis remis sur charge fictive, relu à chaque fois. Son état est mémorisé PAR BANDE par le poste.",
-          "note_en": "Switched on then restored on a dummy load, read back each time. The rig stores its state PER BAND."
+          "note": "Accord automatique à la prise d'émission PAR LA CAT (PTT Start) vu sur antenne réelle désaccordée, bande des 40 m : coupleur relu 2 (accord en cours) et puissance réduite d'un tiers pendant 0,6 s, puis 1 (accordé), TOS 1,0. Réglages du poste requis : MENU > SET > Function > Tuner : [TUNER] Switch = Auto (état mémorisé PAR BANDE), PTT Start = ON. Accord au PTT non garanti hors des bandes radioamateur (comportement du poste, aussi au micro) : une fréquence nouvelle hors bandes peut rester sans accord.",
+          "note_en": "Automatic tuning when transmitting OVER CAT (PTT Start) seen on a real mistuned antenna, 40 m band: tuner read 2 (tuning) and power reduced by a third for 0.6 s, then 1 (tuned), SWR 1.0. Required rig settings: MENU > SET > Function > Tuner: [TUNER] Switch = Auto (state stored PER BAND), PTT Start = ON. Tuning on PTT not guaranteed outside amateur bands (rig behaviour, also with the microphone): a new frequency outside the bands may stay untuned."
         },
         "vox": {
           "etat": "valide",
@@ -703,12 +716,14 @@
           "note_en": "Rises about 0.3 s after keying."
         },
         "ros": {
-          "etat": "valide"
+          "etat": "valide",
+          "note": "1,0 sur charge fictive, 2,7 sur une antenne désaccordée (coupleur à l'arrêt), 1,0 après accord : la mesure suit vraiment l'antenne.",
+          "note_en": "1.0 on a dummy load, 2.7 on a mistuned antenna (tuner off), 1.0 after tuning: the reading really follows the antenna."
         },
         "alc": {
-          "etat": "partiel",
-          "note": "Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l'est).",
-          "note_en": "Reads ≈ 0.14 WITHOUT modulation: never a proof of modulation (power is)."
+          "etat": "valide",
+          "note": "Monte avec la modulation (0,59 à -12 dBFS en mode données) ; ≈ 0,14 SANS modulation : jamais une preuve de modulation à lui seul (la puissance l'est).",
+          "note_en": "Rises with modulation (0.59 at -12 dBFS in data mode); ≈ 0.14 WITHOUT modulation: never a proof of modulation on its own (power is)."
         },
         "tension": {
           "etat": "valide",
@@ -717,6 +732,7 @@
         },
         "temperature": {
           "etat": "non_declare",
+          "cause": "hamlib",
           "note": "TEMP_METER absent : seuils de température du poste sans effet.",
           "note_en": "No TEMP_METER: rig temperature thresholds have no effect."
         },
@@ -940,7 +956,8 @@
           "note_en": "13.4 V read (outside the declared range)."
         },
         "temperature": {
-          "etat": "non_declare"
+          "etat": "non_declare",
+          "cause": "hamlib"
         },
         "audio_rx": {
           "etat": "valide",
@@ -954,6 +971,7 @@
         },
         "spectre_hf": {
           "etat": "non_declare",
+          "cause": "poste",
           "note": "Aucune donnée du scope par la CAT Yaesu (la commande SS ne règle que l'affichage) : spectre audio seulement.",
           "note_en": "No scope data over Yaesu CAT (the SS command only sets the display): audio spectrum only."
         }

@@ -148,6 +148,8 @@ d'après la table de la mesure de TOS ; la valise signale celles qui manquent à
 attendue ; remis à l'arrêt quoi qu'il arrive ; commande brute de l'outil, la station refusant toute écriture du VOX)
 dans la phase d'émission, chacun après EMETTRE.
 
+Étape 269 : essai du SPLIT (`stage_split`, après le coupleur), sur charge fictive après EMETTRE. C'est L'OPÉRATEUR qui règle l'autre VFO et met le split à la touche SPLIT : l'essai n'écrit ni le split ni aucune fréquence (sur l'IC-7300MK2, « S 1 VFOB » de Hamlib 4.7.2 échange les VFO et la fréquence de réception change). Relus : split, fréquence d'émission, fréquence de réception. Fréquence d'émission hors bande : refus attendu (`out_of_band`), aucune émission ; illisible : refus `split_unreadable` (sûr, split inutilisable à distance) ; dans la bande : émission 1 (PTT, puissance, fréquences), puis émission 2 pendant laquelle l'opérateur éteint le split : la station doit couper (`split_changed`, relecture toutes les secondes). Pour relire le split, toujours un rigctld OUVERT : un `rigctl` d'une seule commande renvoie 0 pour la fréquence d'émission.
+
 Étape 266 : choix `f` de la valise = préréglages FIL1 / FIL2 / FIL3 choisis et relus par le SECOND PORT CI-V (26 00,
 comme la page et l'application), filtre d'origine remis, largeurs jamais écrites ; Icom avec second port seulement.
 

@@ -481,3 +481,60 @@ def test_the_vox_is_switched_off_after_returning_to_the_voice_mode(tmp_path):
             await q.teardown()
         assert fake.mode == original_mode and fake.funcs.get("VOX", 0) == 0
     run(tmp_path, scenario)
+
+
+SPLIT_DUMP = SAMPLE_DUMP_CAPS + "Can set Split Freq:\tY\nCan get Split Freq:\tY\nCan get Split VFO:\tY\n"
+
+
+def _split_run(tmp_path, *, tx_offset_hz=5_000, tx_hz=None, split_on=True, operator_switches_off=True):
+    """L'opérateur a mis le split ; `split_operator` remplace son appui sur SPLIT pendant la seconde émission."""
+    seen = {}
+
+    def setup(fake):
+        fake.split = 1 if split_on else 0
+        fake.split_freq = tx_hz if tx_hz is not None else fake.freq + tx_offset_hz
+
+    async def scenario(q, fake, out, prompts):
+        rx = fake.freq
+        if operator_switches_off:
+            q.split_operator = lambda: asyncio.get_running_loop().call_later(0.5, lambda: setattr(fake, "split", 0))
+        assert await q.setup()
+        try:
+            for _ in range(100):
+                if q.link.state.connected and q.link.client.connected:
+                    break
+                await asyncio.sleep(0.05)
+            await q.stage_split()
+        finally:
+            await q.teardown()
+        seen["check"] = next(c for c in q.checks if c.id == "split_tx")
+        sent = [c.lstrip("+").split(" ")[0] for c in fake.commands]
+        assert "S" not in sent and "I" not in sent and "F" not in sent     # ni split, ni fréquence écrits par l'essai
+        assert fake.freq == rx and fake.ptt == 0
+        seen["keys"] = sum(1 for c in fake.commands if c.lstrip("+").startswith("T 1"))
+    run(tmp_path, scenario, dump=SPLIT_DUMP, fake_setup=setup)
+    return seen
+
+
+def test_split_set_by_the_operator_transmits_on_the_other_vfo_and_is_cut_when_switched_off(tmp_path, monkeypatch):
+    import trxstation.qualif.runner as R
+    monkeypatch.setattr(R, "SPLIT_WAIT_S", 4.0)
+    seen = _split_run(tmp_path)
+    assert seen["check"].ok is True and "split_changed" in seen["check"].detail and seen["keys"] == 2
+
+
+def test_split_left_on_during_the_second_transmission_fails_and_the_rig_is_back_in_receive(tmp_path, monkeypatch):
+    import trxstation.qualif.runner as R
+    monkeypatch.setattr(R, "SPLIT_WAIT_S", 2.0)
+    seen = _split_run(tmp_path, operator_switches_off=False)
+    assert seen["check"].ok is False
+
+
+def test_split_transmit_frequency_out_of_band_is_refused_without_transmitting(tmp_path):
+    seen = _split_run(tmp_path, tx_hz=15_000_000, operator_switches_off=False)
+    assert seen["check"].ok is True and "out_of_band" in seen["check"].detail and seen["keys"] == 0
+
+
+def test_split_not_switched_on_by_the_operator_is_not_tried(tmp_path):
+    seen = _split_run(tmp_path, split_on=False, operator_switches_off=False)
+    assert seen["check"].ok is None and seen["keys"] == 0

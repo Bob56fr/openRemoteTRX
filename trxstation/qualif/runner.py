@@ -89,6 +89,8 @@ def _mhz(hz: int | None) -> str:
 
 
 TUNER_WATCH_S = 8.0                   # accord éventuel du coupleur (porteuse brève) : PTT relu jusqu'au retour en réception
+SPLIT_TX_S = 1.5                      # émission en split : PTT et puissance relus
+SPLIT_WAIT_S = 15.0                   # seconde émission : l'opérateur éteint le split, la station doit couper
 VOX_WATCH_S = 4.0                     # VOX en marche, aucun son envoyé : le poste doit rester en réception
 VOX_TONE_S = 2.0                      # puis tonalité vers la carte son : le poste doit passer en émission
 VOX_TONE_DBFS = -18.0                 # niveau de la tonalité (sinon celui conseillé par la montée du niveau)
@@ -675,6 +677,7 @@ class Qualification(HwTest):
                 self.record(_t("hw.drills"), None, *both("phase3.drills_skipped"))
                 self.record(_t("hw.cat_loss"), None, *both("phase3.cat_loss_skipped"))
             await self.stage_tuner()
+            await self.stage_split()
             await self.stage_vox()
 
     async def _rx_and_func(self, name: str) -> tuple[bool | None, bool | None]:
@@ -718,6 +721,97 @@ class Qualification(HwTest):
         ok = all(steps) and not ptt
         self.check("tuner_tx", ("Coupleur d'antenne", _t("tuner.label")), FIXE, ok,
                    both("tuner.ok" if ok else "tuner.ko", tx="oui" if tx_seen else "non"))
+
+    async def _key_retry(self) -> None:
+        """Prise d'émission ; un refus PASSAGER (anti-rebond, démarrage, touche du poste juste avant) est retenté."""
+        from ..gateway.safety.ptt import Refused
+        for _ in range(20):
+            try:
+                self.ctrl.release_local(_hwtest.CLIENT)  # touche SPLIT de l'opérateur : reprise permise hors émission
+            except Exception:
+                pass
+            try:
+                await self.key()
+                return
+            except Refused as exc:
+                if exc.reason not in ("cooldown", "starting", "local_active"):
+                    raise
+                await asyncio.sleep(0.5)
+        raise RuntimeError("prise d'émission jamais acceptée")
+
+    async def stage_split(self) -> None:
+        """Split (demande de l'utilisateur, 2026-11-19), sur CHARGE FICTIVE après EMETTRE. L'OPÉRATEUR met le split et
+        règle l'autre VFO à la touche du poste : l'essai n'écrit NI le split NI aucune fréquence (sur l'IC-7300MK2,
+        « S 1 VFOB » de Hamlib échange les VFO et la fréquence de réception change). Relus : split, fréquence d'émission,
+        fréquence de réception. Fréquence d'émission hors bande => la station doit REFUSER ; illisible => refus aussi
+        (sûr, mais split inutilisable à distance) ; dans la bande : émission 1 (PTT, puissance, fréquences relus), puis
+        émission 2 pendant laquelle l'opérateur éteint le split : la station doit couper (« split_changed »).
+        `split_operator` (essais) : remplace l'appui de l'opérateur. « T 0 » QUOI QU'IL ARRIVE."""
+        from ..gateway.safety.ptt import Refused
+        label = ("Split", _t("split.label"))
+        can = self.profile.can
+        if not (can.get("get Split VFO") or can.get("set Split VFO")):
+            return self.check("split_tx", label, FIXE, None, both("split.not_declared"))
+        if not await self.confirm_emission(_t("split.what")):
+            return self.check("split_tx", label, FIXE, None, both("phase3.not_confirmed"))
+        if _declined(await self.prompt(_t("split.setup"))):
+            return self.check("split_tx", label, FIXE, None, both("split.skipped"))
+        client = self.link.client
+        try:
+            rx = await client.get_frequency()
+            split = await client.get_split()
+            tx = await client.get_split_frequency() if split else 0
+        except Exception as exc:
+            return self.check("split_tx", label, FIXE, None, both("detail.refused", error=_rprt(exc)))
+        if not split:
+            return self.check("split_tx", label, FIXE, None, both("split.not_on", rx=f"{rx / 1e6:.4f}"))
+        try:
+            if not tx or (self.cfg.safety.enforce_bands and not self.cfg.tx_allowed(tx)):
+                expected = "split_unreadable" if not tx else "out_of_band"
+                try:
+                    await self._key_retry()
+                    refused = ""
+                except Refused as exc:
+                    refused = exc.reason
+                ptt = await self.read_ptt()
+                ok = refused == expected and ptt is False
+                key = "split.refused_unreadable" if not tx else "split.refused_out"
+                return self.check("split_tx", label, FIXE, ok if tx else (None if ok else False),
+                                  both(key, tx=f"{tx / 1e6:.4f}", reason=refused or "aucun refus"))
+            await self._key_retry()
+            await self.sleep_with_heartbeat(SPLIT_TX_S)
+            ptt1 = await self.read_ptt()
+            try:
+                power = await client.get_level("RFPOWER_METER")
+            except Exception:
+                power = None
+            tx1, rx1 = await client.get_split_frequency(), await client.get_frequency()
+            await self.ctrl.toggle(_hwtest.CLIENT)
+            first = ptt1 is True and (power is None or power > 0) and tx1 == tx and rx1 == rx
+            await asyncio.sleep(1.0)
+            await self._key_retry()
+            t0 = time.monotonic()
+            self.say(_t("split.now", s=f"{SPLIT_WAIT_S:.0f}"))
+            hook = getattr(self, "split_operator", None)
+            if hook is not None:
+                hook()
+            while self.ctrl.snapshot().state != "RX" and time.monotonic() - t0 < SPLIT_WAIT_S:
+                self.ctrl.heartbeat(_hwtest.CLIENT)
+                await asyncio.sleep(0.1)
+            elapsed = time.monotonic() - t0
+            reason = self.ctrl.snapshot().last_cut_reason if self.ctrl.snapshot().state == "RX" else ""
+            rx2 = await client.get_frequency()
+            cut = reason == "split_changed" and (await self.read_ptt()) is False
+        except Exception as exc:
+            return self.check("split_tx", label, FIXE, False, both("detail.refused", error=_rprt(exc)))
+        finally:
+            if self.ctrl.snapshot().state != "RX" or await self.read_ptt():
+                await self.ctrl.force_rx("hwtest")
+        ok = first and cut and rx2 == rx
+        self.check("split_tx", label, FIXE, ok,
+                   both("split.ok" if ok else "split.ko", rx=f"{rx / 1e6:.4f}", tx=f"{tx / 1e6:.4f}",
+                        power=f"{power:.2f}" if power is not None else "?", first="OK" if first else "NON",
+                        cut=f"{elapsed:.1f}", reason=reason or "aucune coupure"))
 
     async def stage_vox(self) -> None:
         """VOX (demandes de l'utilisateur, 2026-11-19), sur CHARGE FICTIVE après EMETTRE, en deux temps :

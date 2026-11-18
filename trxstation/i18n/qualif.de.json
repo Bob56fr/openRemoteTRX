@@ -438,5 +438,16 @@
   "terrain.fil.echec": "  !!! Filter: {detail}; ursprünglicher Filter {origine}. Am Gerät prüfen.",
   "terrain.fil.non_propose": "  Entfällt: {detail}.",
   "terrain.fil.pas_de_port": "  Prüfung nicht möglich: {detail}.",
-  "terrain.fil.erreur": "  Prüfung nicht möglich: {detail}"
+  "terrain.fil.erreur": "  Prüfung nicht möglich: {detail}",
+  "split.label": "Split (Senden auf dem anderen VFO)",
+  "split.what": "Split: DU schaltest Split am Gerät ein (der Test schreibt weder Split noch Frequenz), 1,5 s Senden im Split, dann ein zweites Senden, bei dem DU Split ausschaltest (die Station muss abschalten)",
+  "split.not_declared": "Split von Hamlib nicht gemeldet",
+  "split.ok": "Empfang {rx} MHz, Senden gelesen {tx} MHz: Senden im Split OK (Leistung {power}), Empfang unverändert; Split vom Bediener während des Sendens ausgeschaltet: Abschaltung durch die Station ({reason}, {cut} s mit Reaktionszeit)",
+  "split.ko": "Empfang {rx} MHz, Senden {tx} MHz: Senden 1 {first} (Leistung {power}); zweites Senden: {reason} nach {cut} s (erwartet split_changed)",
+  "split.setup": "  AKTION ERFORDERLICH: den ANDEREN VFO auf deine Sendefrequenz stellen (gleiches Band, z. B. +5 kHz), SPLIT einschalten (Taste SPLIT), zurück auf deine Empfangsfrequenz, dann Eingabe (n = überspringen): ",
+  "split.now": "  >>> JETZT SPLIT drücken, um es auszuschalten (das Gerät sendet); die Station muss selbst abschalten (höchstens {s} s Wartezeit).",
+  "split.skipped": "Split nicht geprüft (vom Bediener übersprungen)",
+  "split.not_on": "Split als AUS gelesen (Empfang {rx} MHz): vor der Antwort am Gerät einschalten",
+  "split.refused_unreadable": "Split-Sendefrequenz NICHT LESBAR: Senden von der Station abgelehnt ({reason}); sicher, aber Split mit diesem Gerät aus der Ferne nicht nutzbar",
+  "split.refused_out": "Split-Senden auf {tx} MHz, außerhalb der erlaubten Bänder: Ablehnung der Station ({reason}, erwartet out_of_band)"
 }

@@ -66,8 +66,32 @@ def test_the_comparison_shows_only_validated_and_partial_and_never_a_refused_rig
     page = doc.render([rig, other])
     comparison = page.split("Comparaison des postes", 1)[1].split("Fiche de chaque poste", 1)[0]
     assert "REFUSÉ-1" not in comparison and "IC-7300MK2" in comparison
-    assert "ne fonctionne pas" not in comparison and "non proposé par Hamlib</span></td>" not in comparison
     assert "REFUSÉ-1" in page                                # sa fiche reste visible plus bas
+
+
+def test_every_state_is_spelled_out_with_its_footnote_and_the_cause_of_an_unavailable_feature() -> None:
+    """Demande de l'utilisateur (2026-11-19) : plus de tiret ; « non testé (1) », « non disponible (2) (cause) »,
+    « ne fonctionne pas » en clair, notes de bas de page."""
+    rig = _rig()
+    rig["fonctions"]["agc"] = {"etat": "echec", "note": "refusé", "note_en": "refused"}
+    rig["fonctions"]["squelch"] = {"etat": "non_teste"}
+    rig["fonctions"]["anf"] = {"etat": "non_declare", "cause": "poste"}
+    page = doc.render([rig])
+    comparison = page.split("Comparaison des postes", 1)[1].split("Fiche de chaque poste", 1)[0]
+    assert "<td>—</td>" not in page and "ne fonctionne pas" in comparison
+    assert 'href="#note1">(1)</a></sup>' in comparison and 'href="#note2">(2)</a></sup>' in comparison
+    assert "le poste" in comparison and 'id=note1' in page and 'id=note2' in page
+    assert page.count("(2) Non disponible") == 2             # sous la comparaison et en bas de page
+
+
+def test_an_unavailable_feature_needs_its_cause() -> None:
+    rig = _rig()
+    rig["fonctions"]["anf"] = {"etat": "non_declare"}
+    with pytest.raises(doc.DocError, match="cause"):
+        doc.check([rig])
+    rig["fonctions"]["anf"] = {"etat": "non_declare", "cause": "lune"}
+    with pytest.raises(doc.DocError, match="cause"):
+        doc.check([rig])
 
 
 def test_page_is_escaped_and_bilingual() -> None:

@@ -438,5 +438,16 @@
   "terrain.fil.echec": "  !!! Filters: {detail}; original filter {origine}. Check on the rig.",
   "terrain.fil.non_propose": "  Not applicable: {detail}.",
   "terrain.fil.pas_de_port": "  Drill impossible: {detail}.",
-  "terrain.fil.erreur": "  Drill impossible: {detail}"
+  "terrain.fil.erreur": "  Drill impossible: {detail}",
+  "split.label": "Split (transmit on the other VFO)",
+  "split.what": "Split: YOU switch split on at the rig (the test writes neither split nor frequency), 1.5 s transmission in split, then a second transmission during which YOU switch split off (the station must cut)",
+  "split.not_declared": "split not declared by Hamlib",
+  "split.ok": "receive {rx} MHz, transmit read back {tx} MHz: split transmission OK (power {power}), receive unchanged; split switched off by the operator while transmitting: cut by the station ({reason}, {cut} s including reaction time)",
+  "split.ko": "receive {rx} MHz, transmit {tx} MHz: transmission 1 {first} (power {power}); second transmission: {reason} after {cut} s (expected split_changed)",
+  "split.setup": "  ACTION REQUIRED: set the OTHER VFO to your transmit frequency (same band, e.g. +5 kHz), switch SPLIT on (SPLIT key), go back to your receive frequency, then Enter (n = skip): ",
+  "split.now": "  >>> PRESS SPLIT NOW to switch it off (the rig is transmitting); the station must cut by itself (waiting {s} s at most).",
+  "split.skipped": "split not tried (skipped by the operator)",
+  "split.not_on": "split read back OFF (receive {rx} MHz): switch it on at the rig before answering",
+  "split.refused_unreadable": "split transmit frequency UNREADABLE: transmission refused by the station ({reason}); safe, but split unusable remotely with this rig",
+  "split.refused_out": "split transmission on {tx} MHz, outside the allowed bands: station refusal ({reason}, expected out_of_band)"
 }

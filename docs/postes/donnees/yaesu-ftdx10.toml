@@ -61,12 +61,12 @@ puissance_mesuree = { etat = "non_teste" }
 ros = { etat = "non_teste" }
 alc = { etat = "non_teste", note = "Échelle de l'ALC Yaesu pas encore relevée.", note_en = "Yaesu ALC scale not measured yet." }
 tension = { etat = "valide", note = "13,4 V lus (hors de la plage déclarée).", note_en = "13.4 V read (outside the declared range)." }
-temperature = { etat = "non_declare" }
+temperature = { etat = "non_declare", cause = "hamlib" }
 # --- Audio USB
 audio_rx = { etat = "valide", note = "Essai du poste en réception seule (carte « USB Audio CODEC » du poste).", note_en = "Rig test in receive only (rig « USB Audio CODEC » card)." }
 audio_tx = { etat = "non_teste", note = "Menus à régler : MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN.", note_en = "Menus to set: MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN." }
 # --- Spectre
-spectre_hf = { etat = "non_declare", note = "Aucune donnée du scope par la CAT Yaesu (la commande SS ne règle que l'affichage) : spectre audio seulement.", note_en = "No scope data over Yaesu CAT (the SS command only sets the display): audio spectrum only." }
+spectre_hf = { etat = "non_declare", cause = "poste", note = "Aucune donnée du scope par la CAT Yaesu (la commande SS ne règle que l'affichage) : spectre audio seulement.", note_en = "No scope data over Yaesu CAT (the SS command only sets the display): audio spectrum only." }
 
 [hamlib]
 constats = ["« u COMP » : 2,45 s puis refus (le poste répond « ?; », Hamlib réessaie comme si le poste était occupé ; signalé à Hamlib).",

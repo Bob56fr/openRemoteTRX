@@ -18,8 +18,10 @@ Une fiche par poste dans `donnees/<fabricant>-<modèle>.toml`, source unique des
   `refuse`), `resume` et `resume_en`.
 - `[[essais]]` : `date`, `station`, `hamlib`, `systeme`, `quoi` / `quoi_en`. Un résultat vaut pour ces versions.
 - `[fonctions]` : TOUTES les fonctions de la liste `FEATURES` de `scripts/build_rigs_doc.py`, chacune avec `etat` =
-  `valide`, `partiel`, `echec`, `non_teste` ou `non_declare` (Hamlib ne le propose pas) ; `note` / `note_en`
-  obligatoires pour `partiel` et `echec`.
+  `valide`, `partiel`, `echec`, `non_teste` (affiché « non testé (1) ») ou `non_declare` (affiché « non disponible
+  (2) ») ; `note` / `note_en` obligatoires pour `partiel` et `echec` ; `cause` obligatoire pour `non_declare` :
+  `hamlib` (Hamlib ne la propose pas pour ce modèle), `poste` (la CAT du poste ne la donne pas) ou `trx_distant`
+  (pas encore programmée). Les notes (1) et (2) sont en bas de la page publique.
 - `[hamlib]` : `non_exploite` (proposé par Hamlib, pas utilisé par TRX distant), `constats` / `constats_en`.
 
 Règles : chaque état vient d'un essai réel (qualification, valise de qualification) ; un poste n'est `valide` ou

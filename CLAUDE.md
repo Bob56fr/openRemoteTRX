@@ -90,7 +90,7 @@ openRemoteTRX/
 
 La passerelle est le composant critique : validée seule avant tout Kotlin. Outils de test : `tools/fake_client.py` (joue le smartphone via aiortc), `tools/audio_loopback.py` (latence aller-retour), tests pytest des scénarios de panne, test du superviseur (`kill -STOP` de la passerelle pendant un TX). Le protocole (messages CAT/PTT, descripteur de capacités, format du bus d'état) est figé et documenté côté Pi avant l'étape Android.
 
-## État actuel (station 0.208.0, application 0.67.0, étape 268)
+## État actuel (station 0.209.0, application 0.67.0, étape 269)
 
 L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvés, essais) est dans `docs/historique.md` : le lire avant de toucher à un sujet ancien. Ici, l'essentiel.
 
@@ -152,6 +152,7 @@ L'historique COMPLET des étapes (décisions, formats relevés, défauts trouvé
 
 ## Pièges et leçons (à relire avant de coder)
 
+- **Split et VFO de l'IC-7300MK2 (étape 269)** : « S 1 VFOB » de Hamlib 4.7.2 ÉCHANGE les VFO (la fréquence de réception change) : jamais d'écriture du split par un outil, l'opérateur le met à la touche SPLIT ; relever les DEUX VFO avant tout essai (second port : `25 00` sélectionné, `25 01` non sélectionné, sans basculer) ; un `rigctl` d'une seule commande renvoie 0 pour `i` (le rigctld ouvert relit bien) ; remettre un mode TOUJOURS avec la largeur 0. Mot « CHARGE » = charge fictive, « ANTENNE » = antenne réelle (émission sur antenne seulement sur ce mot).
 - **VOX (décision de l'utilisateur, 2026-11-19, étape 268)** : la station ne met JAMAIS le VOX en marche (`set_func` le refuse) ; sa seule écriture est la coupure à la connexion d'un opérateur (`switch_vox_off`). Sur l'IC-7300MK2 l'état du VOX dépend du mode (coupé en mode données, en marche en phonie) : une lecture ne vaut que pour le mode en cours.
 - **Qualifier un poste (règles de l'utilisateur, 2026-11-18)** : Claude MÈNE la qualification et demande les actions physiques à l'opérateur par messages clairs. Ne pas rester en CW : un réglage s'essaie dans le mode où il existe (compresseur en USB / LSB / AM, pas en FM ni CW ; BKINDL en CW). Icom : modulation audio en PKTUSB / PKTLSB seulement (le FTDX10 module aussi en USB). Réception (son, S-mètre, bruit, NR / NB) sur ANTENNE, émissions sur CHARGE FICTIVE : deux parties, changement confirmé par l'opérateur avant toute émission. Réception sur la fréquence OÙ EST le poste (antenne de l'opérateur inconnue : cibiste ou radioamateur ; jamais de QSY imposé, décision du 2026-11-19) ; 28 MHz sans QRM = pas de son : l'opérateur peut donner une autre fréquence (7 ou 3,5 MHz) si son antenne le permet.
 - **Son de l'IC-7300MK2 sous Windows (étape 257)** : sa carte son est la puce C-Media « USB Audio Device » derrière le hub interne du poste (pas « USB Audio CODEC ») ; son nom (« 2- … ») change avec la prise USB ; une sortie à volume réduit (38) = émission sans puissance : volume 100, améliorations désactivées, niveau dosé par USB MOD Level ; l'ALC lu par la CAT vaut ~0,14 sans modulation (jamais une preuve).

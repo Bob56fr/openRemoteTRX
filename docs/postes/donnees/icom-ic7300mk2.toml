@@ -12,6 +12,14 @@ resume_en = "Reference rig of the project: station in service since 2026-10 (Deb
 
 [[essais]]
 date = "2026-11-19"
+station = "0.208.0"
+hamlib = "4.7.2"
+systeme = "Windows 11"
+quoi = "Split (touche SPLIT de l'opérateur, émission puis coupure par la station) et coupleur pas à pas avec l'opérateur : marche / arrêt relus, émissions FM 20 W sur antenne réelle désaccordée (TOS 2,7 coupleur à l'arrêt, accord au PTT sur 40 m), réglages du coupleur lus par le second port"
+quoi_en = "Split (operator SPLIT key, transmission then cut by the station) and tuner step by step with the operator: on / off read back, FM 20 W transmissions on a real mistuned antenna (SWR 2.7 tuner off, tuning on PTT on 40 m), tuner settings read through the second port"
+
+[[essais]]
+date = "2026-11-19"
 station = "0.204.0"
 hamlib = "4.7.2"
 systeme = "Windows 11"
@@ -46,10 +54,10 @@ operateur_local = { etat = "valide", note = "Émission au micro du poste vue ; �
 demarrage = { etat = "valide", note = "Aucune émission vue pendant le démarrage de la station ; station arrêtée pendant une émission : réception en 0,41 s.", note_en = "No transmission seen while the station starts; station stopped while transmitting: receive within 0.41 s." }
 # --- Fréquence
 frequence = { etat = "valide", note = "8 bandes écrites et relues au hertz.", note_en = "8 bands written and read back to the hertz." }
-split = { etat = "non_teste" }
+split = { etat = "valide", note = "Split mis par l'opérateur (touche SPLIT, VFO B réglé au poste) : fréquence d'émission relue par la station (28,365 MHz pour une réception sur 28,360), émission en split, réception inchangée ; split éteint pendant l'émission : coupure par la station (split_changed). Attention : « S 1 VFOB » de Hamlib 4.7.2 ÉCHANGE les VFO sur ce poste (la fréquence de réception change) : la station n'écrit jamais le split.", note_en = "Split set by the operator (SPLIT key, VFO B set at the rig): transmit frequency read back by the station (28.365 MHz for receive on 28.360), split transmission, receive unchanged; split switched off while transmitting: cut by the station (split_changed). Caution: Hamlib 4.7.2 « S 1 VFOB » SWAPS the VFOs on this rig (the receive frequency changes): the station never writes the split." }
 rit = { etat = "valide", note = "Le RIT et le ΔTX partagent le même décalage.", note_en = "RIT and ΔTX share the same offset." }
 xit = { etat = "valide" }
-vfo = { etat = "non_declare", note = "« Can get VFO: N » : voyant VFO A / B absent.", note_en = "« Can get VFO: N »: no VFO A / B indicator." }
+vfo = { etat = "non_declare", cause = "hamlib", note = "« Can get VFO: N » : voyant VFO A / B absent.", note_en = "« Can get VFO: N »: no VFO A / B indicator." }
 # --- Modes et filtres
 modes_base = { etat = "valide" }
 modes_donnees = { etat = "valide", note = "PKTUSB, PKTLSB, FM-D et AM-D (pas PKTFM / PKTAM avec Hamlib 4.7).", note_en = "PKTUSB, PKTLSB, FM-D and AM-D (not PKTFM / PKTAM with Hamlib 4.7)." }
@@ -68,15 +76,15 @@ squelch = { etat = "valide" }
 # --- Émission
 puissance = { etat = "valide" }
 compresseur = { etat = "valide" }
-tuner = { etat = "valide", note = "Mis en marche puis remis sur charge fictive, relu à chaque fois. Son état est mémorisé PAR BANDE par le poste.", note_en = "Switched on then restored on a dummy load, read back each time. The rig stores its state PER BAND." }
+tuner = { etat = "valide", note = "Accord automatique à la prise d'émission PAR LA CAT (PTT Start) vu sur antenne réelle désaccordée, bande des 40 m : coupleur relu 2 (accord en cours) et puissance réduite d'un tiers pendant 0,6 s, puis 1 (accordé), TOS 1,0. Réglages du poste requis : MENU > SET > Function > Tuner : [TUNER] Switch = Auto (état mémorisé PAR BANDE), PTT Start = ON. Accord au PTT non garanti hors des bandes radioamateur (comportement du poste, aussi au micro) : une fréquence nouvelle hors bandes peut rester sans accord.", note_en = "Automatic tuning when transmitting OVER CAT (PTT Start) seen on a real mistuned antenna, 40 m band: tuner read 2 (tuning) and power reduced by a third for 0.6 s, then 1 (tuned), SWR 1.0. Required rig settings: MENU > SET > Function > Tuner: [TUNER] Switch = Auto (state stored PER BAND), PTT Start = ON. Tuning on PTT not guaranteed outside amateur bands (rig behaviour, also with the microphone): a new frequency outside the bands may stay untuned." }
 vox = { etat = "valide", note = "Phonie seulement (manuel avancé p. 2-5 : « SSB, AM, and FM modes ») : sans son aucune émission, à la voix au micro émission puis retour en réception. NON déclenchable par l'USB (inactif en mode données, et le son USB ne module qu'en mode données). Attention : coupé en mode données, il RESTE en marche en phonie. La station ne le propose jamais à distance et le COUPE à chaque connexion d'opérateur (depuis 0.208.0).", note_en = "Voice modes only (advanced manual p. 2-5: « SSB, AM, and FM modes »): no transmission without audio, voice into the microphone keys then releases. NOT triggerable over USB (inactive in data modes, and USB audio only modulates in data modes). Caution: switched off in a data mode, it STAYS on in voice modes. The station never offers it remotely and switches it OFF at every operator connection (since 0.208.0)." }
 # --- Mesures
 s_metre = { etat = "valide", note = "Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.", note_en = "Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table." }
 puissance_mesuree = { etat = "valide", note = "Monte environ 0,3 s après la prise d'émission.", note_en = "Rises about 0.3 s after keying." }
-ros = { etat = "valide" }
-alc = { etat = "partiel", note = "Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l'est).", note_en = "Reads ≈ 0.14 WITHOUT modulation: never a proof of modulation (power is)." }
+ros = { etat = "valide", note = "1,0 sur charge fictive, 2,7 sur une antenne désaccordée (coupleur à l'arrêt), 1,0 après accord : la mesure suit vraiment l'antenne.", note_en = "1.0 on a dummy load, 2.7 on a mistuned antenna (tuner off), 1.0 after tuning: the reading really follows the antenna." }
+alc = { etat = "valide", note = "Monte avec la modulation (0,59 à -12 dBFS en mode données) ; ≈ 0,14 SANS modulation : jamais une preuve de modulation à lui seul (la puissance l'est).", note_en = "Rises with modulation (0.59 at -12 dBFS in data mode); ≈ 0.14 WITHOUT modulation: never a proof of modulation on its own (power is)." }
 tension = { etat = "valide", note = "14,4 V lus (hors de la plage déclarée 0..1).", note_en = "14.4 V read (outside the declared 0..1 range)." }
-temperature = { etat = "non_declare", note = "TEMP_METER absent : seuils de température du poste sans effet.", note_en = "No TEMP_METER: rig temperature thresholds have no effect." }
+temperature = { etat = "non_declare", cause = "hamlib", note = "TEMP_METER absent : seuils de température du poste sans effet.", note_en = "No TEMP_METER: rig temperature thresholds have no effect." }
 # --- Audio USB
 audio_rx = { etat = "valide", note = "Sur antenne : -28,5 dBFS sur 7,061 MHz (S9). Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.", note_en = "On antenna: -28.5 dBFS on 7.061 MHz (S9). « USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port." }
 audio_tx = { etat = "partiel", note = "En mode données seulement (PKTUSB, DATA MOD = USB). Niveau d'envoi conseillé ≈ -18 dBFS pour USB MOD Level 30 % (ALC 0,59 à -12 dBFS). Windows : volume de la sortie à 100, améliorations désactivées.", note_en = "Data modes only (PKTUSB, DATA MOD = USB). Advised send level ≈ -18 dBFS for USB MOD Level 30 % (ALC 0.59 at -12 dBFS). Windows: output volume 100, enhancements off." }

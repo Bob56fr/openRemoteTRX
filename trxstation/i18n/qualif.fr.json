@@ -438,5 +438,16 @@
   "terrain.fil.echec": "  !!! Filtres : {detail} ; filtre d'origine {origine}. À vérifier sur le poste.",
   "terrain.fil.non_propose": "  Sans objet : {detail}.",
   "terrain.fil.pas_de_port": "  Essai impossible : {detail}.",
-  "terrain.fil.erreur": "  Essai impossible : {detail}"
+  "terrain.fil.erreur": "  Essai impossible : {detail}",
+  "split.label": "Split (émission sur l'autre VFO)",
+  "split.what": "Split : TU mets le split au poste (l'essai n'écrit ni split ni fréquence), émission 1,5 s en split, puis seconde émission pendant laquelle TU éteins le split (la station doit couper)",
+  "split.not_declared": "split non déclaré par Hamlib",
+  "split.ok": "réception {rx} MHz, émission relue {tx} MHz : émission en split OK (puissance {power}), réception inchangée ; split éteint par l'opérateur pendant l'émission : coupure par la station ({reason}, {cut} s avec le temps de réaction)",
+  "split.ko": "réception {rx} MHz, émission {tx} MHz : émission 1 {first} (puissance {power}) ; seconde émission : {reason} après {cut} s (attendu split_changed)",
+  "split.setup": "  ACTION DEMANDÉE : règle l'AUTRE VFO sur ta fréquence d'émission (même bande, ex. +5 kHz), mets le SPLIT en marche (touche SPLIT), reviens sur ta fréquence de réception, puis Entrée (n = passer) : ",
+  "split.now": "  >>> APPUIE MAINTENANT sur SPLIT pour l'éteindre (le poste émet) ; la station doit couper d'elle-même (attente {s} s au plus).",
+  "split.skipped": "split non essayé (passé par l'opérateur)",
+  "split.not_on": "split relu À L'ARRÊT (réception {rx} MHz) : le mettre en marche au poste avant de répondre",
+  "split.refused_unreadable": "fréquence d'émission du split ILLISIBLE : émission refusée par la station ({reason}) ; sûr, mais split inutilisable à distance avec ce poste",
+  "split.refused_out": "émission du split sur {tx} MHz, hors des bandes autorisées : refus de la station ({reason}, attendu out_of_band)"
 }

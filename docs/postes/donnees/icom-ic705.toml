@@ -33,7 +33,7 @@ frequence = { etat = "valide", note = "8 bandes HF écrites et relues au hertz (
 split = { etat = "non_teste" }
 rit = { etat = "valide" }
 xit = { etat = "valide" }
-vfo = { etat = "non_declare", note = "« Can get VFO: N ».", note_en = "« Can get VFO: N »." }
+vfo = { etat = "non_declare", cause = "hamlib", note = "« Can get VFO: N ».", note_en = "« Can get VFO: N »." }
 # --- Modes et filtres
 modes_base = { etat = "valide" }
 modes_donnees = { etat = "valide" }
@@ -60,7 +60,7 @@ puissance_mesuree = { etat = "valide", note = "Faible à 0,5 W (0,01 sur l'éche
 ros = { etat = "valide" }
 alc = { etat = "valide", note = "Monte avec la modulation (0,13 à -30 dBFS, 0,56 à 0,62 à -24 dBFS).", note_en = "Rises with modulation (0.13 at -30 dBFS, 0.56 to 0.62 at -24 dBFS)." }
 tension = { etat = "valide", note = "8,2 V sur batterie (hors de la plage déclarée 0..1).", note_en = "8.2 V on battery (outside the declared 0..1 range)." }
-temperature = { etat = "non_declare" }
+temperature = { etat = "non_declare", cause = "hamlib" }
 # --- Audio USB
 audio_rx = { etat = "partiel", note = "Carte « USB Audio CODEC » ; niveau très bas sur charge fictive (-60 à -90 dBFS) : AF Output Level à revoir sur antenne.", note_en = "« USB Audio CODEC » card; very low level on a dummy load (-60 to -90 dBFS): AF Output Level to be checked on air." }
 audio_tx = { etat = "valide", note = "Essayé en mode données ; par défaut (DATA OFF MOD = MIC,USB) le son USB module aussi en USB simple, pas encore essayé.", note_en = "Tried in data mode; by default (DATA OFF MOD = MIC,USB) USB audio also modulates plain USB, not tried yet." }
