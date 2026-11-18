@@ -1665,6 +1665,17 @@ test("VOX du poste coupé à la connexion : texte de la station dans le journal,
   assert.ok(logs[0][0].endsWith("[ORT-5034]"));
 });
 
+test("TOS élevé : bandeau de la page (et bip) avec le texte de la station", async () => {
+  const w = makeWorld();
+  const shown = [];
+  w.ui.rigNotice = (event, text, level) => shown.push([event, level, text]);
+  await w.connected();
+  w.dc().onmessage({ data: JSON.stringify({ type: "rig_notice", event: "swr_high", detail: "TOS 2.7 sur 24.9500 MHz", ort: "ORT-5039", swr: 2.7 }) });
+  assert.equal(shown.length, 1);
+  assert.equal(shown[0][0], "swr_high");
+  assert.ok(shown[0][2].startsWith("TOS 2.7") && shown[0][2].endsWith("[ORT-5039]"));
+});
+
 test("FreeDV : vue de state.freedv (voyant, textes, indicatifs, séquences en étoiles)", () => {
   const ex = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "..", "protocol", "messages.json"), "utf8"));
   assert.equal(web.freedvView(null), null); assert.equal(web.freedvView({}), null);

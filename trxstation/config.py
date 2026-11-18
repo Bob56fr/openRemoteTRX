@@ -314,6 +314,7 @@ class Safety:
     # Rediffusion d'un enregistrement de l'audio reçu (application) : ACCORDÉE UNE FOIS par l'assistant, à la demande
     # expresse de l'opérateur (responsabilité réglementaire : rediffuser une station à des tiers est en général interdit)
     allow_replay: bool = False
+    swr_alert: float = 2.0            # TOS au-dessus pendant plus d'1 s d'émission : alerte à l'opérateur (jamais de coupure) ; 0 = arrêt
 
 
 TEMP_MIN_C, TEMP_MAX_C = 20, 90      # bornes des seuils de température du poste
@@ -661,6 +662,9 @@ def validate(cfg: Config) -> list[str]:
         p.append(_t("safety.heartbeat"))
     if not isinstance(s.allow_replay, bool):
         p.append(_t("bool", where="[safety]", name="allow_replay"))
+    if isinstance(s.swr_alert, bool) or not isinstance(s.swr_alert, (int, float)) \
+            or not (s.swr_alert == 0 or 1.2 <= s.swr_alert <= 10):
+        p.append(_t("safety.swr_alert", value=s.swr_alert))
     if not TEMP_MIN_C <= s.rig_temp_warn_c < s.rig_temp_cut_c <= TEMP_MAX_C:
         p.append(_t("safety.rig_temp", warn=s.rig_temp_warn_c, cut=s.rig_temp_cut_c, low=TEMP_MIN_C, high=TEMP_MAX_C))
 
@@ -1320,6 +1324,7 @@ def render_toml(cfg: Config) -> str:
         f"rig_temp_warn_c = {s.rig_temp_warn_c}   # température du poste : avertissement (sans effet si le poste ne la donne pas)",
         f"rig_temp_cut_c = {s.rig_temp_cut_c}   # émission à distance coupée, reprise sous rig_temp_warn_c",
         f"allow_replay = {str(s.allow_replay).lower()}   # rediffusion d'un enregistrement de l'audio reçu (accordée par l'assistant, responsabilité de l'opérateur)",
+        f"swr_alert = {s.swr_alert:g}   # TOS au-dessus pendant plus d'1 s d'émission : alerte à l'opérateur, jamais de coupure ; 0 = arrêt",
         "",
         "[supervisor]",
         f"tot_abs_s = {v.tot_abs_s}",

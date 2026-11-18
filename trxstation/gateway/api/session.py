@@ -170,6 +170,8 @@ class ControlSession:
         self._times: deque[float] = deque()
         self._state_task: asyncio.Task | None = None
         self._vox_task: asyncio.Task | None = None
+        self._swr_since: float | None = None      # TOS au-dessus du seuil depuis (horloge de la session)
+        self._swr_alerted = False                 # une alerte par émission
         self.closed = False
 
     def send(self, message: dict) -> None:
@@ -177,6 +179,37 @@ class ControlSession:
             self._send(with_error_code(message))
         except Exception:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"envoi vers {self.client_id}")
+
+    SWR_HOLD_S = 1.0                              # TOS au-dessus du seuil pendant au moins ce temps
+
+    def _swr_watch(self) -> None:
+        """Alerte de TOS élevé (2026-11-19) : pendant l'émission de CE client, TOS lu au-dessus de `[safety] swr_alert`
+        plus de SWR_HOLD_S => `rig_notice` « swr_high » une fois par émission (et une ligne au journal). ALERTE
+        SEULEMENT : aucune coupure (le poste réduit déjà sa puissance de lui-même)."""
+        if self.listener:
+            return
+        limit = getattr(self.ctrl.config.safety, "swr_alert", 0) or 0
+        snap = self.ctrl.snapshot()
+        if snap.state != "TX" or snap.owner != self.client_id:
+            self._swr_since, self._swr_alerted = None, False
+            return
+        swr = self.link.state.levels.get("SWR") if limit else None
+        if not isinstance(swr, (int, float)) or swr < limit:
+            self._swr_since = None
+            return
+        now = self.clock()
+        if self._swr_since is None:
+            self._swr_since = now
+        if self._swr_alerted or now - self._swr_since < self.SWR_HOLD_S:
+            return
+        self._swr_alerted = True
+        from ...errors.emit import render
+        freq = self.link.state.frequency_hz or 0
+        ctx = {"client": self.client_id, "tos": f"{swr:.1f}", "frequence": f"{freq / 1e6:.4f}", "seuil": f"{limit:g}"}
+        emit_event(codes.ORT_5039, logger=log, **ctx)
+        _, text = render(codes.ORT_5039, "fr", **ctx)
+        self.send({"type": "rig_notice", "event": "swr_high", "detail": text, "ort": codes.ORT_5039,
+                   "swr": round(float(swr), 2)})
 
     async def _vox_guard(self) -> None:
         """Décision de l'utilisateur (2026-11-19) : à l'ouverture d'une connexion d'opérateur, VOX relu et coupé s'il
@@ -351,6 +384,7 @@ class ControlSession:
         last_key, last_sent = "", 0.0
         while not self.closed:
             message = self._state()
+            self._swr_watch()
             key, now = json.dumps(message, sort_keys=True), self.clock()
             if key != last_key or now - last_sent >= 1.0:
                 self.send(message)

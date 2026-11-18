@@ -4380,6 +4380,34 @@ ORT-5038:
     - Second CI-V port not set, not open yet or silent
     - Settings of this model not recorded yet (spectrum/menus.py)
     preconisation: 'Check on the rig that tuning starts when transmitting (Icom: PTT Start = ON, [TUNER] Switch = Auto).'
+ORT-5039:
+  gravite: avertissement
+  titre: 'TOS élevé pendant l''émission'
+  message: 'TOS {tos} sur {frequence} MHz pendant l''émission de {client} (seuil {seuil}) : antenne désaccordée, coupleur
+    sans accord ou câble en cause.'
+  causes:
+  - Antenne désaccordée sur cette fréquence
+  - Coupleur à l'arrêt, ou accord automatique pas parti (fréquence nouvelle hors des bandes radioamateur)
+  - Câble, connecteur ou commutateur d'antenne en défaut
+  preconisation: 'Arrêter l''émission, vérifier l''antenne et le coupleur ; la station ne coupe pas pour un TOS élevé (le
+    poste réduit sa puissance de lui-même).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - swr_high
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5039/
+  depuis_version: 0.212.0
+  en:
+    titre: 'High SWR while transmitting'
+    message: 'SWR {tos} on {frequence} MHz while {client} was transmitting (threshold {seuil}): mistuned antenna, tuner
+      not tuned or cable at fault.'
+    causes:
+    - Antenna mistuned on this frequency
+    - Tuner off, or automatic tuning did not start (new frequency outside amateur bands)
+    - Faulty cable, connector or antenna switch
+    preconisation: 'Stop transmitting, check the antenna and the tuner; the station does not cut for a high SWR (the rig
+      reduces its power by itself).'
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'

@@ -358,6 +358,14 @@ bornes = "Entre 20 et 90 °C, plus petit que <code>rig_temp_cut_c</code>."
 role = "Au-delà, l'émission à distance est coupée et refusée jusqu'au retour sous <code>rig_temp_warn_c</code>."
 niveau = "courant"
 
+[reglages."safety.swr_alert"]
+role = "TOS au-dessus duquel la station prévient l'opérateur qui émet (bandeau rouge et bip dans la page), si le TOS lu reste au-dessus plus d'une seconde ; une alerte par émission. 0 : arrêt."
+niveau = "courant"
+bornes = "0, ou de 1,2 à 10."
+securite = "Alerte SEULEMENT : la station ne coupe jamais l'émission pour un TOS élevé (le poste réduit déjà sa puissance de lui-même)."
+exemple = "2.0 (défaut)."
+depuis = "0.212.0"
+
 [reglages."safety.allow_replay"]
 role = "Autorise la rediffusion d'un enregistrement de l'audio reçu (page et application) : enregistrer un correspondant puis le renvoyer en émission. Demandé par l'assistant à l'ajout du poste ; refusé par défaut."
 niveau = "courant"

@@ -39,7 +39,8 @@ indispensables :
   sur une nouvelle fréquence. Sur l'IC-7300MK2 : MENU > SET > Function > Tuner, **[TUNER] Switch = Auto** (état du
   coupleur mémorisé par bande) et **PTT Start = ON**. Réponds « oui » à la question du coupleur de l'assistant : la
   station vérifiera ces réglages à chaque connexion et te préviendra s'ils sont faux (elle ne les change jamais). Hors
-  des bandes radioamateur, le poste ne garantit pas l'accord au PTT ;
+  des bandes radioamateur, le poste ne garantit pas l'accord au PTT. Pendant une émission, si le TOS dépasse 2
+  plus d'une seconde, la page affiche un bandeau rouge et bipe (elle ne coupe pas) ;
 - **minuterie d'émission du poste** (TX TIME OUT TIMER) : une seconde sécurité, indépendante de la station.
 
 > **Sécurité.** Une sécurité en plus ne coûte rien : règle aussi une **puissance maximale** raisonnable dans le

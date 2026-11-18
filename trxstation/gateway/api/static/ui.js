@@ -1963,6 +1963,14 @@
       spots(data) { onSpots(data); },
       beeps(settings) { renderBeeps(settings); },
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
+      rigNotice(event, text, level) {                // VOX coupé, coupleur, TOS élevé : bandeau fermé d'un toucher
+        const box = $("rig-alert");
+        box.textContent = text;
+        box.className = "alert " + (level === "bad" || event === "swr_high" ? "bad" : "warn");
+        box.hidden = false;
+        box.onclick = () => { box.hidden = true; };
+        if (event === "swr_high") playSequence([[880, 150], [0, 80], [880, 150], [0, 80], [880, 150]]);
+      },
       breizhEvent(entry, alarm) { bzhLogRender(); if (alarm) playSequence([[660, 120], [0, 60], [440, 200]]); },   // repli pendant MON émission
       friends(view) { frRender(view); },                                       // présence de groupe : vue relue
       monitoring(view) { moRender(view); },                                    // monitoring inter-stations : vue relue

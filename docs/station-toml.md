@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.211.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.212.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -76,6 +76,7 @@ Se modifie : Menu 8.1 ; seuils de température : menu 3.1 ; rediffusion : assist
 | `rig_temp_warn_c` | courant | `40` | Température du poste (si Hamlib la donne) à partir de laquelle un avertissement est affiché et envoyé. Valeurs : Entre 20 et 90 °C, plus petit que `rig_temp_cut_c`. |
 | `rig_temp_cut_c` | courant | `50` | Au-delà, l'émission à distance est coupée et refusée jusqu'au retour sous `rig_temp_warn_c`. |
 | `allow_replay` | courant | `false` | Autorise la rediffusion d'un enregistrement de l'audio reçu (page et application) : enregistrer un correspondant puis le renvoyer en émission. Demandé par l'assistant à l'ajout du poste ; refusé par défaut. **Sécurité** : Rediffuser l'émission d'une station à des tiers est en général INTERDIT au service amateur : n'activez qu'en connaissance de cause, sous votre responsabilité. (depuis 0.91.0) |
+| `swr_alert` | courant | `2.0` | TOS au-dessus duquel la station prévient l'opérateur qui émet (bandeau rouge et bip dans la page), si le TOS lu reste au-dessus plus d'une seconde ; une alerte par émission. 0 : arrêt. Valeurs : 0, ou de 1,2 à 10. **Sécurité** : Alerte SEULEMENT : la station ne coupe jamais l'émission pour un TOS élevé (le poste réduit déjà sa puissance de lui-même). Exemple : 2.0 (défaut). (depuis 0.212.0) |
 
 ## Bandes autorisées [[bands]]
 

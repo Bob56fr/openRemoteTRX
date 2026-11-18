@@ -146,5 +146,6 @@
   "diffusion.audio_port_clash": "[diffusion] audio_port: muss sich von [modules] bus_port und [sdr] audio_port unterscheiden",
   "diffusion.tls_local": "[diffusion] tls = false nur zu 127.0.0.1 (Testserver): im Internet ginge das Quellpasswort im Klartext",
   "diffusion.incomplete": "[diffusion] aktiviert ohne server oder station: es könnte nichts gesendet werden",
-  "rig.tuner": "[rig] tuner muss true oder false sein (Antennentuner des Geräts in Gebrauch)"
+  "rig.tuner": "[rig] tuner muss true oder false sein (Antennentuner des Geräts in Gebrauch)",
+  "safety.swr_alert": "[safety] swr_alert ist {value}: 0 (aus) oder ein SWR zwischen 1,2 und 10 (Warnung bei hohem SWR beim Senden)"
 }
