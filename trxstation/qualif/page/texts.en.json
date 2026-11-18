@@ -193,5 +193,6 @@
   "measure.echec": "failed",
   "measure.non_mesure": "not measured",
   "drill.note_send": "Save the remark",
-  "drill.station_stopping": "Station stop requested."
+  "drill.station_stopping": "Station stop requested.",
+  "covered": "done by the suitcase: {key}"
 }

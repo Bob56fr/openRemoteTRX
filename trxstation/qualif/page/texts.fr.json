@@ -193,5 +193,6 @@
   "measure.echec": "échec",
   "measure.non_mesure": "non mesuré",
   "drill.note_send": "Enregistrer la remarque",
-  "drill.station_stopping": "Arrêt de la station demandé."
+  "drill.station_stopping": "Arrêt de la station demandé.",
+  "covered": "fait par la valise : {key}"
 }

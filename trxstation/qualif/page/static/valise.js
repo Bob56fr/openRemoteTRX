@@ -217,6 +217,9 @@
         const name = itemLabel(it);
         const optional = it.facultatif && !name.toLowerCase().includes(t("optional").toLowerCase());
         txt.appendChild(el("div", "n", name + (optional ? " · " + t("optional") : "")));
+        if (it.couvert && it.etat === "a_faire") {      // essai à la main que la valise fait elle-même (A1…A8)
+          txt.appendChild(el("div", "d", t("covered", { key: "A" + it.couvert.split(".")[1] })));
+        }
         txt.appendChild(el("div", "d", running ? t("state.encours") : it.detail || t("state." + it.etat)));
         li.appendChild(txt);
         if (it.etat !== "absent") {

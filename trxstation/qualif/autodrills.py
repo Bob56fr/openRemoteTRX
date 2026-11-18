@@ -34,7 +34,14 @@ AUTO_DRILLS: tuple[Drill, ...] = (
     Drill("auto_disconnect", "auto_disconnect", optional=True, bound_s=3.0),
     Drill("auto_out_of_band", "auto_out_of_band", optional=True),
     Drill("auto_tot", "auto_tot", optional=True, bound_s=2.0),
+    # Étape 282 (accord de l'utilisateur, 2026-11-19) : ce que l'humain faisait à la main, la valise le fait elle-même
+    Drill("auto_dashboard_stop", "auto_dashboard_stop", optional=True, bound_s=1.0),   # STOP TX du tableau de bord
+    Drill("auto_station_stop", "auto_station_stop", optional=True, bound_s=10.0),      # station arrêtée en émission
+    Drill("auto_startup", "auto_startup", optional=True),                              # démarrage de la station
 )
+NO_CLIENT = ("auto_startup",)          # essais sans client automatique (aucune émission demandée)
+STARTUP_WATCH_S = 40.0                 # démarrage observé (rigctld, passerelle, connexion au poste)
+STATION_WAIT_S = 60.0
 HEARTBEAT_S = 0.5            # comme l'application
 TX_WAIT_S = 5.0              # délai pour voir l'émission demandée sur le poste
 HOLD_S = 2.0                 # émission tenue avant l'action
@@ -124,7 +131,10 @@ def _confirmed(answer: str | None) -> bool:
 
 async def play_auto(drill: Drill, session: Session, *, client_factory: Callable, host: str, port: int, cfg,
                     state_dir: Path, ask: Callable[[str], str] = input, out: Callable[[str], None] = print,
-                    period: float = 0.2) -> dict:
+                    period: float = 0.2, actions: dict | None = None) -> dict:
+    """`actions` (A6 à A8) : `dashboard_stop()` -> (ok, message) = STOP TX du tableau de bord (« T 0 », ne peut que
+    couper) ; `station_control(start)` -> code ; `station_running()` -> bool ; `confirm_rx()` -> 0 / 1 / None =
+    PTT relu par un rigctld de la valise, station arrêtée."""
     """Un essai automatique ; enregistré dans la session comme les essais à la main."""
     tot_s = float(cfg.safety.tot_s)
     out(_t(f"terrain.drill.{drill.id}.title"))
@@ -135,10 +145,15 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
         return {}
     context = (_t(f"terrain.drill.{drill.id}.title").strip() + "\n"
                + _t(f"terrain.drill.{drill.id}.how", tot=f"{tot_s:.0f}").strip())
-    if not _confirmed(await asyncio.to_thread(ask_word, ask, _t("terrain.auto.confirm"), "EMETTRE", context=context)):
+    no_client = drill.kind in NO_CLIENT
+    if not no_client and not _confirmed(await asyncio.to_thread(ask_word, ask, _t("terrain.auto.confirm"), "EMETTRE",
+                                                                context=context)):
         out(_t("terrain.auto.cancelled"))
         return {}
-    if await Observer(host, port, period=period).read_once() is None:
+    if no_client and actions is None:
+        out(_t("terrain.auto.no_actions"))
+        return {}
+    if not no_client and await Observer(host, port, period=period).read_once() is None:
         out(_t("terrain.unreadable"))                    # station d'essai arrêtée : rien n'est lancé ni enregistré
         return {}
     observer = Observer(host, port, period=period)
@@ -150,13 +165,16 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     client = None
     try:
         await asyncio.sleep(period * 2)
-        if _last(observer) is None:
-            raise AutoDrillError(UNREADABLE)
-        if _last(observer) != 0:
-            raise AutoDrillError("le poste n'est pas en réception au départ : essai non joué")
-        client = client_factory()
-        await client.connect()
-        measured, reason, detail = await _scenario(drill, client, observer, cfg, tot_s)
+        if no_client:
+            measured, reason, detail = await _startup(observer, actions)
+        else:
+            if _last(observer) is None:
+                raise AutoDrillError(UNREADABLE)
+            if _last(observer) != 0:
+                raise AutoDrillError("le poste n'est pas en réception au départ : essai non joué")
+            client = client_factory()
+            await client.connect()
+            measured, reason, detail = await _scenario(drill, client, observer, cfg, tot_s, actions)
     except AutoDrillError as exc:
         measured, reason = "non_mesure", str(exc)
     except Exception as exc:                     # noqa: BLE001 : toute erreur finit par la remise en réception
@@ -178,7 +196,7 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     if _last(observer) == 1:
         measured, reason = "echec", "LE POSTE EST RESTÉ EN ÉMISSION après l'essai"
         out(_t("terrain.auto.still_tx"))
-    elif back is None and client is not None:
+    elif back is None and client is not None and not detail.get("verifie_par_la_valise"):
         # Émission demandée mais état final ILLISIBLE : on ne sait pas (jamais « resté en émission » sans l'avoir lu).
         measured, reason = "non_mesure", "état final du poste ILLISIBLE après l'essai : vérifier qu'il est en réception"
         out(_t("terrain.auto.unknown_end"))
@@ -220,8 +238,63 @@ async def _transmit(client, observer: Observer) -> tuple[float, asyncio.Task]:
     return seen, beat
 
 
-async def _scenario(drill: Drill, client, observer: Observer, cfg, tot_s: float) -> tuple[str, str, dict]:
+async def _wait_station(actions: dict, want: bool, timeout: float = STATION_WAIT_S) -> bool:
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        if actions["station_running"]() == want:
+            return True
+        await asyncio.sleep(0.25)
+    return False
+
+
+async def _startup(observer: Observer, actions: dict) -> tuple[str, str, dict]:
+    """A8 : station arrêtée (par la valise si besoin), puis DÉMARRÉE par la valise ; le PTT est relu dès que le
+    rigctld de la station répond, pendant tout le démarrage. Aucune émission n'est demandée par personne."""
+    if actions["station_running"]():
+        if await asyncio.to_thread(actions["station_control"], False) != 0 or not await _wait_station(actions, False):
+            raise AutoDrillError("la station n'a pas pu être arrêtée avant l'essai")
+        await asyncio.sleep(2.0)
+    start = time.time()
+    if await asyncio.to_thread(actions["station_control"], True) != 0:
+        raise AutoDrillError("démarrage de la station refusé")
+    await asyncio.sleep(STARTUP_WATCH_S)
+    seen = [(ts, v) for ts, v in observer.events if ts >= start]
+    read = [v for _, v in seen if v in (0, 1)]
+    running = actions["station_running"]()
+    detail = {"observe_s": STARTUP_WATCH_S, "lectures": len(read), "station_demarree": running}
+    if 1 in read:
+        return "echec", "le poste est passé en ÉMISSION pendant le démarrage de la station", detail
+    if not read:
+        return "non_mesure", f"PTT jamais lisible pendant les {STARTUP_WATCH_S:.0f} s du démarrage", detail
+    if not running:
+        return "non_mesure", "station pas démarrée au bout de l'observation", detail
+    return "reussi", f"aucune émission pendant les {STARTUP_WATCH_S:.0f} s du démarrage ({len(read)} lectures du PTT)", \
+        detail
+
+
+async def _station_stop(observer: Observer, actions: dict, action: float) -> tuple[str, str, dict]:
+    """A7 : la valise ARRÊTE la station pendant l'émission du client ; son rigctld disparaît avec elle, donc le poste
+    est relu ensuite par un rigctld de la valise (`confirm_rx`) ; s'il émettait encore : « T 0 » aussitôt."""
+    if await asyncio.to_thread(actions["station_control"], False) != 0:
+        raise AutoDrillError("arrêt de la station refusé")
+    if not await _wait_station(actions, False):
+        raise AutoDrillError("la station ne s'est pas arrêtée")
+    stopped = time.time() - action
+    value, confirmed = await asyncio.to_thread(actions["confirm_rx"])
+    detail = {"arret_s": round(stopped, 3), "relu_par_la_valise": value, "verifie_par_la_valise": True}
+    if value == 1:
+        return "echec", "POSTE EN ÉMISSION après l'arrêt de la station (coupé ensuite par la valise)", detail
+    if value is None:
+        return "non_mesure", "poste illisible après l'arrêt de la station", detail
+    after = (confirmed or time.time()) - action
+    return "reussi", f"station arrêtée en {stopped:.1f} s, poste relu en RÉCEPTION {after:.1f} s après l'ordre", detail
+
+
+async def _scenario(drill: Drill, client, observer: Observer, cfg, tot_s: float,
+                    actions: dict | None = None) -> tuple[str, str, dict]:
     kind = drill.kind
+    if kind in ("auto_dashboard_stop", "auto_station_stop") and actions is None:
+        raise AutoDrillError("essai réservé à la valise (actions de la station absentes)")
     if kind == "auto_out_of_band":
         state = (client.state or {}).get("rig") or {}
         original = state.get("frequency_hz")
@@ -257,7 +330,13 @@ async def _scenario(drill: Drill, client, observer: Observer, cfg, tot_s: float)
             f"{drill.bound_s:.0f})", {"duree_s": round(duration, 3)}
     await asyncio.sleep(HOLD_S)
     action = time.time()
-    if kind == "auto_stop":
+    if kind == "auto_station_stop":
+        return await _station_stop(observer, actions, action)
+    if kind == "auto_dashboard_stop":
+        ok, message = await asyncio.to_thread(actions["dashboard_stop"])     # même code que le bouton STOP TX
+        if not ok:
+            raise AutoDrillError(f"STOP TX du tableau de bord sans effet relu : {message}")
+    elif kind == "auto_stop":
         await client.command("stop")
     elif kind == "auto_heartbeat":
         beat.cancel()

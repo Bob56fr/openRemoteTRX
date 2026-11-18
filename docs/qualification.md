@@ -123,7 +123,12 @@ Rapport : `<session>.zip` dans DOSSIER (`qualification.json` format 1, `rapport.
 Essais AUTOMATIQUES (choix 8, étape 254, `qualif/autodrills.py`) : un client automatique (le faux client WebRTC
 des tests, micro MUET, certificat de la passerelle ÉPINGLÉ par son empreinte) se connecte à la station avec un compte
 opérateur (demandé une fois, mot de passe masqué) et joue A1 STOP (≤ 0,5 s), A2 battements arrêtés (≤ 3 s), A3
-connexion fermée (≤ 3 s), A4 fréquence juste hors d'une bande (émission refusée, fréquence remise), A5 TOT (± 2 s).
+connexion fermée (≤ 3 s), A4 fréquence juste hors d'une bande (émission refusée, fréquence remise), A5 TOT (± 2 s). Étape 282 : A6 STOP TX du tableau de bord appuyé par la valise (« T 0 », même code que le
+bouton, < 1 s), A7 station ARRÊTÉE par la valise pendant l'émission (poste relu ensuite par un rigctld de la valise,
+« T 0 » s'il émet encore, station redémarrée), A8 démarrage de la station par la valise (PTT relu pendant 40 s,
+aucune émission demandée). Un essai automatique réussi remplace l'essai à la main équivalent dans le verdict
+(`COVERED_BY` : 1 STOP, 2 TOT, 5 hors bande, 7 STOP TX, 8 station arrêtée, 9 démarrage) ; « Tout lancer » ne
+demande plus à l'humain que les essais 3 (Wi-Fi du téléphone), 4 (écran verrouillé) et 6 (micro du poste).
 Il ne parle qu'à la PASSERELLE : aucune commande au poste, toutes les sécurités de la station s'appliquent. Chaque
 essai exige le mot EMETTRE (ou celui de la langue) tapé par l'opérateur ; poste pas en réception au départ = essai non
 joué ; en fin d'essai, quoi qu'il arrive : « stop », connexion fermée, réception relue sur le poste, sinon échec et

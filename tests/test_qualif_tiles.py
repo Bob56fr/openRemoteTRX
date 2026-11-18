@@ -52,7 +52,7 @@ def test_tiles_count_progress_without_optional_absent_or_the_no_tx_qualification
     assert ids == ["releves", "reception", "emission", "auto", "main"]
     manual = next(t for t in data["themes"] if t["id"] == "main")["essais"]
     assert manual[-1]["facultatif"] is True and manual[0]["texte"] == "stop_page"     # reboot : facultatif
-    expected = len(tiles.order()) - 1 - 1             # moins « s » (absent) et le reboot (facultatif) ; « 4 » hors de l'ordre
+    expected = len([k for k in tiles.order() if not tiles._optional(k)]) - 1   # moins « s » (absent)
     assert data["faits"] == 0 and data["total"] == expected
 
 
@@ -60,10 +60,11 @@ def test_plan_follows_the_advised_order_and_skips_what_is_done(tmp_path):
     s = _session(tmp_path)
     order = tiles.plan(s, "tout")
     assert order[:7] == ["9", "1", "r", "2", "s", "f", "3"] and order[-1] == "6"
-    assert order.index("8.1") < order.index("5.1") and "4" not in order and "5.10" not in order   # reboot facultatif
+    assert order.index("8.1") < order.index("5.3") and "4" not in order and "5.10" not in order   # reboot facultatif
+    assert "5.1" not in order and "8.8" in order          # STOP de la page : fait par la valise (A1)
     s.audio = {"problems": []}
     s.drills = {"tot": {"result": "echec"}, "stop_page": {"result": "reussi"}}
-    assert "9" not in tiles.plan(s, "tout") and "5.1" not in tiles.plan(s, "tout")
+    assert "9" not in tiles.plan(s, "tout") and "5.3" in tiles.plan(s, "tout")
     assert tiles.plan(s, "echecs") == ["5.2"]
     assert tiles.plan(s, "theme:reception") == ["r", "s", "f"] and tiles.plan(s, "theme:inconnu") == []
     assert tiles.needs_load("8.3") and tiles.needs_load("3") and not tiles.needs_load("r")
@@ -239,7 +240,7 @@ def test_a_chain_announces_the_hand_played_tests_and_can_skip_them(tmp_path, mon
     asked = [e for e in events if e["type"] == "question" and "À LA MAIN" in e["texte"]]
     assert len(asked) == 1 and "http://127.0.0.1:" in asked[0]["texte"]
     events = _run(tmp_path, ["theme:main", "", "q"], running=True)
-    assert len(played) == len(tiles.manual_keys()) - 1                   # tous sauf le redémarrage du PC (facultatif)
+    assert played == ["wifi", "screen_lock", "local_operator"]           # les autres : faits par la valise (A1…A8)
 
 
 def test_the_password_of_the_qualification_folder_is_used_without_asking(tmp_path):
@@ -266,6 +267,7 @@ def test_cancelling_the_account_skips_the_automatic_tests_and_the_chain_goes_on(
         played.append(drill.id)
         return {}
     monkeypatch.setattr(terrain, "play_drill", fake_drill)
+    monkeypatch.setattr(autodrills, "play_auto", fake_drill)            # A8 (sans compte) : joué quand même
     (tmp_path / "s").mkdir()
     s = _session(tmp_path)
     s.connection = "charge"
@@ -276,6 +278,94 @@ def test_cancelling_the_account_skips_the_automatic_tests_and_the_chain_goes_on(
     s.save()
     events = _run(tmp_path, ["tout", "", "q"], running=True, explore=lambda: None, qualify=lambda no_tx: None)
     assert asked == [1]                                                  # demandé UNE fois pour tout l'enchaînement
-    assert len(played) == len(tiles.manual_keys()) - 1                   # la suite (essais à la main) a continué
-    assert sum(e["type"] == "avis" and "Essai automatique passé" in e["texte"] for e in events) == 5
+    assert played == ["auto_startup", "wifi", "screen_lock", "local_operator"]   # la suite a continué
+    assert sum(e["type"] == "avis" and "Essai automatique passé" in e["texte"] for e in events) == 7
     assert not any(e["type"] == "avis" and "Enchaînement arrêté" in e["texte"] for e in events)
+
+
+# --------------------------------------------------------------------------- A6, A7, A8 (étape 282)
+
+class _Obs:
+    """Observateur factice : la valise « relit » le poste selon un script d'événements."""
+    period = 0.2
+
+    def __init__(self):
+        self.events = []
+
+
+def test_a6_dashboard_stop_is_pressed_by_the_suitcase(monkeypatch):
+    import asyncio
+    import time
+    obs = _Obs()
+    calls = []
+
+    class Client:
+        async def command(self, name, **kw):
+            calls.append(name)
+            if name == "toggle":
+                obs.events.append((time.time(), 1))
+                return {"ok": True, "ptt": {"state": "TX"}}
+            return {"ok": True}
+
+        def start_heartbeat(self, period):
+            return asyncio.get_event_loop().create_future()
+
+    def dashboard_stop():
+        obs.events.append((time.time(), 0))                  # le poste revient en réception tout de suite
+        calls.append("STOP TX")
+        return True, "ok"
+    monkeypatch.setattr(autodrills, "HOLD_S", 0.05)
+    drill = next(d for d in autodrills.AUTO_DRILLS if d.id == "auto_dashboard_stop")
+    measured, reason, detail = asyncio.run(autodrills._scenario(drill, Client(), obs, None, 20.0,
+                                                                {"dashboard_stop": dashboard_stop}))
+    assert measured == "reussi" and calls == ["toggle", "STOP TX"] and detail["delai_s"] < 0.5
+
+
+def test_a7_stops_the_station_reads_the_rig_and_cuts_if_it_still_transmits(monkeypatch):
+    import asyncio
+    state = {"running": True}
+
+    def control(start):
+        state["running"] = start
+        return 0
+    actions = {"station_control": control, "station_running": lambda: state["running"],
+               "confirm_rx": lambda: (0, None)}
+    measured, reason, detail = asyncio.run(autodrills._station_stop(_Obs(), actions, 0.0))
+    assert measured == "reussi" and detail["verifie_par_la_valise"] and not state["running"]
+    actions["confirm_rx"] = lambda: (1, None)                # le poste émet encore : échec (et coupé par confirm_rx)
+    assert asyncio.run(autodrills._station_stop(_Obs(), actions, 0.0))[0] == "echec"
+
+
+def test_a8_starts_the_station_and_watches_that_nothing_transmits(monkeypatch):
+    import asyncio
+    import time
+    monkeypatch.setattr(autodrills, "STARTUP_WATCH_S", 0.05)
+    obs = _Obs()
+    state = {"running": True}
+
+    def control(start):
+        state["running"] = start
+        if start:
+            obs.events.extend([(time.time(), None), (time.time() + 0.01, 0)])
+        return 0
+    actions = {"station_control": control, "station_running": lambda: state["running"]}
+    monkeypatch.setattr(autodrills.asyncio, "sleep", _fast_sleep)
+    measured, reason, detail = asyncio.run(autodrills._startup(obs, actions))
+    assert measured == "reussi" and state["running"] and detail["lectures"] == 1
+    obs.events.append((time.time() + 1, 1))
+    assert asyncio.run(autodrills._startup(obs, actions))[0] == "echec"
+
+
+_real_sleep = __import__("asyncio").sleep
+
+
+async def _fast_sleep(delay, *a, **kw):
+    await _real_sleep(0)
+
+
+def test_a_covered_hand_test_counts_when_the_automatic_one_passed(tmp_path):
+    s = _session(tmp_path)
+    s.drills = {"auto_stop": {"result": "reussi"}}
+    reasons = terrain.verdict(s)[1]
+    assert "essai stop_page non fait" not in reasons and "essai wifi non fait" in reasons
+    assert tiles.covered_by("5.1") == "8.1" and tiles.covered_by("5.3") is None

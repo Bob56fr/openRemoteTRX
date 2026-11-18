@@ -49,6 +49,9 @@ def needs_stopped(key: str) -> bool:
 
 
 def needs_running(key: str) -> bool:
+    drill = drill_of(key)
+    if drill is not None and drill.kind in ("startup", "auto_startup"):
+        return False                             # le démarrage part d'une station arrêtée (l'essai s'en charge)
     return key.startswith(("5.", "8."))
 
 
@@ -139,6 +142,8 @@ def tiles(session, label) -> dict:
                 item["texte"] = label(drill)
                 item["essai"] = drill.id
                 item["facultatif"] = _optional(key)
+                if covered_by(key):
+                    item["couvert"] = covered_by(key)
             items.append(item)
             if state != ABSENT and not item.get("facultatif") and key != "4":
                 counted += 1
@@ -157,9 +162,23 @@ def plan(session, what: str) -> list[str]:
     pick = {"tout": (TODO,), "echecs": (FAILED, PARTIAL)}.get(what)
     if pick is None:
         return []
-    return [k for k in order() if not _optional(k) and item_state(session, k)[0] in pick]
+    # « echecs » reprend aussi un essai à la main facultatif ou couvert qui a ÉCHOUÉ : il pèse sur le verdict
+    return [k for k in order() if (what == "echecs" or not _optional(k)) and item_state(session, k)[0] in pick]
 
 
 def _optional(key: str) -> bool:
+    """Essai à la main hors de « Tout lancer » : facultatif par nature (redémarrage du PC) ou FAIT PAR LA VALISE
+    (essai automatique équivalent, `terrain.COVERED_BY`)."""
+    from .terrain import COVERED_BY
     drill = drill_of(key)
-    return bool(drill is not None and drill.optional and key.startswith("5."))
+    return bool(drill is not None and key.startswith("5.") and (drill.optional or drill.id in COVERED_BY))
+
+
+def covered_by(key: str) -> str | None:
+    """Touche « 8.N » de l'essai automatique qui fait la même chose qu'un essai à la main."""
+    from .autodrills import AUTO_DRILLS
+    from .terrain import COVERED_BY
+    drill = drill_of(key)
+    auto = COVERED_BY.get(drill.id) if drill is not None and key.startswith("5.") else None
+    ids = [d.id for d in AUTO_DRILLS]
+    return f"8.{ids.index(auto) + 1}" if auto in ids else None

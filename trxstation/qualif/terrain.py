@@ -156,6 +156,10 @@ DRILLS: tuple[Drill, ...] = (
     Drill("reboot", "reboot", optional=True),
 )
 NEEDS_MARK = {"stop", "link"}
+# Essai à la main -> essai automatique qui fait la même chose (accord de l'utilisateur, 2026-11-19) : réussi, il
+# remplace l'essai à la main dans le verdict ; l'essai à la main reste jouable, une tuile à la fois.
+COVERED_BY = {"stop_page": "auto_stop", "tot": "auto_tot", "out_of_band": "auto_out_of_band",
+              "stop_dashboard": "auto_dashboard_stop", "station_stop": "auto_station_stop", "startup": "auto_startup"}
 
 
 def analyse(events: list[tuple[float, int | None]], start: float, end: float, mark: float | None) -> dict:
@@ -397,6 +401,9 @@ def verdict(session: Session) -> tuple[str, list[str]]:
         reasons.append(f"qualification Q1 : {qualif[-1].get('verdict') or 'verdict inconnu'}")
     for d in DRILLS:
         r = results[d.id]
+        auto = COVERED_BY.get(d.id)
+        if r is None and auto and session.drills.get(auto, {}).get("result") == "reussi":
+            continue                                    # fait par la valise elle-même (essai automatique réussi)
         if r is None and not d.optional:
             reasons.append(f"essai {d.id} non fait")
         elif r in ("incomplet",):
@@ -965,6 +972,30 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             operator["declined"] = operator["factory"] is None
         return operator["factory"]
 
+    def confirm_rx():
+        """A7 : station arrêtée, le poste est relu par un rigctld de la VALISE ; « T 0 » s'il émet encore."""
+        async def go():
+            async with qmain.rigctld_session(cfg, spawn=True, out=lambda s: None) as (host, port):
+                for _ in range(25):
+                    value = await Observer(host, port).read_once()
+                    if value is not None:
+                        if value == 1:
+                            dashboard_stop()
+                        return value, time.time()
+                    await asyncio.sleep(0.2)
+            return None, None
+        try:
+            return asyncio.run(go())
+        except Exception:                               # noqa: BLE001 : rigctld introuvable, port pris…
+            return None, None
+
+    def dashboard_stop():
+        from ..monitor.actions import stop_tx
+        return stop_tx(cfg)
+
+    station_actions = {"dashboard_stop": lambda: dashboard_stop(), "station_control": control,
+                       "station_running": station, "confirm_rx": confirm_rx}
+
     def wait_station(want: bool, timeout: float = 90.0) -> bool:
         end = time.monotonic() + timeout
         while time.monotonic() < end:
@@ -1103,6 +1134,10 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 notice(bus, _t("terrain.auto.skipped"))
             else:
                 auto_menu(session, cfg, state_dir, ask=ask, out=out, client_factory=factory)
+        elif drill is not None and drill.kind == "auto_startup":
+            asyncio.run(play_auto(drill, session, client_factory=lambda: None, host=cfg.network.rigctld_host,
+                                  port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask, out=out,
+                                  actions=station_actions))
         elif drill is not None and choice.startswith("8."):
             if not running:
                 notice(bus, _t("terrain.need_running"))
@@ -1112,7 +1147,9 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 return True
             record = asyncio.run(play_auto(drill, session, client_factory=factory, host=cfg.network.rigctld_host,
                                            port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask,
-                                           out=out))
+                                           out=out, actions=station_actions))
+            if drill.kind == "auto_station_stop" and not station():
+                act("d")                                # A7 a arrêté la station : la suite en a besoin
             reason = str((record or {}).get("reason", ""))
             if reason.startswith("erreur"):
                 # Le client n'a pas pu parler à la station (compte refusé, station absente…) : les essais suivants
