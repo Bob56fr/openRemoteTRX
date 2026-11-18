@@ -176,3 +176,67 @@ def test_starting_the_station_waits_for_it_and_tells_the_page(tmp_path):
     seen = [e["station"] for e in events if e["type"] == "statut" and "station" in e]
     assert seen == [False, True, True, False, False]       # menu, « d » attendu, menu, « a » attendu, menu
     assert any("Attente de la station du PC" in e.get("texte", "") for e in events)
+
+
+# --------------------------------------------------------------------------- essai du 2026-11-18 (compte faux)
+
+def _cfg_with_account(tmp_path, password="motdepasse-valise-1"):
+    from trxstation.config import ClientAuth as ClientConfig
+    from trxstation.passwords import hash_password
+    cfg = _cfg(tmp_path)
+    cfg.clients = [ClientConfig(id="valise", password_hash=hash_password(password))]
+    return cfg
+
+
+def test_the_operator_account_is_checked_when_typed(tmp_path):
+    """Compte faux (« BOB ») ou mot de passe faux : refusé TOUT DE SUITE et redemandé, jamais gardé."""
+    cfg = _cfg_with_account(tmp_path)
+    shown = []
+    answers = iter(["BOB", "valise", "faux", "valise", "motdepasse-valise-1"])
+    made = []
+    got = autodrills.operator_factory(cfg, ask=lambda p: next(answers), out=shown.append,
+                                      factory=lambda cid, pw: made.append((cid, pw)) or "client",
+                                      secret=lambda p: next(answers))
+    assert got == "client" and made == [("valise", "motdepasse-valise-1")]
+    text = "\n".join(shown)
+    assert "« BOB » inconnu" in text and "Mot de passe refusé" in text and "vérifié" in text
+    answers = iter(["valise", "x", "valise", "y", "valise", "z"])           # trois échecs : abandon
+    assert autodrills.operator_factory(cfg, ask=lambda p: next(answers), out=shown.append,
+                                       factory=lambda cid, pw: "client", secret=lambda p: next(answers)) is None
+    assert autodrills.operator_factory(_cfg(tmp_path), ask=lambda p: "", out=shown.append) is None   # aucun compte
+
+
+def test_a_link_error_stops_the_chain_and_forgets_the_account(tmp_path, monkeypatch):
+    asked, played = [], []
+    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out: asked.append(1) or (lambda: None))
+
+    async def refused(drill, session, **kw):
+        played.append(drill.id)
+        return {"reason": "erreur : ConnectionRefusedError('offre refusée : HTTP 401 unauthorized')"}
+    monkeypatch.setattr(autodrills, "play_auto", refused)
+    (tmp_path / "s").mkdir()
+    s = _session(tmp_path)
+    s.connection = "charge"
+    s.save()
+    events = _run(tmp_path, ["theme:auto", "8.1", "q"], running=True)
+    assert played == ["auto_stop", "auto_stop"] and asked == [1, 1]      # arrêt après A1 ; compte redemandé ensuite
+    assert any(e["type"] == "avis" and "n'a pas pu parler à la station" in e["texte"] for e in events)
+
+
+def test_a_chain_announces_the_hand_played_tests_and_can_skip_them(tmp_path, monkeypatch):
+    played = []
+
+    async def fake_drill(drill, session, **kw):
+        played.append(drill.id)
+        return {}
+    monkeypatch.setattr(terrain, "play_drill", fake_drill)
+    (tmp_path / "s").mkdir()
+    s = _session(tmp_path)
+    s.connection = "charge"
+    s.save()
+    events = _run(tmp_path, ["theme:main", "s", "q"], running=True)
+    assert played == []
+    asked = [e for e in events if e["type"] == "question" and "page DE LA STATION" in e["texte"]]
+    assert len(asked) == 1 and "http://127.0.0.1:" in asked[0]["texte"]
+    events = _run(tmp_path, ["theme:main", "", "q"], running=True)
+    assert len(played) == len(tiles.manual_keys()) - 1                   # tous sauf le redémarrage du PC (facultatif)

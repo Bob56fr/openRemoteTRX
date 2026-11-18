@@ -281,10 +281,16 @@ def make_factory(cfg, client_id: str, password: str) -> Callable:
 def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], None],
                      factory: Callable[[str, str], Callable] | None = None,
                      secret: Callable[[str], str] | None = None) -> Callable | None:
-    """Compte opérateur des essais automatiques (demandé une fois par session de la valise) ; None si aucun."""
+    """Compte opérateur des essais automatiques (demandé une fois par session de la valise) ; None si aucun.
+
+    Compte et mot de passe VÉRIFIÉS tout de suite contre station.toml (essai du 2026-11-18 : un compte faux
+    donnait « HTTP 401 » à CHAQUE essai, notés « non mesuré », EMETTRE redemandé pour rien). Trois essais au plus."""
+    from ..passwords import verify_password
     out(_t("terrain.auto.intro"))
-    client_id = ask(_t("terrain.auto.account")).strip()
-    if not client_id:
+    operators = {c.id: c.password_hash for c in getattr(cfg, "clients", []) or []
+                 if getattr(c, "role", "operator") == "operator" and c.password_hash}
+    if not operators:
+        _tell(ask, out, _t("terrain.auto.no_account"))
         return None
     prompt = _t("terrain.auto.password")
     if secret is None and bus_of(ask) is not None:    # valise : champ masqué de la page ou getpass du terminal
@@ -297,9 +303,32 @@ def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], Non
         else:
             import getpass
             secret = getpass.getpass
-    password = secret(prompt)
     factory_for = factory or (lambda cid, pw: make_factory(cfg, cid, pw))
-    return factory_for(client_id, password)
+    choices = [{"cle": cid, "texte": cid} for cid in operators] + [{"cle": "", "libelle": "annuler"}]
+    for _ in range(3):
+        client_id = ask_typed(ask, _t("terrain.auto.account_choice", accounts=", ".join(operators)), CHOICE,
+                              choices=choices).strip()
+        if not client_id:
+            return None
+        if client_id not in operators:
+            _tell(ask, out, _t("terrain.auto.unknown_account", account=client_id, accounts=", ".join(operators)))
+            continue
+        password = secret(prompt)
+        if not password:
+            return None
+        if verify_password(password, operators[client_id]):
+            out(_t("terrain.auto.account_ok", account=client_id))
+            return factory_for(client_id, password)
+        _tell(ask, out, _t("terrain.auto.bad_password", account=client_id))
+    return None
+
+
+def _tell(ask, out: Callable[[str], None], text: str) -> None:
+    """Refus : ligne du journal et avis bien visible dans la page de la valise."""
+    out(text)
+    bus = bus_of(ask)
+    if bus is not None:
+        bus.publish("avis", texte=text.strip())
 
 
 def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], str], out: Callable[[str], None],

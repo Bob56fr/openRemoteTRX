@@ -88,5 +88,10 @@
   "state.echec": "failed",
   "state.encours": "running…",
   "state.a_faire": "to do",
-  "state.absent": "not on this rig"
+  "state.absent": "not on this rig",
+  "choice.annuler": "Cancel",
+  "choice.pret": "The station page is open: continue",
+  "choice.sauter_main": "Skip the hand-played tests",
+  "seq.stop": "Stop the chain",
+  "seq.running": "Chain running: test {rank} of {total}"
 }

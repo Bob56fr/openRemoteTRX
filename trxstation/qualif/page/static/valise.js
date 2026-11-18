@@ -14,6 +14,7 @@
   const lines = [];
   let tiles = null;                // dernier événement « tuiles »
   let current = null;              // touche de l'essai en cours (lancé d'ici ou enchaîné)
+  let chain = null;                // enchaînement en cours : { rang, total }
   let meters = { actif: false };   // dernières mesures relues par les essais
   let ivId = null;                 // question de mot affichée dans la fenêtre
   let ivTrusted = true;            // toute la saisie du mot vient du clavier
@@ -90,6 +91,17 @@
     a.className = "avis" + (grave ? " grave" : "");
     a.hidden = !text;
   }
+
+  async function stopAll() {        // STOP et « Arrêter l'enchaînement » : même chemin (T 0, puis retour au menu)
+    try {
+      const r = await fetch("/api/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const data = await r.json();
+      notice(data.ok ? t("stop.done") : t("stop.failed", { message: data.message || "?" }), !data.ok);
+    } catch (e) {
+      notice(t("stop.failed", { message: String(e) }), true);
+    }
+  }
+  $("arret-seq").addEventListener("click", stopAll);
 
   $("stop").addEventListener("click", async () => {
     try {
@@ -168,6 +180,8 @@
     box.replaceChildren();
     const menu = menuQuestion();
     $("tout").disabled = $("echecs").disabled = !menu;
+    $("arret-seq").hidden = !chain || !!menu;
+    $("seq-info").textContent = chain && !menu ? t("seq.running", { rank: chain.rang, total: chain.total }) : "";
     for (const b of document.querySelectorAll("#station-boutons button")) b.disabled = !menu;
     if (!tiles) return;
     $("compte").textContent = t("progress", { done: tiles.faits, total: tiles.total });
@@ -395,11 +409,12 @@
           // La valise attend au menu : plus rien en cours, plus personne ne relit le poste. Jamais une vieille
           // valeur montrée comme actuelle (vu à l'essai : bandeau ÉMISSION resté après un STOP).
           current = null;
+          chain = null;
           meters = { actif: false };
         }
         break;
       case "reponse": case "annule": open.delete(e.id); break;
-      case "enchainement": current = e.cle; break;
+      case "enchainement": current = e.cle; chain = { rang: e.rang, total: e.total }; break;
       case "mesure": if (e.nom === "poste" && e.valeur) meters = Object.assign({}, meters, e.valeur); break;
       case "fin": finished = true; meters = { actif: false }; break;
       case "stop": if (live) addLine("— STOP —"); break;
@@ -420,6 +435,7 @@
     $("t-journal").textContent = t("journal");
     $("tout").textContent = t("run.all");
     $("echecs").textContent = t("run.failed");
+    $("arret-seq").textContent = t("seq.stop");
     for (const k of ["freq", "po", "swr", "alc", "s"]) $("t-" + k).textContent = t("meter." + k);
     $("iv-titre").textContent = t("iv.title");
     $("iv-t-why").textContent = t("iv.why");

@@ -88,5 +88,10 @@
   "state.echec": "échec",
   "state.encours": "en cours…",
   "state.a_faire": "à faire",
-  "state.absent": "absent du poste"
+  "state.absent": "absent du poste",
+  "choice.annuler": "Annuler",
+  "choice.pret": "La page de la station est ouverte : continuer",
+  "choice.sauter_main": "Sauter les essais à la main",
+  "seq.stop": "Arrêter l'enchaînement",
+  "seq.running": "Enchaînement en cours : essai {rank} sur {total}"
 }

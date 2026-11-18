@@ -970,13 +970,28 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             return confirm_load(session, ask=ask, out=out)
         return True
 
+    def by_hand_ready() -> bool:
+        """Avant le premier essai À LA MAIN d'un enchaînement : ils se jouent depuis la page DE LA STATION (ou
+        l'application, le micro du poste), pas depuis celle de la valise (essai du 2026-11-18 : observés sans
+        aucune émission). Faux = l'opérateur les saute tous."""
+        url = f"http://127.0.0.1:{cfg.network.gateway_port}"
+        answer = ask_typed(ask, _t("terrain.seq.by_hand", url=url), CHOICE,
+                           choices=[{"cle": "", "libelle": "pret"}, {"cle": "s", "libelle": "sauter_main"}])
+        return answer.strip().lower() != "s"
+
     def sequence(what: str) -> bool:
         keys = tl.plan(session, what)
         if not keys:
             notice(bus, _t("terrain.seq.nothing"))
             return True
         out(_t("terrain.seq.start", count=len(keys)))
+        by_hand = None                                   # réponse à l'annonce des essais à la main
         for rank, key in enumerate(keys, 1):
+            if key.startswith("5."):
+                if by_hand is None:
+                    by_hand = by_hand_ready()
+                if not by_hand:
+                    continue
             bus.publish("enchainement", cle=key, rang=rank, total=len(keys))
             if not prepare(key) or not act(key):
                 notice(bus, _t("terrain.seq.stopped", rank=rank, total=len(keys)))
@@ -1075,8 +1090,16 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             factory = auto_factory()
             if factory is None:
                 return False
-            asyncio.run(play_auto(drill, session, client_factory=factory, host=cfg.network.rigctld_host,
-                                  port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask, out=out))
+            record = asyncio.run(play_auto(drill, session, client_factory=factory, host=cfg.network.rigctld_host,
+                                           port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask,
+                                           out=out))
+            reason = str((record or {}).get("reason", ""))
+            if reason.startswith("erreur"):
+                # Le client n'a pas pu parler à la station (compte refusé, station absente…) : les essais suivants
+                # échoueraient pareil. On arrête l'enchaînement et on oublie le compte (redemandé la prochaine fois).
+                operator["factory"] = None
+                notice(bus, _t("terrain.auto.link_error", reason=reason))
+                return False
         elif choice == "6":
             take_snapshot(session, "apres", snapshot, out=out)
             show_differences(session, out=out)
