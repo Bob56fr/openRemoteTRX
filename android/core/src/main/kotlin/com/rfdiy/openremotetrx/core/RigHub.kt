@@ -215,6 +215,9 @@ object RigHub {
 
     fun breizhReactivate() { service?.onRig { session, now -> session.breizhReactivate(now) } }
 
+    /** Avis de la station sur le poste (VOX, coupleur, TOS) : bandeau fermé par l'opérateur. */
+    fun dismissRigNotice() { service?.onRig { session, now -> session.dismissRigNotice(now) } }
+
     // Diffusion en direct (fonction « diffusion », opérateurs) : la station et son module font tout le travail
     fun diffusionStart(form: com.rfdiy.openremotetrx.logic.Diffusions.Form) { service?.onRig { session, now -> session.diffusionStart(now, form) } }
     fun diffusionConfirm(yes: Boolean) { service?.onRig { session, now -> session.diffusionConfirm(now, yes) } }

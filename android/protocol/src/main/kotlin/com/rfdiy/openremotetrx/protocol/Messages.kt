@@ -338,6 +338,11 @@ data class ModuleMessage(val module: String, val data: JsonElement) : ServerMess
 /** Événement de la liaison avec Breizh Audio Box (station 0.100.0+, opérateurs) : `detail` = texte à afficher. */
 data class BreizhEvent(val t: String, val event: String, val detail: String) : ServerMessage
 
+/** Avis sur le poste, au seul opérateur concerné (station 0.208.0+) : `event` = vox_off, vox_unknown, vox_still_on
+ *  (connexion), tuner_settings, tuner_unverified (0.210.0+), swr_high (pendant SON émission, 0.212.0+) ; `detail` = texte
+ *  de la station à afficher ; `ort` = code du catalogue d'erreurs. */
+data class RigNotice(val event: String, val detail: String, val ort: String) : ServerMessage
+
 /** FreeDV (station 0.122.0+, à TOUS) : `kind` = callsign (`callsign`, `snrDb`), sequence, fault (`cause`). */
 data class FreedvEvent(val kind: String, val callsign: String, val snrDb: Double?, val cause: String, val raw: JsonObject) : ServerMessage
 
@@ -392,6 +397,7 @@ object ServerMessages {
                 "bye" -> Bye(obj.text("reason"), obj.text("message"))
                 "swr" -> SwrMessage(obj)
                 "breizh_event" -> BreizhEvent(obj.text("t"), obj.text("event"), obj.text("detail"))
+                "rig_notice" -> RigNotice(obj.text("event"), obj.text("detail"), obj.text("ort"))
                 "freedv_event" -> FreedvEvent(obj.text("kind"), obj.text("callsign"),
                     (obj["snr_db"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull(), obj.text("cause"), obj)
                 "net_ping" -> NetPing(obj.long("seq").toInt(), obj.long("t"))

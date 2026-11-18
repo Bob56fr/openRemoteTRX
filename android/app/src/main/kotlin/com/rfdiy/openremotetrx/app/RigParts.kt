@@ -148,6 +148,7 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
             }
             if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
             if (presenceBanner) PresenceBanner()
+            RigNoticeBanner()
             // Diffusion en direct en cours : bandeau toujours visible (cahier § 8), toucher = sa fenêtre
             rig.diffusion?.let { dif ->
                 com.rfdiy.openremotetrx.logic.Diffusions.indicator(dif.status)?.let { ind ->
@@ -347,6 +348,14 @@ internal fun RigScope.RigDialogsHost() {
     if (spotsDialog) RecentSpotsDialog(rig.recentSpots, rig.spots, hello?.spectrum != null, canSet, onDismiss = { spotsDialog = false })
     memoryDialog?.let { edit ->
         MemoryDialog(edit, Radio.orderModes(hello?.capabilities?.modes.orEmpty()), onDismiss = { memoryDialog = null })
+    }
+}
+
+/** Avis de la station sur le poste (VOX coupé, coupleur, TOS élevé) : bandeau rouge ou orange, toucher = fermer. */
+@Composable
+internal fun RigScope.RigNoticeBanner() {
+    rig.rigNotice.takeIf { it.isNotEmpty() }?.let { text ->
+        Box(Modifier.clickable { RigHub.dismissRigNotice() }) { Banner("$text  (toucher pour fermer)", if (rig.rigNoticeBad) TX_RED else WARN) }
     }
 }
 

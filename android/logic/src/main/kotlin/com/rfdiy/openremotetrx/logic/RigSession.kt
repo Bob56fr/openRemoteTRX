@@ -4,6 +4,7 @@ package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.Beeps
 import com.rfdiy.openremotetrx.protocol.BreizhEvent
+import com.rfdiy.openremotetrx.protocol.RigNotice
 import com.rfdiy.openremotetrx.protocol.FreedvEvent
 import com.rfdiy.openremotetrx.protocol.Bye
 import com.rfdiy.openremotetrx.protocol.Command
@@ -32,7 +33,9 @@ enum class LinkStatus { DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING }
 /** Sons de liaison (mêmes notes que la page) : perdue, rétablie, perdue pour de bon. */
 enum class LinkAlert { LOST, RESTORED, FAILED, SELCALL_CALL,
     /** Breizh Audio Box perdu pendant MON émission : repli en direct (bip court du téléphone, jamais de la station). */
-    BREIZH_FALLBACK }
+    BREIZH_FALLBACK,
+    /** TOS élevé pendant MON émission (rig_notice swr_high) : bip triple ; la station ne coupe pas. */
+    SWR_HIGH }
 
 enum class LogLevel { INFO, WARN, BAD }
 
@@ -107,6 +110,10 @@ data class RigState(
     val freedvActivity: FreeDvActivityView? = null,
     /** Dernier refus d'un QSY de la liste d'activité (montré dans la fenêtre FreeDV) ; vide sinon. */
     val freedvActivityNotice: String = "",
+    /** Dernier avis de la station sur le poste (VOX coupé, coupleur, TOS élevé) : bandeau fermé d'un toucher ; vide sinon. */
+    val rigNotice: String = "",
+    /** L'avis est grave (VOX impossible à couper ou illisible, TOS élevé) : bandeau rouge, sinon orange. */
+    val rigNoticeBad: Boolean = false,
 )
 
 /**
@@ -202,6 +209,8 @@ class RigSession(
     private var freedvNotice = ""
     private var freedvActivity: com.rfdiy.openremotetrx.protocol.FreedvActivity? = null
     private var freedvActivityNotice = ""
+    private var rigNotice = ""
+    private var rigNoticeBad = false
     private val net = NetClient()
     private var netOffered = false                   // la station a annoncé « netprobe » à la dernière connexion
     private var netStats: NetUi.Stats? = null
@@ -380,6 +389,7 @@ class RigSession(
             is Beeps -> beeps = BeepSettings.parse(msg.settings)
             is Selcall -> onSelcall(SelcallStatus.parse(msg.status))
             is BreizhEvent -> onBreizhEvent(msg)
+            is RigNotice -> onRigNotice(msg)
             is FreedvEvent -> onFreedvEvent(msg)
             is NetPing -> link.send(Command.NetPong(msg.seq, msg.t, now).encode())      // écho immédiat, sans file d'attente
             is NetPong -> net.pong(msg.seq, msg.t, now)
@@ -569,6 +579,25 @@ class RigSession(
             if (entry.cmd == "toggle") heartbeat.cancelGrace()
             log(refusalOf(msg), LogLevel.WARN)
         }
+    }
+
+    /** Avis de la station sur le poste : journal, bandeau (comme la page), bip triple pour un TOS élevé. */
+    private fun onRigNotice(msg: RigNotice) {
+        if (msg.event.isEmpty() || msg.detail.isEmpty()) return
+        val text = msg.detail.take(300) + (if (msg.ort.isNotEmpty()) " [" + msg.ort.take(12) + "]" else "")
+        val bad = msg.event in setOf("vox_still_on", "vox_unknown", "swr_high")
+        rigNotice = text
+        rigNoticeBad = bad
+        log(text, if (bad) LogLevel.BAD else LogLevel.WARN)
+        if (msg.event == "swr_high") link.alert(LinkAlert.SWR_HIGH)
+    }
+
+    /** Bandeau de l'avis fermé par l'opérateur. */
+    fun dismissRigNotice(now: Long) {
+        if (rigNotice.isEmpty()) return
+        rigNotice = ""
+        rigNoticeBad = false
+        publish(now)
     }
 
     private fun onBreizhEvent(msg: BreizhEvent) {
@@ -1458,6 +1487,7 @@ class RigSession(
         breizhEvents = emptyList()
         freedvNotice = ""
         freedvActivity = null; freedvActivityNotice = ""
+        rigNotice = ""; rigNoticeBad = false
         protocolOk = true
         net.stop(wall())                                         // les résumés restent : remis à la reconnexion
         netStats = null; netExport = null; netStatus = ""
@@ -1518,6 +1548,8 @@ class RigSession(
             freedvNotice = freedvNotice,
             freedvActivity = FreeDvActivities.view(freedvActivity, state?.rig?.frequencyHz, wall() / 1000.0),
             freedvActivityNotice = freedvActivityNotice,
+            rigNotice = rigNotice,
+            rigNoticeBad = rigNoticeBad,
         )
         if (next != snapshot) {
             snapshot = next

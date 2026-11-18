@@ -124,6 +124,7 @@ internal fun RigScope.TabletLayout(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         PresenceBanner()
+                        RigNoticeBanner()
                         StationControls(miniWaterfall = false)
                     }
                     VerticalDivider()

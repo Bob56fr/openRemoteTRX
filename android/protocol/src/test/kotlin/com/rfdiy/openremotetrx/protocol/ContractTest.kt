@@ -123,6 +123,8 @@ class ContractTest {
         assertNull(assertIs<State>(ServerMessages.decode(messages["state"].toString())).breizh)    // station sans Breizh
         val e = assertIs<BreizhEvent>(ServerMessages.decode(messages["breizh_event"].toString()))
         assertEquals("fallback", e.event); assertTrue(e.detail.startsWith("Breizh ne répond plus"))
+        val n = assertIs<RigNotice>(ServerMessages.decode(messages["rig_notice"].toString()))
+        assertEquals("vox_off", n.event); assertEquals("ORT-5034", n.ort); assertTrue(n.detail.contains("VOX"))
     }
 
     @Test
