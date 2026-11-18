@@ -331,7 +331,7 @@
   "terrain.drill.reboot.title": "\n--- 10. (optional) Full PC restart ---",
   "terrain.drill.reboot.how": "Restart the PC with the rig on, then run this tool again with --session and play this drill: it reads the rig.",
   "terrain.drill.reboot.expected": "the rig never transmitted",
-  "terrain.menu2": "  1 [{before}] Rig snapshot BEFORE (read only, station STOPPED; photos of the menus in {photo_dir})\n  2 [{explore}] Exploration without transmitting (station STOPPED)\n  3 [{qualif}] Full qualification, transmitting into a dummy load (station STOPPED)\n  4       Qualification without transmitting (station STOPPED)\n  5       Timed safety drills (station RUNNING): {drills}/{total}\n  6 [{after}] Rig snapshot AFTER and differences to restore by hand (station STOPPED)\n  7       Build the report for Claude (zip; {photos} photo(s))\n  8       Automatic drills by an automatic client (station RUNNING, operator account): {auto}/{auto_total}\n  a / d   Stop / start the PC station\n  q       Quit (the session is kept: --session to resume it)",
+  "terrain.menu2": "  9 [{sound}] Rig sound card check (no transmission, station STOPPED): do it FIRST\n  1 [{before}] Rig snapshot BEFORE (read only, station STOPPED; photos of the menus in {photo_dir})\n  2 [{explore}] Exploration without transmitting (station STOPPED)\n  3 [{qualif}] Full qualification, transmitting into a dummy load (station STOPPED)\n  4       Qualification without transmitting (station STOPPED)\n  5       Timed safety drills (station RUNNING): {drills}/{total}\n  6 [{after}] Rig snapshot AFTER and differences to restore by hand (station STOPPED)\n  7       Build the report for Claude (zip; {photos} photo(s))\n  8       Automatic drills by an automatic client (station RUNNING, operator account): {auto}/{auto_total}\n  a / d   Stop / start the PC station\n  q       Quit (the session is kept: --session to resume it)",
   "terrain.station_running": "PC station: RUNNING",
   "terrain.station_stopped": "PC station: stopped",
   "terrain.need_stopped": "The station is running: stop it first (a), these tools start their own rigctld.",
@@ -370,5 +370,18 @@
   "explore.rigctld_crash": "!!! The read « {line} » crashed rigctld (Hamlib defect): rigctld restarted, exploration resumed without it.",
   "finding.rigctld_crash.title": "The read « {line} » crashes rigctld",
   "phase3.local_released": "  The station took the settings changed by phase 1 for an action on the rig (reason: {reason}): the qualification takes control back, like the page button.",
-  "phase3.local_kept": "  Rig used locally (reason: {reason}) and taking control back refused: {error}"
+  "phase3.local_kept": "  Rig used locally (reason: {reason}) and taking control back refused: {error}",
+  "terrain.audio.title": "\n=== Rig sound card (no transmission) ===",
+  "terrain.audio.capture": "  Receive « {name} »: {level} dBFS, {zeros} % zero samples (rig on a dummy load: a low level is normal)",
+  "terrain.audio.playback": "  Transmit « {name} »: the output opens (silence written, nothing transmitted)",
+  "terrain.audio.problem.no_capture": "  !!! No RECEIVE sound card chosen: the station would hear silence without any error (menu 2.6).",
+  "terrain.audio.problem.no_playback": "  !!! No TRANSMIT sound card chosen: the voice would go nowhere (menu 2.6).",
+  "terrain.audio.problem.not_found": "  !!! Card « {name} » ({kind}) not found: cable on another USB port (name changed on Windows)? Menu 2.6.",
+  "terrain.audio.problem.digital_silence": "  !!! Receive « {name} »: DIGITAL SILENCE (only zeros): microphone access denied (Windows: Privacy > Microphone, desktop apps), card held by another program, or wrong card.",
+  "terrain.audio.problem.open_failed": "  !!! Card « {name} » ({kind}) does not open: {error}. Is another program holding it (exclusive mode)?",
+  "terrain.audio.problem.no_sounddevice": "  !!! Audio module unavailable: {error}",
+  "terrain.audio.advice.windows_numbered": "  Note: this Windows name is numbered (« 2- … »); it CHANGES if the rig cable moves to another USB port (then redo menu 2.6).",
+  "terrain.audio.advice.windows_volume": "  Check in Windows (Settings > System > Sound > rig output): volume 100, audio enhancements off, 16 bit 48000 Hz; set the level on the rig (Icom: USB MOD Level). A reduced volume = transmission without power.",
+  "terrain.audio.ok": "  Rig sound card: OK.",
+  "terrain.audio.ko": "  Rig sound card: TO FIX before the qualification (otherwise Audio RX / TX fail)."
 }

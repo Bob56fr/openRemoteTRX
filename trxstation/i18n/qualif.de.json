@@ -331,7 +331,7 @@
   "terrain.drill.reboot.title": "\n--- 10. (optional) Vollständiger Neustart des PCs ---",
   "terrain.drill.reboot.how": "Den PC bei eingeschaltetem Gerät neu starten, dann dieses Werkzeug mit --session erneut starten und diese Prüfung ausführen: sie liest das Gerät.",
   "terrain.drill.reboot.expected": "das Gerät hat nie gesendet",
-  "terrain.menu2": "  1 [{before}] Zustand des Geräts VORHER (nur lesend, Station GESTOPPT; Fotos der Menüs in {photo_dir})\n  2 [{explore}] Erkundung ohne Senden (Station GESTOPPT)\n  3 [{qualif}] Vollständige Qualifizierung, Senden in einen Dummy-Load (Station GESTOPPT)\n  4       Qualifizierung ohne Senden (Station GESTOPPT)\n  5       Gemessene Sicherheitsprüfungen (Station LÄUFT): {drills}/{total}\n  6 [{after}] Zustand des Geräts NACHHER und von Hand zurückzustellende Unterschiede (Station GESTOPPT)\n  7       Bericht für Claude erstellen (zip; {photos} Foto(s))\n  8       Automatische Prüfungen durch einen automatischen Client (Station LÄUFT, Bedienerkonto): {auto}/{auto_total}\n  a / d   Station des PCs stoppen / starten\n  q       Beenden (die Sitzung bleibt erhalten: --session zum Fortsetzen)",
+  "terrain.menu2": "  9 [{sound}] Prüfung der Soundkarte des Geräts (ohne Senden, Station GESTOPPT): ZUERST ausführen\n  1 [{before}] Zustand des Geräts VORHER (nur lesend, Station GESTOPPT; Fotos der Menüs in {photo_dir})\n  2 [{explore}] Erkundung ohne Senden (Station GESTOPPT)\n  3 [{qualif}] Vollständige Qualifizierung, Senden in einen Dummy-Load (Station GESTOPPT)\n  4       Qualifizierung ohne Senden (Station GESTOPPT)\n  5       Gemessene Sicherheitsprüfungen (Station LÄUFT): {drills}/{total}\n  6 [{after}] Zustand des Geräts NACHHER und von Hand zurückzustellende Unterschiede (Station GESTOPPT)\n  7       Bericht für Claude erstellen (zip; {photos} Foto(s))\n  8       Automatische Prüfungen durch einen automatischen Client (Station LÄUFT, Bedienerkonto): {auto}/{auto_total}\n  a / d   Station des PCs stoppen / starten\n  q       Beenden (die Sitzung bleibt erhalten: --session zum Fortsetzen)",
   "terrain.station_running": "Station des PCs: LÄUFT",
   "terrain.station_stopped": "Station des PCs: gestoppt",
   "terrain.need_stopped": "Die Station läuft: zuerst stoppen (a), diese Werkzeuge starten ihr eigenes rigctld.",
@@ -370,5 +370,18 @@
   "explore.rigctld_crash": "!!! Die Lesung « {line} » hat rigctld abstürzen lassen (Hamlib-Fehler): rigctld neu gestartet, Erkundung ohne sie fortgesetzt.",
   "finding.rigctld_crash.title": "Die Lesung « {line} » lässt rigctld abstürzen",
   "phase3.local_released": "  Die Station hielt die in Phase 1 geänderten Einstellungen für eine Bedienung am Gerät (Grund: {reason}): die Qualifizierung übernimmt wieder, wie die Schaltfläche der Seite.",
-  "phase3.local_kept": "  Gerät vor Ort benutzt (Grund: {reason}) und Übernahme verweigert: {error}"
+  "phase3.local_kept": "  Gerät vor Ort benutzt (Grund: {reason}) und Übernahme verweigert: {error}",
+  "terrain.audio.title": "\n=== Soundkarte des Geräts (ohne Senden) ===",
+  "terrain.audio.capture": "  Empfang « {name} »: {level} dBFS, {zeros} % Nullwerte (Gerät an Dummy-Load: niedriger Pegel normal)",
+  "terrain.audio.playback": "  Senden « {name} »: der Ausgang öffnet sich (Stille geschrieben, nichts gesendet)",
+  "terrain.audio.problem.no_capture": "  !!! Keine EMPFANGS-Soundkarte gewählt: die Station hörte Stille ohne jeden Fehler (Menü 2.6).",
+  "terrain.audio.problem.no_playback": "  !!! Keine SENDE-Soundkarte gewählt: die Stimme ginge nirgendwohin (Menü 2.6).",
+  "terrain.audio.problem.not_found": "  !!! Karte « {name} » ({kind}) nicht gefunden: Kabel an einem anderen USB-Anschluss (Name unter Windows geändert)? Menü 2.6.",
+  "terrain.audio.problem.digital_silence": "  !!! Empfang « {name} »: DIGITALE STILLE (nur Nullen): Mikrofonzugriff verweigert (Windows: Datenschutz > Mikrofon, Desktop-Apps), Karte von einem anderen Programm belegt oder falsche Karte.",
+  "terrain.audio.problem.open_failed": "  !!! Karte « {name} » ({kind}) öffnet sich nicht: {error}. Belegt ein anderes Programm sie (Exklusivmodus)?",
+  "terrain.audio.problem.no_sounddevice": "  !!! Audiomodul nicht verfügbar: {error}",
+  "terrain.audio.advice.windows_numbered": "  Achtung: dieser Windows-Name ist nummeriert (« 2- … »); er ÄNDERT sich, wenn das Kabel an einen anderen USB-Anschluss kommt (dann Menü 2.6 wiederholen).",
+  "terrain.audio.advice.windows_volume": "  In Windows prüfen (Einstellungen > System > Sound > Ausgang des Geräts): Lautstärke 100, Audioverbesserungen aus, 16 Bit 48000 Hz; den Pegel am Gerät einstellen (Icom: USB MOD Level). Reduzierte Lautstärke = Senden ohne Leistung.",
+  "terrain.audio.ok": "  Soundkarte des Geräts: OK.",
+  "terrain.audio.ko": "  Soundkarte des Geräts: vor der Qualifizierung BEHEBEN (sonst schlagen Audio RX / TX fehl)."
 }

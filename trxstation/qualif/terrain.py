@@ -21,6 +21,7 @@ import html
 import ipaddress
 import json
 import os
+import re
 import time
 import zipfile
 from dataclasses import asdict, dataclass, field
@@ -238,6 +239,7 @@ class Session:
     runs: list[dict] = field(default_factory=list)
     snapshots: dict[str, dict] = field(default_factory=dict)
     crashers: list[str] = field(default_factory=list)       # lectures qui font tomber rigctld (constat Hamlib)
+    audio: dict = field(default_factory=dict)               # dernier contrôle de la carte son du poste (choix 9)
 
     FILE = "session.json"
 
@@ -473,6 +475,7 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "runs": session.runs,
         "releves": session.snapshots,
         "lectures_qui_font_tomber_rigctld": session.crashers,
+        "carte_son": session.audio,
         "remise_en_etat": _restore_summary(session),
         "photos": sorted(p.relative_to(session.folder).as_posix() for p in (session.folder / "photos").rglob("*")
                          if p.is_file()) if (session.folder / "photos").is_dir() else [],
@@ -518,6 +521,74 @@ def settings_of(cfg) -> dict:
 
 # --------------------------------------------------------------------------- déroulé
 
+WINDOWS_NUMBERED = re.compile(r"\(\d+- ")                  # « Haut-parleurs (2- USB Audio Device) »
+SILENCE_ZEROS_PCT = 99.0
+
+
+def audio_check(cfg, *, sd=None, seconds: float = 2.0, windows: bool | None = None) -> dict:
+    """Carte son du poste, SANS émission (poste en réception, station arrêtée) : choisie ? s'ouvre-t-elle en réception
+    (niveau, silence numérique) et en émission (quelques dixièmes de seconde de SILENCE écrits) ? Sous Windows : nom
+    numéroté qui change avec la prise USB, volume et améliorations (non lisibles ici : rappel). Vu le 2026-11-18 sur
+    l'IC-7300MK2 : nom vide = silence sans erreur, volume Windows à 38 = émission sans puissance."""
+    import sys
+    from ..audio_devices import real_device_names, resolve_device
+    windows = sys.platform == "win32" if windows is None else windows
+    result: dict = {"capture": None, "playback": None, "problems": [], "advice": []}
+    names = {"capture": cfg.audio.capture_device, "playback": cfg.audio.playback_device}
+    if sd is None:
+        try:
+            import sounddevice as sd
+        except (ImportError, OSError) as exc:
+            result["problems"].append({"key": "no_sounddevice", "error": str(exc)})
+            return result
+    for kind, name in names.items():
+        if not real_device_names(name):
+            result["problems"].append({"key": f"no_{kind}", "name": name or ""})
+            continue
+        try:
+            index = resolve_device(name, kind, sd)
+        except LookupError:
+            result["problems"].append({"key": "not_found", "kind": kind, "name": name})
+            continue
+        try:
+            if kind == "capture":
+                import numpy as np
+                data = sd.rec(int(48000 * seconds), samplerate=48000, channels=1, dtype="int16", device=index)
+                sd.wait()
+                x = data.astype(float).ravel()
+                rms = float(np.sqrt(np.mean(x * x))) if x.size else 0.0
+                level = round(20 * np.log10(max(rms, 1e-9) / 32768), 1)
+                zeros = round(float(np.mean(x == 0)) * 100, 1) if x.size else 100.0
+                result["capture"] = {"name": name, "level_dbfs": level, "zeros_pct": zeros}
+                if zeros >= SILENCE_ZEROS_PCT:
+                    result["problems"].append({"key": "digital_silence", "name": name})
+            else:
+                import numpy as np
+                sd.play(np.zeros(int(48000 * 0.3), dtype="float32"), 48000, device=index)
+                sd.wait()
+                result["playback"] = {"name": name, "opened": True}
+        except Exception as exc:                 # noqa: BLE001 : carte tenue ailleurs, format refusé…
+            result["problems"].append({"key": "open_failed", "kind": kind, "name": name, "error": str(exc)[:160]})
+    if windows:
+        if any(WINDOWS_NUMBERED.search(n or "") for n in names.values()):
+            result["advice"].append({"key": "windows_numbered"})
+        result["advice"].append({"key": "windows_volume"})
+    return result
+
+
+def show_audio_check(result: dict, out: Callable[[str], None]) -> None:
+    cap = result.get("capture")
+    if cap:
+        out(_t("terrain.audio.capture", name=cap["name"], level=cap["level_dbfs"], zeros=cap["zeros_pct"]))
+    if result.get("playback"):
+        out(_t("terrain.audio.playback", name=result["playback"]["name"]))
+    for p in result["problems"]:
+        out(_t(f"terrain.audio.problem.{p['key']}", **{k: v for k, v in p.items() if k != "key"}))
+    for a in result["advice"]:
+        out(_t(f"terrain.audio.advice.{a['key']}"))
+    out(_t("terrain.audio.ok" if not result["problems"] else "terrain.audio.ko"))
+
+
 def station_control(config_path: Path | None, start: bool) -> int:
     """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
     import subprocess
@@ -544,7 +615,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 config_path: Path | None = None, ask: Ask = input, out: Callable[[str], None] = print,
                 explore: Callable | None = None, qualify: Callable | None = None,
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
-                snapshot: Callable[[], dict] | None = None) -> int:
+                snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None) -> int:
     from . import main as qmain
     folder = session_dir or output / f"terrain-{profile.model}-{dt.datetime.now():%Y%m%d-%H%M}"
     caps = profile.caps
@@ -559,6 +630,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     station = station or (lambda: qmain.station_running(cfg.supervisor.instance_lock_port))
     control = control or (lambda start: station_control(config_path, start))
     snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out, skip=tuple(session.crashers))))
+    sound = sound or (lambda: audio_check(cfg))
     while True:
         note_runs(session)
         running = station()
@@ -568,13 +640,14 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
 
         def tick(ok) -> str:
             return "x" if ok else " "
-        out(_t("terrain.menu2", before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
+        out(_t("terrain.menu2", sound=tick(session.audio and not session.audio.get("problems")),
+               before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
                qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
                total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
                auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
         choice = ask(_t("terrain.choice")).strip().lower()
-        if choice in ("1", "2", "3", "4", "6") and running:
+        if choice in ("1", "2", "3", "4", "6", "9") and running:
             out(_t("terrain.need_stopped"))
         elif choice == "1":
             take_snapshot(session, "avant", snapshot, out=out)
@@ -588,6 +661,12 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             if not running:
                 out(_t("terrain.need_running"))
             drills_menu(session, cfg, state_dir, ask=ask, out=out)
+        elif choice == "9":
+            out(_t("terrain.audio.title"))
+            result = sound()
+            show_audio_check(result, out)
+            session.audio = {"at": _now(), **result}
+            session.save()
         elif choice == "8":
             if not running:
                 out(_t("terrain.need_running"))

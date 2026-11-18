@@ -390,3 +390,83 @@ def test_a_refused_q1_qualification_refuses_the_rig(tmp_path):
     terrain.note_runs(session)
     assert session.runs[-1]["verdict"] == "refuse"
     assert terrain.verdict(session) == ("refuse", ["qualification Q1 : refus"])
+
+
+# --------------------------------------------------------------------------- carte son du poste (étape 258)
+
+class FakeSd:
+    """Bibliothèque audio factice : deux cartes du poste (nom Windows numéroté), niveau reçu réglable."""
+
+    def __init__(self, *, signal=0.01, fail_play=False):
+        import numpy as np
+        self.np, self.signal, self.fail_play, self.played = np, signal, fail_play, []
+
+    def query_hostapis(self):
+        return [{"name": "Windows WASAPI"}]
+
+    def query_devices(self):
+        return [{"name": "Microphone (2- USB Audio Device)", "max_input_channels": 1, "max_output_channels": 0,
+                 "hostapi": 0},
+                {"name": "Haut-parleurs (2- USB Audio Device)", "max_input_channels": 0, "max_output_channels": 2,
+                 "hostapi": 0}]
+
+    def rec(self, frames, samplerate, channels, dtype, device):
+        return (self.np.ones((frames, 1)) * self.signal * 32767).astype("int16")
+
+    def play(self, data, samplerate, device):
+        if self.fail_play:
+            raise RuntimeError("Error starting stream")
+        self.played.append(float(abs(data).max()))
+
+    def wait(self):
+        pass
+
+
+def _audio_cfg(capture="Microphone (2- USB Audio Device)", playback="Haut-parleurs (2- USB Audio Device)"):
+    from trxstation.setup_wizard import dummy_config
+    cfg = dummy_config()
+    cfg.audio.capture_device, cfg.audio.playback_device = capture, playback
+    return cfg
+
+
+def test_the_rig_sound_card_check_passes_and_writes_only_silence():
+    sd = FakeSd()
+    result = terrain.audio_check(_audio_cfg(), sd=sd, seconds=0.1, windows=True)
+    assert result["problems"] == [] and result["capture"]["level_dbfs"] == pytest.approx(-40.0, abs=0.5)
+    assert sd.played == [0.0]                                    # jamais un son vers le poste
+    assert {a["key"] for a in result["advice"]} == {"windows_numbered", "windows_volume"}
+
+
+def test_an_empty_sound_card_name_is_a_problem_not_a_silent_success():
+    result = terrain.audio_check(_audio_cfg(capture="", playback=""), sd=FakeSd(), seconds=0.1, windows=False)
+    assert [p["key"] for p in result["problems"]] == ["no_capture", "no_playback"] and result["advice"] == []
+
+
+def test_digital_silence_missing_card_and_refused_output_are_problems():
+    keys = lambda r: [p["key"] for p in r["problems"]]       # noqa: E731
+    assert keys(terrain.audio_check(_audio_cfg(), sd=FakeSd(signal=0), seconds=0.1)) == ["digital_silence"]
+    assert keys(terrain.audio_check(_audio_cfg(capture="Autre carte"), sd=FakeSd(), seconds=0.1)) == ["not_found"]
+    assert keys(terrain.audio_check(_audio_cfg(), sd=FakeSd(fail_play=True), seconds=0.1)) == ["open_failed"]
+
+
+def test_the_check_is_shown_saved_and_reported(tmp_path):
+    ok = {"capture": {"name": "m", "level_dbfs": -40.0, "zeros_pct": 1.0}, "playback": {"name": "h", "opened": True},
+          "problems": [], "advice": []}
+    from trxstation.setup_wizard import dummy_config
+    from types import SimpleNamespace
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path)
+    profile = SimpleNamespace(model=3094, hamlib_version="4.7.2", backend_status="Stable",
+                              caps=SimpleNamespace(model_name="IC-7300", manufacturer="Icom"))
+    answers, shown = iter(["9", "7", "q"]), []
+    terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(answers),
+                        out=shown.append, station=lambda: False, sound=lambda: ok)
+    assert any("Carte son du poste : OK" in str(line) for line in shown)
+    data = json.loads((tmp_path / "s" / "qualification.json").read_text(encoding="utf-8"))
+    assert data["carte_son"]["capture"]["level_dbfs"] == -40.0
+    assert "9 [x]" in "\n".join(map(str, shown))
+
+
+def test_the_sound_check_is_refused_while_the_station_runs(tmp_path):
+    _, _, shown = _menu(tmp_path, ["9", "q"], running=True)
+    assert "arrête-la d'abord" in shown

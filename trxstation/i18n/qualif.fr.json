@@ -331,7 +331,7 @@
   "terrain.drill.reboot.title": "\n--- 10. (facultatif) Redémarrage complet du PC ---",
   "terrain.drill.reboot.how": "Redémarre le PC poste allumé, puis relance cet outil avec --session et joue cet essai : il relit le poste.",
   "terrain.drill.reboot.expected": "le poste n'est jamais passé en émission",
-  "terrain.menu2": "  1 [{before}] Relevé du poste AVANT (lecture seule, station ARRÊTÉE ; photos des menus dans {photo_dir})\n  2 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  3 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  4       Qualification sans émission (station ARRÊTÉE)\n  5       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  6 [{after}] Relevé du poste APRÈS et différences à remettre à la main (station ARRÊTÉE)\n  7       Fabriquer le rapport pour Claude (zip ; {photos} photo(s))\n  8       Essais automatiques par un client automatique (station EN MARCHE, compte opérateur) : {auto}/{auto_total}\n  a / d   Arrêter / démarrer la station du PC\n  q       Quitter (la session est gardée : --session pour la reprendre)",
+  "terrain.menu2": "  9 [{sound}] Contrôle de la carte son du poste (sans émission, station ARRÊTÉE) : à faire en PREMIER\n  1 [{before}] Relevé du poste AVANT (lecture seule, station ARRÊTÉE ; photos des menus dans {photo_dir})\n  2 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  3 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  4       Qualification sans émission (station ARRÊTÉE)\n  5       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  6 [{after}] Relevé du poste APRÈS et différences à remettre à la main (station ARRÊTÉE)\n  7       Fabriquer le rapport pour Claude (zip ; {photos} photo(s))\n  8       Essais automatiques par un client automatique (station EN MARCHE, compte opérateur) : {auto}/{auto_total}\n  a / d   Arrêter / démarrer la station du PC\n  q       Quitter (la session est gardée : --session pour la reprendre)",
   "terrain.station_running": "Station du PC : EN MARCHE",
   "terrain.station_stopped": "Station du PC : arrêtée",
   "terrain.need_stopped": "La station est en marche : arrête-la d'abord (a), ces outils lancent leur propre rigctld.",
@@ -370,5 +370,18 @@
   "explore.rigctld_crash": "!!! La lecture « {line} » a fait tomber rigctld (défaut de Hamlib) : rigctld relancé, exploration reprise sans elle.",
   "finding.rigctld_crash.title": "La lecture « {line} » fait tomber rigctld",
   "phase3.local_released": "  La station a pris les réglages changés par la phase 1 pour une action sur le poste (motif : {reason}) : la qualification reprend la main, comme le bouton de la page.",
-  "phase3.local_kept": "  Poste utilisé sur place (motif : {reason}) et reprise de la main refusée : {error}"
+  "phase3.local_kept": "  Poste utilisé sur place (motif : {reason}) et reprise de la main refusée : {error}",
+  "terrain.audio.title": "\n=== Carte son du poste (sans émission) ===",
+  "terrain.audio.capture": "  Réception « {name} » : {level} dBFS, {zeros} % d'échantillons nuls (poste sur charge fictive : faible niveau normal)",
+  "terrain.audio.playback": "  Émission « {name} » : la sortie s'ouvre (silence écrit, rien n'est émis)",
+  "terrain.audio.problem.no_capture": "  !!! Aucune carte son de RÉCEPTION choisie : la station entendrait un silence sans aucune erreur (menu 2.6).",
+  "terrain.audio.problem.no_playback": "  !!! Aucune carte son d'ÉMISSION choisie : la voix n'irait nulle part (menu 2.6).",
+  "terrain.audio.problem.not_found": "  !!! Carte « {name} » ({kind}) introuvable : câble sur une autre prise USB (nom changé sous Windows) ? Menu 2.6.",
+  "terrain.audio.problem.digital_silence": "  !!! Réception « {name} » : SILENCE NUMÉRIQUE (que des zéros) : accès au micro refusé (Windows : Confidentialité > Microphone, applications de bureau), carte tenue par un autre logiciel, ou mauvaise carte.",
+  "terrain.audio.problem.open_failed": "  !!! La carte « {name} » ({kind}) ne s'ouvre pas : {error}. Un autre logiciel la tient-il (mode exclusif) ?",
+  "terrain.audio.problem.no_sounddevice": "  !!! Module audio indisponible : {error}",
+  "terrain.audio.advice.windows_numbered": "  Attention : ce nom Windows est numéroté (« 2- … ») ; il CHANGE si le câble du poste passe sur une autre prise USB (refaire alors le menu 2.6).",
+  "terrain.audio.advice.windows_volume": "  À vérifier dans Windows (Paramètres > Système > Son > sortie du poste) : volume à 100, améliorations audio désactivées, 16 bits 48000 Hz ; le niveau se dose sur le poste (Icom : USB MOD Level). Un volume réduit = émission sans puissance.",
+  "terrain.audio.ok": "  Carte son du poste : OK.",
+  "terrain.audio.ko": "  Carte son du poste : À CORRIGER avant la qualification (sinon Audio RX / TX en échec)."
 }

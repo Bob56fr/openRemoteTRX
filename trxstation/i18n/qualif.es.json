@@ -331,7 +331,7 @@
   "terrain.drill.reboot.title": "\n--- 10. (opcional) Reinicio completo del PC ---",
   "terrain.drill.reboot.how": "Reinicia el PC con el equipo encendido, vuelve a lanzar esta herramienta con --session y haz esta prueba: lee el equipo.",
   "terrain.drill.reboot.expected": "el equipo nunca transmitió",
-  "terrain.menu2": "  1 [{before}] Estado del equipo ANTES (solo lectura, estación DETENIDA; fotos de los menús en {photo_dir})\n  2 [{explore}] Exploración sin transmitir (estación DETENIDA)\n  3 [{qualif}] Cualificación completa, transmisión en carga ficticia (estación DETENIDA)\n  4       Cualificación sin transmitir (estación DETENIDA)\n  5       Pruebas de seguridad cronometradas (estación EN MARCHA): {drills}/{total}\n  6 [{after}] Estado del equipo DESPUÉS y diferencias a restaurar a mano (estación DETENIDA)\n  7       Generar el informe para Claude (zip; {photos} foto(s))\n  8       Pruebas automáticas con un cliente automático (estación EN MARCHA, cuenta de operador): {auto}/{auto_total}\n  a / d   Detener / arrancar la estación del PC\n  q       Salir (la sesión se conserva: --session para reanudarla)",
+  "terrain.menu2": "  9 [{sound}] Control de la tarjeta de sonido del equipo (sin transmitir, estación DETENIDA): hacerlo PRIMERO\n  1 [{before}] Estado del equipo ANTES (solo lectura, estación DETENIDA; fotos de los menús en {photo_dir})\n  2 [{explore}] Exploración sin transmitir (estación DETENIDA)\n  3 [{qualif}] Cualificación completa, transmisión en carga ficticia (estación DETENIDA)\n  4       Cualificación sin transmitir (estación DETENIDA)\n  5       Pruebas de seguridad cronometradas (estación EN MARCHA): {drills}/{total}\n  6 [{after}] Estado del equipo DESPUÉS y diferencias a restaurar a mano (estación DETENIDA)\n  7       Generar el informe para Claude (zip; {photos} foto(s))\n  8       Pruebas automáticas con un cliente automático (estación EN MARCHA, cuenta de operador): {auto}/{auto_total}\n  a / d   Detener / arrancar la estación del PC\n  q       Salir (la sesión se conserva: --session para reanudarla)",
   "terrain.station_running": "Estación del PC: EN MARCHA",
   "terrain.station_stopped": "Estación del PC: detenida",
   "terrain.need_stopped": "La estación está en marcha: detenla primero (a), estas herramientas lanzan su propio rigctld.",
@@ -370,5 +370,18 @@
   "explore.rigctld_crash": "!!! La lectura « {line} » ha hecho caer rigctld (defecto de Hamlib): rigctld relanzado, exploración reanudada sin ella.",
   "finding.rigctld_crash.title": "La lectura « {line} » hace caer rigctld",
   "phase3.local_released": "  La estación tomó los ajustes cambiados en la fase 1 por una acción en el equipo (motivo: {reason}): la cualificación retoma el control, como el botón de la página.",
-  "phase3.local_kept": "  Equipo usado localmente (motivo: {reason}) y recuperación del control rechazada: {error}"
+  "phase3.local_kept": "  Equipo usado localmente (motivo: {reason}) y recuperación del control rechazada: {error}",
+  "terrain.audio.title": "\n=== Tarjeta de sonido del equipo (sin transmitir) ===",
+  "terrain.audio.capture": "  Recepción « {name} »: {level} dBFS, {zeros} % de muestras nulas (equipo en carga ficticia: nivel bajo normal)",
+  "terrain.audio.playback": "  Transmisión « {name} »: la salida se abre (silencio escrito, nada se transmite)",
+  "terrain.audio.problem.no_capture": "  !!! Ninguna tarjeta de RECEPCIÓN elegida: la estación oiría silencio sin ningún error (menú 2.6).",
+  "terrain.audio.problem.no_playback": "  !!! Ninguna tarjeta de TRANSMISIÓN elegida: la voz no iría a ningún sitio (menú 2.6).",
+  "terrain.audio.problem.not_found": "  !!! Tarjeta « {name} » ({kind}) no encontrada: ¿cable en otro puerto USB (nombre cambiado en Windows)? Menú 2.6.",
+  "terrain.audio.problem.digital_silence": "  !!! Recepción « {name} »: SILENCIO DIGITAL (solo ceros): acceso al micrófono denegado (Windows: Privacidad > Micrófono, aplicaciones de escritorio), tarjeta ocupada por otro programa o tarjeta equivocada.",
+  "terrain.audio.problem.open_failed": "  !!! La tarjeta « {name} » ({kind}) no se abre: {error}. ¿La tiene otro programa (modo exclusivo)?",
+  "terrain.audio.problem.no_sounddevice": "  !!! Módulo de audio no disponible: {error}",
+  "terrain.audio.advice.windows_numbered": "  Atención: este nombre de Windows está numerado (« 2- … »); CAMBIA si el cable del equipo pasa a otro puerto USB (rehacer entonces el menú 2.6).",
+  "terrain.audio.advice.windows_volume": "  Comprobar en Windows (Configuración > Sistema > Sonido > salida del equipo): volumen 100, mejoras de audio desactivadas, 16 bits 48000 Hz; el nivel se ajusta en el equipo (Icom: USB MOD Level). Un volumen reducido = transmisión sin potencia.",
+  "terrain.audio.ok": "  Tarjeta de sonido del equipo: OK.",
+  "terrain.audio.ko": "  Tarjeta de sonido del equipo: CORREGIR antes de la cualificación (si no, Audio RX / TX fallan)."
 }

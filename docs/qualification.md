@@ -86,6 +86,12 @@ ARRÊTÉE pour 2 à 4 : refusés sinon, les outils lancent leur rigctld), 5 essa
 MARCHE), 6 relevé APRÈS et différences, 7 rapport zip, a / d arrêter / démarrer la station du PC (comme les menus 1.2
 et 1.1), q quitter.
 
+Carte son du poste (choix 9, étape 258, À FAIRE EN PREMIER, station ARRÊTÉE, aucune émission) : carte choisie (un
+nom VIDE donne un silence sans erreur), réception ouverte 2 s (niveau, silence numérique = accès au micro refusé,
+carte tenue ailleurs ou mauvaise carte), sortie ouverte avec 0,3 s de SILENCE écrit (rien n'est émis) ; sous Windows :
+nom numéroté « 2- … » qui change avec la prise USB, rappel volume 100 / améliorations désactivées (vu sur
+l'IC-7300MK2 : volume à 38 = émission sans puissance). Résultat dans le rapport (`carte_son`).
+
 Relevés (1 et 6) : LECTURE SEULE (`ReadOnlyRig` : `f m t s j z u l p` seulement, toute autre commande refusée avant
 l'envoi), station ARRÊTÉE, par un rigctld lancé pour l'occasion (étape 255 : une lecture qui le fait tomber est notée,
 rigctld relancé, la suite lue, et cette lecture n'est plus jamais faite ; vu : `p KEYERTYPE` sur l'IC-7300MK2 avec
