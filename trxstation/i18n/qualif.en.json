@@ -424,9 +424,13 @@
   "tuner.ok": "switched on then restored, read back each time; transmission seen while tuning: {tx}; back to receive",
   "tuner.ko": "the tuner does not follow the command or the rig did not return to receive (transmission seen: {tx})",
   "vox.label": "VOX",
-  "vox.what": "VOX switched on for 4 s WITHOUT any audio sent: the rig must NOT transmit; it is switched off afterwards",
+  "vox.what": "VOX: on for 4 s WITHOUT audio (the rig must NOT transmit), then you SPEAK into the rig microphone (it MUST transmit by itself, then return to receive when you stop); VOX switched off afterwards",
   "vox.not_declared": "VOX not declared by Hamlib",
-  "vox.ok": "VOX read on ({on}), no transmission without audio, restored and read back ({now}) (the station NEVER offers VOX remotely)",
   "vox.ko": "VOX read {on}, transmission seen WITHOUT audio: {tx}, state after restore: {now}",
-  "vox.left_on": "  !!! VOX NOT switched off ({error}): SWITCH IT OFF on the rig !!!"
+  "vox.left_on": "  !!! VOX NOT switched off ({error}): SWITCH IT OFF on the rig !!!",
+  "vox.keyed_ok": "without audio: no transmission; by voice: transmission triggered by VOX then back to receive; VOX restored (the station NEVER offers VOX remotely)",
+  "vox.not_keyed": "voice did NOT trigger a transmission: VOX gain too low, anti-VOX too high, or rig not in a voice mode (VOX inactive in data modes)",
+  "vox.stuck": "transmission triggered by VOX but NO return to receive within 4 s: cut with « T 0 » (VOX delay too long?)",
+  "vox.quiet_only": "without audio: no transmission; voice triggering NOT tried",
+  "vox.speak": "  ACTION REQUIRED: press Enter, then SPEAK into the rig microphone for 3 to 5 s (without touching PTT), then stop (n = skip): "
 }

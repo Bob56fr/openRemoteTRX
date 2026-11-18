@@ -33,7 +33,7 @@ from pathlib import Path
 from ..answers import yes_no
 from ..config import Config
 from ..devtools import hwtest as _hwtest
-from ..devtools.hwtest import PREFLIGHT, HwTest
+from ..devtools.hwtest import PREFLIGHT, HwTest, _declined
 from ..i18n import Translator, tool_translator
 from ..gateway.cat.client import FLOAT_LEVELS, HAMLIB_ERRORS, INT_LEVELS, POWER_STEPS, RigError
 from .plan import (DECLARATIF, FIXE, GENERE, SOCLE, SOCLE_ITEMS, TestPlan, build_plan, core_modes, label, render_plan,
@@ -90,6 +90,12 @@ def _mhz(hz: int | None) -> str:
 
 TUNER_WATCH_S = 8.0                   # accord éventuel du coupleur (porteuse brève) : PTT relu jusqu'au retour en réception
 VOX_WATCH_S = 4.0                     # VOX en marche, aucun son envoyé : le poste doit rester en réception
+VOX_TONE_S = 2.0                      # puis tonalité vers la carte son : le poste doit passer en émission
+VOX_TONE_DBFS = -18.0                 # niveau de la tonalité (sinon celui conseillé par la montée du niveau)
+VOX_RELEASE_S = 4.0                   # retour en réception attendu après le délai du VOX
+VOX_SPEAK_S = 10.0                    # l'opérateur parle au micro : émission attendue dans cette fenêtre
+
+
 WORK_MODE = "USB"                     # mode de travail des écritures (règle de l'utilisateur : pas en CW ni en FM)
 WORK_MODES = {"USB", "LSB", "PKTUSB", "PKTLSB", "AM"}
 MODE_FOR = {                          # réglages qui n'existent que dans certains modes (règles de l'utilisateur, 2026-11-18)
@@ -714,42 +720,107 @@ class Qualification(HwTest):
                    both("tuner.ok" if ok else "tuner.ko", tx="oui" if tx_seen else "non"))
 
     async def stage_vox(self) -> None:
-        """VOX (demande de l'utilisateur, 2026-11-19) : mis en marche VOX_WATCH_S secondes, AUCUN son envoyé par la
-        station : le poste NE DOIT PAS passer en émission ; VOX remis à l'arrêt QUOI QU'IL ARRIVE (finally)."""
+        """VOX (demandes de l'utilisateur, 2026-11-19), sur CHARGE FICTIVE après EMETTRE, en deux temps :
+        1. VOX en marche VOX_WATCH_S s SANS son : le poste NE DOIT PAS passer en émission ;
+        2. VOX toujours en marche, VOX_TONE_S s de tonalité envoyée DIRECTEMENT à la carte son du poste (c'est ce que
+           fait un VOX : hors de la porte audio de la station, seulement dans cet essai) : le poste DOIT passer en
+           émission, puis revenir en réception après le délai du VOX.
+        VOX remis comme au départ, mode d'origine remis et « T 0 » de sécurité QUOI QU'IL ARRIVE (finally)."""
         label = ("VOX", _t("vox.label"))
         if not ("VOX" in self.profile.set_functions and "VOX" in self.profile.get_functions):
             return self.check("vox_tx", label, FIXE, None, both("vox.not_declared"))
         if not await self.confirm_emission(_t("vox.what")):
             return self.check("vox_tx", label, FIXE, None, both("phase3.not_confirmed"))
         _, orig = await self._rx_and_func("VOX")
-        on_read, tx_seen, off_read = None, False, None
-        # La STATION refuse toute écriture du VOX (liste fermée de PttController : un VOX laissé en marche à distance
-        # ferait émettre le poste sans contrôle). L'essai passe donc par la CAT de l'outil, et le VOX est remis.
+        on_read, quiet_tx, keyed, back, error = None, False, None, None, None
+        # La STATION refuse toute écriture du VOX (liste fermée de PttController et du client CAT : un VOX laissé en
+        # marche à distance ferait émettre le poste sans contrôle). L'essai passe par la commande brute, et le remet.
         client = self.link.client
         try:
-            await client._command("U VOX 1")          # commande brute : hors des listes fermées de la station
+            await client._command("U VOX 1")
             end = time.monotonic() + VOX_WATCH_S
             while time.monotonic() < end:
                 ptt, on_read = await self._rx_and_func("VOX")
-                tx_seen = tx_seen or bool(ptt)
+                quiet_tx = quiet_tx or bool(ptt)
                 await asyncio.sleep(0.25)
+            if not quiet_tx:
+                keyed, back = await self._vox_trigger()
         except Exception as exc:
-            self.check("vox_tx", label, FIXE, False, both("detail.refused", error=_rprt(exc)))
-        else:
-            off_read = "pending"
+            error = exc
         finally:
-            try:
-                await client._command(f"U VOX {1 if orig else 0}")
-            except Exception as exc:
-                self.say(_t("vox.left_on", error=_rprt(exc)))
-            ptt, now = await self._rx_and_func("VOX")
+            # ORDRE IMPOSÉ (vu sur l'IC-7300MK2, 2026-11-19) : le VOX semble gardé à part en mode données ; coupé pendant
+            # le PKTLSB, il restait EN MARCHE au retour en LSB. D'abord le mode d'origine, puis le VOX, puis relecture.
+            ptt, _ = await self._rx_and_func("VOX")
             if ptt:
                 await self.ctrl.force_rx("hwtest")
-        if off_read is None:
-            return
-        ok = on_read is True and not tx_seen and now == (bool(orig) if orig is not None else False)
-        self.check("vox_tx", label, FIXE, ok, both("vox.ok" if ok else "vox.ko", on=on_read, tx="oui" if tx_seen else "non",
-                                                   now=now))
+            wanted = bool(orig) if orig is not None else False
+            now = None
+            for _ in range(3):
+                try:
+                    await client._command(f"U VOX {1 if wanted else 0}")
+                except Exception as exc:
+                    self.say(_t("vox.left_on", error=_rprt(exc)))
+                ptt, now = await self._rx_and_func("VOX")
+                if now == wanted:
+                    break
+                await asyncio.sleep(0.3)
+            if now != wanted:
+                self.say(_t("vox.left_on", error=f"relu {now}"))
+            if ptt:
+                await self.ctrl.force_rx("hwtest")
+        if error is not None:
+            return self.check("vox_tx", label, FIXE, False, both("detail.refused", error=_rprt(error)))
+        restored = now == (bool(orig) if orig is not None else False)
+        if quiet_tx or on_read is not True or not restored:
+            return self.check("vox_tx", label, FIXE, False, both("vox.ko", on=on_read, tx="oui" if quiet_tx else "non",
+                                                                 now=now))
+        if keyed is None:                                # opérateur absent ou refus : seul le premier temps est prouvé
+            return self.check("vox_tx", label, FIXE, None, both("vox.quiet_only"))
+        ok = keyed and back
+        mode_note = (f" [mode relu pendant l'essai : {', '.join(getattr(self, 'vox_tone_modes', []))}]",) * 2
+        detail = both("vox.keyed_ok" if ok else ("vox.not_keyed" if not keyed else "vox.stuck"),
+                      level=f"{self._vox_level():.0f}")
+        self.check("vox_tx", label, FIXE, ok, (detail[0] + mode_note[0], detail[1] + mode_note[1]))
+
+    def _vox_level(self) -> float:
+        advice = getattr(self, "tx_level_advice", None)
+        return advice if advice is not None else VOX_TONE_DBFS
+
+    async def _vox_trigger(self) -> tuple[bool | None, bool | None]:
+        """Le VOX doit FAIRE ÉMETTRE : l'opérateur parle au micro du poste, en phonie (manuels Icom : VOX en SSB / AM /
+        FM / DV, « with your voice » ; en mode données il ne marche pas, vu sur l'IC-7300MK2). `vox_player` (essais) :
+        source de son simulée. (émission vue, retour en réception)."""
+        play = getattr(self, "vox_player", None)
+        if play is not None:
+            if play(self.cfg, self._vox_level(), VOX_TONE_S) is None:
+                return None, None
+            window = VOX_TONE_S + 0.3
+        else:
+            answer = await self.prompt(_t("vox.speak"))
+            if _declined(answer):
+                return None, None
+            window = VOX_SPEAK_S
+        keyed = False
+        end = time.monotonic() + window
+        modes = set()
+        while time.monotonic() < end:
+            ptt, _ = await self._rx_and_func("VOX")
+            keyed = keyed or bool(ptt)
+            try:
+                modes.add((await self.link.client.get_mode())[0])     # mode RELU pendant la tonalité (rapport)
+            except Exception:
+                pass
+            await asyncio.sleep(0.2)
+        self.vox_tone_modes = sorted(modes)
+        back = False
+        end = time.monotonic() + VOX_RELEASE_S
+        while time.monotonic() < end:
+            ptt, _ = await self._rx_and_func("VOX")
+            if ptt is False:
+                back = True
+                break
+            await asyncio.sleep(0.2)
+        return keyed, back
 
     def release_own_changes(self) -> None:
         """Les réglages changés très vite par la phase 1 (modes, filtres) peuvent être vus comme une ACTION SUR LE POSTE

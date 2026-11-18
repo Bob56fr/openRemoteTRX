@@ -424,9 +424,13 @@
   "tuner.ok": "mis en marche puis remis, relu à chaque fois ; émission vue pendant l'accord : {tx} ; retour en réception",
   "tuner.ko": "le coupleur ne suit pas la commande ou le poste n'est pas revenu en réception (émission vue : {tx})",
   "vox.label": "VOX",
-  "vox.what": "VOX mis en marche 4 s SANS aucun son envoyé : le poste ne doit PAS passer en émission ; il est remis à l'arrêt ensuite",
+  "vox.what": "VOX : 4 s en marche SANS son (le poste ne doit PAS émettre), puis tu PARLES dans le micro du poste (il DOIT passer en émission tout seul, puis revenir en réception quand tu te tais) ; VOX remis à l'arrêt ensuite",
   "vox.not_declared": "VOX non déclaré par Hamlib",
-  "vox.ok": "VOX relu en marche ({on}), aucune émission sans son, remis et relu ({now}) (la station ne propose JAMAIS le VOX à distance)",
   "vox.ko": "VOX relu {on}, émission vue SANS son : {tx}, état après remise : {now}",
-  "vox.left_on": "  !!! VOX NON remis à l'arrêt ({error}) : COUPE-LE sur le poste !!!"
+  "vox.left_on": "  !!! VOX NON remis à l'arrêt ({error}) : COUPE-LE sur le poste !!!",
+  "vox.keyed_ok": "sans son : aucune émission ; à la voix : émission déclenchée par le VOX puis retour en réception ; VOX remis (la station ne propose JAMAIS le VOX à distance)",
+  "vox.not_keyed": "la voix n'a PAS déclenché d'émission : gain VOX trop bas, anti-VOX trop haut, ou poste pas en phonie (VOX inactif en mode données)",
+  "vox.stuck": "émission déclenchée par le VOX mais PAS de retour en réception dans les 4 s : coupée par « T 0 » (délai du VOX trop long ?)",
+  "vox.quiet_only": "sans son : aucune émission ; déclenchement à la voix NON essayé",
+  "vox.speak": "  ACTION DEMANDÉE : appuie sur Entrée, puis PARLE dans le micro du poste 3 à 5 s (sans toucher au PTT), et tais-toi (n = passer) : "
 }

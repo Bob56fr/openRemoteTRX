@@ -424,9 +424,13 @@
   "tuner.ok": "encendido y restaurado, leído cada vez; transmisión vista durante el acuerdo: {tx}; vuelta a recepción",
   "tuner.ko": "el acoplador no sigue la orden o el equipo no volvió a recepción (transmisión vista: {tx})",
   "vox.label": "VOX",
-  "vox.what": "VOX encendido 4 s SIN ningún audio enviado: el equipo NO debe transmitir; se apaga después",
+  "vox.what": "VOX: 4 s encendido SIN audio (el equipo NO debe transmitir), luego HABLAS al micrófono del equipo (DEBE transmitir solo y volver a recepción cuando callas); después VOX apagado",
   "vox.not_declared": "VOX no declarado por Hamlib",
-  "vox.ok": "VOX leído encendido ({on}), ninguna transmisión sin audio, restaurado y leído ({now}) (la estación NUNCA ofrece el VOX a distancia)",
   "vox.ko": "VOX leído {on}, transmisión vista SIN audio: {tx}, estado tras restaurar: {now}",
-  "vox.left_on": "  !!! VOX NO apagado ({error}): ¡APÁGALO en el equipo! !!!"
+  "vox.left_on": "  !!! VOX NO apagado ({error}): ¡APÁGALO en el equipo! !!!",
+  "vox.keyed_ok": "sin audio: ninguna transmisión; con la voz: transmisión activada por el VOX y vuelta a recepción; VOX restaurado (la estación NUNCA ofrece el VOX a distancia)",
+  "vox.not_keyed": "la voz NO activó la transmisión: ganancia VOX demasiado baja, anti-VOX demasiado alto o equipo no en fonía (VOX inactivo en modos datos)",
+  "vox.stuck": "transmisión activada por el VOX pero SIN vuelta a recepción en 4 s: cortada con « T 0 » (¿retardo del VOX demasiado largo?)",
+  "vox.quiet_only": "sin audio: ninguna transmisión; activación por voz NO probada",
+  "vox.speak": "  ACCIÓN NECESARIA: pulsa Intro y HABLA al micrófono del equipo 3 a 5 s (sin tocar el PTT), luego calla (n = saltar): "
 }

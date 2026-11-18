@@ -77,7 +77,7 @@ def run(tmp_path, scenario, *, fake_setup=None, answers=None, **kwargs):
         cfg.network.rigctld_port = proxy.port
         cfg.audio.capture_device = "tone:440"
         cfg.audio.playback_device = f"file:{tmp_path / 'tx.wav'}"
-        defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "firmware": "1.10"}
+        defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "PARLE": "n", "firmware": "1.10"}
         defaults.update(answers or {})
         q = Qualification(cfg, profile=real_profile(), dump_text=REAL, proxy=proxy,
                           ask=lambda p: next((v for k, v in defaults.items() if k in p), ""), out=lambda s: None,

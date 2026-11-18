@@ -424,9 +424,13 @@
   "tuner.ok": "eingeschaltet und zurückgestellt, jeweils gelesen; Senden während der Abstimmung: {tx}; zurück auf Empfang",
   "tuner.ko": "der Tuner folgt dem Befehl nicht oder das Gerät ist nicht auf Empfang zurück (Senden gesehen: {tx})",
   "vox.label": "VOX",
-  "vox.what": "VOX 4 s eingeschaltet, OHNE Ton: das Gerät darf NICHT senden; danach wieder ausgeschaltet",
+  "vox.what": "VOX: 4 s ein OHNE Ton (das Gerät darf NICHT senden), dann SPRICHST du ins Mikrofon des Geräts (es MUSS von selbst senden und zurück auf Empfang gehen, wenn du schweigst); danach VOX aus",
   "vox.not_declared": "VOX von Hamlib nicht gemeldet",
-  "vox.ok": "VOX als ein gelesen ({on}), kein Senden ohne Ton, zurückgestellt und gelesen ({now}) (die Station bietet VOX NIE aus der Ferne an)",
   "vox.ko": "VOX gelesen {on}, Senden OHNE Ton gesehen: {tx}, Zustand nach Rückstellung: {now}",
-  "vox.left_on": "  !!! VOX NICHT ausgeschaltet ({error}): am Gerät AUSSCHALTEN !!!"
+  "vox.left_on": "  !!! VOX NICHT ausgeschaltet ({error}): am Gerät AUSSCHALTEN !!!",
+  "vox.keyed_ok": "ohne Ton: kein Senden; per Stimme: Senden durch VOX ausgelöst, dann zurück auf Empfang; VOX zurückgestellt (die Station bietet VOX NIE aus der Ferne an)",
+  "vox.not_keyed": "die Stimme hat KEIN Senden ausgelöst: VOX-Verstärkung zu niedrig, Anti-VOX zu hoch oder Gerät nicht in Sprechfunk (VOX in Datenbetrieb inaktiv)",
+  "vox.stuck": "Senden durch VOX ausgelöst, aber KEINE Rückkehr auf Empfang in 4 s: mit « T 0 » abgeschaltet (VOX-Verzögerung zu lang?)",
+  "vox.quiet_only": "ohne Ton: kein Senden; Auslösung per Stimme NICHT versucht",
+  "vox.speak": "  AKTION ERFORDERLICH: Eingabe drücken, dann 3 bis 5 s ins Mikrofon des Geräts SPRECHEN (PTT nicht berühren), dann schweigen (n = überspringen): "
 }

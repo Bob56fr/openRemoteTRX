@@ -7,6 +7,8 @@ confirmation, toujours rendre la réception, rétablir l'état du poste et ne ja
 sur une erreur d'installation.
 """
 import asyncio
+
+import pytest
 import json
 import tomllib
 
@@ -24,7 +26,7 @@ from trxstation.setup_wizard import dummy_config
 
 
 def scripted(prompts, answers=None):
-    defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "plus fort": "O", "firmware": "1.10", "indique-t-il": "o",
+    defaults = {"OUI": "OUI", EMIT_WORD: EMIT_WORD, "PARLE": "n", "plus fort": "O", "firmware": "1.10", "indique-t-il": "o",
                 "maintenant": "o", "entends-tu": "o"}
     defaults.update(answers or {})
 
@@ -137,7 +139,7 @@ def test_full_qualification_of_a_healthy_rig(tmp_path):
         assert fake.ptt == 0 and q.ctrl.snapshot().state == "RX" and fake.ptt_commands[-1] == 0
         tuner = [c.lstrip("+") for c in fake.commands if c.lstrip("+").startswith("U TUNER")]
         assert len(tuner) == 2 and results["tuner_tx"].ok is True        # coupleur : après EMETTRE seulement, puis remis
-        assert results["vox_tx"].ok is True and fake.funcs.get("VOX", 0) == 0   # VOX remis à l'arrêt
+        assert results["vox_tx"].ok is None and fake.funcs.get("VOX", 0) == 0   # pas de vraie carte son ; VOX remis
         assert fake.funcs == before_funcs
         assert {k: fake.levels[k] for k in ("SQL", "AGC", "PREAMP", "RFPOWER")} == \
                {k: before_levels[k] for k in ("SQL", "AGC", "PREAMP", "RFPOWER")}
@@ -416,3 +418,66 @@ def test_a_setting_refused_in_the_work_mode_is_retried_in_the_mode_where_it_exis
     item = SimpleNamespace(action="write_func", id="write_func_COMP", label="Compresseur", target="COMP")
     asyncio.run(Qualification._write_in_its_mode(self, item))
     assert [c.ok for c in self.checks] == [True] and modes == ["USB", "FM"]
+
+
+
+@pytest.mark.parametrize("keys,releases,expected", [(True, True, True), (False, False, False), (True, False, False)])
+def test_the_vox_must_key_on_audio_and_release_and_is_always_switched_off(tmp_path, keys, releases, expected):
+    """VOX (demande de l'utilisateur, 2026-11-19) : le son DOIT faire émettre le poste, puis le relâcher ; VOX remis
+    à l'arrêt et poste en réception dans tous les cas."""
+    async def scenario(q, fake, out, prompts):
+        def player(cfg, level, seconds):
+            if keys:
+                fake.ptt = 1                                   # le poste passe en émission sur le son (VOX)
+                if releases:
+                    asyncio.get_running_loop().call_later(seconds + 0.4, lambda: setattr(fake, "ptt", 0))
+            return True
+        q.vox_player = player
+        assert await q.setup()
+        try:
+            for _ in range(100):                                 # liaison CAT établie avant l'essai
+                if q.link.state.connected and q.link.client.connected:
+                    break
+                await asyncio.sleep(0.05)
+            await q.stage_vox()
+        finally:
+            await q.teardown()
+        check = next(c for c in q.checks if c.id == "vox_tx")
+        assert check.ok is expected, check.detail
+        assert fake.funcs.get("VOX", 0) == 0 and fake.ptt == 0
+    run(tmp_path, scenario)
+
+
+
+def test_the_vox_is_switched_off_after_returning_to_the_voice_mode(tmp_path):
+    """IC-7300MK2 (2026-11-19) : VOX mémorisé PAR MODE ; coupé en PKTLSB, il restait en marche au retour en LSB. Le
+    faux poste imite ce comportement : le VOX doit être relu à l'arrêt DANS LE MODE D'ORIGINE."""
+    async def scenario(q, fake, out, prompts):
+        original_mode = fake.mode
+        data_vox = {"v": 0}
+        reply = fake._reply
+
+        def per_mode_reply(line):                               # VOX à part en mode données, comme le 7300
+            words = line.lstrip("+").split()
+            if fake.mode.startswith("PKT") and words[:2] == ["U", "VOX"]:
+                data_vox["v"] = int(words[2])
+                return "set_func: VOX\nRPRT 0\n"
+            if fake.mode.startswith("PKT") and words[:2] == ["u", "VOX"]:
+                return f"get_func: VOX\nFunc Status: {data_vox['v']}\nRPRT 0\n"
+            return reply(line)
+        fake._reply = per_mode_reply
+
+        def player(cfg, level, seconds):
+            return True                                        # le son ne déclenche pas (VOX inactif en données)
+        q.vox_player = player
+        assert await q.setup()
+        try:
+            for _ in range(100):
+                if q.link.state.connected and q.link.client.connected:
+                    break
+                await asyncio.sleep(0.05)
+            await q.stage_vox()
+        finally:
+            await q.teardown()
+        assert fake.mode == original_mode and fake.funcs.get("VOX", 0) == 0
+    run(tmp_path, scenario)
