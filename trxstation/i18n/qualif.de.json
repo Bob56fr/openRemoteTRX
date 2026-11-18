@@ -411,6 +411,7 @@
   "terrain.seq.stopped": "Verkettung bei Test {rank} von {total} angehalten (abgelehnt oder abgebrochen).",
   "terrain.seq.done": "Verkettung beendet ({count} Test(s)).",
   "terrain.seq.station_timeout": "Die PC-Station hat ihren Zustand nicht rechtzeitig geändert: Verkettung angehalten.",
+  "terrain.station_wait": "Warten auf die PC-Station (höchstens 90 s)…",
   "terrain.stopped": "\nSTOP von der Seite angefordert: Test abgebrochen, Senden beendet (T 0). Zurück zum Menü.",
   "terrain.rx.refused": "Nicht bestätigt: Empfang an der Antenne nicht gestartet.",
   "terrain.rx.failed": "Empfangsmessung nicht möglich: {error}",

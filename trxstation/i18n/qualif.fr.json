@@ -411,6 +411,7 @@
   "terrain.seq.stopped": "Enchaînement arrêté à l'essai {rank} sur {total} (refusé ou abandonné).",
   "terrain.seq.done": "Enchaînement terminé ({count} essai(s)).",
   "terrain.seq.station_timeout": "La station du PC n'a pas changé d'état à temps : enchaînement arrêté.",
+  "terrain.station_wait": "Attente de la station du PC (90 s au plus)…",
   "terrain.stopped": "\nSTOP demandé depuis la page : essai interrompu, émission coupée (T 0). Retour au menu.",
   "terrain.rx.refused": "Non confirmé : réception sur antenne non lancée.",
   "terrain.rx.failed": "Mesure de réception impossible : {error}",

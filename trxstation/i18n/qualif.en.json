@@ -411,6 +411,7 @@
   "terrain.seq.stopped": "Chain stopped at test {rank} of {total} (refused or abandoned).",
   "terrain.seq.done": "Chain finished ({count} test(s)).",
   "terrain.seq.station_timeout": "The PC station did not change state in time: chain stopped.",
+  "terrain.station_wait": "Waiting for the PC station (90 s at most)…",
   "terrain.stopped": "\nSTOP requested from the page: test interrupted, transmission cut (T 0). Back to the menu.",
   "terrain.rx.refused": "Not confirmed: reception on antenna not started.",
   "terrain.rx.failed": "Receive measurement impossible: {error}",

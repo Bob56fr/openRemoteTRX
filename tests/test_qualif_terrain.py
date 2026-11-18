@@ -211,10 +211,11 @@ def _menu(tmp_path, answers, *, running=False, snapshots=None):
     it = iter(answers)
     shown = []
     snaps = iter(snapshots or [])
+    state = {"running": running}                     # la station suit ce qu'on lui commande (étape 281 : attente)
     code = terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(it),
                                out=shown.append, explore=lambda: calls.append("explore"),
-                               qualify=lambda no_tx: calls.append(("qualif", no_tx)), station=lambda: running,
-                               control=lambda start: calls.append(("station", start)) or 0,
+                               qualify=lambda no_tx: calls.append(("qualif", no_tx)), station=lambda: state["running"],
+                               control=lambda start: calls.append(("station", start)) or state.update(running=start) or 0,
                                snapshot=lambda: next(snaps))
     return code, calls, "\n".join(map(str, shown))
 

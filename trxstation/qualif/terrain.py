@@ -962,12 +962,10 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
 
     def prepare(key: str) -> bool:
         """Préalables d'un essai enchaîné : station arrêtée ou en marche, charge fictive CONFIRMÉE (mot CHARGE)."""
-        if tl.needs_stopped(key) and station():
-            if not act("a") or not wait_station(False):
-                return False
-        if tl.needs_running(key) and not station():
-            if not act("d") or not wait_station(True):
-                return False
+        if tl.needs_stopped(key) and station() and not act("a"):
+            return False
+        if tl.needs_running(key) and not station() and not act("d"):
+            return False
         if tl.needs_load(key) and session.connection != "charge":
             return confirm_load(session, ask=ask, out=out)
         return True
@@ -1085,14 +1083,16 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         elif choice == "7":
             target = build_report(session, settings=settings_of(cfg), out_dir=output)
             out(_t("terrain.report_done", path=target))
-        elif choice == "a":
-            ok = control(False) == 0
+        elif choice in ("a", "d"):
+            start = choice == "d"
+            ok = control(start) == 0
             out(_t("terrain.control_done" if ok else "terrain.control_failed"))
-            return ok
-        elif choice == "d":
-            ok = control(True) == 0
-            out(_t("terrain.control_done" if ok else "terrain.control_failed"))
-            return ok
+            if not ok:
+                return False
+            # La commande rend la main avant que la station ait changé d'état (essai du 2026-11-18 : page restée
+            # sur « arrêtée ») : on attend l'état réel, et la page le voit.
+            out(_t("terrain.station_wait"))
+            return wait_station(start)
         return True
 
     while True:

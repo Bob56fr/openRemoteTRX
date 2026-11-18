@@ -411,6 +411,7 @@
   "terrain.seq.stopped": "Encadenamiento detenido en la prueba {rank} de {total} (rechazada o abandonada).",
   "terrain.seq.done": "Encadenamiento terminado ({count} prueba(s)).",
   "terrain.seq.station_timeout": "La estación del PC no cambió de estado a tiempo: encadenamiento detenido.",
+  "terrain.station_wait": "Esperando a la estación del PC (90 s como máximo)…",
   "terrain.stopped": "\nSTOP pedido desde la página: prueba interrumpida, emisión cortada (T 0). Vuelta al menú.",
   "terrain.rx.refused": "No confirmado: recepción con antena no iniciada.",
   "terrain.rx.failed": "Medida de recepción imposible: {error}",

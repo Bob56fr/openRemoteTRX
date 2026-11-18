@@ -167,3 +167,12 @@ def test_the_suitcase_starts_its_own_station_not_the_installed_task(tmp_path, mo
     launched.clear()
     terrain.station_control(None, True)                        # station installée : sa tâche planifiée
     assert launched[0][0][:2] == ["schtasks", "/Run"]
+
+
+def test_starting_the_station_waits_for_it_and_tells_the_page(tmp_path):
+    """Essai du 2026-11-18 : après « d », la page restait sur « Station du PC : arrêtée » (menu réaffiché 30 ms après
+    la commande, station pas encore partie)."""
+    events = _run(tmp_path, ["d", "a", "q"])
+    seen = [e["station"] for e in events if e["type"] == "statut" and "station" in e]
+    assert seen == [False, True, True, False, False]       # menu, « d » attendu, menu, « a » attendu, menu
+    assert any("Attente de la station du PC" in e.get("texte", "") for e in events)
