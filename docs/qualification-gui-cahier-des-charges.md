@@ -64,6 +64,8 @@ mode par réglage, aucune écriture hors liste fermée, poste remis comme au dé
 - **G0** : maquette et ce cahier : VALIDÉS par l'utilisateur le 2026-11-19.
 - **G1** : moteur d'événements de la valise : `ask` / `out` de `terrain.py` remplacés par un bus (question, réponse,
   ligne de journal, état d'essai, mesure) ; le terminal devient un client de ce bus (aucun changement visible).
+  FAIT (étape 279, station 0.215.0) : `trxstation/qualif/bus.py`, `evenements.jsonl` ; seul changement visible : le
+  choix « r » demande le mot ANTENNE au lieu de « (O/n) ».
 - **G2** : page en mode manuel (tuiles, fenêtre d'intervention, STOP, mesures, journal), français et anglais.
 - **G3** : API de pilotage et `trx-qualif --pilote` ; refus des mots de sécurité par l'API (test).
 - **G4** : note en direct, brouillon de fiche publique, rapport depuis la page.

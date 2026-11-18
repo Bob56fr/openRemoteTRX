@@ -30,6 +30,7 @@ from typing import Callable
 
 from .. import __version__
 from ..answers import yes_no
+from .bus import DONE, YES_NO, Bus, KeyboardClient, ask_typed, ask_word, bus_of
 from .texts import _t
 
 FORMAT = 1
@@ -318,6 +319,7 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     out(_t(f"terrain.drill.{drill.id}.title"))
     out(_t(f"terrain.drill.{drill.id}.how", tot=f"{tot_s:.0f}"))
     out(_t("terrain.expected", text=_t(f"terrain.drill.{drill.id}.expected", tot=f"{tot_s:.0f}")))
+    bus = bus_of(ask)
     if (await asyncio.to_thread(ask, _t("terrain.start_or_skip"))).strip().lower() in ("s", "skip"):
         return {}
     if drill.kind not in ("startup", "reboot") and await Observer(host, port, period=period).read_once() is None:
@@ -331,9 +333,9 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     try:
         out(_t("terrain.observing"))
         if drill.kind in NEEDS_MARK:
-            await asyncio.to_thread(ask, _t("terrain.mark_prompt"))
+            await asyncio.to_thread(ask_typed, ask, _t("terrain.mark_prompt"), DONE)
             mark = time.time()
-        await asyncio.to_thread(ask, _t("terrain.end_prompt"))
+        await asyncio.to_thread(ask_typed, ask, _t("terrain.end_prompt"), DONE)
         await asyncio.sleep(period * 2)          # dernière lecture après la fin annoncée
     finally:
         end = time.time()
@@ -342,7 +344,7 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     m = analyse(observer.events, start, end, mark)
     measured, reason = judge(drill, m, tot_s=tot_s)
     out(_t("terrain.measured", result=_t(f"terrain.result.{measured}"), reason=reason))
-    declared = yes_no(await asyncio.to_thread(ask, _t("terrain.declared_prompt")))
+    declared = yes_no(await asyncio.to_thread(ask_typed, ask, _t("terrain.declared_prompt"), YES_NO))
     note = (await asyncio.to_thread(ask, _t("terrain.note_prompt"))).strip()
     result = final_result(measured, declared)
     record = {
@@ -362,6 +364,8 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     session.drills[drill.id] = {k: record[k] for k in ("result", "measured", "reason", "declared_ok", "note")}
     session.save()
     out(_t("terrain.drill_saved", result=_t(f"terrain.result.{result}")))
+    if bus is not None:
+        bus.state(drill.id, result, mesure=measured, raison=reason)
     return record
 
 
@@ -605,6 +609,7 @@ RX_LOW_DBFS, RX_HIGH_DBFS = -65.0, -6.0
 TX_LEVELS_DB = (-40.0, -30.0, -24.0, -18.0, -12.0, -6.0)
 ALC_STOP = 0.5
 LOAD_WORD = "CHARGE"
+ANTENNA_WORD = "ANTENNE"
 
 
 def judge_reception(level: float | None, zeros: float | None) -> str:
@@ -779,7 +784,7 @@ def filters_check(cfg, *, civ=None) -> dict:
 
 def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) -> bool:
     out(_t("terrain.load.action"))
-    if (ask(_t("terrain.load.prompt", word=LOAD_WORD)) or "").strip().upper() != LOAD_WORD:
+    if (ask_word(ask, _t("terrain.load.prompt", word=LOAD_WORD), LOAD_WORD) or "").strip().upper() != LOAD_WORD:
         out(_t("terrain.load.refused"))
         return False
     session.connection = "charge"
@@ -818,29 +823,38 @@ def _resume_or_new(output: Path, model: int, *, ask: Ask, out: Callable[[str], N
         if output.is_dir() else []
     if sessions:
         last = sessions[-1]
-        if yes_no(ask(_t("terrain.resume", folder=last.name))) is not False:
+        if yes_no(ask_typed(ask, _t("terrain.resume", folder=last.name), YES_NO)) is not False:
             return last
     return output / f"terrain-{model}-{dt.datetime.now():%Y%m%d-%H%M}"
 
 
 def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
-                config_path: Path | None = None, ask: Ask = input, out: Callable[[str], None] = print,
+                config_path: Path | None = None, ask: Ask | None = None, out: Callable[[str], None] | None = None,
+                bus: Bus | None = None,
                 explore: Callable | None = None, qualify: Callable | None = None,
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
                 snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None,
                 receive: Callable[[], dict] | None = None, scope: Callable[[], dict] | None = None,
                 filters: Callable[[], dict] | None = None) -> int:
+    """La valise. Tout passe par le BUS (lot G1) : le terminal n'en est qu'un client clavier (`ask` / `out` donnés =
+    ce client ; `input` / `print` par défaut) ; historique dans `evenements.jsonl` du dossier de la session."""
     from . import main as qmain
+    if bus is None:
+        bus = Bus()
+        KeyboardClient(bus, ask or input, out or print)
+    ask, out = bus.ask, bus.out
     folder = session_dir or _resume_or_new(output, profile.model, ask=ask, out=out)
+    bus.attach(folder)
     caps = profile.caps
     session = Session.open(folder, model=profile.model, model_name=caps.model_name, manufacturer=caps.manufacturer,
                            hamlib_version=profile.hamlib_version, backend_status=profile.backend_status)
     for sub in ("avant", "apres"):
         (folder / "photos" / sub).mkdir(parents=True, exist_ok=True)
     state_dir = Path(cfg.supervisor.state_dir)
-    explore = explore or (lambda: asyncio.run(qmain.run_explore(cfg, profile, dump_text, folder)))
+    explore = explore or (lambda: asyncio.run(qmain.run_explore(cfg, profile, dump_text, folder, ask=ask, out=out)))
     qualify = qualify or (lambda no_tx: asyncio.run(qmain.run_qualif(
-        cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False,
+        cfg, profile, dump_text, folder, ask=ask, out=out, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx,
+        filters_test=False,
         tx_levels_db=TX_LEVELS_DB, alc_stop=ALC_STOP)))
     station = station or (lambda: qmain.station_running(cfg.supervisor.instance_lock_port))
     control = control or (lambda start: station_control(config_path, start))
@@ -878,7 +892,11 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             confirm_load(session, ask=ask, out=out)
         elif choice == "r":
             out(_t("terrain.rx.action"))
-            if yes_no(ask(_t("terrain.rx.prompt"))) is not False:
+            # Mot ANTENNE tapé par un humain (lot G1) : plus de « O/n » validé par Entrée.
+            if (ask_word(ask, _t("terrain.rx.prompt", word=ANTENNA_WORD), ANTENNA_WORD) or "").strip().upper() \
+                    != ANTENNA_WORD:
+                out(_t("terrain.rx.refused"))
+            else:
                 try:
                     wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
                 except ValueError:

@@ -512,7 +512,7 @@ def test_the_antenna_part_locks_transmissions_again_until_charge(tmp_path):
     profile = SimpleNamespace(model=3094, hamlib_version="4.7.2", backend_status="Stable",
                               caps=SimpleNamespace(model_name="IC-7300", manufacturer="Icom"))
     calls, shown = [], []
-    answers = iter(["c", "CHARGE", "r", "", "", "3", "c", "CHARGE", "3", "7", "q"])
+    answers = iter(["c", "CHARGE", "r", "ANTENNE", "", "3", "c", "CHARGE", "3", "7", "q"])
     terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(answers),
                         out=shown.append, station=lambda: False, qualify=lambda no_tx: calls.append(no_tx),
                         receive=lambda wanted=None: rx, explore=lambda: None)

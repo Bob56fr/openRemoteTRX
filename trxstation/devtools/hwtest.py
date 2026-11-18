@@ -170,9 +170,13 @@ class HwTest:
     def say(self, text: str = "") -> None:
         self.out(text)
 
-    async def prompt(self, text: str) -> str:
+    async def prompt(self, text: str, *, word: str | None = None) -> str:
+        """`word` : mot de sécurité (EMETTRE…) ; par le bus de la valise, seul un humain au clavier peut le donner."""
         assert self.ctrl is None or self.ctrl.snapshot().state == "RX", "question posée pendant une émission"
-        return (await asyncio.to_thread(self.ask, text)).strip()       # la boucle (watchdog, CAT) continue de tourner
+        if word is None:
+            return (await asyncio.to_thread(self.ask, text)).strip()   # la boucle (watchdog, CAT) continue de tourner
+        from ..qualif.bus import ask_word
+        return (await asyncio.to_thread(ask_word, self.ask, text, word)).strip()
 
     def record(self, name: str, ok: bool | None, detail: str) -> bool:
         self.results.append(StageResult(name, ok, detail))
@@ -184,7 +188,7 @@ class HwTest:
     async def confirm_emission(self, what: str) -> bool:
         self.say(_t("emit.title", what=what))
         self.say(_t("emit.reminder"))
-        answer = await self.prompt(_t("emit.prompt", word=emit_word()))
+        answer = await self.prompt(_t("emit.prompt", word=emit_word()), word=emit_word())
         return typed_emit(answer)
 
     async def read_ptt(self, wait_s: float = 0.0) -> bool | None:

@@ -24,6 +24,7 @@ from typing import Callable
 
 from ..answers import typed
 from ..i18n import tool_translator
+from .bus import ask_word, bus_of
 from .terrain import Drill, Observer, Session, _iso, _redactor, journal_lines
 from .texts import _t
 
@@ -125,7 +126,7 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     if drill.kind == "auto_out_of_band" and out_of_band_frequency(cfg) is None:
         out(_t("terrain.auto.no_bands"))
         return {}
-    if not _confirmed(await asyncio.to_thread(ask, _t("terrain.auto.confirm"))):
+    if not _confirmed(await asyncio.to_thread(ask_word, ask, _t("terrain.auto.confirm"), "EMETTRE")):
         out(_t("terrain.auto.cancelled"))
         return {}
     if await Observer(host, port, period=period).read_once() is None:
@@ -186,6 +187,9 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     session.drills[drill.id] = {k: record[k] for k in ("result", "measured", "reason", "declared_ok", "note")}
     session.save()
     out(_t("terrain.drill_saved", result=_t(f"terrain.result.{measured}")))
+    bus = bus_of(ask)
+    if bus is not None:
+        bus.state(drill.id, measured, mesure=measured, raison=reason)
     return record
 
 
