@@ -417,8 +417,8 @@
         },
         "nb_niveau": {
           "etat": "partiel",
-          "note": "Lu ; écriture refusée par le poste (RPRT -9).",
-          "note_en": "Read; write refused by the rig (RPRT -9)."
+          "note": "Lu ; écriture refusée par le poste (RPRT -9). Cause très probable (vue sur l'IC-7300MK2) : Hamlib déclare « NB 0..10 » pour les Icom alors que la commande attend 0 à 1 ; plage corrigée par la station depuis 0.211.0, à revérifier sur l'IC-705.",
+          "note_en": "Read; write refused by the rig (RPRT -9). Very likely cause (seen on the IC-7300MK2): Hamlib declares « NB 0..10 » for Icom rigs while the command expects 0 to 1; range corrected by the station since 0.211.0, to be checked again on the IC-705."
         },
         "anf": {
           "etat": "valide"
@@ -674,9 +674,9 @@
           "etat": "valide"
         },
         "nb_niveau": {
-          "etat": "partiel",
-          "note": "Lu ; écriture refusée par le poste (RPRT -9), en USB aussi, NB en marche (deux qualifications).",
-          "note_en": "Read; write refused by the rig (RPRT -9), in USB too, with NB on (two qualifications)."
+          "etat": "valide",
+          "note": "Lu et écrit de 0 à 1 (commande CI-V 14 12, 0 à 100 %). Hamlib 4.7.2 DÉCLARE pourtant « NB 0..10 » pour les Icom : toute valeur au-dessus de 1 est refusée par le poste (RPRT -9, cause de l'ancien « partiel »). La station corrige la plage pour les Icom depuis 0.211.0 (dix crans de 0,1).",
+          "note_en": "Read and written from 0 to 1 (CI-V command 14 12, 0 to 100 %). Hamlib 4.7.2 nevertheless DECLARES « NB 0..10 » for Icom rigs: any value above 1 is refused by the rig (RPRT -9, cause of the former « partial »). The station corrects the range for Icom rigs since 0.211.0 (ten steps of 0.1)."
         },
         "anf": {
           "etat": "valide"

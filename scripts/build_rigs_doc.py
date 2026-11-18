@@ -199,11 +199,30 @@ def _bi(fr: str, en: str) -> str:
     return f'<span class="fr-t">{e(fr)}</span><span class="en-t">{e(en)}</span>'
 
 
-def _label(entry: dict) -> str:
-    """Libellé d'un état, renvoi de note en exposant et cause d'une fonction non disponible."""
+def _anchor(rig_id: str, fid: str) -> str:
+    return f"p-{rig_id}-{fid}"
+
+
+def number_partials(rigs: list[dict]) -> dict[tuple[str, str], int]:
+    """Renvoi numéroté (à partir de 3) de chaque fonction « partiel » ou « ne fonctionne pas » : la note de bas de fiche
+    dit ce qui ne marche pas (demande de l'utilisateur, 2026-11-19)."""
+    marks, n = {}, len(FOOTNOTES)
+    for rig in rigs:
+        for fid, *_ in FEATURES:
+            if rig["fonctions"][fid]["etat"] in NEEDS_NOTE:
+                n += 1
+                marks[(rig["id"], fid)] = n
+    return marks
+
+
+def _label(entry: dict, mark: tuple[str, int] | None = None) -> str:
+    """Libellé d'un état, renvoi de note en exposant et cause d'une fonction non disponible. `mark` : (ancre, numéro)
+    d'une fonction partielle ou en échec."""
     etat = entry["etat"]
     sym, fr, en = ETATS[etat]
     text = f"{sym} {_bi(fr, en)}"
+    if mark is not None:
+        text += f'<sup><a href="#{mark[0]}">({mark[1]})</a></sup>'
     if etat in NOTE_MARK:
         text += f'<sup><a href="#note{NOTE_MARK[etat]}">({NOTE_MARK[etat]})</a></sup>'
     if etat == "non_declare" and entry.get("cause") in CAUSES:
@@ -212,8 +231,8 @@ def _label(entry: dict) -> str:
     return text
 
 
-def _etat(entry: dict) -> str:
-    return f'<td class="e e-{entry["etat"]}">{_label(entry)}</td>'
+def _etat(entry: dict, mark: tuple[str, int] | None = None) -> str:
+    return f'<td class="e e-{entry["etat"]}">{_label(entry, mark)}</td>'
 
 
 def _footnotes(anchor: bool) -> str:
@@ -229,8 +248,10 @@ def _rig_title(rig: dict) -> str:
             f'<span class="statut s-{p["statut"]}">{_bi(fr, en)}</span>')
 
 
-def _table1(rig: dict) -> list[str]:
+def _table1(rig: dict, marks: dict | None = None) -> list[str]:
     funcs = rig["fonctions"]
+    marks = marks if marks is not None else number_partials([rig])
+    partials: list[tuple[int, str, str, str, str]] = []
     out = [f'<section class="poste" id="{html.escape(rig["id"])}">', f"<h3>{_rig_title(rig)}</h3>",
            f'<p>{_bi(rig["poste"]["resume"], rig["poste"]["resume_en"])} '
            f'{_bi("Modèle Hamlib", "Hamlib model")} {rig["poste"]["hamlib_model"]}.</p>',
@@ -249,10 +270,22 @@ def _table1(rig: dict) -> list[str]:
             entry = funcs[fid]
             declared = entry["etat"] != "non_declare"
             note = entry.get("note", "")
+            number = marks.get((rig["id"], fid))
+            mark = (_anchor(rig["id"], fid), number) if number else None
+            if mark:
+                partials.append((number, mark[0], fr, en, fid))
             out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>'
                        f'<td>{_bi("proposé" if declared else "non proposé", "offered" if declared else "not offered")}</td>'
-                       f'{_etat(entry)}<td>{_bi(note, entry.get("note_en", note))}</td></tr>')
+                       f'{_etat(entry, mark)}<td>{_bi(note, entry.get("note_en", note))}</td></tr>')
     out.append("</table></div>")
+    if partials:                                     # ce qui ne marche pas, fonction par fonction
+        out.append('<div class="notes">')
+        for number, anchor, fr, en, fid in partials:
+            entry = funcs[fid]
+            sym, efr, een = ETATS[entry["etat"]]
+            out.append(f'<p id="{anchor}"><small>({number}) {_bi(fr, en)}, {_bi(efr, een)} : '
+                       f'{_bi(entry["note"], entry["note_en"])}</small></p>')
+        out.append("</div>")
     hamlib = rig.get("hamlib", {})
     if hamlib.get("non_exploite"):
         out += ["<details>", f'<summary>{_bi("Proposé par Hamlib, non exploité par TRX Remote", "Offered by Hamlib, not used by TRX Remote")}'
@@ -267,7 +300,7 @@ def _table1(rig: dict) -> list[str]:
     return out
 
 
-def _table2(rigs: list[dict]) -> list[str]:
+def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     shown = [r for r in rigs if r["poste"]["statut"] in COMPARED]
     if not shown:
         return [f'<p>{_bi("Aucun poste à comparer pour l’instant.", "No rig to compare yet.")}</p>']
@@ -282,7 +315,9 @@ def _table2(rigs: list[dict]) -> list[str]:
             for r in shown:
                 entry = r["fonctions"][fid]
                 note = entry.get("note", "")
-                cells.append(f'<td class="e e-{entry["etat"]}" title="{html.escape(note)}">{_label(entry)}</td>')
+                number = (marks or {}).get((r["id"], fid))
+                mark = (_anchor(r["id"], fid), number) if number else None
+                cells.append(f'<td class="e e-{entry["etat"]}" title="{html.escape(note)}">{_label(entry, mark)}</td>')
             out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>{"".join(cells)}</tr>')
     out.append("</table></div>")
     out.append(_footnotes(anchor=True))
@@ -311,10 +346,11 @@ def render(rigs: list[dict]) -> str:
                        "(survol d'une case = remarque).",
                        "Validated rigs or rigs being validated; each cell is detailed in the rig sheet (hover a cell = "
                        "note).") + "</p>"]
-    out += _table2(rigs)
+    marks = number_partials(rigs)
+    out += _table2(rigs, marks)
     out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et TRX distant", "Each rig: Hamlib and TRX Remote")}</h2>')
     for rig in rigs:
-        out += _table1(rig)
+        out += _table1(rig, marks)
     out.append(_footnotes(anchor=False))
     out += ["<footer>",
             f'<p><a href="../erreurs/">{_bi("Codes d’erreur", "Error codes")}</a> · <a href="../guide/">'

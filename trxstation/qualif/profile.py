@@ -174,6 +174,15 @@ def _flag(text: str, label: str) -> bool | None:
     return None if not value else value.upper().startswith("Y")
 
 
+def _fix_icom_nb(profile: "HamlibProfile", model: int) -> None:
+    """Même correction que la station (gateway/cat/capabilities.fix_icom_nb_range) : NB d'un Icom de 0 à 1."""
+    from ..config import is_icom_model
+    for ranges in (profile.level_ranges, profile.get_level_ranges):
+        nb = ranges.get("NB")
+        if model and is_icom_model(model) and nb is not None and (nb.low, nb.high) == (0.0, 10.0):
+            ranges["NB"] = type(nb)(0.0, 1.0, 0.1)
+
+
 def parse_profile(text: str, model: int = 0) -> HamlibProfile:
     caps = parse_dump_caps(text, model)
     profile = HamlibProfile(caps=caps, model=model)
@@ -186,6 +195,7 @@ def parse_profile(text: str, model: int = 0) -> HamlibProfile:
     profile.set_levels = _names(text, "Set level")
     profile.level_ranges = _ranges(text, "Set level")
     profile.get_level_ranges = _ranges(text, "Get level")
+    _fix_icom_nb(profile, model)
     profile.get_params = _names(text, "Get parameters")
     profile.set_params = _names(text, "Set parameters")
     profile.ptt_declared = (_line(text, "PTT type") or "")[:40]

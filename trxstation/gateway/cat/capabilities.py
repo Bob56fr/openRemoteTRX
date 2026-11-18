@@ -109,6 +109,18 @@ def _ranges(text: str, label: str = "Set level") -> dict[str, list[float]]:
     return found
 
 
+ICOM_NB_RANGE = [0.0, 1.0, 0.1]
+
+
+def fix_icom_nb_range(ranges: dict, model: int) -> None:
+    """Hamlib (4.7.2) DÉCLARE le niveau du NB d'un Icom « 0..10 / 1 » mais l'ÉCRIT comme une valeur de 0 à 1 (×255,
+    commande 14 12 : 0000 à 0255 = 0 à 100 %) : au-delà de 1, valeur impossible, le poste refuse (RPRT -9, vu sur
+    l'IC-7300MK2 le 2026-11-19, trace CI-V). Plage corrigée pour un modèle Icom ; pas de 0,1 = dix crans comme avant."""
+    from ...config import is_icom_model
+    if model and is_icom_model(model) and ranges.get("NB") == [0.0, 10.0, 1.0]:
+        ranges["NB"] = list(ICOM_NB_RANGE)
+
+
 def _hertz(text: str) -> int | None:
     """« 2.4 kHz » -> 2400 ; « 500 Hz » -> 500."""
     match = re.match(r"\s*([\d.]+)\s*(MHz|kHz|Hz)?", text.strip(), re.IGNORECASE)
@@ -168,6 +180,7 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
     att = re.search(r"^Attenuator:\s*(.*)$", text, re.MULTILINE | re.IGNORECASE)
     caps.attenuators = tuple(int(v) for v in re.findall(r"\d+", att.group(1)) if int(v) > 0) if att else ()
     caps.level_ranges = _ranges(text)
+    fix_icom_nb_range(caps.level_ranges, model)
     return caps
 
 

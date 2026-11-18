@@ -81,3 +81,17 @@ def test_no_second_port_or_unknown_model_means_unverified():
 def test_no_check_when_the_tuner_is_not_used_or_for_a_visitor():
     assert _scenario({"tuner_switch": 0, "ptt_start": 0}, tuner=False) == []
     assert _scenario({"tuner_switch": 0, "ptt_start": 0}, listener=True) == []
+
+
+
+def test_icom_nb_level_range_is_corrected_from_0_10_to_0_1():
+    """Hamlib déclare « NB 0..10 » pour les Icom mais écrit 0 à 1 (×255) : au-delà de 1, le poste refuse (IC-7300MK2,
+    RPRT -9, 2026-11-19). Plage corrigée pour la station ET la qualification ; un Yaesu garde la sienne."""
+    from trxstation.gateway.cat.capabilities import parse_dump_caps
+    from trxstation.qualif.profile import parse_profile
+    text = "Set level: NB(0.000000..10.000000/1.000000) NR(0.000000..1.000000/0.066667)\n"
+    assert parse_dump_caps(text, 3094).level_ranges["NB"] == [0.0, 1.0, 0.1]
+    assert parse_dump_caps(text, 1042).level_ranges["NB"] == [0.0, 10.0, 1.0]
+    assert parse_dump_caps(text, 3094).level_ranges["NR"] == [0.0, 1.0, 0.066667]
+    nb = parse_profile(text, 3094).level_ranges["NB"]
+    assert (nb.low, nb.high) == (0.0, 1.0)

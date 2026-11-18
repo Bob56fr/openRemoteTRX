@@ -69,7 +69,7 @@ agc = { etat = "valide" }
 nr = { etat = "valide" }
 nr_niveau = { etat = "valide" }
 nb = { etat = "valide" }
-nb_niveau = { etat = "partiel", note = "Lu ; écriture refusée par le poste (RPRT -9), en USB aussi, NB en marche (deux qualifications).", note_en = "Read; write refused by the rig (RPRT -9), in USB too, with NB on (two qualifications)." }
+nb_niveau = { etat = "valide", note = "Lu et écrit de 0 à 1 (commande CI-V 14 12, 0 à 100 %). Hamlib 4.7.2 DÉCLARE pourtant « NB 0..10 » pour les Icom : toute valeur au-dessus de 1 est refusée par le poste (RPRT -9, cause de l'ancien « partiel »). La station corrige la plage pour les Icom depuis 0.211.0 (dix crans de 0,1).", note_en = "Read and written from 0 to 1 (CI-V command 14 12, 0 to 100 %). Hamlib 4.7.2 nevertheless DECLARES « NB 0..10 » for Icom rigs: any value above 1 is refused by the rig (RPRT -9, cause of the former « partial »). The station corrects the range for Icom rigs since 0.211.0 (ten steps of 0.1)." }
 anf = { etat = "valide" }
 notch_manuel = { etat = "valide", note = "Fréquence du notch sans plage déclarée : non réglable à distance.", note_en = "Notch frequency without a declared range: not adjustable remotely." }
 squelch = { etat = "valide" }

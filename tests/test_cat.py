@@ -671,7 +671,7 @@ def test_capabilities_read_attenuator_and_level_ranges_from_a_real_ic7300mk2_dum
             "NB(0.000000..10.000000/1.000000) AGC(0..0/0) \n")
     caps = parse_dump_caps(text, 3094)
     assert caps.attenuators == (20,)
-    assert caps.level_ranges["NR"] == [0.0, 1.0, 0.066667] and caps.level_ranges["NB"] == [0.0, 10.0, 1.0]
+    assert caps.level_ranges["NR"] == [0.0, 1.0, 0.066667] and caps.level_ranges["NB"] == [0.0, 1.0, 0.1]   # Icom : « 0..10 » déclaré, corrigé (étape 271)
     assert "NOTCHF_RAW" not in caps.level_ranges and "AGC" not in caps.level_ranges   # plages vides « 0..0 » ignorées
     assert caps.to_dict()["attenuators"] == [20]
 

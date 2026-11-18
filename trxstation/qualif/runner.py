@@ -507,6 +507,9 @@ class Qualification(HwTest):
             tol = POWER_TOLERANCE
         elif name in FLOAT_LEVELS:                      # NR, NB : milieu de la plage (ou un cinquième si on y est déjà)
             low, high = FLOAT_LEVELS[name]
+            declared = self.profile.caps.level_ranges.get(name) if getattr(self.profile, "caps", None) else None
+            if declared:                                 # plage du poste (NB d'un Icom : 0 à 1, pas 0 à 10)
+                low, high = max(low, declared[0]), min(high, declared[1])
             middle = low + (high - low) / 2
             target = round(middle if abs(restore - middle) > (high - low) * 0.1 else low + (high - low) / 5, 3)
             tol = (high - low) * 0.07                   # le poste arrondit à son pas (NR : 1/15)

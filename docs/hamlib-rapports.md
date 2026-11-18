@@ -93,3 +93,22 @@ Measured on 2026-11-18 (USB, CI-V port A, 115200 baud). `KEYERTYPE` is listed in
 
 **Request**: fix the crash (or drop `KEYERTYPE` from the IC-7300MK2 get parameters). A read declared by dump_caps
 should never be able to kill rigctld: one client then takes the radio control away from every other client.
+
+## 6. Icom (seen on IC-7300MK2, model 3094, Hamlib 4.7.2, Windows): `NB` level range declared 0..10 but written as 0..1
+
+`dump_caps` declares `Set level: ... NB(0.000000..10.000000/1.000000)` for the IC-7300MK2, but `icom_set_level`
+converts the value as a 0..1 float (x 255) into CI-V `14 12` (0000 to 0255 = 0 to 100 %). Any value above 1 gives an
+impossible BCD value and the rig answers NG:
+
+```
+rigctl -m 3094 -r COM8 -s 115200 l NB L NB 0.5 l NB L NB 5
+0.760784          (read: 14 12 -> 01 94)
+0.498039          (L NB 0.5 accepted)
+Command rejected by the rig   (L NB 5: RPRT -9)
+```
+
+A client that trusts the declared range (0..10) cannot set the NB level above 10 % of its scale. Expected: declared
+range `NB(0.000000..1.000000/...)` for Icom backends (like `NR`), or a conversion that matches the declared range.
+The same refusal was seen on an IC-705 (model 3085), not traced yet. Workaround in openRemoteTRX 0.211.0: the range is
+corrected to 0..1 for Icom models.
+

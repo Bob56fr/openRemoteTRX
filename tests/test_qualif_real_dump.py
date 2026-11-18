@@ -95,6 +95,7 @@ def run(tmp_path, scenario, *, fake_setup=None, answers=None, **kwargs):
 def test_full_qualification_with_the_real_capabilities(tmp_path):
     async def scenario(q, fake):
         fake.levels["AGC"], fake.levels["PREAMP"] = 3, 0
+        fake.levels["NB"] = 0.76                                # Icom : niveau du NB de 0 à 1 (lu 0,76 sur le 7300)
         await q.run()
         results = latest(q.checks)
         failed = [(c.id, c.detail) for c in results.values() if c.ok is False]

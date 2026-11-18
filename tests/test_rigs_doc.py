@@ -113,3 +113,17 @@ def test_public_data_holds_no_address_host_or_serial() -> None:
     text = "\n".join(p.read_text(encoding="utf-8") for p in doc.DATA.glob("*.toml"))
     assert not re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", text)          # aucune adresse IP
     assert "minix" not in text.lower() and "13003336" not in text and "43003441" not in text   # ni machine, ni n° de série
+
+
+def test_every_partial_or_failed_feature_has_a_numbered_clickable_note() -> None:
+    """Demande de l'utilisateur (2026-11-19) : renvoi numéroté (à partir de 3) vers une note qui dit ce qui ne marche pas,
+    dans la fiche et dans la comparaison."""
+    rig = _rig()
+    rig["fonctions"]["agc"] = {"etat": "partiel", "note": "écriture refusée", "note_en": "write refused"}
+    page = doc.render([rig])
+    marks = doc.number_partials([rig])
+    number = marks[("icom-ic7300mk2", "agc")]
+    assert number >= 3 and f'href="#p-icom-ic7300mk2-agc">({number})</a></sup>' in page
+    assert page.count('href="#p-icom-ic7300mk2-agc"') == 2              # fiche et comparaison
+    assert f'<p id="p-icom-ic7300mk2-agc"><small>({number})' in page and "écriture refusée" in page
+    assert len(set(marks.values())) == len(marks)                         # numéros uniques
