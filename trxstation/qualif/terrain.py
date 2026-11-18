@@ -243,6 +243,7 @@ class Session:
     connection: str = ""                                    # « antenne » ou « charge » (confirmé par l'opérateur)
     reception: dict = field(default_factory=dict)           # mesure de réception sur antenne (choix r)
     spectrum: dict = field(default_factory=dict)            # contrôle du spectre HF (choix s)
+    filters: dict = field(default_factory=dict)             # préréglages FIL1 / 2 / 3 par le second port (choix f)
 
     FILE = "session.json"
 
@@ -484,6 +485,7 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "carte_son": session.audio,
         "reception_antenne": session.reception,
         "spectre": session.spectrum,
+        "filtres": session.filters,
         "remise_en_etat": _restore_summary(session),
         "photos": sorted(p.relative_to(session.folder).as_posix() for p in (session.folder / "photos").rglob("*")
                          if p.is_file()) if (session.folder / "photos").is_dir() else [],
@@ -720,6 +722,61 @@ def spectrum_check(cfg, folder: Path, *, run=None) -> dict:
             "detail": " ; ".join(summary.strip().splitlines()[:2])[:200] if summary.strip() else ""}
 
 
+CIV_ADDRESSES = (0x94, 0xA4, 0xB6)          # IC-7300, IC-705, IC-7300MK2 : adresse cherchée si station.toml n'en donne pas
+
+
+def filters_check(cfg, *, civ=None) -> dict:
+    """Préréglages de filtre FIL1 / FIL2 / FIL3, station arrêtée, SANS émission, par le SECOND PORT CI-V (commande 26 00,
+    comme la station et l'application) : filtre d'origine relevé, chaque préréglage CHOISI et relu, filtre d'origine
+    remis. Les LARGEURS des préréglages ne sont jamais écrites (une largeur envoyée par Hamlib les réécrirait)."""
+    from ..config import is_icom_model
+    from ..spectrum.civ import FILTERS, OK, decode_mode_filter, encode_mode_filter
+    if not is_icom_model(cfg.rig.model):
+        return {"verdict": "non_propose", "detail": "préréglages FIL : propres au second port CI-V des Icom"}
+    if civ is None and not cfg.spectrum.port:
+        return {"verdict": "pas_de_port", "detail": "second port CI-V non réglé ([spectrum] port)"}
+    ser = None
+    if civ is None:
+        from ..spectrum.probe import CivPort, open_serial
+        ser = open_serial(cfg.spectrum.port, cfg.spectrum.baud)
+        wanted = int(cfg.spectrum.civ_address, 16) if cfg.spectrum.civ_address else None
+        address = None
+        for candidate in ([wanted] if wanted else list(CIV_ADDRESSES)):
+            probe = CivPort(ser, candidate)
+            if probe.identify(to=candidate) is not None:
+                address = candidate
+                break
+        if address is None:
+            ser.close()
+            return {"verdict": "erreur", "detail": "poste muet sur le second port (adresse CI-V ?)"}
+        civ = CivPort(ser, address)
+
+    def current():
+        reply = civ.request(0x26, 0x00, timeout=0.6)
+        return decode_mode_filter(reply.payload) if reply is not None else None
+    try:
+        start = current()
+        if start is None:
+            return {"verdict": "erreur", "detail": "filtre en cours illisible (commande 26 00 sans réponse)"}
+        mode, data, orig = start
+        seen = {}
+        try:
+            for f in FILTERS:
+                reply = civ.request(0x26, 0x00, encode_mode_filter(mode, data, f))
+                accepted = reply is not None and reply.payload[:1] == bytes([OK])
+                after = current()
+                seen[f"FIL{f}"] = bool(accepted and after == (mode, data, f))
+        finally:
+            civ.request(0x26, 0x00, encode_mode_filter(mode, data, orig))
+        restored = current() == start
+        ok = all(seen.values()) and restored
+        return {"verdict": "ok" if ok else "echec", "filtres": seen, "origine": f"FIL{orig}", "remis": restored,
+                "detail": ", ".join(f"{k} {'OK' if v else 'NON'}" for k, v in seen.items())}
+    finally:
+        if ser is not None:
+            ser.close()
+
+
 def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) -> bool:
     out(_t("terrain.load.action"))
     if (ask(_t("terrain.load.prompt", word=LOAD_WORD)) or "").strip().upper() != LOAD_WORD:
@@ -771,7 +828,8 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 explore: Callable | None = None, qualify: Callable | None = None,
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
                 snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None,
-                receive: Callable[[], dict] | None = None, scope: Callable[[], dict] | None = None) -> int:
+                receive: Callable[[], dict] | None = None, scope: Callable[[], dict] | None = None,
+                filters: Callable[[], dict] | None = None) -> int:
     from . import main as qmain
     folder = session_dir or _resume_or_new(output, profile.model, ask=ask, out=out)
     caps = profile.caps
@@ -790,6 +848,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     sound = sound or (lambda: audio_check(cfg))
     receive = receive or (lambda wanted=None: reception_on_antenna(cfg, freq_hz=wanted))
     scope = scope or (lambda: spectrum_check(cfg, folder))
+    filters = filters or (lambda: filters_check(cfg))
     missing = missing_qualification_bands(cfg)
     if missing:
         out(_t("terrain.bands_missing", bands=", ".join(missing)))
@@ -808,10 +867,10 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
                auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
-        out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum),
+        out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum), fil=tick(session.filters),
                connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
         choice = ask(_t("terrain.choice")).strip().lower()
-        if choice in ("1", "2", "3", "4", "6", "9", "r", "s") and running:
+        if choice in ("1", "2", "3", "4", "6", "9", "r", "s", "f") and running:
             out(_t("terrain.need_stopped"))
         elif choice in ("3", "5", "8") and session.connection != "charge":
             out(_t("terrain.need_load"))                 # aucune émission sans la charge fictive CONFIRMÉE
@@ -836,6 +895,16 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                     session.save()
                     out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
                            freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
+        elif choice == "f":
+            out(_t("terrain.fil.title"))
+            try:
+                result = filters()
+            except Exception as exc:                     # noqa: BLE001 : port occupé, pyserial absent…
+                result = {"verdict": "erreur", "detail": str(exc)[:160]}
+            session.filters = {"at": _now(), **result}
+            session.save()
+            out(_t(f"terrain.fil.{result['verdict']}", detail=result.get("detail", ""),
+                   origine=result.get("origine", "")))
         elif choice == "s":
             out(_t("terrain.scope.title"))
             sp = scope()

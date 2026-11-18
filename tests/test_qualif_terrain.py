@@ -572,3 +572,52 @@ def test_qualification_bands_cover_amateur_85m_45m_and_11m():
     assert {"85m", "45m", "11m", "6m"} <= set(terrain.missing_qualification_bands(cfg))
     cfg.bands = terrain.qualification_bands()
     assert terrain.missing_qualification_bands(cfg) == [] and cfg.tx_allowed(27_430_000)
+
+
+# --------------------------------------------------------------------------- préréglages FIL1 / 2 / 3 (étape 266)
+
+class FakeCiv:
+    """Second port CI-V factice : « 26 00 » lu et écrit, filtre choisi mémorisé (`refuse` : préréglages refusés)."""
+
+    def __init__(self, mode=0x01, data=0, filt=2, refuse=()):
+        from types import SimpleNamespace
+        self.ns, self.state, self.refuse, self.writes = SimpleNamespace, [mode, data, filt], set(refuse), []
+
+    def request(self, cmd, sub=None, data=None, *, timeout=0.6, to=None):
+        from trxstation.spectrum.civ import OK
+        assert (cmd, sub) == (0x26, 0x00)                     # rien d'autre ne part vers le poste
+        if data is None:
+            return self.ns(payload=bytes([0x26, 0x00, *self.state]))
+        self.writes.append(bytes(data))
+        if data[2] in self.refuse:
+            return self.ns(payload=bytes([0xFA]))
+        self.state = list(data)
+        return self.ns(payload=bytes([OK]))
+
+
+def _fil_cfg():
+    from trxstation.setup_wizard import dummy_config
+    cfg = dummy_config()
+    cfg.rig.model = 3094
+    return cfg
+
+
+def test_the_three_fil_presets_are_selected_read_back_and_the_original_is_restored():
+    civ = FakeCiv(filt=2)
+    result = terrain.filters_check(_fil_cfg(), civ=civ)
+    assert result["verdict"] == "ok" and result["filtres"] == {"FIL1": True, "FIL2": True, "FIL3": True}
+    assert civ.state[2] == 2 and result["remis"] and result["origine"] == "FIL2"
+    assert all(len(w) == 3 for w in civ.writes)              # mode, données, préréglage : jamais une largeur
+
+
+def test_a_refused_preset_is_a_failure_and_the_original_filter_is_still_restored():
+    civ = FakeCiv(filt=1, refuse={3})
+    result = terrain.filters_check(_fil_cfg(), civ=civ)
+    assert result["verdict"] == "echec" and result["filtres"]["FIL3"] is False and civ.state[2] == 1
+
+
+def test_filters_are_not_applicable_outside_icom_and_need_the_second_port():
+    cfg = _fil_cfg()
+    assert terrain.filters_check(cfg)["verdict"] == "pas_de_port"
+    cfg.rig.model = 1042
+    assert terrain.filters_check(cfg)["verdict"] == "non_propose"

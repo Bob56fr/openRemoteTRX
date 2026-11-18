@@ -37,7 +37,7 @@ vfo = { etat = "non_declare", note = "« Can get VFO: N ».", note_en = "« Can 
 # --- Modes et filtres
 modes_base = { etat = "valide" }
 modes_donnees = { etat = "valide" }
-filtres = { etat = "non_teste", note = "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL : la station ne l'envoie pas.", note_en = "A width sent through Hamlib REWRITES the FIL preset: the station never sends one." }
+filtres = { etat = "non_teste", note = "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL : la station ne l'envoie pas. Le choix de FIL1 / 2 / 3 passe par un second port CI-V, que l'IC-705 n'a pas (manuel).", note_en = "A width sent through Hamlib REWRITES the FIL preset: the station never sends one. Selecting FIL1 / 2 / 3 needs a second CI-V port, which the IC-705 lacks (manual)." }
 # --- Réception
 preampli = { etat = "valide" }
 attenuateur = { etat = "valide", note = "20 dB.", note_en = "20 dB." }

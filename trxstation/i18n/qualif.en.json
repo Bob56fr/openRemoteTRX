@@ -394,7 +394,7 @@
   "write.work_mode": "  Rig in {mode}: switching to {work} for the writes (many settings do not exist in {mode}).",
   "write.work_mode_failed": "  Mode change refused ({error}): writes in the current mode.",
   "write.in_mode": " (refused in the work mode, tried in {mode})",
-  "terrain.parts": "  r [{rx}] Receive on the ANTENNA (rig frequency, no transmission)   s [{scope}] HF spectrum (no transmission)   c  Switch to the DUMMY LOAD\n  Confirmed connection: {connection}. Suggested order: 9, 1, r, 2, s, c, 3, d, 8, 5, a, 6, 7.",
+  "terrain.parts": "  r [{rx}] Receive on the ANTENNA (rig frequency, no transmission)   s [{scope}] HF spectrum   f [{fil}] FIL1/2/3 filters (no transmission)   c  Switch to the DUMMY LOAD\n  Confirmed connection: {connection}. Suggested order: 9, 1, r, 2, s, f, c, 3, d, 8, 5, a, 6, 7.",
   "terrain.connection.inconnu": "not confirmed (no transmission allowed)",
   "terrain.connection.antenne": "ANTENNA (no transmission allowed)",
   "terrain.connection.charge": "DUMMY LOAD (transmissions allowed)",
@@ -432,5 +432,11 @@
   "vox.not_keyed": "voice did NOT trigger a transmission: VOX gain too low, anti-VOX too high, or rig not in a voice mode (VOX inactive in data modes)",
   "vox.stuck": "transmission triggered by VOX but NO return to receive within 4 s: cut with « T 0 » (VOX delay too long?)",
   "vox.quiet_only": "without audio: no transmission; voice triggering NOT tried",
-  "vox.speak": "  ACTION REQUIRED: press Enter, then SPEAK into the rig microphone for 3 to 5 s (without touching PTT), then stop (n = skip): "
+  "vox.speak": "  ACTION REQUIRED: press Enter, then SPEAK into the rig microphone for 3 to 5 s (without touching PTT), then stop (n = skip): ",
+  "terrain.fil.title": "\n=== Filter presets FIL1 / FIL2 / FIL3 (second port, no transmission) ===",
+  "terrain.fil.ok": "  Filters selected and read back: {detail}; original filter ({origine}) restored. OK (preset widths never written).",
+  "terrain.fil.echec": "  !!! Filters: {detail}; original filter {origine}. Check on the rig.",
+  "terrain.fil.non_propose": "  Not applicable: {detail}.",
+  "terrain.fil.pas_de_port": "  Drill impossible: {detail}.",
+  "terrain.fil.erreur": "  Drill impossible: {detail}"
 }

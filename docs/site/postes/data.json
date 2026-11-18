@@ -389,8 +389,8 @@
         },
         "filtres": {
           "etat": "non_teste",
-          "note": "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL : la station ne l'envoie pas.",
-          "note_en": "A width sent through Hamlib REWRITES the FIL preset: the station never sends one."
+          "note": "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL : la station ne l'envoie pas. Le choix de FIL1 / 2 / 3 passe par un second port CI-V, que l'IC-705 n'a pas (manuel).",
+          "note_en": "A width sent through Hamlib REWRITES the FIL preset: the station never sends one. Selecting FIL1 / 2 / 3 needs a second CI-V port, which the IC-705 lacks (manual)."
         },
         "preampli": {
           "etat": "valide"
@@ -634,9 +634,9 @@
           "note_en": "PKTUSB, PKTLSB, FM-D and AM-D (not PKTFM / PKTAM with Hamlib 4.7)."
         },
         "filtres": {
-          "etat": "non_teste",
-          "note": "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL1/2/3 : la station ne l'envoie pas ; FIL par le second port à confirmer.",
-          "note_en": "A width sent through Hamlib REWRITES the FIL1/2/3 preset: the station never sends one; FIL through the second port to be confirmed."
+          "etat": "valide",
+          "note": "Préréglages FIL1, FIL2 et FIL3 choisis et relus par le second port CI-V (commande 26 00), comme depuis la page et l'application ; filtre d'origine remis. Les largeurs des préréglages ne sont jamais écrites (une largeur envoyée par Hamlib les réécrirait).",
+          "note_en": "FIL1, FIL2 and FIL3 presets selected and read back through the second CI-V port (command 26 00), as from the page and the app; original filter restored. Preset widths are never written (a width sent through Hamlib would rewrite them)."
         },
         "preampli": {
           "etat": "valide",

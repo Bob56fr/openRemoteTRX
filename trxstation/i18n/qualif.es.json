@@ -394,7 +394,7 @@
   "write.work_mode": "  Equipo en {mode}: paso a {work} durante las escrituras (muchos ajustes no existen en {mode}).",
   "write.work_mode_failed": "  Cambio de modo rechazado ({error}): escrituras en el modo actual.",
   "write.in_mode": " (rechazado en el modo de trabajo, probado en {mode})",
-  "terrain.parts": "  r [{rx}] Recepción en ANTENA (frecuencia del equipo, sin transmitir)   s [{scope}] Espectro HF (sin transmitir)   c  Pasar a la CARGA FICTICIA\n  Conexión confirmada: {connection}. Orden aconsejado: 9, 1, r, 2, s, c, 3, d, 8, 5, a, 6, 7.",
+  "terrain.parts": "  r [{rx}] Recepción en ANTENA (frecuencia del equipo, sin transmitir)   s [{scope}] Espectro HF   f [{fil}] Filtros FIL1/2/3 (sin transmitir)   c  Pasar a la CARGA FICTICIA\n  Conexión confirmada: {connection}. Orden aconsejado: 9, 1, r, 2, s, f, c, 3, d, 8, 5, a, 6, 7.",
   "terrain.connection.inconnu": "no confirmada (ninguna transmisión permitida)",
   "terrain.connection.antenne": "ANTENA (ninguna transmisión permitida)",
   "terrain.connection.charge": "CARGA FICTICIA (transmisiones permitidas)",
@@ -432,5 +432,11 @@
   "vox.not_keyed": "la voz NO activó la transmisión: ganancia VOX demasiado baja, anti-VOX demasiado alto o equipo no en fonía (VOX inactivo en modos datos)",
   "vox.stuck": "transmisión activada por el VOX pero SIN vuelta a recepción en 4 s: cortada con « T 0 » (¿retardo del VOX demasiado largo?)",
   "vox.quiet_only": "sin audio: ninguna transmisión; activación por voz NO probada",
-  "vox.speak": "  ACCIÓN NECESARIA: pulsa Intro y HABLA al micrófono del equipo 3 a 5 s (sin tocar el PTT), luego calla (n = saltar): "
+  "vox.speak": "  ACCIÓN NECESARIA: pulsa Intro y HABLA al micrófono del equipo 3 a 5 s (sin tocar el PTT), luego calla (n = saltar): ",
+  "terrain.fil.title": "\n=== Preajustes de filtro FIL1 / FIL2 / FIL3 (segundo puerto, sin transmitir) ===",
+  "terrain.fil.ok": "  Filtros elegidos y leídos: {detail}; filtro original ({origine}) restaurado. OK (anchos nunca escritos).",
+  "terrain.fil.echec": "  !!! Filtros: {detail}; filtro original {origine}. Comprobar en el equipo.",
+  "terrain.fil.non_propose": "  No aplicable: {detail}.",
+  "terrain.fil.pas_de_port": "  Prueba imposible: {detail}.",
+  "terrain.fil.erreur": "  Prueba imposible: {detail}"
 }

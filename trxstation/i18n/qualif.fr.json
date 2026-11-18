@@ -394,7 +394,7 @@
   "write.work_mode": "  Poste en {mode} : passage en {work} le temps des écritures (beaucoup de réglages n'existent pas en {mode}).",
   "write.work_mode_failed": "  Changement de mode refusé ({error}) : écritures dans le mode actuel.",
   "write.in_mode": " (refusé dans le mode de travail, essayé en {mode})",
-  "terrain.parts": "  r [{rx}] Réception sur ANTENNE (fréquence du poste, sans émission)   s [{scope}] Spectre HF (sans émission)   c  Passer sur la CHARGE FICTIVE\n  Branchement confirmé : {connection}. Déroulé conseillé : 9, 1, r, 2, s, c, 3, d, 8, 5, a, 6, 7.",
+  "terrain.parts": "  r [{rx}] Réception sur ANTENNE (fréquence du poste, sans émission)   s [{scope}] Spectre HF   f [{fil}] Filtres FIL1/2/3 (sans émission)   c  Passer sur la CHARGE FICTIVE\n  Branchement confirmé : {connection}. Déroulé conseillé : 9, 1, r, 2, s, f, c, 3, d, 8, 5, a, 6, 7.",
   "terrain.connection.inconnu": "non confirmé (aucune émission permise)",
   "terrain.connection.antenne": "ANTENNE (aucune émission permise)",
   "terrain.connection.charge": "CHARGE FICTIVE (émissions permises)",
@@ -432,5 +432,11 @@
   "vox.not_keyed": "la voix n'a PAS déclenché d'émission : gain VOX trop bas, anti-VOX trop haut, ou poste pas en phonie (VOX inactif en mode données)",
   "vox.stuck": "émission déclenchée par le VOX mais PAS de retour en réception dans les 4 s : coupée par « T 0 » (délai du VOX trop long ?)",
   "vox.quiet_only": "sans son : aucune émission ; déclenchement à la voix NON essayé",
-  "vox.speak": "  ACTION DEMANDÉE : appuie sur Entrée, puis PARLE dans le micro du poste 3 à 5 s (sans toucher au PTT), et tais-toi (n = passer) : "
+  "vox.speak": "  ACTION DEMANDÉE : appuie sur Entrée, puis PARLE dans le micro du poste 3 à 5 s (sans toucher au PTT), et tais-toi (n = passer) : ",
+  "terrain.fil.title": "\n=== Préréglages de filtre FIL1 / FIL2 / FIL3 (second port, sans émission) ===",
+  "terrain.fil.ok": "  Filtres choisis et relus : {detail} ; filtre d'origine ({origine}) remis. OK (largeurs des préréglages jamais écrites).",
+  "terrain.fil.echec": "  !!! Filtres : {detail} ; filtre d'origine {origine}. À vérifier sur le poste.",
+  "terrain.fil.non_propose": "  Sans objet : {detail}.",
+  "terrain.fil.pas_de_port": "  Essai impossible : {detail}.",
+  "terrain.fil.erreur": "  Essai impossible : {detail}"
 }

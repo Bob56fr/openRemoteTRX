@@ -394,7 +394,7 @@
   "write.work_mode": "  Gerät in {mode}: Wechsel auf {work} für die Schreibtests (viele Einstellungen gibt es in {mode} nicht).",
   "write.work_mode_failed": "  Moduswechsel verweigert ({error}): Schreibtests im aktuellen Modus.",
   "write.in_mode": " (im Arbeitsmodus verweigert, in {mode} versucht)",
-  "terrain.parts": "  r [{rx}] Empfang an der ANTENNE (Gerätefrequenz, ohne Senden)   s [{scope}] HF-Spektrum (ohne Senden)   c  Auf den DUMMY-LOAD umstecken\n  Bestätigter Anschluss: {connection}. Empfohlene Reihenfolge: 9, 1, r, 2, s, c, 3, d, 8, 5, a, 6, 7.",
+  "terrain.parts": "  r [{rx}] Empfang an der ANTENNE (Gerätefrequenz, ohne Senden)   s [{scope}] HF-Spektrum   f [{fil}] Filter FIL1/2/3 (ohne Senden)   c  Auf den DUMMY-LOAD umstecken\n  Bestätigter Anschluss: {connection}. Empfohlene Reihenfolge: 9, 1, r, 2, s, f, c, 3, d, 8, 5, a, 6, 7.",
   "terrain.connection.inconnu": "nicht bestätigt (kein Senden erlaubt)",
   "terrain.connection.antenne": "ANTENNE (kein Senden erlaubt)",
   "terrain.connection.charge": "DUMMY-LOAD (Senden erlaubt)",
@@ -432,5 +432,11 @@
   "vox.not_keyed": "die Stimme hat KEIN Senden ausgelöst: VOX-Verstärkung zu niedrig, Anti-VOX zu hoch oder Gerät nicht in Sprechfunk (VOX in Datenbetrieb inaktiv)",
   "vox.stuck": "Senden durch VOX ausgelöst, aber KEINE Rückkehr auf Empfang in 4 s: mit « T 0 » abgeschaltet (VOX-Verzögerung zu lang?)",
   "vox.quiet_only": "ohne Ton: kein Senden; Auslösung per Stimme NICHT versucht",
-  "vox.speak": "  AKTION ERFORDERLICH: Eingabe drücken, dann 3 bis 5 s ins Mikrofon des Geräts SPRECHEN (PTT nicht berühren), dann schweigen (n = überspringen): "
+  "vox.speak": "  AKTION ERFORDERLICH: Eingabe drücken, dann 3 bis 5 s ins Mikrofon des Geräts SPRECHEN (PTT nicht berühren), dann schweigen (n = überspringen): ",
+  "terrain.fil.title": "\n=== Filtervoreinstellungen FIL1 / FIL2 / FIL3 (zweiter Anschluss, ohne Senden) ===",
+  "terrain.fil.ok": "  Filter gewählt und gelesen: {detail}; ursprünglicher Filter ({origine}) zurückgestellt. OK (Breiten nie geschrieben).",
+  "terrain.fil.echec": "  !!! Filter: {detail}; ursprünglicher Filter {origine}. Am Gerät prüfen.",
+  "terrain.fil.non_propose": "  Entfällt: {detail}.",
+  "terrain.fil.pas_de_port": "  Prüfung nicht möglich: {detail}.",
+  "terrain.fil.erreur": "  Prüfung nicht möglich: {detail}"
 }

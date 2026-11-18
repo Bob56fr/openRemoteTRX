@@ -148,6 +148,9 @@ d'après la table de la mesure de TOS ; la valise signale celles qui manquent à
 attendue ; remis à l'arrêt quoi qu'il arrive ; commande brute de l'outil, la station refusant toute écriture du VOX)
 dans la phase d'émission, chacun après EMETTRE.
 
+Étape 266 : choix `f` de la valise = préréglages FIL1 / FIL2 / FIL3 choisis et relus par le SECOND PORT CI-V (26 00,
+comme la page et l'application), filtre d'origine remis, largeurs jamais écrites ; Icom avec second port seulement.
+
 ## Comparer deux qualifications du même poste (`--comparer`, étape 260)
 
 ```
