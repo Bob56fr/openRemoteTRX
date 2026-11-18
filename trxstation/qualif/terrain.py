@@ -237,6 +237,7 @@ class Session:
     drills: dict[str, dict] = field(default_factory=dict)
     runs: list[dict] = field(default_factory=list)
     snapshots: dict[str, dict] = field(default_factory=dict)
+    crashers: list[str] = field(default_factory=list)       # lectures qui font tomber rigctld (constat Hamlib)
 
     FILE = "session.json"
 
@@ -466,6 +467,7 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "essais": [{"id": d.id, "facultatif": d.optional, **session.drills.get(d.id, {})} for d in all_drills()],
         "runs": session.runs,
         "releves": session.snapshots,
+        "lectures_qui_font_tomber_rigctld": session.crashers,
         "remise_en_etat": _restore_summary(session),
         "photos": sorted(p.relative_to(session.folder).as_posix() for p in (session.folder / "photos").rglob("*")
                          if p.is_file()) if (session.folder / "photos").is_dir() else [],
@@ -551,7 +553,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False)))
     station = station or (lambda: qmain.station_running(cfg.supervisor.instance_lock_port))
     control = control or (lambda start: station_control(config_path, start))
-    snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out)))
+    snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out, skip=tuple(session.crashers))))
     while True:
         note_runs(session)
         running = station()
@@ -560,14 +562,14 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         done = {r["kind"] for r in session.runs}
 
         def tick(ok) -> str:
-            return "✓" if ok else " "
+            return "x" if ok else " "
         out(_t("terrain.menu2", before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
                qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
                total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
                auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
         choice = ask(_t("terrain.choice")).strip().lower()
-        if choice in ("2", "3", "4") and running:
+        if choice in ("1", "2", "3", "4", "6") and running:
             out(_t("terrain.need_stopped"))
         elif choice == "1":
             take_snapshot(session, "avant", snapshot, out=out)
@@ -621,38 +623,67 @@ class ReadOnlyRig:
         return await self._client._command(line)
 
 
-async def read_state(rig: ReadOnlyRig, profile) -> dict:
-    """Tout ce qui est lisible et stable : fréquence, mode, split, RIT, XIT, fonctions, niveaux (sans les mesures),
-    paramètres. Valeur = réponse de rigctld, ou « RPRT n » si refusée."""
-    from ..gateway.cat.client import FUNC_RE, LEVEL_RE, RigError
+CRASHED = "RIGCTLD TOMBÉ sur cette lecture"
+SKIPPED = "non lu (fait tomber rigctld)"
+MAX_RESTARTS = 4
+RESTART_PAUSE_S = 1.5        # port série libéré par le rigctld tombé
+
+
+def state_lines(profile) -> list[str]:
+    """Lectures du relevé : fréquence, mode, split, RIT, XIT, PTT, fonctions, niveaux et paramètres stables (ni les
+    mesures ni l'horloge du poste : `_VARYING` de l'exploration)."""
+    from ..gateway.cat.client import FUNC_RE, LEVEL_RE
     from .explore import _VARYING, ACTION_PREFIXES
     lines = list(BASE_READS) + ["t"]
     lines += [f"u {n}" for n in profile.get_functions if FUNC_RE.fullmatch(n) and not n.startswith(ACTION_PREFIXES)]
     lines += [f"l {n}" for n in profile.get_levels if LEVEL_RE.fullmatch(n) and n not in _VARYING]
-    lines += [f"p {n}" for n in profile.get_params if LEVEL_RE.fullmatch(n)]
-    state = {}
+    lines += [f"p {n}" for n in profile.get_params if LEVEL_RE.fullmatch(n) and n not in _VARYING]
+    return lines
+
+
+def _shown(values: dict) -> str:
+    return " ".join(f"{k}={v}" for k, v in sorted(values.items()) if not k.startswith("#")) or \
+        " ".join(v for k, v in sorted(values.items()))
+
+
+async def read_state(rig: ReadOnlyRig, lines: list[str], state: dict) -> str | None:
+    """Lit `lines` dans `state` (« RPRT n » si refusée) ; renvoie la lecture qui a FAIT TOMBER rigctld, ou None."""
+    from ..gateway.cat.client import CatConnectionError, RigError
     for line in lines:
         try:
-            values = await rig.read(line)
-            state[line] = " ".join(f"{k}={v}" for k, v in sorted(values.items()) if not k.startswith("#")) or \
-                " ".join(v for k, v in sorted(values.items()))
+            state[line] = _shown(await rig.read(line))
         except RigError as exc:
             state[line] = f"RPRT {exc.code}"
-    return state
+        except CatConnectionError:
+            state[line] = CRASHED
+            return line
+    return None
 
 
-async def snapshot_session(cfg, profile, *, out: Callable[[str], None] = print) -> dict:
-    """Relevé par le rigctld de la station s'il répond, sinon par un rigctld lancé pour l'occasion."""
+async def snapshot_session(cfg, profile, *, out: Callable[[str], None] = print, skip=()) -> dict:
+    """Relevé par un rigctld LANCÉ POUR L'OCCASION (station arrêtée). Une lecture qui fait tomber rigctld (vu :
+    « p KEYERTYPE », IC-7300MK2 et Hamlib 4.7.2 sous Windows) est notée, rigctld relancé, la suite lue ; `skip` :
+    lectures déjà connues pour le faire tomber, jamais refaites."""
     from ..gateway.cat.client import RigctldClient
     from . import main as qmain
-    host, port = cfg.network.rigctld_host, cfg.network.rigctld_port
-    async with qmain.rigctld_session(cfg, spawn=not qmain._port_open(host, port), out=out) as (h, p):
-        client = RigctldClient(h, p, timeout=3.0)
-        await client.connect()
-        try:
-            return await read_state(ReadOnlyRig(client), profile)
-        finally:
-            await client.close()
+    state = {line: SKIPPED for line in skip}
+    todo = [line for line in state_lines(profile) if line not in state]
+    for attempt in range(MAX_RESTARTS):
+        if not todo:
+            break
+        if attempt:
+            await asyncio.sleep(RESTART_PAUSE_S)
+        async with qmain.rigctld_session(cfg, spawn=True, out=out) as (h, p):
+            client = RigctldClient(h, p, timeout=3.0)
+            await client.connect()
+            try:
+                crashed = await read_state(ReadOnlyRig(client), todo, state)
+            finally:
+                await client.close()
+        if crashed is None:
+            break
+        todo = todo[todo.index(crashed) + 1:]
+    return state
 
 
 def take_snapshot(session: "Session", which: str, snapshot: Callable[[], dict], *, out: Callable[[str], None]) -> None:
@@ -667,13 +698,20 @@ def take_snapshot(session: "Session", which: str, snapshot: Callable[[], dict], 
     (folder / f"releve-{which}.json").write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n",
                                                  encoding="utf-8")
     session.snapshots[which] = {"at": _now(), "count": len(state)}
+    for line, value in state.items():
+        if value == CRASHED and line not in session.crashers:
+            session.crashers.append(line)
+            out(_t("terrain.snapshot_crash", line=line))
     session.save()
     out(_t("terrain.snapshot_done", count=len(state)))
 
 
 def differences(before: dict, after: dict) -> list[dict]:
+    """Réglages différents ; jamais une lecture absente d'un côté ou qui fait tomber rigctld (rien de comparable)."""
+    unknown = {CRASHED, SKIPPED, None}
     keys = sorted((set(before) | set(after)) - NOT_COMPARED)
-    return [{"lecture": k, "avant": before.get(k), "apres": after.get(k)} for k in keys if before.get(k) != after.get(k)]
+    return [{"lecture": k, "avant": before.get(k), "apres": after.get(k)} for k in keys
+            if before.get(k) != after.get(k) and before.get(k) not in unknown and after.get(k) not in unknown]
 
 
 def show_differences(session: "Session", *, out: Callable[[str], None]) -> list[dict] | None:
@@ -701,7 +739,7 @@ def drills_menu(session: Session, cfg, state_dir: Path, *, ask: Ask, out: Callab
         for n, d in enumerate(DRILLS, 1):
             r = session.drills.get(d.id, {}).get("result")
             label = _t(f"terrain.drill.{d.id}.title").strip()
-            out(f"  {n:2d}  {label}  [{_t('terrain.result.' + r) if r else '—'}]")
+            out(f"  {n:2d}  {label}  [{_t('terrain.result.' + r) if r else '-'}]")
         choice = ask(_t("terrain.drills_choice")).strip().lower()
         if choice in ("r", "q", ""):
             return

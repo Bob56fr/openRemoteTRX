@@ -62,6 +62,15 @@ OUT_OF_RANGE_STEP_HZ = 1_000_000
 REFUSALS = (-1, -4, -9, -11, -12, -15, -17)
 
 
+class RigctldDied(Exception):
+    """Une lecture a fait TOMBER rigctld (le processus ne répond plus) : l'exploration s'arrête net ; l'appelant
+    relance rigctld et recommence sans cette lecture (vu : « p KEYERTYPE », IC-7300MK2 et Hamlib 4.7.2 sous Windows)."""
+
+    def __init__(self, line: str) -> None:
+        super().__init__(line)
+        self.line = line
+
+
 class TxDetected(Exception):
     """Le poste est en émission (ou son PTT est illisible) : l'exploration s'arrête sans rien écrire.
     `key` / `fields` : même cause dans la langue de l'outil (affichage) ; le texte (français) va au rapport."""
@@ -135,8 +144,12 @@ def _stats(values: list[float]) -> dict:
 class Exploration:
     def __init__(self, client: RigctldClient, profile: HamlibProfile, *, out: Callable[[str], None] = print,
                  note: Callable[[str], None] = lambda text: None, writes: bool = True, burst: int = 300,
-                 settle_s: float = 1.5, reconnects: int = 3):
+                 settle_s: float = 1.5, reconnects: int = 3, alive: Callable[[], bool] | None = None,
+                 skip: frozenset[str] = frozenset()):
+        """`alive` : rigctld (le vrai, derrière le relais de trace) répond-il encore ? `skip` : lectures qui l'ont
+        déjà fait tomber, jamais refaites."""
         self.client, self.profile, self.out, self.note = client, profile, out, note
+        self.alive, self.skip, self.dead = alive, skip, ""
         self.writes, self.burst, self.settle_s, self.reconnects = writes, burst, settle_s, reconnects
         self.result = ExplorationResult()
         self._times: dict[str, list[float]] = {}
@@ -155,12 +168,17 @@ class Exploration:
     async def _send(self, line: str, family: str = "") -> tuple[dict | None, BaseException | None, float]:
         """Une commande rigctld ; (valeurs, erreur, durée en ms). Une liaison perdue est reprise une fois."""
         t0 = time.perf_counter()
+        if self.dead:                                       # plus aucune attente sur un rigctld tombé
+            return None, CatConnectionError(f"rigctld tombé sur « {self.dead} »"), 0.0
         try:
             values = await self.client._command(line)      # lecture générique : la couche CAT n'expose que sa liste
         except RigError as exc:
             return None, exc, (time.perf_counter() - t0) * 1000
         except (CatConnectionError, CatProtocolError, OSError) as exc:
             ms = (time.perf_counter() - t0) * 1000
+            if self.alive is not None and not self.alive():
+                self.dead = line
+                raise RigctldDied(line) from exc
             try:
                 await self.client.connect()
             except CatConnectionError:
@@ -252,6 +270,9 @@ class Exploration:
             for name in names:
                 if not pattern.fullmatch(name):
                     self.probe(f"{kind}_{name}", kind, name, None, "nom refusé par la couche CAT (caractères)")
+                    continue
+                if f"{letter} {name}" in self.skip:
+                    self.probe(f"{kind}_{name}", kind, name, False, "non lu : cette lecture fait tomber rigctld")
                     continue
                 if kind == "read_func" and name.startswith(ACTION_PREFIXES):
                     self.probe(f"{kind}_{name}", kind, name, None, "fonction d'action (envoi) : lecture sans objet, non lue")

@@ -331,7 +331,7 @@
   "terrain.drill.reboot.title": "\n--- 10. (facultatif) Redémarrage complet du PC ---",
   "terrain.drill.reboot.how": "Redémarre le PC poste allumé, puis relance cet outil avec --session et joue cet essai : il relit le poste.",
   "terrain.drill.reboot.expected": "le poste n'est jamais passé en émission",
-  "terrain.menu2": "  1 [{before}] Relevé du poste AVANT (lecture seule ; photos des menus dans {photo_dir})\n  2 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  3 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  4       Qualification sans émission (station ARRÊTÉE)\n  5       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  6 [{after}] Relevé du poste APRÈS et différences à remettre à la main\n  7       Fabriquer le rapport pour Claude (zip ; {photos} photo(s))\n  8       Essais automatiques par un client automatique (station EN MARCHE, compte opérateur) : {auto}/{auto_total}\n  a / d   Arrêter / démarrer la station du PC\n  q       Quitter (la session est gardée : --session pour la reprendre)",
+  "terrain.menu2": "  1 [{before}] Relevé du poste AVANT (lecture seule, station ARRÊTÉE ; photos des menus dans {photo_dir})\n  2 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  3 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  4       Qualification sans émission (station ARRÊTÉE)\n  5       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  6 [{after}] Relevé du poste APRÈS et différences à remettre à la main (station ARRÊTÉE)\n  7       Fabriquer le rapport pour Claude (zip ; {photos} photo(s))\n  8       Essais automatiques par un client automatique (station EN MARCHE, compte opérateur) : {auto}/{auto_total}\n  a / d   Arrêter / démarrer la station du PC\n  q       Quitter (la session est gardée : --session pour la reprendre)",
   "terrain.station_running": "Station du PC : EN MARCHE",
   "terrain.station_stopped": "Station du PC : arrêtée",
   "terrain.need_stopped": "La station est en marche : arrête-la d'abord (a), ces outils lancent leur propre rigctld.",
@@ -365,5 +365,8 @@
   "terrain.drill.auto_out_of_band.expected": "émission refusée, aucune émission vue sur le poste",
   "terrain.drill.auto_tot.title": "\n--- A5. TOT (client automatique) ---",
   "terrain.drill.auto_tot.how": "Le client émet sans rien faire d'autre (battements normaux) ; TOT de la station : {tot} s.",
-  "terrain.drill.auto_tot.expected": "coupure au bout de {tot} s (± 2 s)"
+  "terrain.drill.auto_tot.expected": "coupure au bout de {tot} s (± 2 s)",
+  "terrain.snapshot_crash": "!!! La lecture « {line} » a fait tomber rigctld (défaut de Hamlib à signaler) : rigctld relancé, elle ne sera plus faite.",
+  "explore.rigctld_crash": "!!! La lecture « {line} » a fait tomber rigctld (défaut de Hamlib) : rigctld relancé, exploration reprise sans elle.",
+  "finding.rigctld_crash.title": "La lecture « {line} » fait tomber rigctld"
 }

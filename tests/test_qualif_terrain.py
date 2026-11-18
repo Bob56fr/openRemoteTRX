@@ -227,8 +227,8 @@ def test_the_menu_runs_the_existing_tools_and_quits(tmp_path):
 
 
 def test_the_tools_that_start_their_own_rigctld_are_refused_while_the_station_runs(tmp_path):
-    code, calls, shown = _menu(tmp_path, ["2", "3", "4", "q"], running=True)
-    assert calls == [] and shown.count("arrête-la d'abord") == 3
+    code, calls, shown = _menu(tmp_path, ["1", "2", "3", "4", "6", "q"], running=True)
+    assert calls == [] and shown.count("arrête-la d'abord") == 5
 
 
 def test_before_and_after_snapshots_list_what_to_restore_by_hand(tmp_path):
@@ -275,7 +275,8 @@ def test_the_snapshot_never_sends_a_write():
 def test_the_snapshot_reads_settings_but_not_meters_on_a_fake_rig():
     from types import SimpleNamespace
     from trxstation.gateway.cat.client import RigctldClient
-    profile = SimpleNamespace(get_functions=("NB", "SEND_MORSE"), get_levels=("AF", "STRENGTH"), get_params=())
+    profile = SimpleNamespace(get_functions=("NB", "SEND_MORSE"), get_levels=("AF", "STRENGTH"),
+                              get_params=("BEEP", "TIME"))
 
     async def go():
         fake = FakeRigctld()
@@ -283,13 +284,73 @@ def test_the_snapshot_reads_settings_but_not_meters_on_a_fake_rig():
         client = RigctldClient("127.0.0.1", fake.port, timeout=1.0)
         await client.connect()
         try:
-            return await terrain.read_state(terrain.ReadOnlyRig(client), profile)
+            state = {}
+            assert await terrain.read_state(terrain.ReadOnlyRig(client), terrain.state_lines(profile), state) is None
+            return state
         finally:
             await client.close()
             await fake.stop()
     state = asyncio.run(go())
     assert "f" in state and "u NB" in state and "l AF" in state
-    assert "l STRENGTH" not in state and "u SEND_MORSE" not in state
+    assert "l STRENGTH" not in state and "u SEND_MORSE" not in state and "p TIME" not in state   # mesures, horloge
+
+
+def test_a_read_that_crashes_rigctld_is_noted_and_never_compared(tmp_path):
+    from trxstation.gateway.cat.client import CatConnectionError
+
+    class Crashy:
+        async def _command(self, line):
+            if line == "p KEYERTYPE":          # vu sur l'IC-7300MK2, Hamlib 4.7.2 sous Windows
+                raise CatConnectionError("liaison rigctld perdue")
+            return {"#1": "1"}
+    state = {}
+    lines = ["f", "p KEYERTYPE", "p AFIF"]
+    assert asyncio.run(terrain.read_state(terrain.ReadOnlyRig(Crashy()), lines, state)) == "p KEYERTYPE"
+    assert state == {"f": "1", "p KEYERTYPE": terrain.CRASHED}           # la suite sera lue après la relance
+    session = _session(tmp_path)
+    shown = []
+    terrain.take_snapshot(session, "avant", lambda: dict(state), out=shown.append)
+    assert session.crashers == ["p KEYERTYPE"] and any("KEYERTYPE" in line for line in shown)
+    after = {"f": "1", "p KEYERTYPE": terrain.SKIPPED}
+    assert terrain.differences(state, after) == []
+
+
+def test_the_snapshot_restarts_rigctld_after_a_crash_and_reads_the_rest(monkeypatch):
+    import contextlib
+    from types import SimpleNamespace
+    from trxstation.gateway.cat import client as catclient
+    from trxstation.qualif import main as qmain
+    sessions = []
+
+    @contextlib.asynccontextmanager
+    async def fake_session(cfg, *, spawn, out=print):
+        assert spawn is True                        # toujours son propre rigctld (station arrêtée)
+        sessions.append(1)
+        yield "127.0.0.1", 1
+
+    class Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def connect(self):
+            pass
+
+        async def close(self):
+            pass
+
+        async def _command(self, line):
+            if line == "p KEYERTYPE":
+                raise catclient.CatConnectionError("tombé")
+            return {"#1": "0"}
+    monkeypatch.setattr(qmain, "rigctld_session", fake_session)
+    monkeypatch.setattr(catclient, "RigctldClient", Client)
+    monkeypatch.setattr(terrain, "RESTART_PAUSE_S", 0)
+    profile = SimpleNamespace(get_functions=(), get_levels=(), get_params=("KEYERTYPE", "AFIF"))
+    state = asyncio.run(terrain.snapshot_session(None, profile, out=lambda s: None))
+    assert len(sessions) == 2 and state["p KEYERTYPE"] == terrain.CRASHED and state["p AFIF"] == "0"
+    sessions.clear()
+    state = asyncio.run(terrain.snapshot_session(None, profile, out=lambda s: None, skip=("p KEYERTYPE",)))
+    assert len(sessions) == 1 and state["p KEYERTYPE"] == terrain.SKIPPED
 
 
 # --------------------------------------------------------------------------- textes
@@ -305,3 +366,15 @@ def test_every_drill_text_exists_in_the_four_languages():
 def test_terrain_refuses_the_other_modes(capsys):
     from trxstation.qualif import main as qmain
     assert qmain.main(["--terrain", "--explorer"]) == qmain.EXIT_CONFIG
+
+
+def test_what_the_kit_prints_fits_a_windows_console(tmp_path):
+    """Sortie redirigée sous Windows (console web, journal) = page de code 1252 : un « ✓ » y faisait PLANTER la valise
+    sur le vrai poste (étape 254)."""
+    for lang in LANGS:
+        cat = json.loads((FOLDER / f"qualif.{lang}.json").read_text(encoding="utf-8"))
+        for key, text in cat.items():
+            if key.startswith("terrain.") or key == "explore.rigctld_crash":
+                text.encode("cp1252")
+    _, _, shown = _menu(tmp_path, ["7", "q"])
+    shown.encode("cp1252")

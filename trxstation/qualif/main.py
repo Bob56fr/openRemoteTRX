@@ -35,8 +35,8 @@ from ..procutil import station_running
 from ..errors import codes
 from ..errors.emit import render
 from ..gateway.cat import RigctldClient
-from .coherence import analyse_caps, render_findings
-from .explore import Exploration
+from .coherence import ATTENTION, HAMLIB, Finding, analyse_caps, render_findings
+from .explore import Exploration, RigctldDied
 from .explore_report import write_report as write_explore_report
 from .plan import build_plan, render_plan_shown
 from .profile import HamlibProfile, hamlib_version, parse_profile
@@ -76,6 +76,10 @@ def render_plan_with_findings(profile: HamlibProfile) -> str:
 
 class RigctldUnavailable(Exception):
     pass
+
+
+CRASH_RESTARTS = 3          # rigctld relancé au plus 3 fois si des lectures le font tomber (exploration)
+CRASH_PAUSE_S = 1.5
 
 
 @contextlib.asynccontextmanager
@@ -199,25 +203,48 @@ async def run_explore(cfg: Config, profile: HamlibProfile, dump_text: str, outpu
     def say(text: str) -> None:
         journal.append(text)
         out(text)
+    crashers: list[str] = []
     try:
-        async with rigctld_session(cfg, spawn=spawn, out=say) as (host, port):
-            proxy = TraceProxy(host, port)
-            await proxy.start()
-            client = RigctldClient("127.0.0.1", proxy.port, timeout=3.0)
+        for attempt in range(CRASH_RESTARTS + 1):
+            if attempt:
+                await asyncio.sleep(CRASH_PAUSE_S)          # port série libéré par le rigctld tombé
             try:
-                await client.connect()
-                exploration = Exploration(client, profile, out=say, note=proxy.note, writes=writes, burst=burst,
-                                          settle_s=settle_s)
-                result = await exploration.run()
-            finally:
-                await client.close()
-                await proxy.stop()
+                async with rigctld_session(cfg, spawn=spawn, out=say) as (host, port):
+                    proxy = TraceProxy(host, port)
+                    await proxy.start()
+                    client = RigctldClient("127.0.0.1", proxy.port, timeout=3.0)
+                    try:
+                        await client.connect()
+                        exploration = Exploration(client, profile, out=say, note=proxy.note, writes=writes,
+                                                  burst=burst, settle_s=settle_s,
+                                                  alive=lambda h=host, p=port: _port_open(h, p),
+                                                  skip=frozenset(crashers))
+                        result = await exploration.run()
+                    finally:
+                        await client.close()
+                        await proxy.stop()
+                break
+            except RigctldDied as exc:
+                crashers.append(exc.line)
+                say(_t("explore.rigctld_crash", line=exc.line))
+                if not spawn or attempt == CRASH_RESTARTS:
+                    out(_t("explore.impossible", error=_t("explore.rigctld_crash", line=exc.line)))
+                    return EXIT_HAMLIB
     except RigctldUnavailable as exc:
         out(str(exc))
         return EXIT_HAMLIB
     except ConnectionError as exc:                        # liaison impossible : rien n'a été écrit
         out(_t("explore.impossible", error=exc))
         return EXIT_HAMLIB
+    for line in crashers:
+        result.findings.append(Finding(
+            f"rigctld_crash_{line.replace(' ', '_')}", ATTENTION, HAMLIB, f"La lecture « {line} » fait tomber rigctld",
+            "Le processus rigctld s'arrête sur cette lecture déclarée par dump_caps ; l'exploration l'a relancé et a "
+            "continué sans elle. La station ne fait jamais cette lecture.",
+            f"rigctld crashes on « {line} »",
+            f"The rigctld process dies when this read (declared by dump_caps) is sent; reproduced with rigctl "
+            f"(model {profile.model}, Hamlib {profile.hamlib_version or '?'}).",
+            key="rigctld_crash", args={"line": line}))
     say(_t("explore.findings_title"))
     say(render_findings(result.findings, shown=True))
     if result.restored is False:

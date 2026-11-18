@@ -9,6 +9,7 @@ fermée, s'arrête net si le poste émet, et rétablit la fréquence d'origine.
 import asyncio
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -343,3 +344,44 @@ def test_explorer_is_cancelled_without_oui(tmp_path):
 
 def test_trace_proxy_is_still_used_by_the_explorer():
     assert "TraceProxy" in Path(qmain.__file__).read_text(encoding="utf-8") and TraceProxy
+
+
+# --------------------------------------------------------------------------- rigctld qui tombe (étape 254)
+
+def _crash_on(ex, line):
+    """rigctld « tombe » sur `line` : connexion perdue, et le vrai port ne répond plus (alive = False)."""
+    from trxstation.gateway.cat.client import CatConnectionError
+    original = ex.client._command
+    dead = []
+
+    async def command(text):
+        if text == line or dead:
+            dead.append(text)
+            raise CatConnectionError("liaison rigctld perdue")
+        return await original(text)
+    ex.client._command = command
+    ex.alive = lambda: not dead
+
+
+def test_a_read_that_kills_rigctld_stops_the_exploration_at_once():
+    from trxstation.qualif.explore import RigctldDied
+
+    async def scenario(ex, fake, out):
+        _crash_on(ex, "p KEYERTYPE")
+        t0 = time.perf_counter()
+        with pytest.raises(RigctldDied) as info:
+            await ex.run()
+        assert info.value.line == "p KEYERTYPE" and time.perf_counter() - t0 < 20
+        assert ex.dead == "p KEYERTYPE"
+        values, error, ms = await ex._send("f")                 # plus aucune attente ensuite
+        assert values is None and error is not None and ms == 0.0
+    explore_run(scenario, profile_text=REAL_472)
+
+
+def test_the_exploration_skips_a_read_known_to_kill_rigctld():
+    async def scenario(ex, fake, out):
+        result = await ex.run()
+        probe = next(p for p in result.probes if p.id == "read_param_KEYERTYPE")
+        assert probe.ok is False and "tomber rigctld" in probe.detail
+        assert "p KEYERTYPE" not in sent(fake, "p") and "p BEEP" in sent(fake, "p")
+    explore_run(scenario, profile_text=REAL_472, skip=frozenset({"p KEYERTYPE"}))

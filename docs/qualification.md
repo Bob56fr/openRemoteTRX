@@ -87,7 +87,9 @@ MARCHE), 6 relevé APRÈS et différences, 7 rapport zip, a / d arrêter / déma
 et 1.1), q quitter.
 
 Relevés (1 et 6) : LECTURE SEULE (`ReadOnlyRig` : `f m t s j z u l p` seulement, toute autre commande refusée avant
-l'envoi), par le rigctld de la station s'il répond, sinon par un rigctld lancé pour l'occasion ; fréquence, mode,
+l'envoi), station ARRÊTÉE, par un rigctld lancé pour l'occasion (étape 255 : une lecture qui le fait tomber est notée,
+rigctld relancé, la suite lue, et cette lecture n'est plus jamais faite ; vu : `p KEYERTYPE` sur l'IC-7300MK2 avec
+Hamlib 4.7.2) ; fréquence, mode,
 split, RIT, XIT, fonctions, niveaux SANS les mesures (S-mètre, ALC…), paramètres ; `reglages/releve-avant.json`,
 `releve-apres.json`, `differences.json` = « À REMETTRE À LA MAIN » ; rapport : `remise_en_etat` (« NON vérifiée »
 si un relevé manque). Photos des menus du poste : dossiers `photos/avant` et `photos/apres` de la session (copiées à

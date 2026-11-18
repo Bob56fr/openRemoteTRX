@@ -81,3 +81,15 @@ Measured on 2026-11-16 (USB, CP2105 Enhanced port, 38400 baud, rigctld with `-C 
 
 **Request**: use the FTDX10 form of the processor command (or drop `COMP` from its get functions), avoid the busy
 retries on a definite `?;`, and fix the lower bound of the `COMP` level.
+
+## 5. IC-7300MK2 (model 3094, Hamlib 4.7.2, Windows): `p KEYERTYPE` crashes rigctl / rigctld
+
+Measured on 2026-11-18 (USB, CI-V port A, 115200 baud). `KEYERTYPE` is listed in "Get parameters" by dump_caps.
+
+- `rigctl -m 3094 -r COM8 -s 115200 p KEYERTYPE` ends with a **segmentation fault** (exit code 139); the same read sent
+  to `rigctld` kills the rigctld process (the client sees the connection reset, the port stops listening).
+- The radio is not affected (still in receive, frequency unchanged); every other declared parameter reads fine
+  (`BACKLIGHT`, `BEEP`, `TIME`, `SCREENSAVER`, `AFIF`), and `ANN` is refused with `RPRT -1`.
+
+**Request**: fix the crash (or drop `KEYERTYPE` from the IC-7300MK2 get parameters). A read declared by dump_caps
+should never be able to kill rigctld: one client then takes the radio control away from every other client.

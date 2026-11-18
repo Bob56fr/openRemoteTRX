@@ -270,7 +270,7 @@ def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], st
     while True:
         for n, d in enumerate(AUTO_DRILLS, 1):
             r = session.drills.get(d.id, {}).get("result")
-            out(f"  {n}  {_t(f'terrain.drill.{d.id}.title').strip()}  [{_t('terrain.result.' + r) if r else '—'}]")
+            out(f"  {n}  {_t(f'terrain.drill.{d.id}.title').strip()}  [{_t('terrain.result.' + r) if r else '-'}]")
         choice = ask(_t("terrain.drills_choice")).strip().lower()
         if choice in ("r", "q", ""):
             return
