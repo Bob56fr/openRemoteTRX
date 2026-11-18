@@ -153,6 +153,8 @@
     $("m-alc").textContent = fmt(m.alc, 2);
     $("m-s").textContent = fmt(m.s_db, 0, " dB");
     document.querySelector(".mesures").classList.toggle("vieilles", m.actif === false);
+    // Panneau de droite calé sous l'en-tête, dont la hauteur change avec le bandeau ÉMISSION
+    document.documentElement.style.setProperty("--haut", ($("bandeau").offsetHeight + 12) + "px");
   }
 
   function addLine(text) {
@@ -167,6 +169,9 @@
   function showLines() {
     $("journal").textContent = lines.join("\n");
     $("maintenant").textContent = finished ? t("finished") : lastLines(1);
+    const recent = $("recent");
+    recent.textContent = lastLines(12);
+    recent.scrollTop = recent.scrollHeight;
   }
 
   // ------------------------------------------------------------------ tuiles
@@ -175,7 +180,11 @@
     return it.texte || T["menu." + it.cle] || it.cle;
   }
 
+  let follow = null;                // tuile en cours : gardée visible pendant l'essai
+  let followed = null;
+
   function renderTiles() {
+    follow = null;
     const box = $("themes");
     box.replaceChildren();
     const menu = menuQuestion();
@@ -202,6 +211,7 @@
         const running = current === it.cle && !menu;
         const state = running ? "encours" : it.etat;
         const li = el("li", "essai " + state);
+        if (running) follow = li;
         li.appendChild(el("span", "pt " + state));
         const txt = el("div");
         const name = itemLabel(it);
@@ -308,12 +318,10 @@
     zone.hidden = !q;
     if (!q) return;
     zone.appendChild(el("h2", "", t("question")));
-    const recent = el("pre", "lignes", lastLines(10));
     if (q.genre === "choix" && Array.isArray(q.choix)) renderChoice(zone, q);
     else if (q.genre === "oui_non") renderButtons(zone, q, [[t("yes"), "o"], [t("no"), "n"], [t("enter"), "", true]]);
     else if (q.genre === "fait") renderButtons(zone, q, [[t("done"), ""]]);
     else renderInput(zone, q, q.genre === "secret");
-    zone.appendChild(recent);
   }
 
   function render() {
@@ -322,6 +330,11 @@
     renderQuestion();
     renderTiles();
     showMeters();
+    if (follow && current !== followed) {          // nouvelle tuile en cours : amenée à l'écran, en face du panneau
+      followed = current;
+      follow.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    if (!current) followed = null;
   }
 
   // ------------------------------------------------------------------ fenêtre d'intervention

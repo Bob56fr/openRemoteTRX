@@ -419,6 +419,8 @@
   "terrain.auto.account_ok": "Compte « {account} » vérifié.",
   "terrain.auto.link_error": "Le client automatique n'a pas pu parler à la station ({reason}) : enchaînement arrêté, compte à redonner.",
   "terrain.seq.by_hand": "Essais À LA MAIN : ils se jouent depuis la page DE LA STATION ({url}, compte opérateur), l'application ou le micro du poste — pas depuis cette page. Ouvre-la dans un autre onglet, puis Entrée = continuer, s = sauter les essais à la main : ",
+  "terrain.auto.account_file": "Compte « {account} » : mot de passe lu dans {file}.",
+  "terrain.auto.skipped": "Essai automatique passé (aucun compte opérateur donné) : la suite continue.",
   "terrain.stopped": "\nSTOP demandé depuis la page : essai interrompu, émission coupée (T 0). Retour au menu.",
   "terrain.rx.refused": "Non confirmé : réception sur antenne non lancée.",
   "terrain.rx.failed": "Mesure de réception impossible : {error}",

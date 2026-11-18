@@ -940,14 +940,18 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         out(_t("terrain.bands_missing", bands=", ".join(missing)))
     from . import tiles as tl
     from .autodrills import auto_menu, operator_factory, play_auto
-    operator = {"factory": None}                 # compte des essais automatiques : demandé une fois
+    # Compte des essais automatiques : demandé une fois ; « declined » = pas de compte (annulé) pendant cet
+    # enchaînement : les essais automatiques sont passés, le reste continue (demande de l'utilisateur, 2026-11-19).
+    operator = {"factory": None, "declined": False}
+    password_file = config_path.resolve().parent / "valise.pw" if config_path is not None else None
 
     def label(drill) -> str:
         return _t(f"terrain.drill.{drill.id}.title").strip().strip("-").strip()
 
     def auto_factory():
-        if operator["factory"] is None:
-            operator["factory"] = operator_factory(cfg, ask=ask, out=out)
+        if operator["factory"] is None and not operator["declined"]:
+            operator["factory"] = operator_factory(cfg, ask=ask, out=out, password_file=password_file)
+            operator["declined"] = operator["factory"] is None
         return operator["factory"]
 
     def wait_station(want: bool, timeout: float = 90.0) -> bool:
@@ -985,6 +989,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             notice(bus, _t("terrain.seq.nothing"))
             return True
         out(_t("terrain.seq.start", count=len(keys)))
+        operator["declined"] = False
         by_hand = None                                   # réponse à l'annonce des essais à la main
         for rank, key in enumerate(keys, 1):
             if key.startswith("5."):
@@ -1082,14 +1087,18 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         elif choice == "8":
             if not running:
                 notice(bus, _t("terrain.need_running"))
-            found = auto_menu(session, cfg, state_dir, ask=ask, out=out, client_factory=operator["factory"])
-            operator["factory"] = operator["factory"] or found
+            factory = auto_factory()
+            if factory is None:
+                notice(bus, _t("terrain.auto.skipped"))
+            else:
+                auto_menu(session, cfg, state_dir, ask=ask, out=out, client_factory=factory)
         elif drill is not None and choice.startswith("8."):
             if not running:
                 notice(bus, _t("terrain.need_running"))
             factory = auto_factory()
-            if factory is None:
-                return False
+            if factory is None:                         # pas de compte : cet essai est passé, la suite continue
+                notice(bus, _t("terrain.auto.skipped"))
+                return True
             record = asyncio.run(play_auto(drill, session, client_factory=factory, host=cfg.network.rigctld_host,
                                            port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask,
                                            out=out))
@@ -1145,6 +1154,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             if choice in ("q", "0", ""):
                 out(_t("terrain.bye", folder=folder))
                 return 0
+            operator["declined"] = False                # action choisie à la main : le compte peut être redonné
             act(choice)
         except (KeyboardInterrupt, QuestionStopped):
             if not bus.consume_stop():              # Ctrl+C au terminal : la valise s'arrête, comme avant

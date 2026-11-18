@@ -119,7 +119,7 @@ def test_a_refused_charge_stops_the_chain_and_nothing_transmits(tmp_path):
 
 def test_automatic_tests_ask_the_operator_account_once(tmp_path, monkeypatch):
     asked, played = [], []
-    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out: asked.append(1) or (lambda: None))
+    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out, **kw: asked.append(1) or (lambda: None))
 
     async def fake_play(drill, session, **kw):
         played.append(drill.id)
@@ -208,7 +208,7 @@ def test_the_operator_account_is_checked_when_typed(tmp_path):
 
 def test_a_link_error_stops_the_chain_and_forgets_the_account(tmp_path, monkeypatch):
     asked, played = [], []
-    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out: asked.append(1) or (lambda: None))
+    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out, **kw: asked.append(1) or (lambda: None))
 
     async def refused(drill, session, **kw):
         played.append(drill.id)
@@ -240,3 +240,42 @@ def test_a_chain_announces_the_hand_played_tests_and_can_skip_them(tmp_path, mon
     assert len(asked) == 1 and "http://127.0.0.1:" in asked[0]["texte"]
     events = _run(tmp_path, ["theme:main", "", "q"], running=True)
     assert len(played) == len(tiles.manual_keys()) - 1                   # tous sauf le redémarrage du PC (facultatif)
+
+
+def test_the_password_of_the_qualification_folder_is_used_without_asking(tmp_path):
+    """Dossier de qualification : valise.pw à côté de station.toml ; s'il ouvre un compte, rien n'est demandé."""
+    cfg = _cfg_with_account(tmp_path)
+    pw = tmp_path / "valise.pw"
+    pw.write_text("motdepasse-valise-1\n", encoding="utf-8")
+    shown, made = [], []
+    got = autodrills.operator_factory(cfg, ask=lambda p: 1 / 0, out=shown.append, password_file=pw,
+                                      factory=lambda cid, p: made.append((cid, p)) or "client")
+    assert got == "client" and made == [("valise", "motdepasse-valise-1")] and "lu dans valise.pw" in shown[-1]
+    pw.write_text("autre-chose", encoding="utf-8")                       # fichier faux : on redemande
+    answers = iter([""])
+    assert autodrills.operator_factory(cfg, ask=lambda p: next(answers), out=shown.append, password_file=pw,
+                                       factory=lambda cid, p: "client") is None
+
+
+def test_cancelling_the_account_skips_the_automatic_tests_and_the_chain_goes_on(tmp_path, monkeypatch):
+    """Demande de l'utilisateur (2026-11-19) : « Annuler » sans perdre le reste de l'enchaînement."""
+    asked, played = [], []
+    monkeypatch.setattr(autodrills, "operator_factory", lambda cfg, ask, out, **kw: asked.append(1) or None)
+
+    async def fake_drill(drill, session, **kw):
+        played.append(drill.id)
+        return {}
+    monkeypatch.setattr(terrain, "play_drill", fake_drill)
+    (tmp_path / "s").mkdir()
+    s = _session(tmp_path)
+    s.connection = "charge"
+    s.save()
+    s.audio, s.snapshots = {"problems": []}, {"avant": {"count": 1}, "apres": {"count": 1}}
+    s.reception, s.spectrum, s.filters = {"verdict": "ok"}, {"verdict": "ok"}, {"verdict": "ok"}
+    s.runs = [{"kind": "explore"}, {"kind": "qualif", "verdict": "validation_en_cours", "emission": True}]
+    s.save()
+    events = _run(tmp_path, ["tout", "", "q"], running=True, explore=lambda: None, qualify=lambda no_tx: None)
+    assert asked == [1]                                                  # demandé UNE fois pour tout l'enchaînement
+    assert len(played) == len(tiles.manual_keys()) - 1                   # la suite (essais à la main) a continué
+    assert sum(e["type"] == "avis" and "Essai automatique passé" in e["texte"] for e in events) == 5
+    assert not any(e["type"] == "avis" and "Enchaînement arrêté" in e["texte"] for e in events)

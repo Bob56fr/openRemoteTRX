@@ -28,9 +28,24 @@
   </div>
 </header>
 <div id="avis" class="avis" hidden></div>
-<main>
-  <section id="zone" class="zone" hidden></section>
-  <div class="haut">
+<main class="travail">
+  <div class="gauche">
+    <div class="outils">
+      <button id="tout" type="button" class="principal"></button>
+      <button id="echecs" type="button" class="second"></button>
+      <button id="arret-seq" type="button" class="arret" hidden></button>
+      <span id="seq-info" class="seq-info"></span>
+      <span class="vide"></span>
+      <div id="legende" class="legende"></div>
+    </div>
+    <div id="themes" class="themes"></div>
+    <details class="journal">
+      <summary id="t-journal"></summary>
+      <pre id="journal"></pre>
+    </details>
+  </div>
+  <aside class="droite">
+    <section id="zone" class="zone" hidden></section>
     <section class="carte">
       <div id="maintenant" class="maintenant"></div>
       <div class="mesures">
@@ -40,26 +55,14 @@
         <div class="m"><span id="t-alc"></span><b id="m-alc">—</b></div>
         <div class="m"><span id="t-s"></span><b id="m-s">—</b></div>
       </div>
+      <pre id="recent" class="lignes"></pre>
     </section>
     <section class="carte">
       <div id="compte" class="compte"></div>
       <div class="prog"><i id="prog"></i></div>
       <div id="station-boutons" class="boutons petits"></div>
     </section>
-  </div>
-  <div class="outils">
-    <button id="tout" type="button" class="principal"></button>
-    <button id="echecs" type="button" class="second"></button>
-    <button id="arret-seq" type="button" class="arret" hidden></button>
-    <span id="seq-info" class="seq-info"></span>
-    <span class="vide"></span>
-    <div id="legende" class="legende"></div>
-  </div>
-  <div id="themes" class="themes"></div>
-  <details class="journal">
-    <summary id="t-journal"></summary>
-    <pre id="journal"></pre>
-  </details>
+  </aside>
 </main>
 <div id="intervention" class="fond" hidden>
   <div class="fenetre" role="alertdialog" aria-modal="true" aria-labelledby="iv-titre">

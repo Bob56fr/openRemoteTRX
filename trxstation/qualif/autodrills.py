@@ -278,9 +278,13 @@ def make_factory(cfg, client_id: str, password: str) -> Callable:
     return lambda: FakeClient(url, client_id, password, track=ToneTrack(active=False), ssl=ssl)
 
 
+PASSWORD_FILE = "valise.pw"     # mot de passe du compte de la valise, à côté de sa station.toml (dossier de qualification)
+
+
 def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], None],
                      factory: Callable[[str, str], Callable] | None = None,
-                     secret: Callable[[str], str] | None = None) -> Callable | None:
+                     secret: Callable[[str], str] | None = None,
+                     password_file: Path | None = None) -> Callable | None:
     """Compte opérateur des essais automatiques (demandé une fois par session de la valise) ; None si aucun.
 
     Compte et mot de passe VÉRIFIÉS tout de suite contre station.toml (essai du 2026-11-18 : un compte faux
@@ -292,6 +296,17 @@ def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], Non
     if not operators:
         _tell(ask, out, _t("terrain.auto.no_account"))
         return None
+    factory_for = factory or (lambda cid, pw: make_factory(cfg, cid, pw))
+    # Dossier de qualification : son mot de passe est dans valise.pw ; s'il ouvre un compte opérateur, rien à taper.
+    if password_file is not None and password_file.is_file():
+        try:
+            stored = password_file.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError):
+            stored = ""
+        for cid, hashed in operators.items():
+            if stored and verify_password(stored, hashed):
+                out(_t("terrain.auto.account_file", account=cid, file=password_file.name))
+                return factory_for(cid, stored)
     prompt = _t("terrain.auto.password")
     if secret is None and bus_of(ask) is not None:    # valise : champ masqué de la page ou getpass du terminal
         secret = lambda p: ask_typed(ask, p, SECRET)      # noqa: E731
@@ -303,7 +318,6 @@ def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], Non
         else:
             import getpass
             secret = getpass.getpass
-    factory_for = factory or (lambda cid, pw: make_factory(cfg, cid, pw))
     choices = [{"cle": cid, "texte": cid} for cid in operators] + [{"cle": "", "libelle": "annuler"}]
     for _ in range(3):
         client_id = ask_typed(ask, _t("terrain.auto.account_choice", accounts=", ".join(operators)), CHOICE,
