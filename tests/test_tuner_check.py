@@ -104,3 +104,32 @@ def test_icom_nb_level_range_is_corrected_from_0_10_to_0_1():
     assert parse_dump_caps(text, 3094).level_ranges["NR"] == [0.0, 1.0, 0.066667]
     nb = parse_profile(text, 3094).level_ranges["NB"]
     assert (nb.low, nb.high) == (0.0, 1.0)
+
+
+
+def test_data_mod_not_on_usb_warns_every_operator_even_without_the_tuner():
+    """DATA MOD (2026-11-19) : la voix de la station ne module en mode données que s'il est sur USB."""
+    from trxstation.spectrum.menus import data_mod_check
+
+    def notices(menus, **kw):
+        seen = {}
+
+        async def scenario(fake):
+            fake.funcs["VOX"] = 0
+            async with station(fake) as st:
+                st.ctrl.config.rig.tuner = kw.get("tuner", False)
+                st.ctrl.config.rig.model = kw.get("model", 3094)
+                phone = await connect(st, "phone", spectrum=Spectrum(menus) if menus is not None else None)
+                await asyncio.sleep(0.4)
+                seen["n"] = [m for m in phone.messages if m.get("type") == "rig_notice"]
+        run(scenario)
+        return seen["n"]
+    wrong = notices({"data_mod": 4})
+    assert [n["event"] for n in wrong] == ["data_mod"] and wrong[0]["ort"] == codes.ORT_5040
+    assert "MIC,ACC" in wrong[0]["detail"] and "USB" in wrong[0]["detail"]
+    assert notices({"data_mod": 1}) == []
+    assert notices(None) == []                                          # illisible : rien (pas d'avis sans port B)
+    assert notices({"data_mod": 4}, model=1042) == []                   # modèle sans ce réglage
+    both_ = notices({"data_mod": 0, "tuner_switch": 1, "ptt_start": 0}, tuner=True)
+    assert sorted(n["event"] for n in both_) == ["data_mod", "tuner_settings"]
+    assert data_mod_check(3094, {"data_mod": 9}) == ("data_mod", {"valeur": "valeur 9", "attendu": "USB"})

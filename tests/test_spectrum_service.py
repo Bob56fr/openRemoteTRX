@@ -38,7 +38,7 @@ class PortB:
         self.rts = self.dtr = False
         self.ticks = 0
         self.mute = False                          # True : plus rien ne sort (port réglé autrement, câble…)
-        self.menus = {b"\x00\x37": 0x01, b"\x00\x38": 0x01}   # IC-7300MK2 : [TUNER] Switch Auto, PTT Start ON
+        self.menus = {b"\x00\x37": 0x01, b"\x00\x38": 0x01, b"\x00\x85": 0x01}   # IC-7300MK2 : Auto, PTT Start ON, DATA MOD USB
 
     @property
     def in_waiting(self):
@@ -99,7 +99,7 @@ class Clock:
 def test_closed_command_list_has_no_transmit_command():
     assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
                             (0x26, 0x00), (0x1A, 0x05)}
-    assert ALLOWED[(0x1A, 0x05)] == {b"\x00\x37", b"\x00\x38"}              # réglages de menu : LECTURE seule (pas de valeur)
+    assert ALLOWED[(0x1A, 0x05)] == {b"\x00\x37", b"\x00\x38", b"\x00\x85"}              # réglages de menu : LECTURE seule (pas de valeur)
     from trxstation.spectrum.civ import decode_setting
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
         assert all(v in (None, b"\x00") or decode_setting(sub, bytes([0x27, sub]) + v) is not None for v in ALLOWED[(0x27, sub)])
@@ -788,7 +788,7 @@ def test_menus_of_the_rig_are_read_once_the_port_is_open_and_forgotten_when_it_c
         await svc.stop()
         return svc, menus
     svc, menus = asyncio.run(scenario())
-    assert menus == {"tuner_switch": 1, "ptt_start": 0} and svc.rig_menus() == {}
+    assert menus == {"tuner_switch": 1, "ptt_start": 0, "data_mod": 1} and svc.rig_menus() == {}
     writes = [w for w in rig.written if w[4:6] == b"\x1a\x05"]
     assert writes and all(len(w) == 9 for w in writes)                        # FE FE to frm 1A 05 xx xx FD : jamais de valeur
 

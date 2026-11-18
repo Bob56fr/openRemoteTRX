@@ -32,7 +32,10 @@ Règle les menus listés dans [la fiche du poste](postes/ftdx10.md), section « 
 indispensables :
 
 - **débit du CAT** identique à celui de la station (38400 bps) ;
-- **voix par l'USB** : sinon le poste module avec son propre micro, c'est-à-dire le bruit de la pièce ;
+- **voix par l'USB** : sinon le poste module avec son propre micro, c'est-à-dire le bruit de la pièce. Sur un Icom
+  (IC-7300MK2) : MENU > SET > Connectors > MOD Input > **DATA MOD = USB** (la station n'émet qu'en mode données) ;
+  le poste n'accepte la prise USB que dans DATA MOD **ou** DATA OFF MOD. Avec le second port réglé, la station le
+  vérifie à chaque connexion et te prévient s'il n'est pas sur USB ;
 - **aucune ligne RTS/DTR** pour le PTT ni la CW : sinon le poste peut passer en émission au démarrage du PC ;
 - **VOX éteint** : un VOX en marche fait émettre le poste sur un bruit de la pièce, sans aucune commande. La station le vérifie à chaque connexion d'un opérateur et le **coupe** s'il est en marche (message dans le journal de la page, code ORT-5034). Sur certains postes il reste en marche dans un mode alors qu'il est coupé dans un autre (vu sur l'IC-7300MK2 : coupé en mode données, encore en marche en phonie) ;
 - **coupleur d'antenne intégré** (si l'antenne passe par lui) : l'accord doit partir tout seul à la prise d'émission

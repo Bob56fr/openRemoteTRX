@@ -229,13 +229,14 @@ class ControlSession:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"réglages du coupleur pour {self.client_id}")
 
     async def _tuner_check(self, render) -> None:
-        """Décision de l'utilisateur (2026-11-19) : coupleur du poste déclaré utilisé (`[rig] tuner`) => ses réglages
-        d'accord automatique sont LUS (second port CI-V, table par modèle) et l'opérateur est PRÉVENU s'ils sont faux ou
-        illisibles. La station ne les écrit jamais."""
+        """Décisions de l'utilisateur (2026-11-19) : réglages de menu du poste LUS à la connexion (second port CI-V, table
+        par modèle), JAMAIS écrits : coupleur déclaré utilisé (`[rig] tuner`) => accord automatique (faux ou illisible :
+        avis) ; DATA MOD qui n'est pas sur USB => avis (la voix de la station ne modulerait pas en mode données)."""
         cfg = self.ctrl.config
-        if not getattr(cfg.rig, "tuner", False):
+        from ...spectrum.menus import RIG_MENUS, data_mod_check, tuner_check
+        tuner = getattr(cfg.rig, "tuner", False)
+        if not tuner and "data_mod" not in RIG_MENUS.get(cfg.rig.model, {}):
             return
-        from ...spectrum.menus import tuner_check
         values: dict = {}
         spectrum = self.spectrum
         if spectrum is not None and getattr(spectrum, "active", False) and hasattr(spectrum, "rig_menus"):
@@ -252,14 +253,18 @@ class ControlSession:
                 await asyncio.sleep(0.1)
             else:
                 values = spectrum.rig_menus()            # pas de relecture à temps : dernière valeur connue
-        event, ctx = tuner_check(cfg.rig.model, values)
-        if not event or self.closed:
-            return
-        code = codes.ORT_5037 if event == "tuner_settings" else codes.ORT_5038
-        ctx = {"client": self.client_id, **ctx}
-        emit_event(code, logger=log, **ctx)
-        _, text = render(code, "fr", **ctx)
-        self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
+        notices = [data_mod_check(cfg.rig.model, values)]        # voix de la station en mode données (Icom)
+        if tuner:
+            notices.append(tuner_check(cfg.rig.model, values))
+        codes_of = {"tuner_settings": codes.ORT_5037, "tuner_unverified": codes.ORT_5038, "data_mod": codes.ORT_5040}
+        for event, ctx in notices:
+            if not event or self.closed:
+                continue
+            code = codes_of[event]
+            ctx = {"client": self.client_id, **ctx}
+            emit_event(code, logger=log, **ctx)
+            _, text = render(code, "fr", **ctx)
+            self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
 
     @property
     def listener(self) -> bool:

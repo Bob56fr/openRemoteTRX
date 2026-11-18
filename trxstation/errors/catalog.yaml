@@ -4408,6 +4408,30 @@ ORT-5039:
     - Faulty cable, connector or antenna switch
     preconisation: 'Stop transmitting, check the antenna and the tuner; the station does not cut for a high SWR (the rig
       reduces its power by itself).'
+ORT-5040:
+  gravite: avertissement
+  titre: 'Modulation du poste en mode données à revoir'
+  message: 'DATA MOD du poste sur {valeur} à la connexion de {client} (attendu {attendu}) : la voix de la station ne
+    module pas le poste en mode données (émission sans puissance).'
+  causes:
+  - DATA MOD réglé sur MIC, ACC ou LAN au lieu de USB
+  - Prise USB réservée à DATA OFF MOD (le poste ne l'accepte que dans un des deux réglages)
+  preconisation: 'Sur le poste : MENU > SET > Connectors > MOD Input > DATA MOD = USB ; la station ne le change jamais.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - data_mod
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5040/
+  depuis_version: 0.214.0
+  en:
+    titre: 'Rig data mode modulation to be checked'
+    message: 'Rig DATA MOD set to {valeur} when {client} connected (expected {attendu}): the station voice does not
+      modulate the rig in data modes (transmission without power).'
+    causes:
+    - DATA MOD set to MIC, ACC or LAN instead of USB
+    - USB jack reserved for DATA OFF MOD (the rig accepts it in only one of the two settings)
+    preconisation: 'On the rig: MENU > SET > Connectors > MOD Input > DATA MOD = USB; the station never changes it.'
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'
