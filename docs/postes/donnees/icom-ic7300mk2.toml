@@ -69,7 +69,7 @@ squelch = { etat = "valide" }
 puissance = { etat = "valide" }
 compresseur = { etat = "valide" }
 tuner = { etat = "valide", note = "Mis en marche puis remis sur charge fictive, relu à chaque fois. Son état est mémorisé PAR BANDE par le poste.", note_en = "Switched on then restored on a dummy load, read back each time. The rig stores its state PER BAND." }
-vox = { etat = "valide", note = "Mis en marche 4 s sans aucun son : aucune émission, puis remis à l'arrêt. La station ne le propose jamais à distance.", note_en = "Switched on for 4 s without audio: no transmission, then switched off. The station never offers it remotely." }
+vox = { etat = "valide", note = "Phonie seulement (manuel avancé p. 2-5 : « SSB, AM, and FM modes ») : sans son aucune émission, à la voix au micro émission puis retour en réception. NON déclenchable par l'USB (inactif en mode données, et le son USB ne module qu'en mode données). Attention : coupé en mode données, il RESTE en marche en phonie. La station ne le propose jamais à distance.", note_en = "Voice modes only (advanced manual p. 2-5: « SSB, AM, and FM modes »): no transmission without audio, voice into the microphone keys then releases. NOT triggerable over USB (inactive in data modes, and USB audio only modulates in data modes). Caution: switched off in a data mode, it STAYS on in voice modes. The station never offers it remotely." }
 # --- Mesures
 s_metre = { etat = "valide", note = "Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.", note_en = "Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table." }
 puissance_mesuree = { etat = "valide", note = "Monte environ 0,3 s après la prise d'émission.", note_en = "Rises about 0.3 s after keying." }
