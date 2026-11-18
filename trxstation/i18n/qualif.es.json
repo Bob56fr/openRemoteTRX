@@ -383,5 +383,9 @@
   "terrain.audio.advice.windows_numbered": "  Atención: este nombre de Windows está numerado (« 2- … »); CAMBIA si el cable del equipo pasa a otro puerto USB (rehacer entonces el menú 2.6).",
   "terrain.audio.advice.windows_volume": "  Comprobar en Windows (Configuración > Sistema > Sonido > salida del equipo): volumen 100, mejoras de audio desactivadas, 16 bits 48000 Hz; el nivel se ajusta en el equipo (Icom: USB MOD Level). Un volumen reducido = transmisión sin potencia.",
   "terrain.audio.ok": "  Tarjeta de sonido del equipo: OK.",
-  "terrain.audio.ko": "  Tarjeta de sonido del equipo: CORREGIR antes de la cualificación (si no, Audio RX / TX fallan)."
+  "terrain.audio.ko": "  Tarjeta de sonido del equipo: CORREGIR antes de la cualificación (si no, Audio RX / TX fallan).",
+  "compare.unreadable": "Comparación imposible: {error}",
+  "compare.none": "Ninguna diferencia: las dos cualificaciones dan el mismo resultado.",
+  "compare.summary": "{count} diferencia(s), {important} importante(s):",
+  "compare.written": "Detalle: {path}"
 }

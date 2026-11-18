@@ -383,5 +383,9 @@
   "terrain.audio.advice.windows_numbered": "  Attention : ce nom Windows est numéroté (« 2- … ») ; il CHANGE si le câble du poste passe sur une autre prise USB (refaire alors le menu 2.6).",
   "terrain.audio.advice.windows_volume": "  À vérifier dans Windows (Paramètres > Système > Son > sortie du poste) : volume à 100, améliorations audio désactivées, 16 bits 48000 Hz ; le niveau se dose sur le poste (Icom : USB MOD Level). Un volume réduit = émission sans puissance.",
   "terrain.audio.ok": "  Carte son du poste : OK.",
-  "terrain.audio.ko": "  Carte son du poste : À CORRIGER avant la qualification (sinon Audio RX / TX en échec)."
+  "terrain.audio.ko": "  Carte son du poste : À CORRIGER avant la qualification (sinon Audio RX / TX en échec).",
+  "compare.unreadable": "Comparaison impossible : {error}",
+  "compare.none": "Aucun écart : les deux qualifications donnent le même résultat.",
+  "compare.summary": "{count} écart(s), dont {important} important(s) :",
+  "compare.written": "Détail : {path}"
 }

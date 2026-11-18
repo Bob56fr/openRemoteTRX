@@ -125,6 +125,21 @@ alerte « COUPE LE POSTE ». Un essai automatique en échec REFUSE le poste ; il
 
 Pas encore : configuration de session isolée de celle du PC, mesures ALC, jumeau rejouable.
 
+## Comparer deux qualifications du même poste (`--comparer`, étape 260)
+
+```
+trx-qualif --comparer A B [--output DOSSIER]    # A, B : zips de la valise ou dossiers de session terrain-…
+```
+
+Lecture seule (aucun poste, aucune station.toml). Compare : contexte (modèle Hamlib, versions, réglages), verdicts,
+tests de la qualification Q1 (résultat ; coupures des pannes à ± 0,5 s ; temps de réponse CAT), essais de sécurité
+(résultat ; délai depuis le repère à ± 1 s, mesures du client automatique à ± 0,5 s), constats de l'exploration,
+relevés de DÉPART (un poste pas dans le même état au départ = écart « point de départ »), remise en état, niveau reçu
+de la carte son (± 6 dB). Chaque écart : gravité (important, à vérifier, pour information) et cause probable (poste,
+environnement, opérateur, outil). Documents : `comparaison-<date>/ecarts.md` et `ecarts.json` (format 1). Usage prévu :
+qualification du même poste par deux personnes sur le même PC (IC-705, décision du 2026-11-18), ou du même poste
+après une nouvelle version de Hamlib.
+
 ## Exploration d'un poste jamais essayé (`--explorer`, étape 175)
 
 Pour un expert, AVANT la qualification : aller le plus loin possible sans émettre et trouver où Hamlib et le poste

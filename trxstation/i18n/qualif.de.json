@@ -383,5 +383,9 @@
   "terrain.audio.advice.windows_numbered": "  Achtung: dieser Windows-Name ist nummeriert (« 2- … »); er ÄNDERT sich, wenn das Kabel an einen anderen USB-Anschluss kommt (dann Menü 2.6 wiederholen).",
   "terrain.audio.advice.windows_volume": "  In Windows prüfen (Einstellungen > System > Sound > Ausgang des Geräts): Lautstärke 100, Audioverbesserungen aus, 16 Bit 48000 Hz; den Pegel am Gerät einstellen (Icom: USB MOD Level). Reduzierte Lautstärke = Senden ohne Leistung.",
   "terrain.audio.ok": "  Soundkarte des Geräts: OK.",
-  "terrain.audio.ko": "  Soundkarte des Geräts: vor der Qualifizierung BEHEBEN (sonst schlagen Audio RX / TX fehl)."
+  "terrain.audio.ko": "  Soundkarte des Geräts: vor der Qualifizierung BEHEBEN (sonst schlagen Audio RX / TX fehl).",
+  "compare.unreadable": "Vergleich nicht möglich: {error}",
+  "compare.none": "Keine Abweichung: beide Qualifizierungen ergeben dasselbe Ergebnis.",
+  "compare.summary": "{count} Abweichung(en), davon {important} wichtig:",
+  "compare.written": "Einzelheiten: {path}"
 }

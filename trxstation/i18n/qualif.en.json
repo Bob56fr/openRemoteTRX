@@ -383,5 +383,9 @@
   "terrain.audio.advice.windows_numbered": "  Note: this Windows name is numbered (« 2- … »); it CHANGES if the rig cable moves to another USB port (then redo menu 2.6).",
   "terrain.audio.advice.windows_volume": "  Check in Windows (Settings > System > Sound > rig output): volume 100, audio enhancements off, 16 bit 48000 Hz; set the level on the rig (Icom: USB MOD Level). A reduced volume = transmission without power.",
   "terrain.audio.ok": "  Rig sound card: OK.",
-  "terrain.audio.ko": "  Rig sound card: TO FIX before the qualification (otherwise Audio RX / TX fail)."
+  "terrain.audio.ko": "  Rig sound card: TO FIX before the qualification (otherwise Audio RX / TX fail).",
+  "compare.unreadable": "Comparison impossible: {error}",
+  "compare.none": "No difference: both qualifications give the same result.",
+  "compare.summary": "{count} difference(s), {important} important:",
+  "compare.written": "Details: {path}"
 }

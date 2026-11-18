@@ -255,6 +255,28 @@ async def run_explore(cfg: Config, profile: HamlibProfile, dump_text: str, outpu
     return EXIT_REFUSED if result.stopped else EXIT_OK
 
 
+def run_compare(path_a: Path, path_b: Path, output: Path, out=print) -> int:
+    """Deux rapports de la valise du même poste comparés (lecture seule) ; documents dans `output/comparaison-…`."""
+    from .compare import CompareError, IMPORTANT, compare, load_report, write_outputs
+    try:
+        a, b = load_report(path_a), load_report(path_b)
+    except CompareError as exc:
+        out(_t("compare.unreadable", error=exc))
+        return EXIT_CONFIG
+    gaps = compare(a, b)
+    folder = output / f"comparaison-{datetime.now():%Y%m%d-%H%M%S}"
+    target = write_outputs(a, b, gaps, folder)
+    if not gaps:
+        out(_t("compare.none"))
+    else:
+        important = sum(1 for g in gaps if g.gravity == IMPORTANT)
+        out(_t("compare.summary", count=len(gaps), important=important))
+        for g in gaps:
+            out(f"  [{g.gravity}] {g.category} : {g.item} : A={g.a} B={g.b} ({g.cause})")
+    out(_t("compare.written", path=target))
+    return EXIT_OK
+
+
 @guarded("trx-qualif")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-qualif", description="Qualification d'un poste pour TRX Remote")
@@ -275,7 +297,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--terrain", action="store_true",
                     help="valise de qualification sur place : session, essais de sécurité chronométrés, rapport pour Claude")
     ap.add_argument("--session", type=Path, metavar="DOSSIER", help="avec --terrain : reprendre une session existante")
+    ap.add_argument("--comparer", type=Path, nargs=2, metavar=("A", "B"),
+                    help="comparer deux rapports de la valise (zip ou dossier de session) du même poste")
     args = ap.parse_args(argv)
+    if args.comparer is not None:
+        return run_compare(*args.comparer, args.output)
     if args.catalogue is not None:
         return check_catalogue(args.catalogue)
     if args.modele is not None:
