@@ -5,7 +5,7 @@ pas de matériel informatique, pour qualifier un poste jamais essayé avec SON P
 complet que `trx-qualif` (lot Q1, `docs/qualification.md`) qui produise, en une visite, tout ce qu'il faut pour
 qu'une conversation Claude ajoute le poste à la liste des postes validés.
 
-Aucun code n'est écrit par ce cahier. Étape 248, station inchangée (0.191.0).
+Aucun code n'est écrit par ce cahier. Étape 249, station inchangée (0.191.0).
 
 ## 1. Décisions
 
