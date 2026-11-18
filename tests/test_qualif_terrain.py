@@ -470,3 +470,25 @@ def test_the_check_is_shown_saved_and_reported(tmp_path):
 def test_the_sound_check_is_refused_while_the_station_runs(tmp_path):
     _, _, shown = _menu(tmp_path, ["9", "q"], running=True)
     assert "arrête-la d'abord" in shown
+
+
+# --------------------------------------------------------------------------- leçons du passage B de l'IC-705 (étape 261)
+
+def test_a_drill_is_not_started_when_the_ptt_cannot_be_read(tmp_path):
+    """Station d'essai arrêtée : l'essai n'est ni joué ni enregistré (vu : « stop_page » joué sans station)."""
+    session = _session(tmp_path)
+    shown, asked = [], []
+    record = asyncio.run(terrain.play_drill(DRILLS[0], session, host="127.0.0.1", port=1, tot_s=90, state_dir=tmp_path,
+                                            ask=lambda p: asked.append(p) or "", out=shown.append, period=0.01))
+    assert record == {} and "stop_page" not in session.drills
+    assert any("ILLISIBLE" in s for s in shown) and not any("EXACT" in p for p in asked)
+
+
+def test_relaunching_the_kit_offers_to_resume_today_s_session(tmp_path):
+    first = _menu(tmp_path, ["q"])                            # crée tmp_path/s via session_dir : pas une session du jour
+    today = tmp_path / "out"
+    folder = terrain._resume_or_new(today, 3085, ask=lambda p: "", out=lambda s: None)
+    Session.open(folder, model=3085)
+    again = terrain._resume_or_new(today, 3085, ask=lambda p: "", out=lambda s: None)
+    assert again == folder                                    # Entrée = reprendre
+    assert terrain._resume_or_new(today, 3085, ask=lambda p: "n", out=lambda s: None).name.startswith("terrain-3085-")

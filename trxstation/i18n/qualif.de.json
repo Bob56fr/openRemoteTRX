@@ -387,5 +387,8 @@
   "compare.unreadable": "Vergleich nicht möglich: {error}",
   "compare.none": "Keine Abweichung: beide Qualifizierungen ergeben dasselbe Ergebnis.",
   "compare.summary": "{count} Abweichung(en), davon {important} wichtig:",
-  "compare.written": "Einzelheiten: {path}"
+  "compare.written": "Einzelheiten: {path}",
+  "terrain.unreadable": "  PTT NICHT LESBAR: die Teststation (oder rigctld) läuft nicht. Prüfung NICHT gestartet, nichts gespeichert; Station starten und erneut versuchen.",
+  "terrain.auto.unknown_end": "\n!!! Zustand des Geräts nach der Prüfung NICHT LESBAR: am Gerät prüfen, dass es auf Empfang ist !!!",
+  "terrain.resume": "Heutige Sitzung « {folder} » fortsetzen? (J/n): "
 }

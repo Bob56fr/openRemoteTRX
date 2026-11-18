@@ -88,3 +88,25 @@ def test_the_command_writes_both_documents(tmp_path, capsys):
     assert data["format"] == 1 and any(g["item"] == "stop_page" for g in data["ecarts"])
     assert "| IMPORTANT | essais | stop_page |" in (folder / "ecarts.md").read_text(encoding="utf-8")
     assert qmain.main(["--comparer", str(tmp_path / "absent.zip"), str(a)]) == qmain.EXIT_CONFIG
+
+
+def test_the_last_qualification_WITH_transmission_is_compared(tmp_path):
+    """Une qualification sans émission faite APRÈS ne masque pas celle avec émission (vu sur l'IC-705)."""
+    z = _report(tmp_path, "terrain-a")
+    folder = tmp_path / "terrain-a"
+    later = folder / "qualif-3094-20261118-170000"
+    later.mkdir()
+    (later / "results.json").write_text(json.dumps({"verdict": {"statut": "incomplet"}, "tests": [
+        {"id": "ptt_cycle", "ok": None, "detail": "non fait : --sans-emission", "category": "socle"}]}), encoding="utf-8")
+    (folder / "qualif-3094-20261118-150000" / "results.json").write_text(json.dumps(
+        {"verdict": {"statut": "validation_en_cours"}, "tests": [{"id": "ptt_cycle", "ok": True, "detail": ""}]}),
+        encoding="utf-8")
+    report = cmp.load_report(folder)
+    assert report["q1_folder"] == "qualif-3094-20261118-150000"
+
+
+def test_a_test_done_on_one_side_only_is_not_an_important_gap(tmp_path):
+    """IC-705 : le débranchement USB fait par le qualifieur seul (A = non fait) apparaissait « important »."""
+    gaps = _gaps(tmp_path, audio_ok=None)
+    found = [g for g in gaps if g.item == "Audio RX"]
+    assert found and found[0].gravity == cmp.CHECK and found[0].cause == "opérateur"

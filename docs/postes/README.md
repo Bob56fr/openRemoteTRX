@@ -5,6 +5,7 @@ français / anglais, filtre par thème). Bloc WordPress à coller une fois : `do
 
 | Poste | Modèle Hamlib | Statut | Fiche détaillée |
 | --- | --- | --- | --- |
+| Icom IC-705 | 3085 | validation en cours (qualifié deux fois, même résultat) | `donnees/icom-ic705.toml` |
 | Icom IC-7300MK2 | 3094 | validation en cours | `donnees/icom-ic7300mk2.toml` |
 | Yaesu FTDX10 / FTDX101 | 1042 (FTDX10) | préparé, pas encore qualifié | `yaesu-ftdx10-ftdx101.md` |
 

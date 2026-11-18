@@ -38,6 +38,7 @@ HEARTBEAT_S = 0.5            # comme l'application
 TX_WAIT_S = 5.0              # délai pour voir l'émission demandée sur le poste
 HOLD_S = 2.0                 # émission tenue avant l'action
 OUT_OF_BAND_MARGIN_HZ = 50_000
+UNREADABLE = "PTT illisible (station d'essai ou rigctld arrêtés ?) : essai non joué, rien n'a été demandé"
 COOLDOWN_TRIES = 3           # « cooldown » = anti-rebond de la station (rekey_cooldown_s) : on attend, jamais on force
 COOLDOWN_WAIT_S = 1.5
 
@@ -127,6 +128,9 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     if not _confirmed(await asyncio.to_thread(ask, _t("terrain.auto.confirm"))):
         out(_t("terrain.auto.cancelled"))
         return {}
+    if await Observer(host, port, period=period).read_once() is None:
+        out(_t("terrain.unreadable"))                    # station d'essai arrêtée : rien n'est lancé ni enregistré
+        return {}
     observer = Observer(host, port, period=period)
     stop = asyncio.Event()
     watch = asyncio.create_task(observer.run(stop))
@@ -135,8 +139,10 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
     client = None
     try:
         await asyncio.sleep(period * 2)
+        if _last(observer) is None:
+            raise AutoDrillError(UNREADABLE)
         if _last(observer) != 0:
-            raise AutoDrillError("le poste n'est pas en réception (ou PTT illisible) au départ : essai non joué")
+            raise AutoDrillError("le poste n'est pas en réception au départ : essai non joué")
         client = client_factory()
         await client.connect()
         measured, reason, detail = await _scenario(drill, client, observer, cfg, tot_s)
@@ -158,9 +164,13 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
         end = time.time()
         stop.set()
         await watch
-    if _last(observer) == 1 or back is None:
+    if _last(observer) == 1:
         measured, reason = "echec", "LE POSTE EST RESTÉ EN ÉMISSION après l'essai"
         out(_t("terrain.auto.still_tx"))
+    elif back is None and client is not None:
+        # Émission demandée mais état final ILLISIBLE : on ne sait pas (jamais « resté en émission » sans l'avoir lu).
+        measured, reason = "non_mesure", "état final du poste ILLISIBLE après l'essai : vérifier qu'il est en réception"
+        out(_t("terrain.auto.unknown_end"))
     out(_t("terrain.measured", result=_t(f"terrain.result.{measured}"), reason=reason))
     record = {
         "id": drill.id, "kind": drill.kind, "optional": True, "played_by": "client automatique",

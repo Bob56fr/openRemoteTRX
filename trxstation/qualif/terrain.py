@@ -316,6 +316,9 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     out(_t("terrain.expected", text=_t(f"terrain.drill.{drill.id}.expected", tot=f"{tot_s:.0f}")))
     if (await asyncio.to_thread(ask, _t("terrain.start_or_skip"))).strip().lower() in ("s", "skip"):
         return {}
+    if drill.kind not in ("startup", "reboot") and await Observer(host, port, period=period).read_once() is None:
+        out(_t("terrain.unreadable"))                    # station d'essai arrêtée : essai ni joué ni enregistré
+        return {}
     observer = Observer(host, port, period=period)
     stop = asyncio.Event()
     task = asyncio.create_task(observer.run(stop))
@@ -611,13 +614,26 @@ def station_control(config_path: Path | None, start: bool) -> int:
         return 1
 
 
+def _resume_or_new(output: Path, model: int, *, ask: Ask, out: Callable[[str], None]) -> Path:
+    """Session du même poste commencée AUJOURD'HUI : la reprendre (défaut) plutôt qu'en ouvrir une seconde (vu sur
+    l'IC-705 : la valise relancée avait coupé les essais en deux sessions)."""
+    today = f"terrain-{model}-{dt.datetime.now():%Y%m%d}-"
+    sessions = sorted(p for p in output.glob(today + "*") if p.is_dir() and (p / Session.FILE).exists()) \
+        if output.is_dir() else []
+    if sessions:
+        last = sessions[-1]
+        if yes_no(ask(_t("terrain.resume", folder=last.name))) is not False:
+            return last
+    return output / f"terrain-{model}-{dt.datetime.now():%Y%m%d-%H%M}"
+
+
 def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
                 config_path: Path | None = None, ask: Ask = input, out: Callable[[str], None] = print,
                 explore: Callable | None = None, qualify: Callable | None = None,
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
                 snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None) -> int:
     from . import main as qmain
-    folder = session_dir or output / f"terrain-{profile.model}-{dt.datetime.now():%Y%m%d-%H%M}"
+    folder = session_dir or _resume_or_new(output, profile.model, ask=ask, out=out)
     caps = profile.caps
     session = Session.open(folder, model=profile.model, model_name=caps.model_name, manufacturer=caps.manufacturer,
                            hamlib_version=profile.hamlib_version, backend_status=profile.backend_status)

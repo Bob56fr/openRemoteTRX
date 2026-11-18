@@ -74,21 +74,29 @@ class _Source:
         except ValueError:
             return None
 
-    def latest(self, prefix: str, file: str) -> tuple[str | None, object]:
-        """Dernier dossier `prefix-*` (ordre des noms = ordre des dates) qui contient `file`."""
+    def latest(self, prefix: str, file: str, prefer=None) -> tuple[str | None, object]:
+        """Dernier dossier `prefix-*` (ordre des noms = ordre des dates) qui contient `file` ; avec `prefer`, le
+        dernier qui le satisfait s'il y en a un."""
         folders = sorted({n.split("/", 1)[0] for n in self.names if n.startswith(prefix) and n.endswith("/" + file)})
-        for folder in reversed(folders):
-            data = self.json(f"{folder}/{file}")
-            if data is not None:
-                return folder, data
-        return None, None
+        found = [(f, d) for f in reversed(folders) if (d := self.json(f"{f}/{file}")) is not None]
+        if prefer is not None:
+            for folder, data in found:
+                if prefer(data):
+                    return folder, data
+        return found[0] if found else (None, None)
+
+
+def _with_emission(q1: dict) -> bool:
+    """Qualification où la phase d'émission a été jouée (PTT essayé) : c'est elle qu'on compare (une qualification
+    « sans émission » faite après ne doit pas la masquer, vu sur l'IC-705)."""
+    return any(t.get("id") == "ptt_cycle" and t.get("ok") is not None for t in q1.get("tests", []))
 
 
 def load_report(path: str | Path) -> dict:
     src = _Source(Path(path))
     report = {"name": Path(path).name, "qualification": src.json("qualification.json"),
               "session": src.json("session.json"), "drills": {}}
-    report["q1_folder"], report["q1"] = src.latest("qualif-", "results.json")
+    report["q1_folder"], report["q1"] = src.latest("qualif-", "results.json", prefer=_with_emission)
     report["explore_folder"], report["explore"] = src.latest("explore-", "exploration.json")
     for name in src.names:
         if name.startswith("essais/") and name.endswith(".json"):
@@ -152,7 +160,12 @@ def _q1(a: dict, b: dict, gaps: list[Gap]) -> None:
     for tid in sorted(set(ta) | set(tb)):
         x, y = ta.get(tid), tb.get(tid)
         if x is None or y is None:
-            gaps.append(Gap("qualification", tid, x is not None, y is not None, CHECK, "outil", "test présent d'un seul côté"))
+            gaps.append(Gap("qualification", tid, x is not None, y is not None, CHECK, "opérateur",
+                            "test joué d'un seul côté (vérifications visuelles, débranchement USB…)"))
+            continue
+        if x.get("ok") != y.get("ok") and None in (x.get("ok"), y.get("ok")):
+            gaps.append(Gap("qualification", x.get("label") or tid, x.get("ok"), y.get("ok"), CHECK, "opérateur",
+                            "fait d'un seul côté"))
             continue
         if x.get("ok") != y.get("ok"):
             declared = x.get("category") == "declaratif"

@@ -387,5 +387,8 @@
   "compare.unreadable": "Comparaison impossible : {error}",
   "compare.none": "Aucun écart : les deux qualifications donnent le même résultat.",
   "compare.summary": "{count} écart(s), dont {important} important(s) :",
-  "compare.written": "Détail : {path}"
+  "compare.written": "Détail : {path}",
+  "terrain.unreadable": "  PTT ILLISIBLE : la station d'essai (ou rigctld) n'est pas démarrée. Essai NON lancé, rien n'est enregistré ; démarre la station puis recommence.",
+  "terrain.auto.unknown_end": "\n!!! État du poste ILLISIBLE après l'essai : vérifie sur le poste qu'il est bien en réception !!!",
+  "terrain.resume": "Reprendre la session du jour « {folder} » ? (O/n) : "
 }

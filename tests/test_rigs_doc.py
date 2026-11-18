@@ -81,10 +81,10 @@ def test_data_json_lists_themes_features_and_rigs() -> None:
     data = json.loads(doc.data_json(doc.load_rigs()))
     assert data["format"] == 1 and [t["id"] for t in data["themes"]][0] == "securite"
     assert {f["id"] for f in data["fonctions"]} == {f[0] for f in doc.FEATURES}
-    assert data["postes"][0]["poste"]["hamlib_model"] == 3094
+    assert {p["poste"]["hamlib_model"] for p in data["postes"]} >= {3094, 3085}
 
 
 def test_public_data_holds_no_address_host_or_serial() -> None:
     text = "\n".join(p.read_text(encoding="utf-8") for p in doc.DATA.glob("*.toml"))
     assert not re.search(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", text)          # aucune adresse IP
-    assert "minix" not in text.lower() and "13003336" not in text        # ni nom de machine, ni numéro de série
+    assert "minix" not in text.lower() and "13003336" not in text and "43003441" not in text   # ni machine, ni n° de série

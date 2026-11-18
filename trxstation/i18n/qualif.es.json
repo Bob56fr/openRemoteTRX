@@ -387,5 +387,8 @@
   "compare.unreadable": "Comparación imposible: {error}",
   "compare.none": "Ninguna diferencia: las dos cualificaciones dan el mismo resultado.",
   "compare.summary": "{count} diferencia(s), {important} importante(s):",
-  "compare.written": "Detalle: {path}"
+  "compare.written": "Detalle: {path}",
+  "terrain.unreadable": "  PTT ILEGIBLE: la estación de prueba (o rigctld) no está en marcha. Prueba NO iniciada, nada se guarda; arranca la estación y vuelve a intentarlo.",
+  "terrain.auto.unknown_end": "\n!!! Estado del equipo ILEGIBLE tras la prueba: comprueba en el equipo que está en recepción !!!",
+  "terrain.resume": "¿Reanudar la sesión de hoy « {folder} »? (S/n): "
 }

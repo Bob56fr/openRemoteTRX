@@ -299,6 +299,229 @@
     {
       "poste": {
         "fabricant": "Icom",
+        "modele": "IC-705",
+        "hamlib_model": 3085,
+        "statut": "validation_en_cours",
+        "resume": "Qualifié deux fois le 2026-11-18 sur le même PC (par Claude puis par le qualifieur), sur batterie, 0,5 W, charge fictive : mêmes résultats mesurés. Restent les essais au téléphone et la réception sur antenne.",
+        "resume_en": "Qualified twice on 2026-11-18 on the same PC (by Claude then by the qualifier), on battery, 0.5 W, dummy load: same measured results. Phone drills and on-air receive remain."
+      },
+      "essais": [
+        {
+          "date": "2026-11-18",
+          "station": "0.202.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Deux qualifications complètes (trx-qualif, valise), essais automatiques, opérateur sur place, arrêt et démarrage de la station ; micrologiciel 1.40",
+          "quoi_en": "Two full qualifications (trx-qualif, kit), automatic drills, local operator, station stop and start-up; firmware 1.40"
+        }
+      ],
+      "fonctions": {
+        "ptt_relu": {
+          "etat": "valide",
+          "note": "3 cycles, coupure en 63 à 78 ms. dump_caps annonce « PTT type: None » avec Hamlib 4.7.2 : le PTT par CAT marche quand même.",
+          "note_en": "3 cycles, cut within 63 to 78 ms. dump_caps reports « PTT type: None » with Hamlib 4.7.2: CAT PTT works anyway."
+        },
+        "tot": {
+          "etat": "valide",
+          "note": "TOT de 8 s coupé à 8,1 s, de 20 s à 20,0 s.",
+          "note_en": "8 s TOT cut at 8.1 s, 20 s at 20.0 s."
+        },
+        "battements": {
+          "etat": "valide",
+          "note": "Réception 2,1 à 2,2 s après le dernier battement.",
+          "note_en": "Receive 2.1 to 2.2 s after the last heartbeat."
+        },
+        "deconnexion": {
+          "etat": "valide",
+          "note": "Réception en 0,1 à 0,2 s.",
+          "note_en": "Receive within 0.1 to 0.2 s."
+        },
+        "perte_cat": {
+          "etat": "valide",
+          "note": "Liaison CAT coupée 1,5 s pendant l'émission : réception 1,7 s après.",
+          "note_en": "CAT link cut for 1.5 s while transmitting: receive 1.7 s later."
+        },
+        "hors_bande": {
+          "etat": "valide",
+          "note": "Émission refusée sur 1,760 MHz, aucune émission vue.",
+          "note_en": "Transmission refused on 1.760 MHz, none seen."
+        },
+        "operateur_local": {
+          "etat": "valide",
+          "note": "Émission au micro du poste vue ; émission à distance refusée ensuite (local_active). Toucher le poste (changer de mode) bloque aussi l'émission à distance 2 min.",
+          "note_en": "Rig-microphone transmission seen; remote transmission refused afterwards (local_active). Touching the rig (mode change) also blocks remote transmission for 2 min."
+        },
+        "demarrage": {
+          "etat": "valide",
+          "note": "Aucune émission vue pendant le démarrage de la station.",
+          "note_en": "No transmission seen while the station starts."
+        },
+        "frequence": {
+          "etat": "valide",
+          "note": "8 bandes HF écrites et relues au hertz (VHF / UHF pas encore essayées).",
+          "note_en": "8 HF bands written and read back to the hertz (VHF / UHF not tried yet)."
+        },
+        "split": {
+          "etat": "non_teste"
+        },
+        "rit": {
+          "etat": "valide"
+        },
+        "xit": {
+          "etat": "valide"
+        },
+        "vfo": {
+          "etat": "non_declare",
+          "note": "« Can get VFO: N ».",
+          "note_en": "« Can get VFO: N »."
+        },
+        "modes_base": {
+          "etat": "valide"
+        },
+        "modes_donnees": {
+          "etat": "valide"
+        },
+        "filtres": {
+          "etat": "non_teste",
+          "note": "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL : la station ne l'envoie pas.",
+          "note_en": "A width sent through Hamlib REWRITES the FIL preset: the station never sends one."
+        },
+        "preampli": {
+          "etat": "valide"
+        },
+        "attenuateur": {
+          "etat": "valide",
+          "note": "20 dB.",
+          "note_en": "20 dB."
+        },
+        "agc": {
+          "etat": "partiel",
+          "note": "Lu ; écriture refusée par le poste (RPRT -9) pendant la qualification.",
+          "note_en": "Read; write refused by the rig (RPRT -9) during the qualification."
+        },
+        "nr": {
+          "etat": "valide"
+        },
+        "nr_niveau": {
+          "etat": "valide"
+        },
+        "nb": {
+          "etat": "valide"
+        },
+        "nb_niveau": {
+          "etat": "partiel",
+          "note": "Lu ; écriture refusée par le poste (RPRT -9).",
+          "note_en": "Read; write refused by the rig (RPRT -9)."
+        },
+        "anf": {
+          "etat": "valide"
+        },
+        "notch_manuel": {
+          "etat": "valide"
+        },
+        "squelch": {
+          "etat": "valide"
+        },
+        "puissance": {
+          "etat": "valide",
+          "note": "0 à 100 % ; 10 W sur 13,8 V, 5 W sur batterie (plafonds réglables dans le poste).",
+          "note_en": "0 to 100 %; 10 W on 13.8 V, 5 W on battery (caps set in the rig)."
+        },
+        "compresseur": {
+          "etat": "valide"
+        },
+        "tuner": {
+          "etat": "echec",
+          "note": "Lecture refusée par le poste (RPRT -9) ; jamais mis en marche automatiquement.",
+          "note_en": "Read refused by the rig (RPRT -9); never switched on automatically."
+        },
+        "s_metre": {
+          "etat": "valide",
+          "note": "Valeurs hors de la plage déclarée par Hamlib : table de calibration.",
+          "note_en": "Values outside the range declared by Hamlib: calibration table."
+        },
+        "puissance_mesuree": {
+          "etat": "valide",
+          "note": "Faible à 0,5 W (0,01 sur l'échelle).",
+          "note_en": "Low at 0.5 W (0.01 on the scale)."
+        },
+        "ros": {
+          "etat": "valide"
+        },
+        "alc": {
+          "etat": "valide",
+          "note": "Monte avec la modulation (0,13 à -30 dBFS, 0,56 à 0,62 à -24 dBFS).",
+          "note_en": "Rises with modulation (0.13 at -30 dBFS, 0.56 to 0.62 at -24 dBFS)."
+        },
+        "tension": {
+          "etat": "valide",
+          "note": "8,2 V sur batterie (hors de la plage déclarée 0..1).",
+          "note_en": "8.2 V on battery (outside the declared 0..1 range)."
+        },
+        "temperature": {
+          "etat": "non_declare"
+        },
+        "audio_rx": {
+          "etat": "partiel",
+          "note": "Carte « USB Audio CODEC » ; niveau très bas sur charge fictive (-60 à -90 dBFS) : AF Output Level à revoir sur antenne.",
+          "note_en": "« USB Audio CODEC » card; very low level on a dummy load (-60 to -90 dBFS): AF Output Level to be checked on air."
+        },
+        "audio_tx": {
+          "etat": "valide",
+          "note": "Essayé en mode données ; par défaut (DATA OFF MOD = MIC,USB) le son USB module aussi en USB simple, pas encore essayé.",
+          "note_en": "Tried in data mode; by default (DATA OFF MOD = MIC,USB) USB audio also modulates plain USB, not tried yet."
+        },
+        "spectre_hf": {
+          "etat": "non_teste"
+        }
+      },
+      "hamlib": {
+        "non_exploite": [
+          "ANTIVOX",
+          "BKINDL",
+          "CWPITCH",
+          "FBKIN",
+          "ID_METER",
+          "KEYSPD",
+          "LOCK",
+          "MICGAIN",
+          "MON",
+          "MONITOR_GAIN",
+          "NOTCHF_RAW",
+          "OVF_STATUS",
+          "PBT_IN",
+          "PBT_OUT",
+          "RAWSTR",
+          "RF",
+          "RFPOWER_METER_WATTS",
+          "SBKIN",
+          "SCOPE",
+          "SEND_MORSE",
+          "SEND_VOICE_MEM",
+          "SPECTRUM",
+          "TONE",
+          "TRANSCEIVE",
+          "TSQL",
+          "VOX",
+          "VOXDELAY",
+          "VOXGAIN"
+        ],
+        "constats": [
+          "TUNER et ANN déclarés mais refusés (RPRT -9, RPRT -1).",
+          "BKINDL refusé hors CW.",
+          "Pas réel du PBT plus grossier que le pas déclaré (vu une fois sur deux)."
+        ],
+        "constats_en": [
+          "TUNER and ANN declared but refused (RPRT -9, RPRT -1).",
+          "BKINDL refused outside CW.",
+          "Actual PBT step coarser than the declared one (seen once out of two)."
+        ]
+      },
+      "id": "icom-ic705"
+    },
+    {
+      "poste": {
+        "fabricant": "Icom",
         "modele": "IC-7300MK2",
         "hamlib_model": 3094,
         "statut": "validation_en_cours",

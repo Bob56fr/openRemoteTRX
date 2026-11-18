@@ -387,5 +387,8 @@
   "compare.unreadable": "Comparison impossible: {error}",
   "compare.none": "No difference: both qualifications give the same result.",
   "compare.summary": "{count} difference(s), {important} important:",
-  "compare.written": "Details: {path}"
+  "compare.written": "Details: {path}",
+  "terrain.unreadable": "  PTT UNREADABLE: the test station (or rigctld) is not running. Drill NOT started, nothing is saved; start the station and try again.",
+  "terrain.auto.unknown_end": "\n!!! Rig state UNREADABLE after the drill: check on the rig that it is receiving !!!",
+  "terrain.resume": "Resume today's session « {folder} »? (Y/n): "
 }

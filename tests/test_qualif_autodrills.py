@@ -139,3 +139,15 @@ def test_the_station_certificate_is_pinned(tmp_path):
     import aiohttp
     assert isinstance(autodrills.pinned_ssl(cfg), aiohttp.Fingerprint)
     assert autodrills.station_url(cfg) == f"https://127.0.0.1:{cfg.network.gateway_port}"
+
+
+def test_an_unreadable_ptt_starts_nothing_and_never_claims_a_transmission(tmp_path):
+    """Station d'essai arrêtée (vu sur l'IC-705) : « LE POSTE EST RESTÉ EN ÉMISSION » était affiché à tort."""
+    session = Session.open(tmp_path / "s", model=1)
+    made, shown = [], []
+    from trxstation.setup_wizard import dummy_config
+    record = asyncio.run(autodrills.play_auto(
+        DRILL["auto_stop"], session, client_factory=lambda: made.append(1), host="127.0.0.1", port=1, cfg=dummy_config(),
+        state_dir=tmp_path, ask=lambda p: "EMETTRE", out=shown.append, period=0.01))
+    assert record == {} and made == [] and "auto_stop" not in session.drills
+    assert not any("COUPE" in s for s in shown) and any("ILLISIBLE" in s for s in shown)
