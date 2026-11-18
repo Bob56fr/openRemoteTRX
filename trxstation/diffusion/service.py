@@ -139,6 +139,7 @@ class DiffusionService:
             self.bus.on_call = self.on_call
             self.bus.on_event = self.on_event
             self.bus.on_connect = self.on_connect
+            self.bus.on_gap = lambda: asyncio.ensure_future(self.load_state())
             self.bus.metrics = lambda: {"active": self.active}
 
     async def on_connect(self) -> None:
@@ -146,6 +147,19 @@ class DiffusionService:
         if self._bus_seen and self.active:
             await self.stop("gateway_restart")
         self._bus_seen = True
+        asyncio.ensure_future(self.load_state())      # tâche à part : la lecture du bus ne doit pas attendre
+
+    async def load_state(self) -> None:
+        """Fréquence, mode et émission ACTUELS (les événements ne viennent qu'au changement : sans cette lecture, un
+        module relancé ne connaissait pas la fréquence tant que le poste n'avait pas bougé)."""
+        try:
+            st = await self.bus.get_state()
+        except Exception:                              # bus coupé : on aura les prochains événements
+            return
+        if isinstance(st, dict):
+            await self.on_event("freq_mode", {"freq": st.get("freq"), "mode": st.get("mode")})
+            if isinstance(st.get("ptt"), bool):
+                await self.on_event("ptt", {"active": st["ptt"]})
 
     async def on_event(self, name: str, data: dict) -> None:
         if name == "freq_mode" and isinstance(data, dict):

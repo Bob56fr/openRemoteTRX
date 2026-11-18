@@ -126,3 +126,25 @@ def test_gateway_sends_info_every_10_frames():
         pass
     rx.close()
     assert kinds.count(au.INFO_MAGIC) == 2 and kinds.count(au.MAGIC) == 20
+
+
+def test_module_reads_frequency_and_mode_at_connection(tmp_path):
+    """Les événements ne viennent qu'au changement : à la (re)connexion au bus, le module lit l'état actuel."""
+    import asyncio
+
+    svc = module(tmp_path)
+
+    class Bus:
+        async def get_state(self):
+            return {"freq": 7074000, "mode": "USB", "ptt": False, "ptt_state": "RX", "trx_connected": True}
+
+    svc.bus = Bus()
+
+    async def go():
+        svc._bus_seen = False
+        svc._session = None                             # pas de diffusion : rien à arrêter
+        await svc.on_connect()
+        await asyncio.sleep(0.05)
+    asyncio.run(go())
+    assert (svc.values["frequence_hz"], svc.values["mode"], svc.values["bande"], svc.values["tx"]) == (
+        7074000, "USB", "40m", False)
