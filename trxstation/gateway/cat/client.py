@@ -294,6 +294,11 @@ class RigctldClient:
             raise ValueError(f"décalage invalide (entier de {-OFFSET_MAX_HZ} à {OFFSET_MAX_HZ} Hz) : {hz!r}")
         await self._command(f"{letter} {hz}")
 
+    async def switch_vox_off(self) -> None:
+        """Arrête le VOX du poste. C'est la SEULE écriture du VOX permise à la station : elle ne peut jamais le mettre en
+        marche (un VOX en marche peut faire émettre le poste sans commande ; décision de l'utilisateur, 2026-11-19)."""
+        await self._command("U VOX 0")
+
     async def set_func(self, name: str, on: bool) -> None:
         """Met en ou hors service une fonction de la liste WRITABLE_FUNCS (NR, NB, IP+, compresseur, tuner)."""
         if name not in WRITABLE_FUNCS:

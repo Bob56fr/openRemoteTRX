@@ -34,7 +34,7 @@ indispensables :
 - **débit du CAT** identique à celui de la station (38400 bps) ;
 - **voix par l'USB** : sinon le poste module avec son propre micro, c'est-à-dire le bruit de la pièce ;
 - **aucune ligne RTS/DTR** pour le PTT ni la CW : sinon le poste peut passer en émission au démarrage du PC ;
-- **VOX éteint** ;
+- **VOX éteint** : un VOX en marche fait émettre le poste sur un bruit de la pièce, sans aucune commande. La station le vérifie à chaque connexion d'un opérateur et le **coupe** s'il est en marche (message dans le journal de la page, code ORT-5034). Sur certains postes il reste en marche dans un mode alors qu'il est coupé dans un autre (vu sur l'IC-7300MK2 : coupé en mode données, encore en marche en phonie) ;
 - **minuterie d'émission du poste** (TX TIME OUT TIMER) : une seconde sécurité, indépendante de la station.
 
 > **Sécurité.** Une sécurité en plus ne coûte rien : règle aussi une **puissance maximale** raisonnable dans le

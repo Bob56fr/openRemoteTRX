@@ -1654,6 +1654,17 @@ test("Breizh : événements, alerte du repli pendant MON émission, journal, com
   assert.deepEqual(w.client.breizhEvents, []);
 });
 
+test("VOX du poste coupé à la connexion : texte de la station dans le journal, avec son code", async () => {
+  const w = makeWorld();
+  await w.connected();
+  const ex = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "..", "protocol", "messages.json"), "utf8"));
+  w.dc().onmessage({ data: JSON.stringify(ex.rig_notice) });
+  w.dc().onmessage({ data: JSON.stringify({ type: "rig_notice", event: "vox_still_on", detail: "impossible à couper", ort: "ORT-5036" }) });
+  const logs = w.ui.logs.filter((l) => l[0].includes("VOX") || l[0].includes("impossible"));
+  assert.deepEqual(logs.map((l) => l[1]), ["warn", "bad"]);
+  assert.ok(logs[0][0].endsWith("[ORT-5034]"));
+});
+
 test("FreeDV : vue de state.freedv (voyant, textes, indicatifs, séquences en étoiles)", () => {
   const ex = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "..", "protocol", "messages.json"), "utf8"));
   assert.equal(web.freedvView(null), null); assert.equal(web.freedvView({}), null);

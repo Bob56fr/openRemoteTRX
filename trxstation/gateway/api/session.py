@@ -169,6 +169,7 @@ class ControlSession:
         self.max_msgs_per_s, self.state_interval_s, self.clock = max_msgs_per_s, state_interval_s, clock
         self._times: deque[float] = deque()
         self._state_task: asyncio.Task | None = None
+        self._vox_task: asyncio.Task | None = None
         self.closed = False
 
     def send(self, message: dict) -> None:
@@ -176,6 +177,19 @@ class ControlSession:
             self._send(with_error_code(message))
         except Exception:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"envoi vers {self.client_id}")
+
+    async def _vox_guard(self) -> None:
+        """Décision de l'utilisateur (2026-11-19) : à l'ouverture d'une connexion d'opérateur, VOX relu et coupé s'il
+        est en marche ; l'opérateur reçoit `rig_notice` (texte du catalogue d'erreurs). Jamais fatal."""
+        try:
+            event, code, ctx = await self.ctrl.vox_guard(self.client_id)
+        except Exception:                                # noqa: BLE001 : une vérification ratée ne ferme pas la session
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"vérification du VOX pour {self.client_id}")
+            return
+        if event and not self.closed:
+            from ...errors.emit import render
+            _, text = render(code, "fr", **ctx)
+            self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
 
     @property
     def listener(self) -> bool:
@@ -204,6 +218,8 @@ class ControlSession:
                    # TRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
                    "features": self.features()})
+        if not self.listener:
+            self._vox_task = asyncio.ensure_future(self._vox_guard())   # VOX du poste coupé s'il est en marche
         # « spectrum » : canal du même nom ; « layouts » : mises en page personnalisées (layout_get)
         if self.beeps is not None:
             self.beeps.add_listener(self._beeps_listener)             # réglé depuis un autre téléphone : affiché ici
@@ -294,6 +310,8 @@ class ControlSession:
                 self.netprobe.close(self.probe)
             except Exception:
                 emit_event(codes.ORT_4509, logger=log, trace=True, erreur=f"fermeture pour {self.client_id}")
+        if self._vox_task is not None:
+            self._vox_task.cancel()
         if self._state_task is not None:
             self._state_task.cancel()
             await asyncio.gather(self._state_task, return_exceptions=True)

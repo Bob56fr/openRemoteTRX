@@ -4262,6 +4262,75 @@ ORT-5033:
     preconisation: 'Check the rig microphone and footswitch; if the transmission resists "T 0", the recovery ladder
       then safe mode follow.'
 
+ORT-5034:
+  gravite: avertissement
+  titre: 'VOX du poste trouvé en marche : coupé'
+  message: 'Le VOX du poste était en marche à la connexion de {client} : la station l''a coupé (un VOX en marche peut
+    faire émettre le poste sans commande).'
+  causes:
+  - VOX laissé en marche par un opérateur sur place
+  - VOX resté en marche après un passage en mode données (IC-7300MK2)
+  preconisation: 'Rien à faire : la station l''a coupé. Pour un usage sur place, le remettre en marche sur le poste.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - vox_off
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5034/
+  depuis_version: 0.208.0
+  en:
+    titre: 'Rig VOX found on: switched off'
+    message: 'The rig VOX was on when {client} connected: the station switched it off (a VOX that is on can make the
+      rig transmit without any command).'
+    causes:
+    - VOX left on by an on-site operator
+    - VOX left on after a data mode (IC-7300MK2)
+    preconisation: 'Nothing to do: the station switched it off. For on-site use, switch it back on at the rig.'
+ORT-5035:
+  gravite: avertissement
+  titre: 'État du VOX du poste inconnu'
+  message: 'État du VOX illisible à la connexion de {client} ({erreur}) : vérifier sur le poste que le VOX est à
+    l''arrêt.'
+  causes:
+  - Poste qui ne donne pas l'état de son VOX par la CAT
+  - Liaison CAT perturbée à ce moment
+  preconisation: 'Vérifier sur le poste que le VOX est à l''arrêt (indicateur VOX éteint).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - vox_unknown
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5035/
+  depuis_version: 0.208.0
+  en:
+    titre: 'Rig VOX state unknown'
+    message: 'VOX state unreadable when {client} connected ({erreur}): check on the rig that VOX is off.'
+    causes:
+    - Rig that does not report its VOX state over CAT
+    - CAT link disturbed at that moment
+    preconisation: 'Check on the rig that VOX is off (VOX indicator dark).'
+ORT-5036:
+  gravite: erreur
+  titre: 'VOX du poste impossible à couper'
+  message: 'Le VOX du poste est en marche et la station n''a pas pu le couper ({erreur}) : le couper sur le poste.'
+  causes:
+  - Commande de coupure refusée par le poste
+  - VOX gardé à part selon le mode (coupé dans un autre mode)
+  preconisation: 'Couper le VOX sur le poste (touche VOX) avant d''émettre à distance.'
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  codes_machine:
+  - vox_still_on
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5036/
+  depuis_version: 0.208.0
+  en:
+    titre: 'Rig VOX cannot be switched off'
+    message: 'The rig VOX is on and the station could not switch it off ({erreur}): switch it off at the rig.'
+    causes:
+    - Switch-off command refused by the rig
+    - VOX kept per mode (switched off in another mode)
+    preconisation: 'Switch VOX off at the rig (VOX key) before transmitting remotely.'
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'

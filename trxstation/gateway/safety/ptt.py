@@ -263,6 +263,44 @@ class PttController:
         if client_id == self._owner and self._state is not PttState.RX:
             await self._end_with_tail("client_disconnected", "link_lost", by=client_id)
 
+    async def vox_guard(self, client_id: str) -> tuple[str, str | None, dict]:
+        """À l'ouverture d'une connexion d'OPÉRATEUR (décision de l'utilisateur, 2026-11-19) : le VOX du poste est relu
+        et COUPÉ s'il est en marche (un VOX en marche peut faire émettre le poste sur un bruit de la pièce). Seulement
+        poste en réception, jamais pendant une émission. Renvoie (événement, code ORT, contexte) : « » rien à dire
+        (VOX à l'arrêt, ou poste sans VOX), « vox_off » coupé, « vox_unknown » illisible, « vox_still_on » pas coupé."""
+        from ..cat.client import RigError
+        if self._state is not PttState.RX or not self.link.state.connected:
+            return "", None, {}
+        client = self.link.client
+        try:
+            on = await client.get_func("VOX")
+        except RigError as exc:
+            if exc.code == -11:                          # fonction absente du poste : rien à surveiller
+                return "", None, {}
+            ctx = {"client": client_id, "erreur": str(exc)}
+            emit_event(codes.ORT_5035, logger=log, **ctx)
+            return ("vox_unknown", codes.ORT_5035, ctx)
+        except Exception as exc:                         # noqa: BLE001 : liaison perturbée : on le dit, jamais fatal
+            ctx = {"client": client_id, "erreur": str(exc)[:120]}
+            emit_event(codes.ORT_5035, logger=log, **ctx)
+            return ("vox_unknown", codes.ORT_5035, ctx)
+        if not on:
+            return "", None, {}
+        error = ""
+        for _ in range(3):
+            try:
+                await client.switch_vox_off()
+                if not await client.get_func("VOX"):
+                    ctx = {"client": client_id}
+                    emit_event(codes.ORT_5034, logger=log, **ctx)
+                    return ("vox_off", codes.ORT_5034, ctx)
+            except Exception as exc:                     # noqa: BLE001
+                error = str(exc)[:120]
+            await asyncio.sleep(0.3)
+        ctx = {"client": client_id, "erreur": error or "VOX relu en marche"}
+        emit_event(codes.ORT_5036, logger=log, **ctx)
+        return ("vox_still_on", codes.ORT_5036, ctx)
+
     def heartbeat(self, client_id: str) -> bool:
         """Battement du client propriétaire. Les battements des autres clients sont ignorés."""
         if self._state is PttState.TX and client_id == self._owner:

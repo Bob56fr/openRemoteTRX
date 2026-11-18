@@ -1512,6 +1512,9 @@
         if (msg.settings && typeof msg.settings === "object") { this.beeps = msg.settings; if (this.ui.beeps) this.ui.beeps(this.beeps); }
       } else if (msg.type === "selcall") {                              // armé ailleurs, ou appel reçu
         if (msg.status && typeof msg.status === "object") this._setSelcall(msg.status);
+      } else if (msg.type === "rig_notice") {                           // VOX du poste coupé à la connexion, ou illisible
+        const level = msg.event === "vox_off" ? "warn" : "bad";
+        this.ui.log(String(msg.detail || msg.event || "").slice(0, 300) + (msg.ort ? " [" + String(msg.ort).slice(0, 12) + "]" : ""), level);
       } else if (msg.type === "breizh_event") {                         // liaison avec Breizh Audio Box (opérateurs)
         this._onBreizhEvent(msg);
       } else if (msg.type === "freedv_event") {                         // FreeDV : indicatif, fin de séquence, abandon
