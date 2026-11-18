@@ -286,3 +286,30 @@ def test_the_menu_greys_what_the_suitcase_will_refuse_and_says_why(tmp_path):
     terrain.run_terrain(_cfg(tmp_path), PROFILE, "", tmp_path, session_dir=tmp_path / "s", bus=bus,
                         station=lambda: False, qualify=lambda no_tx: None)
     assert [e["texte"] for e in seen] == ["Émission refusée : confirme d'abord que le poste est sur la CHARGE FICTIVE (choix c)."]
+
+
+def test_an_interrupted_transmission_still_gets_its_mode_back():
+    """Essai réel du 2026-11-18 (IC-7300MK2) : STOP pendant l'audio d'émission = poste laissé en PKTUSB : le
+    contrôleur se croyait encore en émission. Désormais : coupure (force_rx), puis le mode d'origine remis."""
+    from trxstation.devtools.hwtest import HwTest
+
+    class Ctrl:
+        def __init__(self):
+            self.state, self.calls = "TX", []
+
+        def snapshot(self):
+            return SimpleNamespace(state=self.state)
+
+        async def force_rx(self, reason, by=None):
+            self.calls.append("force_rx")
+            self.state = "RX"
+
+        async def set_mode(self, mode):
+            self.calls.append(f"set_mode {mode}")
+            hw.link.state.mode = mode
+    said = []
+    hw = HwTest.__new__(HwTest)
+    hw.ctrl, hw.say, hw._mode_to_restore = Ctrl(), said.append, "USB"
+    hw.link = SimpleNamespace(state=SimpleNamespace(mode="PKTUSB"))
+    asyncio.run(hw._restore_mode())
+    assert hw.ctrl.calls == ["force_rx", "set_mode USB"] and any("USB" in s for s in said)

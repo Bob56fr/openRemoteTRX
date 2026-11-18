@@ -627,6 +627,16 @@ class HwTest:
             self.say(_t("datamode.mismatch"))
 
     async def _restore_mode(self) -> None:
+        if self._mode_to_restore and self.ctrl is not None and self.ctrl.snapshot().state != "RX":
+            # Essai interrompu pendant une émission (STOP de la page, Ctrl+C) : le contrôleur se croit encore en
+            # émission et le mode restait PKTUSB (vu le 2026-11-18). On COUPE d'abord (jamais refusé), puis on remet.
+            try:
+                await self.ctrl.force_rx("fin de l'essai : remise du mode")
+            except Exception:                                  # noqa: BLE001 : la remise est sautée, dite ci-dessous
+                pass
+        if self._mode_to_restore and self.ctrl is not None and self.ctrl.snapshot().state != "RX":
+            self.say(_t("mode.not_restored", error="poste pas en réception"))
+            self._mode_to_restore = None
         if self._mode_to_restore and self.ctrl is not None and self.ctrl.snapshot().state == "RX":
             try:
                 await self.ctrl.set_mode(self._mode_to_restore)
