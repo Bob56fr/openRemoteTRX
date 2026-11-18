@@ -382,10 +382,15 @@ def verdict(session: Session) -> tuple[str, list[str]]:
 
 
 def _qualif_verdict(folder: Path) -> str | None:
+    """Statut du verdict de la qualification Q1 : `results.json` le range en `{"statut": …, "raisons": […]}` (lu
+    comme une chaîne avant l'étape 256 : un refus passait pour « incomplet »)."""
     try:
-        return json.loads((folder / "results.json").read_text(encoding="utf-8")).get("verdict")
+        verdict = json.loads((folder / "results.json").read_text(encoding="utf-8")).get("verdict")
     except (OSError, ValueError, AttributeError):
         return None
+    if isinstance(verdict, dict):
+        verdict = verdict.get("statut")
+    return verdict if isinstance(verdict, str) else None
 
 
 def note_runs(session: Session) -> None:

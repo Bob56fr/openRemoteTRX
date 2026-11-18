@@ -65,6 +65,7 @@ def test_setup_proposes_only_data_modes_that_exist_for_the_model():
 def run(tmp_path, scenario, *, fake_setup=None, answers=None, **kwargs):
     async def wrapper():
         fake = FakeRigctld()
+        fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
         await fake.start()
         if fake_setup:
             fake_setup(fake)

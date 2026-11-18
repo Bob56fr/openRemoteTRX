@@ -368,5 +368,7 @@
   "terrain.drill.auto_tot.expected": "cut after {tot} s (± 2 s)",
   "terrain.snapshot_crash": "!!! The read « {line} » crashed rigctld (Hamlib defect to report): rigctld restarted, it will not be read again.",
   "explore.rigctld_crash": "!!! The read « {line} » crashed rigctld (Hamlib defect): rigctld restarted, exploration resumed without it.",
-  "finding.rigctld_crash.title": "The read « {line} » crashes rigctld"
+  "finding.rigctld_crash.title": "The read « {line} » crashes rigctld",
+  "phase3.local_released": "  The station took the settings changed by phase 1 for an action on the rig (reason: {reason}): the qualification takes control back, like the page button.",
+  "phase3.local_kept": "  Rig used locally (reason: {reason}) and taking control back refused: {error}"
 }

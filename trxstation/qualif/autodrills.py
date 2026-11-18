@@ -38,6 +38,8 @@ HEARTBEAT_S = 0.5            # comme l'application
 TX_WAIT_S = 5.0              # délai pour voir l'émission demandée sur le poste
 HOLD_S = 2.0                 # émission tenue avant l'action
 OUT_OF_BAND_MARGIN_HZ = 50_000
+COOLDOWN_TRIES = 3           # « cooldown » = anti-rebond de la station (rekey_cooldown_s) : on attend, jamais on force
+COOLDOWN_WAIT_S = 1.5
 
 
 class AutoDrillError(RuntimeError):
@@ -179,8 +181,12 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
 
 async def _transmit(client, observer: Observer) -> tuple[float, asyncio.Task]:
     """Prise d'émission par la passerelle (battements lancés) ; instant où le poste est VU en émission."""
-    asked = time.time()
-    result = await client.command("toggle")
+    for _ in range(COOLDOWN_TRIES):
+        asked = time.time()
+        result = await client.command("toggle")
+        if result.get("reason") != "cooldown":
+            break
+        await asyncio.sleep(COOLDOWN_WAIT_S)     # anti-rebond de la station après l'émission précédente (vu : A2)
     if not result.get("ok") or (result.get("ptt") or {}).get("state") != "TX":
         raise AutoDrillError(f"émission refusée par la station : {_refusal(result)}")
     beat = client.start_heartbeat(HEARTBEAT_S)

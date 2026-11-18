@@ -164,5 +164,6 @@
   "cli.level_too_high": "Refused: a test level above -12 dBFS is not allowed (risk of clipping).",
   "cli.tot_range": "--tot must be between 2 and 60 seconds.",
   "cli.tot_error": "--tot: {error}",
-  "cli.interrupted": "\nInterrupted: transmission has been cut."
+  "cli.interrupted": "\nInterrupted: transmission has been cut.",
+  "txaudio.no_power": "no power measured at any level ({last}): the audio does not reach the rig (rig sound card, USB modulation source, data mode)"
 }

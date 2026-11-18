@@ -151,6 +151,7 @@ class HwTest:
         self.tot_s, self.hold_s, self.tx_seconds, self.rx_listen_s = tot_s, hold_s, tx_seconds, rx_listen_s
         self.tx_levels_db, self.cat_timeout_s, self.record_wav, self.cycles = tx_levels_db, cat_timeout_s, record_wav, cycles
         self.results: list[StageResult] = []
+        self.audio_no_power = False      # étape 5 : puissance nulle partout (son ailleurs) ; exercices SANS audio permis
         self.caps = capabilities
         self._mode_to_restore: str | None = None
         self.link: CatLink | None = None
@@ -675,6 +676,8 @@ class HwTest:
         await self._offer_data_mode()
         self.say(_t("txaudio.watch"))
         lines = []
+        powers: list[float | None] = []
+        self.audio_no_power = False
         for level in self.tx_levels_db:
             try:
                 await self.key()
@@ -683,6 +686,7 @@ class HwTest:
                 return self.record(name, False, _t("detail.key_refused", error=exc))
             sent, readings = await self._send_tone(level)
             await self.ctrl.toggle(CLIENT)
+            powers.append(readings.get("RFPOWER_METER"))
             swr = readings.get("SWR")
             if readings:
                 line = _t("txaudio.line", level=f"{level:.0f}", sent=sent,
@@ -698,6 +702,11 @@ class HwTest:
             if level != self.tx_levels_db[-1]:
                 if _declined(await self.prompt(_t("txaudio.next", yn=_t("yn.default_yes")))):
                     break
+        if powers and all(p is not None and p <= 0.0 for p in powers):
+            # Puissance LISIBLE mais nulle à chaque niveau : le son part ailleurs (vu sur l'IC-7300MK2 sans sa carte son,
+            # étape 255 : « OK » à tort). Jamais un succès.
+            self.audio_no_power = True           # voie radio saine, modulation absente : exercices sans audio permis
+            return self.record(name, False, _t("txaudio.no_power", last=lines[-1]))
         return self.record(name, True, _t("txaudio.ok", count=len(lines), last=lines[-1]))
 
     async def _send_tone(self, level_db: float) -> tuple[int, dict[str, float]]:
@@ -834,7 +843,7 @@ class HwTest:
                 await self.stage_rig_unkey()
             else:
                 if await self.stage_ptt():
-                    if await self.stage_tx_audio():
+                    if await self.stage_tx_audio() or self.audio_no_power:
                         await self.stage_drills()
                     else:                                    # ROS élevé, audio non transmis... : plus aucune émission
                         self.record(_t("stage.drills"), None, _t("run.drills_skipped"))

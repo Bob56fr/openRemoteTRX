@@ -368,5 +368,7 @@
   "terrain.drill.auto_tot.expected": "corte a los {tot} s (± 2 s)",
   "terrain.snapshot_crash": "!!! La lectura « {line} » ha hecho caer rigctld (defecto de Hamlib a informar): rigctld relanzado, no se volverá a leer.",
   "explore.rigctld_crash": "!!! La lectura « {line} » ha hecho caer rigctld (defecto de Hamlib): rigctld relanzado, exploración reanudada sin ella.",
-  "finding.rigctld_crash.title": "La lectura « {line} » hace caer rigctld"
+  "finding.rigctld_crash.title": "La lectura « {line} » hace caer rigctld",
+  "phase3.local_released": "  La estación tomó los ajustes cambiados en la fase 1 por una acción en el equipo (motivo: {reason}): la cualificación retoma el control, como el botón de la página.",
+  "phase3.local_kept": "  Equipo usado localmente (motivo: {reason}) y recuperación del control rechazada: {error}"
 }

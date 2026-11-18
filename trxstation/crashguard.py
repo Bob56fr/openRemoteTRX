@@ -108,12 +108,26 @@ def _say(text: str) -> None:
         pass
 
 
+def tolerant_console() -> None:
+    """Sortie redirigée sous Windows (console web, journal, tube) = page de code 1252 : un caractère qu'elle n'a pas
+    (« ≈ », « ✓ »…) faisait PLANTER l'outil en pleine qualification (étape 255, sur le vrai poste). Il est remplacé
+    par « ? » au lieu de lever une erreur ; UTF-8 inchangé."""
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+        if encoding != "utf8" and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass                             # flux déjà fermé ou non reconfigurable : tant pis
+
+
 def guarded(tool: str, *, say: Callable[[str], None] = _say,
             will_close: Callable[[], bool] = window_will_close) -> Callable:
     """Décorateur du `main` d'un outil (voir l'en-tête du module)."""
     def decorate(main: Callable[..., int | None]) -> Callable[..., int | None]:
         @functools.wraps(main)
         def wrapper(*args, **kwargs):
+            tolerant_console()
             try:
                 code = main(*args, **kwargs)
             except SystemExit as exc:          # argparse, sys.exit : comportement normal

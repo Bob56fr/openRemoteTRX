@@ -592,6 +592,7 @@ class Qualification(HwTest):
     async def phase_tx(self) -> None:
         self.say(_t("phase3.title"))
         self.note("PHASE 3")
+        self.release_own_changes()
         await self.stage_band()
         await self.stage_tx_mode()
         freq = self.link.state.frequency_hz or 0
@@ -600,11 +601,28 @@ class Qualification(HwTest):
         elif self.cfg.safety.enforce_bands and not self.cfg.tx_allowed(freq):
             self.record(_t("hw.tx_all"), False, *both("phase3.out_of_band", freq=freq))
         elif await self.stage_ptt():
-            if await self.stage_tx_audio():
+            if await self.stage_tx_audio() or self.audio_no_power:   # pas de son : exercices sans audio
                 await self.stage_drills()
             else:
                 self.record(_t("hw.drills"), None, *both("phase3.drills_skipped"))
                 self.record(_t("hw.cat_loss"), None, *both("phase3.cat_loss_skipped"))
+
+    def release_own_changes(self) -> None:
+        """Les réglages changés très vite par la phase 1 (modes, filtres) peuvent être vus comme une ACTION SUR LE POSTE
+        (opérateur sur place, `local_active`) : la phase 3 serait refusée 2 minutes (vu sur l'IC-7300MK2, étape 255).
+        Ces changements sont ceux de la qualification : elle « reprend la main » comme le bouton de la page, ce qui
+        reste REFUSÉ pendant une émission au micro du poste (la phase 3 est alors refusée normalement)."""
+        local = getattr(self.ctrl, "local", None)
+        if local is None or not local.active():
+            return
+        reason = local.reason or "?"
+        try:
+            self.ctrl.release_local(_hwtest.CLIENT)
+        except Exception as exc:                 # noqa: BLE001 : émission locale en cours : refus normal plus loin
+            self.say(_t("phase3.local_kept", reason=reason, error=exc))
+            return
+        self.note(f"REPRISE DE LA MAIN (motif vu : {reason})")
+        self.say(_t("phase3.local_released", reason=reason))
 
     async def stage_drills(self) -> bool:
         ok = await super().stage_drills()

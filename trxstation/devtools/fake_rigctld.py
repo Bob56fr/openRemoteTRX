@@ -39,6 +39,7 @@ class FakeRigctld:
         self.rit = 0
         self.xit = 0
         self.ptt = 0
+        self.tx_power: float | None = None   # RFPOWER_METER lu EN ÉMISSION (ex. 0.05 comme un vrai poste) ; None = `levels`
         self.cache_timeout_ms = 0          # Hamlib : 500 ms (4.x) ou 1000 ms (5.0) par défaut ; 0 = pas de cache
         self._ptt_cache: tuple[int, float] | None = None   # (valeur, instant) mise par « T » ou par une vraie lecture
         self.writable_levels = {"SQL", "AGC", "PREAMP", "RFPOWER", "ATT", "NR", "NB"}   # « L » accepté (les autres : RPRT -11)
@@ -131,6 +132,8 @@ class FakeRigctld:
                 if self.broken_strength and args[0] == "STRENGTH":
                     return "get_level: STRENGTH\nRPRT 0\n"
                 value = self.strength if args[0] == "STRENGTH" else self.levels.get(args[0])
+                if args[0] == "RFPOWER_METER" and self.ptt and self.tx_power is not None:
+                    value = self.tx_power              # puissance mesurée pendant l'émission (None = celle de `levels`)
                 if value is None:
                     return "RPRT -11\n"
                 return f"get_level: {args[0]}\n{self._out('Level Value', value)}RPRT 0\n"

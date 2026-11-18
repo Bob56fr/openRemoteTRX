@@ -183,7 +183,7 @@ def test_the_report_zip_has_its_files_and_valid_fingerprints(tmp_path):
     session = _session(tmp_path)
     q = session.folder / "qualif-3094-1"
     q.mkdir()
-    (q / "results.json").write_text('{"verdict": "validation_en_cours"}', encoding="utf-8")
+    (q / "results.json").write_text('{"verdict": {"statut": "validation_en_cours", "raisons": []}}', encoding="utf-8")
     target = terrain.build_report(session, settings={"hamlib_model": 3094}, out_dir=tmp_path)
     names = zipfile.ZipFile(target).namelist()
     root = session.folder.name
@@ -378,3 +378,15 @@ def test_what_the_kit_prints_fits_a_windows_console(tmp_path):
                 text.encode("cp1252")
     _, _, shown = _menu(tmp_path, ["7", "q"])
     shown.encode("cp1252")
+
+
+def test_a_refused_q1_qualification_refuses_the_rig(tmp_path):
+    """Format RÉEL de results.json (vu sur l'IC-7300MK2, étape 256) : `verdict` = {statut, raisons}."""
+    session = _session(tmp_path)
+    q = session.folder / "qualif-3094-2"
+    q.mkdir()
+    (q / "results.json").write_text('{"verdict": {"statut": "refuse", "raisons": ["socle en échec"]}}',
+                                    encoding="utf-8")
+    terrain.note_runs(session)
+    assert session.runs[-1]["verdict"] == "refuse"
+    assert terrain.verdict(session) == ("refuse", ["qualification Q1 : refus"])

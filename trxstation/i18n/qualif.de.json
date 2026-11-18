@@ -368,5 +368,7 @@
   "terrain.drill.auto_tot.expected": "Abschaltung nach {tot} s (± 2 s)",
   "terrain.snapshot_crash": "!!! Die Lesung « {line} » hat rigctld abstürzen lassen (Hamlib-Fehler melden): rigctld neu gestartet, sie wird nicht mehr gelesen.",
   "explore.rigctld_crash": "!!! Die Lesung « {line} » hat rigctld abstürzen lassen (Hamlib-Fehler): rigctld neu gestartet, Erkundung ohne sie fortgesetzt.",
-  "finding.rigctld_crash.title": "Die Lesung « {line} » lässt rigctld abstürzen"
+  "finding.rigctld_crash.title": "Die Lesung « {line} » lässt rigctld abstürzen",
+  "phase3.local_released": "  Die Station hielt die in Phase 1 geänderten Einstellungen für eine Bedienung am Gerät (Grund: {reason}): die Qualifizierung übernimmt wieder, wie die Schaltfläche der Seite.",
+  "phase3.local_kept": "  Gerät vor Ort benutzt (Grund: {reason}) und Übernahme verweigert: {error}"
 }

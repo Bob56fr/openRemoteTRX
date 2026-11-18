@@ -40,6 +40,7 @@ def scripted(prompts, answers=None):
 def run(tmp_path, scenario, *, answers=None, fake_setup=None, enforce_bands=True, dump=SAMPLE_DUMP_CAPS, **kwargs):
     async def wrapper():
         fake = FakeRigctld()
+        fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
         await fake.start()
         if fake_setup:
             fake_setup(fake)
@@ -74,6 +75,7 @@ def by_id(q):
 def test_trace_proxy_relays_records_and_simulates_a_cut():
     async def scenario():
         fake = FakeRigctld()
+        fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
         await fake.start()
         proxy = TraceProxy("127.0.0.1", fake.port)
         await proxy.start()
@@ -345,3 +347,31 @@ def test_config_falls_back_to_the_working_directory(tmp_path, monkeypatch):
     (tmp_path / "standard").mkdir()
     (tmp_path / "standard" / "station.toml").write_text("", encoding="utf-8")
     assert qmain.find_config(tmp_path) == tmp_path / "standard" / "station.toml"     # le standard reste prioritaire
+
+
+def test_the_qualification_takes_back_control_after_its_own_changes_but_never_during_a_local_transmission():
+    """Phase 1 (modes, filtres changés très vite) vue comme une action sur le poste : phase 3 refusée 2 min sur
+    l'IC-7300MK2 (étape 255). La qualification reprend la main ; JAMAIS pendant une émission au micro du poste."""
+    from types import SimpleNamespace
+    from trxstation.gateway.safety.local import LocalPresence
+    from trxstation.gateway.safety.ptt import Refused
+    from trxstation.qualif.runner import Qualification
+
+    def tool(local_tx: bool):
+        local = LocalPresence()
+        local._until, local.reason = local.clock() + 120, "mode"
+        local._local_tx = local_tx
+        said, released = [], []
+
+        def release_local(client):
+            if not local.release():
+                raise Refused("local_tx", "le poste émet en ce moment depuis son micro")
+            released.append(client)
+        ctrl = SimpleNamespace(local=local, release_local=release_local)
+        return SimpleNamespace(ctrl=ctrl, say=said.append, note=lambda text: None), local, said, released
+    self, local, said, released = tool(local_tx=False)
+    Qualification.release_own_changes(self)
+    assert released and not local.active() and "mode" in said[-1]
+    self, local, said, released = tool(local_tx=True)
+    Qualification.release_own_changes(self)
+    assert not released and local.active() and "refusée" in said[-1]

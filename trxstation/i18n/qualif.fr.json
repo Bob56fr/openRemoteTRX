@@ -368,5 +368,7 @@
   "terrain.drill.auto_tot.expected": "coupure au bout de {tot} s (± 2 s)",
   "terrain.snapshot_crash": "!!! La lecture « {line} » a fait tomber rigctld (défaut de Hamlib à signaler) : rigctld relancé, elle ne sera plus faite.",
   "explore.rigctld_crash": "!!! La lecture « {line} » a fait tomber rigctld (défaut de Hamlib) : rigctld relancé, exploration reprise sans elle.",
-  "finding.rigctld_crash.title": "La lecture « {line} » fait tomber rigctld"
+  "finding.rigctld_crash.title": "La lecture « {line} » fait tomber rigctld",
+  "phase3.local_released": "  La station a pris les réglages changés par la phase 1 pour une action sur le poste (motif : {reason}) : la qualification reprend la main, comme le bouton de la page.",
+  "phase3.local_kept": "  Poste utilisé sur place (motif : {reason}) et reprise de la main refusée : {error}"
 }

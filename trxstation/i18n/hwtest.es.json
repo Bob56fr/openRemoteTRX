@@ -164,5 +164,6 @@
   "cli.level_too_high": "Rechazado: no se permite un nivel de prueba superior a -12 dBFS (riesgo de saturación).",
   "cli.tot_range": "--tot debe estar entre 2 y 60 segundos.",
   "cli.tot_error": "--tot: {error}",
-  "cli.interrupted": "\nInterrumpido: la transmisión se ha cortado."
+  "cli.interrupted": "\nInterrumpido: la transmisión se ha cortado.",
+  "txaudio.no_power": "ninguna potencia medida en ningún nivel ({last}): el audio no llega al equipo (tarjeta de sonido del equipo, fuente de modulación USB, modo datos)"
 }

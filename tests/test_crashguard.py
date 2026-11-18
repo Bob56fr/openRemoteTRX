@@ -194,3 +194,22 @@ def test_report_contains_the_crash_files(tmp_path, monkeypatch):
     path = report.make_report(tmp_path, config_path=tmp_path / "absent.toml")
     with zipfile.ZipFile(path) as z:
         assert z.read("plantages/trx-hwtest-20261116-150000-1.txt").decode() == "Traceback ..."
+
+
+def test_a_character_the_windows_console_lacks_never_crashes_a_tool(monkeypatch):
+    """Sortie redirigée en cp1252 : « ≈ » (temps de réponse de trx-qualif) faisait planter la qualification sur le
+    vrai poste (étape 255)."""
+    import io
+    import sys
+    from trxstation import crashguard
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", stream)
+
+    @crashguard.guarded("essai", will_close=lambda: False)
+    def tool():
+        print("temps de réponse ≈ 2 ms ✓")
+        return 0
+    assert tool() == 0
+    stream.flush()
+    assert raw.getvalue().decode("cp1252").startswith("temps de réponse ? 2 ms ?")

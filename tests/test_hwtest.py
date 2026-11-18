@@ -38,6 +38,7 @@ def run(tmp_path, scenario, *, capture="tone:440", fake_setup=None, answers=None
     """Lance `scenario(hw, fake, out)` avec un faux poste et un HwTest rapide."""
     async def wrapper():
         fake = FakeRigctld()
+        fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
         await fake.start()
         if fake_setup:
             fake_setup(fake)
@@ -80,6 +81,20 @@ def test_full_run_on_a_healthy_rig(tmp_path):
             assert w.getnframes() > 10_000                                              # le son reçu est enregistré
         with wave.open(str(tmp_path / "tx.wav"), "rb") as w:
             assert w.getnframes() >= 2 * 25 * 960                                       # la tonalité a franchi la porte
+    run(tmp_path, scenario)
+
+
+def test_no_power_at_any_level_fails_audio_tx_but_the_carrier_drills_still_run(tmp_path):
+    """Son parti vers une autre carte (IC-7300MK2 sans sa carte son sur le PC, étape 255) : « Audio TX » était OK
+    à tort ; c'est un ÉCHEC, et les exercices de panne (porteuse sans audio) sont tout de même joués."""
+    async def scenario(hw, fake, out, prompts):
+        fake.tx_power = 0.0
+        results = await hw.run()
+        audio = next(r for r in results if r.name == "Audio TX")
+        assert audio.ok is False and "aucune puissance" in audio.detail
+        assert [r.name for r in results][-3:] == ["Panne : perte du heartbeat", "Panne : TOT (3 s)",
+                                                  "Panne : déconnexion du client"]
+        assert fake.ptt == 0 and hw.ctrl.snapshot().state == "RX"
     run(tmp_path, scenario)
 
 

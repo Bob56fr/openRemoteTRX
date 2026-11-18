@@ -164,5 +164,6 @@
   "cli.level_too_high": "Abgelehnt: ein Testpegel über -12 dBFS ist nicht erlaubt (Gefahr der Übersteuerung).",
   "cli.tot_range": "--tot muss zwischen 2 und 60 Sekunden liegen.",
   "cli.tot_error": "--tot: {error}",
-  "cli.interrupted": "\nUnterbrochen: die Aussendung wurde abgeschaltet."
+  "cli.interrupted": "\nUnterbrochen: die Aussendung wurde abgeschaltet.",
+  "txaudio.no_power": "bei keinem Pegel Leistung gemessen ({last}): der Ton erreicht das Gerät nicht (Soundkarte des Geräts, USB-Modulationsquelle, Datenbetrieb)"
 }
