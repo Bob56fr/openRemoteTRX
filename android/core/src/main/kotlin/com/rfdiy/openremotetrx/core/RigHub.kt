@@ -215,6 +215,14 @@ object RigHub {
 
     fun breizhReactivate() { service?.onRig { session, now -> session.breizhReactivate(now) } }
 
+    // Diffusion en direct (fonction « diffusion », opérateurs) : la station et son module font tout le travail
+    fun diffusionStart(form: com.rfdiy.openremotetrx.logic.Diffusions.Form) { service?.onRig { session, now -> session.diffusionStart(now, form) } }
+    fun diffusionConfirm(yes: Boolean) { service?.onRig { session, now -> session.diffusionConfirm(now, yes) } }
+    fun diffusionStop() { service?.onRig { session, now -> session.diffusionStop(now) } }
+    fun diffusionReveal() { service?.onRig { session, now -> session.diffusionReveal(now) } }
+    fun diffusionNewPassword() { service?.onRig { session, now -> session.diffusionNewPassword(now) } }
+    fun diffusionForget() { service?.onRig { session, now -> session.diffusionForget(now) } }
+
     fun breizhLog() { service?.onRig { session, now -> session.breizhLog(now) } }
 
     /** FreeDV (opérateurs) : mode de la station en réception ; refusé par la station pendant l'émission. */

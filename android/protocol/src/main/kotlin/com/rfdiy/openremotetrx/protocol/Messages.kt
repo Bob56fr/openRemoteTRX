@@ -191,6 +191,37 @@ data class BreizhStatus(
     @SerialName("reactivate_in_s") val reactivateInS: Int? = null,
 )
 
+/** Dernier arrêt d'une diffusion : cause (operator, duration, overload, gateway_restart, auth, disabled,
+ *  station_stop) et heure (s). */
+@Serializable
+data class DiffusionStop(val cause: String = "", val at: Double? = null)
+
+/**
+ * Diffusion en direct (station 0.189.0+, fonction « diffusion », opérateurs seulement, docs/protocole.md § 20) ;
+ * absent pour un visiteur ou sans le module. `silence` (0.191.0+) : raison d'un silence voulu pour les auditeurs.
+ */
+@Serializable
+data class DiffusionStatus(
+    val enabled: Boolean = false,
+    val active: Boolean = false,
+    val accepted: Boolean = false,
+    @SerialName("outside_bands") val outsideBands: Boolean = false,
+    val codec: String = "",
+    val problem: String? = null,
+    @SerialName("last_stop") val lastStop: DiffusionStop? = null,
+    @SerialName("listen_page") val listenPage: String? = null,
+    val access: String? = null,
+    val voice: Boolean = false,
+    val phase: String? = null,
+    val listeners: Int? = null,
+    val operator: String? = null,
+    @SerialName("remaining_s") val remainingS: Int? = null,
+    @SerialName("stream_url") val streamUrl: String? = null,
+    @SerialName("listener_user") val listenerUser: String? = null,
+    @SerialName("meta_choice") val metaChoice: List<String> = emptyList(),
+    val silence: String? = null,
+)
+
 /** FreeDV : indicatif décodé (le plus récent en tête de `calls`). */
 @Serializable
 data class FreedvCall(val callsign: String? = null, @SerialName("snr_db") val snrDb: Double? = null, val t: Double? = null)
@@ -279,6 +310,7 @@ data class State(
     val breizh: BreizhStatus? = null,
     val net: NetState? = null,
     val freedv: FreedvStatus? = null,
+    val diffusion: DiffusionStatus? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */

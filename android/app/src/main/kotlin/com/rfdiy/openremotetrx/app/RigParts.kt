@@ -148,6 +148,12 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
             }
             if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
             if (presenceBanner) PresenceBanner()
+            // Diffusion en direct en cours : bandeau toujours visible (cahier § 8), toucher = sa fenêtre
+            rig.diffusion?.let { dif ->
+                com.rfdiy.openremotetrx.logic.Diffusions.indicator(dif.status)?.let { ind ->
+                    Box(Modifier.clickable { diffusionDialog = true }) { Banner("● " + ind.text, if (ind.live) TX_RED else WARN) }
+                }
+            }
 
             rig.reconnect?.let { r ->
                 Banner(
@@ -249,6 +255,13 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                         CompactChip("FDV", onClick = { freedvDialog = true }, selected = fdv.level == FreeDvLevel.OK, dot = freedvColor(fdv.level),
                             help = com.rfdiy.openremotetrx.logic.Help.client("FDV"))
                     }
+                    // Diffusion en direct (station qui l'offre, opérateurs) : voyant DIF, rouge en direct ; toucher = sa fenêtre
+                    rig.diffusion?.let { dif ->
+                        Spacer(Modifier.width(6.dp))
+                        val live = com.rfdiy.openremotetrx.logic.Diffusions.indicator(dif.status) != null
+                        CompactChip("DIF", onClick = { diffusionDialog = true }, selected = live,
+                            dot = if (live) diffusionColor(dif) else null)
+                    }
                     // Scrambler en service : voyant permanent (toucher = rubrique dans l'onglet « Audio »)
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
@@ -325,6 +338,7 @@ internal fun RigScope.RigDialogsHost() {
             transmitting = (rig.state?.ptt?.state ?: "RX") != "RX",
             activity = rig.freedvActivity, activityNotice = rig.freedvActivityNotice) { freedvDialog = false }
     }
+    if (diffusionDialog) rig.diffusion?.let { DiffusionDialog(it) { diffusionDialog = false } }
     if (swrOpen) SwrScreen(rig) { swrOpen = false }
     if (netOpen) NetScreen(rig) { netOpen = false }
     if (netDialog) rig.net?.let { n -> NetDialog(n, operator = !listener, radio = ui.radio?.text(), onStats = { netDialog = false; netOpen = true }) { netDialog = false } }

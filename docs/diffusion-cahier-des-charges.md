@@ -157,7 +157,10 @@ métadonnées est à écrire par celui qui monte son propre VPS.
   canaux, « Dernières diffusions », essai de liaison avec le serveur, qualité et durée par défaut réglables ;
   indicateurs GNOME / Windows. La ligne « Diffusion » du tableau de bord et de trx-monitor : conversation de la
   console web (§ 12.5).
-- **D4** Application Android : indicateur, lancement, arrêt (parité).
+- **D4** (fait, étape 251, application 0.67.0) Application Android : voyant DIF et bandeau toujours visible pendant
+  une diffusion, fenêtre « Diffusion en direct » (état et raison du silence, lancement avec les mêmes choix que la page
+  et l'avertissement au premier lancement, arrêt, page des auditeurs à ouvrir / partager / copier, identifiants des
+  auditeurs voir / générer) ; textes comparés à diffusion.js par les tests.
 - **D5** VPS, dépôt privé `openRemoteTRX-vps` : FAIT le 2026-11-17 (§ 2.1) ; reste l'essai avec la vraie station
   (D1b) et la page sur iPhone (anciens Safari et Opus : option MP3).
 

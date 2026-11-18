@@ -97,6 +97,8 @@ data class RigState(
     val friends: FriendsState? = null,
     /** Monitoring inter-stations (fonction « monitoring », opérateurs) ; null = pas offert par la station. */
     val monitoring: MonitoringState? = null,
+    /** Diffusion en direct (fonction « diffusion », opérateurs) ; null = pas offerte par la station, ou visiteur. */
+    val diffusion: DiffusionState? = null,
     /** FreeDV RADE V1 en réception (state.freedv, TOUS les comptes) ; null = station sans FreeDV. */
     val freedv: FreeDvView? = null,
     /** Dernier refus du mode FreeDV (montré dans sa fenêtre, là où l'on a cliqué) ; vide sinon. */
@@ -218,6 +220,13 @@ class RigSession(
     private var friendsWatching = false
     private var friendsAskedAt = Long.MIN_VALUE / 2
     private var monitoringOffered = false               // la station a annoncé « monitoring » (opérateur)
+    private var diffusionOffered = false                // la station a annoncé « diffusion » (opérateur)
+    private var diffusionNotice = ""
+    private var diffusionNoticeBad = false
+    private var diffusionUser: String? = null           // identifiants des auditeurs révélés à la demande
+    private var diffusionPassword: String? = null
+    private var diffusionStartArgs: JsonObject? = null  // dernier lancement demandé (repris avec « confirm »)
+    private var diffusionConfirm = false                // la station demande l'avertissement de responsabilité
     private var monitoringData: JsonObject? = null
     private var monitoringCode: String? = null
     private var monitoringJoined: JsonObject? = null
@@ -440,6 +449,10 @@ class RigSession(
         monitoringData = null; monitoringCode = null; monitoringJoined = null; monitoringEvents = null
         monitoringNotice = ""; monitoringReport = null
         if (monitoringOffered) monitoringAsk(now)
+        // Diffusion en direct : état dans chaque state ; rien de gardé d'une connexion à l'autre (mot de passe compris)
+        diffusionOffered = protocolOk && !msg.listener && msg.offers("diffusion")
+        diffusionNotice = ""; diffusionNoticeBad = false; diffusionUser = null; diffusionPassword = null
+        diffusionStartArgs = null; diffusionConfirm = false
         if (!protocolOk) {
             log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
         } else {
@@ -514,6 +527,11 @@ class RigSession(
         }
         if (entry.cmd == "monitoring") {
             onMonitoringResult(now, entry.tag, msg)
+            publish(now)
+            return
+        }
+        if (entry.cmd == "diffusion") {
+            onDiffusionResult(entry.tag, msg)
             publish(now)
             return
         }
@@ -1045,6 +1063,87 @@ class RigSession(
     private fun refusalOf(msg: Result): String =
         Texts.withCode(Texts.refusal(msg.reason, msg.detail), (msg.raw["ort"] as? JsonPrimitive)?.contentOrNull)
 
+    // ------------------------------------------------------------------ diffusion en direct (opérateurs)
+    private fun diffusionOk() = diffusionOffered && connected && protocolOk && !listener
+
+    /** Lancer une diffusion (arguments de [Diffusions.startArgs]) ; avertissement au premier lancement (`confirm`). */
+    fun diffusionStart(now: Long, args: JsonObject) {
+        if (!diffusionOk()) return
+        diffusionStartArgs = args
+        diffusionNotice = ""
+        send(now, Command.Diffusion("start", args), "start")
+        publish(now)
+    }
+
+    /** Même chose depuis le formulaire de l'écran (vérifié par [Diffusions.startArgs] ; rien n'est envoyé s'il est faux). */
+    fun diffusionStart(now: Long, form: Diffusions.Form) {
+        Diffusions.startArgs(form).first?.let { diffusionStart(now, it) }
+    }
+
+    /** Réponse à l'avertissement de responsabilité : oui = même lancement avec `confirm`, non = rien n'est lancé. */
+    fun diffusionConfirm(now: Long, yes: Boolean) {
+        val args = diffusionStartArgs
+        diffusionStartArgs = null
+        diffusionConfirm = false
+        if (yes && args != null && diffusionOk()) {
+            send(now, Command.Diffusion("start", JsonObject(args + ("confirm" to JsonPrimitive(true)))), "start")
+        } else {
+            diffusionNotice = "Diffusion non lancée."
+            diffusionNoticeBad = false
+        }
+        publish(now)
+    }
+
+    fun diffusionStop(now: Long) {
+        if (!diffusionOk()) return
+        send(now, Command.Diffusion("stop"), "stop")
+    }
+
+    /** Identifiant et mot de passe des auditeurs (réponse seulement, jamais dans state). */
+    fun diffusionReveal(now: Long) {
+        if (!diffusionOk()) return
+        send(now, Command.Diffusion("reveal"), "reveal")
+    }
+
+    /** Nouveau mot de passe des auditeurs (ceux qui écoutent ne sont pas coupés). */
+    fun diffusionNewPassword(now: Long) {
+        if (!diffusionOk()) return
+        send(now, Command.Diffusion("listener", JsonObject(mapOf("generate" to JsonPrimitive(true)))), "listener")
+    }
+
+    /** La fenêtre se ferme : le mot de passe révélé n'est plus gardé. */
+    fun diffusionForget(now: Long) {
+        if (diffusionPassword == null && diffusionNotice.isEmpty()) return
+        diffusionPassword = null; diffusionNotice = ""
+        publish(now)
+    }
+
+    private fun onDiffusionResult(action: String, msg: Result) {
+        if (!msg.ok) {
+            if (action == "start" && msg.reason == "diffusion_confirm_required") {   // la fenêtre pose la question
+                diffusionNotice = ""
+                diffusionConfirm = true
+                return
+            }
+            diffusionStartArgs = null
+            diffusionNotice = refusalOf(msg); diffusionNoticeBad = true
+            log("Diffusion : $diffusionNotice", LogLevel.WARN)
+            return
+        }
+        diffusionStartArgs = null
+        diffusionNoticeBad = false
+        val data = msg.raw["data"] as? JsonObject
+        when (action) {
+            "start" -> { diffusionNotice = "Diffusion lancée."; log(diffusionNotice, LogLevel.INFO) }
+            "stop" -> { diffusionNotice = "Diffusion arrêtée."; log(diffusionNotice, LogLevel.INFO) }
+            "reveal", "listener" -> {
+                diffusionUser = (data?.get("listener_user") as? JsonPrimitive)?.contentOrNull?.take(64)
+                diffusionPassword = (data?.get("listener_password") as? JsonPrimitive)?.contentOrNull?.take(64)
+                diffusionNotice = if (action == "listener") "Nouveau mot de passe des auditeurs." else ""
+            }
+        }
+    }
+
     private fun monitoringAsk(now: Long) {
         monitoringAskedAt = now
         send(now, Command.Monitoring("view"))
@@ -1410,6 +1509,9 @@ class RigSession(
             netStats = netStats, netStatus = netStatus,
             monitoring = if (monitoringOffered && !listener) MonitoringState(monitoringData, monitoringCode, monitoringJoined,
                                                                              monitoringEvents, monitoringNotice) else null,
+            diffusion = if (diffusionOffered && !listener) DiffusionState(state?.diffusion, diffusionNotice, diffusionNoticeBad,
+                                                                          diffusionUser ?: state?.diffusion?.listenerUser,
+                                                                          diffusionPassword, diffusionConfirm) else null,
             friends = if (friendsOffered && !listener) FriendsState(friendsData, friendsAt, friendsBackPoint != null,
                                                                     friendsStats, friendsInvite, friendsNotice) else null,
             freedv = if (hello?.offers("freedv") == true) FreeDvs.view(state?.freedv ?: hello?.freedv, wall() / 1000.0) else null,
