@@ -110,6 +110,13 @@ def _refusal(result: dict) -> str:
     return str(result.get("reason") or result.get("detail") or result.get("ptt") or "")
 
 
+def _watch_ptt(observer: Observer, ask) -> None:
+    """Mesure en direct pour la page (lot G2b) : le PTT que l'observateur RELIT déjà, rien d'autre."""
+    bus = bus_of(ask)
+    if bus is not None:
+        observer.notify = lambda value: bus.measure("poste", {"ptt": None if value is None else bool(value)})
+
+
 def _confirmed(answer: str | None) -> bool:
     word = tool_translator("hwtest")("word.emit")
     return typed(answer, word) or typed(answer, "EMETTRE")
@@ -135,6 +142,7 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
         out(_t("terrain.unreadable"))                    # station d'essai arrêtée : rien n'est lancé ni enregistré
         return {}
     observer = Observer(host, port, period=period)
+    _watch_ptt(observer, ask)
     stop = asyncio.Event()
     watch = asyncio.create_task(observer.run(stop))
     start = time.time()
@@ -270,13 +278,14 @@ def make_factory(cfg, client_id: str, password: str) -> Callable:
     return lambda: FakeClient(url, client_id, password, track=ToneTrack(active=False), ssl=ssl)
 
 
-def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], str], out: Callable[[str], None],
-              factory: Callable[[str, str], Callable] | None = None, secret: Callable[[str], str] | None = None) -> None:
-    """Compte opérateur demandé une fois, puis essais au choix ; chaque émission confirmée par EMETTRE."""
+def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], None],
+                     factory: Callable[[str, str], Callable] | None = None,
+                     secret: Callable[[str], str] | None = None) -> Callable | None:
+    """Compte opérateur des essais automatiques (demandé une fois par session de la valise) ; None si aucun."""
     out(_t("terrain.auto.intro"))
     client_id = ask(_t("terrain.auto.account")).strip()
     if not client_id:
-        return
+        return None
     prompt = _t("terrain.auto.password")
     if secret is None and bus_of(ask) is not None:    # valise : champ masqué de la page ou getpass du terminal
         secret = lambda p: ask_typed(ask, p, SECRET)      # noqa: E731
@@ -290,7 +299,18 @@ def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], st
             secret = getpass.getpass
     password = secret(prompt)
     factory_for = factory or (lambda cid, pw: make_factory(cfg, cid, pw))
-    client_factory = factory_for(client_id, password)
+    return factory_for(client_id, password)
+
+
+def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], str], out: Callable[[str], None],
+              factory: Callable[[str, str], Callable] | None = None, secret: Callable[[str], str] | None = None,
+              client_factory: Callable | None = None) -> Callable | None:
+    """Compte opérateur demandé une fois (sauf `client_factory` déjà connu), puis essais au choix ; chaque émission
+    confirmée par EMETTRE. Renvoie le client automatique (la valise le garde pour ses tuiles)."""
+    if client_factory is None:
+        client_factory = operator_factory(cfg, ask=ask, out=out, factory=factory, secret=secret)
+    if client_factory is None:
+        return None
     while True:
         for n, d in enumerate(AUTO_DRILLS, 1):
             r = session.drills.get(d.id, {}).get("result")
@@ -298,7 +318,7 @@ def auto_menu(session: Session, cfg, state_dir: Path, *, ask: Callable[[str], st
         choice = ask_typed(ask, _t("terrain.drills_choice"), CHOICE,
                            choices=drill_choices(session, AUTO_DRILLS)).strip().lower()
         if choice in ("r", "q", ""):
-            return
+            return client_factory
         if choice == "t":
             todo = [d for d in AUTO_DRILLS if d.id not in session.drills]
         elif choice.isdigit() and 1 <= int(choice) <= len(AUTO_DRILLS):

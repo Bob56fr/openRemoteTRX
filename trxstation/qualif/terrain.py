@@ -60,12 +60,15 @@ class Observer:
         self.events: list[tuple[float, int | None]] = []
         self.reads = 0
         self.failures = 0
+        self.notify: Callable[[int | None], None] | None = None   # page de la valise : PTT relu, en direct
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
 
     def _note(self, value: int | None) -> None:
         if not self.events or self.events[-1][1] != value:
             self.events.append((self.clock(), value))
+            if self.notify is not None:
+                self.notify(value)
 
     async def _send(self, command: str) -> str:
         if command not in OBSERVER_COMMANDS:
@@ -326,6 +329,8 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
         out(_t("terrain.unreadable"))                    # station d'essai arrêtée : essai ni joué ni enregistré
         return {}
     observer = Observer(host, port, period=period)
+    if bus is not None:
+        observer.notify = lambda value: bus.measure("poste", {"ptt": None if value is None else bool(value)})
     stop = asyncio.Event()
     task = asyncio.create_task(observer.run(stop))
     start = time.time()
@@ -406,6 +411,15 @@ def _qualif_verdict(folder: Path) -> str | None:
     return verdict if isinstance(verdict, str) else None
 
 
+def _qualif_transmitted(folder: Path) -> bool:
+    """Qualification AVEC émission (choix 3) ou sans (choix 4) : l'essai du PTT a-t-il été joué ?"""
+    try:
+        tests = json.loads((folder / "results.json").read_text(encoding="utf-8")).get("tests", [])
+    except (OSError, ValueError, AttributeError):
+        return False
+    return any(isinstance(t, dict) and t.get("id") == "ptt_cycle" and t.get("ok") is not None for t in tests)
+
+
 def note_runs(session: Session) -> None:
     """Dossiers explore-* et qualif-* de la session (écrits par les outils existants)."""
     runs = []
@@ -413,7 +427,8 @@ def note_runs(session: Session) -> None:
         if p.is_dir() and p.name.startswith("explore-"):
             runs.append({"kind": "explore", "folder": p.name})
         elif p.is_dir() and p.name.startswith("qualif-"):
-            runs.append({"kind": "qualif", "folder": p.name, "verdict": _qualif_verdict(p)})
+            runs.append({"kind": "qualif", "folder": p.name, "verdict": _qualif_verdict(p),
+                         "emission": _qualif_transmitted(p)})
     session.runs = runs
     session.save()
 
@@ -791,6 +806,8 @@ def confirm_load(session: "Session", *, ask: Ask, out: Callable[[str], None]) ->
         return False
     session.connection = "charge"
     session.save()
+    if bus_of(ask) is not None:
+        bus_of(ask).status(branchement="charge")      # bandeau de la page à jour tout de suite
     out(_t("terrain.load.done"))
     return True
 
@@ -866,7 +883,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
                 snapshot: Callable[[], dict] | None = None, sound: Callable[[], dict] | None = None,
                 receive: Callable[[], dict] | None = None, scope: Callable[[], dict] | None = None,
-                filters: Callable[[], dict] | None = None) -> int:
+                filters: Callable[[], dict] | None = None, pause: Callable[[float], None] = time.sleep) -> int:
     """La valise. Tout passe par le BUS (lot G1) : le terminal n'en est qu'un client clavier (`ask` / `out` donnés =
     ce client ; `input` / `print` par défaut) ; historique dans `evenements.jsonl` du dossier de la session."""
     from . import main as qmain
@@ -897,6 +914,163 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     missing = missing_qualification_bands(cfg)
     if missing:
         out(_t("terrain.bands_missing", bands=", ".join(missing)))
+    from . import tiles as tl
+    from .autodrills import auto_menu, operator_factory, play_auto
+    operator = {"factory": None}                 # compte des essais automatiques : demandé une fois
+
+    def label(drill) -> str:
+        return _t(f"terrain.drill.{drill.id}.title").strip().strip("-").strip()
+
+    def auto_factory():
+        if operator["factory"] is None:
+            operator["factory"] = operator_factory(cfg, ask=ask, out=out)
+        return operator["factory"]
+
+    def wait_station(want: bool, timeout: float = 90.0) -> bool:
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            if station() == want:
+                bus.status(station=want)
+                return True
+            pause(0.25)
+        notice(bus, _t("terrain.seq.station_timeout"))
+        return False
+
+    def prepare(key: str) -> bool:
+        """Préalables d'un essai enchaîné : station arrêtée ou en marche, charge fictive CONFIRMÉE (mot CHARGE)."""
+        if tl.needs_stopped(key) and station():
+            if not act("a") or not wait_station(False):
+                return False
+        if tl.needs_running(key) and not station():
+            if not act("d") or not wait_station(True):
+                return False
+        if tl.needs_load(key) and session.connection != "charge":
+            return confirm_load(session, ask=ask, out=out)
+        return True
+
+    def sequence(what: str) -> bool:
+        keys = tl.plan(session, what)
+        if not keys:
+            notice(bus, _t("terrain.seq.nothing"))
+            return True
+        out(_t("terrain.seq.start", count=len(keys)))
+        for rank, key in enumerate(keys, 1):
+            bus.publish("enchainement", cle=key, rang=rank, total=len(keys))
+            if not prepare(key) or not act(key):
+                notice(bus, _t("terrain.seq.stopped", rank=rank, total=len(keys)))
+                return False
+            note_runs(session)                          # tuiles de la page à jour après chaque essai
+            bus.publish("tuiles", **tl.tiles(session, label))
+        out(_t("terrain.seq.done", count=len(keys)))
+        return True
+
+    def act(choice: str) -> bool:
+        """Une action de la valise ; False = refusée ou abandonnée (un enchaînement s'arrête là)."""
+        running = station()
+        drill = tl.drill_of(choice)
+        if choice in NEEDS_STOPPED and running:
+            notice(bus, _t("terrain.need_stopped"))
+            return False
+        if tl.needs_load(choice) and session.connection != "charge":
+            notice(bus, _t("terrain.need_load"))         # aucune émission sans la charge fictive CONFIRMÉE
+            return False
+        if choice == "tout" or choice == "echecs" or choice.startswith("theme:"):
+            return sequence(choice)
+        if choice == "c":
+            return confirm_load(session, ask=ask, out=out)
+        if choice == "r":
+            out(_t("terrain.rx.action"))
+            # Mot ANTENNE tapé par un humain (lot G1) : plus de « O/n » validé par Entrée.
+            if (ask_word(ask, _t("terrain.rx.prompt", word=ANTENNA_WORD), ANTENNA_WORD,
+                         context=_t("terrain.rx.action").strip()) or "").strip().upper() != ANTENNA_WORD:
+                out(_t("terrain.rx.refused"))
+                return True                             # essai passé : la suite (sans antenne) peut continuer
+            try:
+                wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
+            except ValueError:
+                wanted = None
+                out(_t("terrain.rx.freq_invalid"))
+            session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
+            session.save()
+            bus.status(branchement="antenne")
+            try:
+                rx = receive(wanted)
+            except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
+                out(_t("terrain.rx.failed", error=exc))
+            else:
+                session.reception = {"at": _now(), **rx}
+                session.save()
+                out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
+                       freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
+        elif choice == "f":
+            out(_t("terrain.fil.title"))
+            try:
+                result = filters()
+            except Exception as exc:                     # noqa: BLE001 : port occupé, pyserial absent…
+                result = {"verdict": "erreur", "detail": str(exc)[:160]}
+            session.filters = {"at": _now(), **result}
+            session.save()
+            out(_t(f"terrain.fil.{result['verdict']}", detail=result.get("detail", ""),
+                   origine=result.get("origine", "")))
+        elif choice == "s":
+            out(_t("terrain.scope.title"))
+            sp = scope()
+            session.spectrum = {"at": _now(), **sp}
+            session.save()
+            out(_t(f"terrain.scope.{sp['verdict']}", port=sp.get("port", ""), which=sp.get("which", ""),
+                   sweeps=sp.get("sweeps", 0), detail=sp.get("detail", "")))
+        elif choice == "1":
+            take_snapshot(session, "avant", snapshot, out=out)
+        elif choice == "2":
+            explore()
+        elif choice == "3":
+            qualify(False)
+        elif choice == "4":
+            qualify(True)
+        elif choice == "5":
+            if not running:
+                notice(bus, _t("terrain.need_running"))
+            drills_menu(session, cfg, state_dir, ask=ask, out=out)
+        elif drill is not None and choice.startswith("5."):
+            if not running:
+                notice(bus, _t("terrain.need_running"))
+            asyncio.run(play_drill(drill, session, host=cfg.network.rigctld_host, port=cfg.network.rigctld_port,
+                                   tot_s=float(cfg.safety.tot_s), state_dir=state_dir, ask=ask, out=out))
+        elif choice == "9":
+            out(_t("terrain.audio.title"))
+            result = sound()
+            show_audio_check(result, out)
+            session.audio = {"at": _now(), **result}
+            session.save()
+        elif choice == "8":
+            if not running:
+                notice(bus, _t("terrain.need_running"))
+            found = auto_menu(session, cfg, state_dir, ask=ask, out=out, client_factory=operator["factory"])
+            operator["factory"] = operator["factory"] or found
+        elif drill is not None and choice.startswith("8."):
+            if not running:
+                notice(bus, _t("terrain.need_running"))
+            factory = auto_factory()
+            if factory is None:
+                return False
+            asyncio.run(play_auto(drill, session, client_factory=factory, host=cfg.network.rigctld_host,
+                                  port=cfg.network.rigctld_port, cfg=cfg, state_dir=state_dir, ask=ask, out=out))
+        elif choice == "6":
+            take_snapshot(session, "apres", snapshot, out=out)
+            show_differences(session, out=out)
+        elif choice == "7":
+            target = build_report(session, settings=settings_of(cfg), out_dir=output)
+            out(_t("terrain.report_done", path=target))
+        elif choice == "a":
+            ok = control(False) == 0
+            out(_t("terrain.control_done" if ok else "terrain.control_failed"))
+            return ok
+        elif choice == "d":
+            ok = control(True) == 0
+            out(_t("terrain.control_done" if ok else "terrain.control_failed"))
+            return ok
+        return True
+
     while True:
         try:
             note_runs(session)
@@ -918,90 +1092,13 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             bus.status(poste=f"{caps.manufacturer} {caps.model_name}".strip(), modele=profile.model,
                        hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
                        branchement=session.connection or "inconnu")
+            bus.publish("tuiles", **tl.tiles(session, label))
             choice = ask_typed(ask, _t("terrain.choice"), CHOICE,
-                               choices=menu_choices(session, done, folder, running)).strip().lower()
-            if choice in NEEDS_STOPPED and running:
-                notice(bus, _t("terrain.need_stopped"))
-            elif choice in NEEDS_LOAD and session.connection != "charge":
-                notice(bus, _t("terrain.need_load"))         # aucune émission sans la charge fictive CONFIRMÉE
-            elif choice == "c":
-                confirm_load(session, ask=ask, out=out)
-            elif choice == "r":
-                out(_t("terrain.rx.action"))
-                # Mot ANTENNE tapé par un humain (lot G1) : plus de « O/n » validé par Entrée.
-                if (ask_word(ask, _t("terrain.rx.prompt", word=ANTENNA_WORD), ANTENNA_WORD,
-                             context=_t("terrain.rx.action").strip()) or "").strip().upper() != ANTENNA_WORD:
-                    out(_t("terrain.rx.refused"))
-                else:
-                    try:
-                        wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
-                    except ValueError:
-                        wanted = None
-                        out(_t("terrain.rx.freq_invalid"))
-                    session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
-                    session.save()
-                    try:
-                        rx = receive(wanted)
-                    except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
-                        out(_t("terrain.rx.failed", error=exc))
-                    else:
-                        session.reception = {"at": _now(), **rx}
-                        session.save()
-                        out(_t(f"terrain.rx.{rx['verdict']}", level=rx.get("level_dbfs"), s=rx.get("s_metre_db"),
-                               freq=f"{rx['freq_hz'] / 1e6:.3f}", mode=rx["mode"]))
-            elif choice == "f":
-                out(_t("terrain.fil.title"))
-                try:
-                    result = filters()
-                except Exception as exc:                     # noqa: BLE001 : port occupé, pyserial absent…
-                    result = {"verdict": "erreur", "detail": str(exc)[:160]}
-                session.filters = {"at": _now(), **result}
-                session.save()
-                out(_t(f"terrain.fil.{result['verdict']}", detail=result.get("detail", ""),
-                       origine=result.get("origine", "")))
-            elif choice == "s":
-                out(_t("terrain.scope.title"))
-                sp = scope()
-                session.spectrum = {"at": _now(), **sp}
-                session.save()
-                out(_t(f"terrain.scope.{sp['verdict']}", port=sp.get("port", ""), which=sp.get("which", ""),
-                       sweeps=sp.get("sweeps", 0), detail=sp.get("detail", "")))
-            elif choice == "1":
-                take_snapshot(session, "avant", snapshot, out=out)
-            elif choice == "2":
-                explore()
-            elif choice == "3":
-                qualify(False)
-            elif choice == "4":
-                qualify(True)
-            elif choice == "5":
-                if not running:
-                    notice(bus, _t("terrain.need_running"))
-                drills_menu(session, cfg, state_dir, ask=ask, out=out)
-            elif choice == "9":
-                out(_t("terrain.audio.title"))
-                result = sound()
-                show_audio_check(result, out)
-                session.audio = {"at": _now(), **result}
-                session.save()
-            elif choice == "8":
-                if not running:
-                    notice(bus, _t("terrain.need_running"))
-                from .autodrills import auto_menu
-                auto_menu(session, cfg, state_dir, ask=ask, out=out)
-            elif choice == "6":
-                take_snapshot(session, "apres", snapshot, out=out)
-                show_differences(session, out=out)
-            elif choice == "7":
-                target = build_report(session, settings=settings_of(cfg), out_dir=output)
-                out(_t("terrain.report_done", path=target))
-            elif choice == "a":
-                out(_t("terrain.control_done" if control(False) == 0 else "terrain.control_failed"))
-            elif choice == "d":
-                out(_t("terrain.control_done" if control(True) == 0 else "terrain.control_failed"))
-            elif choice in ("q", "0", ""):
+                               choices=menu_choices(session, done, folder, running), role="menu").strip().lower()
+            if choice in ("q", "0", ""):
                 out(_t("terrain.bye", folder=folder))
                 return 0
+            act(choice)
         except (KeyboardInterrupt, QuestionStopped):
             if not bus.consume_stop():              # Ctrl+C au terminal : la valise s'arrête, comme avant
                 raise

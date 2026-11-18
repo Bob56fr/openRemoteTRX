@@ -72,8 +72,13 @@ mode par réglage, aucune écriture hors liste fermée, poste remis comme au dé
   (serveur aiohttp dans un fil à part, protections de la console web locale), menu en boutons, questions texte /
   oui-non / « c'est fait » / secret, fenêtre d'intervention (source `fenetre` du bus, collage et valeur posée par
   script refusés : une touche frappée par lettre au moins), bip, STOP (T 0 puis `Bus.request_stop` = Ctrl+C
-  simulé dans le fil principal, retour au menu). **G2b** à faire : tuiles par thème, mesures en direct, journal
-  replié, « Tout lancer », « Relancer les échecs ».
+  simulé dans le fil principal, retour au menu). **G2b** FAIT (étape 281, station 0.217.0) : tuiles par thème (`qualif/tiles.py`, chaque tuile = une action
+  existante de la valise : touche du menu, essai « 5.N » ou « 8.N »), état lu dans la session, « Lancer le thème »,
+  « Tout lancer » (déroulé conseillé, essais pas encore faits), « Relancer les échecs » (échec ou partiel) ;
+  préalables faits au moment de chaque essai (station arrêtée / démarrée, mot CHARGE demandé à l'humain ; un
+  refus arrête l'enchaînement) ; mesures en direct = lectures que les essais font déjà (PTT de l'observateur,
+  état de CatLink pendant la qualification), bandeau « ÉMISSION EN COURS » ; journal replié. « Remettre à zéro »
+  NON fait (effacerait des résultats) : quitter puis répondre Non à la reprise = nouvelle session.
 - **G3** : API de pilotage et `trx-qualif --pilote` ; refus des mots de sécurité par l'API (test).
 - **G4** : note en direct, brouillon de fiche publique, rapport depuis la page.
 

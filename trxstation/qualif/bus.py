@@ -133,7 +133,7 @@ class Bus:
         self.publish("mesure", nom=name, valeur=value, **fields)
 
     def question(self, prompt: str, kind: str = TEXT, *, word: str | None = None, family: str | None = None,
-                 context: str | None = None, choices: list[dict] | None = None) -> str:
+                 context: str | None = None, choices: list[dict] | None = None, role: str | None = None) -> str:
         """Pose une question et ATTEND la réponse (bloque le fil appelant, comme `input`).
 
         `family` (WORD) : CHARGE, ANTENNE ou EMETTRE (le mot affiché peut être celui d'une langue) ; `context` : ce
@@ -155,6 +155,8 @@ class Bus:
             extra["contexte"] = str(context)
         if choices is not None:
             extra["choix"] = choices
+        if role:
+            extra["role"] = role                    # « menu » : le menu principal de la valise (tuiles de la page)
         try:
             self.publish("question", id=q.id, genre=kind, texte=q.prompt, **extra)
             while not q.done.wait(WAIT_SLICE_S):

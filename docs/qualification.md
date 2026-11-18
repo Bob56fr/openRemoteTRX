@@ -85,7 +85,9 @@ Bus et page (étapes 279-280, valise graphique, `docs/qualification-gui-cahier-d
 bus `qualif/bus.py` (historique `evenements.jsonl` dans le dossier de la session). `trx-qualif --terrain --page`
 ouvre la valise dans le navigateur de CE PC (127.0.0.1, adresse à usage unique) : menu en boutons, fenêtre
 d'intervention pour CHARGE / ANTENNE / EMETTRE (tapés au clavier, collage refusé, bip), STOP toujours visible
-(« T 0 » puis essai interrompu, retour au menu) ; le terminal n'affiche plus que le journal.
+(« T 0 » puis essai interrompu, retour au menu) ; le terminal n'affiche plus que le journal. Étape 281 : tuiles
+par thème, « Tout lancer », « Relancer les échecs », mesures en direct (`qualif/tiles.py`) ; touches directes
+« 5.N » et « 8.N » (un essai), « tout », « echecs », « theme:<id> » acceptées aussi au terminal.
 
 Menu (étape 253) : 1 relevé du poste AVANT, 2 exploration, 3 qualification avec émission, 4 sans émission (station
 ARRÊTÉE pour 2 à 4 : refusés sinon, les outils lancent leur rigctld), 5 essais de sécurité chronométrés (station EN

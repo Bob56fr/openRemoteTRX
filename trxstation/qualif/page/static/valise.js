@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 RF-DIY.COM
-// Page de la valise de qualification (lot G2a) : client du bus de la valise par WebSocket.
+// Page de la valise de qualification (lots G2a et G2b) : client du bus de la valise par WebSocket.
+// Les tuiles ne font que RÉPONDRE au menu de la valise (touches existantes) ; aucun essai n'est inventé ici.
 // Mots de sécurité SEULEMENT dans la fenêtre d'intervention, tapés au clavier (collage refusé) : message « mot ».
 "use strict";
 
@@ -11,6 +12,9 @@
   let finished = false;
   const open = new Map();          // questions ouvertes : id -> événement
   const lines = [];
+  let tiles = null;                // dernier événement « tuiles »
+  let current = null;              // touche de l'essai en cours (lancé d'ici ou enchaîné)
+  let meters = { actif: false };   // dernières mesures relues par les essais
   let ivId = null;                 // question de mot affichée dans la fenêtre
   let ivTrusted = true;            // toute la saisie du mot vient du clavier
   let ivKeys = 0;                  // touches de caractère réellement frappées dans le champ
@@ -68,6 +72,18 @@
     send({ type: "reponse", id: id, text: text });
   }
 
+  function menuQuestion() {
+    for (const q of open.values()) if (q.role === "menu") return q;
+    return null;
+  }
+
+  function launch(key) {              // une tuile, un thème, « Tout lancer » : réponse au menu de la valise
+    const q = menuQuestion();
+    if (!q) return;
+    current = key.includes(":") || key === "tout" || key === "echecs" ? null : key;
+    answer(q.id, key);
+  }
+
   function notice(text, grave) {
     const a = $("avis");
     a.textContent = text;
@@ -84,10 +100,15 @@
       notice(t("stop.failed", { message: String(e) }), true);
     }
   });
+  $("tout").addEventListener("click", () => launch("tout"));
+  $("echecs").addEventListener("click", () => launch("echecs"));
 
-  // ------------------------------------------------------------------ bandeau et journal
+  // ------------------------------------------------------------------ bandeau, mesures, journal
 
-  function status(e) {
+  let statusNow = {};
+
+  function status(update) {
+    const e = statusNow = Object.assign({}, statusNow, update);   // une mise à jour peut ne porter qu'un champ
     $("poste").textContent = e.poste || "";
     $("details").textContent = t("hamlib") + " " + (e.hamlib || "?") + " · " + t("folder") + " " + (e.dossier || "");
     const st = $("v-station");
@@ -99,19 +120,120 @@
     br.className = "voyant" + (b === "charge" ? " charge" : b === "antenne" ? " ok" : " attention");
   }
 
+  function fmt(v, digits, unit) {
+    if (v === null || v === undefined || v === "") return "—";
+    const n = Number(v);
+    return (Number.isFinite(n) ? n.toFixed(digits) : String(v)) + (unit || "");
+  }
+
+  function showMeters() {
+    const m = meters;
+    const tx = m.actif !== false && m.ptt === true;
+    $("txband").hidden = !tx;
+    $("txband").textContent = t("tx.band");
+    const p = $("v-ptt");
+    p.textContent = m.ptt === true ? t("ptt.tx") : m.ptt === false ? t("ptt.rx") : t("ptt.unknown");
+    p.className = "voyant" + (tx ? " tx" : m.ptt === false ? " ok" : "");
+    const freq = m.freq_hz ? (m.freq_hz / 1e6).toFixed(3) + " MHz" + (m.mode ? " " + m.mode : "") : "—";
+    $("m-freq").textContent = freq;
+    $("m-po").textContent = fmt(m.po, 2);
+    $("m-swr").textContent = fmt(m.swr, 1);
+    $("m-alc").textContent = fmt(m.alc, 2);
+    $("m-s").textContent = fmt(m.s_db, 0, " dB");
+    document.querySelector(".mesures").classList.toggle("vieilles", m.actif === false);
+  }
+
   function addLine(text) {
     for (const l of String(text).split("\n")) lines.push(l);
     if (lines.length > 5000) lines.splice(0, lines.length - 5000);
   }
 
-  function showLines() {
-    $("journal").textContent = lines.join("\n");
-    const recent = $("recent");
-    recent.textContent = lines.slice(-40).join("\n");
-    recent.scrollTop = recent.scrollHeight;
+  function lastLines(n) {
+    return lines.filter((l) => l.trim()).slice(-n).join("\n");
   }
 
-  // ------------------------------------------------------------------ question en cours
+  function showLines() {
+    $("journal").textContent = lines.join("\n");
+    $("maintenant").textContent = finished ? t("finished") : lastLines(1);
+  }
+
+  // ------------------------------------------------------------------ tuiles
+
+  function itemLabel(it) {
+    return it.texte || T["menu." + it.cle] || it.cle;
+  }
+
+  function renderTiles() {
+    const box = $("themes");
+    box.replaceChildren();
+    const menu = menuQuestion();
+    $("tout").disabled = $("echecs").disabled = !menu;
+    for (const b of document.querySelectorAll("#station-boutons button")) b.disabled = !menu;
+    if (!tiles) return;
+    $("compte").textContent = t("progress", { done: tiles.faits, total: tiles.total });
+    $("prog").style.width = (tiles.total ? (tiles.faits / tiles.total) * 100 : 0) + "%";
+    for (const th of tiles.themes) {
+      const sec = el("section", "theme");
+      const h = el("header");
+      h.appendChild(el("h3", "", t("theme." + th.id)));
+      h.appendChild(el("span", "ou " + th.ou, t("where." + th.ou)));
+      const all = el("button", "btn-mini", t("run.theme"));
+      all.type = "button";
+      all.disabled = !menu;
+      all.addEventListener("click", () => launch("theme:" + th.id));
+      h.appendChild(all);
+      sec.appendChild(h);
+      const ul = el("ul");
+      for (const it of th.essais) {
+        const running = current === it.cle && !menu;
+        const state = running ? "encours" : it.etat;
+        const li = el("li", "essai " + state);
+        li.appendChild(el("span", "pt " + state));
+        const txt = el("div");
+        const name = itemLabel(it);
+        const optional = it.facultatif && !name.toLowerCase().includes(t("optional").toLowerCase());
+        txt.appendChild(el("div", "n", name + (optional ? " · " + t("optional") : "")));
+        txt.appendChild(el("div", "d", running ? t("state.encours") : it.detail || t("state." + it.etat)));
+        li.appendChild(txt);
+        if (it.etat !== "absent") {
+          const b = el("button", "btn-mini", it.etat === "a_faire" ? "▶" : "↻");
+          b.type = "button";
+          b.title = t(it.etat === "a_faire" ? "run.one" : "run.again");
+          b.disabled = !menu;
+          b.addEventListener("click", () => launch(it.cle));
+          li.appendChild(b);
+        }
+        ul.appendChild(li);
+      }
+      sec.appendChild(ul);
+      box.appendChild(sec);
+    }
+  }
+
+  function stationButtons() {
+    const box = $("station-boutons");
+    if (box.childElementCount) return;
+    for (const key of ["d", "a", "7", "q"]) {
+      const b = el("button", key === "q" ? "second" : "", T["menu." + key] || key);
+      b.type = "button";
+      b.addEventListener("click", () => launch(key));
+      box.appendChild(b);
+    }
+  }
+
+  function legend() {
+    const box = $("legende");
+    box.replaceChildren();
+    for (const s of ["ok", "partiel", "echec", "encours", "a_faire", "absent"]) {
+      const span = el("span");
+      span.appendChild(el("span", "pt " + s));
+      span.lastChild.style.display = "inline-block";
+      span.appendChild(document.createTextNode(" " + t("state." + s)));
+      box.appendChild(span);
+    }
+  }
+
+  // ------------------------------------------------------------------ question en cours (hors menu)
 
   function choiceLabel(c) {
     if (c.texte) return c.texte;
@@ -120,27 +242,15 @@
   }
 
   function renderChoice(zone, q) {
-    const main = q.choix.some((c) => T["menu." + c.cle] && !c.texte && !c.libelle);
-    if (main) {
-      zone.appendChild(el("h2", "", t("menu.title")));
-      zone.appendChild(el("p", "aide", t("menu.hint")));
-    } else {
-      zone.appendChild(el("p", "invite", q.texte.trim()));
-    }
+    zone.appendChild(el("p", "invite", q.texte.trim()));
     const grid = el("div", "choix");
     for (const c of q.choix) {
       const b = el("button");
       b.type = "button";
       if (c.fait) b.classList.add("fait");
-      if (c.bloque) b.classList.add("bloque");
       b.appendChild(el("span", "cle", c.cle));
       b.appendChild(document.createTextNode(" " + choiceLabel(c)));
-      if (c.fait) b.appendChild(el("span", "marque", "✓"));
-      let info = c.info || "";
-      if (c.cle === "7" && main && info) info += " " + t("photos");
-      if (c.etat) info = c.etat;
-      if (c.bloque) info = t("blocked." + c.bloque);
-      if (info) b.appendChild(el("span", "info", info));
+      if (c.etat) b.appendChild(el("span", "info", c.etat));
       b.addEventListener("click", () => answer(q.id, c.cle));
       grid.appendChild(b);
     }
@@ -176,27 +286,28 @@
     zone.appendChild(row);
   }
 
-  function render() {
+  function renderQuestion() {
     const zone = $("zone");
     zone.replaceChildren();
-    const questions = [...open.values()];
-    const words = questions.filter((q) => q.genre === "mot");
-    showIntervention(words.length ? words[words.length - 1] : null);
-    const others = questions.filter((q) => q.genre !== "mot");
+    const others = [...open.values()].filter((q) => q.genre !== "mot" && q.role !== "menu");
     const q = others.length ? others[others.length - 1] : null;
-    if (finished) {
-      zone.appendChild(el("p", "attente", t("finished")));
-    } else if (!q) {
-      zone.appendChild(el("p", "attente", t("waiting")));
-    } else if (q.genre === "choix" && Array.isArray(q.choix)) {
-      renderChoice(zone, q);
-    } else if (q.genre === "oui_non") {
-      renderButtons(zone, q, [[t("yes"), "o"], [t("no"), "n"], [t("enter"), "", true]]);
-    } else if (q.genre === "fait") {
-      renderButtons(zone, q, [[t("done"), ""]]);
-    } else {
-      renderInput(zone, q, q.genre === "secret");
-    }
+    zone.hidden = !q;
+    if (!q) return;
+    zone.appendChild(el("h2", "", t("question")));
+    const recent = el("pre", "lignes", lastLines(10));
+    if (q.genre === "choix" && Array.isArray(q.choix)) renderChoice(zone, q);
+    else if (q.genre === "oui_non") renderButtons(zone, q, [[t("yes"), "o"], [t("no"), "n"], [t("enter"), "", true]]);
+    else if (q.genre === "fait") renderButtons(zone, q, [[t("done"), ""]]);
+    else renderInput(zone, q, q.genre === "secret");
+    zone.appendChild(recent);
+  }
+
+  function render() {
+    const words = [...open.values()].filter((q) => q.genre === "mot");
+    showIntervention(words.length ? words[words.length - 1] : null);
+    renderQuestion();
+    renderTiles();
+    showMeters();
   }
 
   // ------------------------------------------------------------------ fenêtre d'intervention
@@ -225,6 +336,8 @@
     setTimeout(() => input.focus(), 0);
   }
 
+  const ivInput = $("iv-mot");
+
   function ivError(text) {
     const e = $("iv-erreur");
     e.textContent = text;
@@ -232,7 +345,6 @@
     ivInput.focus();                               // l'opérateur retape tout de suite le mot
   }
 
-  const ivInput = $("iv-mot");
   for (const kind of ["paste", "drop"]) {
     ivInput.addEventListener(kind, (ev) => { ev.preventDefault(); ivError(t("iv.paste")); });
   }
@@ -276,9 +388,20 @@
     switch (e.type) {
       case "ligne": addLine(e.texte); break;
       case "statut": status(e); break;
-      case "question": open.set(e.id, e); break;
+      case "tuiles": tiles = e; break;
+      case "question":
+        open.set(e.id, e);
+        if (e.role === "menu") {
+          // La valise attend au menu : plus rien en cours, plus personne ne relit le poste. Jamais une vieille
+          // valeur montrée comme actuelle (vu à l'essai : bandeau ÉMISSION resté après un STOP).
+          current = null;
+          meters = { actif: false };
+        }
+        break;
       case "reponse": case "annule": open.delete(e.id); break;
-      case "fin": finished = true; break;
+      case "enchainement": current = e.cle; break;
+      case "mesure": if (e.nom === "poste" && e.valeur) meters = Object.assign({}, meters, e.valeur); break;
+      case "fin": finished = true; meters = { actif: false }; break;
       case "stop": if (live) addLine("— STOP —"); break;
       case "avis": if (live) notice(e.texte, true); break;
       case "erreur":
@@ -294,14 +417,18 @@
     $("v-pilote").textContent = t("who");
     $("stop").textContent = t("stop");
     $("stop").title = t("stop.title");
-    $("t-recent").textContent = t("recent");
     $("t-journal").textContent = t("journal");
+    $("tout").textContent = t("run.all");
+    $("echecs").textContent = t("run.failed");
+    for (const k of ["freq", "po", "swr", "alc", "s"]) $("t-" + k).textContent = t("meter." + k);
     $("iv-titre").textContent = t("iv.title");
     $("iv-t-why").textContent = t("iv.why");
     $("iv-t-what").textContent = t("iv.what");
     $("iv-rule").textContent = t("iv.rule");
     $("iv-valider").textContent = t("iv.validate");
     $("iv-passer").textContent = t("iv.skip");
+    stationButtons();
+    legend();
   }
 
   function connect() {
@@ -314,6 +441,7 @@
         texts();
         open.clear();
         lines.length = 0;
+        statusNow = {};
         finished = !!e.fin;
         for (const ev of e.evenements || []) onEvent(ev, false);
         open.clear();

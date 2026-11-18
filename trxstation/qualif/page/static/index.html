@@ -11,25 +11,49 @@
 </head>
 <body>
 <header id="bandeau">
-  <div class="ident">
-    <div id="titre" class="titre"></div>
-    <div id="poste" class="poste"></div>
-    <div id="details" class="details"></div>
+  <div id="txband" class="txband" hidden></div>
+  <div class="ligne-bandeau">
+    <div class="ident">
+      <div id="titre" class="titre"></div>
+      <div id="poste" class="poste"></div>
+      <div id="details" class="details"></div>
+    </div>
+    <div class="voyants">
+      <span id="v-station" class="voyant"></span>
+      <span id="v-branchement" class="voyant"></span>
+      <span id="v-ptt" class="voyant"></span>
+      <span id="v-pilote" class="voyant pilote"></span>
+    </div>
+    <button id="stop" class="stop" type="button">STOP</button>
   </div>
-  <div class="voyants">
-    <span id="v-station" class="voyant"></span>
-    <span id="v-branchement" class="voyant"></span>
-    <span id="v-pilote" class="voyant pilote"></span>
-  </div>
-  <button id="stop" class="stop" type="button">STOP</button>
 </header>
 <div id="avis" class="avis" hidden></div>
 <main>
-  <section id="zone" class="zone"></section>
-  <section class="recent">
-    <h2 id="t-recent"></h2>
-    <pre id="recent"></pre>
-  </section>
+  <section id="zone" class="zone" hidden></section>
+  <div class="haut">
+    <section class="carte">
+      <div id="maintenant" class="maintenant"></div>
+      <div class="mesures">
+        <div class="m"><span id="t-freq"></span><b id="m-freq">—</b></div>
+        <div class="m"><span id="t-po"></span><b id="m-po">—</b></div>
+        <div class="m"><span id="t-swr"></span><b id="m-swr">—</b></div>
+        <div class="m"><span id="t-alc"></span><b id="m-alc">—</b></div>
+        <div class="m"><span id="t-s"></span><b id="m-s">—</b></div>
+      </div>
+    </section>
+    <section class="carte">
+      <div id="compte" class="compte"></div>
+      <div class="prog"><i id="prog"></i></div>
+      <div id="station-boutons" class="boutons petits"></div>
+    </section>
+  </div>
+  <div class="outils">
+    <button id="tout" type="button" class="principal"></button>
+    <button id="echecs" type="button" class="second"></button>
+    <span class="vide"></span>
+    <div id="legende" class="legende"></div>
+  </div>
+  <div id="themes" class="themes"></div>
   <details class="journal">
     <summary id="t-journal"></summary>
     <pre id="journal"></pre>

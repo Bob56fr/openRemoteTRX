@@ -238,9 +238,43 @@ class HwTest:
         self.ctrl = PttController(self.link, cfg, limits=limits, audio_gate=self.pipeline.gate.set_open)
         self.pipeline.gate.owner_provider = lambda: self.ctrl.snapshot().owner
         self._link_task = asyncio.create_task(self.link.run())
+        self._start_measures()
         await self.ctrl.start()
         self.ctrl.connect_client(CLIENT)
         return True
+
+    def _start_measures(self) -> None:
+        """Valise (lot G2b) : l'état du poste que CatLink RELIT déjà (aucune commande de plus) publié pour la page,
+        deux fois par seconde au plus et seulement s'il change."""
+        from ..qualif.bus import bus_of
+        bus = bus_of(self.ask)
+        if bus is None or self.link is None:
+            return
+
+        async def publish() -> None:
+            last = None
+            while True:
+                st = self.link.state
+                levels = st.levels or {}
+                now = {"actif": True, "ptt": st.ptt, "freq_hz": st.frequency_hz, "mode": st.mode,
+                       "s_db": st.strength_db, "po": levels.get("RFPOWER_METER"), "swr": levels.get("SWR"),
+                       "alc": levels.get("ALC")}
+                if now != last:
+                    bus.measure("poste", now)
+                    last = now
+                await asyncio.sleep(0.5)
+        self._measure_task = asyncio.create_task(publish())
+
+    async def _stop_measures(self) -> None:
+        task = getattr(self, "_measure_task", None)
+        if task is not None:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            from ..qualif.bus import bus_of
+            bus = bus_of(self.ask)
+            if bus is not None:
+                bus.measure("poste", {"actif": False})
+            self._measure_task = None
 
     async def teardown(self) -> None:
         """Toujours exécuté : coupe l'émission, ferme l'audio, arrête la liaison."""
@@ -249,6 +283,10 @@ class HwTest:
                 await self.ctrl.close()
             except Exception as exc:
                 self.say(_t("teardown.cut_error", error=repr(exc)))
+        try:
+            await self._stop_measures()                 # APRÈS la coupure : jamais rien avant elle
+        except Exception:                               # noqa: BLE001 : la page perd une mesure, rien de plus
+            pass
         if self.pipeline is not None:
             await self.pipeline.stop()
         if self.link is not None:

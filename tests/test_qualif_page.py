@@ -194,8 +194,15 @@ def test_texts_fr_and_en_have_the_same_keys_and_every_menu_entry():
     for name in ("tous", "retour"):
         assert f"choice.{name}" in fr
     js = (STATIC / "valise.js").read_text(encoding="utf-8")
-    used = set(re.findall(r'\bt\("([a-z_.]+)"', js)) - {"connection.", "why.", "choice.", "blocked."}
+    used = {k for k in re.findall(r'\bt\("([a-z_.]+)"', js) if not k.endswith(".")}
     assert used <= fr.keys(), used - fr.keys()
+    from trxstation.qualif import tiles
+    dynamic = {f"theme.{t}" for t, _, _ in tiles.themes()} | {f"where.{w}" for _, w, _ in tiles.themes()}
+    dynamic |= {f"state.{s}" for s in ("ok", "partiel", "echec", "encours", "a_faire", "absent")}
+    dynamic |= {f"meter.{m}" for m in ("freq", "po", "swr", "alc", "s")}
+    dynamic |= {f"why.{w}" for w in ("CHARGE", "ANTENNE", "EMETTRE")}
+    dynamic |= {f"connection.{c}" for c in ("antenne", "charge", "inconnu")} | {"choice.tous", "choice.retour"}
+    assert dynamic <= fr.keys(), dynamic - fr.keys()
     source = open(page_server.__file__, encoding="utf-8").read()
     assert set(re.findall(r'"(err\.[a-z_]+)"', source)) <= fr.keys()
 
