@@ -2371,7 +2371,9 @@ class Console:
         hours = self._ask_int(self.t("diffusion.ask_hours"), 1, 0, 24)
         voice = self._ask_yes(self.t("diffusion.ask_voice"), False)
         pseudo = self.ask(self.t("diffusion.ask_pseudo")).strip()[:32]
-        args = {"access": access, "hours": None if hours == 0 else hours, "voice": voice, "meta": ["pseudo"]}
+        from .diffusion.protocol import DEFAULT_META_CHOICE      # tout, comme le POC (décision du 2026-11-18)
+        args = {"access": access, "hours": None if hours == 0 else hours, "voice": voice,
+                "meta": list(DEFAULT_META_CHOICE)}
         if pseudo:
             args["pseudo"] = pseudo
         reply = self._dif_do("start", args)

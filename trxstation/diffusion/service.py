@@ -42,6 +42,8 @@ FRAME_S = au.BLOCK / 48000            # 20 ms
 AUDIO_QUEUE = 50                      # 1 s au plus en attente
 NO_AUDIO_ALERT_S = 5.0                # plus de son de la passerelle : alerte (silence envoyé)
 NO_AUDIO_SILENCE_S = 2.0              # plus de son de la passerelle : raison « pas_de_son » dite aux auditeurs
+S_KEEP_S = 6.0                        # S-mètre gardé (couvre des envois perdus) ; envoyé : S_SEND_S dernières secondes
+S_SEND_S = 4.0
 FATAL_STATUSES = (401, 404)           # mot de passe ou station refusés : pas de nouvel essai
 # TRX Console (menu 5.6) : demande déposée dans state_dir, réponse dans state_dir/diffusion (même mécanisme que la
 # présence et le monitoring). La réponse peut porter le mot de passe des AUDITEURS (« reveal ») : effacée vite.
@@ -99,6 +101,7 @@ class DiffusionService:
         self._reply_at: float | None = None
         self._meta_dirty = False
         self._last_audio = 0.0
+        self._s_hist: list[tuple[float, float, bool | None]] = []   # (instant monotone, dB / S9, squelch)
 
     # ------------------------------------------------------------- état
     @property
@@ -157,6 +160,29 @@ class DiffusionService:
         elif name == "ptt" and isinstance(data, dict):
             self.values["tx"] = bool(data.get("active"))
             self._meta_dirty = True
+
+    def on_info(self, info: dict, now: float | None = None) -> None:
+        """Infos du poste de la passerelle (diffusion/rigview.snapshot) ; chaque valeur revérifiée, le reste ignoré."""
+        from .rigview import s_text
+        now = time.monotonic() if now is None else now
+        w = info.get("w")
+        self.values["filtre"] = w if isinstance(w, str) and 0 < len(w) <= 8 else None
+        v = info.get("v")
+        try:
+            self.values["voyants"] = p.check_meta({"voyants": v})["voyants"] if isinstance(v, list) else None
+        except p.DiffusionRefused:
+            self.values["voyants"] = None
+        s, q = info.get("s"), info.get("q")
+        if isinstance(s, (int, float)) and not isinstance(s, bool) and -80 <= s <= 100:
+            self._s_hist.append((now, round(float(s), 1), q if isinstance(q, bool) else None))
+            self.values["s_metre"] = s_text(s)
+        self._s_hist = [h for h in self._s_hist if now - h[0] <= S_KEEP_S]
+
+    def s_points(self, now: float | None = None) -> list[list] | None:
+        """S-mètre des S_SEND_S dernières secondes, le plus récent d'abord : [[âge ms, dB, squelch], …]."""
+        now = time.monotonic() if now is None else now
+        pts = [[int(round(1000 * (now - t))), db, q] for t, db, q in reversed(self._s_hist) if now - t <= S_SEND_S]
+        return pts[:p.MAX_S_POINTS] or None
 
     def silence_reason(self) -> str | None:
         """Pourquoi les auditeurs n'entendent rien (protocol.SILENCE_REASONS), None si le son passe. Même règle que la
@@ -265,7 +291,7 @@ class DiffusionService:
             p.check_hours(hours)
             if not isinstance(voice, bool):
                 raise p.DiffusionRefused("voice : true ou false")
-            if not isinstance(choice, list) or any(c not in p.META_FIELDS for c in choice):
+            if not isinstance(choice, list) or any(c not in p.CHOICE_FIELDS for c in choice):
                 raise p.DiffusionRefused("meta : liste de champs permis")
             fixed = p.check_meta({k: args.get(k) for k in ("pseudo", "indicatif", "message")})
         except p.DiffusionRefused as exc:
@@ -316,6 +342,11 @@ class DiffusionService:
     # ------------------------------------------------------------- son reçu de la passerelle
     def on_packet(self, data: bytes) -> None:
         if not self.active or not self.token:
+            return
+        if data[:4] == au.INFO_MAGIC:
+            info = au.unpack_info(self.token, data)
+            if info is not None:
+                self.on_info(info)
             return
         got = au.unpack(self.token, data)
         if got is None:
@@ -440,11 +471,17 @@ class DiffusionService:
                 self._meta_dirty = True
                 self.write_status()
             now = time.monotonic()                     # cadence : horloge monotone (l'heure murale peut sauter)
+            if "s_metre" in s["meta_choice"] and self._s_hist:   # S-mètre animé : un envoi par seconde
+                self._meta_dirty = True
             if (self._meta_dirty and now - last >= p.META_MIN_INTERVAL_S) or now - last >= p.META_REFRESH_S:
                 self._meta_dirty = False
                 last = now
-                status, counts = await meta.send_meta(s["access"], p.pick_meta(s["meta_choice"], self.values),
-                                                     s.get("silence"))
+                self.values["s"] = self.s_points()
+                try:
+                    chosen = p.pick_meta(s["meta_choice"], self.values)
+                except p.DiffusionRefused:            # une valeur inattendue : jamais d'arrêt, le pseudo seul
+                    chosen = p.pick_meta(["pseudo"], self.values)
+                status, counts = await meta.send_meta(s["access"], chosen, s.get("silence"))
                 if status == 200:
                     refused = False
                     if counts is not None and counts.get(s["access"]) != s["listeners"]:

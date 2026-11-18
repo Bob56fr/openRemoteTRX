@@ -37,8 +37,9 @@ test("état de la rubrique : cause du dernier arrêt, voix émise dite clairemen
   assert.match(dfx.status(null), /indisponible/);
 });
 
-test("formulaire : privée, 1 h, pseudo seul et voix coupée par défaut ; limites de la station", () => {
-  assert.deepEqual(dfx.startArgs({}).args, { access: "prive", hours: 1, voice: false, meta: ["pseudo"] });
+test("formulaire : privée, 1 h, tout diffusé et voix coupée par défaut ; limites de la station", () => {
+  assert.deepEqual(dfx.startArgs({}).args, { access: "prive", hours: 1, voice: false, meta: dfx.DEFAULT_META });
+  assert.ok(dfx.DEFAULT_META.includes("s_metre") && dfx.DEFAULT_META.includes("voyants"));   // tout par défaut (étape 248)
   const a = dfx.startArgs({ access: "public", hours: "none", voice: true, meta: ["pseudo", "frequence_hz", "adresse_ip"],
                             pseudo: " BOB ", message: "" }).args;
   assert.deepEqual(a, { access: "public", hours: null, voice: true, meta: ["pseudo", "frequence_hz"], pseudo: "BOB" });
@@ -46,7 +47,8 @@ test("formulaire : privée, 1 h, pseudo seul et voix coupée par défaut ; limit
   assert.ok(dfx.startArgs({ hours: "0" }).error);
   assert.ok(dfx.startArgs({ pseudo: "x".repeat(33) }).error);
   assert.ok(dfx.startArgs({ message: "a\u0007b" }).error);
-  assert.deepEqual(dfx.META.map(([k]) => k), ["pseudo", "indicatif", "frequence_hz", "mode", "bande", "tx", "s_metre", "message"]);
+  assert.deepEqual(dfx.META.map(([k]) => k), ["pseudo", "indicatif", "frequence_hz", "mode", "bande", "tx", "s_metre", "filtre",
+                                         "voyants", "message"]);
 });
 
 test("mot de passe des auditeurs : mêmes règles que la station", () => {

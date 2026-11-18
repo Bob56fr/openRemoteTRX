@@ -14,8 +14,10 @@ Le module ne peut rien demander d'autre : il n'a aucun droit sur le poste.
 """
 from __future__ import annotations
 
+import array
 import asyncio
 import logging
+import math
 import socket
 import time
 from collections.abc import Awaitable, Callable
@@ -27,6 +29,7 @@ from .listeners import ListenerMix
 log = logging.getLogger("trx.diffusion.out")
 
 POLL_S = 2.0
+INFO_EVERY = 10                                    # infos du poste (S-mètre, voyants) : toutes les 10 trames = 200 ms
 # Alerte de fin (ntfy) : cause d'arrêt en clair (mêmes causes que le module, docs/protocole.md § 20)
 STOP_TEXTS = {"operator": "arrêt par un opérateur", "duration": "fin de la durée", "overload": "station surchargée",
               "gateway_restart": "passerelle relancée", "auth": "source refusée", "disabled": "fonction mise hors service",
@@ -41,13 +44,16 @@ def _duration(seconds: float) -> str:
 class DiffusionOut:
     def __init__(self, port: int, token: bytes, hub, tap, transmitting: Callable[[], bool],
                  call: Callable[[dict], Awaitable], overloaded: Callable[[], bool] = lambda: False,
-                 muted: Callable[[], bool] | None = None, alert: Callable[..., None] | None = None) -> None:
+                 muted: Callable[[], bool] | None = None, alert: Callable[..., None] | None = None,
+                 info: Callable[[float], dict] | None = None) -> None:
         self.port, self.token, self.hub, self.tap = port, token, hub, tap
         self.transmitting = transmitting          # () -> bool : émission en cours (n'importe laquelle)
         self.call = call                          # (data) -> coroutine : commande vers le module
         self.overloaded = overloaded              # () -> bool : garde de surcharge des visiteurs déclenchée
         self.muted = muted                        # () -> bool : réception hors bandes (et non permise) : silence
         self.alert = alert                        # Notifier.alert : ntfy au début et à la fin d'une diffusion (§ 8)
+        self.info = info                          # (niveau du son reçu en dBFS) -> infos du poste (diffusion/rigview)
+        self.rms_db = -120.0
         self.voice = False
         self.packets = 0
         self.status: dict | None = None           # dernier état du module (state.diffusion des opérateurs)
@@ -129,17 +135,41 @@ class DiffusionOut:
         seq = 0
         try:
             while True:
-                pcm = self.frame(mix, await queue.get())
+                rx = await queue.get()
+                pcm = self.frame(mix, rx)
                 try:
                     sock.sendto(au.pack(self.token, seq, pcm), ("127.0.0.1", self.port))
                     self.packets += 1
                 except OSError:                    # module absent : paquet perdu, rien d'autre
                     pass
                 seq += 1
+                self._level(rx)
+                if self.info is not None and seq % INFO_EVERY == 0:
+                    self._send_info(sock)
         finally:
             self.hub.unsubscribe(queue)
             mix.close()
             sock.close()
+
+    def _level(self, rx: bytes) -> None:
+        """Niveau du son REÇU du poste (avant silence hors bandes), lissé sur ~200 ms : état indicatif du squelch."""
+        samples = array.array("h")
+        try:
+            samples.frombytes(rx[: len(rx) - len(rx) % 2])
+        except ValueError:
+            return
+        if not samples:
+            return
+        step = max(1, len(samples) // 120)           # 120 échantillons suffisent pour un niveau
+        part = samples[::step]
+        rms = math.sqrt(sum(v * v for v in part) / len(part)) / 32768
+        self.rms_db += (20 * math.log10(rms + 1e-9) - self.rms_db) * 0.1
+
+    def _send_info(self, sock: socket.socket) -> None:
+        try:
+            sock.sendto(au.pack_info(self.token, self.info(self.rms_db)), ("127.0.0.1", self.port))
+        except Exception:                            # des infos ne doivent JAMAIS gêner le son
+            pass
 
     async def run(self, stop: asyncio.Event) -> None:
         try:

@@ -15,12 +15,14 @@
     "« Diffuser aussi ma voix ». Continuer ?";
   const HOURS = [1, 2, 3, 4, 6, 8, 12, 24, null];       // null : sans limite (24 h/24, choix explicite)
   const DEFAULT_HOURS = 1;
-  // Ordre et libellés de la liste proposée à l'opérateur (cahier § 7) ; pseudo seul par défaut.
+  // Ordre et libellés de la liste proposée à l'opérateur (cahier § 7, protocol.CHOICE_FIELDS) ; TOUT coché par
+  // défaut, comme le POC (décision de l'utilisateur du 2026-11-18, étape 248).
   const META = [
     ["pseudo", "Pseudo"], ["indicatif", "Indicatif"], ["frequence_hz", "Fréquence"], ["mode", "Mode"],
-    ["bande", "Bande"], ["tx", "Réception / émission"], ["s_metre", "S-mètre"], ["message", "Message"],
+    ["bande", "Bande"], ["tx", "Réception / émission"], ["s_metre", "S-mètre"], ["filtre", "Filtre"],
+    ["voyants", "Voyants (P.AMP, ATT, NB, NR…)"], ["message", "Message"],
   ];
-  const DEFAULT_META = ["pseudo"];
+  const DEFAULT_META = META.map(([key]) => key);
   const LIMITS = { pseudo: 32, indicatif: 16, message: 140 };
   const STOPS = {
     operator: "arrêtée par un opérateur", duration: "fin de la durée choisie", overload: "station surchargée",

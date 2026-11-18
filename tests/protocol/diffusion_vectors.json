@@ -26,6 +26,14 @@
    "signature": "6711be3514aaa1d44f2c3fe963fe5c9f55424452c091c6272788175f8bebc435"
   },
   {
+   "nom": "meta publique, S-mètre animé, filtre et voyants",
+   "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+   "methode": "POST",
+   "chemin": "/api/v1/bob56fr/meta",
+   "corps": "{\"v\":1,\"station\":\"bob56fr\",\"ts_ms\":1800000004000,\"acces\":\"public\",\"meta\":{\"pseudo\":\"BOB-56-FR\",\"frequence_hz\":7074000,\"mode\":\"USB\",\"s_metre\":\"S7\",\"filtre\":\"2.4k\",\"voyants\":[[\"P.AMP 1\",true],[\"ATT\",false],[\"ΔTX\",false],[\"NB\",true]],\"s\":[[0,-12.0,null],[200,-10.5,true],[400,-14,false]]}}",
+   "signature": "b9a4de7cc92cab0bb10ade3c54d16496d7edd965e9bcc966eea4f3a3f9737e01"
+  },
+  {
    "nom": "nouveau mot de passe des auditeurs",
    "cle": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
    "methode": "POST",
@@ -49,6 +57,63 @@
    "nom": "champ inconnu",
    "meta": {
     "adresse_ip": "192.0.2.1"
+   }
+  },
+  {
+   "nom": "voyant sans booléen",
+   "meta": {
+    "voyants": [
+     [
+      "NB",
+      "oui"
+     ]
+    ]
+   }
+  },
+  {
+   "nom": "voyant trop long",
+   "meta": {
+    "voyants": [
+     [
+      "xxxxxxxxxxxxx",
+      true
+     ]
+    ]
+   }
+  },
+  {
+   "nom": "point du S-mètre trop vieux",
+   "meta": {
+    "s": [
+     [
+      10001,
+      0,
+      null
+     ]
+    ]
+   }
+  },
+  {
+   "nom": "point du S-mètre hors échelle",
+   "meta": {
+    "s": [
+     [
+      0,
+      101,
+      null
+     ]
+    ]
+   }
+  },
+  {
+   "nom": "point du S-mètre incomplet",
+   "meta": {
+    "s": [
+     [
+      0,
+      1
+     ]
+    ]
    }
   },
   {

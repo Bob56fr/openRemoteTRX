@@ -12,6 +12,7 @@ from pathlib import Path
 from trxstation import config as cfgmod
 from trxstation.console import FEATURES, Console, menu_number, set_feature
 from trxstation.diffusion import audio as au, keyfile
+from trxstation.diffusion.protocol import DEFAULT_META_CHOICE
 from trxstation.diffusion.service import CONSOLE_REPLY, CONSOLE_REQUEST, DiffusionService
 from trxstation.errors import codes
 from trxstation.gateway.audio.diffusion_out import DiffusionOut
@@ -96,7 +97,8 @@ def test_start_asks_the_warning_once_and_sends_safe_defaults(tmp_path):
                     {"ok": True, "result": {"active": True, "listen_page": "https://diffusion.example.org/ecoute/b"}}])
     con, out, calls = make(path, ["1", "", "", "", "BOB", "o", ""], module=lambda a, g: next(answers))
     con.diffusion()
-    assert calls[0] == ("start", {"access": "prive", "hours": 1, "voice": False, "meta": ["pseudo"], "pseudo": "BOB"})
+    assert calls[0] == ("start", {"access": "prive", "hours": 1, "voice": False, "meta": list(DEFAULT_META_CHOICE),
+                                  "pseudo": "BOB"})
     assert calls[1][1]["confirm"] is True and calls[1][1]["voice"] is False
     text = "\n".join(out)
     assert "VOTRE responsabilité" in text and "https://diffusion.example.org/ecoute/b" in text

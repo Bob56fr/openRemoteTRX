@@ -278,9 +278,14 @@ def _start_diffusion_out(cfg, ctrl, pipeline, bridge, access, stop, manager=None
             return True                            # fréquence inconnue : silence, par prudence
         return not cfg.tx_allowed(freq)
 
+    def info(rms_db: float) -> dict:              # S-mètre, squelch, filtre, voyants (comme la page de la station)
+        from ..diffusion.rigview import snapshot
+        caps = getattr(link, "capabilities", None)
+        return snapshot(getattr(link, "state", None), getattr(caps, "preamps", ()) or (), rms_db)
+
     out = DiffusionOut(cfg.diffusion.audio_port, audio_token(module_secret(key, "diffusion")), pipeline.hub,
                        pipeline.tx_tap, transmitting, lambda data: bridge.call("diffusion", data), overloaded, muted,
-                       alert=getattr(manager, "alert", None))
+                       alert=getattr(manager, "alert", None), info=info)
     if manager is not None:                        # commande des opérateurs et état publié (lot D2)
         manager.diffusion_call = lambda data: bridge.call("diffusion", data)
         manager.diffusion_status = out.summary

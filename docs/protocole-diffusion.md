@@ -78,7 +78,7 @@ non fiable (affichée, jamais exécutée).
   refuse deux envois en moins de 0,5 s) et au moins toutes les 30 s pendant la diffusion (le nombre d'auditeurs
   revient dans la réponse).
 - `meta` : SEULS champs permis (champ inconnu = 400), tous facultatifs ; l'opérateur choisit lesquels envoyer
-  (cahier § 7 : pseudo seul par défaut). Aucun caractère de contrôle. Jamais d'adresse IP, de nom de machine, de
+  (cahier § 7 : tout par défaut depuis la station 0.192.0). Aucun caractère de contrôle. Jamais d'adresse IP, de nom de machine, de
   locator précis, de numéro de série.
 
   | Champ | Type | Limite |
@@ -90,6 +90,9 @@ non fiable (affichée, jamais exécutée).
   | `bande` | texte | 12 |
   | `tx` | booléen | émission en cours |
   | `s_metre` | texte | 8 (ex. `S9+20`) |
+  | `filtre` | texte | 8 (largeur, ex. `2.4k`) ; depuis 0.192.0 |
+  | `voyants` | liste | 10 au plus de `[texte (12 au plus), allumé]`, ex. `["NB", true]` ; depuis 0.192.0 |
+  | `s` | liste | 40 au plus de `[âge ms 0..10000, dB / S9 -80..100, squelch ouvert ou null]`, le plus récent d'abord : S-mètre des 4 dernières secondes (envoyé avec `s_metre`, une fois par seconde) ; depuis 0.192.0 |
   | `message` | texte | 140 |
 
 - `silence` (facultatif, hors de `meta`, depuis la station 0.191.0) : pourquoi les auditeurs n'entendent rien en ce
@@ -124,7 +127,8 @@ non fiable (affichée, jamais exécutée).
   l'adresse que l'opérateur transmet ; la station l'affiche avec l'identifiant (le mot de passe sur demande).
 - Lecteurs (VLC, applications de radio) : `https://<serveur>/<station>-prive` (identifiant demandé) ou `-public`.
 - Service de la page (serveur de référence) : `GET /api/v1/<station>/etat` → `{"en_direct":false}` ou
-  `{"en_direct":true,"acces":…,"montage":…,"meta":{…},"silence":…,"maj":<s>,"auditeurs":N,"places":P}` (`silence` :
+  `{"en_direct":true,"acces":…,"montage":…,"meta":{…},"silence":…,"maj":<s>,"age_ms":A,"auditeurs":N,"places":P}`
+  (`age_ms` : âge des métadonnées au serveur, pour caler le S-mètre sur le son ; `silence` :
   dernière raison reçue de la station, null si le son passe ; `places` : auditeurs au plus par montage) ; montage privé sans connexion :
   401 `{"en_direct":true,"acces":"prive","connexion":true}`. `POST /api/v1/<station>/connexion`
   `{"user","password"}` : cookie de 12 h (HttpOnly, Secure, SameSite=Strict) ; 5 échecs d'une même adresse en 10 min

@@ -17,7 +17,8 @@ tiers, un petit VPS.
    ou « sans limite ».
 4. **Source** : le son du **TRX seulement** (pas le SDR, pas FreeDV décodé).
 5. **Accès** : public ou privé, choisi par l'opérateur AVANT de lancer la diffusion ; **privé par défaut**.
-6. **Métadonnées** : l'opérateur choisit dans une liste ce qu'il diffuse ; **par défaut son pseudo seul**.
+6. **Métadonnées** : l'opérateur choisit dans une liste ce qu'il diffuse ; **par défaut TOUT** (décision de
+   l'utilisateur du 2026-11-18, étape 248, à la place de « pseudo seul ») : la page des auditeurs ressemble au POC.
 7. **Mise en marche** : fermée par défaut ; un **indicateur explicite, visible tout le temps**, signale qu'une
    diffusion est active.
 8. **Serveur** : un **petit VPS** (Icecast). Son code et sa configuration vont dans un **dépôt privé à part**
@@ -107,8 +108,9 @@ qui écoutent (18 vérifications).
 
 ## 7. Métadonnées
 
-Liste au choix de l'opérateur, **pseudo seul par défaut** : pseudo, indicatif, fréquence, mode, bande, état
-réception / émission, S-mètre, message libre court. **Jamais** : adresse IP, nom de machine, locator précis, numéro de
+Liste au choix de l'opérateur, **tout coché par défaut** (étape 248) : pseudo, indicatif, fréquence, mode, bande, état
+réception / émission, S-mètre (animé : points des 4 dernières secondes, squelch, comme le POC), largeur du filtre,
+voyants (P.AMP, ATT, RIT, ΔTX, SPLIT, NOTCH, NB, NR), message libre court. **Jamais** : adresse IP, nom de machine, locator précis, numéro de
 série. Envoyées par la station au VPS à chaque changement (au plus une fois par seconde) en JSON signé (§ 9), lues par
 la page des auditeurs ; en MP3, elles forment aussi le titre ICY.
 

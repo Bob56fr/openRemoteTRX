@@ -58,10 +58,12 @@ def test_meta_refusals_of_the_vectors_and_never_sent():
 def test_pick_meta_keeps_only_the_operator_choice():
     values = {"pseudo": "BOB", "frequence_hz": 7074000, "mode": "USB", "tx": False, "s_metre": None,
               "adresse_ip": "192.0.2.1"}
-    assert p.pick_meta(p.DEFAULT_META_CHOICE, values) == {"pseudo": "BOB"}                 # pseudo seul par défaut
+    assert p.pick_meta(p.DEFAULT_META_CHOICE, values) == {"pseudo": "BOB", "frequence_hz": 7074000, "mode": "USB",
+                                                         "tx": False}       # tout par défaut (étape 248), absents omis
     assert p.pick_meta(["pseudo", "frequence_hz", "tx", "s_metre", "adresse_ip"], values) == {
         "pseudo": "BOB", "frequence_hz": 7074000, "tx": False}                               # absents et inconnus omis
-    assert list(p.META_FIELDS) == ["pseudo", "indicatif", "frequence_hz", "mode", "bande", "tx", "s_metre", "message"]
+    assert list(p.CHOICE_FIELDS) == ["pseudo", "indicatif", "frequence_hz", "mode", "bande", "tx", "s_metre", "filtre",
+                                     "voyants", "message"]
 
 
 def test_station_names_mounts_and_addresses():

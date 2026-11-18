@@ -49,9 +49,18 @@ META_FIELDS: dict[str, tuple[Any, ...]] = {
     "bande": (str, 12),
     "tx": (bool,),
     "s_metre": (str, 8),
+    "filtre": (str, 8),                 # largeur du filtre, ex. « 2.4k »
+    "voyants": (list,),                 # [[texte, allumé], …] : P.AMP, ATT, RIT, ΔTX, SPLIT, NOTCH, NB, NR (§ 3.1)
+    "s": (list,),                       # S-mètre des dernières secondes : [[âge ms, dB / S9, squelch ouvert], …]
     "message": (str, 140),
 }
-DEFAULT_META_CHOICE = ("pseudo",)       # cahier § 1.6 : pseudo seul par défaut
+# Champs que l'opérateur coche ; « s » suit « s_metre » (jamais coché seul).
+CHOICE_FIELDS = tuple(k for k in META_FIELDS if k != "s")
+# Décision de l'utilisateur du 2026-11-18 (étape 248, à la place de « pseudo seul » du cahier § 1.6) : TOUT par
+# défaut, comme le POC ; l'opérateur décoche au lancement. Un champ sans valeur (indicatif, message) n'est pas envoyé.
+DEFAULT_META_CHOICE = CHOICE_FIELDS
+MAX_VOYANTS, MAX_VOYANT_TEXT = 10, 12
+MAX_S_POINTS, MAX_S_AGE_MS = 40, 10_000
 # Raison d'un silence VOULU, toujours envoyée (aucune donnée personnelle), pour l'expliquer aux auditeurs (§ 3.1) :
 # réception hors des bandes autorisées, opérateur en émission sans sa voix diffusée, plus de son du poste.
 SILENCE_REASONS = ("hors_bandes", "emission", "pas_de_son")
@@ -145,7 +154,9 @@ def check_meta(meta: Any) -> dict[str, Any]:
         if value is None:
             continue
         kind = rule[0]
-        if kind is bool:
+        if kind is list:
+            _check_list(key, value)
+        elif kind is bool:
             if not isinstance(value, bool):
                 raise DiffusionRefused(f"{key} : booléen attendu")
         elif kind is int:
@@ -160,9 +171,33 @@ def check_meta(meta: Any) -> dict[str, Any]:
     return clean
 
 
+def _check_list(key: str, value: Any) -> None:
+    if not isinstance(value, list):
+        raise DiffusionRefused(f"{key} : liste attendue")
+    if key == "voyants":
+        if len(value) > MAX_VOYANTS:
+            raise DiffusionRefused(f"voyants : {MAX_VOYANTS} au plus")
+        for item in value:
+            if (not isinstance(item, list) or len(item) != 2 or not isinstance(item[0], str)
+                    or not 0 < len(item[0]) <= MAX_VOYANT_TEXT or not isinstance(item[1], bool)
+                    or any(ord(c) < 32 or 0x7F <= ord(c) < 0xA0 for c in item[0])):
+                raise DiffusionRefused(f"voyants : [texte de {MAX_VOYANT_TEXT} caractères au plus, booléen] attendu")
+    else:                                    # « s »
+        if len(value) > MAX_S_POINTS:
+            raise DiffusionRefused(f"s : {MAX_S_POINTS} points au plus")
+        for item in value:
+            ok = (isinstance(item, list) and len(item) == 3
+                  and isinstance(item[0], int) and not isinstance(item[0], bool) and 0 <= item[0] <= MAX_S_AGE_MS
+                  and isinstance(item[1], (int, float)) and not isinstance(item[1], bool) and -80 <= item[1] <= 100
+                  and (item[2] is None or isinstance(item[2], bool)))
+            if not ok:
+                raise DiffusionRefused(f"s : [âge de 0 à {MAX_S_AGE_MS} ms, dB de -80 à 100, booléen ou null] attendu")
+
+
 def pick_meta(choice: tuple[str, ...] | list[str], values: dict[str, Any]) -> dict[str, Any]:
     """Seulement les champs choisis par l'opérateur (inconnus ignorés), valeurs absentes omises, puis vérifiées."""
-    return check_meta({k: values[k] for k in choice if k in META_FIELDS and values.get(k) is not None})
+    keys = [k for k in choice if k in CHOICE_FIELDS] + (["s"] if "s_metre" in choice else [])
+    return check_meta({k: values[k] for k in keys if values.get(k) is not None})
 
 
 def _body(obj: dict[str, Any]) -> bytes:
