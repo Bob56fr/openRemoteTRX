@@ -107,6 +107,10 @@ def test_qualif_menu_runs_trx_qualif_with_the_chosen_mode(tmp_path):
     con, fake, out = console(tmp_path, answers=["5", "n"])
     con.qualif()                                                       # complète : aucune option d'émission à part
     assert fake.calls[-1][0][-2] == "--output"
+    con, fake, out = console(tmp_path, answers=["6"], running=True)
+    con.qualif()                                                       # valise : elle gère la station elle-même
+    commands = [c for c, _ in fake.calls]
+    assert [c for c in commands if c[0] == "systemctl"] == [] and commands[-1][-1] == "--terrain"
     con, fake, out = console(tmp_path, answers=["9"], running=True)
     con.qualif()
     assert fake.calls == [] and out[-1] == "Annulé."

@@ -282,7 +282,6 @@
   "finding.rigctld_cache.detail": "Un changement fait SUR le poste (bouton, émission au micro) peut se voir avec retard. Le PTT relu peut être celui du cache : la station ne doit pas s'y fier seule (ni pour couper, ni pour conclure qu'elle a coupé).",
   "args.terrain_options": "--terrain ne se combine pas avec --explorer, --plan ni --sans-emission (choix dans le menu de la valise).",
   "terrain.title": "\n=== Valise de qualification (v0) : {name} ===\nSession : {folder}",
-  "terrain.menu": "  1 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  2 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  3       Qualification sans émission (station ARRÊTÉE)\n  4       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  5       Fabriquer le rapport pour Claude (zip)\n  q       Quitter (la session est gardée : --session pour la reprendre)",
   "terrain.choice": "Choix : ",
   "terrain.report_done": "Rapport fabriqué : {path}\nVérifie les photos avant de le donner (indicatif, plaque du poste).",
   "terrain.bye": "Session gardée dans {folder}. Pense à remettre le poste dans son état d'origine.",
@@ -331,5 +330,18 @@
   "terrain.drill.startup.expected": "le poste ne passe jamais en émission",
   "terrain.drill.reboot.title": "\n--- 10. (facultatif) Redémarrage complet du PC ---",
   "terrain.drill.reboot.how": "Redémarre le PC poste allumé, puis relance cet outil avec --session et joue cet essai : il relit le poste.",
-  "terrain.drill.reboot.expected": "le poste n'est jamais passé en émission"
+  "terrain.drill.reboot.expected": "le poste n'est jamais passé en émission",
+  "terrain.menu2": "  1 [{before}] Relevé du poste AVANT (lecture seule ; photos des menus dans {photo_dir})\n  2 [{explore}] Exploration sans émission (station ARRÊTÉE)\n  3 [{qualif}] Qualification complète, émission sur charge fictive (station ARRÊTÉE)\n  4       Qualification sans émission (station ARRÊTÉE)\n  5       Essais de sécurité chronométrés (station EN MARCHE) : {drills}/{total}\n  6 [{after}] Relevé du poste APRÈS et différences à remettre à la main\n  7       Fabriquer le rapport pour Claude (zip ; {photos} photo(s))\n  a / d   Arrêter / démarrer la station du PC\n  q       Quitter (la session est gardée : --session pour la reprendre)",
+  "terrain.station_running": "Station du PC : EN MARCHE",
+  "terrain.station_stopped": "Station du PC : arrêtée",
+  "terrain.need_stopped": "La station est en marche : arrête-la d'abord (a), ces outils lancent leur propre rigctld.",
+  "terrain.need_running": "Attention : la station est arrêtée. Démarre-la (d) pour les essais, sauf l'essai « démarrage ».",
+  "terrain.control_done": "Commande envoyée.",
+  "terrain.control_failed": "La commande a échoué : utilise TRX Console (menus 1.1 et 1.2).",
+  "terrain.snapshot_reading": "Relevé du poste (lectures seulement, rien n'est changé)…",
+  "terrain.snapshot_failed": "Relevé impossible : {error}",
+  "terrain.snapshot_done": "Relevé enregistré : {count} lectures.",
+  "terrain.diff_missing": "Il faut le relevé AVANT (1) et le relevé APRÈS (6) pour comparer.",
+  "terrain.diff_none": "Aucune différence lue : le poste est revenu à son état de départ (ce que la CAT sait lire ; les menus du poste se vérifient sur les photos).",
+  "terrain.diff_title": "\n!!! {count} réglage(s) différent(s) du départ : À REMETTRE À LA MAIN (avant -> après) :"
 }

@@ -282,7 +282,6 @@
   "finding.rigctld_cache.detail": "Eine Änderung AM Gerät (Knopf, Senden mit dem Mikrofon) kann verspätet erscheinen. Der zurückgelesene PTT kann aus dem Cache stammen: die Station darf sich nicht allein darauf verlassen (weder zum Abschalten noch um zu folgern, dass sie abgeschaltet hat).",
   "args.terrain_options": "--terrain lässt sich nicht mit --explorer, --plan oder --sans-emission kombinieren (Auswahl im Menü des Koffers).",
   "terrain.title": "\n=== Qualifizierungskoffer (v0): {name} ===\nSitzung: {folder}",
-  "terrain.menu": "  1 [{explore}] Erkundung ohne Senden (Station GESTOPPT)\n  2 [{qualif}] Vollständige Qualifizierung, Senden in einen Dummy-Load (Station GESTOPPT)\n  3       Qualifizierung ohne Senden (Station GESTOPPT)\n  4       Gemessene Sicherheitsprüfungen (Station LÄUFT): {drills}/{total}\n  5       Bericht für Claude erstellen (zip)\n  q       Beenden (die Sitzung bleibt erhalten: --session zum Fortsetzen)",
   "terrain.choice": "Auswahl: ",
   "terrain.report_done": "Bericht erstellt: {path}\nFotos vor der Weitergabe prüfen (Rufzeichen, Typenschild).",
   "terrain.bye": "Sitzung gespeichert in {folder}. Das Funkgerät wieder in den Ausgangszustand bringen.",
@@ -331,5 +330,18 @@
   "terrain.drill.startup.expected": "das Gerät sendet nie",
   "terrain.drill.reboot.title": "\n--- 10. (optional) Vollständiger Neustart des PCs ---",
   "terrain.drill.reboot.how": "Den PC bei eingeschaltetem Gerät neu starten, dann dieses Werkzeug mit --session erneut starten und diese Prüfung ausführen: sie liest das Gerät.",
-  "terrain.drill.reboot.expected": "das Gerät hat nie gesendet"
+  "terrain.drill.reboot.expected": "das Gerät hat nie gesendet",
+  "terrain.menu2": "  1 [{before}] Zustand des Geräts VORHER (nur lesend; Fotos der Menüs in {photo_dir})\n  2 [{explore}] Erkundung ohne Senden (Station GESTOPPT)\n  3 [{qualif}] Vollständige Qualifizierung, Senden in einen Dummy-Load (Station GESTOPPT)\n  4       Qualifizierung ohne Senden (Station GESTOPPT)\n  5       Gemessene Sicherheitsprüfungen (Station LÄUFT): {drills}/{total}\n  6 [{after}] Zustand des Geräts NACHHER und von Hand zurückzustellende Unterschiede\n  7       Bericht für Claude erstellen (zip; {photos} Foto(s))\n  a / d   Station des PCs stoppen / starten\n  q       Beenden (die Sitzung bleibt erhalten: --session zum Fortsetzen)",
+  "terrain.station_running": "Station des PCs: LÄUFT",
+  "terrain.station_stopped": "Station des PCs: gestoppt",
+  "terrain.need_stopped": "Die Station läuft: zuerst stoppen (a), diese Werkzeuge starten ihr eigenes rigctld.",
+  "terrain.need_running": "Achtung: die Station ist gestoppt. Für die Prüfungen starten (d), außer der Prüfung « Start ».",
+  "terrain.control_done": "Befehl gesendet.",
+  "terrain.control_failed": "Der Befehl ist fehlgeschlagen: TRX Console verwenden (Menüs 1.1 und 1.2).",
+  "terrain.snapshot_reading": "Gerät wird gelesen (nur Lesen, nichts wird geändert)…",
+  "terrain.snapshot_failed": "Lesen nicht möglich: {error}",
+  "terrain.snapshot_done": "Zustand gespeichert: {count} Lesungen.",
+  "terrain.diff_missing": "Zum Vergleichen werden der Zustand VORHER (1) und NACHHER (6) gebraucht.",
+  "terrain.diff_none": "Kein Unterschied gelesen: das Gerät ist im Ausgangszustand (soweit CAT lesen kann; Menüs anhand der Fotos prüfen).",
+  "terrain.diff_title": "\n!!! {count} Einstellung(en) anders als am Anfang: VON HAND ZURÜCKSTELLEN (vorher -> nachher):"
 }

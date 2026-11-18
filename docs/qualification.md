@@ -79,8 +79,19 @@ trx-qualif --terrain --output DOSSIER            # nouvelle session dans DOSSIER
 trx-qualif --terrain --output DOSSIER --session DOSSIER/terrain-…   # reprendre une session
 ```
 
-Menu : 1 exploration, 2 qualification avec émission, 3 sans émission (station ARRÊTÉE pour ces trois : les outils
-lancent leur rigctld), 4 essais de sécurité chronométrés (station EN MARCHE), 5 rapport zip, q quitter.
+Depuis TRX Console : menu 8.3, choix 6 (étape 253 ; la station n'est pas arrêtée par la console, la valise s'en charge).
+
+Menu (étape 253) : 1 relevé du poste AVANT, 2 exploration, 3 qualification avec émission, 4 sans émission (station
+ARRÊTÉE pour 2 à 4 : refusés sinon, les outils lancent leur rigctld), 5 essais de sécurité chronométrés (station EN
+MARCHE), 6 relevé APRÈS et différences, 7 rapport zip, a / d arrêter / démarrer la station du PC (comme les menus 1.2
+et 1.1), q quitter.
+
+Relevés (1 et 6) : LECTURE SEULE (`ReadOnlyRig` : `f m t s j z u l p` seulement, toute autre commande refusée avant
+l'envoi), par le rigctld de la station s'il répond, sinon par un rigctld lancé pour l'occasion ; fréquence, mode,
+split, RIT, XIT, fonctions, niveaux SANS les mesures (S-mètre, ALC…), paramètres ; `reglages/releve-avant.json`,
+`releve-apres.json`, `differences.json` = « À REMETTRE À LA MAIN » ; rapport : `remise_en_etat` (« NON vérifiée »
+si un relevé manque). Photos des menus du poste : dossiers `photos/avant` et `photos/apres` de la session (copiées à
+la main), comptées et listées dans le rapport.
 
 Essais (partie 3.5 du guide, plus le démarrage) : l'observateur relit le PTT toutes les 200 ms. Pour STOP, perte de
 liaison et arrêt de la station, le qualifieur tape Entrée AU MOMENT de l'action (repère) : délai = retour en réception
@@ -93,8 +104,7 @@ Rapport : `<session>.zip` dans DOSSIER (`qualification.json` format 1, `rapport.
 `empreintes.sha256`, dossiers `explore-*`, `qualif-*`, `essais/`). Verdict PROPOSÉ : `refuse` (un essai ou Q1 en
 échec), `incomplet`, `validation_en_cours` ; `valide` reste une décision de l'équipe.
 
-Pas encore dans la v0 : session isolée de la station du PC, photos guidées, relevé avant / après, client automatique,
-mesures ALC, jumeau rejouable, menu 8.3 de TRX Console (lancer la commande dans un terminal).
+Pas encore : configuration de session isolée de celle du PC, client automatique, mesures ALC, jumeau rejouable.
 
 ## Exploration d'un poste jamais essayé (`--explorer`, étape 175)
 

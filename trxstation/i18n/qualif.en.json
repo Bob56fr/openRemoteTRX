@@ -282,7 +282,6 @@
   "finding.rigctld_cache.detail": "A change made ON the rig (knob, transmitting with the microphone) may show late. The PTT read back may come from the cache: the station must not rely on it alone (neither to cut, nor to conclude that it has cut).",
   "args.terrain_options": "--terrain cannot be combined with --explorer, --plan or --sans-emission (choose in the kit menu).",
   "terrain.title": "\n=== Qualification kit (v0): {name} ===\nSession: {folder}",
-  "terrain.menu": "  1 [{explore}] Exploration without transmitting (station STOPPED)\n  2 [{qualif}] Full qualification, transmitting into a dummy load (station STOPPED)\n  3       Qualification without transmitting (station STOPPED)\n  4       Timed safety drills (station RUNNING): {drills}/{total}\n  5       Build the report for Claude (zip)\n  q       Quit (the session is kept: --session to resume it)",
   "terrain.choice": "Choice: ",
   "terrain.report_done": "Report built: {path}\nCheck the photos before handing it over (callsign, rig label).",
   "terrain.bye": "Session kept in {folder}. Remember to put the rig back as it was.",
@@ -331,5 +330,18 @@
   "terrain.drill.startup.expected": "the rig never transmits",
   "terrain.drill.reboot.title": "\n--- 10. (optional) Full PC restart ---",
   "terrain.drill.reboot.how": "Restart the PC with the rig on, then run this tool again with --session and play this drill: it reads the rig.",
-  "terrain.drill.reboot.expected": "the rig never transmitted"
+  "terrain.drill.reboot.expected": "the rig never transmitted",
+  "terrain.menu2": "  1 [{before}] Rig snapshot BEFORE (read only; photos of the menus in {photo_dir})\n  2 [{explore}] Exploration without transmitting (station STOPPED)\n  3 [{qualif}] Full qualification, transmitting into a dummy load (station STOPPED)\n  4       Qualification without transmitting (station STOPPED)\n  5       Timed safety drills (station RUNNING): {drills}/{total}\n  6 [{after}] Rig snapshot AFTER and differences to restore by hand\n  7       Build the report for Claude (zip; {photos} photo(s))\n  a / d   Stop / start the PC station\n  q       Quit (the session is kept: --session to resume it)",
+  "terrain.station_running": "PC station: RUNNING",
+  "terrain.station_stopped": "PC station: stopped",
+  "terrain.need_stopped": "The station is running: stop it first (a), these tools start their own rigctld.",
+  "terrain.need_running": "Warning: the station is stopped. Start it (d) for the drills, except the « start-up » drill.",
+  "terrain.control_done": "Command sent.",
+  "terrain.control_failed": "The command failed: use TRX Console (menus 1.1 and 1.2).",
+  "terrain.snapshot_reading": "Reading the rig (reads only, nothing is changed)…",
+  "terrain.snapshot_failed": "Snapshot impossible: {error}",
+  "terrain.snapshot_done": "Snapshot saved: {count} reads.",
+  "terrain.diff_missing": "Both the BEFORE (1) and AFTER (6) snapshots are needed to compare.",
+  "terrain.diff_none": "No difference read: the rig is back to its starting state (as far as CAT can read; check the rig menus on the photos).",
+  "terrain.diff_title": "\n!!! {count} setting(s) differ from the start: RESTORE BY HAND (before -> after):"
 }

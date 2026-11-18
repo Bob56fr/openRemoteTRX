@@ -230,6 +230,7 @@ class Session:
     started: str = ""
     drills: dict[str, dict] = field(default_factory=dict)
     runs: list[dict] = field(default_factory=list)
+    snapshots: dict[str, dict] = field(default_factory=dict)
 
     FILE = "session.json"
 
@@ -398,6 +399,14 @@ def _html_report(data: dict) -> str:
         f"<td>{e(str(d.get('note') or ''))}</td></tr>" for d in data["essais"])
     runs = "".join(f"<li>{e(r['kind'])} : {e(r['folder'])} {e(str(r.get('verdict') or ''))}</li>" for r in data["runs"])
     reasons = "".join(f"<li>{e(r)}</li>" for r in data["verdict"]["raisons"]) or "<li>—</li>"
+    rest = data["remise_en_etat"]
+    if not rest["compare"]:
+        restore = "<li>relevé de départ ou de fin manquant : remise en état NON vérifiée</li>"
+    elif not rest["differences"]:
+        restore = "<li>aucune différence entre le départ et la fin</li>"
+    else:
+        restore = "".join(f"<li>À REMETTRE À LA MAIN : {e(d['lecture'])} {e(str(d['avant']))} → {e(str(d['apres']))}</li>"
+                          for d in rest["differences"])
     return f"""<!doctype html>
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <html lang="fr"><head><meta charset="utf-8"><title>Qualification {e(data['poste']['nom'])}</title>
@@ -409,6 +418,8 @@ Session commencée le {e(data['session']['debut'])}.</p>
 <h2>Verdict proposé : {e(data['verdict']['propose'])}</h2><ul>{reasons}</ul>
 <h2>Essais de sécurité</h2><table><tr><th>Essai</th><th>Résultat</th><th>Mesure</th><th>Remarque</th></tr>{rows}</table>
 <h2>Outils lancés</h2><ul>{runs or '<li>—</li>'}</ul>
+<h2>Remise en état du poste</h2><ul>{restore}</ul>
+<p>Photos : {len(data['photos'])}.</p>
 <p>Le statut « valide » reste une décision de l'équipe (docs/qualification-terrain-cahier-des-charges.md § 7).</p>
 </body></html>
 """
@@ -425,6 +436,15 @@ Pour la conversation Claude qui reçoit ce zip, dans le dépôt openRemoteTRX :
 """
 
 
+def _restore_summary(session: Session) -> dict:
+    """Différences entre le relevé de départ et celui de fin (compare = False : un relevé manque)."""
+    try:
+        diff = json.loads((session.folder / "reglages" / "differences.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"compare": False, "differences": None}
+    return {"compare": True, "differences": diff}
+
+
 def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
     note_runs(session)
     proposed, reasons = verdict(session)
@@ -438,6 +458,10 @@ def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
         "reglages": settings,
         "essais": [{"id": d.id, "facultatif": d.optional, **session.drills.get(d.id, {})} for d in DRILLS],
         "runs": session.runs,
+        "releves": session.snapshots,
+        "remise_en_etat": _restore_summary(session),
+        "photos": sorted(p.relative_to(session.folder).as_posix() for p in (session.folder / "photos").rglob("*")
+                         if p.is_file()) if (session.folder / "photos").is_dir() else [],
         "verdict": {"propose": proposed, "raisons": reasons},
     }
     folder = session.folder
@@ -480,39 +504,182 @@ def settings_of(cfg) -> dict:
 
 # --------------------------------------------------------------------------- déroulé
 
+def station_control(config_path: Path | None, start: bool) -> int:
+    """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
+    import subprocess
+    import sys
+    from ..console import TARGET, WINDOWS_TASK
+    if os.name == "nt":
+        if start:
+            cmd = ["schtasks", "/Run", "/TN", WINDOWS_TASK]
+        else:
+            cmd = [sys.executable, "-m", "trxstation.supervisor.main", "--stop"]
+            if config_path is not None:
+                cmd[3:3] = ["--config", str(config_path)]
+    else:
+        cmd = ["systemctl", "start" if start else "stop", TARGET]
+        if hasattr(os, "geteuid") and os.geteuid() != 0:
+            cmd.insert(0, "sudo")
+    try:
+        return subprocess.run(cmd, check=False).returncode
+    except OSError:
+        return 1
+
+
 def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
-                ask: Ask = input, out: Callable[[str], None] = print,
-                explore: Callable | None = None, qualify: Callable | None = None) -> int:
+                config_path: Path | None = None, ask: Ask = input, out: Callable[[str], None] = print,
+                explore: Callable | None = None, qualify: Callable | None = None,
+                station: Callable[[], bool] | None = None, control: Callable[[bool], int] | None = None,
+                snapshot: Callable[[], dict] | None = None) -> int:
     from . import main as qmain
     folder = session_dir or output / f"terrain-{profile.model}-{dt.datetime.now():%Y%m%d-%H%M}"
     caps = profile.caps
     session = Session.open(folder, model=profile.model, model_name=caps.model_name, manufacturer=caps.manufacturer,
                            hamlib_version=profile.hamlib_version, backend_status=profile.backend_status)
+    for sub in ("avant", "apres"):
+        (folder / "photos" / sub).mkdir(parents=True, exist_ok=True)
     state_dir = Path(cfg.supervisor.state_dir)
     explore = explore or (lambda: asyncio.run(qmain.run_explore(cfg, profile, dump_text, folder)))
     qualify = qualify or (lambda no_tx: asyncio.run(qmain.run_qualif(
         cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False)))
+    station = station or (lambda: qmain.station_running(cfg.supervisor.instance_lock_port))
+    control = control or (lambda start: station_control(config_path, start))
+    snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out)))
     while True:
         note_runs(session)
+        running = station()
         out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
+        out(_t("terrain.station_running" if running else "terrain.station_stopped"))
         done = {r["kind"] for r in session.runs}
-        out(_t("terrain.menu", explore="✓" if "explore" in done else " ", qualif="✓" if "qualif" in done else " ",
-               drills=sum(1 for d in DRILLS if d.id in session.drills), total=len(DRILLS)))
+
+        def tick(ok) -> str:
+            return "✓" if ok else " "
+        out(_t("terrain.menu2", before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
+               qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
+               total=len(DRILLS), after=tick(session.snapshots.get("apres")),
+               photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
         choice = ask(_t("terrain.choice")).strip().lower()
-        if choice == "1":
-            explore()
+        if choice in ("2", "3", "4") and running:
+            out(_t("terrain.need_stopped"))
+        elif choice == "1":
+            take_snapshot(session, "avant", snapshot, out=out)
         elif choice == "2":
-            qualify(False)
+            explore()
         elif choice == "3":
-            qualify(True)
+            qualify(False)
         elif choice == "4":
-            drills_menu(session, cfg, state_dir, ask=ask, out=out)
+            qualify(True)
         elif choice == "5":
+            if not running:
+                out(_t("terrain.need_running"))
+            drills_menu(session, cfg, state_dir, ask=ask, out=out)
+        elif choice == "6":
+            take_snapshot(session, "apres", snapshot, out=out)
+            show_differences(session, out=out)
+        elif choice == "7":
             target = build_report(session, settings=settings_of(cfg), out_dir=output)
             out(_t("terrain.report_done", path=target))
+        elif choice == "a":
+            out(_t("terrain.control_done" if control(False) == 0 else "terrain.control_failed"))
+        elif choice == "d":
+            out(_t("terrain.control_done" if control(True) == 0 else "terrain.control_failed"))
         elif choice in ("q", "0", ""):
             out(_t("terrain.bye", folder=folder))
             return 0
+
+
+# --------------------------------------------------------------------------- relevé du poste (lecture seule)
+
+READ_COMMANDS = frozenset({"f", "m", "t", "s", "j", "z", "u", "l", "p"})   # lectures SEULEMENT
+BASE_READS = ("f", "m", "s", "j", "z")
+NOT_COMPARED = {"t"}
+
+
+class ReadOnlyRig:
+    """Enveloppe d'un client rigctld qui REFUSE toute commande hors de READ_COMMANDS (aucune écriture possible)."""
+
+    def __init__(self, client) -> None:
+        self._client = client
+
+    async def read(self, line: str) -> dict:
+        letter = line.split(" ", 1)[0]
+        if letter not in READ_COMMANDS or "\n" in line or "\r" in line:
+            raise ObserverError(f"commande refusée au relevé : {line!r}")
+        return await self._client._command(line)
+
+
+async def read_state(rig: ReadOnlyRig, profile) -> dict:
+    """Tout ce qui est lisible et stable : fréquence, mode, split, RIT, XIT, fonctions, niveaux (sans les mesures),
+    paramètres. Valeur = réponse de rigctld, ou « RPRT n » si refusée."""
+    from ..gateway.cat.client import FUNC_RE, LEVEL_RE, RigError
+    from .explore import _VARYING, ACTION_PREFIXES
+    lines = list(BASE_READS) + ["t"]
+    lines += [f"u {n}" for n in profile.get_functions if FUNC_RE.fullmatch(n) and not n.startswith(ACTION_PREFIXES)]
+    lines += [f"l {n}" for n in profile.get_levels if LEVEL_RE.fullmatch(n) and n not in _VARYING]
+    lines += [f"p {n}" for n in profile.get_params if LEVEL_RE.fullmatch(n)]
+    state = {}
+    for line in lines:
+        try:
+            values = await rig.read(line)
+            state[line] = " ".join(f"{k}={v}" for k, v in sorted(values.items()) if not k.startswith("#")) or \
+                " ".join(v for k, v in sorted(values.items()))
+        except RigError as exc:
+            state[line] = f"RPRT {exc.code}"
+    return state
+
+
+async def snapshot_session(cfg, profile, *, out: Callable[[str], None] = print) -> dict:
+    """Relevé par le rigctld de la station s'il répond, sinon par un rigctld lancé pour l'occasion."""
+    from ..gateway.cat.client import RigctldClient
+    from . import main as qmain
+    host, port = cfg.network.rigctld_host, cfg.network.rigctld_port
+    async with qmain.rigctld_session(cfg, spawn=not qmain._port_open(host, port), out=out) as (h, p):
+        client = RigctldClient(h, p, timeout=3.0)
+        await client.connect()
+        try:
+            return await read_state(ReadOnlyRig(client), profile)
+        finally:
+            await client.close()
+
+
+def take_snapshot(session: "Session", which: str, snapshot: Callable[[], dict], *, out: Callable[[str], None]) -> None:
+    out(_t("terrain.snapshot_reading"))
+    try:
+        state = snapshot()
+    except Exception as exc:                     # noqa: BLE001 : rigctld absent, poste éteint… : dit, jamais fatal
+        out(_t("terrain.snapshot_failed", error=exc))
+        return
+    folder = session.folder / "reglages"
+    folder.mkdir(exist_ok=True)
+    (folder / f"releve-{which}.json").write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+                                                 encoding="utf-8")
+    session.snapshots[which] = {"at": _now(), "count": len(state)}
+    session.save()
+    out(_t("terrain.snapshot_done", count=len(state)))
+
+
+def differences(before: dict, after: dict) -> list[dict]:
+    keys = sorted((set(before) | set(after)) - NOT_COMPARED)
+    return [{"lecture": k, "avant": before.get(k), "apres": after.get(k)} for k in keys if before.get(k) != after.get(k)]
+
+
+def show_differences(session: "Session", *, out: Callable[[str], None]) -> list[dict] | None:
+    folder = session.folder / "reglages"
+    try:
+        before = json.loads((folder / "releve-avant.json").read_text(encoding="utf-8"))
+        after = json.loads((folder / "releve-apres.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        out(_t("terrain.diff_missing"))
+        return None
+    diff = differences(before, after)
+    (folder / "differences.json").write_text(json.dumps(diff, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if not diff:
+        out(_t("terrain.diff_none"))
+    else:
+        out(_t("terrain.diff_title", count=len(diff)))
+        for d in diff:
+            out(f"  {d['lecture']:<22} {d['avant']}  ->  {d['apres']}")
+    return diff
 
 
 def drills_menu(session: Session, cfg, state_dir: Path, *, ask: Ask, out: Callable[[str], None]) -> None:

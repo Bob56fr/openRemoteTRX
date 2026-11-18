@@ -238,6 +238,7 @@ Aucune n'est plus compliquée que ce que la station fait déjà ; le seul point 
 ## 11. Lots
 
 VERSION 0 FAITE (étape 252, station 0.194.0, `docs/qualification.md` § « Valise de qualification v0 ») : session, enchaînement des outils existants, essais du § 5.4 JOUÉS À LA MAIN et chronométrés par l'observateur (repère tapé au moment de l'action), rapport zip et empreintes. Aucun chemin d'émission nouveau.
+Étape 253 (station 0.195.0) : relevés avant / après en lecture seule et différences (§ 5.2, 5.6), dossiers de photos, station du PC arrêtée / démarrée par la valise, menu 8.3 choix 6. Reste du lot T1 : configuration de session isolée de celle du PC ; puis T2 (client automatique), T3, T5.
 
 
 | Lot | Contenu | Dépend de |

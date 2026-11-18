@@ -282,7 +282,6 @@
   "finding.rigctld_cache.detail": "Un cambio hecho EN el equipo (mando, transmisión con el micrófono) puede verse con retraso. El PTT releído puede ser el de la caché: la estación no debe fiarse solo de él (ni para cortar, ni para concluir que ha cortado).",
   "args.terrain_options": "--terrain no se combina con --explorer, --plan ni --sans-emission (elección en el menú del maletín).",
   "terrain.title": "\n=== Maletín de cualificación (v0): {name} ===\nSesión: {folder}",
-  "terrain.menu": "  1 [{explore}] Exploración sin transmitir (estación DETENIDA)\n  2 [{qualif}] Cualificación completa, transmisión en carga ficticia (estación DETENIDA)\n  3       Cualificación sin transmitir (estación DETENIDA)\n  4       Pruebas de seguridad cronometradas (estación EN MARCHA): {drills}/{total}\n  5       Generar el informe para Claude (zip)\n  q       Salir (la sesión se conserva: --session para reanudarla)",
   "terrain.choice": "Opción: ",
   "terrain.report_done": "Informe generado: {path}\nRevisa las fotos antes de entregarlo (indicativo, placa del equipo).",
   "terrain.bye": "Sesión guardada en {folder}. Recuerda dejar el equipo como estaba.",
@@ -331,5 +330,18 @@
   "terrain.drill.startup.expected": "el equipo nunca transmite",
   "terrain.drill.reboot.title": "\n--- 10. (opcional) Reinicio completo del PC ---",
   "terrain.drill.reboot.how": "Reinicia el PC con el equipo encendido, vuelve a lanzar esta herramienta con --session y haz esta prueba: lee el equipo.",
-  "terrain.drill.reboot.expected": "el equipo nunca transmitió"
+  "terrain.drill.reboot.expected": "el equipo nunca transmitió",
+  "terrain.menu2": "  1 [{before}] Estado del equipo ANTES (solo lectura; fotos de los menús en {photo_dir})\n  2 [{explore}] Exploración sin transmitir (estación DETENIDA)\n  3 [{qualif}] Cualificación completa, transmisión en carga ficticia (estación DETENIDA)\n  4       Cualificación sin transmitir (estación DETENIDA)\n  5       Pruebas de seguridad cronometradas (estación EN MARCHA): {drills}/{total}\n  6 [{after}] Estado del equipo DESPUÉS y diferencias a restaurar a mano\n  7       Generar el informe para Claude (zip; {photos} foto(s))\n  a / d   Detener / arrancar la estación del PC\n  q       Salir (la sesión se conserva: --session para reanudarla)",
+  "terrain.station_running": "Estación del PC: EN MARCHA",
+  "terrain.station_stopped": "Estación del PC: detenida",
+  "terrain.need_stopped": "La estación está en marcha: detenla primero (a), estas herramientas lanzan su propio rigctld.",
+  "terrain.need_running": "Atención: la estación está detenida. Arráncala (d) para las pruebas, salvo la prueba « arranque ».",
+  "terrain.control_done": "Orden enviada.",
+  "terrain.control_failed": "La orden ha fallado: usa TRX Console (menús 1.1 y 1.2).",
+  "terrain.snapshot_reading": "Leyendo el equipo (solo lecturas, nada cambia)…",
+  "terrain.snapshot_failed": "Lectura imposible: {error}",
+  "terrain.snapshot_done": "Estado guardado: {count} lecturas.",
+  "terrain.diff_missing": "Se necesitan el estado ANTES (1) y DESPUÉS (6) para comparar.",
+  "terrain.diff_none": "Ninguna diferencia leída: el equipo ha vuelto a su estado inicial (lo que la CAT puede leer; los menús se comprueban en las fotos).",
+  "terrain.diff_title": "\n!!! {count} ajuste(s) distinto(s) del inicio: RESTAURAR A MANO (antes -> después):"
 }

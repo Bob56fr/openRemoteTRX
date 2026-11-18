@@ -300,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.terrain:
         from .terrain import run_terrain
         try:
-            return run_terrain(cfg, profile, text, args.output, session_dir=args.session)
+            return run_terrain(cfg, profile, text, args.output, session_dir=args.session, config_path=config_path)
         except KeyboardInterrupt:
             print(_t("main.interrupted"), file=sys.stderr)
             return 130

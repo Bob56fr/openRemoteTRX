@@ -200,17 +200,96 @@ def test_the_report_zip_has_its_files_and_valid_fingerprints(tmp_path):
     assert terrain.check_report(bad) == ["rapport.html"]
 
 
-def test_the_menu_runs_the_existing_tools_and_quits(tmp_path):
+def _menu(tmp_path, answers, *, running=False, snapshots=None):
     from types import SimpleNamespace
+    from trxstation.setup_wizard import dummy_config
     calls = []
-    cfg = SimpleNamespace(supervisor=SimpleNamespace(state_dir=str(tmp_path)))
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path)
     profile = SimpleNamespace(model=3094, hamlib_version="4.7.2", backend_status="Stable",
                               caps=SimpleNamespace(model_name="IC-7300", manufacturer="Icom"))
-    answers = iter(["1", "2", "3", "q"])
-    code = terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(answers),
-                               out=lambda s: None, explore=lambda: calls.append("explore"),
-                               qualify=lambda no_tx: calls.append(("qualif", no_tx)))
-    assert code == 0 and calls == ["explore", ("qualif", False), ("qualif", True)]
+    it = iter(answers)
+    shown = []
+    snaps = iter(snapshots or [])
+    code = terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(it),
+                               out=shown.append, explore=lambda: calls.append("explore"),
+                               qualify=lambda no_tx: calls.append(("qualif", no_tx)), station=lambda: running,
+                               control=lambda start: calls.append(("station", start)) or 0,
+                               snapshot=lambda: next(snaps))
+    return code, calls, "\n".join(map(str, shown))
+
+
+def test_the_menu_runs_the_existing_tools_and_quits(tmp_path):
+    code, calls, _ = _menu(tmp_path, ["2", "3", "4", "a", "d", "q"])
+    assert code == 0
+    assert calls == ["explore", ("qualif", False), ("qualif", True), ("station", False), ("station", True)]
+    assert (tmp_path / "s" / "photos" / "avant").is_dir() and (tmp_path / "s" / "photos" / "apres").is_dir()
+
+
+def test_the_tools_that_start_their_own_rigctld_are_refused_while_the_station_runs(tmp_path):
+    code, calls, shown = _menu(tmp_path, ["2", "3", "4", "q"], running=True)
+    assert calls == [] and shown.count("arrête-la d'abord") == 3
+
+
+def test_before_and_after_snapshots_list_what_to_restore_by_hand(tmp_path):
+    before = {"f": "Frequency=7074000", "l AF": "0.5", "u NB": "1", "t": "0"}
+    after = {"f": "Frequency=7074000", "l AF": "0.3", "u NB": "1", "t": "0"}
+    code, _, shown = _menu(tmp_path, ["1", "6", "7", "q"], snapshots=[before, after])
+    assert "À REMETTRE À LA MAIN" in shown and "l AF" in shown
+    data = json.loads((tmp_path / "s" / "qualification.json").read_text(encoding="utf-8"))
+    assert data["remise_en_etat"] == {"compare": True, "differences": [{"lecture": "l AF", "avant": "0.5", "apres": "0.3"}]}
+    assert set(data["releves"]) == {"avant", "apres"}
+
+
+def test_a_report_without_snapshots_says_the_restoration_was_not_checked(tmp_path):
+    _menu(tmp_path, ["7", "q"])
+    data = json.loads((tmp_path / "s" / "qualification.json").read_text(encoding="utf-8"))
+    assert data["remise_en_etat"]["compare"] is False
+    assert "NON vérifiée" in (tmp_path / "s" / "rapport.html").read_text(encoding="utf-8")
+
+
+def test_a_failed_snapshot_is_said_and_never_fatal(tmp_path):
+    def boom():
+        raise OSError("rigctld absent")
+    from types import SimpleNamespace
+    session = _session(tmp_path)
+    shown = []
+    terrain.take_snapshot(session, "avant", boom, out=shown.append)
+    assert "rigctld absent" in shown[-1] and "avant" not in session.snapshots
+
+
+def test_the_snapshot_never_sends_a_write():
+    class Spy:
+        sent = []
+
+        async def _command(self, line):
+            self.sent.append(line)
+            return {"#1": "0"}
+    rig = terrain.ReadOnlyRig(Spy())
+    for line in ("F 7074000", "M USB 0", "T 1", "U NB 1", "L AF 0.5", "P BACKLIGHT 1", "w FA;", "f\nT 1"):
+        with pytest.raises(ObserverError):
+            asyncio.run(rig.read(line))
+    assert Spy.sent == []
+
+
+def test_the_snapshot_reads_settings_but_not_meters_on_a_fake_rig():
+    from types import SimpleNamespace
+    from trxstation.gateway.cat.client import RigctldClient
+    profile = SimpleNamespace(get_functions=("NB", "SEND_MORSE"), get_levels=("AF", "STRENGTH"), get_params=())
+
+    async def go():
+        fake = FakeRigctld()
+        await fake.start()
+        client = RigctldClient("127.0.0.1", fake.port, timeout=1.0)
+        await client.connect()
+        try:
+            return await terrain.read_state(terrain.ReadOnlyRig(client), profile)
+        finally:
+            await client.close()
+            await fake.stop()
+    state = asyncio.run(go())
+    assert "f" in state and "u NB" in state and "l AF" in state
+    assert "l STRENGTH" not in state and "u SEND_MORSE" not in state
 
 
 # --------------------------------------------------------------------------- textes

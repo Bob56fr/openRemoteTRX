@@ -81,7 +81,9 @@ demande de l'aide (partie 8) avec le rapport du menu 6.3.
 
 - **Qualification du poste** (menu 8.3, `trx-qualif`) : pour un expert qui veut tout vérifier de ce que Hamlib
   déclare pour le FTDX10. Commence par le choix 2 (exploration sans émission) ; le rapport produit est précieux pour
-  valider la fiche du poste.
+  valider la fiche du poste. Le choix 6 (« valise de qualification ») enchaîne tout pour un membre de l'équipe venu
+  qualifier le poste : relevé du poste avant et après (ce qui est à remettre à la main), exploration, qualification,
+  les essais de sécurité du § 3.5 chronométrés, et un rapport zip à remettre aux développeurs.
 - **Profil de poste** (menu 2.3) : enregistre la configuration sous un nom (« FTDX10 maison ») pour la recharger plus
   tard si tu changes de poste.
 

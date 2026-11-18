@@ -953,7 +953,8 @@ class Console:
             self.start()
 
     QUALIF_CHOICES = {"1": ("--plan",), "2": ("--explorer",), "3": ("--explorer", "--lecture-seule"),
-                      "4": ("--sans-emission",), "5": ()}
+                      "4": ("--sans-emission",), "5": (), "6": ("--terrain",)}
+    QUALIF_OWN_STATION = {"1", "6"}      # 1 : sans poste ; 6 : la valise arrête et démarre la station elle-même
 
     def qualif(self) -> None:
         """trx-qualif pour un expert : cahier, exploration SANS émission, qualification avec ou sans émission.
@@ -967,7 +968,7 @@ class Console:
         if choice not in self.QUALIF_CHOICES:
             self.say(self.t("qualif.4"))
             return
-        stopped = choice != "1" and self.stop_for_exclusive_use(self.t("qualif.why"))
+        stopped = choice not in self.QUALIF_OWN_STATION and self.stop_for_exclusive_use(self.t("qualif.why"))
         self.runner.run(self.module("trxstation.qualif.main", "--config", str(self.config), "--output", str(output),
                                     *self.QUALIF_CHOICES[choice]), admin=True)
         if stopped and self.yes(self.t("qualif.5")):
