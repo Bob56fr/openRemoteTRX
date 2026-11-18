@@ -16,7 +16,15 @@ Une fiche par poste dans `donnees/<fabricant>-<modèle>.toml`, source unique des
 
 - `[poste]` : `fabricant`, `modele`, `hamlib_model`, `statut` (`valide`, `restreint`, `validation_en_cours`,
   `refuse`), `resume` et `resume_en`.
+- `[poste] stabilite` : `ok` (aucun défaut aléatoire pendant les essais) ou `defauts` (avec `stabilite_note` /
+  `stabilite_note_en`) ; sans ce champ, pas de note.
 - `[[essais]]` : `date`, `station`, `hamlib`, `systeme`, `quoi` / `quoi_en`. Un résultat vaut pour ces versions.
+- NOTE SUR 5 ÉTOILES (« fonctionne avec TRX distant », décision de l'utilisateur du 2026-11-19, `rating` de
+  `scripts/build_rigs_doc.py`) : validé = 1, partiel = ½, ne fonctionne pas = 0, `non_declare` de cause `hamlib` ou
+  `trx_distant` = ½ ; `non_declare` de cause `poste` (choix du constructeur) HORS du calcul ; `non_teste` hors du calcul,
+  note « provisoire » ; aucune note tant que la sécurité d'émission n'est pas entièrement validée ni sans `stabilite` ;
+  `defauts` = 3 étoiles au plus. Le statut « restreint » reste pour un vrai problème d'usage à distance, jamais pour une
+  absence du constructeur.
 - `[fonctions]` : TOUTES les fonctions de la liste `FEATURES` de `scripts/build_rigs_doc.py`, chacune avec `etat` =
   `valide`, `partiel`, `echec`, `non_teste` (affiché « non testé (1) ») ou `non_declare` (affiché « non disponible
   (2) ») ; `note` / `note_en` obligatoires pour `partiel` et `echec` ; `cause` obligatoire pour `non_declare` :

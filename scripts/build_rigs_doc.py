@@ -109,6 +109,10 @@ FOOTNOTES = (
 STATUTS = {"valide": ("validé", "validated"), "restreint": ("validé avec restrictions", "validated with restrictions"),
            "validation_en_cours": ("validation en cours", "validation in progress"), "refuse": ("refusé", "refused")}
 COMPARED = ("valide", "restreint", "validation_en_cours")
+STABILITES = {"ok": ("aucun défaut aléatoire pendant les essais", "no random fault during the tests"),
+              "defauts": ("défauts constatés", "faults found")}
+WEIGHTS = {"valide": 1.0, "partiel": 0.5, "echec": 0.0}
+STARS_IF_FAULTS = 3.0                 # défauts aléatoires constatés : 3 étoiles au plus
 NEEDS_NOTE = ("partiel", "echec")
 
 EXTRA_CSS = """
@@ -122,6 +126,8 @@ th,td{border:1px solid var(--ligne);padding:.3rem .5rem;text-align:left;vertical
 th{background:var(--carte)}td.e{white-space:nowrap;font-weight:600}
 tr.t th{background:transparent;color:var(--accent);font-size:1rem;padding-top:.8rem;border-left:0;border-right:0}
 .e-valide{color:#7ed99a}.e-partiel{color:#f2d06b}.e-echec{color:#ff8a8a}.e-non_teste{color:#9cc8f2}.e-non_declare{opacity:.6}
+.etoiles{color:#f2c94c;letter-spacing:.08em}.note-etoiles{font-size:1.05rem;margin:.2rem 0}
+.note-detail{margin:.2rem 0 .6rem;font-size:.9rem}
 .statut{display:inline-block;border-radius:1rem;padding:0 .6rem;font-size:.8rem;background:#3d3418;color:#f2d06b}
 .statut.s-valide{background:#183d26;color:#7ed99a}.statut.s-refuse{background:#3d1818;color:#ff8a8a}
 .wrap{overflow-x:auto}details{margin:.4rem 0 1rem}
@@ -171,6 +177,10 @@ def check(rigs: list[dict]) -> None:
                 problems.append(f"{name} : [poste] {key} manquant")
         if poste.get("statut") not in STATUTS:
             problems.append(f"{name} : statut inconnu {poste.get('statut')!r}")
+        if "stabilite" in poste and poste["stabilite"] not in STABILITES:
+            problems.append(f"{name} : stabilite inconnue {poste['stabilite']!r} ({', '.join(STABILITES)})")
+        if poste.get("stabilite") == "defauts" and not (poste.get("stabilite_note") and poste.get("stabilite_note_en")):
+            problems.append(f"{name} : stabilite « defauts » exige stabilite_note et stabilite_note_en")
         if not rig.get("essais"):
             problems.append(f"{name} : aucun essai ([[essais]])")
         funcs = rig.get("fonctions", {})
@@ -192,6 +202,73 @@ def check(rigs: list[dict]) -> None:
                 problems.append(f"{name} : statut {poste['statut']} impossible, sécurité non validée : {', '.join(unsafe)}")
     if problems:
         raise DocError("\n".join(problems))
+
+
+def rating(rig: dict) -> dict:
+    """Note « fonctionne avec TRX distant » : `stars` (0 à 5 par demi-étoile, None tant que la sécurité d'émission n'est
+    pas entièrement validée ou que la stabilité n'est pas déclarée), `provisional` (fonctions pas encore testées),
+    `counted` / `valid` (fonctions comptées / validées), `absent` (absentes du POSTE, non comptées), `limits` (limites de
+    Hamlib ou de TRX distant, comptées ½), `untested`."""
+    funcs = rig["fonctions"]
+    absent, limits, untested, points, counted, valid = [], [], [], 0.0, 0, 0
+    for fid, theme, fr, en in FEATURES:
+        entry = funcs[fid]
+        etat = entry["etat"]
+        if etat == "non_declare" and entry.get("cause") == "poste":
+            absent.append((fr, en))
+            continue
+        if etat == "non_teste":
+            untested.append((fr, en))
+            continue
+        counted += 1
+        if etat == "non_declare":
+            limits.append((fr, en))
+            points += 0.5
+        else:
+            points += WEIGHTS[etat]
+            valid += etat == "valide"
+    safe = all(funcs[f]["etat"] == "valide" for f, theme, *_ in FEATURES if theme == "securite")
+    stability = rig["poste"].get("stabilite")
+    stars = None
+    if safe and stability in STABILITES and counted:
+        stars = round(points / counted * 5 * 2) / 2
+        if stability == "defauts":
+            stars = min(stars, STARS_IF_FAULTS)
+    return {"stars": stars, "provisional": bool(untested), "counted": counted, "valid": valid, "absent": absent,
+            "limits": limits, "untested": untested, "safe": safe, "stability": stability}
+
+
+def _stars(value: float) -> str:
+    full = int(value)
+    half = value - full >= 0.5
+    return "★" * full + ("½" if half else "") + "☆" * (5 - full - half)
+
+
+def _rating_html(rig: dict) -> list[str]:
+    r = rating(rig)
+    if r["stars"] is None:
+        why = (_bi("note attendue : sécurité d'émission pas encore entièrement validée",
+                   "rating pending: transmit safety not fully validated yet") if not r["safe"] else
+               _bi("note attendue : stabilité pas encore évaluée", "rating pending: stability not assessed yet"))
+        return [f'<p class="note-etoiles">{why}</p>']
+    head = f'<span class="etoiles" title="{r["stars"]:g}/5">{_stars(r["stars"])}</span> {r["stars"]:g}/5'
+    if r["provisional"]:
+        head += " " + _bi(f"(provisoire : {len(r['untested'])} fonction(s) pas encore testée(s))",
+                          f"(provisional: {len(r['untested'])} feature(s) not tested yet)")
+    out = [f'<p class="note-etoiles">{head}</p>', "<ul class=\"note-detail\">",
+           f'<li>{_bi(f"Fonctions utilisées par TRX distant : {r["valid"]} sur {r["counted"]} validées.", f"Features used by TRX Remote: {r["valid"]} of {r["counted"]} validated.")}</li>']
+    if r["absent"]:
+        out.append("<li>" + _bi("Absent du poste (choix du constructeur, non compté) : " + ", ".join(fr for fr, _ in r["absent"]) + ".",
+                                "Missing from the rig (manufacturer's choice, not counted): " + ", ".join(en for _, en in r["absent"]) + ".") + "</li>")
+    if r["limits"]:
+        out.append("<li>" + _bi("Limites de Hamlib ou de TRX distant (comptées ½) : " + ", ".join(fr for fr, _ in r["limits"]) + ".",
+                                "Hamlib or TRX Remote limits (counted ½): " + ", ".join(en for _, en in r["limits"]) + ".") + "</li>")
+    sfr, sen = STABILITES[r["stability"]]
+    note = rig["poste"].get("stabilite_note", "")
+    out.append("<li>" + _bi(f"Stabilité : {sfr}" + (f" ({note})" if note else "") + ".",
+                            f"Stability: {sen}" + (f" ({rig['poste'].get('stabilite_note_en', note)})" if note else "") + ".") + "</li>")
+    out.append("</ul>")
+    return out
 
 
 def _bi(fr: str, en: str) -> str:
@@ -252,7 +329,7 @@ def _table1(rig: dict, marks: dict | None = None) -> list[str]:
     funcs = rig["fonctions"]
     marks = marks if marks is not None else number_partials([rig])
     partials: list[tuple[int, str, str, str, str]] = []
-    out = [f'<section class="poste" id="{html.escape(rig["id"])}">', f"<h3>{_rig_title(rig)}</h3>",
+    out = [f'<section class="poste" id="{html.escape(rig["id"])}">', f"<h3>{_rig_title(rig)}</h3>", *_rating_html(rig),
            f'<p>{_bi(rig["poste"]["resume"], rig["poste"]["resume_en"])} '
            f'{_bi("Modèle Hamlib", "Hamlib model")} {rig["poste"]["hamlib_model"]}.</p>',
            "<p>" + "<br>".join(
@@ -304,7 +381,11 @@ def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     shown = [r for r in rigs if r["poste"]["statut"] in COMPARED]
     if not shown:
         return [f'<p>{_bi("Aucun poste à comparer pour l’instant.", "No rig to compare yet.")}</p>']
-    head = "".join(f'<th>{html.escape(r["poste"]["fabricant"])} {html.escape(r["poste"]["modele"])}</th>' for r in shown)
+    def stars_of(r):
+        value = rating(r)["stars"]
+        return f'<br><span class="etoiles">{_stars(value)}</span> {value:g}/5' if value is not None else ""
+    head = "".join(f'<th>{html.escape(r["poste"]["fabricant"])} {html.escape(r["poste"]["modele"])}{stars_of(r)}</th>'
+                   for r in shown)
     out = ['<div class="wrap"><table>', f'<tr><th>{_bi("Fonction", "Feature")}</th>{head}</tr>']
     for tid, tfr, ten in THEMES:
         out.append(f'<tr class="t" data-theme="{tid}"><th colspan="{len(shown) + 1}">{_bi(tfr, ten)}</th></tr>')
@@ -366,7 +447,9 @@ def data_json(rigs: list[dict]) -> str:
            "themes": [{"id": t, "fr": fr, "en": en} for t, fr, en in THEMES],
            "fonctions": [{"id": f, "theme": t, "fr": fr, "en": en} for f, t, fr, en in FEATURES],
            "etats": {k: {"fr": v[1], "en": v[2]} for k, v in ETATS.items()},
-           "postes": [{k: v for k, v in r.items()} for r in rigs]}
+           "postes": [{**{k: v for k, v in r.items()}, "note": {k: v for k, v in rating(r).items()
+                                                                  if k in ("stars", "provisional", "counted", "valid")}}
+                      for r in rigs]}
     return json.dumps(out, ensure_ascii=False, indent=2) + "\n"
 
 

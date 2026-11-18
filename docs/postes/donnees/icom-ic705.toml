@@ -7,6 +7,7 @@ fabricant = "Icom"
 modele = "IC-705"
 hamlib_model = 3085
 statut = "validation_en_cours"
+stabilite = "ok"     # deux qualifications (Claude puis le qualifieur), mêmes résultats, aucun défaut aléatoire
 resume = "Qualifié deux fois le 2026-11-18 sur le même PC (par Claude puis par le qualifieur), sur batterie, 0,5 W, charge fictive : mêmes résultats mesurés. Restent les essais au téléphone et la réception sur antenne."
 resume_en = "Qualified twice on 2026-11-18 on the same PC (by Claude then by the qualifier), on battery, 0.5 W, dummy load: same measured results. Phone drills and on-air receive remain."
 

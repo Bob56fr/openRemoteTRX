@@ -308,6 +308,7 @@
         "modele": "IC-705",
         "hamlib_model": 3085,
         "statut": "validation_en_cours",
+        "stabilite": "ok",
         "resume": "Qualifié deux fois le 2026-11-18 sur le même PC (par Claude puis par le qualifieur), sur batterie, 0,5 W, charge fictive : mêmes résultats mesurés. Restent les essais au téléphone et la réception sur antenne.",
         "resume_en": "Qualified twice on 2026-11-18 on the same PC (by Claude then by the qualifier), on battery, 0.5 W, dummy load: same measured results. Phone drills and on-air receive remain."
       },
@@ -528,16 +529,23 @@
           "Actual PBT step coarser than the declared one (seen once out of two)."
         ]
       },
-      "id": "icom-ic705"
+      "id": "icom-ic705",
+      "note": {
+        "stars": 4.5,
+        "provisional": true,
+        "counted": 35,
+        "valid": 29
+      }
     },
     {
       "poste": {
         "fabricant": "Icom",
         "modele": "IC-7300MK2",
         "hamlib_model": 3094,
-        "statut": "restreint",
-        "resume": "Poste de référence du projet, VALIDÉ AVEC RESTRICTIONS le 2026-11-19 : toutes les sécurités d'émission, la réception, le son, les filtres FIL1/2/3, le spectre HF, le coupleur, le split, le TOS et le NB essayés sur le vrai poste. Restrictions (le poste ne les donne pas par la CAT) : pas de voyant VFO A / B, pas de température du poste (seuils de température sans effet). Le son de la station ne module qu'en mode données (choix d'Icom).",
-        "resume_en": "Reference rig of the project, VALIDATED WITH RESTRICTIONS on 2026-11-19: all transmit safety, receive, audio, FIL1/2/3 filters, HF spectrum, tuner, split, SWR and NB tried on the real rig. Restrictions (the rig does not report them over CAT): no VFO A / B indicator, no rig temperature (temperature thresholds have no effect). The station audio only modulates in data modes (Icom design)."
+        "statut": "valide",
+        "stabilite": "ok",
+        "resume": "Poste de référence du projet, VALIDÉ le 2026-11-19 : toutes les sécurités d'émission, la réception, le son, les filtres FIL1/2/3, le spectre HF, le coupleur, le split, le TOS et le NB essayés sur le vrai poste. Absents du poste (non comptés dans la note) : voyant VFO A / B, pas de température du poste (seuils de température sans effet). Le son de la station ne module qu'en mode données (choix d'Icom).",
+        "resume_en": "Reference rig of the project, VALIDATED on 2026-11-19: all transmit safety, receive, audio, FIL1/2/3 filters, HF spectrum, tuner, split, SWR and NB tried on the real rig. Missing from the rig (not counted in the rating): VFO A / B indicator, no rig temperature (temperature thresholds have no effect). The station audio only modulates in data modes (Icom design)."
       },
       "essais": [
         {
@@ -794,7 +802,13 @@
           "ANN declared but refused (RPRT -1)."
         ]
       },
-      "id": "icom-ic7300mk2"
+      "id": "icom-ic7300mk2",
+      "note": {
+        "stars": 5.0,
+        "provisional": false,
+        "counted": 37,
+        "valid": 37
+      }
     },
     {
       "poste": {
@@ -988,7 +1002,13 @@
           "get Tuning Step declared but refused; BAND_SELECT refused; BKINDL not read back."
         ]
       },
-      "id": "yaesu-ftdx10"
+      "id": "yaesu-ftdx10",
+      "note": {
+        "stars": null,
+        "provisional": true,
+        "counted": 6,
+        "valid": 4
+      }
     }
   ]
 }

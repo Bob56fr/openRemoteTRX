@@ -127,3 +127,40 @@ def test_every_partial_or_failed_feature_has_a_numbered_clickable_note() -> None
     assert page.count('href="#p-icom-ic7300mk2-agc"') == 2              # fiche et comparaison
     assert f'<p id="p-icom-ic7300mk2-agc"><small>({number})' in page and "écriture refusée" in page
     assert len(set(marks.values())) == len(marks)                         # numéros uniques
+
+
+def test_rating_counts_what_trx_remote_uses_and_the_rig_offers() -> None:
+    """Note sur 5 (validée par l'utilisateur, 2026-11-19) : absences dues au POSTE hors du calcul, limites de Hamlib / TRX
+    distant comptées ½, sécurité d'émission d'abord, défauts aléatoires = 3 étoiles au plus, provisoire si non testé."""
+    rig = _rig()
+    r = doc.rating(rig)
+    assert r["stars"] == 5.0 and not r["provisional"] and len(r["absent"]) == 2 and r["valid"] == r["counted"]
+    rig["fonctions"]["agc"] = {"etat": "non_declare", "cause": "poste"}           # absent du poste : rien ne change
+    assert doc.rating(rig)["stars"] == 5.0
+    rig["fonctions"]["agc"] = {"etat": "non_declare", "cause": "hamlib"}          # limite de Hamlib : ½
+    rig["fonctions"]["nr"] = {"etat": "echec", "note": "x", "note_en": "x"}
+    r = doc.rating(rig)
+    assert r["stars"] == round((r["counted"] - 1.5) / r["counted"] * 10) / 2 and r["limits"]
+    rig["fonctions"]["nb"] = {"etat": "non_teste"}
+    assert doc.rating(rig)["provisional"]
+    rig["poste"]["stabilite"] = "defauts"
+    assert doc.rating(rig)["stars"] == 3.0
+    rig["poste"]["stabilite"] = "ok"
+    rig["fonctions"]["tot"] = {"etat": "non_teste"}                                # sécurité incomplète : pas de note
+    assert doc.rating(rig)["stars"] is None
+    del rig["poste"]["stabilite"]
+    rig["fonctions"]["tot"] = {"etat": "valide"}
+    assert doc.rating(rig)["stars"] is None                                       # stabilité pas évaluée
+
+
+def test_stars_are_shown_and_stability_is_checked() -> None:
+    rig = _rig()
+    page = doc.render([rig])
+    assert "★★★★★" in page and "5/5" in page and "Absent du poste" in page
+    rig["poste"]["stabilite"] = "defauts"
+    with pytest.raises(doc.DocError, match="stabilite_note"):
+        doc.check([rig])
+    rig["poste"]["stabilite"] = "peut-etre"
+    with pytest.raises(doc.DocError, match="stabilite"):
+        doc.check([rig])
+    assert doc._stars(4.5) == "★★★★½" and doc._stars(3.0) == "★★★☆☆"
