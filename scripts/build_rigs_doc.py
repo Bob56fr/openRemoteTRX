@@ -382,10 +382,13 @@ def _table2(rigs: list[dict], marks: dict | None = None) -> list[str]:
     if not shown:
         return [f'<p>{_bi("Aucun poste à comparer pour l’instant.", "No rig to compare yet.")}</p>']
     def stars_of(r):
-        value = rating(r)["stars"]
-        return f'<br><span class="etoiles">{_stars(value)}</span> {value:g}/5' if value is not None else ""
-    head = "".join(f'<th>{html.escape(r["poste"]["fabricant"])} {html.escape(r["poste"]["modele"])}{stars_of(r)}</th>'
-                   for r in shown)
+        note = rating(r)
+        if note["stars"] is None:
+            return f'<br><small>{_bi("note attendue", "rating pending")}</small>'
+        extra = f' <small>{_bi("provisoire", "provisional")}</small>' if note["provisional"] else ""
+        return f'<br><span class="etoiles">{_stars(note["stars"])}</span> {note["stars"]:g}/5{extra}'
+    head = "".join(f'<th><a href="#{html.escape(r["id"])}">{html.escape(r["poste"]["fabricant"])} '
+                   f'{html.escape(r["poste"]["modele"])}</a>{stars_of(r)}</th>' for r in shown)
     out = ['<div class="wrap"><table>', f'<tr><th>{_bi("Fonction", "Feature")}</th>{head}</tr>']
     for tid, tfr, ten in THEMES:
         out.append(f'<tr class="t" data-theme="{tid}"><th colspan="{len(shown) + 1}">{_bi(tfr, ten)}</th></tr>')

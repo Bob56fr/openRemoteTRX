@@ -164,3 +164,14 @@ def test_stars_are_shown_and_stability_is_checked() -> None:
     with pytest.raises(doc.DocError, match="stabilite"):
         doc.check([rig])
     assert doc._stars(4.5) == "★★★★½" and doc._stars(3.0) == "★★★☆☆"
+
+
+
+def test_comparison_names_link_to_their_sheet_and_show_the_rating() -> None:
+    rig = _rig()
+    other = _rig()
+    other["id"], other["poste"]["modele"] = "x-sans-note", "SANS-NOTE"
+    other["fonctions"]["tot"] = {"etat": "non_teste"}
+    comparison = doc.render([rig, other]).split("Comparaison des postes", 1)[1].split("Fiche de chaque poste", 1)[0]
+    assert '<a href="#icom-ic7300mk2">Icom IC-7300MK2</a><br><span class="etoiles">★★★★★</span> 5/5' in comparison
+    assert '<a href="#x-sans-note">' in comparison and "note attendue" in comparison
