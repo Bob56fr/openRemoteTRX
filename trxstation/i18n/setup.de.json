@@ -193,5 +193,8 @@
   "cli_spectrum.cancelled": "Abgebrochen: der zweite Port wurde nicht geöffnet, Konfiguration unverändert.",
   "cli_spectrum.checking": "Prüfung von {port} (nur lesen, keine Aussendung)...",
   "cli_spectrum.problem": "KONFIGURATIONSPROBLEM: {error}\nSpektrum NICHT aktiviert: die Station bleibt im Normalbetrieb (ein einziger Port, ohne HF-Wasserfall).",
-  "cli_spectrum.ok": "OK: HF-Spektrum auf {port} aktiviert (CI-V-Adresse {address}h). Starte die Station neu; sie prüft diesen Port bei jedem Start erneut und kehrt bei einem Problem in den Normalbetrieb zurück."
+  "cli_spectrum.ok": "OK: HF-Spektrum auf {port} aktiviert (CI-V-Adresse {address}h). Starte die Station neu; sie prüft diesen Port bei jedem Start erneut und kehrt bei einem Problem in den Normalbetrieb zurück.",
+  "transmit.tuner": "Benutzt du den eingebauten Antennentuner des Geräts?",
+  "transmit.tuner_settings": "  Aus der Ferne muss die Abstimmung beim Senden auf einer neuen Frequenz von selbst starten. Am Gerät einstellen (Tuner-Menü): {settings}. Die Station prüft sie bei jeder Verbindung und warnt, wenn sie falsch sind (sie ändert sie nie). Außerhalb der Amateurfunkbänder garantiert das Gerät die Abstimmung beim PTT nicht.",
+  "transmit.tuner_generic": "  Aus der Ferne muss die Abstimmung beim Senden auf einer neuen Frequenz von selbst starten: das Gerät entsprechend einstellen (bei Icom: Abstimmung beim PTT, « PTT Start », ein). Die Einstellungen dieses Modells kennt die Station noch nicht: sie kann sie nicht prüfen."
 }

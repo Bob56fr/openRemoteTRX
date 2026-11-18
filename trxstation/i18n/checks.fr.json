@@ -145,5 +145,6 @@
   "diffusion.codec": "[diffusion] codec : opus ou mp3",
   "diffusion.audio_port_clash": "[diffusion] audio_port : différent de [modules] bus_port et de [sdr] audio_port",
   "diffusion.tls_local": "[diffusion] tls = false seulement vers 127.0.0.1 (faux serveur d'essai) : sur Internet, le mot de passe source passerait en clair",
-  "diffusion.incomplete": "[diffusion] activée sans server ni station : rien ne pourrait être diffusé"
+  "diffusion.incomplete": "[diffusion] activée sans server ni station : rien ne pourrait être diffusé",
+  "rig.tuner": "[rig] tuner doit valoir true ou false (coupleur d'antenne du poste utilisé)"
 }

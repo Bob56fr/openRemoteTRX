@@ -37,6 +37,8 @@ ALLOWED: dict[tuple[int, int | None], set[bytes | None]] = {
 }
 
 
+from .menus import menu_reads  # noqa: E402 (table de données sans dépendance)
+
 class CivRefused(ValueError):
     """Commande hors de la liste fermée : jamais envoyée."""
 
@@ -302,4 +304,5 @@ ALLOWED[(0x27, SCOPE_MODE)] |= {encode_setting(SCOPE_MODE, m) for m in MODES}
 ALLOWED[(0x27, SCOPE_SPAN)] |= {encode_setting(SCOPE_SPAN, s) for s in SPANS_HZ}
 ALLOWED[(0x27, SCOPE_REF)] |= {encode_setting(SCOPE_REF, i * REF_STEP_DB) for i in range(-40, 41)}
 ALLOWED[(0x27, SCOPE_SPEED)] |= {encode_setting(SCOPE_SPEED, v) for v in SPEEDS}
+ALLOWED[(0x1A, 0x05)] = menu_reads()            # réglages de menu : LECTURE seule (spectrum/menus.py)
 ALLOWED[(0x26, 0x00)] = {None} | {encode_mode_filter(m, d, f) for m in CIV_MODES for d in DATA_MODES for f in FILTERS}

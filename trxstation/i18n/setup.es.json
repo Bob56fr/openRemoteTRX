@@ -193,5 +193,8 @@
   "cli_spectrum.cancelled": "Cancelado: el segundo puerto no se ha abierto, configuración sin cambios.",
   "cli_spectrum.checking": "Comprobación de {port} (solo lectura, ninguna transmisión)...",
   "cli_spectrum.problem": "PROBLEMA DE CONFIGURACIÓN: {error}\nEspectro NO activado: la estación sigue en modo normal (un solo puerto, sin cascada HF).",
-  "cli_spectrum.ok": "OK: espectro HF activado en {port} (dirección CI-V {address}h). Reinicia la estación; volverá a comprobar este puerto en cada arranque y volverá al modo normal si hay un problema."
+  "cli_spectrum.ok": "OK: espectro HF activado en {port} (dirección CI-V {address}h). Reinicia la estación; volverá a comprobar este puerto en cada arranque y volverá al modo normal si hay un problema.",
+  "transmit.tuner": "¿Usas el acoplador de antena integrado del equipo?",
+  "transmit.tuner_settings": "  A distancia, la sintonía debe arrancar sola al transmitir en una frecuencia nueva. Ajusta en el equipo (menú del acoplador): {settings}. La estación los comprobará en cada conexión y avisará si son incorrectos (nunca los cambia). Fuera de las bandas de radioaficionado, el equipo no garantiza la sintonía al PTT.",
+  "transmit.tuner_generic": "  A distancia, la sintonía debe arrancar sola al transmitir en una frecuencia nueva: ajusta el equipo en consecuencia (en un Icom: sintonía al PTT, « PTT Start », activada). La estación aún no conoce los ajustes de este modelo: no podrá comprobarlos."
 }

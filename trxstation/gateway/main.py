@@ -85,7 +85,7 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     breizh_link = _start_breizh(cfg, pipeline, config_path)              # [breizh] enabled = false : rien
     pipeline.freedv = _start_freedv(cfg, pipeline)                       # [freedv] enabled = false : rien
-    spectrum = SpectrumService(cfg.spectrum, link, ctrl)   # [spectrum] source = "civ_port" ; sinon inactif
+    spectrum = SpectrumService(cfg.spectrum, link, ctrl, model=cfg.rig.model)   # [spectrum] source = "civ_port" ; sinon inactif
     access = AccessControl(cfg.clients, cfg.access)       # rôles, quotas, présence de l'opérateur (visiteurs)
     access.switch = ListenerSwitch(Path(cfg.supervisor.state_dir) / "listeners.json")   # commutateur de l'opérateur
     publisher = StatusPublisher(cfg.supervisor.status_path, link, ctrl, pipeline=pipeline, spectrum=spectrum,

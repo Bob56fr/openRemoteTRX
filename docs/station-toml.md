@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.209.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.210.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -24,6 +24,7 @@ Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au
 | `extra_conf` | expert | `[]` | Options supplémentaires passées à rigctld (`-C nom=valeur`), pour un poste qui en a besoin. **Sécurité** : Interdits ici : les options du spectre (`async`, `multicast_…`, réglées par [spectrum]) et `cache_timeout`. La station lance toujours rigctld avec `cache_timeout=0` (depuis 0.134.0) : avec un cache, rigctld renvoie après une coupure la valeur commandée au lieu de l'état réel du poste, et un poste resté en émission paraîtrait coupé. Exemple : ["civaddr=0x94"] |
 | `tx_modes` | courant | `[]` | Modes dans lesquels l'émission est permise ; vide = tous. Sur les Icom, l'audio de la carte son USB n'est émis qu'en modes données (USB-D, LSB-D, FM-D…) : dans un autre mode, le poste modulerait avec son propre micro. **Sécurité** : Une demande d'émission dans un mode absent de la liste est refusée. La mesure de TOS utilise le premier mode FM permis ici (FM, PKTFM ou FM-D). Exemple : Icom : ["PKTUSB", "PKTLSB", "FM-D", "AM-D"]. |
 | `max_power_w` | courant | `0` | Puissance maximale du poste en watts. 0 : inconnue, la page et l'application affichent des pourcentages au lieu de watts. Exemple : 100 pour un poste de 100 W. |
+| `tuner` | courant | `false` | Le coupleur d'antenne intégré du poste est utilisé. À chaque connexion d'un opérateur, la station lit alors les réglages d'accord automatique du poste par le second port CI-V (IC-7300MK2 : [TUNER] Switch = Auto, PTT Start = ON) et prévient s'ils sont faux ou impossibles à vérifier. Elle ne les change jamais. **Sécurité** : À distance, sans accord automatique à la prise d'émission, une nouvelle fréquence peut émettre sur un TOS élevé. Hors des bandes radioamateur, l'accord au PTT n'est pas garanti par le poste. Exemple : true si l'antenne passe par le coupleur du poste ; false (défaut) sinon. (depuis 0.210.0) |
 
 ## Le son [audio]
 

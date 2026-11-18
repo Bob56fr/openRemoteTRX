@@ -65,8 +65,10 @@ class SpectrumService:
     FILTER_EVERY_S = 1.0       # relecture du préréglage de filtre (changé sur le poste : la page suit)
 
     def __init__(self, cfg: Spectrum, link, ctrl, *, opener: Callable = open_serial,
-                 clock: Callable[[], float] = time.monotonic):
+                 clock: Callable[[], float] = time.monotonic, model: int | None = None):
         self.cfg, self.link, self.ctrl, self.opener, self.clock = cfg, link, ctrl, opener, clock
+        self.model = model                         # modèle Hamlib : réglages de menu lus (spectrum/menus.py)
+        self._menus: dict = {}
         self.active = bool(cfg.enabled) and cfg.source == "civ_port"
         self.address = parse_civ_address(cfg.civ_address) if self.active else None
         self._lock = threading.Lock()
@@ -229,6 +231,20 @@ class SpectrumService:
             except queue.Empty:
                 return
             self._resolve(future, (False, reason))
+
+    def rig_menus(self) -> dict:
+        """Réglages de menu lus à l'ouverture du port (ex. coupleur) ; {} si rien de lu (port fermé, modèle absent)."""
+        with self._lock:
+            return dict(self._menus)
+
+    def _read_menus(self, port: CivPort) -> None:
+        from .menus import RIG_MENUS, decode_menu
+        values = {}
+        for name, (sub, _, _, _) in RIG_MENUS.get(self.model, {}).items():
+            reply = port.request(0x1A, 0x05, sub, timeout=0.6)
+            values[name] = decode_menu(sub, reply.payload) if reply is not None else None
+        with self._lock:
+            self._menus = values
 
     def _read_settings(self, port: CivPort) -> None:
         values = {}
@@ -405,6 +421,7 @@ class SpectrumService:
                 return
             before = check(port, lambda: self.link.state.frequency_hz)
             self._read_settings(port)
+            self._read_menus(port)
             for sub in (SCOPE_DISPLAY, SCOPE_OUTPUT):
                 if before[sub] != 1:
                     if not port.set_setting(sub, 1):
@@ -417,6 +434,7 @@ class SpectrumService:
             self._drain_requests("spectrum_unavailable")
             with self._lock:
                 self._settings = {}
+                self._menus = {}
             for sub, value in reversed(changed):    # remis comme au départ, chacun indépendamment
                 try:
                     port.set_setting(sub, value)

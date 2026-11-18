@@ -566,6 +566,16 @@ def ask_transmit(cfg: Config) -> None:
     """Puissance maximale du poste (affichage en watts) et durée maximale d'une émission (TOT, sous le plafond)."""
     s = cfg.safety
     cfg.rig.max_power_w = ask_number(_t("transmit.power"), cfg.rig.max_power_w, 0, 2000)
+    if cfg.rig.model != DUMMY_MODEL:
+        cfg.rig.tuner = ask_yes_no(_t("transmit.tuner"), cfg.rig.tuner)
+        if cfg.rig.tuner:
+            from .spectrum.menus import RIG_MENUS
+            menus = RIG_MENUS.get(cfg.rig.model, {})
+            if menus:
+                print(_t("transmit.tuner_settings", settings=", ".join(f"{label} = {wanted}" for _, _, label, wanted
+                                                                       in menus.values())))
+            else:
+                print(_t("transmit.tuner_generic"))
     s.tot_s = ask_number(_t("transmit.tot"), s.tot_s, s.warn_before_s + 1, s.tot_ceiling_s,
                          _t("transmit.tot_why", ceiling=s.tot_ceiling_s, low=s.warn_before_s + 1, warn=s.warn_before_s))
 

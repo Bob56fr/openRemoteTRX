@@ -69,7 +69,8 @@ def test_transmit_command_does_not_exist_in_the_tool():
     assert all(not (isinstance(k, ast.Tuple) and isinstance(k.elts[0], ast.Constant) and k.elts[0].value == 0x1C)
                for k in keys)
     assert set(cs.ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
-                                (0x26, 0x00)}
+                                (0x26, 0x00), (0x1A, 0x05)}
+    assert all(len(v) == 2 for v in cs.ALLOWED[(0x1A, 0x05)])                              # menus : LECTURE seule
     assert not any(k[0] == 0x1C for k in cs.ALLOWED)                                         # émission : jamais
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
         from trxstation.spectrum.civ import decode_setting

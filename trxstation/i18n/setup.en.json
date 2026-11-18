@@ -193,5 +193,8 @@
   "cli_spectrum.cancelled": "Cancelled: the second port was not opened, configuration unchanged.",
   "cli_spectrum.checking": "Checking {port} (read only, no transmission)...",
   "cli_spectrum.problem": "CONFIGURATION PROBLEM: {error}\nSpectrum NOT enabled: the station stays in normal mode (a single port, no HF waterfall).",
-  "cli_spectrum.ok": "OK: HF spectrum enabled on {port} (CI-V address {address}h). Restart the station; it will check this port again at every start and go back to normal mode if there is a problem."
+  "cli_spectrum.ok": "OK: HF spectrum enabled on {port} (CI-V address {address}h). Restart the station; it will check this port again at every start and go back to normal mode if there is a problem.",
+  "transmit.tuner": "Do you use the rig's built-in antenna tuner?",
+  "transmit.tuner_settings": "  Remotely, tuning must start by itself when transmitting on a new frequency. Set on the rig (tuner menu): {settings}. The station will check them at every connection and warn if they are wrong (it never changes them). Outside amateur bands, tuning on PTT is not guaranteed by the rig.",
+  "transmit.tuner_generic": "  Remotely, tuning must start by itself when transmitting on a new frequency: set the rig accordingly (on an Icom: tuning on PTT, « PTT Start », on). This model's settings are not yet known to the station: it will not be able to check them."
 }

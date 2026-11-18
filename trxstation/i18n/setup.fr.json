@@ -193,5 +193,8 @@
   "cli_spectrum.cancelled": "Annulé : le second port n'a pas été ouvert, configuration inchangée.",
   "cli_spectrum.checking": "Vérification de {port} (lecture seule, aucune émission)...",
   "cli_spectrum.problem": "PROBLÈME DE CONFIGURATION : {error}\nSpectre NON activé : la station reste en mode normal (un seul port, sans waterfall HF).",
-  "cli_spectrum.ok": "OK : spectre HF activé sur {port} (adresse CI-V {address}h). Redémarre la station ; elle revérifiera ce port à chaque démarrage et reviendra au mode normal en cas de problème."
+  "cli_spectrum.ok": "OK : spectre HF activé sur {port} (adresse CI-V {address}h). Redémarre la station ; elle revérifiera ce port à chaque démarrage et reviendra au mode normal en cas de problème.",
+  "transmit.tuner": "Utilises-tu le coupleur d'antenne intégré du poste ?",
+  "transmit.tuner_settings": "  À distance, l'accord doit partir tout seul à la prise d'émission sur une nouvelle fréquence. Règle sur le poste (menu du coupleur) : {settings}. La station les vérifiera à chaque connexion et préviendra s'ils sont faux (elle ne les change jamais). Hors des bandes radioamateur, l'accord au PTT n'est pas garanti par le poste.",
+  "transmit.tuner_generic": "  À distance, l'accord doit partir tout seul à la prise d'émission sur une nouvelle fréquence : règle le poste en conséquence (sur un Icom : accord au PTT, « PTT Start », en marche). Les réglages de ce modèle ne sont pas encore connus de la station : elle ne pourra pas les vérifier."
 }

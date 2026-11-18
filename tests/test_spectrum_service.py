@@ -38,6 +38,7 @@ class PortB:
         self.rts = self.dtr = False
         self.ticks = 0
         self.mute = False                          # True : plus rien ne sort (port réglé autrement, câble…)
+        self.menus = {b"\x00\x37": 0x01, b"\x00\x38": 0x01}   # IC-7300MK2 : [TUNER] Switch Auto, PTT Start ON
 
     @property
     def in_waiting(self):
@@ -53,6 +54,9 @@ class PortB:
             reply = b"\x19\x00" + bytes([self.address])
         elif p == b"\x03":
             reply = b"\x03" + to_bcd_le(self.freq, 5)
+        elif p[:2] == b"\x1a\x05":
+            value = self.menus.get(p[2:4])
+            reply = (p + bytes([value])) if value is not None and len(p) == 4 else b"\xFA"
         elif p[:1] == b"\x27" and len(p) >= 2 and p[1] not in (0x10, 0x11):
             reply = b"\xFA"                                                  # autres réglages : voir test_spectrum_settings
         elif p[:1] == b"\x27" and self.scope:
@@ -94,7 +98,8 @@ class Clock:
 
 def test_closed_command_list_has_no_transmit_command():
     assert set(ALLOWED) == {(0x19, 0x00), (0x03, None), (0x27, 0x10), (0x27, 0x11), (0x27, 0x14), (0x27, 0x15), (0x27, 0x19), (0x27, 0x1A),
-                            (0x26, 0x00)}
+                            (0x26, 0x00), (0x1A, 0x05)}
+    assert ALLOWED[(0x1A, 0x05)] == {b"\x00\x37", b"\x00\x38"}              # réglages de menu : LECTURE seule (pas de valeur)
     from trxstation.spectrum.civ import decode_setting
     for sub in (0x14, 0x15, 0x19, 0x1A):                       # lectures, et seulement des valeurs de réglage décodables
         assert all(v in (None, b"\x00") or decode_setting(sub, bytes([0x27, sub]) + v) is not None for v in ALLOWED[(0x27, sub)])
@@ -767,3 +772,35 @@ def test_unreadable_ptt_after_closing_port_b_is_a_doubt_and_cuts():
         assert await wait_for(lambda: ctrl.cuts == ["spectrum_port_keyed"])
         await svc.stop()
     asyncio.run(scenario())
+
+
+def test_menus_of_the_rig_are_read_once_the_port_is_open_and_forgotten_when_it_closes():
+    """Coupleur (décision de l'utilisateur, 2026-11-19) : [TUNER] Switch et PTT Start LUS à l'ouverture du port B."""
+    rig = PortB()
+    rig.menus[b"\x00\x38"] = 0x00
+
+    async def scenario():
+        svc, *_ = make_service(rig)
+        svc.model = 3094
+        await svc.start()
+        assert await wait_for(lambda: svc.rig_menus() != {})
+        menus = svc.rig_menus()
+        await svc.stop()
+        return svc, menus
+    svc, menus = asyncio.run(scenario())
+    assert menus == {"tuner_switch": 1, "ptt_start": 0} and svc.rig_menus() == {}
+    writes = [w for w in rig.written if w[4:6] == b"\x1a\x05"]
+    assert writes and all(len(w) == 9 for w in writes)                        # FE FE to frm 1A 05 xx xx FD : jamais de valeur
+
+
+def test_a_model_without_known_menus_reads_nothing():
+    rig = PortB()
+
+    async def scenario():
+        svc, *_ = make_service(rig)
+        await svc.start()
+        assert await wait_for(lambda: svc.snapshot()["state"] == "ok")
+        menus = svc.rig_menus()
+        await svc.stop()
+        return menus
+    assert asyncio.run(scenario()) == {} and not any(w[4:6] == b"\x1a\x05" for w in rig.written)

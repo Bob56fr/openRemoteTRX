@@ -50,6 +50,7 @@ class Rig:
     extra_conf: list[str] = field(default_factory=list)  # options -C de rigctld
     tx_modes: list[str] = field(default_factory=list)    # modes où l'émission est permise (vide = aucune restriction)
     max_power_w: int = 0                                 # puissance maximale du poste en watts ; 0 = inconnue (la page affiche des %)
+    tuner: bool = False                                  # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion
 
     def rigctld_args(self, host: str, tcp_port: int) -> list[str]:
         args = ["rigctld", "-m", str(self.model), "-T", host, "-t", str(tcp_port)]
@@ -594,6 +595,8 @@ def validate(cfg: Config) -> list[str]:
         p.append(_t("rig.port"))
     if not 0 <= r.max_power_w <= 2000:
         p.append(_t("rig.max_power_w"))
+    if not isinstance(r.tuner, bool):
+        p.append(_t("rig.tuner"))
     for mode in r.tx_modes:
         if not re.fullmatch(r"[A-Za-z0-9\-]{1,16}", mode):
             p.append(_t("rig.tx_modes", mode=mode))
@@ -1283,6 +1286,7 @@ def render_toml(cfg: Config) -> str:
         f"extra_conf = [{', '.join(_s(c) for c in r.extra_conf)}]",
         f"tx_modes = [{', '.join(_s(m) for m in r.tx_modes)}]   # ex. Icom : [\"PKTUSB\", \"PKTLSB\"] ; vide = pas de restriction",
         f"max_power_w = {r.max_power_w}   # puissance maximale du poste (ex. 100) : la page affiche des watts ; 0 = inconnue, des %",
+        f"tuner = {'true' if r.tuner else 'false'}   # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion",
         "",
         "[audio]",
         f"capture_device = {_s(a.capture_device)}",

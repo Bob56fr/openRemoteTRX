@@ -4331,6 +4331,55 @@ ORT-5036:
     - Switch-off command refused by the rig
     - VOX kept per mode (switched off in another mode)
     preconisation: 'Switch VOX off at the rig (VOX key) before transmitting remotely.'
+ORT-5037:
+  gravite: avertissement
+  titre: 'Réglages du coupleur du poste à revoir'
+  message: 'Réglages du coupleur du poste à revoir à la connexion de {client} : {reglages}. Sans eux, pas d''accord
+    automatique à la prise d''émission sur une nouvelle fréquence : émission à vos risques.'
+  causes:
+  - Accord à la prise d'émission (PTT Start) à l'arrêt dans le menu du coupleur
+  - État du coupleur commun à toutes les bandes ([TUNER] Switch = Manual)
+  preconisation: 'Régler le menu du coupleur sur le poste (IC-7300MK2 : SET > Function > Tuner) ; la station ne le change
+    jamais.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - tuner_settings
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5037/
+  depuis_version: 0.210.0
+  en:
+    titre: 'Rig tuner settings to be checked'
+    message: 'Rig tuner settings to be checked when {client} connected: {reglages}. Without them, no automatic tuning
+      when transmitting on a new frequency: transmit at your own risk.'
+    causes:
+    - Tuning on transmit (PTT Start) off in the tuner menu
+    - Tuner state common to all bands ([TUNER] Switch = Manual)
+    preconisation: 'Set the tuner menu on the rig (IC-7300MK2: SET > Function > Tuner); the station never changes it.'
+ORT-5038:
+  gravite: info
+  titre: 'Réglages du coupleur du poste non vérifiables'
+  message: 'Réglages du coupleur du poste non vérifiables à la connexion de {client} ({raison}) : vérifier sur le poste
+    que l''accord part tout seul à la prise d''émission.'
+  causes:
+  - Second port CI-V non réglé, pas encore ouvert ou muet
+  - Réglages de ce modèle pas encore relevés (spectrum/menus.py)
+  preconisation: 'Vérifier sur le poste l''accord à la prise d''émission (Icom : PTT Start = ON, [TUNER] Switch = Auto).'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  codes_machine:
+  - tuner_unverified
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5038/
+  depuis_version: 0.210.0
+  en:
+    titre: 'Rig tuner settings cannot be checked'
+    message: 'Rig tuner settings cannot be checked when {client} connected ({raison}): check on the rig that tuning
+      starts by itself when transmitting.'
+    causes:
+    - Second CI-V port not set, not open yet or silent
+    - Settings of this model not recorded yet (spectrum/menus.py)
+    preconisation: 'Check on the rig that tuning starts when transmitting (Icom: PTT Start = ON, [TUNER] Switch = Auto).'
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'

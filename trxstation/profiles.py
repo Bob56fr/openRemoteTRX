@@ -29,14 +29,26 @@ from pathlib import Path
 from . import config as cfgmod
 
 SECTIONS = ("rig", "audio", "spectrum")
-PROFILE_FORMAT = 1
+PROFILE_FORMAT = 2
 PROFILE_FIELDS: dict[int, dict[str, tuple[str, ...]]] = {
     1: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w"),
         "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
         "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
+    2: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w", "tuner"),
+        "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
+        "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
 }
+
+
+def _format1_to_2(sections: dict) -> dict:
+    """Format 2 (station 0.210.0) : `[rig] tuner` (coupleur du poste utilisé), faux pour un ancien profil."""
+    out = {name: dict(values) for name, values in sections.items()}
+    out.setdefault("rig", {}).setdefault("tuner", False)
+    return out
+
+
 # MIGRATIONS[n] : profil (dict des sections) au format n -> format n+1. None = impossible : profil à refaire.
-MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {}
+MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {1: _format1_to_2}
 NAME_RE = re.compile(r"^[\w .+-]{1,40}$")
 FOLDER = "profils"
 

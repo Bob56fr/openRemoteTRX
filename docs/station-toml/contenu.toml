@@ -232,6 +232,13 @@ role = "Puissance maximale du poste en watts. 0 : inconnue, la page et l'applica
 niveau = "courant"
 exemple = "100 pour un poste de 100 W."
 
+[reglages."rig.tuner"]
+role = "Le coupleur d'antenne intégré du poste est utilisé. À chaque connexion d'un opérateur, la station lit alors les réglages d'accord automatique du poste par le second port CI-V (IC-7300MK2 : [TUNER] Switch = Auto, PTT Start = ON) et prévient s'ils sont faux ou impossibles à vérifier. Elle ne les change jamais."
+niveau = "courant"
+securite = "À distance, sans accord automatique à la prise d'émission, une nouvelle fréquence peut émettre sur un TOS élevé. Hors des bandes radioamateur, l'accord au PTT n'est pas garanti par le poste."
+exemple = "true si l'antenne passe par le coupleur du poste ; false (défaut) sinon."
+depuis = "0.210.0"
+
 # ---------------------------------------------------------------- audio
 
 [reglages."audio.capture_device"]

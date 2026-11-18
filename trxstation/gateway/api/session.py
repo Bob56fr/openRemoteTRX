@@ -181,15 +181,44 @@ class ControlSession:
     async def _vox_guard(self) -> None:
         """Décision de l'utilisateur (2026-11-19) : à l'ouverture d'une connexion d'opérateur, VOX relu et coupé s'il
         est en marche ; l'opérateur reçoit `rig_notice` (texte du catalogue d'erreurs). Jamais fatal."""
+        from ...errors.emit import render
         try:
             event, code, ctx = await self.ctrl.vox_guard(self.client_id)
         except Exception:                                # noqa: BLE001 : une vérification ratée ne ferme pas la session
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"vérification du VOX pour {self.client_id}")
-            return
+            event = ""
         if event and not self.closed:
-            from ...errors.emit import render
             _, text = render(code, "fr", **ctx)
             self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
+        try:
+            await self._tuner_check(render)
+        except Exception:                                # noqa: BLE001
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"réglages du coupleur pour {self.client_id}")
+
+    async def _tuner_check(self, render) -> None:
+        """Décision de l'utilisateur (2026-11-19) : coupleur du poste déclaré utilisé (`[rig] tuner`) => ses réglages
+        d'accord automatique sont LUS (second port CI-V, table par modèle) et l'opérateur est PRÉVENU s'ils sont faux ou
+        illisibles. La station ne les écrit jamais."""
+        cfg = self.ctrl.config
+        if not getattr(cfg.rig, "tuner", False):
+            return
+        from ...spectrum.menus import tuner_check
+        values: dict = {}
+        spectrum = self.spectrum
+        if spectrum is not None and getattr(spectrum, "active", False) and hasattr(spectrum, "rig_menus"):
+            for _ in range(30):                          # port B qui s'ouvre encore (démarrage de la station) : 3 s
+                values = spectrum.rig_menus()
+                if values or self.closed:
+                    break
+                await asyncio.sleep(0.1)
+        event, ctx = tuner_check(cfg.rig.model, values)
+        if not event or self.closed:
+            return
+        code = codes.ORT_5037 if event == "tuner_settings" else codes.ORT_5038
+        ctx = {"client": self.client_id, **ctx}
+        emit_event(code, logger=log, **ctx)
+        _, text = render(code, "fr", **ctx)
+        self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
 
     @property
     def listener(self) -> bool:
