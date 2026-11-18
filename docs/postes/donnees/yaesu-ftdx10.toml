@@ -54,6 +54,7 @@ squelch = { etat = "non_teste" }
 puissance = { etat = "non_teste" }
 compresseur = { etat = "partiel", note = "Fonction illisible : « PR; » refusé par le poste (« ?; »), 2,45 s puis RPRT -9 ; la station abandonne cette lecture pour ce poste (ORT-2025). Niveau écrit et relu, mais 0 refusé (RPRT -14) alors que déclaré.", note_en = "Function unreadable: « PR; » refused by the rig (« ?; »), 2.45 s then RPRT -9; the station drops this read for this rig (ORT-2025). Level written and read back, but 0 refused (RPRT -14) although declared." }
 tuner = { etat = "non_teste", note = "Lu en 40 ms ; jamais mis en marche automatiquement.", note_en = "Read in 40 ms; never switched on automatically." }
+vox = { etat = "non_teste" }
 # --- Mesures
 s_metre = { etat = "valide", note = "Lu en 40 ms ; valeurs hors de la plage déclarée (ex. -48) : table de calibration.", note_en = "Read in 40 ms; values outside the declared range (e.g. -48): calibration table." }
 puissance_mesuree = { etat = "non_teste" }

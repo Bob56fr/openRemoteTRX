@@ -88,6 +88,8 @@ def _mhz(hz: int | None) -> str:
     return f"{int(text[:-6])}.{text[-6:-3]}.{text[-3:-1]}"
 
 
+TUNER_WATCH_S = 8.0                   # accord éventuel du coupleur (porteuse brève) : PTT relu jusqu'au retour en réception
+VOX_WATCH_S = 4.0                     # VOX en marche, aucun son envoyé : le poste doit rester en réception
 WORK_MODE = "USB"                     # mode de travail des écritures (règle de l'utilisateur : pas en CW ni en FM)
 WORK_MODES = {"USB", "LSB", "PKTUSB", "PKTLSB", "AM"}
 MODE_FOR = {                          # réglages qui n'existent que dans certains modes (règles de l'utilisateur, 2026-11-18)
@@ -666,6 +668,88 @@ class Qualification(HwTest):
             else:
                 self.record(_t("hw.drills"), None, *both("phase3.drills_skipped"))
                 self.record(_t("hw.cat_loss"), None, *both("phase3.cat_loss_skipped"))
+            await self.stage_tuner()
+            await self.stage_vox()
+
+    async def _rx_and_func(self, name: str) -> tuple[bool | None, bool | None]:
+        try:
+            ptt = await self.link.client.get_ptt()
+        except Exception:
+            ptt = None
+        try:
+            func = await self.link.client.get_func(name)
+        except Exception:
+            func = None
+        return ptt, func
+
+    async def stage_tuner(self) -> None:
+        """Coupleur (demande de l'utilisateur, 2026-11-19) : mis en marche puis remis comme au départ, sur CHARGE
+        FICTIVE après EMETTRE (un accord peut envoyer une porteuse brève) ; le PTT est relu jusqu'au retour en réception."""
+        if not ("TUNER" in self.profile.set_functions and "TUNER" in self.profile.get_functions):
+            return self.check("tuner_tx", ("Coupleur d'antenne", _t("tuner.label")), FIXE, None, both("tuner.not_declared"))
+        if not await self.confirm_emission(_t("tuner.what")):
+            return self.check("tuner_tx", ("Coupleur d'antenne", _t("tuner.label")), FIXE, None, both("phase3.not_confirmed"))
+        _, orig = await self._rx_and_func("TUNER")
+        steps, tx_seen = [], False
+        try:
+            for target in ((not orig) if orig is not None else True, orig if orig is not None else False):
+                await self.ctrl.set_function("TUNER", target)
+                end = time.monotonic() + TUNER_WATCH_S
+                read = None
+                while time.monotonic() < end:
+                    ptt, read = await self._rx_and_func("TUNER")
+                    tx_seen = tx_seen or bool(ptt)
+                    if read == target and not ptt:
+                        break
+                    await asyncio.sleep(0.25)
+                steps.append(read == target)
+        except Exception as exc:
+            return self.check("tuner_tx", ("Coupleur d'antenne", _t("tuner.label")), FIXE, False,
+                              both("detail.refused", error=_rprt(exc)))
+        ptt, _ = await self._rx_and_func("TUNER")
+        if ptt:
+            await self.ctrl.force_rx("hwtest")
+        ok = all(steps) and not ptt
+        self.check("tuner_tx", ("Coupleur d'antenne", _t("tuner.label")), FIXE, ok,
+                   both("tuner.ok" if ok else "tuner.ko", tx="oui" if tx_seen else "non"))
+
+    async def stage_vox(self) -> None:
+        """VOX (demande de l'utilisateur, 2026-11-19) : mis en marche VOX_WATCH_S secondes, AUCUN son envoyé par la
+        station : le poste NE DOIT PAS passer en émission ; VOX remis à l'arrêt QUOI QU'IL ARRIVE (finally)."""
+        label = ("VOX", _t("vox.label"))
+        if not ("VOX" in self.profile.set_functions and "VOX" in self.profile.get_functions):
+            return self.check("vox_tx", label, FIXE, None, both("vox.not_declared"))
+        if not await self.confirm_emission(_t("vox.what")):
+            return self.check("vox_tx", label, FIXE, None, both("phase3.not_confirmed"))
+        _, orig = await self._rx_and_func("VOX")
+        on_read, tx_seen, off_read = None, False, None
+        # La STATION refuse toute écriture du VOX (liste fermée de PttController : un VOX laissé en marche à distance
+        # ferait émettre le poste sans contrôle). L'essai passe donc par la CAT de l'outil, et le VOX est remis.
+        client = self.link.client
+        try:
+            await client._command("U VOX 1")          # commande brute : hors des listes fermées de la station
+            end = time.monotonic() + VOX_WATCH_S
+            while time.monotonic() < end:
+                ptt, on_read = await self._rx_and_func("VOX")
+                tx_seen = tx_seen or bool(ptt)
+                await asyncio.sleep(0.25)
+        except Exception as exc:
+            self.check("vox_tx", label, FIXE, False, both("detail.refused", error=_rprt(exc)))
+        else:
+            off_read = "pending"
+        finally:
+            try:
+                await client._command(f"U VOX {1 if orig else 0}")
+            except Exception as exc:
+                self.say(_t("vox.left_on", error=_rprt(exc)))
+            ptt, now = await self._rx_and_func("VOX")
+            if ptt:
+                await self.ctrl.force_rx("hwtest")
+        if off_read is None:
+            return
+        ok = on_read is True and not tx_seen and now == (bool(orig) if orig is not None else False)
+        self.check("vox_tx", label, FIXE, ok, both("vox.ok" if ok else "vox.ko", on=on_read, tx="oui" if tx_seen else "non",
+                                                   now=now))
 
     def release_own_changes(self) -> None:
         """Les réglages changés très vite par la phase 1 (modes, filtres) peuvent être vus comme une ACTION SUR LE POSTE

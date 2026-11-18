@@ -512,13 +512,14 @@ def test_the_antenna_part_locks_transmissions_again_until_charge(tmp_path):
     profile = SimpleNamespace(model=3094, hamlib_version="4.7.2", backend_status="Stable",
                               caps=SimpleNamespace(model_name="IC-7300", manufacturer="Icom"))
     calls, shown = [], []
-    answers = iter(["c", "CHARGE", "r", "", "3", "c", "CHARGE", "3", "7", "q"])
+    answers = iter(["c", "CHARGE", "r", "", "", "3", "c", "CHARGE", "3", "7", "q"])
     terrain.run_terrain(cfg, profile, "", tmp_path, session_dir=tmp_path / "s", ask=lambda p: next(answers),
                         out=shown.append, station=lambda: False, qualify=lambda no_tx: calls.append(no_tx),
-                        receive=lambda: rx, explore=lambda: None)
+                        receive=lambda wanted=None: rx, explore=lambda: None)
     assert calls == [False]                                   # une seule qualification : après le second « CHARGE »
     text = "\n".join(map(str, shown))
     assert "ACTION DEMANDÉE : branche l'ANTENNE" in text and "7.100 MHz LSB" in text and ": OK." in text
+    assert "fréquence et le mode où est le poste" in text
     data = json.loads((tmp_path / "s" / "qualification.json").read_text(encoding="utf-8"))
     assert data["reception_antenne"]["verdict"] == "ok"
 
@@ -546,3 +547,28 @@ def test_spectrum_check_reads_the_scope_tool_summary(tmp_path):
     assert result["verdict"] == "ok" and result["sweeps"] == 12 and result["which"] == "port CAT"
     cfg.rig.model = 1042                                      # Yaesu : rien d'envoyé
     assert terrain.spectrum_check(cfg, tmp_path, run=lambda c: 1 / 0)["verdict"] == "non_propose"
+
+
+
+def test_the_receive_frequency_stays_the_operator_s_unless_given():
+    """Décision de l'utilisateur (2026-11-19) : antenne inconnue (cibiste ou radioamateur) : jamais de QSY imposé."""
+    assert terrain.parse_rx_frequency("") is None and terrain.parse_rx_frequency("  ") is None
+    assert terrain.parse_rx_frequency("7,1") == 7_100_000 and terrain.parse_rx_frequency("27.43") == 27_430_000
+    for bad in ("abc", "0", "9999"):
+        with pytest.raises(ValueError):
+            terrain.parse_rx_frequency(bad)
+
+
+
+def test_qualification_bands_cover_amateur_85m_45m_and_11m():
+    """Décision de l'utilisateur (2026-11-19) : toutes les bandes radioamateur + 85 m, 45 m, 11 m ; pas le marine."""
+    names = {b.name for b in terrain.qualification_bands()}
+    assert {"160m", "80m", "40m", "20m", "10m", "6m", "2m", "70cm", "85m", "45m", "11m"} <= names
+    assert not any("marine" in n for n in names)
+    eleven = next(b for b in terrain.qualification_bands() if b.name == "11m")
+    assert eleven.low_mhz <= 27.430 <= eleven.high_mhz
+    from trxstation.setup_wizard import dummy_config
+    cfg = dummy_config()
+    assert {"85m", "45m", "11m", "6m"} <= set(terrain.missing_qualification_bands(cfg))
+    cfg.bands = terrain.qualification_bands()
+    assert terrain.missing_qualification_bands(cfg) == [] and cfg.tx_allowed(27_430_000)

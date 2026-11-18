@@ -68,6 +68,7 @@ FEATURES = [   # (identifiant, thème, français, anglais)
     ("puissance", "emission", "Puissance réglée", "Power setting"),
     ("compresseur", "emission", "Compresseur", "Speech processor"),
     ("tuner", "emission", "Coupleur d'antenne", "Antenna tuner"),
+    ("vox", "emission", "VOX (jamais proposé à distance)", "VOX (never offered remotely)"),
     ("s_metre", "mesures", "S-mètre", "S-meter"),
     ("puissance_mesuree", "mesures", "Puissance mesurée", "Measured power"),
     ("ros", "mesures", "ROS", "SWR"),

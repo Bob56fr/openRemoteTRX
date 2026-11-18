@@ -42,7 +42,7 @@ def test_a_partial_or_failed_feature_needs_its_note_in_both_languages() -> None:
 
 
 def test_unknown_features_states_or_missing_features_are_refused() -> None:
-    for change in (lambda r: r["fonctions"].update(vox={"etat": "valide"}),
+    for change in (lambda r: r["fonctions"].update(zzz_inconnue={"etat": "valide"}),
                    lambda r: r["fonctions"]["agc"].update(etat="ok"),
                    lambda r: r["fonctions"].pop("agc")):
         rig = _rig()
@@ -54,8 +54,9 @@ def test_unknown_features_states_or_missing_features_are_refused() -> None:
 def test_a_rig_cannot_be_validated_while_transmit_safety_is_not() -> None:
     rig = _rig()
     rig["poste"]["statut"] = "valide"
+    rig["fonctions"]["operateur_local"] = {"etat": "non_teste"}
     with pytest.raises(doc.DocError, match="sécurité non validée"):
-        doc.check([rig])                                     # opérateur sur place et démarrage pas encore essayés
+        doc.check([rig])
 
 
 def test_the_comparison_shows_only_validated_and_partial_and_never_a_refused_rig() -> None:

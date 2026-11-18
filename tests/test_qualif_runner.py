@@ -41,6 +41,7 @@ def run(tmp_path, scenario, *, answers=None, fake_setup=None, enforce_bands=True
     async def wrapper():
         fake = FakeRigctld()
         fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
+        fake.funcs.setdefault("VOX", 0)        # essai du VOX (étape 264)
         await fake.start()
         if fake_setup:
             fake_setup(fake)
@@ -76,6 +77,7 @@ def test_trace_proxy_relays_records_and_simulates_a_cut():
     async def scenario():
         fake = FakeRigctld()
         fake.tx_power = 0.05                    # puissance mesurée en émission, comme un vrai poste (étape 256)
+        fake.funcs.setdefault("VOX", 0)        # essai du VOX (étape 264)
         await fake.start()
         proxy = TraceProxy("127.0.0.1", fake.port)
         await proxy.start()
@@ -133,7 +135,9 @@ def test_full_qualification_of_a_healthy_rig(tmp_path):
         assert results["latency"].data["polling_max_hz"] > 0
         # sécurité et remise en état
         assert fake.ptt == 0 and q.ctrl.snapshot().state == "RX" and fake.ptt_commands[-1] == 0
-        assert not any(c.lstrip("+").startswith("U TUNER") for c in fake.commands)    # tuner jamais touché
+        tuner = [c.lstrip("+") for c in fake.commands if c.lstrip("+").startswith("U TUNER")]
+        assert len(tuner) == 2 and results["tuner_tx"].ok is True        # coupleur : après EMETTRE seulement, puis remis
+        assert results["vox_tx"].ok is True and fake.funcs.get("VOX", 0) == 0   # VOX remis à l'arrêt
         assert fake.funcs == before_funcs
         assert {k: fake.levels[k] for k in ("SQL", "AGC", "PREAMP", "RFPOWER")} == \
                {k: before_levels[k] for k in ("SQL", "AGC", "PREAMP", "RFPOWER")}

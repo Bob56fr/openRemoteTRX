@@ -597,7 +597,8 @@ def show_audio_check(result: dict, out: Callable[[str], None]) -> None:
     out(_t("terrain.audio.ok" if not result["problems"] else "terrain.audio.ko"))
 
 
-RX_FREQ_HZ, RX_MODE = 7_100_000, "LSB"   # règle de l'utilisateur : réception sur 7 MHz (ou 3,5), pas 28 MHz sans QRM
+# Réception sur antenne : sur la fréquence et le mode OÙ EST LE POSTE (décision de l'utilisateur, 2026-11-19 : on ne
+# sait pas quelle antenne a l'opérateur, cibiste ou radioamateur) ; l'opérateur peut en donner une autre (ex. 7,1 MHz).
 RX_LOW_DBFS, RX_HIGH_DBFS = -65.0, -6.0
 TX_LEVELS_DB = (-40.0, -30.0, -24.0, -18.0, -12.0, -6.0)
 ALC_STOP = 0.5
@@ -615,9 +616,43 @@ def judge_reception(level: float | None, zeros: float | None) -> str:
     return "ok"
 
 
-def reception_on_antenna(cfg, *, sd=None, seconds: float = 4.0, freq_hz: int = RX_FREQ_HZ, mode: str = RX_MODE) -> dict:
-    """Réception sur ANTENNE, station arrêtée, SANS émission : fréquence et mode de réception réglés par la CAT (rigctld
-    lancé pour l'occasion), son mesuré, S-mètre lu, fréquence et mode d'origine remis."""
+QUALIF_BAND_KINDS = ("amateur", "cb", "45m")   # décision de l'utilisateur (2026-11-19) : + 85 m, 45 m, 11 m ; pas le marine
+
+
+def qualification_bands() -> list:
+    """Bandes sur lesquelles une qualification doit pouvoir émettre (charge fictive) : toutes les bandes radioamateur
+    de la région 1, le 85 m, le 45 m et le 11 m (CB 26 à 28 MHz), d'après la table de la mesure de TOS
+    (`swr/plan.BANDS`). C'est l'opérateur qui sait sur lesquelles il a le droit d'émettre."""
+    from ..config import Band
+    from ..swr.plan import BANDS
+    return [Band(b.name if b.name != "CB" else "11m", b.low_hz / 1e6, b.high_hz / 1e6)
+            for b in BANDS if b.kind in QUALIF_BAND_KINDS]
+
+
+def missing_qualification_bands(cfg) -> list[str]:
+    """Bandes de qualification qu'aucune bande de station.toml ne couvre entièrement (contrôle des bandes actif)."""
+    if not cfg.safety.enforce_bands:
+        return []
+    have = [(b.low_mhz, b.high_mhz) for b in cfg.bands]
+    return [b.name for b in qualification_bands()
+            if not any(lo <= b.low_mhz + 1e-9 and b.high_mhz <= hi + 1e-9 for lo, hi in have)]
+
+
+def parse_rx_frequency(text: str) -> int | None:
+    """Réponse de l'opérateur : vide = fréquence actuelle (None) ; « 7.1 » / « 7,1 » MHz ; ValueError sinon."""
+    text = (text or "").strip().replace(",", ".")
+    if not text:
+        return None
+    mhz = float(text)
+    if not 0.1 <= mhz <= 470:
+        raise ValueError(text)
+    return round(mhz * 1e6)
+
+
+def reception_on_antenna(cfg, *, sd=None, seconds: float = 4.0, freq_hz: int | None = None,
+                         mode: str | None = None) -> dict:
+    """Réception sur ANTENNE, station arrêtée, SANS émission : sur la fréquence actuelle du poste (ou celle donnée par
+    l'opérateur, remise ensuite), son mesuré, S-mètre lu."""
     from ..gateway.cat.client import RigctldClient
     from . import main as qmain
 
@@ -629,24 +664,29 @@ def reception_on_antenna(cfg, *, sd=None, seconds: float = 4.0, freq_hz: int = R
                 if await client.get_ptt():
                     raise ObserverError("poste en émission : rien n'est changé")
                 orig_freq, (orig_mode, _) = await client.get_frequency(), await client.get_mode()
+                moved = freq_hz is not None and freq_hz != orig_freq
                 try:
-                    await client.set_frequency(freq_hz)
-                    await client.set_mode(mode, 0)
-                    await asyncio.sleep(1.0)
-                    check = await asyncio.to_thread(audio_check, cfg, sd=sd, seconds=seconds, windows=False)
+                    if moved:
+                        await client.set_frequency(freq_hz)
+                        if mode:
+                            await client.set_mode(mode, 0)
+                        await asyncio.sleep(1.0)
+                    # JAMAIS dans un fil secondaire : sous Windows la carte son ne s'y ouvre pas (vu le 2026-11-19).
+                    check = audio_check(cfg, sd=sd, seconds=seconds, windows=False)
                     strength = await client.get_strength()
+                    used = (await client.get_frequency(), (await client.get_mode())[0])
                 finally:
-                    await client.set_frequency(orig_freq)
-                    await client.set_mode(orig_mode, 0)
-                return check, strength, orig_freq, orig_mode
+                    if moved:
+                        await client.set_frequency(orig_freq)
+                        await client.set_mode(orig_mode, 0)
+                return check, strength, used
             finally:
                 await client.close()
-    check, strength, orig_freq, orig_mode = asyncio.run(go())
+    check, strength, (used_freq, used_mode) = asyncio.run(go())
     cap = check.get("capture") or {}
     verdict = judge_reception(cap.get("level_dbfs"), cap.get("zeros_pct"))
-    return {"freq_hz": freq_hz, "mode": mode, "level_dbfs": cap.get("level_dbfs"), "zeros_pct": cap.get("zeros_pct"),
-            "s_metre_db": strength, "verdict": verdict, "problems": check.get("problems", []),
-            "origine": {"freq_hz": orig_freq, "mode": orig_mode}}
+    return {"freq_hz": used_freq, "mode": used_mode, "level_dbfs": cap.get("level_dbfs"), "zeros_pct": cap.get("zeros_pct"),
+            "s_metre_db": strength, "verdict": verdict, "problems": check.get("problems", [])}
 
 
 def spectrum_check(cfg, folder: Path, *, run=None) -> dict:
@@ -748,8 +788,11 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
     control = control or (lambda start: station_control(config_path, start))
     snapshot = snapshot or (lambda: asyncio.run(snapshot_session(cfg, profile, out=out, skip=tuple(session.crashers))))
     sound = sound or (lambda: audio_check(cfg))
-    receive = receive or (lambda: reception_on_antenna(cfg))
+    receive = receive or (lambda wanted=None: reception_on_antenna(cfg, freq_hz=wanted))
     scope = scope or (lambda: spectrum_check(cfg, folder))
+    missing = missing_qualification_bands(cfg)
+    if missing:
+        out(_t("terrain.bands_missing", bands=", ".join(missing)))
     while True:
         note_runs(session)
         running = station()
@@ -775,12 +818,17 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         elif choice == "c":
             confirm_load(session, ask=ask, out=out)
         elif choice == "r":
-            out(_t("terrain.rx.action", freq=f"{RX_FREQ_HZ / 1e6:.3f}", mode=RX_MODE))
+            out(_t("terrain.rx.action"))
             if yes_no(ask(_t("terrain.rx.prompt"))) is not False:
+                try:
+                    wanted = parse_rx_frequency(ask(_t("terrain.rx.freq_prompt")))
+                except ValueError:
+                    wanted = None
+                    out(_t("terrain.rx.freq_invalid"))
                 session.connection = "antenne"           # désormais : plus d'émission avant « CHARGE »
                 session.save()
                 try:
-                    rx = receive()
+                    rx = receive(wanted)
                 except Exception as exc:                 # noqa: BLE001 : rigctld absent, poste éteint…
                     out(_t("terrain.rx.failed", error=exc))
                 else:

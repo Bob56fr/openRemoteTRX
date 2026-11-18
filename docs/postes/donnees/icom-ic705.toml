@@ -53,6 +53,7 @@ squelch = { etat = "valide" }
 puissance = { etat = "valide", note = "0 à 100 % ; 10 W sur 13,8 V, 5 W sur batterie (plafonds réglables dans le poste).", note_en = "0 to 100 %; 10 W on 13.8 V, 5 W on battery (caps set in the rig)." }
 compresseur = { etat = "valide" }
 tuner = { etat = "echec", note = "Lecture refusée par le poste (RPRT -9) ; jamais mis en marche automatiquement.", note_en = "Read refused by the rig (RPRT -9); never switched on automatically." }
+vox = { etat = "non_teste" }
 # --- Mesures
 s_metre = { etat = "valide", note = "Valeurs hors de la plage déclarée par Hamlib : table de calibration.", note_en = "Values outside the range declared by Hamlib: calibration table." }
 puissance_mesuree = { etat = "valide", note = "Faible à 0,5 W (0,01 sur l'échelle).", note_en = "Low at 0.5 W (0.01 on the scale)." }

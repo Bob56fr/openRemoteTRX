@@ -219,6 +219,12 @@
       "en": "Antenna tuner"
     },
     {
+      "id": "vox",
+      "theme": "emission",
+      "fr": "VOX (jamais proposé à distance)",
+      "en": "VOX (never offered remotely)"
+    },
+    {
       "id": "s_metre",
       "theme": "mesures",
       "fr": "S-mètre",
@@ -435,6 +441,9 @@
           "note": "Lecture refusée par le poste (RPRT -9) ; jamais mis en marche automatiquement.",
           "note_en": "Read refused by the rig (RPRT -9); never switched on automatically."
         },
+        "vox": {
+          "etat": "non_teste"
+        },
         "s_metre": {
           "etat": "valide",
           "note": "Valeurs hors de la plage déclarée par Hamlib : table de calibration.",
@@ -525,10 +534,18 @@
         "modele": "IC-7300MK2",
         "hamlib_model": 3094,
         "statut": "validation_en_cours",
-        "resume": "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13) ; qualification complète réussie sous Windows le 2026-11-18.",
-        "resume_en": "Reference rig of the project: station in service since 2026-10 (Debian 13); full qualification passed on Windows on 2026-11-18."
+        "resume": "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13). Requalifié le 2026-11-19 avec le nouveau déroulé (réception sur antenne, émissions sur charge fictive) : toute la sécurité d'émission validée ; restent le split, les filtres et les essais au téléphone.",
+        "resume_en": "Reference rig of the project: station in service since 2026-10 (Debian 13). Requalified on 2026-11-19 with the new flow (receive on antenna, transmissions on dummy load): all transmit safety validated; split, filters and phone drills remain."
       },
       "essais": [
+        {
+          "date": "2026-11-19",
+          "station": "0.204.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Requalification : réception sur antenne (7,061 MHz), spectre par le port B, qualification avec émission sur charge fictive (27,430 MHz, 5 W), coupleur, VOX, 5 essais automatiques, opérateur sur place, arrêt et démarrage de la station",
+          "quoi_en": "Requalification: receive on antenna (7.061 MHz), spectrum through port B, qualification with transmission on dummy load (27.430 MHz, 5 W), tuner, VOX, 5 automatic drills, local operator, station stop and start-up"
+        },
         {
           "date": "2026-11-18",
           "station": "0.199.0",
@@ -578,10 +595,14 @@
           "note_en": "Transmission refused on 1.760 MHz, none seen."
         },
         "operateur_local": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Émission au micro du poste vue ; émission à distance refusée ensuite (local_active).",
+          "note_en": "Rig-microphone transmission seen; remote transmission refused afterwards (local_active)."
         },
         "demarrage": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Aucune émission vue pendant le démarrage de la station ; station arrêtée pendant une émission : réception en 0,41 s.",
+          "note_en": "No transmission seen while the station starts; station stopped while transmitting: receive within 0.41 s."
         },
         "frequence": {
           "etat": "valide",
@@ -641,8 +662,8 @@
         },
         "nb_niveau": {
           "etat": "partiel",
-          "note": "Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).",
-          "note_en": "Read; write refused by the rig during the qualification (RPRT -9)."
+          "note": "Lu ; écriture refusée par le poste (RPRT -9), en USB aussi, NB en marche (deux qualifications).",
+          "note_en": "Read; write refused by the rig (RPRT -9), in USB too, with NB on (two qualifications)."
         },
         "anf": {
           "etat": "valide"
@@ -662,9 +683,14 @@
           "etat": "valide"
         },
         "tuner": {
-          "etat": "non_teste",
-          "note": "Jamais mis en marche automatiquement : il peut lancer un accord (porteuse).",
-          "note_en": "Never switched on automatically: it may start a tune (carrier)."
+          "etat": "valide",
+          "note": "Mis en marche puis remis sur charge fictive, relu à chaque fois. Son état est mémorisé PAR BANDE par le poste.",
+          "note_en": "Switched on then restored on a dummy load, read back each time. The rig stores its state PER BAND."
+        },
+        "vox": {
+          "etat": "valide",
+          "note": "Mis en marche 4 s sans aucun son : aucune émission, puis remis à l'arrêt. La station ne le propose jamais à distance.",
+          "note_en": "Switched on for 4 s without audio: no transmission, then switched off. The station never offers it remotely."
         },
         "s_metre": {
           "etat": "valide",
@@ -696,18 +722,18 @@
         },
         "audio_rx": {
           "etat": "valide",
-          "note": "Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.",
-          "note_en": "« USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port."
+          "note": "Sur antenne : -28,5 dBFS sur 7,061 MHz (S9). Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.",
+          "note_en": "On antenna: -28.5 dBFS on 7.061 MHz (S9). « USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port."
         },
         "audio_tx": {
           "etat": "partiel",
-          "note": "En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.",
-          "note_en": "Data modes only (PKTUSB, DATA MOD = USB). Windows: output volume 100, enhancements off; about -12 dBFS for USB MOD Level 30 %."
+          "note": "En mode données seulement (PKTUSB, DATA MOD = USB). Niveau d'envoi conseillé ≈ -18 dBFS pour USB MOD Level 30 % (ALC 0,59 à -12 dBFS). Windows : volume de la sortie à 100, améliorations désactivées.",
+          "note_en": "Data modes only (PKTUSB, DATA MOD = USB). Advised send level ≈ -18 dBFS for USB MOD Level 30 % (ALC 0.59 at -12 dBFS). Windows: output volume 100, enhancements off."
         },
         "spectre_hf": {
           "etat": "valide",
-          "note": "Par le second port CI-V (port B) ; figé pendant l'émission (normal).",
-          "note_en": "Through the second CI-V port (port B); frozen while transmitting (normal)."
+          "note": "Par le second port CI-V (port B) : 32 balayages en 8 s à la qualification ; figé pendant l'émission (normal).",
+          "note_en": "Through the second CI-V port (port B): 32 sweeps in 8 s at the qualification; frozen while transmitting (normal)."
         }
       },
       "hamlib": {
@@ -888,6 +914,9 @@
           "etat": "non_teste",
           "note": "Lu en 40 ms ; jamais mis en marche automatiquement.",
           "note_en": "Read in 40 ms; never switched on automatically."
+        },
+        "vox": {
+          "etat": "non_teste"
         },
         "s_metre": {
           "etat": "valide",

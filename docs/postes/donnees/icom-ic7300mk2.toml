@@ -7,8 +7,16 @@ fabricant = "Icom"
 modele = "IC-7300MK2"
 hamlib_model = 3094
 statut = "validation_en_cours"     # valide | restreint | validation_en_cours | refuse
-resume = "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13) ; qualification complète réussie sous Windows le 2026-11-18."
-resume_en = "Reference rig of the project: station in service since 2026-10 (Debian 13); full qualification passed on Windows on 2026-11-18."
+resume = "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13). Requalifié le 2026-11-19 avec le nouveau déroulé (réception sur antenne, émissions sur charge fictive) : toute la sécurité d'émission validée ; restent le split, les filtres et les essais au téléphone."
+resume_en = "Reference rig of the project: station in service since 2026-10 (Debian 13). Requalified on 2026-11-19 with the new flow (receive on antenna, transmissions on dummy load): all transmit safety validated; split, filters and phone drills remain."
+
+[[essais]]
+date = "2026-11-19"
+station = "0.204.0"
+hamlib = "4.7.2"
+systeme = "Windows 11"
+quoi = "Requalification : réception sur antenne (7,061 MHz), spectre par le port B, qualification avec émission sur charge fictive (27,430 MHz, 5 W), coupleur, VOX, 5 essais automatiques, opérateur sur place, arrêt et démarrage de la station"
+quoi_en = "Requalification: receive on antenna (7.061 MHz), spectrum through port B, qualification with transmission on dummy load (27.430 MHz, 5 W), tuner, VOX, 5 automatic drills, local operator, station stop and start-up"
 
 [[essais]]
 date = "2026-11-18"
@@ -34,8 +42,8 @@ battements = { etat = "valide", note = "Réception 2,1 s après le dernier batte
 deconnexion = { etat = "valide", note = "Réception en 0,1 s.", note_en = "Receive within 0.1 s." }
 perte_cat = { etat = "valide", note = "Liaison CAT coupée 1,5 s pendant l'émission : réception 1,7 s après.", note_en = "CAT link cut for 1.5 s while transmitting: receive 1.7 s later." }
 hors_bande = { etat = "valide", note = "Émission refusée sur 1,760 MHz, aucune émission vue.", note_en = "Transmission refused on 1.760 MHz, none seen." }
-operateur_local = { etat = "non_teste" }
-demarrage = { etat = "non_teste" }
+operateur_local = { etat = "valide", note = "Émission au micro du poste vue ; émission à distance refusée ensuite (local_active).", note_en = "Rig-microphone transmission seen; remote transmission refused afterwards (local_active)." }
+demarrage = { etat = "valide", note = "Aucune émission vue pendant le démarrage de la station ; station arrêtée pendant une émission : réception en 0,41 s.", note_en = "No transmission seen while the station starts; station stopped while transmitting: receive within 0.41 s." }
 # --- Fréquence
 frequence = { etat = "valide", note = "8 bandes écrites et relues au hertz.", note_en = "8 bands written and read back to the hertz." }
 split = { etat = "non_teste" }
@@ -53,14 +61,15 @@ agc = { etat = "valide" }
 nr = { etat = "valide" }
 nr_niveau = { etat = "valide" }
 nb = { etat = "valide" }
-nb_niveau = { etat = "partiel", note = "Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).", note_en = "Read; write refused by the rig during the qualification (RPRT -9)." }
+nb_niveau = { etat = "partiel", note = "Lu ; écriture refusée par le poste (RPRT -9), en USB aussi, NB en marche (deux qualifications).", note_en = "Read; write refused by the rig (RPRT -9), in USB too, with NB on (two qualifications)." }
 anf = { etat = "valide" }
 notch_manuel = { etat = "valide", note = "Fréquence du notch sans plage déclarée : non réglable à distance.", note_en = "Notch frequency without a declared range: not adjustable remotely." }
 squelch = { etat = "valide" }
 # --- Émission
 puissance = { etat = "valide" }
 compresseur = { etat = "valide" }
-tuner = { etat = "non_teste", note = "Jamais mis en marche automatiquement : il peut lancer un accord (porteuse).", note_en = "Never switched on automatically: it may start a tune (carrier)." }
+tuner = { etat = "valide", note = "Mis en marche puis remis sur charge fictive, relu à chaque fois. Son état est mémorisé PAR BANDE par le poste.", note_en = "Switched on then restored on a dummy load, read back each time. The rig stores its state PER BAND." }
+vox = { etat = "valide", note = "Mis en marche 4 s sans aucun son : aucune émission, puis remis à l'arrêt. La station ne le propose jamais à distance.", note_en = "Switched on for 4 s without audio: no transmission, then switched off. The station never offers it remotely." }
 # --- Mesures
 s_metre = { etat = "valide", note = "Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.", note_en = "Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table." }
 puissance_mesuree = { etat = "valide", note = "Monte environ 0,3 s après la prise d'émission.", note_en = "Rises about 0.3 s after keying." }
@@ -69,10 +78,10 @@ alc = { etat = "partiel", note = "Lu ≈ 0,14 SANS modulation : jamais une preuv
 tension = { etat = "valide", note = "14,4 V lus (hors de la plage déclarée 0..1).", note_en = "14.4 V read (outside the declared 0..1 range)." }
 temperature = { etat = "non_declare", note = "TEMP_METER absent : seuils de température du poste sans effet.", note_en = "No TEMP_METER: rig temperature thresholds have no effect." }
 # --- Audio USB
-audio_rx = { etat = "valide", note = "Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.", note_en = "« USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port." }
-audio_tx = { etat = "partiel", note = "En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.", note_en = "Data modes only (PKTUSB, DATA MOD = USB). Windows: output volume 100, enhancements off; about -12 dBFS for USB MOD Level 30 %." }
+audio_rx = { etat = "valide", note = "Sur antenne : -28,5 dBFS sur 7,061 MHz (S9). Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.", note_en = "On antenna: -28.5 dBFS on 7.061 MHz (S9). « USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port." }
+audio_tx = { etat = "partiel", note = "En mode données seulement (PKTUSB, DATA MOD = USB). Niveau d'envoi conseillé ≈ -18 dBFS pour USB MOD Level 30 % (ALC 0,59 à -12 dBFS). Windows : volume de la sortie à 100, améliorations désactivées.", note_en = "Data modes only (PKTUSB, DATA MOD = USB). Advised send level ≈ -18 dBFS for USB MOD Level 30 % (ALC 0.59 at -12 dBFS). Windows: output volume 100, enhancements off." }
 # --- Spectre
-spectre_hf = { etat = "valide", note = "Par le second port CI-V (port B) ; figé pendant l'émission (normal).", note_en = "Through the second CI-V port (port B); frozen while transmitting (normal)." }
+spectre_hf = { etat = "valide", note = "Par le second port CI-V (port B) : 32 balayages en 8 s à la qualification ; figé pendant l'émission (normal).", note_en = "Through the second CI-V port (port B): 32 sweeps in 8 s at the qualification; frozen while transmitting (normal)." }
 
 [hamlib]
 non_exploite = ["AGC_TIME", "ANTIVOX", "BKINDL", "CWPITCH", "FBKIN", "ID_METER", "KEYSPD", "LOCK", "MICGAIN", "MON",
