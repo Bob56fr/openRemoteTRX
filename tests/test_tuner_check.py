@@ -29,9 +29,18 @@ class Spectrum:
 
     def __init__(self, menus):
         self.menus = menus
+        self.stamp = 0
+        self.refreshed = 0
 
     def rig_menus(self):
         return dict(self.menus)
+
+    def menus_stamp(self):
+        return self.stamp
+
+    def refresh_menus(self):                       # relecture immédiate (fil du port B simulé)
+        self.refreshed += 1
+        self.stamp += 1
 
     def capability(self):
         return None

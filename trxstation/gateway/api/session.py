@@ -239,11 +239,19 @@ class ControlSession:
         values: dict = {}
         spectrum = self.spectrum
         if spectrum is not None and getattr(spectrum, "active", False) and hasattr(spectrum, "rig_menus"):
-            for _ in range(30):                          # port B qui s'ouvre encore (démarrage de la station) : 3 s
-                values = spectrum.rig_menus()
-                if values or self.closed:
+            stamp = spectrum.menus_stamp() if hasattr(spectrum, "menus_stamp") else None
+            if hasattr(spectrum, "refresh_menus"):
+                spectrum.refresh_menus()                 # réglage peut-être changé sur le poste depuis l'ouverture du port
+            for _ in range(30):                          # relecture (ou port B qui s'ouvre encore) : 3 s au plus
+                if self.closed:
                     break
+                if stamp is None or spectrum.menus_stamp() != stamp:
+                    values = spectrum.rig_menus()
+                    if values:
+                        break
                 await asyncio.sleep(0.1)
+            else:
+                values = spectrum.rig_menus()            # pas de relecture à temps : dernière valeur connue
         event, ctx = tuner_check(cfg.rig.model, values)
         if not event or self.closed:
             return

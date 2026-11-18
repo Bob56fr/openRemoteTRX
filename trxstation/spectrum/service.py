@@ -69,6 +69,8 @@ class SpectrumService:
         self.cfg, self.link, self.ctrl, self.opener, self.clock = cfg, link, ctrl, opener, clock
         self.model = model                         # modèle Hamlib : réglages de menu lus (spectrum/menus.py)
         self._menus: dict = {}
+        self._menus_stamp = 0                      # +1 à chaque lecture des menus
+        self._menus_due = threading.Event()        # relecture demandée (connexion d'un opérateur)
         self.active = bool(cfg.enabled) and cfg.source == "civ_port"
         self.address = parse_civ_address(cfg.civ_address) if self.active else None
         self._lock = threading.Lock()
@@ -237,6 +239,15 @@ class SpectrumService:
         with self._lock:
             return dict(self._menus)
 
+    def menus_stamp(self) -> int:
+        with self._lock:
+            return self._menus_stamp
+
+    def refresh_menus(self) -> None:
+        """Relecture des menus par le fil du port B (entre deux balayages, jamais pendant une émission) : un réglage
+        changé sur le poste depuis l'ouverture du port est vu à la connexion suivante. Ne lève jamais."""
+        self._menus_due.set()
+
     def _read_menus(self, port: CivPort) -> None:
         from .menus import RIG_MENUS, decode_menu
         values = {}
@@ -245,6 +256,7 @@ class SpectrumService:
             values[name] = decode_menu(sub, reply.payload) if reply is not None else None
         with self._lock:
             self._menus = values
+            self._menus_stamp += 1
 
     def _read_settings(self, port: CivPort) -> None:
         values = {}
@@ -465,6 +477,9 @@ class SpectrumService:
             if now >= next_filter and not transmitting:
                 next_filter = now + self.FILTER_EVERY_S
                 self._read_filter(port)
+                if self._menus_due.is_set():
+                    self._menus_due.clear()
+                    self._read_menus(port)
             if now >= next_ident and not transmitting:
                 next_ident = now + self.IDENT_EVERY_S
                 found = port.identify()

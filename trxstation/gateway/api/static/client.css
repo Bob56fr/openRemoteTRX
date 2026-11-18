@@ -352,7 +352,10 @@ audio { display: none; }
 .sel-state { font-weight: 700; }
 #sec-selcall .row { flex-wrap: wrap; }
 .sel-test { display: grid; gap: .4rem; padding: .5rem; border: 1px solid var(--ligne); border-radius: .6rem; }
-.voyant.alert { color: var(--tx); opacity: 1; animation: alc-blink 0.8s steps(2) infinite; }
+/* « .alert » est aussi la classe des BANDEAUX (fond rouge) : le voyant OVERLOAD ALC n'en garde que le texte rouge clignotant
+   (vu le 2026-11-19 : bandeau rouge « vide », texte rouge sur fond rouge) */
+.voyant.alert { color: var(--tx); opacity: 1; animation: alc-blink 0.8s steps(2) infinite; background: none; padding: 0;
+  margin-top: 0; border-radius: 0; font-size: inherit; font-weight: inherit; }
 @keyframes alc-blink { 50% { opacity: .35; } }
 .scr-ind { color: var(--tx); border-color: var(--tx); font-weight: 700; }
 .warn-text { color: var(--alerte); }

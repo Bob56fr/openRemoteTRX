@@ -804,3 +804,22 @@ def test_a_model_without_known_menus_reads_nothing():
         await svc.stop()
         return menus
     assert asyncio.run(scenario()) == {} and not any(w[4:6] == b"\x1a\x05" for w in rig.written)
+
+
+def test_menus_are_read_again_on_request_so_a_setting_changed_on_the_rig_is_seen():
+    """Réglage du coupleur changé sur le poste APRÈS l'ouverture du port B : relu à la connexion suivante."""
+    rig = PortB()
+
+    async def scenario():
+        svc, *_ = make_service(rig)
+        svc.model = 3094
+        await svc.start()
+        assert await wait_for(lambda: svc.rig_menus().get("ptt_start") == 1)
+        rig.menus[b"\x00\x38"] = 0x00                                  # PTT Start mis sur OFF au poste
+        stamp = svc.menus_stamp()
+        svc.refresh_menus()
+        assert await wait_for(lambda: svc.menus_stamp() != stamp)
+        menus = svc.rig_menus()
+        await svc.stop()
+        return menus
+    assert asyncio.run(scenario())["ptt_start"] == 0
