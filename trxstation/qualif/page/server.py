@@ -54,8 +54,8 @@ def load_texts(lang: str) -> dict:
 
 class ValisePage:
     def __init__(self, bus: Bus, *, stop_tx: Callable[[], tuple[bool, str]], lang: str = "fr",
-                 port: int = DEFAULT_PORT) -> None:
-        self.bus, self.stop_tx, self.port = bus, stop_tx, port
+                 port: int = DEFAULT_PORT, stop_station: Callable[[], int] | None = None) -> None:
+        self.bus, self.stop_tx, self.port, self.stop_station = bus, stop_tx, port, stop_station
         self.lang = lang if lang in LANGS else "en"
         self.token: str | None = secrets.token_urlsafe(32)
         self.session: str | None = None
@@ -115,6 +115,7 @@ class ValisePage:
         app.router.add_get("/", self.index)
         app.router.add_get("/static/{name:.+}", self.static)
         app.router.add_post("/api/stop", self.stop)
+        app.router.add_post("/api/station_stop", self.station_stop)
         app.router.add_get("/ws", self.websocket)
         return app
 
@@ -170,6 +171,19 @@ class ValisePage:
             ok, message = False, str(exc)[:160]
         self.bus.request_stop()
         return web.json_response({"ok": ok, "message": message})
+
+    async def station_stop(self, request: web.Request) -> web.StreamResponse:
+        """Essai « station arrêtée pendant une émission » : le bouton de la fiche ARRÊTE la station (comme le menu
+        1.2), au même instant que le repère. Ne peut qu'arrêter : jamais démarrer, jamais émettre."""
+        if not self.has_session(request) or not self.same_origin(request):
+            raise web.HTTPForbidden()
+        if self.stop_station is None:
+            return web.json_response({"ok": False})
+        try:
+            code = await asyncio.to_thread(self.stop_station)
+        except Exception:                                       # noqa: BLE001
+            code = 1
+        return web.json_response({"ok": code == 0})
 
     def handle(self, data: dict) -> dict | None:
         """Message de la page ; renvoie une erreur à montrer, ou None."""
@@ -286,12 +300,12 @@ ANNOUNCE = {
 
 def run_with_page(run: Callable[[Bus], int], *, stop_tx: Callable[[], tuple[bool, str]], lang: str,
                   announce: Callable[[str], None] = print, open_browser: bool = True,
-                  port: int = DEFAULT_PORT) -> int:
+                  port: int = DEFAULT_PORT, stop_station: Callable[[], int] | None = None) -> int:
     """La valise avec sa page : le terminal ne fait qu'afficher (DisplayClient), la page répond."""
     from ..bus import DisplayClient
     bus = Bus()
     DisplayClient(bus, out=announce)
-    page = ValisePage(bus, stop_tx=stop_tx, lang=lang, port=port)
+    page = ValisePage(bus, stop_tx=stop_tx, lang=lang, port=port, stop_station=stop_station)
     url = page.start()
     announce(ANNOUNCE[page.lang].format(url=url, port=page.port))
     if open_browser:

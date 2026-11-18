@@ -418,7 +418,7 @@
   "terrain.auto.bad_password": "Passwort für Konto « {account} » abgelehnt: noch einmal (Enter = abbrechen).",
   "terrain.auto.account_ok": "Konto « {account} » geprüft.",
   "terrain.auto.link_error": "Der automatische Client konnte nicht mit der Station sprechen ({reason}): Verkettung angehalten, Konto erneut angeben.",
-  "terrain.seq.by_hand": "Tests VON HAND: sie werden von der Seite DER STATION ({url}, Bedienerkonto), der App oder dem Mikrofon des Geräts gespielt — nicht von dieser Seite. In einem anderen Tab öffnen, dann Enter = weiter, s = Tests von Hand überspringen: ",
+  "terrain.seq.by_hand": "Wir kommen zu den Sicherheitstests VON HAND. Hier senden SIE, von der Seite der Station ({url}), der App oder dem Mikrofon des Geräts; der Koffer misst nur die Zeit und führt Sie Schritt für Schritt. Die Seite der Station in einem anderen Tab öffnen und mit einem Bedienerkonto anmelden, dann Enter = beginnen, s = Tests von Hand überspringen: ",
   "terrain.auto.account_file": "Konto « {account} »: Passwort aus {file} gelesen.",
   "terrain.auto.skipped": "Automatischer Test übersprungen (kein Bedienerkonto angegeben): es geht weiter.",
   "terrain.stopped": "\nSTOP von der Seite angefordert: Test abgebrochen, Senden beendet (T 0). Zurück zum Menü.",

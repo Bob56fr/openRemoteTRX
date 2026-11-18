@@ -323,7 +323,11 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     out(_t(f"terrain.drill.{drill.id}.how", tot=f"{tot_s:.0f}"))
     out(_t("terrain.expected", text=_t(f"terrain.drill.{drill.id}.expected", tot=f"{tot_s:.0f}")))
     bus = bus_of(ask)
-    if (await asyncio.to_thread(ask, _t("terrain.start_or_skip"))).strip().lower() in ("s", "skip"):
+    # Page de la valise : chaque question dit à quel essai et à quelle étape elle appartient (fiche de l'essai)
+    role = f"essai:{drill.id}:{drill.kind}"
+    start = await asyncio.to_thread(ask_typed, ask, _t("terrain.start_or_skip"), CHOICE, role=role + ":debut",
+                                    choices=[{"cle": "", "libelle": "commencer"}, {"cle": "s", "libelle": "passer"}])
+    if start.strip().lower() in ("s", "skip"):
         return {}
     if drill.kind not in ("startup", "reboot") and await Observer(host, port, period=period).read_once() is None:
         out(_t("terrain.unreadable"))                    # station d'essai arrêtée : essai ni joué ni enregistré
@@ -338,9 +342,9 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     try:
         out(_t("terrain.observing"))
         if drill.kind in NEEDS_MARK:
-            await asyncio.to_thread(ask_typed, ask, _t("terrain.mark_prompt"), DONE)
+            await asyncio.to_thread(ask_typed, ask, _t("terrain.mark_prompt"), DONE, role=role + ":repere")
             mark = time.time()
-        await asyncio.to_thread(ask_typed, ask, _t("terrain.end_prompt"), DONE)
+        await asyncio.to_thread(ask_typed, ask, _t("terrain.end_prompt"), DONE, role=role + ":fin")
         await asyncio.sleep(period * 2)          # dernière lecture après la fin annoncée
     finally:
         end = time.time()
@@ -349,8 +353,9 @@ async def play_drill(drill: Drill, session: Session, *, host: str, port: int, to
     m = analyse(observer.events, start, end, mark)
     measured, reason = judge(drill, m, tot_s=tot_s)
     out(_t("terrain.measured", result=_t(f"terrain.result.{measured}"), reason=reason))
-    declared = yes_no(await asyncio.to_thread(ask_typed, ask, _t("terrain.declared_prompt"), YES_NO))
-    note = (await asyncio.to_thread(ask, _t("terrain.note_prompt"))).strip()
+    declared = yes_no(await asyncio.to_thread(ask_typed, ask, _t("terrain.declared_prompt"), YES_NO,
+                                              role=f"{role}:avis:{measured}"))
+    note = (await asyncio.to_thread(ask_typed, ask, _t("terrain.note_prompt"), role=role + ":note")).strip()
     result = final_result(measured, declared)
     record = {
         "id": drill.id, "kind": drill.kind, "optional": drill.optional, "bound_s": drill.bound_s or None,
@@ -894,6 +899,12 @@ def menu_choices(session: "Session", done: set, folder: Path, running: bool = Fa
              **({"bloque": blocked[k]} if k in blocked else {})} for k in MENU_KEYS]
 
 
+def _station_page(cfg) -> str:
+    """Adresse de la page de la STATION (essais à la main), pour un lien de la page de la valise."""
+    from .autodrills import station_url
+    return station_url(cfg) + "/"
+
+
 def notice(bus: Bus, text: str) -> None:
     """Refus ou avertissement : ligne du journal (terminal) ET avis bien visible dans la page."""
     bus.out(text)
@@ -978,7 +989,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         """Avant le premier essai À LA MAIN d'un enchaînement : ils se jouent depuis la page DE LA STATION (ou
         l'application, le micro du poste), pas depuis celle de la valise (essai du 2026-11-18 : observés sans
         aucune émission). Faux = l'opérateur les saute tous."""
-        url = f"http://127.0.0.1:{cfg.network.gateway_port}"
+        url = _station_page(cfg)
         answer = ask_typed(ask, _t("terrain.seq.by_hand", url=url), CHOICE,
                            choices=[{"cle": "", "libelle": "pret"}, {"cle": "s", "libelle": "sauter_main"}])
         return answer.strip().lower() != "s"
@@ -1147,7 +1158,8 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                    connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
             bus.status(poste=f"{caps.manufacturer} {caps.model_name}".strip(), modele=profile.model,
                        hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
-                       branchement=session.connection or "inconnu")
+                       branchement=session.connection or "inconnu", tot_s=float(cfg.safety.tot_s),
+                       page_station=_station_page(cfg))
             bus.publish("tuiles", **tl.tiles(session, label))
             choice = ask_typed(ask, _t("terrain.choice"), CHOICE,
                                choices=menu_choices(session, done, folder, running), role="menu").strip().lower()

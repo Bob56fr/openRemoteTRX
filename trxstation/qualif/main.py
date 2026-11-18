@@ -361,11 +361,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.page:
                 from ..monitor.actions import stop_tx
                 from .page.server import run_with_page
+                from .terrain import station_control
                 from .texts import french
                 return run_with_page(
                     lambda bus: run_terrain(cfg, profile, text, args.output, session_dir=args.session,
                                             config_path=config_path, bus=bus),
-                    stop_tx=lambda: stop_tx(cfg), lang="fr" if french() else "en")
+                    stop_tx=lambda: stop_tx(cfg), lang="fr" if french() else "en",
+                    stop_station=lambda: station_control(config_path, False))
             return run_terrain(cfg, profile, text, args.output, session_dir=args.session, config_path=config_path)
         except KeyboardInterrupt:
             print(_t("main.interrupted"), file=sys.stderr)

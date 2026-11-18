@@ -259,6 +259,23 @@
 
   // ------------------------------------------------------------------ question en cours (hors menu)
 
+  function withLinks(tag, cls, text) {      // adresses http(s) cliquables, ouvertes dans un NOUVEL onglet
+    const e = el(tag, cls);
+    const parts = String(text).split(/(https?:\/\/[^\s),;]+)/);
+    parts.forEach((part, i) => {
+      if (i % 2) {
+        const a = el("a", "lien", part);
+        a.href = part;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        e.appendChild(a);
+      } else if (part) {
+        e.appendChild(document.createTextNode(part));
+      }
+    });
+    return e;
+  }
+
   function choiceLabel(c) {
     if (c.texte) return c.texte;
     if (c.libelle) return t("choice." + c.libelle);
@@ -266,7 +283,7 @@
   }
 
   function renderChoice(zone, q) {
-    zone.appendChild(el("p", "invite", q.texte.trim()));
+    zone.appendChild(withLinks("p", "invite", q.texte.trim()));
     const grid = el("div", "choix");
     for (const c of q.choix) {
       const b = el("button");
@@ -310,6 +327,78 @@
     zone.appendChild(row);
   }
 
+  function drillTitle(id) {
+    for (const th of (tiles && tiles.themes) || []) {
+      for (const it of th.essais) if (it.essai === id) return it.texte;
+    }
+    return t("drill.title");
+  }
+
+  function bigButton(label, cls, onClick) {
+    const b = el("button", "gros " + (cls || ""), label);
+    b.type = "button";
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderDrill(zone, q) {
+    const [, id, , step, measured] = q.role.split(":");
+    zone.appendChild(el("div", "surtitre", t("drill.title")));
+    zone.appendChild(el("h2", "", drillTitle(id)));
+    const tot = statusNow.tot_s ? Math.round(statusNow.tot_s) : "?";
+    zone.appendChild(el("p", "but", t("drill." + id + ".but")));
+    if (step === "debut" || step === "repere" || step === "fin") {
+      zone.appendChild(el("h3", "", t("drill.steps")));
+      const ol = el("ol", "etapes");
+      for (const s of T["drill." + id + ".steps"] || []) ol.appendChild(el("li", "", s));
+      zone.appendChild(ol);
+      zone.appendChild(el("h3", "", t("drill.expected")));
+      zone.appendChild(el("p", "", t("drill." + id + ".expected", { tot: tot })));
+      if (statusNow.page_station) {
+        const a = el("a", "lien-station", t("drill.station_link"));
+        a.href = statusNow.page_station;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        zone.appendChild(a);
+      }
+      if (T["drill." + id + ".mark"]) zone.appendChild(el("p", "cote", t("drill.side")));
+    }
+    const row = el("div", "boutons gros-boutons");
+    if (step === "debut") {
+      row.appendChild(bigButton(t("drill.start"), "", () => answer(q.id, "")));
+      row.appendChild(bigButton(t("drill.skip"), "second", () => answer(q.id, "s")));
+    } else if (step === "repere") {
+      zone.appendChild(el("p", "attente", t("drill.observing")));
+      row.appendChild(bigButton(t("drill." + id + ".mark"), "repere", () => {
+        answer(q.id, "");                               // l'instant est noté d'abord…
+        if (id === "station_stop") {                    // … puis la station est arrêtée (ne peut qu'arrêter)
+          fetch("/api/station_stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+            .then(() => notice(t("drill.station_stopping")));
+        }
+      }));
+    } else if (step === "fin") {
+      zone.appendChild(el("p", "attente", t("drill.observing")));
+      row.appendChild(bigButton(t("drill.end"), "", () => answer(q.id, "")));
+    } else if (step === "avis") {
+      zone.appendChild(el("p", "but", t("drill.verdict", { measure: t("measure." + measured) })));
+      zone.appendChild(el("p", "", t("drill.expected") + " : " + t("drill." + id + ".expected", { tot: tot })));
+      row.appendChild(bigButton(t("drill.yes"), "", () => answer(q.id, "o")));
+      row.appendChild(bigButton(t("drill.no"), "second", () => answer(q.id, "n")));
+      row.appendChild(bigButton(t("drill.dontknow"), "second", () => answer(q.id, "")));
+    } else {                                            // remarque
+      zone.appendChild(el("p", "but", t("drill.note")));
+      const input = el("input");
+      input.type = "text";
+      const line = el("div", "ligne-saisie");
+      line.appendChild(input);
+      zone.appendChild(line);
+      row.appendChild(bigButton(t("drill.note_send"), "", () => answer(q.id, input.value)));
+      row.appendChild(bigButton(t("drill.note_none"), "second", () => answer(q.id, "")));
+      setTimeout(() => input.focus(), 0);
+    }
+    zone.appendChild(row);
+  }
+
   function renderQuestion() {
     const zone = $("zone");
     zone.replaceChildren();
@@ -317,6 +406,10 @@
     const q = others.length ? others[others.length - 1] : null;
     zone.hidden = !q;
     if (!q) return;
+    if (q.role && q.role.startsWith("essai:")) {
+      renderDrill(zone, q);
+      return;
+    }
     zone.appendChild(el("h2", "", t("question")));
     if (q.genre === "choix" && Array.isArray(q.choix)) renderChoice(zone, q);
     else if (q.genre === "oui_non") renderButtons(zone, q, [[t("yes"), "o"], [t("no"), "n"], [t("enter"), "", true]]);

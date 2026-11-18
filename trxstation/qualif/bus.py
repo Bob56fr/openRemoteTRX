@@ -156,7 +156,7 @@ class Bus:
         if choices is not None:
             extra["choix"] = choices
         if role:
-            extra["role"] = role                    # « menu » : le menu principal de la valise (tuiles de la page)
+            extra["role"] = role                    # « menu » : menu de la valise ; « essai:<id>:<genre>:<étape> »
         try:
             self.publish("question", id=q.id, genre=kind, texte=q.prompt, **extra)
             while not q.done.wait(WAIT_SLICE_S):

@@ -236,7 +236,7 @@ def test_a_chain_announces_the_hand_played_tests_and_can_skip_them(tmp_path, mon
     s.save()
     events = _run(tmp_path, ["theme:main", "s", "q"], running=True)
     assert played == []
-    asked = [e for e in events if e["type"] == "question" and "page DE LA STATION" in e["texte"]]
+    asked = [e for e in events if e["type"] == "question" and "À LA MAIN" in e["texte"]]
     assert len(asked) == 1 and "http://127.0.0.1:" in asked[0]["texte"]
     events = _run(tmp_path, ["theme:main", "", "q"], running=True)
     assert len(played) == len(tiles.manual_keys()) - 1                   # tous sauf le redémarrage du PC (facultatif)

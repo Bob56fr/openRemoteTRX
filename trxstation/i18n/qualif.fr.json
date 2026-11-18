@@ -418,7 +418,7 @@
   "terrain.auto.bad_password": "Mot de passe refusé pour le compte « {account} » : recommence (Entrée = annuler).",
   "terrain.auto.account_ok": "Compte « {account} » vérifié.",
   "terrain.auto.link_error": "Le client automatique n'a pas pu parler à la station ({reason}) : enchaînement arrêté, compte à redonner.",
-  "terrain.seq.by_hand": "Essais À LA MAIN : ils se jouent depuis la page DE LA STATION ({url}, compte opérateur), l'application ou le micro du poste — pas depuis cette page. Ouvre-la dans un autre onglet, puis Entrée = continuer, s = sauter les essais à la main : ",
+  "terrain.seq.by_hand": "Nous passons aux essais de sécurité À LA MAIN. Ici, c'est VOUS qui émettez, depuis la page de la station ({url}), l'application ou le micro du poste ; la valise ne fait que chronométrer et vous guide pas à pas. Ouvrez la page de la station dans un autre onglet et connectez-vous avec un compte opérateur, puis Entrée = commencer, s = sauter les essais à la main : ",
   "terrain.auto.account_file": "Compte « {account} » : mot de passe lu dans {file}.",
   "terrain.auto.skipped": "Essai automatique passé (aucun compte opérateur donné) : la suite continue.",
   "terrain.stopped": "\nSTOP demandé depuis la page : essai interrompu, émission coupée (T 0). Retour au menu.",

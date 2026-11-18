@@ -90,8 +90,108 @@
   "state.a_faire": "to do",
   "state.absent": "not on this rig",
   "choice.annuler": "Cancel",
-  "choice.pret": "The station page is open: continue",
+  "choice.pret": "The station page is open: start",
   "choice.sauter_main": "Skip the hand-played tests",
   "seq.stop": "Stop the chain",
-  "seq.running": "Chain running: test {rank} of {total}"
+  "seq.running": "Chain running: test {rank} of {total}",
+  "drill.title": "Hand-played test",
+  "drill.but": "Purpose",
+  "drill.steps": "What you do",
+  "drill.expected": "Expected result",
+  "drill.station_link": "Open the station page (new tab)",
+  "drill.side": "Put this page and the station page SIDE BY SIDE: the click here and the action there must fall within the same second.",
+  "drill.start": "Start the test",
+  "drill.skip": "Skip this test",
+  "drill.end": "The test is over (rig back to receive)",
+  "drill.observing": "The suitcase watches the rig (PTT read 5 times a second).",
+  "drill.verdict": "The suitcase measured: {measure}. And what did you see?",
+  "drill.yes": "As expected",
+  "drill.no": "Not as expected",
+  "drill.dontknow": "I don't know",
+  "drill.note": "A remark? (optional)",
+  "drill.note_none": "No remark",
+  "choice.commencer": "Start the test",
+  "choice.passer": "Skip this test",
+  "drill.stop_page.but": "We now test the STOP button of the station page, to check that it cuts transmission at once.",
+  "drill.stop_page.steps": [
+    "In the station page, start transmitting (PTT button).",
+    "Wait 2 or 3 seconds.",
+    "Click STOP in the station page AND, within the same second, the big button below.",
+    "When the rig is back to receive, click « The test is over »."
+  ],
+  "drill.stop_page.expected": "the rig goes back to receive immediately.",
+  "drill.stop_page.mark": "I press STOP NOW",
+  "drill.tot.but": "We now test the TOT (transmit timer), to check that the station cuts a too long transmission by itself.",
+  "drill.tot.steps": [
+    "In the station page, start transmitting (PTT button).",
+    "Do not touch anything: a beep sounds 10 s before the end.",
+    "When the rig is back to receive by itself, click « The test is over »."
+  ],
+  "drill.tot.expected": "automatic cut at the station TOT ({tot} s), beep 10 s before.",
+  "drill.wifi.but": "We now test a lost link, to check that the station cuts transmission when the phone disappears.",
+  "drill.wifi.steps": [
+    "On the phone (station page or app), start transmitting.",
+    "Switch the phone Wi-Fi off AND, within the same second, click the big button below.",
+    "When the rig is back to receive, click « The test is over », then switch the Wi-Fi back on."
+  ],
+  "drill.wifi.expected": "the rig goes back to receive within about 2 s.",
+  "drill.wifi.mark": "I switch Wi-Fi off NOW",
+  "drill.screen_lock.but": "We now test the phone lock, to check that a locked screen does not leave transmission on.",
+  "drill.screen_lock.steps": [
+    "In the phone app, start transmitting.",
+    "Lock the phone screen AND, within the same second, click the big button below.",
+    "When the rig is back to receive, click « The test is over »."
+  ],
+  "drill.screen_lock.expected": "the rig goes back to receive.",
+  "drill.screen_lock.mark": "I lock the screen NOW",
+  "drill.out_of_band.but": "We now test the out-of-band refusal, to check that the station never transmits outside the allowed bands.",
+  "drill.out_of_band.steps": [
+    "In the station page, set a frequency OUTSIDE your allowed bands.",
+    "Press PTT in the station page.",
+    "Check that transmission is refused (message in the page), then click « The test is over ».",
+    "Then set a frequency back inside your bands."
+  ],
+  "drill.out_of_band.expected": "transmission refused, message in the page, the rig never transmits.",
+  "drill.local_operator.but": "We now test the local operator, to check that the station respects someone transmitting on the rig microphone.",
+  "drill.local_operator.steps": [
+    "Someone next to the rig transmits on the rig microphone for a few seconds.",
+    "Meanwhile, try the PTT of the station page.",
+    "When the rig is back to receive, click « The test is over »."
+  ],
+  "drill.local_operator.expected": "the page shows the local operator and refuses remote PTT during the transmission, then 2 minutes.",
+  "drill.stop_dashboard.but": "We now test the STOP TX of the dashboard (TRX Console, menu 1.3), to check that it cuts a transmission.",
+  "drill.stop_dashboard.steps": [
+    "Open the dashboard (TRX Console, menu 1.3).",
+    "In the station page, start transmitting.",
+    "Touch STOP TX in the dashboard AND, within the same second, click the big button below.",
+    "When the rig is back to receive, click « The test is over »."
+  ],
+  "drill.stop_dashboard.expected": "the rig goes back to receive.",
+  "drill.stop_dashboard.mark": "I press STOP TX NOW",
+  "drill.station_stop.but": "We now test stopping the station during a transmission, to check that the rig does not stay transmitting.",
+  "drill.station_stop.steps": [
+    "In the station page, start transmitting.",
+    "Click the big button below: it STOPS the station (like TRX Console, menu 1.2) and notes the exact moment.",
+    "When the rig is back to receive, click « The test is over »."
+  ],
+  "drill.station_stop.expected": "the rig goes back to receive.",
+  "drill.station_stop.mark": "I stop the station NOW",
+  "drill.startup.but": "We now test the station start, to check that the rig never transmits while it starts.",
+  "drill.startup.steps": [
+    "The station must be STOPPED at first.",
+    "Click « Start the test », then start the station (TRX Console, menu 1.1).",
+    "Wait until it is ready (station page reachable), then click « The test is over »."
+  ],
+  "drill.startup.expected": "the rig never transmits.",
+  "drill.reboot.but": "(Optional) We test a full PC restart, to check that the rig never transmits meanwhile.",
+  "drill.reboot.steps": [
+    "Restart the PC, rig on.",
+    "Run the suitcase again (same session) and replay this test: it reads the rig."
+  ],
+  "drill.reboot.expected": "the rig never transmitted.",
+  "measure.reussi": "passed",
+  "measure.echec": "failed",
+  "measure.non_mesure": "not measured",
+  "drill.note_send": "Save the remark",
+  "drill.station_stopping": "Station stop requested."
 }

@@ -320,3 +320,50 @@ def test_an_interrupted_transmission_still_gets_its_mode_back():
     hw.link = SimpleNamespace(state=SimpleNamespace(mode="PKTUSB"))
     asyncio.run(hw._restore_mode())
     assert hw.ctrl.calls == ["force_rx", "set_mode USB"] and any("USB" in s for s in said)
+
+
+def test_every_hand_played_test_has_its_card_in_both_languages():
+    """Demande de l'utilisateur (2026-11-19) : « Nous testons maintenant… pour… », étapes, résultat attendu."""
+    fr, en = load_texts("fr"), load_texts("en")
+    for drill in terrain.DRILLS:
+        for lang in (fr, en):
+            assert lang[f"drill.{drill.id}.but"] and lang[f"drill.{drill.id}.expected"]
+            assert isinstance(lang[f"drill.{drill.id}.steps"], list) and lang[f"drill.{drill.id}.steps"]
+            if drill.kind in terrain.NEEDS_MARK:                     # un repère = un gros bouton qui le dit
+                assert lang[f"drill.{drill.id}.mark"]
+
+
+def test_the_station_stop_button_only_stops_and_needs_the_session():
+    stopped = []
+
+    async def body(bus, page, client):
+        page.stop_station = lambda: stopped.append(1) or 0
+        assert (await client.post("/api/station_stop")).status == 403
+        origin = await login(page, client)
+        r = await client.post("/api/station_stop", headers=origin)
+        assert (await r.json()) == {"ok": True} and stopped == [1]
+    scenario(body)
+
+
+def test_hand_played_questions_tell_the_page_which_test_and_step(tmp_path):
+    bus = Bus()
+    seen = []
+
+    def client(event):
+        if event["type"] == "question":
+            seen.append(event)
+            bus.answer(event["id"], "", source=SOURCE_KEYBOARD)
+    bus.subscribe(client)
+
+    class Unreadable(terrain.Observer):
+        async def read_once(self):
+            return None
+    original = terrain.Observer
+    terrain.Observer = Unreadable
+    try:
+        session = terrain.Session.open(tmp_path / "s", model=1)
+        asyncio.run(terrain.play_drill(terrain.DRILLS[0], session, host="127.0.0.1", port=1, tot_s=20,
+                                       state_dir=tmp_path, ask=bus.ask, out=bus.out))
+    finally:
+        terrain.Observer = original
+    assert seen[0]["role"] == "essai:stop_page:stop:debut" and seen[0]["genre"] == "choix"

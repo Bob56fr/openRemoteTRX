@@ -418,7 +418,7 @@
   "terrain.auto.bad_password": "Password refused for account « {account} »: try again (Enter = cancel).",
   "terrain.auto.account_ok": "Account « {account} » checked.",
   "terrain.auto.link_error": "The automatic client could not talk to the station ({reason}): chain stopped, account to be given again.",
-  "terrain.seq.by_hand": "HAND-PLAYED tests: they are played from the STATION page ({url}, operator account), the app or the rig microphone — not from this page. Open it in another tab, then Enter = continue, s = skip the hand-played tests: ",
+  "terrain.seq.by_hand": "We now move to the HAND-PLAYED safety tests. Here YOU transmit, from the station page ({url}), the app or the rig microphone; the suitcase only times and guides you step by step. Open the station page in another tab and log in with an operator account, then Enter = start, s = skip the hand-played tests: ",
   "terrain.auto.account_file": "Account « {account} »: password read from {file}.",
   "terrain.auto.skipped": "Automatic test skipped (no operator account given): carrying on.",
   "terrain.stopped": "\nSTOP requested from the page: test interrupted, transmission cut (T 0). Back to the menu.",

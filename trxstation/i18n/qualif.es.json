@@ -418,7 +418,7 @@
   "terrain.auto.bad_password": "Contraseña rechazada para la cuenta « {account} »: vuelve a intentarlo (Intro = cancelar).",
   "terrain.auto.account_ok": "Cuenta « {account} » verificada.",
   "terrain.auto.link_error": "El cliente automático no pudo hablar con la estación ({reason}): encadenamiento detenido, cuenta a dar de nuevo.",
-  "terrain.seq.by_hand": "Pruebas A MANO: se hacen desde la página DE LA ESTACIÓN ({url}, cuenta de operador), la aplicación o el micrófono del equipo — no desde esta página. Ábrela en otra pestaña y Intro = continuar, s = saltar las pruebas a mano: ",
+  "terrain.seq.by_hand": "Pasamos a las pruebas de seguridad A MANO. Aquí es USTED quien emite, desde la página de la estación ({url}), la aplicación o el micrófono del equipo; el maletín solo cronometra y le guía paso a paso. Abra la página de la estación en otra pestaña e inicie sesión con una cuenta de operador, luego Intro = empezar, s = saltar las pruebas a mano: ",
   "terrain.auto.account_file": "Cuenta « {account} »: contraseña leída en {file}.",
   "terrain.auto.skipped": "Prueba automática saltada (ninguna cuenta de operador dada): se sigue.",
   "terrain.stopped": "\nSTOP pedido desde la página: prueba interrumpida, emisión cortada (T 0). Vuelta al menú.",

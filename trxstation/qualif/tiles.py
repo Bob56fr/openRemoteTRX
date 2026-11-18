@@ -137,6 +137,7 @@ def tiles(session, label) -> dict:
             item = {"cle": key, "etat": state, "detail": detail[:160]}
             if drill is not None:
                 item["texte"] = label(drill)
+                item["essai"] = drill.id
                 item["facultatif"] = _optional(key)
             items.append(item)
             if state != ABSENT and not item.get("facultatif") and key != "4":

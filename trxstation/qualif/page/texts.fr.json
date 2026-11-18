@@ -90,8 +90,108 @@
   "state.a_faire": "à faire",
   "state.absent": "absent du poste",
   "choice.annuler": "Annuler",
-  "choice.pret": "La page de la station est ouverte : continuer",
+  "choice.pret": "La page de la station est ouverte : commencer",
   "choice.sauter_main": "Sauter les essais à la main",
   "seq.stop": "Arrêter l'enchaînement",
-  "seq.running": "Enchaînement en cours : essai {rank} sur {total}"
+  "seq.running": "Enchaînement en cours : essai {rank} sur {total}",
+  "drill.title": "Essai à la main",
+  "drill.but": "But",
+  "drill.steps": "Ce que vous faites",
+  "drill.expected": "Résultat attendu",
+  "drill.station_link": "Ouvrir la page de la station (nouvel onglet)",
+  "drill.side": "Mettez cette page et la page de la station CÔTE À CÔTE : le clic ici et l'action là-bas doivent tomber dans la même seconde.",
+  "drill.start": "Commencer l'essai",
+  "drill.skip": "Passer cet essai",
+  "drill.end": "L'essai est fini (poste revenu en réception)",
+  "drill.observing": "La valise observe le poste (PTT relu 5 fois par seconde).",
+  "drill.verdict": "La valise a mesuré : {measure}. Et vous, qu'avez-vous vu ?",
+  "drill.yes": "Conforme à l'attendu",
+  "drill.no": "Pas conforme",
+  "drill.dontknow": "Je ne sais pas",
+  "drill.note": "Une remarque ? (facultatif)",
+  "drill.note_none": "Aucune remarque",
+  "choice.commencer": "Commencer l'essai",
+  "choice.passer": "Passer cet essai",
+  "drill.stop_page.but": "Nous testons maintenant le bouton STOP de la page de la station, pour vérifier qu'il coupe l'émission tout de suite.",
+  "drill.stop_page.steps": [
+    "Dans la page de la station, passez en émission (bouton PTT).",
+    "Attendez 2 ou 3 secondes.",
+    "Cliquez sur STOP dans la page de la station ET, dans la même seconde, sur le gros bouton ci-dessous.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
+  ],
+  "drill.stop_page.expected": "le poste revient en réception immédiatement.",
+  "drill.stop_page.mark": "J'appuie MAINTENANT sur STOP",
+  "drill.tot.but": "Nous testons maintenant le TOT (minuterie d'émission), pour vérifier que la station coupe seule une émission trop longue.",
+  "drill.tot.steps": [
+    "Dans la page de la station, passez en émission (bouton PTT).",
+    "Ne touchez plus à rien : un bip sonne 10 s avant la fin.",
+    "Quand le poste est revenu en réception tout seul, cliquez sur « L'essai est fini »."
+  ],
+  "drill.tot.expected": "coupure automatique au bout du TOT de la station ({tot} s), bip 10 s avant.",
+  "drill.wifi.but": "Nous testons maintenant la perte de liaison, pour vérifier que la station coupe l'émission quand le téléphone disparaît.",
+  "drill.wifi.steps": [
+    "Sur le téléphone (page de la station ou application), passez en émission.",
+    "Coupez le Wi-Fi du téléphone ET, dans la même seconde, cliquez sur le gros bouton ci-dessous.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini », puis rallumez le Wi-Fi."
+  ],
+  "drill.wifi.expected": "le poste revient en réception en 2 s environ.",
+  "drill.wifi.mark": "Je coupe le Wi-Fi MAINTENANT",
+  "drill.screen_lock.but": "Nous testons maintenant le verrouillage du téléphone, pour vérifier qu'un écran verrouillé ne laisse pas l'émission en marche.",
+  "drill.screen_lock.steps": [
+    "Dans l'application du téléphone, passez en émission.",
+    "Verrouillez l'écran du téléphone ET, dans la même seconde, cliquez sur le gros bouton ci-dessous.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
+  ],
+  "drill.screen_lock.expected": "le poste revient en réception.",
+  "drill.screen_lock.mark": "Je verrouille l'écran MAINTENANT",
+  "drill.out_of_band.but": "Nous testons maintenant le refus hors bande, pour vérifier que la station n'émet jamais hors des bandes autorisées.",
+  "drill.out_of_band.steps": [
+    "Dans la page de la station, réglez une fréquence HORS de vos bandes autorisées.",
+    "Appuyez sur PTT dans la page de la station.",
+    "Vérifiez que l'émission est refusée (message dans la page), puis cliquez sur « L'essai est fini ».",
+    "Remettez ensuite une fréquence dans vos bandes."
+  ],
+  "drill.out_of_band.expected": "émission refusée, message dans la page, le poste ne passe jamais en émission.",
+  "drill.local_operator.but": "Nous testons maintenant l'opérateur sur place, pour vérifier que la station respecte quelqu'un qui émet au micro du poste.",
+  "drill.local_operator.steps": [
+    "Une personne près du poste émet au micro du poste quelques secondes.",
+    "Pendant ce temps, essayez le PTT de la page de la station.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
+  ],
+  "drill.local_operator.expected": "la page montre l'opérateur sur place et refuse le PTT à distance pendant l'émission, puis 2 minutes.",
+  "drill.stop_dashboard.but": "Nous testons maintenant le STOP TX du tableau de bord (TRX Console, menu 1.3), pour vérifier qu'il coupe une émission.",
+  "drill.stop_dashboard.steps": [
+    "Ouvrez le tableau de bord (TRX Console, menu 1.3).",
+    "Dans la page de la station, passez en émission.",
+    "Touchez STOP TX dans le tableau de bord ET, dans la même seconde, cliquez sur le gros bouton ci-dessous.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
+  ],
+  "drill.stop_dashboard.expected": "le poste revient en réception.",
+  "drill.stop_dashboard.mark": "J'appuie MAINTENANT sur STOP TX",
+  "drill.station_stop.but": "Nous testons maintenant l'arrêt de la station pendant une émission, pour vérifier que le poste ne reste pas en émission.",
+  "drill.station_stop.steps": [
+    "Dans la page de la station, passez en émission.",
+    "Cliquez sur le gros bouton ci-dessous : il ARRÊTE la station (comme TRX Console, menu 1.2) et note l'instant exact.",
+    "Quand le poste est revenu en réception, cliquez sur « L'essai est fini »."
+  ],
+  "drill.station_stop.expected": "le poste revient en réception.",
+  "drill.station_stop.mark": "J'arrête la station MAINTENANT",
+  "drill.startup.but": "Nous testons maintenant le démarrage de la station, pour vérifier que le poste ne passe jamais en émission quand elle démarre.",
+  "drill.startup.steps": [
+    "La station doit être ARRÊTÉE au départ.",
+    "Cliquez sur « Commencer l'essai », puis démarrez la station (TRX Console, menu 1.1).",
+    "Attendez qu'elle soit prête (page de la station accessible), puis cliquez sur « L'essai est fini »."
+  ],
+  "drill.startup.expected": "le poste ne passe jamais en émission.",
+  "drill.reboot.but": "(Facultatif) Nous testons le redémarrage complet du PC, pour vérifier que le poste ne passe jamais en émission pendant ce temps.",
+  "drill.reboot.steps": [
+    "Redémarrez le PC, poste allumé.",
+    "Relancez la valise (même session) et rejouez cet essai : elle relit le poste."
+  ],
+  "drill.reboot.expected": "le poste n'est jamais passé en émission.",
+  "measure.reussi": "réussi",
+  "measure.echec": "échec",
+  "measure.non_mesure": "non mesuré",
+  "drill.note_send": "Enregistrer la remarque",
+  "drill.station_stopping": "Arrêt de la station demandé."
 }
