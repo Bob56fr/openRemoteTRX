@@ -35,6 +35,8 @@
   "choice.tous": "All tests not done yet",
   "choice.retour": "Back to the menu",
   "photos": "photo(s)",
+  "blocked.charge": "choice c first (CHARGE)",
+  "blocked.station": "stop the station first (a)",
   "question": "Question from the suitcase",
   "send": "Send",
   "enter": "Enter (proposed value)",

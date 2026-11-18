@@ -132,12 +132,14 @@
       const b = el("button");
       b.type = "button";
       if (c.fait) b.classList.add("fait");
+      if (c.bloque) b.classList.add("bloque");
       b.appendChild(el("span", "cle", c.cle));
       b.appendChild(document.createTextNode(" " + choiceLabel(c)));
       if (c.fait) b.appendChild(el("span", "marque", "✓"));
       let info = c.info || "";
       if (c.cle === "7" && main && info) info += " " + t("photos");
       if (c.etat) info = c.etat;
+      if (c.bloque) info = t("blocked." + c.bloque);
       if (info) b.appendChild(el("span", "info", info));
       b.addEventListener("click", () => answer(q.id, c.cle));
       grid.appendChild(b);
@@ -278,6 +280,7 @@
       case "reponse": case "annule": open.delete(e.id); break;
       case "fin": finished = true; break;
       case "stop": if (live) addLine("— STOP —"); break;
+      case "avis": if (live) notice(e.texte, true); break;
       case "erreur":
         if (ivId !== null) ivError(t(e.cle)); else notice(t(e.cle), true);
         return;

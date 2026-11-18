@@ -35,6 +35,8 @@
   "choice.tous": "Tous les essais pas encore faits",
   "choice.retour": "Retour au menu",
   "photos": "photo(s)",
+  "blocked.charge": "choix c d'abord (CHARGE)",
+  "blocked.station": "arrêter la station d'abord (a)",
   "question": "Question de la valise",
   "send": "Envoyer",
   "enter": "Entrée (valeur proposée)",

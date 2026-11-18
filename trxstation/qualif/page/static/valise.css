@@ -37,6 +37,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 16px; }
   background: var(--fond); color: var(--texte); cursor: pointer; font: inherit; }
 .choix button:hover { border-color: var(--bleu); }
 .choix button.fait { background: var(--fait); }
+.choix button.bloque { opacity: .55; border-style: dashed; }
+.choix button.bloque .info { color: var(--orange); opacity: 1; }
 .choix .cle { display: inline-block; min-width: 1.8em; font-weight: 700; color: var(--bleu); }
 .choix .info { float: right; color: var(--doux); font-size: 13px; }
 .choix .marque { float: right; color: var(--vert); font-weight: 700; }

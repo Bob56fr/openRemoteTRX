@@ -194,7 +194,7 @@ def test_texts_fr_and_en_have_the_same_keys_and_every_menu_entry():
     for name in ("tous", "retour"):
         assert f"choice.{name}" in fr
     js = (STATIC / "valise.js").read_text(encoding="utf-8")
-    used = set(re.findall(r'\bt\("([a-z_.]+)"', js)) - {"connection.", "why.", "choice."}
+    used = set(re.findall(r'\bt\("([a-z_.]+)"', js)) - {"connection.", "why.", "choice.", "blocked."}
     assert used <= fr.keys(), used - fr.keys()
     source = open(page_server.__file__, encoding="utf-8").read()
     assert set(re.findall(r'"(err\.[a-z_]+)"', source)) <= fr.keys()
@@ -266,3 +266,23 @@ def test_run_with_page_answers_only_in_the_page(monkeypatch):
                                      open_browser=False, port=free_port())
     assert code == 0
     assert any("[page] Choix :" in s for s in shown) and any("Suitcase page: http://127.0.0.1:" in s for s in shown)
+
+
+def test_the_menu_greys_what_the_suitcase_will_refuse_and_says_why(tmp_path):
+    """Essai réel du 2026-11-18 : après « r » (ANTENNE), le choix 3 était refusé sans que la page le montre."""
+    session = terrain.Session.open(tmp_path / "s", model=1)
+    session.connection = "antenne"
+    rows = {c["cle"]: c for c in terrain.menu_choices(session, set(), tmp_path / "s")}
+    assert rows["3"]["bloque"] == rows["5"]["bloque"] == rows["8"]["bloque"] == "charge" and "bloque" not in rows["c"]
+    rows = {c["cle"]: c for c in terrain.menu_choices(session, set(), tmp_path / "s", running=True)}
+    assert rows["3"]["bloque"] == "station" and rows["8"]["bloque"] == "charge" and "bloque" not in rows["a"]
+    session.connection = "charge"
+    assert "bloque" not in {c["cle"]: c for c in terrain.menu_choices(session, set(), tmp_path / "s")}["3"]
+    bus = Bus()
+    answers = iter(["3", "q"])
+    bus.subscribe(lambda e: bus.answer(e["id"], next(answers), source=SOURCE_KEYBOARD) if e["type"] == "question" else None)
+    seen = []
+    bus.subscribe(lambda e: seen.append(e) if e["type"] == "avis" else None)
+    terrain.run_terrain(_cfg(tmp_path), PROFILE, "", tmp_path, session_dir=tmp_path / "s", bus=bus,
+                        station=lambda: False, qualify=lambda no_tx: None)
+    assert [e["texte"] for e in seen] == ["Émission refusée : confirme d'abord que le poste est sur la CHARGE FICTIVE (choix c)."]

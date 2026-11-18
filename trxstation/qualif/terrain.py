@@ -833,8 +833,13 @@ def _resume_or_new(output: Path, model: int, *, ask: Ask, out: Callable[[str], N
 MENU_KEYS = ("9", "1", "r", "2", "s", "f", "c", "3", "4", "d", "8", "5", "a", "6", "7", "q")
 
 
-def menu_choices(session: "Session", done: set, folder: Path) -> list[dict]:
-    """Menu de la valise pour la page (lot G2a) : clés, fait ou non, compteurs ; les libellés sont ceux de la page."""
+NEEDS_STOPPED = ("1", "2", "3", "4", "6", "9", "r", "s", "f")   # station du PC ARRÊTÉE (rigctld de la valise)
+NEEDS_LOAD = ("3", "5", "8")                                     # émission : charge fictive CONFIRMÉE (mot CHARGE)
+
+
+def menu_choices(session: "Session", done: set, folder: Path, running: bool = False) -> list[dict]:
+    """Menu de la valise pour la page (lot G2a) : clés, fait ou non, compteurs, et `bloque` (raison du refus que la
+    valise opposera : la page grise le bouton et le dit) ; les libellés sont ceux de la page."""
     fait = {"9": bool(session.audio and not session.audio.get("problems")), "1": bool(session.snapshots.get("avant")),
             "2": "explore" in done, "3": "qualif" in done, "6": bool(session.snapshots.get("apres")),
             "r": bool(session.reception), "s": bool(session.spectrum), "f": bool(session.filters),
@@ -842,8 +847,16 @@ def menu_choices(session: "Session", done: set, folder: Path) -> list[dict]:
     info = {"5": f"{sum(1 for d in DRILLS if d.id in session.drills)}/{len(DRILLS)}",
             "8": f"{sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills)}/{len(all_drills()) - len(DRILLS)}",
             "7": str(sum(1 for p in (folder / "photos").rglob("*") if p.is_file()))}
-    return [{"cle": k, **({"fait": fait[k]} if k in fait else {}), **({"info": info[k]} if k in info else {})}
-            for k in MENU_KEYS]
+    blocked = {k: "station" for k in NEEDS_STOPPED if running}
+    blocked.update({k: "charge" for k in NEEDS_LOAD if session.connection != "charge" and k not in blocked})
+    return [{"cle": k, **({"fait": fait[k]} if k in fait else {}), **({"info": info[k]} if k in info else {}),
+             **({"bloque": blocked[k]} if k in blocked else {})} for k in MENU_KEYS]
+
+
+def notice(bus: Bus, text: str) -> None:
+    """Refus ou avertissement : ligne du journal (terminal) ET avis bien visible dans la page."""
+    bus.out(text)
+    bus.publish("avis", texte=text.strip())
 
 
 def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
@@ -906,11 +919,11 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                        hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
                        branchement=session.connection or "inconnu")
             choice = ask_typed(ask, _t("terrain.choice"), CHOICE,
-                               choices=menu_choices(session, done, folder)).strip().lower()
-            if choice in ("1", "2", "3", "4", "6", "9", "r", "s", "f") and running:
-                out(_t("terrain.need_stopped"))
-            elif choice in ("3", "5", "8") and session.connection != "charge":
-                out(_t("terrain.need_load"))                 # aucune émission sans la charge fictive CONFIRMÉE
+                               choices=menu_choices(session, done, folder, running)).strip().lower()
+            if choice in NEEDS_STOPPED and running:
+                notice(bus, _t("terrain.need_stopped"))
+            elif choice in NEEDS_LOAD and session.connection != "charge":
+                notice(bus, _t("terrain.need_load"))         # aucune émission sans la charge fictive CONFIRMÉE
             elif choice == "c":
                 confirm_load(session, ask=ask, out=out)
             elif choice == "r":
@@ -963,7 +976,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 qualify(True)
             elif choice == "5":
                 if not running:
-                    out(_t("terrain.need_running"))
+                    notice(bus, _t("terrain.need_running"))
                 drills_menu(session, cfg, state_dir, ask=ask, out=out)
             elif choice == "9":
                 out(_t("terrain.audio.title"))
@@ -973,7 +986,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 session.save()
             elif choice == "8":
                 if not running:
-                    out(_t("terrain.need_running"))
+                    notice(bus, _t("terrain.need_running"))
                 from .autodrills import auto_menu
                 auto_menu(session, cfg, state_dir, ask=ask, out=out)
             elif choice == "6":
