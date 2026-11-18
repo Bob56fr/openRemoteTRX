@@ -245,6 +245,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sans-emission", action="store_true", help="qualification sans la phase d'émission")
     ap.add_argument("--filtres", action="store_true",
                     help="essayer les largeurs de filtre (peut RÉÉCRIRE les préréglages de filtre du poste, Icom : FIL1/2/3)")
+    ap.add_argument("--terrain", action="store_true",
+                    help="valise de qualification sur place : session, essais de sécurité chronométrés, rapport pour Claude")
+    ap.add_argument("--session", type=Path, metavar="DOSSIER", help="avec --terrain : reprendre une session existante")
     args = ap.parse_args(argv)
     if args.catalogue is not None:
         return check_catalogue(args.catalogue)
@@ -264,6 +267,9 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
     if args.explorer and (args.sans_emission or args.filtres):
         print(_t("args.explorer_options"), file=sys.stderr)
+        return EXIT_CONFIG
+    if args.terrain and (args.explorer or args.plan or args.sans_emission or args.lecture_seule):
+        print(_t("args.terrain_options"), file=sys.stderr)
         return EXIT_CONFIG
     if args.lecture_seule and not args.explorer:
         print(_t("args.read_only_needs_explorer"), file=sys.stderr)
@@ -291,6 +297,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.plan:
         print(render_plan_with_findings(profile))
         return EXIT_OK
+    if args.terrain:
+        from .terrain import run_terrain
+        try:
+            return run_terrain(cfg, profile, text, args.output, session_dir=args.session)
+        except KeyboardInterrupt:
+            print(_t("main.interrupted"), file=sys.stderr)
+            return 130
     try:
         if args.explorer:
             return asyncio.run(run_explore(cfg, profile, text, args.output, spawn=not args.no_spawn,

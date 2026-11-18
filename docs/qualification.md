@@ -68,6 +68,34 @@ Une erreur d'installation (rigctld injoignable, carte son introuvable, bandes ma
 `incomplet`, jamais `refuse`. Seul un état PTT illisible refuse le poste dès la liaison CAT.
 Le statut `valide` (ou `restreint`) reste une décision de l'éditeur.
 
+## Valise de qualification v0 (`--terrain`, étape 252)
+
+Qualification SUR PLACE par un membre de l'équipe (cahier : `docs/qualification-terrain-cahier-des-charges.md`).
+La v0 n'ajoute AUCUN chemin d'émission : les émissions des essais sont faites par la station (page, application,
+micro du poste) ; l'outil n'envoie à rigctld que la lecture `t` (liste fermée `OBSERVER_COMMANDS`, 127.0.0.1 seulement).
+
+```
+trx-qualif --terrain --output DOSSIER            # nouvelle session dans DOSSIER/terrain-<modèle>-<date>
+trx-qualif --terrain --output DOSSIER --session DOSSIER/terrain-…   # reprendre une session
+```
+
+Menu : 1 exploration, 2 qualification avec émission, 3 sans émission (station ARRÊTÉE pour ces trois : les outils
+lancent leur rigctld), 4 essais de sécurité chronométrés (station EN MARCHE), 5 rapport zip, q quitter.
+
+Essais (partie 3.5 du guide, plus le démarrage) : l'observateur relit le PTT toutes les 200 ms. Pour STOP, perte de
+liaison et arrêt de la station, le qualifieur tape Entrée AU MOMENT de l'action (repère) : délai = retour en réception
+relu - repère, borne = règle + 1 s de réaction humaine. TOT : durée de l'émission relue, ± 2 s. Hors bande et
+démarrage : aucune émission vue. Opérateur sur place : émission locale vue, refus du PTT distant déclaré. Chaque essai
+demande ensuite si ce qui a été vu est conforme ; une déclaration ne rattrape JAMAIS une mesure en échec. Le résultat
+de chaque essai et les lignes des journaux JSON de la station sur la fenêtre (masquées) vont dans `essais/<id>.json`.
+
+Rapport : `<session>.zip` dans DOSSIER (`qualification.json` format 1, `rapport.html`, `LISEZMOI-CLAUDE.md`,
+`empreintes.sha256`, dossiers `explore-*`, `qualif-*`, `essais/`). Verdict PROPOSÉ : `refuse` (un essai ou Q1 en
+échec), `incomplet`, `validation_en_cours` ; `valide` reste une décision de l'équipe.
+
+Pas encore dans la v0 : session isolée de la station du PC, photos guidées, relevé avant / après, client automatique,
+mesures ALC, jumeau rejouable, menu 8.3 de TRX Console (lancer la commande dans un terminal).
+
 ## Exploration d'un poste jamais essayé (`--explorer`, étape 175)
 
 Pour un expert, AVANT la qualification : aller le plus loin possible sans émettre et trouver où Hamlib et le poste

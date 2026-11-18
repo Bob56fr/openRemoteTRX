@@ -237,6 +237,9 @@ Aucune n'est plus compliquée que ce que la station fait déjà ; le seul point 
 
 ## 11. Lots
 
+VERSION 0 FAITE (étape 252, station 0.194.0, `docs/qualification.md` § « Valise de qualification v0 ») : session, enchaînement des outils existants, essais du § 5.4 JOUÉS À LA MAIN et chronométrés par l'observateur (repère tapé au moment de l'action), rapport zip et empreintes. Aucun chemin d'émission nouveau.
+
+
 | Lot | Contenu | Dépend de |
 | --- | --- | --- |
 | T1 | session isolée (§ 5.1), préparation et kit (§ 4), détection, relevés de départ / fin, photos, remise en état, reprise | — |

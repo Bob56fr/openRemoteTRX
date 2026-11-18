@@ -1,0 +1,536 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
+"""Valise de qualification, version 0 (`trx-qualif --terrain`, docs/qualification-terrain-cahier-des-charges.md).
+
+Ce que fait la v0 :
+- une SESSION = un dossier `terrain-<modèle>-<date>` ; l'exploration et la qualification existantes y écrivent ;
+- les essais de sécurité du guide (partie 3.5) sont JOUÉS À LA MAIN par le qualifieur et l'opérateur ; un
+  OBSERVATEUR les chronomètre en relisant le PTT du poste par rigctld toutes les 200 ms ;
+- un rapport zip pour Claude (`qualification.json`, `rapport.html`, `LISEZMOI-CLAUDE.md`, `empreintes.sha256`).
+
+SÉCURITÉ : la v0 n'ajoute AUCUN chemin d'émission. L'observateur n'envoie QUE la lecture « t » (liste fermée
+`OBSERVER_COMMANDS`, vérifiée à chaque envoi) et seulement à un rigctld en 127.0.0.1. Les émissions des essais sont
+faites par la station elle-même (page, application, micro du poste), avec toutes ses sécurités.
+"""
+from __future__ import annotations
+
+import asyncio
+import datetime as dt
+import hashlib
+import html
+import ipaddress
+import json
+import os
+import time
+import zipfile
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Callable
+
+from .. import __version__
+from ..answers import yes_no
+from .texts import _t
+
+FORMAT = 1
+OBSERVER_COMMANDS = frozenset({"t"})      # lecture du PTT, RIEN d'autre
+OBSERVER_PERIOD_S = 0.2
+MARK_SLACK_S = 1.0                        # repère tapé à la main : réaction humaine + une période d'observation
+
+
+class ObserverError(RuntimeError):
+    pass
+
+
+# --------------------------------------------------------------------------- observateur (lecture seule)
+
+class Observer:
+    """Relit le PTT par rigctld ; garde les CHANGEMENTS (instant, valeur) : 1 émission, 0 réception, None illisible."""
+
+    def __init__(self, host: str, port: int, *, period: float = OBSERVER_PERIOD_S, timeout: float = 1.0,
+                 clock: Callable[[], float] = time.time) -> None:
+        try:
+            loopback = ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            loopback = host == "localhost"
+        if not loopback:
+            raise ObserverError("rigctld doit être en 127.0.0.1")
+        self.host, self.port, self.period, self.timeout, self.clock = host, port, period, timeout, clock
+        self.events: list[tuple[float, int | None]] = []
+        self.reads = 0
+        self.failures = 0
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
+
+    def _note(self, value: int | None) -> None:
+        if not self.events or self.events[-1][1] != value:
+            self.events.append((self.clock(), value))
+
+    async def _send(self, command: str) -> str:
+        if command not in OBSERVER_COMMANDS:
+            raise ObserverError(f"commande refusée à l'observateur : {command!r}")
+        if self._writer is None:
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port), self.timeout)
+        self._writer.write((command + "\n").encode("ascii"))
+        await self._writer.drain()
+        first = await self._line()
+        if not first.endswith(":"):
+            return first                         # réponse simple : « 0 », « 1 » ou « RPRT -n »
+        value = ""                               # réponse étendue : « get_ptt: », « PTT: 0 », « RPRT 0 »
+        for _ in range(8):
+            line = await self._line()
+            if line.startswith("RPRT"):
+                return value or line
+            value = line.rsplit(":", 1)[-1].strip()
+        raise ConnectionError("réponse étendue sans RPRT")
+
+    async def _line(self) -> str:
+        line = await asyncio.wait_for(self._reader.readline(), self.timeout)
+        if not line:
+            raise ConnectionError("rigctld a fermé la connexion")
+        return line.decode("ascii", "replace").strip()
+
+    async def read_once(self) -> int | None:
+        try:
+            answer = await self._send("t")
+        except (OSError, asyncio.TimeoutError, ConnectionError):
+            self._close()
+            return None
+        return int(answer) if answer in ("0", "1") else None
+
+    def _close(self) -> None:
+        if self._writer is not None:
+            try:
+                self._writer.close()
+            except Exception:                    # noqa: BLE001 : fermeture au mieux
+                pass
+        self._reader = self._writer = None
+
+    async def run(self, stop: asyncio.Event) -> None:
+        next_at = time.perf_counter()
+        try:
+            while not stop.is_set():
+                value = await self.read_once()
+                self.reads += 1
+                if value is None:
+                    self.failures += 1
+                self._note(value)
+                next_at += self.period
+                delay = next_at - time.perf_counter()
+                if delay < 0:
+                    next_at = time.perf_counter()
+                    delay = 0
+                try:
+                    await asyncio.wait_for(stop.wait(), delay)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            self._close()
+
+
+# --------------------------------------------------------------------------- essais
+
+@dataclass(frozen=True)
+class Drill:
+    id: str
+    kind: str          # stop, tot, link, refusal, local, startup, reboot
+    optional: bool = False
+    bound_s: float = 0.0
+
+
+DRILLS: tuple[Drill, ...] = (
+    Drill("stop_page", "stop", bound_s=MARK_SLACK_S),
+    Drill("tot", "tot", bound_s=2.0),
+    Drill("wifi", "link", bound_s=2.5 + MARK_SLACK_S),
+    Drill("screen_lock", "link", bound_s=2.5 + MARK_SLACK_S),
+    Drill("out_of_band", "refusal"),
+    Drill("local_operator", "local"),
+    Drill("stop_dashboard", "stop", bound_s=MARK_SLACK_S),
+    Drill("station_stop", "link", bound_s=2.0 + MARK_SLACK_S),
+    Drill("startup", "startup"),
+    Drill("reboot", "reboot", optional=True),
+)
+NEEDS_MARK = {"stop", "link"}
+
+
+def analyse(events: list[tuple[float, int | None]], start: float, end: float, mark: float | None) -> dict:
+    """Mesures d'un essai : début et fin d'émission vus, durée, délai depuis le repère, lectures illisibles."""
+    tx_start = rx_after = None
+    unreadable = False
+    value: int | None = None                     # état au début de l'essai, puis état courant
+    for ts, v in sorted(events, key=lambda e: e[0]):
+        if ts > end:
+            break
+        if ts >= start:
+            if v is None:
+                unreadable = True
+            if v == 1 and tx_start is None:
+                tx_start = ts
+            if v == 0 and tx_start is not None and rx_after is None:
+                rx_after = ts
+        value = v
+        if ts < start and v == 1:
+            tx_start = start                     # déjà en émission au début de l'essai
+        elif ts < start:
+            tx_start = None
+    tx_seen = tx_start is not None
+    out = {"tx_seen": tx_seen, "tx_start": tx_start, "rx_after": rx_after, "unreadable": unreadable,
+           "still_tx_at_end": value == 1, "tx_duration_s": None, "delay_from_mark_s": None}
+    if tx_start is not None and rx_after is not None:
+        out["tx_duration_s"] = round(rx_after - tx_start, 3)
+    if mark is not None and rx_after is not None and rx_after >= mark - 0.05:
+        out["delay_from_mark_s"] = round(max(0.0, rx_after - mark), 3)
+    return out
+
+
+def judge(drill: Drill, m: dict, *, tot_s: float) -> tuple[str, str]:
+    """(résultat MESURÉ : reussi / echec / non_mesure, raison en français pour le rapport)."""
+    if m["still_tx_at_end"]:
+        return "echec", "le poste était encore en émission à la fin de l'essai"
+    if drill.kind in ("stop", "link"):
+        if not m["tx_seen"]:
+            return "non_mesure", "aucune émission vue pendant l'essai"
+        d = m["delay_from_mark_s"]
+        if d is None:
+            return "non_mesure", "repère absent ou retour en réception avant le repère"
+        return ("reussi" if d <= drill.bound_s else "echec"), f"réception {d:.2f} s après le repère (borne {drill.bound_s:.1f} s)"
+    if drill.kind == "tot":
+        dur = m["tx_duration_s"]
+        if dur is None:
+            return "non_mesure", "émission complète non vue"
+        ok = abs(dur - tot_s) <= drill.bound_s
+        return ("reussi" if ok else "echec"), f"émission coupée après {dur:.1f} s (TOT {tot_s:.0f} s ± {drill.bound_s:.0f})"
+    if drill.kind in ("refusal", "startup"):
+        return ("echec", "émission vue") if m["tx_seen"] else ("reussi", "aucune émission vue")
+    if drill.kind == "local":
+        return ("reussi", "émission locale vue") if m["tx_seen"] else ("non_mesure", "aucune émission locale vue")
+    return ("echec", "émission vue") if m["tx_seen"] else ("non_mesure", "déclaratif (aucune mesure pendant l'arrêt du PC)")
+
+
+def final_result(measured: str, declared_ok: bool | None) -> str:
+    if measured == "echec" or declared_ok is False:
+        return "echec"
+    if measured == "reussi" and declared_ok:
+        return "reussi"
+    if measured == "non_mesure" and declared_ok:
+        return "declare"
+    return "incomplet"
+
+
+# --------------------------------------------------------------------------- session
+
+@dataclass
+class Session:
+    folder: Path
+    model: int
+    model_name: str = ""
+    manufacturer: str = ""
+    hamlib_version: str = ""
+    backend_status: str = ""
+    started: str = ""
+    drills: dict[str, dict] = field(default_factory=dict)
+    runs: list[dict] = field(default_factory=list)
+
+    FILE = "session.json"
+
+    @classmethod
+    def open(cls, folder: Path, **fields) -> "Session":
+        path = folder / cls.FILE
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return cls(folder=folder, **{k: v for k, v in data.items() if k in cls.__dataclass_fields__ and k != "folder"})
+        folder.mkdir(parents=True, exist_ok=True)
+        s = cls(folder=folder, started=_now(), **fields)
+        s.save()
+        return s
+
+    def save(self) -> None:
+        data = asdict(self)
+        data.pop("folder")
+        tmp = self.folder / (self.FILE + ".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(tmp, self.folder / self.FILE)
+
+
+def _now() -> str:
+    return dt.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _iso(ts: float | None) -> str | None:
+    if ts is None:
+        return None
+    return dt.datetime.fromtimestamp(ts, dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def _parse_ts(text: str) -> float | None:
+    try:
+        return dt.datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp()
+    except (ValueError, AttributeError):
+        return None
+
+
+def journal_lines(state_dir: Path, start: float, end: float, redact: Callable[[str], str]) -> list[dict]:
+    """Lignes des journaux JSON de la passerelle et du superviseur entre start et end (masquées)."""
+    lines = []
+    for name in ("passerelle", "superviseur"):
+        path = state_dir / f"journal-{name}.jsonl"
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace").splitlines()[-5000:]
+        except OSError:
+            continue
+        for line in raw:
+            try:
+                item = json.loads(line)
+            except ValueError:
+                continue
+            ts = _parse_ts(item.get("ts", ""))
+            if ts is not None and start <= ts <= end:
+                lines.append(json.loads(redact(json.dumps(item, ensure_ascii=False))))
+    lines.sort(key=lambda i: i.get("ts", ""))
+    return lines
+
+
+def _redactor() -> Callable[[str], str]:
+    from ..monlink.redact import Redactor
+    return Redactor(os.urandom(16)).text
+
+
+Ask = Callable[[str], str]
+
+
+async def play_drill(drill: Drill, session: Session, *, host: str, port: int, tot_s: float, state_dir: Path,
+                     ask: Ask = input, out: Callable[[str], None] = print, period: float = OBSERVER_PERIOD_S) -> dict:
+    """Un essai : consignes, observation, repère, mesures, avis de l'opérateur ; enregistré dans la session."""
+    out(_t(f"terrain.drill.{drill.id}.title"))
+    out(_t(f"terrain.drill.{drill.id}.how", tot=f"{tot_s:.0f}"))
+    out(_t("terrain.expected", text=_t(f"terrain.drill.{drill.id}.expected", tot=f"{tot_s:.0f}")))
+    if (await asyncio.to_thread(ask, _t("terrain.start_or_skip"))).strip().lower() in ("s", "skip"):
+        return {}
+    observer = Observer(host, port, period=period)
+    stop = asyncio.Event()
+    task = asyncio.create_task(observer.run(stop))
+    start = time.time()
+    mark = None
+    try:
+        out(_t("terrain.observing"))
+        if drill.kind in NEEDS_MARK:
+            await asyncio.to_thread(ask, _t("terrain.mark_prompt"))
+            mark = time.time()
+        await asyncio.to_thread(ask, _t("terrain.end_prompt"))
+        await asyncio.sleep(period * 2)          # dernière lecture après la fin annoncée
+    finally:
+        end = time.time()
+        stop.set()
+        await task
+    m = analyse(observer.events, start, end, mark)
+    measured, reason = judge(drill, m, tot_s=tot_s)
+    out(_t("terrain.measured", result=_t(f"terrain.result.{measured}"), reason=reason))
+    declared = yes_no(await asyncio.to_thread(ask, _t("terrain.declared_prompt")))
+    note = (await asyncio.to_thread(ask, _t("terrain.note_prompt"))).strip()
+    result = final_result(measured, declared)
+    record = {
+        "id": drill.id, "kind": drill.kind, "optional": drill.optional, "bound_s": drill.bound_s or None,
+        "start": _iso(start), "end": _iso(end), "mark": _iso(mark),
+        "measures": {k: (_iso(v) if k in ("tx_start", "rx_after") else v) for k, v in m.items()},
+        "measured": measured, "reason": reason, "declared_ok": declared, "note": note, "result": result,
+        "observer": {"period_s": period, "reads": observer.reads, "unreadable": observer.failures,
+                     "changes": [[_iso(ts), v] for ts, v in observer.events]},
+    }
+    (session.folder / "essais").mkdir(exist_ok=True)
+    redact = _redactor()
+    record["note"] = redact(note)
+    record["journal"] = journal_lines(state_dir, start - 2, end + 2, redact)
+    (session.folder / "essais" / f"{drill.id}.json").write_text(
+        json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    session.drills[drill.id] = {k: record[k] for k in ("result", "measured", "reason", "declared_ok", "note")}
+    session.save()
+    out(_t("terrain.drill_saved", result=_t(f"terrain.result.{result}")))
+    return record
+
+
+# --------------------------------------------------------------------------- rapport
+
+def verdict(session: Session) -> tuple[str, list[str]]:
+    """Verdict PROPOSÉ (la décision reste à l'éditeur) et ses raisons."""
+    reasons = []
+    results = {d.id: session.drills.get(d.id, {}).get("result") for d in DRILLS}
+    if any(r == "echec" for r in results.values()):
+        return "refuse", [f"essai {k} en échec" for k, r in results.items() if r == "echec"]
+    qualif = [r for r in session.runs if r.get("kind") == "qualif"]
+    if not qualif:
+        reasons.append("qualification Q1 non faite")
+    elif qualif[-1].get("verdict") == "refuse":
+        return "refuse", ["qualification Q1 : refus"]
+    elif qualif[-1].get("verdict") != "validation_en_cours":
+        reasons.append(f"qualification Q1 : {qualif[-1].get('verdict') or 'verdict inconnu'}")
+    for d in DRILLS:
+        r = results[d.id]
+        if r is None and not d.optional:
+            reasons.append(f"essai {d.id} non fait")
+        elif r in ("incomplet",):
+            reasons.append(f"essai {d.id} incomplet")
+    return ("validation_en_cours" if not reasons else "incomplet"), reasons
+
+
+def _qualif_verdict(folder: Path) -> str | None:
+    try:
+        return json.loads((folder / "results.json").read_text(encoding="utf-8")).get("verdict")
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def note_runs(session: Session) -> None:
+    """Dossiers explore-* et qualif-* de la session (écrits par les outils existants)."""
+    runs = []
+    for p in sorted(session.folder.iterdir()):
+        if p.is_dir() and p.name.startswith("explore-"):
+            runs.append({"kind": "explore", "folder": p.name})
+        elif p.is_dir() and p.name.startswith("qualif-"):
+            runs.append({"kind": "qualif", "folder": p.name, "verdict": _qualif_verdict(p)})
+    session.runs = runs
+    session.save()
+
+
+def _html_report(data: dict) -> str:
+    e = html.escape
+    rows = "".join(
+        f"<tr><td>{e(d['id'])}</td><td>{e(str(d.get('result') or '—'))}</td><td>{e(str(d.get('reason') or ''))}</td>"
+        f"<td>{e(str(d.get('note') or ''))}</td></tr>" for d in data["essais"])
+    runs = "".join(f"<li>{e(r['kind'])} : {e(r['folder'])} {e(str(r.get('verdict') or ''))}</li>" for r in data["runs"])
+    reasons = "".join(f"<li>{e(r)}</li>" for r in data["verdict"]["raisons"]) or "<li>—</li>"
+    return f"""<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<html lang="fr"><head><meta charset="utf-8"><title>Qualification {e(data['poste']['nom'])}</title>
+<style>body{{font-family:sans-serif;margin:2em;max-width:60em}}td,th{{border:1px solid #999;padding:.3em .6em}}
+table{{border-collapse:collapse}}</style></head><body>
+<h1>Qualification sur place : {e(data['poste']['fabricant'])} {e(data['poste']['nom'])}</h1>
+<p>Modèle Hamlib {data['poste']['hamlib_model']}, Hamlib {e(data['versions']['hamlib'])}, station {e(data['versions']['station'])}.
+Session commencée le {e(data['session']['debut'])}.</p>
+<h2>Verdict proposé : {e(data['verdict']['propose'])}</h2><ul>{reasons}</ul>
+<h2>Essais de sécurité</h2><table><tr><th>Essai</th><th>Résultat</th><th>Mesure</th><th>Remarque</th></tr>{rows}</table>
+<h2>Outils lancés</h2><ul>{runs or '<li>—</li>'}</ul>
+<p>Le statut « valide » reste une décision de l'équipe (docs/qualification-terrain-cahier-des-charges.md § 7).</p>
+</body></html>
+"""
+
+
+README = """# Rapport de qualification sur place (valise v0)
+
+Pour la conversation Claude qui reçoit ce zip, dans le dépôt openRemoteTRX :
+1. Vérifier `empreintes.sha256` (sha256 de chaque fichier) ; un écart = demander un nouveau zip.
+2. Lire `qualification.json` (format {format}) : poste, versions, essais de sécurité chronométrés, verdict PROPOSÉ.
+3. Lire les dossiers `explore-*` (constats, fiche-poste.md, rapport-hamlib.md) et `qualif-*` (results.json, fiche.toml).
+4. Suivre `docs/qualification-terrain-cahier-des-charges.md` § 7 : fiches du poste, catalogue, statut décidé
+   avec l'utilisateur.
+"""
+
+
+def build_report(session: Session, *, settings: dict, out_dir: Path) -> Path:
+    note_runs(session)
+    proposed, reasons = verdict(session)
+    data = {
+        "format": FORMAT,
+        "signature": None,
+        "session": {"debut": session.started, "fin": _now()},
+        "versions": {"station": __version__, "hamlib": session.hamlib_version},
+        "poste": {"fabricant": session.manufacturer, "nom": session.model_name, "hamlib_model": session.model,
+                  "backend": session.backend_status},
+        "reglages": settings,
+        "essais": [{"id": d.id, "facultatif": d.optional, **session.drills.get(d.id, {})} for d in DRILLS],
+        "runs": session.runs,
+        "verdict": {"propose": proposed, "raisons": reasons},
+    }
+    folder = session.folder
+    (folder / "qualification.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (folder / "rapport.html").write_text(_html_report(data), encoding="utf-8")
+    (folder / "LISEZMOI-CLAUDE.md").write_text(README.format(format=FORMAT), encoding="utf-8")
+    files = sorted(p for p in folder.rglob("*") if p.is_file() and p.name != "empreintes.sha256"
+                   and not p.name.endswith(".tmp"))
+    lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(folder).as_posix()}" for p in files]
+    (folder / "empreintes.sha256").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / f"{folder.name}.zip"
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+        for p in files + [folder / "empreintes.sha256"]:
+            z.write(p, f"{folder.name}/{p.relative_to(folder).as_posix()}")
+    return target
+
+
+def check_report(zip_path: Path) -> list[str]:
+    """Fichiers dont l'empreinte ne correspond pas (vide = rapport intact)."""
+    bad = []
+    with zipfile.ZipFile(zip_path) as z:
+        names = z.namelist()
+        manifest = next(n for n in names if n.endswith("/empreintes.sha256"))
+        root = manifest.rsplit("/", 1)[0]
+        for line in z.read(manifest).decode("utf-8").splitlines():
+            digest, _, rel = line.partition("  ")
+            name = f"{root}/{rel}"
+            if name not in names or hashlib.sha256(z.read(name)).hexdigest() != digest:
+                bad.append(rel)
+    return bad
+
+
+def settings_of(cfg) -> dict:
+    """Réglages utiles à la fiche du poste (rien de secret : ni comptes, ni clés)."""
+    return {"hamlib_model": cfg.rig.model, "port": cfg.rig.port, "speed": cfg.rig.speed, "ptt_type": cfg.rig.ptt_type,
+            "capture_device": cfg.audio.capture_device, "playback_device": cfg.audio.playback_device,
+            "tot_s": cfg.safety.tot_s, "spectrum_port": getattr(cfg.spectrum, "port", "")}
+
+
+# --------------------------------------------------------------------------- déroulé
+
+def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path | None = None,
+                ask: Ask = input, out: Callable[[str], None] = print,
+                explore: Callable | None = None, qualify: Callable | None = None) -> int:
+    from . import main as qmain
+    folder = session_dir or output / f"terrain-{profile.model}-{dt.datetime.now():%Y%m%d-%H%M}"
+    caps = profile.caps
+    session = Session.open(folder, model=profile.model, model_name=caps.model_name, manufacturer=caps.manufacturer,
+                           hamlib_version=profile.hamlib_version, backend_status=profile.backend_status)
+    state_dir = Path(cfg.supervisor.state_dir)
+    explore = explore or (lambda: asyncio.run(qmain.run_explore(cfg, profile, dump_text, folder)))
+    qualify = qualify or (lambda no_tx: asyncio.run(qmain.run_qualif(
+        cfg, profile, dump_text, folder, endurance_cycles=1000, tot_s=8.0, no_tx=no_tx, filters_test=False)))
+    while True:
+        note_runs(session)
+        out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
+        done = {r["kind"] for r in session.runs}
+        out(_t("terrain.menu", explore="✓" if "explore" in done else " ", qualif="✓" if "qualif" in done else " ",
+               drills=sum(1 for d in DRILLS if d.id in session.drills), total=len(DRILLS)))
+        choice = ask(_t("terrain.choice")).strip().lower()
+        if choice == "1":
+            explore()
+        elif choice == "2":
+            qualify(False)
+        elif choice == "3":
+            qualify(True)
+        elif choice == "4":
+            drills_menu(session, cfg, state_dir, ask=ask, out=out)
+        elif choice == "5":
+            target = build_report(session, settings=settings_of(cfg), out_dir=output)
+            out(_t("terrain.report_done", path=target))
+        elif choice in ("q", "0", ""):
+            out(_t("terrain.bye", folder=folder))
+            return 0
+
+
+def drills_menu(session: Session, cfg, state_dir: Path, *, ask: Ask, out: Callable[[str], None]) -> None:
+    out(_t("terrain.drills_intro"))
+    while True:
+        for n, d in enumerate(DRILLS, 1):
+            r = session.drills.get(d.id, {}).get("result")
+            label = _t(f"terrain.drill.{d.id}.title").strip()
+            out(f"  {n:2d}  {label}  [{_t('terrain.result.' + r) if r else '—'}]")
+        choice = ask(_t("terrain.drills_choice")).strip().lower()
+        if choice in ("r", "q", ""):
+            return
+        if choice == "t":
+            todo = [d for d in DRILLS if d.id not in session.drills and not d.optional]
+        elif choice.isdigit() and 1 <= int(choice) <= len(DRILLS):
+            todo = [DRILLS[int(choice) - 1]]
+        else:
+            continue
+        for d in todo:
+            asyncio.run(play_drill(d, session, host=cfg.network.rigctld_host, port=cfg.network.rigctld_port,
+                                   tot_s=float(cfg.safety.tot_s), state_dir=state_dir, ask=ask, out=out))
