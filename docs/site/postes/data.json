@@ -536,8 +536,8 @@
         "modele": "IC-7300MK2",
         "hamlib_model": 3094,
         "statut": "restreint",
-        "resume": "Poste de référence du projet, VALIDÉ AVEC RESTRICTIONS le 2026-11-19 : toutes les sécurités d'émission, la réception, le son, les filtres FIL1/2/3, le spectre HF, le coupleur, le split, le TOS et le NB essayés sur le vrai poste. Restrictions (Hamlib) : pas de voyant VFO A / B, pas de température du poste (seuils de température sans effet). Le son de la station ne module qu'en mode données (choix d'Icom).",
-        "resume_en": "Reference rig of the project, VALIDATED WITH RESTRICTIONS on 2026-11-19: all transmit safety, receive, audio, FIL1/2/3 filters, HF spectrum, tuner, split, SWR and NB tried on the real rig. Restrictions (Hamlib): no VFO A / B indicator, no rig temperature (temperature thresholds have no effect). The station audio only modulates in data modes (Icom design)."
+        "resume": "Poste de référence du projet, VALIDÉ AVEC RESTRICTIONS le 2026-11-19 : toutes les sécurités d'émission, la réception, le son, les filtres FIL1/2/3, le spectre HF, le coupleur, le split, le TOS et le NB essayés sur le vrai poste. Restrictions (le poste ne les donne pas par la CAT) : pas de voyant VFO A / B, pas de température du poste (seuils de température sans effet). Le son de la station ne module qu'en mode données (choix d'Icom).",
+        "resume_en": "Reference rig of the project, VALIDATED WITH RESTRICTIONS on 2026-11-19: all transmit safety, receive, audio, FIL1/2/3 filters, HF spectrum, tuner, split, SWR and NB tried on the real rig. Restrictions (the rig does not report them over CAT): no VFO A / B indicator, no rig temperature (temperature thresholds have no effect). The station audio only modulates in data modes (Icom design)."
       },
       "essais": [
         {
@@ -634,9 +634,9 @@
         },
         "vfo": {
           "etat": "non_declare",
-          "cause": "hamlib",
-          "note": "« Can get VFO: N » : voyant VFO A / B absent.",
-          "note_en": "« Can get VFO: N »: no VFO A / B indicator."
+          "cause": "poste",
+          "note": "Le poste n'a aucune commande CI-V pour dire quel VFO est actif (07 ne fait que le choisir ; manuel CI-V) : « Can get VFO: N » dans Hamlib, voyant VFO A / B absent.",
+          "note_en": "The rig has no CI-V command to report which VFO is active (07 only selects it; CI-V manual): « Can get VFO: N » in Hamlib, no VFO A / B indicator."
         },
         "modes_base": {
           "etat": "valide"
@@ -732,9 +732,9 @@
         },
         "temperature": {
           "etat": "non_declare",
-          "cause": "hamlib",
-          "note": "TEMP_METER absent : seuils de température du poste sans effet.",
-          "note_en": "No TEMP_METER: rig temperature thresholds have no effect."
+          "cause": "poste",
+          "note": "Aucune température lisible par la CAT (compteurs du manuel CI-V : S, Po, SWR, ALC, COMP, Vd, Id) : seuils de température du poste sans effet.",
+          "note_en": "No temperature readable over CAT (CI-V manual meters: S, Po, SWR, ALC, COMP, Vd, Id): rig temperature thresholds have no effect."
         },
         "audio_rx": {
           "etat": "valide",
