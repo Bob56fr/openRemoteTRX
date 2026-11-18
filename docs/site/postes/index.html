@@ -1,0 +1,227 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Fabriqué par scripts/build_rigs_doc.py depuis docs/postes/donnees/ : ne pas modifier à la main. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postes essayés avec TRX distant</title>
+<style>:root{--fond:#0f141c;--carte:#171e29;--ligne:#2a3445;--texte:#dbe3ee;--doux:#9aa8bb;--accent:#4c9be8;--emission:#e0524a;
+  --ok:#3fae72;--code:#0b1017;color-scheme:dark}
+*{box-sizing:border-box}
+html{background:var(--fond)}
+body{margin:0;background:var(--fond);color:var(--texte);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.2rem 16px 2.5rem}
+h1{font-size:1.7rem;line-height:1.2;margin:.4rem 0 .2rem}
+h2{font-size:1.3rem;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--ligne)}
+h3{font-size:1.05rem;margin:0}
+p{margin:.45rem 0 .8rem}
+a{color:var(--accent)}
+code{background:var(--code);border:1px solid var(--ligne);border-radius:.3rem;padding:0 .3rem;font-size:.92em;
+  overflow-wrap:anywhere}
+pre{background:var(--code);border:1px solid var(--ligne);border-radius:.5rem;padding:.6rem .8rem;overflow-x:auto;
+  font-size:.9rem;white-space:pre-wrap;overflow-wrap:anywhere}
+ul,ol{margin:.3rem 0 .9rem 1.3rem;padding:0}
+li{margin:.2rem 0}
+.version{color:var(--doux);font-size:.95rem;margin:0 0 1rem}
+.lecture{background:var(--carte);border:1px solid var(--ligne);border-left:.3rem solid var(--accent);border-radius:.5rem;
+  padding:.5rem 1rem;margin:1rem 0}
+.sommaire{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0;padding:0;list-style:none}
+.sommaire a{display:inline-block;background:var(--carte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.25rem .9rem;text-decoration:none;color:var(--texte)}
+.etapes{list-style:none;margin:0;padding:0;counter-reset:e}
+.etapes>li{counter-increment:e;display:grid;grid-template-columns:2.2rem 1fr;gap:.8rem;background:var(--carte);
+  border:1px solid var(--ligne);border-radius:.6rem;padding:.8rem 1rem;margin:.7rem 0}
+.etapes>li::before{content:counter(e);width:2rem;height:2rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:700;display:flex;align-items:center;justify-content:center}
+.etapes>li>div{min-width:0}
+details{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;margin:.55rem 0}
+summary{cursor:pointer;padding:.65rem 1rem;display:flex;gap:.7rem;align-items:baseline;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"\25B8";color:var(--doux);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.num{flex:none;min-width:2.1rem;text-align:center;font-weight:700;color:#fff;background:var(--accent);border-radius:.4rem;
+  padding:0 .3rem}
+.corps{padding:0 1rem .8rem 1rem}
+dl{display:grid;grid-template-columns:minmax(7rem,max-content) 1fr;gap:.35rem 1rem;margin:.2rem 0 .6rem}
+dt{color:var(--doux)}
+dd{margin:0;min-width:0}
+.sudo{color:var(--emission);font-weight:600}
+.libre{color:var(--ok);font-weight:600}
+.expert{border-top:1px dashed var(--ligne);margin-top:.5rem;padding-top:.4rem}
+.plus{display:block;color:var(--doux);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.theme{margin:1.4rem 0 .3rem;color:var(--doux);font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+.langues{margin:0 0 1rem;color:var(--doux);font-size:.95rem}
+.bloc{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.6rem 1rem;margin:.7rem 0}
+footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid var(--ligne);padding-top:.8rem}
+@media (max-width:30rem){dl{grid-template-columns:1fr}dt{margin-top:.3rem}}[hidden]{display:none !important}
+.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.choix button,.themes button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;font:inherit;cursor:pointer;margin:.15rem}
+.choix button[aria-pressed=true],.themes button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+table{border-collapse:collapse;width:100%;margin:.4rem 0 1rem;font-size:.92rem}
+th,td{border:1px solid var(--ligne);padding:.3rem .5rem;text-align:left;vertical-align:top}
+th{background:var(--carte)}td.e{white-space:nowrap;font-weight:600}
+tr.t th{background:transparent;color:var(--accent);font-size:1rem;padding-top:.8rem;border-left:0;border-right:0}
+.e-valide{color:#7ed99a}.e-partiel{color:#f2d06b}.e-echec{color:#ff8a8a}.e-non_teste{color:#9cc8f2}.e-non_declare{opacity:.6}
+.statut{display:inline-block;border-radius:1rem;padding:0 .6rem;font-size:.8rem;background:#3d3418;color:#f2d06b}
+.statut.s-valide{background:#183d26;color:#7ed99a}.statut.s-refuse{background:#3d1818;color:#ff8a8a}
+.wrap{overflow-x:auto}details{margin:.4rem 0 1rem}
+section.poste{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}</style>
+</head>
+<body>
+<main>
+<p class="choix"><button type="button" data-l="fr">Français</button><button type="button" data-l="en">English</button></p>
+<h1><span class="fr-t">Postes essayés avec TRX distant</span><span class="en-t">Rigs tried with TRX Remote</span></h1>
+<p><span class="fr-t">Chaque état vient d’un essai réel sur le poste (qualification, charge fictive). Un résultat vaut pour la version de Hamlib et le système indiqués.</span><span class="en-t">Every state comes from a real test on the rig (qualification, dummy load). A result holds for the Hamlib version and system shown.</span></p>
+<p><span class="e-valide">✓</span> <span class="fr-t">validé</span><span class="en-t">validated</span> · <span class="e-partiel">◐</span> <span class="fr-t">partiel</span><span class="en-t">partial</span> · <span class="e-echec">✗</span> <span class="fr-t">ne fonctionne pas</span><span class="en-t">does not work</span> · <span class="e-non_teste">?</span> <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span> · <span class="e-non_declare">·</span> <span class="fr-t">non proposé par Hamlib</span><span class="en-t">not offered by Hamlib</span></p>
+<p class="themes"><button type="button" data-t="tous"><span class="fr-t">Tous les thèmes</span><span class="en-t">All topics</span></button><button type="button" data-t="securite"><span class="fr-t">Sécurité d&#x27;émission</span><span class="en-t">Transmit safety</span></button><button type="button" data-t="frequence"><span class="fr-t">Fréquence</span><span class="en-t">Frequency</span></button><button type="button" data-t="modes"><span class="fr-t">Modes et filtres</span><span class="en-t">Modes and filters</span></button><button type="button" data-t="reception"><span class="fr-t">Réception</span><span class="en-t">Receive</span></button><button type="button" data-t="emission"><span class="fr-t">Émission</span><span class="en-t">Transmit</span></button><button type="button" data-t="mesures"><span class="fr-t">Mesures</span><span class="en-t">Meters</span></button><button type="button" data-t="audio"><span class="fr-t">Audio USB</span><span class="en-t">USB audio</span></button><button type="button" data-t="spectre"><span class="fr-t">Spectre</span><span class="en-t">Spectrum</span></button></p>
+<h2><span class="fr-t">Comparaison des postes</span><span class="en-t">Rig comparison</span></h2>
+<p><span class="fr-t">Seulement ce qui est validé ou partiel ; — = non disponible avec TRX distant (pas encore essayé, en échec ou non proposé par Hamlib : voir la fiche du poste).</span><span class="en-t">Validated or partial only; — = not available with TRX Remote (not tried yet, failed or not offered by Hamlib: see the rig sheet).</span></p>
+<div class="wrap"><table>
+<tr><th><span class="fr-t">Fonction</span><span class="en-t">Feature</span></th><th>Icom IC-7300MK2</th></tr>
+<tr class="t" data-theme="securite"><th colspan="2"><span class="fr-t">Sécurité d&#x27;émission</span><span class="en-t">Transmit safety</span></th></tr>
+<tr data-theme="securite"><td><span class="fr-t">PTT par la CAT, état relu</span><span class="en-t">CAT PTT, state read back</span></td><td class="e e-valide" title="3 cycles, coupure en 78 ms au plus. dump_caps annonce « PTT type: None » avec Hamlib 4.7.2 (« Rig capable » avec 5.0) : le PTT par CAT marche quand même.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Coupure au bout du TOT</span><span class="en-t">Cut at the TOT</span></td><td class="e e-valide" title="TOT de 8 s coupé à 8,1 s, de 20 s à 20,0 s.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Battements du client perdus</span><span class="en-t">Client heartbeats lost</span></td><td class="e e-valide" title="Réception 2,1 s après le dernier battement.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Connexion du client fermée</span><span class="en-t">Client connection closed</span></td><td class="e e-valide" title="Réception en 0,1 s.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Liaison CAT perdue pendant l&#x27;émission</span><span class="en-t">CAT link lost while transmitting</span></td><td class="e e-valide" title="Liaison CAT coupée 1,5 s pendant l&#x27;émission : réception 1,7 s après.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Refus hors des bandes autorisées</span><span class="en-t">Refusal outside the allowed bands</span></td><td class="e e-valide" title="Émission refusée sur 1,760 MHz, aucune émission vue.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Opérateur sur place (micro du poste)</span><span class="en-t">Local operator (rig microphone)</span></td><td>—</td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Réception au démarrage</span><span class="en-t">Receive at start-up</span></td><td>—</td></tr>
+<tr class="t" data-theme="frequence"><th colspan="2"><span class="fr-t">Fréquence</span><span class="en-t">Frequency</span></th></tr>
+<tr data-theme="frequence"><td><span class="fr-t">Fréquence (écrite et relue)</span><span class="en-t">Frequency (written and read back)</span></td><td class="e e-valide" title="8 bandes écrites et relues au hertz.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">Split</span><span class="en-t">Split</span></td><td>—</td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">RIT</span><span class="en-t">RIT</span></td><td class="e e-valide" title="Le RIT et le ΔTX partagent le même décalage.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">XIT / ΔTX</span><span class="en-t">XIT / ΔTX</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">VFO actif lisible</span><span class="en-t">Active VFO readable</span></td><td>—</td></tr>
+<tr class="t" data-theme="modes"><th colspan="2"><span class="fr-t">Modes et filtres</span><span class="en-t">Modes and filters</span></th></tr>
+<tr data-theme="modes"><td><span class="fr-t">Modes USB, LSB, CW, AM, FM</span><span class="en-t">USB, LSB, CW, AM, FM modes</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="modes"><td><span class="fr-t">Modes données</span><span class="en-t">Data modes</span></td><td class="e e-valide" title="PKTUSB, PKTLSB, FM-D et AM-D (pas PKTFM / PKTAM avec Hamlib 4.7).">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="modes"><td><span class="fr-t">Largeurs de filtre</span><span class="en-t">Filter widths</span></td><td>—</td></tr>
+<tr class="t" data-theme="reception"><th colspan="2"><span class="fr-t">Réception</span><span class="en-t">Receive</span></th></tr>
+<tr data-theme="reception"><td><span class="fr-t">Préampli</span><span class="en-t">Preamp</span></td><td class="e e-valide" title="Valeurs 1 et 2 = P.AMP1 et P.AMP2 (pas des dB).">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Atténuateur</span><span class="en-t">Attenuator</span></td><td class="e e-valide" title="20 dB.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">AGC</span><span class="en-t">AGC</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Réducteur de bruit (NR)</span><span class="en-t">Noise reduction (NR)</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Niveau du NR</span><span class="en-t">NR level</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Noise blanker (NB)</span><span class="en-t">Noise blanker (NB)</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Niveau du NB</span><span class="en-t">NB level</span></td><td class="e e-partiel" title="Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Notch automatique (ANF)</span><span class="en-t">Auto notch (ANF)</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Notch manuel</span><span class="en-t">Manual notch</span></td><td class="e e-valide" title="Fréquence du notch sans plage déclarée : non réglable à distance.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Squelch</span><span class="en-t">Squelch</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr class="t" data-theme="emission"><th colspan="2"><span class="fr-t">Émission</span><span class="en-t">Transmit</span></th></tr>
+<tr data-theme="emission"><td><span class="fr-t">Puissance réglée</span><span class="en-t">Power setting</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="emission"><td><span class="fr-t">Compresseur</span><span class="en-t">Speech processor</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="emission"><td><span class="fr-t">Coupleur d&#x27;antenne</span><span class="en-t">Antenna tuner</span></td><td>—</td></tr>
+<tr class="t" data-theme="mesures"><th colspan="2"><span class="fr-t">Mesures</span><span class="en-t">Meters</span></th></tr>
+<tr data-theme="mesures"><td><span class="fr-t">S-mètre</span><span class="en-t">S-meter</span></td><td class="e e-valide" title="Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Puissance mesurée</span><span class="en-t">Measured power</span></td><td class="e e-valide" title="Monte environ 0,3 s après la prise d&#x27;émission.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">ROS</span><span class="en-t">SWR</span></td><td class="e e-valide" title="">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">ALC</span><span class="en-t">ALC</span></td><td class="e e-partiel" title="Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l&#x27;est).">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Tension d&#x27;alimentation</span><span class="en-t">Supply voltage</span></td><td class="e e-valide" title="14,4 V lus (hors de la plage déclarée 0..1).">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Température du poste</span><span class="en-t">Rig temperature</span></td><td>—</td></tr>
+<tr class="t" data-theme="audio"><th colspan="2"><span class="fr-t">Audio USB</span><span class="en-t">USB audio</span></th></tr>
+<tr data-theme="audio"><td><span class="fr-t">Son reçu par l&#x27;USB</span><span class="en-t">Receive audio over USB</span></td><td class="e e-valide" title="Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+<tr data-theme="audio"><td><span class="fr-t">Modulation par l&#x27;USB</span><span class="en-t">Modulation over USB</span></td><td class="e e-partiel" title="En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td></tr>
+<tr class="t" data-theme="spectre"><th colspan="2"><span class="fr-t">Spectre</span><span class="en-t">Spectrum</span></th></tr>
+<tr data-theme="spectre"><td><span class="fr-t">Spectre HF du poste</span><span class="en-t">Rig HF spectrum</span></td><td class="e e-valide" title="Par le second port CI-V (port B) ; figé pendant l&#x27;émission (normal).">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td></tr>
+</table></div>
+<h2><span class="fr-t">Fiche de chaque poste : Hamlib et TRX distant</span><span class="en-t">Each rig: Hamlib and TRX Remote</span></h2>
+<section class="poste" id="icom-ic7300mk2">
+<h3>Icom IC-7300MK2 <span class="statut s-validation_en_cours"><span class="fr-t">validation en cours</span><span class="en-t">validation in progress</span></span></h3>
+<p><span class="fr-t">Poste de référence du projet : station en service depuis le 2026-10 (Debian 13) ; qualification complète réussie sous Windows le 2026-11-18.</span><span class="en-t">Reference rig of the project: station in service since 2026-10 (Debian 13); full qualification passed on Windows on 2026-11-18.</span> <span class="fr-t">Modèle Hamlib</span><span class="en-t">Hamlib model</span> 3094.</p>
+<p>2026-11-18 · <span class="fr-t">station</span><span class="en-t">station</span> 0.199.0 · Hamlib 4.7.2 · Windows 11 : <span class="fr-t">Qualification complète (trx-qualif, charge fictive), valise : relevés, exploration, 5 essais automatiques</span><span class="en-t">Full qualification (trx-qualif, dummy load), qualification kit: snapshots, exploration, 5 automatic drills</span><br>2026-11-13 · <span class="fr-t">station</span><span class="en-t">station</span> 0.133.0 · Hamlib 5.0.0~git · Debian 13 : <span class="fr-t">Exploration et qualification sans émission ; station en service (CAT, PTT, audio, spectre HF)</span><span class="en-t">Exploration and qualification without transmitting; station in service (CAT, PTT, audio, HF spectrum)</span></p>
+<div class="wrap"><table>
+<tr><th><span class="fr-t">Fonction</span><span class="en-t">Feature</span></th><th>Hamlib</th><th><span class="fr-t">TRX Remote</span><span class="en-t">TRX Remote</span></th><th><span class="fr-t">Remarque</span><span class="en-t">Note</span></th></tr>
+<tr class="t" data-theme="securite"><th colspan="4"><span class="fr-t">Sécurité d&#x27;émission</span><span class="en-t">Transmit safety</span></th></tr>
+<tr data-theme="securite"><td><span class="fr-t">PTT par la CAT, état relu</span><span class="en-t">CAT PTT, state read back</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">3 cycles, coupure en 78 ms au plus. dump_caps annonce « PTT type: None » avec Hamlib 4.7.2 (« Rig capable » avec 5.0) : le PTT par CAT marche quand même.</span><span class="en-t">3 cycles, cut within 78 ms. dump_caps reports « PTT type: None » with Hamlib 4.7.2 (« Rig capable » with 5.0): CAT PTT works anyway.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Coupure au bout du TOT</span><span class="en-t">Cut at the TOT</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">TOT de 8 s coupé à 8,1 s, de 20 s à 20,0 s.</span><span class="en-t">8 s TOT cut at 8.1 s, 20 s at 20.0 s.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Battements du client perdus</span><span class="en-t">Client heartbeats lost</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Réception 2,1 s après le dernier battement.</span><span class="en-t">Receive 2.1 s after the last heartbeat.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Connexion du client fermée</span><span class="en-t">Client connection closed</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Réception en 0,1 s.</span><span class="en-t">Receive within 0.1 s.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Liaison CAT perdue pendant l&#x27;émission</span><span class="en-t">CAT link lost while transmitting</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Liaison CAT coupée 1,5 s pendant l&#x27;émission : réception 1,7 s après.</span><span class="en-t">CAT link cut for 1.5 s while transmitting: receive 1.7 s later.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Refus hors des bandes autorisées</span><span class="en-t">Refusal outside the allowed bands</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Émission refusée sur 1,760 MHz, aucune émission vue.</span><span class="en-t">Transmission refused on 1.760 MHz, none seen.</span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Opérateur sur place (micro du poste)</span><span class="en-t">Local operator (rig microphone)</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-non_teste">? <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="securite"><td><span class="fr-t">Réception au démarrage</span><span class="en-t">Receive at start-up</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-non_teste">? <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr class="t" data-theme="frequence"><th colspan="4"><span class="fr-t">Fréquence</span><span class="en-t">Frequency</span></th></tr>
+<tr data-theme="frequence"><td><span class="fr-t">Fréquence (écrite et relue)</span><span class="en-t">Frequency (written and read back)</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">8 bandes écrites et relues au hertz.</span><span class="en-t">8 bands written and read back to the hertz.</span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">Split</span><span class="en-t">Split</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-non_teste">? <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">RIT</span><span class="en-t">RIT</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Le RIT et le ΔTX partagent le même décalage.</span><span class="en-t">RIT and ΔTX share the same offset.</span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">XIT / ΔTX</span><span class="en-t">XIT / ΔTX</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="frequence"><td><span class="fr-t">VFO actif lisible</span><span class="en-t">Active VFO readable</span></td><td><span class="fr-t">non proposé</span><span class="en-t">not offered</span></td><td class="e e-non_declare">· <span class="fr-t">non proposé par Hamlib</span><span class="en-t">not offered by Hamlib</span></td><td><span class="fr-t">« Can get VFO: N » : voyant VFO A / B absent.</span><span class="en-t">« Can get VFO: N »: no VFO A / B indicator.</span></td></tr>
+<tr class="t" data-theme="modes"><th colspan="4"><span class="fr-t">Modes et filtres</span><span class="en-t">Modes and filters</span></th></tr>
+<tr data-theme="modes"><td><span class="fr-t">Modes USB, LSB, CW, AM, FM</span><span class="en-t">USB, LSB, CW, AM, FM modes</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="modes"><td><span class="fr-t">Modes données</span><span class="en-t">Data modes</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">PKTUSB, PKTLSB, FM-D et AM-D (pas PKTFM / PKTAM avec Hamlib 4.7).</span><span class="en-t">PKTUSB, PKTLSB, FM-D and AM-D (not PKTFM / PKTAM with Hamlib 4.7).</span></td></tr>
+<tr data-theme="modes"><td><span class="fr-t">Largeurs de filtre</span><span class="en-t">Filter widths</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-non_teste">? <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span></td><td><span class="fr-t">Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL1/2/3 : la station ne l&#x27;envoie pas ; FIL par le second port à confirmer.</span><span class="en-t">A width sent through Hamlib REWRITES the FIL1/2/3 preset: the station never sends one; FIL through the second port to be confirmed.</span></td></tr>
+<tr class="t" data-theme="reception"><th colspan="4"><span class="fr-t">Réception</span><span class="en-t">Receive</span></th></tr>
+<tr data-theme="reception"><td><span class="fr-t">Préampli</span><span class="en-t">Preamp</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Valeurs 1 et 2 = P.AMP1 et P.AMP2 (pas des dB).</span><span class="en-t">Values 1 and 2 = P.AMP1 and P.AMP2 (not dB).</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Atténuateur</span><span class="en-t">Attenuator</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">20 dB.</span><span class="en-t">20 dB.</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">AGC</span><span class="en-t">AGC</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Réducteur de bruit (NR)</span><span class="en-t">Noise reduction (NR)</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Niveau du NR</span><span class="en-t">NR level</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Noise blanker (NB)</span><span class="en-t">Noise blanker (NB)</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Niveau du NB</span><span class="en-t">NB level</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-partiel">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td><td><span class="fr-t">Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).</span><span class="en-t">Read; write refused by the rig during the qualification (RPRT -9).</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Notch automatique (ANF)</span><span class="en-t">Auto notch (ANF)</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Notch manuel</span><span class="en-t">Manual notch</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Fréquence du notch sans plage déclarée : non réglable à distance.</span><span class="en-t">Notch frequency without a declared range: not adjustable remotely.</span></td></tr>
+<tr data-theme="reception"><td><span class="fr-t">Squelch</span><span class="en-t">Squelch</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr class="t" data-theme="emission"><th colspan="4"><span class="fr-t">Émission</span><span class="en-t">Transmit</span></th></tr>
+<tr data-theme="emission"><td><span class="fr-t">Puissance réglée</span><span class="en-t">Power setting</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="emission"><td><span class="fr-t">Compresseur</span><span class="en-t">Speech processor</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="emission"><td><span class="fr-t">Coupleur d&#x27;antenne</span><span class="en-t">Antenna tuner</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-non_teste">? <span class="fr-t">pas encore essayé</span><span class="en-t">not tried yet</span></td><td><span class="fr-t">Jamais mis en marche automatiquement : il peut lancer un accord (porteuse).</span><span class="en-t">Never switched on automatically: it may start a tune (carrier).</span></td></tr>
+<tr class="t" data-theme="mesures"><th colspan="4"><span class="fr-t">Mesures</span><span class="en-t">Meters</span></th></tr>
+<tr data-theme="mesures"><td><span class="fr-t">S-mètre</span><span class="en-t">S-meter</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.</span><span class="en-t">Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table.</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Puissance mesurée</span><span class="en-t">Measured power</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Monte environ 0,3 s après la prise d&#x27;émission.</span><span class="en-t">Rises about 0.3 s after keying.</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">ROS</span><span class="en-t">SWR</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t"></span><span class="en-t"></span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">ALC</span><span class="en-t">ALC</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-partiel">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td><td><span class="fr-t">Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l&#x27;est).</span><span class="en-t">Reads ≈ 0.14 WITHOUT modulation: never a proof of modulation (power is).</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Tension d&#x27;alimentation</span><span class="en-t">Supply voltage</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">14,4 V lus (hors de la plage déclarée 0..1).</span><span class="en-t">14.4 V read (outside the declared 0..1 range).</span></td></tr>
+<tr data-theme="mesures"><td><span class="fr-t">Température du poste</span><span class="en-t">Rig temperature</span></td><td><span class="fr-t">non proposé</span><span class="en-t">not offered</span></td><td class="e e-non_declare">· <span class="fr-t">non proposé par Hamlib</span><span class="en-t">not offered by Hamlib</span></td><td><span class="fr-t">TEMP_METER absent : seuils de température du poste sans effet.</span><span class="en-t">No TEMP_METER: rig temperature thresholds have no effect.</span></td></tr>
+<tr class="t" data-theme="audio"><th colspan="4"><span class="fr-t">Audio USB</span><span class="en-t">USB audio</span></th></tr>
+<tr data-theme="audio"><td><span class="fr-t">Son reçu par l&#x27;USB</span><span class="en-t">Receive audio over USB</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.</span><span class="en-t">« USB Audio Device » card (C-Media) behind the rig&#x27;s internal USB hub; on Windows its name (« 2- … ») changes with the USB port.</span></td></tr>
+<tr data-theme="audio"><td><span class="fr-t">Modulation par l&#x27;USB</span><span class="en-t">Modulation over USB</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-partiel">◐ <span class="fr-t">partiel</span><span class="en-t">partial</span></td><td><span class="fr-t">En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.</span><span class="en-t">Data modes only (PKTUSB, DATA MOD = USB). Windows: output volume 100, enhancements off; about -12 dBFS for USB MOD Level 30 %.</span></td></tr>
+<tr class="t" data-theme="spectre"><th colspan="4"><span class="fr-t">Spectre</span><span class="en-t">Spectrum</span></th></tr>
+<tr data-theme="spectre"><td><span class="fr-t">Spectre HF du poste</span><span class="en-t">Rig HF spectrum</span></td><td><span class="fr-t">proposé</span><span class="en-t">offered</span></td><td class="e e-valide">✓ <span class="fr-t">validé</span><span class="en-t">validated</span></td><td><span class="fr-t">Par le second port CI-V (port B) ; figé pendant l&#x27;émission (normal).</span><span class="en-t">Through the second CI-V port (port B); frozen while transmitting (normal).</span></td></tr>
+</table></div>
+<details>
+<summary><span class="fr-t">Proposé par Hamlib, non exploité par TRX Remote</span><span class="en-t">Offered by Hamlib, not used by TRX Remote</span> (30)</summary>
+<p><code>AGC_TIME</code>, <code>ANTIVOX</code>, <code>BKINDL</code>, <code>CWPITCH</code>, <code>FBKIN</code>, <code>ID_METER</code>, <code>KEYSPD</code>, <code>LOCK</code>, <code>MICGAIN</code>, <code>MON</code>, <code>MONITOR_GAIN</code>, <code>NOTCHF_RAW</code>, <code>OVF_STATUS</code>, <code>PBT_IN</code>, <code>PBT_OUT</code>, <code>RAWSTR</code>, <code>RF</code>, <code>RFPOWER_METER_WATTS</code>, <code>SBKIN</code>, <code>SCOPE</code>, <code>SEND_MORSE</code>, <code>SEND_VOICE_MEM</code>, <code>SPECTRUM</code>, <code>TONE</code>, <code>TRANSCEIVE</code>, <code>TSQL</code>, <code>USB_AF</code>, <code>VOX</code>, <code>VOXDELAY</code>, <code>VOXGAIN</code></p>
+</details>
+<p><strong><span class="fr-t">Constats sur Hamlib</span><span class="en-t">Hamlib findings</span></strong></p>
+<ul>
+<li><span class="fr-t">La lecture « p KEYERTYPE » fait planter rigctl / rigctld 4.7.2 sous Windows (signalé à Hamlib) ; la station ne la fait jamais.</span><span class="en-t">Reading « p KEYERTYPE » crashes rigctl / rigctld 4.7.2 on Windows (reported to Hamlib); the station never does it.</span></li>
+<li><span class="fr-t">ANN déclaré mais refusé (RPRT -1).</span><span class="en-t">ANN declared but refused (RPRT -1).</span></li>
+</ul>
+</section>
+<footer>
+<p><a href="../erreurs/"><span class="fr-t">Codes d’erreur</span><span class="en-t">Error codes</span></a> · <a href="../guide/"><span class="fr-t">Guide de l’opérateur</span><span class="en-t">Operator guide</span></a> · <a href="data.json">data.json</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer"><span class="fr-t">code source</span><span class="en-t">source code</span></a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
+</footer>
+</main>
+<script>(function () {
+  if (window.parent === window) return;
+  var last = 0;
+  function send() {
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    if (h !== last) { last = h; window.parent.postMessage({ type: "trx-doc-height", height: h }, "*"); }
+  }
+  window.addEventListener("load", send);
+  document.addEventListener("toggle", send, true);
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  else window.addEventListener("resize", send);
+})();(function () {
+  function lang(l) {
+    document.body.classList.toggle("en", l === "en");
+    document.querySelectorAll(".choix button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.l === l)); });
+    try { localStorage.setItem("trx-postes-langue", l); } catch (e) {}
+  }
+  document.querySelectorAll(".choix button").forEach(function (b) { b.addEventListener("click", function () { lang(b.dataset.l); }); });
+  var saved = null; try { saved = localStorage.getItem("trx-postes-langue"); } catch (e) {}
+  lang(saved || (/^fr/i.test(navigator.language || "fr") ? "fr" : "en"));
+  function theme(t) {
+    document.querySelectorAll("[data-theme]").forEach(function (r) { r.hidden = t !== "tous" && r.dataset.theme !== t; });
+    document.querySelectorAll(".themes button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.t === t)); });
+  }
+  document.querySelectorAll(".themes button").forEach(function (b) { b.addEventListener("click", function () { theme(b.dataset.t); }); });
+  theme("tous");
+})();</script>
+</body>
+</html>

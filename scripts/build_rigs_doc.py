@@ -1,0 +1,328 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 RF-DIY.COM
+"""Fabrique la page publique des postes essayés (GitHub Pages, thème sombre, iframe du site rf-diy.com).
+
+Source : une fiche par poste dans `docs/postes/donnees/*.toml` (états venus d'essais réels). Aucune dépendance hors
+stdlib. Résultat (une seule version, sans numéro de version de la station) :
+  - `docs/site/postes/index.html` : tableau 1 (par poste : ce que propose Hamlib et ce qui est validé, partiel, en
+    échec, non essayé, avec la section repliée « non exploité ») et tableau 2 (comparaison des postes : seulement le
+    validé et le partiel), fonctions classées par thème, français / anglais ;
+  - `docs/site/postes/data.json` : les mêmes données, pour qui veut les lire (même origine que la page).
+Usage : python scripts/build_rigs_doc.py   (après tout changement d'une fiche ; tests/test_rigs_doc.py le vérifie).
+"""
+from __future__ import annotations
+
+import html
+import json
+import sys
+import tomllib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import build_console_doc as base  # noqa: E402  (même style, même ajustement de hauteur dans l'iframe)
+
+DATA = ROOT / "docs" / "postes" / "donnees"
+SITE = ROOT / "docs" / "site"
+FOLDER = "postes"
+PAGES_URL = "https://bob56fr.github.io/openRemoteTRX/postes/"
+
+THEMES = [
+    ("securite", "Sécurité d'émission", "Transmit safety"),
+    ("frequence", "Fréquence", "Frequency"),
+    ("modes", "Modes et filtres", "Modes and filters"),
+    ("reception", "Réception", "Receive"),
+    ("emission", "Émission", "Transmit"),
+    ("mesures", "Mesures", "Meters"),
+    ("audio", "Audio USB", "USB audio"),
+    ("spectre", "Spectre", "Spectrum"),
+]
+FEATURES = [   # (identifiant, thème, français, anglais)
+    ("ptt_relu", "securite", "PTT par la CAT, état relu", "CAT PTT, state read back"),
+    ("tot", "securite", "Coupure au bout du TOT", "Cut at the TOT"),
+    ("battements", "securite", "Battements du client perdus", "Client heartbeats lost"),
+    ("deconnexion", "securite", "Connexion du client fermée", "Client connection closed"),
+    ("perte_cat", "securite", "Liaison CAT perdue pendant l'émission", "CAT link lost while transmitting"),
+    ("hors_bande", "securite", "Refus hors des bandes autorisées", "Refusal outside the allowed bands"),
+    ("operateur_local", "securite", "Opérateur sur place (micro du poste)", "Local operator (rig microphone)"),
+    ("demarrage", "securite", "Réception au démarrage", "Receive at start-up"),
+    ("frequence", "frequence", "Fréquence (écrite et relue)", "Frequency (written and read back)"),
+    ("split", "frequence", "Split", "Split"),
+    ("rit", "frequence", "RIT", "RIT"),
+    ("xit", "frequence", "XIT / ΔTX", "XIT / ΔTX"),
+    ("vfo", "frequence", "VFO actif lisible", "Active VFO readable"),
+    ("modes_base", "modes", "Modes USB, LSB, CW, AM, FM", "USB, LSB, CW, AM, FM modes"),
+    ("modes_donnees", "modes", "Modes données", "Data modes"),
+    ("filtres", "modes", "Largeurs de filtre", "Filter widths"),
+    ("preampli", "reception", "Préampli", "Preamp"),
+    ("attenuateur", "reception", "Atténuateur", "Attenuator"),
+    ("agc", "reception", "AGC", "AGC"),
+    ("nr", "reception", "Réducteur de bruit (NR)", "Noise reduction (NR)"),
+    ("nr_niveau", "reception", "Niveau du NR", "NR level"),
+    ("nb", "reception", "Noise blanker (NB)", "Noise blanker (NB)"),
+    ("nb_niveau", "reception", "Niveau du NB", "NB level"),
+    ("anf", "reception", "Notch automatique (ANF)", "Auto notch (ANF)"),
+    ("notch_manuel", "reception", "Notch manuel", "Manual notch"),
+    ("squelch", "reception", "Squelch", "Squelch"),
+    ("puissance", "emission", "Puissance réglée", "Power setting"),
+    ("compresseur", "emission", "Compresseur", "Speech processor"),
+    ("tuner", "emission", "Coupleur d'antenne", "Antenna tuner"),
+    ("s_metre", "mesures", "S-mètre", "S-meter"),
+    ("puissance_mesuree", "mesures", "Puissance mesurée", "Measured power"),
+    ("ros", "mesures", "ROS", "SWR"),
+    ("alc", "mesures", "ALC", "ALC"),
+    ("tension", "mesures", "Tension d'alimentation", "Supply voltage"),
+    ("temperature", "mesures", "Température du poste", "Rig temperature"),
+    ("audio_rx", "audio", "Son reçu par l'USB", "Receive audio over USB"),
+    ("audio_tx", "audio", "Modulation par l'USB", "Modulation over USB"),
+    ("spectre_hf", "spectre", "Spectre HF du poste", "Rig HF spectrum"),
+]
+ETATS = {   # état : (symbole, français, anglais)
+    "valide": ("✓", "validé", "validated"),
+    "partiel": ("◐", "partiel", "partial"),
+    "echec": ("✗", "ne fonctionne pas", "does not work"),
+    "non_teste": ("?", "pas encore essayé", "not tried yet"),
+    "non_declare": ("·", "non proposé par Hamlib", "not offered by Hamlib"),
+}
+STATUTS = {"valide": ("validé", "validated"), "restreint": ("validé avec restrictions", "validated with restrictions"),
+           "validation_en_cours": ("validation en cours", "validation in progress"), "refuse": ("refusé", "refused")}
+COMPARED = ("valide", "restreint", "validation_en_cours")
+NEEDS_NOTE = ("partiel", "echec")
+
+EXTRA_CSS = """
+[hidden]{display:none !important}
+.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.choix button,.themes button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
+  padding:.2rem .9rem;font:inherit;cursor:pointer;margin:.15rem}
+.choix button[aria-pressed=true],.themes button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
+table{border-collapse:collapse;width:100%;margin:.4rem 0 1rem;font-size:.92rem}
+th,td{border:1px solid var(--ligne);padding:.3rem .5rem;text-align:left;vertical-align:top}
+th{background:var(--carte)}td.e{white-space:nowrap;font-weight:600}
+tr.t th{background:transparent;color:var(--accent);font-size:1rem;padding-top:.8rem;border-left:0;border-right:0}
+.e-valide{color:#7ed99a}.e-partiel{color:#f2d06b}.e-echec{color:#ff8a8a}.e-non_teste{color:#9cc8f2}.e-non_declare{opacity:.6}
+.statut{display:inline-block;border-radius:1rem;padding:0 .6rem;font-size:.8rem;background:#3d3418;color:#f2d06b}
+.statut.s-valide{background:#183d26;color:#7ed99a}.statut.s-refuse{background:#3d1818;color:#ff8a8a}
+.wrap{overflow-x:auto}details{margin:.4rem 0 1rem}
+section.poste{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
+"""
+PAGE_JS = """
+(function () {
+  function lang(l) {
+    document.body.classList.toggle("en", l === "en");
+    document.querySelectorAll(".choix button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.l === l)); });
+    try { localStorage.setItem("trx-postes-langue", l); } catch (e) {}
+  }
+  document.querySelectorAll(".choix button").forEach(function (b) { b.addEventListener("click", function () { lang(b.dataset.l); }); });
+  var saved = null; try { saved = localStorage.getItem("trx-postes-langue"); } catch (e) {}
+  lang(saved || (/^fr/i.test(navigator.language || "fr") ? "fr" : "en"));
+  function theme(t) {
+    document.querySelectorAll("[data-theme]").forEach(function (r) { r.hidden = t !== "tous" && r.dataset.theme !== t; });
+    document.querySelectorAll(".themes button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.t === t)); });
+  }
+  document.querySelectorAll(".themes button").forEach(function (b) { b.addEventListener("click", function () { theme(b.dataset.t); }); });
+  theme("tous");
+})();
+"""
+
+
+class DocError(Exception):
+    pass
+
+
+def load_rigs(folder: Path = DATA) -> list[dict]:
+    rigs = []
+    for path in sorted(folder.glob("*.toml")):
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        data["id"] = path.stem
+        rigs.append(data)
+    return rigs
+
+
+def check(rigs: list[dict]) -> None:
+    """Fiches cohérentes, sinon DocError (rien n'est écrit)."""
+    known = {f[0] for f in FEATURES}
+    problems = []
+    for rig in rigs:
+        name, poste = rig["id"], rig.get("poste", {})
+        for key in ("fabricant", "modele", "hamlib_model", "statut", "resume", "resume_en"):
+            if key not in poste:
+                problems.append(f"{name} : [poste] {key} manquant")
+        if poste.get("statut") not in STATUTS:
+            problems.append(f"{name} : statut inconnu {poste.get('statut')!r}")
+        if not rig.get("essais"):
+            problems.append(f"{name} : aucun essai ([[essais]])")
+        funcs = rig.get("fonctions", {})
+        for fid, entry in funcs.items():
+            if fid not in known:
+                problems.append(f"{name} : fonction inconnue {fid!r} (liste FEATURES de scripts/build_rigs_doc.py)")
+            elif entry.get("etat") not in ETATS:
+                problems.append(f"{name} : {fid} : état inconnu {entry.get('etat')!r}")
+            elif entry["etat"] in NEEDS_NOTE and not (entry.get("note") and entry.get("note_en")):
+                problems.append(f"{name} : {fid} : un état « {entry['etat']} » exige note et note_en")
+        missing = known - set(funcs)
+        if missing:
+            problems.append(f"{name} : fonctions sans état : {', '.join(sorted(missing))}")
+        if poste.get("statut") in ("valide", "restreint"):
+            unsafe = [f[0] for f in FEATURES if f[1] == "securite" and funcs.get(f[0], {}).get("etat") != "valide"]
+            if unsafe:
+                problems.append(f"{name} : statut {poste['statut']} impossible, sécurité non validée : {', '.join(unsafe)}")
+    if problems:
+        raise DocError("\n".join(problems))
+
+
+def _bi(fr: str, en: str) -> str:
+    e = html.escape
+    return f'<span class="fr-t">{e(fr)}</span><span class="en-t">{e(en)}</span>'
+
+
+def _etat(etat: str) -> str:
+    sym, fr, en = ETATS[etat]
+    return f'<td class="e e-{etat}">{sym} {_bi(fr, en)}</td>'
+
+
+def _rig_title(rig: dict) -> str:
+    p = rig["poste"]
+    fr, en = STATUTS[p["statut"]]
+    return (f'{html.escape(p["fabricant"])} {html.escape(p["modele"])} '
+            f'<span class="statut s-{p["statut"]}">{_bi(fr, en)}</span>')
+
+
+def _table1(rig: dict) -> list[str]:
+    funcs = rig["fonctions"]
+    out = [f'<section class="poste" id="{html.escape(rig["id"])}">', f"<h3>{_rig_title(rig)}</h3>",
+           f'<p>{_bi(rig["poste"]["resume"], rig["poste"]["resume_en"])} '
+           f'{_bi("Modèle Hamlib", "Hamlib model")} {rig["poste"]["hamlib_model"]}.</p>',
+           "<p>" + "<br>".join(
+               f'{html.escape(e["date"])} · {_bi("station", "station")} {html.escape(e["station"])} · Hamlib '
+               f'{html.escape(e["hamlib"])} · {html.escape(e["systeme"])} : {_bi(e["quoi"], e.get("quoi_en", e["quoi"]))}'
+               for e in rig["essais"]) + "</p>",
+           '<div class="wrap"><table>',
+           f'<tr><th>{_bi("Fonction", "Feature")}</th><th>Hamlib</th><th>{_bi("TRX Remote", "TRX Remote")}</th>'
+           f'<th>{_bi("Remarque", "Note")}</th></tr>']
+    for tid, tfr, ten in THEMES:
+        out.append(f'<tr class="t" data-theme="{tid}"><th colspan="4">{_bi(tfr, ten)}</th></tr>')
+        for fid, theme, fr, en in FEATURES:
+            if theme != tid:
+                continue
+            entry = funcs[fid]
+            declared = entry["etat"] != "non_declare"
+            note = entry.get("note", "")
+            out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>'
+                       f'<td>{_bi("proposé" if declared else "non proposé", "offered" if declared else "not offered")}</td>'
+                       f'{_etat(entry["etat"])}<td>{_bi(note, entry.get("note_en", note))}</td></tr>')
+    out.append("</table></div>")
+    hamlib = rig.get("hamlib", {})
+    if hamlib.get("non_exploite"):
+        out += ["<details>", f'<summary>{_bi("Proposé par Hamlib, non exploité par TRX Remote", "Offered by Hamlib, not used by TRX Remote")}'
+                f' ({len(hamlib["non_exploite"])})</summary>',
+                "<p>" + ", ".join(f"<code>{html.escape(n)}</code>" for n in hamlib["non_exploite"]) + "</p>", "</details>"]
+    if hamlib.get("constats"):
+        en = hamlib.get("constats_en", hamlib["constats"])
+        out += [f'<p><strong>{_bi("Constats sur Hamlib", "Hamlib findings")}</strong></p>', "<ul>"]
+        out += [f"<li>{_bi(fr, e)}</li>" for fr, e in zip(hamlib["constats"], en)]
+        out.append("</ul>")
+    out.append("</section>")
+    return out
+
+
+def _table2(rigs: list[dict]) -> list[str]:
+    shown = [r for r in rigs if r["poste"]["statut"] in COMPARED]
+    if not shown:
+        return [f'<p>{_bi("Aucun poste à comparer pour l’instant.", "No rig to compare yet.")}</p>']
+    head = "".join(f'<th>{html.escape(r["poste"]["fabricant"])} {html.escape(r["poste"]["modele"])}</th>' for r in shown)
+    out = ['<div class="wrap"><table>', f'<tr><th>{_bi("Fonction", "Feature")}</th>{head}</tr>']
+    for tid, tfr, ten in THEMES:
+        out.append(f'<tr class="t" data-theme="{tid}"><th colspan="{len(shown) + 1}">{_bi(tfr, ten)}</th></tr>')
+        for fid, theme, fr, en in FEATURES:
+            if theme != tid:
+                continue
+            cells = []
+            for r in shown:
+                entry = r["fonctions"][fid]
+                if entry["etat"] in ("valide", "partiel"):
+                    note = entry.get("note", "")
+                    cells.append(f'<td class="e e-{entry["etat"]}" title="{html.escape(note)}">{ETATS[entry["etat"]][0]} '
+                                 f'{_bi(ETATS[entry["etat"]][1], ETATS[entry["etat"]][2])}</td>')
+                else:
+                    cells.append("<td>—</td>")
+            out.append(f'<tr data-theme="{tid}"><td>{_bi(fr, en)}</td>{"".join(cells)}</tr>')
+    out.append("</table></div>")
+    return out
+
+
+def render(rigs: list[dict]) -> str:
+    themes = "".join(f'<button type="button" data-t="{t}">{_bi(fr, en)}</button>' for t, fr, en in THEMES)
+    legend = " · ".join(f'<span class="e-{k}">{v[0]}</span> {_bi(v[1], v[2])}' for k, v in ETATS.items())
+    out = ["<!doctype html>", "<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->", "<!-- Copyright (C) 2026 RF-DIY.COM -->",
+           "<!-- Fabriqué par scripts/build_rigs_doc.py depuis docs/postes/donnees/ : ne pas modifier à la main. -->",
+           '<html lang="fr">', "<head>", '<meta charset="utf-8">',
+           '<meta name="viewport" content="width=device-width, initial-scale=1">',
+           "<title>Postes essayés avec TRX distant</title>",
+           f"<style>{base.CSS.strip()}{EXTRA_CSS.strip()}</style>", "</head>", "<body>", "<main>",
+           '<p class="choix"><button type="button" data-l="fr">Français</button><button type="button" data-l="en">English</button></p>',
+           f'<h1>{_bi("Postes essayés avec TRX distant", "Rigs tried with TRX Remote")}</h1>',
+           "<p>" + _bi("Chaque état vient d’un essai réel sur le poste (qualification, charge fictive). Un résultat vaut pour "
+                       "la version de Hamlib et le système indiqués.",
+                       "Every state comes from a real test on the rig (qualification, dummy load). A result holds for the "
+                       "Hamlib version and system shown.") + "</p>",
+           f"<p>{legend}</p>",
+           f'<p class="themes"><button type="button" data-t="tous">{_bi("Tous les thèmes", "All topics")}</button>{themes}</p>',
+           f'<h2>{_bi("Comparaison des postes", "Rig comparison")}</h2>',
+           "<p>" + _bi("Seulement ce qui est validé ou partiel ; — = non disponible avec TRX distant (pas encore essayé, "
+                       "en échec ou non proposé par Hamlib : voir la fiche du poste).",
+                       "Validated or partial only; — = not available with TRX Remote (not tried yet, failed or not offered "
+                       "by Hamlib: see the rig sheet).") + "</p>"]
+    out += _table2(rigs)
+    out.append(f'<h2>{_bi("Fiche de chaque poste : Hamlib et TRX distant", "Each rig: Hamlib and TRX Remote")}</h2>')
+    for rig in rigs:
+        out += _table1(rig)
+    out += ["<footer>",
+            f'<p><a href="../erreurs/">{_bi("Codes d’erreur", "Error codes")}</a> · <a href="../guide/">'
+            f'{_bi("Guide de l’opérateur", "Operator guide")}</a> · <a href="data.json">data.json</a> · '
+            f'<a href="{base.REPO_URL}" target="_blank" rel="noopener noreferrer">{_bi("code source", "source code")}</a> · '
+            f'<a href="{base.SITE_URL}" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>',
+            "</footer>", "</main>", f"<script>{base.RESIZE_JS.strip()}{PAGE_JS.strip()}</script>", "</body>", "</html>", ""]
+    return "\n".join(out)
+
+
+def data_json(rigs: list[dict]) -> str:
+    out = {"format": 1, "page": PAGES_URL,
+           "themes": [{"id": t, "fr": fr, "en": en} for t, fr, en in THEMES],
+           "fonctions": [{"id": f, "theme": t, "fr": fr, "en": en} for f, t, fr, en in FEATURES],
+           "etats": {k: {"fr": v[1], "en": v[2]} for k, v in ETATS.items()},
+           "postes": [{k: v for k, v in r.items()} for r in rigs]}
+    return json.dumps(out, ensure_ascii=False, indent=2) + "\n"
+
+
+def build(site: Path = SITE, rigs: list[dict] | None = None) -> dict[Path, str]:
+    rigs = rigs if rigs is not None else load_rigs()
+    check(rigs)
+    return {site / FOLDER / "index.html": render(rigs), site / FOLDER / "data.json": data_json(rigs)}
+
+
+def stale_pages(site: Path = SITE) -> list[Path]:
+    return [p for p, text in build(site).items()
+            if not p.exists() or p.read_bytes().replace(b"\r\n", b"\n") != text.encode("utf-8")]
+
+
+def main() -> int:
+    try:
+        pages = build()
+    except DocError as exc:
+        print("Page des postes NON fabriquée :\n" + str(exc), file=sys.stderr)
+        return 1
+    written = 0
+    for path, text in pages.items():
+        data = text.encode("utf-8")
+        if path.exists() and path.read_bytes().replace(b"\r\n", b"\n") == data:
+            continue
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        written += 1
+    print(f"{written} fichier(s) écrit(s) sur {len(pages)} dans {(SITE / FOLDER).relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

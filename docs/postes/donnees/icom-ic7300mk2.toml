@@ -1,0 +1,85 @@
+# Fiche publique du poste : source des tableaux https://bob56fr.github.io/openRemoteTRX/postes/
+# (scripts/build_rigs_doc.py). Chaque état vient d'un essai réel (rapports de qualification gardés par le qualifieur).
+# États : valide, partiel (note obligatoire), echec (note obligatoire), non_teste, non_declare (Hamlib ne le propose pas).
+
+[poste]
+fabricant = "Icom"
+modele = "IC-7300MK2"
+hamlib_model = 3094
+statut = "validation_en_cours"     # valide | restreint | validation_en_cours | refuse
+resume = "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13) ; qualification complète réussie sous Windows le 2026-11-18."
+resume_en = "Reference rig of the project: station in service since 2026-10 (Debian 13); full qualification passed on Windows on 2026-11-18."
+
+[[essais]]
+date = "2026-11-18"
+station = "0.199.0"
+hamlib = "4.7.2"
+systeme = "Windows 11"
+quoi = "Qualification complète (trx-qualif, charge fictive), valise : relevés, exploration, 5 essais automatiques"
+quoi_en = "Full qualification (trx-qualif, dummy load), qualification kit: snapshots, exploration, 5 automatic drills"
+
+[[essais]]
+date = "2026-11-13"
+station = "0.133.0"
+hamlib = "5.0.0~git"
+systeme = "Debian 13"
+quoi = "Exploration et qualification sans émission ; station en service (CAT, PTT, audio, spectre HF)"
+quoi_en = "Exploration and qualification without transmitting; station in service (CAT, PTT, audio, HF spectrum)"
+
+[fonctions]
+# --- Sécurité d'émission
+ptt_relu = { etat = "valide", note = "3 cycles, coupure en 78 ms au plus. dump_caps annonce « PTT type: None » avec Hamlib 4.7.2 (« Rig capable » avec 5.0) : le PTT par CAT marche quand même.", note_en = "3 cycles, cut within 78 ms. dump_caps reports « PTT type: None » with Hamlib 4.7.2 (« Rig capable » with 5.0): CAT PTT works anyway." }
+tot = { etat = "valide", note = "TOT de 8 s coupé à 8,1 s, de 20 s à 20,0 s.", note_en = "8 s TOT cut at 8.1 s, 20 s at 20.0 s." }
+battements = { etat = "valide", note = "Réception 2,1 s après le dernier battement.", note_en = "Receive 2.1 s after the last heartbeat." }
+deconnexion = { etat = "valide", note = "Réception en 0,1 s.", note_en = "Receive within 0.1 s." }
+perte_cat = { etat = "valide", note = "Liaison CAT coupée 1,5 s pendant l'émission : réception 1,7 s après.", note_en = "CAT link cut for 1.5 s while transmitting: receive 1.7 s later." }
+hors_bande = { etat = "valide", note = "Émission refusée sur 1,760 MHz, aucune émission vue.", note_en = "Transmission refused on 1.760 MHz, none seen." }
+operateur_local = { etat = "non_teste" }
+demarrage = { etat = "non_teste" }
+# --- Fréquence
+frequence = { etat = "valide", note = "8 bandes écrites et relues au hertz.", note_en = "8 bands written and read back to the hertz." }
+split = { etat = "non_teste" }
+rit = { etat = "valide", note = "Le RIT et le ΔTX partagent le même décalage.", note_en = "RIT and ΔTX share the same offset." }
+xit = { etat = "valide" }
+vfo = { etat = "non_declare", note = "« Can get VFO: N » : voyant VFO A / B absent.", note_en = "« Can get VFO: N »: no VFO A / B indicator." }
+# --- Modes et filtres
+modes_base = { etat = "valide" }
+modes_donnees = { etat = "valide", note = "PKTUSB, PKTLSB, FM-D et AM-D (pas PKTFM / PKTAM avec Hamlib 4.7).", note_en = "PKTUSB, PKTLSB, FM-D and AM-D (not PKTFM / PKTAM with Hamlib 4.7)." }
+filtres = { etat = "non_teste", note = "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL1/2/3 : la station ne l'envoie pas ; FIL par le second port à confirmer.", note_en = "A width sent through Hamlib REWRITES the FIL1/2/3 preset: the station never sends one; FIL through the second port to be confirmed." }
+# --- Réception
+preampli = { etat = "valide", note = "Valeurs 1 et 2 = P.AMP1 et P.AMP2 (pas des dB).", note_en = "Values 1 and 2 = P.AMP1 and P.AMP2 (not dB)." }
+attenuateur = { etat = "valide", note = "20 dB.", note_en = "20 dB." }
+agc = { etat = "valide" }
+nr = { etat = "valide" }
+nr_niveau = { etat = "valide" }
+nb = { etat = "valide" }
+nb_niveau = { etat = "partiel", note = "Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).", note_en = "Read; write refused by the rig during the qualification (RPRT -9)." }
+anf = { etat = "valide" }
+notch_manuel = { etat = "valide", note = "Fréquence du notch sans plage déclarée : non réglable à distance.", note_en = "Notch frequency without a declared range: not adjustable remotely." }
+squelch = { etat = "valide" }
+# --- Émission
+puissance = { etat = "valide" }
+compresseur = { etat = "valide" }
+tuner = { etat = "non_teste", note = "Jamais mis en marche automatiquement : il peut lancer un accord (porteuse).", note_en = "Never switched on automatically: it may start a tune (carrier)." }
+# --- Mesures
+s_metre = { etat = "valide", note = "Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.", note_en = "Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table." }
+puissance_mesuree = { etat = "valide", note = "Monte environ 0,3 s après la prise d'émission.", note_en = "Rises about 0.3 s after keying." }
+ros = { etat = "valide" }
+alc = { etat = "partiel", note = "Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l'est).", note_en = "Reads ≈ 0.14 WITHOUT modulation: never a proof of modulation (power is)." }
+tension = { etat = "valide", note = "14,4 V lus (hors de la plage déclarée 0..1).", note_en = "14.4 V read (outside the declared 0..1 range)." }
+temperature = { etat = "non_declare", note = "TEMP_METER absent : seuils de température du poste sans effet.", note_en = "No TEMP_METER: rig temperature thresholds have no effect." }
+# --- Audio USB
+audio_rx = { etat = "valide", note = "Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.", note_en = "« USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port." }
+audio_tx = { etat = "partiel", note = "En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.", note_en = "Data modes only (PKTUSB, DATA MOD = USB). Windows: output volume 100, enhancements off; about -12 dBFS for USB MOD Level 30 %." }
+# --- Spectre
+spectre_hf = { etat = "valide", note = "Par le second port CI-V (port B) ; figé pendant l'émission (normal).", note_en = "Through the second CI-V port (port B); frozen while transmitting (normal)." }
+
+[hamlib]
+non_exploite = ["AGC_TIME", "ANTIVOX", "BKINDL", "CWPITCH", "FBKIN", "ID_METER", "KEYSPD", "LOCK", "MICGAIN", "MON",
+                "MONITOR_GAIN", "NOTCHF_RAW", "OVF_STATUS", "PBT_IN", "PBT_OUT", "RAWSTR", "RF", "RFPOWER_METER_WATTS",
+                "SBKIN", "SCOPE", "SEND_MORSE", "SEND_VOICE_MEM", "SPECTRUM", "TONE", "TRANSCEIVE", "TSQL", "USB_AF", "VOX",
+                "VOXDELAY", "VOXGAIN"]
+constats = ["La lecture « p KEYERTYPE » fait planter rigctl / rigctld 4.7.2 sous Windows (signalé à Hamlib) ; la station ne la fait jamais.",
+            "ANN déclaré mais refusé (RPRT -1)."]
+constats_en = ["Reading « p KEYERTYPE » crashes rigctl / rigctld 4.7.2 on Windows (reported to Hamlib); the station never does it.",
+               "ANN declared but refused (RPRT -1)."]

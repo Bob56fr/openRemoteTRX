@@ -1,0 +1,535 @@
+{
+  "format": 1,
+  "page": "https://bob56fr.github.io/openRemoteTRX/postes/",
+  "themes": [
+    {
+      "id": "securite",
+      "fr": "Sécurité d'émission",
+      "en": "Transmit safety"
+    },
+    {
+      "id": "frequence",
+      "fr": "Fréquence",
+      "en": "Frequency"
+    },
+    {
+      "id": "modes",
+      "fr": "Modes et filtres",
+      "en": "Modes and filters"
+    },
+    {
+      "id": "reception",
+      "fr": "Réception",
+      "en": "Receive"
+    },
+    {
+      "id": "emission",
+      "fr": "Émission",
+      "en": "Transmit"
+    },
+    {
+      "id": "mesures",
+      "fr": "Mesures",
+      "en": "Meters"
+    },
+    {
+      "id": "audio",
+      "fr": "Audio USB",
+      "en": "USB audio"
+    },
+    {
+      "id": "spectre",
+      "fr": "Spectre",
+      "en": "Spectrum"
+    }
+  ],
+  "fonctions": [
+    {
+      "id": "ptt_relu",
+      "theme": "securite",
+      "fr": "PTT par la CAT, état relu",
+      "en": "CAT PTT, state read back"
+    },
+    {
+      "id": "tot",
+      "theme": "securite",
+      "fr": "Coupure au bout du TOT",
+      "en": "Cut at the TOT"
+    },
+    {
+      "id": "battements",
+      "theme": "securite",
+      "fr": "Battements du client perdus",
+      "en": "Client heartbeats lost"
+    },
+    {
+      "id": "deconnexion",
+      "theme": "securite",
+      "fr": "Connexion du client fermée",
+      "en": "Client connection closed"
+    },
+    {
+      "id": "perte_cat",
+      "theme": "securite",
+      "fr": "Liaison CAT perdue pendant l'émission",
+      "en": "CAT link lost while transmitting"
+    },
+    {
+      "id": "hors_bande",
+      "theme": "securite",
+      "fr": "Refus hors des bandes autorisées",
+      "en": "Refusal outside the allowed bands"
+    },
+    {
+      "id": "operateur_local",
+      "theme": "securite",
+      "fr": "Opérateur sur place (micro du poste)",
+      "en": "Local operator (rig microphone)"
+    },
+    {
+      "id": "demarrage",
+      "theme": "securite",
+      "fr": "Réception au démarrage",
+      "en": "Receive at start-up"
+    },
+    {
+      "id": "frequence",
+      "theme": "frequence",
+      "fr": "Fréquence (écrite et relue)",
+      "en": "Frequency (written and read back)"
+    },
+    {
+      "id": "split",
+      "theme": "frequence",
+      "fr": "Split",
+      "en": "Split"
+    },
+    {
+      "id": "rit",
+      "theme": "frequence",
+      "fr": "RIT",
+      "en": "RIT"
+    },
+    {
+      "id": "xit",
+      "theme": "frequence",
+      "fr": "XIT / ΔTX",
+      "en": "XIT / ΔTX"
+    },
+    {
+      "id": "vfo",
+      "theme": "frequence",
+      "fr": "VFO actif lisible",
+      "en": "Active VFO readable"
+    },
+    {
+      "id": "modes_base",
+      "theme": "modes",
+      "fr": "Modes USB, LSB, CW, AM, FM",
+      "en": "USB, LSB, CW, AM, FM modes"
+    },
+    {
+      "id": "modes_donnees",
+      "theme": "modes",
+      "fr": "Modes données",
+      "en": "Data modes"
+    },
+    {
+      "id": "filtres",
+      "theme": "modes",
+      "fr": "Largeurs de filtre",
+      "en": "Filter widths"
+    },
+    {
+      "id": "preampli",
+      "theme": "reception",
+      "fr": "Préampli",
+      "en": "Preamp"
+    },
+    {
+      "id": "attenuateur",
+      "theme": "reception",
+      "fr": "Atténuateur",
+      "en": "Attenuator"
+    },
+    {
+      "id": "agc",
+      "theme": "reception",
+      "fr": "AGC",
+      "en": "AGC"
+    },
+    {
+      "id": "nr",
+      "theme": "reception",
+      "fr": "Réducteur de bruit (NR)",
+      "en": "Noise reduction (NR)"
+    },
+    {
+      "id": "nr_niveau",
+      "theme": "reception",
+      "fr": "Niveau du NR",
+      "en": "NR level"
+    },
+    {
+      "id": "nb",
+      "theme": "reception",
+      "fr": "Noise blanker (NB)",
+      "en": "Noise blanker (NB)"
+    },
+    {
+      "id": "nb_niveau",
+      "theme": "reception",
+      "fr": "Niveau du NB",
+      "en": "NB level"
+    },
+    {
+      "id": "anf",
+      "theme": "reception",
+      "fr": "Notch automatique (ANF)",
+      "en": "Auto notch (ANF)"
+    },
+    {
+      "id": "notch_manuel",
+      "theme": "reception",
+      "fr": "Notch manuel",
+      "en": "Manual notch"
+    },
+    {
+      "id": "squelch",
+      "theme": "reception",
+      "fr": "Squelch",
+      "en": "Squelch"
+    },
+    {
+      "id": "puissance",
+      "theme": "emission",
+      "fr": "Puissance réglée",
+      "en": "Power setting"
+    },
+    {
+      "id": "compresseur",
+      "theme": "emission",
+      "fr": "Compresseur",
+      "en": "Speech processor"
+    },
+    {
+      "id": "tuner",
+      "theme": "emission",
+      "fr": "Coupleur d'antenne",
+      "en": "Antenna tuner"
+    },
+    {
+      "id": "s_metre",
+      "theme": "mesures",
+      "fr": "S-mètre",
+      "en": "S-meter"
+    },
+    {
+      "id": "puissance_mesuree",
+      "theme": "mesures",
+      "fr": "Puissance mesurée",
+      "en": "Measured power"
+    },
+    {
+      "id": "ros",
+      "theme": "mesures",
+      "fr": "ROS",
+      "en": "SWR"
+    },
+    {
+      "id": "alc",
+      "theme": "mesures",
+      "fr": "ALC",
+      "en": "ALC"
+    },
+    {
+      "id": "tension",
+      "theme": "mesures",
+      "fr": "Tension d'alimentation",
+      "en": "Supply voltage"
+    },
+    {
+      "id": "temperature",
+      "theme": "mesures",
+      "fr": "Température du poste",
+      "en": "Rig temperature"
+    },
+    {
+      "id": "audio_rx",
+      "theme": "audio",
+      "fr": "Son reçu par l'USB",
+      "en": "Receive audio over USB"
+    },
+    {
+      "id": "audio_tx",
+      "theme": "audio",
+      "fr": "Modulation par l'USB",
+      "en": "Modulation over USB"
+    },
+    {
+      "id": "spectre_hf",
+      "theme": "spectre",
+      "fr": "Spectre HF du poste",
+      "en": "Rig HF spectrum"
+    }
+  ],
+  "etats": {
+    "valide": {
+      "fr": "validé",
+      "en": "validated"
+    },
+    "partiel": {
+      "fr": "partiel",
+      "en": "partial"
+    },
+    "echec": {
+      "fr": "ne fonctionne pas",
+      "en": "does not work"
+    },
+    "non_teste": {
+      "fr": "pas encore essayé",
+      "en": "not tried yet"
+    },
+    "non_declare": {
+      "fr": "non proposé par Hamlib",
+      "en": "not offered by Hamlib"
+    }
+  },
+  "postes": [
+    {
+      "poste": {
+        "fabricant": "Icom",
+        "modele": "IC-7300MK2",
+        "hamlib_model": 3094,
+        "statut": "validation_en_cours",
+        "resume": "Poste de référence du projet : station en service depuis le 2026-10 (Debian 13) ; qualification complète réussie sous Windows le 2026-11-18.",
+        "resume_en": "Reference rig of the project: station in service since 2026-10 (Debian 13); full qualification passed on Windows on 2026-11-18."
+      },
+      "essais": [
+        {
+          "date": "2026-11-18",
+          "station": "0.199.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Qualification complète (trx-qualif, charge fictive), valise : relevés, exploration, 5 essais automatiques",
+          "quoi_en": "Full qualification (trx-qualif, dummy load), qualification kit: snapshots, exploration, 5 automatic drills"
+        },
+        {
+          "date": "2026-11-13",
+          "station": "0.133.0",
+          "hamlib": "5.0.0~git",
+          "systeme": "Debian 13",
+          "quoi": "Exploration et qualification sans émission ; station en service (CAT, PTT, audio, spectre HF)",
+          "quoi_en": "Exploration and qualification without transmitting; station in service (CAT, PTT, audio, HF spectrum)"
+        }
+      ],
+      "fonctions": {
+        "ptt_relu": {
+          "etat": "valide",
+          "note": "3 cycles, coupure en 78 ms au plus. dump_caps annonce « PTT type: None » avec Hamlib 4.7.2 (« Rig capable » avec 5.0) : le PTT par CAT marche quand même.",
+          "note_en": "3 cycles, cut within 78 ms. dump_caps reports « PTT type: None » with Hamlib 4.7.2 (« Rig capable » with 5.0): CAT PTT works anyway."
+        },
+        "tot": {
+          "etat": "valide",
+          "note": "TOT de 8 s coupé à 8,1 s, de 20 s à 20,0 s.",
+          "note_en": "8 s TOT cut at 8.1 s, 20 s at 20.0 s."
+        },
+        "battements": {
+          "etat": "valide",
+          "note": "Réception 2,1 s après le dernier battement.",
+          "note_en": "Receive 2.1 s after the last heartbeat."
+        },
+        "deconnexion": {
+          "etat": "valide",
+          "note": "Réception en 0,1 s.",
+          "note_en": "Receive within 0.1 s."
+        },
+        "perte_cat": {
+          "etat": "valide",
+          "note": "Liaison CAT coupée 1,5 s pendant l'émission : réception 1,7 s après.",
+          "note_en": "CAT link cut for 1.5 s while transmitting: receive 1.7 s later."
+        },
+        "hors_bande": {
+          "etat": "valide",
+          "note": "Émission refusée sur 1,760 MHz, aucune émission vue.",
+          "note_en": "Transmission refused on 1.760 MHz, none seen."
+        },
+        "operateur_local": {
+          "etat": "non_teste"
+        },
+        "demarrage": {
+          "etat": "non_teste"
+        },
+        "frequence": {
+          "etat": "valide",
+          "note": "8 bandes écrites et relues au hertz.",
+          "note_en": "8 bands written and read back to the hertz."
+        },
+        "split": {
+          "etat": "non_teste"
+        },
+        "rit": {
+          "etat": "valide",
+          "note": "Le RIT et le ΔTX partagent le même décalage.",
+          "note_en": "RIT and ΔTX share the same offset."
+        },
+        "xit": {
+          "etat": "valide"
+        },
+        "vfo": {
+          "etat": "non_declare",
+          "note": "« Can get VFO: N » : voyant VFO A / B absent.",
+          "note_en": "« Can get VFO: N »: no VFO A / B indicator."
+        },
+        "modes_base": {
+          "etat": "valide"
+        },
+        "modes_donnees": {
+          "etat": "valide",
+          "note": "PKTUSB, PKTLSB, FM-D et AM-D (pas PKTFM / PKTAM avec Hamlib 4.7).",
+          "note_en": "PKTUSB, PKTLSB, FM-D and AM-D (not PKTFM / PKTAM with Hamlib 4.7)."
+        },
+        "filtres": {
+          "etat": "non_teste",
+          "note": "Une largeur envoyée par Hamlib RÉÉCRIT le préréglage FIL1/2/3 : la station ne l'envoie pas ; FIL par le second port à confirmer.",
+          "note_en": "A width sent through Hamlib REWRITES the FIL1/2/3 preset: the station never sends one; FIL through the second port to be confirmed."
+        },
+        "preampli": {
+          "etat": "valide",
+          "note": "Valeurs 1 et 2 = P.AMP1 et P.AMP2 (pas des dB).",
+          "note_en": "Values 1 and 2 = P.AMP1 and P.AMP2 (not dB)."
+        },
+        "attenuateur": {
+          "etat": "valide",
+          "note": "20 dB.",
+          "note_en": "20 dB."
+        },
+        "agc": {
+          "etat": "valide"
+        },
+        "nr": {
+          "etat": "valide"
+        },
+        "nr_niveau": {
+          "etat": "valide"
+        },
+        "nb": {
+          "etat": "valide"
+        },
+        "nb_niveau": {
+          "etat": "partiel",
+          "note": "Lu ; écriture refusée par le poste pendant la qualification (RPRT -9).",
+          "note_en": "Read; write refused by the rig during the qualification (RPRT -9)."
+        },
+        "anf": {
+          "etat": "valide"
+        },
+        "notch_manuel": {
+          "etat": "valide",
+          "note": "Fréquence du notch sans plage déclarée : non réglable à distance.",
+          "note_en": "Notch frequency without a declared range: not adjustable remotely."
+        },
+        "squelch": {
+          "etat": "valide"
+        },
+        "puissance": {
+          "etat": "valide"
+        },
+        "compresseur": {
+          "etat": "valide"
+        },
+        "tuner": {
+          "etat": "non_teste",
+          "note": "Jamais mis en marche automatiquement : il peut lancer un accord (porteuse).",
+          "note_en": "Never switched on automatically: it may start a tune (carrier)."
+        },
+        "s_metre": {
+          "etat": "valide",
+          "note": "Valeurs hors de la plage déclarée par Hamlib (ex. -54 pour 0..60) : table de calibration.",
+          "note_en": "Values outside the range declared by Hamlib (e.g. -54 for 0..60): calibration table."
+        },
+        "puissance_mesuree": {
+          "etat": "valide",
+          "note": "Monte environ 0,3 s après la prise d'émission.",
+          "note_en": "Rises about 0.3 s after keying."
+        },
+        "ros": {
+          "etat": "valide"
+        },
+        "alc": {
+          "etat": "partiel",
+          "note": "Lu ≈ 0,14 SANS modulation : jamais une preuve de modulation (la puissance l'est).",
+          "note_en": "Reads ≈ 0.14 WITHOUT modulation: never a proof of modulation (power is)."
+        },
+        "tension": {
+          "etat": "valide",
+          "note": "14,4 V lus (hors de la plage déclarée 0..1).",
+          "note_en": "14.4 V read (outside the declared 0..1 range)."
+        },
+        "temperature": {
+          "etat": "non_declare",
+          "note": "TEMP_METER absent : seuils de température du poste sans effet.",
+          "note_en": "No TEMP_METER: rig temperature thresholds have no effect."
+        },
+        "audio_rx": {
+          "etat": "valide",
+          "note": "Carte « USB Audio Device » (C-Media) derrière le hub USB interne du poste ; sous Windows, son nom (« 2- … ») change avec la prise USB.",
+          "note_en": "« USB Audio Device » card (C-Media) behind the rig's internal USB hub; on Windows its name (« 2- … ») changes with the USB port."
+        },
+        "audio_tx": {
+          "etat": "partiel",
+          "note": "En mode données seulement (PKTUSB, DATA MOD = USB). Windows : volume de la sortie à 100, améliorations désactivées ; environ -12 dBFS pour USB MOD Level 30 %.",
+          "note_en": "Data modes only (PKTUSB, DATA MOD = USB). Windows: output volume 100, enhancements off; about -12 dBFS for USB MOD Level 30 %."
+        },
+        "spectre_hf": {
+          "etat": "valide",
+          "note": "Par le second port CI-V (port B) ; figé pendant l'émission (normal).",
+          "note_en": "Through the second CI-V port (port B); frozen while transmitting (normal)."
+        }
+      },
+      "hamlib": {
+        "non_exploite": [
+          "AGC_TIME",
+          "ANTIVOX",
+          "BKINDL",
+          "CWPITCH",
+          "FBKIN",
+          "ID_METER",
+          "KEYSPD",
+          "LOCK",
+          "MICGAIN",
+          "MON",
+          "MONITOR_GAIN",
+          "NOTCHF_RAW",
+          "OVF_STATUS",
+          "PBT_IN",
+          "PBT_OUT",
+          "RAWSTR",
+          "RF",
+          "RFPOWER_METER_WATTS",
+          "SBKIN",
+          "SCOPE",
+          "SEND_MORSE",
+          "SEND_VOICE_MEM",
+          "SPECTRUM",
+          "TONE",
+          "TRANSCEIVE",
+          "TSQL",
+          "USB_AF",
+          "VOX",
+          "VOXDELAY",
+          "VOXGAIN"
+        ],
+        "constats": [
+          "La lecture « p KEYERTYPE » fait planter rigctl / rigctld 4.7.2 sous Windows (signalé à Hamlib) ; la station ne la fait jamais.",
+          "ANN déclaré mais refusé (RPRT -1)."
+        ],
+        "constats_en": [
+          "Reading « p KEYERTYPE » crashes rigctl / rigctld 4.7.2 on Windows (reported to Hamlib); the station never does it.",
+          "ANN declared but refused (RPRT -1)."
+        ]
+      },
+      "id": "icom-ic7300mk2"
+    }
+  ]
+}

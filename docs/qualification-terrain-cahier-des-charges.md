@@ -265,8 +265,9 @@ essai).
 
 ## 12. Questions encore ouvertes
 
-1. Décision 7 (liste des postes validés : `docs/postes/README.md` + catalogue dans `trxstation/qualif/catalogue/`) :
-   à confirmer.
+1. Décision 7 TRANCHÉE (étape 259) : liste dans `docs/postes/README.md`, fiches publiques `docs/postes/donnees/*.toml`,
+   page https://bob56fr.github.io/openRemoteTRX/postes/ ; le catalogue `trxstation/qualif/catalogue/` (format de
+   `sheet.py`) reste à faire avec `trx-qualif --integrer` (lot T4 / P2).
 2. Bornes du § 5.4 : proposées d'après les règles (2 s de battement, etc.) ; à confirmer au premier essai réel sur
    l'IC-7300MK2.
 3. Seuils des mesures audio (§ 5.5) : à fixer au lot T3 d'après l'IC-7300MK2.
