@@ -550,6 +550,14 @@
       "essais": [
         {
           "date": "2026-11-19",
+          "station": "0.218.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Valise graphique (page du navigateur) : carte son, relevés avant / après, exploration, réception sur antenne, spectre HF par le port B, filtres FIL1/2/3, qualification avec émission sur charge fictive, 8 essais automatiques réussis (STOP 0,20 s, battements 2,0 s, connexion fermée 0,19 s, hors bande refusé, TOT 20,0 s, STOP TX du tableau de bord 0,18 s, station arrêtée pendant une émission : réception 2,0 s après l'ordre, démarrage sans émission), opérateur sur place au micro du poste ; verdict proposé « validation en cours »",
+          "quoi_en": "Graphical suitcase (browser page): sound card, before / after readings, exploration, receive on antenna, HF spectrum through port B, FIL1/2/3 filters, qualification with transmission on dummy load, 8 automatic drills passed (STOP 0.20 s, heartbeats 2.0 s, closed connection 0.19 s, out of band refused, TOT 20.0 s, dashboard STOP TX 0.18 s, station stopped during a transmission: receive 2.0 s after the order, start-up without transmission), local operator at the rig microphone; proposed verdict « validation in progress »"
+        },
+        {
+          "date": "2026-11-19",
           "station": "0.208.0",
           "hamlib": "4.7.2",
           "systeme": "Windows 11",
