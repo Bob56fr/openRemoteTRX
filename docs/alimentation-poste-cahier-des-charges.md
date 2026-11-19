@@ -1,9 +1,12 @@
-# Allumer et éteindre le poste à distance : cahier des charges (v2, 2026-11-19)
+# Allumer et éteindre le poste à distance : cahier des charges (v3, 2026-11-19)
 
 Demande de l'utilisateur (2026-11-19) : allumer et éteindre le TRX depuis la page web et l'application Android.
 V2 le même jour (demande de l'utilisateur) : dans l'application, STOP maintenu 3 s = extinction après confirmation
 (§ 8.1) ; connexion d'un opérateur à un poste éteint = allumage par la station après vérification des ports série,
 avec une fenêtre qui montre les étapes et un message explicite en cas d'erreur (§ 4.1, § 8.2).
+V3 le même jour (réponses de l'utilisateur) : MÊME fonctionnement dans la page web et l'application (§ 8.1, § 8.2) ;
+allumage aussi depuis Android Auto et le mode conduite, sans fenêtre ; menu de TRX Console « Allumage et extinction
+à distance » (2.8) en service / hors service, HORS SERVICE par défaut (§ 8.3).
 Idée d'origine : `docs/boite-a-idees.md` (2026-11-14) : après une coupure de courant, une station distante reste muette
 tant que personne n'appuie sur ON/OFF. Aucun code à ce stade.
 
@@ -104,7 +107,7 @@ l'ordre, arrêt à la première erreur (aucun ordre envoyé) :
 
 1. **Port CAT présent** : le port de `[rig] port` existe (Linux : lien `by-id` ; Windows : COM listé).
 2. **C'est bien le poste** : l'identité USB du port (fabricant:produit, numéro de série, numéro d'interface ; ex.
-   CP2105 du FTDX10, interface 00 « Enhanced » et pas 01 « Standard ») est celle relevée par trx-setup (nouveau
+   CP2105 du FTDX10, interface 00 « Enhanced » et pas 01 « Standard ») est celle relevée à la mise en service (nouveau
    réglage `[rig] port_usb`, § 6). Sous Windows un numéro COM peut changer avec la prise USB (piège de l'étape 284 pour
    la carte son) : si le poste est retrouvé sur un AUTRE port, refus avec le nouveau port nommé (« Le poste est
    maintenant sur COM7 : menu 2.5 ») ; la passerelle ne réécrit jamais station.toml et n'ouvre jamais un autre port
@@ -115,7 +118,7 @@ l'ordre, arrêt à la première erreur (aucun ordre envoyé) :
 5. **Carte son** : absente = avertissement seulement (le poste peut la faire apparaître en s'allumant), relue après.
 
 Une station configurée avant la v2 (sans `port_usb`) : vérifications 1, 3 et 4 seulement, et l'avertissement « identité
-du port non relevée : refaire le menu 2.5 » dans la fenêtre.
+du port non relevée : refaire la mise en service au menu 2.8 » dans la fenêtre.
 
 ## 5. Superviseur
 
@@ -127,12 +130,13 @@ du port non relevée : refaire le menu 2.5 » dans la fenêtre.
 
 ## 6. Réglages (`station.toml`, station seulement)
 
-- `[rig] power_control = false` par défaut : la commande n'est proposée que si `true` et si `dump_caps` la déclare.
-  Proposé par `trx-setup` (partie poste, menu 2.5) après un essai réussi (lot P0 automatisé : éteindre, relire,
-  allumer, relire), avec l'avertissement « un poste éteint à distance ne se rallume que par la CAT : vérifiez que
-  votre poste garde l'USB alimenté » ; jamais modifiable depuis le téléphone.
+- `[rig] power_control = false` par défaut (HORS SERVICE : ni allumage ni extinction possibles) : la commande n'est
+  proposée que si `true` et si `dump_caps` la déclare. Mis en service ou hors service par le menu 2.8 de TRX Console
+  (§ 8.3), jamais depuis la page ni le téléphone ; une station existante reste hors service (une station.toml garde
+  ses valeurs).
 - `[rig] power_on_timeout_s = 30` (5 à 120).
-- `[rig] port_usb` et `[rig] ptt_port_usb` (v2) : identité USB des ports relevée par trx-setup (texte, ex.
+- `[rig] port_usb` et `[rig] ptt_port_usb` (v2) : identité USB des ports relevée par le menu 2.8 à la mise en
+  service, et de nouveau par le menu 2.5 (ou l'assistant 2.1) quand le port change (texte, ex.
   `10C4:EA70 SN=… IF=00`), vide = non relevée ; jamais d'adresse ni de nom de machine.
 - Profils de poste : nouvelle clé de `[rig]` => `PROFILE_FORMAT` + 1 et migration (convention).
 - Notice de station.toml (`docs/station-toml/contenu.toml`) à compléter.
@@ -155,7 +159,9 @@ du port non relevée : refaire le menu 2.5 » dans la fenêtre.
 - **Application** : bandeau plein écran poste éteint avec « Allumer le poste » ; extinction par STOP maintenu (§ 8.1) ;
   allumage à la connexion (§ 8.2).
 
-### 8.1 Application : STOP maintenu 3 s = extinction (v2)
+### 8.1 Page et application : STOP maintenu 3 s = extinction (v2, page v3)
+
+Même fonctionnement dans la PAGE WEB et l'APPLICATION (décision de l'utilisateur, v3).
 
 - L'appui sur STOP remet TOUJOURS en réception tout de suite, comme aujourd'hui : l'extinction ne retarde jamais
   STOP.
@@ -169,9 +175,14 @@ du port non relevée : refaire le menu 2.5 » dans la fenêtre.
   maintien n'a pas d'autre effet que STOP.
 - Jamais en mode conduite ni depuis Android Auto (pas de fenêtre à lire en roulant) ; STOP y reste un STOP simple.
 - Gros PTT rond : son STOP garde le même comportement.
-- Page web : STOP maintenu 3 s y vaut déjà DÉCONNEXION (étape 194) : voir § 10, question 7.
+- Page web : STOP maintenu 3 s n'y vaut PLUS déconnexion (étape 194) : la déconnexion reste au bouton
+  « Déconnecter » de la rubrique Connexion, et le texte sous STOP devient « appui long : éteindre le TRX » quand
+  `power` est annoncé (rien sinon). Fonction hors service (§ 8.3) : le maintien n'a pas d'autre effet que STOP, dans
+  la page comme dans l'application.
 
-### 8.2 Application : connexion à un poste éteint = allumage (v2)
+### 8.2 Page et application : connexion à un poste éteint = allumage (v2, page v3)
+
+Même fonctionnement dans la PAGE WEB (bouton « Se connecter ») et l'APPLICATION (écran de connexion), v3.
 
 - Après le `hello` et le premier `state` : si `rig.power` = `off`, que le compte est opérateur et que `power` est
   annoncé, l'application envoie `power_on` (sans question : la connexion vaut demande, décision de l'utilisateur).
@@ -190,8 +201,35 @@ du port non relevée : refaire le menu 2.5 » dans la fenêtre.
   ligne PTT (RTS / DTR) », « Allumage à distance désactivé sur cette station (station.toml) » ; boutons
   « Réessayer » et « Continuer sans le poste » (reste connecté, réception impossible, bandeau « POSTE ÉTEINT »).
 - Visiteur : aucun allumage, message « Le poste est éteint ; seul un opérateur peut l'allumer ».
-- Connexion lancée depuis Android Auto ou en mode conduite : allumage aussi, sans fenêtre ; titre « ALLUMAGE DU
-  POSTE… » puis l'état normal, ou « POSTE ÉTEINT : erreur » (§ 10, question 8).
+- Connexion lancée depuis Android Auto ou en mode conduite : allumage aussi, sans fenêtre (décision v3) ; titre
+  « ALLUMAGE DU POSTE… » puis l'état normal, ou « POSTE ÉTEINT : erreur » avec le code ORT.
+- Fonction hors service (§ 8.3) et poste éteint : aucun ordre ; bandeau « POSTE ÉTEINT : allumage à distance hors
+  service (menu 2.8 de TRX Console sur la station) ».
+- Une reconnexion AUTOMATIQUE après une coupure réseau n'allume pas le poste (seule une connexion demandée par
+  l'opérateur le fait).
+
+### 8.3 TRX Console : menu 2.8 « Allumage et extinction à distance » (v3)
+
+Interrupteur EN SERVICE / HORS SERVICE de la fonction, HORS SERVICE par défaut (décision de l'utilisateur) ; nouveau
+menu en fin du thème 2 « Poste et matériel » (règle : un nouveau menu s'ajoute en fin de thème), méthode
+`remote_power`, 4 langues, aide `h 2.8`, mode d'emploi, niveau Normal.
+
+1. Affiche l'état : en service / hors service, poste déclaré capable ou non par Hamlib (`dump_caps`), identité USB
+   relevée des ports, état actuel du poste (allumé / éteint) si la station tourne.
+2. **Mettre en service** :
+   - refus clair si le modèle ne déclare pas `set_powerstat` / `get_powerstat` (« Votre poste ne peut pas être allumé
+     par la CAT d'après Hamlib ») ;
+   - avertissement : « Un poste éteint à distance ne se rallume que par la CAT ; si votre poste coupe son USB une fois
+     éteint, il faudra appuyer sur ON/OFF au shack. Yaesu : prise USB seulement, pas la prise RS-232C. » ;
+   - essai proposé (oui par défaut, poste en réception, station arrêtée le temps de l'essai et redémarrée après) :
+     éteindre, vérifier que les ports et la carte son restent présents et que le poste répond « éteint », rallumer,
+     relire fréquence, mode et PTT ; un essai en échec = mise en service refusée, avec la cause ;
+   - identité USB des ports relevée (`port_usb`, `ptt_port_usb`) ;
+   - différences montrées, sudo, `power_control = true` écrit, station redémarrée.
+3. **Mettre hors service** : `power_control = false`, station redémarrée ; un poste éteint à ce moment reste éteint
+   (message : « Le poste est éteint : allumez-le au shack ou remettez la fonction en service »).
+4. Aussi dans la console web (formulaires) et l'écran plein ; aucune commande d'allumage ou d'extinction dans la
+   console elle-même (seulement l'interrupteur ; non demandé).
 - Station elle-même injoignable (PC éteint) : hors périmètre (réveil par le réseau à étudier à part).
 - **Android Auto** : titre « POSTE ÉTEINT », lecteur sans son ; aucun bouton (§ 10).
 - **trx-monitor et tableau de bord 1.3** : ligne « Poste : éteint par <pseudo> depuis HH:MM ».
@@ -206,34 +244,37 @@ du port non relevée : refaire le menu 2.5 » dans la fenêtre.
   aucune prise d'émission pendant `starting` et `off` ; client perdu pendant l'allumage (rien ne change, pas
   d'émission) ; superviseur : poste éteint = aucune escalade, poste éteint hors station = avertissement seul ; passerelle
   gelée poste éteint = escalade normale ; visiteur : commandes refusées.
-- Documentation : guide de l'opérateur (page, application, réglage 2.5), fiche des postes (`docs/postes/`), notice de
-  station.toml, mode d'emploi de la console si le menu 2.5 change.
+- Documentation : guide de l'opérateur (page, application, menu 2.8), fiche des postes (`docs/postes/`), notice de
+  station.toml, mode d'emploi de la console (`docs/console/contenu*.toml`, menu 2.8).
 
 ## 10. Questions à l'utilisateur
 
-1. Android Auto : état seulement (proposé) ou aussi un bouton « Allumer » ?
-2. Commande dans TRX Console (ex. menu 1.5 « Allumer / éteindre le poste ») utile ?
+1. Android Auto : état seulement (proposé) ou aussi un bouton « Allumer » ? (l'allumage à la connexion depuis la
+   voiture est décidé, v3)
+2. RÉPONDU (v3) : menu 2.8 = interrupteur en service / hors service, hors service par défaut ; pas de commande
+   d'allumage dans la console.
 3. Allumage automatique après une coupure de courant (option désactivée par défaut, seulement au démarrage de la
    station) : voulu ? (le cahier propose NON pour la v1).
 4. Extinction automatique après N heures sans client : voulue ? (proposé : NON pour la v1).
 5. Alerte ntfy à chaque allumage / extinction : oui, ou journal seulement ?
 6. Qui peut éteindre quand plusieurs opérateurs sont connectés : n'importe lequel (proposé), ou seulement s'il est
    seul ?
-7. (v2) Page web, où STOP maintenu 3 s = déconnexion depuis l'étape 194 : garder la déconnexion seule, ou ouvrir une
+7. RÉPONDU (v3) : même fonctionnement que l'application (§ 8.1, § 8.2). Question d'origine : page web, où STOP maintenu 3 s = déconnexion depuis l'étape 194 : garder la déconnexion seule, ou ouvrir une
    fenêtre « Se déconnecter » / « Éteindre le TRX » / « Annuler » (proposé, pour rester proche de l'application) ?
    Et l'allumage à la connexion de la page : oui comme l'application (proposé) ?
-8. (v2) Connexion lancée depuis Android Auto ou en mode conduite : allumer aussi (proposé, sans fenêtre), ou ne
+8. RÉPONDU (v3) : oui, sans fenêtre. Question d'origine : connexion lancée depuis Android Auto ou en mode conduite : allumer aussi (proposé, sans fenêtre), ou ne
    jamais allumer depuis la voiture ?
 
-Réponses déjà données (v2) : extinction par STOP maintenu 3 s dans l'application avec confirmation ; allumage par la
+Réponses déjà données (v2, v3) : page et application identiques, allumage depuis la voiture, menu 2.8 hors service
+par défaut ; extinction par STOP maintenu 3 s dans l'application avec confirmation ; allumage par la
 connexion d'un opérateur dans l'application, ports série vérifiés, étapes montrées, erreurs explicites.
 
 ## 11. Lots
 
 - **P0** : essais à la main du § 1.3 (IC-7300MK2, rigctld de la station, son, démarrage poste éteint).
-- **P1** : station : réglages, passerelle (§ 4 et vérification des ports § 4.1, avec `port_usb` relevé par
+- **P1** : station : réglages, menu 2.8 de TRX Console (§ 8.3, sans lui la fonction reste hors service), passerelle (§ 4 et vérification des ports § 4.1, avec `port_usb` relevé par
   trx-setup), superviseur (§ 5), protocole (§ 7, dont `power_progress`), codes, tests de panne (port renuméroté,
   mauvais port du CP2105, poste muet, allumé en émission).
-- **P2** : page web.
+- **P2** : page web : STOP maintenu 3 s (déconnexion retirée de ce geste), allumage à la connexion, fenêtre des étapes.
 - **P3** : application : STOP maintenu 3 s (§ 8.1), fenêtre d'allumage à la connexion (§ 8.2), Android Auto en état.
-- **P4** : trx-setup (essai et réglage), trx-monitor, tableau de bord, indicateurs, guide, notices.
+- **P4** : `port_usb` relevé aussi par 2.1 / 2.5, trx-monitor, tableau de bord, indicateurs, guide, notices.
