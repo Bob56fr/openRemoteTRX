@@ -146,22 +146,20 @@
   <!-- 6. Rapport -->
   <section id="s-report" hidden>
     <div class="wrap">
-      <div class="verdict" id="verdict"></div>
-      <div class="card">
-        <h3>Résultats</h3>
-        <table class="res"><tbody id="restable"></tbody></table>
-      </div>
-      <div class="card">
-        <h3>Rapport</h3>
-        <p>Le rapport est anonyme : modèle, résultats, mesures et trace des échanges avec le poste (pour que le projet puisse
-           vérifier les résultats lui-même). Ni nom d'ordinateur, ni adresse, ni numéro de série.</p>
+      <div class="reptop">
+        <div class="verdict" id="verdict"></div>
         <div class="row">
           <button type="button" class="btn primary" id="b-download">Télécharger le rapport</button>
           <button type="button" class="btn" id="b-print">Imprimer</button>
           <button type="button" class="btn" id="b-again">Recommencer</button>
         </div>
-        <p class="what">Envoi au projet en un bouton : bientôt (le service de réception n'est pas encore en ligne). Gardez le
-           fichier téléchargé.</p>
+      </div>
+      <p class="what">Rapport anonyme : modèle, résultats, mesures et trace des échanges avec le poste (pour que le projet
+         puisse vérifier les résultats lui-même) ; ni nom d'ordinateur, ni adresse, ni numéro de série. Envoi au projet en un
+         bouton : bientôt (service pas encore en ligne), gardez le fichier téléchargé.</p>
+      <div class="card">
+        <h3>Résultats</h3>
+        <div class="resgrid" id="restable"></div>
       </div>
     </div>
   </section>

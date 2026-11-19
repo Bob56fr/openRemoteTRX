@@ -276,11 +276,20 @@
     $("verdict").className = "verdict " + s.verdict; $("verdict").textContent = VERDICT[s.verdict];
     const tb = $("restable"); tb.textContent = "";
     for (const l of s.lines) {
-      const tr = el("tr"); const name = (R.STEPS.find(x => x[0] === l.code) || [, l.code])[1];
-      const pill = el("span", "pill " + l.statut, l.label);
-      const td1 = el("td", "c", l.code), td2 = el("td"), td3 = el("td");
-      td2.append(el("b", null, name)); td2.append(el("br")); td2.append(l.texte); td3.append(pill);
-      tr.append(td1, td2, td3); tb.appendChild(tr);
+      const name = (R.STEPS.find(x => x[0] === l.code) || [, l.code])[1];
+      const row = el("div", "resitem"), t = el("div", "t");
+      t.append(el("b", null, name));
+      // Ce qui ne va pas saute aux yeux : un résultat « à vérifier » en orange, un échec en rouge ; dans une ligne en
+      // plusieurs parties (« 13 OK : … ; relues fausses : … »), seules les parties en défaut sont colorées.
+      const bad = l.statut === "echec" ? "txt-bad" : l.statut === "avert" ? "txt-warn" : null;
+      const parts = String(l.texte).split(" ; ");
+      parts.forEach((p, i) => {
+        if (i) t.append(" ; ");
+        const fine = !bad || (parts.length > 1 && /^\d+ OK/.test(p));
+        t.append(fine ? p : el("span", /NON REMIS/.test(p) ? "txt-bad" : bad, p));
+      });
+      row.append(el("span", "c", l.code), t, el("span", "pill " + l.statut, l.label));
+      tb.appendChild(row);
     }
     show("s-report"); $("b-stop").hidden = false;
   }

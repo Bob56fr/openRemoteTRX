@@ -65,7 +65,9 @@ class FakeIcom {
       if (!data.length) return [...p.slice(0, n), ...this.fn[key]];
       if (this.o.ngWrite.includes(key) || s.ptt) return [0xFA];
       if (key === "1C 01" && data[0] > 1) return [0xFA];
-      if (!this.o.stuck.includes(key)) this.fn[key] = data;
+      const step = (this.o.quantize || {})[key];                         // niveau arrondi au cran du poste
+      const val = step ? civ.encodeLevel(Math.round(Math.round(civ.decodeLevel(data) / step) * step)) : data;
+      if (!this.o.stuck.includes(key)) this.fn[key] = val;
       if (key === "16 02" && data[0] && this.o.pampClearsAtt) this.fn["11"] = [0x00];
       return ok;
     }

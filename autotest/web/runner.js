@@ -247,7 +247,11 @@
           const r1 = await this._fnRead(f); row.relu = r1 ? civ.hex(r1) : null;
           await L.writeRaw(f.cmd, v0);
           const r2 = await this._fnRead(f); row.remis = r2 ? civ.hex(r2) : null;
-          row.statut = !same(r2, v0) ? "remise" : !same(r1, v1) ? "ecart" : "ok";
+          // Un niveau est arrondi au cran du poste (IC-7300MK2 : NR écrit 123 relu 120, COMP 155 relu 151) : écart
+          // accepté jusqu'à un demi-cran du réglage le plus grossier (11 crans : 255 / 10 / 2 ≈ 13).
+          const near = f.level && r1 && Math.abs(civ.decodeLevel(r1) - civ.decodeLevel(v1)) <= 13;
+          if (near && !same(r1, v1)) row.note = `arrondi au cran du poste (écrit ${civ.decodeLevel(v1)}, relu ${civ.decodeLevel(r1)})`;
+          row.statut = !same(r2, v0) ? "remise" : !(same(r1, v1) || near) ? "ecart" : "ok";
           out.push(row);
         }
         out.push(await this._vfo());

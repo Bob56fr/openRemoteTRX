@@ -15,7 +15,7 @@ html,body{margin:0;background:var(--bg);color:var(--fg)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5;padding:18px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
 [hidden]{display:none!important}
 a{color:var(--accent)}
-.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .ver{font-family:var(--f-num);font-size:12px;color:var(--dim)}
 h2{font-family:var(--f-label);font-weight:600;letter-spacing:.04em;font-size:22px;margin:0 0 6px}
 h3{font-family:var(--f-label);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:15px;color:var(--dim);margin:0 0 8px}
@@ -112,6 +112,15 @@ body.compact .hero h1{font-size:clamp(20px,3vw,28px)}
 
 /* résultats */
 table.res{width:100%;border-collapse:collapse;font-size:14px}
+/* Résultats sur deux colonnes ; la partie d'une ligne qui ne va pas est en orange (rouge si échec) */
+.reptop{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.reptop .verdict{flex:1 1 420px}
+.resgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+@media (max-width:900px){.resgrid{grid-template-columns:minmax(0,1fr)}}
+.resitem{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:start;padding:8px 2px;border-top:1px solid var(--line);font-size:14px}
+.resitem .c{font-family:var(--f-num);color:var(--dim)}
+.resitem .t b{display:block}
+.txt-warn{color:var(--warn);font-weight:600}.txt-bad{color:var(--bad);font-weight:600}
 table.res td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
 table.res td.c{font-family:var(--f-num);color:var(--dim);width:44px}
 .pill{display:inline-block;font-family:var(--f-label);font-weight:600;letter-spacing:.04em;font-size:13px;border-radius:999px;padding:1px 9px;border:1px solid var(--line);white-space:nowrap}

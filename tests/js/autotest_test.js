@@ -214,6 +214,17 @@ test("R9 : fonction absente, écriture refusée, relue fausse, fonction qui en c
   assert.ok(/absentes : IP\+/.test(r9.text) && /refusée : NB/.test(r9.text) && /fausses : NR/.test(r9.text), r9.text);
 });
 
+test("R9 : niveau arrondi au cran du poste = OK (pas « relu faux »), un vrai écart reste signalé", async () => {
+  const { rig, r } = await setup({ quantize: { "14 06": 13, "14 0E": 25.5 }, stuck: ["14 12"],
+                                   fn: { "14 06": [0x01, 0x04], "14 0E": [0x01, 0x02] } });   // valeurs de départ sur un cran
+  await r._r9();
+  const r9 = r.results.find(x => x.code === "R9"), row = c => r9.values.fonctions.find(x => x.code === c);
+  assert.equal(row("NR niv.").statut, "ok"); assert.ok(/arrondi au cran/.test(row("NR niv.").note || ""), JSON.stringify(row("NR niv.")));
+  assert.equal(row("COMP niv.").statut, "ok");
+  assert.equal(row("NB niv.").statut, "ecart");                          // valeur jamais prise : vrai défaut
+  assert.equal(JSON.stringify(rig.fn), rig.initialFn);
+});
+
 test("liste fermée : commande exacte, jamais l'accord du coupleur, le VOX ni un préfixe", () => {
   assert.throws(() => civ.frame(0xB6, civ.CMD.TUNER, [0x02]), /hors de la liste/);   // 02 = lancer l'accord (émission)
   assert.throws(() => civ.frame(0xB6, [0x16, 0x46], [0x01]), /hors de la liste/);   // VOX
