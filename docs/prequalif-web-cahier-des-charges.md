@@ -1,4 +1,4 @@
-# Préqualification d'un poste depuis le navigateur : cahier des charges (v1, 2026-11-19)
+# Préqualification d'un poste depuis le navigateur : cahier des charges (v2, 2026-11-19)
 
 Demande de l'utilisateur (2026-11-19) : un radioamateur ou un cibiste branche son TRX en USB sur son PC, ouvre une page
 dans Chrome et sait en quelques minutes si son poste pourra être piloté par openRemoteTRX. Deux modes :
@@ -7,6 +7,10 @@ dans Chrome et sait en quelques minutes si son poste pourra être piloté par op
   protocoles CAT publiés par les constructeurs (pilotes écrits par Claude d'après leur documentation).
 - **Mode B, avec Hamlib** : un petit programme installé sur le PC (Windows ou Linux) lance Hamlib et sert la MÊME page ;
   essai plus sérieux, entièrement automatique (la valise de qualification reste l'outil complet).
+
+V2 le même jour (réponses de l'utilisateur) : rapport ENVOYÉ en un bouton, sans formulaire, avec des données dont la
+vraisemblance se vérifie (§ 9) ; mode B ULTRA SIMPLE, petite passerelle « page web <-> Hamlib » proposée sur le
+Microsoft Store (§ 8.1) ; français et anglais ; pas d'Android.
 
 Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
 
@@ -23,6 +27,12 @@ Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
 5. **Le mode B est intéressant parce qu'il est automatique** : la valise (`trx-qualif --terrain --page`) est complexe à
    manipuler ; ici tout s'enchaîne seul après l'autorisation unique.
 6. **Xiegu** : traité comme un dialecte du CI-V d'Icom (§ 6.1).
+7. **Le rapport est important** : envoi le plus simple possible, sans formulaire complexe, et données vérifiables
+   (§ 9).
+8. **Mode B ultra simple**, le moins de manipulations possible ; Windows d'abord, passerelle proposée sur le
+   Microsoft Store (§ 8.1).
+9. **Langues** : français et anglais.
+10. **Pas d'Android.**
 
 EXCEPTION aux règles de sécurité d'émission de CLAUDE.md : elles visent la STATION pilotée À DISTANCE. La
 préqualification est un outil LOCAL, l'opérateur présent devant le poste sur charge fictive ; elle ne passe ni par la
@@ -57,7 +67,7 @@ Un rapport clair, en vert / orange / rouge :
   Traitements de Chrome coupés (`echoCancellation`, `noiseSuppression`, `autoGainControl` à false).
 - **Page dans une iframe** (site rf-diy.com) : Web Serial exige `allow="serial"` sur l'iframe ; sinon, lien vers la
   page publiée.
-- **Chrome sur Android** (téléphone + câble OTG) : support de Web Serial pour l'USB à vérifier ; hors du premier lot.
+- **Android** : hors du projet (décision du 2026-11-19).
 - **Mode B** : une page publique (GitHub Pages) qui parlerait à un programme sur 127.0.0.1 déclenche maintenant une
   demande d'accès au réseau local de Chrome, incompréhensible pour l'opérateur. Le programme local SERT donc lui-même
   la page (comme la valise).
@@ -163,16 +173,65 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
   second port seulement si l'opérateur le demande.
 - Comparaison A / B quand les deux ont tourné : ce que dit la documentation contre ce que fait Hamlib = matière pour un
   rapport à Hamlib (`docs/hamlib-rapports.md`).
-- Installation : à trancher (§ 11, question 5).
+- Installation : § 8.1.
 - La valise reste l'outil de QUALIFICATION (pannes, superviseur, station complète) ; le rapport du mode B peut la
   préremplir.
+
+### 8.1 Passerelle ultra simple, Microsoft Store (proposition de la v2)
+
+- Un seul programme « TRX Préqualif » (nom à choisir) : installé depuis le Microsoft Store, lancé depuis le menu
+  Démarrer ; il ouvre lui-même Chrome / Edge sur sa page (127.0.0.1, jeton), une icône près de l'horloge, fermer la page
+  ou l'icône = arrêt. Aucune question d'installation, aucun réglage, aucun pare-feu (écoute sur 127.0.0.1 seulement).
+- Contenu : le code Python de `trx-qualif` gelé (PyInstaller) + Hamlib pour Windows (version épinglée, empreinte
+  vérifiée à la fabrication) ; ni la station, ni le superviseur, ni la passerelle.
+- Paquet MSIX : le Store le signe lui-même (pas de certificat de signature de code à acheter, pas d'avertissement
+  SmartScreen), mises à jour par le Store ; accès aux ports série = application « pleine confiance » (`runFullTrust`).
+- Licences : Hamlib (LGPL / GPL) livré avec l'offre des sources ; notre code AGPL ; mentions dans la fenêtre « À
+  propos ».
+- À vérifier au lot PQ5 : compte développeur Microsoft (conditions et coût pour un particulier), délai et règles de
+  certification (un programme PyInstaller est parfois pris pour un virus par les antivirus), taille du paquet.
+- Aussi publié en zip sur les Releases GitHub (même programme) et par `winget` plus tard ; Linux : commande
+  `trx-prequalif` du paquet de la station (pas de Store).
 
 ## 9. Rapport
 
 - Page imprimable + fichier JSON téléchargeable (format proche de `docs/postes/donnees/*.toml` : `[poste]`,
   `[[essais]]`), niveau « préqualification navigateur (sans Hamlib) » ou « préqualification Hamlib ».
 - Anonyme : ni adresse, ni nom de machine, ni numéro de série (les noms de ports et de cartes son sont nettoyés).
-- Ne modifie PAS les fiches publiques des postes (seules les qualifications y entrent) ; usage : §11, question 8.
+- Ne modifie PAS les fiches publiques des postes (seules les qualifications y entrent) ; usage : § 11, question 8.
+
+### 9.1 Envoi en un bouton (proposition de la v2)
+
+- Bouton « Envoyer le rapport au projet » à la fin ; avant l'envoi, la page MONTRE ce qui part (résumé lisible + « voir
+  le détail »). Deux champs FACULTATIFS : indicatif, commentaire libre. Aucun compte, aucun courriel exigé.
+- Envoi en HTTPS vers un petit service du projet sur le VPS de diffusion (dépôt privé `openRemoteTRX-vps`, même Caddy) :
+  reçu, stocké, numéro de rapport rendu à l'opérateur (à citer s'il écrit au projet). Limite de débit par adresse.
+- Écartés : ticket GitHub prérempli (compte GitHub exigé, rapport trop long pour une adresse), courriel (logiciel de
+  messagerie, taille), dépôt de fichier sur un site.
+- Le bouton « Télécharger le rapport » reste (pour le garder, ou l'envoyer plus tard).
+
+### 9.2 Rapports truqués
+
+On ne peut PAS prouver qu'un rapport est vrai : le code de la page est public, tout secret qu'elle contiendrait aussi
+(une signature par la page ne prouve rien ; le programme du Store non plus). Le but : rendre un faux COÛTEUX et SANS
+EFFET.
+
+1. **Trace brute jointe** : chaque octet envoyé et reçu par le port série (mode A) ou chaque commande et réponse de
+   rigctld (mode B), horodaté, avec les mesures du son. Le SERVICE recalcule lui-même les résultats depuis la trace
+   avec le même code de pilote : les conclusions écrites par la page ne sont jamais crues.
+2. **Jeton du serveur** : la page en demande un au début des essais ; il est daté, à usage unique et inscrit dans la
+   trace ; un rapport sans jeton, trop vieux ou déjà vu est rangé « non vérifiable ».
+3. **Cohérence physique** vérifiée par le service : identité du poste (`19 00`, `ID;`) cohérente avec le modèle choisi,
+   format exact des trames du modèle, écho CI-V, temps de réponse plausibles et non réguliers, S-mètre qui varie,
+   puissance lue en émission compatible avec la puissance réglée, PTT relu après chaque retour, ALC et Po qui montent
+   avec la tonalité. Inventer une trace cohérente demande de connaître le protocole aussi bien que le pilote.
+4. **Poids** : un rapport seul = « signalé par un utilisateur », jamais un changement de fiche ; plusieurs rapports
+   CONCORDANTS et indépendants (indicatifs, firmwares, dates différents) font monter la confiance ; un rapport
+   discordant est relu par le mainteneur ; la QUALIFICATION (valise) reste seule à valider un poste.
+5. **Indicatif facultatif** vérifiable plus tard (annuaire, réponse à un courriel) pour les rapports qui feraient
+   changer une fiche.
+6. **Anonymat** : aucune adresse IP gardée avec le rapport (seulement pour la limite de débit, effacée après 24 h),
+   noms de ports et de cartes nettoyés, numéro de série du poste jamais envoyé.
 
 ## 10. Où vit le code
 
@@ -189,12 +248,15 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
 2. **Écriture de fréquence et de mode** : un essai d'écriture (petit décalage puis remise) en mode A, ou seulement le
    mode données nécessaire à la tonalité ? (règle actuelle : jamais de QSY imposé)
 3. **Durées** : 10 s au plus par essai d'émission, combien d'émissions au total (environ 5) : d'accord ?
-4. **Rapport** : téléchargement seul, ou envoi au projet (ticket GitHub prérempli, site rf-diy.com) ?
-5. **Installation du mode B** : paquet complet de la station (déjà prêt, lourd) ou paquet léger « préqualification »
-   (Python embarqué + Hamlib + `trx-prequalif`) ?
-6. **Langues** : FR + EN d'abord (comme la valise), DE / ES ensuite ?
-7. **Android** (Chrome + câble OTG) : à essayer plus tard ou hors du projet ?
-8. **Tableaux publics des postes** : une colonne « préqualifié par un utilisateur » (rapports reçus), ou rien ?
+4. **Rapport** : envoi en un bouton vers le service du VPS (§ 9.1) et vérifications du § 9.2 : d'accord ?
+5. **Mode B** : programme seul sur le Microsoft Store (§ 8.1) : d'accord ? nom du programme ?
+6. ~~Langues~~ : TRANCHÉ (français et anglais).
+7. ~~Android~~ : TRANCHÉ (non).
+8. **Rapports reçus sur le site public** : la page publique des postes
+   (https://bob56fr.github.io/openRemoteTRX/postes/) ne montre aujourd'hui que les postes QUALIFIÉS par le projet.
+   Montrer aussi ce que disent les rapports reçus (« IC-7300 : 4 rapports d'utilisateurs, tous OK » ; « Xiegu G90 :
+   1 rapport, PTT par la CAT en échec »), dans une partie à part et après relecture ? Ou garder les rapports pour le
+   projet seulement ?
 
 ## 12. Lots
 
