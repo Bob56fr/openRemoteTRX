@@ -1,4 +1,4 @@
-# Allumer et éteindre le poste à distance : cahier des charges (v3, 2026-11-19)
+# Allumer et éteindre le poste à distance : cahier des charges (v4, 2026-11-19)
 
 Demande de l'utilisateur (2026-11-19) : allumer et éteindre le TRX depuis la page web et l'application Android.
 V2 le même jour (demande de l'utilisateur) : dans l'application, STOP maintenu 3 s = extinction après confirmation
@@ -7,6 +7,10 @@ avec une fenêtre qui montre les étapes et un message explicite en cas d'erreur
 V3 le même jour (réponses de l'utilisateur) : MÊME fonctionnement dans la page web et l'application (§ 8.1, § 8.2) ;
 allumage aussi depuis Android Auto et le mode conduite, sans fenêtre ; menu de TRX Console « Allumage et extinction
 à distance » (2.8) en service / hors service, HORS SERVICE par défaut (§ 8.3).
+V4 le même jour (réponses de l'utilisateur, toutes les questions tranchées) : STOP maintenu 3 s = fenêtre à deux
+choix « Se déconnecter » / « Arrêter le TRX à distance » (§ 8.1) ; extinction automatique après N heures sans usage
+et alertes ntfy, deux options du menu 2.8 hors service par défaut (§ 8.3, § 8.4) ; pas de bouton dans Android Auto,
+pas d'allumage après une coupure de courant, n'importe quel opérateur peut arrêter ; réglages dans `[power]`.
 Idée d'origine : `docs/boite-a-idees.md` (2026-11-14) : après une coupure de courant, une station distante reste muette
 tant que personne n'appuie sur ON/OFF. Aucun code à ce stade.
 
@@ -60,7 +64,8 @@ bloque environ 8 s.
 Ces commandes ne touchent pas au PTT, mais elles agissent sur le poste à distance ; règles retenues :
 
 1. **Jamais automatique, sauf une exception** : pas d'allumage au démarrage de la station ni à une reconnexion après une
-   coupure réseau, pas d'extinction sur délai (sauf décision contraire, § 10). Le `auto_power_on` de Hamlib n'est
+   coupure réseau ni après une coupure de courant (décision v4) ; extinction sur délai seulement par l'option du
+   § 8.4 (hors service par défaut). Le `auto_power_on` de Hamlib n'est
    jamais passé à rigctld. EXCEPTION (décision de l'utilisateur, 2026-11-19, v2) : la connexion d'un OPÉRATEUR lancée
    depuis l'écran de connexion de l'application allume un poste trouvé éteint (§ 8.2) ; c'est l'APPLICATION qui envoie
    `power_on` après le `hello`, jamais la station d'elle-même ; un visiteur ne l'allume jamais. Un opérateur présent au
@@ -71,7 +76,7 @@ Ces commandes ne touchent pas au PTT, mais elles agissent sur le poste à distan
 3. **Allumer** ne met jamais en émission : après l'allumage, la passerelle relit le PTT ; s'il est à 1 (ligne RTS / DTR
    d'un PTT série au démarrage du poste, avertissement de Yaesu) : `T 0` immédiat, alerte, et le poste est traité comme
    une émission qui résiste. Puis mêmes étapes qu'à une connexion : VOX coupé (`switch_vox_off`), état relu, RX.
-4. **Confirmation** dans la page et l'application (« Éteindre le poste ? Personne ne pourra plus l'écouter. ») ;
+4. **Confirmation** dans la page et l'application (« Confirmer l'arrêt à distance de votre TRX ? », § 8.1) ;
    allumer sans confirmation (sans risque), mais un seul ordre à la fois.
 5. Pendant l'allumage (jusqu'à 20 s) et poste éteint : toute prise d'émission est refusée (`rig_off`), toute commande de
    réglage aussi.
@@ -130,6 +135,10 @@ du port non relevée : refaire la mise en service au menu 2.8 » dans la fenêtr
 
 ## 6. Réglages (`station.toml`, station seulement)
 
+- Section `[power]` à part (v4, pour ne pas toucher aux profils de poste) : `enabled = false` (nom définitif à la
+  place de `power_control`), `on_timeout_s = 30`, `idle_off = false`, `idle_off_hours = 4` (1 à 168),
+  `notify = false` ; seuls `port_usb` / `ptt_port_usb` restent dans `[rig]`. Ci-dessous, `power_control` = `[power]
+  enabled`.
 - `[rig] power_control = false` par défaut (HORS SERVICE : ni allumage ni extinction possibles) : la commande n'est
   proposée que si `true` et si `dump_caps` la déclare. Mis en service ou hors service par le menu 2.8 de TRX Console
   (§ 8.3), jamais depuis la page ni le téléphone ; une station existante reste hors service (une station.toml garde
@@ -158,27 +167,31 @@ du port non relevée : refaire la mise en service au menu 2.8 » dans la fenêtr
   bandeau « POSTE ÉTEINT » avec « Allumer le poste », tout le reste grisé ; `starting` = sablier et compte à rebours.
 - **Application** : bandeau plein écran poste éteint avec « Allumer le poste » ; extinction par STOP maintenu (§ 8.1) ;
   allumage à la connexion (§ 8.2).
+- Station elle-même injoignable (PC éteint) : hors périmètre (réveil par le réseau à étudier à part).
+- **Android Auto** : titre « POSTE ÉTEINT », lecteur sans son ; aucun bouton (décision v4).
+- **trx-monitor et tableau de bord 1.3** : ligne « Poste : éteint par <pseudo> depuis HH:MM ».
+- **Indicateurs GNOME / Windows** : couleur neutre « poste éteint » (`status.js` et vecteurs).
 
-### 8.1 Page et application : STOP maintenu 3 s = extinction (v2, page v3)
+### 8.1 Page et application : STOP maintenu 3 s = fenêtre à deux choix (v2, page v3, choix v4)
 
 Même fonctionnement dans la PAGE WEB et l'APPLICATION (décision de l'utilisateur, v3).
 
 - L'appui sur STOP remet TOUJOURS en réception tout de suite, comme aujourd'hui : l'extinction ne retarde jamais
   STOP.
-- Doigt gardé : anneau de progression autour de STOP et texte « Maintenir 3 s pour éteindre le TRX » ; relâcher avant
-  3 s = rien de plus (la réception est déjà faite).
-- À 3 s : vibration, puis fenêtre « Confirmer l'arrêt à distance de votre TRX ? » avec « Annuler » (par défaut) et
-  « Éteindre le TRX » ; la fenêtre se ferme seule après 15 s sans réponse (= Annuler).
-- Accepté : `power_off` avec `confirm: true` ; les refus de la station (§ 3.2 : émission en cours, opérateur sur place)
-  s'affichent dans la fenêtre avec leur code ORT ; réussite = bandeau « POSTE ÉTEINT ».
-- Seulement si `hello.features` annonce `power` (opérateur, `power_control = true`, poste qui le déclare) ; sinon le
-  maintien n'a pas d'autre effet que STOP.
+- Doigt gardé : anneau de progression autour de STOP et texte « appui long : déconnexion ou arrêt du TRX » ;
+  relâcher avant 3 s = rien de plus (la réception est déjà faite).
+- À 3 s : vibration, puis fenêtre à DEUX CHOIX (décision de l'utilisateur, v4), plus « Annuler » (par défaut, aussi
+  après 15 s sans réponse) :
+  1. **Se déconnecter** : comme le geste de l'étape 194 de la page (réception déjà faite, puis déconnexion) ;
+  2. **Arrêter le TRX à distance** : seconde fenêtre « Confirmer l'arrêt à distance de votre TRX ? » (« Annuler » par
+     défaut, « Arrêter le TRX ») puis `power_off` avec `confirm: true`. Les refus de la station (§ 3.2 : émission en
+     cours, opérateur sur place) s'affichent dans la fenêtre avec leur code ORT ; réussite = bandeau « POSTE ÉTEINT ».
+- Choix 2 grisé, avec sa raison sous le bouton, quand `hello.features` n'annonce pas `power` (« Arrêt à distance hors
+  service : menu 2.8 de TRX Console », « Votre poste ne le permet pas », « Compte visiteur ») ; le choix 1 reste.
+- Visiteur : la même fenêtre, choix 2 grisé.
 - Jamais en mode conduite ni depuis Android Auto (pas de fenêtre à lire en roulant) ; STOP y reste un STOP simple.
 - Gros PTT rond : son STOP garde le même comportement.
-- Page web : STOP maintenu 3 s n'y vaut PLUS déconnexion (étape 194) : la déconnexion reste au bouton
-  « Déconnecter » de la rubrique Connexion, et le texte sous STOP devient « appui long : éteindre le TRX » quand
-  `power` est annoncé (rien sinon). Fonction hors service (§ 8.3) : le maintien n'a pas d'autre effet que STOP, dans
-  la page comme dans l'application.
+- Page web : le geste « déconnexion » de l'étape 194 reste (choix 1) ; le bouton « Déconnecter » aussi.
 
 ### 8.2 Page et application : connexion à un poste éteint = allumage (v2, page v3)
 
@@ -230,10 +243,25 @@ menu en fin du thème 2 « Poste et matériel » (règle : un nouveau menu s'ajo
    (message : « Le poste est éteint : allumez-le au shack ou remettez la fonction en service »).
 4. Aussi dans la console web (formulaires) et l'écran plein ; aucune commande d'allumage ou d'extinction dans la
    console elle-même (seulement l'interrupteur ; non demandé).
-- Station elle-même injoignable (PC éteint) : hors périmètre (réveil par le réseau à étudier à part).
-- **Android Auto** : titre « POSTE ÉTEINT », lecteur sans son ; aucun bouton (§ 10).
-- **trx-monitor et tableau de bord 1.3** : ligne « Poste : éteint par <pseudo> depuis HH:MM ».
-- **Indicateurs GNOME / Windows** : couleur neutre « poste éteint » (`status.js` et vecteurs).
+5. **Extinction automatique** (v4, option, HORS SERVICE par défaut) : en service / hors service, durée en heures
+   (1 à 168, 4 proposé) ; proposée seulement quand la fonction est en service (§ 8.4).
+6. **Alertes ntfy** (v4, option, HORS SERVICE par défaut) : en service / hors service ; une alerte à chaque allumage et
+   extinction (qui, comment : STOP maintenu, connexion, extinction automatique), et à chaque échec d'allumage ;
+   envoyée seulement si `[supervisor] notify_url` est réglée (sinon l'option dit « alertes ntfy non configurées :
+   menu 3.5 »).
+
+### 8.4 Extinction automatique après N heures sans usage (v4)
+
+- Faite par la PASSERELLE (jamais par le superviseur), seulement si `power_control` ET `idle_off` sont en service.
+- Compteur remis à zéro par : toute connexion (opérateur ou visiteur), une diffusion en direct en cours, une action
+  sur le poste (opérateur sur place), un allumage. L'extinction a lieu quand AUCUNE connexion n'existe depuis
+  `idle_off_hours` heures.
+- Mêmes règles que l'extinction à la main (§ 3.2) : jamais pendant une émission (locale comprise) ni dans les 2 min
+  qui suivent une action sur le poste ; dans ce cas l'extinction est REPORTÉE (nouvel essai 10 min après), jamais
+  forcée.
+- Ligne au journal (code ORT), alerte ntfy si l'option du § 8.3.6 est en service ; `power_by` = « extinction
+  automatique ».
+- Le poste éteint ainsi se rallume à la connexion suivante d'un opérateur (§ 8.2).
 
 ## 9. Erreurs, tests, documentation
 
@@ -249,16 +277,16 @@ menu en fin du thème 2 « Poste et matériel » (règle : un nouveau menu s'ajo
 
 ## 10. Questions à l'utilisateur
 
-1. Android Auto : état seulement (proposé) ou aussi un bouton « Allumer » ? (l'allumage à la connexion depuis la
-   voiture est décidé, v3)
+TOUTES LES QUESTIONS SONT RÉPONDUES (v4, 2026-11-19).
+
+1. RÉPONDU (v4) : pas de bouton dans Android Auto (état seulement). Question d'origine : Android Auto : état
+   seulement ou aussi un bouton « Allumer » ?
 2. RÉPONDU (v3) : menu 2.8 = interrupteur en service / hors service, hors service par défaut ; pas de commande
    d'allumage dans la console.
-3. Allumage automatique après une coupure de courant (option désactivée par défaut, seulement au démarrage de la
-   station) : voulu ? (le cahier propose NON pour la v1).
-4. Extinction automatique après N heures sans client : voulue ? (proposé : NON pour la v1).
-5. Alerte ntfy à chaque allumage / extinction : oui, ou journal seulement ?
-6. Qui peut éteindre quand plusieurs opérateurs sont connectés : n'importe lequel (proposé), ou seulement s'il est
-   seul ?
+3. RÉPONDU (v4) : NON, aucun allumage automatique après une coupure de courant.
+4. RÉPONDU (v4) : OUI, en option en service / hors service avec une durée en heures (§ 8.3.5, § 8.4).
+5. RÉPONDU (v4) : OUI, alertes ntfy en option en service / hors service (§ 8.3.6).
+6. RÉPONDU (v4) : n'importe quel opérateur connecté peut arrêter le poste.
 7. RÉPONDU (v3) : même fonctionnement que l'application (§ 8.1, § 8.2). Question d'origine : page web, où STOP maintenu 3 s = déconnexion depuis l'étape 194 : garder la déconnexion seule, ou ouvrir une
    fenêtre « Se déconnecter » / « Éteindre le TRX » / « Annuler » (proposé, pour rester proche de l'application) ?
    Et l'allumage à la connexion de la page : oui comme l'application (proposé) ?
