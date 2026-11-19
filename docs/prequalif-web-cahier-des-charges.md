@@ -1,4 +1,4 @@
-# Préqualification d'un poste depuis le navigateur : cahier des charges (v2, 2026-11-19)
+# Préqualification d'un poste depuis le navigateur : cahier des charges (v3, 2026-11-19)
 
 Demande de l'utilisateur (2026-11-19) : un radioamateur ou un cibiste branche son TRX en USB sur son PC, ouvre une page
 dans Chrome et sait en quelques minutes si son poste pourra être piloté par openRemoteTRX. Deux modes :
@@ -11,6 +11,10 @@ dans Chrome et sait en quelques minutes si son poste pourra être piloté par op
 V2 le même jour (réponses de l'utilisateur) : rapport ENVOYÉ en un bouton, sans formulaire, avec des données dont la
 vraisemblance se vérifie (§ 9) ; mode B ULTRA SIMPLE, petite passerelle « page web <-> Hamlib » proposée sur le
 Microsoft Store (§ 8.1) ; français et anglais ; pas d'Android.
+V3 le même jour (réponses de l'utilisateur) : programme « openRemoteTRX-Autotest » compilé en EXE (§ 8.1) ; courriel
+facultatif derrière un interrupteur sur ARRÊT (§ 9.1) ; test ANONYME annoncé dès l'accueil, rien n'est envoyé sans le
+bouton de la fin (§ 4, § 9.2) ; préqualifications NON montrées sur le site public pour l'instant ; autres langues plus
+tard.
 
 Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
 
@@ -33,6 +37,14 @@ Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
    Microsoft Store (§ 8.1).
 9. **Langues** : français et anglais.
 10. **Pas d'Android.**
+11. **Nom du programme** : « openRemoteTRX-Autotest » (commande Linux `trx-autotest`) ; compilé en EXE, pas un Python
+    à installer (§ 8.1).
+12. **Courriel facultatif** pour être recontacté : interrupteur sur ARRÊT par défaut, le champ n'apparaît que sur
+    MARCHE (§ 9.1).
+13. **Anonymat annoncé dès l'accueil** : le test est anonyme, rien ne part vers rf-diy.com pendant le test ; seul le
+    bouton « Envoyer le rapport » de la fin envoie quelque chose, et seulement si l'opérateur le veut.
+14. **Préqualifications non publiées** sur le site public pour l'instant (gestion future dans une base de données).
+15. **Autres langues plus tard.**
 
 EXCEPTION aux règles de sécurité d'émission de CLAUDE.md : elles visent la STATION pilotée À DISTANCE. La
 préqualification est un outil LOCAL, l'opérateur présent devant le poste sur charge fictive ; elle ne passe ni par la
@@ -75,7 +87,9 @@ Un rapport clair, en vert / orange / rouge :
 ## 4. Déroulé (identique dans les deux modes)
 
 1. **Accueil** : ce que fait la page, ce qu'il faut (câble USB, charge fictive, Chrome), ce qui va se passer (les
-   émissions : combien, combien de temps, à quelle puissance), langue.
+   émissions : combien, combien de temps, à quelle puissance), langue. En évidence : « Le test est anonyme. Rien
+   n'est envoyé pendant le test, ni à rf-diy.com ni ailleurs. À la fin, vous pourrez envoyer le rapport au projet si
+   vous le voulez. » Pendant le test la page ne contacte AUCUN serveur (vérifiable dans les outils de Chrome).
 2. **Marque** : boutons (Icom, Yaesu, Kenwood, Elecraft, Xiegu, Autre). « Autre » = mode A impossible, mode B proposé.
    Modèle proposé ensuite en boutons (liste de la marque), « Je ne sais pas » permis.
 3. **Branchement** : choix du port dans la fenêtre de Chrome (mode A) ou liste des ports (mode B).
@@ -164,7 +178,7 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
 
 ## 8. Mode B : avec Hamlib, automatique
 
-- Commande `trx-prequalif` (même code Python que `trx-qualif` : exploration en lecture, liste fermée d'écritures,
+- Commande `trx-autotest` (même code Python que `trx-qualif` : exploration en lecture, liste fermée d'écritures,
   constats de cohérence, étapes de `trx-hwtest`) : lance SON rigctld sur un port libre (jamais celui de la station,
   refus si la station tourne), sert la page sur 127.0.0.1 avec un jeton, ouvre le navigateur.
 - MÊME page que le mode A : une couche « transport » choisit le pilote (Web Serial en mode A, API locale en mode B).
@@ -177,21 +191,27 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
 - La valise reste l'outil de QUALIFICATION (pannes, superviseur, station complète) ; le rapport du mode B peut la
   préremplir.
 
-### 8.1 Passerelle ultra simple, Microsoft Store (proposition de la v2)
+### 8.1 openRemoteTRX-Autotest : passerelle ultra simple, Microsoft Store
 
-- Un seul programme « TRX Préqualif » (nom à choisir) : installé depuis le Microsoft Store, lancé depuis le menu
+- Un seul programme « openRemoteTRX-Autotest » : installé depuis le Microsoft Store, lancé depuis le menu
   Démarrer ; il ouvre lui-même Chrome / Edge sur sa page (127.0.0.1, jeton), une icône près de l'horloge, fermer la page
   ou l'icône = arrêt. Aucune question d'installation, aucun réglage, aucun pare-feu (écoute sur 127.0.0.1 seulement).
-- Contenu : le code Python de `trx-qualif` gelé (PyInstaller) + Hamlib pour Windows (version épinglée, empreinte
-  vérifiée à la fabrication) ; ni la station, ni le superviseur, ni la passerelle.
+- Contenu : un EXE natif + rigctld.exe et les DLL de Hamlib pour Windows (version épinglée, empreinte vérifiée à la
+  fabrication) ; ni la station, ni le superviseur, ni la passerelle. Rien à installer à côté (pas de Python).
+- EXE (décision v3) : le code reste écrit en Python, PARTAGÉ avec `trx-qualif` (une seule implémentation des essais),
+  et il est COMPILÉ en C puis en EXE par Nuitka. Écartés : PyInstaller (un Python caché dans une archive, démarrage
+  lent, souvent pris pour un virus) et une réécriture en Go ou Rust (deux codes des essais à tenir d'accord).
+- Hamlib par rigctld.exe, processus à part, et non par la DLL chargée dans l'EXE : un défaut de Hamlib qui fait planter
+  (lecture `KEYERTYPE`, étape 255) ne tue que rigctld, l'EXE le relance et retient la lecture fautive.
 - Paquet MSIX : le Store le signe lui-même (pas de certificat de signature de code à acheter, pas d'avertissement
   SmartScreen), mises à jour par le Store ; accès aux ports série = application « pleine confiance » (`runFullTrust`).
 - Licences : Hamlib (LGPL / GPL) livré avec l'offre des sources ; notre code AGPL ; mentions dans la fenêtre « À
   propos ».
 - À vérifier au lot PQ5 : compte développeur Microsoft (conditions et coût pour un particulier), délai et règles de
-  certification (un programme PyInstaller est parfois pris pour un virus par les antivirus), taille du paquet.
+  certification (faux positifs des antivirus à surveiller même avec Nuitka), taille du paquet, compilation Nuitka de
+  aiohttp et des autres modules utilisés.
 - Aussi publié en zip sur les Releases GitHub (même programme) et par `winget` plus tard ; Linux : commande
-  `trx-prequalif` du paquet de la station (pas de Store).
+  `trx-autotest` du paquet de la station (pas de Store).
 
 ## 9. Rapport
 
@@ -203,7 +223,12 @@ Un essai que le modèle ne permet pas est « non disponible », jamais un échec
 ### 9.1 Envoi en un bouton (proposition de la v2)
 
 - Bouton « Envoyer le rapport au projet » à la fin ; avant l'envoi, la page MONTRE ce qui part (résumé lisible + « voir
-  le détail »). Deux champs FACULTATIFS : indicatif, commentaire libre. Aucun compte, aucun courriel exigé.
+  le détail »). Champs FACULTATIFS : indicatif, commentaire libre. Aucun compte exigé.
+- Interrupteur « Je veux que le projet puisse me recontacter » sur ARRÊT par défaut : sur MARCHE, un champ « Adresse
+  de courriel » apparaît (format vérifié, rien de plus) ; repassé sur ARRÊT, le champ est vidé et rien ne part. Texte à
+  côté : l'adresse ne sert qu'à vous répondre au sujet de ce rapport, n'est jamais publiée ni transmise, effacée sur
+  simple demande (avec le numéro du rapport). Rangée À PART du rapport sur le serveur (le rapport reste anonyme pour
+  qui l'étudie).
 - Envoi en HTTPS vers un petit service du projet sur le VPS de diffusion (dépôt privé `openRemoteTRX-vps`, même Caddy) :
   reçu, stocké, numéro de rapport rendu à l'opérateur (à citer s'il écrit au projet). Limite de débit par adresse.
 - Écartés : ticket GitHub prérempli (compte GitHub exigé, rapport trop long pour une adresse), courriel (logiciel de
@@ -219,8 +244,9 @@ EFFET.
 1. **Trace brute jointe** : chaque octet envoyé et reçu par le port série (mode A) ou chaque commande et réponse de
    rigctld (mode B), horodaté, avec les mesures du son. Le SERVICE recalcule lui-même les résultats depuis la trace
    avec le même code de pilote : les conclusions écrites par la page ne sont jamais crues.
-2. **Jeton du serveur** : la page en demande un au début des essais ; il est daté, à usage unique et inscrit dans la
-   trace ; un rapport sans jeton, trop vieux ou déjà vu est rangé « non vérifiable ».
+2. **Rapport rejoué** : la v2 proposait un jeton demandé au serveur AU DÉBUT des essais ; RETIRÉ en v3 (la page ne
+   contacte aucun serveur pendant le test, § 4). À la place : empreinte de la trace gardée par le service, un rapport
+   déjà reçu (même trace) est refusé ; horodatages de la trace comparés à l'heure de réception.
 3. **Cohérence physique** vérifiée par le service : identité du poste (`19 00`, `ID;`) cohérente avec le modèle choisi,
    format exact des trames du modèle, écho CI-V, temps de réponse plausibles et non réguliers, S-mètre qui varie,
    puissance lue en émission compatible avec la puissance réglée, PTT relu après chaque retour, ALC et Po qui montent
@@ -248,11 +274,11 @@ EFFET.
 2. **Écriture de fréquence et de mode** : un essai d'écriture (petit décalage puis remise) en mode A, ou seulement le
    mode données nécessaire à la tonalité ? (règle actuelle : jamais de QSY imposé)
 3. **Durées** : 10 s au plus par essai d'émission, combien d'émissions au total (environ 5) : d'accord ?
-4. **Rapport** : envoi en un bouton vers le service du VPS (§ 9.1) et vérifications du § 9.2 : d'accord ?
-5. **Mode B** : programme seul sur le Microsoft Store (§ 8.1) : d'accord ? nom du programme ?
+4. ~~Rapport~~ : TRANCHÉ (un bouton, courriel facultatif derrière un interrupteur, § 9.1).
+5. ~~Mode B~~ : TRANCHÉ (openRemoteTRX-Autotest, EXE, Microsoft Store, § 8.1).
 6. ~~Langues~~ : TRANCHÉ (français et anglais).
 7. ~~Android~~ : TRANCHÉ (non).
-8. **Rapports reçus sur le site public** : la page publique des postes
+8. ~~Rapports reçus sur le site public~~ : TRANCHÉ (non pour l'instant ; base de données plus tard). Question d'origine : la page publique des postes
    (https://bob56fr.github.io/openRemoteTRX/postes/) ne montre aujourd'hui que les postes QUALIFIÉS par le projet.
    Montrer aussi ce que disent les rapports reçus (« IC-7300 : 4 rapports d'utilisateurs, tous OK » ; « Xiegu G90 :
    1 rapport, PTT par la CAT en échec »), dans une partie à part et après relecture ? Ou garder les rapports pour le
@@ -267,7 +293,7 @@ EFFET.
 | PQ2 | Famille ASCII : Yaesu nouveau, Kenwood, Elecraft ; E5 (RTS / DTR) | FTDX10 |
 | PQ3 | Xiegu (dialecte CI-V) et Yaesu ancien, marqués « non vérifié » sans poste | bêta-testeur |
 | PQ4 | Liste des modèles de Hamlib embarquée (§ 7) | — |
-| PQ5 | Mode B : `trx-prequalif`, page servie, transport « API locale », comparaison A / B | IC-7300MK2, FTDX10 |
+| PQ5 | Mode B : `trx-autotest`, page servie, transport « API locale », comparaison A / B | IC-7300MK2, FTDX10 |
 | PQ6 | Publication (GitHub Pages, iframe), langues, guide de l'opérateur | — |
 
 ## 13. Limites assumées
