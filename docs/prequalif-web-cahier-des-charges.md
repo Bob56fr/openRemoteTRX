@@ -331,7 +331,7 @@ TOUTES TRANCHÉES (v4).
 | Lot | Contenu | Poste d'essai |
 |---|---|---|
 | PQ0 | Ce cahier, questions tranchées | — |
-| PQ1 | Page mode A : accueil, marque, port, CI-V Icom, essais R1 à R7, autorisation, E1 à E4 et E6, remise, rapport | IC-7300MK2, IC-705 |
+| PQ1 (FAIT, étape 294, Autotest 0.1.0 ; essai réel à faire) | Page mode A : accueil, marque, port, CI-V Icom, essais R1 à R7, autorisation, E1 à E4 et E6, remise, rapport | IC-7300MK2, IC-705 |
 | PQ2 | Famille ASCII : Yaesu nouveau, Kenwood, Elecraft ; E5 (RTS / DTR) | FTDX10 |
 | PQ3 | Xiegu (dialecte CI-V) et Yaesu ancien, marqués « non vérifié » sans poste | bêta-testeur |
 | PQ4 | Liste des modèles de Hamlib embarquée (§ 7) | — |
