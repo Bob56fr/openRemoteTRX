@@ -123,7 +123,8 @@ def wait(pilot: Pilot, max_s: float, out=print, since: int | None = None) -> dic
     since = state.get("dernier_evenement", 0) if since is None else since
     start = time.monotonic()
     end = start + max_s
-    announced: set[int] = set()
+    # une question DÉJÀ ouverte au départ est déjà connue du pilote : on attend la suivante (ou le menu), pas elle
+    announced: set[int] = set() if launched else {q["id"] for q in state.get("attente_operateur") or []}
     left_menu = launched or not state.get("menu")
     while True:
         for line in pilot.journal(since):
