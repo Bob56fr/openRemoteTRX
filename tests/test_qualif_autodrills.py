@@ -151,3 +151,13 @@ def test_an_unreadable_ptt_starts_nothing_and_never_claims_a_transmission(tmp_pa
         state_dir=tmp_path, ask=lambda p: "EMETTRE", out=shown.append, period=0.01))
     assert record == {} and made == [] and "auto_stop" not in session.drills
     assert not any("COUPE" in s for s in shown) and any("ILLISIBLE" in s for s in shown)
+
+
+def test_an_operator_on_site_still_marked_is_released_like_the_page_button(tmp_path):
+    """Essai du 2026-11-19 : A1 à A3 refusés « local_active » juste après l'essai 6 (micro du poste) ; la valise
+    reprend la main comme le bouton de la page (la station le refuse pendant une émission locale)."""
+    def on_site(lb):
+        lb.ctrl.local._mark("frequency", lb.ctrl.local.clock())
+    record, ptt, _, _, _, _ = _play(tmp_path, "auto_stop", prepare=on_site)
+    assert record["measured"] == "reussi", record["reason"]
+    assert ptt == 0

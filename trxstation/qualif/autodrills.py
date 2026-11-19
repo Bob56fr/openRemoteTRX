@@ -179,6 +179,10 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
         measured, reason = "non_mesure", str(exc)
     except Exception as exc:                     # noqa: BLE001 : toute erreur finit par la remise en réception
         measured, reason = "non_mesure", f"erreur : {exc!r}"
+        if isinstance(exc, (asyncio.InvalidStateError, ConnectionError)):
+            # connexion du client fermée par la station : le MÊME compte ouvert ailleurs (page de la station) chasse
+            # la connexion de la valise (essai du 2026-11-19, InvalidStateError d'aiortc)
+            measured, reason = "non_mesure", _t("terrain.auto.kicked", error=repr(exc))
     finally:
         if client is not None:
             try:
@@ -223,9 +227,17 @@ async def play_auto(drill: Drill, session: Session, *, client_factory: Callable,
 
 async def _transmit(client, observer: Observer) -> tuple[float, asyncio.Task]:
     """Prise d'émission par la passerelle (battements lancés) ; instant où le poste est VU en émission."""
-    for _ in range(COOLDOWN_TRIES):
+    released = False
+    for _ in range(COOLDOWN_TRIES + 1):
         asked = time.time()
         result = await client.command("toggle")
+        if result.get("reason") == "local_active" and not released:
+            # « opérateur sur place » encore actif (essai 6 au micro du poste juste avant, essai du 2026-11-19) : la
+            # valise REPREND LA MAIN comme le bouton de la page ; la station le REFUSE pendant une émission locale.
+            released = True
+            await client.command("local_release")
+            await asyncio.sleep(0.5)
+            continue
         if result.get("reason") != "cooldown":
             break
         await asyncio.sleep(COOLDOWN_WAIT_S)     # anti-rebond de la station après l'émission précédente (vu : A2)

@@ -417,6 +417,7 @@
   "terrain.auto.unknown_account": "Cuenta « {account} » desconocida en station.toml. Cuentas de operador: {accounts}.",
   "terrain.auto.bad_password": "Contraseña rechazada para la cuenta « {account} »: vuelve a intentarlo (Intro = cancelar).",
   "terrain.auto.account_ok": "Cuenta « {account} » verificada.",
+  "terrain.auto.kicked": "conexión cerrada por la estación ({error}): la misma cuenta está probablemente abierta en otro lugar (página de la estación en el navegador?); ciérrela y vuelva a lanzar",
   "terrain.auto.link_error": "El cliente automático no pudo hablar con la estación ({reason}): encadenamiento detenido, cuenta a dar de nuevo.",
   "terrain.seq.by_hand": "Pasamos a las pruebas de seguridad A MANO. Aquí es USTED quien emite, desde la página de la estación ({url}), la aplicación o el micrófono del equipo; el maletín solo cronometra y le guía paso a paso. Abra la página de la estación en otra pestaña e inicie sesión con una cuenta de operador, luego Intro = empezar, s = saltar las pruebas a mano: ",
   "terrain.auto.account_file": "Cuenta « {account} »: contraseña leída en {file}.",
