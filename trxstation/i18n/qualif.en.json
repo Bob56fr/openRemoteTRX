@@ -338,6 +338,7 @@
   "terrain.need_stopped": "The station is running: stop it first (a), these tools start their own rigctld.",
   "terrain.need_running": "Warning: the station is stopped. Start it (d) for the drills, except the « start-up » drill.",
   "terrain.control_done": "Command sent.",
+  "terrain.control_managed": "Suitcase station not started: on Linux, its station.toml must have, in [supervisor], service_mode = \"managed\" (otherwise the INSTALLED station would start), and state_dir and status_path inside the qualification folder (see docs/valise-mode-emploi.md, § 2.3). Fix it, then try again.",
   "terrain.control_failed": "The command failed: use TRX Console (menus 1.1 and 1.2).",
   "terrain.snapshot_reading": "Reading the rig (reads only, nothing is changed)…",
   "terrain.snapshot_failed": "Snapshot impossible: {error}",

@@ -338,6 +338,7 @@
   "terrain.need_stopped": "La estación está en marcha: detenla primero (a), estas herramientas lanzan su propio rigctld.",
   "terrain.need_running": "Atención: la estación está detenida. Arráncala (d) para las pruebas, salvo la prueba « arranque ».",
   "terrain.control_done": "Orden enviada.",
+  "terrain.control_managed": "Estación del maletín no arrancada: en Linux, su station.toml debe tener, en [supervisor], service_mode = \"managed\" (si no, arrancaría la estación INSTALADA), y state_dir y status_path dentro de la carpeta de cualificación (ver docs/valise-mode-emploi.md, § 2.3). Corríjalo y vuelva a intentarlo.",
   "terrain.control_failed": "La orden ha fallado: usa TRX Console (menús 1.1 y 1.2).",
   "terrain.snapshot_reading": "Leyendo el equipo (solo lecturas, nada cambia)…",
   "terrain.snapshot_failed": "Lectura imposible: {error}",

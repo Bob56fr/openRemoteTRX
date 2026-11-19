@@ -165,7 +165,7 @@ def test_the_suitcase_starts_its_own_station_not_the_installed_task(tmp_path, mo
     assert cmd[-1] == str(config.parent.resolve() / "logs") and (config.parent / "logs").is_dir()
     launched.clear()
     terrain.station_control(config, False)                     # arrêt : --stop avec SA configuration
-    assert "--stop" in launched[0][0] and str(config) in launched[0][0]
+    assert "--stop" in launched[0][0] and str(config.resolve()) in launched[0][0]
     launched.clear()
     terrain.station_control(None, True)                        # station installée : sa tâche planifiée
     assert launched[0][0][:2] == ["schtasks", "/Run"]
@@ -440,3 +440,36 @@ def test_the_rx_only_qualification_is_complete_when_only_the_ptt_is_missing(tmp_
     tests[2]["ok"] = None
     (folder / "results.json").write_text(json.dumps({"tests": tests}), encoding="utf-8")
     assert not terrain._qualif_rx_complete(folder)
+
+
+def test_on_linux_the_suitcase_runs_its_own_station_in_managed_mode(tmp_path, monkeypatch):
+    """Limite levée le 2026-11-19 : sous Debian, « d » / « a » pilotaient les services systemd de la station
+    INSTALLÉE. Configuration propre = son superviseur en mode géré ; sans `service_mode = "managed"`, rien n'est
+    lancé (« auto » choisirait systemd)."""
+    import subprocess
+    from trxstation import config as cfgmod
+    from trxstation.setup_wizard import dummy_config
+    launched = []
+    monkeypatch.setattr(subprocess, "Popen", lambda cmd, **kw: launched.append((cmd, kw)))
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: launched.append((cmd, kw)) or SimpleNamespace(returncode=0))
+    import os as real_os
+    monkeypatch.setattr(terrain, "os", SimpleNamespace(name="posix", geteuid=lambda: 1000, access=real_os.access, W_OK=real_os.W_OK))
+    config = tmp_path / "qualif" / "station.toml"
+    config.parent.mkdir()
+    cfg = dummy_config()
+    cfg.supervisor.state_dir = str(tmp_path / "etat")
+    config.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    assert terrain.station_control(config, True) == terrain.NOT_MANAGED and launched == []
+    cfg.supervisor.service_mode = "managed"
+    cfg.supervisor.status_path = str(tmp_path / "etat" / "gateway-status.json")
+    config.write_text(cfgmod.render_toml(cfg), encoding="utf-8")
+    assert terrain.station_control(config, True) == 0
+    cmd, kw = launched[0]
+    assert cmd[1:3] == ["-m", "trxstation.supervisor.main"] and str(config.resolve()) in cmd
+    assert kw.get("start_new_session") is True and "systemctl" not in cmd
+    launched.clear()
+    terrain.station_control(config, False)
+    assert "--stop" in launched[0][0] and "systemctl" not in launched[0][0]
+    launched.clear()
+    terrain.station_control(None, False)                       # station installée : systemd comme avant
+    assert "systemctl" in launched[0][0]

@@ -338,6 +338,7 @@
   "terrain.need_stopped": "La station est en marche : arrête-la d'abord (a), ces outils lancent leur propre rigctld.",
   "terrain.need_running": "Attention : la station est arrêtée. Démarre-la (d) pour les essais, sauf l'essai « démarrage ».",
   "terrain.control_done": "Commande envoyée.",
+  "terrain.control_managed": "Station de la valise non démarrée : sous Linux, sa station.toml doit avoir, dans [supervisor], service_mode = \"managed\" (sinon c'est la station INSTALLÉE qui démarrerait), et state_dir et status_path dans le dossier de qualification (voir docs/valise-mode-emploi.md, § 2.3). Corrigez, puis relancez.",
   "terrain.control_failed": "La commande a échoué : utilise TRX Console (menus 1.1 et 1.2).",
   "terrain.snapshot_reading": "Relevé du poste (lectures seulement, rien n'est changé)…",
   "terrain.snapshot_failed": "Relevé impossible : {error}",

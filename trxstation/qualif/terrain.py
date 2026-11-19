@@ -859,25 +859,63 @@ def own_station_config(config_path: Path | None) -> bool:
         return True
 
 
+NOT_MANAGED = 5          # station.toml de la valise pas prête pour Linux (`own_station_ready`) : rien n'est lancé
+
+
+def _writable_dir(folder: Path) -> bool:
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return False
+    return os.access(folder, os.W_OK)
+
+
+def own_station_ready(config_path: Path) -> bool:
+    """Linux : la station de la VALISE tourne sous le compte de l'opérateur, sans systemd (essai sur Debian du
+    2026-11-19) : `service_mode = "managed"` (« auto » choisirait systemd = la station INSTALLÉE), dossier d'état
+    et fichier d'état de la passerelle où ce compte peut écrire (`/run/trx-remote` : refusé, passerelle « muette »)."""
+    from .. import config as cfgmod
+    try:
+        sup = cfgmod.load(config_path).supervisor
+    except Exception:                    # noqa: BLE001 : configuration illisible = on ne lance rien
+        return False
+    return (sup.service_mode == "managed" and _writable_dir(Path(sup.state_dir))
+            and _writable_dir(Path(sup.status_path).parent))
+
+
 def station_control(config_path: Path | None, start: bool) -> int:
     """Démarre ou arrête la station du PC comme TRX Console (menus 1.1 et 1.2) ; code de retour de la commande."""
     import subprocess
     import sys
     from ..console import TARGET, WINDOWS_TASK
-    if os.name == "nt":
-        if start and own_station_config(config_path):
-            # Station de la VALISE (sa propre station.toml) : jamais la tâche planifiée de l'installation, qui
-            # démarrerait la station installée avec SA configuration, ou n'existe pas (essai du 2026-11-18 :
-            # « Le fichier spécifié est introuvable »). Superviseur lancé comme 2-demarrer-station.cmd.
-            folder = config_path.resolve().parent
-            (folder / "logs").mkdir(exist_ok=True)
+    if own_station_config(config_path):
+        # Station de la VALISE (sa propre station.toml) : jamais la tâche planifiée ni les services systemd de
+        # l'installation, qui démarreraient la station installée avec SA configuration (Windows, essai du
+        # 2026-11-18 : tâche absente ; Debian : limite levée le 2026-11-19). Superviseur lancé directement, en
+        # « mode géré » (il lance lui-même rigctld et la passerelle) ; arrêt par `--stop --config`.
+        folder = config_path.resolve().parent
+        base = [sys.executable, "-m", "trxstation.supervisor.main", "--config", str(config_path.resolve())]
+        if not start:
             try:
-                subprocess.Popen([sys.executable, "-m", "trxstation.supervisor.main", "--config",
-                                  str(config_path.resolve()), "--log-dir", str(folder / "logs")],
-                                 cwd=str(folder), creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
+                return subprocess.run(base + ["--stop"], check=False).returncode
             except OSError:
                 return 1
-            return 0
+        if os.name != "nt" and not own_station_ready(config_path):
+            return NOT_MANAGED            # sous Linux : mode géré et chemins du compte de l'opérateur exigés
+        (folder / "logs").mkdir(exist_ok=True)
+        try:
+            if os.name == "nt":
+                subprocess.Popen(base + ["--log-dir", str(folder / "logs")], cwd=str(folder),
+                                 creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
+            else:
+                with open(folder / "logs" / "superviseur-console.log", "ab") as console:
+                    subprocess.Popen(base + ["--log-dir", str(folder / "logs")], cwd=str(folder),
+                                     stdin=subprocess.DEVNULL, stdout=console, stderr=subprocess.STDOUT,
+                                     start_new_session=True)      # survit à la valise, comme une fenêtre à part
+        except OSError:
+            return 1
+        return 0
+    if os.name == "nt":
         if start:
             cmd = ["schtasks", "/Run", "/TN", WINDOWS_TASK]
         else:
@@ -1194,8 +1232,11 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
             bus.publish("rapport", chemin=str(Path(target).resolve()))
         elif choice in ("a", "d"):
             start = choice == "d"
-            ok = control(start) == 0
+            code = control(start)
+            ok = code == 0
             out(_t("terrain.control_done" if ok else "terrain.control_failed"))
+            if code == NOT_MANAGED:
+                notice(bus, _t("terrain.control_managed"))
             if not ok:
                 return False
             # La commande rend la main avant que la station ait changé d'état (essai du 2026-11-18 : page restée

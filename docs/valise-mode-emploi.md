@@ -39,14 +39,8 @@ dossier indiqué** juste au-dessus du cadre.
 La valise travaille dans **son propre dossier**, avec **sa propre station.toml** : elle ne touche jamais à la
 station installée sur le PC.
 
-> **Debian : limite actuelle.** Sous Debian, les boutons « Démarrer / Arrêter la station du PC » de la valise
-> pilotent la station **installée** (systemd), avec SA configuration `/etc/trx-remote/station.toml`. Sous Debian,
-> on qualifie donc avec la station installée, en sautant 2.2 à 2.4 :
-> - poste, son, bandes et TOT réglés par TRX Console (menus 2.1, 3.2, 3.3) ; compte opérateur par le menu 4.3 ;
-> - valise lancée avec `--config /etc/trx-remote/station.toml` (voir 4.1) ; le mot de passe du compte est demandé
->   au premier essai automatique (pas de `valise.pw`).
->
-> Sous Windows, tout ce qui suit s'applique tel quel.
+Quand la valise démarre « la station du PC », c'est la station **de la valise** (celle de ce dossier), sous votre
+compte, sans sudo ; la station installée n'est pas démarrée.
 
 ### 2.1 Créer le dossier et y entrer
 
@@ -81,7 +75,7 @@ L'assistant pose ses questions ; répondre :
 
 À la fin, s'il propose « Démarrer la station maintenant », répondre **n** : c'est la valise qui la démarrera.
 
-### 2.3 Deux réglages à changer à la main
+### 2.3 Les réglages à changer à la main
 
 Ouvrir le fichier, dans le dossier de qualification :
 
@@ -95,18 +89,35 @@ notepad station.toml
 nano station.toml
 ```
 
-Changer (ou ajouter) ces deux lignes, chacune dans SA section :
+Ces lignes existent déjà dans le fichier : changer leur valeur (ne pas les écrire une seconde fois), chacune dans
+SA section.
 
+**Windows** (barres obliques doublées) :
 ```toml
 [supervisor]
-state_dir = "C:\\qualif-ic7300\\state"     # Windows (barres doublées)
-# state_dir = "/home/MOI/qualif-ic7300/state"   # Debian (MOI = votre compte)
+state_dir = "C:\\qualif-ic7300\\state"
 
 [safety]
-tot_s = 20                                  # l'essai du TOT dure 20 s au lieu de 90
+tot_s = 20
 ```
 
-`state_dir` dans le dossier : les journaux de la valise ne se mêlent pas à ceux de la station installée.
+**Debian** (remplacer `MOI` par votre compte, donné par `echo $HOME`) :
+```toml
+[supervisor]
+state_dir = "/home/MOI/qualif-ic7300/state"
+status_path = "/home/MOI/qualif-ic7300/state/gateway-status.json"
+service_mode = "managed"
+
+[safety]
+tot_s = 20
+```
+
+- `state_dir` (et sous Debian `status_path`) dans le dossier : les journaux de la valise ne se mêlent pas à ceux
+  de la station installée, et votre compte a le droit d'y écrire.
+- `service_mode = "managed"` (Debian) : la station de la valise lance elle-même rigctld et la passerelle, sans
+  systemd. Sans cette ligne, la valise refuse de démarrer la station et dit pourquoi (sinon c'est la station
+  installée qui démarrerait).
+- `tot_s = 20` : l'essai du TOT dure 20 s au lieu de 90.
 Enregistrer et fermer (Bloc-notes : Ctrl + S ; nano : Ctrl + O, Entrée, Ctrl + X).
 
 ### 2.4 Le mot de passe du compte, pour les essais automatiques
@@ -139,8 +150,7 @@ qualif-ic7300/
 
 ### 3.1 Arrêter la station installée sur le PC
 
-S'il y en a une, elle prendrait les mêmes ports et le même poste (sous Debian, c'est elle que la valise
-redémarrera quand il le faudra). Par TRX Console (menu 1.2), ou :
+S'il y en a une, elle prendrait les mêmes ports et le même poste. Par TRX Console (menu 1.2), ou :
 
 **Windows**, dans n'importe quel dossier :
 ```powershell
@@ -164,26 +174,25 @@ sudo systemctl stop trx-remote.target
 
 ### 4.1 Première séance (nouvelle session)
 
-**Windows**, dans le dossier de qualification :
-```powershell
-trx-qualif --config station.toml --output valise --terrain --page
+Dans le dossier de qualification (Windows et Debian) :
 ```
-
-**Debian** (station installée, voir la limite au § 2), dans le dossier de qualification :
-```bash
-trx-qualif --config /etc/trx-remote/station.toml --output valise --terrain --page
+trx-qualif --config station.toml --output valise --terrain --page
 ```
 
 - La page de la valise s'ouvre toute seule dans le navigateur.
 - Le terminal affiche son adresse (`http://127.0.0.1:<port>/?t=…`, valable UNE fois) puis le journal : **le laisser
-  ouvert** pendant toute la séance (le fermer arrête la valise).
+  ouvert** pendant toute la séance. Le fermer arrête la valise, mais PAS la station de la valise si elle tourne :
+  avant de quitter, bouton « Arrêter la station du PC », ou dans le dossier de qualification :
+  ```
+  trx-supervisor --stop --config station.toml
+  ```
 - Les sessions et les rapports vont dans le sous-dossier `valise` :
   ```
   qualif-ic7300/
   ├── station.toml
   ├── valise.pw
   ├── state/                                  journaux de la station de la valise
-  ├── logs/                                   journaux du superviseur (Windows)
+  ├── logs/                                   journaux du superviseur, de la passerelle, de rigctld
   └── valise/
       ├── terrain-3094-20261119-0116/         la session (photos/avant, photos/apres…)
       └── terrain-3094-20261119-0116.zip      le rapport pour Claude
@@ -196,8 +205,9 @@ Dans le dossier de qualification, avec le nom du dossier de la session (voir `va
 trx-qualif --config station.toml --output valise --terrain --page --session valise/terrain-3094-20261119-0116
 ```
 
-> **Attention** : sans `--session`, c'est une **NOUVELLE** session. Les essais faits dans l'ancienne ne comptent
-> pas dans le nouveau rapport.
+> **Attention** : sans `--session`, la valise propose de reprendre la session du MÊME JOUR ; si l'on répond non
+> (ou un autre jour), c'est une **NOUVELLE** session, et les essais faits dans l'ancienne ne comptent pas dans le
+> nouveau rapport.
 
 ### 4.3 Autres façons
 

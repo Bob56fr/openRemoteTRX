@@ -338,6 +338,7 @@
   "terrain.need_stopped": "Die Station läuft: zuerst stoppen (a), diese Werkzeuge starten ihr eigenes rigctld.",
   "terrain.need_running": "Achtung: die Station ist gestoppt. Für die Prüfungen starten (d), außer der Prüfung « Start ».",
   "terrain.control_done": "Befehl gesendet.",
+  "terrain.control_managed": "Station des Koffers nicht gestartet: unter Linux braucht ihre station.toml in [supervisor] service_mode = \"managed\" (sonst startet die INSTALLIERTE Station) sowie state_dir und status_path im Qualifizierungsordner (siehe docs/valise-mode-emploi.md, § 2.3). Korrigieren, dann erneut versuchen.",
   "terrain.control_failed": "Der Befehl ist fehlgeschlagen: TRX Console verwenden (Menüs 1.1 und 1.2).",
   "terrain.snapshot_reading": "Gerät wird gelesen (nur Lesen, nichts wird geändert)…",
   "terrain.snapshot_failed": "Lesen nicht möglich: {error}",
