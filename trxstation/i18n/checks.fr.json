@@ -15,6 +15,7 @@
   "unknown_root_key": "clé inconnue à la racine : {key}",
   "bad_structure": "structure invalide : {error}",
   "toml_unreadable": "TOML illisible : {error}",
+  "toml_backslash": "chemin Windows entre guillemets : écrire les barres à l'endroit (\"C:/dossier/state\") ou doubler chaque barre (\"C:\\\\dossier\\\\state\")",
   "schema_version": "schema_version {version} non supporté (attendu : {expected})",
   "rig.model": "[rig] model : numéro Hamlib requis (voir `rigctl -l`)",
   "rig.port": "[rig] port : requis pour un vrai poste",

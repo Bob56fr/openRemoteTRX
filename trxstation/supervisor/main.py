@@ -95,6 +95,13 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging("superviseur")
     try:
         cfg = cfgmod.load(args.config)
+    except FileNotFoundError:
+        # PC sans station installée (ex. PC de la valise, essai du 2026-11-19) : plus de trace Python
+        if args.stop:
+            print(f"Aucune station installée sur ce PC ({args.config} absent) : rien à arrêter.")
+            return 0
+        print(f"Configuration absente : {args.config} (installer la station, ou donner --config).", file=sys.stderr)
+        return 2
     except cfgmod.ConfigError as exc:
         print("Configuration invalide :\n  - " + "\n  - ".join(exc.problems), file=sys.stderr)
         return 2

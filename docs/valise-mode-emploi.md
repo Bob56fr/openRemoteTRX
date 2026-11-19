@@ -92,10 +92,12 @@ nano station.toml
 Ces lignes existent déjà dans le fichier : changer leur valeur (ne pas les écrire une seconde fois), chacune dans
 SA section.
 
-**Windows** (barres obliques doublées) :
+**Windows** (écrire les chemins avec des barres `/`, Windows les accepte ; une barre `\` seule rend le fichier
+illisible) :
 ```toml
 [supervisor]
-state_dir = "C:\\qualif-ic7300\\state"
+state_dir = "C:/qualif-ic7300/state"
+status_path = "C:/qualif-ic7300/state/gateway-status.json"
 
 [safety]
 tot_s = 20
@@ -112,12 +114,19 @@ service_mode = "managed"
 tot_s = 20
 ```
 
-- `state_dir` (et sous Debian `status_path`) dans le dossier : les journaux de la valise ne se mêlent pas à ceux
-  de la station installée, et votre compte a le droit d'y écrire.
+- `state_dir` et `status_path` dans le dossier : les journaux et l'état de la valise ne se mêlent pas à ceux de la
+  station installée, et votre compte a le droit d'y écrire.
 - `service_mode = "managed"` (Debian) : la station de la valise lance elle-même rigctld et la passerelle, sans
   systemd. Sans cette ligne, la valise refuse de démarrer la station et dit pourquoi (sinon c'est la station
   installée qui démarrerait).
 - `tot_s = 20` : l'essai du TOT dure 20 s au lieu de 90.
+
+Vérifier le fichier, dans le dossier de qualification :
+```
+trx-qualif --config station.toml --plan
+```
+Le cahier de test du poste s'affiche = fichier lisible. Sinon le message dit quelle ligne corriger (ex. « Unescaped
+'\' » = chemin Windows avec une seule barre `\`).
 Enregistrer et fermer (Bloc-notes : Ctrl + S ; nano : Ctrl + O, Entrée, Ctrl + X).
 
 ### 2.4 Le mot de passe du compte, pour les essais automatiques
@@ -150,12 +159,17 @@ qualif-ic7300/
 
 ### 3.1 Arrêter la station installée sur le PC
 
-S'il y en a une, elle prendrait les mêmes ports et le même poste. Par TRX Console (menu 1.2), ou :
+S'il y en a une, elle prendrait les mêmes ports et le même poste. **Pas de station installée sur ce PC** (PC prévu
+pour la valise seule) : rien à faire, passer au § 3.2.
+
+Sinon, par TRX Console (menu 1.2), ou :
 
 **Windows**, dans n'importe quel dossier :
 ```powershell
 trx-supervisor --stop
 ```
+Réponses possibles : « Station arrêtée (le poste est en réception). », « La station est déjà arrêtée. », ou
+« Aucune station installée sur ce PC (… absent) : rien à arrêter. » : dans les trois cas, c'est bon.
 
 **Debian**, dans n'importe quel dossier :
 ```bash

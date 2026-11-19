@@ -15,6 +15,7 @@
   "unknown_root_key": "unknown key at the top level: {key}",
   "bad_structure": "invalid structure: {error}",
   "toml_unreadable": "unreadable TOML: {error}",
+  "toml_backslash": "Windows path in quotes: write forward slashes (\"C:/folder/state\") or double every backslash (\"C:\\\\folder\\\\state\")",
   "schema_version": "schema_version {version} not supported (expected: {expected})",
   "rig.model": "[rig] model: Hamlib number required (see `rigctl -l`)",
   "rig.port": "[rig] port: required for a real transceiver",

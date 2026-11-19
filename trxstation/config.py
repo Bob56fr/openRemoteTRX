@@ -1219,7 +1219,10 @@ def _read_toml(path: str | Path) -> dict:
     try:
         return tomllib.loads(Path(path).read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as exc:
-        raise ConfigError([_t("toml_unreadable", error=exc)]) from exc
+        problems = [_t("toml_unreadable", error=exc)]
+        if "Unescaped '\\'" in str(exc):           # chemin Windows avec une seule barre (essai du 2026-11-19)
+            problems.append(_t("toml_backslash"))
+        raise ConfigError(problems) from exc
 
 
 def load(path: str | Path) -> Config:

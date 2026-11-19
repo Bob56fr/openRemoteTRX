@@ -15,6 +15,7 @@
   "unknown_root_key": "clave desconocida en la raíz: {key}",
   "bad_structure": "estructura no válida: {error}",
   "toml_unreadable": "TOML ilegible: {error}",
+  "toml_backslash": "ruta de Windows entre comillas: escribir barras normales (\"C:/carpeta/state\") o duplicar cada barra invertida (\"C:\\\\carpeta\\\\state\")",
   "schema_version": "schema_version {version} no admitido (se espera: {expected})",
   "rig.model": "[rig] model: se requiere el número de Hamlib (ver `rigctl -l`)",
   "rig.port": "[rig] port: obligatorio para un equipo real",

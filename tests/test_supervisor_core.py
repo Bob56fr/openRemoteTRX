@@ -782,3 +782,14 @@ def test_memory_and_disk_thresholds_are_validated(value, ok):
     cfg.supervisor.disk_alert_pct = value
     problems = [p for p in cfgmod.validate(cfg) if "_alert_pct" in p]
     assert (problems == []) is ok
+
+
+def test_stop_on_a_pc_without_an_installed_station_says_so_without_a_trace(tmp_path, capsys):
+    """Essai du 2026-11-19 (PC de la valise, notice § 3.1) : `trx-supervisor --stop` sans station installée
+    finissait sur une trace Python (FileNotFoundError)."""
+    from trxstation.supervisor import main as sup_main
+    missing = tmp_path / "absent" / "station.toml"
+    assert sup_main.main(["--stop", "--config", str(missing)]) == 0
+    assert "rien à arrêter" in capsys.readouterr().out
+    assert sup_main.main(["--config", str(missing)]) == 2
+    assert "Configuration absente" in capsys.readouterr().err

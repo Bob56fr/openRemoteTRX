@@ -15,6 +15,7 @@
   "unknown_root_key": "unbekannter Schlüssel auf oberster Ebene: {key}",
   "bad_structure": "ungültige Struktur: {error}",
   "toml_unreadable": "TOML nicht lesbar: {error}",
+  "toml_backslash": "Windows-Pfad in Anführungszeichen: Schrägstriche schreiben (\"C:/Ordner/state\") oder jeden Backslash verdoppeln (\"C:\\\\Ordner\\\\state\")",
   "schema_version": "schema_version {version} wird nicht unterstützt (erwartet: {expected})",
   "rig.model": "[rig] model: Hamlib-Nummer erforderlich (siehe `rigctl -l`)",
   "rig.port": "[rig] port: für ein echtes Funkgerät erforderlich",
