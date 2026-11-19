@@ -2411,7 +2411,7 @@ class Console:
             text = self.t(f"diffusion.cause.{cause}") if cause in causes else ""
             lines.append(self.t("diffusion.idle") + (self.t("diffusion.last", cause=text) if text else ""))
         lines.append(self.t("diffusion.bands_on") if status.get("outside_bands") else self.t("diffusion.bands_off"))
-        if status.get("active") and status.get("silence") in ("hors_bandes", "emission", "pas_de_son"):
+        if status.get("active") and status.get("silence") in ("hors_bandes", "emission", "pas_de_son", "poste_eteint"):
             lines.append(self.t("diffusion.silence", v=self.t(f"diffusion.silence.{status['silence']}")))
         if status.get("listen_page"):
             lines.append(self.t("diffusion.page", url=status["listen_page"]))

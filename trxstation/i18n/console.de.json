@@ -788,6 +788,7 @@
   "diffusion.silence.hors_bandes": "Empfang außerhalb der erlaubten Bänder",
   "diffusion.silence.emission": "Sendung läuft, Stimme wird nicht übertragen",
   "diffusion.silence.pas_de_son": "der Ton des Geräts erreicht das Modul nicht mehr",
+  "diffusion.silence.poste_eteint": "das Gerät ist ausgeschaltet",
   "diffusion.page": "Seite der Hörer: {url}",
   "diffusion.noreply": "Das Modul „diffusion“ antwortet nicht: Station gestoppt oder Funktion ausgeschaltet (Protokoll: Menü {menu}).",
   "diffusion.refused": "Abgelehnt: {v}",

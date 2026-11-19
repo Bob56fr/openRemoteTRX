@@ -788,6 +788,7 @@
   "diffusion.silence.hors_bandes": "recepción fuera de las bandas autorizadas",
   "diffusion.silence.emission": "emisión en curso, voz no difundida",
   "diffusion.silence.pas_de_son": "el sonido del equipo ya no llega al módulo",
+  "diffusion.silence.poste_eteint": "el equipo está apagado",
   "diffusion.page": "Página de los oyentes: {url}",
   "diffusion.noreply": "El módulo «diffusion» no responde: estación detenida o función desactivada (registro: menú {menu}).",
   "diffusion.refused": "Rechazado: {v}",

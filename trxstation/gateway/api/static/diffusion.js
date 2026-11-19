@@ -45,6 +45,7 @@
     hors_bandes: "réception hors des bandes autorisées",
     emission: "émission en cours, voix non diffusée",
     pas_de_son: "le son du poste n'arrive plus",
+    poste_eteint: "le poste est éteint",
   };
 
   /* Indicateur de l'en-tête : toujours visible pendant une diffusion (cahier § 8). null hors diffusion. */

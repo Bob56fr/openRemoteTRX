@@ -788,6 +788,7 @@
   "diffusion.silence.hors_bandes": "réception hors des bandes autorisées",
   "diffusion.silence.emission": "émission en cours, voix non diffusée",
   "diffusion.silence.pas_de_son": "le son du poste n'arrive plus au module",
+  "diffusion.silence.poste_eteint": "le poste est éteint",
   "diffusion.page": "Page des auditeurs : {url}",
   "diffusion.noreply": "Le module « diffusion » ne répond pas : station arrêtée ou fonction hors service (journal : menu {menu}).",
   "diffusion.refused": "Refusé : {v}",

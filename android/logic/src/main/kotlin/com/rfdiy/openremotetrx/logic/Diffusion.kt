@@ -47,6 +47,7 @@ object Diffusions {
         "hors_bandes" to "réception hors des bandes autorisées",
         "emission" to "émission en cours, voix non diffusée",
         "pas_de_son" to "le son du poste n'arrive plus",
+        "poste_eteint" to "le poste est éteint",
     )
 
     fun remaining(s: Int?): String {

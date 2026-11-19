@@ -788,6 +788,7 @@
   "diffusion.silence.hors_bandes": "receiving outside the allowed bands",
   "diffusion.silence.emission": "transmitting, voice not broadcast",
   "diffusion.silence.pas_de_son": "the rig audio no longer reaches the module",
+  "diffusion.silence.poste_eteint": "the rig is switched off",
   "diffusion.page": "Listeners' page: {url}",
   "diffusion.noreply": "The \"diffusion\" module does not answer: station stopped or feature switched off (log: menu {menu}).",
   "diffusion.refused": "Refused: {v}",

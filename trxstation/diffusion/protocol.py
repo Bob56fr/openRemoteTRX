@@ -62,8 +62,9 @@ DEFAULT_META_CHOICE = CHOICE_FIELDS
 MAX_VOYANTS, MAX_VOYANT_TEXT = 10, 12
 MAX_S_POINTS, MAX_S_AGE_MS = 40, 10_000
 # Raison d'un silence VOULU, toujours envoyée (aucune donnée personnelle), pour l'expliquer aux auditeurs (§ 3.1) :
-# réception hors des bandes autorisées, opérateur en émission sans sa voix diffusée, plus de son du poste.
-SILENCE_REASONS = ("hors_bandes", "emission", "pas_de_son")
+# réception hors des bandes autorisées, opérateur en émission sans sa voix diffusée, plus de son du poste, poste éteint
+# (allumage à distance ; serveur du VPS à jour depuis le 2026-11-19, un serveur plus ancien la refuserait en 400).
+SILENCE_REASONS = ("hors_bandes", "emission", "pas_de_son", "poste_eteint")
 
 
 class DiffusionRefused(ValueError):

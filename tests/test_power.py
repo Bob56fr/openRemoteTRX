@@ -698,4 +698,4 @@ def test_broadcast_listeners_are_told_why_they_hear_nothing_when_the_rig_is_off(
     svc._last_audio = float("inf")
     svc.values, svc._rig_off = {}, True
     reason = svc.silence_reason()
-    assert reason == "pas_de_son" and reason in dp.SILENCE_REASONS   # raison que le serveur connaît déjà
+    assert reason == "poste_eteint" and reason in dp.SILENCE_REASONS   # serveur du VPS à jour (2026-11-19)

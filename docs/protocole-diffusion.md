@@ -99,7 +99,8 @@ non fiable (affichée, jamais exécutée).
   moment, pour le leur dire. TOUJOURS envoyé quand il s'applique (aucune donnée personnelle), absent quand le son
   passe. Valeurs : `hors_bandes` (réception hors des bandes autorisées, `[diffusion] outside_bands = false`),
   `emission` (l'opérateur émet et sa voix n'est pas diffusée), `pas_de_son` (le son du poste n'arrive plus au module
-  depuis 2 s). Le serveur refuse (400) une autre valeur ; un serveur plus ancien l'ignore. Exemple signé : vecteur
+  depuis 2 s), `poste_eteint` (station 0.226.0+ : poste éteint par l'allumage à distance ou au shack ; serveur à jour
+  le 2026-11-19). Le serveur refuse (400) une autre valeur ; un serveur plus ancien l'ignore. Exemple signé : vecteur
   « meta publique, silence hors bandes ».
 
   ```json

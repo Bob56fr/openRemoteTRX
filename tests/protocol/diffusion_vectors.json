@@ -150,7 +150,8 @@
  "silences": [
   "hors_bandes",
   "emission",
-  "pas_de_son"
+  "pas_de_son",
+  "poste_eteint"
  ],
  "reconnexion_s": [
   2,
