@@ -311,6 +311,50 @@ test("Yaesu : R9 fonction absente, écriture refusée « ?; », relue fausse ; p
   assert.equal(res(out, "R6").status, "echec"); assert.ok(!busy.rig.writes.some(w => /^(TX[01]|FA\d|MD0.)/.test(w.cmd)));
 });
 
+// ---------- Kenwood (commandes PC ASCII, TS-890S) ----------
+const K = require("./autotest_fake_kenwood.js");
+const TS890 = models.KENWOOD.find(m => m.id === "ts890s");
+async function setupK(rigOpts, uiOver, opts, audioOpts) {
+  const rig = new K.FakeKenwood(rigOpts);
+  const d = await K.kw.detect({ openAt: async b => rig.transport(b), model: TS890, bauds: models.KENWOOD_BAUDS, byId: models.byKenwood });
+  assert.ok(!d.error, JSON.stringify(d));
+  const u = ui(uiOver);
+  const r = new Runner({ link: d.link, model: TS890, audio: K.fakeAudio(rig, audioOpts), ui: u, opts: Object.assign({}, FAST, opts), detected: d });
+  return { rig, d, u, r };
+}
+
+test("Kenwood : liste fermée (jamais TX TUNE, VOX, menus, alimentation, accord du coupleur, AI sauvegardée)", () => {
+  const f = K.kw.frame;
+  for (const [c, v] of [["TX", "2"], ["VX", "1"], ["EX", "00000001"], ["PS", "0"], ["AC", "111"], ["AC", "101"], ["AI", "4"], ["RT", "2"]])
+    assert.throws(() => f(c, v), /liste fermée/, c + v);
+  assert.equal(f("RX", ""), "RX;"); assert.equal(f("AC", "110"), "AC110;"); assert.equal(f("OM0"), "OM0;");
+});
+
+test("Kenwood : parcours complet réussi, AI et mesures remises, état d'origine remis", async () => {
+  const { rig, r } = await setupK({});
+  const out = await r.run();
+  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+  assert.equal(rig.st.FA, "00007074000"); assert.equal(rig.st.OM0, "1"); assert.equal(rig.st.PC, "100"); assert.equal(rig.tx, false);
+  assert.equal(JSON.stringify(rig.fn), rig.initialFn);
+  assert.equal(rig.st.AI, "0"); assert.equal(rig.rm[1], false); assert.equal(rig.rm[2], false);   // AI et mesures remises
+  assert.equal(rig.txLog.length, 4); assert.ok(rig.maxTx() < 1000);
+  assert.ok(rig.writes.some(w => w.cmd === "TX1"), "tonalité en DATA SEND (TX1)");
+  assert.ok(!rig.writes.some(w => /^(TX2|VX|EX|PS|AC1.1|AI4)/.test(w.cmd)));
+  assert.ok(/annonces automatiques/.test(res(out, "R6").text));
+});
+
+test("Kenwood : sans annonces AI, PTT illisible = aucune émission ; STOP pendant la porteuse", async () => {
+  const a = await setupK({ ng: ["AI"] });
+  const outA = await a.r.run();
+  assert.equal(res(outA, "R6").status, "avert"); assert.equal(a.rig.txLog.length, 0); assert.ok(!a.rig.writes.some(w => /^TX/.test(w.cmd)));
+  const b = await setupK({}, {}, { e2: 3000 });
+  let t0 = null;
+  b.r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E2") setTimeout(() => { t0 = Date.now(); b.r.stop("stop"); }, 60); };
+  const out = await b.r.run();
+  assert.equal(b.rig.tx, false); assert.equal(b.rig.txLog.length, 2); assert.ok(b.rig.txLog[1] < 400);
+  assert.ok(Date.now() - t0 < 1500); assert.equal(res(out, "RS").status, "ok");
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

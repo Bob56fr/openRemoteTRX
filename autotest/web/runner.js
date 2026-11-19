@@ -190,7 +190,7 @@
       this.pttReadable = ptt !== null;
       if (ptt === true) { this.result("R6", "echec", "Le poste est DÉJÀ en émission : essais arrêtés (la page ne touche pas à une émission de l'opérateur)."); this.aborted = true; this.stopReason = "deja_en_emission"; return; }
       if (ptt === null) this.result("R6", "avert", "PTT illisible par la CAT : les émissions d'essai ne seront pas faites (retour en réception impossible à vérifier).");
-      else this.result("R6", "ok", "Réception.");
+      else this.result("R6", "ok", L.pttTracked ? "Réception (ce poste ne se lit pas en émission par la CAT : état suivi par ses annonces automatiques AI, mises en marche pour l'essai)." : "Réception.");
       // R7
       this.step("R7", "cur"); this.now("Carte son du poste…");
       await this._audio();
@@ -455,6 +455,7 @@
         if (o.power != null) { if (L.powerClose(p, o.power)) lines.push(`puissance ${Math.round(L.powerPct(o.power))} %`); else { status = "avert"; lines.push(`puissance à remettre à la main (${Math.round(L.powerPct(o.power))} %)`); } }
         const ptt = await L.readPtt();
         if (ptt === true) { status = "echec"; lines.push("POSTE EN ÉMISSION : coupez-le à la main"); }
+        if (L.finish) await L.finish();                              // Kenwood : AI et lecture des mesures remises
       } catch (e) { status = "echec"; lines.push("remise interrompue : " + (e && e.message || e)); }
       this.result("RS", status, lines.length ? lines.join(", ") + "." : "Rien à remettre.");
     }

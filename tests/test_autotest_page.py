@@ -92,3 +92,15 @@ def test_yaesu_closed_list_never_vox_menus_power_mox_or_tuning() -> None:
     assert keys == {"FA", "FB", "MD0", "PC", "TX", "NB0", "NL0", "NR0", "RL0", "RA0", "PA0", "BC0", "PR0", "RT", "ST",
                     "AC00", "SV"}, keys
     assert "AC00: /^[01]$/" in block and "ST: /^[01]$/" in block and "TX: /^[01]$/" in block
+
+
+def test_kenwood_closed_list_never_tx_tune_vox_menus_power_tuning_or_saved_ai() -> None:
+    """Pilote Kenwood (kenwood.js, manuel PC Control Command du TS-890S) : jamais TX2 (TX TUNE), VX, EX, PS ; coupleur
+    écrit seulement « 1x0 » (P3 = 1 lancerait l'accord) ; AI seulement 0 ou 2 (jamais 4, sauvegardée dans le poste)."""
+    kw = (WEB / "kenwood.js").read_text(encoding="utf-8")
+    block = kw[kw.index("const WRITE = {"):kw.index("};", kw.index("const WRITE = {"))]
+    keys = set(re.findall(r"(?<![A-Za-z0-9])([A-Z]{2}[0-9]{0,1}):", block))
+    assert keys == {"FA", "FB", "OM0", "PC", "TX", "RX", "EC", "AI", "RM", "NB1", "NL1", "NR", "NT", "BC", "RA", "PA",
+                    "GC", "PR0", "RT", "XT", "TB", "AC"}, keys
+    for rule in ("TX: /^[01]$/", "AC: /^1[01]0$/", "AI: /^[02]$/"):
+        assert rule in block, rule

@@ -5,7 +5,7 @@
    Node) ; ici, les COUPURES D'URGENCE de la page : STOP, Échap, onglet caché, fermeture, erreur, port perdu. */
 (function () {
   "use strict";
-  const { AtCiv: civ, AtYaesu: yaesu, AtModels: models, AtRunner: R, AtReport: rep } = window;
+  const { AtCiv: civ, AtYaesu: yaesu, AtKenwood: kenwood, AtModels: models, AtRunner: R, AtReport: rep } = window;
   const $ = id => document.getElementById(id);
   const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -44,6 +44,8 @@
         $("port-driver").hidden = !(m && m.piloteIcom && /Windows/i.test(navigator.userAgent));   // pilote 1.80 (2026-11-19)
         $("port-help").textContent = S.brand.family === "yaesu"
           ? `${m ? m.name + " : " : ""}la CAT passe par le port « Enhanced COM Port » (deux ports « Silicon Labs CP2105 » ; l'autre, « Standard », ne sert pas ici). Vitesse : celle du menu CAT RATE du poste (38400 d'usine), la page essaie 38400, 9600, 19200 et 4800.`
+          : S.brand.family === "kenwood"
+          ? `${m ? m.name + " : " : ""}la CAT passe par le port « Enhanced COM Port » (ports « Silicon Labs CP2105 »). Vitesse : celle du menu du port USB du poste (115200 d'usine). Pendant l'essai, la page met en marche l'information automatique (AI2, non sauvegardée) : c'est le seul moyen de savoir si le poste émet ; elle est remise à la fin.`
           : m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste.";
         show("s-port"); };
       box.appendChild(c);
@@ -82,11 +84,15 @@
     const onTry = b => { status.textContent = `Essai à ${b} bauds…`; };
     const d = S.brand.family === "yaesu"
       ? await yaesu.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.YAESU_BAUDS, byId: models.byIdent, onTry })
+      : S.brand.family === "kenwood"
+      ? await kenwood.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.KENWOOD_BAUDS, byId: models.byKenwood, onTry })
       : await R.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.ICOM_BAUDS, byAddr: models.byAddr, onTry });
     $("b-port").disabled = false;
     if (d.error === "port") { status.textContent = "Port impossible à ouvrir : un autre logiciel l'utilise peut-être (WSJT-X, logiciel du constructeur, station openRemoteTRX). Fermez-le et recommencez."; return; }
     if (d.error) { status.textContent = S.brand.family === "yaesu"
       ? "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », et la vitesse CAT RATE dans son menu."
+      : S.brand.family === "kenwood"
+      ? "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », la vitesse du port USB dans son menu, et que « PSQ/PKS Pin Assignment » n'est pas sur « On »."
       : "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le bon port, et la vitesse CI-V USB dans son menu."; return; }
     S.detected = d;
     if (!S.model && d.guess) S.model = d.guess;
