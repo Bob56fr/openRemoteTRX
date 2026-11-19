@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'">
+<title>Autotest : diagnostic du port</title>
+<link rel="stylesheet" href="autotest.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h2>Diagnostic du port série, pas à pas</h2>
+    <p>Chaque bouton fait UNE seule chose. Si Chrome plante, notez le dernier bouton cliqué. Aucune émission : la seule
+       commande envoyée au poste est la lecture de son identité (CI-V 19 00).</p>
+    <div class="row">
+      <button type="button" class="btn" id="d1">1. Choisir le port</button>
+      <label>Vitesse <select id="baud"><option>115200</option><option>19200</option><option>9600</option></select></label>
+      <button type="button" class="btn" id="d2">2. Ouvrir</button>
+      <button type="button" class="btn" id="d3">3. Baisser DTR et RTS</button>
+      <button type="button" class="btn" id="d4">4. Lire l'identité</button>
+      <button type="button" class="btn" id="d5">5. Fermer</button>
+    </div>
+    <pre id="log" class="what"></pre>
+  </div>
+</div>
+<script src="civ.js"></script>
+<script src="diag.js"></script>
+</body>
+</html>

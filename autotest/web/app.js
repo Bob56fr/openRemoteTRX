@@ -50,17 +50,19 @@
   $("b-back-model").onclick = () => show("s-model");
 
   // ---------- Web Serial ----------
+  // Délai maximum d'un appel au port : un pilote qui ne répond plus donne une erreur claire au lieu d'une page figée.
+  const within = (p, ms, what) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(`${what} : pas de réponse du port en ${ms / 1000} s`)), ms))]);
   async function openAt(port, baud) {
-    await port.open({ baudRate: baud, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" });
+    await within(port.open({ baudRate: baud, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" }), 5000, "ouverture");
     // RTS et DTR baissés tout de suite : certains postes passent en émission sur ces lignes (réglage USB SEND / Keying).
-    try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* non géré */ }
+    try { await within(port.setSignals({ dataTerminalReady: false, requestToSend: false }), 3000, "DTR / RTS"); } catch (e) { /* non géré */ }
     const writer = port.writable.getWriter(), reader = port.readable.getReader();
     let cb = () => {}, reading = true;
     (async () => { try { while (reading) { const { value, done } = await reader.read(); if (done) break; if (value) cb(value); } } catch (e) { /* port fermé ou perdu */ } })();
     return {
       onData(f) { cb = f; },
       async write(bytes) { await writer.write(bytes); },
-      async close() { reading = false; try { await reader.cancel(); } catch (e) {} try { reader.releaseLock(); } catch (e) {} try { writer.releaseLock(); } catch (e) {} await port.close(); },
+      async close() { reading = false; try { await reader.cancel(); } catch (e) {} try { reader.releaseLock(); } catch (e) {} try { writer.releaseLock(); } catch (e) {} await within(port.close(), 5000, "fermeture"); },
     };
   }
 
