@@ -92,7 +92,7 @@ async def station(fake, cfg=None, *, wait_rx=True, alerts=None, **power_kw):
 
 
 def powerstat_orders(fake) -> list[int]:
-    return [int(c.split()[-1]) for c in fake.commands if c.lstrip("+").startswith("\\set_powerstat")]
+    return [int(c.split()[-1]) for c in fake.commands if c.lstrip("+").startswith("\\set_powerstat")]   # protocole réseau
 
 
 async def refusal(coro):
@@ -497,9 +497,11 @@ class _FakeRig:
             command = command[2:]
         self.commands.append(command)
         out, code = "", 0
-        if command == ["\\get_powerstat"]:
+        if command[:1] and command[0].startswith("\\"):
+            out = f"Command '{command[0]}' not found!"   # vrai rigctl 4.7.2 en ligne de commande (2026-11-19)
+        elif command == ["get_powerstat"]:
             out = "1" if self.on else "0"
-        elif command[:1] == ["\\set_powerstat"]:
+        elif command[:1] == ["set_powerstat"]:
             if command[1] == "1" and self.starts:
                 self.on, self.ptt = True, 1 if self.ptt_at_boot else 0
             elif command[1] == "0":
@@ -536,15 +538,15 @@ def test_power_trial_switches_the_rig_off_and_on_without_ever_keying():
     rig = _FakeRig()
     ok, out = _trial(rig)
     assert ok and rig.on and rig.ptt == 0
-    orders = [c for c in rig.commands if c[:1] == ["\\set_powerstat"]]
-    assert orders == [["\\set_powerstat", "0"], ["\\set_powerstat", "1"]]
+    orders = [c for c in rig.commands if c[:1] == ["set_powerstat"]]
+    assert orders == [["set_powerstat", "0"], ["set_powerstat", "1"]]
     assert not any(c[:1] == ["T"] and c[1:] != ["0"] for c in rig.commands)     # jamais « T 1 »
 
 
 def test_power_trial_fails_when_the_port_disappears_or_the_rig_comes_back_transmitting():
     rig = _FakeRig()
     ok, out = _trial(rig, present=lambda p: False)
-    assert not ok and not any(c == ["\\set_powerstat", "1"] for c in rig.commands)
+    assert not ok and not any(c == ["set_powerstat", "1"] for c in rig.commands)
     rig = _FakeRig(ptt_at_boot=True)
     ok, _ = _trial(rig)
     assert not ok and rig.ptt == 0 and ["T", "0"] in rig.commands

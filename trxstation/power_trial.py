@@ -31,6 +31,13 @@ ORDER_TIMEOUT_S = 30.0
 READ_TIMEOUT_S = 15.0
 
 
+def khz_text(hz: int) -> str:
+    """27555000 -> « 27 555,00 kHz » (comme la page)."""
+    whole, frac = f"{hz / 1000:.2f}".split(".")
+    groups = f"{int(whole):,}".replace(",", " ")
+    return f"{groups},{frac} kHz"
+
+
 def t(key: str, **fields) -> str:
     return tool_translator("power")(key, **fields)
 
@@ -75,7 +82,7 @@ class Trial:
         return lines[-1] if code == 0 and lines else None
 
     def powered(self) -> bool | None:
-        raw = self.value("\\get_powerstat")
+        raw = self.value("get_powerstat")       # SANS antislash : rigctl 4.7.2 refuse « \get_powerstat » en argument
         return None if raw is None else raw == "1"
 
     def wait_power(self, on: bool, seconds: float) -> bool:
@@ -105,7 +112,7 @@ class Trial:
             return False
         before = self.identity(port) if port else None
         say(t("step_off"))
-        code, _ = self.rigctl("\\set_powerstat", "0", timeout=ORDER_TIMEOUT_S)
+        code, _ = self.rigctl("set_powerstat", "0", timeout=ORDER_TIMEOUT_S)
         if code != 0 or not self.wait_power(False, OFF_WAIT_S):
             say(t("off_failed"))
             return False
@@ -122,7 +129,7 @@ class Trial:
             say(t("ports_ok", port=port, ident=str(after) if after else t("no_ident")))
         say(t("step_on", seconds=cfg.power.on_timeout_s))
         started = self.clock()
-        self.rigctl("\\set_powerstat", "1", timeout=ORDER_TIMEOUT_S)
+        self.rigctl("set_powerstat", "1", timeout=ORDER_TIMEOUT_S)
         if not self.wait_power(True, float(cfg.power.on_timeout_s)):
             say(t("on_failed", seconds=cfg.power.on_timeout_s))
             return False
@@ -134,12 +141,13 @@ class Trial:
             freq = int(float(raw)) if raw and raw.replace(".", "", 1).isdigit() else None
             if freq is None:
                 self.sleep(1.0)
-        mode = self.value("m")
+        code, out = self.rigctl("m")                    # « USB » puis la largeur « 3000 » : le mode est la PREMIÈRE ligne
+        mode = next((line.strip() for line in out.splitlines() if line.strip()), "") if code == 0 else ""
         if self.ptt_off_if_needed():
             say(t("tx_after"))
             return False
-        shown = f"{freq / 1000:,.2f} kHz".replace(",", " ") if freq else t("no_freq")
-        say(t("on_ok", seconds=f"{seconds:.0f}", freq=shown, mode=(mode or "").split()[0] if mode else "-"))
+        shown = khz_text(freq) if freq else t("no_freq")
+        say(t("on_ok", seconds=f"{seconds:.0f}", freq=shown, mode=mode or "-"))
         return True
 
 

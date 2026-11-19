@@ -404,5 +404,6 @@ def _how_text(how: str) -> str:
 
 def _rig_text(readback: dict) -> str:
     freq, mode = readback.get("frequency_hz"), readback.get("mode")
-    shown = f"{freq / 1000:,.2f} kHz".replace(",", " ") if isinstance(freq, int) else "fréquence non relue"
+    from ..power_trial import khz_text
+    shown = khz_text(freq) if isinstance(freq, int) else "fréquence non relue"
     return f"{shown} {mode or ''}".strip() + ", en réception"

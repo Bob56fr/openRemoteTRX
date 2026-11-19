@@ -839,6 +839,14 @@
         },
         {
           "date": "2026-11-19",
+          "station": "0.222.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Allumage et extinction à distance par la station (code du dépôt, rigctld réel) : essai du menu 2.8 réussi (éteint, port toujours présent, rallumé en 9 s), extinction refusant ensuite émission et réglages, superviseur sans aucune reprise poste éteint, rallumé en 6 s avec ses étapes, poste éteint hors station signalé seul, port renuméroté refusé en nommant le bon port. Page et application : pas encore.",
+          "quoi_en": "Remote switch-on and switch-off by the station (repository code, real rigctld): menu 2.8 trial passed (off, port still present, back on in 9 s), switch-off then refusing transmission and settings, supervisor without any recovery while off, back on in 6 s with its steps, radio switched off outside the station reported alone, renumbered port refused naming the right port. Page and app: not yet."
+        },
+        {
+          "date": "2026-11-19",
           "station": "0.221.0",
           "hamlib": "4.7.2",
           "systeme": "Windows 11",
