@@ -48,6 +48,7 @@ DEFAULT_BANDS_MHZ = ((3.5, 3.8), (7.0, 7.2), (14.0, 14.35), (21.0, 21.45), (28.0
 FREQ_OFFSET_HZ = 123              # décalage « au hertz » pour vérifier la résolution
 MAX_RESOLUTION_HZ = 10
 POWER_TOLERANCE = 0.015           # même tolérance que l'application (±1,5 %)
+LINK_WAIT_S = 6.0                 # phase 1 : attente de la reconnexion à rigctld après une lecture trop lente
 CACHE_MS = 1.0                    # lecture plus rapide qu'un aller-retour série : cache de rigctld (Hamlib 5)
 LATENCY_SAMPLES = 200
 TOOL_NAME = "trx-qualif"
@@ -285,16 +286,41 @@ class Qualification(HwTest):
     async def phase_auto(self) -> None:
         self.say(_t("phase1.title"))
         self.note("PHASE 1")
-        await self._snapshot()
+        restore_command = self._patient_link()
         try:
-            await self.test_frequency()
-            await self.test_modes()
-            await self.test_filters()
-            await self.test_reads()
-            await self.test_writes()
+            await self._snapshot()
+            try:
+                await self.test_frequency()
+                await self.test_modes()
+                await self.test_filters()
+                await self.test_reads()
+                await self.test_writes()
+            finally:
+                await self._restore()
         finally:
-            await self._restore()
+            restore_command()
         await self.test_endurance()
+
+    def _patient_link(self, wait_s: float = LINK_WAIT_S) -> Callable[[], None]:
+        """Phase 1 SEULEMENT (aucune émission) : une lecture plus lente que le délai de la liaison (Yaesu FTDX10 :
+        « u COMP » refusé en 2,5 s, délai de 2 s ; valise du 2026-11-19) ferme la connexion à rigctld ; CatLink la
+        refait en moins d'une seconde, mais sans attendre, TOUS les essais suivants échouaient en « non connecté ». La
+        commande suivante attend donc la reconnexion (`wait_s` au plus) ; la lecture lente reste notée en échec. Les
+        essais d'émission et de panne gardent le comportement de la station (échec immédiat). Rend la fonction qui
+        remet la commande d'origine."""
+        client = self.link.client if self.link is not None else None
+        if client is None:
+            return lambda: None
+        raw = client._command
+
+        async def command(line: str):
+            end = time.monotonic() + wait_s
+            while not client.connected and time.monotonic() < end:
+                await asyncio.sleep(0.1)
+            return await raw(line)
+
+        client._command = command
+        return lambda: setattr(client, "_command", raw)
 
     async def test_frequency(self) -> None:
         bands = [(b.low_mhz, b.high_mhz) for b in self.cfg.bands] or list(DEFAULT_BANDS_MHZ)
@@ -988,10 +1014,17 @@ class Qualification(HwTest):
     async def run(self) -> list:
         self.say(_t("run.title", name=self.profile.name, hamlib=self.profile.hamlib_version or "?",
                     backend=self.profile.backend_status or "?"))
-        # Consignes de sécurité de trx-hwtest, dans la langue de l'outil quand il sait les traduire.
-        self.say(getattr(_hwtest, "preflight_text", lambda: PREFLIGHT)())
+        # Consignes de sécurité de trx-hwtest, dans la langue de l'outil quand il sait les traduire. Sans émission
+        # (`no_tx`), les 6 points de l'émission (« antenne débranchée »…) faisaient confirmer le contraire de ce que
+        # l'opérateur faisait (antenne branchée pour enregistrer un vrai son, valise du FTDX10, 2026-11-19).
+        if self.no_tx:
+            self.say(_t("run.no_tx_notice"))
+            confirm = _t("run.no_tx_confirm", word=_t("word.yes"))
+        else:
+            self.say(getattr(_hwtest, "preflight_text", lambda: PREFLIGHT)())
+            confirm = _t("run.confirm", word=_t("word.yes"))
         # Le mot de la langue OU le mot français OUI, en entier ; rien d'autre (jamais « oui » par défaut).
-        if not typed_yes(await asyncio.to_thread(self.ask, _t("run.confirm", word=_t("word.yes")))):
+        if not typed_yes(await asyncio.to_thread(self.ask, confirm)):
             self.say(_t("run.cancelled"))
             return []
         await self.ask_firmware()

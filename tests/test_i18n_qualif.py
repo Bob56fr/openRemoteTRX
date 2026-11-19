@@ -236,6 +236,9 @@ def test_the_qualification_speaks_english_and_its_report_stays_in_french(tmp_pat
     assert "  - core not tested — PTT on then off, with read-back" in shown and "Frequency: write and read back" in shown
     assert "Phase 1 :" not in shown and "BILAN" not in shown
     french = "\n".join(outputs["fr"])
+    # Sans émission : jamais les 6 points de l'émission (« antenne débranchée ») à confirmer (FTDX10, 2026-11-19)
+    assert "QUALIFICATION WITHOUT TRANSMISSION" in shown and "No PTT command is sent" in shown
+    assert "QUALIFICATION SANS ÉMISSION" in french and "DÉBRANCHÉE" not in french and "6 points" not in french
     assert "BILAN DE QUALIFICATION" in french and "\nVerdict proposé : INCOMPLET" in french
 
     def masked(text: str) -> str:

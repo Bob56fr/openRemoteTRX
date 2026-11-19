@@ -538,3 +538,42 @@ def test_split_transmit_frequency_out_of_band_is_refused_without_transmitting(tm
 def test_split_not_switched_on_by_the_operator_is_not_tried(tmp_path):
     seen = _split_run(tmp_path, split_on=False, operator_switches_off=False)
     assert seen["check"].ok is None and seen["keys"] == 0
+
+
+def test_phase_one_waits_for_the_link_to_come_back_after_a_too_slow_read():
+    """FTDX10 (valise du 2026-11-19) : « u COMP » refusé en 2,5 s, délai de 2 s : connexion fermée, puis TOUS les
+    essais de la phase 1 en « non connecté ». La commande suivante attend la reconnexion ; ensuite tout est remis."""
+    import asyncio as _asyncio
+    from types import SimpleNamespace
+
+    from trxstation.qualif.runner import Qualification
+
+    class Client:
+        def __init__(self):
+            self.connected, self.sent = False, []
+
+        async def _command(self, line):
+            if not self.connected:
+                raise RuntimeError("non connecté à rigctld")
+            self.sent.append(line)
+            return {}
+
+    async def scenario():
+        client = Client()
+        q = object.__new__(Qualification)
+        q.link = SimpleNamespace(client=client)
+        original = client._command
+        restore = q._patient_link(wait_s=2.0)
+        _asyncio.get_running_loop().call_later(0.3, setattr, client, "connected", True)   # CatLink se reconnecte
+        await client._command("f")
+        assert client.sent == ["f"]
+        restore()
+        assert client._command == original                                   # essais d'émission : comportement d'origine
+        client.connected = False
+        try:
+            await client._command("t")
+        except RuntimeError:
+            return
+        raise AssertionError("hors phase 1, une commande sans liaison doit échouer tout de suite")
+
+    _asyncio.run(scenario())

@@ -105,6 +105,8 @@
   "hw.drills": "Fallos",
   "hw.cat_loss": "Fallo: pérdida del enlace CAT",
   "run.title": "Cualificación: {name} (Hamlib {hamlib}, backend {backend})",
+  "run.no_tx_notice": "================  CUALIFICACIÓN SIN TRANSMISIÓN  ================\n No se envía ninguna orden de PTT: el equipo nunca transmite durante esta prueba.\n Antena o carga fantasma: a elegir. En la ANTENA, el audio recibido grabado (5 s) contiene una señal real.\n El equipo cambiará de frecuencia y de modo (restablecidos enseguida): no lo toques durante la prueba.\n=================================================================",
+  "run.no_tx_confirm": "Escribe {word} para empezar: ",
   "run.confirm": "Escribe {word} para confirmar estos 6 puntos: ",
   "run.cancelled": "Cualificación cancelada.",
   "run.no_cat": "\nEnlace CAT imposible: paramos aquí (no se ha intentado ninguna transmisión).",

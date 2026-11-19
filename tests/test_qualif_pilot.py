@@ -180,3 +180,14 @@ def test_the_command_line_client_end_to_end(tmp_path):
             bus.answer(q.id, "q", source="clavier")
         page.close()
     assert run_pilot(["etat"], tmp_path / "ailleurs", out=lines.append) == 1     # aucune valise ici
+
+
+def test_the_pilot_words_reach_the_pilot_untouched_even_with_dashes():
+    """« demander --fait TEXTE » : argparse prenait « --fait » pour une option inconnue de trx-qualif (FTDX10,
+    2026-11-19). Les mots de --pilote vont jusqu'à --output / --config."""
+    from trxstation.qualif.main import _split_pilot
+    rest, words = _split_pilot(["--pilote", "demander", "--fait", "Règle la carte son", "--output", "valise"])
+    assert words == ["demander", "--fait", "Règle la carte son"] and rest == ["--output", "valise"]
+    rest, words = _split_pilot(["--output=valise", "--pilote", "demander", "--oui-non", "Antenne ?"])
+    assert words == ["demander", "--oui-non", "Antenne ?"] and rest == ["--output=valise"]
+    assert _split_pilot(["--terrain", "--page"]) == (["--terrain", "--page"], None)

@@ -105,6 +105,8 @@
   "hw.drills": "Störungen",
   "hw.cat_loss": "Störung: CAT-Verbindung verloren",
   "run.title": "Qualifizierung: {name} (Hamlib {hamlib}, Backend {backend})",
+  "run.no_tx_notice": "================  QUALIFIZIERUNG OHNE SENDEN  ================\n Es wird kein PTT-Befehl gesendet: das Funkgerät sendet während dieses Tests nie.\n Antenne oder Dummy-Load: nach Wahl. An der ANTENNE enthält der aufgenommene Empfangston (5 s) ein echtes Signal.\n Das Gerät wechselt Frequenz und Betriebsart (sofort zurückgestellt): während des Tests nicht berühren.\n===============================================================",
+  "run.no_tx_confirm": "Gib {word} ein, um zu beginnen: ",
   "run.confirm": "Gib {word} ein, um diese 6 Punkte zu bestätigen: ",
   "run.cancelled": "Qualifizierung abgebrochen.",
   "run.no_cat": "\nCAT-Verbindung unmöglich: hier ist Schluss (es wurde nicht gesendet).",

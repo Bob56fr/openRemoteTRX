@@ -105,6 +105,8 @@
   "hw.drills": "Faults",
   "hw.cat_loss": "Fault: CAT link lost",
   "run.title": "Qualification: {name} (Hamlib {hamlib}, backend {backend})",
+  "run.no_tx_notice": "================  QUALIFICATION WITHOUT TRANSMISSION  ================\n No PTT command is sent: the radio never transmits during this test.\n Antenna or dummy load: your choice. On the ANTENNA, the recorded received audio (5 s) holds a real signal.\n The radio will change frequency and mode (restored right away): do not touch it during the test.\n======================================================================",
+  "run.no_tx_confirm": "Type {word} to start: ",
   "run.confirm": "Type {word} to confirm these 6 points: ",
   "run.cancelled": "Qualification cancelled.",
   "run.no_cat": "\nCAT link impossible: stopping here (no transmission was attempted).",

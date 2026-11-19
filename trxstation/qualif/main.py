@@ -277,6 +277,22 @@ def run_compare(path_a: Path, path_b: Path, output: Path, out=print) -> int:
     return EXIT_OK
 
 
+_QUALIF_OPTIONS_AFTER_PILOT = ("--output", "--config")
+
+
+def _split_pilot(argv: list[str]) -> tuple[list[str], list[str] | None]:
+    """Les mots de « --pilote » sont pris TELS QUELS jusqu'à --output / --config : argparse prenait « --fait » et
+    « --oui-non » de « demander » pour des options inconnues de trx-qualif (valise du FTDX10, 2026-11-19)."""
+    if "--pilote" not in argv:
+        return argv, None
+    i = argv.index("--pilote")
+    j = i + 1
+    while j < len(argv) and argv[j] not in _QUALIF_OPTIONS_AFTER_PILOT \
+            and not argv[j].startswith(tuple(o + "=" for o in _QUALIF_OPTIONS_AFTER_PILOT)):
+        j += 1
+    return argv[:i] + argv[j:], argv[i + 1:j]
+
+
 @guarded("trx-qualif")
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="trx-qualif", description="Qualification d'un poste pour TRX Remote")
@@ -304,7 +320,10 @@ def main(argv: list[str] | None = None) -> int:
                          "demander [--oui-non|--fait] TEXTE, reponse N, journal, stop ; dossier : --output")
     ap.add_argument("--comparer", type=Path, nargs=2, metavar=("A", "B"),
                     help="comparer deux rapports de la valise (zip ou dossier de session) du même poste")
+    argv, pilot_words = _split_pilot(list(sys.argv[1:] if argv is None else argv))
     args = ap.parse_args(argv)
+    if pilot_words is not None:
+        args.pilote = pilot_words
     if args.pilote is not None:
         from .pilot import run_pilot
         return run_pilot(args.pilote, args.output)

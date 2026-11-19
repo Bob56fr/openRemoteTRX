@@ -309,6 +309,11 @@ conversation (`trx-qualif --pilote …`, dans le même dossier de qualification)
   passés, le reste continue.
 - **Nom de la carte son sous Windows** (« 2- USB Audio Device ») : il change si le câble passe sur une autre prise
   USB. Refaire la carte son (premier essai) et corriger station.toml.
+- **Carte son qui « ne s'ouvre pas » (Invalid sample rate)** au premier essai : Windows a réglé l'entrée du poste
+  en 44 100 Hz (vu sur le Yaesu FTDX10). Panneau Son > Enregistrement > entrée du poste > Propriétés > Avancé :
+  « 16 bits, 48000 Hz » ; même chose pour la sortie (onglet Lecture).
+- **Qualification sans émission (choix 4)** : la faire sur **ANTENNE** si l'on veut un vrai son dans `rx.wav`
+  (sur la charge fictive, le fichier n'est que du bruit très faible).
 - **Icom : modulation par l'USB seulement en mode données** (PKTUSB / PKTLSB) ; en USB, une émission de la valise
   peut sortir sans puissance.
 - **Split** : la valise ne l'écrit jamais (sur l'IC-7300MK2, Hamlib échangerait les VFO) ; c'est l'opérateur qui le

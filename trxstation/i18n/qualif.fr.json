@@ -105,6 +105,8 @@
   "hw.drills": "Pannes",
   "hw.cat_loss": "Panne : perte de la liaison CAT",
   "run.title": "Qualification : {name} (Hamlib {hamlib}, backend {backend})",
+  "run.no_tx_notice": "================  QUALIFICATION SANS ÉMISSION  ================\n Aucune commande de PTT n'est envoyée : le poste n'émet jamais pendant cet essai.\n Antenne ou charge fictive : au choix. Sur ANTENNE, le son reçu enregistré (5 s) contient un vrai signal.\n Le poste va changer de fréquence et de mode (aussitôt remis) : ne touche pas au poste pendant l'essai.\n================================================================",
+  "run.no_tx_confirm": "Tape {word} pour commencer : ",
   "run.confirm": "Tape {word} pour confirmer ces 6 points : ",
   "run.cancelled": "Qualification annulée.",
   "run.no_cat": "\nLiaison CAT impossible : on s'arrête ici (aucune émission n'a été tentée).",

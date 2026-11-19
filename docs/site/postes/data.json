@@ -824,10 +824,19 @@
         "modele": "FTDX10",
         "hamlib_model": 1042,
         "statut": "validation_en_cours",
-        "resume": "Premier essai le 2026-11-16 : liaison CAT, exploration sans émission et essai du poste en réception seule. JAMAIS ESSAYÉ EN ÉMISSION : toute la sécurité d'émission reste à qualifier (valise, charge fictive).",
-        "resume_en": "First test on 2026-11-16: CAT link, exploration without transmitting and rig test in receive only. NEVER TRIED TRANSMITTING: all transmit safety remains to be qualified (kit, dummy load)."
+        "stabilite": "ok",
+        "resume": "Qualifié avec la valise le 2026-11-19 : TOUTES les sécurités d'émission réussies sur charge fictive (8 essais automatiques, pannes, opérateur sur place), réception, son dans les deux sens, coupleur et VOX essayés. Limites : le SPLIT à distance est coupé par la station au bout d'environ 1 s (le poste donne la fréquence d'émission pendant l'émission) ; NR, compresseur et notch auto mettent plus de 2 s à se lire. Les modes données s'appellent PKTUSB / PKTLSB / FM-D dans Hamlib (DATA-U / DATA-L / DATA-FM sur le poste).",
+        "resume_en": "Qualified with the suitcase on 2026-11-19: ALL transmit safety passed on dummy load (8 automatic drills, failures, local operator), receive, audio both ways, tuner and VOX tried. Limits: remote SPLIT is cut by the station after about 1 s (the rig reports the transmit frequency while transmitting); NR, compressor and auto notch take more than 2 s to read. Data modes are named PKTUSB / PKTLSB / FM-D in Hamlib (DATA-U / DATA-L / DATA-FM on the rig)."
       },
       "essais": [
+        {
+          "date": "2026-11-19",
+          "station": "0.220.0",
+          "hamlib": "4.7.2",
+          "systeme": "Windows 11",
+          "quoi": "Valise graphique pilotée par Claude : carte son (entrée Windows passée de 44,1 à 48 kHz), relevés avant / après, exploration, réception sur antenne (27,555 MHz USB, -26,6 dBFS), qualification avec émission sur charge fictive (PTT : prise 218 ms, coupure 203 ms ; battement perdu 2,2 s, TOT 8,3 s, déconnexion 0,2 s, perte de la CAT 1,9 s), qualification sans émission sur antenne (son -23 dBFS), 8 essais automatiques réussis (STOP 0,19 s, battements 2,69 s, connexion fermée 0,67 s, hors bande refusé, TOT 90,2 s, STOP TX du tableau de bord 0,43 s, station arrêtée pendant une émission : réception 2,6 s après l'ordre, démarrage sans émission), opérateur sur place au micro du poste ; verdict proposé « validation en cours »",
+          "quoi_en": "Graphical suitcase piloted by Claude: sound card (Windows input moved from 44.1 to 48 kHz), before / after readings, exploration, receive on antenna (27.555 MHz USB, -26.6 dBFS), qualification with transmission on dummy load (PTT: key 218 ms, unkey 203 ms; lost heartbeat 2.2 s, TOT 8.3 s, disconnection 0.2 s, CAT loss 1.9 s), qualification without transmission on antenna (audio -23 dBFS), 8 automatic drills passed (STOP 0.19 s, heartbeats 2.69 s, closed connection 0.67 s, out of band refused, TOT 90.2 s, dashboard STOP TX 0.43 s, station stopped during a transmission: receive 2.6 s after the order, start-up without transmission), local operator at the rig microphone; proposed verdict « validation in progress »"
+        },
         {
           "date": "2026-11-16",
           "station": "0.153.0",
@@ -839,48 +848,62 @@
       ],
       "fonctions": {
         "ptt_relu": {
-          "etat": "non_teste",
-          "note": "PTT lu en 40 ms ; jamais commandé. dump_caps annonce « PTT type: None » mais le PTT par CAT est déclaré.",
-          "note_en": "PTT read in 40 ms; never keyed. dump_caps reports « PTT type: None » but CAT PTT is declared."
+          "etat": "valide",
+          "note": "3 cycles : prise 218 ms au plus, coupure 203 ms au plus, poste relu à chaque fois. dump_caps annonce « PTT type: None » mais le PTT par CAT fonctionne.",
+          "note_en": "3 cycles: key 218 ms at most, unkey 203 ms at most, rig read back each time. dump_caps reports « PTT type: None » but CAT PTT works."
         },
         "tot": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Coupure à 8,3 s (TOT d'essai de 8 s) et à 90,2 s (TOT de la station, 90 s).",
+          "note_en": "Cut at 8.3 s (8 s test TOT) and at 90.2 s (station TOT, 90 s)."
         },
         "battements": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Coupure en 2,2 s (qualification) et 2,69 s (client figé, station réelle).",
+          "note_en": "Cut in 2.2 s (qualification) and 2.69 s (frozen client, real station)."
         },
         "deconnexion": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Coupure en 0,2 s (qualification) et 0,67 s (connexion fermée, station réelle).",
+          "note_en": "Cut in 0.2 s (qualification) and 0.67 s (closed connection, real station)."
         },
         "perte_cat": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Retour en réception 1,9 s après une coupure de la liaison CAT de 1,5 s.",
+          "note_en": "Back to receive 1.9 s after a 1.5 s CAT link cut."
         },
         "hors_bande": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Émission refusée sur 1 760 kHz (out_of_band), aucune émission vue.",
+          "note_en": "Transmission refused on 1,760 kHz (out_of_band), no transmission seen."
         },
         "operateur_local": {
-          "etat": "non_teste"
+          "etat": "valide"
         },
         "demarrage": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Aucune émission pendant les 40 s du démarrage ; arrêt de la station pendant une émission : poste relu en réception 2,6 s après l'ordre.",
+          "note_en": "No transmission during the 40 s start-up; station stopped during a transmission: rig read in receive 2.6 s after the order."
         },
         "frequence": {
           "etat": "valide",
-          "note": "Écrite et relue par l'exploration (bords de la couverture, fréquence d'origine remise) ; couverture plus large que déclarée (29 kHz à 61 MHz acceptés).",
-          "note_en": "Written and read back by the exploration (coverage edges, original frequency restored); wider coverage than declared (29 kHz to 61 MHz accepted)."
+          "note": "8 bandes écrites et relues au hertz ; couverture plus large que déclarée (29 kHz à 61 MHz acceptés).",
+          "note_en": "8 bands written and read back to the hertz; wider coverage than declared (29 kHz to 61 MHz accepted)."
         },
         "split": {
-          "etat": "non_teste"
+          "etat": "echec",
+          "note": "Pendant l'émission en split, le poste donne la fréquence du VFO d'ÉMISSION : la station y voit un changement de fréquence et coupe (« frequency_changed ») au bout d'environ 1 s. Split à distance inutilisable pour l'instant ; le split au poste n'est pas touché.",
+          "note_en": "While transmitting in split, the rig reports the TRANSMIT VFO frequency: the station sees a frequency change and cuts (« frequency_changed ») after about 1 s. Remote split unusable for now; split on the rig itself is not affected."
         },
         "rit": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms ; écriture pas encore essayée.",
-          "note_en": "Read in 40 ms; write not tried yet."
+          "etat": "valide",
+          "note": "Mis en marche puis remis, relu à chaque fois.",
+          "note_en": "Switched on then restored, read back each time."
         },
         "xit": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms ; écriture pas encore essayée.",
-          "note_en": "Read in 40 ms; write not tried yet."
+          "etat": "valide",
+          "note": "Mis en marche puis remis, relu à chaque fois.",
+          "note_en": "Switched on then restored, read back each time."
         },
         "vfo": {
           "etat": "non_teste",
@@ -888,60 +911,74 @@
           "note_en": "Declared readable by Hamlib (VFOA, VFOB, MEM): VFO indicator to be tried."
         },
         "modes_base": {
-          "etat": "non_teste",
-          "note": "Mode lu ; jamais changé par l'exploration.",
-          "note_en": "Mode read; never changed by the exploration."
+          "etat": "valide",
+          "note": "USB, LSB, CW, AM, FM, RTTY, CWR, RTTYR, FMN, AMN écrits et relus.",
+          "note_en": "USB, LSB, CW, AM, FM, RTTY, CWR, RTTYR, FMN, AMN written and read back."
         },
         "modes_donnees": {
-          "etat": "non_teste"
+          "etat": "partiel",
+          "note": "PKTUSB, PKTLSB et FM-D de Hamlib (DATA-U, DATA-L, DATA-FM du poste) écrits et relus ; PKTFMN déclaré par Hamlib mais refusé (RPRT -1).",
+          "note_en": "Hamlib PKTUSB, PKTLSB and FM-D (rig DATA-U, DATA-L, DATA-FM) written and read back; PKTFMN declared by Hamlib but refused (RPRT -1)."
         },
         "filtres": {
-          "etat": "non_teste"
+          "etat": "non_teste",
+          "note": "Largeurs pas essayées (option --filtres).",
+          "note_en": "Widths not tried (--filtres option)."
         },
         "preampli": {
-          "etat": "non_teste",
-          "note": "Déclaré : AMP1 et AMP2 (10 et 20 dB).",
-          "note_en": "Declared: AMP1 and AMP2 (10 and 20 dB)."
+          "etat": "valide",
+          "note": "0 -> 10 dB -> 0, relu.",
+          "note_en": "0 -> 10 dB -> 0, read back."
         },
         "attenuateur": {
-          "etat": "non_teste",
-          "note": "Déclaré : 6, 12, 18 dB.",
-          "note_en": "Declared: 6, 12, 18 dB."
+          "etat": "valide",
+          "note": "0 -> 6 dB -> 0, relu.",
+          "note_en": "0 -> 6 dB -> 0, read back."
         },
         "agc": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Plage non renseignée par Hamlib : valeurs prises dans « AGC levels ».",
+          "note_en": "Range not given by Hamlib: values taken from « AGC levels »."
         },
         "nr": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms.",
-          "note_en": "Read in 40 ms."
+          "etat": "partiel",
+          "note": "Lecture de la fonction en plus de 2 s (liaison coupée par le délai), écriture refusée juste après (« bus occupé »). Le niveau NR fonctionne.",
+          "note_en": "Function read takes more than 2 s (link cut by the timeout), write refused right after (« bus busy »). The NR level works."
         },
         "nr_niveau": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "0,2 -> 0,5 -> 0,2 (relu 0,467 : pas de 1/15).",
+          "note_en": "0.2 -> 0.5 -> 0.2 (read 0.467: 1/15 steps)."
         },
         "nb": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms.",
-          "note_en": "Read in 40 ms."
+          "etat": "valide",
+          "note": "Mis en marche puis remis, relu à chaque fois.",
+          "note_en": "Switched on then restored, read back each time."
         },
         "nb_niveau": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "0 -> 5 -> 0, relu.",
+          "note_en": "0 -> 5 -> 0, read back."
         },
         "anf": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms.",
-          "note_en": "Read in 40 ms."
+          "etat": "partiel",
+          "note": "Lecture en plus de 2 s (liaison coupée par le délai), écriture refusée juste après (« bus occupé »).",
+          "note_en": "Read takes more than 2 s (link cut by the timeout), write refused right after (« bus busy »)."
         },
         "notch_manuel": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms.",
-          "note_en": "Read in 40 ms."
+          "etat": "partiel",
+          "note": "Lu ; écriture refusée (« bus occupé ») juste après une lecture lente.",
+          "note_en": "Read; write refused (« bus busy ») right after a slow read."
         },
         "squelch": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "0 -> 0,3 -> 0, relu.",
+          "note_en": "0 -> 0.3 -> 0, read back."
         },
         "puissance": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "0,1 -> 0,05 -> 0,1, relu.",
+          "note_en": "0.1 -> 0.05 -> 0.1, read back."
         },
         "compresseur": {
           "etat": "partiel",
@@ -949,28 +986,34 @@
           "note_en": "Function unreadable: « PR; » refused by the rig (« ?; »), 2.45 s then RPRT -9; the station drops this read for this rig (ORT-2025). Level written and read back, but 0 refused (RPRT -14) although declared."
         },
         "tuner": {
-          "etat": "non_teste",
-          "note": "Lu en 40 ms ; jamais mis en marche automatiquement.",
-          "note_en": "Read in 40 ms; never switched on automatically."
+          "etat": "valide",
+          "note": "Mis en marche puis remis, relu ; aucune émission vue pendant l'accord.",
+          "note_en": "Switched on then restored, read back; no transmission seen during tuning."
         },
         "vox": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "Sans son : aucune émission ; à la voix : émission puis retour en réception ; VOX remis. La station ne propose jamais le VOX à distance.",
+          "note_en": "No audio: no transmission; with voice: transmission then back to receive; VOX restored. The station never offers VOX remotely."
         },
         "s_metre": {
           "etat": "valide",
-          "note": "Lu en 40 ms ; valeurs hors de la plage déclarée (ex. -48) : table de calibration.",
-          "note_en": "Read in 40 ms; values outside the declared range (e.g. -48): calibration table."
+          "note": "Valeurs hors de la plage déclarée (ex. -54) : table de calibration.",
+          "note_en": "Values outside the declared range (e.g. -54): calibration table."
         },
         "puissance_mesuree": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "0,12 à 0,15 lu en émission (poste à la puissance minimale).",
+          "note_en": "0.12 to 0.15 read while transmitting (rig at minimum power)."
         },
         "ros": {
-          "etat": "non_teste"
+          "etat": "valide",
+          "note": "1,0 lu sur charge fictive.",
+          "note_en": "1.0 read on dummy load."
         },
         "alc": {
-          "etat": "non_teste",
-          "note": "Échelle de l'ALC Yaesu pas encore relevée.",
-          "note_en": "Yaesu ALC scale not measured yet."
+          "etat": "valide",
+          "note": "0,31 à 0,39 lu en émission ; échelle de l'ALC Yaesu à relever.",
+          "note_en": "0.31 to 0.39 read while transmitting; Yaesu ALC scale to be measured."
         },
         "tension": {
           "etat": "valide",
@@ -983,13 +1026,13 @@
         },
         "audio_rx": {
           "etat": "valide",
-          "note": "Essai du poste en réception seule (carte « USB Audio CODEC » du poste).",
-          "note_en": "Rig test in receive only (rig « USB Audio CODEC » card)."
+          "note": "Carte « USB AUDIO CODEC » du poste : -23 dBFS sur antenne. Sous Windows, régler l'entrée en 48 000 Hz (44 100 par défaut : la station ne l'ouvre pas).",
+          "note_en": "Rig « USB AUDIO CODEC » card: -23 dBFS on antenna. On Windows, set the input to 48,000 Hz (44,100 by default: the station cannot open it)."
         },
         "audio_tx": {
-          "etat": "non_teste",
-          "note": "Menus à régler : MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN.",
-          "note_en": "Menus to set: MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN."
+          "etat": "valide",
+          "note": "Tonalité de -40 à -6 dBFS modulée (puissance mesurée, ALC visible). Menus : MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN.",
+          "note_en": "Tone from -40 to -6 dBFS modulated (power measured, ALC visible). Menus: MOD SOURCE = REAR, REAR SELECT = USB, RPORT GAIN."
         },
         "spectre_hf": {
           "etat": "non_declare",
@@ -1001,21 +1044,25 @@
       "hamlib": {
         "constats": [
           "« u COMP » : 2,45 s puis refus (le poste répond « ?; », Hamlib réessaie comme si le poste était occupé ; signalé à Hamlib).",
+          "« u NR » et « u ANF » : plus de 2 s certaines fois ; juste après, « bus occupé » (RPRT -14) sur les écritures suivantes.",
           "« L COMP 0 » refusé alors que la plage déclarée est 0..1.",
-          "get Tuning Step déclaré mais refusé ; BAND_SELECT refusé ; BKINDL non relu."
+          "PKTFMN déclaré mais refusé (RPRT -1) ; get Tuning Step déclaré mais refusé ; BAND_SELECT refusé ; BKINDL non relu.",
+          "En split, la fréquence lue PENDANT l'émission est celle du VFO d'émission."
         ],
         "constats_en": [
           "« u COMP »: 2.45 s then refused (the rig answers « ?; », Hamlib retries as if the rig were busy; reported to Hamlib).",
+          "« u NR » and « u ANF »: over 2 s at times; right after, « bus busy » (RPRT -14) on the following writes.",
           "« L COMP 0 » refused although the declared range is 0..1.",
-          "get Tuning Step declared but refused; BAND_SELECT refused; BKINDL not read back."
+          "PKTFMN declared but refused (RPRT -1); get Tuning Step declared but refused; BAND_SELECT refused; BKINDL not read back.",
+          "In split, the frequency read WHILE transmitting is the transmit VFO frequency."
         ]
       },
       "id": "yaesu-ftdx10",
       "note": {
-        "stars": null,
+        "stars": 4.5,
         "provisional": true,
-        "counted": 6,
-        "valid": 4
+        "counted": 36,
+        "valid": 29
       }
     }
   ]
