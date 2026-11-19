@@ -302,6 +302,12 @@ quand = "Après avoir réglé le second port CI-V du poste, ou pour couper le sp
 modifie = "La configuration de la station (<code>station.toml</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true
 
+[menus.remote_power]
+role = "Met en service (ou hors service) l'<strong>allumage et l'extinction du poste à distance</strong> : un opérateur qui se connecte allume le poste s'il est éteint, et STOP maintenu 3 s dans la page ou l'application permet de l'éteindre (avec confirmation). <strong>Hors service par défaut.</strong> La mise en service est refusée si Hamlib ne déclare pas la fonction pour ton poste ; elle propose d'abord un essai (station arrêtée le temps de l'essai, poste éteint puis rallumé, aucune émission) et relève l'identité USB du port du poste, vérifiée avant chaque allumage. Options : extinction automatique après un délai sans aucune connexion, alertes ntfy à chaque allumage ou extinction."
+quand = "Pour une station distante qu'il faut pouvoir rallumer sans aller au shack, avec un poste qui garde son USB alimenté une fois éteint (Yaesu FTDX10 par la prise USB). Refaire la mise en service après avoir changé le poste de prise USB."
+modifie = "La configuration de la station (<code>station.toml</code> : section <code>[power]</code> et identité USB des ports dans <code>[rig]</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
 [menus.bands]
 role = "Décide qui empêche d'émettre hors de tes bandes : la station (liste des bandes autorisées, points de départ région 1 IARU à vérifier selon ta licence) ou le poste lui-même. <strong>Liste vide = réception seule.</strong> Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
 quand = "À la mise en service, après un changement de licence, ou si la station refuse une émission dans une bande permise."

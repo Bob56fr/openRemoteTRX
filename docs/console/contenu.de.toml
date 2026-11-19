@@ -302,6 +302,12 @@ quand = "Nach dem Einstellen des zweiten CI-V-Ports, oder um das Spektrum auszus
 modifie = "Die Stationskonfiguration (<code>station.toml</code>), mit Administratorrechten; die vorherige Version wird aufbewahrt (<code>station.toml.bak</code>). Bei Abbruch wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
 admin = true
 
+[menus.remote_power]
+role = "Schaltet das <strong>Fern-Ein- und -Ausschalten des Funkgeräts</strong> ein (oder aus): ein Operator, der sich verbindet, schaltet das ausgeschaltete Gerät ein, und STOP 3 s gedrückt in der Seite oder der App schaltet es aus (mit Bestätigung). <strong>Standardmäßig aus.</strong> Das Einschalten wird verweigert, wenn Hamlib die Funktion für dein Gerät nicht angibt; zuerst wird ein Test angeboten (Station während des Tests gestoppt, Gerät aus- und wieder eingeschaltet, keine Aussendung) und die USB-Kennung des Geräteanschlusses erfasst, die vor jedem Einschalten geprüft wird. Optionen: automatisches Ausschalten nach einer Zeit ohne Verbindung, ntfy-Warnungen bei jedem Ein- oder Ausschalten."
+quand = "Für eine entfernte Station, die ohne Gang zum Shack wieder eingeschaltet werden soll, mit einem Gerät, dessen USB im ausgeschalteten Zustand versorgt bleibt (Yaesu FTDX10 über die USB-Buchse). Erneut ausführen, wenn das Gerät an eine andere USB-Buchse kommt."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>: Abschnitt <code>[power]</code> und USB-Kennung der Anschlüsse in <code>[rig]</code>), mit Administratorrechten; die vorige Fassung bleibt erhalten (<code>station.toml.bak</code>). Beim Abbrechen wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
 [menus.bands]
 role = "Legt fest, wer das Senden außerhalb deiner Bänder verhindert: die Station (Liste erlaubter Bänder, Ausgangswerte IARU-Region 1, gemäß deiner Lizenz zu prüfen) oder der Transceiver selbst. <strong>Leere Liste = nur Empfang.</strong> Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
 quand = "Bei der Inbetriebnahme, nach einer Lizenzänderung oder wenn die Station eine Sendung in einem erlaubten Band ablehnt."

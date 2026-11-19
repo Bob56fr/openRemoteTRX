@@ -60,6 +60,9 @@ class Capabilities:
     can_get_split: bool | None = None  # « Can get Split VFO » ; None = non déclaré (la sécurité tente quand même la lecture)
     max_rit_hz: int = RIT_LIMIT_HZ     # plage PERMISE du RIT : « Max RIT » du poste resserré à RIT_LIMIT_HZ (étape 97)
     max_xit_hz: int = 0
+    # « Can set / get Power Stat » : allumage et extinction par la CAT (docs/alimentation-poste-cahier-des-charges.md)
+    can_set_power: bool = False
+    can_get_power: bool = False
 
     def to_dict(self) -> dict:
         data = asdict(self)
@@ -161,7 +164,8 @@ def parse_dump_caps(text: str, model: int = 0) -> Capabilities:
 
     for attr, verb, what in (("can_set_frequency", "set", "Frequency"), ("can_get_frequency", "get", "Frequency"),
                              ("can_set_mode", "set", "Mode"), ("can_get_mode", "get", "Mode"),
-                             ("can_get_ptt", "get", "PTT")):
+                             ("can_get_ptt", "get", "PTT"),
+                             ("can_set_power", "set", "Power Stat"), ("can_get_power", "get", "Power Stat")):
         value = _flag(text, verb, what)                    # (split et clarifieur : plus bas)
         if value is not None:
             setattr(caps, attr, value)

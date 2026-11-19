@@ -1993,6 +1993,247 @@ ORT-2704:
 # 3000–3999 : Audio
 # ====================================================================================================
 
+ORT-2801:
+  gravite: info
+  titre: Poste éteint à distance
+  message: 'Poste éteint à distance par {par} ({comment}) ; extinction relue sur le poste : {relu}.'
+  causes:
+  - Arrêt demandé par un opérateur (STOP maintenu 3 s, puis « Arrêter le TRX à distance »)
+  - Extinction automatique après le délai sans connexion ([power] idle_off)
+  preconisation: Rien à faire. Le poste se rallume à la prochaine connexion d'un opérateur.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2801/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio switched off remotely
+    message: 'Radio switched off remotely by {par} ({comment}); switch-off read back on the radio: {relu}.'
+    causes:
+    - Switch-off requested by an operator (STOP held 3 s, then « Switch the TRX off remotely »)
+    - Automatic switch-off after the delay without any connection ([power] idle_off)
+    preconisation: Nothing to do. The radio switches on again at the next operator connection.
+
+ORT-2802:
+  gravite: info
+  titre: Poste allumé à distance
+  message: 'Poste allumé à distance par {par} ({comment}) en {secondes} s : {poste}.'
+  causes:
+  - Connexion d'un opérateur à un poste éteint
+  preconisation: Rien à faire.
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2802/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio switched on remotely
+    message: 'Radio switched on remotely by {par} ({comment}) in {secondes} s: {poste}.'
+    causes:
+    - An operator connected to a switched-off radio
+    preconisation: Nothing to do.
+
+ORT-2803:
+  gravite: avertissement
+  titre: Allumage ou extinction du poste impossible
+  message: 'Allumage ou extinction du poste impossible (demandé par {par}) : {cause}.'
+  causes:
+  - Poste sans courant (alimentation 13,8 V coupée, interrupteur arrière)
+  - Câble USB débranché, ou poste qui coupe son USB une fois éteint
+  - Ordre refusé par Hamlib ou poste trop long à démarrer
+  preconisation: Vérifier l'alimentation et le câble USB du poste ; au besoin, l'allumer au shack (bouton ON/OFF).
+  action_auto: refus
+  codes_machine:
+  - power_on_failed
+  - power_off_failed
+  - power_on_timeout
+  ntfy_defaut: false
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2803/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio cannot be switched on or off
+    message: 'Radio cannot be switched on or off (requested by {par}): {cause}.'
+    causes:
+    - Radio without power (13.8 V supply off, rear switch)
+    - USB cable unplugged, or a radio that cuts its USB once switched off
+    - Command refused by Hamlib, or radio too slow to start
+    preconisation: Check the radio power supply and USB cable; if needed, switch it on at the shack (ON/OFF button).
+
+ORT-2804:
+  gravite: avertissement
+  titre: Poste éteint sans commande de la station
+  message: 'Poste lu éteint alors que la station ne l''a pas éteint : {detail}.'
+  causes:
+  - Poste éteint à la main au shack
+  - Coupure de courant du poste
+  - Poste muet (Hamlib lit « éteint » quand un Yaesu ne répond plus)
+  preconisation: Rien à faire si le poste a été éteint exprès ; sinon vérifier son alimentation. La station attend son
+    retour sans relancer rigctld.
+  action_auto: aucune
+  codes_machine:
+  - rig_off_unexpected
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2804/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio switched off without a station command
+    message: 'Radio read as switched off although the station did not switch it off: {detail}.'
+    causes:
+    - Radio switched off by hand at the shack
+    - Power cut on the radio
+    - Silent radio (Hamlib reads « off » when a Yaesu stops answering)
+    preconisation: Nothing to do if the radio was switched off on purpose; otherwise check its power supply. The
+      station waits for it without restarting rigctld.
+
+ORT-2805:
+  gravite: info
+  titre: Allumage et extinction à distance non disponibles
+  message: 'Allumage et extinction à distance non disponibles : {detail}.'
+  causes:
+  - Fonction hors service sur la station (par défaut ; TRX Console, menu 2.8)
+  - Poste qui ne déclare pas « set / get Power Stat » sous Hamlib
+  preconisation: Mettre la fonction en service au menu 2.8 de TRX Console, si le poste le permet.
+  action_auto: refus
+  codes_machine:
+  - power_disabled
+  - power_unsupported
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2805/
+  depuis_version: 0.222.0
+  en:
+    titre: Remote power on and off unavailable
+    message: 'Remote power on and off unavailable: {detail}.'
+    causes:
+    - Feature switched off on the station (default; TRX Console, menu 2.8)
+    - Radio that does not declare « set / get Power Stat » in Hamlib
+    preconisation: Switch the feature on in TRX Console menu 2.8, if the radio allows it.
+
+ORT-2806:
+  gravite: info
+  titre: 'Poste éteint : commande refusée'
+  message: 'Commande refusée : {detail}.'
+  causes:
+  - Le poste est éteint (à distance, au shack, ou coupure de courant)
+  preconisation: Rallumer le poste (nouvelle connexion d'un opérateur, ou bouton ON/OFF au shack).
+  action_auto: refus
+  codes_machine:
+  - rig_off
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2806/
+  depuis_version: 0.222.0
+  en:
+    titre: 'Radio switched off: command refused'
+    message: 'Command refused: {detail}.'
+    causes:
+    - The radio is switched off (remotely, at the shack, or power cut)
+    preconisation: Switch the radio on again (new operator connection, or ON/OFF button at the shack).
+
+ORT-2807:
+  gravite: info
+  titre: Allumage ou extinction du poste en cours
+  message: 'Commande refusée : {detail}.'
+  causes:
+  - Un allumage ou une extinction du poste est en cours (jusqu'à 40 s)
+  - Le poste n'est pas lu éteint au moment de l'allumage
+  preconisation: Attendre la fin de l'allumage ou de l'extinction, puis recommencer.
+  action_auto: refus
+  codes_machine:
+  - power_busy
+  - rig_on
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2807/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio switching on or off in progress
+    message: 'Command refused: {detail}.'
+    causes:
+    - The radio is being switched on or off (up to 40 s)
+    - The radio is not read as switched off when switching it on
+    preconisation: Wait for the end of the switch-on or switch-off, then try again.
+
+ORT-2808:
+  gravite: critique
+  titre: Poste allumé en émission
+  message: 'Le poste s''est allumé EN ÉMISSION (allumage demandé par {par}) : remis en réception aussitôt.'
+  causes:
+  - Ligne PTT série (RTS / DTR) active au démarrage du poste (Yaesu prévient que le poste peut émettre au démarrage
+    du PC quand le PTT passe par l'USB)
+  - Pédale ou micro du poste appuyé
+  preconisation: 'Vérifier la ligne PTT : sur un FTDX10, RPTT SELECT = DAKY et PC KEYING = OFF ; ne plus allumer à
+    distance tant que la cause n''est pas trouvée (menu 2.8).'
+  action_auto: retour_rx
+  codes_machine:
+  - power_on_tx
+  ntfy_defaut: true
+  priorite_ntfy: 5
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2808/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio switched on while transmitting
+    message: 'The radio switched on TRANSMITTING (switch-on requested by {par}): put back to receive at once.'
+    causes:
+    - Serial PTT line (RTS / DTR) active when the radio starts (Yaesu warns the radio may transmit when the PC starts
+      if PTT goes through USB)
+    - Radio footswitch or microphone pressed
+    preconisation: 'Check the PTT line: on an FTDX10, RPTT SELECT = DAKY and PC KEYING = OFF; do not switch on
+      remotely again until the cause is found (menu 2.8).'
+
+ORT-2809:
+  gravite: avertissement
+  titre: Port série du poste à vérifier avant l'allumage
+  message: 'Allumage refusé (demandé par {par}) : {detail}.'
+  causes:
+  - Câble USB du poste débranché
+  - Poste branché sur une autre prise USB (Windows lui donne un autre numéro COM)
+  - Autre appareil sur le port de station.toml
+  preconisation: Rebrancher le poste, ou refaire le menu 2.5 de TRX Console pour choisir le bon port ; aucun port
+    n'est ouvert tant que ce n'est pas réglé.
+  action_auto: refus
+  codes_machine:
+  - port_missing
+  - port_moved
+  - port_mismatch
+  - port_identity
+  ntfy_defaut: false
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2809/
+  depuis_version: 0.222.0
+  en:
+    titre: Radio serial port to check before switching on
+    message: 'Switch-on refused (requested by {par}): {detail}.'
+    causes:
+    - Radio USB cable unplugged
+    - Radio plugged into another USB socket (Windows gives it another COM number)
+    - Another device on the station.toml port
+    preconisation: Plug the radio back in, or redo TRX Console menu 2.5 to choose the right port; no port is opened
+      until this is fixed.
+
+ORT-2810:
+  gravite: info
+  titre: Extinction automatique reportée
+  message: 'Extinction automatique du poste reportée de 10 min : {cause}.'
+  causes:
+  - Émission en cours, ou poste utilisé sur place
+  - Liaison avec le poste perturbée
+  preconisation: Rien à faire ; la station réessaiera.
+  action_auto: nouvel_essai
+  ntfy_defaut: false
+  priorite_ntfy: 2
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-2810/
+  depuis_version: 0.222.0
+  en:
+    titre: Automatic switch-off postponed
+    message: 'Automatic radio switch-off postponed by 10 min: {cause}.'
+    causes:
+    - Transmission in progress, or radio used at the shack
+    - Disturbed link with the radio
+    preconisation: Nothing to do; the station will try again.
+
 ORT-3001:
   gravite: critique
   titre: Périphérique audio du poste absent

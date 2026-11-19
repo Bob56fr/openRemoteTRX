@@ -84,7 +84,10 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "monitoring",
             # diffusion en direct (docs/diffusion-cahier-des-charges.md) : OPÉRATEURS ; relayée au module « diffusion »,
             # qui n'a AUCUN droit sur le poste ; la passerelle fabrique les arguments (liste fermée par action)
-            "diffusion")
+            "diffusion",
+            # allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) : OPÉRATEURS ;
+            # power_off exige confirm: true ; power_on suit ses étapes par des messages power_progress ; n'émettent jamais
+            "power_on", "power_off")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release")
@@ -103,7 +106,8 @@ OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "
                      "sdr_audio",                 # son du SDR sur une seconde piste (0.142.0+, offre à deux réceptions audio)
                      "monitoring",                # monitoring inter-stations dans la page (0.164.0+, module monlink)
                      "diffusion",                 # diffusion en direct vers un serveur Icecast (0.189.0+, module diffusion)
-                     "remote_console")            # lien vers TRX Console sur le réseau (0.178.0+, opérateurs admin)
+                     "remote_console",            # lien vers TRX Console sur le réseau (0.178.0+, opérateurs admin)
+                     "power")                     # allumage et extinction du poste à distance (0.222.0+, [power] enabled)
 FRIENDS_ACTIONS = ("view", "stats", "pseudo", "texts", "shack_for", "shack_cancel", "shack_rules", "create", "invite",
                    "join", "leave", "delete", "exclude", "role", "share", "rename", "qsy_mark", "qsy_back")
 MAX_FRIENDS_ARGS_BYTES = 1500
@@ -378,6 +382,14 @@ def parse_command(raw: str | bytes) -> Command:
         if data["action"] in ("watch", "listen") and not isinstance(args.get("on"), bool):
             raise ProtocolError("invalid_params", f"{data['action']} : args.on vaut true ou false")
         params["action"], params["args"] = data["action"], args
+    elif name == "power_off":
+        if data.get("confirm") is not True or set(data) - {"cmd", "id", "confirm"}:
+            raise ProtocolError("invalid_params", "confirm doit valoir true (arrêt confirmé par l'opérateur)")
+    elif name == "power_on":
+        how = data.get("how", "button")
+        if how not in ("connect", "button") or set(data) - {"cmd", "id", "how"}:
+            raise ProtocolError("invalid_params", "how : connect (à la connexion) ou button")
+        params["how"] = how
     elif name == "layout_save":
         profile = data.get("profile")
         if not isinstance(profile, dict):

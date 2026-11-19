@@ -1,0 +1,22 @@
+{
+  "description": "Prueba de apagado y encendido del equipo por CAT (estación detenida, sin emisión)",
+  "start": "Prueba del equipo {model} en {port}: apagado y luego encendido por CAT. Sin emisión.",
+  "not_on": "El equipo no responde como encendido: enciéndalo en el cuarto de radio, revise el cable USB y vuelva a intentarlo.",
+  "tx_before": "El equipo estaba emitiendo: « T 0 » enviado. Prueba detenida.",
+  "step_off": "1/3 Apagando el equipo…",
+  "off_failed": "El equipo no se apagó (orden rechazada o sigue respondiendo « encendido »). El encendido remoto no es posible con este equipo o cable.",
+  "off_ok": "   Equipo apagado.",
+  "port_gone": "El puerto {port} desapareció con el equipo apagado: este equipo corta su USB y no se podrá encender a distancia. Enciéndalo en el cuarto de radio (botón ON/OFF).",
+  "port_changed": "El puerto {port} ya no tiene la misma identidad USB con el equipo apagado: prueba detenida. Encienda el equipo en el cuarto de radio.",
+  "ports_ok": "2/3 Equipo apagado: puerto {port} todavía presente ({ident}).",
+  "no_ident": "identidad USB ilegible",
+  "step_on": "3/3 Encendiendo de nuevo el equipo ({seconds} s como máximo)…",
+  "on_failed": "El equipo no se encendió en {seconds} s: enciéndalo en el cuarto de radio (botón ON/OFF). El encendido remoto no es posible así.",
+  "tx_after": "El equipo se encendió EMITIENDO: « T 0 » enviado al instante. Revise la línea PTT (RTS / DTR) antes de activar la función.",
+  "no_freq": "frecuencia no releída",
+  "on_ok": "   Equipo encendido de nuevo en {seconds} s: {freq} {mode}, en recepción.",
+  "result_ok": "Prueba SUPERADA: el equipo se apaga y se enciende por CAT.",
+  "result_failed": "Prueba FALLIDA: función no activada.",
+  "config_bad": "station.toml ilegible: {detail}",
+  "no_rigctl": "rigctl (Hamlib) no encontrado: instale Hamlib o indique [tools] hamlib_dir."
+}

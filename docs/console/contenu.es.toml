@@ -302,6 +302,12 @@ quand = "Después de ajustar el segundo puerto CI-V, o para desactivar el espect
 modifie = "La configuración de la estación (<code>station.toml</code>), con derechos de administrador; se conserva la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia a petición para aplicar el cambio."
 admin = true
 
+[menus.remote_power]
+role = "Activa (o desactiva) el <strong>encendido y apagado remoto del equipo</strong>: un operador que se conecta enciende el equipo si está apagado, y STOP mantenido 3 s en la página o la aplicación lo apaga (con confirmación). <strong>Desactivado por defecto.</strong> La activación se rechaza si Hamlib no declara la función para tu equipo; primero propone una prueba (estación detenida durante la prueba, equipo apagado y encendido, sin emisión) y registra la identidad USB del puerto del equipo, comprobada antes de cada encendido. Opciones: apagado automático tras un tiempo sin ninguna conexión, alertas ntfy en cada encendido o apagado."
+quand = "Para una estación remota que hay que poder encender sin ir al cuarto de radio, con un equipo que mantiene su USB alimentado una vez apagado (Yaesu FTDX10 por la toma USB). Repetirlo tras cambiar el equipo de toma USB."
+modifie = "La configuración de la estación (<code>station.toml</code>: sección <code>[power]</code> e identidad USB de los puertos en <code>[rig]</code>), con derechos de administración; se conserva la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia si lo pides para aplicar el cambio."
+admin = true
+
 [menus.bands]
 role = "Decide quién impide emitir fuera de tus bandas: la estación (lista de bandas permitidas, puntos de partida de la región 1 IARU a comprobar según tu licencia) o el propio transceptor. <strong>Lista vacía = solo recepción.</strong> Las mismas preguntas que la parte correspondiente del asistente completo (menú 2.1), y solo esas: Intro conserva cada ajuste actual, el resto de la configuración no se toca."
 quand = "En la puesta en servicio, tras un cambio de licencia, o si la estación rechaza una emisión en una banda permitida."

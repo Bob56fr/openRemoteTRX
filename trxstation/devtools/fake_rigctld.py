@@ -52,6 +52,13 @@ class FakeRigctld:
         self.ignore_unkey = False  # « T 0 » accepté mais le PTT reste actif (poste bloqué)
         self.bare = False          # réponses SANS libellé (« 14200000 » au lieu de « Frequency: 14200000 »)
         self.broken_strength = False  # « l STRENGTH » répond sans aucune valeur
+        # Alimentation (« Power Status: 1 », relevé sur rigctld 4.7.2 avec un FTDX10, 2026-11-19) : éteint, le poste
+        # ne répond plus (RPRT -5) qu'à \get_powerstat / \set_powerstat et aux réglages de rigctld lui-même.
+        self.powered = 1
+        self.power_supported = True       # False : \get_powerstat et \set_powerstat refusés (RPRT -4)
+        self.boot_s = 0.0                 # après « \set_powerstat 1 » : muet encore ce délai (le poste démarre)
+        self.ptt_at_boot = 0              # 1 : le poste s'allume EN ÉMISSION (ligne RTS d'un PTT série, test de panne)
+        self._booting_until = 0.0
         self.port = 0
         self._server: asyncio.AbstractServer | None = None
         self._writers: set[asyncio.StreamWriter] = set()
@@ -117,6 +124,24 @@ class FakeRigctld:
         key, args = parts[0], parts[1:]
         if key in self.errors:
             return f"RPRT {self.errors[key]}\n"
+        if key == "\\get_powerstat":
+            if not self.power_supported:
+                return "RPRT -4\n"
+            on = self.powered and time.monotonic() >= self._booting_until
+            return f"get_powerstat:\n{self._out('Power Status', 1 if on else 0)}RPRT 0\n"
+        if key == "\\set_powerstat" and args:
+            if not self.power_supported:
+                return "RPRT -4\n"
+            value = int(args[0])
+            if value == 1 and not self.powered:
+                self._booting_until = time.monotonic() + self.boot_s
+                self.ptt = self.ptt_at_boot
+            elif value == 0:
+                self.ptt = 0
+            self.powered = 1 if value == 1 else 0
+            return f"set_powerstat: {args[0]}\nRPRT 0\n"
+        if key not in ("\\set_cache", "\\get_cache") and (not self.powered or time.monotonic() < self._booting_until):
+            return "RPRT -5\n"                 # poste éteint ou qui démarre : muet
         try:
             if key == "f":
                 return f"get_freq:\n{self._out('Frequency', self.freq)}RPRT 0\n"

@@ -42,6 +42,7 @@ from .audio.xruns import XrunWatch
 from .bugreports import ReportStore
 from .cat import CatLink, load_capabilities
 from .memories import MemoryStore
+from .power import PowerControl
 from .voice_profiles import VoiceProfileStore
 from ..swr.runner import SwrRunner
 from ..swr.store import SwrStore
@@ -109,6 +110,17 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
         await ctrl.start()
         await spectrum.start()                     # n'ouvre le second port qu'en réception confirmée
         manager, runner, registry = await _start_api(cfg, ctrl, link, pipeline, capabilities, spectrum, access)
+        power = PowerControl(cfg, link, ctrl, alert=Notifier(cfg.supervisor.notify_url,
+                                                             lang=cfg.supervisor.notify_lang).alert)
+        publisher.power_status = power.snapshot                                 # superviseur : poste éteint exprès ?
+        if manager is not None:
+            manager.power = power if power.available else None                  # [power] enabled et poste capable
+
+            def diffusing() -> str:
+                status = manager.diffusion_status() if getattr(manager, "diffusion_status", None) else None
+                return "diffusion" if isinstance(status, dict) and status.get("active") else ""
+            if power.available and cfg.power.idle_off:
+                tasks.append(asyncio.create_task(power.run_idle(stop, lambda: len(manager.peers), diffusing)))
         if manager is not None and getattr(manager, "swr", None) is not None:
             publisher.swr_status = manager.swr.status                           # trx-monitor : mesure de TOS en cours
         selcall = getattr(pipeline, "selcall", None)

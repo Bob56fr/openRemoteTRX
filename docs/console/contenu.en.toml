@@ -302,6 +302,12 @@ quand = "After setting the second CI-V port of the transceiver, or to turn the s
 modifie = "The station configuration (<code>station.toml</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
 admin = true
 
+[menus.remote_power]
+role = "Switches <strong>remote power on and off of the transceiver</strong> on (or off): an operator who connects switches the transceiver on if it is off, and STOP held 3 s in the page or the app switches it off (with confirmation). <strong>Off by default.</strong> Switching it on is refused if Hamlib does not declare the feature for your transceiver; it first offers a trial (station stopped during the trial, transceiver switched off then on, no transmission) and records the USB identity of the transceiver port, checked before every switch-on. Options: automatic switch-off after a delay without any connection, ntfy alerts at each switch-on or switch-off."
+quand = "For a remote station that must be switched on again without going to the shack, with a transceiver that keeps its USB powered once off (Yaesu FTDX10 through the USB socket). Do it again after moving the transceiver to another USB socket."
+modifie = "The station configuration (<code>station.toml</code>: <code>[power]</code> section and USB identity of the ports in <code>[rig]</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
 [menus.bands]
 role = "Decides who prevents transmitting outside your bands: the station (list of allowed bands, IARU region 1 starting points to check against your licence) or the transceiver itself. <strong>Empty list = receive only.</strong> The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
 quand = "At commissioning, after a licence change, or if the station refuses a transmission in an allowed band."

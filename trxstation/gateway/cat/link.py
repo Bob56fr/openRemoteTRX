@@ -31,6 +31,8 @@ EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METE
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
 SLOW_REFUSAL_S = 1.5        # lecture facultative REFUSÉE après plus de 1,5 s (Hamlib a réessayé) : abandonnée aussitôt
+OFF_POLL_S = 5.0            # poste éteint : seule l'alimentation (get_powerstat) est lue, toutes les 5 s (docs/alimentation-poste-cahier-des-charges.md)
+POWER_SETTLE_S = 15.0       # poste qui vient de s'allumer : aucune lecture facultative abandonnée pendant ce délai
 
 
 @dataclass
@@ -49,6 +51,9 @@ class RigState:
     tx_frequency_hz: int | None = None  # fréquence d'ÉMISSION en split ; None hors split ou inconnue
     offsets: dict = field(default_factory=dict)     # « RIT », « XIT » -> décalage en Hz (affichage ; la sécurité relit le poste)
     vfo: str | None = None             # VFO actif (VFOA, VFOB, MEM, Main, Sub) ; None = non lisible (IC-7300MK2)
+    # Alimentation : "on", "off" (éteint OU muet : Hamlib Yaesu répond 0 sans réponse du poste), None = inconnue (poste
+    # qui ne déclare pas « get Power Stat »). Jamais une preuve de réception : un poste « off » n'est pas « RX confirmé ».
+    power: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -57,7 +62,7 @@ class RigState:
         return (self.connected, self.frequency_hz, self.mode, self.passband_hz,
                 self.strength_db, self.ptt, self.last_error,
                 tuple(sorted(self.functions.items())), tuple(sorted(self.levels.items())),
-                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())), self.vfo)
+                self.split, self.tx_frequency_hz, tuple(sorted(self.offsets.items())), self.vfo, self.power)
 
 
 class CatLink:
@@ -84,6 +89,49 @@ class CatLink:
         # changent aussi les réglages mémorisés par bande du poste), horloge monotone. Lu par la présence sur place
         # (safety/local.py) : un changement relu juste après une écriture de la station n'est pas une action de l'opérateur.
         self.writes: dict[str, float] = {}
+        # Allumage à distance (gateway/power.py) : `paused` = aucune lecture pendant l'ordre et le démarrage du poste
+        # (PowerControl lit lui-même) ; `_settle_until` = poste tout juste allumé, lectures lentes NON abandonnées.
+        self.paused = False
+        self._settle_until = 0.0
+
+    @property
+    def power_readable(self) -> bool:
+        """Le poste déclare « get Power Stat » : l'état éteint / allumé se lit (sinon `power` reste None)."""
+        caps = self.capabilities
+        return caps is not None and bool(getattr(caps, "can_get_power", False))
+
+    def settle(self, seconds: float = POWER_SETTLE_S) -> None:
+        """Poste qui démarre : ses refus des premières secondes ne disent rien de ce qu'il sait faire."""
+        self._settle_until = time.monotonic() + seconds
+        self._failures.clear()
+
+    def mark_power(self, on: bool) -> None:
+        """État d'alimentation constaté par PowerControl (après un ordre relu) : la boucle suit tout de suite."""
+        if on:
+            self._update(power="on")
+            self._refresh_now = True
+        else:
+            self._mark_off()
+
+    def _mark_off(self) -> None:
+        self._update(power="off", frequency_hz=None, mode=None, passband_hz=None, strength_db=None, ptt=None,
+                     split=None, tx_frequency_hz=None, vfo=None, levels={}, functions={}, offsets={}, last_error="")
+
+    async def _check_off(self) -> bool:
+        """Une lecture vient d'échouer : poste éteint ? (seulement s'il déclare « get Power Stat »). True = éteint, la
+        boucle passe en veille ; False = allumé ou inconnu (l'échec est une vraie panne de lecture)."""
+        if not self.power_readable or self.paused:
+            return False
+        try:
+            on = await self.client.get_powerstat()
+        except (RigError, CatProtocolError):
+            return False
+        if on:
+            return False
+        if self._state.power != "off":
+            log.info("poste éteint (ou muet) : seule l'alimentation est lue, toutes les %.0f s", OFF_POLL_S)
+        self._mark_off()
+        return True
 
     def _stamp(self, key: str) -> None:
         self.writes[key] = time.monotonic()
@@ -136,7 +184,10 @@ class CatLink:
                 await self._poll_loop()
             except (CatConnectionError, CatProtocolError, OSError) as exc:
                 emit_event(codes.ORT_2005, logger=log, detail=str(exc))
-                self._set_state(RigState(connected=False, last_error=str(exc), updated_at=time.time()))
+                # Poste éteint : il le reste à travers une connexion refaite (sinon la reprise relirait tout un poste
+                # éteint, lentement) ; `connected` = False dit quand même au superviseur que rigctld ne répond plus.
+                off = "off" if self._state.power == "off" else None
+                self._set_state(RigState(connected=False, last_error=str(exc), updated_at=time.time(), power=off))
             finally:
                 await self.client.close()
             if self._stop.is_set():
@@ -170,11 +221,24 @@ class CatLink:
     async def _poll_loop(self) -> None:
         tick = 0
         while not self._stop.is_set():
+            if self.paused:                              # allumage ou extinction en cours : PowerControl lit lui-même
+                if await self._sleep(self.poll_fast_s):
+                    return
+                continue
+            if self._state.power == "off":
+                await self._refresh_off()
+                if await self._sleep(OFF_POLL_S):
+                    return
+                continue
             if self._strength_supported:
-                await self._refresh_strength()
+                if not await self._refresh_strength():
+                    continue                             # poste éteint : rien d'autre à lire
             if self._state.ptt:
                 await self._refresh_tx_meters()
-            await self._refresh_one_extra()
+            if self._state.power != "off":
+                await self._refresh_one_extra()
+            if self._state.power == "off":
+                continue                                 # trouvé éteint pendant ce tour : la veille commence
             if self._refresh_now or tick % self.slow_every == 0:
                 self._refresh_now = False
                 await self._refresh_slow()
@@ -182,7 +246,20 @@ class CatLink:
             if await self._sleep(self.poll_fast_s):
                 return
 
-    async def _refresh_strength(self) -> None:
+    async def _refresh_off(self) -> None:
+        """Poste éteint : seule l'alimentation est lue. Allumé (à la main, ou par PowerControl) => lecture normale."""
+        try:
+            on = await self.client.get_powerstat()
+        except (RigError, CatProtocolError):
+            return
+        if on:
+            log.info("poste de nouveau allumé : lecture normale")
+            self.settle()
+            self._update(power="on")
+            self._refresh_now = True
+
+    async def _refresh_strength(self) -> bool:
+        """False = poste trouvé éteint (le reste du tour est sauté)."""
         try:
             self._update(strength_db=await self.client.get_strength())
         except RigError as exc:
@@ -190,11 +267,16 @@ class CatLink:
                 self._strength_supported = False  # ce poste n'a pas de S-mètre lisible
                 self._update(strength_db=None)
             else:
+                if await self._check_off():
+                    return False
                 self._update(strength_db=None, last_error=str(exc))
         except CatProtocolError as exc:           # réponse illisible : lecture facultative, la liaison reste valide
+            if time.monotonic() < self._settle_until:
+                return True                       # poste qui démarre : pas de conclusion
             emit_event(codes.ORT_2008, logger=log, commande="S-mètre (l STRENGTH), lecture désactivée", reponse=str(exc))
             self._strength_supported = False
             self._update(strength_db=None)
+        return True
 
     async def _refresh_slow(self) -> None:
         """Fréquence, mode et PTT sont publiés ensemble : jamais d'état à moitié rafraîchi."""
@@ -203,7 +285,11 @@ class CatLink:
             frequency = await self.client.get_frequency()
             mode, passband = await self.client.get_mode()
             changes.update(frequency_hz=frequency, mode=mode, passband_hz=passband, last_error="")
+            if self.power_readable and self._state.power != "on":
+                changes["power"] = "on"
         except (RigError, CatProtocolError) as exc:  # poste éteint/muet, ou réponse illisible : la liaison reste valide
+            if isinstance(exc, RigError) and await self._check_off():
+                return
             changes.update(frequency_hz=None, mode=None, passband_hz=None, last_error=str(exc))
         try:
             changes["ptt"] = await self.client.get_ptt()
@@ -260,6 +346,10 @@ class CatLink:
                 value = await (self.client.get_func(name) if kind == "f" else self.client.get_level(name))
         except RigError as exc:
             key = f"{kind}:{name}"
+            if time.monotonic() < self._settle_until or self.paused:
+                return                                             # poste qui démarre : ses refus ne prouvent rien
+            if exc.code not in PERMANENT_ERRORS and await self._check_off():
+                return                                             # poste éteint : rien n'est abandonné
             self._failures[key] = self._failures.get(key, 0) + 1
             slow = time.monotonic() - started > SLOW_REFUSAL_S     # refus après des essais répétés de Hamlib : bloque le bus
             if exc.code in PERMANENT_ERRORS or slow or self._failures[key] >= MAX_TRANSIENT_FAILURES:
@@ -269,6 +359,8 @@ class CatLink:
             self._disable(kind, name, str(exc))
             return
         except CatConnectionError as exc:
+            if time.monotonic() < self._settle_until:
+                raise                                              # poste qui démarre : connexion refaite, rien d'abandonné
             # Lecture FACULTATIVE trop lente (Yaesu FTDX10 + Hamlib 4.7.2 : « u COMP » = « PR; » refusé par « ?; »,
             # réessayé par Hamlib, 2,5 s) : abandonnée pour ce poste, sinon la liaison tomberait à chaque tour et le
             # PTT deviendrait illisible. La connexion est quand même refaite (flux désynchronisé après un délai).

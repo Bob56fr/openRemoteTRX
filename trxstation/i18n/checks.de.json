@@ -148,5 +148,6 @@
   "diffusion.tls_local": "[diffusion] tls = false nur zu 127.0.0.1 (Testserver): im Internet ginge das Quellpasswort im Klartext",
   "diffusion.incomplete": "[diffusion] aktiviert ohne server oder station: es könnte nichts gesendet werden",
   "rig.tuner": "[rig] tuner muss true oder false sein (Antennentuner des Geräts in Gebrauch)",
+  "rig.port_usb": "[rig] {name}: USB-Kennung unlesbar ({value}); erwartet « 10C4:EA70 SN=… IF=00 » oder leer. Fern-Ein/Aus erneut einrichten (TRX Console, Menü 2.8)",
   "safety.swr_alert": "[safety] swr_alert ist {value}: 0 (aus) oder ein SWR zwischen 1,2 und 10 (Warnung bei hohem SWR beim Senden)"
 }

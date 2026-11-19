@@ -47,11 +47,12 @@ FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0
 # Pendant une mesure de TOS, aucun client ne change les réglages du poste (la mesure les a pris et les remettra) ;
 # STOP et toute coupure restent TOUJOURS possibles (ils arrêtent la mesure).
 SWR_BLOCKED = frozenset({"set_frequency", "set_mode", "set_function", "set_level", "set_offset", "memory_recall",
-                         "spectrum_set", "selcall_send", "selcall_calibrate", "local_release"})    # visiteur : au-delà, connexion fermée et alerte
+                         "spectrum_set", "selcall_send", "selcall_calibrate", "local_release", "power_on", "power_off"})    # visiteur : au-delà, connexion fermée et alerte
 
 
 def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None, access=None,
-                role: str = OPERATOR, net: dict | None = None, diffusion: dict | None = None) -> dict:
+                role: str = OPERATOR, net: dict | None = None, diffusion: dict | None = None,
+                power: dict | None = None) -> dict:
     """`spectrum` : SpectrumService (facultatif) ; seul son état (state, code, message) part vers les clients.
     `access` (AccessControl, facultatif) : présence ; pour un visiteur, pseudos à la place des identifiants."""
     rig, ptt = link.state, ctrl.snapshot()
@@ -71,7 +72,9 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
                 "functions": dict(rig.functions), "levels": dict(rig.levels),
                 # split (fréquence d'émission = autre VFO) et décalages du clarifieur (RIT, XIT = ΔTX) ; None = inconnu
                 "split": rig.split, "tx_frequency_hz": rig.tx_frequency_hz, "offsets": dict(rig.offsets),
-                "vfo": rig.vfo},
+                "vfo": rig.vfo,
+                # alimentation : "on", "off" (éteint ou muet), None = inconnue ; visiteurs compris (bandeau « éteint »)
+                "power": getattr(rig, "power", None)},
         "audio": pipeline.stats() if pipeline is not None else {},
         "clients": [] if listener else ctrl.clients,             # identifiants : jamais vers un visiteur
         "spectrum": spectrum.snapshot() if spectrum is not None else {"state": "off", "code": "", "message": ""},
@@ -86,6 +89,8 @@ def build_state(link: CatLink, ctrl: PttController, pipeline=None, spectrum=None
         **({} if getattr(pipeline, "freedv", None) is None else {"freedv": pipeline.freedv.snapshot()}),
         # diffusion en direct (module « diffusion ») : OPÉRATEURS seulement, si la station l'emploie
         **({} if listener or diffusion is None else {"diffusion": diffusion}),
+        # allumage / extinction à distance (gateway/power.py) : OPÉRATEURS seulement, si la station l'a
+        **({} if listener or power is None else {"power": power}),
     }
 
 
@@ -142,6 +147,8 @@ class ControlSession:
         self.sdr_audio_offered = False           # cette connexion a une piste pour le son du SDR (posé par webrtc)
         self.on_sdr_listen: Callable[[], None] | None = None   # PeerManager._sdr_listeners_changed
         self.on_operator_activity: Callable[[], None] | None = None
+        # Allumage et extinction du poste (gateway/power.py, PowerControl) : posé par webrtc pour un OPÉRATEUR ; None sinon
+        self.power = None
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
@@ -336,7 +343,8 @@ class ControlSession:
                    "diffusion": self.diffusion_call is not None and not self.listener,
                    "freedv": self.freedv is not None,
                    "sdr": self.sdr_call is not None and not self.listener,
-                   "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered}
+                   "sdr_audio": self.sdr_call is not None and not self.listener and self.sdr_audio_offered,
+                   "power": self.power is not None and not self.listener and self.power.available}
         return [*BASE_FEATURES, *(name for name, on in offered.items() if on)]
 
     def _remote_console(self) -> dict | None:
@@ -363,7 +371,40 @@ class ControlSession:
                 diffusion = self.diffusion_status()
             except Exception:
                 diffusion = None
-        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net, diffusion)
+        power = None
+        if self.power is not None and not self.listener:
+            try:
+                power = self.power.snapshot()
+            except Exception:
+                power = None
+        return build_state(self.link, self.ctrl, self.pipeline, self.spectrum, self.access, self.role, net, diffusion,
+                           power)
+
+    async def _power_command(self, cmd: Command) -> None:
+        """Allumage / extinction du poste (OPÉRATEURS : la liste blanche des visiteurs ne les contient pas)."""
+        from ..power import PowerError
+        if self.power is None:
+            self._result(cmd.id, False, reason="power_disabled",
+                         detail="allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8)")
+            return
+        if cmd.name == "power_off":
+            result = await self.power.power_off(self.client_id, how="stop_hold")      # Refused : refus habituel
+            emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action="arrêt du poste à distance")
+            self._result(cmd.id, True, **result)
+            return
+
+        def progress(message: dict) -> None:
+            if not self.closed:
+                self.send({"type": "power_progress", **message})
+
+        task = self.power.power_on(self.client_id, how=cmd.params.get("how", "button"), progress=progress)
+        emit_event(codes.ORT_4019, logger=log, compte=self.client_id, action="allumage du poste à distance")
+        try:
+            result = await asyncio.shield(task)     # une connexion fermée n'interrompt pas l'allumage
+        except PowerError as exc:
+            self._result(cmd.id, False, reason=exc.reason, ort=exc.ort, step=exc.step, detail=exc.detail)
+            return
+        self._result(cmd.id, True, **result)
 
     async def close(self) -> None:
         """Idempotent. Désenregistre le client : coupe l'émission s'il en était propriétaire."""
@@ -959,6 +1000,8 @@ class ControlSession:
                 self._breizh_command(cmd)
             elif cmd.name == "freedv_set":
                 await self._freedv_set(cmd)
+            elif cmd.name in ("power_on", "power_off"):
+                await self._power_command(cmd)
             elif cmd.name.startswith("voice_profile"):     # opérateur seulement ; un fichier sur la station, rien vers le poste
                 if self.voices is None:
                     self._result(cmd.id, False, reason="voice_profiles_unavailable")

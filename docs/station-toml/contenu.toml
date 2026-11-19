@@ -86,6 +86,12 @@ intro = "<p>La courbe de TOS de l'antenne, lancée depuis la page ou l'applicati
 ou = "Menu 8.1."
 relu = "redemarrage"
 
+[sections.power]
+titre = "Allumage et extinction du poste à distance [power]"
+intro = "<p>Allumer le poste à la connexion d'un opérateur et l'éteindre depuis la page ou l'application (STOP maintenu 3 s). Hors service par défaut. Seulement pour un poste qui le permet par la CAT (Hamlib : « set / get Power Stat ») et qui garde son USB alimenté une fois éteint. La station n'émet jamais pour allumer ou éteindre le poste.</p>"
+ou = "TRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1."
+relu = "redemarrage"
+
 [sections.breizh]
 titre = "Breizh Audio Box dans l'émission [breizh]"
 intro = "<p>Le son du micro passe par Breizh Audio Box (traitement de la voix) sur un autre PC du réseau local avant d'aller au poste. Si Breizh ne répond plus, la station repasse seule en direct. Le son du micro circule EN CLAIR sur le réseau local : seulement sur un réseau de confiance.</p>"
@@ -238,6 +244,19 @@ niveau = "courant"
 securite = "À distance, sans accord automatique à la prise d'émission, une nouvelle fréquence peut émettre sur un TOS élevé. Hors des bandes radioamateur, l'accord au PTT n'est pas garanti par le poste."
 exemple = "true si l'antenne passe par le coupleur du poste ; false (défaut) sinon."
 depuis = "0.210.0"
+
+[reglages."rig.port_usb"]
+role = "Identité USB du port du poste (fabricant, produit, numéro de série, interface), relevée à la mise en service de l'allumage à distance. Avant chaque allumage, la station vérifie que le port de <code>port</code> est TOUJOURS celui du poste ; s'il a changé (autre prise USB sous Windows), l'allumage est refusé et le nouveau port est nommé."
+niveau = "expert"
+securite = "La station ne fait que LIRE cette identité ; elle n'ouvre jamais un autre port de sa propre initiative (un port série ouvert par erreur peut lever RTS ou DTR, donc un PTT)."
+exemple = "<code>10C4:EA70 SN=01D0F21E IF=00</code> (port « Enhanced » du CP2105 d'un FTDX10) ; vide = non relevée."
+depuis = "0.222.0"
+
+[reglages."rig.ptt_port_usb"]
+role = "Identité USB du port du PTT quand il est séparé du port du poste (PTT par RTS ou DTR) ; même vérification que <code>port_usb</code>."
+niveau = "expert"
+exemple = "Vide (défaut) : PTT par la CAT, ou port non relevé."
+depuis = "0.222.0"
 
 # ---------------------------------------------------------------- audio
 
@@ -479,6 +498,37 @@ niveau = "expert"
 bornes = "1 à 50 %."
 
 # ---------------------------------------------------------------- swr
+
+[reglages."power.enabled"]
+role = "true : allumage du poste à la connexion d'un opérateur et extinction depuis la page ou l'application. false (défaut) : ni allumage ni extinction à distance."
+niveau = "courant"
+securite = "Extinction refusée pendant toute émission et quand le poste est utilisé sur place ; après un allumage, la station relit le PTT et remet le poste en réception s'il s'est allumé en émission."
+exemple = "Mettre en service par le menu 2.8 de TRX Console, qui essaie d'abord d'éteindre et de rallumer le poste."
+depuis = "0.222.0"
+
+[reglages."power.on_timeout_s"]
+role = "Attente de la réponse du poste après l'ordre d'allumage. Au-delà, l'allumage est déclaré en échec avec un message clair."
+niveau = "expert"
+bornes = "5 à 120 s (défaut 30 ; un FTDX10 répond en 8 s environ)."
+depuis = "0.222.0"
+
+[reglages."power.idle_off"]
+role = "Extinction automatique du poste quand plus personne n'est connecté (opérateur ni visiteur) depuis <code>idle_off_hours</code> heures, sans diffusion en cours ni action sur le poste. Reportée de 10 min pendant une émission, jamais forcée."
+niveau = "courant"
+exemple = "false (défaut)."
+depuis = "0.222.0"
+
+[reglages."power.idle_off_hours"]
+role = "Délai sans aucune connexion avant l'extinction automatique."
+niveau = "courant"
+bornes = "1 à 168 h (défaut 4)."
+depuis = "0.222.0"
+
+[reglages."power.notify"]
+role = "Alerte ntfy à chaque allumage, extinction ou échec (qui, comment). Un poste allumé EN ÉMISSION alerte toujours, même sans ce réglage."
+niveau = "courant"
+exemple = "false (défaut) ; exige <code>[supervisor] notify_url</code>."
+depuis = "0.222.0"
 
 [reglages."swr.enabled"]
 role = "false : la mesure de TOS n'est pas proposée."

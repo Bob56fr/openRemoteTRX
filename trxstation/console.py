@@ -66,7 +66,7 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 # nouveau menu s'ajoute EN FIN de son thème : les numéros existants ne bougent plus.
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
-    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum")),
+    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum", "remote_power")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
@@ -687,6 +687,68 @@ class Console:
         if v.allow_local_tx:
             v.local_tx_max_s = self._ask_int(self.t("local_operator.4"), v.local_tx_max_s, 1, LOCAL_TX_CEILING_S)
         self._save_accounts(original, cfg, live=False)
+
+    def remote_power(self) -> None:
+        """Allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md § 8.3) :
+        interrupteur HORS SERVICE par défaut ; mise en service refusée si Hamlib ne déclare pas la fonction ou si
+        l'essai (éteindre, ports relus, rallumer : trxstation/power_trial.py, station arrêtée) échoue ; identité USB
+        des ports relevée. La console n'allume ni n'éteint jamais le poste elle-même hors de cet essai."""
+        from . import usbports
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        pw, rig = cfg.power, cfg.rig
+        on_off = lambda value: self.t("ask_yes.2") if value else self.t("ask_yes.3")   # noqa: E731
+        self.say(self.t("remote_power.1"))
+        self.say(self.t("remote_power.state", on=on_off(pw.enabled), idle=on_off(pw.idle_off), hours=pw.idle_off_hours,
+                        notify=on_off(pw.notify), ident=rig.port_usb or self.t("remote_power.no_ident")))
+        enable = self._ask_yes(self.t("remote_power.2"), pw.enabled)
+        stopped = False
+        if enable and (not pw.enabled or not rig.port_usb):
+            declared = self._power_declared(rig.model, cfg.tools.hamlib_dir)
+            if declared is not True:
+                self.say(self.t("remote_power.unsupported") if declared is False else self.t("remote_power.caps_unknown"))
+                enable = False
+            else:
+                self.say(self.t("remote_power.warning"))
+                if self.yes(self.t("remote_power.trial_ask")):
+                    stopped = self.stop_for_exclusive_use(self.t("remote_power.why"))
+                    code = self.runner.run(self.module("trxstation.power_trial", "--config", str(self.config)), admin=True)
+                    if code != 0:
+                        self.say(self.t("remote_power.trial_failed"))
+                        enable = False
+                if enable:
+                    for name, port in (("port_usb", rig.port), ("ptt_port_usb", rig.ptt_port)):
+                        if name == "ptt_port_usb" and (rig.ptt_type not in ("RTS", "DTR") or not port
+                                                       or port.strip().lower() == rig.port.strip().lower()):
+                            setattr(rig, name, "")
+                            continue
+                        ident = usbports.identity(port) if port else None
+                        setattr(rig, name, str(ident) if ident is not None else "")
+                        self.say(self.t("remote_power.ident", port=port or "-",
+                                        ident=str(ident) if ident is not None else self.t("remote_power.no_ident")))
+        if enable:
+            pw.idle_off = self._ask_yes(self.t("remote_power.3"), pw.idle_off)
+            if pw.idle_off:
+                pw.idle_off_hours = self._ask_int(self.t("remote_power.4"), pw.idle_off_hours, 1, 168)
+            pw.notify = self._ask_yes(self.t("remote_power.5"), pw.notify)
+            if pw.notify and not cfg.supervisor.notify_url:
+                alerts_menu = menu_number("alerts")
+                self.say(self.t("remote_power.no_ntfy", menu=alerts_menu))
+        pw.enabled = enable
+        saved = self._save_accounts(original, cfg, live=False)
+        if stopped and not saved and self.yes(self.t("hwtest.6")):
+            self.start()
+
+    def _power_declared(self, model: int, hamlib_dir: str) -> bool | None:
+        """« set / get Power Stat » déclarés par Hamlib pour ce modèle ? None = rigctl illisible (Hamlib absent)."""
+        from .gateway.cat.capabilities import CapabilitiesError, _run_dump_caps, parse_dump_caps
+        try:
+            caps = parse_dump_caps(_run_dump_caps(model, hamlib_dir), model)
+        except (CapabilitiesError, OSError):
+            return None
+        return bool(caps.can_set_power and caps.can_get_power)
 
     def remote_console(self) -> None:
         """TRX Console sur le réseau (étape 233) : marche / arrêt, comptes opérateurs ADMINISTRATEURS, compte Linux du

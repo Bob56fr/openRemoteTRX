@@ -148,5 +148,6 @@
   "diffusion.tls_local": "[diffusion] tls = false seulement vers 127.0.0.1 (faux serveur d'essai) : sur Internet, le mot de passe source passerait en clair",
   "diffusion.incomplete": "[diffusion] activée sans server ni station : rien ne pourrait être diffusé",
   "rig.tuner": "[rig] tuner doit valoir true ou false (coupleur d'antenne du poste utilisé)",
+  "rig.port_usb": "[rig] {name} : identité USB illisible ({value}) ; format attendu « 10C4:EA70 SN=… IF=00 », ou vide. Refaire la mise en service de l'allumage à distance (TRX Console, menu 2.8)",
   "safety.swr_alert": "[safety] swr_alert vaut {value} : 0 (arrêt) ou un TOS entre 1,2 et 10 (alerte de TOS élevé pendant l'émission)"
 }

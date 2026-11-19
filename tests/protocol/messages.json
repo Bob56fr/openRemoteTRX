@@ -11,7 +11,8 @@
       "functions": ["NB", "NR", "COMP", "TUNER"], "levels": ["PREAMP", "AGC", "SQL", "STRENGTH", "SWR", "ALC"],
       "complete": true, "filters": {"USB": [3000, 2400, 1800], "PKTUSB": [3000, 1200, 500]},
       "preamps": [10, 20], "attenuators": [20], "level_ranges": {"NR": [0, 1, 0.0667]},
-      "can_get_split": true, "max_rit_hz": 500, "max_xit_hz": 9999
+      "can_get_split": true, "max_rit_hz": 500, "max_xit_hz": 9999,
+      "can_set_power": true, "can_get_power": true
     },
     "tx_modes": ["PKTUSB", "PKTLSB"], "max_power_w": 100,
     "memories": [{"id": "a1b2c3", "name": "FT8 20 m", "hz": 14074000, "mode": "PKTUSB", "favorite": true}],
@@ -35,7 +36,7 @@
             "fault": "", "local_remaining_s": null, "local_reason": "", "local_tx": false, "temp_alert": "", "temp_c": null},
     "rig": {"connected": true, "frequency_hz": 14074000, "mode": "PKTUSB", "passband_hz": 3000, "strength_db": -54,
             "functions": {"NR": false, "NB": true}, "levels": {"PREAMP": 10, "SWR": 1.1, "ALC": 0.3},
-            "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}, "vfo": "VFOA"},
+            "split": false, "tx_frequency_hz": null, "offsets": {"RIT": 0, "XIT": 0}, "vfo": "VFOA", "power": "on"},
     "audio": {"rx_db": -32, "tx_db": -18, "gate_open": true, "listeners": 1, "tx_underruns": 0, "tx_overruns": 0},
     "clients": ["phone"],
     "spectrum": {"state": "ok", "code": "", "message": "", "settings": {"span": 25000}},
@@ -133,5 +134,14 @@
   "net_event": [{"type": "net_event", "event": "outage", "outage": {"start_ms": 1762700000000, "end_ms": 1762700006000, "duration_ms": 6000, "diagnosis": "vpn_shared", "basis": ["backlog", "regular_pattern"], "agent": "android 0.53.0", "net_type": "4g", "kind": "in_session"}}, {"type": "net_event", "event": "vpn_shared", "warning": {"address": "192.168.27.2", "kind": "same_time", "agents": ["page Windows", "android 0.53.0"], "since_ms": 1762700000000, "period_ms": null}}],
   "friends_changed": {"type": "module", "module": "presence", "data": {"kind": "friends_changed", "scope": "operators"}},
   "friends_view_result": {"type": "result", "id": 90, "ok": true, "action": "view", "data": {"station": "755e36b15199ae1a0a69f261575f325f", "pseudo": "F4ABC", "registered": true, "problem": null, "last_sync": 1794000000, "texts": ["Mobile"], "groups": [{"g": "00112233445566778899aabbccddeeff", "name": "Amis", "role": "a", "status": "member", "share": {"level": "f", "text": null, "invisible": false, "hide_absence": false}, "members": [{"id": "1a6aec63d9b9c03f89a8471c85e8fa41", "pseudo": "F5XYZ", "code": "R", "age": 40, "sd": 1793999880, "lt": 1793999100, "lv": "f", "f": 14205000, "m": "USB", "updated": 40}, {"id": "eb755af2be6e5dd780af80b8fd946763", "pseudo": "F6ZZZ", "code": "O", "age": 900}]}]}},
-  "rig_notice": {"type": "rig_notice", "event": "vox_off", "ort": "ORT-5034", "detail": "Le VOX du poste était en marche à la connexion de phone : la station l'a coupé (un VOX en marche peut faire émettre le poste sans commande)."}
+  "rig_notice": {"type": "rig_notice", "event": "vox_off", "ort": "ORT-5034", "detail": "Le VOX du poste était en marche à la connexion de phone : la station l'a coupé (un VOX en marche peut faire émettre le poste sans commande)."},
+  "state_power": {"_note": "champ « power » de state (OPÉRATEURS seulement, station avec [power] enabled et un poste qui le déclare) ; rig.power (on, off, null) part vers tous, visiteurs compris",
+                  "power": {"state": "off", "available": true, "by": "phone", "how": "stop_hold", "last": "off", "since": 1795000000.0}},
+  "power_progress": [{"type": "power_progress", "step": "ports", "status": "ok", "detail": ""},
+                     {"type": "power_progress", "step": "wait", "status": "running", "detail": "", "remaining_s": 22.0},
+                     {"type": "power_progress", "step": "done", "status": "ok", "detail": "7 074,00 kHz USB, en réception"},
+                     {"type": "power_progress", "step": "ports", "status": "error", "ort": "ORT-2809", "detail": "le poste est maintenant sur COM7 (station.toml dit COM6) : refaire le menu 2.5 de TRX Console sur la station"}],
+  "power_on_result": {"type": "result", "id": 150, "ok": true, "result": "on", "seconds": 9.4, "rig": "7 074,00 kHz USB, en réception",
+                      "power": {"state": "on", "available": true, "by": "phone", "how": "connect", "last": "on", "since": 1795000010.0}},
+  "power_refused_result": {"type": "result", "id": 150, "ok": false, "reason": "power_on_timeout", "ort": "ORT-2803", "step": "wait", "detail": "le poste ne s'est pas allumé en 30 s"}
 }

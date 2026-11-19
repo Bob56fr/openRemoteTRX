@@ -222,6 +222,8 @@ class ContractTest {
             "sdr" -> Command.Sdr(p("action").content, e["args"]?.jsonObject)
             "monitoring" -> Command.Monitoring(p("action").content, e["args"]?.jsonObject)
             "diffusion" -> Command.Diffusion(p("action").content, e["args"]?.jsonObject)
+            "power_on" -> Command.PowerOn(e["how"]?.jsonPrimitive?.content)
+            "power_off" -> Command.PowerOff
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

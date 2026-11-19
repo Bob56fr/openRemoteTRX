@@ -27,6 +27,12 @@ object Texts {
         "local_tx" to "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
         "rig_hot" to "Poste trop chaud : émission refusée jusqu'à ce qu'il refroidisse.",
         "audio_missing" to "Carte son du poste absente (poste débranché ou éteint ?) : émission refusée. La station la retrouve toute seule.",
+        "power_disabled" to "Allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8).",
+        "power_unsupported" to "Ce poste ne peut pas être allumé ou éteint par la CAT.",
+        "power_busy" to "Allumage ou extinction du poste en cours : patiente quelques secondes.",
+        "rig_off" to "Poste éteint : rallume-le (nouvelle connexion) avant de le régler ou d'émettre.",
+        "rig_on" to "Le poste n'est pas éteint : rien à allumer.",
+        "power_off_failed" to "Le poste a refusé l'ordre d'extinction.",
         "report_empty" to "Le rapport est vide.",
         "report_too_soon" to "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
         "report_storage_error" to "La station n'a pas pu enregistrer le rapport (disque ?).",
@@ -96,6 +102,7 @@ object Texts {
 
     val CUTS: Map<String, String> = mapOf(
         "tot" to "durée maximale d'émission atteinte",
+        "power_on_tx" to "poste allumé en émission : remis en réception",
         "heartbeat" to "perte du signal de vie du client",
         "selcall_sent" to "appel SELCALL envoyé",
         "swr_point" to "point de mesure de TOS terminé",

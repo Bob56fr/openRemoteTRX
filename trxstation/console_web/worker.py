@@ -61,6 +61,7 @@ REFUSED_KEYS = frozenset({
     "remote_console.admins_bad", "remote_console.account_bad", "apply_result.1", "apply_result.2", "apply_result.3",
     "save_profile.8", "breizh_new_key.3",
     "diffusion.refused", "diffusion.noreply", "diffusion.bad_value", "diffusion.secrets_bad", "diffusion.secrets_failed",
+    "remote_power.unsupported", "remote_power.caps_unknown", "remote_power.trial_failed",
 })
 # Réussites (vert) : ce qui vient d'être enregistré, installé ou envoyé.
 DONE_KEYS = frozenset({

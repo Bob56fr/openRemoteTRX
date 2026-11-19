@@ -1,0 +1,22 @@
+{
+  "description": "Trial switching the radio off and on over CAT (station stopped, no transmission)",
+  "start": "Trial of radio {model} on {port}: switch-off then switch-on over CAT. No transmission.",
+  "not_on": "The radio does not answer as switched on: switch it on at the shack, check the USB cable, then try again.",
+  "tx_before": "The radio was transmitting: « T 0 » sent. Trial stopped.",
+  "step_off": "1/3 Switching the radio off…",
+  "off_failed": "The radio did not switch off (command refused or the radio still answers « on »). Remote power is not possible with this radio or cable.",
+  "off_ok": "   Radio switched off.",
+  "port_gone": "Port {port} disappeared once the radio was off: this radio cuts its USB and cannot be switched on remotely. Switch it on at the shack (ON/OFF button).",
+  "port_changed": "Port {port} no longer has the same USB identity once the radio is off: trial stopped. Switch the radio on at the shack.",
+  "ports_ok": "2/3 Radio off: port {port} still present ({ident}).",
+  "no_ident": "unreadable USB identity",
+  "step_on": "3/3 Switching the radio on again ({seconds} s at most)…",
+  "on_failed": "The radio did not switch on within {seconds} s: switch it on at the shack (ON/OFF button). Remote power is not possible this way.",
+  "tx_after": "The radio came back TRANSMITTING: « T 0 » sent at once. Check the PTT line (RTS / DTR) before switching the feature on.",
+  "no_freq": "frequency not read back",
+  "on_ok": "   Radio back on in {seconds} s: {freq} {mode}, receiving.",
+  "result_ok": "Trial PASSED: the radio switches off and on over CAT.",
+  "result_failed": "Trial FAILED: feature not switched on.",
+  "config_bad": "station.toml unreadable: {detail}",
+  "no_rigctl": "rigctl (Hamlib) not found: install Hamlib or set [tools] hamlib_dir."
+}

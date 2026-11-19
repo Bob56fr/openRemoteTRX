@@ -67,7 +67,7 @@ RENOTIFY_S = 600.0
 HOST_EVERY_S = 30.0         # mémoire, disque, ralentissement du Pi : relevés toutes les 30 s (vcgencmd est un processus)
 HOST_SUSTAIN_S = 60.0       # seuil dépassé depuis ce délai : alerte (un pic passager n'alerte pas)
 HOST_RENOTIFY_S = 3600.0    # puis une alerte par heure au plus (décision de l'utilisateur, 2026-11-09)
-HOST_PROBLEMS = ("memory_high", "disk_high", "pi_throttled")
+HOST_PROBLEMS = ("memory_high", "disk_high", "pi_throttled", "rig_off_unexpected")   # une alerte par heure au plus
 SAFE_MODE_STOP_EVERY_S = 30.0
 ACTIVE_STATES = ("KEYING", "TX", "UNKEYING")
 
@@ -271,6 +271,19 @@ class Supervisor:
         if (self.cfg.rig.model != DUMMY_MODEL and self.cfg.rig.port
                 and not self.port_exists(self.cfg.rig.port) and not in_grace):
             problems.append(Problem("usb_missing", self.cfg.rig.port, 2, False))
+
+        last = self.watch.status
+        if (self._tx_since is None and gateway_fresh and last is not None and last.rig.get("connected") is True
+                and (last.rig.get("power") == "off" or last.power.get("state") in ("starting", "stopping"))):
+            # Poste ÉTEINT (ou qui s'allume / s'éteint) lu par la passerelle, liaison avec rigctld en place, aucune
+            # émission connue : la sonde échoue parce que le poste ne répond pas, rigctld n'y est pour rien. Aucune
+            # reprise (relancer rigctld ne rallume pas un poste) ; poste éteint SANS commande de la station : alerte
+            # seule. Une émission connue garde l'escalade complète (poste qui émet sans répondre).
+            problems = [p for p in problems if p.name != "rigctld_down"]
+            commanded = last.power.get("last") == "off"
+            if last.rig.get("power") == "off" and not commanded:
+                problems.append(Problem("rig_off_unexpected", "poste éteint au shack, coupure de courant ou poste muet",
+                                        None, False))
 
         if self._tx_since is None and any(p.name == "usb_missing" for p in problems):
             problems = [Problem("rig_absent", f"poste éteint ou débranché ({self.cfg.rig.port} absent) : la station "

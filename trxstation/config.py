@@ -51,6 +51,10 @@ class Rig:
     tx_modes: list[str] = field(default_factory=list)    # modes où l'émission est permise (vide = aucune restriction)
     max_power_w: int = 0                                 # puissance maximale du poste en watts ; 0 = inconnue (la page affiche des %)
     tuner: bool = False                                  # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion
+    # Identité USB des ports (« 10C4:EA70 SN=01D0F21E IF=00 », usbports.py), relevée par TRX Console (menu 2.8) ; vérifiée
+    # avant un allumage à distance (docs/alimentation-poste-cahier-des-charges.md § 4.1) ; vide = non relevée
+    port_usb: str = ""
+    ptt_port_usb: str = ""
 
     def rigctld_args(self, host: str, tcp_port: int) -> list[str]:
         args = ["rigctld", "-m", str(self.model), "-T", host, "-t", str(tcp_port)]
@@ -118,6 +122,17 @@ class Access:
     overload_cpu_pct: int = 90          # charge de tous les cœurs (%)
     overload_lag_ms: int = 100          # retard de la boucle de la passerelle (ms)
     overload_mem_pct: int = 10          # mémoire libre minimale (%)
+
+
+@dataclass
+class Power:
+    """Allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) : réglages de la
+    STATION seulement, mis en service par TRX Console (menu 2.8) ; hors service par défaut."""
+    enabled: bool = False               # false : ni allumage ni extinction à distance (fonction « power » non annoncée)
+    on_timeout_s: int = 30              # attente de la réponse du poste après l'ordre d'allumage (5 à 120 s)
+    idle_off: bool = False              # extinction automatique après idle_off_hours sans aucune connexion
+    idle_off_hours: int = 4             # 1 à 168 h
+    notify: bool = False                # alerte ntfy à chaque allumage, extinction ou échec
 
 
 @dataclass
@@ -566,6 +581,7 @@ class Config:
     selcall: Selcall = field(default_factory=Selcall)
     access: Access = field(default_factory=Access)
     swr: Swr = field(default_factory=Swr)
+    power: Power = field(default_factory=Power)
     breizh: Breizh = field(default_factory=Breizh)
     netprobe: Netprobe = field(default_factory=Netprobe)
     presence: Presence = field(default_factory=Presence)
@@ -627,6 +643,7 @@ def validate(cfg: Config) -> list[str]:
         p += _client_problems(client, cfg.clients)
     p += _access_problems(cfg.access)
     p += _swr_problems(cfg.swr)
+    p += _power_problems(cfg.power, cfg.rig)
     p += _netprobe_problems(cfg.netprobe)
     p += _breizh_problems(cfg.breizh, cfg)
     p += _presence_problems(cfg.presence)
@@ -810,6 +827,25 @@ def _access_problems(a: Access) -> list[str]:
     for name in ("listeners_need_operator", "listeners_outside_bands"):
         if not isinstance(getattr(a, name), bool):
             p.append(_t("bool", where="[access]", name=name))
+    return p
+
+
+USB_IDENTITY_RE = re.compile(r"^[0-9A-F]{4}:[0-9A-F]{4}( SN=[A-Za-z0-9_.&-]{1,64})?( IF=[0-9A-F]{2})?$")
+
+
+def _power_problems(pw: Power, rig: Rig) -> list[str]:
+    p = []
+    for name in ("enabled", "idle_off", "notify"):
+        if not isinstance(getattr(pw, name), bool):
+            p.append(_t("bool", where="[power]", name=name))
+    for name, low, high in (("on_timeout_s", 5, 120), ("idle_off_hours", 1, 168)):
+        value = getattr(pw, name)
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            p.append(_t("int_between", where="[power]", name=name, low=low, high=high))
+    for name in ("port_usb", "ptt_port_usb"):
+        value = getattr(rig, name)
+        if not isinstance(value, str) or (value and not USB_IDENTITY_RE.fullmatch(value)):
+            p.append(_t("rig.port_usb", name=name, value=str(value)[:80]))
     return p
 
 
@@ -1171,7 +1207,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
     """
     problems: list[str] = []
     top_known = {"schema_version", "config_revision", "rig", "audio", "tools", "network",
-                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "breizh",
+                 "safety", "supervisor", "modules", "update", "spectrum", "cluster", "selcall", "access", "swr", "power", "breizh",
                  "netprobe", "presence", "monitor_link", "diffusion", "remote_console", "freedv", "sdr", "bands", "clients"}
     for key in sorted(set(d) - top_known):
         problems.append(_t("unknown_root_key", key=key))
@@ -1192,6 +1228,7 @@ def build(d: dict) -> tuple[Config, list[str]]:
             selcall=_build(Selcall, d.get("selcall", {}), "selcall", problems),
             access=_build(Access, d.get("access", {}), "access", problems),
             swr=_build(Swr, d.get("swr", {}), "swr", problems),
+            power=_build(Power, d.get("power", {}), "power", problems),
             breizh=_build(Breizh, d.get("breizh", {}), "breizh", problems),
             netprobe=_build(Netprobe, d.get("netprobe", {}), "netprobe", problems),
             presence=_build(Presence, d.get("presence", {}), "presence", problems),
@@ -1294,6 +1331,8 @@ def render_toml(cfg: Config) -> str:
         f"tx_modes = [{', '.join(_s(m) for m in r.tx_modes)}]   # ex. Icom : [\"PKTUSB\", \"PKTLSB\"] ; vide = pas de restriction",
         f"max_power_w = {r.max_power_w}   # puissance maximale du poste (ex. 100) : la page affiche des watts ; 0 = inconnue, des %",
         f"tuner = {'true' if r.tuner else 'false'}   # coupleur d'antenne du poste utilisé : réglages d'accord vérifiés à chaque connexion",
+        f"port_usb = {_s(r.port_usb)}   # identité USB du port du poste (TRX Console, menu 2.8) ; vide = non relevée",
+        f"ptt_port_usb = {_s(r.ptt_port_usb)}   # identité USB du port du PTT, s'il est séparé",
         "",
         "[audio]",
         f"capture_device = {_s(a.capture_device)}",
@@ -1409,6 +1448,13 @@ def render_toml(cfg: Config) -> str:
         f"max_power_pct = {cfg.swr.max_power_pct}   # plafond de puissance, % de la puissance du poste (5 à 50)",
         f"max_points = {cfg.swr.max_points}   # points d'une mesure au plus (2 à 200)",
         f"point_tx_max_s = {cfg.swr.point_tx_max_s}   # émission d'un point au plus, en secondes (0.5 à 3)",
+        "",
+        "[power]   # allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) ; TRX Console, menu 2.8",
+        f"enabled = {str(cfg.power.enabled).lower()}   # false : ni allumage ni extinction à distance",
+        f"on_timeout_s = {cfg.power.on_timeout_s}   # attente de la réponse du poste après l'ordre d'allumage (5 à 120 s)",
+        f"idle_off = {str(cfg.power.idle_off).lower()}   # extinction automatique après idle_off_hours sans aucune connexion",
+        f"idle_off_hours = {cfg.power.idle_off_hours}   # 1 à 168 h",
+        f"notify = {str(cfg.power.notify).lower()}   # alerte ntfy à chaque allumage, extinction ou échec",
         "",
         "[breizh]   # Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md) ; le micro circule EN CLAIR sur le réseau local",
         f"enabled = {str(cfg.breizh.enabled).lower()}",

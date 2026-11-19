@@ -256,6 +256,17 @@ sealed class Command(val name: String) {
         override fun JsonObjectBuilder.params() { put("action", action); if (args != null) put("args", args) }
     }
 
+    /** Allumage du poste (fonction « power », docs/protocole.md § 21) : `how` = "connect" (connexion demandée par
+     *  l'opérateur) ou "button". Étapes reçues par des messages `power_progress`. Opérateurs seulement ; lot P3. */
+    data class PowerOn(val how: String? = "connect") : Command("power_on") {
+        override fun JsonObjectBuilder.params() { if (how != null) put("how", how) }
+    }
+
+    /** Extinction du poste (fonction « power ») : toujours confirmée par l'opérateur (STOP maintenu 3 s puis choix). */
+    data object PowerOff : Command("power_off") {
+        override fun JsonObjectBuilder.params() { put("confirm", true) }
+    }
+
     /** Texte relu par l'utilisateur, sans mot de passe. */
     data class BugReport(val text: String) : Command("bug_report") {
         override fun JsonObjectBuilder.params() { put("text", text) }
@@ -272,7 +283,7 @@ sealed class Command(val name: String) {
             "voice_profiles", "voice_profile_save", "voice_profile_delete", "swr_plan", "swr_start", "swr_cancel", "swr_last",
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
-            "net_export", "friends", "freedv_set", "sdr", "monitoring", "diffusion",
+            "net_export", "friends", "freedv_set", "sdr", "monitoring", "diffusion", "power_on", "power_off",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */

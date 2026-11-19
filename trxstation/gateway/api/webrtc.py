@@ -195,6 +195,7 @@ class PeerManager:
         self.sdr_audio = None                   # SdrAudio : son du module SDR (seconde piste des opérateurs), ou None
         self.on_sdr_view = None                 # (session, ouverte) -> None : état du SDR rejoué (ModuleBridge.on_sdr_view)
         self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
+        self.power = None                       # PowerControl (gateway/power.py) : allumage / extinction, opérateurs seulement
         self.peers: dict[str, _Peer] = {}
         self._tasks: set[asyncio.Task] = set()
 
@@ -255,7 +256,10 @@ class PeerManager:
                 session.sdr_audio_offered = peer.sdr_track is not None
                 session.on_sdr_listen = self._sdr_listeners_changed
                 session.on_operator_activity = self.on_operator_activity
+                session.power = self.power
             peer.session = session
+            if self.power is not None:
+                self.power.touch()                      # connexion : l'extinction automatique repart de zéro
 
             @channel.on("message")
             def on_message(message) -> None:
@@ -367,6 +371,8 @@ class PeerManager:
         if peer is None or peer.closed:
             return
         peer.closed = True
+        if self.power is not None:
+            self.power.touch()                          # fin de connexion : le délai sans connexion part d'ici
         if self.peers.get(client_id) is peer:
             del self.peers[client_id]
             self.fanout.remove(client_id)

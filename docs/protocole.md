@@ -112,6 +112,8 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 | `net_export` | `part` (0 à 99 ; 0 = fabriquer un nouvel export) | OPÉRATEUR (station 0.109.0+) : export ANONYME des 30 derniers jours (zip : `rapport.html`, `donnees.json`), par morceaux ; réponse `name` (nom de fichier), `part`, `parts`, `size` (octets du zip), `data` (36 000 octets au plus, en base64) ; le client demande `part` = 1, 2… jusqu'à `parts` - 1 et assemble |
 | `friends` | `action` (une de `view`, `stats`, `pseudo`, `texts`, `shack_for`, `shack_cancel`, `shack_rules`, `create`, `invite`, `join`, `leave`, `delete`, `exclude`, `role`, `share`, `rename`, `qsy_mark`, `qsy_back`), `args` (objet, 1 500 octets au plus, vérifié par le module) | OPÉRATEUR (station 0.118.0+, fonction `friends`, § 16) : présence de groupe, relayée au module « presence » ; réponse `action`, `data` (résultat de l'action) ; refus : `reason` du module ou `friends_unavailable` |
 | `freedv_set` | `on` (booléen) | OPÉRATEUR (station 0.122.0+, fonction `freedv`, § 17) : mode FreeDV de la station en RÉCEPTION (voix décodée vers tous les clients, visiteurs compris) ; n'agit JAMAIS sur le poste ; refusé pendant toute émission (`freedv_tx`) ; réponse `freedv` (état comme `state.freedv`) ; refus : `freedv_unavailable`, `freedv_tx`, `freedv_missing` (décodeur introuvable), `freedv_storage_error` |
+| `power_on` | `how` facultatif : `connect` (allumage à la connexion, défaut des clients) ou `button` | OPÉRATEUR (station 0.222.0+, fonction `power`, § 21) : allume le poste après vérification des ports série ; étapes envoyées par des messages `power_progress` ; réponse `result` (`on` ou `already_on`), `seconds`, `rig`, `power` ; refus : `reason`, `ort`, `step`, `detail` (§ 21) ; n'émet jamais |
+| `power_off` | `confirm` = `true` (exigé) | OPÉRATEUR (fonction `power`, § 21) : éteint le poste, refusé pendant toute émission et quand le poste est utilisé sur place ; réponse `power` |
 
 ## 7. Réponses et erreurs
 
@@ -119,6 +121,7 @@ Forme : `{"cmd": "<nom>", "id": <entier facultatif>, ...}`. `id` est le **numér
 - `{"type":"result","id":N,"ok":false,"reason":"…","detail":"…"}` : refus. `detail` est un texte pour l'humain, `reason` un code stable :
   - émission : `not_idle`, `unknown_client`, `fault_latched`, `starting`, `tx_disabled` (aucune bande autorisée), `cat_down`, `cat_error`, `local_active`, `local_tx`, `rig_hot`, `audio_missing` (carte son du poste absente : la station la recherche toute seule), `cooldown`, `ptt_unreadable`, `cancelled`, `rig_already_tx`, `mode_not_allowed`, `out_of_band` (vérifié sur la fréquence d'ÉMISSION : en split celle de l'autre VFO, décalée du ΔTX s'il est en service), `split_unreadable`, `xit_unreadable` (split ou ΔTX déclarés par le poste mais illisibles : en cas de doute, pas d'émission), `ptt_write_failed`, `rig_did_not_key` ;
   - réglages : `tx_active` (pas en RX confirmé), `invalid`, `rig_error`, `cat_down` ;
+  - poste éteint ou qui s'allume (station 0.222.0+) : `rig_off`, `power_busy` (émission et réglages) ;
   - fonctions absentes ou en panne : `memories_unavailable`, `unknown_memory`, `storage_error`, `layouts_unavailable`, `layout_invalid`, `layout_storage_error`, `spectrum_unavailable`, `beeps_unavailable`, `beeps_storage_error`, `selcall_unavailable`, `reports_unavailable` (et les motifs de refus d'un rapport), `freedv_unavailable`, `freedv_missing`, `freedv_storage_error`, `freedv_tx` (§ 17) ;
   - visiteur : `forbidden` (toute commande hors `get_state` et `spectrum_watch`, § 13).
 - `{"type":"error","code":"…","detail":"…"}` : message illisible, sans `id` : `too_large`, `bad_json`, `bad_message`, `unknown_command`, `invalid_params`, `rate_limited`.
@@ -447,3 +450,36 @@ diffusion, y compris celle d'un autre.
   lancement, arrêt, adresse de la page des auditeurs, identifiant et mot de passe des auditeurs (sur demande, en
   générer un).
 - **Application** : à venir (lot D4 ; le contrat Android connaît déjà la commande).
+
+## 21. Allumage et extinction du poste (station 0.222.0+, fonction `power`)
+
+Cahier des charges : [`docs/alimentation-poste-cahier-des-charges.md`](alimentation-poste-cahier-des-charges.md).
+Annoncée dans `hello.features` (`power`) seulement pour un OPÉRATEUR, quand `[power] enabled` (TRX Console, menu 2.8 ;
+hors service par défaut) et que le poste déclare « set / get Power Stat » (`hello.capabilities.can_set_power`,
+`can_get_power`). Un visiteur reçoit `forbidden`. N'importe quel opérateur connecté peut éteindre.
+
+- `state.rig.power` (tous les clients, visiteurs compris) : `"on"`, `"off"` (éteint OU muet : Hamlib lit « éteint »
+  quand un Yaesu ne répond plus) ou `null` (poste qui ne le déclare pas). Poste éteint : fréquence, mode, S-mètre,
+  PTT à `null` ; toute prise d'émission et tout réglage sont refusés (`rig_off`), pendant un allumage ou une
+  extinction aussi (`power_busy`).
+- `state.power` (OPÉRATEURS, station qui offre la fonction ; exemple `state_power`) : `state` (`on`, `off`,
+  `starting`, `stopping`, `unknown`), `available`, `by` (compte du dernier allumage ou de la dernière extinction ;
+  « extinction automatique »), `how` (`stop_hold`, `connect`, `button`, `idle`), `last` (`on` / `off` : dernier ordre
+  réussi), `since` (heure Unix).
+- `power_off` {confirm: true} : la station relit le PTT sur le poste (0 exigé), refuse pendant toute émission
+  (`tx_active`, `local_tx`) et dans les 2 minutes qui suivent une action sur le poste (`local_active`), puis éteint.
+  Refus : `power_disabled`, `power_unsupported` (ORT-2805), `power_busy` (ORT-2807), `rig_off` (déjà éteint,
+  ORT-2806), `ptt_unreadable`, `power_off_failed` (ORT-2803), `cat_down`.
+- `power_on` {how} : une seule à la fois pour toute la station ; une connexion fermée ne l'interrompt pas. Messages
+  `power_progress` (à celui qui l'a demandé ; exemples `power_progress`) : `step` (`ports`, `check_off`, `order`,
+  `wait`, `readback`, `done`), `status` (`running`, `ok`, `error`), `detail` (texte pour l'opérateur), `ort` (en
+  erreur), `remaining_s` (pendant `wait`). Réponse : `result` = `on` (avec `seconds`, `rig` : « 7 074,00 kHz USB, en
+  réception ») ou `already_on` ; refus avec `reason`, `ort`, `step`, `detail` : `port_missing`, `port_moved`,
+  `port_mismatch`, `port_identity` (ORT-2809 : aucun ordre envoyé, le nouveau port est NOMMÉ, jamais ouvert),
+  `rig_silent`, `cat_down`, `power_on_failed`, `power_on_timeout` (ORT-2803), `power_on_tx` (ORT-2808 : le poste
+  s'est allumé en émission, remis aussitôt en réception), `power_disabled`, `power_unsupported`, `power_busy`.
+- Allumage à la connexion (décision de l'utilisateur, 2026-11-19) : après le `hello` et le premier `state`, un client
+  d'OPÉRATEUR qui voit `rig.power` = `off` et la fonction `power` envoie `power_on` avec `how: "connect"`, UNE fois par
+  connexion qu'il a lui-même demandée (jamais à une reconnexion automatique), et montre les étapes. Extinction : STOP
+  maintenu 3 s, choix « Arrêter le TRX à distance », confirmation, puis `power_off`.
+- **Page web** et **application** : à venir (lots P2 et P3).

@@ -148,5 +148,6 @@
   "diffusion.tls_local": "[diffusion] tls = false solo hacia 127.0.0.1 (servidor de prueba): en Internet la contraseña de la fuente viajaría sin cifrar",
   "diffusion.incomplete": "[diffusion] activada sin server ni station: no se podría difundir nada",
   "rig.tuner": "[rig] tuner debe valer true o false (acoplador de antena del equipo en uso)",
+  "rig.port_usb": "[rig] {name}: identidad USB ilegible ({value}); formato esperado « 10C4:EA70 SN=… IF=00 », o vacío. Configure de nuevo el encendido remoto (TRX Console, menú 2.8)",
   "safety.swr_alert": "[safety] swr_alert vale {value}: 0 (apagado) o una ROE entre 1,2 y 10 (alerta de ROE alta al transmitir)"
 }

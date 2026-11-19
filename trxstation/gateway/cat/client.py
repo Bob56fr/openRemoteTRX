@@ -90,20 +90,22 @@ class RigctldClient:
             except OSError:
                 pass
 
-    async def _command(self, line: str) -> dict[str, str]:
+    async def _command(self, line: str, timeout: float | None = None) -> dict[str, str]:
+        """`timeout` : délai de CETTE commande (allumage du poste : bien plus long qu'une lecture) ; défaut : self.timeout."""
         if "\n" in line or "\r" in line:
             raise ValueError("saut de ligne interdit dans une commande rigctld")
+        wait = self.timeout if timeout is None else timeout
         async with self._lock:
             if not self.connected:
                 raise CatConnectionError("non connecté à rigctld")
             assert self._reader is not None and self._writer is not None
             try:
                 self._writer.write(f"+{line}\n".encode())
-                await asyncio.wait_for(self._writer.drain(), self.timeout)
+                await asyncio.wait_for(self._writer.drain(), wait)
                 values: dict[str, str] = {}
                 payloads: list[str] = []        # valeurs dans l'ordre, avec ou sans libellé
                 for _ in range(MAX_RESPONSE_LINES):
-                    raw = await asyncio.wait_for(self._reader.readline(), self.timeout)
+                    raw = await asyncio.wait_for(self._reader.readline(), wait)
                     if not raw:
                         raise CatConnectionError("connexion fermée par rigctld")
                     text = raw.decode(errors="replace").strip()
@@ -244,6 +246,26 @@ class RigctldClient:
             return int(float(raw))
         except ValueError:
             raise CatProtocolError(f"décalage illisible : {raw!r}") from None
+
+    async def get_powerstat(self, timeout: float | None = None) -> bool:
+        """Poste allumé ? (« Power Status: 1 », relevé sur rigctld 4.7.2 avec un FTDX10.) ATTENTION : chez Yaesu, Hamlib
+        répond « éteint » (0) quand le poste ne répond pas du tout : 0 veut dire « éteint OU muet », jamais une preuve
+        de réception. RigError si le poste ne le gère pas."""
+        raw = self._pick(await self._command("\\get_powerstat", timeout), "Power Status", "#1",
+                         command="\\get_powerstat")
+        try:
+            return int(float(raw)) != 0
+        except ValueError:
+            raise CatProtocolError(f"état d'alimentation illisible : {raw!r}") from None
+
+    # ------------------------------------------------------------------ alimentation (réservé)
+
+    async def set_powerstat(self, on: bool, timeout: float = 20.0) -> None:
+        """RÉSERVÉ à gateway/power.py (PowerControl : opérateur, poste en réception, ports vérifiés). Allume (1) ou
+        éteint (0) le poste ; jamais la veille (2). Délai long : un FTDX10 répond à l'allumage en ~8 s (2026-11-19)."""
+        if not isinstance(on, bool):
+            raise ValueError(f"état invalide (vrai ou faux attendu) : {on!r}")
+        await self._command(f"\\set_powerstat {1 if on else 0}", timeout)
 
     # ------------------------------------------------------------------ PTT (réservé)
 

@@ -156,6 +156,8 @@ class PttController:
         # Carte son du poste disponible ? (audio/rigcard.py) None = toujours (sources de test, fichiers) ; absente =
         # émission REFUSÉE (`audio_missing`) : une porteuse sans modulation n'a rien à faire sur l'air
         self.audio_ready: Callable[[], bool] | None = None
+        # Allumage ou extinction du poste en cours (gateway/power.py) : toute prise d'émission et tout réglage refusés
+        self.power_busy: Callable[[], bool] | None = None
 
     # ------------------------------------------------------------------ état
 
@@ -496,7 +498,31 @@ class PttController:
             self._require_rx_for_tuning()
             yield
 
+    @contextlib.asynccontextmanager
+    async def power_window(self, turning_on: bool):
+        """Allumage ou extinction du poste (gateway/power.py), SOUS le verrou de l'émission : aucune prise ni aucun
+        réglage ne peut s'y glisser ; STOP et les coupures restent toujours possibles (ils ne prennent pas le verrou).
+        Éteindre : RX CONFIRMÉ exigé (jamais pendant une émission ni une coupure). Allumer : le poste doit être lu
+        éteint ; le retour RX de démarrage peut encore tourner (un poste éteint ne répond pas à « T 0 »), mais jamais
+        une émission en cours."""
+        async with self._tx_lock:
+            if self._state is not PttState.RX:
+                raise Refused("tx_active", "allumage ou extinction refusé pendant une émission")
+            if turning_on:
+                if self.link.state.power != "off":
+                    raise Refused("rig_on", "le poste n'est pas lu éteint")
+            elif self._cut_running() or self._starting:
+                raise Refused("tx_active", "extinction refusée tant que le retour en réception n'est pas confirmé")
+            yield
+
+    def _power_refusal(self) -> None:
+        if self.power_busy is not None and self.power_busy():
+            raise Refused("power_busy", "allumage ou extinction du poste en cours")
+        if self.link.state.power == "off":
+            raise Refused("rig_off", "poste éteint")
+
     def _require_rx_for_tuning(self) -> None:
+        self._power_refusal()
         if self._state is not PttState.RX or self._cut_running():
             raise Refused("tx_active", "changement de fréquence, de mode ou de réglage refusé tant que le PTT n'est pas en RX confirmé")
 
@@ -517,6 +543,7 @@ class PttController:
             raise Refused("tx_disabled", "aucune bande autorisée dans station.toml")
         if not self.link.state.connected:
             raise Refused("cat_down")
+        self._power_refusal()                # poste éteint, ou allumage / extinction en cours
         if self.local.active():
             left = self.local.remaining()
             raise Refused("local_active", f"poste utilisé sur place, encore {left or 0:.0f} s")
@@ -528,6 +555,8 @@ class PttController:
             raise Refused("cooldown")
 
     async def _key(self, client_id: str, *, open_gate: bool = True) -> PttSnapshot:
+        if self.power_busy is not None and self.power_busy():
+            raise Refused("power_busy", "allumage ou extinction du poste en cours")   # sans attendre le verrou (30 s)
         async with self._tx_lock:
             epoch = self._epoch
             self._check_idle(client_id)
@@ -750,6 +779,11 @@ class PttController:
         deadline = time.monotonic() + self.limits.unkey_deadline_s
         faulted = False
         while not self._closing:
+            if latch_fault and not was_active and self.link.state.power == "off":
+                # Coupure demandée EN RÉCEPTION (STOP, arrêt de la station) alors que le poste est éteint : rien à
+                # couper, et « T 0 » ne passerait pas ; sans cela un défaut verrouillé bloquerait l'émission après
+                # l'allumage. Une émission en cours, ou le RX de démarrage, gardent la règle stricte.
+                break
             try:
                 await self.link.client.write_ptt(False)
                 if not await self._rig_still_keyed():
@@ -759,6 +793,11 @@ class PttController:
                 if isinstance(exc, CatConnectionError) and not latch_fault:
                     # RX de démarrage : la liaison CAT s'établit, c'est attendu et sans gravité
                     log.debug("RX de démarrage en attente de la liaison CAT (%s)", exc)
+                elif not latch_fault and self.link.state.power == "off":
+                    # RX de démarrage, poste éteint : « T 0 » ne peut pas passer ; refait plus lentement, sans
+                    # remplir le journal (aucune émission n'est permise tant qu'il n'est pas confirmé)
+                    log.debug("RX de démarrage en attente : poste éteint (%s)", exc)
+                    await asyncio.sleep(2.0)
                 else:
                     emit_event(codes.ORT_5030, logger=log, detail=str(exc))
             if not faulted and time.monotonic() >= deadline:

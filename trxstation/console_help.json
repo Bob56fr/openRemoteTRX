@@ -198,6 +198,13 @@
      "quand": "Um die Station von einem anderen Gerät zu verwalten, ohne SSH zu kennen.",
      "role": "Stellt TRX Console im Netzwerk bereit: dieselben Menüs im Browser jedes PCs,\nTablets oder Telefons im lokalen Netz oder VPN, ohne SSH oder Verknüpfung,\nunter https://<station>:8444/. Anmeldung mit einem als Administrator\nmarkierten Operatorkonto (hier gewählt); die Sitzung endet nach 30 Minuten\nohne Aktion; das sudo-Passwort der Station wird weiterhin einmal pro Sitzung\nabgefragt. 5 Fehlversuche sperren die Adresse 15 Minuten, jede Anmeldung\nsendet eine ntfy-Meldung. Nie aus dem Internet erreichbar. Ein auf der\nBedienseite angemeldeter Administrator findet dort auch den Link."
     },
+    "remote_power": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Die Konfiguration der Station (station.toml: Abschnitt [power] und\nUSB-Kennung der Anschlüsse in [rig]), mit Administratorrechten; die vorige\nFassung bleibt erhalten (station.toml.bak). Beim Abbrechen wird nichts\ngeschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu\nübernehmen.",
+     "quand": "Für eine entfernte Station, die ohne Gang zum Shack wieder eingeschaltet\nwerden soll, mit einem Gerät, dessen USB im ausgeschalteten Zustand versorgt\nbleibt (Yaesu FTDX10 über die USB-Buchse). Erneut ausführen, wenn das Gerät\nan eine andere USB-Buchse kommt.",
+     "role": "Schaltet das Fern-Ein- und -Ausschalten des Funkgeräts ein (oder aus): ein\nOperator, der sich verbindet, schaltet das ausgeschaltete Gerät ein, und\nSTOP 3 s gedrückt in der Seite oder der App schaltet es aus (mit\nBestätigung). Standardmäßig aus. Das Einschalten wird verweigert, wenn\nHamlib die Funktion für dein Gerät nicht angibt; zuerst wird ein Test\nangeboten (Station während des Tests gestoppt, Gerät aus- und wieder\neingeschaltet, keine Aussendung) und die USB-Kennung des Geräteanschlusses\nerfasst, die vor jedem Einschalten geprüft wird. Optionen: automatisches\nAusschalten nach einer Zeit ohne Verbindung, ntfy-Warnungen bei jedem Ein-\noder Ausschalten."
+    },
     "report": {
      "admin": false,
      "expert": "Ohne Menü: trx-console --rapport. In der Datei station.toml des Berichts\nsind die Geheimnisse ausgeblendet; prüfe ihren Inhalt trotzdem vor dem\nVersand, wenn du möchtest. Der Bericht enthält auch die Spuren von\nWerkzeugen, die bei einem unerwarteten Fehler angehalten wurden (Ordner\nplantages, Code ORT-9312).",
@@ -481,6 +488,13 @@
      "modifie": "The station configuration (station.toml: [remote_console] and the admin mark\nof the accounts), with administrator rights; the previous version is kept.\nOn Debian, the trx-console-web@account service is started or stopped; on\nWindows, the station is restarted.",
      "quand": "To administer the station from another device, without knowing SSH.",
      "role": "Puts TRX Console on the network: the same menus in the browser of any PC,\ntablet or phone on the local network or VPN, without SSH or shortcut, at\nhttps://<station>:8444/. Login with an operator account marked administrator\n(chosen here); the session closes after 30 minutes without action; the\nstation sudo password is still asked once per session. 5 failures block the\naddress for 15 minutes and every login sends an ntfy alert. Never reachable\nfrom the Internet. An administrator logged in to the control page also finds\nthe link there."
+    },
+    "remote_power": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The station configuration (station.toml: [power] section and USB identity of\nthe ports in [rig]), with administrator rights; the previous version is kept\n(station.toml.bak). Nothing is written if you give up. The station is\nrestarted on request to take the change.",
+     "quand": "For a remote station that must be switched on again without going to the\nshack, with a transceiver that keeps its USB powered once off (Yaesu FTDX10\nthrough the USB socket). Do it again after moving the transceiver to another\nUSB socket.",
+     "role": "Switches remote power on and off of the transceiver on (or off): an operator\nwho connects switches the transceiver on if it is off, and STOP held 3 s in\nthe page or the app switches it off (with confirmation). Off by default.\nSwitching it on is refused if Hamlib does not declare the feature for your\ntransceiver; it first offers a trial (station stopped during the trial,\ntransceiver switched off then on, no transmission) and records the USB\nidentity of the transceiver port, checked before every switch-on. Options:\nautomatic switch-off after a delay without any connection, ntfy alerts at\neach switch-on or switch-off."
     },
     "report": {
      "admin": false,
@@ -766,6 +780,13 @@
      "quand": "Para administrar la estación desde otro dispositivo, sin saber SSH.",
      "role": "Pone TRX Console en la red: los mismos menús en el navegador de cualquier\nPC, tableta o teléfono de la red local o del VPN, sin SSH ni acceso directo,\nen https://<station>:8444/. Conexión con una cuenta de operador marcada\nadministradora (elegida aquí); la sesión se cierra tras 30 minutos sin\nacción; la contraseña sudo de la estación se sigue pidiendo una vez por\nsesión. 5 fallos bloquean la dirección 15 minutos y cada conexión envía una\nalerta ntfy. Nunca accesible desde Internet. Un administrador conectado a la\npágina de control también encuentra allí el enlace."
     },
+    "remote_power": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuración de la estación (station.toml: sección [power] e identidad\nUSB de los puertos en [rig]), con derechos de administración; se conserva la\nversión anterior (station.toml.bak). No se escribe nada si abandonas. La\nestación se reinicia si lo pides para aplicar el cambio.",
+     "quand": "Para una estación remota que hay que poder encender sin ir al cuarto de\nradio, con un equipo que mantiene su USB alimentado una vez apagado (Yaesu\nFTDX10 por la toma USB). Repetirlo tras cambiar el equipo de toma USB.",
+     "role": "Activa (o desactiva) el encendido y apagado remoto del equipo: un operador\nque se conecta enciende el equipo si está apagado, y STOP mantenido 3 s en\nla página o la aplicación lo apaga (con confirmación). Desactivado por\ndefecto. La activación se rechaza si Hamlib no declara la función para tu\nequipo; primero propone una prueba (estación detenida durante la prueba,\nequipo apagado y encendido, sin emisión) y registra la identidad USB del\npuerto del equipo, comprobada antes de cada encendido. Opciones: apagado\nautomático tras un tiempo sin ninguna conexión, alertas ntfy en cada\nencendido o apagado."
+    },
     "report": {
      "admin": false,
      "expert": "Sin el menú: trx-console --rapport. El archivo station.toml del informe\ntiene sus secretos ocultos; aun así, revisa su contenido antes de enviarlo\nsi quieres. El informe incluye también las trazas de las herramientas\ndetenidas por un error inesperado (carpeta plantages, código ORT-9312).",
@@ -1049,6 +1070,13 @@
      "modifie": "La configuration de la station (station.toml : [remote_console] et la marque\nadmin des comptes), avec les droits d'administration ; l'ancienne version\nest gardée. Sous Debian, le service trx-console-web@compte est mis en marche\nou arrêté ; sous Windows, la station est redémarrée.",
      "quand": "Pour administrer la station depuis un autre appareil, sans connaître SSH.",
      "role": "Met TRX Console sur le réseau : les mêmes menus dans le navigateur de\nn'importe quel PC, tablette ou téléphone du réseau local ou du VPN, sans SSH\nni raccourci, à l'adresse https://<station>:8444/. On s'y connecte avec un\ncompte opérateur marqué administrateur (choisis ici) ; la session se ferme\naprès 30 minutes sans action ; le mot de passe sudo de la station reste\ndemandé une fois par session. 5 échecs bloquent l'adresse 15 minutes et\nchaque connexion envoie une alerte ntfy. Jamais joignable depuis Internet.\nUn administrateur connecté à la page de pilotage y trouve aussi le lien."
+    },
+    "remote_power": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuration de la station (station.toml : section [power] et identité\nUSB des ports dans [rig]), avec les droits d'administration ; l'ancienne\nversion est gardée (station.toml.bak). Rien n'est écrit si tu abandonnes. La\nstation est redémarrée sur ta demande pour prendre le changement.",
+     "quand": "Pour une station distante qu'il faut pouvoir rallumer sans aller au shack,\navec un poste qui garde son USB alimenté une fois éteint (Yaesu FTDX10 par\nla prise USB). Refaire la mise en service après avoir changé le poste de\nprise USB.",
+     "role": "Met en service (ou hors service) l'allumage et l'extinction du poste à\ndistance : un opérateur qui se connecte allume le poste s'il est éteint, et\nSTOP maintenu 3 s dans la page ou l'application permet de l'éteindre (avec\nconfirmation). Hors service par défaut. La mise en service est refusée si\nHamlib ne déclare pas la fonction pour ton poste ; elle propose d'abord un\nessai (station arrêtée le temps de l'essai, poste éteint puis rallumé,\naucune émission) et relève l'identité USB du port du poste, vérifiée avant\nchaque allumage. Options : extinction automatique après un délai sans aucune\nconnexion, alertes ntfy à chaque allumage ou extinction."
     },
     "report": {
      "admin": false,

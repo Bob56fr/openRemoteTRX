@@ -29,12 +29,16 @@ from pathlib import Path
 from . import config as cfgmod
 
 SECTIONS = ("rig", "audio", "spectrum")
-PROFILE_FORMAT = 2
+PROFILE_FORMAT = 3
 PROFILE_FIELDS: dict[int, dict[str, tuple[str, ...]]] = {
     1: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w"),
         "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
         "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
     2: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w", "tuner"),
+        "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
+        "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
+    3: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w", "tuner",
+                "port_usb", "ptt_port_usb"),
         "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
         "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
 }
@@ -48,7 +52,17 @@ def _format1_to_2(sections: dict) -> dict:
 
 
 # MIGRATIONS[n] : profil (dict des sections) au format n -> format n+1. None = impossible : profil à refaire.
-MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {1: _format1_to_2}
+def _format2_to_3(sections: dict) -> dict:
+    """Format 3 (station 0.222.0) : `[rig] port_usb` et `ptt_port_usb` (identité USB des ports), vides pour un ancien
+    profil : l'identité se relève de nouveau à la mise en service de l'allumage à distance (menu 2.8)."""
+    out = {name: dict(values) for name, values in sections.items()}
+    rig = out.setdefault("rig", {})
+    rig.setdefault("port_usb", "")
+    rig.setdefault("ptt_port_usb", "")
+    return out
+
+
+MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {1: _format1_to_2, 2: _format2_to_3}
 NAME_RE = re.compile(r"^[\w .+-]{1,40}$")
 FOLDER = "profils"
 

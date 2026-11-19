@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.221.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.222.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -25,6 +25,8 @@ Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au
 | `tx_modes` | courant | `[]` | Modes dans lesquels l'émission est permise ; vide = tous. Sur les Icom, l'audio de la carte son USB n'est émis qu'en modes données (USB-D, LSB-D, FM-D…) : dans un autre mode, le poste modulerait avec son propre micro. **Sécurité** : Une demande d'émission dans un mode absent de la liste est refusée. La mesure de TOS utilise le premier mode FM permis ici (FM, PKTFM ou FM-D). Exemple : Icom : ["PKTUSB", "PKTLSB", "FM-D", "AM-D"]. |
 | `max_power_w` | courant | `0` | Puissance maximale du poste en watts. 0 : inconnue, la page et l'application affichent des pourcentages au lieu de watts. Exemple : 100 pour un poste de 100 W. |
 | `tuner` | courant | `false` | Le coupleur d'antenne intégré du poste est utilisé. À chaque connexion d'un opérateur, la station lit alors les réglages d'accord automatique du poste par le second port CI-V (IC-7300MK2 : [TUNER] Switch = Auto, PTT Start = ON) et prévient s'ils sont faux ou impossibles à vérifier. Elle ne les change jamais. **Sécurité** : À distance, sans accord automatique à la prise d'émission, une nouvelle fréquence peut émettre sur un TOS élevé. Hors des bandes radioamateur, l'accord au PTT n'est pas garanti par le poste. Exemple : true si l'antenne passe par le coupleur du poste ; false (défaut) sinon. (depuis 0.210.0) |
+| `port_usb` | expert | `""` | Identité USB du port du poste (fabricant, produit, numéro de série, interface), relevée à la mise en service de l'allumage à distance. Avant chaque allumage, la station vérifie que le port de `port` est TOUJOURS celui du poste ; s'il a changé (autre prise USB sous Windows), l'allumage est refusé et le nouveau port est nommé. **Sécurité** : La station ne fait que LIRE cette identité ; elle n'ouvre jamais un autre port de sa propre initiative (un port série ouvert par erreur peut lever RTS ou DTR, donc un PTT). Exemple : `10C4:EA70 SN=01D0F21E IF=00` (port « Enhanced » du CP2105 d'un FTDX10) ; vide = non relevée. (depuis 0.222.0) |
+| `ptt_port_usb` | expert | `""` | Identité USB du port du PTT quand il est séparé du port du poste (PTT par RTS ou DTR) ; même vérification que `port_usb`. Exemple : Vide (défaut) : PTT par la CAT, ou port non relevé. (depuis 0.222.0) |
 
 ## Le son [audio]
 
@@ -138,6 +140,20 @@ Se modifie : Menu 8.1. (au redémarrage).
 | `max_power_pct` | courant | `50` | Plafond de puissance de la mesure, en % de la puissance du poste. L'opérateur choisit la puissance (15 % par défaut) sous ce plafond. Valeurs : 5 à 50 %. **Sécurité** : Jamais au-dessus de 50 % : quelques watts suffisent pour mesurer. (depuis 0.90.0) |
 | `max_points` | expert | `50` | Nombre maximal de points d'une mesure. Valeurs : 2 à 200. (depuis 0.90.0) |
 | `point_tx_max_s` | expert | `2.0` | Durée maximale de l'émission d'un point. Le temps réel est étalonné au premier usage pour chaque modèle de poste, sans dépasser cette valeur. Valeurs : 0,5 à 3 s. (depuis 0.90.0) |
+
+## Allumage et extinction du poste à distance [power]
+
+Allumer le poste à la connexion d'un opérateur et l'éteindre depuis la page ou l'application (STOP maintenu 3 s). Hors service par défaut. Seulement pour un poste qui le permet par la CAT (Hamlib : « set / get Power Stat ») et qui garde son USB alimenté une fois éteint. La station n'émet jamais pour allumer ou éteindre le poste.
+
+Se modifie : TRX Console, menu 2.8 (mise en service avec un essai éteindre / rallumer) ; réglages fins : menu 8.1. (au redémarrage).
+
+| Clé | Niveau | Par défaut | À quoi il sert |
+|---|---|---|---|
+| `enabled` | courant | `false` | true : allumage du poste à la connexion d'un opérateur et extinction depuis la page ou l'application. false (défaut) : ni allumage ni extinction à distance. **Sécurité** : Extinction refusée pendant toute émission et quand le poste est utilisé sur place ; après un allumage, la station relit le PTT et remet le poste en réception s'il s'est allumé en émission. Exemple : Mettre en service par le menu 2.8 de TRX Console, qui essaie d'abord d'éteindre et de rallumer le poste. (depuis 0.222.0) |
+| `on_timeout_s` | expert | `30` | Attente de la réponse du poste après l'ordre d'allumage. Au-delà, l'allumage est déclaré en échec avec un message clair. Valeurs : 5 à 120 s (défaut 30 ; un FTDX10 répond en 8 s environ). (depuis 0.222.0) |
+| `idle_off` | courant | `false` | Extinction automatique du poste quand plus personne n'est connecté (opérateur ni visiteur) depuis `idle_off_hours` heures, sans diffusion en cours ni action sur le poste. Reportée de 10 min pendant une émission, jamais forcée. Exemple : false (défaut). (depuis 0.222.0) |
+| `idle_off_hours` | courant | `4` | Délai sans aucune connexion avant l'extinction automatique. Valeurs : 1 à 168 h (défaut 4). (depuis 0.222.0) |
+| `notify` | courant | `false` | Alerte ntfy à chaque allumage, extinction ou échec (qui, comment). Un poste allumé EN ÉMISSION alerte toujours, même sans ce réglage. Exemple : false (défaut) ; exige `[supervisor] notify_url`. (depuis 0.222.0) |
 
 ## Breizh Audio Box dans l'émission [breizh]
 

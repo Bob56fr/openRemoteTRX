@@ -68,6 +68,12 @@
     local_tx: "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
     rig_hot: "Poste trop chaud : émission refusée jusqu'à ce qu'il refroidisse.",
     audio_missing: "Carte son du poste absente (poste débranché ou éteint ?) : émission refusée. La station la retrouve toute seule.",
+    power_disabled: "Allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8).",
+    power_unsupported: "Ce poste ne peut pas être allumé ou éteint par la CAT.",
+    power_busy: "Allumage ou extinction du poste en cours : patiente quelques secondes.",
+    rig_off: "Poste éteint : rallume-le (nouvelle connexion) avant de le régler ou d'émettre.",
+    rig_on: "Le poste n'est pas éteint : rien à allumer.",
+    power_off_failed: "Le poste a refusé l'ordre d'extinction.",
     report_empty: "Le rapport est vide.",
     report_too_soon: "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
     report_storage_error: "La station n'a pas pu enregistrer le rapport (disque ?).",
@@ -192,6 +198,7 @@
 
   const CUT_REASONS = {
     tot: "durée maximale d'émission atteinte",
+    power_on_tx: "poste allumé en émission : remis en réception",
     heartbeat: "perte du signal de vie du client",
     selcall_sent: "appel SELCALL envoyé",
     swr_point: "point de mesure de TOS terminé",
@@ -2354,6 +2361,16 @@
       let at = 0;
       for (const p of parts) { bytes.set(p, at); at += p.length; }
       return { name: String(first.name || "openremotetrx-reseau.zip").replace(/[^\w.-]/g, "_"), bytes: bytes };
+    }
+
+    /* Allumage et extinction du poste (fonction « power », opérateurs ; docs/protocole.md § 21). L'allumage suit ses
+       étapes par les messages power_progress ; l'interface (fenêtre des étapes, STOP maintenu 3 s) : lot P2. */
+    async powerOn(how) {
+      return this.send("power_on", { how: how === "button" ? "button" : "connect" });
+    }
+
+    async powerOff() {
+      return this.send("power_off", { confirm: true });
     }
 
     /* FreeDV (fonction « freedv », opérateurs) : mode de la station en réception ; refusé pendant l'émission. */
