@@ -56,7 +56,8 @@ propose qu'en HTTPS, d'où le certificat.
 > **Poste éteint.** Un bandeau rouge « POSTE ÉTEINT » le dit. Si l'allumage à distance est en service, ta connexion
 > rallume le poste toute seule : une fenêtre montre les étapes (ports série vérifiés, ordre, démarrage, relecture) et,
 > en cas d'échec, un message clair avec « Réessayer » et « Continuer sans le poste » ; le bouton « Allumer le poste »
-> du bandeau fait la même chose. Une reconnexion automatique ne rallume jamais le poste.
+> du bandeau fait la même chose. Une reconnexion automatique ne rallume jamais le poste. L'application fait de même
+> (son STOP coupe dès l'appui) ; en voiture, Android Auto affiche « POSTE ÉTEINT » ou « ALLUMAGE DU POSTE… » en titre.
 
 ## 4.3 Plusieurs appareils, plusieurs utilisateurs
 

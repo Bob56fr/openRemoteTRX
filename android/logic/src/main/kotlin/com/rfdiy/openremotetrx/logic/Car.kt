@@ -126,6 +126,8 @@ object Car {
         val freq = listOfNotNull(carFrequency(preview?.hz ?: r?.frequencyHz), (preview?.mode ?: r?.mode)?.let { Radio.modeLabel(it) })
             .joinToString(" ")
         val title = when {
+            // Poste éteint ou qui s'allume (fonction « power ») : état seul en titre, aucun bouton d'allumage (décision v4)
+            rig.powerCarTitle != null && !mine -> rig.powerCarTitle
             mine -> "$freq ÉMISSION" + (ptt?.totSeconds?.let { " ${Format.duration(it)}" } ?: "")
             ptt?.transmitting == true -> "$freq Émission : ${ptt.label}"
             else -> freq

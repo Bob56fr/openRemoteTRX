@@ -32,7 +32,7 @@ en réception, accès coupé, alerte envoyée. Le mode sûr **survit aux redéma
 | PC | dans le BIOS / UEFI : « Restore on AC power loss » = **Power On** (le nom varie selon la carte mère) |
 | Station Debian | rien : elle démarre avec le PC, sans ouvrir de session |
 | Station Windows | elle démarre à l'**ouverture de session** : sans connexion automatique de ta session, elle reste arrêtée |
-| Poste | le FTDX10 ne se rallume **pas** seul. La station sait l'allumer par la CAT (menu **2.8**, hors service par défaut, avec un essai éteindre / rallumer) : ta connexion depuis la page le rallume (l'application : prochaine version) |
+| Poste | le FTDX10 ne se rallume **pas** seul. La station sait l'allumer par la CAT (menu **2.8**, hors service par défaut, avec un essai éteindre / rallumer) : ta connexion depuis la page ou l'application le rallume |
 | Box | se rallume seule ; vérifie que le VPN aussi |
 
 Un **onduleur** pour le PC, la box et l'alimentation du poste évite la plupart de ces cas.

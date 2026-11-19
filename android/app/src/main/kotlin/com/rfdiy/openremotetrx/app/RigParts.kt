@@ -149,6 +149,7 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
             if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
             if (presenceBanner) PresenceBanner()
             RigNoticeBanner()
+            PowerBannerRow()
             // Diffusion en direct en cours : bandeau toujours visible (cahier § 8), toucher = sa fenêtre
             rig.diffusion?.let { dif ->
                 com.rfdiy.openremotetrx.logic.Diffusions.indicator(dif.status)?.let { ind ->
@@ -298,13 +299,10 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                         )
                       }
                     }
-                    Button(
-                        onClick = { RigHub.stop(); bigPttRequested = false; onStop() },   // STOP coupe toujours, masque le gros PTT (tablette : replie le bloc)
-                        enabled = connected && !listener,                          // un visiteur ne coupe pas l'opérateur
-                        colors = ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f).height(if (compact) 52.dp else 64.dp),
-                    ) { Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+                    // STOP coupe à l'APPUI, masque le gros PTT (tablette : replie le bloc) ; maintenu 3 s : fenêtre à deux choix
+                    StopButton(Modifier.weight(1f).height(if (compact) 52.dp else 64.dp), if (compact) 52.dp else 64.dp) {
+                        bigPttRequested = false; onStop()
+                    }
                 }
             }
         }
@@ -313,6 +311,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
 /** Fenêtres de l'écran de la station (fréquence, niveaux, bandes, SELCALL, ST, visiteurs, Breizh, TOS, réseau, rapport…). */
 @Composable
 internal fun RigScope.RigDialogsHost() {
+    PowerDialogs()                                                     // alimentation du poste (lot P3)
     HelpDialog()                                                      // aide courte par appui long
     if (entry) FrequencyDialog(shownHz, onDismiss = { entry = false }) { hz ->
         entry = false

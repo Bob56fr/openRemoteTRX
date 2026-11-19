@@ -43,6 +43,9 @@ data class Capabilities(
     /** Décalages maximaux du clarifieur (Hz) ; 0 = inconnu. */
     @SerialName("max_rit_hz") val maxRitHz: Int = 0,
     @SerialName("max_xit_hz") val maxXitHz: Int = 0,
+    /** Allumage et extinction par la CAT (« Can set / get Power Stat », station 0.222.0+). */
+    @SerialName("can_set_power") val canSetPower: Boolean = false,
+    @SerialName("can_get_power") val canGetPower: Boolean = false,
 )
 
 @Serializable
@@ -154,6 +157,22 @@ data class RigStatus(
     val offsets: Map<String, Int> = emptyMap(),
     /** VFO actif tel que Hamlib le nomme (VFOA, VFOB, MEM, Main, Sub) ; null = non lisible (IC-7300MK2). Station 0.65.0+. */
     val vfo: String? = null,
+    /** Alimentation (station 0.222.0+) : "on", "off" (éteint ou muet), null = inconnue ; visiteurs compris. */
+    val power: String? = null,
+)
+
+/** Allumage et extinction du poste (fonction « power », opérateurs ; docs/protocole.md § 21) : `state.power`. */
+@Serializable
+data class PowerStatus(
+    /** on, off, starting, stopping, unknown. */
+    val state: String = "unknown",
+    val available: Boolean = false,
+    val by: String = "",
+    /** stop_hold, connect, button, idle. */
+    val how: String = "",
+    /** Dernier ordre réussi : "on" ou "off". */
+    val last: String = "",
+    val since: Double? = null,
 )
 
 /** Rediffusion permise par la station : durée maximale de l'enregistrement (TOT - 5 s). */
@@ -311,6 +330,7 @@ data class State(
     val net: NetState? = null,
     val freedv: FreedvStatus? = null,
     val diffusion: DiffusionStatus? = null,
+    val power: PowerStatus? = null,
 ) : ServerMessage
 
 /** Réponse à une commande ; `raw` garde les champs propres à chaque commande (memory, settings, profile…). */
@@ -359,6 +379,11 @@ data class SwrMessage(val raw: JsonObject) : ServerMessage
 /** La station ferme la connexion (motif et texte) : afficher, et NE PAS se reconnecter tout seul. */
 data class Bye(val reason: String, val message: String) : ServerMessage
 
+/** Étape de MON allumage du poste (station 0.222.0+) : `step` (ports, check_off, order, wait, readback, done), `status`
+ *  (running, ok, error), `detail` (texte de la station), `ort` (en erreur), `remainingS` (pendant `wait`). */
+data class PowerProgress(val step: String, val status: String, val detail: String, val ort: String,
+                         val remainingS: Double?) : ServerMessage
+
 /** Type inconnu de cette version de l'application : ignoré (une station plus récente peut en ajouter). */
 data class Unknown(val type: String) : ServerMessage
 
@@ -403,6 +428,8 @@ object ServerMessages {
                 "net_ping" -> NetPing(obj.long("seq").toInt(), obj.long("t"))
                 "net_pong" -> NetPong(obj.long("seq").toInt(), obj.long("t"), obj.long("tr"))
                 "net_event" -> NetEvent(obj.text("event"), obj)
+                "power_progress" -> PowerProgress(obj.text("step"), obj.text("status"), obj.text("detail"), obj.text("ort"),
+                    (obj["remaining_s"] as? JsonPrimitive)?.contentOrNull?.toDoubleOrNull())
                 else -> Unknown(type)
             }
         } catch (e: SerializationException) {

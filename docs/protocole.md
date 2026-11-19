@@ -486,4 +486,7 @@ hors service par défaut) et que le poste déclare « set / get Power Stat » (`
   `stopHoldChoices`), `ui.js` : bandeau « POSTE ÉTEINT » (`#power-banner`, bouton « Allumer le poste »), fenêtre
   « Allumage du TRX » (`#power-dialog`), STOP maintenu 3 s = fenêtre `#stophold-dialog` (« Se déconnecter » /
   « Arrêter le TRX à distance » grisé avec sa raison, puis « Confirmer l'arrêt à distance de votre TRX ? » ; Annuler
-  par défaut et après 15 s). **Application** : à venir (lot P3).
+  par défaut et après 15 s). **Application** (0.69.0, lot P3) : `logic/Power.kt` (mêmes vues et textes que la page),
+  `RigSession` (`powerOn`, `powerOff`, `powerHide`, délai de 150 s pour `power_on`), `app/PowerViews.kt` (STOP qui coupe
+  dès l'APPUI, maintien 3 s, fenêtres) ; Android Auto et mode conduite : allumage à la connexion sans fenêtre, titre
+  « POSTE ÉTEINT », « ALLUMAGE DU POSTE… » ou « POSTE ÉTEINT : erreur », aucun bouton.

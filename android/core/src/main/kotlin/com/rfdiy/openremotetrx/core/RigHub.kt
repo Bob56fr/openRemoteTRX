@@ -217,6 +217,11 @@ object RigHub {
 
     /** Avis de la station sur le poste (VOX, coupleur, TOS) : bandeau fermé par l'opérateur. */
     fun dismissRigNotice() { service?.onRig { session, now -> session.dismissRigNotice(now) } }
+    // Allumage et extinction du poste (fonction « power », lot P3) : la station vérifie et fait tout
+    fun powerOn() { service?.onRig { session, now -> session.powerOn(now, "button") } }
+    fun powerOff() { service?.onRig { session, now -> session.powerOff(now) } }
+    fun powerHide() { service?.onRig { session, now -> session.powerHide(now) } }
+    fun clearPowerOffNotice() { service?.onRig { session, now -> session.clearPowerOffNotice(now) } }
 
     // Diffusion en direct (fonction « diffusion », opérateurs) : la station et son module font tout le travail
     fun diffusionStart(form: com.rfdiy.openremotetrx.logic.Diffusions.Form) { service?.onRig { session, now -> session.diffusionStart(now, form) } }

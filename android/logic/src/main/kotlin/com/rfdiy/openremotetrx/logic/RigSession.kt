@@ -16,6 +16,7 @@ import com.rfdiy.openremotetrx.protocol.ModuleMessage
 import com.rfdiy.openremotetrx.protocol.NetEvent
 import com.rfdiy.openremotetrx.protocol.NetPing
 import com.rfdiy.openremotetrx.protocol.NetPong
+import com.rfdiy.openremotetrx.protocol.PowerProgress
 import com.rfdiy.openremotetrx.protocol.Protocol
 import com.rfdiy.openremotetrx.protocol.ProtocolException
 import com.rfdiy.openremotetrx.protocol.Result
@@ -114,6 +115,14 @@ data class RigState(
     val rigNotice: String = "",
     /** L'avis est grave (VOX impossible à couper ou illisible, TOS élevé) : bandeau rouge, sinon orange. */
     val rigNoticeBad: Boolean = false,
+    /** Allumage et extinction du poste (fonction « power », lot P3) : fenêtre « Allumage du TRX » (null = rien à
+     *  montrer), bandeau « POSTE ÉTEINT » (null = poste allumé ou inconnu), choix de STOP maintenu 3 s, dernier refus
+     *  de l'arrêt (montré dans sa fenêtre), titre d'Android Auto (null = titre habituel). */
+    val powerDialog: PowerDialogView? = null,
+    val powerBanner: PowerBanner? = null,
+    val stopHold: StopHoldChoices = StopHoldChoices(false, ""),
+    val powerOffNotice: String = "",
+    val powerCarTitle: String? = null,
 )
 
 /**
@@ -236,6 +245,10 @@ class RigSession(
     private var diffusionPassword: String? = null
     private var diffusionStartArgs: JsonObject? = null  // dernier lancement demandé (repris avec « confirm »)
     private var diffusionConfirm = false                // la station demande l'avertissement de responsabilité
+    private var powerOffered = false                    // la station a annoncé « power » (opérateur)
+    private var powerOnConnect = false                  // connexion DEMANDÉE : allumer le poste s'il est éteint (une fois)
+    private var powerRun: PowerRun? = null
+    private var powerOffNotice = ""
     private var monitoringData: JsonObject? = null
     private var monitoringCode: String? = null
     private var monitoringJoined: JsonObject? = null
@@ -281,6 +294,9 @@ class RigSession(
     fun begin(now: Long, windowS: Int, bandSpots: Map<String, BandSpot>? = null) {
         if (bandSpots != null) bands = BandMemory(bandSpots)
         teardown()
+        // Allumage du poste à la connexion (décision de l'utilisateur, 2026-11-19) : connexion DEMANDÉE seulement,
+        // jamais une reconnexion automatique (elle passe par tick, pas par begin) ; décidé au premier « state »
+        powerOnConnect = true
         reconnect = null
         this.windowS = windowS.coerceIn(0, ReconnectPolicy.MAX_WINDOW_S)
         status = LinkStatus.CONNECTING
@@ -381,6 +397,7 @@ class RigSession(
             is State -> {
                 state = msg
                 afterState()
+                powerAfterState(now, msg)
                 if (bands.observe(now, msg.rig.frequencyHz, msg.rig.mode)) onBandSpots?.invoke(bands.spots)
             }
             is Result -> onResult(now, msg)
@@ -394,6 +411,7 @@ class RigSession(
             is NetPing -> link.send(Command.NetPong(msg.seq, msg.t, now).encode())      // écho immédiat, sans file d'attente
             is NetPong -> net.pong(msg.seq, msg.t, now)
             is NetEvent -> onNetEvent(msg)
+            is PowerProgress -> onPowerProgress(msg)
             is SwrMessage -> {
                 val p = SwrUi.progress(msg.raw)
                 swr = p
@@ -463,6 +481,9 @@ class RigSession(
         diffusionOffered = protocolOk && !msg.listener && msg.offers("diffusion")
         diffusionNotice = ""; diffusionNoticeBad = false; diffusionUser = null; diffusionPassword = null
         diffusionStartArgs = null; diffusionConfirm = false
+        // Allumage et extinction du poste : opérateurs seulement
+        powerOffered = protocolOk && !msg.listener && msg.offers("power")
+        powerRun = null; powerOffNotice = ""
         if (!protocolOk) {
             log("La station parle le protocole ${msg.protocol}, l'application le ${Protocol.VERSION} : réception et STOP seulement. Mets à jour l'application ou la station.", LogLevel.BAD)
         } else {
@@ -542,6 +563,11 @@ class RigSession(
         }
         if (entry.cmd == "diffusion") {
             onDiffusionResult(entry.tag, msg)
+            publish(now)
+            return
+        }
+        if (entry.cmd == "power_on" || entry.cmd == "power_off") {
+            onPowerResult(entry.cmd, msg)
             publish(now)
             return
         }
@@ -677,6 +703,79 @@ class RigSession(
         link.setMicOpen(mineTx())                               // micro ouvert seulement en TX confirmé de ce téléphone
     }
 
+    // ------------------------------------------------------------------ allumage et extinction du poste (lot P3)
+
+    private fun powerAfterState(now: Long, msg: State) {
+        if (!powerOnConnect) return
+        powerOnConnect = false                                   // une fois par connexion demandée
+        if (powerOffered && msg.rig.power == "off" && powerRun == null) powerOn(now, "connect")
+    }
+
+    private fun onPowerProgress(msg: PowerProgress) {
+        if (msg.step.isEmpty()) return
+        val run = powerRun ?: PowerRun()
+        powerRun = run.copy(steps = run.steps + (msg.step to PowerStep(msg.status, msg.detail, msg.ort, msg.remainingS)))
+    }
+
+    private fun onPowerResult(cmd: String, msg: Result) {
+        fun text(key: String) = (msg.raw[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
+        if (cmd == "power_off") {
+            if (msg.ok) {
+                powerOffNotice = ""
+                log("Poste éteint à distance.", LogLevel.INFO)
+            } else {
+                powerOffNotice = refusalOf(msg)
+                log("Arrêt du poste refusé : $powerOffNotice", LogLevel.WARN)
+            }
+            return
+        }
+        val run = powerRun ?: return
+        if (msg.ok) {
+            val done = if (text("result") == "already_on") "Le poste était déjà allumé." else "TRX allumé : " + text("rig").take(120)
+            powerRun = run.copy(status = "done", done = done)
+            log(done, LogLevel.INFO)
+        } else {
+            val ort = text("ort")
+            val detail = if (msg.detail.isNotEmpty() && msg.reason != "power_busy")
+                msg.detail.take(300) + (if (ort.isNotEmpty()) " [${ort.take(12)}]" else "") else refusalOf(msg)
+            val step = text("step")
+            var steps = run.steps
+            if (step.isNotEmpty() && steps[step]?.status != "error") steps = steps + (step to PowerStep("error", msg.detail, ort))
+            powerRun = run.copy(status = "error", error = "Allumage impossible : $detail", steps = steps)
+            log("Allumage impossible : $detail", LogLevel.BAD)
+        }
+    }
+
+    /** Allume le poste (opérateur, fonction « power ») ; `how` = "connect" (connexion demandée) ou "button". */
+    fun powerOn(now: Long, how: String = "button") {
+        if (!connected || !powerOffered || powerRun?.status == "running") return
+        powerRun = PowerRun(how = if (how == "connect") "connect" else "button")
+        send(now, Command.PowerOn(powerRun!!.how))
+        publish(now)
+    }
+
+    /** Arrêt du poste à distance, CONFIRMÉ par l'opérateur (STOP maintenu 3 s puis confirmation). */
+    fun powerOff(now: Long) {
+        if (!connected || !powerOffered) return
+        powerOffNotice = ""
+        send(now, Command.PowerOff)
+        publish(now)
+    }
+
+    /** « Masquer » pendant l'allumage (il continue) ; « Continuer sans le poste » ou fermeture après la fin. */
+    fun powerHide(now: Long) {
+        val run = powerRun ?: return
+        powerRun = if (run.status == "running") run.copy(hidden = true) else null
+        publish(now)
+    }
+
+    /** Refus de l'arrêt lu par sa fenêtre : effacé à la fermeture. */
+    fun clearPowerOffNotice(now: Long) {
+        if (powerOffNotice.isEmpty()) return
+        powerOffNotice = ""
+        publish(now)
+    }
+
     // ------------------------------------------------------------------ minuterie (toutes les 400 ms)
 
     fun tick(now: Long, online: Boolean) {
@@ -731,10 +830,14 @@ class RigSession(
                 lastPing = now
                 send(now, Command.GetState)
             }
-            val expired = pending.filterValues { now - it.sentAt > COMMAND_TIMEOUT_MS }
+            val expired = pending.filterValues {
+                now - it.sentAt > if (it.cmd == "power_on") POWER_ON_TIMEOUT_MS else COMMAND_TIMEOUT_MS
+            }
             for ((id, entry) in expired) {
                 pending.remove(id)
                 if (entry.cmd != "get_state") log("Pas de réponse de la station à « ${entry.cmd} ».", LogLevel.WARN)
+                if (entry.cmd == "power_on") powerRun = powerRun?.copy(status = "error",
+                    error = "Allumage impossible : pas de réponse de la station")
             }
         }
         publish(now)
@@ -1488,6 +1591,8 @@ class RigSession(
         freedvNotice = ""
         freedvActivity = null; freedvActivityNotice = ""
         rigNotice = ""; rigNoticeBad = false
+        powerRun = null; powerOffNotice = ""; powerOffered = false
+        powerOnConnect = false                                    // une reconnexion automatique n'allume jamais le poste
         protocolOk = true
         net.stop(wall())                                         // les résumés restent : remis à la reconnexion
         netStats = null; netExport = null; netStatus = ""
@@ -1550,6 +1655,11 @@ class RigSession(
             freedvActivityNotice = freedvActivityNotice,
             rigNotice = rigNotice,
             rigNoticeBad = rigNoticeBad,
+            powerDialog = if (listener) null else Power.dialog(powerRun),
+            powerBanner = if (connected) Power.banner(state?.rig?.power, hello, powerRun?.status == "running") else null,
+            stopHold = Power.stopHold(hello, state?.rig?.power),
+            powerOffNotice = powerOffNotice,
+            powerCarTitle = if (connected) Power.carTitle(state?.rig?.power, powerRun) else null,
         )
         if (next != snapshot) {
             snapshot = next
@@ -1562,6 +1672,8 @@ class RigSession(
         private const val FDVA_TAG = "fdva"
         const val PING_EVERY_MS = 2000L
         const val COMMAND_TIMEOUT_MS = 5000L
+        /** Allumage du poste : ports, ordre (20 s), attente (120 s au plus), relecture. */
+        const val POWER_ON_TIMEOUT_MS = 150_000L
         /** Connexion manuelle : le canal doit s'ouvrir dans ce délai après la réponse de la station. */
         const val HELLO_TIMEOUT_MS = 15_000L
         const val LINK_ALERT_REPEAT_MS = 3000L
