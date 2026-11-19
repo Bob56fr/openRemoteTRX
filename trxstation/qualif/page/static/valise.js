@@ -15,6 +15,8 @@
   let tiles = null;                // dernier événement « tuiles »
   let current = null;              // touche de l'essai en cours (lancé d'ici ou enchaîné)
   let chain = null;                // enchaînement en cours : { rang, total }
+  let pilotAt = 0;                 // dernière action du pilote (Claude), Date.now()
+  let pilotAsked = null;           // dernière question du pilote montrée (bip une fois)
   let report = null;               // dernier rapport fabriqué (chemin)
   let meters = { actif: false };   // dernières mesures relues par les essais
   let ivId = null;                 // question de mot affichée dans la fenêtre
@@ -462,7 +464,17 @@
       renderDrill(zone, q);
       return;
     }
-    zone.appendChild(el("h2", "", t("question")));
+    if (q.role && q.role.startsWith("pilote:")) {   // question de Claude : bien visible, bip d'intervention
+      zone.appendChild(el("h2", "pilote-titre", t("pilot.question")));
+      zone.appendChild(el("p", "aide", t("pilot.help")));
+      if (pilotAsked !== q.id) {
+        pilotAsked = q.id;
+        ensureAudio();
+        beep([880, 660, 880], 0.18, 0.6);
+      }
+    } else {
+      zone.appendChild(el("h2", "", t("question")));
+    }
     if (q.genre === "choix" && Array.isArray(q.choix)) renderChoice(zone, q);
     else if (q.genre === "oui_non") renderButtons(zone, q, [[t("yes"), "o"], [t("no"), "n"], [t("enter"), "", true]]);
     else if (q.genre === "fait") renderButtons(zone, q, [[t("done"), ""]]);
@@ -572,7 +584,16 @@
         }
         break;
       case "reponse": case "annule": open.delete(e.id); break;
-      case "enchainement": current = e.cle; chain = { rang: e.rang, total: e.total }; break;
+      case "enchainement":
+        current = e.cle;
+        chain = { rang: e.rang, total: e.total };
+        if (live && pilotActive()) beep([1320], 0.06, 0.12);   // petit bip : Claude passe à l'essai suivant
+        break;
+      case "pilote":
+        pilotAt = Date.now();
+        if (live && e.cle) beep([1320], 0.06, 0.12);            // petit bip discret (cahier § 3)
+        showPilot();
+        break;
       case "mesure": if (e.nom === "poste" && e.valeur) meters = Object.assign({}, meters, e.valeur); break;
       case "fin": finished = true; meters = { actif: false }; break;
       case "stop": if (live) addLine("— STOP —"); break;
@@ -585,10 +606,21 @@
     }
   }
 
+  function pilotActive() {
+    return Date.now() - pilotAt < 90000;
+  }
+
+  function showPilot() {
+    const v = $("v-pilote");
+    v.textContent = t(pilotActive() ? "who.claude" : "who");
+    v.classList.toggle("claude", pilotActive());
+  }
+  setInterval(showPilot, 15000);
+
   function texts() {
     $("titre").textContent = t("title");
     document.title = t("title");
-    $("v-pilote").textContent = t("who");
+    showPilot();
     $("stop").textContent = t("stop");
     $("stop").title = t("stop.title");
     $("t-journal").textContent = t("journal");

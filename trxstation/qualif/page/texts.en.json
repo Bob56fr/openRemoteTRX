@@ -197,5 +197,8 @@
   "report.done": "Report built: {path}",
   "report.open": "Open the folder",
   "blocked.marche": "Stop the station first",
-  "blocked.arretee": "Start the station first"
+  "blocked.arretee": "Start the station first",
+  "who.claude": "Pilot: Claude",
+  "pilot.question": "Claude needs you",
+  "pilot.help": "Claude is running the qualification and asks you this question. The words CHARGE, ANTENNE and EMETTRE are still typed by you, on the keyboard."
 }

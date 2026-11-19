@@ -197,5 +197,8 @@
   "report.done": "Rapport fabriqué : {path}",
   "report.open": "Ouvrir le dossier",
   "blocked.marche": "Arrêtez d'abord la station",
-  "blocked.arretee": "Démarrez d'abord la station"
+  "blocked.arretee": "Démarrez d'abord la station",
+  "who.claude": "Pilote : Claude",
+  "pilot.question": "Claude a besoin de vous",
+  "pilot.help": "Claude mène la qualification et vous pose cette question. Les mots CHARGE, ANTENNE et EMETTRE restent à taper par vous, au clavier."
 }

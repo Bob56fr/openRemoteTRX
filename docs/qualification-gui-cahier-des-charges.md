@@ -80,6 +80,13 @@ mode par réglage, aucune écriture hors liste fermée, poste remis comme au dé
   état de CatLink pendant la qualification), bandeau « ÉMISSION EN COURS » ; journal replié. « Remettre à zéro »
   NON fait (effacerait des résultats) : quitter puis répondre Non à la reprise = nouvelle session.
 - **G3** : API de pilotage et `trx-qualif --pilote` ; refus des mots de sécurité par l'API (test).
+  FAIT (étape 283, station 0.219.0) : routes `/pilote/…` du serveur de la page (jeton propre dans
+  `<output>/pilote.json`, fichier privé retiré à la fin ; requête d'un navigateur refusée), `qualif/pilot.py`.
+  Le pilote LIT (état, tuiles, mesures, journal), LANCE une action du menu quand la valise y attend (ni quitter, ni
+  sous-menu), POSE une question à l'humain (texte, oui / non, « c'est fait » ; jamais un mot ni un secret) et
+  ARRÊTE (STOP) ; il ne RÉPOND à aucune question de la valise (« en attente de l'opérateur »). Page : « Pilote :
+  Claude », petit bip à chaque action du pilote et à chaque essai enchaîné, « Claude a besoin de vous » avec le bip
+  fort. Tests : `tests/test_qualif_pilot.py` (dont le refus des mots de sécurité).
 - **G4** : note en direct, brouillon de fiche publique, rapport depuis la page.
 
 ## 7. Décisions de l'utilisateur (2026-11-19)

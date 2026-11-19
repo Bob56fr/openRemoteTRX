@@ -140,6 +140,25 @@ alerte « COUPE LE POSTE ». Un essai automatique en échec REFUSE le poste ; il
 
 Pas encore : configuration de session isolée de celle du PC, mesures ALC, jumeau rejouable.
 
+## Valise pilotée par Claude (`--pilote`, étape 283, lot G3)
+
+La valise ouverte avec sa page (`trx-qualif --terrain --page --output DOSSIER`) écrit `DOSSIER/pilote.json` (port et
+jeton du pilote, privé, retiré à la fin). Claude la pilote depuis la conversation, dans le même dossier :
+
+```
+trx-qualif --pilote etat --output DOSSIER                  # au menu ?, ce qui attend l'opérateur, tuiles, mesures
+trx-qualif --pilote lancer 8.1 --output DOSSIER            # une action du menu, puis suivie jusqu'au retour au menu
+trx-qualif --pilote attendre 600 --output DOSSIER          # suivre le journal (attente de l'opérateur, menu, fin)
+trx-qualif --pilote demander --oui-non "Antenne branchée ?" --output DOSSIER
+trx-qualif --pilote journal 40 --output DOSSIER
+trx-qualif --pilote stop --output DOSSIER                  # comme STOP : « T 0 » puis l'essai interrompu
+```
+
+Le pilote ne répond à AUCUNE question de la valise : gestes, avis (« conforme ? »), mots de passe et mots CHARGE /
+ANTENNE / EMETTRE restent à l'humain (« EN ATTENTE DE L'OPÉRATEUR ») ; il ne peut ni quitter la valise ni ouvrir les
+sous-menus 5 / 8 (clés directes 5.N / 8.N). Route `/pilote/…` : jeton `X-Valise-Pilote`, requête d'un navigateur
+(en-tête Origin) refusée. Page : « Pilote : Claude », petit bip à chaque action, question « Claude a besoin de vous ».
+
 ## Valise : parties antenne / charge, bon mode, lot T3 (étape 263)
 
 Règles de l'utilisateur (2026-11-18) appliquées :

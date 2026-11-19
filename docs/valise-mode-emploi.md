@@ -273,7 +273,18 @@ Verdict proposé dans le rapport : `validation_en_cours` (tout est bon), `incomp
 - Au moindre doute : **STOP** dans la page, ou la touche TRANSMIT du poste.
 - La valise ne change jamais la fréquence d'elle-même (sauf l'essai A4, qui la remet aussitôt).
 
-## 8. Pièges connus
+## 8. Quand Claude mène la qualification
+
+L'opérateur lance la valise comme d'habitude (§ 4.1, avec `--page`) et le dit à Claude. Claude la pilote depuis la
+conversation (`trx-qualif --pilote …`, dans le même dossier de qualification) :
+- le voyant du bandeau passe à **« Pilote : Claude »** ; un **petit bip** discret à chaque essai que Claude lance ;
+- quand Claude a une question (« le poste est-il sur la charge fictive ? »), elle apparaît à droite sous **« Claude
+  a besoin de vous »**, avec le bip fort : répondre dans la page ;
+- les mots **CHARGE, ANTENNE, EMETTRE** restent à taper par l'opérateur, au clavier, dans la fenêtre orange ; Claude
+  ne peut pas les donner, ni répondre à aucune question de la valise à la place de l'opérateur ;
+- l'opérateur garde la main : **STOP**, et tous les boutons de la page.
+
+## 9. Pièges connus
 
 - **Page de la station ouverte avec le même compte** que `valise.pw` (laissée ouverte après un essai à la main) :
   les deux connexions se chassent et les essais automatiques échouent (« connexion fermée par la station… »).

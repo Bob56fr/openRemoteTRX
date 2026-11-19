@@ -168,3 +168,5 @@ button.gros.repere { background: var(--rouge); border-color: var(--rouge); font-
 .lignes .alerte { font-weight: 700; color: var(--orange); }
 .themes { align-items: start; }
 .colonne { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.voyant.claude { border-color: var(--bleu); color: var(--bleu); font-weight: 700; }
+.pilote-titre { color: var(--bleu); }

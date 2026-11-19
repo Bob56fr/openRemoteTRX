@@ -299,9 +299,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--session", type=Path, metavar="DOSSIER", help="avec --terrain : reprendre une session existante")
     ap.add_argument("--page", action="store_true",
                     help="avec --terrain : la valise dans une page du navigateur de CE PC (le terminal n'affiche que le journal)")
+    ap.add_argument("--pilote", nargs="+", metavar="ACTION",
+                    help="piloter une valise ouverte avec --page (Claude) : etat, lancer CLE [S], attendre [S], "
+                         "demander [--oui-non|--fait] TEXTE, reponse N, journal, stop ; dossier : --output")
     ap.add_argument("--comparer", type=Path, nargs=2, metavar=("A", "B"),
                     help="comparer deux rapports de la valise (zip ou dossier de session) du même poste")
     args = ap.parse_args(argv)
+    if args.pilote is not None:
+        from .pilot import run_pilot
+        return run_pilot(args.pilote, args.output)
     if args.comparer is not None:
         return run_compare(*args.comparer, args.output)
     if args.catalogue is not None:
@@ -367,7 +373,8 @@ def main(argv: list[str] | None = None) -> int:
                     lambda bus: run_terrain(cfg, profile, text, args.output, session_dir=args.session,
                                             config_path=config_path, bus=bus),
                     stop_tx=lambda: stop_tx(cfg), lang="fr" if french() else "en",
-                    stop_station=lambda: station_control(config_path, False))
+                    stop_station=lambda: station_control(config_path, False),
+                    pilot_file=args.output / "pilote.json")
             return run_terrain(cfg, profile, text, args.output, session_dir=args.session, config_path=config_path)
         except KeyboardInterrupt:
             print(_t("main.interrupted"), file=sys.stderr)
