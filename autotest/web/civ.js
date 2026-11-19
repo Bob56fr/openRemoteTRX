@@ -27,16 +27,45 @@
     // sous Windows, Chrome se fige tant qu'une lecture attend sur un port vide (essai du 2026-11-19) : un flux
     // continu du poste l'empêche d'attendre.
     SCOPE_OUT: [0x27, 0x11],
+    // Fonctions de réception (essai R9 : lue, changée, relue, remise, relue). JAMAIS le VOX (16 46).
+    ATT: [0x11],                 // atténuateur : 00 ou 20 (dB)
+    PREAMP: [0x16, 0x02],        // P.AMP : 00, 01, 02
+    AGC: [0x16, 0x12],           // 01 rapide, 02 moyen, 03 lent
+    NB: [0x16, 0x22],
+    NR: [0x16, 0x40],
+    ANF: [0x16, 0x41],           // notch automatique
+    COMP: [0x16, 0x44],          // compresseur (phonie)
+    IPPLUS: [0x16, 0x65],        // IP+
+    NR_LEVEL: [0x14, 0x06],
+    NB_LEVEL: [0x14, 0x12],
+    COMP_LEVEL: [0x14, 0x0E],
+    SPLIT: [0x0F],               // 00 / 01
+    RIT_ON: [0x21, 0x01],        // 00 / 01
+    TUNER: [0x1C, 0x01],         // 00 / 01 seulement : 02 = lancer l'accord (émission) JAMAIS
+    VFO_EXCH: [0x07, 0xB0],      // échange VFO A / B
+    VFO_FREQ: [0x25],            // lecture : 00 VFO choisi, 01 l'autre (jamais d'écriture)
   };
   const ALLOWED = Object.values(CMD).map(c => c.join(","));
+  // Données permises après certaines commandes (le reste : toute donnée). Une donnée hors liste = refus de la page.
+  const DATA_RULES = {
+    [CMD.TUNER.join(",")]: [[], [0x00], [0x01]],
+    [CMD.VFO_EXCH.join(",")]: [[]],
+    [CMD.VFO_FREQ.join(",")]: [[0x00], [0x01]],
+    [CMD.SPLIT.join(",")]: [[], [0x00], [0x01]],
+    [CMD.RIT_ON.join(",")]: [[], [0x00], [0x01]],
+    [CMD.ATT.join(",")]: [[], [0x00], [0x20]],
+  };
 
   const MODES = { 0x00: "LSB", 0x01: "USB", 0x02: "AM", 0x03: "CW", 0x04: "RTTY", 0x05: "FM", 0x06: "WFM",
                   0x07: "CW-R", 0x08: "RTTY-R", 0x17: "DV" };
   const MODE_CODES = Object.fromEntries(Object.entries(MODES).map(([k, v]) => [v, Number(k)]));
 
   function frame(addr, cmd, data) {
-    const body = [...cmd, ...(data || [])];
-    if (!ALLOWED.some(a => body.join(",").startsWith(a)) ) throw new Error("commande hors de la liste fermée : " + hex(body));
+    const body = [...cmd, ...(data || [])], key = cmd.join(",");
+    // La commande doit être EXACTEMENT une de la liste (avant : un préfixe de texte, « 3 » acceptait « 36 »).
+    if (!ALLOWED.includes(key)) throw new Error("commande hors de la liste fermée : " + hex(body));
+    const rule = DATA_RULES[key];
+    if (rule && !rule.some(r => r.join(",") === (data || []).join(","))) throw new Error("donnée hors de la liste fermée : " + hex(body));
     return Uint8Array.from([PREAMBLE, PREAMBLE, addr, CTRL, ...body, END]);
   }
 
@@ -166,6 +195,9 @@
     async setMode(code, filter) { const r = await this.request(CMD.SET_MODE, [code, filter || 1]); return !!r.ok; }
     async setDataMode(on, filter) { const r = await this.request(CMD.DATA_MODE, [on, on ? (filter || 1) : 0]); return !!r.ok; }
     async setPower(raw) { const r = await this.request(CMD.RF_POWER, encodeLevel(raw)); return !!r.ok; }
+    // Lecture / écriture génériques (essai R9) : { ok, data } / { ng } / { timeout }.
+    async readRaw(cmd) { return this.request(cmd, [], { timeout: 300 }); }
+    async writeRaw(cmd, data) { return this.request(cmd, data, { timeout: 300 }); }
     async setPtt(on) { const r = await this.request(CMD.PTT, [on ? 1 : 0], { timeout: 300 }); return !!r.ok; }
   }
 

@@ -69,8 +69,13 @@ select{background:var(--panel2);color:var(--fg);border:1px solid var(--line);bor
 .count .bar i{display:block;height:100%;background:#fff;width:100%}
 .body{padding:16px;display:flex;flex-direction:column;gap:18px}
 .what{font-size:14px;color:var(--dim)}.what b{color:var(--fg);font-weight:600}
-.freq{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
-.digits{font-family:var(--f-num);font-weight:700;color:var(--digit);font-size:clamp(34px,8vw,64px);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,181,71,.25)}
+.freq{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+/* Pendant les essais : bandeau réduit à une bande pour laisser la place aux mesures */
+body.compact .hero{aspect-ratio:auto;height:84px}
+body.compact .hero img{object-position:center 42%}
+body.compact .hero .cap{padding:10px 16px}
+body.compact .hero h1{font-size:clamp(20px,3vw,28px)}
+.digits{font-family:var(--f-num);font-weight:700;color:var(--digit);font-size:clamp(28px,5vw,44px);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,181,71,.25)}
 .digits small{font-size:.42em;color:var(--dim);font-weight:600;margin-left:6px;text-shadow:none}
 .chip{font-family:var(--f-label);font-weight:700;letter-spacing:.08em;font-size:15px;border:1px solid var(--digit);color:var(--digit);border-radius:4px;padding:2px 8px;margin-bottom:6px}
 .meters{display:flex;flex-direction:column;gap:16px}

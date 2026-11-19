@@ -15,9 +15,30 @@
   const STEPS = [
     ["R1", "Port et vitesse"], ["R2", "Modèle identifié"], ["R3", "Fréquence et mode lus"], ["R4", "S-mètre"],
     ["R5", "Temps de réponse"], ["R6", "PTT lu"], ["R7", "Carte son du poste"], ["R8", "Écriture de fréquence et de mode"],
+    ["R9", "Fonctions du poste (ATT, P.AMP, NB, NR, RIT, split, VFO…)"],
     ["E1", "Émission par la CAT"], ["E2", "Puissance lue"], ["E3", "TOS lu"], ["E4", "Tonalité 1 kHz"],
     ["E6", "STOP de la page"], ["RS", "Remise de l'état d'origine"],
   ];
+
+  /* Fonctions essayées en R9, SANS émission : lue, changée, relue, remise, relue. Une fonction que le poste ne lit pas
+     (silence ou refus) est « absente », jamais une panne. Le VOX n'y est JAMAIS (règle de la station). */
+  const FUNCS = [
+    { code: "ATT", label: "Atténuateur", cmd: CMD.ATT, values: [0x00, 0x20] },
+    { code: "P.AMP", label: "Préampli", cmd: CMD.PREAMP, values: [0x00, 0x01, 0x02] },
+    { code: "IP+", label: "IP+", cmd: CMD.IPPLUS, values: [0x00, 0x01] },
+    { code: "AGC", label: "AGC", cmd: CMD.AGC, values: [0x01, 0x02, 0x03] },
+    { code: "NB", label: "Noise blanker", cmd: CMD.NB, values: [0x00, 0x01] },
+    { code: "NB niv.", label: "Niveau NB", cmd: CMD.NB_LEVEL, level: true },
+    { code: "NR", label: "Réduction de bruit", cmd: CMD.NR, values: [0x00, 0x01] },
+    { code: "NR niv.", label: "Niveau NR", cmd: CMD.NR_LEVEL, level: true },
+    { code: "ANF", label: "Notch automatique", cmd: CMD.ANF, values: [0x00, 0x01] },
+    { code: "COMP", label: "Compresseur", cmd: CMD.COMP, values: [0x00, 0x01] },
+    { code: "COMP niv.", label: "Niveau du compresseur", cmd: CMD.COMP_LEVEL, level: true },
+    { code: "RIT", label: "RIT", cmd: CMD.RIT_ON, values: [0x00, 0x01] },
+    { code: "SPLIT", label: "Split", cmd: CMD.SPLIT, values: [0x00, 0x01] },
+    { code: "TUNER", label: "Coupleur (en / hors service, sans accord)", cmd: CMD.TUNER, values: [0x00, 0x01] },
+  ];
+  const STATUS_FN = { ok: "OK", absent: "absente", refus: "écriture refusée", ecart: "relue fausse", remise: "NON REMISE" };
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const fr = (v, d) => v.toFixed(d).replace(".", ",");
@@ -190,6 +211,88 @@
       // R8
       this.step("R8", "cur"); this.now("Écriture de la fréquence (+1 kHz) puis du mode…");
       await this._r8();
+      if (this.aborted) return;
+      // R9
+      this.step("R9", "cur"); this.now("Fonctions du poste : lecture, changement, relecture, remise…");
+      await this._r9();
+    }
+
+    // Une valeur lue : tableau d'octets après la commande, ou null (absente).
+    async _fnRead(f) {
+      const r = await this.link.readRaw(f.cmd);
+      if (!r.ok || !r.data || !r.data.length) return null;
+      return f.level ? r.data.slice(0, 2) : r.data.slice(0, 1);
+    }
+    _fnOther(f, v0) {
+      if (f.level) { const n = civ.decodeLevel(v0); return civ.encodeLevel(n >= 128 ? n - 51 : n + 51); }
+      const other = f.values.find(x => x !== v0[0]);
+      return [other == null ? f.values[0] : other];
+    }
+
+    async _r9() {
+      const L = this.link, same = (a, b) => !!a && !!b && a.join(",") === b.join(",");
+      const out = [], changed = [];
+      try {
+        for (const f of FUNCS) {
+          if (this.aborted) break;
+          this.now(`Fonction ${f.code} : lecture, changement, relecture, remise…`);
+          const row = { code: f.code, label: f.label };
+          const v0 = await this._fnRead(f);
+          if (!v0) { row.statut = "absent"; out.push(row); continue; }
+          row.avant = civ.hex(v0);
+          const v1 = this._fnOther(f, v0); row.essai = civ.hex(v1);
+          const w = await L.writeRaw(f.cmd, v1);
+          if (!w.ok) { row.statut = "refus"; out.push(row); continue; }
+          changed.push({ f, v0 });
+          const r1 = await this._fnRead(f); row.relu = r1 ? civ.hex(r1) : null;
+          await L.writeRaw(f.cmd, v0);
+          const r2 = await this._fnRead(f); row.remis = r2 ? civ.hex(r2) : null;
+          row.statut = !same(r2, v0) ? "remise" : !same(r1, v1) ? "ecart" : "ok";
+          out.push(row);
+        }
+        out.push(await this._vfo());
+      } finally {
+        // Seconde passe : une fonction peut en changer une autre (P.AMP coupe l'ATT…) : tout est relu et remis.
+        for (const { f, v0 } of changed) {
+          const now = await this._fnRead(f);
+          if (same(now, v0)) continue;
+          await L.writeRaw(f.cmd, v0);
+          const back = await this._fnRead(f);
+          const row = out.find(x => x.code === f.code);
+          if (row) { row.remis = back ? civ.hex(back) : null; row.statut = same(back, v0) ? (row.statut === "remise" ? "ecart" : row.statut) : "remise"; row.repasse = true; }
+        }
+      }
+      const by = s => out.filter(x => x.statut === s).map(x => x.code);
+      const ok = by("ok"), abs = by("absent"), ref = by("refus"), ec = by("ecart"), bad = by("remise");
+      const parts = [];
+      if (ok.length) parts.push(`${ok.length} OK : ${ok.join(", ")}`);
+      if (ec.length) parts.push(`relues fausses : ${ec.join(", ")}`);
+      if (ref.length) parts.push(`écriture refusée : ${ref.join(", ")}`);
+      if (abs.length) parts.push(`absentes : ${abs.join(", ")}`);
+      if (bad.length) parts.push(`NON REMISES (à remettre à la main) : ${bad.join(", ")}`);
+      const status = bad.length ? "echec" : (ec.length || ref.length) ? "avert" : ok.length ? "ok" : "na";
+      this.result("R9", status, parts.join(" ; ") + ".", { fonctions: out });
+    }
+
+    // VFO A / B : échange, relecture, échange de nouveau, relecture (on ne sait pas lire QUEL VFO est choisi).
+    async _vfo() {
+      const L = this.link, row = { code: "VFO A/B", label: "Échange des VFO A et B" };
+      const f0 = await L.readFreq(), o0 = await this._readOtherVfo();
+      if (f0 == null) { row.statut = "absent"; return row; }
+      const w = await L.writeRaw(CMD.VFO_EXCH, []);
+      if (!w.ok) { row.statut = w.ng ? "refus" : "absent"; return row; }
+      const f1 = await L.readFreq();
+      await L.writeRaw(CMD.VFO_EXCH, []);
+      const f2 = await L.readFreq();
+      row.avant = fmtHz(f0); row.autre = o0 == null ? null : fmtHz(o0); row.relu = fmtHz(f1); row.remis = fmtHz(f2);
+      if (f2 !== f0) row.statut = "remise";
+      else if (o0 != null) row.statut = f1 === o0 ? "ok" : "ecart";
+      else { row.statut = "ok"; if (f1 === f0) row.note = "fréquences A et B peut-être identiques : échange non vérifiable"; }
+      return row;
+    }
+    async _readOtherVfo() {
+      const r = await this.link.request(CMD.VFO_FREQ, [0x01], { timeout: 300 });
+      return r.ok && r.data.length >= 6 ? civ.decodeFreq(r.data.slice(1, 6)) : null;
     }
 
     async _audio() {
@@ -384,7 +487,7 @@
     }
   }
 
-  const api = { DEFAULTS, STEPS, TxGuard, Runner, detect, fmtHz };
+  const api = { DEFAULTS, STEPS, FUNCS, TxGuard, Runner, detect, fmtHz };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AtRunner = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -7,7 +7,7 @@
   "use strict";
   const { AtCiv: civ, AtModels: models, AtRunner: R, AtReport: rep } = window;
   const $ = id => document.getElementById(id);
-  const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; window.scrollTo(0, 0); };
+  const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
   const S = { brand: null, model: null, chosen: null, port: null, detected: null, runner: null, startedAt: null, audio: null, report: null };

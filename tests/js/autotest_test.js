@@ -72,9 +72,10 @@ test("parcours complet : tout réussi, état d'origine remis, émissions courtes
   const { rig, r } = await setup({ echo: true });
   rig.st.mode = 0x01; rig.st.freq = 28074000; rig.st.power = 128;
   const out = await r.run();
-  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
   assert.equal(rig.st.freq, 28074000); assert.equal(rig.st.mode, 0x01); assert.equal(rig.st.data, 0); assert.equal(rig.st.power, 128);
   assert.equal(rig.st.ptt, false);
+  assert.equal(JSON.stringify(rig.fn), rig.initialFn);                  // fonctions remises (R9)
   assert.equal(rig.txLog.length, 4);
   assert.ok(rig.maxTx() < 1000, "émission trop longue : " + rig.maxTx());
   assert.ok(res(out, "E2").values.po_pct > 8 && res(out, "E2").values.po_pct < 12);
@@ -105,12 +106,13 @@ test("durée maximale : la garde coupe même si l'essai dure plus longtemps", as
 
 test("STOP pendant la porteuse : réception tout de suite, plus d'émission, état remis", async () => {
   const { rig, r } = await setup({}, {}, { e2: 3000 });
-  r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E2") setTimeout(() => r.stop("stop"), 60); };
-  const t0 = Date.now(); const out = await r.run();
+  let t0 = null;
+  r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E2") setTimeout(() => { t0 = Date.now(); r.stop("stop"); }, 60); };
+  const out = await r.run();
   assert.equal(rig.st.ptt, false);
   assert.equal(rig.txLog.length, 2);                          // E1 puis E2 coupée
   assert.ok(rig.txLog[1] < 400, "E2 : " + rig.txLog[1]);
-  assert.ok(Date.now() - t0 < 2500);
+  assert.ok(Date.now() - t0 < 1500, "fin " + (Date.now() - t0) + " ms après le STOP");
   assert.equal(out.stop, "stop");
   assert.equal(rig.st.mode, 0x01); assert.equal(res(out, "RS").status, "ok");
 });
@@ -181,6 +183,44 @@ test("puissance non réglable par la CAT : réglage à la main demandé, refus =
   const { rig, r } = await setup({ ng: ["14 0A"] }, { confirmManualPower: async () => { asked++; return false; } });
   const out = await r.run();
   assert.equal(asked, 1); assert.equal(rig.txLog.length, 0); assert.equal(res(out, "E1").status, "saute");
+});
+
+test("R9 : chaque fonction lue, changée, relue, remise et relue, SANS émission", async () => {
+  const { rig, r } = await setup({ echo: true });
+  const before = JSON.stringify(rig.fn), f0 = rig.st.freq, o0 = rig.st.otherFreq;
+  await r._r9();
+  const r9 = r.results.find(x => x.code === "R9"), rows = r9.values.fonctions;
+  assert.equal(r9.status, "ok", r9.text);
+  assert.equal(rows.length, 15);
+  for (const row of rows) assert.equal(row.statut, "ok", row.code);
+  for (const code of ["ATT", "P.AMP", "IP+", "NB", "NR", "RIT", "SPLIT", "TUNER", "VFO A/B"]) assert.ok(r9.text.includes(code), code);
+  assert.equal(JSON.stringify(rig.fn), before);
+  assert.equal(rig.st.freq, f0); assert.equal(rig.st.otherFreq, o0);
+  assert.equal(rig.txLog.length, 0);
+  assert.ok(!rig.writes.some(w => /^(1C 00 01|1C 01 02|16 46)/.test(w.cmd)), "émission, accord ou VOX écrit");
+  assert.equal(rows.find(x => x.code === "VFO A/B").relu, "7.100.000");
+});
+
+test("R9 : fonction absente, écriture refusée, relue fausse, fonction qui en coupe une autre", async () => {
+  const { rig, r } = await setup({ silent: ["16 65"], ngWrite: ["16 22"], stuck: ["16 40"], pampClearsAtt: true, fn: { "11": [0x20] } });
+  await r._r9();
+  const r9 = r.results.find(x => x.code === "R9"), row = c => r9.values.fonctions.find(x => x.code === c);
+  assert.equal(row("IP+").statut, "absent");
+  assert.equal(row("NB").statut, "refus");
+  assert.equal(row("NR").statut, "ecart");
+  assert.equal(row("ATT").statut, "ok");
+  assert.deepEqual(rig.fn["11"], [0x20]);                               // ATT remis par la seconde passe
+  assert.equal(r9.status, "avert", r9.text);
+  assert.ok(/absentes : IP\+/.test(r9.text) && /refusée : NB/.test(r9.text) && /fausses : NR/.test(r9.text), r9.text);
+});
+
+test("liste fermée : commande exacte, jamais l'accord du coupleur, le VOX ni un préfixe", () => {
+  assert.throws(() => civ.frame(0xB6, civ.CMD.TUNER, [0x02]), /hors de la liste/);   // 02 = lancer l'accord (émission)
+  assert.throws(() => civ.frame(0xB6, [0x16, 0x46], [0x01]), /hors de la liste/);   // VOX
+  assert.throws(() => civ.frame(0xB6, [0x36], []), /hors de la liste/);              // « 3 » n'accepte plus « 36 »
+  assert.throws(() => civ.frame(0xB6, civ.CMD.VFO_FREQ, [0x00, 0x00, 0x40, 0x07, 0x14, 0x00]), /hors de la liste/);  // jamais d'écriture
+  assert.throws(() => civ.frame(0xB6, civ.CMD.ATT, [0x12]), /hors de la liste/);
+  assert.equal(civ.hex(civ.frame(0xB6, civ.CMD.TUNER, [0x01])), "FE FE B6 E0 1C 01 01 FD");
 });
 
 test("rapport : anonyme, trace et empreinte, résumé", async () => {
