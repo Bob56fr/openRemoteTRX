@@ -179,6 +179,7 @@ class DiffusionService:
         """Infos du poste de la passerelle (diffusion/rigview.snapshot) ; chaque valeur revérifiée, le reste ignoré."""
         from .rigview import s_text
         now = time.monotonic() if now is None else now
+        self._rig_off = info.get("off") is True            # poste éteint (allumage à distance) : raison du silence
         w = info.get("w")
         self.values["filtre"] = w if isinstance(w, str) and 0 < len(w) <= 8 else None
         v = info.get("v")
@@ -205,6 +206,10 @@ class DiffusionService:
         s = self._session
         if s is None:
             return None
+        if getattr(self, "_rig_off", False):
+            # Poste éteint (fonction « power ») : « pas_de_son » (le son du poste n'arrive plus), raison que le serveur
+            # connaît déjà ; une raison « poste_eteint » propre demandera d'abord le serveur (il refuse une valeur inconnue)
+            return "pas_de_son"
         if s.get("phase") == "en_direct" and time.monotonic() - self._last_audio > NO_AUDIO_SILENCE_S:
             return "pas_de_son"
         if self.values.get("tx") and not s.get("voice"):

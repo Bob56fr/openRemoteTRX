@@ -797,6 +797,171 @@
   }
  },
  {
+  "name": "poste éteint par la station",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": null,
+     "mode": null,
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     },
+     "power": "off"
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    },
+    "power": {
+     "state": "off",
+     "by": "S25",
+     "last": "off"
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "Poste éteint",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Poste",
+     "text": "éteint par S25",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
+  "name": "poste éteint hors de la station",
+  "input": {
+   "status": {
+    "pid": 1,
+    "seq": 1019,
+    "written_at": 1793175457.2,
+    "schema": 1,
+    "clients": [],
+    "ptt": {
+     "state": "RX",
+     "owner": null,
+     "tot_remaining_s": null,
+     "tot_warning": false,
+     "last_cut_reason": "",
+     "fault": "",
+     "event": "",
+     "local_remaining_s": null,
+     "local_reason": "",
+     "local_tx": false,
+     "temp_alert": "",
+     "temp_c": null
+    },
+    "rig": {
+     "connected": true,
+     "frequency_hz": null,
+     "mode": null,
+     "passband_hz": 3000,
+     "strength_db": -54,
+     "ptt": false,
+     "last_error": "",
+     "levels": {
+      "VD_METER": 14.447
+     },
+     "power": "off"
+    },
+    "spectrum": {
+     "state": "ok",
+     "fps": 4.2
+    }
+   },
+   "nowS": 1793175457.5
+  },
+  "expect": {
+   "level": "ok",
+   "label": "Poste éteint",
+   "lines": [
+    {
+     "key": "Station",
+     "text": "en marche",
+     "level": "ok"
+    },
+    {
+     "key": "Émission",
+     "text": "réception",
+     "level": "ok"
+    },
+    {
+     "key": "Poste",
+     "text": "éteint hors de la station",
+     "level": "info"
+    },
+    {
+     "key": "Clients web",
+     "text": "aucun",
+     "level": "info"
+    },
+    {
+     "key": "Alimentation",
+     "text": "14.4 V",
+     "level": "info"
+    },
+    {
+     "key": "Spectre HF",
+     "text": "reçu (4.2 /s)",
+     "level": "info"
+    }
+   ]
+  }
+ },
+ {
   "name": "sur place",
   "input": {
    "status": {

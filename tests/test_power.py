@@ -649,3 +649,53 @@ def test_only_the_power_control_references_set_powerstat():
     # faux rigctld des tests ; essai du menu 2.8 (rigctl, station ARRÊTÉE, poste lu en réception avant l'ordre)
     allowed_devtools = {root / "devtools" / "fake_rigctld.py", root / "power_trial.py"}
     assert [p for p in offenders if p.resolve() not in allowed_devtools] == []
+
+
+# --------------------------------------------------------------------------- lot P4
+
+def test_wizard_records_the_usb_identity_of_the_chosen_ports(capsys):
+    from trxstation.setup_wizard import record_usb_identity
+    cfg = dummy_config()
+    cfg.rig.port, cfg.rig.ptt_type, cfg.rig.ptt_port = "COM7", "RTS", "COM9"
+    idents = {"COM7": usbports.UsbIdentity("10C4", "EA70", "01D0F21E", "00"),
+              "COM9": usbports.UsbIdentity("067B", "2303", "X1", "")}
+    cfg.power.enabled = True
+    record_usb_identity(cfg, identity=idents.get)
+    assert cfg.rig.port_usb == "10C4:EA70 SN=01D0F21E IF=00" and cfg.rig.ptt_port_usb == "067B:2303 SN=X1"
+    assert "10C4:EA70" in capsys.readouterr().out                    # dit à l'opérateur (allumage en service)
+    cfg.rig.ptt_type, cfg.rig.ptt_port = "RIG", ""
+    record_usb_identity(cfg, identity=lambda p: None)                 # port illisible : identité vidée, jamais l'ancienne
+    assert cfg.rig.port_usb == "" and cfg.rig.ptt_port_usb == ""
+    assert cfgmod.validate(cfg) == []
+
+
+def test_monitor_shows_who_switched_the_rig_off():
+    from trxstation.monitor import model
+
+    class Snap:
+        gateway_fresh = True
+
+    def rows(rig, power):
+        s = Snap()
+        s.status = GatewayStatus(pid=1, seq=1, written_at=0.0, ptt={"state": "RX"}, rig=rig, clients=[], power=power)
+        return [(r.label, r.text) for r in model._radio_panel(s).rows]
+    assert any("par S25" in text for _, text in rows({"power": "off"}, {"state": "off", "by": "S25", "last": "off",
+                                                                          "since": 1795107752.0}))
+    assert any("hors de la station" in text for _, text in rows({"power": "off"}, {"state": "off"}))
+    assert any("allumage en cours" in text for _, text in rows({"power": "off"}, {"state": "starting"}))
+    assert not any(label == "Poste" for label, _ in rows({"power": "on"}, {"state": "on"}))
+
+
+def test_broadcast_listeners_are_told_why_they_hear_nothing_when_the_rig_is_off():
+    from types import SimpleNamespace
+    from trxstation.diffusion import protocol as dp
+    from trxstation.diffusion.rigview import snapshot
+    assert snapshot(SimpleNamespace(power="off"), (), -90.0)["off"] is True
+    assert snapshot(SimpleNamespace(power="on"), (), -90.0)["off"] is False
+    from trxstation.diffusion.service import DiffusionService
+    svc = DiffusionService.__new__(DiffusionService)              # seulement silence_reason (pas de bus ni de réseau)
+    svc._session = {"phase": "en_direct", "voice": False}
+    svc._last_audio = float("inf")
+    svc.values, svc._rig_off = {}, True
+    reason = svc.silence_reason()
+    assert reason == "pas_de_son" and reason in dp.SILENCE_REASONS   # raison que le serveur connaît déjà

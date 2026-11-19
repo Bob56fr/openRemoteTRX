@@ -90,6 +90,8 @@
   "rig.tx_modes": "Modes d'émission permis : {modes}",
   "rig.speed": "Débit série (Entrée = {default})",
   "rig.speed_hamlib": "défaut Hamlib du modèle",
+  "rig.port_usb": "Identité USB du port du poste relevée pour l'allumage à distance : {ident}",
+  "rig.port_usb_none": "illisible (l'allumage à distance ne pourra pas vérifier le port)",
   "ptt.title": "Méthode PTT",
   "ptt.rig": "CAT (commande envoyée au poste)",
   "ptt.rts": "ligne RTS du port série",

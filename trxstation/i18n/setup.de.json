@@ -90,6 +90,8 @@
   "rig.tx_modes": "Erlaubte Sendebetriebsarten: {modes}",
   "rig.speed": "Serielle Baudrate (Eingabe = {default})",
   "rig.speed_hamlib": "Hamlib-Standard des Modells",
+  "rig.port_usb": "USB-Kennung des Geräteanschlusses für Fern-Ein/Aus erfasst: {ident}",
+  "rig.port_usb_none": "unlesbar (Fern-Ein/Aus kann den Anschluss nicht prüfen)",
   "ptt.title": "PTT-Methode",
   "ptt.rig": "CAT (Befehl an das Funkgerät)",
   "ptt.rts": "RTS-Leitung des seriellen Ports",

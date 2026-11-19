@@ -70,7 +70,8 @@ def s_text(db: Any) -> str | None:
 
 
 def snapshot(state: Any, preamps: tuple | list, rms_db: float) -> dict:
-    """Infos du poste à envoyer au module : {"s": dB ou None, "q": squelch, "w": filtre, "v": voyants}."""
+    """Infos du poste à envoyer au module : {"s": dB ou None, "q": squelch, "w": filtre, "v": voyants, "off": poste
+    éteint (fonction « power »)}."""
     s = getattr(state, "strength_db", None)
     s = float(s) if isinstance(s, (int, float)) and not isinstance(s, bool) else None
     if s is not None:
@@ -79,4 +80,5 @@ def snapshot(state: Any, preamps: tuple | list, rms_db: float) -> dict:
     return {"s": s, "q": squelch_open(levels, s, rms_db) if s is not None else None,
             "w": width_text(getattr(state, "passband_hz", None)),
             "v": indicators(getattr(state, "functions", None) or {}, levels, getattr(state, "split", None),
-                            getattr(state, "offsets", None) or {}, tuple(preamps or ()))}
+                            getattr(state, "offsets", None) or {}, tuple(preamps or ())),
+            "off": getattr(state, "power", None) == "off"}

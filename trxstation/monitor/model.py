@@ -114,6 +114,24 @@ def format_duration(seconds: float | None, t: Translator | None = None) -> str:
 
 # --------------------------------------------------------------------------- panneaux
 
+def _power_row(rig: dict, power: dict, t: Translator) -> Row | None:
+    """Alimentation du poste (fonction « power ») : « éteint par X depuis HH:MM », éteint hors de la station, ou
+    allumage / extinction en cours ; None quand le poste est allumé (ou ne dit rien)."""
+    state = power.get("state") if isinstance(power, dict) else None
+    if state == "starting":
+        return Row(t("label.rig"), t("power.starting"), "warn")
+    if state == "stopping":
+        return Row(t("label.rig"), t("power.stopping"), "warn")
+    if rig.get("power") != "off":
+        return None
+    since = power.get("since")
+    if power.get("last") == "off" and power.get("by") and isinstance(since, (int, float)):
+        import time as _time
+        when = _time.strftime("%H:%M", _time.localtime(since))
+        return Row(t("label.rig"), t("power.off_by", by=str(power["by"])[:32], since=when), "warn")
+    return Row(t("label.rig"), t("power.off_unknown"), "warn")
+
+
 def _radio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
     t = translator(t)
     status = snap.status
@@ -131,6 +149,9 @@ def _radio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         label += " ?"
         level = "bad" if state in ACTIVE_STATES else "warn"
     rows = [Row("PTT", label, level)]
+    power_row = _power_row(rig, getattr(status, "power", None) or {}, t)   # poste éteint ou qui s'allume
+    if power_row is not None:
+        rows.append(power_row)
     swr = status.swr if isinstance(getattr(status, "swr", None), dict) else {}
     if swr.get("running"):                          # mesure de TOS : des émissions courtes vont se succéder
         step = swr.get("state")

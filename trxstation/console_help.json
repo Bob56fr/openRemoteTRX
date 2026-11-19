@@ -217,7 +217,7 @@
      "expert": "",
      "modifie": "Die Stationskonfiguration (station.toml), mit Administratorrechten; die\nvorherige Version wird aufbewahrt (station.toml.bak). Bei Abbruch wird\nnichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die\nÄnderung zu übernehmen.",
      "quand": "Neuer Transceiver, geänderter serieller Port (anderes Kabel, andere\nUSB-Buchse), im Transceiver geänderte Baudrate, fehlgeschlagener\nVerbindungstest.",
-     "role": "Ändert den Transceiver und seine Verbindung: Hamlib-Modell (mit den\nempfohlenen Einstellungen eines bekannten Transceivers), serieller CAT-Port,\nBaudrate, PTT-Methode, dann ein Verbindungstest nur lesend (keine Sendung).\nDie Station ist während der Fragen gestoppt: der serielle Port muss frei\nsein. Dieselben Fragen wie im entsprechenden Teil des vollständigen\nAssistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle\nEinstellung, der Rest der Konfiguration bleibt unberührt."
+     "role": "Ändert den Transceiver und seine Verbindung: Hamlib-Modell (mit den\nempfohlenen Einstellungen eines bekannten Transceivers), serieller CAT-Port,\nBaudrate, PTT-Methode, dann ein Verbindungstest nur lesend (keine Sendung).\nDie Station ist während der Fragen gestoppt: der serielle Port muss frei\nsein. Dieselben Fragen wie im entsprechenden Teil des vollständigen\nAssistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle\nEinstellung, der Rest der Konfiguration bleibt unberührt. Erfasst auch die\nUSB-Kennung des Anschlusses, die vor jedem Fern-Einschalten geprüft wird\n(Menü 2.8)."
     },
     "rollback": {
      "admin": true,
@@ -508,7 +508,7 @@
      "expert": "",
      "modifie": "The station configuration (station.toml), with administrator rights; the\nprevious version is kept (station.toml.bak). Nothing is written if you give\nup. The station is restarted on request to take the change.",
      "quand": "New transceiver, serial port changed (other cable, other USB socket), speed\nchanged in the transceiver menus, failed link test.",
-     "role": "Changes the transceiver and its link: Hamlib model (with the advised\nsettings of a known transceiver), CAT serial port, speed, PTT method, then a\nread-only link test (no transmission). The station is stopped during the\nquestions: the serial port must be free. The same questions as the matching\npart of the full wizard (menu 2.1), and only those: Enter keeps each current\nsetting, the rest of the configuration is not touched."
+     "role": "Changes the transceiver and its link: Hamlib model (with the advised\nsettings of a known transceiver), CAT serial port, speed, PTT method, then a\nread-only link test (no transmission). The station is stopped during the\nquestions: the serial port must be free. The same questions as the matching\npart of the full wizard (menu 2.1), and only those: Enter keeps each current\nsetting, the rest of the configuration is not touched. Also records the USB\nidentity of the port, checked before every remote switch-on (menu 2.8)."
     },
     "rollback": {
      "admin": true,
@@ -799,7 +799,7 @@
      "expert": "",
      "modifie": "La configuración de la estación (station.toml), con derechos de\nadministrador; se conserva la versión anterior (station.toml.bak). No se\nescribe nada si abandonas. La estación se reinicia a petición para aplicar\nel cambio.",
      "quand": "Transceptor nuevo, puerto serie cambiado (otro cable, otra toma USB),\nvelocidad cambiada en los menús del transceptor, prueba del enlace fallida.",
-     "role": "Cambia el transceptor y su enlace: modelo Hamlib (con los ajustes\naconsejados de un transceptor conocido), puerto serie CAT, velocidad, método\nPTT y luego una prueba del enlace solo en lectura (sin emisión). La estación\nse detiene durante las preguntas: el puerto serie debe estar libre. Las\nmismas preguntas que la parte correspondiente del asistente completo (menú\n2.1), y solo esas: Intro conserva cada ajuste actual, el resto de la\nconfiguración no se toca."
+     "role": "Cambia el transceptor y su enlace: modelo Hamlib (con los ajustes\naconsejados de un transceptor conocido), puerto serie CAT, velocidad, método\nPTT y luego una prueba del enlace solo en lectura (sin emisión). La estación\nse detiene durante las preguntas: el puerto serie debe estar libre. Las\nmismas preguntas que la parte correspondiente del asistente completo (menú\n2.1), y solo esas: Intro conserva cada ajuste actual, el resto de la\nconfiguración no se toca. Registra también la identidad USB del puerto,\ncomprobada antes de cada encendido remoto (menú 2.8)."
     },
     "rollback": {
      "admin": true,
@@ -1090,7 +1090,7 @@
      "expert": "",
      "modifie": "La configuration de la station (station.toml), avec les droits\nd'administration ; l'ancienne version est gardée (station.toml.bak). Rien\nn'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour\nprendre le changement.",
      "quand": "Nouveau poste, port série changé (autre câble, autre prise USB), débit\nmodifié dans les menus du poste, test de liaison en échec.",
-     "role": "Change le poste et sa liaison : modèle Hamlib (avec les réglages conseillés\nd'un poste connu), port série du CAT, débit, méthode PTT, puis un test de\nliaison en lecture seule (aucune émission). La station est arrêtée pendant\nles questions : le port série doit être libre. Les mêmes questions que la\npartie correspondante de l'assistant complet (menu 2.1), et seulement\nelles : Entrée garde chaque réglage actuel, le reste de la configuration\nn'est pas touché."
+     "role": "Change le poste et sa liaison : modèle Hamlib (avec les réglages conseillés\nd'un poste connu), port série du CAT, débit, méthode PTT, puis un test de\nliaison en lecture seule (aucune émission). La station est arrêtée pendant\nles questions : le port série doit être libre. Les mêmes questions que la\npartie correspondante de l'assistant complet (menu 2.1), et seulement\nelles : Entrée garde chaque réglage actuel, le reste de la configuration\nn'est pas touché. Relève aussi l'identité USB du port, vérifiée avant chaque\nallumage à distance (menu 2.8)."
     },
     "rollback": {
      "admin": true,

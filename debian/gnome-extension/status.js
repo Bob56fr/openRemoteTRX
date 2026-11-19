@@ -81,7 +81,11 @@ export function summarize(input) {
     } else {
       add("Émission", "réception", "ok");
     }
-    if (rig.connected) {
+    if (rig.connected && rig.power === "off") {        // poste éteint (allumage à distance) : couleur neutre
+      const power = status.power || {};
+      add("Poste", power.last === "off" && power.by ? "éteint par " + text(power.by, 32) : "éteint hors de la station", "info");
+      if (!transmitting && !safe) label = "Poste éteint";
+    } else if (rig.connected) {
       const freq = mhz(rig.frequency_hz, 6).replace(/(\d)(\d{3})$/, "$1.$2");
       add("Fréquence", freq + " MHz " + modeLabel(rig.mode) + (width(rig.passband_hz) ? ", filtre " + width(rig.passband_hz) : ""), "info");
       if (!transmitting && !safe) label = mhz(rig.frequency_hz, 3) + " " + modeLabel(rig.mode);

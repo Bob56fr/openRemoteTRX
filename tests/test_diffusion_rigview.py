@@ -39,7 +39,7 @@ def test_snapshot_and_info_packet_round_trip():
     state = SimpleNamespace(strength_db=-12, levels={"SQL": 0.0, "PREAMP": 0}, passband_hz=2400,
                             functions={"NB": True}, split=None, offsets={})
     info = rigview.snapshot(state, (), -30.0)
-    assert info == {"s": -12.0, "q": None, "w": "2.4k", "v": [["P.AMP", False], ["NB", True]]}
+    assert info == {"s": -12.0, "q": None, "w": "2.4k", "v": [["P.AMP", False], ["NB", True]], "off": False}
     packet = au.pack_info(TOKEN, info)
     assert au.unpack_info(TOKEN, packet) == info
     assert au.unpack_info(au.audio_token("autre"), packet) is None          # mauvais jeton

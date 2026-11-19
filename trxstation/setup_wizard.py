@@ -508,8 +508,10 @@ def ask_rig(cfg: Config, keep_offer: bool) -> None:
             cfg.rig.ptt_port = ask(_t("ptt.gpio_id"), cfg.rig.ptt_port or None)
         else:
             cfg.rig.ptt_port = ""
+        record_usb_identity(cfg)
     else:
         cfg.rig.port = ""
+        cfg.rig.port_usb = cfg.rig.ptt_port_usb = ""
 
     while True:
         print(_t("link.testing"))
@@ -525,6 +527,22 @@ def ask_rig(cfg: Config, keep_offer: bool) -> None:
                 if ask_yes_no(_t("link.skip"), False):
                     break
                 raise SystemExit(_t("link.abandon"))
+
+
+def record_usb_identity(cfg: Config, identity=None) -> None:
+    """Identité USB du port du poste (et du port du PTT s'il est séparé) relevée à chaque choix des ports (menus 2.1 et
+    2.5) : l'allumage à distance la vérifie avant chaque ordre (gateway/power.py) ; un poste passé sur une autre prise
+    serait sinon refusé même après avoir refait ce menu. LECTURE seule (usbports.py), jamais un port ouvert."""
+    from .usbports import identity as read_identity
+    read = identity or read_identity
+    r = cfg.rig
+    ident = read(r.port) if r.port else None
+    r.port_usb = str(ident) if ident is not None else ""
+    separate = r.ptt_type in ("RTS", "DTR") and r.ptt_port and r.ptt_port.strip().lower() != r.port.strip().lower()
+    ptt_ident = read(r.ptt_port) if separate else None
+    r.ptt_port_usb = str(ptt_ident) if ptt_ident is not None else ""
+    if cfg.power.enabled:
+        print(_t("rig.port_usb", ident=r.port_usb or _t("rig.port_usb_none")))
 
 
 def ask_audio(cfg: Config) -> None:

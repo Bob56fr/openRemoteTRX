@@ -90,6 +90,8 @@
   "rig.tx_modes": "Transmit modes allowed: {modes}",
   "rig.speed": "Serial baud rate (Enter = {default})",
   "rig.speed_hamlib": "Hamlib default for the model",
+  "rig.port_usb": "USB identity of the radio port recorded for remote power: {ident}",
+  "rig.port_usb_none": "unreadable (remote power will not be able to check the port)",
   "ptt.title": "PTT method",
   "ptt.rig": "CAT (command sent to the radio)",
   "ptt.rts": "RTS line of the serial port",

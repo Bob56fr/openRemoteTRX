@@ -160,7 +160,13 @@ def summarize(data, hints: dict[str, str] = DEBIAN_HINTS) -> dict:
                 level, label = "tx", "TX"
         else:
             add("Émission", "réception", "ok")
-        if rig.get("connected"):
+        if rig.get("connected") and rig.get("power") == "off":   # poste éteint (allumage à distance) : couleur neutre
+            power = status.get("power") if isinstance(status.get("power"), dict) else {}
+            add("Poste", "éteint par " + text(power.get("by"), 32) if power.get("last") == "off" and power.get("by")
+                else "éteint hors de la station", "info")
+            if not transmitting and not safe:
+                label = "Poste éteint"
+        elif rig.get("connected"):
             freq = re.sub(r"(\d)(\d{3})$", r"\1.\2", mhz(rig.get("frequency_hz"), 6))
             width = _width(rig.get("passband_hz"))
             add("Fréquence", f"{freq} MHz {mode_label(rig.get('mode'))}" + (f", filtre {width}" if width else ""), "info")

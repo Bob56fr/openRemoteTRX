@@ -90,6 +90,8 @@
   "rig.tx_modes": "Modos de transmisión permitidos: {modes}",
   "rig.speed": "Velocidad serie (Intro = {default})",
   "rig.speed_hamlib": "valor por defecto de Hamlib para el modelo",
+  "rig.port_usb": "Identidad USB del puerto del equipo registrada para el encendido remoto: {ident}",
+  "rig.port_usb_none": "ilegible (el encendido remoto no podrá comprobar el puerto)",
   "ptt.title": "Método de PTT",
   "ptt.rig": "CAT (comando enviado al equipo)",
   "ptt.rts": "línea RTS del puerto serie",
