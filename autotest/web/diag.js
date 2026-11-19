@@ -17,9 +17,13 @@
     log("  ouvert");
   });
   step("d3", async () => { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); log("  DTR et RTS baissés"); });
-  step("d4", async () => {
-    writer = writer || port.writable.getWriter(); reader = reader || port.readable.getReader();
+  // 4a : écriture SEULE (aucune lecture en cours) ; 4b : lecture seule. Chrome se figeait au bouton 4 (écriture + lecture).
+  step("d4a", async () => {
+    writer = writer || port.writable.getWriter(); log("  écrivain prêt");
     await writer.write(AtCiv.frame(0x00, AtCiv.CMD.ID)); log("  envoyé : FE FE 00 E0 19 00 FD");
+  });
+  step("d4b", async () => {
+    reader = reader || port.readable.getReader(); log("  lecteur prêt");
     const until = Date.now() + 1500; let got = [];
     while (Date.now() < until) {
       const r = await Promise.race([reader.read(), new Promise(res => setTimeout(() => res(null), until - Date.now()))]);
