@@ -1,12 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
-"""RxHub : distribue le son reçu du poste à tous les clients connectés (diffusion)."""
+"""RxHub : distribue le son reçu du poste à tous les clients connectés (diffusion).
+
+Ordre (étape 295) : indicateur de niveau (son du poste + `rx_gain_db`, sans plafond : il montre une saturation)
+-> gain `rx_gain_db` et limiteur `rx_limiter` en UNE passe en virgule flottante (crête à -1 dBFS ; un gain appliqué
+en 16 bits avant lui écrêterait déjà) -> FreeDV ou traitement SELCALL -> terminaux, visiteurs, diffusion.
+Le limiteur ne touche que les crêtes qui auraient saturé : les décodeurs reçoivent le même son qu'avant, sans
+écrêtage. Limiteur coupé : gain appliqué en 16 bits, écrêtage possible (comportement d'avant l'étape 295)."""
 from __future__ import annotations
 
 import asyncio
 import logging
 
 from .levels import LevelMeter
+from .limiter import PeakLimiter
 from .pcm import apply_gain
 from ...errors import codes
 from ...errors.emit import emit_event
@@ -15,10 +22,12 @@ log = logging.getLogger(__name__)
 
 
 class RxHub:
-    def __init__(self, source, meter: LevelMeter | None = None, gain_db: float = 0.0):
+    def __init__(self, source, meter: LevelMeter | None = None, gain_db: float = 0.0, limiter: bool = True):
         self.source, self.meter, self.gain_db = source, meter or LevelMeter(), gain_db
         self._subscribers: set[asyncio.Queue] = set()
         self.frames = self.dropped = 0
+        self.limiter = PeakLimiter() if limiter else None
+        self.limited = 0                                            # trames baissées par le limiteur
         # Traitement facultatif du son reçu avant les clients (SELCALL : retard, squelch, filtrage des tonalités).
         # Une erreur n'arrête jamais la réception : le son passe alors tel quel.
         self.processor = None
@@ -41,8 +50,14 @@ class RxHub:
         self._subscribers.discard(queue)
 
     def publish(self, pcm: bytes) -> None:
-        pcm = apply_gain(pcm, self.gain_db)
-        self.meter.update(pcm)                                      # niveau du poste, avant tout traitement
+        if self.limiter is not None:
+            self.meter.update(pcm, self.gain_db)                    # niveau du poste + gain, avant tout traitement
+            pcm = self.limiter.process(pcm, self.gain_db)
+            if self.limiter.gain < 1.0:
+                self.limited += 1
+        else:
+            pcm = apply_gain(pcm, self.gain_db)
+            self.meter.update(pcm)
         self.frames += 1
         freedv = self.freedv
         if freedv is not None and freedv.on:

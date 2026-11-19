@@ -23,7 +23,7 @@ class AudioPipeline:
         self.source = source if source is not None else make_source(cfg.capture_device, sd)
         self.sink = sink if sink is not None else make_sink(cfg.playback_device, sd)
         self.rx_meter, self.tx_meter = LevelMeter(), LevelMeter()
-        self.hub = RxHub(self.source, self.rx_meter, cfg.rx_gain_db)
+        self.hub = RxHub(self.source, self.rx_meter, cfg.rx_gain_db, cfg.rx_limiter)
         self.tx_tap = TxTap()                     # copie de ce qui part vers le poste, pour les VISITEURS (listeners.py)
         self.tx_sink = TapSink(self.sink, self.tx_tap)    # puits de la porte et des bips de fin : poste + visiteurs
         self.gate = TxAudioGate(self.tx_sink, self.tx_meter, cfg.tx_gain_db, owner_provider)
@@ -56,6 +56,9 @@ class AudioPipeline:
                 "gate_open": self.gate.is_open, "listeners": self.hub.subscribers,
                 "rx_dropped": self.hub.dropped, "tx_dropped_not_owner": self.gate.dropped_not_owner,
                 "rx_frames": self.hub.frames,              # trames capturées sur la carte son du poste
+                "rx_gain_db": self.hub.gain_db,            # gain du son reçu ([audio] rx_gain_db), compris dans rx_db
+                "rx_limiter": self.hub.limiter is not None,     # limiteur du son reçu en service
+                "rx_limited": self.hub.limited,            # trames baissées par ce limiteur (crête au-delà de -1 dBFS)
                 "tx_frames": self.gate.passed,             # trames du micro d'un client passées au poste (porte ouverte)
                 "tx_dropped_closed": self.gate.dropped_closed,   # trames jetées porte fermée (normal en réception)
                 "tx_dropped_stale": self.gate.dropped_stale,     # son revenu de Breizh après la coupure : jeté

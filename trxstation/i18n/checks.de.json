@@ -26,6 +26,7 @@
   "rig.extra_conf_cache": "[rig] extra_conf: cache_timeout nicht erlaubt (die Station schaltet den Cache von rigctld ab: sonst liefert das Rücklesen der PTT den befohlenen Wert statt des echten Zustands des Funkgeräts)",
   "audio.sample_rate": "[audio] sample_rate: nur 48000 wird unterstützt",
   "audio.gain": "[audio] {name} muss zwischen -40 und +20 dB bleiben",
+  "audio.rx_limiter": "[audio] rx_limiter: true oder false erwartet (Begrenzer des Empfangstons)",
   "clients.id_invalid": "[[clients]] ungültige Kennung: {id} (Buchstaben, Ziffern, _ und -, höchstens 32)",
   "clients.id_duplicate": "[[clients]] doppelte Kennung: {id}",
   "clients.one_secret": "[[clients]] {id}: genau ein Geheimnis nötig (password_hash, ersatzweise token)",

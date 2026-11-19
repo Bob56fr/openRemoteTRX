@@ -26,6 +26,7 @@
   "rig.extra_conf_cache": "[rig] extra_conf : cache_timeout interdit (la station coupe le cache de rigctld : sinon la relecture du PTT renvoie la valeur commandée au lieu de l'état réel du poste)",
   "audio.sample_rate": "[audio] sample_rate : seul 48000 est géré",
   "audio.gain": "[audio] {name} doit rester entre -40 et +20 dB",
+  "audio.rx_limiter": "[audio] rx_limiter : true ou false attendu (limiteur du son reçu)",
   "clients.id_invalid": "[[clients]] identifiant invalide : {id} (lettres, chiffres, _ et -, 32 max)",
   "clients.id_duplicate": "[[clients]] identifiant en double : {id}",
   "clients.one_secret": "[[clients]] {id} : il faut exactement un secret (password_hash, ou à défaut token)",

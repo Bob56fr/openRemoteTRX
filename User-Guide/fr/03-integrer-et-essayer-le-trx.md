@@ -40,7 +40,7 @@ carte son du poste prise par le bureau (partie 1.4).
 La station est arrêtée pendant l'essai.
 
 1. **Choix 1, réception seule** : liaison CAT, son reçu, changement de fréquence et de mode, largeurs de filtre.
-   Écoute que le son reçu est propre et à un niveau correct (sinon : OUT LEVEL du mode, fiche du poste).
+   Écoute que le son reçu est propre et à un niveau correct (sinon : réglage du poste indiqué par sa fiche, puis gain du son reçu au menu 2.9).
 2. **Choix 2, réception puis émission** : charge fictive, puissance réduite. Chaque passage en émission demande de
    taper `EMETTRE`.
 

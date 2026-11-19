@@ -226,6 +226,13 @@
      "quand": "Wenn die neue Version Probleme macht.",
      "role": "Kehrt zur vorherigen Version zurück, die beim letzten Update behalten wurde,\nohne Internet."
     },
+    "rx_gain": {
+     "admin": true,
+     "expert": "",
+     "modifie": "Die Konfiguration der Station (station.toml: rx_gain_db und rx_limiter im\nAbschnitt [audio]), mit Administratorrechten; die vorherige Fassung bleibt\nerhalten (station.toml.bak). Nichts wird geschrieben, wenn du abbrichst. Die\nStation wird auf Wunsch neu gestartet, um die Änderung zu übernehmen.",
+     "quand": "Wenn der Empfangston auf allen Endgeräten zu leise oder zu laut ist, zum\nBeispiel bei einem Funkgerät mit nicht einstellbarem USB-Ausgang (Yaesu\nFTDX10). Mit gestarteter Station und Signal auf der Antenne messen.",
+     "role": "Stellt die Verstärkung des Empfangstons ein, den die Station an alle\nEndgeräte schickt (Telefone, Seite, Besucher, Übertragung), sowie den\nBegrenzer des Empfangstons (Spitzen bei -1 dBFS, standardmäßig an). Das Menü\nzeigt den gerade empfangenen Pegel und schlägt eine Verstärkung für -20 dBFS\nvor. Mit dem Begrenzer übersteuert eine hohe Verstärkung nicht; ihn\nauszuschalten dient nur der Fehlersuche. Die Lautstärke jedes Telefons wird\nin der Seite oder der App eingestellt."
+    },
     "sdr": {
      "admin": true,
      "expert": "Ein belegter SDR (zum Beispiel von einem anderen Projekt) oder einer mit\ndoppelter Seriennummer (häufig bei RTL-SDR-Sticks ab Werk) wird abgelehnt:\ndie Station würde die Geräte verwechseln. Die Suche meldet auch einen SDR am\nselben Hub wie das Funkgerät (zu vermeiden). Ebenso auf der Kommandozeile:\ntrx-sdr --list (mit sudo wird der Name des Programms angezeigt, das einen\nRTL-SDR-Stick belegt).",
@@ -516,6 +523,13 @@
      "modifie": "The active version. The configuration is kept.",
      "quand": "If the new version causes problems.",
      "role": "Goes back to the previous version, kept during the last update, without\nInternet."
+    },
+    "rx_gain": {
+     "admin": true,
+     "expert": "",
+     "modifie": "The station configuration (station.toml: rx_gain_db and rx_limiter in the\n[audio] section), with administrator rights; the previous version is kept\n(station.toml.bak). Nothing is written if you give up. The station is\nrestarted on request to take the change.",
+     "quand": "When received audio is too weak or too loud on every terminal, for instance\nwith a transceiver whose USB output cannot be adjusted (Yaesu FTDX10).\nMeasure with the station started and signal on the antenna.",
+     "role": "Sets the receive audio gain the station sends to every terminal (phones,\npage, visitors, broadcast) and the receive limiter (peaks capped at -1 dBFS,\non by default). The menu shows the level received right now and suggests a\ngain to reach -20 dBFS. With the limiter, a high gain does not clip;\nswitching it off is only useful for troubleshooting. The volume of each\nphone is set in the page or the app."
     },
     "sdr": {
      "admin": true,
@@ -808,6 +822,13 @@
      "quand": "Si la nueva versión da problemas.",
      "role": "Vuelve a la versión anterior, conservada en la última actualización, sin\nInternet."
     },
+    "rx_gain": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuración de la estación (station.toml: rx_gain_db y rx_limiter de la\nsección [audio]), con derechos de administrador; se guarda la versión\nanterior (station.toml.bak). No se escribe nada si abandonas. La estación se\nreinicia a petición para tomar el cambio.",
+     "quand": "Cuando el audio recibido es demasiado débil o fuerte en todos los\nterminales, por ejemplo con un equipo cuya salida USB no se puede ajustar\n(Yaesu FTDX10). Medir con la estación arrancada y señal en la antena.",
+     "role": "Ajusta la ganancia del audio recibido que la estación envía a todos los\nterminales (teléfonos, página, visitantes, difusión) y el limitador del\naudio recibido (picos limitados a -1 dBFS, activo por defecto). El menú\nmuestra el nivel recibido en este momento y propone una ganancia para llegar\na -20 dBFS. Con el limitador, una ganancia alta no satura; apagarlo solo\nsirve para un diagnóstico. El volumen de cada teléfono se ajusta en la\npágina o la aplicación."
+    },
     "sdr": {
      "admin": true,
      "expert": "Un SDR ocupado (por ejemplo por otro proyecto) o cuyo número de serie está\nduplicado (frecuente en las llaves RTL-SDR de fábrica) se rechaza: la\nestación confundiría los aparatos. La búsqueda también señala un SDR\nconectado al mismo hub que el equipo (a evitar). Lo mismo en línea de\ncomandos: trx-sdr --list (con sudo se muestra el nombre del programa que\nocupa una llave RTL-SDR).",
@@ -1098,6 +1119,13 @@
      "modifie": "La version active. La configuration est conservée.",
      "quand": "Si la nouvelle version pose problème.",
      "role": "Revient à la version précédente, gardée lors de la dernière mise à jour,\nsans Internet."
+    },
+    "rx_gain": {
+     "admin": true,
+     "expert": "",
+     "modifie": "La configuration de la station (station.toml : rx_gain_db et rx_limiter de\nla section [audio]), avec les droits d'administration ; l'ancienne version\nest gardée (station.toml.bak). Rien n'est écrit si tu abandonnes. La station\nest redémarrée sur ta demande pour prendre le changement.",
+     "quand": "Quand le son reçu est trop faible ou trop fort sur tous les terminaux, par\nexemple avec un poste dont la sortie USB n'est pas réglable (Yaesu FTDX10).\nMesurer avec la station démarrée et du signal sur l'antenne.",
+     "role": "Règle le gain du son reçu envoyé par la station à tous les terminaux\n(téléphones, page, visiteurs, diffusion) et le limiteur du son reçu (crêtes\nplafonnées à -1 dBFS, en service par défaut). Le menu montre le niveau reçu\nen ce moment et propose un gain pour viser -20 dBFS. Avec le limiteur, un\ngain fort ne sature pas ; le couper ne sert qu'au diagnostic. Le volume\npropre à chaque téléphone se règle dans la page ou l'application."
     },
     "sdr": {
      "admin": true,

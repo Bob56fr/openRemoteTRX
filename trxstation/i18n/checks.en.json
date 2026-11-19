@@ -26,6 +26,7 @@
   "rig.extra_conf_cache": "[rig] extra_conf: cache_timeout not allowed (the station turns off the rigctld cache: otherwise reading the PTT back returns the commanded value instead of the real state of the transceiver)",
   "audio.sample_rate": "[audio] sample_rate: only 48000 is supported",
   "audio.gain": "[audio] {name} must stay between -40 and +20 dB",
+  "audio.rx_limiter": "[audio] rx_limiter: true or false expected (limiter of the received audio)",
   "clients.id_invalid": "[[clients]] invalid login: {id} (letters, digits, _ and -, 32 max)",
   "clients.id_duplicate": "[[clients]] duplicate login: {id}",
   "clients.one_secret": "[[clients]] {id}: exactly one secret is needed (password_hash, or failing that token)",

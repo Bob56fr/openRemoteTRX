@@ -308,6 +308,12 @@ quand = "Für eine entfernte Station, die ohne Gang zum Shack wieder eingeschalt
 modifie = "Die Konfiguration der Station (<code>station.toml</code>: Abschnitt <code>[power]</code> und USB-Kennung der Anschlüsse in <code>[rig]</code>), mit Administratorrechten; die vorige Fassung bleibt erhalten (<code>station.toml.bak</code>). Beim Abbrechen wird nichts geschrieben. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
 admin = true
 
+[menus.rx_gain]
+role = "Stellt die <strong>Verstärkung des Empfangstons</strong> ein, den die Station an alle Endgeräte schickt (Telefone, Seite, Besucher, Übertragung), sowie den <strong>Begrenzer des Empfangstons</strong> (Spitzen bei -1 dBFS, standardmäßig an). Das Menü zeigt den gerade empfangenen Pegel und schlägt eine Verstärkung für -20 dBFS vor. Mit dem Begrenzer übersteuert eine hohe Verstärkung nicht; ihn auszuschalten dient nur der Fehlersuche. Die Lautstärke jedes Telefons wird in der Seite oder der App eingestellt."
+quand = "Wenn der Empfangston auf allen Endgeräten zu leise oder zu laut ist, zum Beispiel bei einem Funkgerät mit nicht einstellbarem USB-Ausgang (Yaesu FTDX10). Mit gestarteter Station und Signal auf der Antenne messen."
+modifie = "Die Konfiguration der Station (<code>station.toml</code>: <code>rx_gain_db</code> und <code>rx_limiter</code> im Abschnitt <code>[audio]</code>), mit Administratorrechten; die vorherige Fassung bleibt erhalten (<code>station.toml.bak</code>). Nichts wird geschrieben, wenn du abbrichst. Die Station wird auf Wunsch neu gestartet, um die Änderung zu übernehmen."
+admin = true
+
 [menus.bands]
 role = "Legt fest, wer das Senden außerhalb deiner Bänder verhindert: die Station (Liste erlaubter Bänder, Ausgangswerte IARU-Region 1, gemäß deiner Lizenz zu prüfen) oder der Transceiver selbst. <strong>Leere Liste = nur Empfang.</strong> Dieselben Fragen wie im entsprechenden Teil des vollständigen Assistenten (Menü 2.1), und nur diese: Eingabe behält jede aktuelle Einstellung, der Rest der Konfiguration bleibt unberührt."
 quand = "Bei der Inbetriebnahme, nach einer Lizenzänderung oder wenn die Station eine Sendung in einem erlaubten Band ablehnt."

@@ -610,6 +610,7 @@
   "menu.sound": "Cartes son (son reçu du poste, voix vers le poste)",
   "menu.hf_spectrum": "Spectre HF par le second port CI-V (Icom)",
   "menu.remote_power": "Allumage et extinction du poste à distance",
+  "menu.rx_gain": "Gain audio de réception",
   "menu.bands": "Bandes autorisées en émission",
   "menu.transmit": "Puissance maximale et durée maximale d'une émission (TOT)",
   "menu.access_network": "Accès réseau (adresse d'écoute, HTTPS, certificat)",
@@ -838,5 +839,13 @@
   "remote_power.3": "Extinction automatique après un délai sans aucune connexion",
   "remote_power.4": "Délai sans connexion avant l'extinction, en heures",
   "remote_power.5": "Alerte ntfy à chaque allumage, extinction ou échec",
-  "remote_power.no_ntfy": "Alertes ntfy non configurées : réglez-les au menu {menu}."
+  "remote_power.no_ntfy": "Alertes ntfy non configurées : réglez-les au menu {menu}.",
+  "rx_gain.1": "Gain audio de réception : niveau du son du poste envoyé à tous les terminaux (téléphones, page, visiteurs, diffusion). Le limiteur du son reçu plafonne les crêtes à -1 dBFS : un gain fort ne sature pas. Le volume propre à chaque téléphone se règle dans la page ou l'application.",
+  "rx_gain.state": "  Gain actuel : {gain} dB ; limiteur du son reçu : {limiter}",
+  "rx_gain.level": "  Niveau reçu en ce moment : {level} dBFS (visé : {target} dBFS sur une voix ou le bruit de bande) ; gain proposé : {suggest} dB",
+  "rx_gain.limited": "  Le limiteur a baissé le son {pct} % du temps depuis le démarrage de la station.",
+  "rx_gain.no_level": "  Niveau reçu inconnu (station arrêtée ou poste muet) : démarrez la station, mettez le poste sur une fréquence avec du signal, puis revenez à ce menu pour avoir une valeur proposée.",
+  "rx_gain.2": "Gain du son reçu, en dB",
+  "rx_gain.3": "Limiteur du son reçu en service (conseillé)",
+  "rx_gain.warning": "ATTENTION : limiteur coupé, un gain positif ou un signal fort peut saturer (son distordu). À garder pour un diagnostic seulement."
 }

@@ -610,6 +610,7 @@
   "menu.sound": "Tarjetas de sonido (audio recibido del transceptor, voz hacia el transceptor)",
   "menu.hf_spectrum": "Espectro HF por el segundo puerto CI-V (Icom)",
   "menu.remote_power": "Encendido y apagado remoto del equipo",
+  "menu.rx_gain": "Ganancia de audio de recepción",
   "menu.bands": "Bandas permitidas para emitir",
   "menu.transmit": "Potencia máxima y duración máxima de una emisión (TOT)",
   "menu.access_network": "Acceso de red (dirección de escucha, HTTPS, certificado)",
@@ -838,5 +839,13 @@
   "remote_power.3": "Apagado automático tras un tiempo sin ninguna conexión",
   "remote_power.4": "Tiempo sin conexión antes del apagado, en horas",
   "remote_power.5": "Alerta ntfy en cada encendido, apagado o fallo",
-  "remote_power.no_ntfy": "Alertas ntfy no configuradas: configúrelas en el menú {menu}."
+  "remote_power.no_ntfy": "Alertas ntfy no configuradas: configúrelas en el menú {menu}.",
+  "rx_gain.1": "Ganancia de audio de recepción: nivel del audio del equipo enviado a todos los terminales (teléfonos, página, visitantes, difusión). El limitador del audio recibido limita los picos a -1 dBFS: una ganancia alta no satura. El volumen de cada teléfono se ajusta en la página o la aplicación.",
+  "rx_gain.state": "  Ganancia actual: {gain} dB; limitador del audio recibido: {limiter}",
+  "rx_gain.level": "  Nivel recibido ahora: {level} dBFS (objetivo: {target} dBFS con una voz o el ruido de banda); ganancia propuesta: {suggest} dB",
+  "rx_gain.limited": "  El limitador bajó el audio el {pct} % del tiempo desde el arranque de la estación.",
+  "rx_gain.no_level": "  Nivel recibido desconocido (estación parada o equipo mudo): arranque la estación, ponga el equipo en una frecuencia con señal y vuelva a este menú para obtener un valor propuesto.",
+  "rx_gain.2": "Ganancia del audio recibido, en dB",
+  "rx_gain.3": "Limitador del audio recibido en servicio (aconsejado)",
+  "rx_gain.warning": "ATENCIÓN: limitador apagado, una ganancia positiva o una señal fuerte puede saturar (audio distorsionado). Solo para un diagnóstico."
 }

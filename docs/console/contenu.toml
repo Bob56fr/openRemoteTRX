@@ -308,6 +308,12 @@ quand = "Pour une station distante qu'il faut pouvoir rallumer sans aller au sha
 modifie = "La configuration de la station (<code>station.toml</code> : section <code>[power]</code> et identité USB des ports dans <code>[rig]</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
 admin = true
 
+[menus.rx_gain]
+role = "Règle le <strong>gain du son reçu</strong> envoyé par la station à tous les terminaux (téléphones, page, visiteurs, diffusion) et le <strong>limiteur du son reçu</strong> (crêtes plafonnées à -1 dBFS, en service par défaut). Le menu montre le niveau reçu en ce moment et propose un gain pour viser -20 dBFS. Avec le limiteur, un gain fort ne sature pas ; le couper ne sert qu'au diagnostic. Le volume propre à chaque téléphone se règle dans la page ou l'application."
+quand = "Quand le son reçu est trop faible ou trop fort sur tous les terminaux, par exemple avec un poste dont la sortie USB n'est pas réglable (Yaesu FTDX10). Mesurer avec la station démarrée et du signal sur l'antenne."
+modifie = "La configuration de la station (<code>station.toml</code> : <code>rx_gain_db</code> et <code>rx_limiter</code> de la section <code>[audio]</code>), avec les droits d'administration ; l'ancienne version est gardée (<code>station.toml.bak</code>). Rien n'est écrit si tu abandonnes. La station est redémarrée sur ta demande pour prendre le changement."
+admin = true
+
 [menus.bands]
 role = "Décide qui empêche d'émettre hors de tes bandes : la station (liste des bandes autorisées, points de départ région 1 IARU à vérifier selon ta licence) ou le poste lui-même. <strong>Liste vide = réception seule.</strong> Les mêmes questions que la partie correspondante de l'assistant complet (menu 2.1), et seulement elles : Entrée garde chaque réglage actuel, le reste de la configuration n'est pas touché."
 quand = "À la mise en service, après un changement de licence, ou si la station refuse une émission dans une bande permise."

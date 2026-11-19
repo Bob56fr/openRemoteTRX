@@ -12,7 +12,7 @@
 | Symptôme | Cause probable | À faire |
 |---|---|---|
 | Le diagnostic ne trouve pas le poste | poste éteint, port **Standard** choisi, CAT RATE différent de 38400, pilote absent (Windows) | allumer ; reprendre l'assistant avec le port **Enhanced** ; régler CAT RATE (fiche du poste) |
-| Pas de son reçu | carte son du poste prise par le bureau ; micro interdit aux applications (Windows) ; OUT LEVEL trop bas | partie 1.4 ; partie 2.2 ; fiche du poste |
+| Pas de son reçu | carte son du poste prise par le bureau ; micro interdit aux applications (Windows) ; niveau trop bas (réglage du poste, gain du menu 2.9) | partie 1.4 ; partie 2.2 ; fiche du poste |
 | L'émission part mais rien n'est modulé | MOD SOURCE = MIC ou REAR SELECT = DATA dans ce mode | fiche du poste, « Voix par l'USB » |
 | Seuls les modes DATA peuvent émettre | l'assistant a noté que la voix ne passe pas par l'USB | régler MOD SOURCE, puis relancer l'assistant et répondre « oui » |
 | ALC au maximum, son saturé | RPORT GAIN trop haut | partie 3.4 |

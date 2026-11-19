@@ -54,7 +54,7 @@ l'ouvrir). Les réglages « MODE » se font **pour chaque mode** que tu veux uti
 | **REAR SELECT** | **USB** | l'arrière = l'USB (et non la prise DATA) |
 | **RPTT SELECT** | **DAKY** | le PTT « arrière » reste sur la prise DATA, où rien n'est branché ; **jamais RTS ni DTR** |
 | RPORT GAIN | à ajuster (partie 3) | niveau de la voix qui arrive par l'USB : à régler avec l'ALC |
-| SSB / AM / FM / DATA OUT LEVEL | valeur d'usine au départ | niveau du son reçu envoyé vers l'USB : à monter si le son reçu est faible |
+| SSB / AM / FM / DATA OUT LEVEL | valeur d'usine | niveau de la prise RTTY/DATA de l'arrière seulement : **sans effet sur le son USB** (essai du 2026-11-19). Son reçu trop faible : gain du menu **2.9** de TRX Console |
 
 Sans « MOD SOURCE = REAR » en BLU, l'assistant limite l'émission aux modes données (DATA-U, DATA-L) : la page ne
 pourra pas émettre en USB / LSB.

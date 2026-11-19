@@ -308,6 +308,12 @@ quand = "Para una estación remota que hay que poder encender sin ir al cuarto d
 modifie = "La configuración de la estación (<code>station.toml</code>: sección <code>[power]</code> e identidad USB de los puertos en <code>[rig]</code>), con derechos de administración; se conserva la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia si lo pides para aplicar el cambio."
 admin = true
 
+[menus.rx_gain]
+role = "Ajusta la <strong>ganancia del audio recibido</strong> que la estación envía a todos los terminales (teléfonos, página, visitantes, difusión) y el <strong>limitador del audio recibido</strong> (picos limitados a -1 dBFS, activo por defecto). El menú muestra el nivel recibido en este momento y propone una ganancia para llegar a -20 dBFS. Con el limitador, una ganancia alta no satura; apagarlo solo sirve para un diagnóstico. El volumen de cada teléfono se ajusta en la página o la aplicación."
+quand = "Cuando el audio recibido es demasiado débil o fuerte en todos los terminales, por ejemplo con un equipo cuya salida USB no se puede ajustar (Yaesu FTDX10). Medir con la estación arrancada y señal en la antena."
+modifie = "La configuración de la estación (<code>station.toml</code>: <code>rx_gain_db</code> y <code>rx_limiter</code> de la sección <code>[audio]</code>), con derechos de administrador; se guarda la versión anterior (<code>station.toml.bak</code>). No se escribe nada si abandonas. La estación se reinicia a petición para tomar el cambio."
+admin = true
+
 [menus.bands]
 role = "Decide quién impide emitir fuera de tus bandas: la estación (lista de bandas permitidas, puntos de partida de la región 1 IARU a comprobar según tu licencia) o el propio transceptor. <strong>Lista vacía = solo recepción.</strong> Las mismas preguntas que la parte correspondiente del asistente completo (menú 2.1), y solo esas: Intro conserva cada ajuste actual, el resto de la configuración no se toca."
 quand = "En la puesta en servicio, tras un cambio de licencia, o si la estación rechaza una emisión en una banda permitida."

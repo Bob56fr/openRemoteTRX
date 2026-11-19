@@ -76,7 +76,8 @@ class Audio:
     capture_device: str = ""       # audio reçu du TRX (ex. plughw:CARD=CODEC,DEV=0)
     playback_device: str = ""      # audio injecté vers le TRX
     sample_rate: int = 48000       # seul 48000 est géré (Opus)
-    rx_gain_db: float = 0.0        # gain appliqué au son reçu
+    rx_gain_db: float = 0.0        # gain appliqué au son reçu (TRX Console, menu 2.9)
+    rx_limiter: bool = True        # limiteur du son reçu (crête à -1 dBFS) avant les terminaux ; coupé = saturation possible
     tx_gain_db: float = 0.0        # gain appliqué au son émis (prudence : un excès sature l'émetteur)
 
 
@@ -627,6 +628,8 @@ def validate(cfg: Config) -> list[str]:
     for name in ("rx_gain_db", "tx_gain_db"):
         if not -40 <= getattr(cfg.audio, name) <= 20:
             p.append(_t("audio.gain", name=name))
+    if not isinstance(cfg.audio.rx_limiter, bool):
+        p.append(_t("audio.rx_limiter"))
     seen: set[str] = set()
     for client in cfg.clients:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", client.id):
@@ -1338,7 +1341,8 @@ def render_toml(cfg: Config) -> str:
         f"capture_device = {_s(a.capture_device)}",
         f"playback_device = {_s(a.playback_device)}",
         f"sample_rate = {a.sample_rate}",
-        f"rx_gain_db = {a.rx_gain_db}",
+        f"rx_gain_db = {a.rx_gain_db}   # gain du son reçu, -40 à +20 dB (TRX Console, menu 2.9)",
+        f"rx_limiter = {'true' if a.rx_limiter else 'false'}   # limiteur du son reçu (crête à -1 dBFS) ; false = saturation possible",
         f"tx_gain_db = {a.tx_gain_db}",
         "",
         "[tools]",

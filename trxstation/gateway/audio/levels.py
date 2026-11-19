@@ -14,9 +14,12 @@ class LevelMeter:
         self.release, self._clock = release_db_per_s, clock
         self._level, self._last = FLOOR_DB, None
 
-    def update(self, pcm: bytes) -> float:
+    def update(self, pcm: bytes, offset_db: float = 0.0) -> float:
+        """`offset_db` : gain pas encore appliqué à `pcm` (le niveau peut alors dépasser 0 dBFS : saturation)."""
         now = self._clock()
         instant = rms_dbfs(pcm)
+        if instant > FLOOR_DB:
+            instant += offset_db
         decayed = self._level if self._last is None else self._level - self.release * (now - self._last)
         self._level = max(instant, decayed, FLOOR_DB)
         self._last = now

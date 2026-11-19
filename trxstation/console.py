@@ -66,7 +66,8 @@ GREEN, YELLOW, RED = "32", "33", "31"   # couleurs ANSI de l'en-tête et du menu
 # nouveau menu s'ajoute EN FIN de son thème : les numéros existants ne bougent plus.
 MENU_THEMES = (
     ("1", "station", ("start", "stop", "monitor", "clear_safe_mode")),
-    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum", "remote_power")),
+    ("2", "hardware", ("assistant", "hwtest", "profiles", "sdr", "rig", "sound", "hf_spectrum", "remote_power",
+                               "rx_gain")),
     ("3", "safety", ("temperature", "bands", "transmit", "local_operator", "alerts")),
     ("4", "access", ("pairing", "visitors", "operators", "certificate", "access_network", "remote_console")),
     ("5", "features", ("cluster", "breizh", "friends", "swr_report", "features_switch", "diffusion")),
@@ -80,6 +81,9 @@ RENUMBERED_IN = "0.166.0"
 RENUMBER_NOTICE_UNTIL = (0, 180, 0)
 # Anciens numéros (un seul niveau, jusqu'à la station 0.125.0) -> méthode. 10 à 24 restent acceptés quelque temps
 # avec un message ; 1 à 9 ouvrent désormais un thème.
+RX_TARGET_DBFS = -20       # menu 2.9 : niveau reçu visé (voix ou bruit de bande sur antenne)
+RX_FLOOR_DBFS = -85        # en dessous : pas de son mesurable (station arrêtée, poste muet), aucune proposition
+RX_GAIN_LOW, RX_GAIN_HIGH = -40, 20     # bornes de [audio] rx_gain_db (config.validate)
 OLD_NUMBERS = {"1": "diagnostic", "2": "assistant", "3": "monitor", "4": "hwtest", "5": "start", "6": "stop",
                "7": "journal", "8": "report", "9": "clear_safe_mode", "10": "update", "11": "rollback",
                "12": "cluster", "13": "install_zip", "14": "edit_config", "15": "expert", "16": "temperature",
@@ -740,6 +744,39 @@ class Console:
         saved = self._save_accounts(original, cfg, live=False)
         if stopped and not saved and self.yes(self.t("hwtest.6")):
             self.start()
+
+    def rx_gain(self) -> None:
+        """Gain audio de réception (étape 295) : `[audio] rx_gain_db` (son du poste vers TOUS les terminaux, visiteurs
+        et diffusion compris) et limiteur du son reçu `rx_limiter` (crête à -1 dBFS, en service par défaut). Niveau
+        reçu en ce moment lu dans le fichier d'état de la passerelle, valeur proposée pour viser RX_TARGET_DBFS."""
+        loaded = self._load_for_edit()
+        if loaded is None:
+            return
+        original, cfg = loaded
+        a = cfg.audio
+        on_off = lambda value: self.t("ask_yes.2") if value else self.t("ask_yes.3")   # noqa: E731
+        self.say(self.t("rx_gain.1"))
+        self.say(self.t("rx_gain.state", gain=f"{a.rx_gain_db:+g}", limiter=on_off(a.rx_limiter)))
+        status = self._gateway_status()
+        audio = status.audio if status is not None else {}
+        level, used = audio.get("rx_db"), audio.get("rx_gain_db", a.rx_gain_db)
+        if (isinstance(level, (int, float)) and not isinstance(level, bool) and level > RX_FLOOR_DBFS
+                and isinstance(used, (int, float)) and not isinstance(used, bool)):
+            suggest = max(RX_GAIN_LOW, min(RX_GAIN_HIGH, round(RX_TARGET_DBFS - (level - used))))
+            self.say(self.t("rx_gain.level", level=round(level), target=RX_TARGET_DBFS, suggest=f"{suggest:+d}"))
+            limited, frames = audio.get("rx_limited"), audio.get("rx_frames")
+            if isinstance(limited, int) and isinstance(frames, int) and frames > 0 and limited > 0:
+                self.say(self.t("rx_gain.limited", pct=max(1, round(100 * limited / frames))))
+        else:
+            self.say(self.t("rx_gain.no_level"))
+        current = round(a.rx_gain_db)
+        gain = self._ask_int(self.t("rx_gain.2"), current, RX_GAIN_LOW, RX_GAIN_HIGH)
+        if gain != current:
+            a.rx_gain_db = float(gain)
+        a.rx_limiter = self._ask_yes(self.t("rx_gain.3"), a.rx_limiter)
+        if not a.rx_limiter:
+            self.say(self.t("rx_gain.warning"))
+        self._save_accounts(original, cfg, live=False)
 
     def _power_declared(self, model: int, hamlib_dir: str) -> bool | None:
         """« set / get Power Stat » déclarés par Hamlib pour ce modèle ? None = rigctl illisible (Hamlib absent)."""
@@ -1818,7 +1855,7 @@ class Console:
             answer = self.ask(self.t("ask_int.1", question=question, low=low, high=high, current=current)).strip()
             if not answer:
                 return current
-            if re.fullmatch(r"\d{1,5}", answer) and low <= int(answer) <= high:
+            if re.fullmatch(r"-?\d{1,5}", answer) and low <= int(answer) <= high:     # négatif : gains en dB
                 return int(answer)
             self.say(self.t("ask_int.2", low=low, high=high))
 

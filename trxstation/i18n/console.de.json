@@ -610,6 +610,7 @@
   "menu.sound": "Soundkarten (empfangener Ton vom Transceiver, Stimme zum Transceiver)",
   "menu.hf_spectrum": "KW-Spektrum über den zweiten CI-V-Port (Icom)",
   "menu.remote_power": "Fern-Ein/Aus des Funkgeräts",
+  "menu.rx_gain": "Empfangs-Audiopegel",
   "menu.bands": "Zum Senden erlaubte Bänder",
   "menu.transmit": "Höchstleistung und maximale Sendedauer (TOT)",
   "menu.access_network": "Netzwerkzugang (Abhöradresse, HTTPS, Zertifikat)",
@@ -838,5 +839,13 @@
   "remote_power.3": "Automatisches Ausschalten nach einer Zeit ohne Verbindung",
   "remote_power.4": "Zeit ohne Verbindung bis zum Ausschalten, in Stunden",
   "remote_power.5": "ntfy-Warnung bei jedem Ein-, Ausschalten oder Fehler",
-  "remote_power.no_ntfy": "ntfy-Warnungen nicht eingerichtet: im Menü {menu} einrichten."
+  "remote_power.no_ntfy": "ntfy-Warnungen nicht eingerichtet: im Menü {menu} einrichten.",
+  "rx_gain.1": "Empfangs-Audiopegel: Pegel des Tons vom Funkgerät an alle Endgeräte (Telefone, Seite, Besucher, Übertragung). Der Begrenzer des Empfangstons hält die Spitzen bei -1 dBFS: eine hohe Verstärkung übersteuert nicht. Die Lautstärke jedes Telefons wird in der Seite oder der App eingestellt.",
+  "rx_gain.state": "  Aktuelle Verstärkung: {gain} dB; Begrenzer des Empfangstons: {limiter}",
+  "rx_gain.level": "  Empfangener Pegel gerade: {level} dBFS (Ziel: {target} dBFS bei Sprache oder Bandrauschen); vorgeschlagene Verstärkung: {suggest} dB",
+  "rx_gain.limited": "  Der Begrenzer hat den Ton seit dem Start der Station {pct} % der Zeit abgesenkt.",
+  "rx_gain.no_level": "  Empfangener Pegel unbekannt (Station angehalten oder Funkgerät stumm): Station starten, das Funkgerät auf eine Frequenz mit Signal stellen und dieses Menü erneut öffnen, um einen Vorschlag zu erhalten.",
+  "rx_gain.2": "Verstärkung des Empfangstons, in dB",
+  "rx_gain.3": "Begrenzer des Empfangstons in Betrieb (empfohlen)",
+  "rx_gain.warning": "ACHTUNG: Begrenzer aus, eine positive Verstärkung oder ein starkes Signal kann übersteuern (verzerrter Ton). Nur zur Fehlersuche."
 }

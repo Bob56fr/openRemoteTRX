@@ -275,8 +275,15 @@ niveau = "expert"
 bornes = "48000 uniquement."
 
 [reglages."audio.rx_gain_db"]
-role = "Gain appliqué au son reçu, en dB (négatif = moins fort)."
+role = "Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par TRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu."
 niveau = "courant"
+bornes = "-40 à +20 dB."
+
+[reglages."audio.rx_limiter"]
+role = "Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. <code>false</code> = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. TRX Console, menu 2.9."
+niveau = "courant"
+depuis = "0.227.0"
+exemple = "rx_limiter = true"
 
 [reglages."audio.tx_gain_db"]
 role = "Gain appliqué au son envoyé au poste, en dB."

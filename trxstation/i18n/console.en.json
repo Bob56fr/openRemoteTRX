@@ -610,6 +610,7 @@
   "menu.sound": "Sound cards (audio received from the transceiver, voice to the transceiver)",
   "menu.hf_spectrum": "HF spectrum through the second CI-V port (Icom)",
   "menu.remote_power": "Remote power on and off of the radio",
+  "menu.rx_gain": "Receive audio gain",
   "menu.bands": "Bands allowed for transmission",
   "menu.transmit": "Maximum power and maximum transmission time (TOT)",
   "menu.access_network": "Network access (listening address, HTTPS, certificate)",
@@ -838,5 +839,13 @@
   "remote_power.3": "Automatic switch-off after a delay without any connection",
   "remote_power.4": "Delay without connection before switch-off, in hours",
   "remote_power.5": "ntfy alert at each switch-on, switch-off or failure",
-  "remote_power.no_ntfy": "ntfy alerts not configured: set them up in menu {menu}."
+  "remote_power.no_ntfy": "ntfy alerts not configured: set them up in menu {menu}.",
+  "rx_gain.1": "Receive audio gain: level of the rig audio sent to every terminal (phones, page, visitors, broadcast). The receive limiter caps peaks at -1 dBFS: a high gain does not clip. The volume of each phone is set in the page or the app.",
+  "rx_gain.state": "  Current gain: {gain} dB; receive limiter: {limiter}",
+  "rx_gain.level": "  Level received right now: {level} dBFS (target: {target} dBFS on a voice or band noise); suggested gain: {suggest} dB",
+  "rx_gain.limited": "  The limiter lowered the audio {pct} % of the time since the station started.",
+  "rx_gain.no_level": "  Received level unknown (station stopped or rig silent): start the station, tune the rig to a frequency with signal, then come back to this menu for a suggested value.",
+  "rx_gain.2": "Receive audio gain, in dB",
+  "rx_gain.3": "Receive limiter in service (recommended)",
+  "rx_gain.warning": "WARNING: limiter off, a positive gain or a strong signal may clip (distorted audio). Keep it for troubleshooting only."
 }

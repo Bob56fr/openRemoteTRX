@@ -308,6 +308,12 @@ quand = "For a remote station that must be switched on again without going to th
 modifie = "The station configuration (<code>station.toml</code>: <code>[power]</code> section and USB identity of the ports in <code>[rig]</code>), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
 admin = true
 
+[menus.rx_gain]
+role = "Sets the <strong>receive audio gain</strong> the station sends to every terminal (phones, page, visitors, broadcast) and the <strong>receive limiter</strong> (peaks capped at -1 dBFS, on by default). The menu shows the level received right now and suggests a gain to reach -20 dBFS. With the limiter, a high gain does not clip; switching it off is only useful for troubleshooting. The volume of each phone is set in the page or the app."
+quand = "When received audio is too weak or too loud on every terminal, for instance with a transceiver whose USB output cannot be adjusted (Yaesu FTDX10). Measure with the station started and signal on the antenna."
+modifie = "The station configuration (<code>station.toml</code>: <code>rx_gain_db</code> and <code>rx_limiter</code> in the <code>[audio]</code> section), with administrator rights; the previous version is kept (<code>station.toml.bak</code>). Nothing is written if you give up. The station is restarted on request to take the change."
+admin = true
+
 [menus.bands]
 role = "Decides who prevents transmitting outside your bands: the station (list of allowed bands, IARU region 1 starting points to check against your licence) or the transceiver itself. <strong>Empty list = receive only.</strong> The same questions as the matching part of the full wizard (menu 2.1), and only those: Enter keeps each current setting, the rest of the configuration is not touched."
 quand = "At commissioning, after a licence change, or if the station refuses a transmission in an allowed band."

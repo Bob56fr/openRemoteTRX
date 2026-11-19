@@ -29,7 +29,7 @@ from pathlib import Path
 from . import config as cfgmod
 
 SECTIONS = ("rig", "audio", "spectrum")
-PROFILE_FORMAT = 3
+PROFILE_FORMAT = 4
 PROFILE_FIELDS: dict[int, dict[str, tuple[str, ...]]] = {
     1: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w"),
         "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
@@ -40,6 +40,10 @@ PROFILE_FIELDS: dict[int, dict[str, tuple[str, ...]]] = {
     3: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w", "tuner",
                 "port_usb", "ptt_port_usb"),
         "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "tx_gain_db"),
+        "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
+    4: {"rig": ("model", "port", "speed", "ptt_type", "ptt_port", "extra_conf", "tx_modes", "max_power_w", "tuner",
+                "port_usb", "ptt_port_usb"),
+        "audio": ("capture_device", "playback_device", "sample_rate", "rx_gain_db", "rx_limiter", "tx_gain_db"),
         "spectrum": ("enabled", "source", "data_port", "max_fps", "port", "civ_address", "baud")},
 }
 
@@ -62,7 +66,14 @@ def _format2_to_3(sections: dict) -> dict:
     return out
 
 
-MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {1: _format1_to_2, 2: _format2_to_3}
+def _format3_to_4(sections: dict) -> dict:
+    """Format 4 (station 0.227.0) : `[audio] rx_limiter` (limiteur du son reçu), en service pour un ancien profil."""
+    out = {name: dict(values) for name, values in sections.items()}
+    out.setdefault("audio", {}).setdefault("rx_limiter", True)
+    return out
+
+
+MIGRATIONS: dict[int, Callable[[dict], dict] | None] = {1: _format1_to_2, 2: _format2_to_3, 3: _format3_to_4}
 NAME_RE = re.compile(r"^[\w .+-]{1,40}$")
 FOLDER = "profils"
 

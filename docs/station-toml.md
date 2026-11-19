@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.226.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.227.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -39,7 +39,8 @@ Se modifie : Assistant (menu 2.1), profils de poste (menu 2.3), ou menu 8.1. (au
 | `capture_device` | courant | `""` | Carte son qui reçoit l'audio du poste (le son entendu à distance). Vide : la carte par défaut du système. Exemple : Linux : `plughw:CARD=CODEC,DEV=0` ; Windows : `Microphone (USB Audio CODEC)`. |
 | `playback_device` | courant | `""` | Carte son qui envoie l'audio vers le poste (votre voix en émission). Vide : la carte par défaut du système. |
 | `sample_rate` | expert | `48000` | Fréquence d'échantillonnage. Seule la valeur 48 000 est gérée (codec Opus). Valeurs : 48000 uniquement. |
-| `rx_gain_db` | courant | `0.0` | Gain appliqué au son reçu, en dB (négatif = moins fort). |
+| `rx_gain_db` | courant | `0.0` | Gain appliqué au son reçu, en dB (négatif = moins fort), pour tous les terminaux, visiteurs et diffusion compris. Réglé par TRX Console, menu 2.9, qui propose une valeur d'après le niveau reçu. Valeurs : -40 à +20 dB. |
+| `rx_limiter` | courant | `true` | Limiteur du son reçu : crêtes plafonnées à -1 dBFS avant les terminaux, pour qu'un gain fort ou un signal puissant ne sature pas. `false` = gain appliqué sans plafond (saturation possible), pour un diagnostic seulement. TRX Console, menu 2.9. Exemple : rx_limiter = true (depuis 0.227.0) |
 | `tx_gain_db` | courant | `0.0` | Gain appliqué au son envoyé au poste, en dB. **Sécurité** : Un excès sature l'émetteur : réglez-le sur charge fictive en surveillant l'ALC. |
 
 ## Réseau [network]
