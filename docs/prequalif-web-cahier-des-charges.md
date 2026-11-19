@@ -118,7 +118,17 @@ Un rapport clair, en vert / orange / rouge :
   à 10 % (10 W)… ».
 - Avant chaque émission : ce qui va être émis (porteuse, tonalité), fréquence, puissance, durée.
 - PENDANT une émission : bandeau rouge « ÉMISSION EN COURS » avec le compte à rebours de l'essai (barre qui se vide),
-  Po / TOS / ALC lus en direct quand le poste les donne, bouton STOP agrandi.
+  bouton STOP agrandi, et PANNEAU D'ÉMISSION « pro » (demande de l'utilisateur, v4) à la manière de l'afficheur d'un
+  poste :
+  - fréquence en grands chiffres (MHz.kHz.Hz) et mode ;
+  - puissance de sortie (Po) : barre graduée de 0 à la puissance maximale du poste, valeur en W, repère des 10 %
+    attendus ;
+  - TOS (SWR) : échelle non linéaire 1 / 1,5 / 2 / 3 / ∞, vert jusqu'à 1,5, orange jusqu'à 2, rouge au-delà (alerte
+    seule, comme la règle de la station) ;
+  - ALC : barre avec la zone « correcte » du constructeur quand elle est connue ;
+  - pour chaque barre : valeur en chiffres et crête maintenue (1 s) ; lue environ 5 fois par seconde ;
+  - mesure que le poste ne donne pas = barre grisée « non disponible », jamais une valeur inventée ;
+  - valeurs gardées dans la trace du rapport (§ 9.2 : elles servent aussi à vérifier sa vraisemblance).
 - Après chaque essai : coche verte, croix rouge ou « non disponible », avec une phrase.
 - Liste des étapes à venir visible (l'opérateur sait ce qui l'attend).
 
