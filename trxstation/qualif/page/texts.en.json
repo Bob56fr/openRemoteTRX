@@ -196,6 +196,6 @@
   "ready": "Ready: choose a test (▶) or « Run all ».",
   "report.done": "Report built: {path}",
   "report.open": "Open the folder",
-  "blocked.marche": "Station RUNNING: stop it first (« Stop the PC station » button)",
-  "blocked.arretee": "Station STOPPED: start it first (« Start the PC station » button)"
+  "blocked.marche": "Stop the station first",
+  "blocked.arretee": "Start the station first"
 }

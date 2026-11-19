@@ -60,11 +60,12 @@ def test_plan_follows_the_advised_order_and_skips_what_is_done(tmp_path):
     s = _session(tmp_path)
     order = tiles.plan(s, "tout")
     assert order[:7] == ["9", "1", "r", "2", "s", "f", "3"] and order[-1] == "6"
-    assert order.index("8.1") < order.index("5.3") and "4" not in order and "5.10" not in order   # reboot facultatif
+    assert order.index("8.1") < order.index("5.6") and "4" not in order and "5.10" not in order   # reboot facultatif
+    assert "5.3" not in order and "5.4" not in order      # téléphone : facultatifs
     assert "5.1" not in order and "8.8" in order          # STOP de la page : fait par la valise (A1)
     s.audio = {"problems": []}
     s.drills = {"tot": {"result": "echec"}, "stop_page": {"result": "reussi"}}
-    assert "9" not in tiles.plan(s, "tout") and "5.3" in tiles.plan(s, "tout")
+    assert "9" not in tiles.plan(s, "tout") and "5.6" in tiles.plan(s, "tout")
     assert tiles.plan(s, "echecs") == ["5.2"]
     assert tiles.plan(s, "theme:reception") == ["r", "s", "f"] and tiles.plan(s, "theme:inconnu") == []
     assert tiles.needs_load("8.3") and tiles.needs_load("3") and not tiles.needs_load("r")
@@ -240,7 +241,7 @@ def test_a_chain_announces_the_hand_played_tests_and_can_skip_them(tmp_path, mon
     asked = [e for e in events if e["type"] == "question" and "À LA MAIN" in e["texte"]]
     assert len(asked) == 1 and "http://127.0.0.1:" in asked[0]["texte"]
     events = _run(tmp_path, ["theme:main", "", "q"], running=True)
-    assert played == ["wifi", "screen_lock", "local_operator"]           # les autres : faits par la valise (A1…A8)
+    assert played == ["local_operator"]          # les autres : faits par la valise (A1…A8), téléphone facultatif
 
 
 def test_the_password_of_the_qualification_folder_is_used_without_asking(tmp_path):
@@ -278,7 +279,7 @@ def test_cancelling_the_account_skips_the_automatic_tests_and_the_chain_goes_on(
     s.save()
     events = _run(tmp_path, ["tout", "", "q"], running=True, explore=lambda: None, qualify=lambda no_tx: None)
     assert asked == [1]                                                  # demandé UNE fois pour tout l'enchaînement
-    assert played == ["auto_startup", "wifi", "screen_lock", "local_operator"]   # la suite a continué
+    assert played == ["auto_startup", "local_operator"]   # la suite a continué
     assert sum(e["type"] == "avis" and "Essai automatique passé" in e["texte"] for e in events) == 7
     assert not any(e["type"] == "avis" and "Enchaînement arrêté" in e["texte"] for e in events)
 
@@ -367,7 +368,8 @@ def test_a_covered_hand_test_counts_when_the_automatic_one_passed(tmp_path):
     s = _session(tmp_path)
     s.drills = {"auto_stop": {"result": "reussi"}}
     reasons = terrain.verdict(s)[1]
-    assert "essai stop_page non fait" not in reasons and "essai wifi non fait" in reasons
+    assert "essai stop_page non fait" not in reasons and "essai local_operator non fait" in reasons
+    assert "essai wifi non fait" not in reasons                         # téléphone : facultatif
     assert tiles.covered_by("5.1") == "8.1" and tiles.covered_by("5.3") is None
 
 
@@ -412,3 +414,29 @@ def test_tiles_are_greyed_by_the_station_state(tmp_path):
     assert on["r"] == on["s"] == on["3"] == "marche" and on["8.1"] is None and on["8.8"] is None
     assert off["8.1"] == off["5.3"] == "arretee" and off["r"] is None and off["8.8"] is None   # A8 démarre lui-même
     assert all(v is None for v in blocked(None).values())
+
+
+def test_a_qualification_without_emission_done_later_does_not_replace_the_full_one(tmp_path):
+    """Essai du 2026-11-19 : choix 4 joué APRÈS le 3 ; le verdict restait « incomplet » (PTT non essayé)."""
+    s = _session(tmp_path)
+    s.runs = [{"kind": "qualif", "verdict": "validation_en_cours", "emission": True},
+              {"kind": "qualif", "verdict": "incomplet", "emission": False, "rx_complet": True}]
+    reasons = terrain.verdict(s)[1]
+    assert not any("qualification Q1" in r for r in reasons)
+    assert tiles.item_state(s, "4") == (tiles.OK, "complet sans émission")
+    assert tiles.item_state(s, "3")[0] == tiles.OK
+    s.runs[1]["rx_complet"] = False                                      # un VRAI manque du socle reste partiel
+    assert tiles.item_state(s, "4")[0] == tiles.PARTIAL
+
+
+def test_the_rx_only_qualification_is_complete_when_only_the_ptt_is_missing(tmp_path):
+    import json
+    folder = tmp_path / "qualif-x"
+    folder.mkdir()
+    tests = [{"id": i, "ok": True} for i in ("cat", "cat_endurance", "freq_rw", "mode_rw", "audio_rx")]
+    tests += [{"id": "ptt_cycle", "ok": None}, {"id": "cat_loss_rx", "ok": None}]
+    (folder / "results.json").write_text(json.dumps({"tests": tests}), encoding="utf-8")
+    assert terrain._qualif_rx_complete(folder)
+    tests[2]["ok"] = None
+    (folder / "results.json").write_text(json.dumps({"tests": tests}), encoding="utf-8")
+    assert not terrain._qualif_rx_complete(folder)

@@ -158,3 +158,13 @@ button.gros.repere { background: var(--rouge); border-color: var(--rouge); font-
 .essai.bloque .n { color: var(--doux); }
 .essai.bloque .pt { opacity: .35; }
 .essai .raison { font-size: 13px; font-weight: 600; color: var(--orange); }
+
+/* bloc de droite : dernières lignes lisibles (essai du 2026-11-19 : texte du terminal illisible) */
+.lignes { max-height: 320px; overflow: auto; margin-top: 12px; padding: 8px 10px; border-radius: 8px;
+  background: var(--fond); border: 1px solid var(--bord); font: 14px/1.45 system-ui, sans-serif; }
+.lignes .l { padding: 3px 0; overflow-wrap: anywhere; }
+.lignes .l + .l { border-top: 1px solid color-mix(in srgb, var(--bord) 55%, transparent); }
+.lignes .titre { font-weight: 700; color: var(--bleu); padding-top: 8px; }
+.lignes .alerte { font-weight: 700; color: var(--orange); }
+.themes { align-items: start; }
+.colonne { display: flex; flex-direction: column; gap: 14px; min-width: 0; }

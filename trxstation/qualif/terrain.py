@@ -146,8 +146,10 @@ class Drill:
 DRILLS: tuple[Drill, ...] = (
     Drill("stop_page", "stop", bound_s=MARK_SLACK_S),
     Drill("tot", "tot", bound_s=2.0),
-    Drill("wifi", "link", bound_s=2.5 + MARK_SLACK_S),
-    Drill("screen_lock", "link", bound_s=2.5 + MARK_SLACK_S),
+    # 3 et 4 : avec le TÉLÉPHONE de l'application ; facultatifs (décision du 2026-11-19 : ils essaient
+    # l'application, pas le poste ; côté station, A2 et A3 font la même coupure sans téléphone)
+    Drill("wifi", "link", bound_s=2.5 + MARK_SLACK_S, optional=True),
+    Drill("screen_lock", "link", bound_s=2.5 + MARK_SLACK_S, optional=True),
     Drill("out_of_band", "refusal"),
     Drill("local_operator", "local"),
     Drill("stop_dashboard", "stop", bound_s=MARK_SLACK_S),
@@ -398,6 +400,9 @@ def verdict(session: Session) -> tuple[str, list[str]]:
     if failed:
         return "refuse", [f"essai {k} en échec" for k in failed]
     qualif = [r for r in session.runs if r.get("kind") == "qualif"]
+    # une qualification SANS émission (choix 4) faite APRÈS la complète ne la remplace pas : elle ne peut
+    # qu'être « incomplète » (PTT non essayé) ; essai du 2026-11-19
+    qualif = [r for r in qualif if r.get("emission")] or qualif
     if not qualif:
         reasons.append("qualification Q1 non faite")
     elif qualif[-1].get("verdict") == "refuse":
@@ -437,6 +442,20 @@ def _qualif_transmitted(folder: Path) -> bool:
     return any(isinstance(t, dict) and t.get("id") == "ptt_cycle" and t.get("ok") is not None for t in tests)
 
 
+RX_ONLY_MISSING = {"ptt_cycle", "cat_loss_rx"}       # socle qu'une qualification sans émission ne peut pas faire
+
+
+def _qualif_rx_complete(folder: Path) -> bool:
+    """Qualification SANS émission dont le socle est complet et réussi, hors PTT (qu'elle ne fait jamais)."""
+    from .plan import SOCLE_ITEMS
+    try:
+        tests = json.loads((folder / "results.json").read_text(encoding="utf-8")).get("tests", [])
+    except (OSError, ValueError, AttributeError):
+        return False
+    ok = {t.get("id"): t.get("ok") for t in tests if isinstance(t, dict)}
+    return all(ok.get(i) is True for i, _ in SOCLE_ITEMS if i not in RX_ONLY_MISSING)
+
+
 def note_runs(session: Session) -> None:
     """Dossiers explore-* et qualif-* de la session (écrits par les outils existants)."""
     runs = []
@@ -445,7 +464,7 @@ def note_runs(session: Session) -> None:
             runs.append({"kind": "explore", "folder": p.name})
         elif p.is_dir() and p.name.startswith("qualif-"):
             runs.append({"kind": "qualif", "folder": p.name, "verdict": _qualif_verdict(p),
-                         "emission": _qualif_transmitted(p)})
+                         "emission": _qualif_transmitted(p), "rx_complet": _qualif_rx_complete(p)})
     session.runs = runs
     session.save()
 

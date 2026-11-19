@@ -100,7 +100,10 @@ def item_state(session, key: str) -> tuple[str, str]:
         if not runs:
             return TODO, ""
         verdict = runs[-1].get("verdict")
-        return QUALIF.get(verdict or "", PARTIAL), str(verdict or "")
+        if key == "4" and verdict == "incomplet" and runs[-1].get("rx_complet"):
+            return OK, "complet sans émission"      # le PTT n'y est jamais essayé : c'est le rôle du « 3 »
+        return QUALIF.get(verdict or "", PARTIAL), {"validation_en_cours": "complet et réussi"}.get(
+            verdict or "", str(verdict or ""))
     if key == "r":
         rx = session.reception
         if not rx:

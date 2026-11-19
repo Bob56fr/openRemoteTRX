@@ -179,11 +179,33 @@
     return lines.filter((l) => l.trim()).slice(-n).join("\n");
   }
 
+  // Ligne du terminal rendue lisible (bloc de droite) : alignements du terminal retirés, flèches, titres et
+  // alertes repérés ; le journal complet (en bas de page) reste tel quel.
+  function tidy(line) {
+    let s = String(line).trim();
+    let cls = "l";
+    if (/^!!!/.test(s) || /ATTENTION|REMETTRE|TO RESTORE|RESTORE BY HAND/i.test(s)) {
+      cls += " alerte";
+      s = s.replace(/^!+\s*/, "");
+    }
+    if (/^(===|>>>|---)/.test(s)) {
+      cls += " titre";
+      s = s.replace(/^[=>-]+\s*/, "").replace(/\s*[=-]+$/, "");
+    }
+    s = s.replace(/^\[\s*([^\]]*?)\s*\]\s*/, "$1 · ");          // « [OK     ] Mode AM » -> « OK · Mode AM »
+    s = s.replace(/\s*->\s*/g, " → ").replace(/\s{2,}/g, " · ");
+    return [cls, s];
+  }
+
   function showLines() {
     $("journal").textContent = lines.join("\n");
-    $("maintenant").textContent = finished ? t("finished") : menuQuestion() ? t("ready") : lastLines(1);
+    $("maintenant").textContent = finished ? t("finished") : menuQuestion() ? t("ready") : tidy(lastLines(1))[1];
     const recent = $("recent");
-    recent.textContent = lastLines(12);
+    recent.replaceChildren();
+    for (const l of lines.filter((x) => x.trim()).slice(-14)) {
+      const [cls, text] = tidy(l);
+      recent.appendChild(el("div", cls, text));
+    }
     recent.scrollTop = recent.scrollHeight;
   }
 
@@ -213,6 +235,9 @@
     if (!tiles) return;
     $("compte").textContent = t("progress", { done: tiles.faits, total: tiles.total });
     $("prog").style.width = (tiles.total ? (tiles.faits / tiles.total) * 100 : 0) + "%";
+    const cols = [el("div", "colonne"), el("div", "colonne")];
+    box.appendChild(cols[0]);
+    box.appendChild(cols[1]);
     for (const th of tiles.themes) {
       const sec = el("section", "theme");
       const h = el("header");
@@ -253,9 +278,12 @@
         ul.appendChild(li);
       }
       sec.appendChild(ul);
-      box.appendChild(sec);
+      cols[RIGHT_THEMES.includes(th.id) ? 1 : 0].appendChild(sec);
     }
   }
+  // Deux colonnes indépendantes (sans trous) : à droite la réception et les essais automatiques, à gauche le
+  // reste, essais À LA MAIN juste sous l'émission (essai du 2026-11-19 : on ne les trouvait pas)
+  const RIGHT_THEMES = ["reception", "auto"];
 
   function stationButtons() {
     const box = $("station-boutons");

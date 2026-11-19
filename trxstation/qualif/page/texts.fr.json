@@ -196,6 +196,6 @@
   "ready": "Prêt : choisissez un essai (▶) ou « Tout lancer ».",
   "report.done": "Rapport fabriqué : {path}",
   "report.open": "Ouvrir le dossier",
-  "blocked.marche": "Station EN MARCHE : arrêtez-la d'abord (bouton « Arrêter la station du PC »)",
-  "blocked.arretee": "Station ARRÊTÉE : démarrez-la d'abord (bouton « Démarrer la station du PC »)"
+  "blocked.marche": "Arrêtez d'abord la station",
+  "blocked.arretee": "Démarrez d'abord la station"
 }
