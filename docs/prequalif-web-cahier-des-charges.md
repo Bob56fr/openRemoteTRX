@@ -128,7 +128,8 @@ Un rapport clair, en vert / orange / rouge :
   - ALC : barre avec la zone « correcte » du constructeur quand elle est connue ;
   - pour chaque barre : valeur en chiffres et crête maintenue (1 s) ; lue environ 5 fois par seconde ;
   - mesure que le poste ne donne pas = barre grisée « non disponible », jamais une valeur inventée ;
-  - valeurs gardées dans la trace du rapport (§ 9.2 : elles servent aussi à vérifier sa vraisemblance).
+  - valeurs gardées dans la trace du rapport (§ 9.2 : elles servent aussi à vérifier sa vraisemblance) ;
+  - maquette : https://claude.ai/artifact/P6YoyvkAhzhafUhqRmjPLQ (privée).
 - Après chaque essai : coche verte, croix rouge ou « non disponible », avec une phrase.
 - Liste des étapes à venir visible (l'opérateur sait ce qui l'attend).
 
