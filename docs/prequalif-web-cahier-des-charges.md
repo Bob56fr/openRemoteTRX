@@ -1,4 +1,4 @@
-# Préqualification d'un poste depuis le navigateur : cahier des charges (v3, 2026-11-19)
+# Préqualification d'un poste depuis le navigateur : cahier des charges (v4, 2026-11-19)
 
 Demande de l'utilisateur (2026-11-19) : un radioamateur ou un cibiste branche son TRX en USB sur son PC, ouvre une page
 dans Chrome et sait en quelques minutes si son poste pourra être piloté par openRemoteTRX. Deux modes :
@@ -15,6 +15,9 @@ V3 le même jour (réponses de l'utilisateur) : programme « openRemoteTRX-Autot
 facultatif derrière un interrupteur sur ARRÊT (§ 9.1) ; test ANONYME annoncé dès l'accueil, rien n'est envoyé sans le
 bouton de la fin (§ 4, § 9.2) ; préqualifications NON montrées sur le site public pour l'instant ; autres langues plus
 tard.
+V4 le même jour (réponses de l'utilisateur, TOUTES les questions tranchées) : essais d'émission à 10 % de la puissance
+maximale DU POSTE (§ 5.1) ; changement de fréquence permis (§ 6.5, R8) ; durées acceptées avec un écran qui dit ce qui
+se passe et une barre de progression (§ 4.1).
 
 Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
 
@@ -45,6 +48,11 @@ Aucun code à ce stade. Étape 293 (station inchangée, 0.226.0).
     bouton « Envoyer le rapport » de la fin envoie quelque chose, et seulement si l'opérateur le veut.
 14. **Préqualifications non publiées** sur le site public pour l'instant (gestion future dans une base de données).
 15. **Autres langues plus tard.**
+16. **Puissance des essais** : 10 % de la puissance maximale DU POSTE (pas 10 W), puis puissance d'origine remise
+    (§ 5.1).
+17. **Changement de fréquence permis** pendant le test (§ 6.5, essai R8), fréquence d'origine remise à la fin.
+18. **Durées** : 10 s au plus par émission, environ 5 émissions, à condition que l'écran dise à chaque instant ce qui
+    se passe, avec une barre de progression pour rassurer l'opérateur (§ 4.1).
 
 EXCEPTION aux règles de sécurité d'émission de CLAUDE.md : elles visent la STATION pilotée À DISTANCE. La
 préqualification est un outil LOCAL, l'opérateur présent devant le poste sur charge fictive ; elle ne passe ni par la
@@ -103,6 +111,17 @@ Un rapport clair, en vert / orange / rouge :
 9. **Remise de l'état d'origine**, relue et montrée.
 10. **Rapport** (§ 9).
 
+### 4.1 Écran pendant les essais
+
+- Barre de progression GÉNÉRALE (étape N sur M, temps restant estimé) toujours visible.
+- Ligne « en ce moment » en clair : « Lecture du S-mètre… », « Changement de fréquence (+1 kHz)… », « Puissance mise
+  à 10 % (10 W)… ».
+- Avant chaque émission : ce qui va être émis (porteuse, tonalité), fréquence, puissance, durée.
+- PENDANT une émission : bandeau rouge « ÉMISSION EN COURS » avec le compte à rebours de l'essai (barre qui se vide),
+  Po / TOS / ALC lus en direct quand le poste les donne, bouton STOP agrandi.
+- Après chaque essai : coche verte, croix rouge ou « non disponible », avec une phrase.
+- Liste des étapes à venir visible (l'opérateur sait ce qui l'attend).
+
 ## 5. Sécurités gardées (le minimum)
 
 - Aucune émission avant l'autorisation du § 4.7.
@@ -113,6 +132,16 @@ Un rapport clair, en vert / orange / rouge :
 - La page n'écrit au poste que dans une **liste fermée** de commandes par modèle (jamais un réglage de menu, jamais un
   essai au hasard d'une commande non documentée).
 - Après tout cela, l'opérateur reste maître : son interrupteur et son micro.
+
+### 5.1 Puissance des essais
+
+- Puissance d'origine relevée au § 4.5, puis réglée à 10 % de la puissance maximale DU POSTE (table du modèle :
+  100 W => 10 W, IC-705 10 W => 1 W ; Hamlib `RFPOWER` 0,10 en mode B ; Icom `14 0A` à l'échelle 0-255).
+- Poste dont la puissance minimale dépasse 10 % : sa puissance minimale, affichée comme telle.
+- Puissance réglée RELUE avant la première émission ; illisible ou refusée = l'autorisation montre « puissance non
+  réglable par la CAT : réglez-la à la main sur 10 % » et attend l'accord de l'opérateur.
+- Puissance d'origine remise à la fin, relue et montrée (aussi après STOP ou une erreur).
+- E2 vérifie que la puissance lue pendant l'émission est cohérente avec ces 10 %.
 
 ## 6. Mode A : pilotes par famille de protocoles
 
@@ -127,7 +156,8 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 - Identification : `19 00` (adresse du poste), sinon adresses par défaut des modèles de la marque choisie.
 - Lectures : fréquence `03`, mode `04`, S-mètre `15 02`, PTT `1C 00`, Po `15 11`, TOS `15 12`, ALC `15 13`,
   puissance réglée `14 0A`, mode données `1A 06` (selon le modèle).
-- Écritures (liste fermée) : PTT `1C 00`, mode et mode données pour la tonalité, puissance pour l'essai, puis remise.
+- Écritures (liste fermée) : PTT `1C 00`, fréquence `05` (essai R8), mode et mode données pour la tonalité, puissance
+  `14 0A` pour l'essai, puis remise.
 - **Xiegu** (G90, G106, X6100, X6200, X5105) : dialecte partiel du CI-V. Une commande non gérée peut rester SANS
   réponse (pas de NG) : silence = « non supporté », délai court, jamais « câble en panne ». `19 00` peut ne pas répondre :
   adresses connues des modèles. Firmware (officiel ou communautaire) relevé et noté : un résultat ne vaut que pour lui.
@@ -160,6 +190,7 @@ code. La documentation peut se tromper : chaque modèle reste « non vérifié �
 | R5 | Temps de réponse (médiane, pire cas) | non |
 | R6 | PTT lu = réception | non |
 | R7 | Carte son du poste : entrée trouvée, niveau du bruit de réception | non |
+| R8 | Écriture de la fréquence (+1 kHz dans la même bande) et du mode, relues, puis remises | non |
 | E1 | Émission par la CAT puis retour, PTT relu, temps mesurés | oui |
 | E2 | Puissance (Po) lue pendant l'émission, non nulle | oui |
 | E3 | TOS lu (charge fictive : bas) | oui |
@@ -269,11 +300,11 @@ EFFET.
 
 ## 11. Questions ouvertes
 
-1. **Puissance pendant les essais** : la page baisse-t-elle la puissance (ex. 10 W ou 10 %) puis remet celle
-   d'origine, ou garde-t-elle celle réglée par l'opérateur (affichée dans l'autorisation) ?
-2. **Écriture de fréquence et de mode** : un essai d'écriture (petit décalage puis remise) en mode A, ou seulement le
-   mode données nécessaire à la tonalité ? (règle actuelle : jamais de QSY imposé)
-3. **Durées** : 10 s au plus par essai d'émission, combien d'émissions au total (environ 5) : d'accord ?
+TOUTES TRANCHÉES (v4).
+
+1. ~~Puissance~~ : 10 % de la puissance maximale du poste (§ 5.1).
+2. ~~Fréquence~~ : changement permis (R8), fréquence d'origine remise.
+3. ~~Durées~~ : 10 s au plus, environ 5 émissions, écran et barre de progression (§ 4.1).
 4. ~~Rapport~~ : TRANCHÉ (un bouton, courriel facultatif derrière un interrupteur, § 9.1).
 5. ~~Mode B~~ : TRANCHÉ (openRemoteTRX-Autotest, EXE, Microsoft Store, § 8.1).
 6. ~~Langues~~ : TRANCHÉ (français et anglais).
