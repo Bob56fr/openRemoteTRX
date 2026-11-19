@@ -71,6 +71,9 @@
     try { port = await navigator.serial.requestPort(); } catch (e) { $("port-status").textContent = "Aucun port choisi."; return; }
     S.port = port; $("b-port").disabled = true;
     const status = $("port-status");
+    // Pause de 5 s avant d'ouvrir le port (demande de l'utilisateur, 2026-11-19 : Chrome se figeait à l'ouverture juste
+    // après la fenêtre de choix du port).
+    for (let s = 5; s > 0; s--) { status.textContent = `Ouverture du port dans ${s} s…`; await new Promise(r => setTimeout(r, 1000)); }
     const d = await R.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.ICOM_BAUDS, byAddr: models.byAddr,
                                onTry: b => { status.textContent = `Essai à ${b} bauds…`; } });
     $("b-port").disabled = false;
