@@ -38,6 +38,7 @@ OFF_CONFIRM_S = 15.0          # extinction relue dans ce délai
 READBACK_S = 10.0             # poste allumé : fréquence relue dans ce délai
 IDLE_CHECK_S = 60.0           # extinction automatique : vérifiée toutes les minutes
 IDLE_RETRY_S = 600.0          # refusée (émission, action sur le poste) : nouvel essai 10 min plus tard
+RX_SETTLE_WAIT_S = 8.0        # extinction : attente d'un retour en réception encore en cours (STOP juste avant)
 STEPS = ("ports", "check_off", "order", "wait", "readback", "done")
 _CAT_ERRORS = (CatConnectionError, CatProtocolError, RigError, OSError)
 
@@ -139,6 +140,16 @@ class PowerControl:
         if self.ctrl.local.active():
             left = self.ctrl.local.remaining() or 0
             raise Refused("local_active", f"poste utilisé sur place, encore {left:.0f} s")
+        # STOP maintenu 3 s : l'appui a lancé un retour en réception (« T 0 » relu) ; sur un poste lent (FTDX10) il peut
+        # tourner encore quand l'opérateur confirme l'arrêt (essai réel du 2026-11-20) : on l'attend un peu, puis on
+        # refuse avec la VRAIE raison (jamais « pendant l'émission » quand le poste est en réception)
+        for _ in range(int(RX_SETTLE_WAIT_S / 0.2)):       # tours comptés : jamais d'attente sans fin
+            if not (self.ctrl.starting or not self.ctrl.rx_settled) or self.ctrl.snapshot().state != "RX":
+                break                                    # réception confirmée, ou vraie émission (refus tx_active)
+            await self.sleep(0.2)
+        if self.ctrl.snapshot().state == "RX" and (self.ctrl.starting or not self.ctrl.rx_settled):
+            raise Refused("starting" if self.ctrl.starting else "not_idle",
+                          "retour en réception pas encore confirmé par le poste : réessayez dans quelques secondes")
         self._phase = "stopping"
         client = self.link.client
         try:

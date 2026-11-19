@@ -185,6 +185,22 @@ def test_power_off_refused_while_transmitting_and_no_order_sent():
     run(scenario)
 
 
+def test_power_off_waits_for_the_rx_confirmation_started_by_stop():
+    # STOP maintenu 3 s : l'appui lance « T 0 » relu ; sur un poste lent, l'arrêt confirmé juste après doit l'attendre
+    # (essai réel du FTDX10, 2026-11-20 : refus « pendant l'émission » alors que le poste était en réception)
+    async def scenario(fake):
+        async with station(fake) as (ctrl, link, power):
+            fake.slow["T 0"] = 0.4                                   # « T 0 » lent
+            stop = asyncio.ensure_future(ctrl.force_rx("stop", by="phone"))
+            await asyncio.sleep(0.05)
+            assert not ctrl.rx_settled
+            await power.power_off("phone")
+            assert fake.powered == 0
+            await stop
+            fake.slow.clear()
+    run(scenario)
+
+
 def test_power_off_refused_when_the_rig_is_used_at_the_shack():
     async def scenario(fake):
         async with station(fake) as (ctrl, link, power):

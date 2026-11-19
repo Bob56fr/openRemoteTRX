@@ -3998,9 +3998,14 @@
       $("stop-sub").textContent = stopSub();
       $("stop").classList.remove("holding");
     }
-    $("stop").addEventListener("pointerdown", () => {
+    $("stop").addEventListener("pointerdown", (ev) => {
       stopHoldCancel();
       if ($("stop").disabled) return;
+      // Doigt ou souris « capturés » par STOP : si la page bouge pendant le maintien (voyants qui arrivent après
+      // l'allumage du poste), le pointeur ne « sort » pas du bouton et le maintien n'est pas annulé (essai du 2026-11-20)
+      if (ev && ev.pointerId !== undefined && $("stop").setPointerCapture) {
+        try { $("stop").setPointerCapture(ev.pointerId); } catch (e) { /* navigateur sans capture */ }
+      }
       const t0 = Date.now();
       $("stop").classList.add("holding");
       $("stop-sub").textContent = "choix dans 3 s…";
