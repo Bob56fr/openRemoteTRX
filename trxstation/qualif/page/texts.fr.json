@@ -194,5 +194,8 @@
   "measure.non_mesure": "non mesuré",
   "drill.note_send": "Enregistrer la remarque",
   "drill.station_stopping": "Arrêt de la station demandé.",
-  "covered": "fait par la valise : {key}"
+  "covered": "fait par la valise : {key}",
+  "ready": "Prêt : choisissez un essai (▶) ou « Tout lancer ».",
+  "report.done": "Rapport fabriqué : {path}",
+  "report.open": "Ouvrir le dossier"
 }

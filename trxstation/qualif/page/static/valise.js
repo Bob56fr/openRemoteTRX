@@ -15,6 +15,7 @@
   let tiles = null;                // dernier événement « tuiles »
   let current = null;              // touche de l'essai en cours (lancé d'ici ou enchaîné)
   let chain = null;                // enchaînement en cours : { rang, total }
+  let report = null;               // dernier rapport fabriqué (chemin)
   let meters = { actif: false };   // dernières mesures relues par les essais
   let ivId = null;                 // question de mot affichée dans la fenêtre
   let ivTrusted = true;            // toute la saisie du mot vient du clavier
@@ -90,6 +91,18 @@
     a.textContent = text;
     a.className = "avis" + (grave ? " grave" : "");
     a.hidden = !text;
+  }
+
+  function reportNotice(path) {     // rapport fabriqué : où il est, et un bouton pour ouvrir son dossier
+    const a = $("avis");
+    a.replaceChildren(el("span", "", t("report.done", { path: path }) + " "));
+    const b = el("button", "btn-mini", t("report.open"));
+    b.type = "button";
+    b.addEventListener("click", () => fetch("/api/open_report", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }));
+    a.appendChild(b);
+    a.className = "avis";
+    a.hidden = false;
   }
 
   async function stopAll() {        // STOP et « Arrêter l'enchaînement » : même chemin (T 0, puis retour au menu)
@@ -168,7 +181,7 @@
 
   function showLines() {
     $("journal").textContent = lines.join("\n");
-    $("maintenant").textContent = finished ? t("finished") : lastLines(1);
+    $("maintenant").textContent = finished ? t("finished") : menuQuestion() ? t("ready") : lastLines(1);
     const recent = $("recent");
     recent.textContent = lastLines(12);
     recent.scrollTop = recent.scrollHeight;
@@ -509,7 +522,7 @@
 
   function onEvent(e, live) {
     switch (e.type) {
-      case "ligne": addLine(e.texte); break;
+      case "ligne": if (!e.menu) addLine(e.texte); break;
       case "statut": status(e); break;
       case "tuiles": tiles = e; break;
       case "question":
@@ -528,6 +541,7 @@
       case "fin": finished = true; meters = { actif: false }; break;
       case "stop": if (live) addLine("— STOP —"); break;
       case "avis": if (live) notice(e.texte, true); break;
+      case "rapport": report = e.chemin; if (live) reportNotice(e.chemin); break;
       case "erreur":
         if (ivId !== null) ivError(t(e.cle)); else notice(t(e.cle), true);
         return;

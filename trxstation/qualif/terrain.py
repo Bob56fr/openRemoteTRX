@@ -202,7 +202,7 @@ def judge(drill: Drill, m: dict, *, tot_s: float) -> tuple[str, str]:
         d = m["delay_from_mark_s"]
         if d is None:
             return "non_mesure", "repère absent ou retour en réception avant le repère"
-        return ("reussi" if d <= drill.bound_s else "echec"), f"réception {d:.2f} s après le repère (borne {drill.bound_s:.1f} s)"
+        return ("reussi" if d <= drill.bound_s else "echec"), f"retour en réception {d:.2f} s après le repère (attendu : {drill.bound_s:.1f} s au plus)"
     if drill.kind == "tot":
         dur = m["tx_duration_s"]
         if dur is None:
@@ -389,7 +389,12 @@ def verdict(session: Session) -> tuple[str, list[str]]:
     """Verdict PROPOSÉ (la décision reste à l'éditeur) et ses raisons."""
     reasons = []
     results = {d.id: session.drills.get(d.id, {}).get("result") for d in DRILLS}
-    failed = [k for k, v in session.drills.items() if v.get("result") == "echec"]   # automatiques compris
+    # automatiques compris ; un essai à la main où AUCUNE émission n'a été vue (« non mesuré ») n'a pas été joué :
+    # s'il est couvert par un essai automatique RÉUSSI, son « non conforme » ne compte pas (essai du 2026-11-19 :
+    # compte faux, essais 1 et 2 « en échec » sans émission alors que A1 et A5 avaient réussi)
+    failed = [k for k, v in session.drills.items() if v.get("result") == "echec"
+              and not (v.get("measured") == "non_mesure" and COVERED_BY.get(k)
+                       and session.drills.get(COVERED_BY[k], {}).get("result") == "reussi")]
     if failed:
         return "refuse", [f"essai {k} en échec" for k in failed]
     qualif = [r for r in session.runs if r.get("kind") == "qualif"]
@@ -958,6 +963,10 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         out(_t("terrain.bands_missing", bands=", ".join(missing)))
     from . import tiles as tl
     from .autodrills import auto_menu, operator_factory, play_auto
+
+    def menu_out(text: str) -> None:
+        """Menu du TERMINAL : affiché au terminal, gardé dans le journal, ignoré par la page (elle a ses tuiles)."""
+        bus.publish("ligne", texte=str(text), menu=True)
     # Compte des essais automatiques : demandé une fois ; « declined » = pas de compte (annulé) pendant cet
     # enchaînement : les essais automatiques sont passés, le reste continue (demande de l'utilisateur, 2026-11-19).
     operator = {"factory": None, "declined": False}
@@ -1163,6 +1172,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         elif choice == "7":
             target = build_report(session, settings=settings_of(cfg), out_dir=output)
             out(_t("terrain.report_done", path=target))
+            bus.publish("rapport", chemin=str(Path(target).resolve()))
         elif choice in ("a", "d"):
             start = choice == "d"
             ok = control(start) == 0
@@ -1179,19 +1189,19 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
         try:
             note_runs(session)
             running = station()
-            out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
-            out(_t("terrain.station_running" if running else "terrain.station_stopped"))
+            menu_out(_t("terrain.title", name=f"{caps.manufacturer} {caps.model_name}".strip(), folder=folder))
+            menu_out(_t("terrain.station_running" if running else "terrain.station_stopped"))
             done = {r["kind"] for r in session.runs}
 
             def tick(ok) -> str:
                 return "x" if ok else " "
-            out(_t("terrain.menu2", sound=tick(session.audio and not session.audio.get("problems")),
+            menu_out(_t("terrain.menu2", sound=tick(session.audio and not session.audio.get("problems")),
                    before=tick(session.snapshots.get("avant")), explore=tick("explore" in done),
                    qualif=tick("qualif" in done), drills=sum(1 for d in DRILLS if d.id in session.drills),
                    total=len(DRILLS), auto=sum(1 for d in all_drills()[len(DRILLS):] if d.id in session.drills),
                    auto_total=len(all_drills()) - len(DRILLS), after=tick(session.snapshots.get("apres")),
                    photos=sum(1 for p in (folder / "photos").rglob("*") if p.is_file()), photo_dir=folder / "photos" / "avant"))
-            out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum), fil=tick(session.filters),
+            menu_out(_t("terrain.parts", rx=tick(session.reception), scope=tick(session.spectrum), fil=tick(session.filters),
                    connection=_t(f"terrain.connection.{session.connection or 'inconnu'}")))
             bus.status(poste=f"{caps.manufacturer} {caps.model_name}".strip(), modele=profile.model,
                        hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
@@ -1204,6 +1214,8 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 out(_t("terrain.bye", folder=folder))
                 return 0
             operator["declined"] = False                # action choisie à la main : le compte peut être redonné
+            if tl.drill_of(choice) is not None and not prepare(choice):
+                continue                                # station qui ne démarre pas, CHARGE non tapé : rien n'est lancé
             act(choice)
         except (KeyboardInterrupt, QuestionStopped):
             if not bus.consume_stop():              # Ctrl+C au terminal : la valise s'arrête, comme avant

@@ -194,5 +194,8 @@
   "measure.non_mesure": "not measured",
   "drill.note_send": "Save the remark",
   "drill.station_stopping": "Station stop requested.",
-  "covered": "done by the suitcase: {key}"
+  "covered": "done by the suitcase: {key}",
+  "ready": "Ready: choose a test (▶) or « Run all ».",
+  "report.done": "Report built: {path}",
+  "report.open": "Open the folder"
 }

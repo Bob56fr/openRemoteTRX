@@ -260,16 +260,18 @@ async def _startup(observer: Observer, actions: dict) -> tuple[str, str, dict]:
     await asyncio.sleep(STARTUP_WATCH_S)
     seen = [(ts, v) for ts, v in observer.events if ts >= start]
     read = [v for _, v in seen if v in (0, 1)]
+    first = next((ts for ts, v in seen if v in (0, 1)), None)
     running = actions["station_running"]()
-    detail = {"observe_s": STARTUP_WATCH_S, "lectures": len(read), "station_demarree": running}
+    detail = {"observe_s": STARTUP_WATCH_S, "lectures": len(read), "station_demarree": running,
+              "premiere_lecture_s": round(first - start, 1) if first else None}
     if 1 in read:
         return "echec", "le poste est passé en ÉMISSION pendant le démarrage de la station", detail
     if not read:
         return "non_mesure", f"PTT jamais lisible pendant les {STARTUP_WATCH_S:.0f} s du démarrage", detail
     if not running:
         return "non_mesure", "station pas démarrée au bout de l'observation", detail
-    return "reussi", f"aucune émission pendant les {STARTUP_WATCH_S:.0f} s du démarrage ({len(read)} lectures du PTT)", \
-        detail
+    return "reussi", f"aucune émission pendant les {STARTUP_WATCH_S:.0f} s du démarrage (poste relu en réception " \
+        f"dès {first - start:.1f} s)", detail
 
 
 async def _station_stop(observer: Observer, actions: dict, action: float) -> tuple[str, str, dict]:
@@ -347,7 +349,7 @@ async def _scenario(drill: Drill, client, observer: Observer, cfg, tot_s: float,
         return "echec", f"pas de retour en réception {drill.bound_s + 5:.0f} s après l'action", {}
     delay = max(0.0, back - action)
     ok = delay <= drill.bound_s + observer.period
-    return ("reussi" if ok else "echec"), f"réception {delay:.2f} s après l'action (borne {drill.bound_s:.1f} s)", \
+    return ("reussi" if ok else "echec"), f"retour en réception {delay:.2f} s après l'action (attendu : {drill.bound_s:.1f} s au plus)", \
         {"delai_s": round(delay, 3)}
 
 

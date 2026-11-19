@@ -369,3 +369,34 @@ def test_a_covered_hand_test_counts_when_the_automatic_one_passed(tmp_path):
     reasons = terrain.verdict(s)[1]
     assert "essai stop_page non fait" not in reasons and "essai wifi non fait" in reasons
     assert tiles.covered_by("5.1") == "8.1" and tiles.covered_by("5.3") is None
+
+
+def test_a_hand_test_never_played_does_not_fail_the_verdict_when_covered(tmp_path):
+    """Essai du 2026-11-19 : essais 1 et 2 « en échec » SANS aucune émission (compte faux), A1 et A5 réussis."""
+    s = _session(tmp_path)
+    s.drills = {"stop_page": {"result": "echec", "measured": "non_mesure"}, "auto_stop": {"result": "reussi"},
+                "tot": {"result": "echec", "measured": "echec"}, "auto_tot": {"result": "reussi"}}
+    status, reasons = terrain.verdict(s)
+    assert reasons == ["essai tot en échec"]                            # un VRAI échec mesuré compte toujours
+
+
+def test_a_single_tile_starts_the_station_first(tmp_path, monkeypatch):
+    played = []
+
+    async def fake_drill(drill, session, **kw):
+        played.append(drill.id)
+        return {}
+    monkeypatch.setattr(terrain, "play_drill", fake_drill)
+    (tmp_path / "s").mkdir()
+    s = _session(tmp_path)
+    s.connection = "charge"
+    s.save()
+    events = _run(tmp_path, ["5.3", "q"], running=False)
+    assert played == ["wifi"]
+    assert [e["station"] for e in events if e["type"] == "statut" and "station" in e][:2] == [False, True]
+
+
+def test_menu_lines_of_the_terminal_are_marked_for_the_page(tmp_path):
+    events = _run(tmp_path, ["q"])
+    menu = [e for e in events if e["type"] == "ligne" and e.get("menu")]
+    assert menu and any("Valise de qualification" in e["texte"] for e in menu)

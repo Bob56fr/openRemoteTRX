@@ -355,3 +355,22 @@ def test_settings_mode_writes_a_report(monkeypatch, tmp_path, capsys):
     text = (tmp_path / "r" / "reglages.txt").read_text(encoding="utf-8")
     assert "largeur (SPAN)" in text and "lecture seule" in text
 
+
+
+def test_scope_data_left_addressed_to_the_station_gateway_is_still_counted():
+    """Essai du 2026-11-19 (IC-7300MK2) : la station venait de tourner et avait laissé la sortie du spectre en marche
+    vers SON adresse (E1) ; l'outil (E0) comptait « 0 trame ». Elles comptent, et la destination n'est pas changée."""
+    rig = FakeRig(scope_on=1)
+    rig.settings[0x11] = 1                                               # sortie déjà en marche (par la station)
+    real_read = rig.read
+
+    def read_to_e1(n):
+        data = real_read(n)
+        return data.replace(bytes([0xFE, 0xFE, 0x00, RIG, 0x27, 0x00]),
+                            bytes([0xFE, 0xFE, 0xE1, RIG, 0x27, 0x00]))
+    rig.read = read_to_e1
+    probe = ScopeProbe(rig, address=RIG, say=lambda m: None, clock=Clock())
+    assert probe.detect(())
+    probe.run(2.0, show=False)
+    assert len(probe.sweeps) >= 3 and probe.counts["spectre adressé à un autre contrôleur"] > 0
+    assert not any(w[4:-1] == b"\x27\x11\x01" for w in rig.written)       # destination jamais reprise à la station

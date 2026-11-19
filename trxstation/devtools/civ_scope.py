@@ -150,6 +150,17 @@ class ScopeProbe:
                 self.counts["commandes d'un autre contrôleur"] += 1
                 self._log("<-", bytes([PREAMBLE, PREAMBLE, frame.to, frame.frm]) + frame.payload + bytes([END]))
                 continue
+            if frame.to in CONTROLLERS and frame.to != self.controller and frame.payload[:2] == b"\x27\x00":
+                # Données du spectre adressées à un AUTRE contrôleur : le poste les envoie à celui qui a mis la
+                # sortie en marche (la passerelle de la station, E1, vu le 2026-11-19 : « 0 trame » pour l'outil).
+                # Elles sont comptées quand même ; on ne change JAMAIS la destination (la station la retrouve).
+                self.counts["spectre adressé à un autre contrôleur"] += 1
+                self._log("<-", bytes([PREAMBLE, PREAMBLE, frame.to, frame.frm]) + frame.payload + bytes([END]))
+                self.counts["spectre"] += 1
+                sweep = self.scope.feed(frame.payload[2:], self.clock() - self.t0)
+                if sweep is not None:
+                    self.sweeps.append(sweep)
+                continue
             if frame.to in CONTROLLERS and frame.to != self.controller:
                 self.counts["réponses pour un autre contrôleur"] += 1
                 self._log("<-", bytes([PREAMBLE, PREAMBLE, frame.to, frame.frm]) + frame.payload + bytes([END]))

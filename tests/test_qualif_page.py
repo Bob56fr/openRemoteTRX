@@ -367,3 +367,20 @@ def test_hand_played_questions_tell_the_page_which_test_and_step(tmp_path):
     finally:
         terrain.Observer = original
     assert seen[0]["role"] == "essai:stop_page:stop:debut" and seen[0]["genre"] == "choix"
+
+
+def test_open_report_shows_only_the_last_report_built(tmp_path, monkeypatch):
+    import subprocess
+    opened = []
+    monkeypatch.setattr(subprocess, "Popen", lambda cmd, **kw: opened.append(cmd))
+    zip_path = tmp_path / "terrain.zip"
+    zip_path.write_bytes(b"PK")
+
+    async def body(bus, page, client):
+        origin = await login(page, client)
+        assert (await (await client.post("/api/open_report", headers=origin)).json()) == {"ok": False}
+        bus.publish("rapport", chemin=str(zip_path))
+        await until(lambda: page.report)
+        assert (await (await client.post("/api/open_report", headers=origin)).json()) == {"ok": True}
+        assert str(zip_path) in " ".join(opened[0])
+    scenario(body)

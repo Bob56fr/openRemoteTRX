@@ -62,6 +62,7 @@ class ValisePage:
         self.history: deque[dict] = deque(maxlen=HISTORY)
         self.open: dict[int, dict] = {}            # questions ouvertes (événement d'origine)
         self.finished = False
+        self.report: str | None = None
         self.clients: set[web.WebSocketResponse] = set()
         self._lock = threading.Lock()
         self._outbox: deque[dict] = deque()
@@ -82,6 +83,8 @@ class ValisePage:
                 self.open.pop(event.get("id"), None)
             elif event["type"] == "fin":
                 self.finished = True
+            elif event["type"] == "rapport":
+                self.report = event.get("chemin")         # seul fichier que /api/open_report sait montrer
             self._outbox.append(event)
             if self.loop is None or self._drain_pending:
                 return
@@ -116,6 +119,7 @@ class ValisePage:
         app.router.add_get("/static/{name:.+}", self.static)
         app.router.add_post("/api/stop", self.stop)
         app.router.add_post("/api/station_stop", self.station_stop)
+        app.router.add_post("/api/open_report", self.open_report)
         app.router.add_get("/ws", self.websocket)
         return app
 
@@ -184,6 +188,26 @@ class ValisePage:
         except Exception:                                       # noqa: BLE001
             code = 1
         return web.json_response({"ok": code == 0})
+
+    async def open_report(self, request: web.Request) -> web.StreamResponse:
+        """Ouvre l'explorateur sur le DERNIER rapport fabriqué par la valise (chemin connu du serveur, jamais donné
+        par la page). Windows : le zip sélectionné ; ailleurs : son dossier."""
+        if not self.has_session(request) or not self.same_origin(request):
+            raise web.HTTPForbidden()
+        path = Path(self.report) if self.report else None
+        if path is None or not path.exists():
+            return web.json_response({"ok": False})
+        import os
+        import subprocess
+        import sys
+        try:
+            if os.name == "nt":
+                subprocess.Popen(["explorer", f"/select,{path}"])
+            else:
+                subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(path.parent)])
+        except OSError:
+            return web.json_response({"ok": False})
+        return web.json_response({"ok": True})
 
     def handle(self, data: dict) -> dict | None:
         """Message de la page ; renvoie une erreur à montrer, ou None."""
