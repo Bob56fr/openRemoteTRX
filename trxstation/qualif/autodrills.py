@@ -393,7 +393,7 @@ def operator_factory(cfg, *, ask: Callable[[str], str], out: Callable[[str], Non
     # Dossier de qualification : son mot de passe est dans valise.pw ; s'il ouvre un compte opérateur, rien à taper.
     if password_file is not None and password_file.is_file():
         try:
-            stored = password_file.read_text(encoding="utf-8").strip()
+            stored = password_file.read_text(encoding="utf-8-sig").strip()   # Bloc-notes / PowerShell : BOM possible
         except (OSError, UnicodeDecodeError):
             stored = ""
         for cid, hashed in operators.items():
