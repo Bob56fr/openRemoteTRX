@@ -336,7 +336,7 @@ TOUTES TRANCHÉES (v4).
 | PQ3 | Xiegu (dialecte CI-V) et Yaesu ancien, marqués « non vérifié » sans poste | bêta-testeur |
 | PQ4 | Liste des modèles de Hamlib embarquée (§ 7) | — |
 | PQ5 | Mode B : `trx-autotest`, page servie, transport « API locale », comparaison A / B | IC-7300MK2, FTDX10 |
-| PQ6 | Publication (GitHub Pages, iframe), langues, guide de l'opérateur | — |
+| PQ6 (FAIT en partie, étape 296, Autotest 0.6.0 : anglais, GitHub Pages, lien WordPress ; reste le guide) | Publication (GitHub Pages, lien plutôt qu'iframe : Web Serial), langues, guide de l'opérateur | — |
 
 ## 13. Limites assumées
 

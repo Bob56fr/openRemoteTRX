@@ -1,4 +1,4 @@
-# Publie docs/site/ (mode d'emploi de TRX Console, guide de l'opérateur…) sur GitHub Pages à chaque push sur main qui
+# Publie docs/site/ (mode d'emploi de TRX Console, guide de l'opérateur…) et la page d'openRemoteTRX-Autotest (autotest/web/) sur GitHub Pages à chaque push sur main qui
 # le modifie. Le PDF du guide n'est pas dans le dépôt : il est imprimé ici, à côté de la page, juste avant la mise en ligne.
 # Réglage à faire une fois sur GitHub : Settings > Pages > Build and deployment > Source = « GitHub Actions ».
 name: Documentation (GitHub Pages)
@@ -6,7 +6,7 @@ name: Documentation (GitHub Pages)
 on:
   push:
     branches: [main]
-    paths: ["docs/site/**", ".github/workflows/pages.yml", "scripts/build_user_guide_pdf.py"]
+    paths: ["docs/site/**", "autotest/web/**", ".github/workflows/pages.yml", "scripts/build_user_guide_pdf.py"]
   workflow_dispatch:
 
 permissions:
@@ -35,6 +35,8 @@ jobs:
           python -m pip install playwright==1.64.1
           python -m playwright install --with-deps chromium
           python scripts/build_user_guide_pdf.py
+      - name: Page d'openRemoteTRX-Autotest (préqualification depuis Chrome, lot PQ6)
+        run: cp -r autotest/web docs/site/autotest
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/site

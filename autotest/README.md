@@ -2,7 +2,10 @@
 
 Préqualification d'un poste depuis le navigateur : cahier des charges `docs/prequalif-web-cahier-des-charges.md`.
 
-- `web/` : la page du mode A (Web Serial, sans Hamlib). Pas encore publiée sur GitHub Pages (lot PQ6) : essai en local.
+- `web/` : la page du mode A (Web Serial, sans Hamlib), en français et en anglais (`?lang=en`). Publiée sur
+  https://bob56fr.github.io/openRemoteTRX/autotest/ (copiée par `.github/workflows/pages.yml`) ; bloc WordPress
+  `docs/wordpress/autotest-lien.html`. Pilotes : Icom CI-V (`civ.js`), Yaesu FTDX10 (`yaesu.js`), Kenwood TS-890S
+  (`kenwood.js`) ; traductions `i18n.js` + `en.js`.
 - Tests : `node tests/js/autotest_test.js` (logique, garde d'émission, pannes) et `tests/test_autotest_page.py`.
 
 ## Essayer la page sur ce PC

@@ -15,24 +15,24 @@
     <img src="bandeau.jpg" alt="openRemoteTRX : un poste piloté depuis un PC, un téléphone et Android Auto">
     <div class="cap"><h1>openRemoteTRX<span>-Autotest</span></h1>
       <span class="hero-r"><a class="site" href="https://www.rf-diy.com" target="_blank" rel="noopener">www.rf-diy.com</a>
-      <span class="ver" id="ver"></span></span></div>
+      <span class="ver" id="ver"></span><span class="lang"><a href="?lang=fr" lang="fr">FR</a> · <a href="?lang=en" lang="en">EN</a></span></span></div>
   </header>
 
   <!-- 1. Accueil -->
   <section id="s-home" class="wrap">
     <div class="card">
-      <h2>Votre TRX pourra-t-il être piloté à distance ?</h2>
-      <p>Cette page parle à votre poste par son câble USB, sans rien installer, et vous dit en quelques minutes s'il répond à
+      <h2 data-t="home.q">Votre TRX pourra-t-il être piloté à distance ?</h2>
+      <p data-t="home.intro">Cette page parle à votre poste par son câble USB, sans rien installer, et vous dit en quelques minutes s'il répond à
          la CAT, si sa carte son est trouvée et s'il sait émettre et revenir en réception sur ordre de l'ordinateur.</p>
     </div>
     <div class="card anon">
-      <p><strong>Le test est anonyme.</strong> Rien n'est envoyé pendant le test, ni à rf-diy.com ni ailleurs : la page ne
+      <p data-t="home.anon"><strong>Le test est anonyme.</strong> Rien n'est envoyé pendant le test, ni à rf-diy.com ni ailleurs : la page ne
          contacte aucun serveur. À la fin, vous pourrez télécharger le rapport et, plus tard, l'envoyer au projet si vous
          le voulez.</p>
     </div>
     <div class="card">
-      <h3>Ce qui va se passer</h3>
-      <ul>
+      <h3 data-t="home.what.h">Ce qui va se passer</h3>
+      <ul data-t="home.what.l">
         <li>Lectures sans émission : fréquence, mode, S-mètre, temps de réponse, PTT, carte son.</li>
         <li>Petit changement de fréquence (+1 kHz) et de mode, puis remise.</li>
         <li>Après <b>votre autorisation</b> seulement : 4 émissions courtes (18 s en tout, 10 s au plus chacune) à
@@ -40,49 +40,49 @@
             page.</li>
         <li>À la fin, la fréquence, le mode et la puissance d'origine sont remis et relus.</li>
       </ul>
-      <h3>Il vous faut</h3>
-      <ul>
+      <h3 data-t="home.need.h">Il vous faut</h3>
+      <ul data-t="home.need.l">
         <li>Le poste relié en USB à cet ordinateur, et <b>sur une charge fictive</b> pour les émissions.</li>
         <li>Chrome ou Edge sur un ordinateur (Windows, Linux ou macOS).</li>
         <li>Aucun autre logiciel qui utilise le port du poste (WSJT-X, logiciel du constructeur, station openRemoteTRX).</li>
       </ul>
-      <p>Vous restez maître de votre poste : bouton <b>STOP</b> ou touche <b>Échap</b> à tout moment, et votre interrupteur.</p>
-      <div class="badbox" id="noserial" hidden>Ce navigateur ne sait pas parler au port USB du poste. Ouvrez cette page dans
+      <p data-t="home.stop">Vous restez maître de votre poste : bouton <b>STOP</b> ou touche <b>Échap</b> à tout moment, et votre interrupteur.</p>
+      <div data-t="home.noserial" class="badbox" id="noserial" hidden>Ce navigateur ne sait pas parler au port USB du poste. Ouvrez cette page dans
         <b>Chrome</b> ou <b>Edge</b> sur un ordinateur.</div>
-      <div class="row"><button type="button" class="btn primary" id="b-start">Commencer</button></div>
+      <div class="row"><button data-t="home.start" type="button" class="btn primary" id="b-start">Commencer</button></div>
     </div>
   </section>
 
   <!-- 2. Marque -->
   <section id="s-brand" class="card" hidden>
-    <h2>Marque du poste</h2>
+    <h2 data-t="brand.t">Marque du poste</h2>
     <div class="choices" id="brands"></div>
-    <p class="what">Les autres marques arrivent dans les prochaines versions de la page.</p>
+    <p data-t="brand.more" class="what">Les autres marques arrivent dans les prochaines versions de la page.</p>
   </section>
 
   <!-- 3. Modèle -->
   <section id="s-model" class="card" hidden>
-    <h2>Modèle</h2>
+    <h2 data-t="model.t">Modèle</h2>
     <div class="choices" id="models"></div>
-    <div class="row"><button type="button" class="btn" id="b-back-brand">Retour</button></div>
+    <div class="row"><button type="button" class="btn" id="b-back-brand" data-t="model.back">Retour</button></div>
   </section>
 
   <!-- 4. Port -->
   <section id="s-port" class="card" hidden>
-    <h2>Branchement</h2>
+    <h2 data-t="port.t">Branchement</h2>
     <p id="port-help"></p>
-    <div class="badbox" id="port-driver" hidden><b>Windows : pilote USB Icom 1.80 ou plus récent obligatoire.</b> Avec les
+    <div data-t="port.driver" class="badbox" id="port-driver" hidden><b>Windows : pilote USB Icom 1.80 ou plus récent obligatoire.</b> Avec les
       versions plus anciennes, Chrome se fige dès la connexion (défaut corrigé par Icom). Version à lire dans le Gestionnaire
       de périphériques (port « Serial Port A (CI-V) », onglet Pilote : 1.8 ou plus) ; pilote sur le site d'Icom.</div>
     <ul>
-      <li>Poste allumé, câble USB branché.</li>
-      <li>Dans le menu du poste, la vitesse CI-V USB peut rester sur sa valeur d'usine : la page essaie les vitesses courantes.</li>
-      <li>Dans la fenêtre de Chrome, choisissez le port du poste (souvent « CP2102 », « USB Serial » ou le nom du poste).</li>
-      <li>Deux ports au même nom (Icom IC-7300MK2, IC-705, IC-7610…) : prenez le port <b>A (CI-V)</b> ; son numéro COM se lit
+      <li data-t="port.l1">Poste allumé, câble USB branché.</li>
+      <li data-t="port.l2">Dans le menu du poste, la vitesse CI-V USB peut rester sur sa valeur d'usine : la page essaie les vitesses courantes.</li>
+      <li data-t="port.l3">Dans la fenêtre de Chrome, choisissez le port du poste (souvent « CP2102 », « USB Serial » ou le nom du poste).</li>
+      <li data-t="port.l4">Deux ports au même nom (Icom IC-7300MK2, IC-705, IC-7610…) : prenez le port <b>A (CI-V)</b> ; son numéro COM se lit
           dans le Gestionnaire de périphériques de Windows (« Ports (COM et LPT) »).</li>
     </ul>
-    <div class="row"><button type="button" class="btn primary" id="b-port">Choisir le port USB du poste</button>
-      <button type="button" class="btn" id="b-back-model">Retour</button></div>
+    <div class="row"><button data-t="port.choose" type="button" class="btn primary" id="b-port">Choisir le port USB du poste</button>
+      <button type="button" class="btn" id="b-back-model" data-t="port.back">Retour</button></div>
     <p class="now" id="port-status"></p>
   </section>
 
@@ -90,9 +90,9 @@
   <section id="s-run" hidden>
     <div class="wrap">
       <section class="prog" aria-label="Progression">
-        <div class="prog-top"><span>Étape <strong id="stepn">1</strong> sur <strong id="stept">14</strong></span><span id="prog-model"></span></div>
+        <div class="prog-top"><span data-t="run.step">Étape <strong id="stepn">1</strong> sur <strong id="stept">14</strong></span><span id="prog-model"></span></div>
         <div class="track"><i id="progbar"></i></div>
-        <div class="now"><span>En ce moment :</span> <b id="nowtxt">—</b></div>
+        <div class="now"><span data-t="run.now">En ce moment :</span> <b id="nowtxt">—</b></div>
       </section>
       <div class="grid">
         <div class="main">
@@ -109,7 +109,7 @@
               </div>
               <div class="meters">
                 <div class="m" id="m-po">
-                  <div class="name">Po<small>PUISSANCE</small></div>
+                  <div data-t="run.po" class="name">Po<small>PUISSANCE</small></div>
                   <div>
                     <div class="rail"><div class="fill" id="po-fill"></div><div class="peak" id="po-peak"></div><div class="mark" id="po-mark"></div></div>
                     <div class="ticks" id="po-ticks"></div>
@@ -125,20 +125,20 @@
                   <div class="val"><b id="swr-v">—</b><small id="swr-p"></small></div>
                 </div>
                 <div class="m" id="m-alc">
-                  <div class="name">ALC<small>NIVEAU</small></div>
+                  <div data-t="run.alc" class="name">ALC<small>NIVEAU</small></div>
                   <div>
                     <div class="rail"><div class="zones"><i class="z-half-ok"></i><i class="z-half-bad"></i></div><div class="fill" id="alc-fill"></div><div class="peak" id="alc-peak"></div></div>
-                    <div class="ticks"><span class="first t0">0</span><span class="t50">zone ALC du constructeur</span><span class="last t100">max</span></div>
+                    <div class="ticks"><span class="first t0">0</span><span data-t="run.alczone" class="t50">zone ALC du constructeur</span><span class="last t100">max</span></div>
                   </div>
                   <div class="val"><b id="alc-v">—</b><small id="alc-p"></small></div>
                 </div>
               </div>
             </div>
           </section>
-          <section class="card" id="lastres" hidden><h3>Dernier résultat</h3><p id="lastres-t"></p></section>
-          <button type="button" class="stop" id="b-stop">STOP<small>retour en réception · touche Échap</small></button>
+          <section class="card" id="lastres" hidden><h3 data-t="run.lastres">Dernier résultat</h3><p id="lastres-t"></p></section>
+          <button data-t="run.stop" type="button" class="stop" id="b-stop">STOP<small>retour en réception · touche Échap</small></button>
         </div>
-        <aside class="steps" aria-label="Étapes"><h3>Étapes</h3><ol id="steps"></ol></aside>
+        <aside class="steps" aria-label="Étapes"><h3 data-t="run.steps">Étapes</h3><ol id="steps"></ol></aside>
       </div>
     </div>
   </section>
@@ -149,98 +149,100 @@
       <div class="reptop">
         <div class="verdict" id="verdict"></div>
         <div class="row">
-          <button type="button" class="btn primary" id="b-download">Télécharger le rapport</button>
-          <button type="button" class="btn" id="b-print">Imprimer</button>
-          <button type="button" class="btn" id="b-again">Recommencer</button>
+          <button data-t="rep.dl" type="button" class="btn primary" id="b-download">Télécharger le rapport</button>
+          <button data-t="rep.print" type="button" class="btn" id="b-print">Imprimer</button>
+          <button data-t="rep.again" type="button" class="btn" id="b-again">Recommencer</button>
         </div>
       </div>
-      <p class="what">Rapport anonyme : modèle, résultats, mesures et trace des échanges avec le poste (pour que le projet
+      <p data-t="rep.what" class="what">Rapport anonyme : modèle, résultats, mesures et trace des échanges avec le poste (pour que le projet
          puisse vérifier les résultats lui-même) ; ni nom d'ordinateur, ni adresse, ni numéro de série. Envoi au projet en un
          bouton : bientôt (service pas encore en ligne), gardez le fichier téléchargé.</p>
       <div class="card">
-        <h3>Résultats</h3>
+        <h3 data-t="rep.results">Résultats</h3>
         <div class="resgrid" id="restable"></div>
       </div>
     </div>
   </section>
 
-  <footer>openRemoteTRX-Autotest · logiciel libre (AGPL-3.0) · <a href="https://github.com/Bob56fr/openRemoteTRX">github.com/Bob56fr/openRemoteTRX</a></footer>
+  <footer><span data-t="foot">openRemoteTRX-Autotest · logiciel libre (AGPL-3.0)</span> · <a href="https://github.com/Bob56fr/openRemoteTRX">github.com/Bob56fr/openRemoteTRX</a></footer>
 </div>
 
 <!-- Fenêtres -->
 <div class="overlay" id="o-audio" hidden>
   <div class="card">
-    <h2>Carte son du poste</h2>
-    <p>Chrome va demander l'accès au micro : c'est la carte son du poste (réception et tonalité d'essai). Rien n'est
+    <h2 data-t="audio.t">Carte son du poste</h2>
+    <p data-t="audio.p">Chrome va demander l'accès au micro : c'est la carte son du poste (réception et tonalité d'essai). Rien n'est
        enregistré ni envoyé.</p>
-    <label class="field">Entrée (son reçu du poste)<select id="a-in"></select></label>
-    <label class="field">Sortie (vers le poste, pour la tonalité d'essai)<select id="a-out"></select></label>
+    <label class="field" data-t="audio.in">Entrée (son reçu du poste)<select id="a-in"></select></label>
+    <label class="field" data-t="audio.out">Sortie (vers le poste, pour la tonalité d'essai)<select id="a-out"></select></label>
     <p class="now" id="a-status"></p>
-    <div class="row"><button type="button" class="btn primary" id="a-ok">Continuer</button>
-      <button type="button" class="btn" id="a-skip">Pas de carte son</button></div>
+    <div class="row"><button data-t="audio.ok" type="button" class="btn primary" id="a-ok">Continuer</button>
+      <button data-t="audio.skip" type="button" class="btn" id="a-skip">Pas de carte son</button></div>
   </div>
 </div>
 <!-- Conditions d'utilisation : montrées à CHAQUE visite, au-dessus de l'accueil (texte validé le 2026-11-19) -->
 <div class="overlay terms-veil" id="o-terms" role="dialog" aria-modal="true" aria-labelledby="terms-title">
   <div class="dlg">
-    <div class="dlg-head"><img src="bandeau.jpg" alt=""><h2 id="terms-title">Avant de tester votre station<small>À lire avant le premier essai</small></h2></div>
+    <div class="dlg-head"><img src="bandeau.jpg" alt=""><h2 data-t="terms.title" id="terms-title">Avant de tester votre station<small>À lire avant le premier essai</small></h2></div>
     <div class="terms">
       <div>
-        <h3>À quoi sert ce test</h3>
-        <p>openRemoteTRX-Autotest vérifie si votre poste peut être piloté à distance par openRemoteTRX : liaison CAT, carte son, passage en émission et retour en réception commandés par l'ordinateur.</p>
+        <h3 data-t="terms.h1">À quoi sert ce test</h3>
+        <p data-t="terms.p1">openRemoteTRX-Autotest vérifie si votre poste peut être piloté à distance par openRemoteTRX : liaison CAT, carte son, passage en émission et retour en réception commandés par l'ordinateur.</p>
       </div>
       <div>
-        <h3>Ce qui va se passer</h3>
+        <h3 data-t="terms.h2">Ce qui va se passer</h3>
         <ul>
-          <li>Des lectures sans émission, puis un petit changement de fréquence et de mode, remis ensuite.</li>
-          <li>Après une seconde autorisation de votre part : 4 émissions courtes, 10 secondes au plus chacune, à 10 % de la puissance maximale du poste.</li>
-          <li>À la fin, la fréquence, le mode et la puissance d'origine sont remis.</li>
+          <li data-t="terms.l1">Des lectures sans émission, puis un petit changement de fréquence et de mode, remis ensuite.</li>
+          <li data-t="terms.l2">Après une seconde autorisation de votre part : 4 émissions courtes, 10 secondes au plus chacune, à 10 % de la puissance maximale du poste.</li>
+          <li data-t="terms.l3">À la fin, la fréquence, le mode et la puissance d'origine sont remis.</li>
         </ul>
       </div>
       <div class="t-anon">
-        <h3>Test anonyme</h3>
-        <p>Rien ne part vers rf-diy.com ni ailleurs pendant le test : la page ne peut contacter aucun serveur. Le rapport reste sur votre ordinateur ; vous seul décidez de l'envoyer.</p>
+        <h3 data-t="terms.h3">Test anonyme</h3>
+        <p data-t="terms.p3">Rien ne part vers rf-diy.com ni ailleurs pendant le test : la page ne peut contacter aucun serveur. Le rapport reste sur votre ordinateur ; vous seul décidez de l'envoyer.</p>
       </div>
       <div>
-        <h3>Votre responsabilité</h3>
+        <h3 data-t="terms.h4">Votre responsabilité</h3>
         <ul>
-          <li>Vous êtes radioamateur titulaire d'un certificat d'opérateur, ou cibiste sur une bande où vous avez le droit d'émettre.</li>
-          <li>Le poste est branché sur une <b>charge fictive</b> adaptée à sa puissance, jamais sur une antenne pendant les émissions.</li>
-          <li>Vous restez devant le poste pendant tout le test, prêt à le repasser en réception ou à le couper (bouton STOP, touche Échap, interrupteur du poste).</li>
-          <li>Vous connaissez votre station et vérifiez avant de commencer qu'elle est en état d'émettre sans risque (câbles, alimentation, ventilation).</li>
+          <li data-t="terms.r1">Vous êtes radioamateur titulaire d'un certificat d'opérateur, ou cibiste sur une bande où vous avez le droit d'émettre.</li>
+          <li data-t="terms.r2">Le poste est branché sur une <b>charge fictive</b> adaptée à sa puissance, jamais sur une antenne pendant les émissions.</li>
+          <li data-t="terms.r3">Vous restez devant le poste pendant tout le test, prêt à le repasser en réception ou à le couper (bouton STOP, touche Échap, interrupteur du poste).</li>
+          <li data-t="terms.r4">Vous connaissez votre station et vérifiez avant de commencer qu'elle est en état d'émettre sans risque (câbles, alimentation, ventilation).</li>
         </ul>
       </div>
       <div class="t-legal">
-        <h3>Limitation de responsabilité</h3>
-        <p>Ce logiciel libre est fourni « tel quel », sans aucune garantie, comme le prévoit sa licence (GNU AGPL v3, articles 15 et 16). Dans toute la mesure permise par la loi, RF-DIY.COM et les contributeurs du projet openRemoteTRX déclinent toute responsabilité pour les dommages qui pourraient survenir pendant ou après le test : à votre poste, à votre station et à ses accessoires, à votre ordinateur, à des tiers, ou à vous-même ; ainsi que pour tout brouillage ou toute émission non conforme à la réglementation. Vous utilisez cet outil sous votre seule responsabilité.</p>
+        <h3 data-t="terms.h5">Limitation de responsabilité</h3>
+        <p data-t="terms.p5">Ce logiciel libre est fourni « tel quel », sans aucune garantie, comme le prévoit sa licence (GNU AGPL v3, articles 15 et 16). Dans toute la mesure permise par la loi, RF-DIY.COM et les contributeurs du projet openRemoteTRX déclinent toute responsabilité pour les dommages qui pourraient survenir pendant ou après le test : à votre poste, à votre station et à ses accessoires, à votre ordinateur, à des tiers, ou à vous-même ; ainsi que pour tout brouillage ou toute émission non conforme à la réglementation. Vous utilisez cet outil sous votre seule responsabilité.</p>
       </div>
     </div>
     <div class="dlg-foot">
-      <label class="check" for="terms-ok"><input type="checkbox" id="terms-ok"><span>J'accepte les conditions d'utilisation de cette application et j'accepte les risques.</span></label>
-      <button type="button" class="btn primary go" id="terms-go" disabled>Démarrer les tests anonymes de ma station</button>
+      <label class="check" for="terms-ok"><input type="checkbox" id="terms-ok"><span data-t="terms.accept">J'accepte les conditions d'utilisation de cette application et j'accepte les risques.</span></label>
+      <button data-t="terms.go" type="button" class="btn primary go" id="terms-go" disabled>Démarrer les tests anonymes de ma station</button>
     </div>
   </div>
 </div>
 <div class="overlay" id="o-auth" hidden>
   <div class="card">
-    <h2>Autorisation d'émettre</h2>
+    <h2 data-t="auth.t">Autorisation d'émettre</h2>
     <p id="auth-where"></p>
     <ul id="auth-list"></ul>
-    <p class="what">Chaque émission est coupée par la page au plus tard à 10 s. STOP ou Échap à tout moment.</p>
-    <label class="check"><input type="checkbox" id="auth-load"><span>Mon poste est sur une <b>charge fictive</b>.</span></label>
-    <div class="row"><button type="button" class="btn primary" id="auth-ok" disabled>J'autorise les émissions d'essai</button>
-      <button type="button" class="btn" id="auth-no">Ne pas émettre</button></div>
+    <p data-t="auth.p" class="what">Chaque émission est coupée par la page au plus tard à 10 s. STOP ou Échap à tout moment.</p>
+    <label class="check"><input type="checkbox" id="auth-load"><span data-t="auth.load">Mon poste est sur une <b>charge fictive</b>.</span></label>
+    <div class="row"><button data-t="auth.ok" type="button" class="btn primary" id="auth-ok" disabled>J'autorise les émissions d'essai</button>
+      <button type="button" class="btn" id="auth-no" data-t="auth.no">Ne pas émettre</button></div>
   </div>
 </div>
 <div class="overlay" id="o-power" hidden>
   <div class="card">
-    <h2>Puissance à régler à la main</h2>
+    <h2 data-t="power.t">Puissance à régler à la main</h2>
     <p id="power-t"></p>
-    <div class="row"><button type="button" class="btn primary" id="power-ok">C'est réglé</button>
-      <button type="button" class="btn" id="power-no">Ne pas émettre</button></div>
+    <div class="row"><button data-t="power.ok" type="button" class="btn primary" id="power-ok">C'est réglé</button>
+      <button type="button" class="btn" id="power-no" data-t="power.no">Ne pas émettre</button></div>
   </div>
 </div>
 
+<script src="i18n.js"></script>
+<script src="en.js"></script>
 <script src="civ.js"></script>
 <script src="yaesu.js"></script>
 <script src="kenwood.js"></script>

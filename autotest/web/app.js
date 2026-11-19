@@ -5,7 +5,7 @@
    Node) ; ici, les COUPURES D'URGENCE de la page : STOP, Échap, onglet caché, fermeture, erreur, port perdu. */
 (function () {
   "use strict";
-  const { AtCiv: civ, AtYaesu: yaesu, AtKenwood: kenwood, AtModels: models, AtRunner: R, AtReport: rep } = window;
+  const { AtI18n: I18N, AtCiv: civ, AtYaesu: yaesu, AtKenwood: kenwood, AtModels: models, AtRunner: R, AtReport: rep } = window;
   const $ = id => document.getElementById(id);
   const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -14,6 +14,8 @@
   $("ver").textContent = "version " + rep.VERSION;
 
   // ---------- Accueil, marque, modèle ----------
+  const T = I18N.T;
+  I18N.apply(document);
   const hasSerial = "serial" in navigator;
   if (!hasSerial) { $("noserial").hidden = false; $("b-start").disabled = true; }
   $("b-start").onclick = () => { buildBrands(); show("s-brand"); };
@@ -30,7 +32,7 @@
     const box = $("brands"); box.textContent = "";
     for (const b of models.BRANDS) {
       const c = el("button", "choice", b.name); c.type = "button";
-      c.appendChild(el("small", null, b.ready ? "prêt" : "bientôt"));
+      c.appendChild(el("small", null, b.ready ? T("prêt") : T("bientôt")));
       c.disabled = !b.ready;
       c.onclick = () => { S.brand = b; buildModels(); show("s-model"); };
       box.appendChild(c);
@@ -43,24 +45,24 @@
       c.onclick = () => { S.chosen = m; S.model = m;
         $("port-driver").hidden = !(m && m.piloteIcom && /Windows/i.test(navigator.userAgent));   // pilote 1.80 (2026-11-19)
         $("port-help").textContent = S.brand.family === "yaesu"
-          ? `${m ? m.name + " : " : ""}la CAT passe par le port « Enhanced COM Port » (deux ports « Silicon Labs CP2105 » ; l'autre, « Standard », ne sert pas ici). Vitesse : celle du menu CAT RATE du poste (38400 d'usine), la page essaie 38400, 9600, 19200 et 4800.`
+          ? T("{name}la CAT passe par le port « Enhanced COM Port » (deux ports « Silicon Labs CP2105 » ; l'autre, « Standard », ne sert pas ici). Vitesse : celle du menu CAT RATE du poste (38400 d'usine), la page essaie 38400, 9600, 19200 et 4800.", { name: m ? m.name + " : " : "" })
           : S.brand.family === "kenwood"
-          ? `${m ? m.name + " : " : ""}la CAT passe par le port « Enhanced COM Port » (ports « Silicon Labs CP2105 »). Vitesse : celle du menu du port USB du poste (115200 d'usine). Pendant l'essai, la page met en marche l'information automatique (AI2, non sauvegardée) : c'est le seul moyen de savoir si le poste émet ; elle est remise à la fin.`
-          : m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste.";
+          ? T("{name}la CAT passe par le port « Enhanced COM Port » (ports « Silicon Labs CP2105 »). Vitesse : celle du menu du port USB du poste (115200 d'usine). Pendant l'essai, la page met en marche l'information automatique (AI2, non sauvegardée) : c'est le seul moyen de savoir si le poste émet ; elle est remise à la fin.", { name: m ? m.name + " : " : "" })
+          : m ? T("{name} : adresse CI-V d'usine {addr}h.", { name: m.name, addr: m.addr.toString(16).toUpperCase() }) : T("La page cherchera l'adresse du poste.");
         show("s-port"); };
       box.appendChild(c);
     };
-    for (const m of models.modelsOf(S.brand.id)) add(m, m.name, (m.verifie ? "vérifié" : "non vérifié") + ` · ${m.maxW} W`);
-    add(null, "Je ne sais pas", "la page cherchera");
+    for (const m of models.modelsOf(S.brand.id)) add(m, m.name, (m.verifie ? T("vérifié") : T("non vérifié")) + ` · ${m.maxW} W`);
+    add(null, T("Je ne sais pas"), T("la page cherchera"));
   }
   $("b-back-brand").onclick = () => show("s-brand");
   $("b-back-model").onclick = () => show("s-model");
 
   // ---------- Web Serial ----------
   // Délai maximum d'un appel au port : un pilote qui ne répond plus donne une erreur claire au lieu d'une page figée.
-  const within = (p, ms, what) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(`${what} : pas de réponse du port en ${ms / 1000} s`)), ms))]);
+  const within = (p, ms, what) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(T("{what} : pas de réponse du port en {s} s", { what, s: ms / 1000 }))), ms))]);
   async function openAt(port, baud) {
-    await within(port.open({ baudRate: baud, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" }), 5000, "ouverture");
+    await within(port.open({ baudRate: baud, dataBits: 8, stopBits: 1, parity: "none", flowControl: "none" }), 5000, T("ouverture"));
     // RTS et DTR baissés tout de suite : certains postes passent en émission sur ces lignes (réglage USB SEND / Keying).
     try { await within(port.setSignals({ dataTerminalReady: false, requestToSend: false }), 3000, "DTR / RTS"); } catch (e) { /* non géré */ }
     const writer = port.writable.getWriter(), reader = port.readable.getReader();
@@ -69,7 +71,7 @@
     return {
       onData(f) { cb = f; },
       async write(bytes) { await writer.write(bytes); },
-      async close() { reading = false; try { await reader.cancel(); } catch (e) {} try { reader.releaseLock(); } catch (e) {} try { writer.releaseLock(); } catch (e) {} await within(port.close(), 5000, "fermeture"); },
+      async close() { reading = false; try { await reader.cancel(); } catch (e) {} try { reader.releaseLock(); } catch (e) {} try { writer.releaseLock(); } catch (e) {} await within(port.close(), 5000, T("fermeture")); },
     };
   }
 
@@ -80,20 +82,20 @@
     const status = $("port-status");
     // Pause de 5 s avant d'ouvrir le port (demande de l'utilisateur, 2026-11-19 : Chrome se figeait à l'ouverture juste
     // après la fenêtre de choix du port).
-    for (let s = 5; s > 0; s--) { status.textContent = `Ouverture du port dans ${s} s…`; await new Promise(r => setTimeout(r, 1000)); }
-    const onTry = b => { status.textContent = `Essai à ${b} bauds…`; };
+    for (let s = 5; s > 0; s--) { status.textContent = T("Ouverture du port dans {s} s…", { s }); await new Promise(r => setTimeout(r, 1000)); }
+    const onTry = b => { status.textContent = T("Essai à {b} bauds…", { b }); };
     const d = S.brand.family === "yaesu"
       ? await yaesu.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.YAESU_BAUDS, byId: models.byIdent, onTry })
       : S.brand.family === "kenwood"
       ? await kenwood.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.KENWOOD_BAUDS, byId: models.byKenwood, onTry })
       : await R.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.ICOM_BAUDS, byAddr: models.byAddr, onTry });
     $("b-port").disabled = false;
-    if (d.error === "port") { status.textContent = "Port impossible à ouvrir : un autre logiciel l'utilise peut-être (WSJT-X, logiciel du constructeur, station openRemoteTRX). Fermez-le et recommencez."; return; }
+    if (d.error === "port") { status.textContent = T("Port impossible à ouvrir : un autre logiciel l'utilise peut-être (WSJT-X, logiciel du constructeur, station openRemoteTRX). Fermez-le et recommencez."); return; }
     if (d.error) { status.textContent = S.brand.family === "yaesu"
-      ? "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », et la vitesse CAT RATE dans son menu."
+      ? T("Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », et la vitesse CAT RATE dans son menu.")
       : S.brand.family === "kenwood"
-      ? "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », la vitesse du port USB dans son menu, et que « PSQ/PKS Pin Assignment » n'est pas sur « On »."
-      : "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le bon port, et la vitesse CI-V USB dans son menu."; return; }
+      ? T("Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », la vitesse du port USB dans son menu, et que « PSQ/PKS Pin Assignment » n'est pas sur « On ».")
+      : T("Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le bon port, et la vitesse CI-V USB dans son menu."); return; }
     S.detected = d;
     if (!S.model && d.guess) S.model = d.guess;
     startRun();
@@ -127,19 +129,19 @@
   const GUESS = /USB Audio CODEC|USB Audio Device|IC-?7300|IC-?705|IC-?9700|IC-?7610|C-Media/i;
   function chooseAudio() {
     return new Promise(async resolve => {
-      $("o-audio").hidden = false; $("a-status").textContent = "Demande d'accès à la carte son…";
+      $("o-audio").hidden = false; $("a-status").textContent = T("Demande d'accès à la carte son…");
       try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); }
-      catch (e) { $("a-status").textContent = "Accès refusé : les essais de la carte son seront sautés."; }
+      catch (e) { $("a-status").textContent = T("Accès refusé : les essais de la carte son seront sautés."); $("a-status").dataset.refused = "1"; }
       const devs = await navigator.mediaDevices.enumerateDevices().catch(() => []);
       const fill = (sel, kind) => {
         sel.textContent = "";
         const list = devs.filter(d => d.kind === kind && d.deviceId && d.deviceId !== "default" && d.deviceId !== "communications");
-        sel.appendChild(el("option", null, "— aucune —")).value = "";
-        for (const d of list) { const o = el("option", null, d.label || "(sans nom)"); o.value = d.deviceId; sel.appendChild(o); }
+        sel.appendChild(el("option", null, T("— aucune —"))).value = "";
+        for (const d of list) { const o = el("option", null, d.label || T("(sans nom)")); o.value = d.deviceId; sel.appendChild(o); }
         const g = list.find(d => GUESS.test(d.label)); if (g) sel.value = g.deviceId;
       };
       fill($("a-in"), "audioinput"); fill($("a-out"), "audiooutput");
-      if (!$("a-status").textContent.startsWith("Accès refusé")) $("a-status").textContent = "Carte du poste proposée quand son nom est reconnu : vérifiez.";
+      if (!$("a-status").dataset.refused) $("a-status").textContent = T("Carte du poste proposée quand son nom est reconnu : vérifiez.");
       const done = ok => {
         $("o-audio").hidden = true;
         if (ok) { audio.inId = $("a-in").value || null; audio.outId = $("a-out").value || null;
@@ -154,8 +156,8 @@
   // ---------- Autorisation, puissance à la main ----------
   function authorize(info) {
     return new Promise(resolve => {
-      const w = info.watts != null ? ` (${info.watts.toFixed(info.watts < 10 ? 1 : 0)} W sur ${info.maxW} W)` : "";
-      $("auth-where").textContent = `Fréquence ${R.fmtHz(info.hz)} MHz, puissance réglée à ${info.pct} %${w} avant la première émission.`;
+      const w = info.watts != null ? T(" ({w} W sur {max} W)", { w: info.watts.toFixed(info.watts < 10 ? 1 : 0), max: info.maxW }) : "";
+      $("auth-where").textContent = T("Fréquence {f} MHz, puissance réglée à {pct} %{w} avant la première émission.", { f: R.fmtHz(info.hz), pct: info.pct, w });
       const ul = $("auth-list"); ul.textContent = "";
       for (const [c, t, ms] of info.emissions) ul.appendChild(el("li", null, `${c} : ${t}, ${(ms / 1000).toFixed(0)} s`));
       $("auth-load").checked = false; $("auth-ok").disabled = true;
@@ -168,7 +170,7 @@
   function confirmManualPower(info) {
     return new Promise(resolve => {
       const w = info.watts != null ? ` (${info.watts.toFixed(1)} W)` : "";
-      $("power-t").textContent = `La puissance n'a pas pu être réglée ou relue par la CAT. Réglez-la à la main à ${info.pct} %${w} sur le poste, puis confirmez.`;
+      $("power-t").textContent = T("La puissance n'a pas pu être réglée ou relue par la CAT. Réglez-la à la main à {pct} %{w} sur le poste, puis confirmez.", { pct: info.pct, w });
       $("o-power").hidden = false;
       const done = v => { $("o-power").hidden = true; resolve(v); };
       $("power-ok").onclick = () => done(true); $("power-no").onclick = () => done(false);
@@ -180,7 +182,7 @@
   let stepIndex = 0;
   function buildSteps() {
     const ol = $("steps"); ol.textContent = "";
-    R.STEPS.forEach(([c, t]) => { const li = el("li", "todo"); li.id = "st-" + c; li.append(el("span", "s", SYM.todo), el("span", "c", c), el("span", null, t)); ol.appendChild(li); });
+    R.STEPS.forEach(([c, t]) => { const li = el("li", "todo"); li.id = "st-" + c; li.append(el("span", "s", SYM.todo), el("span", "c", c), el("span", null, T(t))); ol.appendChild(li); });
     $("stept").textContent = R.STEPS.length;
   }
   function setStep(code, state) {
@@ -211,31 +213,31 @@
     for (const k of ["po", "swr", "alc"]) {
       const off = na.includes(k);
       $("m-" + k).classList.toggle("na", off);
-      if (off) { $(k + "-v").textContent = "non disponible"; $(k + "-p").textContent = "le poste ne le donne pas"; }
+      if (off) { $(k + "-v").textContent = T("non disponible"); $(k + "-p").textContent = T("le poste ne le donne pas"); }
     }
-    if (s.po != null) { const w = maxW ? s.po * maxW / 100 : null, p = peak("po", s.po); meter("po", Math.min(100, s.po), "var(--ok)", w != null ? fmt(w, w < 10 ? 1 : 0) + " W" : fmt(s.po, 0) + " %", Math.min(100, p), "crête " + (maxW ? fmt(p * maxW / 100, 1) + " W" : fmt(p, 0) + " %")); }
-    if (s.swr != null) { const p = peak("swr", s.swr), c = s.swr <= 1.5 ? "var(--ok)" : s.swr <= 2 ? "var(--warn)" : "var(--bad)"; meter("swr", swrPos(s.swr), c, fmt(s.swr, 2), swrPos(p), "crête " + fmt(p, 2)); $("swr-v").style.color = s.swr > 2 ? "var(--bad)" : s.swr > 1.5 ? "var(--warn)" : ""; }
-    if (s.alc != null) { const p = peak("alc", s.alc); meter("alc", s.alc, s.alc > 50 ? "var(--bad)" : "var(--ok)", fmt(s.alc, 0) + " %", p, "crête " + fmt(p, 0) + " %"); }
+    if (s.po != null) { const w = maxW ? s.po * maxW / 100 : null, p = peak("po", s.po); meter("po", Math.min(100, s.po), "var(--ok)", w != null ? fmt(w, w < 10 ? 1 : 0) + " W" : fmt(s.po, 0) + " %", Math.min(100, p), T("crête {v}", { v: maxW ? fmt(p * maxW / 100, 1) + " W" : fmt(p, 0) + " %" })); }
+    if (s.swr != null) { const p = peak("swr", s.swr), c = s.swr <= 1.5 ? "var(--ok)" : s.swr <= 2 ? "var(--warn)" : "var(--bad)"; meter("swr", swrPos(s.swr), c, fmt(s.swr, 2), swrPos(p), T("crête {v}", { v: fmt(p, 2) })); $("swr-v").style.color = s.swr > 2 ? "var(--bad)" : s.swr > 1.5 ? "var(--warn)" : ""; }
+    if (s.alc != null) { const p = peak("alc", s.alc); meter("alc", s.alc, s.alc > 50 ? "var(--bad)" : "var(--ok)", fmt(s.alc, 0) + " %", p, T("crête {v}", { v: fmt(p, 0) + " %" })); }
   }
   let countTimer = null, txInfo = null;
   function onTx(ev) {
     const tx = $("tx"); tx.hidden = false;
     if (ev.on) {
-      tx.classList.remove("rx"); $("bandtxt").textContent = "Émission en cours"; $("countbox").hidden = false;
+      tx.classList.remove("rx"); $("bandtxt").textContent = T("Émission en cours"); $("countbox").hidden = false;
       resetMeters();
       const ms = txInfo ? txInfo.ms : ev.maxTx, t0 = performance.now();
       clearInterval(countTimer);
       countTimer = setInterval(() => { const left = Math.max(0, ms - (performance.now() - t0)); $("count").textContent = fmt(left / 1000, 1) + " s"; $("countbar").style.width = (left / ms * 100) + "%"; }, 100);
     } else {
       clearInterval(countTimer); tx.classList.add("rx"); $("countbox").hidden = true;
-      $("bandtxt").textContent = ev.rx ? "Réception" : "RÉCEPTION NON RELUE : coupez le poste à la main";
+      $("bandtxt").textContent = ev.rx ? T("Réception") : T("RÉCEPTION NON RELUE : coupez le poste à la main");
       resetMeters();
     }
   }
   function onTxInfo(ev) {
     txInfo = ev; const i = ev.info || {};
     $("txwhat").innerHTML = "";
-    $("txwhat").append("Essai ", el("b", null, ev.code), ` : ${i.what || ""}. Puissance ${S.runner ? S.runner.o.power : 10} % du poste${S.model ? " (" + fmt(S.model.maxW / 10, S.model.maxW < 100 ? 1 : 0) + " W)" : ""}, charge fictive.`);
+    $("txwhat").append(T("Essai "), el("b", null, ev.code), T(" : {what}. Puissance {pct} % du poste{w}, charge fictive.", { what: i.what || "", pct: S.runner ? S.runner.o.power : 10, w: S.model ? " (" + fmt(S.model.maxW / 10, S.model.maxW < 100 ? 1 : 0) + " W)" : "" }));
     $("freq").textContent = R.fmtHz(i.hz); $("mode").textContent = i.mode || "—";
   }
   const ui = {
@@ -256,18 +258,18 @@
   $("b-stop").onclick = () => emergency("stop");
   document.addEventListener("keydown", e => { if (e.key === "Escape") emergency("stop"); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && S.runner && S.runner.guard.on) emergency("onglet_cache"); });
-  window.addEventListener("pagehide", () => emergency("fermeture"));
-  window.addEventListener("beforeunload", e => { if (S.runner && S.runner.guard.on) { emergency("fermeture"); e.preventDefault(); e.returnValue = ""; } });
+  window.addEventListener("pagehide", () => emergency(T("fermeture")));
+  window.addEventListener("beforeunload", e => { if (S.runner && S.runner.guard.on) { emergency(T("fermeture")); e.preventDefault(); e.returnValue = ""; } });
   window.addEventListener("error", () => emergency("erreur"));
   window.addEventListener("unhandledrejection", () => emergency("erreur"));
   if (hasSerial) navigator.serial.addEventListener("disconnect", e => {
-    if (S.port && e.target === S.port) { emergency("port_perdu"); $("nowtxt").textContent = "Le port USB du poste a disparu : si le poste émet, coupez-le à la main."; }
+    if (S.port && e.target === S.port) { emergency("port_perdu"); $("nowtxt").textContent = T("Le port USB du poste a disparu : si le poste émet, coupez-le à la main."); }
   });
 
   // ---------- Déroulé ----------
   async function startRun() {
     show("s-run"); buildSteps(); $("tx").hidden = true; $("lastres").hidden = true;
-    $("prog-model").textContent = S.model ? S.model.name : "modèle inconnu";
+    $("prog-model").textContent = S.model ? S.model.name : T("modèle inconnu");
     if (S.model) poTicks(S.model.maxW);
     S.startedAt = new Date().toISOString();
     S.runner = new R.Runner({ link: S.detected.link, model: S.model, audio, ui, detected: S.detected });
@@ -283,13 +285,13 @@
     const p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
     return /win/i.test(p) ? "Windows" : /mac/i.test(p) ? "macOS" : /linux/i.test(p) ? "Linux" : null;
   }
-  const VERDICT = { ok: "Votre poste a passé tous les essais disponibles.", avert: "Votre poste répond, avec des points à vérifier.", echec: "Au moins un essai a échoué." };
+  const VERDICT = { ok: T("Votre poste a passé tous les essais disponibles."), avert: T("Votre poste répond, avec des points à vérifier."), echec: T("Au moins un essai a échoué.") };
   function showReport() {
     const s = rep.summary(S.report);
     $("verdict").className = "verdict " + s.verdict; $("verdict").textContent = VERDICT[s.verdict];
     const tb = $("restable"); tb.textContent = "";
     for (const l of s.lines) {
-      const name = (R.STEPS.find(x => x[0] === l.code) || [, l.code])[1];
+      const name = T((R.STEPS.find(x => x[0] === l.code) || [, l.code])[1]);
       const row = el("div", "resitem"), t = el("div", "t");
       t.append(el("b", null, name));
       // Ce qui ne va pas saute aux yeux : un résultat « à vérifier » en orange, un échec en rouge ; dans une ligne en
@@ -299,9 +301,9 @@
       parts.forEach((p, i) => {
         if (i) t.append(" ; ");
         const fine = !bad || (parts.length > 1 && /^\d+ OK/.test(p));
-        t.append(fine ? p : el("span", /NON REMIS/.test(p) ? "txt-bad" : bad, p));
+        t.append(fine ? p : el("span", /NON REMIS|NOT RESTORED/.test(p) ? "txt-bad" : bad, p));
       });
-      row.append(el("span", "c", l.code), t, el("span", "pill " + l.statut, l.label));
+      row.append(el("span", "c", l.code), t, el("span", "pill " + l.statut, T(l.label)));
       tb.appendChild(row);
     }
     show("s-report"); $("b-stop").hidden = false;

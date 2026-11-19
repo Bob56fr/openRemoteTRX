@@ -8,6 +8,7 @@
 (function (root) {
   "use strict";
   const civ = (typeof module !== "undefined" && module.exports) ? require("./civ.js") : root.AtCiv;
+  const { T } = (typeof module !== "undefined" && module.exports) ? require("./i18n.js") : root.AtI18n;
 
   const DEFAULTS = { e1: 3000, e2: 5000, e4: 8000, e6: 2000, sample: 200, maxTx: 10000, settle: 150, power: 10 };
 
@@ -124,14 +125,14 @@
 
     async run() {
       const d = this.detected;
-      this.result("R1", "ok", `Le poste répond à ${d.baud} bauds.`, { baud: d.baud });
+      this.result("R1", "ok", T("Le poste répond à {baud} bauds.", { baud: d.baud }), { baud: d.baud });
       this._r2();
       try {
         await this._reception();
         if (this.aborted) return this._finish();
         const go = await this._authorize();
         if (go && !this.aborted) await this._emissions();
-        else for (const c of ["E1", "E2", "E3", "E4", "E6"]) if (!this.results.find(r => r.code === c)) this.result(c, "saute", go ? "Essais arrêtés." : "Émissions non autorisées.");
+        else for (const c of ["E1", "E2", "E3", "E4", "E6"]) if (!this.results.find(r => r.code === c)) this.result(c, "saute", go ? T("Essais arrêtés.") : T("Émissions non autorisées."));
       } catch (e) {
         this.emit({ type: "error", text: String(e && e.message || e) });
         await this.guard.unkey("erreur");
@@ -147,13 +148,14 @@
     _r2() {
       const d = this.detected, m = this.model, hexA = a => a.toString(16).toUpperCase().padStart(2, "0") + "h";
       if (d.ident != null) {                                         // Yaesu : identité « ID; »
-        if (m && m.ident === d.ident) this.result("R2", "ok", `${m.name} reconnu (identité ${d.ident}).`, { ident: d.ident });
-        else this.result("R2", d.guess ? "ok" : "avert", d.guess ? `Poste reconnu : ${d.guess.name} (identité ${d.ident}).` : `Identité ${d.ident} : modèle inconnu de la table${m ? ", pas celle du " + m.name : ""}.`, { ident: d.ident });
+        if (m && m.ident === d.ident) this.result("R2", "ok", T("{name} reconnu (identité {id}).", { name: m.name, id: d.ident }), { ident: d.ident });
+        else if (d.guess) this.result("R2", "ok", T("Poste reconnu : {name} (identité {id}).", { name: d.guess.name, id: d.ident }), { ident: d.ident });
+        else this.result("R2", "avert", m ? T("Identité {id} : modèle inconnu de la table, pas celle du {name}.", { id: d.ident, name: m.name }) : T("Identité {id} : modèle inconnu de la table.", { id: d.ident }), { ident: d.ident });
         return;
       }
-      if (!m) this.result("R2", d.guess ? "ok" : "avert", d.guess ? `Poste reconnu : ${d.guess.name} (adresse ${hexA(d.addr)}).` : `Poste à l'adresse ${hexA(d.addr)}, modèle inconnu de la table.`, { addr: d.addr });
-      else if (d.addr === m.addr) this.result("R2", "ok", `${m.name} reconnu à son adresse ${hexA(d.addr)}${d.idSupported ? "" : " (identité non gérée par le poste, fréquence lue)"}.`, { addr: d.addr });
-      else this.result("R2", "avert", `Le poste répond à l'adresse ${hexA(d.addr)}${d.guess ? " (" + d.guess.name + " ?)" : ""}, pas à celle du ${m.name} (${hexA(m.addr)}) : adresse CI-V changée dans le poste, ou autre modèle.`, { addr: d.addr });
+      if (!m) this.result("R2", d.guess ? "ok" : "avert", d.guess ? T("Poste reconnu : {name} (adresse {addr}).", { name: d.guess.name, addr: hexA(d.addr) }) : T("Poste à l'adresse {addr}, modèle inconnu de la table.", { addr: hexA(d.addr) }), { addr: d.addr });
+      else if (d.addr === m.addr) this.result("R2", "ok", d.idSupported ? T("{name} reconnu à son adresse {addr}.", { name: m.name, addr: hexA(d.addr) }) : T("{name} reconnu à son adresse {addr} (identité non gérée par le poste, fréquence lue).", { name: m.name, addr: hexA(d.addr) }), { addr: d.addr });
+      else this.result("R2", "avert", T("Le poste répond à l'adresse {addr}{guess}, pas à celle du {name} ({maddr}) : adresse CI-V changée dans le poste, ou autre modèle.", { addr: hexA(d.addr), guess: d.guess ? " (" + d.guess.name + " ?)" : "", name: m.name, maddr: hexA(m.addr) }), { addr: d.addr });
     }
 
     async _timed(fn) { const t = Date.now(); const v = await fn(); this.timings.push(Date.now() - t); return v; }
@@ -161,46 +163,46 @@
     async _reception() {
       const L = this.link;
       // R3
-      this.step("R3", "cur"); this.now("Lecture de la fréquence et du mode…");
+      this.step("R3", "cur"); this.now(T("Lecture de la fréquence et du mode…"));
       const f1 = await this._timed(() => L.readFreq()), m1 = await this._timed(() => L.readMode());
       const f2 = await this._timed(() => L.readFreq()), m2 = await this._timed(() => L.readMode());
       this.orig.freq = f1; this.orig.mode = m1;
-      if (f1 == null || m1 == null) this.result("R3", "echec", "Fréquence ou mode illisible.");
-      else if (f1 !== f2 || m1.code !== m2.code) this.result("R3", "avert", "Deux lectures différentes : quelqu'un touche le poste ?", { f1, f2 });
-      else this.result("R3", "ok", `${fmtHz(f1)} MHz, ${m1.name}.`, { hz: f1, mode: m1.name, filter: m1.filter });
+      if (f1 == null || m1 == null) this.result("R3", "echec", T("Fréquence ou mode illisible."));
+      else if (f1 !== f2 || m1.code !== m2.code) this.result("R3", "avert", T("Deux lectures différentes : quelqu'un touche le poste ?"), { f1, f2 });
+      else this.result("R3", "ok", T("{f} MHz, {mode}.", { f: fmtHz(f1), mode: m1.name }), { hz: f1, mode: m1.name, filter: m1.filter });
       this.orig.data = await L.readDataMode();
       this.orig.power = await L.meter("power");
       if (this.aborted) return;
       // R4
-      this.step("R4", "cur"); this.now("Lecture du S-mètre…");
+      this.step("R4", "cur"); this.now(T("Lecture du S-mètre…"));
       const s = [];
       for (let i = 0; i < 8 && !this.aborted; i++) { s.push(await this._timed(() => L.meter("s"))); await this.wait(150); }
       const got = s.filter(v => v != null);
-      if (!got.length) this.result("R4", "na", "S-mètre non lu par la CAT.");
-      else this.result("R4", "ok", `De ${L.scale.sText(Math.min(...got))} à ${L.scale.sText(Math.max(...got))}.`, { raw: got });
+      if (!got.length) this.result("R4", "na", T("S-mètre non lu par la CAT."));
+      else this.result("R4", "ok", T("De {a} à {b}.", { a: L.scale.sText(Math.min(...got)), b: L.scale.sText(Math.max(...got)) }), { raw: got });
       // R5
-      this.step("R5", "cur"); this.now("Mesure du temps de réponse…");
+      this.step("R5", "cur"); this.now(T("Mesure du temps de réponse…"));
       const t = this.timings.slice().sort((a, b) => a - b);
       const med = t.length ? t[Math.floor(t.length / 2)] : null, max = t.length ? t[t.length - 1] : null;
-      if (med == null) this.result("R5", "na", "Aucune mesure.");
-      else this.result("R5", med > 200 ? "avert" : "ok", `Médiane ${med} ms, pire ${max} ms sur ${t.length} lectures.`, { median_ms: med, max_ms: max, n: t.length });
+      if (med == null) this.result("R5", "na", T("Aucune mesure."));
+      else this.result("R5", med > 200 ? "avert" : "ok", T("Médiane {med} ms, pire {max} ms sur {n} lectures.", { med, max, n: t.length }), { median_ms: med, max_ms: max, n: t.length });
       // R6
-      this.step("R6", "cur"); this.now("Lecture du PTT…");
+      this.step("R6", "cur"); this.now(T("Lecture du PTT…"));
       const ptt = await L.readPtt();
       this.pttReadable = ptt !== null;
-      if (ptt === true) { this.result("R6", "echec", "Le poste est DÉJÀ en émission : essais arrêtés (la page ne touche pas à une émission de l'opérateur)."); this.aborted = true; this.stopReason = "deja_en_emission"; return; }
-      if (ptt === null) this.result("R6", "avert", "PTT illisible par la CAT : les émissions d'essai ne seront pas faites (retour en réception impossible à vérifier).");
-      else this.result("R6", "ok", L.pttTracked ? "Réception (ce poste ne se lit pas en émission par la CAT : état suivi par ses annonces automatiques AI, mises en marche pour l'essai)." : "Réception.");
+      if (ptt === true) { this.result("R6", "echec", T("Le poste est DÉJÀ en émission : essais arrêtés (la page ne touche pas à une émission de l'opérateur).")); this.aborted = true; this.stopReason = "deja_en_emission"; return; }
+      if (ptt === null) this.result("R6", "avert", T("PTT illisible par la CAT : les émissions d'essai ne seront pas faites (retour en réception impossible à vérifier)."));
+      else this.result("R6", "ok", L.pttTracked ? T("Réception (ce poste ne se lit pas en émission par la CAT : état suivi par ses annonces automatiques AI, mises en marche pour l'essai).") : T("Réception."));
       // R7
-      this.step("R7", "cur"); this.now("Carte son du poste…");
+      this.step("R7", "cur"); this.now(T("Carte son du poste…"));
       await this._audio();
       if (this.aborted) return;
       // R8
-      this.step("R8", "cur"); this.now("Écriture de la fréquence (+1 kHz) puis du mode…");
+      this.step("R8", "cur"); this.now(T("Écriture de la fréquence (+1 kHz) puis du mode…"));
       await this._r8();
       if (this.aborted) return;
       // R9
-      this.step("R9", "cur"); this.now("Fonctions du poste : lecture, changement, relecture, remise…");
+      this.step("R9", "cur"); this.now(T("Fonctions du poste : lecture, changement, relecture, remise…"));
       await this._r9();
     }
 
@@ -210,7 +212,7 @@
       try {
         for (const f of L.funcs) {
           if (this.aborted) break;
-          this.now(`Fonction ${f.code} : lecture, changement, relecture, remise…`);
+          this.now(T("Fonction {code} : lecture, changement, relecture, remise…", { code: f.code }));
           const row = { code: f.code, label: f.label };
           const v0 = await L.fnRead(f);
           if (v0 == null) { row.statut = "absent"; out.push(row); continue; }
@@ -223,7 +225,7 @@
           await L.fnWrite(f, v0);
           const r2 = await L.fnRead(f); row.remis = r2;
           const near = L.fnNear(f, r1, v1);                    // niveau arrondi au cran du poste (voir civ.js)
-          if (near && !same(r1, v1)) row.note = `arrondi au cran du poste (écrit ${L.fnShow(v1)}, relu ${L.fnShow(r1)})`;
+          if (near && !same(r1, v1)) row.note = T("arrondi au cran du poste (écrit {w}, relu {r})", { w: L.fnShow(v1), r: L.fnShow(r1) });
           row.statut = !same(r2, v0) ? "remise" : !(same(r1, v1) || near) ? "ecart" : "ok";
           out.push(row);
         }
@@ -242,18 +244,18 @@
       const by = s => out.filter(x => x.statut === s).map(x => x.code);
       const ok = by("ok"), abs = by("absent"), ref = by("refus"), ec = by("ecart"), bad = by("remise");
       const parts = [];
-      if (ok.length) parts.push(`${ok.length} OK : ${ok.join(", ")}`);
-      if (ec.length) parts.push(`relues fausses : ${ec.join(", ")}`);
-      if (ref.length) parts.push(`écriture refusée : ${ref.join(", ")}`);
-      if (abs.length) parts.push(`absentes : ${abs.join(", ")}`);
-      if (bad.length) parts.push(`NON REMISES (à remettre à la main) : ${bad.join(", ")}`);
+      if (ok.length) parts.push(T("{n} OK : {list}", { n: ok.length, list: ok.join(", ") }));
+      if (ec.length) parts.push(T("relues fausses : {list}", { list: ec.join(", ") }));
+      if (ref.length) parts.push(T("écriture refusée : {list}", { list: ref.join(", ") }));
+      if (abs.length) parts.push(T("absentes : {list}", { list: abs.join(", ") }));
+      if (bad.length) parts.push(T("NON REMISES (à remettre à la main) : {list}", { list: bad.join(", ") }));
       const status = bad.length ? "echec" : (ec.length || ref.length) ? "avert" : ok.length ? "ok" : "na";
       this.result("R9", status, parts.join(" ; ") + ".", { fonctions: out });
     }
 
     // VFO A / B : échange, relecture, échange de nouveau, relecture (on ne sait pas lire QUEL VFO est choisi).
     async _vfo() {
-      const L = this.link, row = { code: "VFO A/B", label: "Échange des VFO A et B" };
+      const L = this.link, row = { code: "VFO A/B", label: T("Échange des VFO A et B") };
       const f0 = await L.readFreq(), o0 = await L.vfoOther();
       if (f0 == null) { row.statut = "absent"; return row; }
       const w = await L.vfoSwap();
@@ -264,52 +266,52 @@
       row.avant = fmtHz(f0); row.autre = o0 == null ? null : fmtHz(o0); row.relu = fmtHz(f1); row.remis = fmtHz(f2);
       if (f2 !== f0) row.statut = "remise";
       else if (o0 != null) row.statut = f1 === o0 ? "ok" : "ecart";
-      else { row.statut = "ok"; if (f1 === f0) row.note = "fréquences A et B peut-être identiques : échange non vérifiable"; }
+      else { row.statut = "ok"; if (f1 === f0) row.note = T("fréquences A et B peut-être identiques : échange non vérifiable"); }
       return row;
     }
 
     async _audio() {
       const a = this.audio;
       const chosen = a ? await this.ui.chooseAudio() : null;
-      if (!chosen || !a.hasInput()) { this.result("R7", "na", "Carte son du poste non choisie."); return; }
+      if (!chosen || !a.hasInput()) { this.result("R7", "na", T("Carte son du poste non choisie.")); return; }
       const db = await a.measureInput(1500);
-      if (db == null) this.result("R7", "echec", "Entrée de la carte son illisible.");
-      else if (!isFinite(db) || db < -100) this.result("R7", "avert", "Entrée de la carte son muette (silence numérique) : réglages du son du poste ou de l'ordinateur.", { dbfs: null });
-      else this.result("R7", "ok", `Entrée trouvée, bruit de réception ${db.toFixed(0)} dBFS${a.hasOutput() ? ", sortie choisie pour la tonalité" : ""}.`, { dbfs: Math.round(db) });
+      if (db == null) this.result("R7", "echec", T("Entrée de la carte son illisible."));
+      else if (!isFinite(db) || db < -100) this.result("R7", "avert", T("Entrée de la carte son muette (silence numérique) : réglages du son du poste ou de l'ordinateur."), { dbfs: null });
+      else this.result("R7", "ok", a.hasOutput() ? T("Entrée trouvée, bruit de réception {db} dBFS, sortie choisie pour la tonalité.", { db: db.toFixed(0) }) : T("Entrée trouvée, bruit de réception {db} dBFS.", { db: db.toFixed(0) }), { dbfs: Math.round(db) });
     }
 
     async _r8() {
       const L = this.link, f0 = this.orig.freq, m0 = this.orig.mode;
-      if (f0 == null || m0 == null) { this.result("R8", "na", "Fréquence d'origine inconnue."); return; }
+      if (f0 == null || m0 == null) { this.result("R8", "na", T("Fréquence d'origine inconnue.")); return; }
       const lines = []; let status = "ok";
       let target = f0 + 1000, okF = await L.setFreq(target);
       if (!okF) { target = f0 - 1000; okF = await L.setFreq(target); }
       const rf = okF ? await L.readFreq() : null;
-      if (!okF) { status = "avert"; lines.push("fréquence non réglable par la CAT"); }
-      else if (rf !== target) { status = "avert"; lines.push(`fréquence écrite ${fmtHz(target)}, relue ${fmtHz(rf)}`); }
-      else lines.push(`fréquence ${fmtHz(target)} écrite et relue`);
+      if (!okF) { status = "avert"; lines.push(T("fréquence non réglable par la CAT")); }
+      else if (rf !== target) { status = "avert"; lines.push(T("fréquence écrite {w}, relue {r}", { w: fmtHz(target), r: fmtHz(rf) })); }
+      else lines.push(T("fréquence {f} écrite et relue", { f: fmtHz(target) }));
       if (okF) await L.setFreq(f0);
       const other = m0.name === "USB" ? "LSB" : "USB";
       const okM = await L.setMode(L.modeCode(other), m0.filter);
       const rm = okM ? await L.readMode() : null;
-      if (!okM) { status = "avert"; lines.push("mode non réglable par la CAT"); }
-      else if (!rm || rm.name !== other) { status = "avert"; lines.push(`mode ${other} écrit, relu ${rm ? rm.name : "—"}`); }
-      else lines.push(`mode ${other} écrit et relu`);
+      if (!okM) { status = "avert"; lines.push(T("mode non réglable par la CAT")); }
+      else if (!rm || rm.name !== other) { status = "avert"; lines.push(T("mode {w} écrit, relu {r}", { w: other, r: rm ? rm.name : "—" })); }
+      else lines.push(T("mode {m} écrit et relu", { m: other }));
       if (okM) await L.setMode(m0.code, m0.filter);
       const back = await L.readFreq(), bm = await L.readMode();
-      if (back !== f0 || !bm || bm.code !== m0.code) { status = "avert"; lines.push("état d'origine pas encore relu (remis à la fin)"); }
+      if (back !== f0 || !bm || bm.code !== m0.code) { status = "avert"; lines.push(T("état d'origine pas encore relu (remis à la fin)")); }
       this.result("R8", status, lines.join(" ; ") + ".", { written_hz: target });
     }
 
     async _authorize() {
       this.step("AU", "cur");
-      if (!this.pttReadable) { this.now("Émissions sautées : PTT illisible."); return false; }
+      if (!this.pttReadable) { this.now(T("Émissions sautées : PTT illisible.")); return false; }
       const pct = Math.max(this.o.power, this.model && this.model.minPct || 0);
       const maxW = this.model ? this.model.maxW : null;
       const info = { hz: this.orig.freq, mode: this.orig.mode && this.orig.mode.name, pct, watts: maxW ? maxW * pct / 100 : null, maxW,
-                     emissions: [["E1", "émission par la CAT, sans modulation", this.o.e1], ["E2", "porteuse en FM : puissance et TOS", this.o.e2],
-                                 ["E4", "tonalité 1 kHz en mode données", this.o.e4], ["E6", "coupure par la page (STOP)", this.o.e6]] };
-      this.now("En attente de l'autorisation d'émettre…");
+                     emissions: [["E1", T("émission par la CAT, sans modulation"), this.o.e1], ["E2", T("porteuse en FM : puissance et TOS"), this.o.e2],
+                                 ["E4", T("tonalité 1 kHz en mode données"), this.o.e4], ["E6", T("coupure par la page (STOP)"), this.o.e6]] };
+      this.now(T("En attente de l'autorisation d'émettre…"));
       const ok = await this.ui.authorize(info);
       if (!ok || this.aborted) return false;
       // Puissance : 10 % (ou le minimum du poste), relue.
@@ -363,85 +365,85 @@
     async _emissions() {
       const L = this.link, m0 = this.orig.mode;
       // E1 : émission par la CAT dans le mode d'origine.
-      this.now("E1 : émission par la CAT, sans modulation…");
-      const e1 = await this._emit("E1", this.o.e1, { what: "Émission par la CAT, sans modulation", mode: m0 && m0.name });
+      this.now(T("E1 : émission par la CAT, sans modulation…"));
+      const e1 = await this._emit("E1", this.o.e1, { what: T("Émission par la CAT, sans modulation"), mode: m0 && m0.name });
       if (!e1) return;
-      if (!e1.rx) { this.result("E1", "echec", "Retour en réception NON relu : coupez le poste à la main."); this.aborted = true; return; }
-      if (!e1.pttOn) this.result("E1", "echec", `Ordre d'émission ${e1.acked ? "accepté" : "refusé"} mais PTT relu en réception : émission par la CAT impossible ?`);
-      else this.result("E1", "ok", `Émission relue en ${e1.tOn} ms, réception relue en ${e1.tOff} ms.`, { t_on_ms: e1.tOn, t_off_ms: e1.tOff });
+      if (!e1.rx) { this.result("E1", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
+      if (!e1.pttOn) this.result("E1", "echec", (e1.acked ? T("Ordre d'émission accepté mais PTT relu en réception : émission par la CAT impossible ?") : T("Ordre d'émission refusé et PTT relu en réception : émission par la CAT impossible ?")));
+      else this.result("E1", "ok", T("Émission relue en {on} ms, réception relue en {off} ms.", { on: e1.tOn, off: e1.tOff }), { t_on_ms: e1.tOn, t_off_ms: e1.tOff });
       if (!e1.pttOn || this.aborted) return;
 
       // E2 / E3 : porteuse (FM, sinon RTTY, sinon AM).
       let carrier = null;
       for (const name of ["FM", "RTTY", "RTTY-U", "AM"]) { if (L.modeCode(name) != null && await L.setMode(L.modeCode(name), 1)) { const rm = await L.readMode(); if (rm && rm.name === name) { carrier = name; break; } } }
-      if (!carrier) { this.result("E2", "na", "Aucun mode à porteuse réglable par la CAT."); this.result("E3", "na", "Pas de porteuse."); }
+      if (!carrier) { this.result("E2", "na", T("Aucun mode à porteuse réglable par la CAT.")); this.result("E3", "na", T("Pas de porteuse.")); }
       else {
-        this.now(`E2 / E3 : porteuse en ${carrier}, lecture de la puissance et du TOS…`);
-        const e2 = await this._emit("E2", this.o.e2, { what: `Porteuse en ${carrier}`, mode: carrier });
+        this.now(T("E2 / E3 : porteuse en {m}, lecture de la puissance et du TOS…", { m: carrier }));
+        const e2 = await this._emit("E2", this.o.e2, { what: T("Porteuse en {m}", { m: carrier }), mode: carrier });
         if (!e2) return;
-        if (!e2.rx) { this.result("E2", "echec", "Retour en réception NON relu : coupez le poste à la main."); this.aborted = true; return; }
+        if (!e2.rx) { this.result("E2", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
         const pos = e2.samples.map(s => s.po).filter(v => v != null), swrs = e2.samples.map(s => s.swr).filter(v => v != null);
         const pct = Math.max(this.o.power, this.model && this.model.minPct || 0);
-        if (!pos.length) this.result("E2", "na", "Puissance (Po) non lue par la CAT.");
+        if (!pos.length) this.result("E2", "na", T("Puissance (Po) non lue par la CAT."));
         else {
           const po = pos.reduce((a, b) => a + b, 0) / pos.length, w = this.model ? po * this.model.maxW / 100 : null;
-          const txt = `${po.toFixed(0)} %${w != null ? " (" + fr(w, 1) + " W)" : ""} pour ${pct} % demandés`;
-          if (po < 1) this.result("E2", "echec", `Aucune puissance mesurée en ${carrier} : ${txt}.`, { po_pct: po });
-          else if (po > pct * 2.5 || po < pct / 2.5) this.result("E2", "avert", `Puissance éloignée de la consigne : ${txt}.`, { po_pct: po });
-          else this.result("E2", "ok", `${txt}.`, { po_pct: po, watts: w });
+          const txt = T("{po} %{w} pour {pct} % demandés", { po: po.toFixed(0), w: w != null ? " (" + fr(w, 1) + " W)" : "", pct });
+          if (po < 1) this.result("E2", "echec", T("Aucune puissance mesurée en {m} : {txt}.", { m: carrier, txt }), { po_pct: po });
+          else if (po > pct * 2.5 || po < pct / 2.5) this.result("E2", "avert", T("Puissance éloignée de la consigne : {txt}.", { txt }), { po_pct: po });
+          else this.result("E2", "ok", txt + ".", { po_pct: po, watts: w });
         }
         this.step("E3", "cur");
-        if (!swrs.length) this.result("E3", "na", "TOS non lu par la CAT.");
-        else { const sw = Math.max(...swrs); this.result("E3", sw > 2 ? "avert" : "ok", `TOS ${fr(sw, 2)}${sw > 2 ? " : vérifiez la charge fictive et son câble" : ""}.`, { swr: sw }); }
+        if (!swrs.length) this.result("E3", "na", T("TOS non lu par la CAT."));
+        else { const sw = Math.max(...swrs); this.result("E3", sw > 2 ? "avert" : "ok", (sw > 2 ? T("TOS {s} : vérifiez la charge fictive et son câble.", { s: fr(sw, 2) }) : T("TOS {s}.", { s: fr(sw, 2) })), { swr: sw }); }
       }
       if (this.aborted) return;
 
       // E4 : tonalité par la carte son en mode données.
       this.step("E4", "cur");
-      if (!this.audio || !this.audio.hasOutput()) this.result("E4", "na", "Sortie de la carte son du poste non choisie.");
+      if (!this.audio || !this.audio.hasOutput()) this.result("E4", "na", T("Sortie de la carte son du poste non choisie."));
       else {
         const okMode = await L.setMode(L.modeCode("USB"), (m0 && m0.filter) || 1);
         const okData = okMode && await L.setDataMode(1, (m0 && m0.filter) || 1);
         const rd = okData ? await L.readDataMode() : null;
-        if (!okData || !rd || !rd.on) this.result("E4", "na", "Mode données non réglable par la CAT.");
+        if (!okData || !rd || !rd.on) this.result("E4", "na", T("Mode données non réglable par la CAT."));
         else {
-          this.now(`E4 : tonalité 1 kHz par la carte son, en ${L.dataLabel}…`);
+          this.now(T("E4 : tonalité 1 kHz par la carte son, en {m}…", { m: L.dataLabel }));
           let toneErr = null;
           try { await this.audio.startTone(); } catch (e) { toneErr = String(e && e.message || e); }
-          const e4 = toneErr ? null : await this._emit("E4", this.o.e4, { what: "Tonalité 1 kHz par la carte son", mode: L.dataLabel });
-          if (toneErr) this.result("E4", "echec", "Sortie de la carte son impossible à ouvrir : " + toneErr + ".");
+          const e4 = toneErr ? null : await this._emit("E4", this.o.e4, { what: T("Tonalité 1 kHz par la carte son"), mode: L.dataLabel });
+          if (toneErr) this.result("E4", "echec", T("Sortie de la carte son impossible à ouvrir : {e}.", { e: toneErr }));
           try { this.audio.stopTone(); } catch (e) { /* rien */ }
           if (!e4 && !toneErr) return;
-          if (e4 && !e4.rx) { this.result("E4", "echec", "Retour en réception NON relu : coupez le poste à la main."); this.aborted = true; return; }
+          if (e4 && !e4.rx) { this.result("E4", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; return; }
           const pos = e4 ? e4.samples.map(s => s.po).filter(v => v != null) : [], alcs = e4 ? e4.samples.map(s => s.alc).filter(v => v != null) : [];
           const po = pos.length ? Math.max(...pos) : null, alc = alcs.length ? Math.max(...alcs) : null;
           if (toneErr) { /* déjà noté */ }
-          else if (po == null) this.result("E4", "na", "Puissance non lue : modulation impossible à vérifier.");
-          else if (po < 2) this.result("E4", "echec", "Tonalité envoyée mais aucune puissance : réglage « DATA MOD » du poste sur USB ? volume de la carte son à 100 dans l'ordinateur ?", { po_pct: po, alc_pct: alc });
-          else this.result("E4", "ok", `Modulation par la carte son : Po ${po.toFixed(0)} %${alc != null ? ", ALC " + alc.toFixed(0) + " %" + (alc > 50 ? " (hors de la zone ALC : baissez le niveau USB MOD)" : "") : ""}.`, { po_pct: po, alc_pct: alc });
+          else if (po == null) this.result("E4", "na", T("Puissance non lue : modulation impossible à vérifier."));
+          else if (po < 2) this.result("E4", "echec", T("Tonalité envoyée mais aucune puissance : réglage « DATA MOD » du poste sur USB ? volume de la carte son à 100 dans l'ordinateur ?"), { po_pct: po, alc_pct: alc });
+          else this.result("E4", "ok", T("Modulation par la carte son : Po {po} %{alc}.", { po: po.toFixed(0), alc: alc != null ? ", ALC " + alc.toFixed(0) + " %" + (alc > 50 ? T(" (hors de la zone ALC : baissez le niveau USB MOD)") : "") : "" }), { po_pct: po, alc_pct: alc });
         }
       }
       if (this.aborted) return;
 
       // E6 : coupure par la page (même chemin que le bouton STOP).
       if (carrier) await L.setMode(L.modeCode(carrier), 1);
-      this.step("E6", "cur"); this.now("E6 : émission puis coupure par la page, comme le bouton STOP…");
-      this.emit({ type: "tx-info", code: "E6", ms: this.o.e6, info: { hz: await L.readFreq(), what: "Coupure par la page", mode: carrier || (m0 && m0.name) } });
+      this.step("E6", "cur"); this.now(T("E6 : émission puis coupure par la page, comme le bouton STOP…"));
+      this.emit({ type: "tx-info", code: "E6", ms: this.o.e6, info: { hz: await L.readFreq(), what: T("Coupure par la page"), mode: carrier || (m0 && m0.name) } });
       await this.guard.key("E6");
       const on = await L.readPtt();
       await this._sampleTx(this.o.e6, "E6");
       const t0 = Date.now();
       const rx = await this.guard.unkey("E6");
       const ms = Date.now() - t0;
-      if (!on) this.result("E6", "na", "Émission non relue.");
-      else if (!rx) { this.result("E6", "echec", "Retour en réception NON relu : coupez le poste à la main."); this.aborted = true; }
-      else this.result("E6", ms < 1000 ? "ok" : "avert", `Réception relue ${ms} ms après l'ordre de coupure.`, { ms });
+      if (!on) this.result("E6", "na", T("Émission non relue."));
+      else if (!rx) { this.result("E6", "echec", T("Retour en réception NON relu : coupez le poste à la main.")); this.aborted = true; }
+      else this.result("E6", ms < 1000 ? "ok" : "avert", T("Réception relue {ms} ms après l'ordre de coupure.", { ms }), { ms });
     }
 
     async _restore() {
       const L = this.link, o = this.orig;
-      this.step("RS", "cur"); this.now("Remise de l'état d'origine…");
-      if (this.stopReason === "deja_en_emission") { this.result("RS", "na", "Rien n'a été changé (poste en émission par l'opérateur)."); return; }
+      this.step("RS", "cur"); this.now(T("Remise de l'état d'origine…"));
+      if (this.stopReason === "deja_en_emission") { this.result("RS", "na", T("Rien n'a été changé (poste en émission par l'opérateur).")); return; }
       const lines = []; let status = "ok";
       try {
         if (o.mode) await L.setMode(o.mode.code, o.mode.filter);
@@ -449,15 +451,15 @@
         if (o.freq != null) await L.setFreq(o.freq);
         if (o.power != null) await L.setPower(o.power);
         const f = await L.readFreq(), m = await L.readMode(), d = o.data ? await L.readDataMode() : null, p = o.power != null ? await L.meter("power") : null;
-        if (o.freq != null) { if (f === o.freq) lines.push(`fréquence ${fmtHz(f)}`); else { status = "avert"; lines.push(`fréquence relue ${fmtHz(f)} au lieu de ${fmtHz(o.freq)}`); } }
-        if (o.mode) { if (m && m.code === o.mode.code) lines.push(`mode ${m.name}`); else { status = "avert"; lines.push(`mode relu ${m ? m.name : "—"} au lieu de ${o.mode.name}`); } }
-        if (o.data) { if (d && d.on === o.data.on) lines.push(o.data.on ? "mode données remis" : "mode données coupé"); else { status = "avert"; lines.push("mode données à vérifier"); } }
-        if (o.power != null) { if (L.powerClose(p, o.power)) lines.push(`puissance ${Math.round(L.powerPct(o.power))} %`); else { status = "avert"; lines.push(`puissance à remettre à la main (${Math.round(L.powerPct(o.power))} %)`); } }
+        if (o.freq != null) { if (f === o.freq) lines.push(T("fréquence {f}", { f: fmtHz(f) })); else { status = "avert"; lines.push(T("fréquence relue {r} au lieu de {o}", { r: fmtHz(f), o: fmtHz(o.freq) })); } }
+        if (o.mode) { if (m && m.code === o.mode.code) lines.push(T("mode {m}", { m: m.name })); else { status = "avert"; lines.push(T("mode relu {r} au lieu de {o}", { r: m ? m.name : "—", o: o.mode.name })); } }
+        if (o.data) { if (d && d.on === o.data.on) lines.push(o.data.on ? T("mode données remis") : T("mode données coupé")); else { status = "avert"; lines.push(T("mode données à vérifier")); } }
+        if (o.power != null) { if (L.powerClose(p, o.power)) lines.push(T("puissance {p} %", { p: Math.round(L.powerPct(o.power)) })); else { status = "avert"; lines.push(T("puissance à remettre à la main ({p} %)", { p: Math.round(L.powerPct(o.power)) })); } }
         const ptt = await L.readPtt();
-        if (ptt === true) { status = "echec"; lines.push("POSTE EN ÉMISSION : coupez-le à la main"); }
+        if (ptt === true) { status = "echec"; lines.push(T("POSTE EN ÉMISSION : coupez-le à la main")); }
         if (L.finish) await L.finish();                              // Kenwood : AI et lecture des mesures remises
-      } catch (e) { status = "echec"; lines.push("remise interrompue : " + (e && e.message || e)); }
-      this.result("RS", status, lines.length ? lines.join(", ") + "." : "Rien à remettre.");
+      } catch (e) { status = "echec"; lines.push(T("remise interrompue : {e}", { e: e && e.message || e })); }
+      this.result("RS", status, lines.length ? lines.join(", ") + "." : T("Rien à remettre."));
     }
   }
 

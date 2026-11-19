@@ -141,6 +141,7 @@ table.res td.c{font-family:var(--f-num);color:var(--dim);width:44px}
 .hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .hero .site{font-family:var(--f-label);font-size:15px;letter-spacing:.06em;color:#cfe3ff;text-decoration:none;border-bottom:1px solid rgba(207,227,255,.4)}
 .hero .ver{font-size:12px;color:#b8c6cd}
+.hero .lang{font-size:13px;color:#b8c6cd}.hero .lang a{color:#cfe3ff}
 /* conditions d'utilisation */
 .terms-veil{background:rgba(4,7,9,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:30}
 .dlg{width:min(640px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--digit);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}

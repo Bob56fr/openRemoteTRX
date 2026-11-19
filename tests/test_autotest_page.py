@@ -27,7 +27,7 @@ def test_every_file_has_its_licence_header_and_every_script_exists() -> None:
     for f in CODE:
         assert "SPDX-License-Identifier: AGPL-3.0-or-later" in f.read_text(encoding="utf-8")[:300], f.name
     html = (WEB / "index.html").read_text(encoding="utf-8")
-    for ref in re.findall(r'(?:src|href)="([^":]+)"', html):
+    for ref in re.findall(r'(?:src|href)="([^":?]+)"', html):              # « ?lang=en » : choix de la langue
         assert (WEB / ref).is_file(), ref
 
 
@@ -104,3 +104,23 @@ def test_kenwood_closed_list_never_tx_tune_vox_menus_power_tuning_or_saved_ai() 
                     "GC", "PR0", "RT", "XT", "TB", "AC"}, keys
     for rule in ("TX: /^[01]$/", "AC: /^1[01]0$/", "AI: /^[02]$/"):
         assert rule in block, rule
+
+
+def test_every_text_has_its_english_translation() -> None:
+    """Lot PQ6 : chaque texte du code passé par T("…") a sa traduction dans en.js (EN), chaque partie fixe de la page
+    marquée data-t="clé" a la sienne (EN_PAGE) ; i18n.js et en.js sont chargés avant le reste ; rien n'est retenu."""
+    import json
+    en_src = (WEB / "en.js").read_text(encoding="utf-8")
+    en = json.loads(en_src[en_src.index("const EN = ") + 11:en_src.index(";\n  const EN_PAGE")])
+    page = json.loads(en_src[en_src.index("const EN_PAGE = ") + 16:en_src.index(";\n  if (typeof module")])
+    missing = []
+    for f in ("runner.js", "app.js"):
+        for key in re.findall(r'\bT\("([^"]*)"', (WEB / f).read_text(encoding="utf-8")):
+            if key not in en:
+                missing.append((f, key))
+    assert not missing, missing[:10]
+    html = (WEB / "index.html").read_text(encoding="utf-8")
+    keys = re.findall(r'data-t="([^"]+)"', html)
+    assert len(keys) == len(set(keys)) and set(keys) <= set(page), set(keys) - set(page)
+    assert html.index('src="i18n.js"') < html.index('src="en.js"') < html.index('src="civ.js"')
+    assert 'href="?lang=en"' in html and 'href="?lang=fr"' in html
