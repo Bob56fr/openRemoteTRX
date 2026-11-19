@@ -129,7 +129,7 @@
 
     <div class="pttrow listener-off">
       <button id="ptt" class="ptt" disabled>PTT</button>
-      <button id="stop" class="stop" disabled title="Appui : retour en réception immédiat. Maintenu 3 s : déconnexion de la station">STOP<small id="stop-sub" class="stop-sub">appui long : déconnecter</small></button>
+      <button id="stop" class="stop" disabled title="Appui : retour en réception immédiat. Maintenu 3 s : se déconnecter ou arrêter le TRX à distance">STOP<small id="stop-sub" class="stop-sub">appui long : déconnecter</small></button>
     </div>
 
     <div class="subrow">
@@ -152,6 +152,10 @@
       <button id="local-release" class="chip" title="Débloque le PTT à distance avant la fin de l'attente (impossible pendant une émission au micro du poste)">Reprendre la main</button>
     </div>
     <div id="temp-banner" class="alert warn" hidden></div>
+    <div id="power-banner" class="alert localbar" hidden>
+      <span id="power-banner-text" class="grow"></span>
+      <button id="power-on" class="chip" title="Allume le poste par la CAT (ports série vérifiés par la station) ; aucune émission">Allumer le poste</button>
+    </div>
     <div id="blk-hfdock" class="hfdock" hidden>
       <label class="check" title="Grand écran en paysage : le spectre HF du poste reste affiché en haut de la colonne de droite (consomme des données tant qu'il est affiché)"><input id="hf-dock-on" type="checkbox"> Waterfall HF permanent</label>
     </div>
@@ -802,6 +806,24 @@
     <div class="row"><button id="mini-gain" class="chip">GAIN 0</button><button id="mini-range" class="chip">PLAGE 40 dB</button><button id="mini-hot" class="chip">COUL. S</button></div>
     <p class="note">Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).</p>
     <div class="row"><button id="mini-hide" class="chip">Masquer</button><button id="mini-close" class="primary">Fermer</button></div>
+  </div>
+</div>
+<div id="stophold-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div id="stophold-title" class="kp-display ctl-title">STOP maintenu : que voulez-vous faire ?</div>
+    <p id="stophold-text" class="note">La station est déjà revenue en réception.</p>
+    <div class="row"><button id="stophold-disconnect" class="chip">Se déconnecter</button></div>
+    <div class="row"><button id="stophold-power" class="chip">Arrêter le TRX à distance</button></div>
+    <p id="stophold-reason" class="note" hidden></p>
+    <div class="row"><button id="stophold-confirm" class="chip danger" hidden>Arrêter le TRX</button><button id="stophold-cancel" class="primary">Annuler</button></div>
+  </div>
+</div>
+<div id="power-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title">Allumage du TRX</div>
+    <ul id="power-steps" class="presence-list power-steps"></ul>
+    <p id="power-dialog-text" class="note"></p>
+    <div class="row"><button id="power-retry" class="chip" hidden>Réessayer</button><button id="power-continue" class="chip" hidden>Continuer sans le poste</button><button id="power-hide" class="primary">Masquer</button></div>
   </div>
 </div>
 <div id="swr-dialog" class="keypad" hidden>

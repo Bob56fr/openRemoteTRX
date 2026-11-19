@@ -482,4 +482,8 @@ hors service par défaut) et que le poste déclare « set / get Power Stat » (`
   d'OPÉRATEUR qui voit `rig.power` = `off` et la fonction `power` envoie `power_on` avec `how: "connect"`, UNE fois par
   connexion qu'il a lui-même demandée (jamais à une reconnexion automatique), et montre les étapes. Extinction : STOP
   maintenu 3 s, choix « Arrêter le TRX à distance », confirmation, puis `power_off`.
-- **Page web** et **application** : à venir (lots P2 et P3).
+- **Page web** (station 0.223.0, lot P2) : `client.js` (`powerOn`, `powerOff`, `powerStepsView`, `powerBannerView`,
+  `stopHoldChoices`), `ui.js` : bandeau « POSTE ÉTEINT » (`#power-banner`, bouton « Allumer le poste »), fenêtre
+  « Allumage du TRX » (`#power-dialog`), STOP maintenu 3 s = fenêtre `#stophold-dialog` (« Se déconnecter » /
+  « Arrêter le TRX à distance » grisé avec sa raison, puis « Confirmer l'arrêt à distance de votre TRX ? » ; Annuler
+  par défaut et après 15 s). **Application** : à venir (lot P3).

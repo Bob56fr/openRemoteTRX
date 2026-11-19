@@ -276,6 +276,8 @@ class PttController:
         from ..cat.client import RigError
         if self._state is not PttState.RX or not self.link.state.connected:
             return "", None, {}
+        if getattr(self.link.state, "power", None) == "off":
+            return "", None, {}              # poste éteint : relu après l'allumage (gateway/power.py), pas d'avis trompeur
         client = self.link.client
         try:
             on = await client.get_func("VOX")

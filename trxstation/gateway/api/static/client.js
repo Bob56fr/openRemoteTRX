@@ -22,6 +22,7 @@
   const HEARTBEAT_TICK_MS = 400;
   const PING_EVERY_MS = 2000;
   const COMMAND_TIMEOUT_MS = 5000;
+  const POWER_ON_TIMEOUT_MS = 150000;   // allumage du poste : ports, ordre (20 s), attente (120 s au plus), relecture
   const STALE_MS = 5000;                // plus aucun message de la station depuis ce délai : liaison perdue
   const HELLO_TIMEOUT_MS = 15000;       // le canal de contrôle doit s'ouvrir dans ce délai après la réponse de la station
   const NUDGE_FLUSH_MS = 120;           // les crans de fréquence rapprochés sont regroupés en UNE commande
@@ -255,6 +256,64 @@
   function reasonText(code, detail, ort) {
     const text = REASONS[code] || ("Refusé (" + code + (detail ? " : " + detail : "") + ")");
     return typeof ort === "string" && /^ORT-\d{4}$/.test(ort) ? text + " [" + ort + "]" : text;
+  }
+
+  /* Allumage et extinction du poste à distance (fonction « power », docs/protocole.md § 21 ; lot P2). */
+  const POWER_STEPS_SHOWN = [
+    ["ports", "Vérification des ports série du poste"],
+    ["check_off", "Vérification que le poste est bien éteint"],
+    ["order", "Ordre d'allumage envoyé"],
+    ["wait", "Démarrage du poste (quelques secondes ; environ 8 s pour un FTDX10)"],
+    ["readback", "Relecture : réception confirmée, fréquence et mode"],
+  ];
+
+  function powerStepsView(run) {
+    /* Fenêtre « Allumage du TRX » : une ligne par étape (attente, en cours, faite, en erreur), message final. */
+    if (!run) return { visible: false };
+    const steps = run.steps || {};
+    const lines = POWER_STEPS_SHOWN.map(([key, label]) => {
+      const s = steps[key] || {};
+      const status = s.status === "ok" ? "ok" : s.status === "error" ? "error" : s.status === "running" ? "running" : "pending";
+      let detail = typeof s.detail === "string" ? s.detail.slice(0, 300) : "";
+      if (key === "wait" && status === "running" && Number.isFinite(s.remaining_s)) {
+        detail = "encore " + Math.max(0, Math.ceil(s.remaining_s)) + " s au plus";
+      }
+      if (status === "error" && typeof s.ort === "string" && /^ORT-\d{4}$/.test(s.ort)) detail += " [" + s.ort + "]";
+      return { key: key, label: label, status: status, detail: detail };
+    });
+    const status = run.status || "running";
+    const error = run.error || null;
+    return {
+      visible: !run.hidden, status: status, title: "Allumage du TRX", lines: lines,
+      text: status === "done" ? run.done || "TRX allumé."
+        : status === "error" ? (error && error.text) || "Allumage impossible."
+          : "Allumage en cours : la réception reprend toute seule à la fin.",
+      canRetry: status === "error", canContinue: status === "error", canHide: status === "running",
+      autoCloseMs: status === "done" ? 3000 : 0,
+    };
+  }
+
+  function powerBannerView(rig, features, role, running) {
+    /* Bandeau « POSTE ÉTEINT » (state.rig.power, visiteurs compris) et bouton « Allumer le poste ». */
+    if (!rig || rig.power !== "off") return { shown: false };
+    if (role === "listener") return { shown: true, text: "Le poste est éteint ; seul un opérateur peut l'allumer.", canPowerOn: false };
+    if (!(Array.isArray(features) && features.includes("power"))) {
+      return { shown: true, text: "POSTE ÉTEINT : allumage à distance hors service (menu 2.8 de TRX Console sur la station).", canPowerOn: false };
+    }
+    return { shown: true, text: running ? "POSTE ÉTEINT : allumage en cours…" : "POSTE ÉTEINT", canPowerOn: !running };
+  }
+
+  function stopHoldChoices(hello, rig) {
+    /* Fenêtre de STOP maintenu 3 s : « Se déconnecter » toujours ; « Arrêter le TRX à distance » grisé avec sa raison. */
+    const features = hello && Array.isArray(hello.features) ? hello.features : [];
+    const caps = hello && hello.capabilities ? hello.capabilities : {};
+    let reason = "";
+    if (hello && hello.role === "listener") reason = "Compte visiteur";
+    else if (!features.includes("power")) {
+      reason = caps.can_set_power === false ? "Votre poste ne le permet pas"
+        : "Arrêt à distance hors service : menu 2.8 de TRX Console";
+    } else if (rig && rig.power === "off") reason = "Le poste est déjà éteint";
+    return { disconnect: true, powerOff: !reason, powerReason: reason };
   }
 
   function cutText(code) {
@@ -1125,6 +1184,9 @@
 
     async connect(opts, auto) {
       if (!auto) this._finishReconnect("cancelled");                 // l'utilisateur reprend la main : plus de reconnexion automatique
+      // Allumage du poste à la connexion (décision de l'utilisateur, 2026-11-19) : seulement une connexion DEMANDÉE par
+      // l'opérateur, jamais une reconnexion automatique ; décidé au premier « state » (rig.power = off)
+      this._powerOnConnect = !auto;
       this.disconnect(true);
       const token = {};
       this._token = token;
@@ -1450,7 +1512,7 @@
       if (this.dc && this.dc.readyState === "open") this.dc.send(JSON.stringify(obj));
     }
 
-    send(cmd, params) {
+    send(cmd, params, timeoutMs) {
       return new Promise((resolve, reject) => {
         if (!this.dc || this.dc.readyState !== "open") { reject(new Error("non connecté")); return; }
         if (this.isListener() && !LISTENER_COMMANDS.includes(cmd)) {                  // visiteur : aucune requête vers la station
@@ -1458,7 +1520,7 @@
           return;
         }
         const id = this.nextId++;
-        const timeout = this.env.setTimeout(() => { this.pending.delete(id); reject(new Error("pas de réponse de la station")); }, COMMAND_TIMEOUT_MS);
+        const timeout = this.env.setTimeout(() => { this.pending.delete(id); reject(new Error("pas de réponse de la station")); }, timeoutMs || COMMAND_TIMEOUT_MS);
         this.pending.set(id, { resolve: (m) => { this.env.clearTimeout(timeout); resolve(m); },
                                reject: (e) => { this.env.clearTimeout(timeout); reject(e); } });
         this._sendRaw(Object.assign({ cmd: cmd, id: id }, params || {}));
@@ -1497,6 +1559,7 @@
         this._monitoringStart(msg);
         this.diffusionOffered = !!(Array.isArray(msg.features) && msg.features.includes("diffusion")
                                    && msg.role !== "listener");
+        this.powerOffered = !!(Array.isArray(msg.features) && msg.features.includes("power") && msg.role !== "listener");
         this._sdrStart(msg);
         this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
         this._acquireWakeLock();
@@ -1537,6 +1600,8 @@
       } else if (msg.type === "net_event") {                            // coupure diagnostiquée, profil VPN partagé (opérateurs)
         this.netEvents = this.netEvents.concat([msg]).slice(-NET_EVENTS_MAX);
         if (this.ui.netEvent) { try { this.ui.netEvent(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
+      } else if (msg.type === "power_progress") {                       // étapes de MON allumage du poste
+        this._powerProgress(msg);
       } else if (msg.type === "swr") {                                  // progression de MA mesure de TOS
         this.swr = msg;
         if (this.ui.swr) { try { this.ui.swr(msg); } catch (e) { /* un affichage fautif ne touche pas la liaison */ } }
@@ -1697,7 +1762,84 @@
       const now = this.env.now();
       if (this.pendingHz !== null && (rig.frequency_hz === this.pendingHz || now - this.pendingSince > PENDING_MAX_MS)) this.pendingHz = null;
       this._trackBand(now, rig, active);
+      this._powerAfterState(rig);
       this.ui.state(this.view());
+    }
+
+    // ---- allumage et extinction du poste (fonction « power », lot P2)
+
+    _powerAfterState(rig) {
+      if (!this._powerOnConnect) return;
+      this._powerOnConnect = false;                                    // une fois par connexion demandée
+      if (this.powerOffered && rig && rig.power === "off" && !this.powerRun) this.powerOn("connect").catch(() => {});
+    }
+
+    _powerUi() {
+      if (this.ui.power) { try { this.ui.power(powerStepsView(this.powerRun)); } catch (e) { /* affichage seulement */ } }
+      if (this.state && this.connected) this.ui.state(this.view());   // bandeau « POSTE ÉTEINT » à jour tout de suite
+    }
+
+    _powerProgress(msg) {
+      const step = typeof msg.step === "string" ? msg.step : "";
+      if (!step) return;
+      if (!this.powerRun) this.powerRun = { status: "running", steps: {}, how: "connect" };
+      this.powerRun.steps[step] = { status: msg.status, detail: msg.detail, ort: msg.ort, remaining_s: msg.remaining_s };
+      this._powerUi();
+    }
+
+    async powerOn(how) {
+      /* Allume le poste (opérateur, fonction « power ») : fenêtre des étapes ; l'allumage va jusqu'au bout même si la
+         fenêtre est masquée. Résultat : `result` de la station (ok, result, rig) ou refus (reason, ort, detail). */
+      if (!this.connected || !this.powerOffered) return { ok: false, reason: "power_disabled" };
+      if (this.powerRun && this.powerRun.status === "running") return { ok: false, reason: "power_busy" };
+      this.powerRun = { status: "running", steps: {}, how: how === "button" ? "button" : "connect" };
+      this._powerUi();
+      let res;
+      try {
+        res = await this.send("power_on", { how: this.powerRun.how }, POWER_ON_TIMEOUT_MS);
+      } catch (err) {
+        res = { ok: false, reason: "no_reply", detail: "pas de réponse de la station" };
+      }
+      const run = this.powerRun;
+      if (!run) return res;
+      if (res && res.ok) {
+        run.status = "done";
+        run.done = res.result === "already_on" ? "Le poste était déjà allumé." : "TRX allumé : " + String(res.rig || "").slice(0, 120);
+        this.ui.log(run.done, "");
+      } else {
+        run.status = "error";
+        const text = res && typeof res.detail === "string" && res.detail && res.reason !== "power_busy"
+          ? res.detail.slice(0, 300) + (res.ort ? " [" + String(res.ort).slice(0, 12) + "]" : "")
+          : reasonText(res && res.reason, res && res.detail, res && res.ort);
+        run.error = { text: "Allumage impossible : " + text, reason: res && res.reason, step: res && res.step };
+        if (res && res.step && !(run.steps[res.step] && run.steps[res.step].status === "error")) {
+          run.steps[res.step] = { status: "error", detail: res.detail, ort: res.ort };
+        }
+        this.ui.log(run.error.text, "bad");
+      }
+      this._powerUi();
+      return res;
+    }
+
+    powerHide() {
+      /* « Masquer » la fenêtre pendant l'allumage (il continue) ; « Continuer sans le poste » après une erreur. */
+      if (!this.powerRun) return;
+      if (this.powerRun.status === "running") this.powerRun.hidden = true;
+      else this.powerRun = null;
+      this._powerUi();
+    }
+
+    async powerOff() {
+      /* Arrêt du poste à distance, CONFIRMÉ par l'opérateur dans la page (STOP maintenu 3 s, puis confirmation). */
+      if (!this.connected || !this.powerOffered) return { ok: false, reason: "power_disabled" };
+      const res = await this.send("power_off", { confirm: true });
+      if (res && res.ok) this.ui.log("Poste éteint à distance.", "");
+      else this.ui.log("Arrêt du poste refusé : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      return res;
+    }
+
+    stopHoldChoices() {
+      return stopHoldChoices(this.hello, this.state && this.state.rig);
     }
 
     _onSpectrum(data) {
@@ -1786,6 +1928,9 @@
         breizh: this.isListener() ? null : breizhView(this.state && this.state.breizh),
         // diffusion en direct : opérateurs seulement (state.diffusion absent pour un visiteur ou sans le module)
         diffusion: this.isListener() || !this.diffusionOffered ? null : (this.state && this.state.diffusion) || null,
+        rigPower: powerBannerView(rig, this.hello && this.hello.features, this.hello && this.hello.role,
+                                  !!(this.powerRun && this.powerRun.status === "running")),   // bandeau « POSTE ÉTEINT »
+        powerOffered: !!this.powerOffered,
         net: netView(this.state && this.state.net),                  // sonde réseau : la liaison de CE client
         freedv: freedvView(this.state && this.state.freedv, Date.now() / 1000),   // FreeDV : tous, visiteurs compris
         memories: this.memories, rig: rig,
@@ -2363,16 +2508,6 @@
       return { name: String(first.name || "openremotetrx-reseau.zip").replace(/[^\w.-]/g, "_"), bytes: bytes };
     }
 
-    /* Allumage et extinction du poste (fonction « power », opérateurs ; docs/protocole.md § 21). L'allumage suit ses
-       étapes par les messages power_progress ; l'interface (fenêtre des étapes, STOP maintenu 3 s) : lot P2. */
-    async powerOn(how) {
-      return this.send("power_on", { how: how === "button" ? "button" : "connect" });
-    }
-
-    async powerOff() {
-      return this.send("power_off", { confirm: true });
-    }
-
     /* FreeDV (fonction « freedv », opérateurs) : mode de la station en réception ; refusé pendant l'émission. */
     async freedvSet(on) {
       const res = await this.send("freedv_set", { on: !!on });
@@ -2632,6 +2767,7 @@
   }
 
   const api = { REASONS, CUT_REASONS, TrxClient, formatFrequency, sMeterText, sMeterFraction, levelFraction,
+                powerStepsView, powerBannerView, stopHoldChoices, POWER_STEPS_SHOWN,
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,

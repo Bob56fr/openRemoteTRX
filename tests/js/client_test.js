@@ -587,6 +587,104 @@ test("spectre HF : balayages demandés seulement vue ouverte ET page visible", a
   assert.equal(res.ok, false);
 });
 
+function replyTo(w, cmd, ok, extra) {         // réponse à LA commande `cmd` (la page envoie d'autres requêtes entre-temps)
+  const sent = w.sentCommands(cmd).at(-1);
+  w.dc().onmessage({ data: JSON.stringify(Object.assign({ type: "result", id: sent.id, ok }, extra || {})) });
+}
+
+test("alimentation du poste : vues de la fenêtre, du bandeau et du STOP maintenu (lot P2)", () => {
+  assert.deepEqual(web.powerStepsView(null), { visible: false });
+  const running = web.powerStepsView({ status: "running", steps: { ports: { status: "ok" }, wait: { status: "running", remaining_s: 21.2 } } });
+  assert.equal(running.lines.length, 5);
+  assert.deepEqual(running.lines.map((l) => l.status), ["ok", "pending", "pending", "running", "pending"]);
+  assert.equal(running.lines[3].detail, "encore 22 s au plus");
+  assert.equal(running.canHide, true); assert.equal(running.canRetry, false);
+  const failed = web.powerStepsView({ status: "error", error: { text: "Allumage impossible : port" },
+                                       steps: { ports: { status: "error", detail: "port COM6 absent", ort: "ORT-2809" } } });
+  assert.equal(failed.lines[0].detail, "port COM6 absent [ORT-2809]");
+  assert.ok(failed.canRetry && failed.canContinue && !failed.canHide);
+  assert.equal(web.powerStepsView({ status: "done", done: "TRX allumé : 7 074,00 kHz USB" }).autoCloseMs, 3000);
+  // bandeau
+  assert.equal(web.powerBannerView({ power: "on" }, ["power"], "operator", false).shown, false);
+  assert.equal(web.powerBannerView({ power: "off" }, ["power"], "operator", false).canPowerOn, true);
+  assert.equal(web.powerBannerView({ power: "off" }, ["power"], "operator", true).canPowerOn, false);
+  assert.match(web.powerBannerView({ power: "off" }, [], "operator", false).text, /menu 2\.8/);
+  assert.match(web.powerBannerView({ power: "off" }, ["power"], "listener", false).text, /seul un opérateur/);
+  // STOP maintenu
+  assert.deepEqual(web.stopHoldChoices({ features: ["power"], role: "operator" }, { power: "on" }),
+                   { disconnect: true, powerOff: true, powerReason: "" });
+  assert.match(web.stopHoldChoices({ features: [], role: "operator" }, {}).powerReason, /menu 2\.8/);
+  assert.equal(web.stopHoldChoices({ features: [], capabilities: { can_set_power: false } }, {}).powerReason, "Votre poste ne le permet pas");
+  assert.equal(web.stopHoldChoices({ features: ["power"], role: "listener" }, {}).powerReason, "Compte visiteur");
+  assert.equal(web.stopHoldChoices({ features: ["power"] }, { power: "off" }).powerReason, "Le poste est déjà éteint");
+});
+
+test("alimentation du poste : connexion demandée à un poste éteint = power_on une fois, avec ses étapes", async () => {
+  const w = makeWorld();
+  const views = [];
+  w.ui.power = (v) => views.push(v);
+  await w.client.connect({ clientId: "phone", password: "x", useMic: false });
+  w.hello({ features: ["ptt", "power"], role: "operator" });
+  w.state({}, { power: "off", frequency_hz: null, mode: null });
+  assert.equal(w.sentCommands("power_on").length, 1);
+  assert.equal(w.sentCommands("power_on")[0].how, "connect");
+  w.state({}, { power: "off", frequency_hz: null, mode: null });
+  assert.equal(w.sentCommands("power_on").length, 1);                           // une fois par connexion
+  w.dc().onmessage({ data: JSON.stringify({ type: "power_progress", step: "ports", status: "ok", detail: "" }) });
+  w.dc().onmessage({ data: JSON.stringify({ type: "power_progress", step: "wait", status: "running", detail: "", remaining_s: 25 }) });
+  assert.equal(views.at(-1).lines[3].status, "running");
+  assert.equal(w.client.view().rigPower.canPowerOn, false);                     // allumage en cours : pas de second bouton
+  replyTo(w, "power_on", true, { result: "on", seconds: 9.4, rig: "7 074,00 kHz USB, en réception" });
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(views.at(-1).status, "done");
+  assert.match(views.at(-1).text, /TRX allumé : 7 074,00 kHz USB/);
+  w.client.powerHide();
+  assert.equal(views.at(-1).visible, false);
+});
+
+test("alimentation du poste : refus explicite, Réessayer, et jamais à une reconnexion automatique ni sans la fonction", async () => {
+  const w = makeWorld();
+  const views = [];
+  w.ui.power = (v) => views.push(v);
+  await w.client.connect({ clientId: "phone", password: "x", useMic: false });
+  w.hello({ features: ["ptt", "power"], role: "operator" });
+  w.state({}, { power: "off" });
+  replyTo(w, "power_on", false, { reason: "port_moved", ort: "ORT-2809", step: "ports",
+                    detail: "le poste est maintenant sur COM7 (station.toml dit COM6) : refaire le menu 2.5" });
+  await new Promise((r) => setTimeout(r, 0));
+  const v = views.at(-1);
+  assert.equal(v.status, "error"); assert.ok(v.canRetry && v.canContinue);
+  assert.match(v.text, /maintenant sur COM7.*\[ORT-2809\]/);
+  assert.equal(v.lines[0].status, "error");
+  w.client.powerOn("button");
+  assert.equal(w.sentCommands("power_on").at(-1).how, "button");
+  // reconnexion automatique : aucun allumage
+  const w2 = makeWorld();
+  await w2.client.connect({ clientId: "phone", password: "x", useMic: false }, true);
+  w2.hello({ features: ["ptt", "power"], role: "operator" });
+  w2.state({}, { power: "off" });
+  assert.equal(w2.sentCommands("power_on").length, 0);
+  // station sans la fonction, ou visiteur : aucun allumage, bandeau seulement
+  const w3 = makeWorld();
+  await w3.client.connect({ clientId: "phone", password: "x", useMic: false });
+  w3.hello({ features: ["ptt"], role: "operator" });
+  w3.state({}, { power: "off" });
+  assert.equal(w3.sentCommands("power_on").length, 0);
+  assert.match(w3.client.view().rigPower.text, /hors service/);
+});
+
+test("alimentation du poste : arrêt confirmé = power_off avec confirm", async () => {
+  const w = makeWorld();
+  await w.client.connect({ clientId: "phone", password: "x", useMic: false });
+  w.hello({ features: ["ptt", "power"], role: "operator" });
+  w.state({}, { power: "on" });
+  const off = w.client.powerOff();
+  assert.deepEqual(w.sentCommands("power_off").map((m) => m.confirm), [true]);
+  replyTo(w, "power_off", false, { reason: "local_active", detail: "poste utilisé sur place", ort: "ORT-5005" });
+  assert.equal((await off).reason, "local_active");
+  assert.ok(w.ui.logs.some(([text]) => /Arrêt du poste refusé/.test(text)));
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

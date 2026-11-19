@@ -1896,6 +1896,9 @@
         logList.insertBefore(li, logList.firstChild);
         while (logList.children.length > 50) logList.removeChild(logList.lastChild);
       },
+      power(view) {
+        renderPower(view);
+      },
       swr(msg) {
         onSwr(msg);
       },
@@ -2016,6 +2019,7 @@
           for (const button of bandButtons.values()) button.disabled = true;
           for (const button of modeButtons.values()) button.disabled = true;
           $("local-banner").hidden = true; $("temp-banner").hidden = true; resetRelease(); closeControlDialog();
+          $("power-banner").hidden = true; closeStopHold(); $("power-dialog").hidden = true;
           clusterData = null; renderCluster();                                        // plus de liaison : plus d'état des flux
           $("hf-cluster").hidden = $("hf-spots").hidden = $("hf-list").hidden = true;   // reviendront quand le module reparlera
           teardownAnalysis(); closeKeypad(); $("wf-tx").hidden = true;
@@ -2046,6 +2050,14 @@
         $("temp-banner").hidden = !temp.level;
         $("temp-banner").className = "alert" + (temp.level === "hot" ? "" : " warn");
         $("temp-banner").textContent = temp.text;
+        const rigPower = v.rigPower || { shown: false };                             // poste éteint (fonction « power »)
+        $("power-banner").hidden = !rigPower.shown;
+        if (rigPower.shown) {
+          $("power-banner-text").textContent = rigPower.text;
+          $("power-on").hidden = !rigPower.canPowerOn && !rigPower.text.includes("en cours");
+          $("power-on").disabled = !rigPower.canPowerOn;
+        }
+        if (!String($("stop").className || "").includes("holding")) $("stop-sub").textContent = v.powerOffered ? "appui long : déconnexion ou arrêt du TRX" : "appui long : déconnecter";
         const transmitting = v.pttState !== "RX";
         $("wf-tx").hidden = !(wfVisible && transmitting);
         hfState(v, transmitting);
@@ -3974,14 +3986,16 @@
     $("armed").addEventListener("change", (ev) => client.setArmed(ev.target.checked));
     $("ptt").addEventListener("click", () => client.pressPtt().catch(fail));
     $("stop").addEventListener("click", () => client.stop().catch(fail));
-    // STOP maintenu 3 s : déconnexion de la station (le premier appui a déjà remis en réception, comme toujours)
-    const STOP_HOLD_MS = 3000, STOP_SUB = "appui long : déconnecter";
+    // STOP maintenu 3 s : fenêtre « Se déconnecter » / « Arrêter le TRX à distance » (lot P2 de l'alimentation, décision
+    // de l'utilisateur du 2026-11-19 ; avant : déconnexion directe, étape 194). Le premier appui a déjà remis en réception.
+    const STOP_HOLD_MS = 3000;
+    const stopSub = () => client.powerOffered ? "appui long : déconnexion ou arrêt du TRX" : "appui long : déconnecter";
     let stopHold = null;
     function stopHoldCancel() {
       if (!stopHold) return;
       window.clearInterval(stopHold);
       stopHold = null;
-      $("stop-sub").textContent = STOP_SUB;
+      $("stop-sub").textContent = stopSub();
       $("stop").classList.remove("holding");
     }
     $("stop").addEventListener("pointerdown", () => {
@@ -3989,16 +4003,89 @@
       if ($("stop").disabled) return;
       const t0 = Date.now();
       $("stop").classList.add("holding");
-      $("stop-sub").textContent = "déconnexion dans 3 s…";
+      $("stop-sub").textContent = "choix dans 3 s…";
       stopHold = window.setInterval(() => {
         const left = STOP_HOLD_MS - (Date.now() - t0);
-        if (left > 0) { $("stop-sub").textContent = "déconnexion dans " + Math.ceil(left / 1000) + " s…"; return; }
+        if (left > 0) { $("stop-sub").textContent = "choix dans " + Math.ceil(left / 1000) + " s…"; return; }
         stopHoldCancel();
-        ui.log("STOP maintenu 3 s : déconnexion de la station.", "");
-        client.stop().catch(() => {}).then(() => client.disconnect());
+        if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) { /* sans vibreur */ } }
+        openStopHold();
       }, 100);
     });
     for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("stop").addEventListener(type, stopHoldCancel);
+    // -- fenêtre de STOP maintenu : deux choix, puis confirmation de l'arrêt ; Annuler par défaut, et après 15 s
+    let stopHoldTimer = null;
+    function armStopHoldTimer() {
+      if (stopHoldTimer) window.clearTimeout(stopHoldTimer);
+      stopHoldTimer = window.setTimeout(closeStopHold, 15000);
+    }
+    function openStopHold() {
+      const choices = client.stopHoldChoices();
+      $("stophold-title").textContent = "STOP maintenu : que voulez-vous faire ?";
+      $("stophold-text").textContent = "La station est déjà revenue en réception.";
+      $("stophold-disconnect").hidden = false; $("stophold-power").hidden = false;
+      $("stophold-power").disabled = !choices.powerOff;
+      $("stophold-reason").hidden = !choices.powerReason;
+      $("stophold-reason").textContent = choices.powerReason;
+      $("stophold-confirm").hidden = true; $("stophold-confirm").disabled = false;
+      $("stophold-cancel").textContent = "Annuler";
+      $("stophold-dialog").hidden = false;
+      $("stophold-cancel").focus();
+      armStopHoldTimer();
+    }
+    function closeStopHold() {
+      if (stopHoldTimer) { window.clearTimeout(stopHoldTimer); stopHoldTimer = null; }
+      $("stophold-dialog").hidden = true;
+    }
+    $("stophold-cancel").addEventListener("click", closeStopHold);
+    $("stophold-disconnect").addEventListener("click", () => {
+      closeStopHold();
+      ui.log("STOP maintenu 3 s : déconnexion de la station.", "");
+      client.stop().catch(() => {}).then(() => client.disconnect());
+    });
+    $("stophold-power").addEventListener("click", () => {
+      $("stophold-title").textContent = "Confirmer l'arrêt à distance de votre TRX ?";
+      $("stophold-text").textContent = "Plus personne ne pourra l'écouter ; il se rallumera à la prochaine connexion d'un opérateur.";
+      $("stophold-disconnect").hidden = true; $("stophold-power").hidden = true; $("stophold-reason").hidden = true;
+      $("stophold-confirm").hidden = false;
+      $("stophold-cancel").focus();
+      armStopHoldTimer();
+    });
+    $("stophold-confirm").addEventListener("click", async () => {
+      $("stophold-confirm").disabled = true;
+      if (stopHoldTimer) { window.clearTimeout(stopHoldTimer); stopHoldTimer = null; }
+      let res;
+      try { res = await client.powerOff(); } catch (e) { res = { ok: false, reason: "no_reply", detail: String(e && e.message || e) }; }
+      if (res && res.ok) { closeStopHold(); return; }
+      $("stophold-title").textContent = "Arrêt du TRX refusé";
+      $("stophold-text").textContent = web.reasonText(res && res.reason, res && res.detail, res && res.ort);
+      $("stophold-confirm").hidden = true;
+      $("stophold-cancel").textContent = "Fermer";
+    });
+    // -- fenêtre « Allumage du TRX » (étapes envoyées par la station) et bandeau « POSTE ÉTEINT »
+    let powerCloseTimer = null;
+    function renderPower(view) {
+      if (powerCloseTimer) { window.clearTimeout(powerCloseTimer); powerCloseTimer = null; }
+      if (!view || !view.visible) { $("power-dialog").hidden = true; return; }
+      const list = $("power-steps");
+      list.textContent = "";
+      for (const line of view.lines) {
+        const li = el("li", line.status, line.label);
+        if (line.detail) li.appendChild(el("span", "detail", line.detail));
+        list.appendChild(li);
+      }
+      $("power-dialog-text").textContent = view.text;
+      $("power-retry").hidden = !view.canRetry;
+      $("power-continue").hidden = !view.canContinue;
+      $("power-hide").hidden = !view.canHide && view.status !== "done";
+      $("power-hide").textContent = view.status === "done" ? "Fermer" : "Masquer";
+      $("power-dialog").hidden = false;
+      if (view.autoCloseMs) powerCloseTimer = window.setTimeout(() => client.powerHide(), view.autoCloseMs);
+    }
+    $("power-hide").addEventListener("click", () => client.powerHide());
+    $("power-continue").addEventListener("click", () => client.powerHide());
+    $("power-retry").addEventListener("click", () => client.powerOn("button").catch(fail));
+    $("power-on").addEventListener("click", () => client.powerOn("button").catch(fail));
     $("stop").addEventListener("contextmenu", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); });
     $("mode-pill").addEventListener("click", () => {                                 // USB-D <-> LSB-D ; USB -> USB-D ; LSB -> LSB-D ; autre -> USB-D
       if (frequencyLocked()) return;                                                  // émission ou hors liaison : la station refuserait

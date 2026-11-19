@@ -403,6 +403,13 @@ audio { display: none; }
 .fr-member .dim, .fr-member.off { color: var(--texte-secondaire); }
 .fr-warn { color: var(--alerte); } .fr-strong { color: var(--erreur); font-weight: 700; }
 .fr-dialog-body { max-height: 60vh; overflow-y: auto; margin: .4rem 0; }
+/* allumage du poste (fonction « power ») : une ligne par étape */
+.power-steps li { padding: .25rem 0; }
+.power-steps li.running::before { content: "… "; } .power-steps li.ok::before { content: "✓ "; color: var(--succes); }
+.power-steps li.pending { opacity: .55; } .power-steps li.error { color: var(--erreur); font-weight: 600; }
+.power-steps li.error::before { content: "✗ "; }
+.power-steps .detail { display: block; font-size: .9em; font-weight: 400; }
+button.danger { background: var(--danger-fond); color: var(--texte-sur-danger); }
 .fr-dialog-body p { margin: .4rem 0; } .fr-dialog-body textarea, .fr-dialog-body input[type="text"] { width: 100%; }
 .fr-url { word-break: break-all; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
 #sec-friends.fr-big { border: 2px solid var(--accent); }

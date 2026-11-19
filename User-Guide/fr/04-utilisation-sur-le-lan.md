@@ -49,8 +49,14 @@ propose qu'en HTTPS, d'où le certificat.
 
 > **Sécurité.** Le PTT est une **bascule** : un appui pour émettre, un appui pour revenir en réception. L'état
 > affiché est celui que la station confirme, jamais une supposition. **STOP** coupe à tout moment. **STOP maintenu
-> 3 secondes** déconnecte en plus la page de la station (compte à rebours sous le mot STOP). Une page masquée
+> 3 secondes** (compte à rebours sous le mot STOP) ouvre une fenêtre : « Se déconnecter », ou « Arrêter le TRX à
+> distance » (avec une confirmation ; seulement si l'allumage à distance est en service, menu 2.8). Une page masquée
 > (autre onglet, écran verrouillé) arrête l'émission.
+>
+> **Poste éteint.** Un bandeau rouge « POSTE ÉTEINT » le dit. Si l'allumage à distance est en service, ta connexion
+> rallume le poste toute seule : une fenêtre montre les étapes (ports série vérifiés, ordre, démarrage, relecture) et,
+> en cas d'échec, un message clair avec « Réessayer » et « Continuer sans le poste » ; le bouton « Allumer le poste »
+> du bandeau fait la même chose. Une reconnexion automatique ne rallume jamais le poste.
 
 ## 4.3 Plusieurs appareils, plusieurs utilisateurs
 

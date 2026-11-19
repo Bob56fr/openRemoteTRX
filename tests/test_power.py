@@ -119,6 +119,16 @@ def test_switched_off_rig_is_seen_and_only_its_power_is_read():
     run(scenario)
 
 
+def test_no_misleading_vox_notice_while_the_rig_is_off():
+    async def scenario(fake):
+        async with station(fake) as (ctrl, link, power):
+            fake.powered = 0
+            await until(lambda: link.state.power == "off")
+            assert await ctrl.vox_guard("phone") == ("", None, {})      # relu après l'allumage, pas d'avis rouge
+            assert not any(c.lstrip("+").startswith("u VOX") for c in fake.commands[-3:])
+    run(scenario)
+
+
 def test_rig_switched_on_by_hand_is_read_again():
     async def scenario(fake):
         async with station(fake) as (ctrl, link, power):
