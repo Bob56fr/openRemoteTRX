@@ -11,9 +11,11 @@
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <h1>openRemoteTRX<span>-Autotest</span></h1>
-    <span class="ver" id="ver"></span>
+  <header class="hero">
+    <img src="bandeau.jpg" alt="openRemoteTRX : un poste piloté depuis un PC, un téléphone et Android Auto">
+    <div class="cap"><h1>openRemoteTRX<span>-Autotest</span></h1>
+      <span class="hero-r"><a class="site" href="https://www.rf-diy.com" target="_blank" rel="noopener">www.rf-diy.com</a>
+      <span class="ver" id="ver"></span></span></div>
   </header>
 
   <!-- 1. Accueil -->
@@ -173,6 +175,47 @@
     <p class="now" id="a-status"></p>
     <div class="row"><button type="button" class="btn primary" id="a-ok">Continuer</button>
       <button type="button" class="btn" id="a-skip">Pas de carte son</button></div>
+  </div>
+</div>
+<!-- Conditions d'utilisation : montrées à CHAQUE visite, au-dessus de l'accueil (texte validé le 2026-11-19) -->
+<div class="overlay terms-veil" id="o-terms" role="dialog" aria-modal="true" aria-labelledby="terms-title">
+  <div class="dlg">
+    <div class="dlg-head"><img src="bandeau.jpg" alt=""><h2 id="terms-title">Avant de tester votre station<small>À lire avant le premier essai</small></h2></div>
+    <div class="terms">
+      <div>
+        <h3>À quoi sert ce test</h3>
+        <p>openRemoteTRX-Autotest vérifie si votre poste peut être piloté à distance par openRemoteTRX : liaison CAT, carte son, passage en émission et retour en réception commandés par l'ordinateur.</p>
+      </div>
+      <div>
+        <h3>Ce qui va se passer</h3>
+        <ul>
+          <li>Des lectures sans émission, puis un petit changement de fréquence et de mode, remis ensuite.</li>
+          <li>Après une seconde autorisation de votre part : 4 émissions courtes, 10 secondes au plus chacune, à 10 % de la puissance maximale du poste.</li>
+          <li>À la fin, la fréquence, le mode et la puissance d'origine sont remis.</li>
+        </ul>
+      </div>
+      <div class="t-anon">
+        <h3>Test anonyme</h3>
+        <p>Rien ne part vers rf-diy.com ni ailleurs pendant le test : la page ne peut contacter aucun serveur. Le rapport reste sur votre ordinateur ; vous seul décidez de l'envoyer.</p>
+      </div>
+      <div>
+        <h3>Votre responsabilité</h3>
+        <ul>
+          <li>Vous êtes radioamateur titulaire d'un certificat d'opérateur, ou cibiste sur une bande où vous avez le droit d'émettre.</li>
+          <li>Le poste est branché sur une <b>charge fictive</b> adaptée à sa puissance, jamais sur une antenne pendant les émissions.</li>
+          <li>Vous restez devant le poste pendant tout le test, prêt à le repasser en réception ou à le couper (bouton STOP, touche Échap, interrupteur du poste).</li>
+          <li>Vous connaissez votre station et vérifiez avant de commencer qu'elle est en état d'émettre sans risque (câbles, alimentation, ventilation).</li>
+        </ul>
+      </div>
+      <div class="t-legal">
+        <h3>Limitation de responsabilité</h3>
+        <p>Ce logiciel libre est fourni « tel quel », sans aucune garantie, comme le prévoit sa licence (GNU AGPL v3, articles 15 et 16). Dans toute la mesure permise par la loi, RF-DIY.COM et les contributeurs du projet openRemoteTRX déclinent toute responsabilité pour les dommages qui pourraient survenir pendant ou après le test : à votre poste, à votre station et à ses accessoires, à votre ordinateur, à des tiers, ou à vous-même ; ainsi que pour tout brouillage ou toute émission non conforme à la réglementation. Vous utilisez cet outil sous votre seule responsabilité.</p>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <label class="check" for="terms-ok"><input type="checkbox" id="terms-ok"><span>J'accepte les conditions d'utilisation de cette application et j'accepte les risques.</span></label>
+      <button type="button" class="btn primary go" id="terms-go" disabled>Démarrer les tests anonymes de ma station</button>
+    </div>
   </div>
 </div>
 <div class="overlay" id="o-auth" hidden>

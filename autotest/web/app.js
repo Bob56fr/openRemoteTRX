@@ -17,6 +17,14 @@
   const hasSerial = "serial" in navigator;
   if (!hasSerial) { $("noserial").hidden = false; $("b-start").disabled = true; }
   $("b-start").onclick = () => { buildBrands(); show("s-brand"); };
+  // Conditions d'utilisation : à CHAQUE visite (rien n'est retenu), le bouton n'agit que case cochée.
+  $("terms-ok").checked = false; $("terms-go").disabled = true;
+  $("terms-ok").onchange = () => { $("terms-go").disabled = !$("terms-ok").checked; };
+  $("terms-go").onclick = () => {
+    if (!$("terms-ok").checked) return;
+    $("o-terms").hidden = true;
+    if (hasSerial) { buildBrands(); show("s-brand"); }                 // sinon l'accueil montre pourquoi (Chrome ou Edge)
+  };
 
   function buildBrands() {
     const box = $("brands"); box.textContent = "";

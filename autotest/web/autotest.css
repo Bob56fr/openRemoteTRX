@@ -16,9 +16,6 @@ body{font-family:var(--f-body);font-size:15px;line-height:1.5;padding:18px max(1
 [hidden]{display:none!important}
 a{color:var(--accent)}
 .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}
-header.top h1{margin:0;font-family:var(--f-label);font-weight:600;font-size:24px;letter-spacing:.04em}
-header.top h1 span{color:var(--digit)}
 .ver{font-family:var(--f-num);font-size:12px;color:var(--dim)}
 h2{font-family:var(--f-label);font-weight:600;letter-spacing:.04em;font-size:22px;margin:0 0 6px}
 h3{font-family:var(--f-label);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:15px;color:var(--dim);margin:0 0 8px}
@@ -121,6 +118,32 @@ table.res td.c{font-family:var(--f-num);color:var(--dim);width:44px}
 .verdict.echec{color:var(--bad);border-color:var(--bad);background:rgba(255,79,79,.07)}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .overlay .card{max-width:620px;width:100%;max-height:90vh;overflow:auto;border-color:var(--digit)}
+/* bandeau */
+.hero{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);aspect-ratio:3/1;max-width:100%;background:var(--panel2);margin:0}
+.hero img{width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block}
+.hero .cap{position:absolute;inset:auto 0 0 0;padding:28px 18px 12px;background:linear-gradient(180deg,transparent,rgba(5,9,12,.92));display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.hero h1{margin:0;font-family:var(--f-label);font-weight:700;font-size:clamp(22px,4.5vw,38px);letter-spacing:.03em;line-height:1;color:#fff}
+.hero h1 span{color:var(--digit)}
+.hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.hero .site{font-family:var(--f-label);font-size:15px;letter-spacing:.06em;color:#cfe3ff;text-decoration:none;border-bottom:1px solid rgba(207,227,255,.4)}
+.hero .ver{font-size:12px;color:#b8c6cd}
+/* conditions d'utilisation */
+.terms-veil{background:rgba(4,7,9,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:30}
+.dlg{width:min(640px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--digit);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+.dlg-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.dlg-head img{width:56px;height:38px;object-fit:cover;border-radius:4px;flex:none}
+.dlg-head h2{margin:0;font-family:var(--f-label);font-weight:700;font-size:22px;letter-spacing:.04em}
+.dlg-head small{display:block;color:var(--dim);font-family:var(--f-body);font-size:13px;letter-spacing:0;font-weight:400}
+.terms{padding:14px 18px;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:12px}
+.terms h3{margin:0 0 3px;font-family:var(--f-label);font-weight:700;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--digit)}
+.terms p,.terms ul{margin:0;font-size:14.5px}
+.terms ul{padding-left:20px;display:flex;flex-direction:column;gap:3px}
+.terms .t-anon{border:1px solid #1d4d33;background:#0f2219;border-radius:8px;padding:10px 12px}
+.terms .t-anon h3{color:var(--ok)}
+.terms .t-legal{border:1px solid #5a2a2a;background:#1d1213;border-radius:8px;padding:10px 12px}
+.terms .t-legal h3{color:var(--bad)}
+.dlg-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;background:var(--panel2)}
+.dlg-foot .go{font-size:18px;padding:12px 16px}
 footer{color:var(--dim);font-size:12px;border-top:1px solid var(--line);padding-top:10px}
 @media print{body{background:#fff;color:#000}.btn,.stop,footer{display:none}.card,.verdict{border-color:#999;background:#fff;color:#000}}
 .ticks .t0{left:0}.ticks .t25{left:25%}.ticks .t45{left:45%}.ticks .t50{left:50%}.ticks .t70{left:70%}.ticks .t86{left:86%}.ticks .t100{left:100%}

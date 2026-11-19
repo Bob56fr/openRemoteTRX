@@ -41,7 +41,7 @@ def test_the_page_contacts_no_server_during_the_test() -> None:
             assert bad not in text, (f.name, bad)
         urls = re.findall(r"https?://[^\s\"'<>)]+", text)
         if f.name == "index.html":
-            assert set(urls) <= {"https://github.com/Bob56fr/openRemoteTRX"}, urls   # un simple lien, cliqué ou non
+            assert set(urls) <= {"https://github.com/Bob56fr/openRemoteTRX", "https://www.rf-diy.com"}, urls  # liens, cliqués ou non
         else:
             assert urls == [], (f.name, urls)
 
@@ -60,3 +60,19 @@ def test_closed_list_of_civ_commands_and_a_single_way_to_transmit() -> None:
     assert runner.index("setPtt(true)") < runner.index("class Runner")
     assert "setTimeout(() => { this.unkey(\"duree_max\"); }, this.o.maxTx)" in runner
     assert "maxTx: 10000" in runner                                                     # 10 s au plus par émission
+
+
+def test_terms_of_use_are_shown_at_every_visit_and_must_be_accepted() -> None:
+    """Conditions d'utilisation (texte validé le 2026-11-19) : fenêtre ouverte au chargement, au-dessus de l'accueil,
+    redemandée à chaque visite (rien n'est retenu), bouton inactif tant que la case n'est pas cochée."""
+    html = (WEB / "index.html").read_text(encoding="utf-8")
+    tag = re.search(r'<div class="overlay terms-veil" id="o-terms"[^>]*>', html).group(0)
+    assert "hidden" not in tag
+    assert re.search(r'<button[^>]*id="terms-go"[^>]*disabled', html)
+    assert "J'accepte les conditions d'utilisation de cette application et j'accepte les risques." in html
+    assert "Démarrer les tests anonymes de ma station" in html and "Limitation de responsabilité" in html
+    app = (WEB / "app.js").read_text(encoding="utf-8")
+    assert '$("terms-go").disabled = !$("terms-ok").checked' in app
+    for f in WEB.glob("*.js"):
+        text = f.read_text(encoding="utf-8")
+        assert "localStorage" not in text and "sessionStorage" not in text and "indexedDB" not in text, f.name
