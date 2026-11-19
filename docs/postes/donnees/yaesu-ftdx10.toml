@@ -21,6 +21,14 @@ quoi = "Valise graphique pilotée par Claude : carte son (entrée Windows passé
 quoi_en = "Graphical suitcase piloted by Claude: sound card (Windows input moved from 44.1 to 48 kHz), before / after readings, exploration, receive on antenna (27.555 MHz USB, -26.6 dBFS), qualification with transmission on dummy load (PTT: key 218 ms, unkey 203 ms; lost heartbeat 2.2 s, TOT 8.3 s, disconnection 0.2 s, CAT loss 1.9 s), qualification without transmission on antenna (audio -23 dBFS), 8 automatic drills passed (STOP 0.19 s, heartbeats 2.69 s, closed connection 0.67 s, out of band refused, TOT 90.2 s, dashboard STOP TX 0.43 s, station stopped during a transmission: receive 2.6 s after the order, start-up without transmission), local operator at the rig microphone; proposed verdict « validation in progress »"
 
 [[essais]]
+date = "2026-11-19"
+station = "0.221.0"
+hamlib = "4.7.2"
+systeme = "Windows 11"
+quoi = "Mise hors tension et sous tension par la CAT (rigctl, sans station ni émission) : éteint en 0,6 s, ports USB et carte son toujours présents poste éteint, rallumé en 7,9 s avec la même fréquence et le même mode. Fonction pas encore proposée par la station."
+quoi_en = "Power off and on over CAT (rigctl, without the station, no transmission): off in 0.6 s, USB ports and sound card still present while off, back on in 7.9 s with the same frequency and mode. Not yet offered by the station."
+
+[[essais]]
 date = "2026-11-16"
 station = "0.153.0"
 hamlib = "4.7.2"

@@ -57,7 +57,11 @@ Guide de l'opérateur, pas à pas : `User-Guide/fr/postes/ftdx10.md`.
 - OPERATION SETTING > TX GENERAL : **HF MAX POWER** (et 50M, 70M, AM) = plafond de puissance du poste ; **EMERGENCY
   FREQ TX** = DISABLE.
 - Mise sous tension par CAT (`PS1;`, deux fois à 1-2 s d'écart) possible par l'USB seulement (pas par la prise
-  RS-232C) : non utilisée par la station.
+  RS-232C) : pas encore utilisée par la station (cahier `docs/alimentation-poste-cahier-des-charges.md`). ESSAYÉE
+  sur un FTDX10 le 2026-11-19 (Windows, Hamlib 4.7.2, `rigctl` direct, sans émission) : `set_powerstat 0` accepté en
+  0,6 s ; poste éteint, les deux ports COM du CP2105 et la carte son « USB AUDIO CODEC » restent présents et le poste
+  répond encore `get_powerstat` = 0 (2,1 s) ; `set_powerstat 1` accepté en 7,9 s, poste qui répond 1 s après, même
+  fréquence, mode et filtre, en réception.
 
 ## Ce qui ne marche pas avec ces postes
 
