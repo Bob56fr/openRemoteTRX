@@ -81,3 +81,14 @@ def test_terms_of_use_are_shown_at_every_visit_and_must_be_accepted() -> None:
     for f in WEB.glob("*.js"):
         text = f.read_text(encoding="utf-8")
         assert "localStorage" not in text and "sessionStorage" not in text and "indexedDB" not in text, f.name
+
+
+def test_yaesu_closed_list_never_vox_menus_power_mox_or_tuning() -> None:
+    """Pilote Yaesu (yaesu.js, manuel CAT FTDX10) : écritures en liste fermée ; jamais VX (VOX), EX (menus), PS
+    (alimentation), MX (MOX) ; coupleur seulement 0 / 1 (2 = accord = émission), split jamais « + 5 kHz »."""
+    ya = (WEB / "yaesu.js").read_text(encoding="utf-8")
+    block = ya[ya.index("const WRITE = {"):ya.index("};", ya.index("const WRITE = {"))]
+    keys = set(re.findall(r"(?<![A-Za-z0-9])([A-Z]{2}[0-9]{0,2}):", block))
+    assert keys == {"FA", "FB", "MD0", "PC", "TX", "NB0", "NL0", "NR0", "RL0", "RA0", "PA0", "BC0", "PR0", "RT", "ST",
+                    "AC00", "SV"}, keys
+    assert "AC00: /^[01]$/" in block and "ST: /^[01]$/" in block and "TX: /^[01]$/" in block

@@ -6,7 +6,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "0.3.1";
+  const VERSION = "0.4.0";
   const SCHEMA = "openremotetrx-autotest/1";
   const STATUS_TEXT = { ok: "réussi", avert: "à vérifier", echec: "échec", na: "non disponible", saute: "sauté" };
 
@@ -40,6 +40,7 @@
         modele_verifie: model ? !!model.verifie : false,
         hamlib_model: model && model.hamlib || null,
         adresse_civ: detected && detected.addr != null ? detected.addr.toString(16).toUpperCase().padStart(2, "0") : null,
+        identifiant: detected && detected.ident || null,                     // Yaesu : réponse à « ID; »
         vitesse: detected ? detected.baud : null,
         usb: usb ? { vid: hexId(usb.usbVendorId), pid: hexId(usb.usbProductId) } : null,
       },

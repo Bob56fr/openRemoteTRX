@@ -5,7 +5,7 @@
    Node) ; ici, les COUPURES D'URGENCE de la page : STOP, Échap, onglet caché, fermeture, erreur, port perdu. */
 (function () {
   "use strict";
-  const { AtCiv: civ, AtModels: models, AtRunner: R, AtReport: rep } = window;
+  const { AtCiv: civ, AtYaesu: yaesu, AtModels: models, AtRunner: R, AtReport: rep } = window;
   const $ = id => document.getElementById(id);
   const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -42,7 +42,10 @@
       const c = el("button", "choice", name); c.type = "button"; c.appendChild(el("small", null, note));
       c.onclick = () => { S.chosen = m; S.model = m;
         $("port-driver").hidden = !(m && m.piloteIcom && /Windows/i.test(navigator.userAgent));   // pilote 1.80 (2026-11-19)
-        $("port-help").textContent = m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste."; show("s-port"); };
+        $("port-help").textContent = S.brand.family === "yaesu"
+          ? `${m ? m.name + " : " : ""}la CAT passe par le port « Enhanced COM Port » (deux ports « Silicon Labs CP2105 » ; l'autre, « Standard », ne sert pas ici). Vitesse : celle du menu CAT RATE du poste (38400 d'usine), la page essaie 38400, 9600, 19200 et 4800.`
+          : m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste.";
+        show("s-port"); };
       box.appendChild(c);
     };
     for (const m of models.modelsOf(S.brand.id)) add(m, m.name, (m.verifie ? "vérifié" : "non vérifié") + ` · ${m.maxW} W`);
@@ -76,11 +79,15 @@
     // Pause de 5 s avant d'ouvrir le port (demande de l'utilisateur, 2026-11-19 : Chrome se figeait à l'ouverture juste
     // après la fenêtre de choix du port).
     for (let s = 5; s > 0; s--) { status.textContent = `Ouverture du port dans ${s} s…`; await new Promise(r => setTimeout(r, 1000)); }
-    const d = await R.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.ICOM_BAUDS, byAddr: models.byAddr,
-                               onTry: b => { status.textContent = `Essai à ${b} bauds…`; } });
+    const onTry = b => { status.textContent = `Essai à ${b} bauds…`; };
+    const d = S.brand.family === "yaesu"
+      ? await yaesu.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.YAESU_BAUDS, byId: models.byIdent, onTry })
+      : await R.detect({ openAt: b => openAt(port, b), model: S.model, bauds: models.ICOM_BAUDS, byAddr: models.byAddr, onTry });
     $("b-port").disabled = false;
     if (d.error === "port") { status.textContent = "Port impossible à ouvrir : un autre logiciel l'utilise peut-être (WSJT-X, logiciel du constructeur, station openRemoteTRX). Fermez-le et recommencez."; return; }
-    if (d.error) { status.textContent = "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le bon port, et la vitesse CI-V USB dans son menu."; return; }
+    if (d.error) { status.textContent = S.brand.family === "yaesu"
+      ? "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le port « Enhanced », et la vitesse CAT RATE dans son menu."
+      : "Le poste ne répond à aucune vitesse. Vérifiez qu'il est allumé, que c'est le bon port, et la vitesse CI-V USB dans son menu."; return; }
     S.detected = d;
     if (!S.model && d.guess) S.model = d.guess;
     startRun();

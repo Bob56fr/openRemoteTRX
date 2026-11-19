@@ -199,9 +199,64 @@
     async readRaw(cmd) { return this.request(cmd, [], { timeout: 300 }); }
     async writeRaw(cmd, data) { return this.request(cmd, data, { timeout: 300 }); }
     async setPtt(on) { const r = await this.request(CMD.PTT, [on ? 1 : 0], { timeout: 300 }); return !!r.ok; }
+
+    // ---- Interface commune aux familles (yaesu.js a la même) : le déroulé des essais ne connaît pas la marque.
+    get family() { return "icom"; }
+    get dataLabel() { return "USB-D"; }
+    get scale() { return SCALE; }
+    get funcs() { return FUNCS; }
+    modeCode(name) { return MODE_CODES[name]; }
+    async meter(kind) { return this.level({ s: CMD.S_METER, po: CMD.PO_METER, swr: CMD.SWR_METER, alc: CMD.ALC_METER, power: CMD.RF_POWER }[kind]); }
+    powerRaw(pct) { return Math.round(255 * pct / 100); }
+    powerPct(raw) { return raw / 2.55; }
+    powerClose(a, b) { return a != null && b != null && Math.abs(a - b) <= 2; }
+    // Retour en réception en tête de file (coupure d'urgence).
+    async pttOffNow() { await this.sendNow(CMD.PTT, [0]); }
+    // Fonctions (R9) : valeurs en hexadécimal (« 01 94 »).
+    async fnRead(f) {
+      const r = await this.readRaw(f.cmd);
+      if (!r.ok || !r.data || !r.data.length) return null;
+      return hex(f.level ? r.data.slice(0, 2) : r.data.slice(0, 1));
+    }
+    async fnWrite(f, v) { const r = await this.writeRaw(f.cmd, unhex(v)); return { ok: !!r.ok, ng: !!r.ng }; }
+    fnOther(f, v0) {
+      const b = unhex(v0);
+      if (f.level) { const n = decodeLevel(b); return hex(encodeLevel(n >= 128 ? n - 51 : n + 51)); }
+      const other = f.values.find(x => x !== b[0]);
+      return hex([other == null ? f.values[0] : other]);
+    }
+    // Un niveau est arrondi au cran du poste (IC-7300MK2 : NR écrit 123 relu 120, COMP 155 relu 151) : écart accepté
+    // jusqu'à un demi-cran du réglage le plus grossier (11 crans : 255 / 10 / 2 ≈ 13).
+    fnNear(f, r1, v1) { return !!(f.level && r1 && v1 && Math.abs(decodeLevel(unhex(r1)) - decodeLevel(unhex(v1))) <= 13); }
+    fnShow(v) { return v ? String(decodeLevel(unhex(v))) : v; }
+    async vfoOther() {
+      const r = await this.request(CMD.VFO_FREQ, [0x01], { timeout: 300 });
+      return r.ok && r.data.length >= 6 ? decodeFreq(r.data.slice(1, 6)) : null;
+    }
+    async vfoSwap() { const r = await this.writeRaw(CMD.VFO_EXCH, []); return { ok: !!r.ok, ng: !!r.ng }; }
   }
 
-  const api = { CTRL, CMD, MODES, MODE_CODES, frame, hex, Parser, decodeFreq, encodeFreq, decodeLevel, encodeLevel,
+  /* Fonctions essayées en R9, SANS émission : lue, changée, relue, remise, relue. Le VOX n'y est JAMAIS. */
+  const FUNCS = [
+    { code: "ATT", label: "Atténuateur", cmd: CMD.ATT, values: [0x00, 0x20] },
+    { code: "P.AMP", label: "Préampli", cmd: CMD.PREAMP, values: [0x00, 0x01, 0x02] },
+    { code: "IP+", label: "IP+", cmd: CMD.IPPLUS, values: [0x00, 0x01] },
+    { code: "AGC", label: "AGC", cmd: CMD.AGC, values: [0x01, 0x02, 0x03] },
+    { code: "NB", label: "Noise blanker", cmd: CMD.NB, values: [0x00, 0x01] },
+    { code: "NB niv.", label: "Niveau NB", cmd: CMD.NB_LEVEL, level: true },
+    { code: "NR", label: "Réduction de bruit", cmd: CMD.NR, values: [0x00, 0x01] },
+    { code: "NR niv.", label: "Niveau NR", cmd: CMD.NR_LEVEL, level: true },
+    { code: "ANF", label: "Notch automatique", cmd: CMD.ANF, values: [0x00, 0x01] },
+    { code: "COMP", label: "Compresseur", cmd: CMD.COMP, values: [0x00, 0x01] },
+    { code: "COMP niv.", label: "Niveau du compresseur", cmd: CMD.COMP_LEVEL, level: true },
+    { code: "RIT", label: "RIT", cmd: CMD.RIT_ON, values: [0x00, 0x01] },
+    { code: "SPLIT", label: "Split", cmd: CMD.SPLIT, values: [0x00, 0x01] },
+    { code: "TUNER", label: "Coupleur (en / hors service, sans accord)", cmd: CMD.TUNER, values: [0x00, 0x01] },
+  ];
+  const SCALE = { sText, poPercent, swrValue, alcPercent };
+  function unhex(s) { return String(s || "").trim().split(/\s+/).filter(Boolean).map(x => parseInt(x, 16)); }
+
+  const api = { FUNCS, SCALE, unhex, CTRL, CMD, MODES, MODE_CODES, frame, hex, Parser, decodeFreq, encodeFreq, decodeLevel, encodeLevel,
                 PO_TABLE, SWR_TABLE, poPercent, swrValue, alcPercent, sText, CivLink };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AtCiv = api;

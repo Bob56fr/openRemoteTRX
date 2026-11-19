@@ -251,6 +251,66 @@ test("rapport : anonyme, trace et empreinte, résumé", async () => {
   assert.ok(!/serial|hostname|COM\d/i.test(txt));
 });
 
+// ---------- Yaesu (CAT ASCII, FTDX10) ----------
+const Y = require("./autotest_fake_yaesu.js");
+const FTDX10 = models.YAESU.find(m => m.id === "ftdx10");
+async function setupY(rigOpts, uiOver, opts, audioOpts) {
+  const rig = new Y.FakeYaesu(rigOpts);
+  const d = await Y.ya.detect({ openAt: async b => rig.transport(b), model: FTDX10, bauds: models.YAESU_BAUDS, byId: models.byIdent });
+  assert.ok(!d.error, JSON.stringify(d));
+  const u = ui(uiOver);
+  const r = new Runner({ link: d.link, model: FTDX10, audio: Y.fakeAudio(rig, audioOpts), ui: u, opts: Object.assign({}, FAST, opts), detected: d });
+  return { rig, d, u, r };
+}
+
+test("Yaesu : liste fermée (jamais VOX, menus, alimentation, MOX, accord du coupleur, split + 5 kHz)", () => {
+  const f = Y.ya.frame;
+  for (const [c, v] of [["VX", "1"], ["EX", "010101"], ["PS", "0"], ["MX", "1"], ["AC00", "2"], ["ST", "2"], ["TX", "2"], ["PC", "1000"]])
+    assert.throws(() => f(c, v), /liste fermée/, c + v);
+  assert.throws(() => f("EX"), /liste fermée/);
+  assert.equal(f("TX", "0"), "TX0;"); assert.equal(f("FA"), "FA;"); assert.equal(f("AC00", "1"), "AC001;");
+});
+
+test("Yaesu : détection (vitesse, identité 0761 = FTDX10, autre vitesse du menu)", async () => {
+  const rig = new Y.FakeYaesu({ baud: 9600 });
+  const d = await Y.ya.detect({ openAt: async b => rig.transport(b), model: null, bauds: models.YAESU_BAUDS, byId: models.byIdent });
+  assert.equal(d.baud, 9600); assert.equal(d.ident, "0761"); assert.equal(d.guess.name, "FTDX10");
+});
+
+test("Yaesu : parcours complet réussi, état d'origine remis, émissions courtes à 10 %", async () => {
+  const { rig, r } = await setupY({});
+  const out = await r.run();
+  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+  assert.equal(rig.st.FA, "007074000"); assert.equal(rig.st.MD0, "1"); assert.equal(rig.st.PC, "100"); assert.equal(rig.st.TX, "0");
+  assert.equal(JSON.stringify(rig.fn), rig.initialFn);
+  assert.equal(rig.txLog.length, 4); assert.ok(rig.maxTx() < 1000);
+  assert.ok(!rig.writes.some(w => /^(VX|EX|PS|MX|AC002|ST2)/.test(w.cmd)));
+  assert.ok(res(out, "E4").text.includes("Po"));
+  assert.equal(res(out, "R9").values.fonctions.find(x => x.code === "VFO A/B").relu, "14.074.000");
+});
+
+test("Yaesu : aucune émission sans autorisation ; STOP pendant la porteuse", async () => {
+  const a = await setupY({}, { authorize: async () => false });
+  await a.r.run(); assert.equal(a.rig.txLog.length, 0); assert.ok(!a.rig.writes.some(w => w.cmd === "TX1"));
+  const b = await setupY({}, {}, { e2: 3000 });
+  let t0 = null;
+  b.r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E2") setTimeout(() => { t0 = Date.now(); b.r.stop("stop"); }, 60); };
+  const out = await b.r.run();
+  assert.equal(b.rig.st.TX, "0"); assert.equal(b.rig.txLog.length, 2); assert.ok(b.rig.txLog[1] < 400);
+  assert.ok(Date.now() - t0 < 1500); assert.equal(res(out, "RS").status, "ok");
+});
+
+test("Yaesu : R9 fonction absente, écriture refusée « ?; », relue fausse ; poste déjà en émission", async () => {
+  const { rig, r } = await setupY({ silent: ["PR0"], ngWrite: ["NB0"], stuck: ["RL0"] });
+  await r._r9();
+  const r9 = r.results.find(x => x.code === "R9"), row = c => r9.values.fonctions.find(x => x.code === c);
+  assert.equal(row("COMP").statut, "absent"); assert.equal(row("NB").statut, "refus"); assert.equal(row("NR niv.").statut, "ecart");
+  assert.equal(row("SPLIT").statut, "ok"); assert.equal(JSON.stringify(rig.fn), rig.initialFn);
+  const busy = await setupY({ alreadyTx: true });
+  const out = await busy.r.run();
+  assert.equal(res(out, "R6").status, "echec"); assert.ok(!busy.rig.writes.some(w => /^(TX[01]|FA\d|MD0.)/.test(w.cmd)));
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {

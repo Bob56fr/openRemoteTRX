@@ -7,8 +7,8 @@
   "use strict";
 
   const BRANDS = [
-    { id: "icom", name: "Icom", family: "civ", ready: true },
-    { id: "yaesu", name: "Yaesu", family: "ascii", ready: false },
+    { id: "icom", name: "Icom", family: "icom", ready: true },
+    { id: "yaesu", name: "Yaesu", family: "yaesu", ready: true },
     { id: "kenwood", name: "Kenwood", family: "ascii", ready: false },
     { id: "elecraft", name: "Elecraft", family: "ascii", ready: false },
     { id: "xiegu", name: "Xiegu", family: "civ", ready: false },
@@ -31,10 +31,19 @@
   ];
   const ICOM_BAUDS = [115200, 19200, 9600, 38400, 57600, 4800];
 
-  function modelsOf(brand) { return brand === "icom" ? ICOM : []; }
-  function byAddr(addr) { return ICOM.find(m => m.addr === addr) || null; }
+  // Yaesu « nouveaux » (ASCII) : ident = réponse à « ID; » (manuel CAT du modèle). Seul le FTDX10 est documenté ici
+  // (manuel CAT 2308-F) ; un autre modèle s'ajoute avec SON manuel (les numéros des mesures RM changent d'un modèle à
+  // l'autre). Ports : deux ports CP2105, la CAT est sur « Enhanced COM Port ».
+  const YAESU = [
+    { id: "ftdx10", name: "FTDX10", ident: "0761", maxW: 100, verifie: false, hamlib: 1042, ports: "Enhanced" },
+  ];
+  const YAESU_BAUDS = [38400, 9600, 19200, 4800];
 
-  const api = { BRANDS, ICOM, ICOM_BAUDS, modelsOf, byAddr };
+  function modelsOf(brand) { return brand === "icom" ? ICOM : brand === "yaesu" ? YAESU : []; }
+  function byAddr(addr) { return ICOM.find(m => m.addr === addr) || null; }
+  function byIdent(id) { return YAESU.find(m => m.ident === id) || null; }
+
+  const api = { BRANDS, ICOM, ICOM_BAUDS, YAESU, YAESU_BAUDS, modelsOf, byAddr, byIdent };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AtModels = api;
 })(typeof window !== "undefined" ? window : globalThis);
