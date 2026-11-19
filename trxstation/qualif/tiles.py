@@ -128,9 +128,11 @@ def item_state(session, key: str) -> tuple[str, str]:
     return TODO, ""
 
 
-def tiles(session, label) -> dict:
+def tiles(session, label, running: bool | None = None) -> dict:
     """Tuiles pour la page : thèmes, essais (touche, état, détail, titre si c'est un essai), progression.
-    `label(drill)` : titre de l'essai dans la langue de l'outil."""
+    `label(drill)` : titre de l'essai dans la langue de l'outil. `running` (station du PC en marche) : un essai lancé
+    SEUL qui exige l'autre état est grisé dans la page (`bloque` : « marche » = à arrêter, « arretee » = à démarrer)
+    ; « Tout lancer » et « Lancer le thème » font eux-mêmes ces préalables."""
     out, counted, done = [], 0, 0
     for theme, where, keys in themes():
         items = []
@@ -138,6 +140,10 @@ def tiles(session, label) -> dict:
             state, detail = item_state(session, key)
             drill = drill_of(key)
             item = {"cle": key, "etat": state, "detail": detail[:160]}
+            if running is True and needs_stopped(key):
+                item["bloque"] = "marche"
+            elif running is False and needs_running(key):
+                item["bloque"] = "arretee"
             if drill is not None:
                 item["texte"] = label(drill)
                 item["essai"] = drill.id

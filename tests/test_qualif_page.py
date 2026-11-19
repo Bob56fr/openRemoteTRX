@@ -202,6 +202,7 @@ def test_texts_fr_and_en_have_the_same_keys_and_every_menu_entry():
     dynamic |= {f"meter.{m}" for m in ("freq", "po", "swr", "alc", "s")}
     dynamic |= {f"why.{w}" for w in ("CHARGE", "ANTENNE", "EMETTRE")}
     dynamic |= {f"connection.{c}" for c in ("antenne", "charge", "inconnu")} | {"choice.tous", "choice.retour"}
+    dynamic |= {"blocked.marche", "blocked.arretee"}
     assert dynamic <= fr.keys(), dynamic - fr.keys()
     source = open(page_server.__file__, encoding="utf-8").read()
     assert set(re.findall(r'"(err\.[a-z_]+)"', source)) <= fr.keys()

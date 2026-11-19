@@ -1053,7 +1053,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                 notice(bus, _t("terrain.seq.stopped", rank=rank, total=len(keys)))
                 return False
             note_runs(session)                          # tuiles de la page à jour après chaque essai
-            bus.publish("tuiles", **tl.tiles(session, label))
+            bus.publish("tuiles", **tl.tiles(session, label, station()))
         out(_t("terrain.seq.done", count=len(keys)))
         return True
 
@@ -1207,7 +1207,7 @@ def run_terrain(cfg, profile, dump_text: str, output: Path, *, session_dir: Path
                        hamlib=profile.hamlib_version, dossier=str(folder), station=bool(running),
                        branchement=session.connection or "inconnu", tot_s=float(cfg.safety.tot_s),
                        page_station=_station_page(cfg))
-            bus.publish("tuiles", **tl.tiles(session, label))
+            bus.publish("tuiles", **tl.tiles(session, label, station()))
             choice = ask_typed(ask, _t("terrain.choice"), CHOICE,
                                choices=menu_choices(session, done, folder, running), role="menu").strip().lower()
             if choice in ("q", "0", ""):

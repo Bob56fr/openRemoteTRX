@@ -400,3 +400,15 @@ def test_menu_lines_of_the_terminal_are_marked_for_the_page(tmp_path):
     events = _run(tmp_path, ["q"])
     menu = [e for e in events if e["type"] == "ligne" and e.get("menu")]
     assert menu and any("Valise de qualification" in e["texte"] for e in menu)
+
+
+def test_tiles_are_greyed_by_the_station_state(tmp_path):
+    """Demande de l'utilisateur (2026-11-19) : un essai qui exige l'autre état de la station est grisé, avec la raison."""
+    s = _session(tmp_path)
+
+    def blocked(running):
+        return {i["cle"]: i.get("bloque") for t in tiles.tiles(s, lambda d: d.id, running)["themes"] for i in t["essais"]}
+    on, off = blocked(True), blocked(False)
+    assert on["r"] == on["s"] == on["3"] == "marche" and on["8.1"] is None and on["8.8"] is None
+    assert off["8.1"] == off["5.3"] == "arretee" and off["r"] is None and off["8.8"] is None   # A8 démarre lui-même
+    assert all(v is None for v in blocked(None).values())

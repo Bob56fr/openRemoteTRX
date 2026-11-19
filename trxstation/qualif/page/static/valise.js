@@ -204,7 +204,12 @@
     $("tout").disabled = $("echecs").disabled = !menu;
     $("arret-seq").hidden = !chain || !!menu;
     $("seq-info").textContent = chain && !menu ? t("seq.running", { rank: chain.rang, total: chain.total }) : "";
-    for (const b of document.querySelectorAll("#station-boutons button")) b.disabled = !menu;
+    for (const b of document.querySelectorAll("#station-boutons button")) {
+      // « Démarrer » grisé si la station tourne, « Arrêter » si elle est arrêtée
+      const useless = (b.dataset.cle === "d" && statusNow.station === true) ||
+        (b.dataset.cle === "a" && statusNow.station === false);
+      b.disabled = !menu || useless;
+    }
     if (!tiles) return;
     $("compte").textContent = t("progress", { done: tiles.faits, total: tiles.total });
     $("prog").style.width = (tiles.total ? (tiles.faits / tiles.total) * 100 : 0) + "%";
@@ -223,13 +228,14 @@
       for (const it of th.essais) {
         const running = current === it.cle && !menu;
         const state = running ? "encours" : it.etat;
-        const li = el("li", "essai " + state);
+        const li = el("li", "essai " + state + (it.bloque ? " bloque" : ""));
         if (running) follow = li;
         li.appendChild(el("span", "pt " + state));
         const txt = el("div");
         const name = itemLabel(it);
         const optional = it.facultatif && !name.toLowerCase().includes(t("optional").toLowerCase());
         txt.appendChild(el("div", "n", name + (optional ? " · " + t("optional") : "")));
+        if (it.bloque) txt.appendChild(el("div", "raison", t("blocked." + it.bloque)));
         if (it.couvert && it.etat === "a_faire") {      // essai à la main que la valise fait elle-même (A1…A8)
           txt.appendChild(el("div", "d", t("covered", { key: "A" + it.couvert.split(".")[1] })));
         }
@@ -239,7 +245,8 @@
           const b = el("button", "btn-mini", it.etat === "a_faire" ? "▶" : "↻");
           b.type = "button";
           b.title = t(it.etat === "a_faire" ? "run.one" : "run.again");
-          b.disabled = !menu;
+          b.disabled = !menu || !!it.bloque;
+          if (it.bloque) b.title = t("blocked." + it.bloque);
           b.addEventListener("click", () => launch(it.cle));
           li.appendChild(b);
         }
@@ -256,6 +263,7 @@
     for (const key of ["d", "a", "7", "q"]) {
       const b = el("button", key === "q" ? "second" : "", T["menu." + key] || key);
       b.type = "button";
+      b.dataset.cle = key;
       b.addEventListener("click", () => launch(key));
       box.appendChild(b);
     }

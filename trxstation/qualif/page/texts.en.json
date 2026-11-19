@@ -32,8 +32,6 @@
   "menu.q": "Quit (session kept)",
   "choice.tous": "All tests not done yet",
   "choice.retour": "Back to the menu",
-  "blocked.charge": "choice c first (CHARGE)",
-  "blocked.station": "stop the station first (a)",
   "question": "Question from the suitcase",
   "send": "Send",
   "enter": "Enter (proposed value)",
@@ -197,5 +195,7 @@
   "covered": "done by the suitcase: {key}",
   "ready": "Ready: choose a test (▶) or « Run all ».",
   "report.done": "Report built: {path}",
-  "report.open": "Open the folder"
+  "report.open": "Open the folder",
+  "blocked.marche": "Station RUNNING: stop it first (« Stop the PC station » button)",
+  "blocked.arretee": "Station STOPPED: start it first (« Start the PC station » button)"
 }

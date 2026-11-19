@@ -32,8 +32,6 @@
   "menu.q": "Quitter (session gardée)",
   "choice.tous": "Tous les essais pas encore faits",
   "choice.retour": "Retour au menu",
-  "blocked.charge": "choix c d'abord (CHARGE)",
-  "blocked.station": "arrêter la station d'abord (a)",
   "question": "Question de la valise",
   "send": "Envoyer",
   "enter": "Entrée (valeur proposée)",
@@ -197,5 +195,7 @@
   "covered": "fait par la valise : {key}",
   "ready": "Prêt : choisissez un essai (▶) ou « Tout lancer ».",
   "report.done": "Rapport fabriqué : {path}",
-  "report.open": "Ouvrir le dossier"
+  "report.open": "Ouvrir le dossier",
+  "blocked.marche": "Station EN MARCHE : arrêtez-la d'abord (bouton « Arrêter la station du PC »)",
+  "blocked.arretee": "Station ARRÊTÉE : démarrez-la d'abord (bouton « Démarrer la station du PC »)"
 }
