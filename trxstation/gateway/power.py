@@ -216,6 +216,11 @@ class PowerControl:
                 self.link.paused = True
                 try:
                     on = await client.get_powerstat(timeout=6.0)
+                except RigError as exc:
+                    # Icom (IC-7300MK2, essai réel du 2026-11-19) : poste éteint = lecture REFUSÉE (RPRT -9), pas « 0 ».
+                    # rigctld répond (liaison en place), le poste ne répond pas : c'est le cas qu'on vient allumer.
+                    log.info("alimentation illisible (%s) : poste éteint, l'ordre d'allumage part quand même", exc)
+                    on = False
                 except _CAT_ERRORS as exc:
                     raise PowerError("check_off", "rig_silent", codes.ORT_2803,
                                      f"le poste ne répond pas ({exc}) : câble USB, alimentation, interrupteur arrière") from exc
@@ -344,6 +349,9 @@ class PowerControl:
                     await client.connect()
                 if await client.get_powerstat(timeout=min(6.0, max(1.0, left))) is on:
                     return True
+            except RigError:
+                if not on:
+                    return True                           # Icom éteint : lecture refusée (RPRT -9) = poste qui ne répond plus
             except _CAT_ERRORS:
                 pass
             await self.sleep(1.0)

@@ -18,5 +18,8 @@
   "result_ok": "Trial PASSED: the radio switches off and on over CAT.",
   "result_failed": "Trial FAILED: feature not switched on.",
   "config_bad": "station.toml unreadable: {detail}",
-  "no_rigctl": "rigctl (Hamlib) not found: install Hamlib or set [tools] hamlib_dir."
+  "no_rigctl": "rigctl (Hamlib) not found: install Hamlib or set [tools] hamlib_dir.",
+  "restore": "Switching the radio back on as a precaution…",
+  "restore_ok": "   Radio back on.",
+  "restore_failed": "   The radio did not come back on: switch it on at the shack (ON/OFF button)."
 }

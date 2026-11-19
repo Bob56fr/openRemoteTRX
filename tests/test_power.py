@@ -129,6 +129,24 @@ def test_no_misleading_vox_notice_while_the_rig_is_off():
     run(scenario)
 
 
+def test_icom_that_refuses_the_power_reading_when_off_is_switched_off_and_on():
+    # IC-7300MK2 (essai réel du 2026-11-19) : éteint, « \get_powerstat » = RPRT -9 ; l'allumage restait bloqué sur
+    # « le poste ne répond pas » et l'ordre ne partait jamais
+    async def scenario(fake):
+        fake.off_refuses = True
+        async with station(fake) as (ctrl, link, power):
+            await power.power_off("phone")
+            assert fake.powered == 0 and link.state.power == "off"
+            outcome = await power.power_on("phone")
+            assert outcome["result"] == "on" and fake.powered == 1
+            assert powerstat_orders(fake) == [0, 1]
+            fake.powered = 0                                          # éteint au shack : vu éteint quand même
+            await until(lambda: link.state.power == "off")
+            fake.powered = 1
+            await until(lambda: link.state.power == "on", timeout=8)
+    run(scenario, timeout=30)
+
+
 def test_rig_switched_on_by_hand_is_read_again():
     async def scenario(fake):
         async with station(fake) as (ctrl, link, power):
@@ -512,8 +530,9 @@ def test_power_settings_are_validated_and_written():
 class _FakeRig:
     """Poste vu par `rigctl` d'une commande : allumé, en réception ; `ptt_at_boot` = se rallume en émission."""
 
-    def __init__(self, ptt_at_boot=False, starts=True):
+    def __init__(self, ptt_at_boot=False, starts=True, icom=False):
         self.on, self.ptt, self.ptt_at_boot, self.starts = True, 0, ptt_at_boot, starts
+        self.icom = icom                     # éteint : lecture d'alimentation refusée (IC-7300MK2)
         self.commands: list[list[str]] = []
 
     def __call__(self, cmd, capture_output=True, timeout=None):
@@ -526,7 +545,10 @@ class _FakeRig:
         if command[:1] and command[0].startswith("\\"):
             out = f"Command '{command[0]}' not found!"   # vrai rigctl 4.7.2 en ligne de commande (2026-11-19)
         elif command == ["get_powerstat"]:
-            out = "1" if self.on else "0"
+            if self.on or not self.icom:
+                out = "1" if self.on else "0"
+            else:
+                code = 1                                      # Icom éteint : lecture refusée (rigctl : erreur, pas « 0 »)
         elif command[:1] == ["set_powerstat"]:
             if command[1] == "1" and self.starts:
                 self.on, self.ptt = True, 1 if self.ptt_at_boot else 0
@@ -572,13 +594,20 @@ def test_power_trial_switches_the_rig_off_and_on_without_ever_keying():
 def test_power_trial_fails_when_the_port_disappears_or_the_rig_comes_back_transmitting():
     rig = _FakeRig()
     ok, out = _trial(rig, present=lambda p: False)
-    assert not ok and not any(c == ["set_powerstat", "1"] for c in rig.commands)
+    # port disparu : l'essai échoue mais REMET le poste en marche (jamais laissé éteint)
+    assert not ok and ["set_powerstat", "1"] in rig.commands and rig.on
     rig = _FakeRig(ptt_at_boot=True)
     ok, _ = _trial(rig)
     assert not ok and rig.ptt == 0 and ["T", "0"] in rig.commands
     rig = _FakeRig(starts=False)
     ok, _ = _trial(rig)
     assert not ok
+
+
+def test_power_trial_with_an_icom_that_refuses_the_reading_when_off():
+    rig = _FakeRig(icom=True)
+    ok, out = _trial(rig)
+    assert ok and rig.on and rig.ptt == 0
 
 
 def test_console_menu_2_8_needs_hamlib_and_a_passed_trial(tmp_path, monkeypatch):

@@ -18,5 +18,8 @@
   "result_ok": "Prueba SUPERADA: el equipo se apaga y se enciende por CAT.",
   "result_failed": "Prueba FALLIDA: función no activada.",
   "config_bad": "station.toml ilegible: {detail}",
-  "no_rigctl": "rigctl (Hamlib) no encontrado: instale Hamlib o indique [tools] hamlib_dir."
+  "no_rigctl": "rigctl (Hamlib) no encontrado: instale Hamlib o indique [tools] hamlib_dir.",
+  "restore": "Encendiendo de nuevo el equipo por precaución…",
+  "restore_ok": "   Equipo encendido de nuevo.",
+  "restore_failed": "   El equipo no se encendió de nuevo: enciéndalo en el cuarto de radio (botón ON/OFF)."
 }

@@ -58,6 +58,7 @@ class FakeRigctld:
         self.power_supported = True       # False : \get_powerstat et \set_powerstat refusés (RPRT -4)
         self.boot_s = 0.0                 # après « \set_powerstat 1 » : muet encore ce délai (le poste démarre)
         self.ptt_at_boot = 0              # 1 : le poste s'allume EN ÉMISSION (ligne RTS d'un PTT série, test de panne)
+        self.off_refuses = False          # True : éteint, « \get_powerstat » REFUSÉ (RPRT -9) comme un IC-7300MK2
         self._booting_until = 0.0
         self.port = 0
         self._server: asyncio.AbstractServer | None = None
@@ -128,6 +129,8 @@ class FakeRigctld:
             if not self.power_supported:
                 return "RPRT -4\n"
             on = self.powered and time.monotonic() >= self._booting_until
+            if not on and self.off_refuses:
+                return "RPRT -9\n"             # Icom éteint (IC-7300MK2, 2026-11-19) : lecture refusée, pas « 0 »
             return f"get_powerstat:\n{self._out('Power Status', 1 if on else 0)}RPRT 0\n"
         if key == "\\set_powerstat" and args:
             if not self.power_supported:

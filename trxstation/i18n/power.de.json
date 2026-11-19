@@ -18,5 +18,8 @@
   "result_ok": "Test BESTANDEN: das Funkgerät lässt sich über CAT aus- und einschalten.",
   "result_failed": "Test FEHLGESCHLAGEN: Funktion nicht eingeschaltet.",
   "config_bad": "station.toml unlesbar: {detail}",
-  "no_rigctl": "rigctl (Hamlib) nicht gefunden: Hamlib installieren oder [tools] hamlib_dir angeben."
+  "no_rigctl": "rigctl (Hamlib) nicht gefunden: Hamlib installieren oder [tools] hamlib_dir angeben.",
+  "restore": "Funkgerät wird vorsichtshalber wieder eingeschaltet…",
+  "restore_ok": "   Funkgerät wieder an.",
+  "restore_failed": "   Das Funkgerät ist nicht wieder angegangen: vor Ort einschalten (Taste ON/OFF)."
 }

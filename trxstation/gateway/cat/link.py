@@ -31,6 +31,7 @@ EXTRA_LEVELS = ("PREAMP", "ATT", "AGC", "SQL", "RFPOWER", "VD_METER", "TEMP_METE
 PERMANENT_ERRORS = (-1, -4, -11, -15, -17)          # paramètre invalide / non géré : inutile de redemander
 MAX_TRANSIENT_FAILURES = 5
 SLOW_REFUSAL_S = 1.5        # lecture facultative REFUSÉE après plus de 1,5 s (Hamlib a réessayé) : abandonnée aussitôt
+OFF_REFUSED = (-9,)         # Icom éteint (IC-7300MK2, 2026-11-19) : « get_powerstat » REFUSÉ (RPRT -9) au lieu de « 0 »
 OFF_POLL_S = 5.0            # poste éteint : seule l'alimentation (get_powerstat) est lue, toutes les 5 s (docs/alimentation-poste-cahier-des-charges.md)
 POWER_SETTLE_S = 15.0       # poste qui vient de s'allumer : aucune lecture facultative abandonnée pendant ce délai
 
@@ -124,7 +125,11 @@ class CatLink:
             return False
         try:
             on = await self.client.get_powerstat()
-        except (RigError, CatProtocolError):
+        except RigError as exc:
+            if exc.code not in OFF_REFUSED:
+                return False
+            on = False                                      # Icom éteint : lecture refusée après une autre lecture ratée
+        except CatProtocolError:
             return False
         if on:
             return False
@@ -250,7 +255,16 @@ class CatLink:
         """Poste éteint : seule l'alimentation est lue. Allumé (à la main, ou par PowerControl) => lecture normale."""
         try:
             on = await self.client.get_powerstat()
-        except (RigError, CatProtocolError):
+        except RigError as exc:
+            # Lecture refusée : Icom éteint, OU poste allumé qui refuse cette seule commande : la fréquence tranche
+            if exc.code not in OFF_REFUSED:
+                return
+            try:
+                await self.client.get_frequency()
+                on = True
+            except (RigError, CatProtocolError):
+                return
+        except CatProtocolError:
             return
         if on:
             log.info("poste de nouveau allumé : lecture normale")

@@ -88,10 +88,24 @@ class Trial:
     def wait_power(self, on: bool, seconds: float) -> bool:
         deadline = self.clock() + seconds
         while self.clock() < deadline:
-            if self.powered() is on:
+            state = self.powered()
+            # Icom éteint (IC-7300MK2, 2026-11-19) : la lecture est REFUSÉE (pas de « 0 ») : après l'ordre d'extinction,
+            # un poste qui ne répond plus compte comme éteint
+            if state is on or (not on and state is None):
                 return True
             self.sleep(1.0)
         return False
+
+    def restore(self) -> None:
+        """Après l'ordre d'extinction, TOUTE sortie en échec tente d'abord de rallumer le poste : un essai ne doit
+        jamais laisser un poste éteint que personne ne pourra rallumer à distance."""
+        self.say(t("restore"))
+        self.rigctl("set_powerstat", "1", timeout=ORDER_TIMEOUT_S)
+        if self.wait_power(True, float(self.cfg.power.on_timeout_s)):
+            self.ptt_off_if_needed()
+            self.say(t("restore_ok"))
+        else:
+            self.say(t("restore_failed"))
 
     def ptt_off_if_needed(self) -> bool:
         """True si le poste est en émission (« T 0 » envoyé aussitôt) : l'essai échoue."""
@@ -115,16 +129,19 @@ class Trial:
         code, _ = self.rigctl("set_powerstat", "0", timeout=ORDER_TIMEOUT_S)
         if code != 0 or not self.wait_power(False, OFF_WAIT_S):
             say(t("off_failed"))
+            self.restore()
             return False
         say(t("off_ok"))
         self.sleep(PORTS_WAIT_S)
         if port:
             if not self.port_present(port):
                 say(t("port_gone", port=port))
+                self.restore()
                 return False
             after = self.identity(port)
             if before is not None and not usbports.same_device(before, after):
                 say(t("port_changed", port=port))
+                self.restore()
                 return False
             say(t("ports_ok", port=port, ident=str(after) if after else t("no_ident")))
         say(t("step_on", seconds=cfg.power.on_timeout_s))

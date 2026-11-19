@@ -18,5 +18,8 @@
   "result_ok": "Essai RÉUSSI : le poste s'éteint et se rallume par la CAT.",
   "result_failed": "Essai en ÉCHEC : fonction non mise en service.",
   "config_bad": "station.toml illisible : {detail}",
-  "no_rigctl": "rigctl (Hamlib) introuvable : installez Hamlib ou renseignez [tools] hamlib_dir."
+  "no_rigctl": "rigctl (Hamlib) introuvable : installez Hamlib ou renseignez [tools] hamlib_dir.",
+  "restore": "Remise en marche du poste par précaution…",
+  "restore_ok": "   Poste rallumé.",
+  "restore_failed": "   Le poste ne s'est pas rallumé : allumez-le au shack (bouton ON/OFF)."
 }
