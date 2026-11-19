@@ -344,3 +344,7 @@ TOUTES TRANCHÉES (v4).
   rencontrés (lecture qui fait tomber rigctld, split qui échange les VFO, plage déclarée fausse, cache).
 - Un modèle jamais branché sur un vrai poste reste « non vérifié » dans la table.
 - Chrome et Edge seulement pour le mode A.
+
+## Annexe : pilote USB Icom et Web Serial (essai du 2026-11-19)
+
+Avec le pilote USB Icom 1.70 (IC-7300MK2, IC-705, IC-905, identifiant USB 0C26), tout Chrome se fige dès qu'une lecture attend sur un port vide. Icom l'a corrigé dans le pilote 1.80 (Windows 11). La page l'exige pour ces postes sous Windows ; Windows 10 (pas de pilote 1.80 annoncé) : mode B. Diagnostic : `autotest/web/diag.html`.

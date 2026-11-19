@@ -40,7 +40,9 @@
     const box = $("models"); box.textContent = "";
     const add = (m, name, note) => {
       const c = el("button", "choice", name); c.type = "button"; c.appendChild(el("small", null, note));
-      c.onclick = () => { S.chosen = m; S.model = m; $("port-help").textContent = m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste."; show("s-port"); };
+      c.onclick = () => { S.chosen = m; S.model = m;
+        $("port-driver").hidden = !(m && m.piloteIcom && /Windows/i.test(navigator.userAgent));   // pilote 1.80 (2026-11-19)
+        $("port-help").textContent = m ? `${m.name} : adresse CI-V d'usine ${m.addr.toString(16).toUpperCase()}h.` : "La page cherchera l'adresse du poste."; show("s-port"); };
       box.appendChild(c);
     };
     for (const m of models.modelsOf(S.brand.id)) add(m, m.name, (m.verifie ? "vérifié" : "non vérifié") + ` · ${m.maxW} W`);
