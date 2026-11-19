@@ -70,6 +70,8 @@ Le statut `valide` (ou `restreint`) reste une décision de l'éditeur.
 
 ## Valise de qualification v0 (`--terrain`, étape 252)
 
+Mode d'emploi pour le qualifieur (préparation, commandes, adresses, pièges) : [valise-mode-emploi.md](valise-mode-emploi.md).
+
 Qualification SUR PLACE par un membre de l'équipe (cahier : `docs/qualification-terrain-cahier-des-charges.md`).
 La v0 n'ajoute AUCUN chemin d'émission : les émissions des essais sont faites par la station (page, application,
 micro du poste) ; l'outil n'envoie à rigctld que la lecture `t` (liste fermée `OBSERVER_COMMANDS`, 127.0.0.1 seulement).
