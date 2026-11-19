@@ -51,7 +51,7 @@ def test_closed_list_of_civ_commands_and_a_single_way_to_transmit() -> None:
     block = civ[civ.index("const CMD = {"):civ.index("};", civ.index("const CMD = {"))]
     cmds = set(re.findall(r"\[(0x[0-9A-F]{2}(?:, 0x[0-9A-F]{2})?)\]", block))
     assert cmds == {"0x19, 0x00", "0x03", "0x04", "0x05", "0x06", "0x14, 0x0A", "0x15, 0x02", "0x15, 0x11", "0x15, 0x12",
-                    "0x15, 0x13", "0x1C, 0x00", "0x1A, 0x06"}, cmds                   # jamais 0x18 (alimentation) ni 1A 05 (menus)
+                    "0x15, 0x13", "0x1C, 0x00", "0x1A, 0x06", "0x27, 0x11"}, cmds     # jamais 0x18 (alimentation) ni 1A 05 (menus)
     sources = {f.name: f.read_text(encoding="utf-8") for f in WEB.glob("*.js")}
     keyers = [n for n, t in sources.items() for _ in re.finditer(r"setPtt\(true\)", t)]
     assert keyers == ["runner.js"], keyers

@@ -23,6 +23,10 @@
     ALC_METER: [0x15, 0x13],
     PTT: [0x1C, 0x00],
     DATA_MODE: [0x1A, 0x06],
+    // Sortie des données du spectre (01 = marche, 00 = arrêt) : lecture seule. Avec le pilote USB d'Icom (IC-7300MK2)
+    // sous Windows, Chrome se fige tant qu'une lecture attend sur un port vide (essai du 2026-11-19) : un flux
+    // continu du poste l'empêche d'attendre.
+    SCOPE_OUT: [0x27, 0x11],
   };
   const ALLOWED = Object.values(CMD).map(c => c.join(","));
 

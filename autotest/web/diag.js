@@ -22,15 +22,25 @@
     writer = writer || port.writable.getWriter(); log("  écrivain prêt");
     await writer.write(AtCiv.frame(0x00, AtCiv.CMD.ID)); log("  envoyé : FE FE 00 E0 19 00 FD");
   });
+  // Spectre en continu, AVANT toute lecture (sinon Chrome attend sur un port vide et se fige avec le pilote Icom).
+  const scope = on => async () => {
+    writer = writer || port.writable.getWriter();
+    await writer.write(AtCiv.frame(0xB6, AtCiv.CMD.SCOPE_OUT, [on ? 0x01 : 0x00]));
+    log(`  envoyé : FE FE B6 E0 27 11 0${on ? 1 : 0} FD`);
+  };
+  step("dson", scope(true));
+  step("dsoff", scope(false));
   step("d4b", async () => {
     reader = reader || port.readable.getReader(); log("  lecteur prêt");
     const until = Date.now() + 1500; let got = [];
     while (Date.now() < until) {
       const r = await Promise.race([reader.read(), new Promise(res => setTimeout(() => res(null), until - Date.now()))]);
       if (!r || r.done) break;
-      got = got.concat(Array.from(r.value)); if (got.includes(0xFD) && got.length > 12) break;
+      got = got.concat(Array.from(r.value)); if (got.length > 4000) break;
     }
-    log(got.length ? `  reçu : ${AtCiv.hex(new Uint8Array(got))}` : "  aucune réponse en 1,5 s");
+    const h = AtCiv.hex(new Uint8Array(got)), id = h.indexOf("19 00 B6 FD");
+    log(got.length ? `  reçu ${got.length} octets en 1,5 s ; début : ${h.slice(0, 120)}` : "  aucune réponse en 1,5 s");
+    if (got.length) log(id >= 0 ? "  réponse d'identité trouvée (19 00 B6)" : "  pas de réponse d'identité dans ce qui a été lu");
   });
   step("d5", async () => {
     if (reader) { try { await reader.cancel(); } catch (e) {} reader.releaseLock(); reader = null; }
