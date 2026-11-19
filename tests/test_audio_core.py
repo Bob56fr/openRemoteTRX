@@ -456,3 +456,20 @@ def test_latency_math():
     values = latencies([1.0, 2.0, 3.0, 10.0], [1.045, 2.05, 3.04, 5.0])
     assert [round(v, 3) for v in values] == [0.045, 0.05, 0.04]                     # 5.0 : trop loin de 3.0, ignoré
     assert "médiane 45 ms" in describe("RX", values) and "aucune mesure" in describe("TX", [])
+
+
+def test_a_linux_card_whose_alsa_number_changed_is_still_found_when_alone():
+    """minix-bzh, 2026-11-19 : « USB Audio Device: - (hw:2,0) » devenu « (hw:0,0) » au redémarrage : passerelle
+    arrêtée, mode sûr. Même nom sans le numéro et UNE seule carte de ce nom : c'est elle ; deux : aucune."""
+    alsa = ("ALSA",)
+    card = {"name": "USB Audio Device: - (hw:0,0)", "hostapi": 0, "max_input_channels": 1, "max_output_channels": 2}
+    pch = {"name": "HDA Intel PCH: ALC897 Analog (hw:1,0)", "hostapi": 0, "max_input_channels": 2,
+           "max_output_channels": 2}
+    sd = FakeSd([card, pch], hostapis=alsa)
+    assert resolve_device("USB Audio Device: - (hw:2,0)", "capture", sd) == 0
+    assert resolve_device("USB Audio Device: - (hw:2,0)", "playback", sd) == 0
+    twin = dict(card, name="USB Audio Device: - (hw:3,0)")
+    with pytest.raises(LookupError):                                # deux interfaces identiques : aucune choisie
+        resolve_device("USB Audio Device: - (hw:2,0)", "capture", FakeSd([card, twin, pch], hostapis=alsa))
+    with pytest.raises(LookupError):                                # un autre nom n'est jamais pris
+        resolve_device("Autre carte: - (hw:2,0)", "capture", sd)

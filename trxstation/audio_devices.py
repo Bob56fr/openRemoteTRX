@@ -127,8 +127,31 @@ def resolve_device(name: str, kind: str, sd) -> int:
             partial.append(entry)
     found = sorted(exact) or sorted(partial)
     if not found:
+        found = _same_card_renumbered(wanted, channels, hostapis, sd)
+    if not found:
         raise LookupError(f"aucun périphérique audio « {name} » ({kind}) : lance trx-setup pour la liste")
     return found[0][1]
+
+
+_HW_SUFFIX = re.compile(r"\s*\(hw:\d+,\d+\)\s*$")
+
+
+def _same_card_renumbered(wanted: str, channels: str, hostapis: list[str], sd) -> list[tuple[int, int]]:
+    """Linux : PortAudio nomme une carte ALSA avec son NUMÉRO (« USB Audio Device: - (hw:2,0) »), qui change selon
+    ce qui est branché au démarrage (minix-bzh, 2026-11-19 : hw:2,0 devenu hw:0,0, passerelle arrêtée, mode sûr).
+    Même nom sans le numéro, ET une seule carte de ce nom : c'est elle. Deux cartes du même nom (deux interfaces
+    identiques) : aucune n'est prise, le doute ne choisit pas la carte d'un autre poste."""
+    if not _HW_SUFFIX.search(wanted):
+        return []
+    base = _HW_SUFFIX.sub("", wanted)
+    same = []
+    for index, dev in enumerate(sd.query_devices()):
+        if dev.get(channels, 0) > 0 and _HW_SUFFIX.search(dev["name"]) \
+                and _HW_SUFFIX.sub("", dev["name"]).lower() == base:
+            api = hostapis[dev["hostapi"]] if dev.get("hostapi") is not None else ""
+            same.append((_hostapi_rank(api), index, _HW_SUFFIX.search(dev["name"]).group(0)))
+    cards = {suffix for _, _, suffix in same}
+    return [(rank, index) for rank, index, _ in sorted(same)] if len(cards) == 1 else []
 
 
 def real_device_names(*specs: str) -> list[str]:
