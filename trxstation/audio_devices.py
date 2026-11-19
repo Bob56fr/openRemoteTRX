@@ -133,25 +133,40 @@ def resolve_device(name: str, kind: str, sd) -> int:
     return found[0][1]
 
 
-_HW_SUFFIX = re.compile(r"\s*\(hw:\d+,\d+\)\s*$")
+_HW_SUFFIX = re.compile(r"\s*\(hw:\d+,\d+\)\s*$")      # Linux (PortAudio / ALSA) : « … (hw:2,0) »
+_WIN_NUMBER = re.compile(r"\((\d+)- ")                 # Windows : « Microphone (2- USB Audio Device) »
+
+
+def _without_number(name: str) -> tuple[str, str]:
+    """(nom sans le numéro qui change, numéro retiré) ; numéro vide = nom sans numéro."""
+    m = _HW_SUFFIX.search(name)
+    if m:
+        return _HW_SUFFIX.sub("", name), m.group(0).strip()
+    m = _WIN_NUMBER.search(name)
+    if m:
+        return _WIN_NUMBER.sub("(", name, count=1), m.group(1)
+    return name, ""
 
 
 def _same_card_renumbered(wanted: str, channels: str, hostapis: list[str], sd) -> list[tuple[int, int]]:
-    """Linux : PortAudio nomme une carte ALSA avec son NUMÉRO (« USB Audio Device: - (hw:2,0) »), qui change selon
-    ce qui est branché au démarrage (minix-bzh, 2026-11-19 : hw:2,0 devenu hw:0,0, passerelle arrêtée, mode sûr).
-    Même nom sans le numéro, ET une seule carte de ce nom : c'est elle. Deux cartes du même nom (deux interfaces
-    identiques) : aucune n'est prise, le doute ne choisit pas la carte d'un autre poste."""
-    if not _HW_SUFFIX.search(wanted):
+    """Le système numérote la carte et le numéro CHANGE selon ce qui est branché, ou la prise USB : Linux
+    « USB Audio Device: - (hw:2,0) » devenu « (hw:0,0) » (minix-bzh, 2026-11-19 : passerelle arrêtée, mode sûr) ;
+    Windows « Microphone (2- USB Audio Device) » devenu « (3- …) ». Même nom sans le numéro, ET une seule carte de
+    ce nom : c'est elle. Deux cartes du même nom (deux interfaces identiques) : aucune n'est prise, le doute ne
+    choisit pas la carte d'un autre poste."""
+    base, number = _without_number(wanted)
+    if not number:
         return []
-    base = _HW_SUFFIX.sub("", wanted)
     same = []
     for index, dev in enumerate(sd.query_devices()):
-        if dev.get(channels, 0) > 0 and _HW_SUFFIX.search(dev["name"]) \
-                and _HW_SUFFIX.sub("", dev["name"]).lower() == base:
+        if dev.get(channels, 0) <= 0:
+            continue
+        name, num = _without_number(dev["name"].lower())
+        if num and name == base:
             api = hostapis[dev["hostapi"]] if dev.get("hostapi") is not None else ""
-            same.append((_hostapi_rank(api), index, _HW_SUFFIX.search(dev["name"]).group(0)))
-    cards = {suffix for _, _, suffix in same}
-    return [(rank, index) for rank, index, _ in sorted(same)] if len(cards) == 1 else []
+            same.append((_hostapi_rank(api), index, num))
+    numbers = {num for _, _, num in same}
+    return [(rank, index) for rank, index, _ in sorted(same)] if len(numbers) == 1 else []
 
 
 def real_device_names(*specs: str) -> list[str]:

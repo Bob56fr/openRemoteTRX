@@ -2017,6 +2017,8 @@ ORT-3001:
     - Audio driver missing
     preconisation: Check the USB cable and rig power, then run trx-setup again and pick the device from the list
       ([audio] capture_device / playback_device).
+  deprecated: true
+  remplace_par: ORT-3012 (la passerelle ne s'arrête plus, émission refusée, carte recherchée)
 
 ORT-3002:
   gravite: avertissement
@@ -2250,6 +2252,53 @@ ORT-3011:
     - PipeWire chose the radio's card as default output or input
     - Other audio software open
     preconisation: Pick another default output and input in the desktop sound settings, then rerun the diagnostic.
+
+ORT-3012:
+  gravite: erreur
+  titre: Carte son du poste absente
+  message: 'Carte son du poste absente : {detail}. Émission refusée ; la station la recherche toutes les 5 s.'
+  causes:
+  - Poste éteint, ou câble USB du poste débranché
+  - 'Nom de la carte changé (autre prise USB, pilote mis à jour) : le nom de station.toml ne correspond plus'
+  - Carte tenue par un autre logiciel (son du bureau, WSJT-X)
+  preconisation: Rebrancher ou allumer le poste ; la station reprend toute seule. Si le message reste, choisir de
+    nouveau les cartes son (TRX Console, menu 2.6).
+  action_auto: refus
+  codes_machine:
+  - audio_missing
+  - audio_lost
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3012/
+  depuis_version: 0.220.0
+  en:
+    titre: Radio sound card missing
+    message: 'Radio sound card missing: {detail}. Transmission refused; the station looks for it every 5 s.'
+    causes:
+    - Radio switched off, or its USB cable unplugged
+    - 'Card name changed (other USB socket, driver update): the name in station.toml no longer matches'
+    - Card held by another program (desktop audio, WSJT-X)
+    preconisation: Plug in or switch on the radio; the station recovers by itself. If the message stays, choose the
+      sound cards again (TRX Console, menu 2.6).
+
+ORT-3013:
+  gravite: info
+  titre: Carte son du poste retrouvée
+  message: 'Carte son du poste retrouvée ({entree} / {sortie}) : émission de nouveau possible.'
+  causes:
+  - Poste rallumé ou câble USB rebranché
+  preconisation: Rien à faire.
+  action_auto: aucune
+  ntfy_defaut: true
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-3013/
+  depuis_version: 0.220.0
+  en:
+    titre: Radio sound card found again
+    message: 'Radio sound card found again ({entree} / {sortie}): transmission possible again.'
+    causes:
+    - Radio switched back on or USB cable plugged back in
+    preconisation: Nothing to do.
 
 
 # ====================================================================================================

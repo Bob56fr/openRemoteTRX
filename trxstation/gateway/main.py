@@ -71,7 +71,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     except Exception as exc:                       # Hamlib absent ou format inattendu : l'interface s'adapte
         emit_event(codes.ORT_2014, logger=log, detail=str(exc))
         capabilities = None
-    pipeline = AudioPipeline(cfg.audio)            # AudioConfigError : périphérique introuvable, on s'arrête franchement
+    card = _rig_card(cfg)                          # carte son du poste qui peut manquer et revenir (rigcard.py)
+    pipeline = AudioPipeline(cfg.audio, source=card.source, sink=card.sink) if card is not None \
+        else AudioPipeline(cfg.audio)              # sources d'essai (tone:, file:) : AudioConfigError = arrêt franc
     try:
         await pipeline.start()                     # AVANT la liaison CAT et la sécurité PTT : un échec ne laisse rien derrière
     except BaseException:
@@ -81,6 +83,9 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
     beeps = BeepStore(Path(cfg.supervisor.state_dir) / "beeps.json")   # roger bip, bip de liaison perdue (téléphone)
     tail = TailPlayer(pipeline.tx_sink, beeps, gain_db=cfg.audio.tx_gain_db)   # bips et trame SELCALL entendus aussi des visiteurs
     ctrl = PttController(link, cfg, audio_gate=pipeline.gate.set_open, tail=tail)
+    if card is not None:
+        ctrl.audio_ready = lambda: card.available                     # carte absente : émission refusée
+        card.on_lost = lambda: asyncio.get_running_loop().create_task(ctrl.force_rx("audio_lost"))
     pipeline.gate.owner_provider = lambda: ctrl.snapshot().owner     # seul le propriétaire de l'émission est entendu
     pipeline.selcall = _start_selcall(cfg, pipeline, ctrl, link)        # [selcall] enabled = false : rien
     breizh_link = _start_breizh(cfg, pipeline, config_path)              # [breizh] enabled = false : rien
@@ -92,6 +97,8 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                                 presence=lambda: access.presence(OPERATOR))
     tasks = [asyncio.create_task(link.run()), asyncio.create_task(publisher.run()),
              asyncio.create_task(XrunWatch(pipeline.source).run(stop))]   # décrochages de la carte son : ORT-3010
+    if card is not None:
+        tasks.append(asyncio.create_task(card.watch(stop)))           # recherche de la carte absente
     if breizh_link is not None:
         tasks.append(asyncio.create_task(breizh_link.run(stop)))
     if parent_pid is not None:
@@ -159,6 +166,16 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+
+
+def _rig_card(cfg: Config):
+    """Carte son du poste quand les DEUX sens sont de vrais périphériques ; sinon None (essais : tone:, file:…)."""
+    capture, playback = (cfg.audio.capture_device or "").strip(), (cfg.audio.playback_device or "").strip()
+    if len(real_device_names(capture, playback)) != 2:
+        return None
+    from .audio.rigcard import RigCard
+    notifier = Notifier(cfg.supervisor.notify_url, lang=cfg.supervisor.notify_lang)
+    return RigCard(capture, playback, alert=notifier.alert)
 
 
 def _start_selcall(cfg: Config, pipeline: AudioPipeline, ctrl, link):

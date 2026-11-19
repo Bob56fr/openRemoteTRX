@@ -430,7 +430,7 @@ def test_pipeline_streams_rx_and_reports_stats():
         assert all(len(f) == FRAME_BYTES for f in frames)
         stats = pipeline.stats()
         assert set(stats) == {"rx_db", "tx_db", "gate_open", "listeners", "rx_dropped", "tx_dropped_not_owner",
-                              "rx_frames", "tx_frames", "tx_dropped_closed", "tx_dropped_stale", "tx_underruns", "tx_overruns"}
+                              "rx_frames", "tx_frames", "tx_dropped_closed", "tx_dropped_stale", "tx_underruns", "tx_overruns", "rig_card"}
         assert stats["rx_frames"] >= 3 and stats["tx_frames"] == 0
         assert stats["rx_db"] > -20 and stats["listeners"] == 1 and stats["gate_open"] is False
         pipeline.gate.owner_provider = lambda: "phone"
@@ -473,3 +473,17 @@ def test_a_linux_card_whose_alsa_number_changed_is_still_found_when_alone():
         resolve_device("USB Audio Device: - (hw:2,0)", "capture", FakeSd([card, twin, pch], hostapis=alsa))
     with pytest.raises(LookupError):                                # un autre nom n'est jamais pris
         resolve_device("Autre carte: - (hw:2,0)", "capture", sd)
+
+
+def test_a_windows_card_whose_number_changed_with_the_usb_socket_is_still_found_when_alone():
+    """Windows : « Microphone (2- USB Audio Device) » devient « (3- USB Audio Device) » sur une autre prise USB ;
+    plusieurs interfaces (MME, WASAPI) du MÊME numéro restent une seule carte ; deux numéros : aucune."""
+    wasapi = {"name": "Microphone (3- USB Audio Device)", "hostapi": 1, "max_input_channels": 1, "max_output_channels": 0}
+    mme = dict(wasapi, hostapi=0)
+    out = {"name": "Haut-parleurs (3- USB Audio Device)", "hostapi": 1, "max_input_channels": 0, "max_output_channels": 2}
+    sd = FakeSd([mme, wasapi, out])
+    assert resolve_device("Microphone (2- USB Audio Device)", "capture", sd) == 1          # WASAPI d'abord
+    assert resolve_device("Haut-parleurs (2- USB Audio Device)", "playback", sd) == 2
+    other = dict(wasapi, name="Microphone (4- USB Audio Device)")
+    with pytest.raises(LookupError):
+        resolve_device("Microphone (2- USB Audio Device)", "capture", FakeSd([wasapi, other]))

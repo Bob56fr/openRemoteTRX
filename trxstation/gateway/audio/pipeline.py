@@ -60,4 +60,6 @@ class AudioPipeline:
                 "tx_dropped_closed": self.gate.dropped_closed,   # trames jetées porte fermée (normal en réception)
                 "tx_dropped_stale": self.gate.dropped_stale,     # son revenu de Breizh après la coupure : jeté
                 "tx_underruns": getattr(self.sink, "underruns", 0),   # trous dans le son envoyé au poste (réseau en retard)
-                "tx_overruns": getattr(self.sink, "overruns", 0)}     # son jeté car arrivé trop tard
+                "tx_overruns": getattr(self.sink, "overruns", 0),     # son jeté car arrivé trop tard
+                # carte son du poste (rigcard.py) : False = absente, émission refusée ; None = source d'essai
+                "rig_card": getattr(getattr(self.source, "card", None), "available", None)}
