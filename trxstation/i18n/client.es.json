@@ -93,7 +93,7 @@
   "refus._inconnu_detail": "Rechazado ({code}: {detail})",
   "coupure.tot": "duración máxima de transmisión alcanzada",
   "coupure.power_on_tx": "equipo encendido en transmisión: devuelto a recepción",
-  "coupure.heartbeat": "pérdida de la señal de vida del cliente",
+  "coupure.heartbeat": "pérdida del latido del cliente",
   "coupure.selcall_sent": "llamada SELCALL enviada",
   "coupure.swr_point": "punto de medida de ROE terminado",
   "coupure.swr_cancel": "medida de ROE cancelada",

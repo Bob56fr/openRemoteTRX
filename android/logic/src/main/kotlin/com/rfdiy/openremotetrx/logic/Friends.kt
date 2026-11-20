@@ -57,7 +57,7 @@ object Friends {
     /** « mis à jour il y a … » : secondes sous la minute. */
     fun freshness(seconds: Long): String = if (seconds < 60) "${maxOf(0, seconds)} s" else formatAge(seconds)
 
-    fun frequencyText(hz: Long): String = String.format(Locale.ROOT, "%.3f", hz / 1e6).replace('.', ',') + " MHz"
+    fun frequencyText(hz: Long): String = Format.decimal(hz / 1e6, 3) + " MHz"
 
     data class Member(
         val id: String, val pseudo: String, val code: String, val letter: String, val label: String, val detail: String,
@@ -145,7 +145,7 @@ object Friends {
     }
 
     private fun sorted(list: List<Member>) =
-        list.sortedWith(compareBy<Member>({ ORDER.getValue(it.code) }, { it.pseudo.lowercase(Locale.FRENCH) }))
+        list.sortedWith(compareBy<Member>({ ORDER.getValue(it.code) }, { it.pseudo.lowercase(Locale.ROOT) }))
 
     /** Vue de la station (action « view ») ; null si illisible. */
     fun view(data: JsonObject?, nowS: Long, elapsedS: Long, zone: ZoneId = ZoneId.systemDefault()): View? {
@@ -213,7 +213,7 @@ object Friends {
             val week = ((s["weeks"] as? JsonArray)?.firstOrNull() as? JsonObject) ?: JsonObject(emptyMap())
             StatsRow(id, pseudos[id] ?: id.take(8), s.str("last_active") ?: "—", (s.long("active_days_month") ?: 0).toInt(),
                      week.long("qso_min") ?: 0, week.long("rx_min") ?: 0)
-        }.sortedBy { it.pseudo.lowercase(Locale.FRENCH) }
+        }.sortedBy { it.pseudo.lowercase(Locale.ROOT) }
 
     /** Onglet « Amis » du téléphone (demande de l'utilisateur, 2026-11-11) : seulement quand la station fait partie
      *  d'au moins un groupe (membre, adhésion en attente ou exclue) ; avant, créer ou rejoindre se fait dans l'onglet

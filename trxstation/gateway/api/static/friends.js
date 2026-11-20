@@ -50,7 +50,7 @@
 
   function frequencyText(hz) {
     if (!Number.isFinite(hz)) return "";
-    return (hz / 1e6).toFixed(3).replace(".", ",") + " MHz";
+    return I18N.decimal(hz / 1e6, 3) + " MHz";
   }
 
   function clock(epochS) {

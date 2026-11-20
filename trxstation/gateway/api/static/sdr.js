@@ -158,7 +158,7 @@
     return x < 0 || x > 1 ? null : Math.round(x * 10000) / 100;
   }
 
-  function widthLabel(hz) { return hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 1 : 0).replace(".", ",") + " kHz" : hz + " Hz"; }
+  function widthLabel(hz) { return hz >= 1000 ? I18N.decimal(hz / 1000, hz % 1000 ? 1 : 0) + " kHz" : hz + " Hz"; }
 
   // Curseur de volume 0-100 -> volume de l'élément audio : courbe au carré (l'oreille entend en décibels ;
   // un réglage linéaire semblait sans effet sur les trois quarts de sa course). 50 % = -12 dB, 10 % = -40 dB.
@@ -290,7 +290,7 @@
 
   function rateLabel(hz) {
     /* Largeur du SDR : « 2 MHz », « 2,048 MHz ». */
-    return Number.isFinite(hz) ? String(+(hz / 1e6).toFixed(3)).replace(".", ",") + " MHz" : "—";
+    return Number.isFinite(hz) ? I18N.decimal(+(hz / 1e6).toFixed(3)) + " MHz" : "—";
   }
 
   function nextRange(current) {

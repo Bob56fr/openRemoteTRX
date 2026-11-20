@@ -91,7 +91,9 @@ OpenRemoteTRX, Breizh Audio Box, Android Auto, www.rf-diy.com, unités (kHz, dB,
 | bridé (SDR) | throttled | gedrosselt | limitado | |
 | brouiller / débrouiller (scrambler), en clair | scramble / descramble, in clear | verschleiern / entschleiern, im Klartext | codificar / decodificar, en claro | jamais « chiffrer » : ce n'est pas un chiffrement |
 | spatialisation (ST) | spatialisation | Raumklang | espacialización | |
-| armer (SELCALL) | arm | schärfen | armar | |
+| armer (SELCALL) | arm | scharf schalten | armar | relecture du 2026-11-20 : « schärfen » évoque une arme |
+| trame (SELCALL) | burst | Tonfolge | trama | |
+| signal de vie (heartbeat) | heartbeat | Heartbeat | latido | pas « Lebenszeichen » / « señal de vida » |
 | reprendre la main | take back control | Kontrolle übernehmen | Recuperar el control | bouton et refus disent la même chose |
 | visiteur (compte en réception seule) | visitor | Besucher | visitante | « oyente » = auditeur de la diffusion seulement |
 | Direct (Breizh) | Direct | „Direkt“ | Direct | |

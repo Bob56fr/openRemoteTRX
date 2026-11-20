@@ -41,6 +41,7 @@ import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.SelcallStatus
 import com.rfdiy.openremotetrx.logic.SelcallTones
 import com.rfdiy.openremotetrx.logic.Tr
+import com.rfdiy.openremotetrx.logic.Format
 import java.io.File
 import java.time.Instant
 import java.time.ZoneId
@@ -154,7 +155,7 @@ fun SelcallDialog(
                             onValueChangeFinished = { levelDrag?.let { RigHub.selcallOptions(txLevelDbfs = (it * 2).roundToInt() / 2.0) }; levelDrag = null },
                             modifier = Modifier.weight(1f),
                         )
-                        Text("${"%.1f".format(shown).replace('.', ',')} dBFS", style = MaterialTheme.typography.bodySmall) // i18n-ok
+                        Text("${Format.decimal(shown.toDouble(), 1)} dBFS", style = MaterialTheme.typography.bodySmall) // i18n-ok
                     }
                     OutlinedButton(
                         onClick = { RigHub.selcallCalibrate() },

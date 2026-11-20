@@ -90,7 +90,7 @@
   }
 
   function swrText(swr) {
-    return swr > SCALE_MAX ? "> 5" : swr.toFixed(2).replace(".", ",");
+    return swr > SCALE_MAX ? "> 5" : I18N.decimal(swr, 2);
   }
 
   function pointColor(point) {
@@ -102,7 +102,7 @@
     /* « État du poste remis » : ce qui a été relu sur le poste, puis les écarts à corriger à la main. */
     const label = modeLabel || ((m) => m);
     const r = (result && result.restored) || {}, out = [];
-    if (Number.isFinite(r.frequency_hz)) out.push(I18N.t("swrui.restored_frequency", { mhz: (r.frequency_hz / 1e6).toFixed(4).replace(".", ",") }));
+    if (Number.isFinite(r.frequency_hz)) out.push(I18N.t("swrui.restored_frequency", { mhz: I18N.decimal(r.frequency_hz / 1e6, 4) }));
     if (r.mode) {
       out.push(r.passband_hz ? I18N.t("swrui.restored_mode_passband", { mode: label(r.mode), hz: r.passband_hz })
         : I18N.t("swrui.restored_mode", { mode: label(r.mode) }));

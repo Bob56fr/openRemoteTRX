@@ -174,6 +174,20 @@ class VoiceTest {
         assertEquals(VoiceAction.SetFrequency(27_555_000), Voice.parse("QSY 27 555", memories))
         assertEquals(VoiceAction.SetFrequency(145_500_000), Voice.parse("fréquence 145,5 mégahertz", memories))
         assertEquals(VoiceAction.SetFrequency(14_200_000), Voice.parse("14200", memories))
+        // Lot T7 : mots des quatre langues, quelle que soit la langue de l'application
+        assertEquals("m1", (Voice.parse("memory 40 metres", memories) as VoiceAction.RecallMemory).memory.id)
+        assertEquals("m2", (Voice.parse("Speicher Rennes", memories) as VoiceAction.RecallMemory).memory.id)
+        assertEquals("m2", (Voice.parse("memoria Rennes", memories) as VoiceAction.RecallMemory).memory.id)
+        assertEquals(VoiceAction.SelectBand("20"), Voice.parse("20 meter band", memories))
+        assertEquals(VoiceAction.SelectBand("20"), Voice.parse("20-Meter-Band", memories))
+        assertEquals(VoiceAction.SelectBand("40"), Voice.parse("banda de 40 metros", memories))
+        assertEquals(VoiceAction.SetFrequency(7_074_000), Voice.parse("frequency 7,074", memories))     // virgule de milliers anglaise
+        assertEquals(VoiceAction.SetFrequency(7_074_000), Voice.parse("tune to 7074 kilohertz", memories))
+        assertEquals(VoiceAction.SetFrequency(145_500_000), Voice.parse("Frequenz 145,5 Megahertz", memories))
+        assertEquals(VoiceAction.SetFrequency(27_555_000), Voice.parse("frecuencia 27 555 kilohercios", memories))
+        assertEquals(VoiceAction.SetFrequency(14_205_000), Voice.parse("gehe auf 14205", memories))
+        assertTrue(Voice.parse("transmit", memories) is VoiceAction.Unknown)                       // aucun mot ne fait émettre
+        assertTrue(Voice.parse("senden", memories) is VoiceAction.Unknown)
     }
 
     @Test

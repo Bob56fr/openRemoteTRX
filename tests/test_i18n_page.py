@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -229,3 +231,14 @@ def test_offered_languages_have_complete_catalogues_and_real_translations():
             assert list(other) == list(fr), (domain, lang)
             same = [k for k, v in fr.items() if other[k] == v and is_human(v) and v not in allowed]
             assert same == [], (domain, lang, same)
+
+
+def test_decimals_and_dates_follow_the_chosen_language():
+    """Formats du § 3.5 (lot T7) : TrxI18n.decimal (virgule fr / de / es, point en), dates de la langue choisie,
+    fréquences au format radio inchangé (tests/js/i18n_test.js)."""
+    node = shutil.which("node")
+    if not node:
+        return
+    done = subprocess.run([node, str(ROOT / "tests" / "js" / "i18n_test.js")], capture_output=True, text=True,
+                          encoding="utf-8", timeout=60)
+    assert done.returncode == 0, done.stdout + done.stderr

@@ -264,7 +264,7 @@ object Car {
         val khz = hz / 1000
         val rest = (hz % 1000) / 10
         val grouped = khz.toString().reversed().chunked(3).joinToString(" ").reversed()
-        return String.format(Locale.ROOT, "%s,%02d kHz", grouped, rest)
+        return String.format(Locale.ROOT, "%s%c%02d kHz", grouped, Format.separator, rest)
     }
 
     /** Mémoire qui correspond à la fréquence actuelle (à 50 Hz près, même mode si connu). */

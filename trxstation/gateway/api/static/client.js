@@ -280,7 +280,7 @@
   function formatProblemReport(d) {
     /* Rapport « Signaler un problème » : texte lisible, montré à l'utilisateur AVANT tout envoi. Aucun secret :
        ni mot de passe, ni jeton (la page n'en garde pas). */
-    const fmt = d.formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
+    const fmt = d.formatTime || ((t) => I18N.dateTime(t));
     const lines = [I18N.t("problemreport.header"), I18N.t("problemreport.date", { date: fmt(d.now) }), "",
                    I18N.t("problemreport.what_happened"), (String(d.description || "").trim() || I18N.t("problemreport.not_described")).slice(0, 2000), "",
                    I18N.t("problemreport.station", { version: d.version ? "v" + d.version : I18N.t("problemreport.version_unknown") }) +
@@ -531,7 +531,7 @@
     return new Uint8Array(Buffer.from(text, "base64"));                // Node (tests)
   }
 
-  function netNumber(v, unit) { return Number.isFinite(v) ? String(v).replace(".", ",") + " " + unit : "—"; }
+  function netNumber(v, unit) { return Number.isFinite(v) ? I18N.decimal(v) + " " + unit : "—"; }
 
   function vpnText(w) {
     const agents = Array.isArray(w.agents) ? w.agents.map(String).join(" / ") : "";
@@ -574,7 +574,7 @@
       weak: net.level === "red",                                              // « Liaison faible » (conduite, Android Auto)
       title: I18N.t("netui.title", { level: levels[net.level] }) + (net.outage ? I18N.t("netui.title_outage") : "") +
         (Number.isFinite(net.rtt_ms) ? I18N.t("netui.title_rtt", { rtt: net.rtt_ms + " ms" }) : "") +
-        (Number.isFinite(net.loss_pct) ? I18N.t("netui.title_loss", { loss: String(net.loss_pct).replace(".", ",") + " %" }) : "") +
+        (Number.isFinite(net.loss_pct) ? I18N.t("netui.title_loss", { loss: I18N.decimal(net.loss_pct) + " %" }) : "") +
         I18N.t("netviews.title_suffix"),
       thresholds: Number.isFinite(th.rtt_warn) ? I18N.t("netui.thresholds", { rtt_warn: th.rtt_warn + " ms", loss_warn: netNumber(th.loss_warn, "%"),
                                                                              rtt_alert: th.rtt_alert + " ms", loss_alert: netNumber(th.loss_alert, "%") }) : "",
@@ -646,7 +646,7 @@
       state: state, route: b.route === "breizh" ? "breizh" : "direct", bypass: bypass, level: level,
       text: bypass ? I18N.t("breizh.bypass", { state: states[state] }) : states[state],
       details: details.join(" · "), returnGainDb: gain,
-      returnGainText: (gain > 0 ? "+" : gain < 0 ? "−" : "") + String(Math.abs(gain)).replace(".", ",") + " dB",
+      returnGainText: (gain > 0 ? "+" : gain < 0 ? "−" : "") + I18N.decimal(Math.abs(gain)) + " dB",
       canReactivate: !bypass && (state === "fallback" || state === "refused"),
       effectsOff: b.route === "breizh",           // égaliseur, chorus, réverbération coupés ; limiteur gardé ; scrambler exclu
     };
@@ -671,7 +671,7 @@
   }
 
   function freedvDb(v) {
-    return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1).replace(".", ",") + " dB";
+    return (v > 0 ? "+" : v < 0 ? "−" : "") + I18N.decimal(Math.abs(v), 1) + " dB";
   }
 
   function freedvView(f, nowS) {
@@ -717,7 +717,7 @@
   const FREEDV_ACTIVITY_STALE_S = 60;
 
   function freedvFreqText(hz) {
-    return (Math.round(hz / 100) / 10).toFixed(1).replace(".", ",") + " kHz";
+    return I18N.decimal(Math.round(hz / 100) / 10, 1) + " kHz";
   }
 
   function freedvActivityView(a, rigHz, nowS) {
@@ -987,7 +987,7 @@
   }
 
   function describeLoss(entry, formatTime) {
-    const fmt = formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
+    const fmt = formatTime || ((t) => I18N.dateTime(t));
     const d = entry.details || {};
     const info = [];
     if (d.sessionS !== null && d.sessionS !== undefined) info.push(I18N.t("client.loss_session", { duration: d.sessionS >= 60 ? Math.floor(d.sessionS / 60) + " min " + (d.sessionS % 60) + " s" : d.sessionS + " s" }));
@@ -1019,7 +1019,7 @@
   }
 
   function lossSummary(entry, formatTime) {
-    const fmt = formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
+    const fmt = formatTime || ((t) => I18N.dateTime(t));
     const back = entry.details && entry.details.reconnect && entry.details.reconnect.outcome === "ok"
       ? " · " + I18N.t("client.loss_reconnected_in", { seconds: entry.details.reconnect.seconds }) : "";
     return fmt(entry.t) + " · " + entry.title + (entry.kind === "failed" ? " " + I18N.t("client.loss_failed_suffix") : "") + back;

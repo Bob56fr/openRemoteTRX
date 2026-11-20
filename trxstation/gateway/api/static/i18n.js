@@ -84,6 +84,23 @@
     return t(key + (one ? "_one" : "_other"), Object.assign({ n: n }, fields || {}));
   }
 
+  // Formats (cahier § 3.5) : les FRÉQUENCES gardent le format radio (7.074.00, formatFrequency) ; les nombres
+  // décimaux affichés prennent le séparateur de la langue CHOISIE et les dates son format, jamais ceux du navigateur.
+  // Un nombre qui part vers la station n'est jamais localisé.
+  const LOCALES = { fr: "fr-FR", en: "en-GB", de: "de-DE", es: "es-ES" };
+  function locale() { return LOCALES[current] || LOCALES.fr; }
+
+  function decimal(v, digits) {
+    /* Nombre affiché avec le séparateur décimal de la langue (virgule fr / de / es, point en) : `digits` chiffres
+     * après la virgule (toFixed), sinon écrit comme JavaScript (String) ; un texte déjà formaté est seulement
+     * converti. SEULE fonction de la page qui choisit le séparateur. */
+    const text = typeof v === "string" ? v : (digits === undefined || digits === null ? String(v) : Number(v).toFixed(digits));
+    return current === "en" ? text : text.replace(".", ",");
+  }
+
+  function dateTime(t) { return new Date(t).toLocaleString(locale()); }       // date et heure de la langue
+  function time(t) { return new Date(t).toLocaleTimeString(locale()); }       // heure de la langue
+
   const ATTRS = ["title", "placeholder", "aria-label", "alt", "label"];
 
   function apply(el) {
@@ -145,7 +162,8 @@
       : Promise.resolve().then(() => { loaded = true; });
   }
 
-  const api = { LANGS, OFFERED, PSEUDO, chooseLang, t, has, plural, pseudo, use, apply, choose, stored, ready,
-                get lang() { return current; }, get loaded() { return loaded; } };
+  const api = { LANGS, OFFERED, PSEUDO, LOCALES, chooseLang, t, has, plural, pseudo, use, apply, choose, stored, ready,
+                decimal, dateTime, time,
+                get lang() { return current; }, get locale() { return locale(); }, get loaded() { return loaded; } };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxI18n = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -59,7 +59,7 @@ object NetUi {
     fun number(v: Double?, unit: String): String {
         if (v == null) return "—"
         val text = if (v == floor(v) && kotlin.math.abs(v) < 1e15) v.toLong().toString() else v.toString()
-        return text.replace(".", ",") + " " + unit
+        return Format.localize(text) + " " + unit
     }
 
     fun vpnText(w: NetVpnWarning): String {
@@ -185,7 +185,7 @@ object NetUi {
                        lossWarn: Double, lossAlert: Double): String {
         val r = NetProbe.simulate(t.rttHist, rttEdges, rttWarn, rttAlert)
         val l = NetProbe.simulate(t.lossHist, lossEdges, lossWarn, lossAlert)
-        fun pct(x: Double?) = if (x == null) "—" else x.toString().replace(".", ",").removeSuffix(",0") + " %"
+        fun pct(x: Double?) = if (x == null) "—" else Format.localize(x.toString()).removeSuffix(Format.separator + "0") + " %"
         return Tr.t("netui.simulation", "rtt_orange" to pct(r.orangePct), "rtt_red" to pct(r.redPct), "degraded_red" to pct(r.degradedRedPct),
             "degraded_green" to pct(r.degradedGreenPct), "loss_orange" to pct(l.orangePct), "loss_red" to pct(l.redPct))
     }

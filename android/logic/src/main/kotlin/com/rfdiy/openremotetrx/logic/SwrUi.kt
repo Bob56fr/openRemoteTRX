@@ -55,7 +55,7 @@ object SwrUi {
 
     fun freqLabel(hz: Long): String = String.format(Locale.ROOT, if (hz % 1000 != 0L) "%.4f" else "%.3f", hz / 1e6)
 
-    fun swrText(swr: Double): String = if (swr > 5) "> 5" else String.format(Locale.ROOT, "%.2f", swr).replace('.', ',')
+    fun swrText(swr: Double): String = if (swr > 5) "> 5" else Format.decimal(swr, 2)
 
     /** « État du poste remis » : ce qui a été relu, puis les écarts à corriger à la main (page : restoredLines). */
     fun restoredLines(result: SwrResult?): Pair<List<String>, List<String>> {
@@ -63,7 +63,7 @@ object SwrUi {
         val out = mutableListOf<String>()
         if (r != null) {
             (r["frequency_hz"] as? JsonPrimitive)?.longOrNull?.let {
-                out += Tr.t("swrui.restored_frequency", "mhz" to String.format(Locale.ROOT, "%.4f", it / 1e6).replace('.', ','))
+                out += Tr.t("swrui.restored_frequency", "mhz" to Format.decimal(it / 1e6, 4))
             }
             r.text("mode").takeIf { it.isNotEmpty() }?.let { mode ->
                 val pb = (r["passband_hz"] as? JsonPrimitive)?.longOrNull ?: 0

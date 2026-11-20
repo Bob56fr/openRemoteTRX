@@ -1522,7 +1522,7 @@
       cv.width = W; cv.height = H;
       const ctx = cv.getContext("2d");
       ctx.fillStyle = sw.COLORS.background; ctx.fillRect(0, 0, W, H);
-      const legend = sw.legendLines(swrResult, swrName, web.modeLabel, new Date(swrResult.at ? swrResult.at * 1000 : Date.now()).toLocaleString());
+      const legend = sw.legendLines(swrResult, swrName, web.modeLabel, I18N.dateTime(swrResult.at ? swrResult.at * 1000 : Date.now()));
       ctx.fillStyle = sw.COLORS.title; ctx.font = "bold 34px sans-serif"; ctx.fillText(legend[0], 40, 56);  // i18n-ok (police)
       drawSwrChart(ctx, 30, 80, W - 60, 520, swrResult.points || [], 2);
       ctx.fillStyle = sw.COLORS.text; ctx.font = "22px sans-serif";  // i18n-ok (police)
@@ -1606,7 +1606,7 @@
       $("replay-hint").hidden = armed;
       $("replay-status").textContent = replayRec ? I18N.t("ui.replay_recording", { max: max })
         : replayPlaying ? I18N.t("ui.replay_sending") : replayPending ? I18N.t("voicescreen.replay_pending")
-        : replayBuf ? I18N.t("voicescreen.replay_recorded", { seconds: replayBuf.duration.toFixed(1).replace(".", ",") }) : I18N.t("voicescreen.replay_empty");
+        : replayBuf ? I18N.t("voicescreen.replay_recorded", { seconds: I18N.decimal(replayBuf.duration, 1) }) : I18N.t("voicescreen.replay_empty");
     }
     function replayOnTx(on) {
       /* Émission confirmée de CETTE page (client.js -> chaîne de voix) : la diffusion demandée commence ; fin = arrêt net. */
@@ -1789,7 +1789,7 @@
       const list = $("net-outages");
       list.textContent = "";
       for (const o of m.outages) {
-        list.appendChild(el("li", "", new Date(o.when).toLocaleString() + " — " + o.duration + " — " + o.diagnosis +
+        list.appendChild(el("li", "", I18N.dateTime(o.when) + " — " + o.duration + " — " + o.diagnosis +
           (o.agent ? " — " + o.agent : "") + (o.net ? " (" + o.net + ")" : "") + " — " + o.kind + (o.basis ? I18N.t("netviews.based_on", { basis: o.basis }) : "")));
       }
       if (!m.outages.length) list.appendChild(el("li", "", I18N.t("netviews.no_outage_period")));
@@ -1824,7 +1824,7 @@
           if (!np) return;
           const r = np.simulate(t.rttHist, m.edges.rtt_ms, values.rtt_warn, values.rtt_alert);
           const l = np.simulate(t.lossHist, m.edges.loss_pct, values.loss_warn, values.loss_alert);
-          const pct = (x) => (x === null ? "—" : String(x).replace(".", ",") + " %");
+          const pct = (x) => (x === null ? "—" : I18N.decimal(x) + " %");
           result.textContent = I18N.t("netui.simulation", { rtt_orange: pct(r.orange_pct), rtt_red: pct(r.red_pct), degraded_red: pct(r.degraded_red_pct),
             degraded_green: pct(r.degraded_green_pct), loss_orange: pct(l.orange_pct), loss_red: pct(l.red_pct) });
         };
@@ -1920,7 +1920,7 @@
     const ui = {
       status(text, kind) { const b = $("status"); b.textContent = text; b.className = "badge" + (kind ? " " + kind : ""); },
       log(text, level) {
-        const li = el("li", level || "", new Date().toLocaleTimeString() + "  " + text);
+        const li = el("li", level || "", I18N.time(Date.now()) + "  " + text);
         logList.insertBefore(li, logList.firstChild);
         while (logList.children.length > 50) logList.removeChild(logList.lastChild);
       },
@@ -2190,7 +2190,7 @@
       $("sel-level-box").hidden = !calOffered;
       if (calOffered) {
         if (document.activeElement !== $("sel-level")) $("sel-level").value = status.tx_level_dbfs;
-        $("sel-level-text").textContent = " " + String(status.tx_level_dbfs).replace(".", ",") + " dBFS";
+        $("sel-level-text").textContent = " " + I18N.decimal(status.tx_level_dbfs) + " dBFS";
         $("sel-calibration").textContent = status.calibration ? I18N.t("ui.sel_last_calibration", { calibration: status.calibration }) : "";
         $("sel-calibrate").disabled = !connectedFlag || !!status.sending || !(lastView && lastView.armed) || (lastView && lastView.pttState !== "RX");
       }
@@ -2209,7 +2209,7 @@
         box.appendChild(chip);
       }
       const c = status.last_call;
-      $("sel-last").textContent = c ? I18N.t("selcallpanel.last_call", { code: c.code, time: new Date(c.at * 1000).toLocaleTimeString("fr-FR"),
+      $("sel-last").textContent = c ? I18N.t("selcallpanel.last_call", { code: c.code, time: I18N.time(c.at * 1000),
         delta: (c.delta_hz > 0 ? "+" : "") + c.delta_hz, snr: c.snr_db }) : I18N.t("selcallpanel.no_call");
     }
     function paintSelcallSend() {
@@ -2419,7 +2419,7 @@
       for (const [key, t] of Object.entries(vx.CHORUS_TYPES)) $("voice-chorus-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
       for (const [key, t] of Object.entries(vx.REVERB_TYPES)) $("voice-reverb-type").appendChild(Object.assign(el("option", "", t.label), { value: key }));
       vx.BANDS_HZ.forEach((hz, i) => {
-        const label = el("span", "", (hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 2 : 0).replace(".", ",") + " k" : hz + " Hz"));
+        const label = el("span", "", (hz >= 1000 ? I18N.decimal(hz / 1000, hz % 1000 ? 2 : 0) + " k" : hz + " Hz"));
         const gain = Object.assign(el("input", ""), { type: "range", min: String(-vx.GAIN_MAX_DB), max: String(vx.GAIN_MAX_DB), step: "1" });
         const gainText = el("span", "mono", "");
         const fz = Object.assign(el("input", ""), { type: "number", min: String(Math.round(hz / 1.5)), max: String(Math.round(hz * 1.5)), step: "10", title: I18N.t("ui.voice_band_hz") });
@@ -2513,7 +2513,7 @@
           if (recordTimer !== null) { window.clearTimeout(recordTimer); recordTimer = null; }
           new Blob(chunks).arrayBuffer().then((data) => voiceCtx.decodeAudioData(data)).then((buffer) => {
             recordBuffer = buffer;
-            $("voice-rec-text").textContent = I18N.t("ui.voice_take", { seconds: buffer.duration.toFixed(1).replace(".", ",") });
+            $("voice-rec-text").textContent = I18N.t("ui.voice_take", { seconds: I18N.decimal(buffer.duration, 1) });
             voiceRender();
           }).catch((e) => { ui.log(I18N.t("ui.recording_unreadable", { error: e.message }), "warn"); voiceRender(); });
         };
@@ -2800,7 +2800,7 @@
     }
     $("bzh-gain").addEventListener("input", (ev) => {
       const g = Number(ev.target.value);
-      $("bzh-gain-text").textContent = " " + (g > 0 ? "+" : g < 0 ? "−" : "") + String(Math.abs(g)).replace(".", ",") + " dB";
+      $("bzh-gain-text").textContent = " " + (g > 0 ? "+" : g < 0 ? "−" : "") + I18N.decimal(Math.abs(g)) + " dB";
     });
     $("bzh-gain").addEventListener("change", (ev) => bzhSet({ return_gain_db: Number(ev.target.value) }));
     $("bzh-bypass").addEventListener("change", (ev) => bzhSet({ bypass: !!ev.target.checked }));
@@ -2878,7 +2878,7 @@
         const tr = el("tr", (operator ? "go" : "") + (r.here ? " here" : ""));
         if (operator) { tr.title = I18N.t("ui.fdva_go", { freq: r.freqText }); tr.addEventListener("click", () => fdvaQsy(r.hz)); }
         tr.appendChild(el("td", "f", r.freqText + (r.here ? I18N.t("freedvactivity.here") : "")));
-        tr.appendChild(el("td", "", String(r.note).replace(".", ",")));
+        tr.appendChild(el("td", "", I18N.decimal(r.note)));
         const tx = el("td", "");
         r.tx.forEach((t, i) => { tx.appendChild(el("span", t.on ? "on" : "", (i ? ", " : "") + t.text)); });
         if (!r.tx.length) tx.appendChild(el("span", "", "—"));
@@ -4155,7 +4155,7 @@
         const row = el("button", "");
         row.disabled = locked;
         row.title = locked ? I18N.t("ui.spot_qsy_locked") : I18N.t("ui.spot_qsy");
-        row.appendChild(el("span", "mono", at.toLocaleTimeString("fr-FR")));
+        row.appendChild(el("span", "mono", I18N.time(at)));
         row.appendChild(el("span", "", s.dx));
         row.appendChild(el("span", "mono", s.khz.toFixed(1)));
         row.appendChild(el("span", "src", [sp.sourceLabel(s), sp.modeLabel(s), s.comment].filter(Boolean).join(" · ")));

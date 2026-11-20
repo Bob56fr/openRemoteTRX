@@ -53,7 +53,7 @@ object Breizhs {
     /** « −3,5 dB », « +6 dB », « 0 dB » (signe moins typographique, comme la page). */
     fun gainText(gain: Double): String {
         val a = abs(gain)
-        val number = if (a == Math.floor(a)) a.toLong().toString() else a.toString().replace(".", ",")
+        val number = if (a == Math.floor(a)) a.toLong().toString() else Format.localize(a.toString())
         return (if (gain > 0) "+" else if (gain < 0) "−" else "") + number + " dB"
     }
 

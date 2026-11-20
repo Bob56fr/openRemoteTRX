@@ -3,7 +3,6 @@
 package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.FreedvStatus
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -57,7 +56,7 @@ object FreeDvs {
 
     /** « +7,5 dB », « −3,0 dB », « 0,0 dB » (signe moins typographique). */
     fun db(v: Double): String =
-        (if (v > 0) "+" else if (v < 0) "−" else "") + String.format(Locale.ROOT, "%.1f", abs(v)).replace(".", ",") + " dB"
+        (if (v > 0) "+" else if (v < 0) "−" else "") + Format.decimal(abs(v), 1) + " dB"
 
     /** Nombre écrit comme JavaScript le ferait (« 9 », « 9.5 »). */
     private fun jsNumber(v: Double): String =

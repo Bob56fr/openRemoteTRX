@@ -30,7 +30,7 @@ class I18nAppTest {
 
     /**
      * Fichiers de `:logic` passés par [Tr] : un nouveau fichier y entre dès qu'il est converti, et n'en sort jamais.
-     * Voice.kt (mots de la commande vocale) attend le lot T7.
+     * Voice.kt (mots de la commande vocale des quatre langues, lot T7) : motifs marqués `// i18n-ok`.
      */
     private val CONVERTED = listOf(
         "Artwork.kt",
@@ -78,6 +78,7 @@ class I18nAppTest {
         "Tr.kt",
         "VoiceDsp.kt",
         "VoiceEq.kt",
+        "Voice.kt",
     )
 
     private fun load(file: File): Map<String, String> {

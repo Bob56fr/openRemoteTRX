@@ -27,7 +27,6 @@ object ProblemReport {
         val device: String, val screen: String, val rttMs: Int?, val log: List<LogLine>, val zone: ZoneId = ZoneId.systemDefault(),
     )
 
-    private val DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")   // i18n-ok
     private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss")
 
     /** 7074000 -> « 7 074 000 Hz » (formatFrequency de la page). */
@@ -54,7 +53,7 @@ object ProblemReport {
         fun at(ms: Long, f: DateTimeFormatter) = f.format(Instant.ofEpochMilli(ms).atZone(d.zone))
         val h = d.hello
         val lines = mutableListOf(
-            Tr.t("problemreport.header"), Tr.t("problemreport.date", "date" to at(d.nowMs, DATE)), "",
+            Tr.t("problemreport.header"), Tr.t("problemreport.date", "date" to Format.dateTime(d.nowMs, d.zone)), "",
             Tr.t("problemreport.what_happened"), d.description.trim().ifEmpty { Tr.t("problemreport.not_described") }.take(DESCRIPTION_MAX), "",
             Tr.t("problemreport.station", "version" to (if (!h?.version.isNullOrEmpty()) "v" + h!!.version else Tr.t("problemreport.version_unknown"))) +
                 (h?.let { Tr.t("problemreport.protocol", "protocol" to it.protocol) } ?: "") +

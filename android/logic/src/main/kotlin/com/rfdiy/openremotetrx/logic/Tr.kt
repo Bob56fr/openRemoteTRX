@@ -5,6 +5,7 @@ package com.rfdiy.openremotetrx.logic
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -44,6 +45,17 @@ object Tr {
 
     /** Langue annoncée à la station (la pseudo-langue y est du français). */
     val stationLang: String get() = if (lang == PSEUDO) "fr" else lang
+
+    /**
+     * Locale de la langue CHOISIE (formats de date du cahier § 3.5 : fr-FR, en-GB, de-DE, es-ES ; pseudo-langue =
+     * français), jamais celle du téléphone. Les nombres décimaux passent par [Format.decimal].
+     */
+    val locale: Locale get() = when (lang) {
+        "en" -> Locale.UK
+        "de" -> Locale.GERMANY
+        "es" -> Locale.forLanguageTag("es-ES")
+        else -> Locale.FRANCE
+    }
 
     private const val PLAIN = "AaCcEeIiNnOoUuYy"
     private const val ACCENTED = "ÅåÇçÉéÎîÑñÖöÛûÝý"   // i18n-ok : lettres de la pseudo-langue

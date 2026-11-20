@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.SpatialHub
 import com.rfdiy.openremotetrx.logic.Spatials
 import com.rfdiy.openremotetrx.logic.Tr
+import com.rfdiy.openremotetrx.logic.Format
 import kotlin.math.roundToInt
 
 /** Réglages de la spatialisation stéréo de la réception (appui long sur ST), comme la rubrique de la page. */
@@ -78,7 +79,7 @@ fun SpatialDialog(onDismiss: () -> Unit) {
                     AppSwitch(checked = s.monoOut, onCheckedChange = { save(s.copy(monoOut = it)) })
                 }
                 if (ui.playing) {
-                    Text(Tr.t("spatialdialog.correlation", "value" to "%.2f".format(ui.correlation)), style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("spatialdialog.correlation", "value" to Format.decimal(ui.correlation.toDouble(), 2)), style = MaterialTheme.typography.bodySmall)
                     LinearProgressIndicator(progress = { (1 - ui.correlation).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                 }
                 Text(

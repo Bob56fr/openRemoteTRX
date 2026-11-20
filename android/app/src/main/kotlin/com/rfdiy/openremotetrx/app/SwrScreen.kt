@@ -127,7 +127,7 @@ private fun swrImage(context: Context, result: SwrResult, name: String): Bitmap 
     val bmp = Bitmap.createBitmap(1200, 760, Bitmap.Config.ARGB_8888)
     val c = android.graphics.Canvas(bmp)
     c.drawColor(BACKGROUND)
-    val legend = SwrUi.legendLines(result, name, DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+    val legend = SwrUi.legendLines(result, name, DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Tr.locale)
         .format(Date((if (result.atS > 0) result.atS * 1000 else System.currentTimeMillis().toDouble()).toLong())))
     val paint = Paint().apply { isAntiAlias = true }
     paint.color = android.graphics.Color.WHITE; paint.textSize = 34f; paint.isFakeBoldText = true

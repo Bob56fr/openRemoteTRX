@@ -414,7 +414,7 @@
   "client.loss_last_msg": "último mensaje hace {seconds} s",
   "client.loss_last_rtt": "último tiempo de respuesta {ms} ms",
   "client.loss_ping_failures": "{n} sondeo(s) sin respuesta",
-  "client.loss_tx_mine": "(tu transmisión: cortada por la estación por falta de señal de vida)",
+  "client.loss_tx_mine": "(tu transmisión: cortada por la estación por falta de latido)",
   "client.loss_offline": "el teléfono YA NO tenía red",
   "client.loss_online": "red del teléfono: en línea",
   "client.loss_hidden": "página OCULTA (segundo plano)",

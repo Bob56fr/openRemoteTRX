@@ -200,7 +200,7 @@ internal fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -
 
 internal fun stepLabel(hz: Long): String = when {
     hz >= 1000 && hz % 1000 == 0L -> "${hz / 1000} kHz"
-    hz >= 1000 -> "%.1f kHz".format(hz / 1000.0).replace('.', ',')
+    hz >= 1000 -> Format.decimal(hz / 1000.0, 1) + " kHz"
     else -> "$hz Hz"
 }
 

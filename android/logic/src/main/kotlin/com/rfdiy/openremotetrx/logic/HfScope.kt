@@ -229,12 +229,12 @@ object HfScope {
     /** Défilement (lu seulement) -> centré ; centré <-> fixe. */
     fun nextMode(m: String?) = if (m == "center") "fixed" else "center"
     fun spanSettingLabel(hz: Long?): String =
-        if (hz == null) "SPAN ?" else "±" + if (hz >= 1000) (hz / 1000.0).let { if (it % 1.0 == 0.0) "${it.toLong()}" else "$it".replace('.', ',') } + "k" else "$hz"
+        if (hz == null) "SPAN ?" else "±" + if (hz >= 1000) (hz / 1000.0).let { if (it % 1.0 == 0.0) "${it.toLong()}" else Format.localize("$it") } + "k" else "$hz"
     fun nextSpan(hz: Long?) = SPANS_HZ[(SPANS_HZ.indexOf(hz ?: -1) + 1) % SPANS_HZ.size]
     fun speedSettingLabel(s: String?) = SPEED_LABELS[s] ?: Tr.t("hfscope.speed_unknown")
     fun nextSpeed(s: String?) = SPEED_ORDER[(SPEED_ORDER.indexOf(s ?: "") + 1) % SPEED_ORDER.size]
     fun refLabel(db: Double?): String =
-        if (db == null) "REF ?" else "REF " + (if (db > 0) "+" else "") + String.format(Locale.ROOT, "%.1f", db).replace('.', ',')
+        if (db == null) "REF ?" else "REF " + (if (db > 0) "+" else "") + Format.decimal(db, 1)
 
     /** Pas de 1 dB, ramené sur la grille de 0,5 dB du poste et borné à ±20 dB ; null si la valeur est inconnue. */
     fun stepRef(db: Double?, delta: Double): Double? =

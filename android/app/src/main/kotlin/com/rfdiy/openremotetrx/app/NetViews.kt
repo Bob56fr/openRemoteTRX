@@ -50,12 +50,10 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.NetUi
+import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.logic.Tr
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 private fun netColor(level: String) = when (level) {
     "green" -> Page.SUCCES
@@ -196,10 +194,9 @@ fun NetScreen(rig: RigState, onClose: () -> Unit) {
                     for (d in m.diagnoses) Bar(d.label, d.fraction, "${d.count} (${(d.fraction * 100).toInt()} %)")
                     Title(Tr.t("netviews.per_network")); Rows(m.types.ifEmpty { listOf("—" to Tr.t("netviews.no_measure")) })
                     Title(Tr.t("netviews.last_outages"))
-                    val fmt = SimpleDateFormat("dd/MM HH:mm:ss", Locale.FRANCE)
                     if (m.outages.isEmpty()) Text(Tr.t("netviews.no_outage_period"), style = MaterialTheme.typography.bodySmall)
                     for (o in m.outages) {
-                        Text(fmt.format(Date(o.whenMs)) + " — ${o.duration} — ${o.diagnosis}" + (if (o.agent.isNotEmpty()) " — ${o.agent}" else "") +
+                        Text(Format.dayTime(o.whenMs) + " — ${o.duration} — ${o.diagnosis}" + (if (o.agent.isNotEmpty()) " — ${o.agent}" else "") +
                             (if (o.net.isNotEmpty()) " (${o.net})" else "") + " — ${o.kind}" + (if (o.basis.isNotEmpty()) Tr.t("netviews.based_on", "basis" to o.basis) else ""),
                             style = MaterialTheme.typography.bodySmall)
                         HorizontalDivider(color = Page.LIGNE)

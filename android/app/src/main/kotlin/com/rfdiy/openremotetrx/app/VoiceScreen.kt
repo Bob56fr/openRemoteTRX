@@ -47,9 +47,9 @@ import com.rfdiy.openremotetrx.core.VoiceHub
 import com.rfdiy.openremotetrx.logic.ScramblerSettings
 import com.rfdiy.openremotetrx.logic.Scramblers
 import com.rfdiy.openremotetrx.logic.Tr
+import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.VoiceEq
 import com.rfdiy.openremotetrx.logic.VoiceSettings
-import java.util.Locale
 import kotlin.math.roundToInt
 
 private val WARN = Page.ALERTE
@@ -186,7 +186,7 @@ fun VoiceTab(
         SliderRow(Tr.t("voicescreen.lowpass"), s.lowpassHz, 1500.0..8000.0, 50.0, "Hz", enabled = fx) { save(s.copy(lowpassHz = it)) }
         var details by remember { mutableStateOf(false) }
         s.bands.forEachIndexed { i, b ->
-            val hz = if (b.hz >= 1000) String.format(Locale.FRANCE, "%.2f kHz", b.hz / 1000) else "${b.hz.roundToInt()} Hz"   // i18n-ok
+            val hz = if (b.hz >= 1000) Format.decimal(b.hz / 1000.0, 2) + " kHz" else "${b.hz.roundToInt()} Hz"   // i18n-ok
             val name = if (b.shelf) Tr.t("voicescreen.band_shelf", "band" to hz) else hz
             SliderRow(name, b.gainDb, -VoiceEq.GAIN_MAX_DB..VoiceEq.GAIN_MAX_DB, 0.5, "dB", enabled = fx) { v ->
                 save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(gainDb = v) else x }))
@@ -290,7 +290,7 @@ private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRa
         )
         val v = Math.round(shown / step) * step
         Text(
-            (if (step < 1) String.format(Locale.FRANCE, "%.1f", v) else v.roundToInt().toString()) + if (unit.isNotEmpty()) " $unit" else "",
+            (if (step < 1) Format.decimal(v.toDouble(), 1) else v.roundToInt().toString()) + if (unit.isNotEmpty()) " $unit" else "",
             style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(64.dp),
         )
     }

@@ -3,7 +3,6 @@
 package com.rfdiy.openremotetrx.logic
 
 import com.rfdiy.openremotetrx.protocol.FreedvActivity
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -31,7 +30,7 @@ object FreeDvActivities {
 
     /** 14 236 000 Hz -> « 14236,0 kHz » (arrondi à 100 Hz). */
     fun freqText(hz: Long): String =
-        String.format(Locale.ROOT, "%.1f", Math.round(hz / 100.0) / 10.0).replace(".", ",") + " kHz"
+        Format.decimal(Math.round(hz / 100.0) / 10.0, 1) + " kHz"
 
     /** FreeDV se reçoit en BLU supérieure : mode gardé en USB ou PKTUSB, sinon USB. */
     fun qsyMode(rigMode: String?): String? = if (rigMode == "USB" || rigMode == "PKTUSB") null else "USB"
@@ -68,7 +67,7 @@ object FreeDvActivities {
                     (if (other(r.m).isNotEmpty()) " (" + other(r.m) + ")" else "")
             }
             val note = g.note ?: 0.0
-            FreeDvActivityView.Row(g.f, freqText(g.f), note, js(note).replace(".", ","),
+            FreeDvActivityView.Row(g.f, freqText(g.f), note, Format.localize(js(note)),
                 rigHz != null && abs(g.f - rigHz) <= 1500, tx, rx)
         }
         return FreeDvActivityView(status, text, rows)

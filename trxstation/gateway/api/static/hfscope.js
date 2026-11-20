@@ -204,7 +204,7 @@
   const nextMode = (m) => (m === "center" ? "fixed" : "center");          // défilement (lu seulement) -> centré
   function spanSettingLabel(hz) {
     if (!Number.isFinite(hz)) return "SPAN ?";
-    return "±" + (hz >= 1000 ? (hz / 1000).toString().replace(".", ",") + "k" : hz);
+    return "±" + (hz >= 1000 ? I18N.decimal(hz / 1000) + "k" : hz);
   }
   function nextSpan(hz) {
     const i = SPANS_HZ.indexOf(hz);
@@ -217,7 +217,7 @@
   }
   function refLabel(db) {
     if (!Number.isFinite(db)) return "REF ?";
-    return "REF " + (db > 0 ? "+" : "") + db.toFixed(1).replace(".", ",");
+    return "REF " + (db > 0 ? "+" : "") + I18N.decimal(db, 1);
   }
   function stepRef(db, delta) {
     /* Pas de 1 dB, ramené sur la grille de 0,5 dB du poste et borné à ±20 dB ; null si la valeur actuelle est inconnue. */

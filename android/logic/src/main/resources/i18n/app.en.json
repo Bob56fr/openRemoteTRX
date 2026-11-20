@@ -366,7 +366,7 @@
   "clusterandbeeps.media_ptt_hint": "Press = start or end of transmission, never a hold; “Transmit allowed” is still required; automatic playback when a headset connects is ignored.",
   "clusterandbeeps.headset_mic": "Bluetooth headset mic",
   "clusterandbeeps.headset_mic_hint": "Used during transmission only (the headset switches to call mode: speak after the beep). During transmission, the headset button ends it. Without a headset, transmitting is refused. Takes effect at the next connection.",
-  "clusterandbeeps.android_auto_hint": "In the car: “openRemoteTRX” player (Play = listen, Pause = mute), TRANSMIT / STOP / Allow transmit buttons, Browse > Stations, Memories, Bands, and voice, in French for now (“mémoire 40 mètres”, “fréquence 7 074”, “bande 20 mètres”: never transmitting by voice). The steering-wheel buttons only act as PTT with the setting above. App installed by hand: in Android Auto, Settings > version (tap 10 times) > Developer settings > “Unknown sources”.",
+  "clusterandbeeps.android_auto_hint": "In the car: “openRemoteTRX” player (Play = listen, Pause = mute), TRANSMIT / STOP / Allow transmit buttons, Browse > Stations, Memories, Bands, and voice in any of the four languages (“memory 40 metres”, “frequency 7 074”, “20 metre band”: never transmitting by voice). The steering-wheel buttons only act as PTT with the setting above. App installed by hand: in Android Auto, Settings > version (tap 10 times) > Developer settings > “Unknown sources”.",
   "clusterandbeeps.noise": "Noise reduction",
   "clusterandbeeps.mic_hint": "Voice dropouts when transmitting: try “quiet room” or a “headset mic” profile (noise reduction off). Takes effect at the next connection.",
   "drivingscreen.connecting": "CONNECTING…",
