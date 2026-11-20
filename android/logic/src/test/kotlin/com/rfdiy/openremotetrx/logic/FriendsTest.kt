@@ -65,9 +65,8 @@ class FriendsTest {
     }
 
     @Test
-    fun `memes textes que la page (consentement, niveaux, statuts)`() {
-        for (text in Friends.CONSENT + Friends.LEVELS.values + Friends.LABELS.values) assertTrue(page.contains("\"$text\""), text)
-    }
+    fun `memes textes que la page (consentement, niveaux, statuts)`() =
+        PageI18n.assertSameTexts("friends.js", "Friends.kt", "friends.consent_", "friends.level_", "friends.label_")
 
     @Test
     fun `un membre - pastille, detail, hors ligne quand la vue vieillit`() {

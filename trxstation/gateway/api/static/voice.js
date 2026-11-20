@@ -6,23 +6,25 @@
    la chaîne WebAudio se construit sur un AudioContext fourni (faux contexte dans les tests).
 
    Sécurité :
-   - la station reste maîtresse de l'émission : la piste envoyée n'est ouverte que par client.js en TX confirmé ;
+   - la station reste maîtresse de l'émission : la piste envoyée n'est ouverte que par client.js en TX confirmé ;   // i18n-ok (commentaire)
      ici, en plus, la sortie vers la station est à zéro hors émission ;
    - au retour en réception, la traîne de réverbération et le chorus sont coupés net (réverbération recréée) ;
    - l'écoute de contrôle et la relecture ne vont JAMAIS vers la station ; interdites en émission, arrêtées par
      toute prise d'émission ;
    - une erreur dans la chaîne la fait passer en contournement (limiteur seul), jamais en silence. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const BANDS_HZ = [100, 160, 250, 370, 570, 880, 1350, 2100, 3250, 5000];
   const GAIN_MAX_DB = 12;
   const Q_MIN = 0.3, Q_MAX = 8;
   const LIMIT_DBFS = -3;                    // plafond des crêtes (à vérifier à l'ALC sur charge fictive)
-  const CHORUS_TYPES = { classic: { label: "Classique", voices: 1, delayMs: 18 }, ensemble: { label: "Ensemble 3 voix", voices: 3, delayMs: 22 },
-                         double: { label: "Doublage", voices: 1, delayMs: 32 } };
-  const REVERB_TYPES = { room: { label: "Pièce", seconds: 0.5, bright: 0.5 }, hall: { label: "Salle", seconds: 1.8, bright: 0.35 },
-                         plate: { label: "Plaque", seconds: 1.2, bright: 0.8 }, spring: { label: "Ressort", seconds: 0.9, bright: 0.6 } };
+  const CHORUS_TYPES = { classic: { get label() { return I18N.t("voiceeq.chorus_classic"); }, voices: 1, delayMs: 18 }, ensemble: { get label() { return I18N.t("voiceeq.chorus_ensemble"); }, voices: 3, delayMs: 22 },
+                         double: { get label() { return I18N.t("voiceeq.chorus_double"); }, voices: 1, delayMs: 32 } };
+  const REVERB_TYPES = { room: { get label() { return I18N.t("voiceeq.reverb_room"); }, seconds: 0.5, bright: 0.5 }, hall: { get label() { return I18N.t("voiceeq.reverb_hall"); }, seconds: 1.8, bright: 0.35 },
+                         plate: { get label() { return I18N.t("voiceeq.reverb_plate"); }, seconds: 1.2, bright: 0.8 }, spring: { get label() { return I18N.t("voiceeq.reverb_spring"); }, seconds: 0.9, bright: 0.6 } };
   const RECORD_MAX_S = 30;
   const GATE_HOLD_MS = 250, GATE_TICK_MS = 10, GATE_FLOOR = 0.03;     // porte de bruit : maintien, cadence, -30 dB fermée
 
@@ -39,13 +41,13 @@
   }
 
   const PRESETS = {
-    neutre: { label: "Neutre", make: () => Object.assign(defaults(), { enabled: true }) },
-    dx: { label: "DX (aigus présents)", make: () => {
+    neutre: { get label() { return I18N.t("voiceeq.preset_neutral"); }, make: () => Object.assign(defaults(), { enabled: true }) },
+    dx: { get label() { return I18N.t("voiceeq.preset_dx"); }, make: () => {
       const s = Object.assign(defaults(), { enabled: true, highpassHz: 250, lowpassHz: 2800 });
       [-6, -4, -2, 0, 0, 1, 3, 5, 4, 0].forEach((g, i) => { s.bands[i].gainDb = g; });
       return s;
     } },
-    ragchew: { label: "Ragchew (voix chaude)", make: () => {
+    ragchew: { get label() { return I18N.t("voiceeq.preset_ragchew"); }, make: () => {
       const s = Object.assign(defaults(), { enabled: true, highpassHz: 100, lowpassHz: 3000 });
       [2, 3, 2, 1, 0, 0, 1, 1, 0, -2].forEach((g, i) => { s.bands[i].gainDb = g; });
       return s;
@@ -86,7 +88,7 @@
 
   function importJson(text) {
     const raw = JSON.parse(text);
-    if (!raw || raw.format !== "openremotetrx-voice") throw new Error("ce fichier n'est pas un réglage de voix openRemoteTRX");
+    if (!raw || raw.format !== "openremotetrx-voice") throw new Error(I18N.t("voiceeq.not_voice_file"));
     return validate(raw);
   }
 
@@ -108,7 +110,7 @@
     } else if (type === "lowpass") {
       b0 = (1 - cos) / 2; b1 = 1 - cos; b2 = (1 - cos) / 2; a0 = 1 + alpha; a1 = -2 * cos; a2 = 1 - alpha;
     } else {
-      throw new Error("filtre inconnu : " + type);
+      throw new Error("filtre inconnu : " + type);   // i18n-ok (erreur de programmation)
     }
     return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
   }
@@ -172,19 +174,19 @@
     const s = validate(settings), out = [];
     const mean = (from, to) => s.bands.slice(from, to).reduce((sum, b) => sum + b.gainDb, 0) / (to - from);
     const lows = mean(0, 4), mids = mean(4, 7), highs = mean(7, 10);
-    if (!s.enabled) out.push("Égaliseur éteint : ces réglages ne s'appliquent pas encore.");
-    if (lows >= 2) out.push("Graves renforcés : voix plus chaude et ronde, moins lisible en DX.");
-    else if (lows <= -2) out.push("Graves réduits : voix plus légère, moins de ronflement.");
-    if (mids >= 2) out.push("Médiums renforcés : voix plus présente, un peu nasale.");
-    else if (mids <= -2) out.push("Médiums creusés : voix plus douce, moins d'énergie.");
-    if (highs >= 2) out.push("Aigus renforcés : plus de clarté et de punch, idéal en DX.");
-    else if (highs <= -2) out.push("Aigus réduits : voix plus sombre, moins de sifflantes.");
-    if (s.highpassHz >= 200) out.push("Coupe-bas à " + Math.round(s.highpassHz) + " Hz : la puissance va à la parole.");
-    if (s.lowpassHz <= 2700) out.push("Coupe-haut à " + Math.round(s.lowpassHz) + " Hz : bande étroite, plus de punch, moins de fidélité.");
-    if (s.chorus.on) out.push("Chorus : voix doublée, effet studio (à éviter en DX).");
-    if (s.reverb.on) out.push("Réverbération : effet de salle (à éviter en DX).");
-    if (s.bands.some((b) => Math.abs(b.gainDb) >= 9)) out.push("Attention : gain fort sur une bande, surveillez l'ALC sur charge fictive.");
-    if (out.length === 0) out.push("Réglage neutre : votre voix part telle quelle.");
+    if (!s.enabled) out.push(I18N.t("voiceeq.hint_off"));
+    if (lows >= 2) out.push(I18N.t("voiceeq.hint_lows_up"));
+    else if (lows <= -2) out.push(I18N.t("voiceeq.hint_lows_down"));
+    if (mids >= 2) out.push(I18N.t("voiceeq.hint_mids_up"));
+    else if (mids <= -2) out.push(I18N.t("voiceeq.hint_mids_down"));
+    if (highs >= 2) out.push(I18N.t("voiceeq.hint_highs_up"));
+    else if (highs <= -2) out.push(I18N.t("voiceeq.hint_highs_down"));
+    if (s.highpassHz >= 200) out.push(I18N.t("voiceeq.hint_highpass", { hz: Math.round(s.highpassHz) }));
+    if (s.lowpassHz <= 2700) out.push(I18N.t("voiceeq.hint_lowpass", { hz: Math.round(s.lowpassHz) }));
+    if (s.chorus.on) out.push(I18N.t("voiceeq.hint_chorus"));
+    if (s.reverb.on) out.push(I18N.t("voiceeq.hint_reverb"));
+    if (s.bands.some((b) => Math.abs(b.gainDb) >= 9)) out.push(I18N.t("voiceeq.hint_strong_gain"));
+    if (out.length === 0) out.push(I18N.t("voiceeq.hint_neutral"));
     return out;
   }
 
@@ -240,7 +242,7 @@
       source.connect(this.pre); this.pre.connect(this.tap); this.pre.connect(this.gate);
       this._tapBuf = new Float32Array(this.tap.fftSize);
       this._gateOpenUntil = 0; this._gateTimer = null;
-      this.input = ctx.createGain();                        // porte d'entrée : ouverte en émission et pendant l'écoute de contrôle
+      this.input = ctx.createGain();                        // porte d'entrée : ouverte en émission et pendant l'écoute de contrôle   // i18n-ok (commentaire)
       this.input.gain.value = 0;
       this.gate.connect(this.input);
       this.playIn = ctx.createGain();                       // relecture d'un enregistrement (jamais vers la station)
@@ -314,7 +316,7 @@
 
     _fail(err) {
       this.failed = true;
-      this.log("Égaliseur en erreur (" + (err && err.message ? err.message : err) + ") : voix envoyée sans traitement (limiteur seul).", "warn");
+      this.log(I18N.t("voicedsp.eq_failed", { why: err && err.message ? err.message : err }), "warn");
       this.bypass.gain.value = 1; this.processed.gain.value = 0;
     }
 
@@ -391,7 +393,7 @@
 
     setExternal(on) {
       /* Voix traitée par Breizh Audio Box (station 0.100.0+) : égaliseur, chorus et réverbération contournés ; gain du
-         micro, porte de bruit et limiteur gardés. Fixé à l'ouverture du micro, jamais pendant l'émission. */
+         micro, porte de bruit et limiteur gardés. Fixé à l'ouverture du micro, jamais pendant l'émission. */   // i18n-ok (commentaire)
       on = !!on;
       if (on === this.external || this.tx) return this.external;
       this.external = on;
@@ -443,8 +445,8 @@
 
     replayBuffer(buffer, onEnd) {
       /* Rediffusion d'un enregistrement de l'audio reçu (accordée par la station) : pendant une émission CONFIRMÉE
-         seulement, l'enregistrement REMPLACE le micro (porte d'entrée fermée), sans égaliseur ni effets (directement au
-         limiteur, toujours actif), et passe aussi sur la sortie de l'appareil pour que l'opérateur l'entende. */
+         seulement, l'enregistrement REMPLACE le micro (porte d'entrée fermée), sans égaliseur ni effets (directement au   // i18n-ok (commentaire)
+         limiteur, toujours actif), et passe aussi sur la sortie de l'appareil pour que l'opérateur l'entende. */   // i18n-ok (commentaire)
       if (!this.tx || !buffer) return false;
       this.stopReplay();
       const src = this.ctx.createBufferSource();

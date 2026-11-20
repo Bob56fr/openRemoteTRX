@@ -17,7 +17,7 @@
  * un heartbeat est envoyé tant que l'émission est active (sans lui, la passerelle coupe en ~2 s).
  */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
 
   const HEARTBEAT_TICK_MS = 400;
   const PING_EVERY_MS = 2000;
@@ -82,7 +82,7 @@
     const listeners = Number(presence.listeners) || 0;
     const people = (Array.isArray(presence.people) ? presence.people : []).map((p) => ({
       text: String(p.pseudo || "?").slice(0, 32) + (Number(p.count) > 1 ? " ×" + Number(p.count) : ""),
-      role: p.role === "listener" ? "Visiteur" : "Opérateur", since: durationText(p.since_s) }));
+      role: p.role === "listener" ? I18N.t("presenceui.role_listener") : I18N.t("presenceui.role_operator"), since: durationText(p.since_s) }));
     const operator = role !== "listener";
     const kick = operator && Array.isArray(presence.connections)
       ? presence.connections.filter((c) => c && c.role === "listener").map((c) => ({
@@ -94,21 +94,23 @@
     return {
       count: listeners, label: listeners > 0 ? "🎧 " + listeners : "", people: people, kick: kick,
       grace: grace === null || grace === undefined ? ""
-        : "Opérateur momentanément déconnecté : fin de l'écoute des visiteurs dans " + Math.max(0, Math.round(grace)) + " s.",
-      suspended: suspended ? String(suspended.message || "Écoute des visiteurs suspendue.").slice(0, 300) : "",
+        : I18N.t("presenceui.grace", { seconds: Math.max(0, Math.round(grace)) }),
+      suspended: suspended ? String(suspended.message || I18N.t("presenceui.suspended")).slice(0, 300) : "",
       canReopen: operator && !!suspended,
       // commutateur de l'opérateur (fin de la rubrique Connexion) ; station 0.74.0+ (champ « open »)
       switchShown: operator && typeof presence.open === "boolean",
       switchOn: presence.open === true,
       switchAvailable: (Number(presence.max_listeners) || 0) > 0,
       switchNote: (Number(presence.max_listeners) || 0) <= 0
-        ? "Fermée sur la station : nombre maximal de visiteurs à 0 (TRX Console, menu 4.2)."
-        : presence.open === true ? "Ouverte : " + listeners + " visiteur(s) sur " + Number(presence.max_listeners) + " au plus."
-          : "Fermée : aucun visiteur ne peut se connecter.",
+        ? I18N.t("presenceui.closed_station")
+        : presence.open === true ? I18N.t("presenceui.open", { listeners: listeners, max: Number(presence.max_listeners) })
+          : I18N.t("presenceui.closed"),
     };
   }
 
-  const PTT_LABELS = { RX: "RÉCEPTION", KEYING: "PRISE D'ÉMISSION", TX: "ÉMISSION", UNKEYING: "COUPURE EN COURS" };
+  function pttLabels() {
+    return { RX: I18N.t("texts.ptt_rx"), KEYING: I18N.t("texts.ptt_keying"), TX: I18N.t("texts.ptt_tx"), UNKEYING: I18N.t("texts.ptt_unkeying") };
+  }
 
   // ------------------------------------------------------------------ fonctions pures
 
@@ -148,24 +150,26 @@
   }
 
   /* Allumage et extinction du poste à distance (fonction « power », docs/protocole.md § 21 ; lot P2). */
-  const POWER_STEPS_SHOWN = [
-    ["ports", "Vérification des ports série du poste"],
-    ["check_off", "Vérification que le poste est bien éteint"],
-    ["order", "Ordre d'allumage envoyé"],
-    ["wait", "Démarrage du poste (quelques secondes ; environ 8 s pour un FTDX10)"],
-    ["readback", "Relecture : réception confirmée, fréquence et mode"],
-  ];
+  function powerStepsShown() {
+    return [
+      ["ports", I18N.t("power.step_ports")],
+      ["check_off", I18N.t("power.step_check_off")],
+      ["order", I18N.t("power.step_order")],
+      ["wait", I18N.t("power.step_wait")],
+      ["readback", I18N.t("power.step_readback")],
+    ];
+  }
 
   function powerStepsView(run) {
     /* Fenêtre « Allumage du TRX » : une ligne par étape (attente, en cours, faite, en erreur), message final. */
     if (!run) return { visible: false };
     const steps = run.steps || {};
-    const lines = POWER_STEPS_SHOWN.map(([key, label]) => {
+    const lines = powerStepsShown().map(([key, label]) => {
       const s = steps[key] || {};
       const status = s.status === "ok" ? "ok" : s.status === "error" ? "error" : s.status === "running" ? "running" : "pending";
       let detail = typeof s.detail === "string" ? s.detail.slice(0, 300) : "";
       if (key === "wait" && status === "running" && Number.isFinite(s.remaining_s)) {
-        detail = "encore " + Math.max(0, Math.ceil(s.remaining_s)) + " s au plus";
+        detail = I18N.t("power.wait_left", { seconds: Math.max(0, Math.ceil(s.remaining_s)) });
       }
       if (status === "error" && typeof s.ort === "string" && /^ORT-\d{4}$/.test(s.ort)) detail += " [" + s.ort + "]";
       return { key: key, label: label, status: status, detail: detail };
@@ -173,10 +177,10 @@
     const status = run.status || "running";
     const error = run.error || null;
     return {
-      visible: !run.hidden, status: status, title: "Allumage du TRX", lines: lines,
-      text: status === "done" ? run.done || "TRX allumé."
-        : status === "error" ? (error && error.text) || "Allumage impossible."
-          : "Allumage en cours : la réception reprend toute seule à la fin.",
+      visible: !run.hidden, status: status, title: I18N.t("power.dialog_title"), lines: lines,
+      text: status === "done" ? run.done || I18N.t("power.done")
+        : status === "error" ? (error && error.text) || I18N.t("power.error")
+          : I18N.t("power.running"),
       canRetry: status === "error", canContinue: status === "error", canHide: status === "running",
       autoCloseMs: status === "done" ? 3000 : 0,
     };
@@ -185,11 +189,11 @@
   function powerBannerView(rig, features, role, running) {
     /* Bandeau « POSTE ÉTEINT » (state.rig.power, visiteurs compris) et bouton « Allumer le poste ». */
     if (!rig || rig.power !== "off") return { shown: false };
-    if (role === "listener") return { shown: true, text: "Le poste est éteint ; seul un opérateur peut l'allumer.", canPowerOn: false };
+    if (role === "listener") return { shown: true, text: I18N.t("power.banner_listener"), canPowerOn: false };
     if (!(Array.isArray(features) && features.includes("power"))) {
-      return { shown: true, text: "POSTE ÉTEINT : allumage à distance hors service (menu 2.8 de TRX Console sur la station).", canPowerOn: false };
+      return { shown: true, text: I18N.t("power.banner_disabled"), canPowerOn: false };
     }
-    return { shown: true, text: running ? "POSTE ÉTEINT : allumage en cours…" : "POSTE ÉTEINT", canPowerOn: !running };
+    return { shown: true, text: running ? I18N.t("power.banner_running") : I18N.t("power.banner_off"), canPowerOn: !running };
   }
 
   function stopHoldChoices(hello, rig) {
@@ -197,11 +201,11 @@
     const features = hello && Array.isArray(hello.features) ? hello.features : [];
     const caps = hello && hello.capabilities ? hello.capabilities : {};
     let reason = "";
-    if (hello && hello.role === "listener") reason = "Compte visiteur";
+    if (hello && hello.role === "listener") reason = I18N.t("power.reason_listener");
     else if (!features.includes("power")) {
-      reason = caps.can_set_power === false ? "Votre poste ne le permet pas"
-        : "Arrêt à distance hors service : menu 2.8 de TRX Console";
-    } else if (rig && rig.power === "off") reason = "Le poste est déjà éteint";
+      reason = caps.can_set_power === false ? I18N.t("power.reason_unsupported")
+        : I18N.t("power.reason_disabled");
+    } else if (rig && rig.power === "off") reason = I18N.t("power.reason_already_off");
     return { disconnect: true, powerOff: !reason, powerReason: reason };
   }
 
@@ -210,11 +214,18 @@
   }
 
   // ---- état des flux du Cluster DX (message « cluster_status » du module, toutes les 15 s)
-  const CLUSTER_TITLES = { green: "Les flux arrivent", orange: "Une partie des flux seulement", red: "Aucun flux reçu",
-                           off: "Cluster DX désactivé sur la station" };
-  const CLUSTER_TYPES = { rbn: "RBN", telnet: "cluster", web: "page CB" };
-  const CLUSTER_VERDICTS = { ok: ["green", "reçoit"], calme: ["orange", "connecté, mais calme"], reserve: ["", "en réserve (secours)"],
-                             echec: ["red", "refusé"], attente: ["orange", "connexion en cours"] };
+  function clusterTitles() {
+    return { green: I18N.t("clusterstatus.title_green"), orange: I18N.t("clusterstatus.title_orange"),
+             red: I18N.t("clusterstatus.title_red"), off: I18N.t("clusterstatus.title_off") };
+  }
+  function clusterTypes() {
+    return { rbn: I18N.t("clusterstatus.type_rbn"), telnet: I18N.t("clusterstatus.type_telnet"), web: I18N.t("clusterstatus.type_web") };
+  }
+  function clusterVerdicts() {
+    return { ok: ["green", I18N.t("clusterstatus.verdict_ok")], calme: ["orange", I18N.t("clusterstatus.verdict_calme")],
+             reserve: ["", I18N.t("clusterstatus.verdict_reserve")], echec: ["red", I18N.t("clusterstatus.verdict_echec")],
+             attente: ["orange", I18N.t("clusterstatus.verdict_attente")] };
+  }
   const CLUSTER_STALE_S = 45;          // plus de nouvelles du module depuis ce délai : il est peut-être arrêté
 
   function shortAge(seconds) {
@@ -231,19 +242,21 @@
     const d = data && typeof data === "object" ? data : {};
     const elapsed = Number.isFinite(elapsedS) ? Math.max(0, elapsedS) : 0;
     const health = ["green", "orange", "red", "off"].includes(d.health) ? d.health : "red";
+    const verdicts = clusterVerdicts(), types = clusterTypes();
     const lines = (Array.isArray(d.sources) ? d.sources : []).slice(0, 12).map((s) => {
-      const [dot, word] = CLUSTER_VERDICTS[s.verdict] || ["", String(s.verdict || "?")];
+      const [dot, word] = verdicts[s.verdict] || ["", String(s.verdict || "?")];
       const n = Number.isFinite(s.last_10min) ? s.last_10min : 0;
-      const rate = n >= 10 ? Math.round(n / 10) + " spots/min" : n + " spot" + (n > 1 ? "s" : "") + " en 10 min";
+      const rate = n >= 10 ? I18N.t("clusterstatus.rate_per_min", { n: Math.round(n / 10) }) : I18N.plural("clusterstatus.rate_10min", n);
       const age = shortAge(s.last_spot_age_s === null || s.last_spot_age_s === undefined ? null : s.last_spot_age_s + elapsed);
       const parts = [word];
-      if (s.verdict === "ok" || s.verdict === "calme") parts.push(rate, age ? "dernier il y a " + age : "aucun spot reçu");
-      if (s.verdict === "attente" && Number.isFinite(s.retry_in_s) && s.retry_in_s > 0) parts.push("nouvel essai dans " + shortAge(s.retry_in_s));
-      if (s.verdict === "echec" && s.code) parts.push(String(s.code).slice(0, 40) + " : voir TRX Console, menu 5.1");
-      return { dot: dot, text: String(s.name || "?").slice(0, 40) + " (" + (CLUSTER_TYPES[s.type] || "flux") + ") : " + parts.join(" · ") };
+      if (s.verdict === "ok" || s.verdict === "calme") parts.push(rate, age ? I18N.t("clusterstatus.last_ago", { age: age }) : I18N.t("clusterstatus.no_spot"));
+      if (s.verdict === "attente" && Number.isFinite(s.retry_in_s) && s.retry_in_s > 0) parts.push(I18N.t("clusterstatus.retry_in", { age: shortAge(s.retry_in_s) }));
+      if (s.verdict === "echec" && s.code) parts.push(I18N.t("clusterstatus.failed_code", { code: String(s.code).slice(0, 40) }));
+      return { dot: dot, text: I18N.t("clusterstatus.line", { name: String(s.name || "?").slice(0, 40),
+                                                              type: types[s.type] || I18N.t("clusterstatus.type_other"), parts: parts.join(" · ") }) };
     });
-    return { health: health, title: CLUSTER_TITLES[health], lines: lines, stale: elapsed > CLUSTER_STALE_S,
-             staleText: elapsed > CLUSTER_STALE_S ? "Plus de nouvelles du module Cluster DX depuis " + shortAge(elapsed) + " : arrêté ? (TRX Console, menu 6.1)" : "" };
+    return { health: health, title: clusterTitles()[health], lines: lines, stale: elapsed > CLUSTER_STALE_S,
+             staleText: elapsed > CLUSTER_STALE_S ? I18N.t("clusterstatus.stale", { age: shortAge(elapsed) }) : "" };
   }
 
   // Pastille des boutons de bande : nombre de spots actifs (« 20m » du cluster -> bouton « 20 ») ; couleur du gris au rouge.
@@ -261,29 +274,33 @@
     return out;
   }
 
-  const MAX_REPORT_CHARS = 30000;          // même limite que la station (protocol.MAX_BUG_REPORT_CHARS)
+  // même limite que la station (protocol.MAX_BUG_REPORT_CHARS)
+  const MAX_REPORT_CHARS = 30000;
 
   function formatProblemReport(d) {
     /* Rapport « Signaler un problème » : texte lisible, montré à l'utilisateur AVANT tout envoi. Aucun secret :
        ni mot de passe, ni jeton (la page n'en garde pas). */
     const fmt = d.formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
-    const lines = ["=== Rapport de problème TRX distant ===", "Date : " + fmt(d.now), "",
-                   "Ce qui s'est passé :", (String(d.description || "").trim() || "(non décrit)").slice(0, 2000), "",
-                   "Station : " + (d.version ? "v" + d.version : "version inconnue") + (d.protocol ? ", protocole " + d.protocol : "") +
-                   (d.account ? ", compte " + d.account : "") + (d.connected ? ", connecté" : ", NON connecté"),
-                   "Appareil : " + (d.userAgent || "?"), "Écran : " + (d.screen || "?") + (d.layout ? ", disposition " + d.layout : "") +
-                   (d.theme ? ", thème " + d.theme : "")];
-    if (d.rig) lines.push("Poste : " + d.rig);
-    if (d.spectrum) lines.push("Spectre HF : " + d.spectrum);
-    if (d.rtt !== null && d.rtt !== undefined) lines.push("Dernier temps de réponse : " + d.rtt + " ms");
+    const lines = [I18N.t("problemreport.header"), I18N.t("problemreport.date", { date: fmt(d.now) }), "",
+                   I18N.t("problemreport.what_happened"), (String(d.description || "").trim() || I18N.t("problemreport.not_described")).slice(0, 2000), "",
+                   I18N.t("problemreport.station", { version: d.version ? "v" + d.version : I18N.t("problemreport.version_unknown") }) +
+                   (d.protocol ? I18N.t("problemreport.protocol", { protocol: d.protocol }) : "") +
+                   (d.account ? I18N.t("problemreport.account", { account: d.account }) : "") +
+                   (d.connected ? I18N.t("problemreport.connected") : I18N.t("problemreport.not_connected")),
+                   I18N.t("problemreport.device", { device: d.userAgent || "?" }), I18N.t("problemreport.screen", { screen: d.screen || "?" }) +
+                   (d.layout ? I18N.t("client.report_layout", { layout: d.layout }) : "") +
+                   (d.theme ? I18N.t("client.report_theme", { theme: d.theme }) : "")];
+    if (d.rig) lines.push(I18N.t("problemreport.rig", { rig: d.rig }));
+    if (d.spectrum) lines.push(I18N.t("problemreport.spectrum", { spectrum: d.spectrum }));
+    if (d.rtt !== null && d.rtt !== undefined) lines.push(I18N.t("problemreport.rtt", { rtt: d.rtt }));
     const losses = Array.isArray(d.losses) ? d.losses.slice(0, 3) : [];
-    lines.push("", "Dernières pertes de connexion : " + (losses.length ? "" : "aucune"));
+    lines.push("", losses.length ? I18N.t("client.report_losses") + " " : I18N.t("client.report_losses_none"));
     for (const entry of losses) lines.push(describeLoss(entry, fmt), "");
     const errors = Array.isArray(d.errors) ? d.errors : [];
-    lines.push("Erreurs de la page : " + (errors.length ? "" : "aucune"));
+    lines.push(errors.length ? I18N.t("client.report_errors") + " " : I18N.t("client.report_errors_none"));
     for (const e of errors) lines.push("  " + fmt(e.t) + "  " + e.text);
     const logs = Array.isArray(d.logs) ? d.logs : [];
-    lines.push("", "Journal de la page (dernières lignes) :");
+    lines.push("", I18N.t("client.report_log_header"));
     for (const l of logs) lines.push("  " + fmt(l.t).split(" ").pop() + "  " + l.text);
     return lines.join("\n").slice(0, MAX_REPORT_CHARS);
   }
@@ -293,7 +310,9 @@
     return typeof version === "string" && /^\d{1,3}\.\d{1,3}\.\d{1,3}([.+-][0-9A-Za-z.]{1,20})?$/.test(version) ? "v" + version : "";
   }
 
-  const LOCAL_REASONS = { tx: "émission au micro du poste", frequency: "fréquence changée sur le poste", mode: "mode changé sur le poste" };
+  function localReasons() {
+    return { tx: I18N.t("pttview.local_tx"), frequency: I18N.t("pttview.local_frequency"), mode: I18N.t("pttview.local_mode") };
+  }
 
   function localView(ptt) {
     /* « Poste utilisé sur place » (voir gateway/safety/local.py) : bandeau, durée restante, reprise possible ou non. */
@@ -301,9 +320,10 @@
     if (left === null) return { active: false, transmitting: false, text: "" };
     const transmitting = !!ptt.local_tx;
     const s = Math.max(0, Math.ceil(left));
-    const when = transmitting ? "pendant l'émission locale" : "encore " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    const when = transmitting ? I18N.t("pttview.during_local_tx")
+      : I18N.t("pttview.time_left", { time: Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") });
     return { active: true, transmitting: transmitting,
-             text: "POSTE UTILISÉ SUR PLACE (" + (LOCAL_REASONS[ptt.local_reason] || "action sur le poste") + ") : PTT à distance bloqué " + when };
+             text: I18N.t("pttview.local_banner", { cause: localReasons()[ptt.local_reason] || I18N.t("pttview.local_other"), time: when }) };
   }
 
   function tempView(ptt) {
@@ -311,14 +331,16 @@
     const level = ptt ? ptt.temp_alert : "";
     if (level !== "warn" && level !== "hot") return { level: "", text: "" };
     const temp = Number.isFinite(ptt.temp_c) ? Math.round(ptt.temp_c) + " °C" : "?";
-    return { level: level, text: level === "hot" ? "POSTE TROP CHAUD (" + temp + ") : émission à distance coupée et refusée jusqu'au refroidissement"
-                                                 : "Poste chaud (" + temp + ") : surveille la température, l'émission sera coupée au second seuil" };
+    return { level: level, text: level === "hot" ? I18N.t("client.temp_hot", { temp: temp }) : I18N.t("client.temp_warm", { temp: temp }) };
   }
 
   // Modes « données » : le nom dépend de la version de Hamlib (4.7 : FM-D et AM-D au lieu de PKTFM, PKTAM).
   const DATA_MODES = { USB: ["PKTUSB"], LSB: ["PKTLSB"], FM: ["PKTFM", "FM-D"], AM: ["PKTAM", "AM-D"] };
-  const MODE_LABELS = { PKTUSB: "USB-D (données)", PKTLSB: "LSB-D (données)", PKTFM: "FM-D (données)", PKTAM: "AM-D (données)",
-                        "FM-D": "FM-D (données)", "AM-D": "AM-D (données)" };
+  function modeLabels() {
+    const data = (name) => I18N.t("client.mode_data", { mode: name });
+    return { PKTUSB: data("USB-D"), PKTLSB: data("LSB-D"), PKTFM: data("FM-D"), PKTAM: data("AM-D"),
+             "FM-D": data("FM-D"), "AM-D": data("AM-D") };
+  }
 
   function dataModeFor(mode, available) {
     /* Mode données de `mode` parmi `available` (null si aucun) ; sans liste connue, le nom habituel. */
@@ -328,7 +350,7 @@
   }
 
   function modeLabel(mode) {
-    return MODE_LABELS[mode] || mode || "—";
+    return modeLabels()[mode] || mode || "—";
   }
 
   function txModeHint(mode, txModes, modes) {
@@ -337,8 +359,7 @@
     const available = txModes.filter((m) => !Array.isArray(modes) || modes.length === 0 || modes.includes(m));
     const wanted = dataModeFor(mode, available);
     const suggestion = wanted && available.includes(wanted) ? wanted : available[0] || txModes[0];
-    return "Émission impossible en " + modeLabel(mode) + " : la station n'autorise que " + txModes.map(modeLabel).join(", ") +
-           ". Passe en " + modeLabel(suggestion) + ".";
+    return I18N.t("client.tx_mode_hint", { mode: modeLabel(mode), allowed: txModes.map(modeLabel).join(", "), suggestion: modeLabel(suggestion) });
   }
 
   function matchesRigDevice(label, names) {
@@ -356,8 +377,7 @@
   function dataModeHint(mode, modes) {
     const target = Array.isArray(modes) && modes.length ? dataModeFor(mode, modes) : null;
     if (!target) return "";
-    return "Le poste est en " + mode + " : pour émettre le micro de cette page par l'USB, passe en mode " + modeLabel(target) +
-           ". En " + mode + ", la plupart des postes modulent avec leur propre micro.";
+    return I18N.t("client.data_mode_hint", { mode: mode, target: modeLabel(target) });
   }
 
   function formatIcomFrequency(hz) {
@@ -455,7 +475,7 @@
     if ("ANF" in fn || "MN" in fn) out.push({ label: "NOTCH", on: !!fn.ANF || !!fn.MN });
     if ("NB" in fn) out.push({ label: "NB", on: !!fn.NB });
     if ("NR" in fn) out.push({ label: "NR", on: !!fn.NR });
-    if (typeof lv.ALC === "number" && lv.ALC >= ALC_OVERLOAD) out.push({ label: "OVERLOAD ALC", on: true, alert: true });
+    if (typeof lv.ALC === "number" && lv.ALC >= ALC_OVERLOAD) out.push({ label: "OVERLOAD ALC", on: true, alert: true });   // i18n-ok (voyant)
     return out;
   }
 
@@ -466,30 +486,38 @@
        du son ; null = rien à afficher (visiteur, station plus ancienne). Rouge à 90 % de la barre (hostinfo.py). */
     if (!host || typeof host !== "object" || !Number.isFinite(host.load)) return null;
     const parts = [];
-    if (Number.isFinite(host.cpu_pct)) parts.push("processeur " + host.cpu_pct + " %");
-    if (Number.isFinite(host.mem_pct)) parts.push("mémoire " + host.mem_pct + " %");
-    if (Number.isFinite(host.disk_pct)) parts.push("disque " + host.disk_pct + " %");
+    if (Number.isFinite(host.cpu_pct)) parts.push(I18N.t("hosthealth.cpu", { pct: host.cpu_pct }));
+    if (Number.isFinite(host.mem_pct)) parts.push(I18N.t("hosthealth.mem", { pct: host.mem_pct }));
+    if (Number.isFinite(host.disk_pct)) parts.push(I18N.t("hosthealth.disk", { pct: host.disk_pct }));
     if (Number.isFinite(host.temp_c)) parts.push(host.temp_c + " °C");
-    if (host.throttled === true) parts.push("Pi RALENTI (alimentation ou chaleur)");
+    if (host.throttled === true) parts.push(I18N.t("hosthealth.throttled"));
     return { fraction: Math.min(1, Math.max(0, host.load)), level: HOST_LEVELS.includes(host.level) ? host.level : "ok",
-             title: "Machine de la station : " + (parts.join(", ") || "mesures indisponibles") + ". Touche : synthèse du matériel" };
+             title: I18N.t("client.host_title", { parts: parts.join(", ") || I18N.t("hosthealth.unavailable") }) };
   }
 
   // Sonde de qualité réseau (docs/netprobe-cahier-des-charges.md § 9, § 10) : textes communs à la page et à l'application.
-  const NET_DIAGNOSES = {
-    app_station: "application ou machine de la station", lan: "réseau local ou machine de la station",
-    box_internet: "connexion Internet de la box", webrtc: "WebRTC ou passerelle", phone_radio: "radio du téléphone",
-    vpn_shared: "profil VPN probablement partagé par un autre appareil", mobile_or_tunnel: "téléphone, réseau mobile ou tunnel",
-    unknown: "indéterminé",
-  };
-  const NET_TYPES = { lan: "réseau local", wifi: "Wi-Fi", "4g": "4G", "5g": "5G", mobile: "mobile", unknown: "inconnu" };
-  const NET_LEVELS = { gray: "mesure en cours", green: "liaison bonne", orange: "liaison moyenne", red: "liaison faible" };
+  function netDiagnoses() {
+    return {
+      app_station: I18N.t("netui.diag_app_station"), lan: I18N.t("netui.diag_lan"),
+      box_internet: I18N.t("netui.diag_box_internet"), webrtc: I18N.t("netui.diag_webrtc"), phone_radio: I18N.t("netui.diag_phone_radio"),
+      vpn_shared: I18N.t("netui.diag_vpn_shared"), mobile_or_tunnel: I18N.t("netui.diag_mobile_or_tunnel"),
+      unknown: I18N.t("netui.diag_unknown"),
+    };
+  }
+  function netTypes() {
+    return { lan: I18N.t("netui.type_lan"), wifi: "Wi-Fi", "4g": "4G", "5g": "5G", mobile: I18N.t("netui.type_mobile"), unknown: I18N.t("netui.type_unknown") };
+  }
+  function netLevels() {
+    return { gray: I18N.t("netui.level_gray"), green: I18N.t("netui.level_green"), orange: I18N.t("netui.level_orange"), red: I18N.t("netui.level_red") };
+  }
   const NET_BARS = { gray: 0, red: 1, orange: 2, green: 3 };
-  const NET_BASIS = { backlog: "mesures du client", health_ok: "/health répondait", radio_weak: "signal faible",
-                      cell_changed: "changement de cellule", network_switched: "bascule de réseau",
-                      regular_pattern: "coupures régulières", lan_probe_down: "box injoignable",
-                      internet_probe_down: "Internet injoignable" };
-  const NET_PROBES = { lan: "Box", internet: "Internet" };
+  function netBasis() {
+    return { backlog: I18N.t("netui.basis_backlog"), health_ok: I18N.t("netui.basis_health_ok"), radio_weak: I18N.t("netui.basis_radio_weak"),
+             cell_changed: I18N.t("netui.basis_cell_changed"), network_switched: I18N.t("netui.basis_network_switched"),
+             regular_pattern: I18N.t("netui.basis_regular_pattern"), lan_probe_down: I18N.t("netui.basis_lan_probe_down"),
+             internet_probe_down: I18N.t("netui.basis_internet_probe_down") };
+  }
+  function netProbes() { return { lan: I18N.t("netui.probe_lan"), internet: I18N.t("netui.probe_internet") }; }
 
   function netDuration(s) {
     if (!Number.isFinite(s)) return "—";
@@ -508,34 +536,35 @@
   function vpnText(w) {
     const agents = Array.isArray(w.agents) ? w.agents.map(String).join(" / ") : "";
     if (w.kind === "pattern") {
-      return "Coupures très régulières (toutes les ~" + Math.round((w.period_ms || 0) / 1000) + " s) sur " + agents +
-        " : un autre appareil partage probablement le même profil VPN. Créez un profil par appareil.";
+      return I18N.t("netui.vpn_pattern", { period: Math.round((w.period_ms || 0) / 1000), agents: agents });
     }
-    return "Deux appareils (" + agents + ") arrivent " + (w.kind === "same_time" ? "en même temps" : "à quelques minutes d'écart") +
-      " par la même adresse " + w.address + " : s'ils passent par un VPN, ils partagent probablement le même profil. Créez un profil par appareil.";
+    return w.kind === "same_time" ? I18N.t("netui.vpn_same_time", { agents: agents, address: w.address })
+      : I18N.t("netui.vpn_minutes_apart", { agents: agents, address: w.address });
   }
 
   function netView(net) {
     /* state.net (station 0.106.0+) -> indicateur de l'en-tête et détail ; null = station sans sonde. */
-    if (!net || typeof net !== "object" || !NET_LEVELS[net.level]) return null;
+    const levels = netLevels();
+    if (!net || typeof net !== "object" || !levels[net.level]) return null;
     const rows = [
-      ["Perte (60 s / 10 s)", netNumber(net.loss_pct, "%") + " / " + netNumber(net.loss_pct_10, "%")],
-      ["Aller-retour (p95 / moyen)", netNumber(net.rtt_ms, "ms") + " / " + netNumber(net.rtt_mean_ms, "ms")],
-      ["Gigue", netNumber(net.jitter_ms, "ms")],
-      ["Réseau du client", NET_TYPES[net.net_type] || "inconnu"],
+      [I18N.t("netui.row_loss"), netNumber(net.loss_pct, "%") + " / " + netNumber(net.loss_pct_10, "%")],
+      [I18N.t("netui.row_rtt"), netNumber(net.rtt_ms, "ms") + " / " + netNumber(net.rtt_mean_ms, "ms")],
+      [I18N.t("netui.row_jitter"), netNumber(net.jitter_ms, "ms")],
+      [I18N.t("netui.row_client_net"), netTypes()[net.net_type] || I18N.t("netui.type_unknown")],
     ];
-    if (net.outage) rows.unshift(["COUPURE EN COURS", Number.isFinite(net.outage_s) ? "depuis " + netDuration(net.outage_s) : ""]);
+    if (net.outage) rows.unshift([I18N.t("netui.row_outage_now"), Number.isFinite(net.outage_s) ? I18N.t("netui.since", { duration: netDuration(net.outage_s) }) : ""]);
     const last = net.last_outage;
     if (last && typeof last === "object") {
-      rows.push(["Dernière coupure", netDuration(last.duration_s) + ", il y a " + netDuration(last.ago_s) + " — " +
-                 (last.diagnosis ? "tronçon probable : " + (NET_DIAGNOSES[last.diagnosis] || last.diagnosis) : "diagnostic en cours…")]);
+      rows.push([I18N.t("netui.row_last_outage"), I18N.t("netui.last_outage", { duration: netDuration(last.duration_s), ago: netDuration(last.ago_s),
+        diagnosis: last.diagnosis ? I18N.t("netui.probable_segment", { diagnosis: netDiagnoses()[last.diagnosis] || last.diagnosis })
+          : I18N.t("netui.diagnosis_pending") })]);
     }
-    const probes = [];
+    const probes = [], probeNames = netProbes();
     for (const [name, p] of Object.entries(net.probes && typeof net.probes === "object" ? net.probes : {})) {
-      if (!p || !NET_PROBES[name]) continue;
-      probes.push([NET_PROBES[name] + " (" + (p.method === "tcp" ? "TCP" : "ping") + ")",
-                   (p.ok === false ? "NE RÉPOND PAS" : p.ok ? "répond" : "—") + " · perte " + netNumber(p.loss_pct, "%") +
-                   " · " + netNumber(p.rtt_ms, "ms")]);
+      if (!p || !probeNames[name]) continue;
+      probes.push([probeNames[name] + " (" + (p.method === "tcp" ? "TCP" : "ping") + ")",
+                   I18N.t("netui.probe_line", { answer: p.ok === false ? I18N.t("netui.probe_no_answer") : p.ok ? I18N.t("netui.probe_answers") : "—",
+                                                loss: netNumber(p.loss_pct, "%"), rtt: netNumber(p.rtt_ms, "ms") })]);
     }
     const th = net.thresholds || {};
     const vpn = (Array.isArray(net.vpn) ? net.vpn : []).filter((w) => w && typeof w.address === "string")
@@ -543,11 +572,12 @@
     return {
       level: net.level, bars: NET_BARS[net.level], outage: !!net.outage, rows: rows, probes: probes, vpn: vpn,
       weak: net.level === "red",                                              // « Liaison faible » (conduite, Android Auto)
-      title: "Liaison avec la station : " + NET_LEVELS[net.level] + (net.outage ? " (COUPURE)" : "") +
-        (Number.isFinite(net.rtt_ms) ? ", aller-retour " + net.rtt_ms + " ms" : "") +
-        (Number.isFinite(net.loss_pct) ? ", perte " + String(net.loss_pct).replace(".", ",") + " %" : "") + ". Touche : détail",
-      thresholds: Number.isFinite(th.rtt_warn) ? "Seuils : orange à " + th.rtt_warn + " ms ou " + netNumber(th.loss_warn, "%") +
-        ", rouge à " + th.rtt_alert + " ms ou " + netNumber(th.loss_alert, "%") : "",
+      title: I18N.t("netui.title", { level: levels[net.level] }) + (net.outage ? I18N.t("netui.title_outage") : "") +
+        (Number.isFinite(net.rtt_ms) ? I18N.t("netui.title_rtt", { rtt: net.rtt_ms + " ms" }) : "") +
+        (Number.isFinite(net.loss_pct) ? I18N.t("netui.title_loss", { loss: String(net.loss_pct).replace(".", ",") + " %" }) : "") +
+        I18N.t("netviews.title_suffix"),
+      thresholds: Number.isFinite(th.rtt_warn) ? I18N.t("netui.thresholds", { rtt_warn: th.rtt_warn + " ms", loss_warn: netNumber(th.loss_warn, "%"),
+                                                                             rtt_alert: th.rtt_alert + " ms", loss_alert: netNumber(th.loss_alert, "%") }) : "",
     };
   }
 
@@ -560,25 +590,26 @@
     const diag = Object.entries(stats.by_diagnosis || {}).sort((a, b) => b[1] - a[1]);
     const totalDiag = diag.reduce((t, [, n]) => t + n, 0) || 1;
     const outages = Array.isArray(stats.outages_list) ? stats.outages_list : [];
+    const diagnoses = netDiagnoses(), types = netTypes(), basis = netBasis();
     return {
       summary: [
-        ["Coupures", String(s.outages || 0)], ["Durée cumulée", netDuration(s.outage_s)],
-        ["Plus longue", netDuration(s.longest_s)], ["Temps connecté", netDuration(s.connected_s)],
-        ["Disponibilité", netNumber(s.availability_pct, "%")], ["Perte moyenne", netNumber(s.loss_pct, "%")],
+        [I18N.t("netui.sum_outages"), String(s.outages || 0)], [I18N.t("netui.sum_total"), netDuration(s.outage_s)],
+        [I18N.t("netui.sum_longest"), netDuration(s.longest_s)], [I18N.t("netui.sum_connected"), netDuration(s.connected_s)],
+        [I18N.t("netui.sum_availability"), netNumber(s.availability_pct, "%")], [I18N.t("netui.sum_loss"), netNumber(s.loss_pct, "%")],
       ],
       days: days.map((d) => ({ date: d.date, outages: d.outages || 0, fraction: (d.outages || 0) / maxDay,
                                short: (d.outages || 0) + " · " + netDuration(d.outage_s),
-                               detail: netDuration(d.outage_s) + " · perte " + netNumber(d.loss_pct, "%") + " · aller-retour p95 " + netNumber(d.rtt_p95_ms, "ms"),
+                               detail: I18N.t("netui.day_detail", { duration: netDuration(d.outage_s), loss: netNumber(d.loss_pct, "%"), rtt: netNumber(d.rtt_p95_ms, "ms") }),
                                hours: (Array.isArray(d.hours) ? d.hours : []).map((n) => ({ n: n, fraction: n / maxCell })) })),
-      diagnoses: diag.map(([code, n]) => ({ code: code, label: NET_DIAGNOSES[code] || code, count: n, fraction: n / totalDiag })),
-      types: Object.entries(stats.by_net_type || {}).map(([k, v]) => [NET_TYPES[k] || k,
-        netDuration((v.windows || 0) * 10) + " mesurés · " + (v.outages || 0) + " coupure(s) · perte " + netNumber(v.loss_pct, "%")]),
+      diagnoses: diag.map(([code, n]) => ({ code: code, label: diagnoses[code] || code, count: n, fraction: n / totalDiag })),
+      types: Object.entries(stats.by_net_type || {}).map(([k, v]) => [types[k] || k,
+        I18N.t("netui.type_line", { duration: netDuration((v.windows || 0) * 10), outages: v.outages || 0, loss: netNumber(v.loss_pct, "%") })]),
       outages: outages.map((o) => ({ when: o.start_ms, duration: netDuration((o.duration_ms || 0) / 1000),
-        diagnosis: NET_DIAGNOSES[o.diagnosis] || "indéterminé", agent: o.agent || "",
-        basis: (Array.isArray(o.basis) ? o.basis : []).map((b) => NET_BASIS[b] || b).join(", "),
-        kind: o.kind === "disconnect" ? "déconnexion" : "liaison ouverte", net: NET_TYPES[o.net_type] || "" })),
+        diagnosis: diagnoses[o.diagnosis] || I18N.t("netui.diag_unknown"), agent: o.agent || "",
+        basis: (Array.isArray(o.basis) ? o.basis : []).map((b) => basis[b] || b).join(", "),
+        kind: o.kind === "disconnect" ? I18N.t("netui.kind_disconnect") : I18N.t("netui.kind_open"), net: types[o.net_type] || "" })),
       devices: Array.isArray(stats.devices) ? stats.devices : [],
-      thresholds: Object.entries(stats.thresholds || {}).map(([k, t]) => ({ netType: k, label: NET_TYPES[k] || k,
+      thresholds: Object.entries(stats.thresholds || {}).map(([k, t]) => ({ netType: k, label: types[k] || k,
         inForce: t.in_force || {}, chosen: !!t.chosen, days: t.days || 0, proposed: t.proposed || {},
         rttHist: (t.rtt_hist || []).map((c) => ({ n: c[0], degraded: c[1] })),
         lossHist: (t.loss_hist || []).map((c) => ({ n: c[0], degraded: c[1] })) })),
@@ -588,29 +619,32 @@
 
   // Breizh Audio Box dans la chaîne d'émission (docs/breizh-cahier-des-charges.md, station 0.100.0+) : textes communs
   // à la page et à l'application ; voyant BZH vert (prêt, émission par Breizh), orange (repli), gris (autre, « Direct »).
-  const BREIZH_STATES = {
-    connecting: "recherche de Breizh…",
-    ready: "prêt : prochaines émissions par Breizh",
-    active: "émission par Breizh",
-    fallback: "REPLI : Breizh ne répond plus, émissions en direct",
-    refused: "liaison refusée par Breizh (voir le journal)",
-  };
+  function breizhStates() {
+    return {
+      connecting: I18N.t("breizh.state_connecting"),
+      ready: I18N.t("breizh.state_ready"),
+      active: I18N.t("breizh.state_active"),
+      fallback: I18N.t("breizh.state_fallback"),
+      refused: I18N.t("breizh.state_refused"),
+    };
+  }
   const BREIZH_EVENTS_MAX = 50;
 
   function breizhView(b) {
     /* state.breizh (opérateurs, station avec [breizh] enabled) ; null = rien à afficher. */
     if (!b || typeof b !== "object" || typeof b.state !== "string") return null;
-    const bypass = b.bypass === true, state = BREIZH_STATES[b.state] ? b.state : "connecting";
+    const states = breizhStates();
+    const bypass = b.bypass === true, state = states[b.state] ? b.state : "connecting";
     const level = bypass ? "off" : state === "ready" || state === "active" ? "ok" : state === "fallback" ? "warn" : "off";
     const gain = Number.isFinite(b.return_gain_db) ? b.return_gain_db : 0;
     const details = [];
     if (b.peer) details.push(String(b.peer).slice(0, 64));
-    if (Number.isFinite(b.rtt_ms)) details.push("aller-retour " + b.rtt_ms + " ms");
-    if (Number.isFinite(b.late) && b.late > 0) details.push(b.late + " bloc(s) partis sans traitement");
-    if (Number.isFinite(b.reactivate_in_s)) details.push("retour de Breizh dans " + b.reactivate_in_s + " s");
+    if (Number.isFinite(b.rtt_ms)) details.push(I18N.t("breizh.rtt", { rtt: b.rtt_ms }));
+    if (Number.isFinite(b.late) && b.late > 0) details.push(I18N.t("breizh.late", { late: b.late }));
+    if (Number.isFinite(b.reactivate_in_s)) details.push(I18N.t("breizh.reactivate_in", { seconds: b.reactivate_in_s }));
     return {
       state: state, route: b.route === "breizh" ? "breizh" : "direct", bypass: bypass, level: level,
-      text: bypass ? "« Direct » choisi : Breizh ignoré (" + BREIZH_STATES[state] + ")" : BREIZH_STATES[state],
+      text: bypass ? I18N.t("breizh.bypass", { state: states[state] }) : states[state],
       details: details.join(" · "), returnGainDb: gain,
       returnGainText: (gain > 0 ? "+" : gain < 0 ? "−" : "") + String(Math.abs(gain)).replace(".", ",") + " dB",
       canReactivate: !bypass && (state === "fallback" || state === "refused"),
@@ -621,13 +655,15 @@
   // FreeDV RADE V1 en réception (station 0.122.0+, fonction « freedv », docs/protocole.md § 17) : textes communs à la
   // page et à l'application. Voyant FDV : vert = voix (synchro tenue 2 s), orange = recherche d'un signal ou relance des
   // décodeurs, rouge = abandon après panne, gris = son du poste. La station décode ; le client n'affiche que son état.
-  const FREEDV_ENGINE = {
-    demarrage: "démarrage des décodeurs…",
-    ecoute: "écoute",
-    relance: "relance des décodeurs…",
-    panne: "décodeurs en panne",
-    arret: "arrêté",
-  };
+  function freedvEngine() {
+    return {
+      demarrage: I18N.t("freedv.engine_demarrage"),
+      ecoute: I18N.t("freedv.engine_ecoute"),
+      relance: I18N.t("freedv.engine_relance"),
+      panne: I18N.t("freedv.engine_panne"),
+      arret: I18N.t("freedv.engine_arret"),
+    };
+  }
 
   function freedvStars(note) {
     const n = Math.max(0, Math.min(5, Math.round(Number(note) || 0)));
@@ -643,21 +679,22 @@
     if (!f || typeof f !== "object" || typeof f.on !== "boolean") return null;
     const on = f.on, confirmed = on && f.confirmed === true;
     const snr = on && Number.isFinite(f.snr_db) ? f.snr_db : null;
-    const engine = FREEDV_ENGINE[f.engine] ? f.engine : "arret";
-    const ago = (t) => Number.isFinite(t) && Number.isFinite(nowS) ? "il y a " + durationText(nowS - t) : "";
+    const engines = freedvEngine();
+    const engine = engines[f.engine] ? f.engine : "arret";
+    const ago = (t) => Number.isFinite(t) && Number.isFinite(nowS) ? I18N.t("freedv.ago", { duration: durationText(nowS - t) }) : "";
     let level, text;
     if (!on) {
       level = f.fault ? "bad" : "off";
-      text = f.fault ? "FreeDV abandonné : " + String(f.fault).slice(0, 200) + " (son du poste remis)" : "Son du poste : mode FreeDV non choisi";
+      text = f.fault ? I18N.t("freedv.abandoned", { fault: String(f.fault).slice(0, 200) }) : I18N.t("freedv.rig_audio");
     } else if (engine === "demarrage" || engine === "relance" || engine === "panne") {
       level = "warn";
-      text = "FreeDV : " + FREEDV_ENGINE[engine];
+      text = I18N.t("freedv.engine_text", { state: engines[engine] });
     } else if (confirmed) {
       level = "ok";
-      text = "Voix FreeDV" + (snr !== null ? " · SNR " + freedvDb(snr) : "");
+      text = I18N.t("freedv.voice") + (snr !== null ? " · SNR " + freedvDb(snr) : "");
     } else {
       level = "warn";
-      text = "FreeDV : recherche d'un signal…";
+      text = I18N.t("freedv.searching");
     }
     const calls = (Array.isArray(f.calls) ? f.calls : []).filter((c) => c && typeof c.callsign === "string").slice(0, 10)
       .map((c) => ({ callsign: c.callsign.slice(0, 12), snrText: Number.isFinite(c.snr_db) ? c.snr_db + " dB" : "", when: ago(c.t) }));
@@ -690,17 +727,18 @@
     const status = stale ? "erreur" : (a.status === "ok" || a.status === "connexion" || a.status === "erreur" ? a.status : "erreur");
     const total = Number.isInteger(a.total) ? a.total : 0;
     let text;
-    if (stale) text = "Liste périmée : le module Activité FreeDV ne répond plus.";
-    else if (status === "connexion") text = "Connexion à FreeDV Reporter…";
-    else if (status === "erreur") text = String(a.message || "FreeDV Reporter injoignable").slice(0, 200);
-    else text = total + " station" + (total > 1 ? "s" : "") + " connectée" + (total > 1 ? "s" : "") + " à FreeDV Reporter"
-      + (a.locator ? "" : " · distances absentes ([freedv] locator)");
+    if (stale) text = I18N.t("freedvactivity.stale");
+    else if (status === "connexion") text = I18N.t("freedvactivity.connecting");
+    else if (status === "erreur") text = String(a.message || I18N.t("freedvactivity.unreachable")).slice(0, 200);
+    else text = I18N.plural("freedvactivity.connected", total) + (a.locator ? "" : I18N.t("freedvactivity.no_locator"));
     const km = (k) => Number.isInteger(k) ? " " + k + " km" : "";
     const other = (m) => m && m !== "RADEV1" ? String(m).slice(0, 12) : "";
     const rows = (stale || !Array.isArray(a.freqs) ? [] : a.freqs).filter((g) => g && Number.isInteger(g.f) && g.f > 0).slice(0, 20).map((g) => {
       const tx = (Array.isArray(g.tx) ? g.tx : []).slice(0, 8).map((t) => {
         const m = other(t.m);
-        return { text: String(t.c || "?").slice(0, 12) + km(t.km) + (t.on ? " ÉMET" + (m ? " " + m : "") : " (" + (Number.isInteger(t.min) ? t.min : "?") + " min" + (m ? ", " + m : "") + ")"), on: t.on === true };
+        const who = String(t.c || "?").slice(0, 12) + km(t.km);
+        return { text: t.on ? I18N.t("freedvactivity.tx_on", { who: who, mode: m ? " " + m : "" })
+          : I18N.t("freedvactivity.tx_off", { who: who, min: Number.isInteger(t.min) ? t.min : "?", mode: m ? ", " + m : "" }), on: t.on === true };
       });
       const rx = (Array.isArray(g.rx) ? g.rx : []).slice(0, 6).map((r) => String(r.c || "?").slice(0, 12) + km(r.km)
         + (Number.isFinite(r.snr) ? " " + r.snr + " dB" : "") + (other(r.m) ? " (" + other(r.m) + ")" : ""));
@@ -724,17 +762,20 @@
 
   // Traitements du micro par le navigateur, selon l'environnement (demande de l'utilisateur, 2026-10-29 : coupures en
   // émission). Le contrôle automatique de gain reste TOUJOURS coupé (il fausserait le niveau d'émission).
-  const MIC_PROFILES = {
-    quiet: { label: "Micro intégré, pièce calme", echo: true, noise: false },
-    noisy: { label: "Micro intégré, pièce bruyante", echo: true, noise: true },
-    headset_nr: { label: "Micro-casque avec réduction de bruit", echo: false, noise: false },
-    headset: { label: "Micro-casque sans réduction de bruit", echo: false, noise: true },
-    custom: { label: "Personnalisé", echo: null, noise: null },
-  };
+  function micProfiles() {
+    return {
+      quiet: { label: I18N.t("micprofiles.quiet"), echo: true, noise: false },
+      noisy: { label: I18N.t("micprofiles.noisy"), echo: true, noise: true },
+      headset_nr: { label: I18N.t("micprofiles.headset_nr"), echo: false, noise: false },
+      headset: { label: I18N.t("micprofiles.headset"), echo: false, noise: true },
+      custom: { label: I18N.t("micprofiles.custom"), echo: null, noise: null },
+    };
+  }
 
   function micConstraints(profile, custom) {
     /* {echoCancellation, noiseSuppression, autoGainControl} pour getUserMedia ; profil inconnu = pièce calme. */
-    const p = MIC_PROFILES[profile] || MIC_PROFILES.quiet;
+    const profiles = micProfiles();
+    const p = profiles[profile] || profiles.quiet;
     const c = custom || {};
     return { echoCancellation: p.echo === null ? c.echo !== false : p.echo,
              noiseSuppression: p.noise === null ? c.noise === true : p.noise, autoGainControl: false };
@@ -746,16 +787,14 @@
        jusqu'au débranchement, et tout autre logiciel, navigateur compris, reçoit alors NotReadableError. */
     const name = err && err.name ? err.name : String(err);
     const why = {
-      NotReadableError: "le micro est occupé ou bloqué par son pilote : fermez le logiciel qui l'utilise peut-être en mode exclusif " +
-        "(logiciel audio, Breizh Audio Box…) ; s'il reste bloqué, débranchez puis rebranchez le micro et reconnectez-vous",
-      AbortError: "le micro n'a pas démarré : débranchez puis rebranchez-le et reconnectez-vous",
-      NotAllowedError: "accès refusé : autorisez le micro pour cette page (cadenas de la barre d'adresse) et, sous Windows, " +
-        "dans Paramètres > Confidentialité > Microphone (« Autoriser les applications de bureau »)",
-      SecurityError: "accès refusé par le navigateur (page HTTPS exigée)",
-      NotFoundError: "aucun micro trouvé : vérifiez qu'il est branché et activé dans les paramètres de son de Windows",
-      OverconstrainedError: "le micro choisi n'existe plus (débranché ou renommé) : choisissez-le de nouveau dans la liste",
+      NotReadableError: () => I18N.t("client.mic_err_notreadable"),
+      AbortError: () => I18N.t("client.mic_err_abort"),
+      NotAllowedError: () => I18N.t("client.mic_err_notallowed"),
+      SecurityError: () => I18N.t("client.mic_err_security"),
+      NotFoundError: () => I18N.t("client.mic_err_notfound"),
+      OverconstrainedError: () => I18N.t("client.mic_err_overconstrained"),
     }[name];
-    return "Micro refusé ou absent (" + name + ")" + (why ? " : " + why : "") + ". Réception seule.";
+    return why ? I18N.t("client.mic_refused_why", { name: name, why: why() }) : I18N.t("client.mic_refused", { name: name });
   }
 
   function clarifierText(hz) {
@@ -918,66 +957,62 @@
   // ---- journal des pertes de connexion
   const MAX_LOSSES = 10;
 
-  const LOSS_REASONS = {
-    datachannel_closed: { kind: "lost", title: "Canal de contrôle fermé",
-      explain: "Le canal de commande s'est fermé alors que la liaison était établie : la station, le réseau ou le VPN a coupé.",
-      hint: "Regarde le journal de la station à la même heure, puis le VPN et le signal du téléphone." },
-    connection_failed: { kind: "lost", title: "Liaison réseau échouée",
-      explain: "Le chemin réseau (UDP) entre le téléphone et la station n'est plus utilisable.",
-      hint: "Changement de réseau (Wi-Fi vers 4G), VPN coupé ou redémarré, ou redirection de port qui a expiré." },
-    connection_closed: { kind: "lost", title: "Liaison fermée",
-      explain: "Le navigateur a fermé la liaison WebRTC sans qu'on le lui demande.",
-      hint: "Souvent un changement de réseau ou la mise en veille de la page par Android." },
-    ice_failed: { kind: "lost", title: "Liaison réseau échouée (ICE)",
-      explain: "Le test de connectivité réseau a échoué : plus aucun chemin n'est utilisable entre le téléphone et la station.",
-      hint: "Vérifie le VPN, le pare-feu et que le trafic UDP n'est pas bloqué par le réseau." },
-    silence: { kind: "lost", title: "Plus de nouvelles de la station",
-      explain: "Aucun message n'est arrivé depuis plusieurs secondes alors que le canal paraissait ouvert : liaison gelée, réseau très dégradé ou page suspendue.",
-      hint: "Si la page était en arrière-plan ou l'écran verrouillé, Android l'a suspendue : reste au premier plan, ou utilise l'application." },
-    no_hello: { kind: "failed", title: "Canal de contrôle jamais ouvert",
-      explain: "La station a répondu, mais la liaison WebRTC ne s'est pas établie dans le délai : le trafic UDP est très probablement bloqué.",
-      hint: "VPN qui ne laisse pas passer l'UDP, pare-feu, NAT strict ou CGNAT : voir docs/acces-distant.md." },
-    network: { kind: "failed", title: "Station injoignable",
-      explain: "La requête de connexion n'a pas atteint la station.",
-      hint: "Vérifie l'adresse, le VPN, le Wi-Fi ou la 4G, et que la station est démarrée." },
-    auth: { kind: "failed", title: "Identifiants refusés",
-      explain: "La station a refusé l'identifiant ou le mot de passe, ou bloque temporairement après trop d'essais.",
-      hint: "Corrige le mot de passe ou attends quelques minutes." },
-    busy: { kind: "failed", title: "Station occupée",
-      explain: "La station a atteint son nombre maximal de connexions.", hint: "Déconnecte un autre appareil." },
-    refused: { kind: "failed", title: "Accès refusé par la station",
-      explain: "Le mot de passe est juste, mais la station refuse ce compte pour l'instant (compte désactivé ou expiré, visiteurs complets, opérateur absent).",
-      hint: "Lis le message de la station dans les détails." },
-    http: { kind: "failed", title: "Réponse inattendue de la station",
-      explain: "La station a répondu par une erreur HTTP.", hint: "Regarde le journal de la station." },
-    client_error: { kind: "failed", title: "Erreur dans le navigateur",
-      explain: "Le navigateur n'a pas pu préparer la liaison WebRTC.", hint: "Recharge la page ; si cela persiste, note le détail ci-dessous." },
-  };
+  function lossReasons() {
+    return {
+      datachannel_closed: { kind: "lost", title: I18N.t("texts.loss_datachannel_closed"),
+        explain: I18N.t("client.loss_datachannel_closed_explain"), hint: I18N.t("client.loss_datachannel_closed_hint") },
+      connection_failed: { kind: "lost", title: I18N.t("texts.loss_connection_failed"),
+        explain: I18N.t("client.loss_connection_failed_explain"), hint: I18N.t("client.loss_connection_failed_hint") },
+      connection_closed: { kind: "lost", title: I18N.t("texts.loss_connection_closed"),
+        explain: I18N.t("client.loss_connection_closed_explain"), hint: I18N.t("client.loss_connection_closed_hint") },
+      ice_failed: { kind: "lost", title: I18N.t("texts.loss_ice_failed"),
+        explain: I18N.t("client.loss_ice_failed_explain"), hint: I18N.t("client.loss_ice_failed_hint") },
+      silence: { kind: "lost", title: I18N.t("texts.loss_silence"),
+        explain: I18N.t("client.loss_silence_explain"), hint: I18N.t("client.loss_silence_hint") },
+      no_hello: { kind: "failed", title: I18N.t("client.loss_no_hello_title"),
+        explain: I18N.t("client.loss_no_hello_explain"), hint: I18N.t("client.loss_no_hello_hint") },
+      network: { kind: "failed", title: I18N.t("texts.loss_network"),
+        explain: I18N.t("client.loss_network_explain"), hint: I18N.t("client.loss_network_hint") },
+      auth: { kind: "failed", title: I18N.t("client.loss_auth_title"),
+        explain: I18N.t("client.loss_auth_explain"), hint: I18N.t("client.loss_auth_hint") },
+      busy: { kind: "failed", title: I18N.t("client.loss_busy_title"),
+        explain: I18N.t("client.loss_busy_explain"), hint: I18N.t("client.loss_busy_hint") },
+      refused: { kind: "failed", title: I18N.t("client.loss_refused_title"),
+        explain: I18N.t("client.loss_refused_explain"), hint: I18N.t("client.loss_refused_hint") },
+      http: { kind: "failed", title: I18N.t("texts.loss_http"),
+        explain: I18N.t("client.loss_http_explain"), hint: I18N.t("client.loss_http_hint") },
+      client_error: { kind: "failed", title: I18N.t("client.loss_client_error_title"),
+        explain: I18N.t("client.loss_client_error_explain"), hint: I18N.t("client.loss_client_error_hint") },
+    };
+  }
 
   function describeLoss(entry, formatTime) {
     const fmt = formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
     const d = entry.details || {};
     const info = [];
-    if (d.sessionS !== null && d.sessionS !== undefined) info.push("session " + (d.sessionS >= 60 ? Math.floor(d.sessionS / 60) + " min " + (d.sessionS % 60) + " s" : d.sessionS + " s"));
-    if (d.lastMsgAgoS !== null && d.lastMsgAgoS !== undefined) info.push("dernier message il y a " + d.lastMsgAgoS + " s");
-    if (d.lastRttMs !== null && d.lastRttMs !== undefined) info.push("dernier temps de réponse " + d.lastRttMs + " ms");
-    if (d.pingFailures) info.push(d.pingFailures + " sondage(s) sans réponse");
-    if (d.ptt) info.push("PTT " + d.ptt + (d.txMine ? " (ton émission : coupée par la station faute de signal de vie)" : ""));
-    if (d.online === false) info.push("le téléphone n'avait PLUS de réseau");
-    else if (d.online === true) info.push("réseau du téléphone : en ligne");
-    if (d.visible === false) info.push("page MASQUÉE (arrière-plan)");
-    if (d.connectionState) info.push("liaison : " + d.connectionState);
+    if (d.sessionS !== null && d.sessionS !== undefined) info.push(I18N.t("client.loss_session", { duration: d.sessionS >= 60 ? Math.floor(d.sessionS / 60) + " min " + (d.sessionS % 60) + " s" : d.sessionS + " s" }));
+    if (d.lastMsgAgoS !== null && d.lastMsgAgoS !== undefined) info.push(I18N.t("client.loss_last_msg", { seconds: d.lastMsgAgoS }));
+    if (d.lastRttMs !== null && d.lastRttMs !== undefined) info.push(I18N.t("client.loss_last_rtt", { ms: d.lastRttMs }));
+    if (d.pingFailures) info.push(I18N.t("client.loss_ping_failures", { n: d.pingFailures }));
+    if (d.ptt) info.push("PTT " + d.ptt + (d.txMine ? " " + I18N.t("client.loss_tx_mine") : ""));
+    if (d.online === false) info.push(I18N.t("client.loss_offline"));
+    else if (d.online === true) info.push(I18N.t("client.loss_online"));
+    if (d.visible === false) info.push(I18N.t("client.loss_hidden"));
+    if (d.connectionState) info.push(I18N.t("client.loss_connection_state", { state: d.connectionState }));
     if (d.iceState) info.push("ICE : " + d.iceState);
-    if (d.dcState) info.push("canal : " + d.dcState);
+    if (d.dcState) info.push(I18N.t("client.loss_dc_state", { state: d.dcState }));
     if (d.reconnect) {
-      const outcome = { ok: "réussie", timeout: "abandonnée (délai écoulé)", auth: "abandonnée (identifiants refusés)", refused: "abandonnée (accès refusé par la station)", cancelled: "annulée" }[d.reconnect.outcome] || d.reconnect.outcome;
-      info.push("reconnexion automatique " + outcome + " après " + d.reconnect.seconds + " s, " + d.reconnect.attempts + " essai(s)");
+      const outcome = { ok: () => I18N.t("client.reconnect_ok"), timeout: () => I18N.t("client.reconnect_timeout"),
+                        auth: () => I18N.t("client.reconnect_auth"), refused: () => I18N.t("client.reconnect_refused"),
+                        cancelled: () => I18N.t("client.reconnect_cancelled") }[d.reconnect.outcome];
+      info.push(I18N.t("client.loss_reconnect", { outcome: outcome ? outcome() : d.reconnect.outcome, seconds: d.reconnect.seconds, attempts: d.reconnect.attempts }));
     }
     if (d.detail) info.push(d.detail);
-    const lines = [(entry.kind === "failed" ? "Échec de connexion" : "Perte de connexion") + " — " + fmt(entry.t),
-                   "Raison : " + entry.title, "Explication : " + entry.explain, "Piste : " + entry.hint, "Détails : " + (info.join(" · ") || "aucun")];
+    const lines = [entry.kind === "failed" ? I18N.t("client.loss_head_failed", { time: fmt(entry.t) }) : I18N.t("client.loss_head_lost", { time: fmt(entry.t) }),
+                   I18N.t("client.loss_reason", { title: entry.title }), I18N.t("client.loss_explain", { explain: entry.explain }),
+                   I18N.t("client.loss_hint", { hint: entry.hint }), I18N.t("client.loss_details", { details: info.join(" · ") || I18N.t("client.loss_no_details") })];
     if (Array.isArray(entry.logs) && entry.logs.length) {
-      lines.push("Dernières lignes du journal :");
+      lines.push(I18N.t("client.loss_logs"));
       for (const l of entry.logs) lines.push("  " + fmt(l.t).split(" ").pop() + "  " + l.text);
     }
     return lines.join("\n");
@@ -985,8 +1020,9 @@
 
   function lossSummary(entry, formatTime) {
     const fmt = formatTime || ((t) => new Date(t).toLocaleString("fr-FR"));
-    const back = entry.details && entry.details.reconnect && entry.details.reconnect.outcome === "ok" ? " · reconnecté en " + entry.details.reconnect.seconds + " s" : "";
-    return fmt(entry.t) + " · " + entry.title + (entry.kind === "failed" ? " (échec de connexion)" : "") + back;
+    const back = entry.details && entry.details.reconnect && entry.details.reconnect.outcome === "ok"
+      ? " · " + I18N.t("client.loss_reconnected_in", { seconds: entry.details.reconnect.seconds }) : "";
+    return fmt(entry.t) + " · " + entry.title + (entry.kind === "failed" ? " " + I18N.t("client.loss_failed_suffix") : "") + back;
   }
 
   function loadLosses(storage) {
@@ -1087,7 +1123,7 @@
       this.closed = false;
       this.keepAwake = opts.keepAwake !== false;
       this.clientId = opts.clientId;
-      this.ui.status(auto ? "Reconnexion…" : "Connexion…", "busy");
+      this.ui.status(auto ? I18N.t("client.status_reconnecting") : I18N.t("rigparts.connecting"), "busy");
       let iceServers = [];                                              // la station indique ses serveurs STUN (vide : réseau local/VPN)
       this.rigAudio = [];
       try {
@@ -1095,7 +1131,7 @@
         iceServers = (config.ice_servers || []).map((url) => ({ urls: url }));
         this.rigAudio = Array.isArray(config.rig_audio) ? config.rig_audio : [];
       } catch (err) {
-        this.ui.log("Configuration réseau de la station indisponible : connexion sans serveur STUN.", "warn");
+        this.ui.log(I18N.t("client.no_stun"), "warn");
       }
       let pc;
       try {
@@ -1112,7 +1148,7 @@
         let mic = false;
         if (opts.useMic) {
           if (!this.env.isSecureContext || !this.env.getUserMedia) {
-            this.ui.log("Micro indisponible : il faut une page HTTPS. Réception seule.", "warn");
+            this.ui.log(I18N.t("client.mic_needs_https"), "warn");
           } else {
             try {
               const processing = opts.audioProcessing !== false;
@@ -1121,11 +1157,10 @@
               if (opts.micDeviceId) audio.deviceId = { exact: opts.micDeviceId };
               const stream = await this.env.getUserMedia({ audio: audio });
               const track = stream.getAudioTracks()[0];
-              const label = track.label || "micro sans nom";
+              const label = track.label || I18N.t("client.mic_unnamed");
               if (!opts.ignoreRigWarning && matchesRigDevice(label, this.rigAudio)) {
                 track.stop();
-                this.ui.log("Micro REFUSÉ : « " + label + " » est une entrée/sortie audio du poste lui-même (la réception serait renvoyée dans l'émission). " +
-                            "Choisis un autre micro, ou coche « Ce n'est pas le poste » si c'est une erreur. Réception seule.", "bad");
+                this.ui.log(I18N.t("client.mic_is_rig", { label: label }), "bad");
               } else {
                 // Égaliseur et effets (voice.js) : la piste envoyée sort de la chaîne ; en cas d'échec, le micro tel quel
                 let sent = track, sentStream = stream;
@@ -1134,15 +1169,15 @@
                     const voice = this.env.voiceChain(stream);
                     if (voice && voice.track) { this.voice = voice; sent = voice.track; sentStream = voice.stream || stream; }
                   } catch (err) {
-                    this.ui.log("Égaliseur indisponible (" + (err && err.message ? err.message : err) + ") : voix sans traitement.", "warn");
+                    this.ui.log(I18N.t("client.eq_unavailable", { error: err && err.message ? err.message : err }), "warn");
                   }
                 }
                 this.rawMic = track;
                 this.micTrack = sent;
-                this.micTrack.enabled = false;                         // fermé tant que l'émission n'est pas confirmée
+                this.micTrack.enabled = false;                         // fermé tant que l'émission n'est pas confirmée (i18n-ok)
                 pc.addTrack(this.micTrack, sentStream);
                 mic = true;
-                this.ui.log("Micro utilisé : " + label + ".", "");
+                this.ui.log(I18N.t("client.mic_used", { label: label }), "");
               }
             } catch (err) {
               this.ui.log(micErrorText(err), "warn");
@@ -1167,7 +1202,7 @@
         pc.onconnectionstatechange = () => {
           if (pc.connectionState === "failed") this._onClosed("connection_failed");
           else if (pc.connectionState === "closed") this._onClosed("connection_closed");
-          else if (pc.connectionState === "disconnected") this.ui.log("Liaison réseau instable (disconnected) : elle peut se rétablir seule.", "warn");
+          else if (pc.connectionState === "disconnected") this.ui.log(I18N.t("client.link_unstable"), "warn");
         };
         pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === "failed") this._onClosed("ice_failed"); };
 
@@ -1181,16 +1216,16 @@
             device: this.device, agent: this.env.agent || "page",
             lang: I18N.lang });                                        // textes de la station dans cette langue (lot T1)
         } catch (netErr) {
-          throw Object.assign(new Error("La station est injoignable (réseau, VPN ou adresse incorrecte)."), { code: "network", detail: String(netErr && netErr.message || netErr) });
+          throw Object.assign(new Error(I18N.t("client.err_network")), { code: "network", detail: String(netErr && netErr.message || netErr) });
         }
-        if (res.status === 401) throw Object.assign(new Error("Identifiant ou mot de passe refusé (ou trop d'essais : attends quelques minutes)."), { code: "auth" });
+        if (res.status === 401) throw Object.assign(new Error(I18N.t("client.err_auth")), { code: "auth" });
         const said = res.body && typeof res.body.message === "string" ? res.body.message.slice(0, 200) : "";   // refus d'accès (visiteurs)
-        if (res.status === 403) throw Object.assign(new Error(said || "Accès refusé par la station."), { code: "refused", detail: said });
-        if (res.status === 503) throw Object.assign(new Error(said || "La station est occupée (trop de connexions)."), { code: "busy", detail: said });
-        if (res.status !== 200) throw Object.assign(new Error("La station a répondu " + res.status + "."), { code: "http", detail: "HTTP " + res.status });
-        if (this._token !== token) throw Object.assign(new Error("connexion annulée"), { code: "cancelled" });
+        if (res.status === 403) throw Object.assign(new Error(said || I18N.t("client.err_refused")), { code: "refused", detail: said });
+        if (res.status === 503) throw Object.assign(new Error(said || I18N.t("client.err_busy")), { code: "busy", detail: said });
+        if (res.status !== 200) throw Object.assign(new Error(I18N.t("client.err_http", { status: res.status })), { code: "http", detail: "HTTP " + res.status });
+        if (this._token !== token) throw Object.assign(new Error(I18N.t("client.err_cancelled")), { code: "cancelled" });
         await pc.setRemoteDescription(res.body);
-        this._helloTimer = this.env.setTimeout(() => {                  // la liaison WebRTC doit s'ouvrir : sinon l'UDP est bloqué
+        this._helloTimer = this.env.setTimeout(() => {                  // la liaison WebRTC doit s'ouvrir : sinon l'UDP est bloqué (i18n-ok)
           this._helloTimer = null;
           if (!this.connected && !this.closed) this._failAttempt("no_hello");
         }, auto ? RECONNECT_HELLO_MS : HELLO_TIMEOUT_MS);
@@ -1200,7 +1235,7 @@
         const entry = this._buildEntry(err.code || "client_error", Object.assign({}, err.detail ? { detail: err.detail } : (err.code ? {} : { detail: String(err && err.message || err) })));
         this.disconnect(true);
         this._credentials = null;
-        this.ui.status("Erreur", "bad");
+        this.ui.status(I18N.t("client.status_error"), "bad");
         this._recordLoss(entry);
         throw err;
       }
@@ -1213,7 +1248,7 @@
       if (this._nudgeTimer !== null) { this.env.clearTimeout(this._nudgeTimer); this._nudgeTimer = null; }
       this.pendingHz = null;
       if (this.net) { this.net = null; this.netLostAt = this._epoch(); }   // les résumés restent : remis à la reconnexion
-      for (const entry of this.pending.values()) { entry.reject(new Error("déconnecté")); }
+      for (const entry of this.pending.values()) { entry.reject(new Error(I18N.t("client.err_disconnected"))); }
       this.pending.clear();
       this._releaseWakeLock();
       if (this.micTrack) { try { this.micTrack.enabled = false; this.micTrack.stop(); } catch (e) { /* déjà arrêtée */ } this.micTrack = null; }
@@ -1230,19 +1265,20 @@
       if (!silent) {                                                    // déconnexion voulue : jamais de reconnexion automatique, mot de passe oublié
         if (this.reconnecting) this._finishReconnect("cancelled");
         this._credentials = null;
-        this.ui.status("Déconnecté", ""); if (wasConnected) this.ui.log("Déconnecté.", "");
+        this.ui.status(I18N.t("rigparts.disconnected"), ""); if (wasConnected) this.ui.log(I18N.t("rigsession.disconnected"), "");
       }
     }
 
     _buildEntry(code, extra) {
       /* Rapport de la perte : raison, contexte (réseau, page, temps de réponse, PTT) et dernières lignes du journal. */
-      const reason = LOSS_REASONS[code] || LOSS_REASONS.client_error;
+      const reasons = lossReasons();
+      const reason = reasons[code] || reasons.client_error;
       const now = this.env.now();
       const p = this._ptt();
       const dcState = this.dc ? this.dc.readyState : null;
       const wasConnected = this.connected;
       return {
-        t: this._epoch(), kind: wasConnected ? "lost" : "failed", code: code in LOSS_REASONS ? code : "client_error",
+        t: this._epoch(), kind: wasConnected ? "lost" : "failed", code: code in reasons ? code : "client_error",
         title: reason.title, explain: reason.explain, hint: reason.hint,
         details: Object.assign({
           sessionS: wasConnected && this.connectedAt ? Math.round((now - this.connectedAt) / 1000) : null,
@@ -1272,7 +1308,7 @@
       this.disconnect(true);
       if (this.reconnecting) { this._attemptEnded(code); return; }
       this._credentials = null;
-      this.ui.status("Erreur", "bad");
+      this.ui.status(I18N.t("client.status_error"), "bad");
       this.ui.log(entry.title + " : " + entry.explain, "bad");
       this._recordLoss(entry);
     }
@@ -1284,14 +1320,14 @@
       const entry = this._buildEntry(code);
       this.disconnect(true);
       if (wasConnected && this._credentials && this.autoWindowS > 0) {                        // micro-coupure : on retente sans redemander le mot de passe
-        this.ui.log("Connexion perdue : " + entry.title + ". Reconnexion automatique pendant " + this.autoWindowS + " s.", "bad");
+        this.ui.log(I18N.t("rigsession.lost_reconnect", { cause: entry.title, seconds: this.autoWindowS }), "bad");
         this._recordLoss(entry);
         this._startReconnect(entry);
         return;
       }
       this._credentials = null;
-      this.ui.status("Déconnecté", "bad");
-      this.ui.log((wasConnected ? "Connexion perdue : " : "Connexion impossible : ") + entry.title + ". L'émission éventuelle est coupée par la station.", wasConnected ? "bad" : "warn");
+      this.ui.status(I18N.t("rigparts.disconnected"), "bad");
+      this.ui.log(wasConnected ? I18N.t("rigsession.lost", { cause: entry.title }) : I18N.t("client.connect_impossible", { cause: entry.title }), wasConnected ? "bad" : "warn");
       this._recordLoss(entry);
       if (wasConnected) this._linkAlert("failed");                   // sans reconnexion automatique : la liaison est perdue pour de bon
     }
@@ -1302,7 +1338,7 @@
       const now = this.env.now();
       this.reconnecting = { entry: entry, startedAt: now, deadline: now + this.autoWindowS * 1000, attempts: 0,
                             nextAt: now + RECONNECT_FIRST_DELAY_MS, busy: false, lastTitle: entry.title, alertAt: now };
-      this.ui.status("Reconnexion…", "busy");
+      this.ui.status(I18N.t("client.status_reconnecting"), "busy");
       this._linkAlert("lost");
       this._reconnectUi();
       this._reconnectTimer = this.env.setInterval(() => this._reconnectTick(), RECONNECT_TICK_MS);
@@ -1341,7 +1377,8 @@
       const r = this.reconnecting;
       if (!r) return;
       r.busy = false;
-      r.lastTitle = (LOSS_REASONS[code] || LOSS_REASONS.client_error).title;
+      const reasons = lossReasons();
+      r.lastTitle = (reasons[code] || reasons.client_error).title;
       if (code === "auth" || code === "refused") { this._giveUp(code); return; }                           // identifiants refusés : on n'insiste jamais (la station bloque après 5 essais)
       r.nextAt = this.env.now() + RECONNECT_RETRY_MS * Math.min(r.attempts, 3);
       this._reconnectUi();
@@ -1351,7 +1388,7 @@
       const r = this.reconnecting;
       const seconds = Math.round((this.env.now() - r.startedAt) / 1000), attempts = r.attempts;
       this._finishReconnect("ok");
-      this.ui.log("Reconnecté après " + seconds + " s (" + attempts + " essai" + (attempts > 1 ? "s" : "") + "). Recoche « Émission autorisée » pour émettre.", "");
+      this.ui.log(I18N.plural("client.reconnected", attempts, { seconds: seconds }), "");
       this._linkAlert("restored");                                     // la station est en RÉCEPTION : rien ne reprend tout seul
     }
 
@@ -1361,10 +1398,11 @@
       this.disconnect(true);                                                          // coupe aussi un essai en cours
       this._credentials = null;
       this._finishReconnect(outcome);
-      const text = { timeout: "Reconnexion abandonnée : plus de liaison après " + this.autoWindowS + " s.",
-                     auth: "Reconnexion abandonnée : identifiants refusés par la station.",
-                     refused: "Reconnexion abandonnée : accès refusé par la station (compte, visiteurs complets ou opérateur absent)." }[outcome];
-      if (text) { this.ui.status("Déconnecté", "bad"); this.ui.log(text, "bad"); this._linkAlert("failed"); } else this.ui.status("Déconnecté", "");
+      const why = { timeout: () => I18N.t("rigsession.giveup_timeout", { seconds: this.autoWindowS }),
+                    auth: () => I18N.t("rigsession.giveup_auth"),
+                    refused: () => I18N.t("client.giveup_refused_why") }[outcome];
+      const text = why ? I18N.t("rigsession.giveup", { why: why() }) : "";
+      if (text) { this.ui.status(I18N.t("rigparts.disconnected"), "bad"); this.ui.log(text, "bad"); this._linkAlert("failed"); } else this.ui.status(I18N.t("rigparts.disconnected"), "");
     }
 
     _finishReconnect(outcome) {
@@ -1404,13 +1442,13 @@
 
     send(cmd, params, timeoutMs) {
       return new Promise((resolve, reject) => {
-        if (!this.dc || this.dc.readyState !== "open") { reject(new Error("non connecté")); return; }
+        if (!this.dc || this.dc.readyState !== "open") { reject(new Error(I18N.t("client.err_not_connected"))); return; }
         if (this.isListener() && !LISTENER_COMMANDS.includes(cmd)) {                  // visiteur : aucune requête vers la station
-          resolve({ type: "result", ok: false, reason: "forbidden", detail: "compte visiteur" });
+          resolve({ type: "result", ok: false, reason: "forbidden", detail: I18N.t("client.listener_account") });
           return;
         }
         const id = this.nextId++;
-        const timeout = this.env.setTimeout(() => { this.pending.delete(id); reject(new Error("pas de réponse de la station")); }, timeoutMs || COMMAND_TIMEOUT_MS);
+        const timeout = this.env.setTimeout(() => { this.pending.delete(id); reject(new Error(I18N.t("client.no_reply"))); }, timeoutMs || COMMAND_TIMEOUT_MS);
         this.pending.set(id, { resolve: (m) => { this.env.clearTimeout(timeout); resolve(m); },
                                reject: (e) => { this.env.clearTimeout(timeout); reject(e); } });
         this._sendRaw(Object.assign({ cmd: cmd, id: id }, params || {}));
@@ -1423,7 +1461,7 @@
       this.lastMessageAt = this.env.now();
       if (this._txSilenceAlerted) {                                     // la station répond de nouveau (silence bref pendant l'émission)
         this._txSilenceAlerted = false;
-        this.ui.log("La station répond de nouveau.", "");
+        this.ui.log(I18N.t("rigsession.station_back"), "");
         this._linkAlert("restored");
       }
       if (msg.type === "hello") {
@@ -1433,7 +1471,7 @@
         this.connectedAt = this.env.now(); this.pingFailures = 0; this.lastRttMs = null;
         if (this.timer !== null) this.env.clearInterval(this.timer);                // un second « hello » ne doit pas doubler la minuterie
         this.timer = this.env.setInterval(() => this._tick(), HEARTBEAT_TICK_MS);
-        this.ui.status("Connecté", "ok");
+        this.ui.status(I18N.t("rigparts.connected"), "ok");
         this.ui.connected(true);
         const caps = msg.capabilities;
         this.ui.modes(caps && Array.isArray(caps.modes) ? caps.modes : []);
@@ -1451,7 +1489,7 @@
                                    && msg.role !== "listener");
         this.powerOffered = !!(Array.isArray(msg.features) && msg.features.includes("power") && msg.role !== "listener");
         this._sdrStart(msg);
-        this.ui.log("Connecté à la station (protocole " + msg.protocol + ").", "");
+        this.ui.log(I18N.t("client.connected_protocol", { protocol: msg.protocol }), "");
         this._acquireWakeLock();
         if (this.reconnecting) this._reconnected();
       } else if (msg.type === "memories") {
@@ -1464,10 +1502,11 @@
         const entry = this.pending.get(msg.id);
         if (entry) { this.pending.delete(msg.id); entry.resolve(msg); }
       } else if (msg.type === "error") {
-        this.ui.log("Erreur de la station : " + msg.code + (msg.detail ? " (" + msg.detail + ")" : ""), "warn");
+        this.ui.log(msg.detail ? I18N.t("rigsession.station_error_detail", { code: msg.code, detail: msg.detail })
+          : I18N.t("rigsession.station_error", { code: msg.code }), "warn");
       } else if (msg.type === "bye") {                                  // la station ferme la connexion : pas de reconnexion automatique
         this._credentials = null;
-        this.ui.log("La station a fermé la connexion : " + String(msg.message || msg.reason || "").slice(0, 200), "bad");
+        this.ui.log(I18N.t("rigsession.closed_by_station", { reason: String(msg.message || msg.reason || "").slice(0, 200) }), "bad");
       } else if (msg.type === "module") {
         this._onModule(msg);
       } else if (msg.type === "beeps") {                                // réglé depuis un autre appareil
@@ -1579,9 +1618,10 @@
     _onFreedvEvent(msg) {
       /* Indicatif décodé et abandon après panne : journal de la page ; la séquence notée s'affiche par state.freedv. */
       if (msg.kind === "callsign" && typeof msg.callsign === "string") {
-        this.ui.log("FreeDV : indicatif " + msg.callsign.slice(0, 12) + " décodé" + (Number.isFinite(msg.snr_db) ? " (SNR " + msg.snr_db + " dB)." : "."), "");
+        this.ui.log(Number.isFinite(msg.snr_db) ? I18N.t("rigsession.freedv_callsign_snr", { callsign: msg.callsign.slice(0, 12), snr: msg.snr_db })
+          : I18N.t("rigsession.freedv_callsign", { callsign: msg.callsign.slice(0, 12) }), "");
       } else if (msg.kind === "fault") {
-        this.ui.log("FreeDV abandonné : " + String(msg.cause || "décodeurs en panne").slice(0, 200) + ". Son du poste remis.", "warn");
+        this.ui.log(I18N.t("rigsession.freedv_fault", { cause: String(msg.cause || I18N.t("rigsession.freedv_fault_default")).slice(0, 200) }), "warn");
       }
       if (this.ui.freedvEvent) { try { this.ui.freedvEvent(msg); } catch (e) { /* affichage seulement */ } }
     }
@@ -1593,7 +1633,7 @@
       this.breizhEvents = (this.breizhEvents || []).concat([entry]).slice(-BREIZH_EVENTS_MAX);
       const alarm = entry.event === "fallback" && this._mineActive();
       const level = ["fallback", "lost", "refused"].includes(entry.event) ? (alarm ? "bad" : "warn") : "";
-      this.ui.log("Breizh Audio Box : " + entry.detail, level);
+      this.ui.log(I18N.t("rigsession.breizh_event", { detail: entry.detail }), level);
       if (this.ui.breizhEvent) { try { this.ui.breizhEvent(entry, alarm); } catch (e) { /* affichage seulement */ } }
     }
 
@@ -1609,7 +1649,7 @@
       const call = !!before && before.state === "standby" && status.state === "open";      // appel reçu : bip discret
       if (call && status.last_call) {
         const c = status.last_call;
-        this.ui.log("SELCALL : appel " + c.code + " reçu (décalage " + (c.delta_hz > 0 ? "+" : "") + c.delta_hz + " Hz, SNR " + c.snr_db + " dB) : son ouvert.", "");
+        this.ui.log(I18N.t("rigsession.selcall_call_detail", { code: c.code, offset: (c.delta_hz > 0 ? "+" : "") + c.delta_hz, snr: c.snr_db }), "");
       }
       if (this.ui.selcall) this.ui.selcall(status, call);
     }
@@ -1641,10 +1681,10 @@
       if (this.micTrack) this.micTrack.enabled = this._mineTx();       // micro ouvert seulement en TX confirmé
       if (this.voice) { try { this.voice.setTx(this._mineTx()); } catch (e) { /* affichage seulement */ } }   // traîne coupée au retour en RX
       const active = this._mineActive();
-      if (this._wasActive && !active) {                                // fin d'émission : la case reste cochée (jusqu'à décision de l'utilisateur)
+      if (this._wasActive && !active) {                                // fin d'émission : la case reste cochée (jusqu'à décision de l'utilisateur) i18n-ok
         const p = this._ptt();
         const why = cutText(p && p.last_cut_reason);
-        this.ui.log("Retour en réception" + (why ? " (" + why + ")" : "") + ".", "");
+        this.ui.log(why ? I18N.t("client.back_to_rx_why", { why: why }) : I18N.t("client.back_to_rx"), "");
       }
       this._wasActive = active;
       this._trackSpectrum();
@@ -1688,20 +1728,21 @@
       try {
         res = await this.send("power_on", { how: this.powerRun.how }, POWER_ON_TIMEOUT_MS);
       } catch (err) {
-        res = { ok: false, reason: "no_reply", detail: "pas de réponse de la station" };
+        res = { ok: false, reason: "no_reply", detail: I18N.t("client.no_reply") };
       }
       const run = this.powerRun;
       if (!run) return res;
       if (res && res.ok) {
         run.status = "done";
-        run.done = res.result === "already_on" ? "Le poste était déjà allumé." : "TRX allumé : " + String(res.rig || "").slice(0, 120);
+        run.done = res.result === "already_on" ? I18N.t("rigsession.power_already_on")
+          : I18N.t("rigsession.power_on_done", { rig: String(res.rig || "").slice(0, 120) });
         this.ui.log(run.done, "");
       } else {
         run.status = "error";
         const text = res && typeof res.detail === "string" && res.detail && res.reason !== "power_busy"
           ? res.detail.slice(0, 300) + (res.ort ? " [" + String(res.ort).slice(0, 12) + "]" : "")
           : reasonText(res && res.reason, res && res.detail, res && res.ort);
-        run.error = { text: "Allumage impossible : " + text, reason: res && res.reason, step: res && res.step };
+        run.error = { text: I18N.t("rigsession.power_on_failed", { detail: text }), reason: res && res.reason, step: res && res.step };
         if (res && res.step && !(run.steps[res.step] && run.steps[res.step].status === "error")) {
           run.steps[res.step] = { status: "error", detail: res.detail, ort: res.ort };
         }
@@ -1723,8 +1764,8 @@
       /* Arrêt du poste à distance, CONFIRMÉ par l'opérateur dans la page (STOP maintenu 3 s, puis confirmation). */
       if (!this.connected || !this.powerOffered) return { ok: false, reason: "power_disabled" };
       const res = await this.send("power_off", { confirm: true });
-      if (res && res.ok) this.ui.log("Poste éteint à distance.", "");
-      else this.ui.log("Arrêt du poste refusé : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      if (res && res.ok) this.ui.log(I18N.t("rigsession.power_off_done"), "");
+      else this.ui.log(I18N.t("rigsession.power_off_refused", { detail: reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn");
       return res;
     }
 
@@ -1748,8 +1789,8 @@
       if (key === this._spectrumKey) return;
       const before = this._spectrumKey;
       this._spectrumKey = key;
-      if (sp.state === "error") this.ui.log("Spectre HF : problème de configuration. " + String(sp.message || sp.code || "").slice(0, 400), "warn");
-      else if (sp.state === "ok" && before && before.startsWith("error")) this.ui.log("Spectre HF de nouveau disponible.", "");
+      if (sp.state === "error") this.ui.log(I18N.t("client.spectrum_error", { message: String(sp.message || sp.code || "").slice(0, 400) }), "warn");
+      else if (sp.state === "ok" && before && before.startsWith("error")) this.ui.log(I18N.t("client.spectrum_back"), "");
     }
 
     _trackBand(now, rig, active) {
@@ -1798,7 +1839,7 @@
       const add = (key, label, text, fraction) => { if (key in lv) instruments.push({ key, label, text, fraction }); };
       add("COMP_METER", "COMP", Number(lv.COMP_METER).toFixed(1) + " dB", Math.min(1, Math.max(0, lv.COMP_METER / 30)));
       add("VD_METER", "Vd", Number(lv.VD_METER).toFixed(1) + " V", Math.min(1, Math.max(0, (lv.VD_METER - 10) / 6)));
-      add("TEMP_METER", "Temp", Math.round(lv.TEMP_METER) + " °C", Math.min(1, Math.max(0, (lv.TEMP_METER - 20) / 50)));
+      add("TEMP_METER", I18N.t("controls.temp_meter"), Math.round(lv.TEMP_METER) + " °C", Math.min(1, Math.max(0, (lv.TEMP_METER - 20) / 50)));
       if ("ATT" in lv) instruments.push({ key: "ATT", label: "ATT", text: lv.ATT > 0 ? Math.round(lv.ATT) + " dB" : "off", fraction: 0 });
       const swr = "SWR" in lv ? { fraction: Math.min(1, Math.max(0, (lv.SWR - 1) / 2)), text: Number(lv.SWR).toFixed(1) } : null;
       const alcFraction = "ALC" in lv ? Math.min(1, Math.max(0, lv.ALC)) : null;
@@ -1827,7 +1868,7 @@
         frequency: formatFrequency(rig.frequency_hz), mode: modeLabel(rig.mode),
         passband: rig.passband_hz === null || rig.passband_hz === undefined ? "" : rig.passband_hz + " Hz",
         sText: sMeterText(rig.strength_db), sFraction: sMeterFraction(rig.strength_db),
-        pttState: state, pttLabel: PTT_LABELS[state] || state, mine: mine, owner: p.owner || null, other: other,
+        pttState: state, pttLabel: pttLabels()[state] || state, mine: mine, owner: p.owner || null, other: other,
         tot: state === "TX" && p.tot_remaining_s !== null && p.tot_remaining_s !== undefined ? Math.round(p.tot_remaining_s) : null,
         totWarning: !!p.tot_warning, fault: p.fault || "",
         rxLevel: audio.rx_db === undefined ? "—" : audio.rx_db + " dBFS", txLevel: audio.tx_db === undefined ? "—" : audio.tx_db + " dBFS",
@@ -1847,7 +1888,7 @@
       if (!this.env.requestWakeLock) {
         if (!this._wakeWarned) {
           this._wakeWarned = true;
-          this.ui.log("Écran maintenu allumé indisponible (il faut une page HTTPS et un navigateur récent) : l'écran s'éteindra.", "warn");
+          this.ui.log(I18N.t("client.wake_unavailable"), "warn");
         }
         return;
       }
@@ -1856,9 +1897,9 @@
         if (!this.connected || this.wakeLock) { try { await lock.release(); } catch (e) { /* déjà relâché */ } return; }
         this.wakeLock = lock;
         if (lock.addEventListener) lock.addEventListener("release", () => { if (this.wakeLock === lock) this.wakeLock = null; });
-        if (!this._wakeLogged) { this._wakeLogged = true; this.ui.log("Écran maintenu allumé tant que cette page est au premier plan.", ""); }
+        if (!this._wakeLogged) { this._wakeLogged = true; this.ui.log(I18N.t("client.wake_on"), ""); }
       } catch (err) {
-        this.ui.log("Écran non maintenu allumé (" + (err && err.name ? err.name : err) + ") : mode économie de batterie ?", "warn");
+        this.ui.log(I18N.t("client.wake_failed", { error: err && err.name ? err.name : err }), "warn");
       }
     }
 
@@ -1877,7 +1918,7 @@
       if (this.lastMessageAt && now - this.lastMessageAt > STALE_MS) { this._onClosed("silence"); return; }    // la station envoie son état plusieurs fois par seconde
       if (!this._txSilenceAlerted && this.lastMessageAt && now - this.lastMessageAt > TX_SILENCE_MS && this._mineActive()) {
         this._txSilenceAlerted = true;                                 // l'utilisateur parle peut-être dans le vide : on le prévient sans attendre la coupure
-        this.ui.log("Plus de nouvelles de la station depuis " + String(TX_SILENCE_MS / 1000).replace(".", ",") + " s pendant ton émission : arrête de parler.", "bad");
+        this.ui.log(I18N.t("rigsession.tx_silence"), "bad");                  // délai TX_SILENCE_MS (1,5 s) écrit dans le texte
         this._linkAlert("lost");
       }
       if (this._mineActive() || now < this.hbUntil) this._sendRaw({ cmd: "heartbeat" });
@@ -1908,8 +1949,8 @@
       if (!this.connected) return null;
       const mine = this._mineActive();
       const p = this._ptt();
-      if (!mine && !this.armed) { this.ui.log("Coche d'abord « Émission autorisée ».", "warn"); return null; }
-      if (!mine && p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : utilise STOP pour couper.", "warn"); return null; }
+      if (!mine && !this.armed) { this.ui.log(I18N.t("client.arm_first"), "warn"); return null; }
+      if (!mine && p && p.state !== "RX") { this.ui.log(I18N.t("rigsession.tx_busy", { owner: p.owner || "?" }), "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
       const res = await this.send("toggle");
       if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
@@ -1920,8 +1961,8 @@
       /* Réglage automatique du niveau de la trame d'après l'ALC : une ÉMISSION (ton par paliers), mêmes conditions. */
       if (!this.connected) return null;
       const p = this._ptt();
-      if (!this.armed) { this.ui.log("Coche d'abord « Émission autorisée » : le réglage automatique est une émission.", "warn"); return null; }
-      if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : réglage impossible.", "warn"); return null; }
+      if (!this.armed) { this.ui.log(I18N.t("client.calibrate_arm_first"), "warn"); return null; }
+      if (p && p.state !== "RX") { this.ui.log(I18N.t("client.calibrate_tx_busy", { owner: p.owner || "?" }), "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;
       const res = await this.send("selcall_calibrate");
       if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
@@ -1933,8 +1974,8 @@
          personne d'autre en émission) ; la station émet la trame du code armé, micro fermé. Annuler = stop(). */
       if (!this.connected) return null;
       const p = this._ptt();
-      if (!this.armed) { this.ui.log("Coche d'abord « Émission autorisée » : l'appel SELCALL est une émission.", "warn"); return null; }
-      if (p && p.state !== "RX") { this.ui.log("Une émission est en cours (" + (p.owner || "?") + ") : appel SELCALL impossible.", "warn"); return null; }
+      if (!this.armed) { this.ui.log(I18N.t("client.selcall_arm_first"), "warn"); return null; }
+      if (p && p.state !== "RX") { this.ui.log(I18N.t("rigsession.selcall_tx_busy", { owner: p.owner || "?" }), "warn"); return null; }
       this.hbUntil = this.env.now() + HEARTBEAT_GRACE_MS;            // battements dès la demande, comme pour le PTT
       const res = await this.send("selcall_send");
       if (!res.ok) { this.hbUntil = 0; this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn"); }
@@ -1976,8 +2017,10 @@
         now: this._epoch(), description: description, version: this.hello && this.hello.version,
         protocol: this.hello && this.hello.protocol, account: this.clientId, connected: this.connected,
         userAgent: dev.userAgent, screen: dev.screen, layout: dev.layout, theme: dev.theme,
-        rig: this.state ? formatFrequency(rig.frequency_hz) + " " + (rig.mode || "?") + ", liaison CAT " + (rig.connected ? "active" : "PERDUE") +
-             ", PTT " + (p ? p.state : "?") + (p && p.local_remaining_s ? ", poste utilisé sur place" : "") : null,
+        rig: this.state ? I18N.t("problemreport.rig_line", { frequency: formatFrequency(rig.frequency_hz), mode: rig.mode || "?",
+                                                             cat: rig.connected ? I18N.t("problemreport.cat_active") : I18N.t("problemreport.cat_lost"),
+                                                             ptt: p ? p.state : "?" }) +
+             (p && p.local_remaining_s ? I18N.t("problemreport.local_use") : "") : null,
         spectrum: this.hello && this.hello.spectrum ? (sp.state || "?") + (sp.code ? " (" + sp.code + ")" : "") : null,
         rtt: this.lastRttMs, losses: this.losses, errors: this.pageErrors, logs: this.recentLogs,
       });
@@ -1986,7 +2029,7 @@
     async sendProblemReport(text) {
       /* Rangé sur la station (fichier texte), joint ensuite au rapport de dépannage de TRX Console (menu 6.3). */
       const res = await this.send("bug_report", { text: String(text).slice(0, MAX_REPORT_CHARS) });
-      if (res.ok) this.ui.log("Rapport envoyé à la station (" + res.name + ") : il sera joint au rapport de dépannage (TRX Console, menu 6.3).", "");
+      if (res.ok) this.ui.log(I18N.t("rigsession.bug_report_sent_name", { name: res.name }), "");
       else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
@@ -1995,7 +2038,7 @@
       /* « Reprendre la main » : lève l'attente « poste utilisé sur place ». Ne commande rien au poste ; refusé par la
          station pendant une émission au micro du poste. */
       const res = await this.send("local_release");
-      if (res.ok) this.ui.log("Main reprise : le PTT à distance est de nouveau permis.", "");
+      if (res.ok) this.ui.log(I18N.t("client.local_released"), "");
       else this.ui.log(reasonText(res.reason, res.detail, res.ort), "warn");
       return res;
     }
@@ -2006,7 +2049,7 @@
       if (this._ptt() && this._ptt().state !== "RX") { this.ui.log(reasonText("tx_active"), "warn"); return { ok: false, reason: "tx_active" }; }
       const rig = this.state && this.state.rig ? this.state.rig : {};
       const target = pillModeTarget(rig.mode, this._caps().modes);
-      if (!target) { this.ui.log("Le poste ne propose pas ce mode données (USB-D ou LSB-D).", "warn"); return { ok: false }; }
+      if (!target) { this.ui.log(I18N.t("client.no_data_mode"), "warn"); return { ok: false }; }
       if (target === rig.mode) return { ok: true };
       return this.setMode(target, 0);
     }
@@ -2084,7 +2127,7 @@
 
     _presetsExpected() {
       /* Station avec port B (Icom) : la largeur par Hamlib RÉÉCRIRAIT les largeurs des préréglages du poste ; pas
-         d'ancien bouton tant que le préréglage n'est pas lisible (port B en panne ou en pause). */
+         d'ancien bouton tant que le préréglage n'est pas lisible (port B en panne ou en pause). i18n-ok */
       return !!(this.hello && this.hello.spectrum && this.hello.spectrum.source === "civ_port");
     }
 
@@ -2215,22 +2258,22 @@
     async kickListener(account) {
       /* Opérateur : déconnecter un visiteur (il peut revenir ; pour l'en empêcher, désactiver son compte sur la station). */
       const res = await this.send("listener_kick", { account: account });
-      if (!res.ok) this.ui.log("Déconnexion du visiteur refusée : " + (refusalOnly(res.reason) || res.reason), "warn");
+      if (!res.ok) this.ui.log(I18N.t("client.kick_refused", { detail: refusalOnly(res.reason) || res.reason }), "warn");
       return res;
     }
 
     async setListenersOpen(on) {
       /* Opérateur : commutateur « Écoute des visiteurs » (mémorisé sur la station ; fermer déconnecte les visiteurs). */
       const res = await this.send("listeners_open", { on: !!on });
-      this.ui.log(res.ok ? (on ? "Écoute des visiteurs ouverte." : "Écoute des visiteurs fermée : visiteurs déconnectés.")
-        : "Écoute des visiteurs : " + (refusalOnly(res.reason) || res.reason), res.ok ? "" : "warn");
+      this.ui.log(res.ok ? (on ? I18N.t("client.listeners_opened") : I18N.t("client.listeners_closed"))
+        : I18N.t("client.listeners_refused", { detail: refusalOnly(res.reason) || res.reason }), res.ok ? "" : "warn");
       return res;
     }
 
     _voiceProfilesResult(res) {
       /* Liste à jour des profils d'égaliseur de CE compte, ou null si la station refuse (motif dans le journal). */
       if (res && res.ok && Array.isArray(res.profiles)) { this.voiceProfileList = res.profiles; return res.profiles; }
-      if (res && !res.ok) this.ui.log("Profils de voix : " + (res.detail || refusalOnly(res.reason) || res.reason), "warn");
+      if (res && !res.ok) this.ui.log(I18N.t("rigsession.voice_profiles_refused", { detail: res.detail || refusalOnly(res.reason) || res.reason }), "warn");
       return null;
     }
 
@@ -2254,7 +2297,7 @@
 
     async swrStart(lowHz, highHz, points, powerPct) {
       const res = await this.send("swr_start", { low_hz: lowHz, high_hz: highHz, points: points, power_pct: powerPct });
-      if (!res.ok) this.ui.log("Mesure de TOS : " + reasonText(res.reason, res.detail, res.ort), "warn");
+      if (!res.ok) this.ui.log(I18N.t("rigsession.swr_refused", { detail: reasonText(res.reason, res.detail, res.ort) }), "warn");
       return res;
     }
 
@@ -2401,7 +2444,7 @@
     /* FreeDV (fonction « freedv », opérateurs) : mode de la station en réception ; refusé pendant l'émission. */
     async freedvSet(on) {
       const res = await this.send("freedv_set", { on: !!on });
-      if (res && !res.ok) this.ui.log("FreeDV : " + reasonText(res.reason, res.detail, res.ort), "warn");
+      if (res && !res.ok) this.ui.log(I18N.t("rigsession.freedv_refused", { detail: reasonText(res.reason, res.detail, res.ort) }), "warn");
       return res;
     }
 
@@ -2496,7 +2539,7 @@
       /* Action de l'opérateur (créer, inviter, rejoindre, partage…) ; refus écrit au journal, vue relue après un succès. */
       const res = await this.friends(action, args);
       if (res && res.ok) this.friendsRefresh().catch(() => {});
-      else this.ui.log("Amis : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      else this.ui.log(I18N.t("rigsession.friends_refused", { detail: reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn");
       return res;
     }
 
@@ -2537,7 +2580,7 @@
          code, vue relue après un succès. */
       const res = await this.monitoring(action, args);
       if (res && res.ok) this.monitoringRefresh().catch(() => {});
-      else this.ui.log("Monitoring : " + reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      else this.ui.log(I18N.t("rigsession.monitoring_refused", { detail: reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn");
       return res;
     }
 
@@ -2554,7 +2597,7 @@
       }
       const mx = typeof root !== "undefined" && root.TrxMonitoring ? root.TrxMonitoring : null;
       const bytes = mx ? mx.joinParts(parts) : null;
-      if (!bytes || bytes.length !== first.data.size) return { ok: false, reason: "report_incomplete", detail: "rapport incomplet" };
+      if (!bytes || bytes.length !== first.data.size) return { ok: false, reason: "report_incomplete", detail: I18N.t("client.report_incomplete") };
       return { ok: true, name: first.data.name, bytes: bytes };
     }
 
@@ -2590,7 +2633,7 @@
 
     async reopenListeners() {
       const res = await this.send("listeners_reopen");
-      this.ui.log(res.ok ? "Écoute des visiteurs rouverte." : (res.detail || refusalOnly(res.reason) || res.reason), res.ok ? "" : "warn");
+      this.ui.log(res.ok ? I18N.t("client.listeners_reopened") : (res.detail || refusalOnly(res.reason) || res.reason), res.ok ? "" : "warn");
       return res;
     }
 
@@ -2608,11 +2651,11 @@
       if (!this.rawMic || !this.rawMic.applyConstraints) return false;
       try {
         await this.rawMic.applyConstraints(wanted);
-        this.ui.log("Micro : écho " + (wanted.echoCancellation ? "annulé" : "non traité") + ", réduction de bruit "
-                    + (wanted.noiseSuppression ? "en service" : "coupée") + ".", "");
+        this.ui.log(I18N.t("client.mic_applied", { echo: wanted.echoCancellation ? I18N.t("client.mic_echo_on") : I18N.t("client.mic_echo_off"),
+                                                   noise: wanted.noiseSuppression ? I18N.t("client.mic_noise_on") : I18N.t("client.mic_noise_off") }), "");
         return true;
       } catch (e) {
-        this.ui.log("Réglage du micro appliqué à la prochaine connexion (" + (e && e.message ? e.message : e) + ").", "warn");
+        this.ui.log(I18N.t("client.mic_next_connection", { error: e && e.message ? e.message : e }), "warn");
         return false;
       }
     }
@@ -2631,7 +2674,7 @@
 
     onVisibility(hidden) {               // un navigateur en arrière-plan ralentit ses minuteries : on coupe avant
       if (hidden && this._mineActive()) {
-        this.ui.log("Page masquée : émission coupée par sécurité.", "warn");
+        this.ui.log(I18N.t("client.page_hidden_tx"), "warn");
         this.stop().catch(() => {});
       }
       const wasHidden = !!this._pageHidden;
@@ -2656,17 +2699,22 @@
              points: bytes.subarray(SPECTRUM_HEADER) };
   }
 
+  // Tables de textes : relues à chaque accès (getters), jamais calculées au chargement du script (catalogues pas encore là).
   const api = { I18N, refusalOnly, TrxClient, formatFrequency, sMeterText, sMeterFraction, levelFraction,
-                powerStepsView, powerBannerView, stopHoldChoices, POWER_STEPS_SHOWN,
-                reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
+                powerStepsView, powerBannerView, stopHoldChoices, get POWER_STEPS_SHOWN() { return powerStepsShown(); },
+                get PTT_LABELS() { return pttLabels(); }, get LOCAL_REASONS() { return localReasons(); },
+                get CLUSTER_TITLES() { return clusterTitles(); },
+                reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, get MODE_LABELS() { return modeLabels(); },
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,
                 squelchMarkerFraction, formatWidth, filterLabel, nearestIndex, AGC_CYCLE,
                 POWER_STEPS, powerLabel, nextPower, parseFrequencyEntry, frequencyDigits, nudgedFrequency, STEPS_HZ, BANDS, bandOf, adaptMode, orderModes, pillModeTarget, localView, tempView, versionLabel, formatProblemReport, clusterStatusView, bandSpotLevels,
-                loadBandMemory, rememberBand, bandTarget, LOSS_REASONS, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
+                loadBandMemory, rememberBand, bandTarget, get LOSS_REASONS() { return lossReasons(); }, describeLoss, lossSummary, loadLosses, MAX_LOSSES,
                 LINK_ALERTS, ALERT_VOLUMES, alertVolume, alertDurationMs, parseSpectrumFrame, clarifierView, clarifierText,
-                indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, MIC_PROFILES, micConstraints, micErrorText, ALC_OVERLOAD,
-                LISTENER_COMMANDS, presenceView, durationText, BREIZH_STATES, breizhView, FREEDV_ENGINE, freedvView, freedvStars,
+                indicatorsView, hostView, vfoLabel, preampNumber, favoriteBands, get MIC_PROFILES() { return micProfiles(); }, micConstraints, micErrorText, ALC_OVERLOAD,
+                LISTENER_COMMANDS, presenceView, durationText, get BREIZH_STATES() { return breizhStates(); }, breizhView,
+                get FREEDV_ENGINE() { return freedvEngine(); }, freedvView, freedvStars,
                 freedvActivityView, freedvQsyMode, freedvFreqText,
-                NET_DIAGNOSES, NET_TYPES, NET_LEVELS, netView, netStatsModel, vpnText, netDuration };
+                get NET_DIAGNOSES() { return netDiagnoses(); }, get NET_TYPES() { return netTypes(); }, get NET_LEVELS() { return netLevels(); },
+                netView, netStatsModel, vpnText, netDuration };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxWeb = api; }
 })(typeof window !== "undefined" ? window : globalThis);

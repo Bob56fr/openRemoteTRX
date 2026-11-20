@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Catalogues : ressources `/i18n/<domaine>.<langue>.json`, objets {clé: texte} avec des champs `{nom}`. Le domaine
  * « client » est le TRONC COMMUN copié à la compilation depuis `trxstation/i18n/` (mêmes textes que la station et la
- * page web : refus, coupures) ; le domaine « app » (`logic/src/main/resources/i18n/app.<langue>.json`, lot T2) porte
+ * page web : refus, coupures) ; le domaine « shared » (copié de même, lot T4) les autres textes communs à la page
+ * et à l'application (même clé des deux côtés) ; le domaine « app » (`logic/src/main/resources/i18n/app.<langue>.json`, lot T2) porte
  * les textes propres à l'application, clés `<fichier>.<nom>` (`rigsession.connecting`). Le français est la référence : une clé absente d'une langue retombe sur le français,
  * une clé absente partout s'affiche telle quelle (jamais d'exception : l'écran doit toujours s'afficher).
  */
@@ -25,7 +26,7 @@ object Tr {
      */
     val OFFERED = listOf("fr")
 
-    private val DOMAINS = listOf("client", "app")
+    private val DOMAINS = listOf("client", "shared", "app")
     private val json = Json { ignoreUnknownKeys = true }
     private val cache = ConcurrentHashMap<String, Map<String, String>>()
     private val FIELD = Regex("""\{([a-z_]+)\}""")

@@ -34,12 +34,8 @@ class ProblemReportTest {
 
     @Test
     fun `memes rubriques que la page`() {
-        for (label in listOf("=== Rapport de problème TRX distant ===", "\"Date : \"", "Ce qui s'est passé :", "(non décrit)",
-            "\"Station : \"", "\"version inconnue\"", "\", protocole \"", "\", compte \"", "\", connecté\"", "\", NON connecté\"",
-            "\"Appareil : \"", "\"Écran : \"", "\"Poste : \"", "\", liaison CAT \"", "\"PERDUE\"", "\", PTT \"",
-            "\", poste utilisé sur place\"", "\"Spectre HF : \"", "\"Dernier temps de réponse : \"")) {
-            assertTrue(page.contains(label.trim('"')), label)
-        }
+        val keys = PageI18n.appKeys("ProblemReport.kt").filter { it.startsWith("problemreport.") } - "problemreport.log_header"
+        PageI18n.assertSameTexts("client.js", "ProblemReport.kt", *keys.toTypedArray())
         assertTrue(page.contains("const MAX_REPORT_CHARS = ${ProblemReport.MAX_CHARS};"))
         assertTrue(page.contains(".slice(0, ${ProblemReport.DESCRIPTION_MAX})"))
     }

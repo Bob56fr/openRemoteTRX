@@ -4,13 +4,15 @@
    Les spots arrivent du module « cluster » (trxstation/cluster/publish.py) : instantané de la bande courante,
    puis changements ; seulement pendant que la vue HF est ouverte. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const FRESH_S = 120;            // spot de moins de 2 min : mis en évidence
   const FADE_TO = 0.35;           // opacité d'un spot en fin de vie
   const DEFAULT_TTL_S = 900;      // 15 min (durée de vie par défaut côté station)
   const KINDS = { cluster: "DX", rbn: "RBN", cb: "CB" };
-  const MODE_NAMES = { SSB: "BLU", AM: "AM", FM: "FM", FREEDV: "FreeDV", CW: "CW" };
+  const MODE_NAMES = { SSB: "spots.mode_ssb", AM: "AM", FM: "FM", FREEDV: "FreeDV", CW: "CW" };   // « spots.* » = clé du texte
 
   function cleanText(value, max) {
     return typeof value === "string" ? value.replace(/[\u0000-\u001f\u007f‪-‮⁦-⁩]/g, "").slice(0, max) : "";
@@ -74,9 +76,10 @@
   }
 
   function ageLabel(ageS) {
-    if (ageS < 60) return "à l'instant";
+    if (ageS < 60) return I18N.t("spots.age_now");
     const min = Math.floor(ageS / 60);
-    return min < 60 ? "il y a " + min + " min" : "il y a " + Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0");
+    return min < 60 ? I18N.t("spots.age_min", { min: min })
+      : I18N.t("spots.age_hours", { h: Math.floor(min / 60), min: String(min % 60).padStart(2, "0") });
   }
 
   function layoutLabels(spots, lowHz, highHz, widthPx, opts) {
@@ -127,8 +130,9 @@
   }
 
   function modeLabel(spot) {
-    const name = MODE_NAMES[spot.mode] || spot.mode || "?";
-    return spot.modeGuessed ? name + " (supposé)" : name;
+    const known = MODE_NAMES[spot.mode];
+    const name = known ? (known.startsWith("spots.") ? I18N.t(known) : known) : spot.mode || "?";
+    return spot.modeGuessed ? I18N.t("spots.mode_guessed", { name: name }) : name;
   }
 
   function kindLabel(kind) { return KINDS[kind] || "DX"; }
@@ -156,12 +160,11 @@
   }
 
   function sourceLabel(spot) {
-    return kindLabel(spot.kind) + (spot.de ? " de " + spot.de : "");
+    return spot.de ? I18N.t("spots.source_by", { kind: kindLabel(spot.kind), de: spot.de }) : kindLabel(spot.kind);
   }
 
   function healthLabel(state) {
-    return { green: "Cluster DX : toutes les sources connectées", orange: "Cluster DX : sources en partie connectées",
-             red: "Cluster DX : aucune source connectée", off: "Cluster DX désactivé" }[state] || "";
+    return ["green", "orange", "red", "off"].includes(state) ? I18N.t("spots.health_" + state) : "";
   }
 
   const api = { SpotBook, cleanSpot, ageSeconds, opacity, ageLabel, layoutLabels, sortList, modeLabel, kindLabel,

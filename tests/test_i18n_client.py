@@ -48,7 +48,7 @@ def test_catalogues_are_served_to_the_page_in_a_closed_list():
 
     from trxstation.gateway.api.server import I18N_FILES, make_app
 
-    assert set(I18N_FILES) == {f"client.{lang}.json" for lang in LANGS}
+    assert set(I18N_FILES) == {f"{domain}.{lang}.json" for domain in ("client", "shared", "page") for lang in LANGS}
 
     async def scenario():
         app = make_app(object(), object())
@@ -69,7 +69,7 @@ def test_catalogues_are_served_to_the_page_in_a_closed_list():
 def test_page_asks_the_route_the_station_serves():
     script = (ROOT / "trxstation" / "gateway" / "api" / "static" / "i18n.js").read_text(encoding="utf-8")
     assert '"i18n/" + domain + "." + lang + ".json"' in script
-    assert re.search(r'const DOMAINS = \["client"\]', script)
+    assert re.search(r'const DOMAINS = \["client", "shared", "page"\]', script)
 
 
 # ---------------------------------------------------------------- lot T1 : textes de la station dans la langue du client

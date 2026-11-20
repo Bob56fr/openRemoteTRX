@@ -102,8 +102,8 @@ class I18nAppTest {
             assertTrue(v.isNotBlank(), "texte vide : $k")
             assertTrue(!v.contains(Regex("""\{[^a-z_}]""")), "champ mal formé dans $k : $v")
         }
-        val clientKeys = load(File(common, "client.fr.json")).keys
-        assertEquals(emptySet(), fr.keys intersect clientKeys, "clé déjà dans le tronc commun")
+        val clientKeys = load(File(common, "client.fr.json")).keys + load(File(common, "shared.fr.json")).keys
+        assertEquals(emptySet(), fr.keys intersect clientKeys, "clé déjà dans le tronc commun ou les textes partagés")
         for (lang in Tr.LANGS - "fr") {
             val f = File(resources, "app.$lang.json")
             if (!f.exists()) continue                                     // langue pas encore traduite (lots T5, T6)
@@ -115,7 +115,8 @@ class I18nAppTest {
 
     @Test
     fun `chaque cle ecrite dans le code existe en francais`() {
-        val known = load(File(resources, "app.fr.json")).keys + load(File(common, "client.fr.json")).keys
+        val known = load(File(resources, "app.fr.json")).keys + load(File(common, "client.fr.json")).keys +
+            load(File(common, "shared.fr.json")).keys
         val call = Regex("""Tr\.(?:t|find|has|plural)\(\s*"([a-z0-9_.]+)"\s*[,)]""")
         val missing = (listOf(sources) + otherModules).flatMap(::kotlinFiles).flatMap { f ->
             call.findAll(f.readText(Charsets.UTF_8)).map { it.groupValues[1] }

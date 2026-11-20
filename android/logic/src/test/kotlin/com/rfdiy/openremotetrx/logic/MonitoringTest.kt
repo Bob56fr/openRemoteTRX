@@ -47,15 +47,9 @@ class MonitoringTest {
     }
 
     @Test
-    fun `memes textes que la page`() {
-        for (t in Monitoring.ROLES.values + Monitoring.STATES.values + Monitoring.PROFILES.map { it.second }) {
-            assertTrue(page.contains(t), "texte absent de monitoring.js : $t")
-        }
-        for (t in listOf("DEMANDE DE RAPPORT en attente", "DEMANDE D'ASSISTANCE en attente", "SANS NOUVELLES (alerte envoyée)",
-                         "rapport de dépannage en préparation", "Aucune nouvelle reçue pour l'instant.")) {
-            assertTrue(page.contains(t), "texte absent de monitoring.js : $t")
-        }
-    }
+    fun `memes textes que la page`() = PageI18n.assertSameTexts("monitoring.js", "Monitoring.kt", "monitoring.role_",
+        "monitoring.state_", "monitoring.profile_", "monitoring.report_pending", "monitoring.assist_pending",
+        "monitoring.silent", "monitoring.no_news_received")
 
     @Test
     fun `liaison - boutons selon le role et l etat, jamais de commande vers l autre station`() {

@@ -33,16 +33,10 @@ class FreeDvActivityTest {
 
     @Test
     fun `memes textes que la page`() {
-        val fn = Regex("function freedvActivityView\\(a, rigHz, nowS\\) \\{(.*?)\\n  \\}", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        for (t in listOf(FreeDvActivities.STALE_TEXT, FreeDvActivities.CONNECTING_TEXT, FreeDvActivities.DEFAULT_ERROR,
-                         FreeDvActivities.NO_LOCATOR, " connectée", " à FreeDV Reporter", " min", " km", " dB")) {
-            assertTrue(fn.contains("\"$t\""), t)
-        }
-        assertTrue(fn.contains("\" ÉMET\""), "ÉMET")
+        PageI18n.assertSameTexts("client.js", "FreeDvActivity.kt", "freedvactivity.stale", "freedvactivity.connecting",
+            "freedvactivity.unreachable", "freedvactivity.connected", "freedvactivity.no_locator", "freedvactivity.tx_")
         assertTrue(page.contains("const FREEDV_ACTIVITY_STALE_S = 60;"))
         assertTrue(page.contains("return rigMode === \"USB\" || rigMode === \"PKTUSB\" ? null : \"USB\";"))
-        val ui = File(repo, "trxstation/gateway/api/static/ui.js").readText()
-        for (t in listOf("\"QSY FreeDV : \"", "\" ◀ poste\"", "\"aucune activité HF\"")) assertTrue(ui.contains(t), t)
     }
 
     @Test

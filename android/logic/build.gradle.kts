@@ -26,7 +26,7 @@ dependencies {
 // compilation : mêmes textes que la station et la page web (cahier docs/application-traduction-cahier-des-charges.md)
 val i18nDir = layout.buildDirectory.dir("generated/i18n")
 val copyI18n by tasks.registering(Copy::class) {
-    from(rootProject.file("../trxstation/i18n")) { include("client.*.json") }
+    from(rootProject.file("../trxstation/i18n")) { include("client.*.json", "shared.*.json") }
     into(i18nDir.map { it.dir("i18n") })
 }
 sourceSets["main"].resources.srcDir(i18nDir)

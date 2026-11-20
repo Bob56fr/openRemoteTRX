@@ -5,7 +5,7 @@
    partagés tests/protocol/netprobe_vectors.json. Durées en ms entières sur l'horloge MONOTONE de celui qui envoie le
    battement. Rien ici n'agit sur le poste : la sonde mesure et affiche. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
 
   const LATE_MS = 5000, WINDOWS_MS = [10000, 60000], MIN_MEASURED_MS = 10000, RECENT_OUTAGE_MS = 120000;
   const RTT_EDGES_MS = [50, 100, 150, 200, 250, 300, 400, 600, 800, 1000];

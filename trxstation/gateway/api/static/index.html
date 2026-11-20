@@ -6,17 +6,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Station TRX</title>
+  <title data-t="index.page_title">Station TRX</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="client.css">
 </head>
 <body>
-<div id="splash" class="splash" title="Touche pour passer"><img src="splash.webp" alt="openremotetrx"></div>
+<div id="splash" class="splash" title="Touche pour passer" data-t-title="index.splash_title"><img src="splash.webp" alt="openremotetrx"></div>
 <div id="app" class="portrait">
 
   <!-- Écran de sécurité : le profil n'a pas d'interface pour cet appareil (voir layout.js) -->
   <section id="safe-screen" class="safe" hidden>
-    <div class="safe-title">Interface non disponible</div>
+    <div class="safe-title" data-t="index.safe_title">Interface non disponible</div>
     <p id="safe-text" class="note"></p>
     <div id="safe-body" class="safe-body"></div>
   </section>
@@ -25,15 +25,15 @@
   <header id="top">
     <div class="line1">
       <span id="blk-mode" class="modegrp"><span id="tx-flag" class="txflag" hidden>TX</span>
-      <span id="mode-pill" class="modepill listener-off" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)">—</span>
+      <span id="mode-pill" class="modepill listener-off" role="button" title="Touche : USB-D ⇄ LSB-D (USB → USB-D, LSB → LSB-D, autre mode → USB-D)" data-t-title="index.mode_pill_title">—</span>
       <span id="passband" class="dim"></span></span>
       <span class="grow"></span>
-      <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)">www.rf-diy.com</a>
-      <button id="net-bar" class="netbar" hidden title="Liaison avec la station : touche pour le détail"></button>
-      <button id="host-bar" class="hostbar listener-hide" hidden title="Machine de la station : touche pour la synthèse du matériel"><span id="host-fill" class="hostbar-fill"></span></button>
-      <span id="status" class="badge">déconnecté</span>
-      <button id="presence" class="chip presence" hidden title="Visiteurs en réception seule : touche pour voir la liste">🎧 0</button>
-      <span id="version" class="dim version" title="Version de la station" hidden></span>
+      <a id="site-link" class="sitelink" href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer" title="Site du projet (nouvel onglet)" data-t-title="index.site_link_title">www.rf-diy.com</a>
+      <button id="net-bar" class="netbar" hidden title="Liaison avec la station : touche pour le détail" data-t-title="index.net_bar_title"></button>
+      <button id="host-bar" class="hostbar listener-hide" hidden title="Machine de la station : touche pour la synthèse du matériel" data-t-title="index.host_bar_title"><span id="host-fill" class="hostbar-fill"></span></button>
+      <span id="status" class="badge" data-t="index.status">déconnecté</span>
+      <button id="presence" class="chip presence" hidden title="Visiteurs en réception seule : touche pour voir la liste" data-t-title="index.presence_title">🎧 0</button>
+      <span id="version" class="dim version" title="Version de la station" hidden data-t-title="index.version_title"></span>
     </div>
 
     <!-- Sonde de qualité réseau : détail de la liaison (accordéon, fermé par défaut) -->
@@ -41,32 +41,32 @@
       <table id="net-rows" class="netrows"></table>
       <div id="net-vpn"></div>
       <p id="net-thresholds" class="note"></p>
-      <div class="row"><button id="net-stats-open" class="chip listener-hide">Statistiques 30 jours</button><button id="net-detail-close" class="chip">Fermer</button></div>
+      <div class="row"><button id="net-stats-open" class="chip listener-hide" data-t="netviews.stats_30">Statistiques 30 jours</button><button id="net-detail-close" class="chip" data-t="common.close">Fermer</button></div>
     </div>
 
     <div id="blk-freq">
-    <div id="listener-badge" class="alert listener-badge" hidden>Visiteur — réception seule</div>
+    <div id="listener-badge" class="alert listener-badge" hidden data-t="rigparts.visitor">Visiteur — réception seule</div>
     <div id="presence-banner" class="alert warn" hidden></div>
     <div id="replay-banner" class="alert" hidden></div>
-    <div id="rig-alert" class="alert" hidden title="Toucher pour fermer"></div>
-    <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler">—</div>
-    <div id="voyants" class="voyants listener-off" title="Voyants du poste : allumé = en service"></div>
+    <div id="rig-alert" class="alert" hidden title="Toucher pour fermer" data-t-title="index.rig_alert_title"></div>
+    <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler" data-t-title="index.freq_title">—</div>
+    <div id="voyants" class="voyants listener-off" title="Voyants du poste : allumé = en service" data-t-title="index.voyants_title"></div>
     <div id="reconnect" class="reconnect" hidden>
-      <div id="reconnect-text" class="reconnect-text">RECONNEXION…</div>
-      <div class="reconnect-line"><span id="reconnect-sub" class="dim"></span><button id="reconnect-cancel" class="chip" hidden>Annuler</button></div>
+      <div id="reconnect-text" class="reconnect-text" data-t="drivingscreen.reconnecting">RECONNEXION…</div>
+      <div class="reconnect-line"><span id="reconnect-sub" class="dim"></span><button id="reconnect-cancel" class="chip" hidden data-t="common.cancel">Annuler</button></div>
     </div>
     </div>
 
     <div id="blk-smeter" class="meters">
       <div class="meter">
         <span class="mlabel">S</span>
-        <div class="mtrack s-track"><div id="sql-marker" class="sqlmark" title="Niveau du squelch" hidden></div><div id="smeter-mask" class="mmask"></div></div>
+        <div class="mtrack s-track"><div id="sql-marker" class="sqlmark" title="Niveau du squelch" hidden data-t-title="index.sql_marker_title"></div><div id="smeter-mask" class="mmask"></div></div>
         <span id="smeter-text" class="mval">—</span>
       </div>
       <div class="scale s-scale"><span class="at-1">1</span><span class="at-3">3</span><span class="at-5">5</span><span class="at-7">7</span><span class="at-9">9</span><span class="at-20">+20</span><span class="at-40">+40</span><span class="at-60">+60dB</span></div>
     </div>
 
-    <div id="txzone" class="txzone" title="Touche (ou double-touche) pour afficher le waterfall de l'audio reçu">
+    <div id="txzone" class="txzone" title="Touche (ou double-touche) pour afficher le waterfall de l'audio reçu" data-t-title="index.txzone_title">
       <div id="blk-po">
       <div class="meter">
         <span class="mlabel">Po</span>
@@ -97,7 +97,7 @@
     </div>
 
     <div id="waterfall" class="wf" hidden>
-      <div id="wf-plot" class="wf-plot" title="Touche (ou double-touche) pour revenir aux graphiques de puissance">
+      <div id="wf-plot" class="wf-plot" title="Touche (ou double-touche) pour revenir aux graphiques de puissance" data-t-title="index.wf_plot_title">
         <canvas id="wf-spec" class="wf-spec"></canvas>
         <canvas id="wf-fall" class="wf-fall"></canvas>
         <canvas id="wf-grid" class="wf-grid"></canvas>
@@ -105,62 +105,62 @@
       </div>
       <div id="wf-axis" class="wf-axis"></div>
       <div class="wf-buttons">
-        <button id="wf-speed" class="chip" title="Vitesse de défilement : lignes par seconde">VIT 12</button>
-        <button id="wf-width" class="chip" title="Bande audio affichée, de 0 Hz à N kHz">LARG 5k</button>
-        <button id="wf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
-        <button id="wf-peak" class="chip" title="Pics : constante de temps de la décroissance">PIC 2s</button>
+        <button id="wf-speed" class="chip" title="Vitesse de défilement : lignes par seconde" data-t-title="index.wf_speed_title" data-t="index.wf_speed">VIT 12</button>
+        <button id="wf-width" class="chip" title="Bande audio affichée, de 0 Hz à N kHz" data-t-title="index.wf_width_title" data-t="index.wf_width">LARG 5k</button>
+        <button id="wf-gain" class="chip" title="Sensibilité des couleurs, en dB" data-t-title="index.wf_gain_title">GAIN 0</button>
+        <button id="wf-peak" class="chip" title="Pics : constante de temps de la décroissance" data-t="index.wf_peak" data-t-title="index.wf_peak_title">PIC 2s</button>
         <span id="wf-peakinfo" class="dim"></span>
       </div>
     </div>
 
     <div class="chips listener-off">
-      <button id="ctl-nr" class="chip" title="Réducteur de bruit" hidden>NR</button>
-      <button id="ctl-nb" class="chip" title="Antiparasite (noise blanker)" hidden>NB</button>
-      <button id="ctl-preamp" class="chip" title="Préampli : arrêt, puis chaque valeur du poste" hidden>P.AMP</button>
-      <button id="ctl-att" class="chip" title="Atténuateur : arrêt ou marche" hidden>ATT</button>
-      <button id="ctl-aip" class="chip" title="IP+ (point d'interception)" hidden>IP+</button>
-      <button id="ctl-notch" class="chip" title="Notch : arrêt, automatique, manuel (appui long ou double clic : réglages)" hidden>NOTCH</button>
-      <button id="ctl-agc" class="chip" title="AGC : rapide, moyen, lent" hidden>AGC</button>
-      <button id="ctl-comp" class="chip" title="Compresseur de parole" hidden>COMP</button>
-      <button id="ctl-fil" class="chip" title="Filtre de réception : largeur suivante" hidden>FIL</button>
-      <button id="ctl-tuner" class="chip" title="Tuner d'antenne en service ou non" hidden>TUNER</button>
-      <button id="ctl-pwr" class="chip" title="Puissance d'émission : 5, 10, 25, 50, 80, 100 % puis retour au début" hidden>PWR</button>
+      <button id="ctl-nr" class="chip" title="Réducteur de bruit" hidden data-t-title="index.ctl_nr_title">NR</button>
+      <button id="ctl-nb" class="chip" title="Antiparasite (noise blanker)" hidden data-t-title="index.ctl_nb_title">NB</button>
+      <button id="ctl-preamp" class="chip" title="Préampli : arrêt, puis chaque valeur du poste" hidden data-t-title="index.ctl_preamp_title">P.AMP</button>
+      <button id="ctl-att" class="chip" title="Atténuateur : arrêt ou marche" hidden data-t-title="index.ctl_att_title">ATT</button>
+      <button id="ctl-aip" class="chip" title="IP+ (point d'interception)" hidden data-t-title="index.ctl_aip_title">IP+</button>
+      <button id="ctl-notch" class="chip" title="Notch : arrêt, automatique, manuel (appui long ou double clic : réglages)" hidden data-t-title="index.ctl_notch_title">NOTCH</button>
+      <button id="ctl-agc" class="chip" title="AGC : rapide, moyen, lent" hidden data-t-title="index.ctl_agc_title">AGC</button>
+      <button id="ctl-comp" class="chip" title="Compresseur de parole" hidden data-t-title="index.ctl_comp_title">COMP</button>
+      <button id="ctl-fil" class="chip" title="Filtre de réception : largeur suivante" hidden data-t-title="index.ctl_fil_title">FIL</button>
+      <button id="ctl-tuner" class="chip" title="Tuner d'antenne en service ou non" hidden data-t-title="index.ctl_tuner_title">TUNER</button>
+      <button id="ctl-pwr" class="chip" title="Puissance d'émission : 5, 10, 25, 50, 80, 100 % puis retour au début" hidden data-t-title="index.ctl_pwr_title">PWR</button>
     </div>
 
     <div class="pttrow listener-off">
       <button id="ptt" class="ptt" disabled>PTT</button>
-      <button id="stop" class="stop" disabled title="Appui : retour en réception immédiat. Maintenu 3 s : se déconnecter ou arrêter le TRX à distance">STOP<small id="stop-sub" class="stop-sub">appui long : déconnecter</small></button>
+      <button id="stop" class="stop" disabled title="Appui : retour en réception immédiat. Maintenu 3 s : se déconnecter ou arrêter le TRX à distance" data-t-title="index.stop_title">STOP<small id="stop-sub" class="stop-sub" data-t="powerviews.hold_disconnect">appui long : déconnecter</small></button>
     </div>
 
     <div class="subrow">
-      <label id="blk-armed" class="check listener-hide"><input id="armed" type="checkbox" disabled> Émission autorisée</label>
-      <button id="mini-wf-on" class="chip" hidden title="Petit waterfall HF avant les bandes : affiché ou masqué">WF</button>
-      <button id="sel-ind" class="chip sel-ind listener-hide" hidden title="SELCALL de la station : touche pour ouvrir son panneau">SEL</button>
-      <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)">EQ</button>
-      <button id="st-direct" class="chip st-direct" title="Spatialisation stéréo de la réception (casque) : marche / arrêt ; appui long : réglages">ST</button>
-      <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique">SCRAMBLER</button>
-      <button id="bzh-ind" class="chip bzh-ind listener-hide" hidden title="Breizh Audio Box : touche pour ouvrir sa rubrique">BZH</button>
-      <button id="fdv-ind" class="chip fdv-ind" hidden title="FreeDV : touche pour ouvrir sa rubrique">FDV</button>
-      <button id="dif-ind" class="chip dif-ind listener-hide" hidden title="Diffusion en direct : touche pour ouvrir sa rubrique">DIFFUSION</button>
+      <label id="blk-armed" class="check listener-hide"><input id="armed" type="checkbox" disabled> <span data-t="rigparts.armed">Émission autorisée</span></label>
+      <button id="mini-wf-on" class="chip" hidden title="Petit waterfall HF avant les bandes : affiché ou masqué" data-t-title="index.mini_wf_on_title">WF</button>
+      <button id="sel-ind" class="chip sel-ind listener-hide" hidden title="SELCALL de la station : touche pour ouvrir son panneau" data-t-title="index.sel_ind_title">SEL</button>
+      <button id="voice-direct" class="chip voice-direct listener-hide" title="Égaliseur et effets de voix : marche / arrêt (réglages : rubrique « Égaliseur paramétrique »)" data-t-title="index.voice_direct_title">EQ</button>
+      <button id="st-direct" class="chip st-direct" title="Spatialisation stéréo de la réception (casque) : marche / arrêt ; appui long : réglages" data-t-title="index.st_direct_title">ST</button>
+      <button id="scr-ind" class="chip scr-ind listener-hide" hidden title="Scrambler en service : touche pour ouvrir sa rubrique" data-t-title="index.scr_ind_title">SCRAMBLER</button>
+      <button id="bzh-ind" class="chip bzh-ind listener-hide" hidden title="Breizh Audio Box : touche pour ouvrir sa rubrique" data-t-title="index.bzh_ind_title">BZH</button>
+      <button id="fdv-ind" class="chip fdv-ind" hidden title="FreeDV : touche pour ouvrir sa rubrique" data-t-title="index.fdv_ind_title">FDV</button>
+      <button id="dif-ind" class="chip dif-ind listener-hide" hidden title="Diffusion en direct : touche pour ouvrir sa rubrique" data-t-title="index.dif_ind_title" data-t="diffusion.indicator">DIFFUSION</button>
       <label id="blk-sql" class="sql listener-off">SQL <input id="squelch" type="range" min="0" max="100" step="1" value="0" disabled><span id="squelch-text">—</span></label>
-      <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
+      <label id="blk-clar" class="sql listener-off" hidden title="Décalage du clarifieur (ΔTX / XIT : décale l'ÉMISSION ; RIT : la réception) ; refusé pendant l'émission" data-t-title="index.blk_clar_title"><span id="clar-name">ΔTX</span> <input id="clar" type="range" min="-9999" max="9999" step="10" value="0"><span id="clar-text">0 Hz</span></label>
     </div>
 
-    <div class="statusline"><span id="ptt-state" class="ptt-state rx">RÉCEPTION</span><span id="tot" class="note"></span></div>
+    <div class="statusline"><span id="ptt-state" class="ptt-state rx" data-t="texts.ptt_rx">RÉCEPTION</span><span id="tot" class="note"></span></div>
     <div id="local-banner" class="alert warn localbar" hidden>
       <span id="local-text" class="grow"></span>
-      <button id="local-release" class="chip" title="Débloque le PTT à distance avant la fin de l'attente (impossible pendant une émission au micro du poste)">Reprendre la main</button>
+      <button id="local-release" class="chip" title="Débloque le PTT à distance avant la fin de l'attente (impossible pendant une émission au micro du poste)" data-t="rigparts.release_local" data-t-title="index.local_release_title">Reprendre la main</button>
     </div>
     <div id="temp-banner" class="alert warn" hidden></div>
     <div id="power-banner" class="alert localbar" hidden>
       <span id="power-banner-text" class="grow"></span>
-      <button id="power-on" class="chip" title="Allume le poste par la CAT (ports série vérifiés par la station) ; aucune émission">Allumer le poste</button>
+      <button id="power-on" class="chip" title="Allume le poste par la CAT (ports série vérifiés par la station) ; aucune émission" data-t="powerviews.power_on" data-t-title="index.power_on_title">Allumer le poste</button>
     </div>
     <div id="blk-hfdock" class="hfdock" hidden>
-      <label class="check" title="Grand écran en paysage : le spectre HF du poste reste affiché en haut de la colonne de droite (consomme des données tant qu'il est affiché)"><input id="hf-dock-on" type="checkbox"> Waterfall HF permanent</label>
+      <label class="check" title="Grand écran en paysage : le spectre HF du poste reste affiché en haut de la colonne de droite (consomme des données tant qu'il est affiché)" data-t-title="index.hf_dock_on_label_title"><input id="hf-dock-on" type="checkbox"> <span data-t="index.hf_dock_on_label">Waterfall HF permanent</span></label>
     </div>
     <div id="blk-audiodock" class="audiodock" hidden>
-      <label class="check" title="Grand écran en paysage : le spectre de l'audio reçu reste affiché sous ces réglages (calculé par le navigateur, aucune donnée réseau en plus)"><input id="audio-dock-on" type="checkbox" checked> Spectre audio permanent</label>
+      <label class="check" title="Grand écran en paysage : le spectre de l'audio reçu reste affiché sous ces réglages (calculé par le navigateur, aucune donnée réseau en plus)" data-t-title="index.audio_dock_on_label_title"><input id="audio-dock-on" type="checkbox" checked> <span data-t="index.audio_dock_on_label">Spectre audio permanent</span></label>
     </div>
     <div id="audio-dock" class="audio-dock" hidden></div>
     <div id="mode-hint" class="alert warn" hidden></div>
@@ -172,123 +172,123 @@
     <div id="hf-dock" class="hf-dock" hidden></div>
 
     <details id="sec-connect" open>
-      <summary>Connexion</summary>
+      <summary data-t="index.connect_section">Connexion</summary>
       <div class="body">
         <form id="login-form" class="login-form" autocomplete="on">
-        <label>Identifiant <input id="client-id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
-        <label>Mot de passe <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"></label>
+        <label><span data-t="stationscreen.user">Identifiant</span> <input id="client-id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+        <label><span data-t="stationscreen.password">Mot de passe</span> <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"></label>
         </form>
-        <p id="ca-hint" class="note" hidden>Avertissement du navigateur, mot de passe jamais retenu ?
-          <a id="ca-link" href="station-ca.crt" download>Installer le certificat de la station</a> (une fois par appareil, guide de l'opérateur partie 4).</p>
-        <p class="note">Le mot de passe n'est jamais enregistré par cette page : utilise le gestionnaire de mots de passe de ton navigateur.</p>
-        <label class="check"><input id="use-mic" type="checkbox" checked> Utiliser le micro (HTTPS requis)</label>
-        <label>Micro <select id="mic-select"></select></label>
-        <label id="out-label">Sortie audio (son reçu) <select id="out-select"></select></label>
-        <label class="check"><input id="ignore-rig-warning" type="checkbox"> Ce n'est pas le poste : ignorer l'avertissement</label>
-        <label>Micro : environnement
+        <p id="ca-hint" class="note" hidden><span data-t="index.ca_hint_part1">Avertissement du navigateur, mot de passe jamais retenu ?</span>
+          <a id="ca-link" href="station-ca.crt" download data-t="index.ca_link">Installer le certificat de la station</a> <span data-t="index.ca_hint_part2">(une fois par appareil, guide de l'opérateur partie 4).</span></p>
+        <p class="note" data-t="index.password_not_saved">Le mot de passe n'est jamais enregistré par cette page : utilise le gestionnaire de mots de passe de ton navigateur.</p>
+        <label class="check"><input id="use-mic" type="checkbox" checked> <span data-t="index.use_mic_label">Utiliser le micro (HTTPS requis)</span></label>
+        <label><span data-t="index.mic_select_label">Micro</span> <select id="mic-select"></select></label>
+        <label id="out-label"><span data-t="index.out_label">Sortie audio (son reçu)</span> <select id="out-select"></select></label>
+        <label class="check"><input id="ignore-rig-warning" type="checkbox"> <span data-t="index.ignore_rig_warning_label">Ce n'est pas le poste : ignorer l'avertissement</span></label>
+        <label><span data-t="clusterandbeeps.mic_title">Micro : environnement</span>
           <select id="mic-profile"></select>
         </label>
         <div id="mic-custom" class="row" hidden>
-          <label class="check"><input id="mic-echo" type="checkbox" checked> Annulation d'écho</label>
-          <label class="check"><input id="mic-noise" type="checkbox"> Réduction de bruit du navigateur</label>
+          <label class="check"><input id="mic-echo" type="checkbox" checked> <span data-t="clusterandbeeps.echo">Annulation d'écho</span></label>
+          <label class="check"><input id="mic-noise" type="checkbox"> <span data-t="index.mic_noise_label">Réduction de bruit du navigateur</span></label>
         </div>
-        <p class="note">Coupures de la voix en émission : essayez « pièce calme » ou un profil « micro-casque » (réduction de bruit du
+        <p class="note" data-t="index.mic_cuts_hint">Coupures de la voix en émission : essayez « pièce calme » ou un profil « micro-casque » (réduction de bruit du
           navigateur coupée). Gain du micro et porte de bruit réglable : rubrique « Égaliseur paramétrique ».</p>
-        <label class="check"><input id="keep-awake" type="checkbox" checked> Garder l'écran allumé tant que je suis connecté (HTTPS requis)</label>
-        <label>Reconnexion automatique après une coupure
+        <label class="check"><input id="keep-awake" type="checkbox" checked> <span data-t="index.keep_awake_label">Garder l'écran allumé tant que je suis connecté (HTTPS requis)</span></label>
+        <label><span data-t="stationscreen.reconnect_title">Reconnexion automatique après une coupure</span>
           <select id="reconnect-select">
-            <option value="0">Désactivée</option>
-            <option value="15">Essayer pendant 15 s</option>
-            <option value="30">Essayer pendant 30 s</option>
-            <option value="60">Essayer pendant 60 s</option>
+            <option value="0" data-t="index.reconnect_select_0">Désactivée</option>
+            <option value="15" data-t="index.reconnect_select_15">Essayer pendant 15 s</option>
+            <option value="30" data-t="index.reconnect_select_30">Essayer pendant 30 s</option>
+            <option value="60" data-t="index.reconnect_select_60">Essayer pendant 60 s</option>
           </select>
         </label>
-        <label>Sons de la liaison (perdue, rétablie, reconnexion impossible)
+        <label><span data-t="index.alert_select_label">Sons de la liaison (perdue, rétablie, reconnexion impossible)</span>
           <select id="alert-select">
-            <option value="high">Forts</option>
-            <option value="normal">Normaux</option>
-            <option value="low">Faibles</option>
-            <option value="off">Coupés</option>
+            <option value="high" data-t="index.alert_select_high">Forts</option>
+            <option value="normal" data-t="index.alert_select_normal">Normaux</option>
+            <option value="low" data-t="index.alert_select_low">Faibles</option>
+            <option value="off" data-t="index.alert_select_off">Coupés</option>
           </select>
         </label>
-        <div class="row"><button id="alert-test" class="chip" disabled>Écouter les sons</button></div>
-        <div>Bandes affichées (aucune cochée = toutes)</div>
+        <div class="row"><button id="alert-test" class="chip" disabled data-t="index.alert_test">Écouter les sons</button></div>
+        <div data-t="index.fav_bands_title">Bandes affichées (aucune cochée = toutes)</div>
         <div id="fav-bands" class="row fav-bands"></div>
-        <p class="note">Deux notes descendantes : liaison perdue (répété pendant la reconnexion). Deux notes montantes : liaison rétablie, la station est en réception. Trois notes graves : reconnexion impossible. Le téléphone vibre aussi.</p>
-        <p class="note">Le mot de passe est gardé en mémoire de la page le temps de la session (jamais enregistré) : il n'est pas redemandé pendant la reconnexion, mais il l'est après un rechargement de la page.</p>
+        <p class="note" data-t="index.link_sounds_help">Deux notes descendantes : liaison perdue (répété pendant la reconnexion). Deux notes montantes : liaison rétablie, la station est en réception. Trois notes graves : reconnexion impossible. Le téléphone vibre aussi.</p>
+        <p class="note" data-t="index.password_session">Le mot de passe est gardé en mémoire de la page le temps de la session (jamais enregistré) : il n'est pas redemandé pendant la reconnexion, mais il l'est après un rechargement de la page.</p>
         <div class="row">
-          <button id="connect" class="primary">Se connecter</button>
-          <button id="disconnect" disabled>Déconnecter</button>
+          <button id="connect" class="primary" data-t="index.connect">Se connecter</button>
+          <button id="disconnect" disabled data-t="common.disconnect">Déconnecter</button>
         </div>
         <div id="loss-last" class="note loss" hidden></div>
-        <button id="loss-open" hidden>Détails de la dernière perte de connexion</button>
+        <button id="loss-open" hidden data-t="index.loss_open">Détails de la dernière perte de connexion</button>
         <div id="insecure" class="note" hidden>
-          <p>Page en HTTP : le navigateur bloque le micro (c'est une règle du navigateur, qu'aucune page ne peut contourner). La réception et les commandes fonctionnent. Pour émettre depuis ce navigateur :</p>
+          <p data-t="index.insecure_intro">Page en HTTP : le navigateur bloque le micro (c'est une règle du navigateur, qu'aucune page ne peut contourner). La réception et les commandes fonctionnent. Pour émettre depuis ce navigateur :</p>
           <ol>
-            <li>ouvre la station en HTTPS (certificat auto-signé : <code>trx-setup --self-signed &lt;adresse&gt;</code>), ou</li>
-            <li>sur Chrome, ouvre <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>, active le réglage, ajoute exactement <code id="origin"></code>, puis relance Chrome.</li>
+            <li><span data-t="index.insecure_https_part1">ouvre la station en HTTPS (certificat auto-signé :</span> <code data-t="index.insecure_https_code">trx-setup --self-signed &lt;adresse&gt;</code><span data-t="index.insecure_https_part2">), ou</span></li>
+            <li><span data-t="index.insecure_flags_part1">sur Chrome, ouvre</span> <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code><span data-t="index.insecure_flags_part2">, active le réglage, ajoute exactement</span> <code id="origin"></code><span data-t="index.insecure_flags_part3">, puis relance Chrome.</span></li>
           </ol>
-          <p>Détails : docs/acces-distant.md.</p>
+          <p data-t="index.insecure_details">Détails : docs/acces-distant.md.</p>
         </div>
         <div id="blk-listeners" class="listeners-switch listener-hide" hidden>
-          <label class="check"><input id="listeners-open" type="checkbox"> Écoute des visiteurs (réception seule)</label>
+          <label class="check"><input id="listeners-open" type="checkbox"> <span data-t="presenceviews.switch">Écoute des visiteurs (réception seule)</span></label>
           <p id="listeners-note" class="note"></p>
         </div>
       </div>
     </details>
 
     <details id="sec-console" class="listener-hide" hidden open>
-      <summary>TRX Console (administration)</summary>
+      <summary data-t="index.console_section">TRX Console (administration)</summary>
       <div class="body">
-        <p class="note">Régler et dépanner la station depuis ce navigateur : mêmes menus que TRX Console. Connexion avec ton
+        <p class="note" data-t="index.console_intro">Régler et dépanner la station depuis ce navigateur : mêmes menus que TRX Console. Connexion avec ton
           identifiant et ton mot de passe ; le mot de passe sudo de la station est demandé une fois, au premier menu
           d'administration.</p>
-        <div class="row"><a id="rc-open" class="chip" href="#" target="_blank" rel="noopener">Ouvrir TRX Console</a></div>
+        <div class="row"><a id="rc-open" class="chip" href="#" target="_blank" rel="noopener" data-t="index.rc_open">Ouvrir TRX Console</a></div>
       </div>
     </details>
 
     <details id="sec-tune" class="listener-off" open>
-      <summary>Accord</summary>
+      <summary data-t="index.tune_section">Accord</summary>
       <div class="body">
-        <div id="blk-miniwf" class="miniwf" hidden title="Petit waterfall HF du poste : touche pour ses réglages">
+        <div id="blk-miniwf" class="miniwf" hidden title="Petit waterfall HF du poste : touche pour ses réglages" data-t-title="index.blk_miniwf_title">
           <canvas id="mini-fall" class="mini-fall"></canvas><div id="mini-marker" class="hf-marker" hidden></div><div id="mini-wait" class="hf-wait"></div>
           <div id="mini-axis" class="mini-axis"></div>
         </div>
         <div id="bands" class="bands"></div>
         <div id="blk-steps" class="row">
-          <button id="step-down" title="Plus bas d'un pas (maintenir pour répéter)">◀</button>
-          <label class="grow">Pas <select id="step-select"></select></label>
-          <button id="step-up" title="Plus haut d'un pas (maintenir pour répéter)">▶</button>
+          <button id="step-down" title="Plus bas d'un pas (maintenir pour répéter)" data-t-title="index.step_down_title">◀</button>
+          <label class="grow"><span data-t="index.step_select_label">Pas</span> <select id="step-select"></select></label>
+          <button id="step-up" title="Plus haut d'un pas (maintenir pour répéter)" data-t-title="index.step_up_title">▶</button>
         </div>
         <div id="blk-freqinput" class="row">
-          <label class="grow">Fréquence (kHz) <input id="freq-input" inputmode="decimal" placeholder="14200"></label>
-          <button id="freq-set" disabled>Accorder</button>
+          <label class="grow"><span data-t="index.freq_input_label">Fréquence (kHz)</span> <input id="freq-input" inputmode="decimal" placeholder="14200"></label>
+          <button id="freq-set" disabled data-t="index.freq_set">Accorder</button>
         </div>
         <div id="blk-modeset">
-          <div class="dim">Mode</div>
+          <div class="dim" data-t="index.mode_title">Mode</div>
           <div id="mode-buttons" class="bands modes"></div>
         </div>
       </div>
     </details>
 
     <details id="sec-memories" class="listener-off" open>
-      <summary>Mémoires <span id="mem-count" class="dim"></span></summary>
+      <summary><span data-t="memoriestab.memories">Mémoires</span> <span id="mem-count" class="dim"></span></summary>
       <div class="body"><div id="blk-memories" class="memblock">
-        <button id="mem-add-current" disabled>＋ Mémoriser la fréquence actuelle</button>
+        <button id="mem-add-current" disabled data-t="index.mem_add_current">＋ Mémoriser la fréquence actuelle</button>
         <div id="mem-form" class="memform" hidden>
-          <label>Nom <input id="mem-name" maxlength="40" placeholder="ex. Réseau 40 m" autocomplete="off"></label>
+          <label><span data-t="index.mem_name_label">Nom</span> <input id="mem-name" maxlength="40" placeholder="ex. Réseau 40 m" autocomplete="off" data-t-placeholder="index.mem_name_hint"></label>
           <div class="row">
-            <label class="grow">Fréquence (kHz) <input id="mem-khz" inputmode="decimal" placeholder="7100"></label>
-            <label class="grow">Mode <select id="mem-mode"></select></label>
+            <label class="grow"><span data-t="index.mem_khz_label">Fréquence (kHz)</span> <input id="mem-khz" inputmode="decimal" placeholder="7100"></label>
+            <label class="grow"><span data-t="index.mem_mode_label">Mode</span> <select id="mem-mode"></select></label>
           </div>
-          <label class="check"><input id="mem-fav" type="checkbox"> ★ Favori (affiché en haut de la liste)</label>
+          <label class="check"><input id="mem-fav" type="checkbox"> <span data-t="index.mem_fav_label">★ Favori (affiché en haut de la liste)</span></label>
           <div class="row">
-            <button id="mem-save" class="primary">Enregistrer</button>
-            <button id="mem-cancel">Annuler</button>
-            <button id="mem-delete" class="danger" hidden>Supprimer</button>
+            <button id="mem-save" class="primary" data-t="common.save">Enregistrer</button>
+            <button id="mem-cancel" data-t="common.cancel">Annuler</button>
+            <button id="mem-delete" class="danger" hidden data-t="common.delete">Supprimer</button>
           </div>
         </div>
-        <p id="mem-empty" class="note">Aucune mémoire. Accorde le poste, puis « Mémoriser la fréquence actuelle ».</p>
+        <p id="mem-empty" class="note" data-t="index.mem_empty">Aucune mémoire. Accorde le poste, puis « Mémoriser la fréquence actuelle ».</p>
         <ul id="mem-list" class="memlist"></ul>
       </div></div>
     </details>
@@ -298,123 +298,123 @@
       <div class="body">
         <p id="sdr-status" class="note"></p>
         <p id="sdr-load" class="note sdr-load" hidden></p>
-        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div><div id="sdr-spot-layer" class="hf-spots"></div></div>
+        <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence" data-t-title="index.sdr_wf_title"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div><div id="sdr-spot-layer" class="hf-spots"></div></div>
         <div id="sdr-axis" class="wf-axis"></div>
         <div class="row">
           <span id="sdr-pick" class="note"></span>
-          <button id="sdr-here" class="chip" hidden title="Écouter cette fréquence avec le SDR">Écouter ici</button>
-          <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence ÉCOUTÉE sur le SDR (refusé pendant l'émission)">QSY SDR → TRX</button>
-          <button id="sdr-qsy-rev" class="chip" title="Le SDR écoute la fréquence du TRX (le waterfall suit si elle sort de la fenêtre)">QSY TRX → SDR</button>
+          <button id="sdr-here" class="chip" hidden title="Écouter cette fréquence avec le SDR" data-t="index.sdr_here" data-t-title="index.sdr_here_title">Écouter ici</button>
+          <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence ÉCOUTÉE sur le SDR (refusé pendant l'émission)" data-t-title="index.sdr_qsy_title">QSY SDR → TRX</button> <!-- i18n-ok -->
+          <button id="sdr-qsy-rev" class="chip" title="Le SDR écoute la fréquence du TRX (le waterfall suit si elle sort de la fenêtre)" data-t-title="index.sdr_qsy_rev_title">QSY TRX → SDR</button> <!-- i18n-ok -->
         </div>
         <div id="sdr-listen-box">
           <div class="row">
-            <button id="sdr-listen" class="chip" aria-pressed="false" title="Son du SDR ; coupé par la station pendant toute émission">🔈 Écouter</button>
-            <label>Mode <select id="sdr-mode"></select></label>
-            <label>Filtre <select id="sdr-dbw"></select></label>
-            <label class="grow" title="Squelch du SDR : dB au-dessus du bruit ; 0 = toujours ouvert">Squelch
+            <button id="sdr-listen" class="chip" aria-pressed="false" title="Son du SDR ; coupé par la station pendant toute émission" data-t="index.sdr_listen" data-t-title="index.sdr_listen_title">🔈 Écouter</button>
+            <label><span data-t="index.sdr_mode_label">Mode</span> <select id="sdr-mode"></select></label>
+            <label><span data-t="index.sdr_dbw_label">Filtre</span> <select id="sdr-dbw"></select></label>
+            <label class="grow" title="Squelch du SDR : dB au-dessus du bruit ; 0 = toujours ouvert" data-t-title="index.sdr_sql_label_title"><span data-t="index.sdr_sql_label">Squelch</span>
               <input id="sdr-sql" type="range" min="0" max="30" step="1"> <span id="sdr-sql-val" class="sdr-val"></span></label>
-            <label class="grow">Volume <input id="sdr-vol" type="range" min="0" max="100" step="1" value="80"></label>
+            <label class="grow"><span data-t="index.sdr_vol_label">Volume</span> <input id="sdr-vol" type="range" min="0" max="100" step="1" value="80"></label>
           </div>
           <div class="row">
-            <label title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre">Fréquence écoutée (MHz)
+            <label title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre" data-t-title="index.sdr_dfreq_label_title"><span data-t="index.sdr_dfreq_label">Fréquence écoutée (MHz)</span>
               <input id="sdr-dfreq" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
-            <button id="sdr-dfreq-set" class="chip">Écouter cette fréquence</button>
+            <button id="sdr-dfreq-set" class="chip" data-t="index.sdr_dfreq_set">Écouter cette fréquence</button>
           </div>
           <div class="row">
-            <label class="grow" title="Équilibre des deux sources quand on écoute le SDR : à gauche le TRX seul, à droite le SDR seul">TRX ◄ Balance ► SDR
+            <label class="grow" title="Équilibre des deux sources quand on écoute le SDR : à gauche le TRX seul, à droite le SDR seul" data-t-title="index.sdr_bal_label_title"><span data-t="index.sdr_bal_label">TRX ◄ Balance ► SDR</span>
               <input id="sdr-bal" type="range" min="-100" max="100" step="5" value="0"></label>
-            <label title="Au casque : chaque source sur une oreille (exclusif avec la spatialisation ST)">Oreilles
+            <label title="Au casque : chaque source sur une oreille (exclusif avec la spatialisation ST)" data-t-title="index.sdr_split_label_title"><span data-t="index.sdr_split_label">Oreilles</span>
               <select id="sdr-split"></select></label>
           </div>
           <p id="sdr-listen-info" class="note"></p>
         </div>
         <div class="row">
-          <label>Centre (MHz) <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
-          <button id="sdr-center-set" class="chip">Appliquer</button>
-          <label>Lignes/s <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
-          <button id="sdr-range" class="chip" title="Dynamique des couleurs">DYN 50 dB</button>
-          <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)">Couleurs : Thème</button>
-          <button id="sdr-spots" class="chip on" title="Spots du Cluster DX sur le waterfall du SDR ; toucher un spot : le SDR l'écoute (le TRX ne bouge pas)">Spots</button>
+          <label><span data-t="index.sdr_center_label">Centre (MHz)</span> <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
+          <button id="sdr-center-set" class="chip" data-t="index.sdr_center_set">Appliquer</button>
+          <label><span data-t="index.sdr_rate_label">Lignes/s</span> <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
+          <button id="sdr-range" class="chip" title="Dynamique des couleurs" data-t-title="index.sdr_range_title" data-t="index.sdr_range">DYN 50 dB</button>
+          <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)" data-t="index.sdr_palette" data-t-title="index.sdr_palette_title">Couleurs : Thème</button>
+          <button id="sdr-spots" class="chip on" title="Spots du Cluster DX sur le waterfall du SDR ; toucher un spot : le SDR l'écoute (le TRX ne bouge pas)" data-t-title="index.sdr_spots_title" data-t="index.sdr_spots">Spots</button>
         </div>
         <div id="sdr-hw-box" class="row" hidden>
-          <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 2.4). Le SDR redémarre (une à deux secondes).">Largeur
+          <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 2.4). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_fs_label_title"><span data-t="index.sdr_fs_label">Largeur</span>
             <select id="sdr-fs"></select></label>
-          <label id="sdr-ant-box" title="Entrée d'antenne du SDR (RSP2). Le SDR redémarre (une à deux secondes).">Antenne
+          <label id="sdr-ant-box" title="Entrée d'antenne du SDR (RSP2). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_ant_box_title"><span data-t="index.sdr_ant_box">Antenne</span>
             <select id="sdr-ant"><option value="A">A</option><option value="B">B</option></select></label>
         </div>
         <div id="sdr-zoom-box" class="row" hidden>
-          <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur">Zoom −</button>
+          <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur" data-t-title="index.sdr_zoom_out_title">Zoom −</button>
           <span id="sdr-zoom" class="note"></span>
-          <button id="sdr-zoom-in" class="chip" title="Zoom avant autour de la fréquence écoutée">Zoom +</button>
-          <button id="sdr-pan-down" class="chip" title="Fenêtre zoomée vers le bas (demi-largeur)">◄</button>
-          <button id="sdr-pan-up" class="chip" title="Fenêtre zoomée vers le haut (demi-largeur)">►</button>
+          <button id="sdr-zoom-in" class="chip" title="Zoom avant autour de la fréquence écoutée" data-t-title="index.sdr_zoom_in_title">Zoom +</button>
+          <button id="sdr-pan-down" class="chip" title="Fenêtre zoomée vers le bas (demi-largeur)" data-t-title="index.sdr_pan_down_title">◄</button>
+          <button id="sdr-pan-up" class="chip" title="Fenêtre zoomée vers le haut (demi-largeur)" data-t-title="index.sdr_pan_up_title">►</button>
         </div>
         <div class="row">
-          <label class="grow" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser.">Gain RF
+          <label class="grow" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser." data-t-title="index.sdr_rf_label_title"><span data-t="index.sdr_rf_label">Gain RF</span>
             <input id="sdr-rf" type="range" min="0" max="8" step="1"> <span id="sdr-rf-val" class="sdr-val"></span></label>
-          <label title="AGC de la FI : le SDR règle lui-même le gain FI"><input id="sdr-agc" type="checkbox"> FI auto</label>
-          <label id="sdr-if-box" class="grow" title="Gain de la FI, réglé à la main quand « FI auto » est coupé">Gain FI
+          <label title="AGC de la FI : le SDR règle lui-même le gain FI" data-t-title="index.sdr_agc_label_title"><input id="sdr-agc" type="checkbox"> <span data-t="index.sdr_agc_label">FI auto</span></label>
+          <label id="sdr-if-box" class="grow" title="Gain de la FI, réglé à la main quand « FI auto » est coupé" data-t-title="index.sdr_if_box_title"><span data-t="index.sdr_if_box">Gain FI</span>
             <input id="sdr-if" type="range" min="0" max="39" step="1"> <span id="sdr-if-val" class="sdr-val"></span></label>
         </div>
         <p id="sdr-gain" class="note"></p>
-        <p class="note">Récepteur SDR en parallèle du TRX, en réception seule. Les curseurs s'appliquent pendant qu'on les
+        <p class="note" data-t="index.sdr_intro">Récepteur SDR en parallèle du TRX, en réception seule. Les curseurs s'appliquent pendant qu'on les
           fait glisser ; en cas de SURCHARGE, baisser le gain RF. Le SDR n'agit jamais sur le poste.</p>
       </div>
     </details>
 
     <details id="sec-friends" class="listener-hide" hidden>
-      <summary>Amis <span id="fr-badges" class="fr-badges"></span></summary>
+      <summary><span data-t="friendsviews.friends">Amis</span> <span id="fr-badges" class="fr-badges"></span></summary>
       <div class="body">
         <p id="fr-status" class="note"></p>
         <div class="row">
-          <label>Affichage <select id="fr-display"><option value="section">dans les rubriques</option><option value="big">en grand</option><option value="pip">fenêtre détachée</option></select></label>
-          <label>Vue <select id="fr-by"><option value="group">par groupe</option><option value="member">par membre</option></select></label>
-          <button id="fr-refresh" class="chip">Actualiser</button>
-          <button id="fr-back" class="chip" hidden title="Revenir sur la fréquence et le mode d'avant le QSY vers un ami">↩ Retour</button>
+          <label><span data-t="index.fr_display_label">Affichage</span> <select id="fr-display"><option value="section" data-t="index.fr_display_section">dans les rubriques</option><option value="big" data-t="index.fr_display_big">en grand</option><option value="pip" data-t="index.fr_display_pip">fenêtre détachée</option></select></label>
+          <label><span data-t="index.fr_by_label">Vue</span> <select id="fr-by"><option value="group" data-t="index.fr_by_group">par groupe</option><option value="member" data-t="index.fr_by_member">par membre</option></select></label>
+          <button id="fr-refresh" class="chip" data-t="common.refresh">Actualiser</button>
+          <button id="fr-back" class="chip" hidden title="Revenir sur la fréquence et le mode d'avant le QSY vers un ami" data-t-title="index.fr_back_title" data-t="friendsviews.back">↩ Retour</button>
         </div>
         <div id="fr-list" class="fr-list"></div>
         <p id="fr-updated" class="note"></p>
-        <h4>Mon statut</h4>
-        <div class="row" role="radiogroup" aria-label="Mon statut"><button id="fr-shack-cancel" class="chip" role="radio">Automatique</button><button id="fr-shack-60" class="chip" role="radio">Au shack 1 h</button><button id="fr-shack-120" class="chip" role="radio">Au shack 2 h</button></div>
+        <h4 data-t="friendsviews.my_status">Mon statut</h4>
+        <div class="row" role="radiogroup" aria-label="Mon statut" data-t-aria-label="friendsviews.my_status"><button id="fr-shack-cancel" class="chip" role="radio" data-t="friendsviews.automatic">Automatique</button><button id="fr-shack-60" class="chip" role="radio" data-t="friendsviews.shack_1h">Au shack 1 h</button><button id="fr-shack-120" class="chip" role="radio" data-t="friendsviews.shack_2h">Au shack 2 h</button></div>
         <p id="fr-me" class="note"></p>
-        <h4>Pseudo dans les groupes</h4>
-        <div class="row"><label class="grow">Pseudo <input id="fr-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="fr-pseudo-save" class="chip">Enregistrer le pseudo</button></div>
-        <h4>Groupes</h4>
-        <div class="row"><button id="fr-create" class="chip">Créer un groupe</button><button id="fr-join" class="chip">Rejoindre (invitation)</button></div>
-        <p class="note">Un groupe d'amis voit qui est actif sur sa station. Le relais de présence ne voit que des états chiffrés ;
+        <h4 data-t="friendsviews.pseudo_in_groups">Pseudo dans les groupes</h4>
+        <div class="row"><label class="grow"><span data-t="friendsviews.pseudo">Pseudo</span> <input id="fr-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="fr-pseudo-save" class="chip" data-t="friendsviews.save_pseudo">Enregistrer le pseudo</button></div>
+        <h4 data-t="friendsviews.groups">Groupes</h4>
+        <div class="row"><button id="fr-create" class="chip" data-t="friendsviews.create_group">Créer un groupe</button><button id="fr-join" class="chip" data-t="friendsviews.join_invitation">Rejoindre (invitation)</button></div>
+        <p class="note" data-t="index.friends_intro">Un groupe d'amis voit qui est actif sur sa station. Le relais de présence ne voit que des états chiffrés ;
           un QSY vers un ami se fait en réception, après confirmation, jamais pendant une émission.</p>
       </div>
     </details>
 
     <details id="sec-monitoring" class="listener-hide" hidden>
-      <summary>Monitoring <span id="mo-badge" class="note"></span></summary>
+      <summary><span data-t="monitoringscreen.title">Monitoring</span> <span id="mo-badge" class="note"></span></summary>
       <div class="body">
         <p id="mo-status" class="note"></p>
-        <div class="row"><label class="grow">Pseudo <input id="mo-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="mo-pseudo-save" class="chip">Enregistrer</button><button id="mo-refresh" class="chip">Actualiser</button></div>
-        <div class="row"><button id="mo-invite" class="chip">Aider quelqu'un : créer un code</button><button id="mo-join" class="chip">Être aidé : j'ai un code</button></div>
+        <div class="row"><label class="grow"><span data-t="monitoringscreen.pseudo">Pseudo</span> <input id="mo-pseudo" maxlength="16" autocomplete="off" spellcheck="false"></label><button id="mo-pseudo-save" class="chip" data-t="common.save">Enregistrer</button><button id="mo-refresh" class="chip" data-t="common.refresh">Actualiser</button></div>
+        <div class="row"><button id="mo-invite" class="chip" data-t="index.mo_invite">Aider quelqu'un : créer un code</button><button id="mo-join" class="chip" data-t="monitoringscreen.be_helped_code">Être aidé : j'ai un code</button></div>
         <div id="mo-list" class="mo-list"></div>
-        <p class="note">Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert : la station aidée envoie ce
+        <p class="note" data-t="index.monitoring_intro">Aider un opérateur en difficulté, ou être aidé, sans VPN ni port ouvert : la station aidée envoie ce
           que SON opérateur a choisi, toujours masqué et chiffré par le relais. La station qui aide ne peut que lire et
           demander ; rien ne commande le poste. Mêmes actions que le menu 6.5 de TRX Console.</p>
       </div>
     </details>
 
     <details id="sec-diffusion" class="listener-hide" hidden>
-      <summary>Diffusion en direct <span id="dif-badge" class="note"></span></summary>
+      <summary><span data-t="diffusiondialog.title">Diffusion en direct</span> <span id="dif-badge" class="note"></span></summary>
       <div class="body">
         <p id="dif-status" class="note"></p>
         <div id="dif-form">
-          <div class="row"><label class="check"><input type="radio" name="dif-access" id="dif-prive" value="prive" checked> Privée (identifiant et mot de passe)</label><label class="check"><input type="radio" name="dif-access" id="dif-public" value="public"> Publique</label></div>
-          <div class="row"><label>Durée <select id="dif-hours"></select></label><label class="check"><input id="dif-voice" type="checkbox"> Diffuser aussi ma voix pendant mes émissions</label></div>
+          <div class="row"><label class="check"><input type="radio" name="dif-access" id="dif-prive" value="prive" checked> <span data-t="diffusiondialog.private">Privée (identifiant et mot de passe)</span></label><label class="check"><input type="radio" name="dif-access" id="dif-public" value="public"> <span data-t="diffusiondialog.public">Publique</span></label></div>
+          <div class="row"><label><span data-t="diffusiondialog.duration">Durée</span> <select id="dif-hours"></select></label><label class="check"><input id="dif-voice" type="checkbox"> <span data-t="diffusiondialog.voice">Diffuser aussi ma voix pendant mes émissions</span></label></div>
           <div class="row" id="dif-meta"></div>
-          <div class="row"><label class="grow">Pseudo <input id="dif-pseudo" maxlength="32" autocomplete="off" spellcheck="false"></label><label>Indicatif <input id="dif-indicatif" maxlength="16" autocomplete="off" spellcheck="false"></label></div>
-          <div class="row"><label class="grow">Message <input id="dif-message" maxlength="140" autocomplete="off"></label></div>
-          <div class="row"><button id="dif-start" class="chip">Lancer la diffusion</button></div>
+          <div class="row"><label class="grow"><span data-t="diffusiondialog.pseudo">Pseudo</span> <input id="dif-pseudo" maxlength="32" autocomplete="off" spellcheck="false"></label><label><span data-t="diffusiondialog.callsign">Indicatif</span> <input id="dif-indicatif" maxlength="16" autocomplete="off" spellcheck="false"></label></div>
+          <div class="row"><label class="grow"><span data-t="diffusiondialog.message">Message</span> <input id="dif-message" maxlength="140" autocomplete="off"></label></div>
+          <div class="row"><button id="dif-start" class="chip" data-t="diffusiondialog.start">Lancer la diffusion</button></div>
         </div>
-        <div class="row"><button id="dif-stop" class="chip dif-stop" hidden>Arrêter la diffusion</button></div>
-        <div class="row"><span class="note">Page des auditeurs :</span> <a id="dif-page" target="_blank" rel="noopener noreferrer"></a> <button id="dif-copy" class="chip">Copier l'adresse</button></div>
-        <div class="row"><span class="note">Auditeurs de la diffusion privée : identifiant</span> <code id="dif-user">—</code> <button id="dif-reveal" class="chip">Voir le mot de passe</button> <button id="dif-generate" class="chip">En générer un nouveau</button> <code id="dif-password"></code></div>
-        <p class="note">Faire entendre le son du TRX à quelques internautes sans compte sur la station, par un serveur de
+        <div class="row"><button id="dif-stop" class="chip dif-stop" hidden data-t="diffusiondialog.stop">Arrêter la diffusion</button></div>
+        <div class="row"><span class="note" data-t="index.dif_page_label">Page des auditeurs :</span> <a id="dif-page" target="_blank" rel="noopener noreferrer"></a> <button id="dif-copy" class="chip" data-t="index.dif_copy">Copier l'adresse</button></div>
+        <div class="row"><span class="note" data-t="index.dif_user_label">Auditeurs de la diffusion privée : identifiant</span> <code id="dif-user">—</code> <button id="dif-reveal" class="chip" data-t="diffusiondialog.reveal">Voir le mot de passe</button> <button id="dif-generate" class="chip" data-t="index.dif_generate">En générer un nouveau</button> <code id="dif-password"></code></div>
+        <p class="note" data-t="diffusiondialog.intro">Faire entendre le son du TRX à quelques internautes sans compte sur la station, par un serveur de
           diffusion : ils ne joignent jamais la station. Privée par défaut (c'est vous qui transmettez l'adresse et
           l'identifiant), 1 heure par défaut ; pendant vos émissions, silence sauf si vous cochez « Diffuser aussi ma
           voix ». Tout opérateur peut arrêter une diffusion ; elle ne reprend jamais seule.</p>
@@ -422,23 +422,23 @@
     </details>
 
     <details id="sec-audio">
-      <summary>Audio</summary>
+      <summary data-t="rigwidgets.tab_audio">Audio</summary>
       <div class="body">
-        <label class="check"><input id="mute" type="checkbox"> Couper le son reçu</label>
-        <label>Volume <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
-        <div class="row between small"><span>Réception <b id="rx-level">—</b></span><span>Émission <b id="tx-level">—</b></span></div>
-        <div class="small" title="Paquets de votre voix arrivés trop tard à la station (réseau) : chacun fait un petit trou dans l'émission. S'il ne bouge pas pendant une coupure, la cause est le traitement du micro.">Trous dans l'émission (réseau), depuis le démarrage de la station : <b id="tx-holes">—</b></div>
+        <label class="check"><input id="mute" type="checkbox"> <span data-t="index.mute_label">Couper le son reçu</span></label>
+        <label><span data-t="index.volume_label">Volume</span> <input id="volume" type="range" min="0" max="1" step="0.05" value="1"></label>
+        <div class="row between small"><span><span data-t="index.rx_level_label">Réception</span> <b id="rx-level">—</b></span><span><span data-t="index.tx_level_label">Émission</span> <b id="tx-level">—</b></span></div>
+        <div class="small" title="Paquets de votre voix arrivés trop tard à la station (réseau) : chacun fait un petit trou dans l'émission. S'il ne bouge pas pendant une coupure, la cause est le traitement du micro." data-t-title="index.tx_holes_title"><span data-t="index.tx_holes_label">Trous dans l'émission (réseau), depuis le démarrage de la station :</span> <b id="tx-holes">—</b></div>
         <div id="beeps-box" class="beeps listener-hide">
-          <div class="dim small">Bips de fin d'émission — produits et ÉMIS par la station, réglage commun à tous les appareils.</div>
-          <label class="check"><input id="roger-on" type="checkbox" disabled> Roger bip quand je relâche le PTT</label>
+          <div class="dim small" data-t="index.beeps_title">Bips de fin d'émission — produits et ÉMIS par la station, réglage commun à tous les appareils.</div>
+          <label class="check"><input id="roger-on" type="checkbox" disabled> <span data-t="clusterandbeeps.roger">Roger bip quand je relâche le PTT</span></label>
           <div class="row">
-            <label>Tonalité <select id="roger-tone" disabled></select></label>
-            <label>Motif <select id="roger-pattern" disabled></select></label>
-            <button id="roger-preview" disabled title="Joué ici seulement, jamais émis">Écouter</button>
+            <label><span data-t="index.roger_tone_label">Tonalité</span> <select id="roger-tone" disabled></select></label>
+            <label><span data-t="index.roger_pattern_label">Motif</span> <select id="roger-pattern" disabled></select></label>
+            <button id="roger-preview" disabled title="Joué ici seulement, jamais émis" data-t="clusterandbeeps.listen" data-t-title="index.roger_preview_title">Écouter</button>
           </div>
-          <label class="check"><input id="lost-on" type="checkbox" disabled> Bip de liaison perdue (émis si la liaison tombe pendant mon émission)</label>
+          <label class="check"><input id="lost-on" type="checkbox" disabled> <span data-t="clusterandbeeps.link_lost">Bip de liaison perdue (émis si la liaison tombe pendant mon émission)</span></label>
           <div class="row">
-            <button id="lost-preview" disabled title="Joué ici seulement, jamais émis">Écouter le bip de liaison perdue</button>
+            <button id="lost-preview" disabled title="Joué ici seulement, jamais émis" data-t-title="index.lost_preview_title" data-t="index.lost_preview">Écouter le bip de liaison perdue</button>
           </div>
           <div id="beeps-note" class="dim small"></div>
         </div>
@@ -446,19 +446,19 @@
     </details>
 
     <details id="sec-spatial">
-      <summary>Spatialisation (stéréo)</summary>
+      <summary data-t="spatialdialog.title">Spatialisation (stéréo)</summary>
       <div class="body">
-        <p class="note">Rend l'audio reçu stéréo au casque : confort d'écoute, voix au centre, souffle autour. Traité sur cet appareil
+        <p class="note" data-t="index.spatial_intro">Rend l'audio reçu stéréo au casque : confort d'écoute, voix au centre, souffle autour. Traité sur cet appareil
           seulement : la station n'envoie toujours qu'un son mono. Sans casque (haut-parleur unique, casque Bluetooth en mode appel),
           cochez « Sortie mono ».</p>
-        <label class="check"><input id="st-on" type="checkbox"> Spatialisation en service</label>
+        <label class="check"><input id="st-on" type="checkbox"> <span data-t="spatialdialog.enabled">Spatialisation en service</span></label>
         <div id="st-presets" class="row"></div>
-        <label>Intensité <input id="st-width" type="range" min="0" max="150" step="1"><span id="st-width-text"></span></label>
-        <label>Présence voix <input id="st-presence" type="range" min="0" max="100" step="1"><span id="st-presence-text"></span></label>
-        <label>Équilibre G/D <input id="st-balance" type="range" min="-100" max="100" step="1"><span id="st-balance-text"></span></label>
+        <label><span data-t="index.st_width_label">Intensité</span> <input id="st-width" type="range" min="0" max="150" step="1"><span id="st-width-text"></span></label>
+        <label><span data-t="index.st_presence_label">Présence voix</span> <input id="st-presence" type="range" min="0" max="100" step="1"><span id="st-presence-text"></span></label>
+        <label><span data-t="index.st_balance_label">Équilibre G/D</span> <input id="st-balance" type="range" min="-100" max="100" step="1"><span id="st-balance-text"></span></label>
         <div class="row">
-          <button id="st-ab" class="chip" title="Maintenir appuyé : écoute en mono, pour comparer">A/B (maintenir : mono)</button>
-          <label class="check"><input id="st-mono" type="checkbox"> Sortie mono (pas de casque)</label>
+          <button id="st-ab" class="chip" title="Maintenir appuyé : écoute en mono, pour comparer" data-t-title="index.st_ab_title" data-t="index.st_ab">A/B (maintenir : mono)</button>
+          <label class="check"><input id="st-mono" type="checkbox"> <span data-t="spatialdialog.mono_out">Sortie mono (pas de casque)</span></label>
         </div>
         <div class="meter"><span class="mlabel">G/D</span><div class="mtrack st-corr"><div id="st-corr-mask" class="mmask"></div></div><span id="st-corr-text" class="mval">—</span></div>
         <div id="st-state" class="note"></div>
@@ -466,114 +466,114 @@
     </details>
 
     <details id="sec-voice" class="listener-hide">
-      <summary>Égaliseur paramétrique</summary>
+      <summary data-t="index.voice_section">Égaliseur paramétrique</summary>
       <div class="body">
-        <p class="note">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
+        <p class="note" data-t="index.voice_intro">Traitement de VOTRE voix sur cet appareil, avant l'envoi à la station (utile en USB-D : l'égaliseur du poste n'y agit pas).
           Un limiteur reste toujours actif. Réglages gardés par ce navigateur.</p>
         <div class="voice-mic">
-          <div>Micro (actif même égaliseur éteint)</div>
-          <div class="meter"><span class="mlabel">Mic</span><div class="mtrack voice-level"><div id="voice-gate-mark" class="sqlmark" hidden></div><div id="voice-level-mask" class="mmask"></div></div><span id="voice-level-text" class="mval">—</span></div>
-          <label>Gain du micro <input id="voice-gain" type="range" min="-12" max="20" step="1"><span id="voice-gain-text"></span></label>
-          <label class="check"><input id="voice-gate-on" type="checkbox"> Porte de bruit (atténue le fond entre les phrases)</label>
-          <label>Seuil de la porte <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
-          <p class="note">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
+          <div data-t="index.voice_mic_title">Micro (actif même égaliseur éteint)</div>
+          <div class="meter"><span class="mlabel">Mic</span><div class="mtrack voice-level"><div id="voice-gate-mark" class="sqlmark" hidden></div><div id="voice-level-mask" class="mmask"></div></div><span id="voice-level-text" class="mval">—</span></div> <!-- i18n-ok -->
+          <label><span data-t="index.voice_gain_label">Gain du micro</span> <input id="voice-gain" type="range" min="-12" max="20" step="1"><span id="voice-gain-text"></span></label>
+          <label class="check"><input id="voice-gate-on" type="checkbox"> <span data-t="index.voice_gate_on_label">Porte de bruit (atténue le fond entre les phrases)</span></label>
+          <label><span data-t="index.voice_gate_db_label">Seuil de la porte</span> <input id="voice-gate-db" type="range" min="-80" max="-20" step="1"><span id="voice-gate-db-text"></span></label>
+          <p class="note" data-t="index.voice_gate_hint">Réglez le seuil juste au-dessus du niveau du fond (repère sur le niveau), sous celui de votre voix. Trop haut : syllabes coupées.</p>
         </div>
-        <p id="voice-breizh" class="note warn-text" hidden>Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés et
+        <p id="voice-breizh" class="note warn-text" hidden data-t="voicescreen.breizh_bypass">Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés et
           non modifiables tant que la voix passe par Breizh (réglages gardés pour le retour en direct). Gain du micro, porte de bruit et
           limiteur restent actifs.</p>
-        <label class="check"><input id="voice-on" type="checkbox"> Égaliseur et effets en service</label>
+        <label class="check"><input id="voice-on" type="checkbox"> <span data-t="index.voice_on_label">Égaliseur et effets en service</span></label>
         <div class="row">
-          <label>Préréglage <select id="voice-preset"></select></label>
-          <button id="voice-apply" class="chip">Appliquer</button>
-          <button id="voice-profile-save" class="chip" hidden title="Range les réglages actuels (égaliseur, chorus, réverbération) sur la station, pour ce compte">Enregistrer comme profil…</button>
-          <button id="voice-profile-delete" class="chip" hidden>Supprimer ce profil</button>
-          <button id="voice-export" class="chip">Exporter</button>
-          <label class="chip">Importer <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
+          <label><span data-t="index.voice_preset_label">Préréglage</span> <select id="voice-preset"></select></label>
+          <button id="voice-apply" class="chip" data-t="index.voice_apply">Appliquer</button>
+          <button id="voice-profile-save" class="chip" hidden title="Range les réglages actuels (égaliseur, chorus, réverbération) sur la station, pour ce compte" data-t="index.voice_profile_save" data-t-title="index.voice_profile_save_title">Enregistrer comme profil…</button>
+          <button id="voice-profile-delete" class="chip" hidden data-t="index.voice_profile_delete">Supprimer ce profil</button>
+          <button id="voice-export" class="chip" data-t="voicescreen.export">Exporter</button>
+          <label class="chip"><span data-t="voicescreen.import">Importer</span> <input id="voice-import" type="file" accept="application/json,.json" hidden></label>
         </div>
-        <canvas id="voice-graph" class="voice-graph" title="Courbe de l'égaliseur : au-dessus de 0 dB renforcé (chaud), en dessous atténué (froid) ; zone bleutée = la parole"></canvas>
+        <canvas id="voice-graph" class="voice-graph" title="Courbe de l'égaliseur : au-dessus de 0 dB renforcé (chaud), en dessous atténué (froid) ; zone bleutée = la parole" data-t-title="index.voice_graph_title"></canvas>
         <ul id="voice-hints" class="voice-hints"></ul>
-        <label>Coupe-bas <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
-        <label>Coupe-haut <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
+        <label><span data-t="voicescreen.highpass">Coupe-bas</span> <input id="voice-hp" type="range" min="20" max="1000" step="10"><span id="voice-hp-text"></span></label>
+        <label><span data-t="voicescreen.lowpass">Coupe-haut</span> <input id="voice-lp" type="range" min="1500" max="8000" step="50"><span id="voice-lp-text"></span></label>
         <div id="voice-bands" class="voice-bands"></div>
-        <label class="check"><input id="voice-chorus-on" type="checkbox"> Chorus</label>
+        <label class="check"><input id="voice-chorus-on" type="checkbox"> <span data-t="voicescreen.chorus">Chorus</span></label>
         <div class="row">
-          <label>Type <select id="voice-chorus-type"></select></label>
-          <label>Dosage <input id="voice-chorus-mix" type="range" min="0" max="100" step="1"><span id="voice-chorus-mix-text"></span></label>
-          <label>Vitesse <input id="voice-chorus-rate" type="range" min="0.1" max="5" step="0.1"></label>
-          <label>Profondeur <input id="voice-chorus-depth" type="range" min="0.5" max="8" step="0.5"></label>
+          <label><span data-t="index.voice_chorus_type_label">Type</span> <select id="voice-chorus-type"></select></label>
+          <label><span data-t="voicescreen.mix">Dosage</span> <input id="voice-chorus-mix" type="range" min="0" max="100" step="1"><span id="voice-chorus-mix-text"></span></label>
+          <label><span data-t="voicescreen.rate">Vitesse</span> <input id="voice-chorus-rate" type="range" min="0.1" max="5" step="0.1"></label>
+          <label><span data-t="voicescreen.depth">Profondeur</span> <input id="voice-chorus-depth" type="range" min="0.5" max="8" step="0.5"></label>
         </div>
-        <label class="check"><input id="voice-reverb-on" type="checkbox"> Réverbération</label>
+        <label class="check"><input id="voice-reverb-on" type="checkbox"> <span data-t="voicescreen.reverb">Réverbération</span></label>
         <div class="row">
-          <label>Type <select id="voice-reverb-type"></select></label>
-          <label>Dosage <input id="voice-reverb-mix" type="range" min="0" max="100" step="1"><span id="voice-reverb-mix-text"></span></label>
-          <label>Durée <input id="voice-reverb-time" type="range" min="0.2" max="4" step="0.1"><span id="voice-reverb-time-text"></span></label>
+          <label><span data-t="index.voice_reverb_type_label">Type</span> <select id="voice-reverb-type"></select></label>
+          <label><span data-t="voicescreen.mix">Dosage</span> <input id="voice-reverb-mix" type="range" min="0" max="100" step="1"><span id="voice-reverb-mix-text"></span></label>
+          <label><span data-t="voicescreen.duration">Durée</span> <input id="voice-reverb-time" type="range" min="0.2" max="4" step="0.1"><span id="voice-reverb-time-text"></span></label>
         </div>
-        <p class="note">En BLU, le chorus et la réverbération réduisent la compréhension : à doser avec prudence. Ils sont coupés net au retour en réception.</p>
-        <label class="check"><input id="voice-monitor" type="checkbox" disabled> Écoute de contrôle (CASQUE obligatoire : sur haut-parleur, effet Larsen)</label>
+        <p class="note" data-t="index.voice_fx_hint">En BLU, le chorus et la réverbération réduisent la compréhension : à doser avec prudence. Ils sont coupés net au retour en réception.</p>
+        <label class="check"><input id="voice-monitor" type="checkbox" disabled> <span data-t="index.voice_monitor_label">Écoute de contrôle (CASQUE obligatoire : sur haut-parleur, effet Larsen)</span></label>
         <div class="row">
-          <button id="voice-record" class="chip" disabled>Enregistrer</button>
-          <button id="voice-play" class="chip" disabled>Relire</button>
+          <button id="voice-record" class="chip" disabled data-t="voicescreen.record">Enregistrer</button>
+          <button id="voice-play" class="chip" disabled data-t="voicescreen.replay">Relire</button>
           <span id="voice-rec-text" class="dim small"></span>
         </div>
-        <p class="note">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
+        <p class="note" data-t="index.voice_monitor_hint">Écoute et relecture : sur cet appareil seulement, JAMAIS envoyées à la station ; impossibles pendant l'émission. Disponibles une fois connecté avec le micro.</p>
       </div>
     </details>
 
     <details id="sec-replay" class="listener-hide" hidden>
-      <summary>Rediffusion d'un enregistrement</summary>
+      <summary data-t="voicescreen.replay_title">Rediffusion d'un enregistrement</summary>
       <div class="body">
-        <p class="note">Enregistre l'audio reçu (<span id="replay-max">0</span> s au plus), puis renvoie-le en émission. Micro coupé pendant la diffusion, écoute sur cet appareil. Rediffuser une station à des tiers est en général interdit : sous ta responsabilité.</p>
-        <p id="replay-status" class="note">Rien d'enregistré.</p>
-        <div class="row"><button id="replay-record" class="chip">Enregistrer</button><button id="replay-send" class="primary" disabled>Diffuser en émission</button></div>
-        <p id="replay-hint" class="note" hidden>« Émission autorisée » doit être allumé.</p>
+        <p class="note"><span data-t="index.replay_intro_part1">Enregistre l'audio reçu (</span><span id="replay-max">0</span> <span data-t="index.replay_intro_part2">s au plus), puis renvoie-le en émission. Micro coupé pendant la diffusion, écoute sur cet appareil. Rediffuser une station à des tiers est en général interdit : sous ta responsabilité.</span></p>
+        <p id="replay-status" class="note" data-t="voicescreen.replay_empty">Rien d'enregistré.</p>
+        <div class="row"><button id="replay-record" class="chip" data-t="voicescreen.record">Enregistrer</button><button id="replay-send" class="primary" disabled data-t="voicescreen.broadcast">Diffuser en émission</button></div>
+        <p id="replay-hint" class="note" hidden data-t="voicescreen.armed_needed">« Émission autorisée » doit être allumé.</p>
       </div>
     </details>
 
     <details id="sec-selcall" class="listener-hide" hidden>
       <summary>SELCALL</summary>
       <div class="body">
-        <p class="note">Squelch numérique de la station par appel de groupe : armé sur un code, il coupe le son reçu jusqu'à
+        <p class="note" data-t="index.selcall_intro">Squelch numérique de la station par appel de groupe : armé sur un code, il coupe le son reçu jusqu'à
           ce qu'une station du groupe envoie ce code, puis le laisse ouvert jusqu'à ce que vous réarmiez. Réglage commun à tous
           vos appareils.</p>
         <div id="sel-state" class="sel-state">—</div>
         <div class="row">
-          <label>Code (3 à 8 chiffres) <input id="sel-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
-          <button id="sel-activate" class="primary">Activer</button>
+          <label><span data-t="selcallpanel.code_label">Code (3 à 8 chiffres)</span> <input id="sel-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
+          <button id="sel-activate" class="primary" data-t="common.enable">Activer</button>
         </div>
         <div id="sel-history" class="row sel-history"></div>
         <div class="row">
-          <button id="sel-rearm" class="chip">Réarmer</button>
-          <button id="sel-deactivate" class="chip">Désactiver</button>
+          <button id="sel-rearm" class="chip" data-t="selcallpanel.rearm">Réarmer</button>
+          <button id="sel-deactivate" class="chip" data-t="selcallpanel.deactivate">Désactiver</button>
         </div>
         <div class="row">
-          <label>Tonalités dans le son reçu <select id="sel-filter">
-            <option value="attenuate">atténuées</option><option value="mute">coupées</option><option value="chime">coupées + carillon</option>
+          <label><span data-t="selcallpanel.tones">Tonalités dans le son reçu</span> <select id="sel-filter">
+            <option value="attenuate" data-t="selcall.filter_attenuate">atténuées</option><option value="mute" data-t="selcall.filter_mute">coupées</option><option value="chime" data-t="selcall.filter_chime">coupées + carillon</option>
           </select></label>
-          <label>Atténuation <input id="sel-att" type="range" min="6" max="60" step="1"><span id="sel-att-text"></span></label>
+          <label><span data-t="selcallpanel.attenuation">Atténuation</span> <input id="sel-att" type="range" min="6" max="60" step="1"><span id="sel-att-text"></span></label>
         </div>
-        <label id="sel-tail-row" class="check"><input id="sel-tail" type="checkbox"> Envoyer la trame en fin d'émission (à la place du roger bip ; ÉMIS par la station)</label>
+        <label id="sel-tail-row" class="check"><input id="sel-tail" type="checkbox"> <span data-t="index.sel_tail_row">Envoyer la trame en fin d'émission (à la place du roger bip ; ÉMIS par la station)</span></label>
         <div class="row">
-          <button id="sel-send" class="primary" title="Appel du groupe sans parler : la station ÉMET la trame du code armé plusieurs fois">Envoyer SELCALL</button>
+          <button id="sel-send" class="primary" title="Appel du groupe sans parler : la station ÉMET la trame du code armé plusieurs fois" data-t-title="index.sel_send_title" data-t="selcallpanel.send">Envoyer SELCALL</button>
           <span id="sel-send-note" class="dim small"></span>
         </div>
         <div id="sel-level-box" class="sel-test">
-          <label>Niveau de la trame émise <input id="sel-level" type="range" min="-30" max="-1" step="0.5"><span id="sel-level-text"></span></label>
+          <label><span data-t="index.sel_level_label">Niveau de la trame émise</span> <input id="sel-level" type="range" min="-30" max="-1" step="0.5"><span id="sel-level-text"></span></label>
           <div class="row">
-            <button id="sel-calibrate" class="chip" title="Émet un ton de 1 000 Hz qui monte par paliers en surveillant l'ALC, puis règle le niveau">Réglage automatique (ALC)</button>
+            <button id="sel-calibrate" class="chip" title="Émet un ton de 1 000 Hz qui monte par paliers en surveillant l'ALC, puis règle le niveau" data-t-title="index.sel_calibrate_title" data-t="index.sel_calibrate">Réglage automatique (ALC)</button>
           </div>
-          <p class="note">Le réglage automatique ÉMET un ton jusqu'à 18 s (puissance réglée sur le poste) : sur charge fictive ou
+          <p class="note" data-t="index.sel_calibrate_hint">Le réglage automatique ÉMET un ton jusqu'à 18 s (puissance réglée sur le poste) : sur charge fictive ou
             fréquence libre, « Émission autorisée » cochée. Annuler = STOP.</p>
           <div id="sel-calibration" class="note"></div>
         </div>
         <div id="sel-last" class="note"></div>
         <div class="sel-test">
-          <div>Fichier de test (pour un correspondant)</div>
-          <p class="note">Fabriqué ici, sans la station : 2 s de silence puis la trame 3 fois. À envoyer comme DOCUMENT (pas en
+          <div data-t="selcallpanel.test_title">Fichier de test (pour un correspondant)</div>
+          <p class="note" data-t="index.sel_test_hint">Fabriqué ici, sans la station : 2 s de silence puis la trame 3 fois. À envoyer comme DOCUMENT (pas en
             message vocal) ; le correspondant le joue au micro de son poste, volume moyen, en émission, et s'identifie.</p>
           <div class="row">
-            <label>Code <input id="sel-test-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
-            <button id="sel-test-play" class="chip">Écouter</button>
-            <button id="sel-test-save" class="chip">Télécharger</button>
+            <label><span data-t="index.sel_test_code_label">Code</span> <input id="sel-test-code" inputmode="numeric" maxlength="8" pattern="[0-9]*" autocomplete="off"></label>
+            <button id="sel-test-play" class="chip" data-t="selcallpanel.listen">Écouter</button>
+            <button id="sel-test-save" class="chip" data-t="index.sel_test_save">Télécharger</button>
           </div>
         </div>
       </div>
@@ -582,25 +582,25 @@
     <details id="sec-freedv" hidden>
       <summary>FreeDV</summary>
       <div class="body">
-        <p class="note">FreeDV RADE V1 : voix numérique décodée par la station. En mode FreeDV, tous les connectés entendent la voix
+        <p class="note" data-t="freedvdialog.intro">FreeDV RADE V1 : voix numérique décodée par la station. En mode FreeDV, tous les connectés entendent la voix
           décodée à la place du son du poste, et du silence tant qu'aucun signal FreeDV n'est accroché. Le poste reste réglé comme il
           l'est : FreeDV se reçoit en BLU supérieure (USB ou PKTUSB), avec un filtre d'au moins 2,4 kHz.</p>
         <p id="fdv-state" class="fdv-state"></p>
         <p id="fdv-details" class="note"></p>
-        <div class="row listener-hide"><button id="fdv-toggle" class="chip" title="Refusé pendant une émission">Passer en FreeDV</button></div>
+        <div class="row listener-hide"><button id="fdv-toggle" class="chip" title="Refusé pendant une émission" data-t-title="index.fdv_toggle_title" data-t="freedvdialog.switch_on">Passer en FreeDV</button></div>
         <div id="fdva" hidden>
-          <h4>Activité FreeDV</h4>
-          <p class="note">D'après FreeDV Reporter (qso.freedv.org), lu par la station en simple observateur : rien n'est envoyé.
-            Note = chance de réception ici (RADE V1) : stations qui émettent, voisins qui décodent. <span class="listener-hide">Touchez une
+          <h4 data-t="freedvdialog.activity_title">Activité FreeDV</h4>
+          <p class="note"><span data-t="freedvdialog.activity_intro">D'après FreeDV Reporter (qso.freedv.org), lu par la station en simple observateur : rien n'est envoyé.
+            Note = chance de réception ici (RADE V1) : stations qui émettent, voisins qui décodent.</span> <span class="listener-hide" data-t="index.fdva_touch_hint">Touchez une
             fréquence pour y aller (USB si le poste n'est pas en BLU supérieure).</span></p>
           <p id="fdva-state" class="note"></p>
-          <div class="fdva-wrap"><table class="fdva"><thead><tr><th>Fréquence</th><th>Note</th><th>Émettent (15 min)</th><th>Reçoivent (SNR)</th></tr></thead>
+          <div class="fdva-wrap"><table class="fdva"><thead><tr><th data-t="index.fdva_col_freq">Fréquence</th><th data-t="index.fdva_col_score">Note</th><th data-t="index.fdva_col_tx">Émettent (15 min)</th><th data-t="index.fdva_col_rx">Reçoivent (SNR)</th></tr></thead>
             <tbody id="fdva-rows"></tbody></table></div>
         </div>
-        <h4>Indicatifs décodés</h4>
+        <h4 data-t="freedvdialog.calls_title">Indicatifs décodés</h4>
         <ol id="fdv-calls" class="fdv-list"></ol>
-        <h4>Séquences reçues</h4>
-        <p class="note">Qualité probable à l'écoute, de 1 à 5 étoiles : SNR médian pendant la synchro (5 dès +6 dB, 4 dès +3, 3 dès 0,
+        <h4 data-t="freedvdialog.sequences_title">Séquences reçues</h4>
+        <p class="note" data-t="freedvdialog.sequences_help">Qualité probable à l'écoute, de 1 à 5 étoiles : SNR médian pendant la synchro (5 dès +6 dB, 4 dès +3, 3 dès 0,
           2 dès −3), une étoile de moins si la synchro tient moins de 80 % du temps ou se perd souvent ; 2 au plus sous 3 s. La station
           n'enregistre pas la voix.</p>
         <ol id="fdv-seqs" class="fdv-list"></ol>
@@ -608,178 +608,178 @@
     </details>
 
     <details id="sec-breizh" class="listener-hide" hidden>
-      <summary>Breizh Audio Box</summary>
+      <summary>Breizh Audio Box</summary> <!-- i18n-ok -->
       <div class="body">
-        <p class="note">Votre voix passe par Breizh Audio Box, sur un PC du réseau local de la station, avant d'aller au poste. La station
+        <p class="note" data-t="breizhdialog.intro">Votre voix passe par Breizh Audio Box, sur un PC du réseau local de la station, avant d'aller au poste. La station
           garde le PTT, le TOT et son limiteur : si Breizh ne répond plus, l'émission continue en direct, à gain réduit. Le son du micro
           circule en clair sur ce réseau local.</p>
         <p id="bzh-state" class="bzh-state"></p>
         <p id="bzh-details" class="note"></p>
-        <label class="grow">Volume retour <input id="bzh-gain" type="range" min="-20" max="6" step="0.5" value="0"><span id="bzh-gain-text"></span></label>
-        <label class="check"><input id="bzh-bypass" type="checkbox"> Direct : ignorer Breizh (à la prochaine émission)</label>
-        <div class="row"><button id="bzh-reactivate" class="chip" hidden>Réactiver Breizh</button><button id="bzh-log-refresh" class="chip">Relire le journal</button></div>
-        <p class="note">Les réglages s'appliquent à la prochaine émission, jamais pendant. Égaliseur, chorus, réverbération et scrambler de
+        <label class="grow"><span data-t="breizhdialog.return_volume">Volume retour</span> <input id="bzh-gain" type="range" min="-20" max="6" step="0.5" value="0"><span id="bzh-gain-text"></span></label>
+        <label class="check"><input id="bzh-bypass" type="checkbox"> <span data-t="breizhdialog.bypass">Direct : ignorer Breizh (à la prochaine émission)</span></label>
+        <div class="row"><button id="bzh-reactivate" class="chip" hidden data-t="breizhdialog.reactivate">Réactiver Breizh</button><button id="bzh-log-refresh" class="chip" data-t="breizhdialog.reload_log">Relire le journal</button></div>
+        <p class="note" data-t="index.breizh_apply_hint">Les réglages s'appliquent à la prochaine émission, jamais pendant. Égaliseur, chorus, réverbération et scrambler de
           cet appareil sont coupés quand la voix passe par Breizh.</p>
         <ol id="bzh-log" class="bzh-log"></ol>
       </div>
     </details>
 
     <details id="sec-scrambler" class="listener-hide">
-      <summary>Scrambler (voix brouillée)</summary>
+      <summary data-t="voicescreen.scrambler_title">Scrambler (voix brouillée)</summary>
       <div class="body">
-        <p class="note warn-text">Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un chiffrement :
+        <p class="note warn-text" data-t="index.scrambler_warning">Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un chiffrement :
           tout possesseur d'un scrambler identique vous entend. En bandes radioamateur, le Règlement des radiocommunications (UIT, art. 25)
           et la réglementation nationale interdisent les émissions destinées à masquer le sens des messages : vous en prenez l'entière
           responsabilité. Toujours éteint à l'ouverture de la page.</p>
-        <label class="check"><input id="scr-tx" type="checkbox"> Brouiller mon émission</label>
-        <label class="check"><input id="scr-rx" type="checkbox"> Débrouiller la réception</label>
-        <label>Mode <select id="scr-mode"></select></label>
-        <label>Décalage fin (réception, BLU mal accordée) <input id="scr-offset" type="range" min="-300" max="300" step="5"><span id="scr-offset-text"></span></label>
-        <p class="note">Même mode des deux côtés. Retard ajouté : environ 43 ms. Si la voix reste brouillée en BLU, ajustez le décalage fin
+        <label class="check"><input id="scr-tx" type="checkbox"> <span data-t="voicescreen.scramble_tx">Brouiller mon émission</span></label>
+        <label class="check"><input id="scr-rx" type="checkbox"> <span data-t="voicescreen.descramble_rx">Débrouiller la réception</span></label>
+        <label><span data-t="index.scr_mode_label">Mode</span> <select id="scr-mode"></select></label>
+        <label><span data-t="index.scr_offset_label">Décalage fin (réception, BLU mal accordée)</span> <input id="scr-offset" type="range" min="-300" max="300" step="5"><span id="scr-offset-text"></span></label>
+        <p class="note" data-t="index.scrambler_hint">Même mode des deux côtés. Retard ajouté : environ 43 ms. Si la voix reste brouillée en BLU, ajustez le décalage fin
           (ou le RIT du poste). Les tonalités SELCALL et les bips de la station ne sont pas brouillés.</p>
         <div id="scr-state" class="note"></div>
       </div>
     </details>
 
     <details id="sec-swr" class="listener-hide" hidden>
-      <summary>Mesure de TOS</summary>
+      <summary data-t="swrscreen.title">Mesure de TOS</summary>
       <div class="body">
-        <p class="note">La station émet une courte porteuse FM sur chaque point (prise d'émission normale : « Émission autorisée » allumé, STOP toujours possible), coupleur arrêté, puis remet le poste en état.</p>
+        <p class="note" data-t="index.swr_intro">La station émet une courte porteuse FM sur chaque point (prise d'émission normale : « Émission autorisée » allumé, STOP toujours possible), coupleur arrêté, puis remet le poste en état.</p>
         <div class="row">
-          <label class="check"><input id="swr-use-band" type="radio" name="swr-range" checked> Bande du poste <span id="swr-band" class="dim"></span></label>
-          <label class="check"><input id="swr-use-center" type="radio" name="swr-range"> Centre et largeur</label>
+          <label class="check"><input id="swr-use-band" type="radio" name="swr-range" checked> <span data-t="index.swr_use_band_label">Bande du poste</span> <span id="swr-band" class="dim"></span></label>
+          <label class="check"><input id="swr-use-center" type="radio" name="swr-range"> <span data-t="swrscreen.center_width">Centre et largeur</span></label>
         </div>
         <div id="swr-center-row" class="row" hidden>
-          <label>Centre (kHz) <input id="swr-center" inputmode="decimal" size="9"></label>
-          <label>Largeur (kHz) <input id="swr-width" inputmode="decimal" size="7" value="100"></label>
+          <label><span data-t="swrscreen.center">Centre (kHz)</span> <input id="swr-center" inputmode="decimal" size="9"></label>
+          <label><span data-t="swrscreen.width">Largeur (kHz)</span> <input id="swr-width" inputmode="decimal" size="7" value="100"></label>
         </div>
         <div class="row">
-          <label>Points <input id="swr-points" type="number" min="2" max="50" value="11" size="4"></label>
-          <label class="grow">Puissance <input id="swr-power" type="range" min="5" max="50" step="1" value="15"><span id="swr-power-text"></span></label>
+          <label><span data-t="swrscreen.points">Points</span> <input id="swr-points" type="number" min="2" max="50" value="11" size="4"></label>
+          <label class="grow"><span data-t="index.swr_power_label">Puissance</span> <input id="swr-power" type="range" min="5" max="50" step="1" value="15"><span id="swr-power-text"></span></label>
         </div>
         <p id="swr-plan" class="note"></p>
-        <div class="row"><button id="swr-start" class="primary" disabled>Lancer la mesure</button><button id="swr-cancel" class="chip" hidden>Annuler</button></div>
+        <div class="row"><button id="swr-start" class="primary" disabled data-t="swrscreen.start">Lancer la mesure</button><button id="swr-cancel" class="chip" hidden data-t="common.cancel">Annuler</button></div>
         <p id="swr-progress" class="note"></p>
         <canvas id="swr-chart" class="swr-chart"></canvas>
         <p id="swr-summary" class="note"></p>
         <div id="swr-export" class="row" hidden>
-          <button id="swr-save" class="chip">Enregistrer l'image…</button>
-          <button id="swr-share" class="chip" hidden>Partager</button>
-          <button id="swr-copy" class="chip" hidden>Copier l'image</button>
-          <button id="swr-restored-open" class="chip">État du poste remis</button>
+          <button id="swr-save" class="chip" data-t="index.swr_save">Enregistrer l'image…</button>
+          <button id="swr-share" class="chip" hidden data-t="common.share">Partager</button>
+          <button id="swr-copy" class="chip" hidden data-t="index.swr_copy">Copier l'image</button>
+          <button id="swr-restored-open" class="chip" data-t="swrscreen.restored">État du poste remis</button>
         </div>
       </div>
     </details>
 
     <details id="sec-net" class="listener-hide" hidden>
-      <summary>Qualité du réseau</summary>
+      <summary data-t="netviews.network_quality">Qualité du réseau</summary>
       <div class="body">
         <div class="row">
-          <label>Période <select id="net-days"><option value="1">24 h</option><option value="7">7 jours</option><option value="30" selected>30 jours</option></select></label>
-          <label>Appareil <select id="net-device"><option value="">tous</option></select></label>
-          <button id="net-refresh" class="chip">Actualiser</button>
+          <label><span data-t="index.net_days_label">Période</span> <select id="net-days"><option value="1">24 h</option><option value="7" data-t="netviews.days_7">7 jours</option><option value="30" selected data-t="netviews.days_30">30 jours</option></select></label>
+          <label><span data-t="index.net_device_label">Appareil</span> <select id="net-device"><option value="" data-t="index.net_device_empty">tous</option></select></label>
+          <button id="net-refresh" class="chip" data-t="common.refresh">Actualiser</button>
         </div>
         <p id="net-status" class="note"></p>
         <div id="net-view" class="netview" hidden>
-          <h4>Synthèse</h4><table id="net-summary" class="netrows"></table>
-          <h4>Coupures par jour</h4><div id="net-days-chart" class="netbars"></div>
-          <h4>Heures les plus touchées</h4><div id="net-heat" class="netheat"></div>
-          <h4>Tronçon probable</h4><div id="net-diag" class="netbars"></div>
-          <h4>Par réseau</h4><table id="net-types" class="netrows"></table>
-          <h4>Dernières coupures</h4><ul id="net-outages" class="netlist"></ul>
-          <h4>Seuils de l'indicateur</h4>
-          <p class="note">Les seuils ne changent que la couleur de l'indicateur et les alertes, jamais l'émission. Déplacez les curseurs : le texte dit ce qu'ils auraient donné sur l'historique, sans rien changer. « Appliquer » les garde sur la station pour ce type de réseau.</p>
+          <h4 data-t="netviews.summary">Synthèse</h4><table id="net-summary" class="netrows"></table>
+          <h4 data-t="netviews.outages_per_day">Coupures par jour</h4><div id="net-days-chart" class="netbars"></div>
+          <h4 data-t="netviews.worst_hours">Heures les plus touchées</h4><div id="net-heat" class="netheat"></div>
+          <h4 data-t="netviews.likely_segment">Tronçon probable</h4><div id="net-diag" class="netbars"></div>
+          <h4 data-t="netviews.per_network">Par réseau</h4><table id="net-types" class="netrows"></table>
+          <h4 data-t="netviews.last_outages">Dernières coupures</h4><ul id="net-outages" class="netlist"></ul>
+          <h4 data-t="netviews.thresholds">Seuils de l'indicateur</h4>
+          <p class="note" data-t="netviews.thresholds_note">Les seuils ne changent que la couleur de l'indicateur et les alertes, jamais l'émission. Déplacez les curseurs : le texte dit ce qu'ils auraient donné sur l'historique, sans rien changer. « Appliquer » les garde sur la station pour ce type de réseau.</p>
           <div id="net-thr"></div>
         </div>
-        <div class="row"><button id="net-export" class="chip" title="Zip anonyme des 30 derniers jours (rapport et données, sans compte, adresse ni position) à transmettre à l'équipe de développement">Exporter (anonyme)</button><button id="net-clear" class="chip">Tout effacer…</button><button id="net-clear-confirm" class="danger" hidden>Effacer l'historique réseau</button></div>
+        <div class="row"><button id="net-export" class="chip" title="Zip anonyme des 30 derniers jours (rapport et données, sans compte, adresse ni position) à transmettre à l'équipe de développement" data-t="netviews.export" data-t-title="index.net_export_title">Exporter (anonyme)</button><button id="net-clear" class="chip" data-t="netviews.clear_all">Tout effacer…</button><button id="net-clear-confirm" class="danger" hidden data-t="netviews.clear_history">Effacer l'historique réseau</button></div>
       </div>
     </details>
 
     <details id="sec-instruments">
-      <summary>Mesures du poste</summary>
+      <summary data-t="index.instruments_section">Mesures du poste</summary>
       <div class="body">
         <div id="instruments" class="instruments"></div>
-        <p id="instruments-empty" class="note">Rien à afficher : le poste ne fournit pas ces mesures, ou la liaison est coupée.</p>
+        <p id="instruments-empty" class="note" data-t="index.instruments_empty">Rien à afficher : le poste ne fournit pas ces mesures, ou la liaison est coupée.</p>
         <div id="owner" class="note"></div>
       </div>
     </details>
 
     <details id="sec-display">
-      <summary>Affichage</summary>
+      <summary data-t="index.display_section">Affichage</summary>
       <div class="body">
-        <label>Thème des couleurs
+        <label><span data-t="index.theme_select_label">Thème des couleurs</span>
           <select id="theme-select">
-            <option value="defaut">Thème par défaut</option>
-            <option value="icom">Style Icom</option>
-            <option value="yaesu">Style Yaesu</option>
-            <option value="kenwood">Style Kenwood</option>
+            <option value="defaut" data-t="index.theme_select_defaut">Thème par défaut</option>
+            <option value="icom" data-t="index.theme_select_icom">Style Icom</option>
+            <option value="yaesu" data-t="index.theme_select_yaesu">Style Yaesu</option>
+            <option value="kenwood" data-t="index.theme_select_kenwood">Style Kenwood</option>
           </select>
         </label>
-        <label>Taille du texte
+        <label><span data-t="index.text_size_label">Taille du texte</span>
           <select id="text-size">
-            <option value="auto">Automatique (selon l'écran)</option>
-            <option value="s">Petit</option>
-            <option value="m">Moyen</option>
-            <option value="l">Grand</option>
+            <option value="auto" data-t="index.text_size_auto">Automatique (selon l'écran)</option>
+            <option value="s" data-t="index.text_size_s">Petit</option>
+            <option value="m" data-t="index.text_size_m">Moyen</option>
+            <option value="l" data-t="index.text_size_l">Grand</option>
           </select>
         </label>
-        <label>Disposition
+        <label><span data-t="index.layout_select_label">Disposition</span>
           <select id="layout-select">
-            <option value="auto">Automatique (paysage si l'écran est large)</option>
-            <option value="portrait">Portrait</option>
-            <option value="landscape">Paysage</option>
+            <option value="auto" data-t="index.layout_select_auto">Automatique (paysage si l'écran est large)</option>
+            <option value="portrait" data-t="index.layout_select_portrait">Portrait</option>
+            <option value="landscape" data-t="index.layout_select_landscape">Paysage</option>
           </select>
         </label>
-        <label class="listener-hide">Catégorie d'appareil (mise en page personnalisée)
+        <label class="listener-hide"><span data-t="index.device_select_label">Catégorie d'appareil (mise en page personnalisée)</span>
           <select id="device-select">
-            <option value="auto">Automatique (selon l'écran)</option>
-            <option value="phone">Smartphone</option>
-            <option value="tablet">Tablette</option>
-            <option value="desktop">Ordinateur</option>
+            <option value="auto" data-t="index.device_select_auto">Automatique (selon l'écran)</option>
+            <option value="phone" data-t="index.device_select_phone">Smartphone</option>
+            <option value="tablet" data-t="index.device_select_tablet">Tablette</option>
+            <option value="desktop" data-t="index.device_select_desktop">Ordinateur</option>
           </select>
         </label>
         <p id="layout-info" class="note"></p>
-        <button id="layout-factory" class="listener-hide" disabled>Revenir à l'interface d'usine</button>
+        <button id="layout-factory" class="listener-hide" disabled data-t="index.layout_factory">Revenir à l'interface d'usine</button>
       </div>
     </details>
 
     <details id="sec-cluster" class="listener-off" hidden>
-      <summary>Cluster DX <span id="cluster-dot" class="cluster-dot"></span></summary>
+      <summary>Cluster DX <span id="cluster-dot" class="cluster-dot"></span></summary> <!-- i18n-ok -->
       <div class="body">
         <div id="cluster-title" class="cluster-title">—</div>
         <ul id="cluster-sources" class="cluster-sources"></ul>
         <div id="cluster-age" class="note"></div>
-        <div class="row"><button id="cluster-all" class="chip" title="Les 30 derniers spots reçus, toutes bandes">Tout afficher</button></div>
+        <div class="row"><button id="cluster-all" class="chip" title="Les 30 derniers spots reçus, toutes bandes" data-t-title="index.cluster_all_title" data-t="memoriestab.show_all">Tout afficher</button></div>
         <div id="cluster-recent" class="cluster-recent" hidden></div>
       </div>
     </details>
 
     <details id="sec-diag">
-      <summary>Diagnostic et journal</summary>
+      <summary data-t="index.diag_section">Diagnostic et journal</summary>
       <div class="body">
         <div id="net" class="note">—</div>
         <div id="diag" class="note">—</div>
-        <div class="row"><button id="host-open" class="chip listener-hide" hidden>Synthèse du matériel de la station</button></div>
-        <label>Pertes de connexion (les 10 dernières)<select id="loss-select"></select></label>
-        <pre id="loss-detail" class="lossdetail">Aucune perte de connexion enregistrée.</pre>
+        <div class="row"><button id="host-open" class="chip listener-hide" hidden data-t="settingstab.host">Synthèse du matériel de la station</button></div>
+        <label><span data-t="index.loss_select_label">Pertes de connexion (les 10 dernières)</span><select id="loss-select"></select></label>
+        <pre id="loss-detail" class="lossdetail" data-t="index.loss_detail">Aucune perte de connexion enregistrée.</pre>
         <div class="row">
-          <button id="loss-copy" disabled>Copier le rapport</button>
-          <button id="loss-clear" disabled>Effacer l'historique</button>
+          <button id="loss-copy" disabled data-t="index.loss_copy">Copier le rapport</button>
+          <button id="loss-clear" disabled data-t="index.loss_clear">Effacer l'historique</button>
         </div>
         <ul id="log"></ul>
       </div>
     </details>
 
     <details id="sec-bug" class="listener-hide">
-      <summary>Signaler un problème</summary>
+      <summary data-t="problemreportdialog.title">Signaler un problème</summary>
       <div class="body">
-        <p class="note">Décris ce qui s'est passé, puis prépare le rapport : il contient la version, l'appareil, l'état de la liaison et du poste, les dernières pertes de connexion et le journal de la page. Jamais de mot de passe. Tu le relis avant de l'envoyer.</p>
-        <label>Ce qui s'est passé <textarea id="bug-text" rows="4" maxlength="2000" placeholder="ex. le waterfall reste noir après avoir changé de bande"></textarea></label>
-        <div class="row"><button id="bug-prepare">Préparer le rapport</button></div>
+        <p class="note" data-t="index.bug_intro">Décris ce qui s'est passé, puis prépare le rapport : il contient la version, l'appareil, l'état de la liaison et du poste, les dernières pertes de connexion et le journal de la page. Jamais de mot de passe. Tu le relis avant de l'envoyer.</p>
+        <label><span data-t="problemreportdialog.what_happened">Ce qui s'est passé</span> <textarea id="bug-text" rows="4" maxlength="2000" placeholder="ex. le waterfall reste noir après avoir changé de bande" data-t-placeholder="index.bug_text_hint"></textarea></label>
+        <div class="row"><button id="bug-prepare" data-t="index.bug_prepare">Préparer le rapport</button></div>
         <pre id="bug-report" class="lossdetail" hidden></pre>
         <div class="row">
-          <button id="bug-send" disabled title="Rangé sur la station : il sera joint au rapport de dépannage de TRX Console (menu 6.3)">Envoyer à la station</button>
-          <button id="bug-share" disabled title="Partage du téléphone (e-mail, messagerie...) ou copie">Partager / e-mail</button>
+          <button id="bug-send" disabled title="Rangé sur la station : il sera joint au rapport de dépannage de TRX Console (menu 6.3)" data-t-title="index.bug_send_title" data-t="index.bug_send">Envoyer à la station</button>
+          <button id="bug-share" disabled title="Partage du téléphone (e-mail, messagerie...) ou copie" data-t="index.bug_share" data-t-title="index.bug_share_title">Partager / e-mail</button>
         </div>
       </div>
     </details>
@@ -789,59 +789,59 @@
 <div id="keypad" class="keypad" hidden>
   <div class="kp-panel">
     <div id="kp-display" class="kp-display">—</div>
-    <div id="kp-preview" class="kp-preview">kHz si 1000 ou plus, sinon MHz (ex. 7074 ou 14.205)</div>
+    <div id="kp-preview" class="kp-preview" data-t="index.kp_preview">kHz si 1000 ou plus, sinon MHz (ex. 7074 ou 14.205)</div>
     <div id="kp-keys" class="kp-keys"></div>
     <div class="row">
-      <button id="kp-cancel">Annuler</button>
+      <button id="kp-cancel" data-t="common.cancel">Annuler</button>
       <button id="kp-ok" class="primary" disabled>OK</button>
     </div>
   </div>
 </div>
 <div id="mini-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div class="kp-display ctl-title">Petit waterfall</div>
+    <div class="kp-display ctl-title" data-t="hfscopeview.mini_title">Petit waterfall</div>
     <p id="mini-span-info" class="note"></p>
-    <div class="dim">Spectre du poste (réception seulement)</div>
+    <div class="dim" data-t="hfscopeview.rig_spectrum">Spectre du poste (réception seulement)</div>
     <div class="row"><button id="mini-set-span" class="chip">—</button><button id="mini-set-mode" class="chip">—</button><button id="mini-set-speed" class="chip">—</button></div>
     <div class="row"><button id="mini-ref-down" class="chip">REF −</button><span id="mini-ref" class="dim">—</span><button id="mini-ref-up" class="chip">REF +</button></div>
-    <div class="dim">Affichage (navigateur, commun avec le grand spectre)</div>
-    <div class="row"><button id="mini-gain" class="chip">GAIN 0</button><button id="mini-range" class="chip">PLAGE 40 dB</button><button id="mini-hot" class="chip">COUL. S</button></div>
-    <p class="note">Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).</p>
-    <div class="row"><button id="mini-hide" class="chip">Masquer</button><button id="mini-close" class="primary">Fermer</button></div>
+    <div class="dim" data-t="index.mini_display_title">Affichage (navigateur, commun avec le grand spectre)</div>
+    <div class="row"><button id="mini-gain" class="chip">GAIN 0</button><button id="mini-range" class="chip" data-t="index.mini_range">PLAGE 40 dB</button><button id="mini-hot" class="chip" data-t="index.mini_hot">COUL. S</button></div>
+    <p class="note" data-t="hfscopeview.s_colors_help">Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).</p>
+    <div class="row"><button id="mini-hide" class="chip" data-t="common.hide">Masquer</button><button id="mini-close" class="primary" data-t="common.close">Fermer</button></div>
   </div>
 </div>
 <div id="stophold-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div id="stophold-title" class="kp-display ctl-title">STOP maintenu : que voulez-vous faire ?</div>
-    <p id="stophold-text" class="note">La station est déjà revenue en réception.</p>
-    <div class="row"><button id="stophold-disconnect" class="chip">Se déconnecter</button></div>
-    <div class="row"><button id="stophold-power" class="chip">Arrêter le TRX à distance</button></div>
+    <div id="stophold-title" class="kp-display ctl-title" data-t="powerviews.hold_question">STOP maintenu : que voulez-vous faire ?</div>
+    <p id="stophold-text" class="note" data-t="powerviews.already_rx">La station est déjà revenue en réception.</p>
+    <div class="row"><button id="stophold-disconnect" class="chip" data-t="powerviews.disconnect">Se déconnecter</button></div>
+    <div class="row"><button id="stophold-power" class="chip" data-t="powerviews.power_off_remote">Arrêter le TRX à distance</button></div>
     <p id="stophold-reason" class="note" hidden></p>
-    <div class="row"><button id="stophold-confirm" class="chip danger" hidden>Arrêter le TRX</button><button id="stophold-cancel" class="primary">Annuler</button></div>
+    <div class="row"><button id="stophold-confirm" class="chip danger" hidden data-t="powerviews.power_off">Arrêter le TRX</button><button id="stophold-cancel" class="primary" data-t="common.cancel">Annuler</button></div>
   </div>
 </div>
 <div id="power-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div class="kp-display ctl-title">Allumage du TRX</div>
+    <div class="kp-display ctl-title" data-t="power.dialog_title">Allumage du TRX</div>
     <ul id="power-steps" class="presence-list power-steps"></ul>
     <p id="power-dialog-text" class="note"></p>
-    <div class="row"><button id="power-retry" class="chip" hidden>Réessayer</button><button id="power-continue" class="chip" hidden>Continuer sans le poste</button><button id="power-hide" class="primary">Masquer</button></div>
+    <div class="row"><button id="power-retry" class="chip" hidden data-t="common.retry">Réessayer</button><button id="power-continue" class="chip" hidden data-t="powerviews.continue_without">Continuer sans le poste</button><button id="power-hide" class="primary" data-t="common.hide">Masquer</button></div>
   </div>
 </div>
 <div id="swr-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div class="kp-display ctl-title">État du poste remis</div>
+    <div class="kp-display ctl-title" data-t="swrscreen.restored">État du poste remis</div>
     <ul id="swr-restored" class="presence-list"></ul>
     <ul id="swr-differences" class="presence-list swr-differences"></ul>
-    <p class="note">Si un réglage n'a pas été remis, corrige-le à la main sur le poste ou dans la page.</p>
-    <div class="row"><button id="swr-dialog-close" class="primary">Fermer</button></div>
+    <p class="note" data-t="index.swr_dialog_hint">Si un réglage n'a pas été remis, corrige-le à la main sur le poste ou dans la page.</p>
+    <div class="row"><button id="swr-dialog-close" class="primary" data-t="common.close">Fermer</button></div>
   </div>
 </div>
 <div id="host-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div class="kp-display ctl-title">Matériel de la station</div>
+    <div class="kp-display ctl-title" data-t="hostviews.title">Matériel de la station</div>
     <div id="host-sections" class="host-sections"></div>
-    <div class="row"><button id="host-refresh" class="chip">Actualiser</button><button id="host-close" class="chip">Fermer</button></div>
+    <div class="row"><button id="host-refresh" class="chip" data-t="common.refresh">Actualiser</button><button id="host-close" class="chip" data-t="common.close">Fermer</button></div>
   </div>
 </div>
 <div id="fr-dialog" class="keypad" hidden>
@@ -853,11 +853,11 @@
 </div>
 <div id="presence-dialog" class="keypad" hidden>
   <div class="kp-panel">
-    <div class="kp-display ctl-title">Connectés à la station</div>
+    <div class="kp-display ctl-title" data-t="presenceviews.title">Connectés à la station</div>
     <ul id="presence-list" class="presence-list"></ul>
     <p id="presence-note" class="note"></p>
-    <div class="row"><button id="presence-reopen" class="chip" hidden>Rouvrir l'écoute des visiteurs</button>
-      <button id="presence-close" class="chip">Fermer</button></div>
+    <div class="row"><button id="presence-reopen" class="chip" hidden data-t="presenceviews.reopen">Rouvrir l'écoute des visiteurs</button>
+      <button id="presence-close" class="chip" data-t="common.close">Fermer</button></div>
   </div>
 </div>
 <div id="ctl-dialog" class="keypad" hidden>
@@ -865,50 +865,50 @@
     <div id="ctl-dialog-title" class="kp-display ctl-title">—</div>
     <div id="ctl-dialog-onrow" class="row"><button id="ctl-dialog-toggle" class="chip">—</button></div>
     <div id="ctl-notch-row" class="row" hidden>
-      <button id="ctl-notch-off" class="chip">Arrêt</button>
-      <button id="ctl-notch-auto" class="chip">Automatique</button>
-      <button id="ctl-notch-manual" class="chip">Manuel</button>
+      <button id="ctl-notch-off" class="chip" data-t="index.ctl_notch_off">Arrêt</button>
+      <button id="ctl-notch-auto" class="chip" data-t="index.ctl_notch_auto">Automatique</button>
+      <button id="ctl-notch-manual" class="chip" data-t="index.ctl_notch_manual">Manuel</button>
     </div>
-    <label id="ctl-level-row" hidden>Niveau <span id="ctl-level-text" class="dim"></span>
+    <label id="ctl-level-row" hidden><span data-t="index.ctl_level_row">Niveau</span> <span id="ctl-level-text" class="dim"></span>
       <input id="ctl-level" type="range" min="0" max="1" step="0.01" value="0"></label>
     <div id="ctl-dialog-note" class="note"></div>
-    <div class="row"><button id="ctl-dialog-close" class="primary">Fermer</button></div>
+    <div class="row"><button id="ctl-dialog-close" class="primary" data-t="common.close">Fermer</button></div>
   </div>
 </div>
 <div id="hfscope" class="hf" hidden>
   <div class="hf-bar">
     <span id="hf-freq" class="hf-freq">—</span>
     <span id="hf-mode" class="hf-mode"></span>
-    <span id="hf-tx" class="hf-tx" hidden>ÉMISSION EN COURS</span>
+    <span id="hf-tx" class="hf-tx" hidden data-t="index.hf_tx">ÉMISSION EN COURS</span>
     <span id="hf-info" class="hf-info"></span>
     <span class="hf-actions">
-      <span id="hf-cluster" class="cluster-dot" hidden title="Cluster DX"></span>
-      <button id="hf-spots" class="chip" hidden title="Afficher ou masquer les spots du Cluster DX sur le spectre">SPOTS</button>
-      <button id="hf-list" class="chip" hidden title="Liste des spots de la bande">LISTE</button>
-      <button id="hf-vfo" class="chip listener-off" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)">VFO</button>
-      <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB">GAIN 0</button>
-      <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)">PLAGE 40 dB</button>
-      <button id="hf-hot" class="chip" title="Couleurs selon le niveau S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif) ; éteint = couleurs relatives">COUL. S</button>
-      <button id="hf-stop" class="stop listener-off" title="Coupe l'émission (toujours possible)">STOP</button>
-      <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance">Fermer</button>
+      <span id="hf-cluster" class="cluster-dot" hidden title="Cluster DX"></span> <!-- i18n-ok -->
+      <button id="hf-spots" class="chip" hidden title="Afficher ou masquer les spots du Cluster DX sur le spectre" data-t-title="index.hf_spots_title">SPOTS</button>
+      <button id="hf-list" class="chip" hidden title="Liste des spots de la bande" data-t-title="index.hf_list_title" data-t="hfscopeview.list">LISTE</button>
+      <button id="hf-vfo" class="chip listener-off" title="Accord au doigt : tant qu'il est allumé, glisser le spectre change la fréquence (comme le VFO)" data-t-title="index.hf_vfo_title">VFO</button>
+      <button id="hf-gain" class="chip" title="Sensibilité des couleurs, en dB" data-t-title="index.hf_gain_title">GAIN 0</button>
+      <button id="hf-range" class="chip" title="Contraste : écart du noir au blanc, en dB (80 = toute l'échelle du poste ; sinon, le noir suit le bruit)" data-t-title="index.hf_range_title" data-t="index.hf_range">PLAGE 40 dB</button>
+      <button id="hf-hot" class="chip" title="Couleurs selon le niveau S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif) ; éteint = couleurs relatives" data-t="index.hf_hot" data-t-title="index.hf_hot_title">COUL. S</button>
+      <button id="hf-stop" class="stop listener-off" title="Coupe l'émission (toujours possible)" data-t-title="index.hf_stop_title">STOP</button>
+      <button id="hf-close" class="chip" title="Revenir aux graphiques de puissance" data-t="common.close" data-t-title="index.hf_close_title">Fermer</button>
     </span>
   </div>
-  <div class="hf-bar hf-rig listener-off" title="Réglages du spectre du poste lui-même (refusés pendant l'émission)">
-    <span class="hf-info">Poste :</span>
-    <button id="hf-set-mode" class="chip" title="Mode du spectre : centré sur la fréquence ou bornes fixes">CENT</button>
-    <button id="hf-set-span" class="chip" title="Largeur affichée (mode centré) : plus étroite = plus de détail">SPAN ?</button>
-    <button id="hf-ref-down" class="chip" title="Niveau de référence -1 dB">REF −</button>
+  <div class="hf-bar hf-rig listener-off" title="Réglages du spectre du poste lui-même (refusés pendant l'émission)" data-t-title="index.hf_rig_title">
+    <span class="hf-info" data-t="index.hf_rig_label">Poste :</span>
+    <button id="hf-set-mode" class="chip" title="Mode du spectre : centré sur la fréquence ou bornes fixes" data-t-title="index.hf_set_mode_title" data-t="index.hf_set_mode">CENT</button>
+    <button id="hf-set-span" class="chip" title="Largeur affichée (mode centré) : plus étroite = plus de détail" data-t-title="index.hf_set_span_title">SPAN ?</button>
+    <button id="hf-ref-down" class="chip" title="Niveau de référence -1 dB" data-t-title="index.hf_ref_down_title">REF −</button>
     <span id="hf-ref" class="hf-info">REF ?</span>
-    <button id="hf-ref-up" class="chip" title="Niveau de référence +1 dB">REF +</button>
-    <button id="hf-set-speed" class="chip" title="Vitesse de balayage du poste">VIT ?</button>
+    <button id="hf-ref-up" class="chip" title="Niveau de référence +1 dB" data-t-title="index.hf_ref_up_title">REF +</button>
+    <button id="hf-set-speed" class="chip" title="Vitesse de balayage du poste" data-t="hfscope.speed_unknown" data-t-title="index.hf_set_speed_title">VIT ?</button>
   </div>
-  <div id="hf-plot" class="hf-plot" title="Spectre HF du poste : toucher = accorder (au kHz) ; « Fermer » pour revenir aux graphiques de puissance">
+  <div id="hf-plot" class="hf-plot" title="Spectre HF du poste : toucher = accorder (au kHz) ; « Fermer » pour revenir aux graphiques de puissance" data-t-title="index.hf_plot_title">
     <canvas id="hf-spec" class="hf-spec"></canvas>
     <canvas id="hf-fall" class="hf-fall"></canvas>
     <canvas id="hf-grid" class="hf-grid"></canvas>
     <div id="hf-marker" class="hf-marker" hidden></div>
     <div id="hf-spot-layer" class="hf-spots"></div>
-    <div id="hf-wait" class="hf-wait">En attente du spectre du poste…</div>
+    <div id="hf-wait" class="hf-wait" data-t="hfscope.wait_ok">En attente du spectre du poste…</div>
   </div>
   <div id="hf-axis" class="hf-axis"></div>
   <div id="spot-card" class="spot-card" hidden>
@@ -917,17 +917,17 @@
     <div id="spot-info" class="hf-info"></div>
     <div id="spot-comment" class="spot-comment"></div>
     <div class="row">
-      <button id="spot-qsy" class="primary" title="Mettre le poste sur la fréquence (et le mode) du spot ; refusé pendant l'émission">QSY</button>
-      <button id="spot-close">Fermer</button>
+      <button id="spot-qsy" class="primary" title="Mettre le poste sur la fréquence (et le mode) du spot ; refusé pendant l'émission" data-t-title="index.spot_qsy_title">QSY</button>
+      <button id="spot-close" data-t="common.close">Fermer</button>
     </div>
     <div id="spot-note" class="hf-info"></div>
   </div>
   <div id="spot-list" class="spot-list" hidden>
     <div class="hf-bar">
-      <span id="spot-list-title" class="spot-dx">Spots de la bande</span>
+      <span id="spot-list-title" class="spot-dx" data-t="index.spot_list_title">Spots de la bande</span>
       <span class="hf-actions">
-        <button id="spot-sort" class="chip">Tri : fréquence</button>
-        <button id="spot-list-close" class="chip">Fermer</button>
+        <button id="spot-sort" class="chip" data-t="hfscopeview.sort_freq">Tri : fréquence</button>
+        <button id="spot-list-close" class="chip" data-t="common.close">Fermer</button>
       </span>
     </div>
     <div id="spot-items" class="spot-items"></div>

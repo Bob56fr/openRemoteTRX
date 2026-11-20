@@ -172,12 +172,13 @@ class MicProfilesTest {
         assertEquals(MicProcessing(echo = true, noise = true), MicProfiles.processing("noisy"))
         assertEquals(MicProcessing(echo = true, noise = false), MicProfiles.processing("inconnu"))
         assertEquals(MicProcessing(echo = false, noise = true), MicProfiles.processing("custom", customEcho = false, customNoise = true))
-        // Même table que la page (client.js, MIC_PROFILES)
-        val js = java.io.File("../../trxstation/gateway/api/static/client.js").readText()
+        // Même table que la page (client.js, MIC_PROFILES) : mêmes libellés (clés partagées) et mêmes traitements
+        PageI18n.assertSameTexts("client.js", "MicProfiles.kt", "micprofiles.")
+        val js = java.io.File(PageI18n.repo, "trxstation/gateway/api/static/client.js").readText()
         for (p in MicProfiles.ALL) {
             val pr = p.processing
-            val expected = if (pr == null) "${p.key}: { label: \"${p.label}\", echo: null, noise: null }"
-                else "${p.key}: { label: \"${p.label}\", echo: ${pr.echo}, noise: ${pr.noise} }"
+            val expected = if (pr == null) "${p.key}: { label: I18N.t(\"micprofiles.${p.key}\"), echo: null, noise: null }"
+                else "${p.key}: { label: I18N.t(\"micprofiles.${p.key}\"), echo: ${pr.echo}, noise: ${pr.noise} }"
             assertTrue(expected in js, expected)
         }
     }

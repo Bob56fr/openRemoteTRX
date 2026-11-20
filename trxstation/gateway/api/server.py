@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
 # Catalogues de textes de la page (i18n.js), liste FERMÉE : tronc commun « client » dans chaque langue de la station
 I18N_DIR = Path(__file__).resolve().parents[2] / "i18n"
-I18N_DOMAINS = ("client",)
+I18N_DOMAINS = ("client", "shared", "page")   # tronc commun, textes communs page / application, page seule
 I18N_FILES = tuple(f"{domain}.{lang}.json" for domain in I18N_DOMAINS for lang in LANGS)
 WEB_FILES = {"/": ("index.html", "text/html"), "/client.js": ("client.js", "text/javascript"), "/i18n.js": ("i18n.js", "text/javascript"),
              "/client.css": ("client.css", "text/css"), "/ui.js": ("ui.js", "text/javascript"),

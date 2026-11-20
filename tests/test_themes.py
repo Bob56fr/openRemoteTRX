@@ -160,7 +160,7 @@ HTML = (STATIC / "index.html").read_text(encoding="utf-8")
 
 def test_selector_offers_exactly_the_themes_of_the_reference_file():
     select = re.search(r'<select id="theme-select">(.*?)</select>', HTML, re.S).group(1)
-    options = re.findall(r'<option value="([^"]+)">([^<]+)</option>', select)
+    options = re.findall(r'<option value="([^"]+)"[^>]*>([^<]+)</option>', select)
     assert options == [(k, t["name"]) for k, t in THEMES["themes"].items()]
     assert options[0][0] == "defaut"
 

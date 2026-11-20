@@ -7,27 +7,30 @@
    Calcul : transformée de Fourier à court terme (2 048 points, demi-recouvrement, fenêtres racine de Hann), bins de la
    bande 300-3 000 Hz découpée en 1 à 5 bandes de même largeur ; chaque bande est recopiée dans une autre (permutation)
    à l'endroit ou retournée (inversion = miroir + conjugué). Les limites sont choisies sur des bins PAIRS : le
-   déplacement d'un bin est alors toujours d'un nombre pair de bins, ce qui rend l'opération indépendante du découpage
-   en trames ; l'émetteur et le récepteur n'ont donc pas besoin d'être synchronisés. Réception : décalage fin (BLU mal
+   déplacement d'un bin est alors toujours d'un nombre pair de bins, ce qui rend l'opération indépendante du découpage   // i18n-ok (commentaire)
+   en trames ; l'émetteur et le récepteur n'ont donc pas besoin d'être synchronisés. Réception : décalage fin (BLU mal   // i18n-ok (commentaire)
    accordée) par un décaleur de fréquence (transformée de Hilbert) avant le débrouillage.
 
    Même fichier : module Node (tests), script de la page et module AudioWorklet (registerProcessor). */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  // Absent dans le module AudioWorklet (aucun texte n'y est lu).
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const FRAME = 2048, HOP = 1024, LO_HZ = 300, HI_HZ = 3000, OFFSET_MAX_HZ = 300;
   // perm[i] = case où va la bande i ; inv[i] = 1 si la bande est retournée
   const MODES = {
-    inv1: { label: "Inversion simple (1 bande)", perm: [0], inv: [1] },
-    inv2: { label: "2 bandes inversées", perm: [0, 1], inv: [1, 1] },
-    inv3: { label: "3 bandes inversées", perm: [0, 1, 2], inv: [1, 1, 1] },
-    inv4: { label: "4 bandes inversées", perm: [0, 1, 2, 3], inv: [1, 1, 1, 1] },
-    inv5: { label: "5 bandes inversées", perm: [0, 1, 2, 3, 4], inv: [1, 1, 1, 1, 1] },
-    mix2: { label: "2 bandes échangées", perm: [1, 0], inv: [0, 0] },
-    mix3: { label: "3 bandes mélangées", perm: [2, 0, 1], inv: [1, 0, 1] },
-    mix4: { label: "4 bandes mélangées", perm: [1, 3, 0, 2], inv: [1, 1, 0, 0] },
-    mix5a: { label: "5 bandes mélangées A", perm: [4, 2, 0, 3, 1], inv: [1, 1, 1, 1, 1] },
-    mix5b: { label: "5 bandes mélangées B", perm: [2, 4, 1, 0, 3], inv: [0, 1, 0, 1, 1] },
+    inv1: { get label() { return I18N.t("scrambler.mode_inv1"); }, perm: [0], inv: [1] },
+    inv2: { get label() { return I18N.t("scrambler.mode_inv2"); }, perm: [0, 1], inv: [1, 1] },
+    inv3: { get label() { return I18N.t("scrambler.mode_inv3"); }, perm: [0, 1, 2], inv: [1, 1, 1] },
+    inv4: { get label() { return I18N.t("scrambler.mode_inv4"); }, perm: [0, 1, 2, 3], inv: [1, 1, 1, 1] },
+    inv5: { get label() { return I18N.t("scrambler.mode_inv5"); }, perm: [0, 1, 2, 3, 4], inv: [1, 1, 1, 1, 1] },
+    mix2: { get label() { return I18N.t("scrambler.mode_mix2"); }, perm: [1, 0], inv: [0, 0] },
+    mix3: { get label() { return I18N.t("scrambler.mode_mix3"); }, perm: [2, 0, 1], inv: [1, 0, 1] },
+    mix4: { get label() { return I18N.t("scrambler.mode_mix4"); }, perm: [1, 3, 0, 2], inv: [1, 1, 0, 0] },
+    mix5a: { get label() { return I18N.t("scrambler.mode_mix5a"); }, perm: [4, 2, 0, 3, 1], inv: [1, 1, 1, 1, 1] },
+    mix5b: { get label() { return I18N.t("scrambler.mode_mix5b"); }, perm: [2, 4, 1, 0, 3], inv: [0, 1, 0, 1, 1] },
   };
 
   function defaults() { return { tx: false, rx: false, mode: "inv1", offsetHz: 0 }; }
@@ -55,7 +58,7 @@
   function binMap(modeKey, direction, rate, frame) {
     /* dest[k] = bin où va le bin k (-1 : supprimé) ; conj[k] = 1 si retourné. direction : "tx" brouille, "rx" débrouille. */
     const mode = MODES[modeKey];
-    if (!mode) throw new Error("mode de scrambler inconnu : " + modeKey);
+    if (!mode) throw new Error("mode de scrambler inconnu : " + modeKey);   // i18n-ok (erreur de programmation)
     const half = frame / 2 + 1;
     const dest = new Int32Array(half).fill(-1), conj = new Uint8Array(half);
     const b = bands(mode.perm.length, rate, frame);

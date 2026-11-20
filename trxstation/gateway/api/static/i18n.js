@@ -3,18 +3,26 @@
 /* Textes de la page dans la langue de l'opérateur (cahier docs/application-traduction-cahier-des-charges.md).
  *
  * Catalogues : trxstation/i18n/<domaine>.<langue>.json, objets {clé: texte} avec des champs {nom} ; le TRONC COMMUN
- * (domaine « client » : refus, coupures) est lu aussi par la station et copié dans l'application Android. Le français
+ * (domaine « client » : refus, coupures) est lu aussi par la station et copié dans l'application Android ; le domaine
+ * « shared » porte les autres textes communs à la page et à l'application (même clé des deux côtés, copié aussi dans
+ * l'application ; lot T4) ; le domaine « page » les textes propres à la page. Le français
  * est la référence : une clé absente d'une langue retombe sur le français, une clé absente partout s'affiche telle
  * quelle (jamais d'exception : la page doit toujours s'afficher).
  *
  * Navigateur : catalogues servis par la station (/i18n/<domaine>.<langue>.json, liste fermée), chargés au démarrage
- * (`ready`) ; Node (tests) : lus sur le disque, prêts tout de suite.
+ * (`ready`) ; Node (tests) : lus sur le disque, prêts tout de suite. AUCUN texte ne se lit avant `ready` (la page
+ * attend avant d'afficher quoi que ce soit) : une table de textes se relit à l'affichage, jamais au chargement du
+ * script.
+ *
+ * index.html garde le texte français dans l'élément (affiché tel quel si le catalogue manque) et porte sa clé :
+ * `data-t="clé"` (contenu, élément sans enfant), `data-t-title`, `data-t-placeholder`, `data-t-aria-label`,
+ * `data-t-alt`, `data-t-label` (attributs) ; `apply(élément)` les remplit dans la langue choisie.
  */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
 
   const LANGS = ["fr", "en", "de", "es"];
-  const DOMAINS = ["client"];
+  const DOMAINS = ["client", "shared", "page"];
   // Langues PROPOSÉES par la page : la page elle-même n'est traduite qu'au lot T5 ; d'ici là elle reste en français
   // (refus et coupures traduits ailleurs, mais pas mélangés à une page française).
   const OFFERED = ["fr"];
@@ -56,6 +64,29 @@
 
   function t(key, fields) { const text = lookup(key); return fill(text === null ? key : text, fields); }
   function has(key) { return lookup(key) !== null; }
+  function plural(key, n, fields) {
+    /* Clés `<clé>_one` / `<clé>_other` ; {n} rempli d'office. Français : 0 et 1 au singulier ; autres langues : ±1. */
+    const one = current === "fr" ? Math.abs(n) < 2 : Math.abs(n) === 1;
+    return t(key + (one ? "_one" : "_other"), Object.assign({ n: n }, fields || {}));
+  }
+
+  const ATTRS = ["title", "placeholder", "aria-label", "alt", "label"];
+
+  function apply(el) {
+    /* Remplit les textes marqués de `el` et de ses descendants (index.html, fragments clonés d'un modèle). */
+    if (!el || typeof el.querySelectorAll !== "function") return;
+    const nodes = [el, ...el.querySelectorAll("[data-t],[data-t-title],[data-t-placeholder],[data-t-aria-label],[data-t-alt],[data-t-label]")];
+    for (const node of nodes) {
+      if (!node.getAttribute) continue;
+      const key = node.getAttribute("data-t");
+      if (key && has(key)) node.textContent = t(key);
+      for (const attr of ATTRS) {
+        const k = node.getAttribute("data-t-" + attr);
+        if (k && has(k)) node.setAttribute(attr, t(k));
+      }
+    }
+    if (el.documentElement && el.documentElement.setAttribute) el.documentElement.setAttribute("lang", current);
+  }
 
   function use(lang, data) {
     /* Tests : remplace les catalogues d'une langue et la rend courante. */
@@ -84,7 +115,7 @@
       : Promise.resolve().then(() => { loaded = true; });
   }
 
-  const api = { LANGS, OFFERED, chooseLang, t, has, use, ready,
+  const api = { LANGS, OFFERED, chooseLang, t, has, plural, use, apply, ready,
                 get lang() { return current; }, get loaded() { return loaded; } };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxI18n = api; }
 })(typeof window !== "undefined" ? window : globalThis);

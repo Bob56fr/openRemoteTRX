@@ -5,18 +5,25 @@
    « Monitoring »). Mêmes actions que le menu 6.5 de TRX Console ; le module « monlink » n'agit jamais sur le poste et
    la station qui aide ne peut que lire et DEMANDER. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
 
-  const ROLES = { receiver: "vous aidez cette station", emitter: "cette station vous aide" };
-  const STATES = { confirm: "empreinte à comparer", active: "active", paused: "en pause" };
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
+
+  // Textes relus à l'affichage (catalogues chargés après ce script dans le navigateur).
+  function roles() { return { receiver: I18N.t("monitoring.role_receiver"), emitter: I18N.t("monitoring.role_emitter") }; }
+  function states() {
+    return { confirm: I18N.t("monitoring.state_confirm"), active: I18N.t("monitoring.state_active"),
+             paused: I18N.t("monitoring.state_paused") };
+  }
+  function profiles() {
+    return {
+      essentiel: { label: I18N.t("monitoring.profile_essential"), rig: false, events_min: "erreur" },
+      diagnostic: { label: I18N.t("monitoring.profile_diagnostic"), rig: true, events_min: "avertissement" },
+    };
+  }
   const SEVERITIES = ["info", "avertissement", "erreur", "critique"];
   const HOURS = [1, 2, 4, 24];
   const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";          // Crockford, comme la station (monlink/invite.py)
-  const PROFILES = {
-    essentiel: { label: "Essentiel : santé de la machine et erreurs", rig: false, events_min: "erreur" },
-    diagnostic: { label: "Diagnostic : en plus, état du poste et avertissements (conseillé)", rig: true,
-                  events_min: "avertissement" },
-  };
 
   function normalizeCode(text) {
     /* Code tapé -> « ABCDE-FGHJK », ou null : casse libre, espaces et tirets ignorés, O = 0, I et L = 1. */
@@ -28,7 +35,7 @@
 
   function profile(choice, freqMode) {
     /* Profil envoyé au module : « essentiel » ou « diagnostic », fréquence et mode à part (masqués par défaut). */
-    const p = PROFILES[choice] || PROFILES.diagnostic;
+    const all = profiles(), p = all[choice] || all.diagnostic;
     return { rig: p.rig, events_min: p.events_min, freq_mode: !!freqMode };
   }
 
@@ -38,15 +45,15 @@
     /* Détails d'une liaison, dans les mots de TRX Console (menu 6.5). */
     const out = [];
     if (link.state !== "confirm") {
-      out.push(link.last_rx_age === null || link.last_rx_age === undefined ? "aucune nouvelle encore"
-               : "dernières nouvelles il y a " + minutes(link.last_rx_age) + " min");
+      out.push(link.last_rx_age === null || link.last_rx_age === undefined ? I18N.t("monitoring.no_news")
+               : I18N.t("monitoring.last_news", { min: minutes(link.last_rx_age) }));
     }
-    if (link.request) out.push(link.request.snapshot ? "DEMANDE DE RAPPORT en attente" : "DEMANDE D'ASSISTANCE en attente");
-    if (link.assist_left_s) out.push("assistance encore " + Math.max(1, minutes(link.assist_left_s)) + " min");
-    if (link.paused) out.push("en pause");
-    if (link.silent) out.push("SANS NOUVELLES (alerte envoyée)");
-    if (link.report_due) out.push("rapport de dépannage en préparation");
-    if (link.reports) out.push(link.reports + " rapport(s) reçu(s)");
+    if (link.request) out.push(I18N.t(link.request.snapshot ? "monitoring.report_pending" : "monitoring.assist_pending"));
+    if (link.assist_left_s) out.push(I18N.t("monitoring.assist_left", { min: Math.max(1, minutes(link.assist_left_s)) }));
+    if (link.paused) out.push(I18N.t("monitoring.paused"));
+    if (link.silent) out.push(I18N.t("monitoring.silent"));
+    if (link.report_due) out.push(I18N.t("monitoring.report_due"));
+    if (link.reports) out.push(I18N.t("monitoring.reports_received", { reports: link.reports }));
     return out;
   }
 
@@ -73,27 +80,32 @@
   }
 
   function linkView(link) {
-    return { peer: link.peer, title: (link.pseudo || "?") + " : " + (ROLES[link.role] || "?") + ", " + (STATES[link.state] || "?"),
+    const title = I18N.t("monitoring.link_title", { pseudo: link.pseudo || "?", role: roles()[link.role] || "?",
+                                                     state: states()[link.state] || "?" });
+    return { peer: link.peer, title: title,
              details: extra(link), level: level(link), actions: actions(link), raw: link };
   }
 
   function stationLines(link) {
     /* Dernières nouvelles d'une station suivie (station qui aide), comme le choix 2 du menu 6.5. */
     const lines = [], hb = link.last_hb || {}, st = link.last_st || {};
-    if (hb.v) lines.push("Station : version " + hb.v + ", passerelle " + (hb.gateway || "?") + ", mode sûr : " + (hb.safe || "non"));
+    if (hb.v) {
+      lines.push(I18N.t("monitoring.station_line", { version: hb.v, gateway: hb.gateway || "?",
+                                                     safe: hb.safe || I18N.t("monitoring.safe_no") }));
+    }
     const s = st.system || {};
     if (Object.keys(s).length) {
       const v = (x) => (x === null || x === undefined ? "--" : x);
-      lines.push("Machine : processeur " + v(s.cpu) + " %, mémoire " + v(s.mem) + " %, disque " + v(s.disk) + " %, température "
-                 + (s.temp === null || s.temp === undefined ? "--" : s.temp + " °C"));
+      lines.push(I18N.t("monitoring.machine_line", { cpu: v(s.cpu), mem: v(s.mem), disk: v(s.disk),
+                                                     temp: s.temp === null || s.temp === undefined ? "--" : s.temp + " °C" }));
     }
     const r = st.rig || {};
     if (Object.keys(r).length) {
       const freq = r.freq ? ", " + (r.freq / 1e6).toFixed(3) + " MHz " + (r.mode || "") : "";
-      lines.push("Poste : CAT " + (r.cat ? "OK" : (r.cat_error || "?")) + ", émission " + (r.tx || "?") + ", "
-                 + (r.clients || 0) + " connexion(s)" + freq.trimEnd());
+      lines.push(I18N.t("monitoring.rig_line", { cat: r.cat ? "OK" : (r.cat_error || "?"), tx: r.tx || "?",
+                                                 clients: r.clients || 0, freq: freq.trimEnd() }));
     }
-    if (!lines.length) lines.push("Aucune nouvelle reçue pour l'instant.");
+    if (!lines.length) lines.push(I18N.t("monitoring.no_news_received"));
     return lines;
   }
 
@@ -104,10 +116,10 @@
   }
 
   function status(view) {
-    if (!view) return "Lecture…";
-    return [view.pseudo ? "Pseudo " + view.pseudo : "Pas encore de pseudo (ci-dessous)",
-            view.registered ? "station enregistrée auprès du relais" : "pas encore enregistrée auprès du relais",
-            view.problem ? "problème : " + view.problem : ""].filter(Boolean).join(" · ");
+    if (!view) return I18N.t("monitoring.reading");
+    return [view.pseudo ? I18N.t("monitoring.pseudo", { pseudo: view.pseudo }) : I18N.t("monitoring.no_pseudo"),
+            I18N.t(view.registered ? "monitoring.registered" : "monitoring.not_registered"),
+            view.problem ? I18N.t("monitoring.problem", { problem: view.problem }) : ""].filter(Boolean).join(" · ");
   }
 
   function decodeB64url(text) {
@@ -140,7 +152,8 @@
     return out;
   }
 
-  const api = { ROLES, STATES, SEVERITIES, HOURS, PROFILES, normalizeCode, profile, extra, level, actions, linkView,
+  const api = { get ROLES() { return roles(); }, get STATES() { return states(); }, SEVERITIES, HOURS,
+                get PROFILES() { return profiles(); }, normalizeCode, profile, extra, level, actions, linkView,
                 stationLines, eventLine, status, decodeB64url, joinParts };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxMonitoring = api; }
 })(typeof window !== "undefined" ? window : globalThis);

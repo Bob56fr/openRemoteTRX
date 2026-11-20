@@ -6,7 +6,9 @@
    Fichier de test : la page fabrique elle-même la trame en WAV (aucune connexion à la station) pour qu'un correspondant
    la joue au micro de son poste : 2 s de silence (le temps de passer en émission), puis la trame 3 fois séparées de 0,5 s. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const F0_HZ = 1000, PILOT_S = 1.0, SYMBOL_S = 0.3, RAMP_S = 0.005, LEVEL_DBFS = -6;
   const CODE_MIN = 3, CODE_MAX = 8, REPEAT = "R";
@@ -17,7 +19,7 @@
 
   function symbols(code) {
     /* Chiffres puis contrôle (somme modulo 10), chaque répétition remplacée par R : « 4477 » -> 4 R 7 R 2. */
-    if (!validCode(code)) throw new Error("code SELCALL : " + CODE_MIN + " à " + CODE_MAX + " chiffres");
+    if (!validCode(code)) throw new Error("code SELCALL : " + CODE_MIN + " à " + CODE_MAX + " chiffres");   // i18n-ok (erreur de programmation)
     const sum = [...code].reduce((s, c) => s + Number(c), 0) % 10;
     const raw = [...code, String(sum)];
     return raw.map((s, i) => (i > 0 && s === raw[i - 1] ? REPEAT : s));
@@ -81,13 +83,15 @@
   function indicator(status) {
     /* Indicateur de l'en-tête : null (désactivé), « SEL 4721 » (veille) ou « SEL OUVERT » (appel reçu). */
     if (!status || status.state === "disabled") return null;
-    return status.state === "open" ? { text: "SEL OUVERT", open: true } : { text: "SEL " + status.code, open: false };
+    return status.state === "open" ? { text: I18N.t("selcall.indicator_open"), open: true } : { text: "SEL " + status.code, open: false };
   }
 
-  const STATE_LABELS = { disabled: "désactivé : son reçu normal", standby: "VEILLE : son coupé jusqu'à l'appel du code",
-                         open: "OUVERT : appel reçu, son transmis" };
+  function stateLabels() {
+    return { disabled: I18N.t("selcall.state_disabled"), standby: I18N.t("selcall.state_standby"),
+             open: I18N.t("selcall.state_open") };
+  }
 
   const api = { F0_HZ, PILOT_S, SYMBOL_S, validCode, symbols, tones, frameSamples, testSamples, wavBytes, testWav,
-                indicator, STATE_LABELS };
+                indicator, get STATE_LABELS() { return stateLabels(); } };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSelcall = api; }
 })(typeof window !== "undefined" ? window : globalThis);

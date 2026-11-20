@@ -5,7 +5,9 @@
    La table des bandes propose la plage par défaut et avertit hors radioamateur ; elle n'autorise JAMAIS une émission
    (c'est la station qui décide, comme pour toute émission). */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const NICE_STEPS_HZ = [1000, 2000, 5000, 10000, 25000, 50000, 75000, 100000, 150000, 200000, 250000, 500000, 1000000];
   const MAX_POINTS = 50;
@@ -19,11 +21,11 @@
     band("10m", "amateur", 28000000, 29700000), band("6m", "amateur", 50000000, 52000000), band("2m", "amateur", 144000000, 146000000),
     band("70cm", "amateur", 430000000, 440000000),
     band("CB", "cb", 26000000, 28000000), band("45m", "45m", 6620000, 6700000), band("85m", "45m", 3410000, 3490000),
-    band("marine 4 MHz", "marine", 4063000, 4438000), band("marine 6 MHz", "marine", 6200000, 6525000),
-    band("marine 8 MHz", "marine", 8195000, 8815000), band("marine 12 MHz", "marine", 12230000, 13200000),
-    band("marine 16 MHz", "marine", 16360000, 17410000), band("marine 18 MHz", "marine", 18780000, 18900000),
-    band("marine 19 MHz", "marine", 19680000, 19800000), band("marine 22 MHz", "marine", 22000000, 22855000),
-    band("marine 25 MHz", "marine", 25070000, 25210000), band("marine 26 MHz", "marine", 26100000, 26175000),
+    band("marine 4 MHz", "marine", 4063000, 4438000), band("marine 6 MHz", "marine", 6200000, 6525000),   // i18n-ok (noms de la table commune swr_plans.json)
+    band("marine 8 MHz", "marine", 8195000, 8815000), band("marine 12 MHz", "marine", 12230000, 13200000),   // i18n-ok (noms de la table commune swr_plans.json)
+    band("marine 16 MHz", "marine", 16360000, 17410000), band("marine 18 MHz", "marine", 18780000, 18900000),   // i18n-ok (noms de la table commune swr_plans.json)
+    band("marine 19 MHz", "marine", 19680000, 19800000), band("marine 22 MHz", "marine", 22000000, 22855000),   // i18n-ok (noms de la table commune swr_plans.json)
+    band("marine 25 MHz", "marine", 25070000, 25210000), band("marine 26 MHz", "marine", 26100000, 26175000),   // i18n-ok (noms de la table commune swr_plans.json)
   ];
 
   function bandAt(hz) {
@@ -100,23 +102,27 @@
     /* « État du poste remis » : ce qui a été relu sur le poste, puis les écarts à corriger à la main. */
     const label = modeLabel || ((m) => m);
     const r = (result && result.restored) || {}, out = [];
-    if (Number.isFinite(r.frequency_hz)) out.push("Fréquence : " + (r.frequency_hz / 1e6).toFixed(4).replace(".", ",") + " MHz");
-    if (r.mode) out.push("Mode : " + label(r.mode) + (r.passband_hz ? " (" + r.passband_hz + " Hz)" : ""));
-    if (Number.isFinite(r.rfpower)) out.push("Puissance : " + Math.round(r.rfpower * 100) + " %");
-    if (r.tuner !== null && r.tuner !== undefined) out.push("Coupleur : " + (r.tuner ? "en service" : "arrêté"));
-    if (!out.length) out.push("État du poste non relu : vérifie fréquence, mode, puissance et coupleur.");
+    if (Number.isFinite(r.frequency_hz)) out.push(I18N.t("swrui.restored_frequency", { mhz: (r.frequency_hz / 1e6).toFixed(4).replace(".", ",") }));
+    if (r.mode) {
+      out.push(r.passband_hz ? I18N.t("swrui.restored_mode_passband", { mode: label(r.mode), hz: r.passband_hz })
+        : I18N.t("swrui.restored_mode", { mode: label(r.mode) }));
+    }
+    if (Number.isFinite(r.rfpower)) out.push(I18N.t("swrui.restored_power", { pct: Math.round(r.rfpower * 100) }));
+    if (r.tuner !== null && r.tuner !== undefined) out.push(I18N.t(r.tuner ? "swrui.restored_tuner_on" : "swrui.restored_tuner_off"));
+    if (!out.length) out.push(I18N.t("swrui.not_restored"));
     return { lines: out, differences: Array.isArray(result && result.differences) ? result.differences : [] };
   }
 
   function legendLines(result, name, modeLabel, when) {
     /* Pied de l'image exportée (ANONYME : ni indicatif ni station) : nom, date, puissance, mode, meilleur point. */
     const label = modeLabel || ((m) => m);
-    const lines = [name && String(name).trim() ? String(name).trim() : "Mesure de TOS"];
+    const lines = [name && String(name).trim() ? String(name).trim() : I18N.t("swrui.legend_title")];
     const parts = [];
     if (when) parts.push(when);
     if (result) {
-      parts.push((result.power_w ? result.power_w + " W" : Math.round(result.power_pct) + " %") + " en " + label(result.fm_mode || "FM"));
-      if (result.best) parts.push("meilleur TOS " + swrText(result.best.swr) + " à " + freqLabel(result.best.hz) + " MHz");
+      parts.push(I18N.t("swrui.legend_power_mode", { power: result.power_w ? result.power_w + " W" : Math.round(result.power_pct) + " %",
+                                                     mode: label(result.fm_mode || "FM") }));
+      if (result.best) parts.push(I18N.t("swrui.legend_best", { swr: swrText(result.best.swr), mhz: freqLabel(result.best.hz) }));
     }
     if (parts.length) lines.push(parts.join(" · "));
     return lines;

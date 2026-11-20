@@ -4,7 +4,9 @@
    purs, testés sous Node (tests/js/sdr_test.js), sans DOM. Le dessin est dans ui.js (rubrique « SDR »).
    Le SDR est en RÉCEPTION SEULE ; « QSY du TRX » passe par la commande habituelle set_frequency du client. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const DB_MIN = -150, DB_STEP = 0.5;                 // niveau d'une case : -150 dBFS + 0,5 dB × valeur (0 à 255)
   const LIMITS = { center_hz: [1000, 2000000000], lna: [0, 8], gr: [20, 59], rate: [1, 15] };
@@ -16,13 +18,14 @@
   // la station garde la fenêtre dans la largeur du SDR et la recentre sur l'écoute quand celle-ci en sort.
   const ZOOMS = [1, 2, 4, 8, 16], ZOOM_OFF_MAX = 5000000;
   // Palettes du waterfall du SDR (étape 204, choix gardé dans le navigateur) : « theme » = celle du thème de la page.
+  // Deuxième colonne : clé du nom affiché (relu par paletteName).
   const PALETTE_STOPS = [0, 0.2, 0.45, 0.7, 0.88, 1];
   const PALETTES = [
-    ["theme", "Thème", null],
-    ["classique", "Classique", ["#000000", "#000080", "#0060ff", "#00e0ff", "#ffff00", "#ff2000"]],
-    ["chaud", "Chaud", ["#000000", "#3b0a45", "#8a1c4b", "#d94a1f", "#f9b233", "#ffffcc"]],
-    ["vert", "Vert", ["#000000", "#002200", "#005a10", "#10a030", "#80ff60", "#f0fff0"]],
-    ["gris", "Gris", ["#000000", "#202020", "#505050", "#909090", "#d0d0d0", "#ffffff"]],
+    ["theme", "sdr.palette_theme", null],
+    ["classique", "sdr.palette_classique", ["#000000", "#000080", "#0060ff", "#00e0ff", "#ffff00", "#ff2000"]],
+    ["chaud", "sdr.palette_chaud", ["#000000", "#3b0a45", "#8a1c4b", "#d94a1f", "#f9b233", "#ffffcc"]],
+    ["vert", "sdr.palette_vert", ["#000000", "#002200", "#005a10", "#10a030", "#80ff60", "#f0fff0"]],
+    ["gris", "sdr.palette_gris", ["#000000", "#202020", "#505050", "#909090", "#d0d0d0", "#ffffff"]],
   ];
   const WIDTHS = { AM: [6000, 8000, 10000], NFM: [8000, 12500], USB: [1800, 2400, 2700, 3000], LSB: [1800, 2400, 2700, 3000],
                    CW: [250, 500, 1000] };
@@ -107,24 +110,24 @@
   }
 
   function checkSettings(args) {
-    /* Mêmes limites que la station (trxstation/sdr/service.py) ; renvoie un message en français, ou "". */
-    if (!args || typeof args !== "object") return "réglages invalides";
+    /* Mêmes limites que la station (trxstation/sdr/service.py) ; renvoie un message dans la langue de la page, ou "". */
+    if (!args || typeof args !== "object") return I18N.t("sdr.check_invalid");
     const names = Object.keys(args);
-    if (!names.length) return "aucun réglage";
+    if (!names.length) return I18N.t("sdr.check_empty");
     for (const name of names) {
-      if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return name + " : vrai ou faux"; continue; }
-      if (name === "mode") { if (!MODES.includes(args[name])) return "mode : " + MODES.join(", "); continue; }
-      if (name === "fs") { const v = args[name]; if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 10000000) return "fs : largeur en Hz"; continue; }
-      if (name === "ant") { if (!["", "A", "B"].includes(args[name])) return "ant : A ou B"; continue; }
-      if (name === "zoom") { if (!ZOOMS.includes(args[name])) return "zoom : " + ZOOMS.join(", "); continue; }
+      if (BOOLS.includes(name)) { if (typeof args[name] !== "boolean") return I18N.t("sdr.check_bool", { name: name }); continue; }
+      if (name === "mode") { if (!MODES.includes(args[name])) return I18N.t("sdr.check_choice", { name: name, choices: MODES.join(", ") }); continue; }
+      if (name === "fs") { const v = args[name]; if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 10000000) return I18N.t("sdr.check_fs"); continue; }
+      if (name === "ant") { if (!["", "A", "B"].includes(args[name])) return I18N.t("sdr.check_ant"); continue; }
+      if (name === "zoom") { if (!ZOOMS.includes(args[name])) return I18N.t("sdr.check_choice", { name: name, choices: ZOOMS.join(", ") }); continue; }
       if (name === "zoom_off") {
         const v = args[name];
-        if (typeof v !== "number" || !Number.isInteger(v) || Math.abs(v) > ZOOM_OFF_MAX) return "zoom_off : entier de -" + ZOOM_OFF_MAX + " à " + ZOOM_OFF_MAX;
+        if (typeof v !== "number" || !Number.isInteger(v) || Math.abs(v) > ZOOM_OFF_MAX) return I18N.t("sdr.check_range", { name: name, min: -ZOOM_OFF_MAX, max: ZOOM_OFF_MAX });
         continue;
       }
       const lim = LIMITS[name], v = args[name];
-      if (!lim) return "réglage inconnu : " + name;
-      if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return name + " : entier de " + lim[0] + " à " + lim[1];
+      if (!lim) return I18N.t("sdr.check_unknown", { name: name });
+      if (typeof v !== "number" || !Number.isInteger(v) || v < lim[0] || v > lim[1]) return I18N.t("sdr.check_range", { name: name, min: lim[0], max: lim[1] });
     }
     return "";
   }
@@ -138,11 +141,13 @@
   function gainText(st) {
     /* Ligne de gain : ce que le SDR applique réellement (AGC de la FI compris). */
     if (!st || !Number.isFinite(st.lna)) return "";
-    let t = "Gain RF " + rfFromLna(st.lna) + "/" + LNA_MAX;
-    if (st.agc) t += " · FI auto" + (Number.isFinite(st.gr_now) ? " (gain FI " + ifFromGr(st.gr_now) + "/" + (GR_MAX - GR_MIN) + ")" : "");
-    else t += " · gain FI " + ifFromGr(st.gr) + "/" + (GR_MAX - GR_MIN);
-    if (Number.isFinite(st.gain_db)) t += " · gain total " + st.gain_db.toFixed(1) + " dB";
-    if (st.overload) t += " — SURCHARGE : baisser le gain RF";
+    let t = I18N.t("sdr.gain_rf", { gain: rfFromLna(st.lna), max: LNA_MAX });
+    if (st.agc) {
+      t += Number.isFinite(st.gr_now) ? I18N.t("sdr.gain_if_auto_now", { gain: ifFromGr(st.gr_now), max: GR_MAX - GR_MIN })
+        : I18N.t("sdr.gain_if_auto");
+    } else t += I18N.t("sdr.gain_if", { gain: ifFromGr(st.gr), max: GR_MAX - GR_MIN });
+    if (Number.isFinite(st.gain_db)) t += I18N.t("sdr.gain_total", { db: st.gain_db.toFixed(1) });
+    if (st.overload) t += I18N.t("sdr.gain_overload");
     return t;
   }
 
@@ -165,52 +170,49 @@
   function listenText(st, listening) {
     /* Ligne de l'écoute : fréquence, mode, filtre, squelch, niveaux. */
     if (!st || !Number.isFinite(st.dfreq)) return "";
-    let t = (listening ? "Écoute " : "Fréquence d'écoute ") + formatMHz(st.dfreq, 4) + " MHz " + (st.mode || "") + " " + widthLabel(st.dbw || 0);
-    t += st.sql ? " · squelch " + st.sql + " dB (" + (st.sql_open ? "ouvert" : "fermé") + ")" : " · squelch ouvert";
+    let t = I18N.t(listening ? "sdr.listen_on" : "sdr.listen_off", { freq: formatMHz(st.dfreq, 4), mode: st.mode || "",
+                                                                     width: widthLabel(st.dbw || 0) });
+    t += st.sql ? I18N.t(st.sql_open ? "sdr.squelch_db_open" : "sdr.squelch_db_closed", { db: st.sql }) : I18N.t("sdr.squelch_off");
     if (listening && Number.isFinite(st.chan_db) && Number.isFinite(st.noise_db))
-      t += " · canal " + st.chan_db.toFixed(0) + " dBFS, bruit " + st.noise_db.toFixed(0) + " dBFS";
-    if (listening && st.audio === false) t += " · en attente du son…";
+      t += I18N.t("sdr.levels", { chan: st.chan_db.toFixed(0), noise: st.noise_db.toFixed(0) });
+    if (listening && st.audio === false) t += I18N.t("sdr.waiting_audio");
     return t;
   }
 
-  const CODE_TEXTS = {
-    absent: "SDR introuvable (débranché, ou numéro de série faux dans [sdr] serial)",
-    busy: "SDR déjà pris par une autre application",
-    service: "service du fabricant injoignable (API SDRplay installée ? sdrplay.service ?)",
-    core_missing: "programme sdr-core absent (relancer l'installation après l'API du fabricant)",
-    config: "réglage refusé par sdr-core (voir [sdr] de station.toml)",
-    removed: "SDR débranché pendant l'écoute",
-    access: "clé RTL-SDR illisible par la station (droits USB : relancer l'installation de la station)",
-    duplicate: "numéro de série en double (deux clés RTL-SDR identiques : en réécrire un)",
-    exit: "sdr-core s'est arrêté : relance automatique",
-  };
+  const CODES = ["absent", "busy", "service", "core_missing", "config", "removed", "access", "duplicate", "exit"];
+  function codeTexts() {
+    /* Causes des pannes du SDR (relues à l'affichage). */
+    const out = {};
+    for (const c of CODES) out[c] = I18N.t("sdr.code_" + c);
+    return out;
+  }
 
   function stateText(st) {
     /* Ligne d'état de la rubrique. */
-    if (!st || typeof st !== "object") return "SDR : en attente de l'état…";
+    if (!st || typeof st !== "object") return I18N.t("sdr.state_waiting");
     if (st.state === "running") {
-      let t = "SDR " + (st.serial || "") + " : " + formatMHz(st.center, 3) + " MHz, largeur " + formatMHz(st.fs, 0) + " MHz";
-      if (st.overload) t += " — SURCHARGE (baisser le gain)";
-      if (st.drops || st.gaps) t += " — pertes : " + (st.drops || 0) + " / " + (st.gaps || 0);
+      let t = I18N.t("sdr.state_running", { serial: st.serial || "", center: formatMHz(st.center, 3), fs: formatMHz(st.fs, 0) });
+      if (st.overload) t += I18N.t("sdr.state_overload");
+      if (st.drops || st.gaps) t += I18N.t("sdr.state_losses", { drops: st.drops || 0, gaps: st.gaps || 0 });
       if (Number.isFinite(st.cpu_total)) t += " — CPU " + st.cpu_total + " %";
       else if (Number.isFinite(st.cpu)) t += " — CPU " + st.cpu + " %";
-      if (Number.isFinite(st.mem_mb)) t += ", " + Math.round(st.mem_mb) + " Mo";
+      if (Number.isFinite(st.mem_mb)) t += I18N.t("sdr.state_mem", { mb: Math.round(st.mem_mb) });
       return t;
     }
-    if (st.state === "suspended") return "SDR SUSPENDU par la station : " + (st.load_reason || st.detail || "station chargée") + " (reprise automatique au calme)";
-    if (st.state === "starting") return "SDR : démarrage…";
-    if (st.state === "error" && st.code === "duplicate") return "SDR en panne : numéro de série en double (deux clés RTL-SDR identiques : en réécrire un)";
-    if (st.state === "error") return "SDR en panne : " + (CODE_TEXTS[st.code] || st.detail || st.code || "cause inconnue");
-    return "SDR : " + String(st.state || "arrêté");
+    if (st.state === "suspended") {
+      return I18N.t("sdr.state_suspended", { reason: st.load_reason || st.detail || I18N.t("sdr.load_default") });
+    }
+    if (st.state === "starting") return I18N.t("sdr.state_starting");
+    if (st.state === "error" && st.code === "duplicate") return I18N.t("sdr.state_error", { cause: I18N.t("sdr.code_duplicate") });
+    if (st.state === "error") return I18N.t("sdr.state_error", { cause: codeTexts()[st.code] || st.detail || st.code || I18N.t("sdr.cause_unknown") });
+    return I18N.t("sdr.state_other", { state: String(st.state || I18N.t("sdr.state_stopped")) });
   }
 
   // Bridage du module (station 0.144.0+, trxstation/sdr/load.py) : niveau appliqué et sa cause, ou vide.
-  const LOAD_TEXTS = { 1: "son du SDR coupé", 2: "waterfall ralenti", 3: "waterfall à 1 ligne/s",
-                       4: "échantillonnage à 2 MHz", 5: "module suspendu" };
   function loadText(st) {
     if (!st || !(st.load > 0)) return "";
-    return "Bridé (niveau " + st.load + " : " + (LOAD_TEXTS[st.load] || "?") + ")" + (st.load_reason ? " — " + st.load_reason : "")
-      + ". Un cran est rendu après 5 minutes au calme.";
+    const what = st.load >= 1 && st.load <= 5 && Number.isInteger(st.load) ? I18N.t("sdr.load_" + st.load) : "?";
+    return I18N.t("sdr.load_text", { level: st.load, what: what, reason: st.load_reason ? " — " + st.load_reason : "" });
   }
 
   // Balance TRX / SDR (-100 = TRX seul, +100 = SDR seul) -> facteurs de volume des deux sources.
@@ -221,7 +223,7 @@
 
   // Séparation gauche / droite : 0 = mélange (mono), 1 = TRX à gauche et SDR à droite, 2 = l'inverse.
   // Rend la position stéréo (-1 gauche, +1 droite) de chaque source.
-  const SPLITS = [[0, "Mélange (mono)"], [1, "TRX à gauche, SDR à droite"], [2, "SDR à gauche, TRX à droite"]];
+  function splits() { return [0, 1, 2].map((n) => [n, I18N.t("sdr.split_" + n)]); }
   function splitPans(split) {
     if (split === 1) return { trx: -1, sdr: 1 };
     if (split === 2) return { trx: 1, sdr: -1 };
@@ -271,7 +273,7 @@
 
   function paletteName(name) {
     const entry = PALETTES.find((p) => p[0] === name);
-    return entry ? entry[1] : PALETTES[0][1];
+    return I18N.t(entry ? entry[1] : PALETTES[0][1]);
   }
 
   // Spots du Cluster DX sur le SDR (étape 205) : mode du spot (mode Hamlib proposé par la station) -> mode du SDR.
@@ -297,8 +299,8 @@
   }
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
-                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, CODE_TEXTS, rfFromLna,
+                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
-                PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, SPLITS, splitPans };
+                PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, get SPLITS() { return splits(); }, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -37,21 +37,8 @@ class FreeDvTest {
     private fun fdvState(freedv: String) = """{"type":"state","ptt":{"state":"RX","owner":null},"rig":{"connected":true},"freedv":$freedv}"""
 
     @Test
-    fun `memes textes que la page`() {
-        val body = Regex("const FREEDV_ENGINE = \\{(.*?)\\n  \\};", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        val pageEngine = Regex("^\\s*([a-z_]+): \"(.*)\",?\\s*$", RegexOption.MULTILINE).findAll(body)
-            .associate { it.groupValues[1] to it.groupValues[2] }
-        assertEquals(pageEngine, FreeDvs.ENGINE.toMap())
-        val fn = Regex("function freedvView\\(f, nowS\\) \\{(.*?)\\n  \\}", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        for (t in listOf("FreeDV abandonné : ", " (son du poste remis)", "Son du poste : mode FreeDV non choisi", "FreeDV : ",
-                         "Voix FreeDV", " · SNR ", "FreeDV : recherche d'un signal…", "il y a ")) {
-            assertTrue(fn.contains("\"$t\""), t)
-        }
-        val ui = File(System.getProperty("trx.repo") ?: "../..", "trxstation/gateway/api/static/ui.js").readText()
-        for (t in listOf("Mode FreeDV : voix décodée par la station.", "Mode FreeDV quitté : son du poste.")) assertTrue(ui.contains(t), t)
-        assertTrue(page.contains("\" décodé\""), "journal de l'indicatif")
-        assertTrue(page.contains("\". Son du poste remis.\""), "journal de l'abandon")
-    }
+    fun `memes textes que la page`() = PageI18n.assertSameTexts("client.js", "FreeDv.kt", "freedv.engine_", "freedv.abandoned",
+        "freedv.rig_audio", "freedv.voice", "freedv.searching")
 
     @Test
     fun `vue de state freedv - memes cas que la page`() {

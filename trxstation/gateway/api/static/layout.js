@@ -9,11 +9,12 @@
 // état d'émission, liaison, « Émission autorisée ») doivent être présents : sinon, écran de sécurité.
 // Les règles de la station s'appliquent quel que soit le profil : rien ici ne donne de droit.
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const DEVICES = ["phone", "tablet", "desktop"];                     // du plus petit au plus grand : la cascade monte
   const ORIENTATIONS = ["portrait", "landscape"];
-  const DEVICE_LABELS = { phone: "smartphone", tablet: "tablette", desktop: "ordinateur" };
   const GRID_COLUMNS = { phone: 4, tablet: 8, desktop: 12 };
   const MAX_WIDTH = { phone: "44rem", tablet: "64rem", desktop: "none" };   // largeur d'affichage d'une variante
   const LOCKED = { ptt: "ptt", tx_indicator: "ptt-state", link_status: "status", tx_armed: "blk-armed" };
@@ -35,7 +36,7 @@
 
   // ------------------------------------------------------------------ cascade (même règle que trxstation/layout/cascade.py)
   function selectVariant(variants, device, orientation, forced) {
-    if (!DEVICES.includes(device) || !ORIENTATIONS.includes(orientation)) throw new Error("appareil ou orientation inconnu");
+    if (!DEVICES.includes(device) || !ORIENTATIONS.includes(orientation)) throw new Error("appareil ou orientation inconnu");   // i18n-ok (erreur de programmation)
     let effective = device;
     if (DEVICES.includes(forced) && DEVICES.indexOf(forced) <= DEVICES.indexOf(device)) effective = forced;
     for (let i = DEVICES.indexOf(effective); i >= 0; i--) {
@@ -115,11 +116,10 @@
   }
 
   function safeText(plan) {
-    if (plan.reason === "rotate") return "Tourne l'appareil : cette interface est prévue en paysage.";
-    if (plan.reason === "locked_missing") return "Ce profil est incomplet (widgets de sécurité manquants) : il ne peut pas s'afficher.";
-    if (plan.reason === "invalid") return "Ce profil est illisible.";
-    return "Ce profil n'a pas d'interface pour un " + (DEVICE_LABELS[plan.device] || "appareil") +
-      " : ajoute-la avec le designer, ou reviens à l'interface d'usine.";
+    if (plan.reason === "rotate") return I18N.t("layout.rotate");
+    if (plan.reason === "locked_missing") return I18N.t("layout.locked_missing");
+    if (plan.reason === "invalid") return I18N.t("layout.invalid");
+    return I18N.t(DEVICES.includes(plan.device) ? "layout.no_variant_" + plan.device : "layout.no_variant_other");
   }
 
   // ------------------------------------------------------------------ application à la page (DOM)
@@ -134,7 +134,7 @@
   class Layout {
     constructor(doc, hooks) {
       this.doc = doc; this.hooks = hooks || {};
-      this.homes = new Map();             // bloc -> repère laissé à sa place d'origine (null si l'élément n'avait pas de parent)
+      this.homes = new Map();             // bloc -> repère laissé à sa place d'origine (null si l'élément n'avait pas de parent)   // i18n-ok (commentaire)
       this.created = [];                  // éléments fabriqués par le plan en cours
       this.offs = [];                     // blocs absents du profil, masqués sur place
       this.names = new Map();             // élément déplacé -> identifiant de bloc
@@ -171,7 +171,7 @@
 
     _grid(container, items, cols) {
       container.className = (container.className ? container.className + " " : "") + "laygrid";
-      container.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";
+      container.style.gridTemplateColumns = "repeat(" + cols + ", minmax(0, 1fr))";   // i18n-ok (CSS)
       for (const n of items) {
         let element = null;
         if (n.kind === "block") element = this._move(n.block, container);

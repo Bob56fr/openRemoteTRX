@@ -37,16 +37,11 @@ class DiffusionTest {
 
     @Test
     fun `memes textes que la page`() {
-        assertEquals(jsMap("STOPS"), Diffusions.STOPS.toMap())
-        assertEquals(jsMap("PHASES"), Diffusions.PHASES.toMap())
-        assertEquals(jsMap("SILENCES"), Diffusions.SILENCES.toMap())
-        val meta = Regex("\\[\"(\\w+)\", \"([^\"]+)\"\\]").findAll(
-            Regex("const META = \\[(.*?)\\];", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1])
-            .map { it.groupValues[1] to it.groupValues[2] }.toList()
-        assertEquals(meta, Diffusions.META)
-        val warning = Regex("const WARNING = (.*?);\\n", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-            .split(Regex("\"\\s*\\+\\s*\"")).joinToString("").trim().removePrefix("\"").removeSuffix("\"")
-        assertEquals(warning, Diffusions.WARNING)
+        PageI18n.assertSameTexts("diffusion.js", "Diffusion.kt", "diffusion.stop_", "diffusion.phase_", "diffusion.silence_",
+            "diffusion.warning")
+        val metaKeys = Regex("""const META_KEYS = \[(.*?)\];""", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
+        assertEquals(Regex(""""(\w+)"""").findAll(metaKeys).map { it.groupValues[1] }.toList(), Diffusions.META.map { it.first })
+        for ((key, _) in Diffusions.META) assertTrue("diffusion.meta_$key" in PageI18n.shared, key)   // page : clé construite
     }
 
     @Test

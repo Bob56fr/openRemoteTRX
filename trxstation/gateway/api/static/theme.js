@@ -5,7 +5,7 @@
  * client.css (générées depuis docs/themes.json). Un nom inconnu ne correspond à aucun bloc : le thème par défaut
  * s'applique de lui-même. Mémorisation sur l'appareil seulement (localStorage), jamais indispensable. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
   const KEY = "trx.theme";
   const DEFAULT = "defaut";
   const valid = (id) => typeof id === "string" && /^[a-z][a-z0-9_-]{0,31}$/.test(id);

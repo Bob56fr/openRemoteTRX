@@ -41,12 +41,8 @@ class BreizhTest {
     }
 
     @Test
-    fun `memes textes d'etat que la page`() {
-        val body = Regex("const BREIZH_STATES = \\{(.*?)\\n  \\};", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        val pageStates = Regex("^\\s*([a-z_]+): \"(.*)\",?\\s*$", RegexOption.MULTILINE).findAll(body)
-            .associate { it.groupValues[1] to it.groupValues[2] }
-        assertEquals(pageStates, Breizhs.STATES.toMap())
-    }
+    fun `memes textes d'etat que la page`() =
+        PageI18n.assertSameKeys("client.js", "Breizh.kt", Breizhs.STATES.keys.map { "breizh.state_$it" })
 
     @Test
     fun `vue de state breizh - memes cas que la page`() {

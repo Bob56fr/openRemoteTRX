@@ -2,7 +2,9 @@
 // Copyright (C) 2026 RF-DIY.COM
 /* Waterfall de l'audio reçu : calculs purs (palette, rééchantillonnage, pics, graduations). Le dessin et l'analyse audio sont dans ui.js. */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const SPEEDS = [3, 6, 12, 25, 50];                 // lignes par seconde
   const WIDTHS = [5000, 3000, 2500, 2000, 1000];     // bande audio affichée : de 0 Hz à N Hz
@@ -17,10 +19,11 @@
     return list[(i + 1) % list.length];              // valeur inconnue : retour au début de la liste
   }
 
-  const speedLabel = (v) => "VIT " + v;
-  const widthLabel = (v) => "LARG " + (v / 1000) + "k";
+  const speedLabel = (v) => I18N.t("audiowaterfall.speed", { v: v });
+  const widthLabel = (v) => I18N.t("audiowaterfall.width", { khz: v / 1000 });
   const gainLabel = (v) => "GAIN " + (v > 0 ? "+" + v : v);
-  const peakLabel = (v) => (v === 0 ? "PIC OFF" : v === Infinity ? "PIC MAX" : "PIC " + v + "s");
+  const peakLabel = (v) => (v === 0 ? I18N.t("audiowaterfall.peak_off") : v === Infinity ? I18N.t("audiowaterfall.peak_max")
+    : I18N.t("audiowaterfall.peak", { s: v }));
 
   // ---- palette : 6 couleurs aux positions fixes ; thème par défaut : gris sombre, gris-bleu, bleu, bleu clair, blanc.
   // Le thème la fournit par la variable CSS --waterfall-degrade (lue par ui.js) ; LUT est recalculée SUR PLACE.

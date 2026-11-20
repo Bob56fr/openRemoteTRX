@@ -2,7 +2,7 @@
 // Copyright (C) 2026 RF-DIY.COM
 /* Affichage : relie TrxClient (client.js, logique testée sous Node) à la page. Aucune logique de protocole ici. */
 (function (root) {
-  "use strict";
+  "use strict";  // i18n-ok
   const web = root.TrxWeb;
   if (typeof document === "undefined" || !web) return;
   const { TrxClient, modeLabel, shortMode, matchesRigDevice, parseKilohertz, chooseLayout, formatIcomFrequency, frequencyDigits, parseFrequencyEntry,
@@ -28,7 +28,8 @@
                     ["NOTCH", "ctl-notch"], ["AGC", "ctl-agc"], ["COMP", "ctl-comp"], ["FIL", "ctl-fil"], ["TUNER", "ctl-tuner"],
                     ["PWR", "ctl-pwr"]];
   const DIALOG_KEYS = ["NR", "NB", "NOTCH"];          // appui long (téléphone) ou double clic (PC) : fenêtre de réglage
-  const DOUBLE_CLICK_MS = 260;                        // un appui sur NR/NB/NOTCH attend ce délai : un second appui = double clic
+  // un appui sur NR/NB/NOTCH attend ce délai : un second appui = double clic
+  const DOUBLE_CLICK_MS = 260;
   const percentLeft = (fraction) => (100 - Math.round(fraction * 100)) + "%";                    // largeur du masque : la partie VIDE de la barre
 
   function browserEnv() {
@@ -47,9 +48,9 @@
       epoch: () => Date.now(),
       // sonde réseau : appareil tiré au hasard, nom affiché à l'opérateur, type de réseau quand le navigateur le dit
       randomBytes: (n) => crypto.getRandomValues(new Uint8Array(n)),
-      agent: "page " + (/Android/i.test(navigator.userAgent) ? "Android" : /iPhone|iPad/i.test(navigator.userAgent) ? "iOS"
-        : /Windows/i.test(navigator.userAgent) ? "Windows" : /Mac/i.test(navigator.userAgent) ? "Mac"
-        : /Linux/i.test(navigator.userAgent) ? "Linux" : "navigateur"),
+      agent: "page " + (/Android/i.test(navigator.userAgent) ? "Android" : /iPhone|iPad/i.test(navigator.userAgent) ? "iOS"  // i18n-ok (envoyé à la station)
+        : /Windows/i.test(navigator.userAgent) ? "Windows" : /Mac/i.test(navigator.userAgent) ? "Mac"  // i18n-ok
+        : /Linux/i.test(navigator.userAgent) ? "Linux" : "navigateur"),  // i18n-ok
       netType: () => {
         const c = navigator.connection;
         return c && typeof c.type === "string" ? ({ wifi: "wifi", cellular: "mobile", ethernet: "lan" }[c.type] || null) : null;
@@ -93,13 +94,15 @@
           if (r.type === "candidate-pair" && r.nominated && r.state === "succeeded") rtt = r.currentRoundTripTime;
         });
         const net = [];
-        if (rtt !== null) net.push("RTT réseau " + Math.round(rtt * 1000) + " ms");
-        if (jitter !== null) net.push("gigue " + Math.round(jitter * 1000) + " ms");
-        if (lost !== null && received !== null) net.push("pertes " + lost + "/" + (received + lost));
+        if (rtt !== null) net.push(I18N.t("ui.stats_rtt", { ms: Math.round(rtt * 1000) }));
+        if (jitter !== null) net.push(I18N.t("ui.stats_jitter", { ms: Math.round(jitter * 1000) }));
+        if (lost !== null && received !== null) net.push(I18N.t("ui.stats_lost", { lost: lost, total: received + lost }));
         const pct = (v) => Math.round(v * 100) + " %";
         const diag = [];
-        if (received !== null) diag.push("son reçu : " + received + " paquets" + (rxLevel !== null ? ", niveau " + pct(rxLevel) : ""));
-        if (sent !== null) diag.push("micro : " + sent + " paquets envoyés" + (micLevel !== null ? ", niveau capté " + pct(micLevel) : ""));
+        if (received !== null) diag.push(rxLevel !== null ? I18N.t("ui.stats_rx_level", { packets: received, level: pct(rxLevel) })
+          : I18N.t("ui.stats_rx", { packets: received }));
+        if (sent !== null) diag.push(micLevel !== null ? I18N.t("ui.stats_mic_level", { packets: sent, level: pct(micLevel) })
+          : I18N.t("ui.stats_mic", { packets: sent }));
         return { net: net.join(" · "), diag: diag.join(" · "), conceal: conceal };
       },
       health: async () => {                                  // sonde réseau : second chemin (HTTPS, hors WebRTC)
@@ -112,6 +115,7 @@
   }
 
   function initUi() {
+    if (I18N) I18N.apply(document);                      // textes d'index.html dans la langue choisie (lot T4)
     const audio = $("rx-audio");
     const logList = $("log");
     let rttText = "", statsText = "", rigAudio = [];
@@ -134,7 +138,7 @@
     function resetRelease() {
       releaseArmed = false;
       if (releaseTimer !== null) { window.clearTimeout(releaseTimer); releaseTimer = null; }
-      $("local-release").textContent = "Reprendre la main";
+      $("local-release").textContent = I18N.t("rigparts.release_local");
     }
     let wfSettings = wf.normalizeSettings(safeJson(store.get("trx.wf", "null")));
     let wfVisible = false, audioCtx = null, analyser = null, wfSource = null, spectrumBuf = null, wfValues = null;
@@ -169,7 +173,7 @@
       const text = store.get("trx.text", "auto");
       if (text === "auto") document.documentElement.removeAttribute("data-text");
       else document.documentElement.setAttribute("data-text", text);
-      const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth > window.innerHeight;
+      const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth > window.innerHeight;  // i18n-ok
       $("app").className = chooseLayout(store.get("trx.layout", "auto"), landscape, window.innerWidth);
       renderLayout(false);
       syncDock();                                                                    // paysage étroit ou portrait : le spectre intégré se retire
@@ -177,30 +181,32 @@
 
     // ---- mise en page personnalisée : profil du compte, servi par la station (layout_get)
     function currentDevice() {
-      const coarse = window.matchMedia ? window.matchMedia("(pointer: coarse)").matches : false;
+      const coarse = window.matchMedia ? window.matchMedia("(pointer: coarse)").matches : false;  // i18n-ok
       return lay.detectDevice(window.innerWidth, window.innerHeight, coarse);
     }
     function currentOrientation() {
       const chosen = store.get("trx.layout", "auto");
       if (chosen === "portrait" || chosen === "landscape") return chosen;
-      const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth > window.innerHeight;
+      const landscape = window.matchMedia ? window.matchMedia("(orientation: landscape)").matches : window.innerWidth > window.innerHeight;  // i18n-ok
       return landscape ? "landscape" : "portrait";
     }
     function layoutInfo(plan) {
-      const labels = { phone: "smartphone", tablet: "tablette", desktop: "ordinateur" };
-      let text = "Interface d'usine.";
+      const labels = { phone: "ui.device_phone", tablet: "ui.device_tablet", desktop: "ui.device_desktop" };
+      let text = I18N.t("ui.layout_factory");
       if (profile && profileSource === "user") {
-        text = "Profil « " + profile.name + " »";
-        if (plan && plan.safe) text += " — variante " + labels[plan.choice.device] + " " + (plan.choice.orientation === "portrait" ? "portrait" : "paysage") +
-          (plan.choice.display === "centered" ? " (affichée centrée)" : "") + ".";
-        else if (plan) text += " — écran de sécurité : " + lay.safeText(plan);
+        text = I18N.t("ui.layout_profile", { name: profile.name });
+        if (plan && plan.safe) {
+          const fields = { name: profile.name, device: labels[plan.choice.device] ? I18N.t(labels[plan.choice.device]) : String(labels[plan.choice.device]),
+            orientation: plan.choice.orientation === "portrait" ? I18N.t("ui.orientation_portrait") : I18N.t("ui.orientation_landscape") };
+          text = plan.choice.display === "centered" ? I18N.t("ui.layout_variant_centered", fields) : I18N.t("ui.layout_variant", fields);
+        } else if (plan) text = I18N.t("ui.layout_safe", { name: profile.name, reason: lay.safeText(plan) });
       }
       $("layout-info").textContent = text;
       $("layout-factory").disabled = !(connectedFlag && profile && profileSource === "user");
     }
     function renderLayout(force) {
       if (!layout) return;
-      if (!profile || profileSource !== "user") {                                     // profil d'usine : la page telle qu'elle est écrite
+      if (!profile || profileSource !== "user") {                                     // profil d'usine : la page telle qu'elle est écrite  // i18n-ok
         if (layout.active) layout.restore();
         planKey = ""; layoutInfo(null);
         return;
@@ -212,16 +218,16 @@
       planKey = key;
       layout.apply(plan);
       layoutInfo(plan);
-      if (plan.unsupported.length) ui.log("Mise en page : widget(s) pas encore pris en charge par cette page, ignoré(s) : " + plan.unsupported.join(", "), "warn");
+      if (plan.unsupported.length) ui.log(I18N.t("ui.layout_unsupported", { widgets: plan.unsupported.join(", ") }), "warn");
     }
     async function loadLayout() {
       try {
         const res = await client.getLayout();
         if (!res || !res.ok || !res.profile) return;
         profile = res.profile; profileSource = res.source === "user" ? "user" : "factory"; profileVersion += 1;
-        if (Array.isArray(res.warnings) && res.warnings.length) ui.log("Mise en page : " + res.warnings.length + " widget(s) masqué(s), fonction absente du poste.", "");
+        if (Array.isArray(res.warnings) && res.warnings.length) ui.log(I18N.t("ui.layout_hidden", { n: res.warnings.length }), "");
         renderLayout(true);
-      } catch (err) { ui.log("Mise en page non chargée (interface d'usine) : " + (err && err.message ? err.message : err), "warn"); }
+      } catch (err) { ui.log(I18N.t("ui.layout_not_loaded", { error: err && err.message ? err.message : err }), "warn"); }
     }
 
     // ---- périphériques audio du navigateur
@@ -232,9 +238,9 @@
     };
     const fillDevices = (select, devices, saved) => {
       select.textContent = "";
-      select.appendChild(Object.assign(el("option", "", "Périphérique par défaut du système"), { value: "" }));
+      select.appendChild(Object.assign(el("option", "", I18N.t("ui.device_default")), { value: "" }));
       for (const d of devices) {
-        select.appendChild(Object.assign(el("option", "", d.label || "(nom masqué jusqu'à l'autorisation du micro)"), { value: d.deviceId }));
+        select.appendChild(Object.assign(el("option", "", d.label || I18N.t("ui.device_hidden_name")), { value: d.deviceId }));
       }
       select.value = Array.from(select.options).some((o) => o.value === saved) ? saved : "";
     };
@@ -248,7 +254,7 @@
     }
     async function applyOutput() {
       const id = $("out-select").value;
-      if (audio.setSinkId) { try { await audio.setSinkId(id); } catch (err) { ui.log("Sortie audio non applicable : " + err.message, "warn"); } }
+      if (audio.setSinkId) { try { await audio.setSinkId(id); } catch (err) { ui.log(I18N.t("ui.output_not_applied", { error: err.message }), "warn"); } }
       if (sdrSound && sdrSound.setSinkId) { try { await sdrSound.setSinkId(id); } catch (err) { /* sortie par défaut */ } }
       if (audioCtx && audioCtx.setSinkId) { try { await audioCtx.setSinkId(id); } catch (err) { /* les alertes restent sur la sortie par défaut */ } }
       const label = id ? deviceLabel("audiooutput", id)
@@ -256,8 +262,7 @@
       outputIsRig = !$("ignore-rig-warning").checked && matchesRigDevice(label, rigAudio);
       if (outputIsRig) {
         audio.muted = true;
-        ui.log("Sortie audio COUPÉE : « " + label + " » est une entrée audio du poste (le son reçu serait injecté dans l'émetteur). " +
-               "Choisis une autre sortie, ou coche « Ce n'est pas le poste ».", "bad");
+        ui.log(I18N.t("ui.output_is_rig", { device: label }), "bad");
       } else { audio.muted = $("mute").checked; }
       sdrMirrorOutput();                                                             // le son du SDR suit (jamais vers le poste)
     }
@@ -296,13 +301,13 @@
     $("alert-select").addEventListener("change", (ev) => { alertLevel = ev.target.value; store.set("trx.alerts", alertLevel); });
     $("alert-test").addEventListener("click", () => {                                 // les trois sons à la suite, pour les reconnaître
       let delay = 0;
-      for (const [kind, text] of [["lost", "liaison perdue"], ["restored", "liaison rétablie"], ["failed", "reconnexion impossible"]]) {
-        window.setTimeout(() => { ui.log("Son « " + text + " ».", ""); playLinkAlert(kind); }, delay);
+      for (const [kind, text] of [["lost", "ui.alert_lost"], ["restored", "ui.alert_restored"], ["failed", "ui.alert_failed"]]) {
+        window.setTimeout(() => { ui.log(I18N.t("ui.alert_sound", { name: I18N.t(text) }), ""); playLinkAlert(kind); }, delay);
         delay += alertDurationMs(kind) + 900;
       }
     });
     // ---- bips de fin d'émission (réglage de la STATION ; l'écoute ici n'émet rien)
-    const TONE_LABELS = { duo: "deux tons montants" };
+    const TONE_LABELS = { duo: "beeps.tone_duo" };                                   // clés des textes
     let beepSettings = null;
     function playSequence(seq) {
       /* Segments [Hz, ms] (0 Hz = silence), sur le haut-parleur du téléphone ; jamais sur la sortie du poste. */
@@ -328,22 +333,22 @@
       const ok = !!settings && connectedFlag;
       for (const id of ["roger-on", "roger-tone", "roger-pattern", "roger-preview", "lost-on", "lost-preview"]) $(id).disabled = !ok;
       if (!settings) {
-        $("beeps-note").textContent = connectedFlag ? "Cette station ne propose pas les bips de fin." : "";
+        $("beeps-note").textContent = connectedFlag ? I18N.t("clusterandbeeps.no_beeps") : "";
         return;
       }
       const tone = $("roger-tone"), pattern = $("roger-pattern");
       if (tone.options.length !== (settings.tones || []).length) {
         tone.textContent = "";
-        for (const t of settings.tones || []) tone.appendChild(Object.assign(el("option", "", TONE_LABELS[t] || t + " Hz"), { value: t }));
+        for (const t of settings.tones || []) tone.appendChild(Object.assign(el("option", "", TONE_LABELS[t] ? I18N.t(TONE_LABELS[t]) : t + " Hz"), { value: t }));
       }
       if (pattern.options.length !== (settings.patterns || []).length) {
         pattern.textContent = "";
-        for (const n of settings.patterns || []) pattern.appendChild(Object.assign(el("option", "", n + (n > 1 ? " bips" : " bip")), { value: String(n) }));
+        for (const n of settings.patterns || []) pattern.appendChild(Object.assign(el("option", "", I18N.plural("beeps.pattern", n)), { value: String(n) }));
       }
       $("roger-on").checked = !!settings.roger_enabled; $("lost-on").checked = !!settings.link_lost_enabled;
       tone.value = settings.roger_tone; pattern.value = String(settings.roger_pattern);
       $("beeps-note").textContent = settings.link_lost_enabled
-        ? "Bip de liaison perdue ACTIF : si la liaison tombe pendant votre émission, la station émet trois tons descendants avant de couper (émission automatique, sous votre responsabilité)."
+        ? I18N.t("clusterandbeeps.link_lost_active")
         : "";
     }
     function setBeeps(changes) { client.setBeeps(changes).catch(fail).finally(() => renderBeeps(client.beeps || beepSettings)); }
@@ -353,8 +358,7 @@
     $("lost-on").addEventListener("change", (ev) => {
       const on = !!ev.target.checked;
       const ask = typeof window.confirm === "function" ? window.confirm : () => true;
-      if (on && !ask("Ce bip est ÉMIS par la station quand la liaison avec ce téléphone tombe pendant votre émission : "
-                     + "une émission automatique de 0,4 s, sous votre responsabilité. L'activer ?")) { ev.target.checked = false; return; }
+      if (on && !ask(I18N.t("clusterandbeeps.link_lost_confirm"))) { ev.target.checked = false; return; }
       setBeeps({ link_lost_enabled: on });
     });
     $("roger-preview").addEventListener("click", () => { if (beepSettings) playSequence(beepSettings.roger_sequence); });
@@ -386,7 +390,7 @@
     function resetDelete() {
       deleteArmed = false;
       if (deleteTimer !== null) { window.clearTimeout(deleteTimer); deleteTimer = null; }
-      $("mem-delete").textContent = "Supprimer";
+      $("mem-delete").textContent = I18N.t("common.delete");
     }
     function markActive(v) {
       const rig = v && v.rig ? v.rig : {};
@@ -404,14 +408,14 @@
       for (const m of list) {
         const li = el("li", "mem");
         const star = el("button", "star", m.favorite ? "★" : "☆");
-        star.title = m.favorite ? "Retirer des favoris" : "Mettre en favori";
+        star.title = m.favorite ? I18N.t("ui.mem_unfavorite") : I18N.t("ui.mem_favorite");
         const recall = el("button", "recall");
-        recall.title = "Rappeler cette fréquence et ce mode";
+        recall.title = I18N.t("ui.mem_recall");
         recall.appendChild(el("span", "mname", m.name));
         recall.appendChild(el("span", "mfreq", formatIcomFrequency(m.hz)));
         recall.appendChild(el("span", "mmode", shortMode(m.mode)));
         const edit = el("button", "edit", "✎");
-        edit.title = "Modifier";
+        edit.title = I18N.t("ui.mem_edit");
         star.disabled = recall.disabled = edit.disabled = !connectedFlag;
         star.addEventListener("click", () => client.saveMemory({ memoryId: m.id, name: m.name, hz: m.hz, mode: m.mode, favorite: !m.favorite }).catch(fail));
         recall.addEventListener("click", () => client.recallMemory(m.id).catch(fail));
@@ -480,7 +484,7 @@
       const digit = digitAt(ev.clientX);
       if (!digit) return;
       drag = { el: digit, weight: digit.weight, startY: ev.clientY, applied: 0, moved: false, t0: performance.now(), id: ev.pointerId };
-      digit.className = "dig active";
+      digit.className = "dig active";  // i18n-ok (classes CSS)
       if ($("freq").setPointerCapture) { try { $("freq").setPointerCapture(ev.pointerId); } catch (e) { /* capture indisponible */ } }
       if (ev.preventDefault) ev.preventDefault();
     });
@@ -508,11 +512,11 @@
       const hz = parseFrequencyEntry(kpText);
       $("kp-display").textContent = kpText || "—";
       $("kp-preview").textContent = hz !== null ? formatIcomFrequency(hz) + "  =  " + khzText(hz) + " kHz"
-        : kpText ? "Valeur incorrecte" : "kHz si 1000 ou plus, sinon MHz (ex. 7074 ou 14.205)";
+        : kpText ? I18N.t("ui.keypad_invalid") : I18N.t("ui.keypad_hint");
       $("kp-ok").disabled = hz === null;
     }
     let keypadOpenedAt = -1e9;
-    const keypadReady = () => performance.now() - keypadOpenedAt > 450;            // au toucher, Android envoie un « clic fantôme » à l'endroit du doigt : il tomberait sur le pavé qui vient de s'ouvrir
+    const keypadReady = () => performance.now() - keypadOpenedAt > 450;            // au toucher, Android envoie un « clic fantôme » à l'endroit du doigt : il tomberait sur le pavé qui vient de s'ouvrir  // i18n-ok
     function openKeypad() {
       if (frequencyLocked()) return;
       kpText = "";
@@ -543,15 +547,15 @@
       if ($("keypad").hidden) return;
       if (/^[0-9.]$/.test(ev.key)) keypadPress(ev.key);
       else if (ev.key === ",") keypadPress(".");
-      else if (ev.key === "Backspace") keypadPress("⌫");
-      else if (ev.key === "Enter") $("kp-ok").click();
-      else if (ev.key === "Escape") closeKeypad();
+      else if (ev.key === "Backspace") keypadPress("⌫");  // i18n-ok (touches du clavier)
+      else if (ev.key === "Enter") $("kp-ok").click();  // i18n-ok
+      else if (ev.key === "Escape") closeKeypad();  // i18n-ok
     });
 
     // ---- bandes (dernière fréquence et dernier mode par bande) et pas
     for (const band of BANDS) {
       const button = el("button", "chip", band.label);
-      button.title = "Bande des " + band.key + " m : dernière fréquence et dernier mode utilisés";
+      button.title = I18N.t("ui.band_title", { band: band.key });
       button.disabled = true;
       button.addEventListener("click", () => client.goBand(band.key).catch(fail));
       const dot = el("span", "banddot");                                             // spots actifs du Cluster DX sur la bande
@@ -590,8 +594,8 @@
       for (const [key, item] of bandDots) {
         const level = levels[key];
         item.dot.hidden = !level;
-        if (level) item.dot.className = ["", "banddot lvl1", "banddot lvl2", "banddot lvl3"][level.level];
-        bandButtons.get(key).title = item.title + (level ? " — " + level.count + " spot" + (level.count > 1 ? "s actifs" : " actif") + " (Cluster DX)" : "");
+        if (level) item.dot.className = ["", "banddot lvl1", "banddot lvl2", "banddot lvl3"][level.level];  // i18n-ok (classes CSS)
+        bandButtons.get(key).title = level ? I18N.plural("ui.band_title_spots", level.count, { title: item.title }) : item.title;
       }
     }
     let voyantsKey = "";
@@ -629,14 +633,14 @@
     // ---- pertes de connexion : dernière raison et historique des 10 dernières
     function showLoss(index) {
       const entry = client.losses[index];
-      $("loss-detail").textContent = entry ? describeLoss(entry) : "Aucune perte de connexion enregistrée.";
+      $("loss-detail").textContent = entry ? describeLoss(entry) : I18N.t("ui.loss_none_detail");
     }
     function renderLosses(list) {
       const select = $("loss-select");
       select.textContent = "";
       $("loss-copy").disabled = $("loss-clear").disabled = list.length === 0;
       if (!list.length) {
-        select.appendChild(Object.assign(el("option", "", "Aucune perte enregistrée"), { value: "" }));
+        select.appendChild(Object.assign(el("option", "", I18N.t("ui.loss_none")), { value: "" }));
         $("loss-last").hidden = true; $("loss-open").hidden = true;
         showLoss(-1);
         return;
@@ -645,7 +649,7 @@
       select.value = "0";
       showLoss(0);
       const last = list[0];
-      $("loss-last").textContent = (last.kind === "failed" ? "Dernier échec de connexion : " : "Dernière perte de connexion : ") + last.title + " — " + last.explain;
+      $("loss-last").textContent = I18N.t(last.kind === "failed" ? "ui.loss_last_failed" : "ui.loss_last_lost", { title: last.title, explain: last.explain });
       $("loss-last").hidden = false; $("loss-open").hidden = false;
     }
     $("loss-select").addEventListener("change", (ev) => showLoss(Number(ev.target.value)));
@@ -654,8 +658,8 @@
       if ($("sec-diag").scrollIntoView) $("sec-diag").scrollIntoView();
     });
     $("loss-copy").addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText($("loss-detail").textContent); ui.log("Rapport copié dans le presse-papiers.", ""); }
-      catch (err) { ui.log("Copie impossible : sélectionne le texte du rapport à la main.", "warn"); }
+      try { await navigator.clipboard.writeText($("loss-detail").textContent); ui.log(I18N.t("ui.loss_copied"), ""); }
+      catch (err) { ui.log(I18N.t("ui.loss_copy_failed"), "warn"); }
     });
     $("loss-clear").addEventListener("click", () => client.clearLosses());
 
@@ -713,7 +717,7 @@
         specCtx.strokeStyle = canvasColors["--alerte"]; specCtx.lineWidth = 1; specCtx.stroke();
       }
       const top = wf.strongest(peaks || values, wfSettings.width);
-      $("wf-peakinfo").textContent = top ? "pic " + (top.hz / 1000).toFixed(2) : "";
+      $("wf-peakinfo").textContent = top ? I18N.t("audiowaterfallview.peak", { khz: (top.hz / 1000).toFixed(2) }) : "";
     }
     function pushLine(values) {
       fallCtx.drawImage(fallCanvas, 0, 0, WF_W, FALL_H - 1, 0, 1, WF_W, FALL_H - 1);     // tout descend d'une ligne, la nouvelle arrive en haut
@@ -727,7 +731,7 @@
       analyser.getFloatFrequencyData(spectrumBuf);
       wfValues = wf.resample(spectrumBuf, audioCtx.sampleRate, analyser.fftSize, wfSettings.width, WF_W, wfValues);
       const interval = 1000 / wfSettings.speed;
-      if (lastFrame === 0) { lastFrame = now; lastLine = now - interval; }   // 1re image : l'horloge part de l'horodatage de l'animation (pas de performance.now()), une ligne tout de suite
+      if (lastFrame === 0) { lastFrame = now; lastLine = now - interval; }   // 1re image : l'horloge part de l'horodatage de l'animation (pas de performance.now()), une ligne tout de suite  // i18n-ok
       const dt = (now - lastFrame) / 1000;
       lastFrame = now;
       drawSpectrum(wfValues, tracker.update(wfValues, dt, wfSettings.peak));
@@ -736,7 +740,7 @@
       wfRaf = window.requestAnimationFrame(frame);
     }
     function startWf() {
-      if (wfRaf !== null || !analyser) { if (!analyser) $("wf-peakinfo").textContent = "pas d'audio reçu"; return; }
+      if (wfRaf !== null || !analyser) { if (!analyser) $("wf-peakinfo").textContent = I18N.t("ui.wf_no_audio"); return; }
       if (audioCtx && audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
       lastLine = lastFrame = 0;                                                       // initialisés par la première image
       wfRaf = window.requestAnimationFrame(frame);
@@ -801,7 +805,7 @@
     }
     function syncDock() {
       /* Spectre HF intégré : interrupteur allumé, paysage assez large, page d'usine, liaison établie et spectre disponible.
-         Sinon la vue intégrée se referme (et l'interrupteur disparaît s'il ne peut pas servir). */
+         Sinon la vue intégrée se referme (et l'interrupteur disparaît s'il ne peut pas servir). */  // i18n-ok
       if (!hfx) return;
       const allowed = hfx.canDock($("app").className, window.innerWidth, !!(layout && layout.active));
       const audioUsable = allowed && connectedFlag;                                   // spectre audio : pas besoin du spectre HF
@@ -850,7 +854,7 @@
         label.style.left = (tick.fraction * 100).toFixed(2) + "%";
         axis.appendChild(label);
       }
-      $("hf-info").textContent = "largeur " + hfx.spanLabel(frame.lowHz, frame.highHz) + (frame.outOfRange ? " — HORS PLAGE" : "");
+      $("hf-info").textContent = I18N.t(frame.outOfRange ? "ui.hf_width_out" : "ui.hf_width", { span: hfx.spanLabel(frame.lowHz, frame.highHz) });
     }
     function hfResetFall() {
       hfFallCtx.fillStyle = canvasColors["--fond"]; hfFallCtx.fillRect(0, 0, hfFall.width, hfFall.height);
@@ -959,9 +963,9 @@
       $("hf-freq").textContent = v.frequency;
       $("hf-mode").textContent = v.modeShort;
       $("hf-tx").hidden = !transmitting;
-      $("hf-tx").textContent = v.mine ? "ÉMISSION EN COURS" : "ÉMISSION (" + (v.owner || "?") + ")";
+      $("hf-tx").textContent = v.mine ? I18N.t("stationtab.tx_in_progress") : I18N.t("ui.tx_other", { owner: v.owner || "?" });
       $("hf-stop").disabled = !v.connected;
-      if (transmitting || !v.connected) setVfo(false);                            // jamais d'accord pendant l'émission
+      if (transmitting || !v.connected) setVfo(false);                            // jamais d'accord pendant l'émission  // i18n-ok
       $("hf-vfo").disabled = !v.connected || transmitting || !!v.controlsLocked;
       hfRigSettings(v.connected && !transmitting);
       hfMarker();
@@ -1001,7 +1005,7 @@
       const width = layer.clientWidth || $("hf-plot").clientWidth || hfGrid.width / (window.devicePixelRatio || 1) || 0;
       const span = hfLast.highHz - hfLast.lowHz;
       for (const s of visible) {
-        const line = el("div", "spot-line k-" + s.kind);
+        const line = el("div", "spot-line k-" + s.kind);  // i18n-ok (classe CSS)
         line.style.left = (((s.hz - hfLast.lowHz) / span) * 100).toFixed(2) + "%";
         line.style.opacity = String(sp.opacity(sp.ageSeconds(s, now)) * 0.7);
         layer.appendChild(line);
@@ -1010,12 +1014,12 @@
       for (const tag of sp.layoutLabels(visible, hfLast.lowHz, hfLast.highHz, width, { rows: 3, charPx: 7, padPx: 12 })) {
         const first = spotBook.get(tag.ids[0]);
         const age = first ? sp.ageSeconds(first, now) : 0;
-        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")
+        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")  // i18n-ok (classe CSS)
                                     + (!tag.group && age <= sp.FRESH_S ? " fresh" : ""), tag.text);
         button.style.left = tag.x.toFixed(1) + "px";
         button.style.top = (2 + tag.row * rowPx) + "px";
         if (!tag.group) button.style.opacity = String(sp.opacity(age));
-        button.title = tag.group ? tag.ids.length + " spots proches : liste" : (first ? first.dx + " " + first.khz.toFixed(1) + " kHz" : "");
+        button.title = tag.group ? I18N.t("ui.near_spots_title", { count: tag.ids.length }) : (first ? first.dx + " " + first.khz.toFixed(1) + " kHz" : "");
         const ids = tag.ids.slice();
         button.addEventListener("pointerdown", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });   // ni accord au doigt, ni fermeture de la vue
         button.addEventListener("click", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); if (ids.length > 1) openSpotList(ids); else openSpotCard(ids[0]); });
@@ -1031,26 +1035,26 @@
       if (!sp || spotCardId === null || $("spot-card").hidden) return;
       const s = spotBook.get(spotCardId);
       const locked = frequencyLocked();
-      if (!s) { $("spot-qsy").disabled = true; $("spot-note").textContent = "Spot expiré ou hors de la bande."; return; }
+      if (!s) { $("spot-qsy").disabled = true; $("spot-note").textContent = I18N.t("hfscopeview.spot_gone"); return; }
       $("spot-dx").textContent = s.dx;
-      $("spot-kind").textContent = sp.kindLabel(s.kind) + (s.count > 1 ? " · " + s.count + " spotteurs" : "");
+      $("spot-kind").textContent = s.count > 1 ? I18N.t("hfscopeview.kind_spotters", { kind: sp.kindLabel(s.kind), count: s.count }) : sp.kindLabel(s.kind);
       $("spot-freq").textContent = s.khz.toFixed(1) + " kHz · " + sp.modeLabel(s);
       $("spot-info").textContent = [s.country ? s.country + (s.continent ? " (" + s.continent + ")" : "") : "",
-                                    "de " + (s.de || "?"), (s.time ? s.time.slice(0, 2) + ":" + s.time.slice(2) + " UTC" : ""),
+                                    I18N.t("hfscopeview.from", { call: s.de || "?" }), (s.time ? s.time.slice(0, 2) + ":" + s.time.slice(2) + " UTC" : ""),
                                     sp.ageLabel(sp.ageSeconds(s, Date.now()))].filter(Boolean).join(" · ");
       $("spot-comment").textContent = s.comment;
       $("spot-qsy").disabled = locked;
-      $("spot-qsy").title = locked ? "QSY impossible : émission en cours ou station déconnectée" : "Mettre le poste sur ce spot";
+      $("spot-qsy").title = locked ? I18N.t("ui.spot_qsy_locked") : I18N.t("ui.spot_qsy");
     }
     function spotQsy() {
       const s = spotCardId === null ? null : spotBook.get(spotCardId);
       if (!s || frequencyLocked()) return;
       const target = sp.qsyTarget(s, (mode) => client.adaptSpotMode(mode));
-      $("spot-qsy").disabled = true; $("spot-note").textContent = "QSY en cours…";
+      $("spot-qsy").disabled = true; $("spot-note").textContent = I18N.t("ui.qsy_pending");
       client.qsy(target.hz, target.mode).then((res) => {
-        if (res && res.ok) { ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", ""); closeSpotCard(); }
-        else { $("spot-note").textContent = "QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."); refreshSpotCard(); }
-      }).catch((err) => { $("spot-note").textContent = "QSY impossible : " + err.message; refreshSpotCard(); });
+        if (res && res.ok) { ui.log(I18N.t("ui.qsy_done", { dx: s.dx, khz: s.khz.toFixed(1) }), ""); closeSpotCard(); }
+        else { $("spot-note").textContent = res && res.reason ? I18N.t("ui.qsy_refused_reason", { reason: web.reasonText(res.reason, res.detail, res.ort) }) : I18N.t("ui.qsy_refused"); refreshSpotCard(); }
+      }).catch((err) => { $("spot-note").textContent = I18N.t("ui.qsy_failed", { error: err.message }); refreshSpotCard(); });
     }
     function openSpotList(ids) {
       spotListIds = ids || null; closeSpotCard(); $("spot-list").hidden = false;
@@ -1061,11 +1065,11 @@
       if (!sp || $("spot-list").hidden) return;
       const now = Date.now();
       const all = spotListIds ? spotListIds.map((id) => spotBook.get(id)).filter(Boolean) : spotBook.all();
-      $("spot-sort").textContent = "Tri : " + (spotSort === "age" ? "âge" : "fréquence");
-      $("spot-list-title").textContent = (spotListIds ? "Spots proches" : "Spots de la bande") + " (" + all.length + ")";
+      $("spot-sort").textContent = spotSort === "age" ? I18N.t("hfscopeview.sort_age") : I18N.t("hfscopeview.sort_freq");
+      $("spot-list-title").textContent = spotListIds ? I18N.t("ui.near_spots_list", { count: all.length }) : I18N.t("hfscopeview.band_spots", { count: all.length });
       const box = $("spot-items");
       box.textContent = "";
-      if (!all.length) { box.appendChild(el("div", "hf-info", "Aucun spot pour l'instant.")); return; }
+      if (!all.length) { box.appendChild(el("div", "hf-info", I18N.t("hfscopeview.no_spot"))); return; }
       for (const s of sp.sortList(all, spotSort, now)) {
         const item = el("button", "", s.khz.toFixed(1) + "  " + s.dx + "  " + (s.mode || "?") + "  " + sp.ageLabel(sp.ageSeconds(s, now))
                                       + (s.kind !== "cluster" ? "  [" + sp.kindLabel(s.kind) + "]" : ""));
@@ -1083,7 +1087,7 @@
       const dot = $("hf-cluster");
       dot.hidden = false;
       dot.className = "cluster-dot " + (["green", "orange", "red"].includes(state) ? state : "");
-      dot.title = sp ? sp.healthLabel(state) : "Cluster DX";
+      dot.title = sp ? sp.healthLabel(state) : "Cluster DX";  // i18n-ok (nom propre)
       spotsKnown();
     }
     $("hf-spots").addEventListener("click", () => { spotsOn = !spotsOn; store.set("trx.spots", spotsOn ? "1" : "0"); spotTexts(); drawSpots(); });
@@ -1106,7 +1110,7 @@
         wfSource.connect(analyser);                                                     // jamais relié à la sortie : le son part par l'élément <audio>
         spectrumBuf = new Float32Array(analyser.frequencyBinCount);
         if (wfVisible) startWf();
-      } catch (err) { ui.log("Analyse audio indisponible : " + err.message, "warn"); }
+      } catch (err) { ui.log(I18N.t("ui.analysis_unavailable", { error: err.message }), "warn"); }
     }
     function teardownAnalysis() {
       stopWf();
@@ -1143,7 +1147,7 @@
       const hz = box.width > 0 ? hfx.frequencyAt((ev.clientX - box.left) / box.width, hfLast.lowHz, hfLast.highHz) : null;
       if (hz === null) return;
       client.qsy(hz).then((res) => {
-        if (!(res && res.ok)) ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."), "warn");
+        if (!(res && res.ok)) ui.log(res && res.reason ? I18N.t("ui.qsy_refused_reason", { reason: web.reasonText(res.reason, res.detail, res.ort) }) : I18N.t("ui.qsy_refused"), "warn");
       }).catch(fail);
     });
     for (const type of ["pointerup", "pointercancel"]) $("hf-plot").addEventListener(type, () => { hfDrag = null; });
@@ -1190,12 +1194,12 @@
         wfSettings = wf.nextSetting(wfSettings, name);
         store.set("trx.wf", wf.serializeSettings(wfSettings));
         wfTexts();
-        if (name === "width") { drawGrid(); resetFall(); }                              // l'échelle change : l'ancien historique n'a plus de sens
+        if (name === "width") { drawGrid(); resetFall(); }                              // l'échelle change : l'ancien historique n'a plus de sens  // i18n-ok
         if (name === "peak") tracker.reset();
       });
     }
 
-    const squelchLabel = (percent) => (percent === 0 ? "ouvert" : percent + " %");
+    const squelchLabel = (percent) => (percent === 0 ? I18N.t("stationtab.squelch_open") : percent + " %");
 
     // ---- visiteurs (docs/visiteurs-cahier-des-charges.md) : 🎧 N, liste, bandeaux, mode visiteur
     let presenceOpen = false, lastPresence = null;
@@ -1210,15 +1214,15 @@
       }
       for (const visitor of pv.kick) {                                          // opérateur : « Déconnecter » par visiteur
         const li = el("li", "");
-        const button = el("button", "chip", "Déconnecter");
+        const button = el("button", "chip", I18N.t("common.disconnect"));
         button.addEventListener("click", () => {
-          if (!window.confirm("Déconnecter « " + visitor.text + " » ? (il peut se reconnecter ; pour l'en empêcher, désactive son compte sur la station)")) return;
+          if (!window.confirm(I18N.t("ui.kick_confirm", { name: visitor.text }))) return;
           client.kickListener(visitor.account).catch(fail);
         });
         li.appendChild(el("span", "grow", visitor.text)); li.appendChild(el("span", "dim", visitor.detail)); li.appendChild(button);
         list.appendChild(li);
       }
-      $("presence-note").textContent = pv.suspended || pv.grace || (pv.people.length ? "" : "Personne d'autre n'est connecté.");
+      $("presence-note").textContent = pv.suspended || pv.grace || (pv.people.length ? "" : I18N.t("presenceviews.nobody"));
       $("presence-reopen").hidden = !pv.canReopen;
     }
     function renderPresence(v) {
@@ -1246,7 +1250,7 @@
     $("listeners-open").addEventListener("change", (event) => {
       const on = !!event.target.checked;
       if (!on && lastPresence && lastPresence.count > 0
-          && !window.confirm("Fermer l'écoute des visiteurs ? Les " + lastPresence.count + " visiteur(s) connecté(s) seront déconnectés.")) {
+          && !window.confirm(I18N.t("ui.listeners_close_confirm", { count: lastPresence.count }))) {
         event.target.checked = true;
         return;
       }
@@ -1325,7 +1329,7 @@
     function miniTexts(v) {
       const sp = (client.state && client.state.spectrum && client.state.spectrum.settings) || {};
       const enabled = !!(v && v.connected && v.pttState === "RX" && !v.listener);
-      $("mini-span-info").textContent = miniLast ? "Largeur affichée : " + hfx.spanLabel(miniLast.lowHz, miniLast.highHz) : "";
+      $("mini-span-info").textContent = miniLast ? I18N.t("hfscopeview.width_shown", { span: hfx.spanLabel(miniLast.lowHz, miniLast.highHz) }) : "";
       $("mini-set-span").textContent = hfx.spanSettingLabel(sp.span); $("mini-set-mode").textContent = hfx.modeSettingLabel(sp.mode);
       $("mini-set-speed").textContent = hfx.speedSettingLabel(sp.speed); $("mini-ref").textContent = hfx.refLabel(sp.ref);
       for (const id of ["mini-set-span", "mini-set-mode", "mini-set-speed", "mini-ref-down", "mini-ref-up"]) $(id).disabled = !enabled;
@@ -1379,27 +1383,28 @@
       /* Calcul affiché tout de suite (swr.js), complété par le plan de la station (hors bande, watts, durée). */
       const rig = (client.state && client.state.rig) || {};
       const b = Number.isFinite(rig.frequency_hz) ? sw.bandAt(rig.frequency_hz) : null;
-      $("swr-band").textContent = b ? "(" + b.name + " : " + sw.freqLabel(b.low_hz) + " à " + sw.freqLabel(b.high_hz) + " MHz)" : "(hors table : centre et largeur)";
+      $("swr-band").textContent = b ? I18N.t("ui.swr_band", { name: b.name, low: sw.freqLabel(b.low_hz), high: sw.freqLabel(b.high_hz) }) : I18N.t("ui.swr_band_none");
       $("swr-center-row").hidden = $("swr-use-band").checked;
       if (!$("swr-center").value && Number.isFinite(rig.frequency_hz)) $("swr-center").value = String(Math.round(rig.frequency_hz / 1000));
       $("swr-power-text").textContent = " " + $("swr-power").value + " %";
       const range = swrRange(), points = parseInt($("swr-points").value, 10);
-      if (!range) { $("swr-plan").textContent = "Choisis une plage."; $("swr-start").disabled = true; return null; }
+      if (!range) { $("swr-plan").textContent = I18N.t("swrscreen.choose_range"); $("swr-start").disabled = true; return null; }
       const p = sw.plan(range.lowHz, range.highHz, points, Number($("swr-points").max) || sw.MAX_POINTS);
       if (p.error) { $("swr-plan").textContent = web.reasonText(p.error); $("swr-start").disabled = true; return null; }
-      const center = $("swr-use-center").checked
-        ? $("swr-center").value + " kHz ± " + (Number(String($("swr-width").value).replace(",", ".")) / 2) + " kHz = " : "";
-      $("swr-plan").textContent = center + sw.freqLabel(p.lowHz) + " à " + sw.freqLabel(p.highHz) + " MHz, pas de " + (p.stepHz / 1000) +
-        " kHz, " + p.freqs.length + " points" + (p.amateurOnly ? "" : " — HORS des bandes radioamateur");
+      const planFields = { center: $("swr-center").value, half: Number(String($("swr-width").value).replace(",", ".")) / 2,
+        low: sw.freqLabel(p.lowHz), high: sw.freqLabel(p.highHz), step: p.stepHz / 1000, count: p.freqs.length };
+      $("swr-plan").textContent = I18N.t($("swr-use-center").checked ? "swrscreen.plan_center" : "swrscreen.plan", planFields)
+        + (p.amateurOnly ? "" : I18N.t("swrscreen.plan_outside"));
       $("swr-start").disabled = swrRunning || !(lastView && lastView.armed && lastView.connected);
       if (swrPlanTimer !== null) window.clearTimeout(swrPlanTimer);
       swrPlanTimer = window.setTimeout(() => {                                       // plan de la station (rien n'est émis)
         client.swrPlan(range.lowHz, range.highHz, points, Number($("swr-power").value)).then((res) => {
           if (!res || !res.ok || !res.plan) return;
           const pl = res.plan, skipped = pl.points.filter((x) => x.status === "out_of_band").length;
-          $("swr-plan").textContent += (pl.power_w ? " ; " + pl.power_w + " W" : "") + " en " + web.modeLabel(pl.fm_mode || "FM") +
-            (skipped ? " ; " + skipped + " point(s) hors des bandes de la station, sautés" : "") +
-            " ; environ " + Math.round(pl.estimated_s) + " s" + (pl.calibration_needed ? " (étalonnage du poste compris)" : "");
+          const mode = web.modeLabel(pl.fm_mode || "FM");
+          $("swr-plan").textContent += (pl.power_w ? " ; " + I18N.t("swrui.plan_power_mode", { power: pl.power_w + " W", mode: mode }) : " " + I18N.t("swrui.plan_mode", { mode: mode })) +
+            (skipped ? " ; " + I18N.t("swrui.plan_skipped", { n: skipped }) : "") +
+            " ; " + I18N.t("swrui.plan_duration", { s: Math.round(pl.estimated_s) }) + (pl.calibration_needed ? " " + I18N.t("swrui.plan_calibration") : "");
           $("swr-power").max = String(pl.max_power_pct);
         }).catch(() => {});
       }, 300);
@@ -1410,7 +1415,7 @@
       const axis = 34 * ratio, bottom = 18 * ratio, top = 10 * ratio;
       const plotX = x0 + axis, plotW = w - axis, plotH = h - bottom - top, baseY = y0 + top + plotH;
       const yOf = (swr) => baseY - sw.scaleY(swr) * plotH;
-      ctx.font = Math.round(10 * ratio) + "px sans-serif";
+      ctx.font = Math.round(10 * ratio) + "px sans-serif";  // i18n-ok (police)
       for (const g of sw.GRID.concat([3, 5])) {
         ctx.strokeStyle = g === 2 || g === 5 ? sw.COLORS.gridStrong : sw.COLORS.grid; ctx.lineWidth = Math.max(1, ratio);
         ctx.beginPath(); ctx.moveTo(plotX, yOf(g)); ctx.lineTo(x0 + w, yOf(g)); ctx.stroke();
@@ -1450,16 +1455,16 @@
     }
     function swrSummary(result) {
       const best = result && result.best;
-      const why = result && result.reason !== "done" ? " Mesure interrompue (" + web.cutText(result.detail) + ")." : "";
-      return (best ? "Meilleur TOS : " + sw.swrText(best.swr) + " à " + sw.freqLabel(best.hz) + " MHz." : "Aucun point mesuré.") + why +
-        (result && result.warning === "swr_unstable" ? " Lecture du TOS instable sur ce poste." : "");
+      const why = result && result.reason !== "done" ? " " + I18N.t("swrui.summary_cut", { why: web.cutText(result.detail) }) : "";
+      return (best ? I18N.t("swrui.summary_best", { swr: sw.swrText(best.swr), mhz: sw.freqLabel(best.hz) }) : I18N.t("swrui.summary_none")) + why +
+        (result && result.warning === "swr_unstable" ? " " + I18N.t("swrui.summary_unstable") : "");
     }
     function onSwr(msg) {
       swrRunning = !["done", "cut", "failed", "cancelled"].includes(msg.state);
       $("swr-cancel").hidden = !swrRunning;
-      const names = { preparing: "Préparation du poste…", calibrating: "Étalonnage du temps de lecture du poste…", restoring: "Remise en état du poste…" };
-      $("swr-progress").textContent = names[msg.state] ||
-        (msg.state === "measuring" ? "Point " + ((msg.points || []).filter((p) => p.swr !== null && p.swr !== undefined).length) + " sur " + msg.total : "");
+      const names = { preparing: "swrscreen.preparing", calibrating: "swrscreen.calibrating", restoring: "swrscreen.restoring" };
+      $("swr-progress").textContent = names[msg.state] ? I18N.t(names[msg.state]) :
+        (msg.state === "measuring" ? I18N.t("swrscreen.measuring", { done: (msg.points || []).filter((p) => p.swr !== null && p.swr !== undefined).length, total: msg.total }) : "");
       paintSwrChart(msg.points);
       if (msg.result) {
         swrResult = msg.result;
@@ -1488,19 +1493,19 @@
     async function swrImage() {
       /* Image ANONYME à partager : graphique, nom de la mesure, date, puissance, mode ; logo et www.rf-diy.com. */
       if (!swrResult) return null;
-      if (!swrName) swrName = (window.prompt("Nom de la mesure (légende de l'image) :", "") || "").trim();
+      if (!swrName) swrName = (window.prompt(I18N.t("ui.swr_name_prompt"), "") || "").trim();
       const W = 1200, H = 760, cv = document.createElement("canvas");
       cv.width = W; cv.height = H;
       const ctx = cv.getContext("2d");
       ctx.fillStyle = sw.COLORS.background; ctx.fillRect(0, 0, W, H);
       const legend = sw.legendLines(swrResult, swrName, web.modeLabel, new Date(swrResult.at ? swrResult.at * 1000 : Date.now()).toLocaleString());
-      ctx.fillStyle = sw.COLORS.title; ctx.font = "bold 34px sans-serif"; ctx.fillText(legend[0], 40, 56);
+      ctx.fillStyle = sw.COLORS.title; ctx.font = "bold 34px sans-serif"; ctx.fillText(legend[0], 40, 56);  // i18n-ok (police)
       drawSwrChart(ctx, 30, 80, W - 60, 520, swrResult.points || [], 2);
-      ctx.fillStyle = sw.COLORS.text; ctx.font = "22px sans-serif";
+      ctx.fillStyle = sw.COLORS.text; ctx.font = "22px sans-serif";  // i18n-ok (police)
       if (legend[1]) ctx.fillText(legend[1], 40, 650);
       const logo = await new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = "logo-96.png"; });
       if (logo) ctx.drawImage(logo, 40, 676, 64, 64);
-      ctx.fillStyle = sw.COLORS.accent; ctx.font = "bold 24px sans-serif"; ctx.fillText("www.rf-diy.com", 118, 718);
+      ctx.fillStyle = sw.COLORS.accent; ctx.font = "bold 24px sans-serif"; ctx.fillText("www.rf-diy.com", 118, 718);  // i18n-ok (police)
       return await new Promise((resolve) => cv.toBlob(resolve, "image/png"));
     }
     const swrFileName = () => "tos-" + (swrName || "mesure").replace(/[^\w.-]+/g, "_").slice(0, 40) + ".png";
@@ -1514,7 +1519,7 @@
     $("swr-start").addEventListener("click", () => {
       const p = swrPlanText();
       if (!p) return;
-      if (!p.plan.amateurOnly && !window.confirm("Cette plage sort des bandes radioamateur : tu vas émettre hors de ces bandes, sous ta seule responsabilité. Continuer ?")) return;
+      if (!p.plan.amateurOnly && !window.confirm(I18N.t("ui.swr_outside_confirm"))) return;
       swrName = ""; swrResult = null; $("swr-export").hidden = true; $("swr-summary").textContent = "";
       swrRunning = true; $("swr-start").disabled = true;
       client.swrStart(p.range.lowHz, p.range.highHz, p.points, Number($("swr-power").value)).then((res) => {
@@ -1529,25 +1534,25 @@
         const blob = await swrImage();
         if (!blob) return;
         if (window.showSaveFilePicker) {                                               // Chrome, Edge : choix du dossier et du nom
-          const handle = await window.showSaveFilePicker({ suggestedName: swrFileName(), types: [{ description: "Image PNG", accept: { "image/png": [".png"] } }] });
+          const handle = await window.showSaveFilePicker({ suggestedName: swrFileName(), types: [{ description: I18N.t("ui.png_image"), accept: { "image/png": [".png"] } }] });
           const out = await handle.createWritable(); await out.write(blob); await out.close();
         } else {
           const link = el("a", ""); link.href = URL.createObjectURL(blob); link.download = swrFileName(); link.click();
           window.setTimeout(() => URL.revokeObjectURL(link.href), 5000);
         }
-        ui.log("Image de la mesure enregistrée.", "");
+        ui.log(I18N.t("ui.swr_image_saved"), "");
       } catch (e) { if (!(e && e.name === "AbortError")) fail(e); }
     });
     $("swr-share").addEventListener("click", async () => {
       try {
         const blob = await swrImage();
-        if (blob) await navigator.share({ files: [new File([blob], swrFileName(), { type: "image/png" })], title: swrName || "Mesure de TOS" });
+        if (blob) await navigator.share({ files: [new File([blob], swrFileName(), { type: "image/png" })], title: swrName || I18N.t("swrscreen.title") });
       } catch (e) { if (!(e && e.name === "AbortError")) fail(e); }
     });
     $("swr-copy").addEventListener("click", async () => {
       try {
         const blob = await swrImage();
-        if (blob) { await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]); ui.log("Image copiée.", ""); }
+        if (blob) { await navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })]); ui.log(I18N.t("ui.image_copied"), ""); }
       } catch (e) { fail(e); }
     });
     try {                                                                              // boutons selon ce que sait le navigateur
@@ -1566,18 +1571,18 @@
       const max = replayMax();
       $("sec-replay").hidden = !max || !vx;
       $("replay-banner").hidden = !(replayPlaying || replayPending);
-      $("replay-banner").textContent = replayPlaying ? "DIFFUSION DE L'ENREGISTREMENT — STOP pour arrêter" : "Diffusion de l'enregistrement : émission demandée…";
+      $("replay-banner").textContent = replayPlaying ? I18N.t("ui.replay_playing") : I18N.t("rigparts.replay_pending");
       if (!max) return;
       const tx = !!(lastView && lastView.pttState && lastView.pttState !== "RX");
       const armed = !!(lastView && lastView.armed && lastView.connected);
       $("replay-max").textContent = String(max);
-      $("replay-record").textContent = replayRec ? "Arrêter" : "Enregistrer";
+      $("replay-record").textContent = replayRec ? I18N.t("common.stop") : I18N.t("voicescreen.record");
       $("replay-record").disabled = tx || replayPlaying || !!replayPending || !rxMedia || typeof MediaRecorder === "undefined";
       $("replay-send").disabled = !replayBuf || !!replayRec || tx || replayPlaying || !!replayPending || !armed || !voiceChain;
       $("replay-hint").hidden = armed;
-      $("replay-status").textContent = replayRec ? "Enregistrement en cours (" + max + " s au plus)…"
-        : replayPlaying ? "Diffusion en cours…" : replayPending ? "Émission demandée…"
-        : replayBuf ? "Enregistré : " + replayBuf.duration.toFixed(1).replace(".", ",") + " s" : "Rien d'enregistré.";
+      $("replay-status").textContent = replayRec ? I18N.t("ui.replay_recording", { max: max })
+        : replayPlaying ? I18N.t("ui.replay_sending") : replayPending ? I18N.t("voicescreen.replay_pending")
+        : replayBuf ? I18N.t("voicescreen.replay_recorded", { seconds: replayBuf.duration.toFixed(1).replace(".", ",") }) : I18N.t("voicescreen.replay_empty");
     }
     function replayOnTx(on) {
       /* Émission confirmée de CETTE page (client.js -> chaîne de voix) : la diffusion demandée commence ; fin = arrêt net. */
@@ -1585,7 +1590,7 @@
         if (replayRec) replayRec.stop();
         if (replayPending && Date.now() - replayPending <= 5000 && replayBuf && voiceChain) {
           replayPending = 0;
-          replayPlaying = voiceChain.replayBuffer(replayBuf, () => {        // fin de l'enregistrement : fin d'émission (STOP)
+          replayPlaying = voiceChain.replayBuffer(replayBuf, () => {        // fin de l'enregistrement : fin d'émission (STOP)  // i18n-ok
             replayPlaying = false; replayRender();
             client.stop().catch(fail);
           });
@@ -1608,7 +1613,7 @@
         if (ctx && chunks.length) {
           new Blob(chunks).arrayBuffer().then((data) => ctx.decodeAudioData(data))
             .then((buffer) => { replayBuf = buffer; replayRender(); })
-            .catch((e) => ui.log("Enregistrement illisible : " + e.message, "warn"));
+            .catch((e) => ui.log(I18N.t("ui.recording_unreadable", { error: e.message }), "warn"));
         }
         replayRender();
       };
@@ -1630,17 +1635,17 @@
       const h = v.connected ? v.host : null;
       $("host-bar").hidden = $("host-open").hidden = !h;
       if (!h) return;
-      $("host-bar").className = "hostbar listener-hide" + (h.level !== "ok" ? " " + h.level : "");
+      $("host-bar").className = "hostbar listener-hide" + (h.level !== "ok" ? " " + h.level : "");  // i18n-ok (classes CSS)
       $("host-fill").style.height = Math.round(h.fraction * 100) + "%";
       $("host-bar").title = h.title;
     }
     function showHostInfo() {
       const box = $("host-sections");
-      box.textContent = "Lecture…";
+      box.textContent = I18N.t("hostviews.reading");
       $("host-dialog").hidden = false;
       client.hostInfo().then((sections) => {
         box.textContent = "";
-        if (!sections) { box.textContent = "Synthèse indisponible (station plus ancienne ou déconnectée)."; return; }
+        if (!sections) { box.textContent = I18N.t("hostviews.unavailable"); return; }
         for (const section of sections) {
           box.appendChild(el("h4", "", String(section.title || "")));
           const table = el("table", "");
@@ -1651,7 +1656,7 @@
           }
           box.appendChild(table);
         }
-      }).catch((err) => { box.textContent = "Synthèse impossible : " + err.message; });
+      }).catch((err) => { box.textContent = I18N.t("ui.host_failed", { error: err.message }); });
     }
     $("host-bar").addEventListener("click", showHostInfo);
     $("host-open").addEventListener("click", showHostInfo);
@@ -1679,12 +1684,12 @@
       const key = JSON.stringify([n.rows, n.probes, n.vpn, n.thresholds]);
       if (key === netKey) return;                                          // rien de changé : boutons gardés sous le doigt
       netKey = key;
-      netRows($("net-rows"), n.probes.length ? n.rows.concat([["Sondes de la station", ""]], n.probes) : n.rows, n.outage);
+      netRows($("net-rows"), n.probes.length ? n.rows.concat([[I18N.t("netviews.station_probes"), ""]], n.probes) : n.rows, n.outage);
       const box = $("net-vpn");
       box.textContent = "";
       for (const w of n.vpn) {
-        const div = el("div", "alert warn", w.text + " ");
-        const skip = el("button", "chip", "Ignorer pour cette adresse");
+        const div = el("div", "alert warn", w.text + " ");  // i18n-ok (classes CSS)
+        const skip = el("button", "chip", I18N.t("netviews.ignore_address"));
         skip.addEventListener("click", () => client.netVpnIgnore(w.address).catch(fail));
         div.appendChild(skip);
         box.appendChild(div);
@@ -1737,8 +1742,8 @@
       netRows($("net-summary"), m.summary);
       const days = $("net-days-chart");
       days.textContent = "";
-      if (!m.days.length) days.appendChild(el("p", "note", "Aucune mesure sur la période."));
-      for (const d of m.days) netBarRow(days, d.date, d.fraction, d.short, d.date + " : " + d.outages + " coupure(s), " + d.detail);
+      if (!m.days.length) days.appendChild(el("p", "note", I18N.t("netviews.no_measure_period")));
+      for (const d of m.days) netBarRow(days, d.date, d.fraction, d.short, I18N.t("ui.net_day_title", { date: d.date, outages: d.outages, detail: d.detail }));
       const heat = $("net-heat");
       heat.textContent = "";
       heat.appendChild(el("b", "", ""));
@@ -1748,28 +1753,28 @@
         d.hours.forEach((cell, h) => {
           const c = el("span", cell.n ? "" : "zero");
           if (cell.n) c.style.opacity = String(0.25 + 0.75 * cell.fraction);
-          c.title = d.date + " " + h + " h : " + cell.n + " coupure(s)";
+          c.title = I18N.t("ui.net_hour_title", { date: d.date, hour: h, n: cell.n });
           heat.appendChild(c);
         });
       }
       const diag = $("net-diag");
       diag.textContent = "";
-      if (!m.diagnoses.length) diag.appendChild(el("p", "note", "Aucune coupure."));
+      if (!m.diagnoses.length) diag.appendChild(el("p", "note", I18N.t("netviews.no_outage")));
       for (const d of m.diagnoses) netBarRow(diag, d.label, d.fraction, d.count + " (" + Math.round(d.fraction * 100) + " %)", d.label);
-      netRows($("net-types"), m.types.length ? m.types : [["—", "aucune mesure"]]);
+      netRows($("net-types"), m.types.length ? m.types : [["—", I18N.t("netviews.no_measure")]]);
       const list = $("net-outages");
       list.textContent = "";
       for (const o of m.outages) {
         list.appendChild(el("li", "", new Date(o.when).toLocaleString() + " — " + o.duration + " — " + o.diagnosis +
-          (o.agent ? " — " + o.agent : "") + (o.net ? " (" + o.net + ")" : "") + " — " + o.kind + (o.basis ? " ; d'après : " + o.basis : "")));
+          (o.agent ? " — " + o.agent : "") + (o.net ? " (" + o.net + ")" : "") + " — " + o.kind + (o.basis ? I18N.t("netviews.based_on", { basis: o.basis }) : "")));
       }
-      if (!m.outages.length) list.appendChild(el("li", "", "Aucune coupure sur la période."));
+      if (!m.outages.length) list.appendChild(el("li", "", I18N.t("netviews.no_outage_period")));
       const select = $("net-device"), keep = select.value;
       select.textContent = "";
-      select.appendChild(el("option", "", "tous"));
+      select.appendChild(el("option", "", I18N.t("ui.net_all_devices")));
       select.firstChild.value = "";
       for (const d of m.devices) {
-        const o = el("option", "", (d.agent || "appareil") + " (" + String(d.device).slice(0, 4) + ")");
+        const o = el("option", "", (d.agent || I18N.t("ui.net_device")) + " (" + String(d.device).slice(0, 4) + ")");
         o.value = d.device;
         select.appendChild(o);
       }
@@ -1779,15 +1784,15 @@
     function renderNetThresholds(m) {
       const box = $("net-thr");
       box.textContent = "";
-      if (!m.thresholds.length) { box.appendChild(el("p", "note", "Pas encore de mesures par type de réseau.")); return; }
+      if (!m.thresholds.length) { box.appendChild(el("p", "note", I18N.t("netviews.no_thresholds"))); return; }
       for (const t of m.thresholds) {
         const card = el("div", "net-thr-type");
-        card.appendChild(el("strong", "", t.label + (t.chosen ? " — seuils choisis" : " — seuils de station.toml")));
+        card.appendChild(el("strong", "", I18N.t(t.chosen ? "netviews.chosen" : "netviews.from_toml", { label: t.label })));
         const p = t.proposed || {};
         const proposal = p.rtt || p.loss
-          ? "Proposé d'après vos mesures : " + (p.rtt ? "aller-retour " + p.rtt.warn + " / " + p.rtt.alert + " ms" : "") +
-            (p.rtt && p.loss ? ", " : "") + (p.loss ? "perte " + p.loss.warn + " / " + p.loss.alert + " %" : "")
-          : "Pas encore de proposition (7 jours et 2 000 mesures de 10 s de ce réseau ; " + t.days + " jour(s) aujourd'hui).";
+          ? I18N.t("netviews.proposed", { list: (p.rtt ? I18N.t("netviews.proposed_rtt", { warn: p.rtt.warn, alert: p.rtt.alert }) : "") +
+            (p.rtt && p.loss ? ", " : "") + (p.loss ? I18N.t("netviews.proposed_loss", { warn: p.loss.warn, alert: p.loss.alert + " %" }) : "") })
+          : I18N.t("netviews.no_proposal", { days: t.days });
         card.appendChild(el("p", "note", proposal));
         const values = { rtt_warn: t.inForce.rtt_warn, rtt_alert: t.inForce.rtt_alert, loss_warn: t.inForce.loss_warn, loss_alert: t.inForce.loss_alert };
         const result = el("p", "note", "");
@@ -1796,9 +1801,8 @@
           const r = np.simulate(t.rttHist, m.edges.rtt_ms, values.rtt_warn, values.rtt_alert);
           const l = np.simulate(t.lossHist, m.edges.loss_pct, values.loss_warn, values.loss_alert);
           const pct = (x) => (x === null ? "—" : String(x).replace(".", ",") + " %");
-          result.textContent = "Sur l'historique — aller-retour : orange " + pct(r.orange_pct) + " du temps, rouge " + pct(r.red_pct) +
-            " ; son dégradé dans " + pct(r.degraded_red_pct) + " des moments rouges et " + pct(r.degraded_green_pct) + " des moments verts. " +
-            "Perte : orange " + pct(l.orange_pct) + ", rouge " + pct(l.red_pct) + ".";
+          result.textContent = I18N.t("netui.simulation", { rtt_orange: pct(r.orange_pct), rtt_red: pct(r.red_pct), degraded_red: pct(r.degraded_red_pct),
+            degraded_green: pct(r.degraded_green_pct), loss_orange: pct(l.orange_pct), loss_red: pct(l.red_pct) });
         };
         const inputs = {};
         const slider = (key, label, min, max, step, unit) => {
@@ -1812,15 +1816,15 @@
           row.appendChild(input); row.appendChild(out);
           card.appendChild(row);
         };
-        slider("rtt_warn", "Aller-retour orange", 50, 1500, 50, "ms");
-        slider("rtt_alert", "Aller-retour rouge", 100, 3000, 50, "ms");
-        slider("loss_warn", "Perte orange", 0.5, 20, 0.5, "%");
-        slider("loss_alert", "Perte rouge", 1, 50, 1, "%");
+        slider("rtt_warn", I18N.t("netviews.rtt_orange"), 50, 1500, 50, "ms");
+        slider("rtt_alert", I18N.t("netviews.rtt_red"), 100, 3000, 50, "ms");
+        slider("loss_warn", I18N.t("netviews.loss_orange"), 0.5, 20, 0.5, "%");
+        slider("loss_alert", I18N.t("netviews.loss_red"), 1, 50, 1, "%");
         card.appendChild(result);
         simulate();
         const row = el("div", "row");
         if (p.rtt || p.loss) {
-          const take = el("button", "chip", "Prendre la proposition");
+          const take = el("button", "chip", I18N.t("netviews.take_proposal"));
           take.addEventListener("click", () => {
             const pick = { rtt_warn: p.rtt && p.rtt.warn, rtt_alert: p.rtt && p.rtt.alert, loss_warn: p.loss && p.loss.warn, loss_alert: p.loss && p.loss.alert };
             for (const [key, value] of Object.entries(pick)) {
@@ -1831,20 +1835,20 @@
           });
           row.appendChild(take);
         }
-        const apply = el("button", "chip", "Appliquer");
+        const apply = el("button", "chip", I18N.t("netviews.apply"));
         apply.addEventListener("click", () => {
           if (values.rtt_warn >= values.rtt_alert || values.loss_warn >= values.loss_alert) {
-            ui.log("Seuils refusés : l'orange doit être plus petit que le rouge.", "warn");
+            ui.log(I18N.t("ui.net_thresholds_order"), "warn");
             return;
           }
           client.netThresholds(Object.assign({ net_type: t.netType }, values)).then((res) => {
-            ui.log(res && res.ok ? "Seuils enregistrés sur la station pour « " + t.label + " »." : "Seuils refusés : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), res && res.ok ? "" : "warn");
+            ui.log(res && res.ok ? I18N.t("ui.net_thresholds_saved", { label: t.label }) : I18N.t("ui.net_thresholds_refused", { reason: web.reasonText(res && res.reason, res && res.detail, res && res.ort) }), res && res.ok ? "" : "warn");
             loadNetStats();
           }).catch(fail);
         });
         row.appendChild(apply);
         if (t.chosen) {
-          const reset = el("button", "chip", "Revenir aux valeurs de station.toml");
+          const reset = el("button", "chip", I18N.t("ui.net_thresholds_reset"));
           reset.addEventListener("click", () => client.netThresholds({ net_type: t.netType, reset: true }).then(loadNetStats).catch(fail));
           row.appendChild(reset);
         }
@@ -1853,16 +1857,16 @@
       }
     }
     function loadNetStats() {
-      $("net-status").textContent = "Lecture…";
+      $("net-status").textContent = I18N.t("rigsession.net_reading");
       client.netStats(Number($("net-days").value), $("net-device").value).then((res) => {
         if (!res || !res.ok) {
-          $("net-status").textContent = "Statistiques indisponibles : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort);
+          $("net-status").textContent = I18N.t("rigsession.net_stats_refused", { detail: web.reasonText(res && res.reason, res && res.detail, res && res.ort) });
           return;
         }
         netModel = web.netStatsModel(res.stats);
-        $("net-status").textContent = netModel ? "Mesures de " + ($("net-device").value ? "cet appareil" : "tous les appareils") + " ; heures locales de la station." : "Réponse illisible.";
+        $("net-status").textContent = netModel ? ($("net-device").value ? I18N.t("ui.net_stats_device") : I18N.t("rigsession.net_stats_ok")) : I18N.t("rigsession.net_stats_unreadable");
         renderNetStats(netModel);
-      }).catch((err) => { $("net-status").textContent = "Lecture impossible : " + err.message; });
+      }).catch((err) => { $("net-status").textContent = I18N.t("ui.read_failed", { error: err.message }); });
     }
     $("net-days").value = "30";                                            // 30 jours par défaut
     $("net-refresh").addEventListener("click", loadNetStats);
@@ -1871,20 +1875,20 @@
     $("sec-net").addEventListener("toggle", () => { if ($("sec-net").open) loadNetStats(); });
     $("net-clear").addEventListener("click", () => { $("net-clear-confirm").hidden = !$("net-clear-confirm").hidden; });
     $("net-export").addEventListener("click", () => {
-      $("net-status").textContent = "Export en cours…";
+      $("net-status").textContent = I18N.t("rigsession.net_exporting");
       client.netExport().then((res) => {
-        if (res.error) { $("net-status").textContent = "Export impossible : " + res.error; return; }
+        if (res.error) { $("net-status").textContent = I18N.t("rigsession.net_export_refused", { detail: res.error }); return; }
         const link = el("a", "");
         link.href = URL.createObjectURL(new Blob([res.bytes], { type: "application/zip" }));
         link.download = res.name;
         link.click();
-        $("net-status").textContent = "Export enregistré : " + res.name + " (anonyme : à joindre à un message pour l'équipe de développement).";
-      }).catch((err) => { $("net-status").textContent = "Export impossible : " + err.message; });
+        $("net-status").textContent = I18N.t("ui.net_export_saved", { name: res.name });
+      }).catch((err) => { $("net-status").textContent = I18N.t("rigsession.net_export_refused", { detail: err.message }); });
     });
     $("net-clear-confirm").addEventListener("click", () => {
       $("net-clear-confirm").hidden = true;
       client.netClear().then((res) => {
-        ui.log(res && res.ok ? "Historique réseau effacé (les seuils choisis sont gardés)." : "Effacement refusé : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), res && res.ok ? "" : "warn");
+        ui.log(res && res.ok ? I18N.t("rigsession.net_cleared") : I18N.t("ui.net_clear_refused", { reason: web.reasonText(res && res.reason, res && res.detail, res && res.ort) }), res && res.ok ? "" : "warn");
         loadNetStats();
       }).catch(fail);
     });
@@ -1905,8 +1909,9 @@
       netEvent(msg) {                                          // sonde réseau : coupure diagnostiquée, profil VPN partagé
         if (msg.event === "outage" && msg.outage) {
           const o = msg.outage;
-          ui.log("Coupure réseau de " + web.netDuration((o.duration_ms || 0) / 1000) + (o.agent ? " (" + o.agent + ")" : "") +
-                 " — tronçon probable : " + (web.NET_DIAGNOSES[o.diagnosis] || "indéterminé") + ".", "warn");
+          const outage = { duration: web.netDuration((o.duration_ms || 0) / 1000), agent: o.agent,
+                           diagnosis: web.NET_DIAGNOSES[o.diagnosis] || I18N.t("rigsession.net_diagnosis_unknown") };
+          ui.log(I18N.t(o.agent ? "rigsession.net_outage_agent" : "rigsession.net_outage", outage), "warn");
         } else if (msg.event === "vpn_shared" && msg.warning) {
           ui.log(web.vpnText(msg.warning), "bad");
         }
@@ -1922,11 +1927,11 @@
         rxMedia = media;
         audio.srcObject = rxStream(media);                                          // débrouillage et spatialisation éventuels
         setupAnalysis(media);
-        applyOutput().finally(() => audio.play().catch(() => ui.log("Lecture audio bloquée par le navigateur : touche l'écran.", "warn")));
+        applyOutput().finally(() => audio.play().catch(() => ui.log(I18N.t("ui.audio_blocked"), "warn")));
       },
       stats(text) { statsText = text; showNet(); },
-      diag(text) { $("diag").textContent = text + (audio.paused ? " · lecture en pause" : "") + (audio.muted ? " · son coupé" : ""); },
-      rtt(ms) { rttText = "commande " + ms + " ms"; showNet(); },
+      diag(text) { $("diag").textContent = text + (audio.paused ? " · " + I18N.t("ui.diag_paused") : "") + (audio.muted ? " · " + I18N.t("ui.diag_muted") : ""); },
+      rtt(ms) { rttText = I18N.t("ui.rtt_command", { ms: ms }); showNet(); },
       modes(list) {
         const ordered = orderModes(list);                                            // USB-D, LSB-D, FM-D, AM-D d'abord
         const select = $("mem-mode");
@@ -1952,11 +1957,11 @@
         banner.className = "reconnect" + (lost ? " lost" : "");
         $("reconnect-cancel").hidden = !info.active;
         if (info.active) {
-          $("reconnect-text").textContent = "RECONNEXION… " + info.remainingS + " s";
-          $("reconnect-sub").textContent = (info.attempt ? "essai " + info.attempt : "préparation") + (info.lastError ? " · " + info.lastError : "");
+          $("reconnect-text").textContent = I18N.t("ui.reconnecting", { seconds: info.remainingS });
+          $("reconnect-sub").textContent = (info.attempt ? I18N.t("ui.reconnect_attempt", { n: info.attempt }) : I18N.t("ui.reconnect_preparing")) + (info.lastError ? " · " + info.lastError : "");
         } else if (lost) {
-          $("reconnect-text").textContent = "CONNEXION PERDUE";
-          $("reconnect-sub").textContent = info.outcome === "auth" ? "identifiants refusés" : "plus de liaison après " + info.seconds + " s";
+          $("reconnect-text").textContent = I18N.t("ui.connection_lost");
+          $("reconnect-sub").textContent = info.outcome === "auth" ? I18N.t("ui.credentials_refused") : I18N.t("rigsession.giveup_timeout", { seconds: info.seconds });
         }
       },
       memories(list) { renderMemories(list); },
@@ -2054,10 +2059,10 @@
         $("power-banner").hidden = !rigPower.shown;
         if (rigPower.shown) {
           $("power-banner-text").textContent = rigPower.text;
-          $("power-on").hidden = !rigPower.canPowerOn && !rigPower.text.includes("en cours");
+          $("power-on").hidden = !rigPower.canPowerOn && rigPower.text !== I18N.t("power.banner_running");
           $("power-on").disabled = !rigPower.canPowerOn;
         }
-        if (!String($("stop").className || "").includes("holding")) $("stop-sub").textContent = v.powerOffered ? "appui long : déconnexion ou arrêt du TRX" : "appui long : déconnecter";
+        if (!String($("stop").className || "").includes("holding")) $("stop-sub").textContent = v.powerOffered ? I18N.t("powerviews.hold_power") : I18N.t("powerviews.hold_disconnect");
         const transmitting = v.pttState !== "RX";
         $("wf-tx").hidden = !(wfVisible && transmitting);
         hfState(v, transmitting);
@@ -2110,14 +2115,14 @@
         const badge = $("ptt-state");
         badge.textContent = v.pttLabel + (v.mine || !v.owner ? "" : " (" + v.owner + ")");
         badge.className = "ptt-state " + (v.pttState === "RX" ? "rx" : v.mine ? "tx" : "other");
-        $("tot").textContent = v.tot === null ? (v.lastCut ? "Dernière coupure : " + v.lastCut : "")
-          : "Temps restant : " + v.tot + " s" + (v.totWarning ? " — COUPURE IMMINENTE" : "");
-        $("owner").textContent = v.clients.length ? "Connectés : " + v.clients.join(", ") : "";
+        $("tot").textContent = v.tot === null ? (v.lastCut ? I18N.t("rigparts.last_cut", { cut: v.lastCut }) : "")
+          : I18N.t(v.totWarning ? "ui.tot_remaining_warning" : "ui.tot_remaining", { seconds: v.tot });
+        $("owner").textContent = v.clients.length ? I18N.t("ui.clients_connected", { clients: v.clients.join(", ") }) : "";
         const faultBox = $("fault");
         faultBox.hidden = !v.fault;
-        faultBox.textContent = v.fault ? "DÉFAUT STATION : " + v.fault + " (intervention requise)" : "";
+        faultBox.textContent = v.fault ? I18N.t("ui.station_fault", { fault: v.fault }) : "";
         const ptt = $("ptt");
-        ptt.textContent = v.mine ? "PTT — COUPER" : v.other ? "EN ÉMISSION (" + v.owner + ")" : "PTT";
+        ptt.textContent = v.mine ? I18N.t("ui.ptt_cut") : v.other ? I18N.t("ui.ptt_other", { owner: v.owner }) : "PTT";
         ptt.className = "ptt" + (v.mine ? " tx" : "");
         ptt.disabled = !v.connected || v.other || !!v.fault || (v.txBlocked && !v.mine);
         const hint = $("mode-hint");
@@ -2148,9 +2153,11 @@
       $("sec-selcall").hidden = !offered;
       const ind = scx ? scx.indicator(offered ? status : null) : null;
       $("sel-ind").hidden = !ind;
-      if (ind) { $("sel-ind").textContent = ind.text; $("sel-ind").className = "chip sel-ind" + (ind.open ? " open" : ""); }
+      if (ind) { $("sel-ind").textContent = ind.text; $("sel-ind").className = "chip sel-ind" + (ind.open ? " open" : ""); }  // i18n-ok (classes CSS)
       if (!offered) return;
-      $("sel-state").textContent = "État : " + (scx.STATE_LABELS[status.state] || status.state) + (status.code && status.state !== "disabled" ? " (code " + status.code + ")" : "");
+      const selState = scx.STATE_LABELS[status.state] || status.state;
+      $("sel-state").textContent = status.code && status.state !== "disabled" ? I18N.t("selcallpanel.state_code", { state: selState, code: status.code })
+        : I18N.t("selcallpanel.state", { state: selState });
       if (document.activeElement !== $("sel-code") && !$("sel-code").value) $("sel-code").value = status.code || "";
       if (document.activeElement !== $("sel-test-code") && !$("sel-test-code").value) $("sel-test-code").value = status.code || "";
       $("sel-tail").checked = !!status.send_on_tx_end;
@@ -2159,7 +2166,7 @@
       if (calOffered) {
         if (document.activeElement !== $("sel-level")) $("sel-level").value = status.tx_level_dbfs;
         $("sel-level-text").textContent = " " + String(status.tx_level_dbfs).replace(".", ",") + " dBFS";
-        $("sel-calibration").textContent = status.calibration ? "Dernier réglage : " + status.calibration : "";
+        $("sel-calibration").textContent = status.calibration ? I18N.t("ui.sel_last_calibration", { calibration: status.calibration }) : "";
         $("sel-calibrate").disabled = !connectedFlag || !!status.sending || !(lastView && lastView.armed) || (lastView && lastView.pttState !== "RX");
       }
       paintSelcallSend();
@@ -2172,13 +2179,13 @@
       box.textContent = "";
       for (const code of status.history || []) {
         const chip = el("button", "chip" + (code === status.code && status.state !== "disabled" ? " on" : ""), code);
-        chip.title = "Armer sur " + code;
+        chip.title = I18N.t("ui.sel_arm_on", { code: code });
         chip.addEventListener("click", () => client.selcallActivate(code).catch(fail));
         box.appendChild(chip);
       }
       const c = status.last_call;
-      $("sel-last").textContent = c ? "Dernier appel : " + c.code + " à " + new Date(c.at * 1000).toLocaleTimeString("fr-FR")
-        + " (décalage " + (c.delta_hz > 0 ? "+" : "") + c.delta_hz + " Hz, SNR " + c.snr_db + " dB)" : "Aucun appel reçu.";
+      $("sel-last").textContent = c ? I18N.t("selcallpanel.last_call", { code: c.code, time: new Date(c.at * 1000).toLocaleTimeString("fr-FR"),
+        delta: (c.delta_hz > 0 ? "+" : "") + c.delta_hz, snr: c.snr_db }) : I18N.t("selcallpanel.no_call");
     }
     function paintSelcallSend() {
       /* « Envoyer SELCALL » : devient « Annuler » pendant l'appel (progression 1/3...) ; une émission de ce client. */
@@ -2187,12 +2194,12 @@
       const button = $("sel-send");
       const offered = !!(client.hello && Array.isArray(client.hello.features) && client.hello.features.includes("selcall_send"));
       button.hidden = !offered; $("sel-tail-row").hidden = !offered;
-      if (!offered) { $("sel-send-note").textContent = "Appel et trame de fin : station à mettre à jour (0.63.0 ou plus)."; return; }
-      button.textContent = sending ? "Annuler" + (st && st.sending ? " (" + st.sending + ")" : "") : "Envoyer SELCALL";
+      if (!offered) { $("sel-send-note").textContent = I18N.t("ui.sel_update_station"); return; }
+      button.textContent = sending ? (st && st.sending ? I18N.t("selcallpanel.cancel_sending", { sending: st.sending }) : I18N.t("common.cancel")) : I18N.t("selcallpanel.send");
       button.className = sending ? "stop" : "primary";
       button.disabled = !connectedFlag || !st || (!sending && (st.state === "disabled" || !(v && v.armed) || (v && v.pttState !== "RX")));
-      $("sel-send-note").textContent = !st || st.state === "disabled" ? "Armez d'abord sur un code."
-        : !(v && v.armed) && !sending ? "Cochez « Émission autorisée » (c'est une émission)." : "";
+      $("sel-send-note").textContent = !st || st.state === "disabled" ? I18N.t("ui.sel_arm_first")
+        : !(v && v.armed) && !sending ? I18N.t("ui.sel_check_armed") : "";
       if (!sending && v && v.pttState === "RX") selSendAsked = false;
     }
     let selSendAsked = false;
@@ -2211,7 +2218,7 @@
       $("sel-ind").addEventListener("click", () => { $("sec-selcall").open = true; $("sec-selcall").scrollIntoView({ behavior: "smooth" }); });
       $("sel-activate").addEventListener("click", () => {
         const code = $("sel-code").value.trim();
-        if (!scx.validCode(code)) { ui.log("Code SELCALL : 3 à 8 chiffres.", "warn"); return; }
+        if (!scx.validCode(code)) { ui.log(I18N.t("rigsession.selcall_code_invalid"), "warn"); return; }
         client.selcallActivate(code).catch(fail);
       });
       $("sel-rearm").addEventListener("click", () => client.selcallRearm().catch(fail));
@@ -2220,7 +2227,7 @@
       $("sel-att").addEventListener("change", (ev) => client.selcallOptions({ attenuation_db: Number(ev.target.value) }).catch(fail));
       const testCode = () => {
         const code = $("sel-test-code").value.trim();
-        if (!scx.validCode(code)) { ui.log("Code du fichier de test : 3 à 8 chiffres.", "warn"); return null; }
+        if (!scx.validCode(code)) { ui.log(I18N.t("ui.sel_test_code_invalid"), "warn"); return null; }
         return code;
       };
       $("sel-test-save").addEventListener("click", () => {
@@ -2236,10 +2243,10 @@
       $("sel-test-play").addEventListener("click", () => {
         const code = testCode();
         if (!code) return;
-        if (testPlayer) { testPlayer.pause(); testPlayer = null; $("sel-test-play").textContent = "Écouter"; return; }
+        if (testPlayer) { testPlayer.pause(); testPlayer = null; $("sel-test-play").textContent = I18N.t("selcallpanel.listen"); return; }
         testPlayer = new Audio(URL.createObjectURL(new Blob([scx.testWav(code)], { type: "audio/wav" })));   // ici seulement, jamais émis
-        testPlayer.onended = () => { testPlayer = null; $("sel-test-play").textContent = "Écouter"; };
-        $("sel-test-play").textContent = "Arrêter";
+        testPlayer.onended = () => { testPlayer = null; $("sel-test-play").textContent = I18N.t("selcallpanel.listen"); };
+        $("sel-test-play").textContent = I18N.t("common.stop");
         testPlayer.play().catch(fail);
       });
     }
@@ -2282,7 +2289,7 @@
       // Voix par Breizh Audio Box : égaliseur et effets contournés => leurs commandes grisées (réglages gardés pour le
       // retour en direct : « Direct » ou repli) ; gain du micro et porte de bruit restent actifs
       const bzh = client.breizhEffectsOff(), on = s.enabled && !bzh;
-      $("voice-direct").className = "chip voice-direct" + (on ? " on" : "");
+      $("voice-direct").className = "chip voice-direct" + (on ? " on" : "");  // i18n-ok (classes CSS)
       $("voice-direct").textContent = on ? "EQ ON" : "EQ";
       $("voice-direct").disabled = bzh;
       $("voice-on").checked = on;
@@ -2307,7 +2314,7 @@
       if (!voiceChain || voiceTx()) $("voice-monitor").checked = false;
       $("voice-record").disabled = !ready || !voiceRaw || typeof MediaRecorder === "undefined";
       $("voice-play").disabled = !ready || !recordBuffer;
-      $("voice-record").textContent = recorder ? "Arrêter l'enregistrement" : "Enregistrer";
+      $("voice-record").textContent = recorder ? I18N.t("ui.record_stop") : I18N.t("voicescreen.record");
       drawVoiceGraph();
       const hintBox = $("voice-hints");
       hintBox.textContent = "";
@@ -2345,13 +2352,13 @@
         const near = points.reduce((best, p) => (Math.abs(p.hz - b.hz) < Math.abs(best.hz - b.hz) ? p : best));
         g.fillStyle = vx.bandColor(i); g.beginPath(); g.arc(xOf(b.hz), yOf(near.db), 4.5 * ratio, 0, 2 * Math.PI); g.fill();
       });
-      g.font = Math.round(11 * ratio) + "px sans-serif"; g.fillStyle = cssVar("--texte-secondaire") || vx.GRAPH.label;
-      for (const [hz, label] of [[100, "100"], [300, "300"], [1000, "1 k"], [3000, "3 k Hz"]]) g.fillText(label, xOf(hz) + 3 * ratio, H - 4 * ratio);
+      g.font = Math.round(11 * ratio) + "px sans-serif"; g.fillStyle = cssVar("--texte-secondaire") || vx.GRAPH.label;  // i18n-ok (police)
+      for (const [hz, label] of [[100, "100"], [300, "300"], [1000, "1 k"], [3000, "3 k Hz"]]) g.fillText(label, xOf(hz) + 3 * ratio, H - 4 * ratio);  // i18n-ok (police, unités)
       for (const db of [12, -12]) g.fillText((db > 0 ? "+" : "") + db + " dB", 3 * ratio, yOf(db) - 3 * ratio);
-      const badges = (s.chorus.on ? ["♫ chorus"] : []).concat(s.reverb.on ? ["≋ réverb"] : []);
+      const badges = (s.chorus.on ? [I18N.t("voicescreen.graph_chorus")] : []).concat(s.reverb.on ? [I18N.t("voicescreen.graph_reverb")] : []);
       g.fillStyle = vx.GRAPH.badge;
       badges.forEach((text, i) => g.fillText(text, W - 80 * ratio, (16 + 15 * i) * ratio));
-      if (!s.enabled) { g.fillStyle = vx.GRAPH.off; g.fillRect(0, 0, W, H); g.fillStyle = vx.GRAPH.offText; g.fillText("ÉTEINT", W / 2 - 22 * ratio, H / 2); }
+      if (!s.enabled) { g.fillStyle = vx.GRAPH.off; g.fillRect(0, 0, W, H); g.fillStyle = vx.GRAPH.offText; g.fillText(I18N.t("voicescreen.graph_off"), W / 2 - 22 * ratio, H / 2); }
     }
     // ---- profils de l'opérateur rangés sur la station (après Neutre, DX, Ragchew)
     let voiceProfilesFor = null;
@@ -2360,7 +2367,7 @@
       select.textContent = "";
       for (const [key, preset] of Object.entries(vx.PRESETS)) select.appendChild(Object.assign(el("option", "", preset.label), { value: key }));
       const mine = client.voiceProfileList || [];
-      if (mine.length) select.appendChild(Object.assign(el("option", "", "── Mes profils (station) ──"), { value: "", disabled: true }));
+      if (mine.length) select.appendChild(Object.assign(el("option", "", I18N.t("ui.voice_my_profiles")), { value: "", disabled: true }));
       mine.forEach((p) => select.appendChild(Object.assign(el("option", "", "★ " + p.name), { value: "user:" + p.name })));
       select.value = [...select.options].some((o) => o.value === keep) ? keep : Object.keys(vx.PRESETS)[0];
       voiceProfileButtons();
@@ -2390,8 +2397,8 @@
         const label = el("span", "", (hz >= 1000 ? (hz / 1000).toFixed(hz % 1000 ? 2 : 0).replace(".", ",") + " k" : hz + " Hz"));
         const gain = Object.assign(el("input", ""), { type: "range", min: String(-vx.GAIN_MAX_DB), max: String(vx.GAIN_MAX_DB), step: "1" });
         const gainText = el("span", "mono", "");
-        const fz = Object.assign(el("input", ""), { type: "number", min: String(Math.round(hz / 1.5)), max: String(Math.round(hz * 1.5)), step: "10", title: "Fréquence (Hz)" });
-        const q = Object.assign(el("input", ""), { type: "number", min: "0.3", max: "8", step: "0.1", title: "Largeur Q (grand = étroit)" });
+        const fz = Object.assign(el("input", ""), { type: "number", min: String(Math.round(hz / 1.5)), max: String(Math.round(hz * 1.5)), step: "10", title: I18N.t("ui.voice_band_hz") });
+        const q = Object.assign(el("input", ""), { type: "number", min: "0.3", max: "8", step: "0.1", title: I18N.t("ui.voice_band_q") });
         gain.addEventListener("input", () => { voiceSettings.bands[i].gainDb = Number(gain.value); voiceSave(); });
         fz.addEventListener("change", () => { voiceSettings.bands[i].hz = Number(fz.value); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
         q.addEventListener("change", () => { voiceSettings.bands[i].q = Number(q.value); voiceSettings = vx.validate(voiceSettings); voiceSave(); });
@@ -2428,7 +2435,7 @@
           const p = (client.voiceProfileList || []).find((x) => "user:" + x.name === choice);
           if (!p) return;
           voiceSettings = vx.validate(p.settings);
-          ui.log("Profil « " + p.name + " » appliqué.", "");
+          ui.log(I18N.t("voicescreen.profile_applied", { name: p.name }), "");
         } else if (vx.PRESETS[choice]) {
           voiceSettings = vx.PRESETS[choice].make();
         }
@@ -2437,19 +2444,19 @@
       $("voice-preset").addEventListener("change", voiceProfileButtons);
       $("voice-profile-save").addEventListener("click", () => {
         const current = $("voice-preset").value.startsWith("user:") ? $("voice-preset").value.slice(5) : "";
-        const name = (window.prompt("Nom du profil (égaliseur, chorus et réverbération actuels, rangés sur la station) :", current) || "").trim();
+        const name = (window.prompt(I18N.t("ui.voice_profile_prompt"), current) || "").trim();
         if (!name) return;
         client.saveVoiceProfile(name, vx.validate(voiceSettings)).then((list) => {
           if (!list) return;
           voicePresetOptions(); $("voice-preset").value = "user:" + (list.find((p) => p.name.toLowerCase() === name.toLowerCase()) || { name }).name;
-          voiceProfileButtons(); ui.log("Profil « " + name + " » enregistré sur la station.", "");
+          voiceProfileButtons(); ui.log(I18N.t("ui.voice_profile_saved", { name: name }), "");
         }).catch(fail);
       });
       $("voice-profile-delete").addEventListener("click", () => {
         const name = $("voice-preset").value.slice(5);
-        if (!name || !window.confirm("Supprimer le profil « " + name + " » de la station ?")) return;
+        if (!name || !window.confirm(I18N.t("ui.voice_profile_delete_confirm", { name: name }))) return;
         client.deleteVoiceProfile(name).then((list) => {
-          if (list) { voicePresetOptions(); ui.log("Profil « " + name + " » supprimé.", ""); }
+          if (list) { voicePresetOptions(); ui.log(I18N.t("ui.voice_profile_deleted", { name: name }), ""); }
         }).catch(fail);
       });
       $("voice-export").addEventListener("click", () => {
@@ -2462,8 +2469,8 @@
       $("voice-import").addEventListener("change", (ev) => {
         const file = ev.target.files && ev.target.files[0];
         if (!file) return;
-        file.text().then((text) => { voiceSettings = vx.importJson(text); voiceSave(); ui.log("Réglages de voix importés.", ""); })
-          .catch((e) => ui.log("Import impossible : " + e.message, "warn"))
+        file.text().then((text) => { voiceSettings = vx.importJson(text); voiceSave(); ui.log(I18N.t("ui.voice_imported"), ""); })
+          .catch((e) => ui.log(I18N.t("ui.voice_import_failed", { error: e.message }), "warn"))
           .finally(() => { ev.target.value = ""; });
       });
       $("voice-monitor").addEventListener("change", (ev) => {
@@ -2474,19 +2481,19 @@
         if (recorder) { recorder.stop(); return; }
         if (!voiceRaw || voiceTx()) return;
         const chunks = [];
-        try { recorder = new MediaRecorder(new MediaStream([voiceRaw])); } catch (e) { ui.log("Enregistrement impossible : " + e.message, "warn"); return; }
+        try { recorder = new MediaRecorder(new MediaStream([voiceRaw])); } catch (e) { ui.log(I18N.t("ui.record_failed", { error: e.message }), "warn"); return; }
         recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
         recorder.onstop = () => {
           recorder = null;
           if (recordTimer !== null) { window.clearTimeout(recordTimer); recordTimer = null; }
           new Blob(chunks).arrayBuffer().then((data) => voiceCtx.decodeAudioData(data)).then((buffer) => {
             recordBuffer = buffer;
-            $("voice-rec-text").textContent = "Prise de " + buffer.duration.toFixed(1).replace(".", ",") + " s.";
+            $("voice-rec-text").textContent = I18N.t("ui.voice_take", { seconds: buffer.duration.toFixed(1).replace(".", ",") });
             voiceRender();
-          }).catch((e) => { ui.log("Enregistrement illisible : " + e.message, "warn"); voiceRender(); });
+          }).catch((e) => { ui.log(I18N.t("ui.recording_unreadable", { error: e.message }), "warn"); voiceRender(); });
         };
         recorder.start();
-        $("voice-rec-text").textContent = "Enregistrement… (" + vx.RECORD_MAX_S + " s au plus)";
+        $("voice-rec-text").textContent = I18N.t("ui.voice_recording", { max: vx.RECORD_MAX_S });
         recordTimer = window.setTimeout(() => { if (recorder) recorder.stop(); }, vx.RECORD_MAX_S * 1000);
         voiceRender();
       });
@@ -2511,19 +2518,18 @@
           zeroMs = chain.micLevelDb() <= -120 ? zeroMs + 500 : 0;
           if (zeroMs >= 3000) {
             window.clearInterval(silenceWatch);
-            ui.log("Le micro ne livre que du silence numérique : micro coupé (bouton muet, volume à 0 dans Windows) ou pilote bloqué " +
-                   "(débranchez puis rebranchez le micro, puis reconnectez-vous).", "warn");
+            ui.log(I18N.t("ui.mic_digital_silence"), "warn");
           } else if (watchMs >= 10000) window.clearInterval(silenceWatch);
         }, 500);
         if (voiceRaw) voiceRaw.addEventListener("ended", () => {
-          if (voiceChain === chain) ui.log("Le micro s'est arrêté (débranché ou pilote bloqué) : plus de voix envoyée, reconnectez-vous.", "bad");
+          if (voiceChain === chain) ui.log(I18N.t("ui.mic_ended"), "bad");
         });
         return {
           track: chain.track, stream: chain.stream,
           setTx(on) {
             if (on) chain.setExternal(client.breizhEffectsOff());        // voix par Breizh : égaliseur et effets coupés (limiteur gardé)
             chain.setTx(on);
-            if (on && recorder) recorder.stop();                       // toute prise d'émission arrête l'enregistrement
+            if (on && recorder) recorder.stop();                       // toute prise d'émission arrête l'enregistrement  // i18n-ok
             replayOnTx(on);
             voiceRender();
           },
@@ -2548,14 +2554,11 @@
     const sx = root.TrxScrambler || null;
     let scr = sx ? sx.validate(safeJson(store.get("trx.scrambler", "null"))) : null;
     let scrTxNode = null, rxGraph = null;
-    const SCR_WARNING = "SCRAMBLER : votre voix devient incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un " +
-      "chiffrement : tout possesseur d'un scrambler identique vous entend.\n\nEn bandes radioamateur, le Règlement des " +
-      "radiocommunications (UIT, art. 25) et la réglementation nationale interdisent les émissions destinées à masquer le sens " +
-      "des messages. Vous en prenez l'ENTIÈRE responsabilité.";
+    const SCR_WARNING = "ui.scrambler_warning";                                    // clé du texte (lu à l'affichage)
     function scrMsg() { return { mode: scr.mode, offsetHz: scr.offsetHz }; }
     function scrSave() { store.set("trx.scrambler", JSON.stringify(scrMsg())); }
     function scrWorklet(ctx) {
-      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error("AudioWorklet absent de ce navigateur"));
+      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error(I18N.t("ui.no_audioworklet")));
       if (!ctx.trxScrambler) ctx.trxScrambler = ctx.audioWorklet.addModule("scrambler.js");
       return ctx.trxScrambler;
     }
@@ -2574,11 +2577,11 @@
         if (!scrTxNode) scrTxNode = new AudioWorkletNode(ctx, "trx-scrambler", { processorOptions: Object.assign({ direction: "tx" }, scrMsg()) });
         else scrTxNode.port.postMessage(scrMsg());
         chain.setScrambler(scrTxNode);
-        if (ctx.sampleRate !== 48000) ui.log("Scrambler : son à " + ctx.sampleRate + " Hz (prévu pour 48 kHz) : décodage moins propre en face.", "warn");
+        if (ctx.sampleRate !== 48000) ui.log(I18N.t("ui.scr_rate", { rate: ctx.sampleRate }), "warn");
       } catch (err) {
         scr.tx = false;
         if (chain) chain.setScrambler(null);
-        ui.log("Scrambler d'émission impossible (" + (err && err.message ? err.message : err) + ") : voix en CLAIR.", "bad");
+        ui.log(I18N.t("ui.scr_tx_failed", { error: err && err.message ? err.message : err }), "bad");
       }
       scrRender();
     }
@@ -2638,20 +2641,20 @@
           if (wantScr) scr.rx = false;
           if (wantSt) stFailed = true;
           rxStop(); audio.srcObject = media;
-          ui.log("Traitement de la réception impossible (" + (err && err.message ? err.message : err) + ") : réception sans débrouillage ni spatialisation.", "warn");
+          ui.log(I18N.t("ui.rx_chain_failed", { error: err && err.message ? err.message : err }), "warn");
           scrRender(); stRender();
         });
         if (ctx.resume) ctx.resume().catch(() => {});
         window.setTimeout(() => {                                                   // contexte gardé en pause par le navigateur
           if (rxGraph !== state || ctx.state !== "suspended") return;
-          ui.log("Son de la réception en attente du navigateur : touchez l'écran.", "warn");
+          ui.log(I18N.t("ui.rx_audio_waiting"), "warn");
           document.addEventListener("pointerdown", () => { if (rxGraph === state && ctx.resume) ctx.resume().catch(() => {}); }, { once: true });
         }, 1000);
         return dest.stream;
       } catch (err) {
         if (wantScr) scr.rx = false;
         if (wantSt) stFailed = true;
-        ui.log("Traitement de la réception impossible (" + (err && err.message ? err.message : err) + ") : réception sans débrouillage ni spatialisation.", "warn");
+        ui.log(I18N.t("ui.rx_chain_failed", { error: err && err.message ? err.message : err }), "warn");
         return media;
       }
     }
@@ -2671,33 +2674,33 @@
       $("scr-offset-text").textContent = " " + (scr.offsetHz > 0 ? "+" : "") + scr.offsetHz + " Hz";
       const ind = $("scr-ind");
       ind.hidden = !(scr.tx || scr.rx);
-      ind.textContent = scr.tx ? "SCRAMBLER" : "DÉBROUILLAGE";
-      const txState = !scr.tx ? "émission en clair" : (voiceChain && scrTxNode && voiceChain.scrambler === scrTxNode) ? "émission BROUILLÉE"
-        : voiceChain ? "émission brouillée : mise en route…" : "émission brouillée dès la connexion avec le micro";
-      const rxState = !scr.rx ? "réception en clair" : rxGraph && rxGraph.node ? "réception débrouillée" : "réception débrouillée dès la connexion";
-      $("scr-state").textContent = "État : " + txState + " ; " + rxState + " (mode « " + sx.MODES[scr.mode].label + " »).";
+      ind.textContent = scr.tx ? "SCRAMBLER" : I18N.t("ui.scr_ind_rx");
+      const txState = !scr.tx ? I18N.t("ui.scr_tx_clear") : (voiceChain && scrTxNode && voiceChain.scrambler === scrTxNode) ? I18N.t("ui.scr_tx_on")
+        : voiceChain ? I18N.t("ui.scr_tx_starting") : I18N.t("ui.scr_tx_pending");
+      const rxState = !scr.rx ? I18N.t("ui.scr_rx_clear") : rxGraph && rxGraph.node ? I18N.t("ui.scr_rx_on") : I18N.t("ui.scr_rx_pending");
+      $("scr-state").textContent = I18N.t("ui.scr_state", { tx: txState, rx: rxState, mode: sx.MODES[scr.mode].label });
     }
     if (sx) {
       for (const [key, m] of Object.entries(sx.MODES)) $("scr-mode").appendChild(Object.assign(el("option", "", m.label), { value: key }));
-      const confirmOn = (what) => window.confirm(SCR_WARNING + "\n\n" + what);
+      const confirmOn = (what) => window.confirm(I18N.t(SCR_WARNING) + "\n\n" + what);
       $("scr-tx").addEventListener("change", (ev) => {
         if (ev.target.checked && client.breizhEffectsOff()) {                      // Breizh et scrambler d'émission exclusifs
           ev.target.checked = false;
-          ui.log("Breizh Audio Box en service : scrambler d'émission impossible (exclusifs). Choisissez « Direct » dans la rubrique Breizh pour brouiller.", "warn");
+          ui.log(I18N.t("ui.scr_breizh_refused"), "warn");
           return;
         }
-        if (ev.target.checked && !confirmOn("Brouiller VOTRE ÉMISSION ?")) { ev.target.checked = false; return; }
+        if (ev.target.checked && !confirmOn(I18N.t("ui.scr_confirm_tx"))) { ev.target.checked = false; return; }
         scr.tx = ev.target.checked;
-        ui.log(scr.tx ? "Scrambler : émission brouillée (mode « " + sx.MODES[scr.mode].label + " »)." : "Scrambler : émission en clair.", scr.tx ? "warn" : "");
+        ui.log(scr.tx ? I18N.t("ui.scr_log_tx_on", { mode: sx.MODES[scr.mode].label }) : I18N.t("ui.scr_log_tx_off"), scr.tx ? "warn" : "");
         scrApplyTx();
       });
       $("scr-rx").addEventListener("change", (ev) => {
-        if (ev.target.checked && !confirmOn("Débrouiller la RÉCEPTION ?")) { ev.target.checked = false; return; }
+        if (ev.target.checked && !confirmOn(I18N.t("ui.scr_confirm_rx"))) { ev.target.checked = false; return; }
         scr.rx = ev.target.checked;
-        ui.log(scr.rx ? "Scrambler : réception débrouillée." : "Scrambler : réception en clair.", "");
+        ui.log(scr.rx ? I18N.t("ui.scr_log_rx_on") : I18N.t("ui.scr_log_rx_off"), "");
         if (scr.rx && spx && stSet.on) {                                            // débrouillage et ST exclusifs (2026-11-03)
           stSet = spx.validate(Object.assign({}, stSet, { on: false })); stSave(); stRender();
-          ui.log("Débrouillage en service : spatialisation ST coupée.", "");
+          ui.log(I18N.t("voicehub.spatial_off"), "");
         }
         rxApply();
       });
@@ -2741,8 +2744,8 @@
       const b = v && v.connected && bzhOffered() ? v.breizh : null;
       $("sec-breizh").hidden = !b; $("bzh-ind").hidden = !b;
       if (!b) { bzhLogLoaded = false; $("voice-breizh").hidden = true; bzhControls(false); return; }
-      $("bzh-ind").className = "chip bzh-ind listener-hide" + (b.level !== "off" ? " " + b.level : "");
-      $("bzh-ind").title = "Breizh Audio Box : " + b.text + ". Touche : sa rubrique";
+      $("bzh-ind").className = "chip bzh-ind listener-hide" + (b.level !== "off" ? " " + b.level : "");  // i18n-ok (classes CSS)
+      $("bzh-ind").title = I18N.t("ui.bzh_title", { text: b.text });
       $("bzh-state").className = "bzh-state" + (b.level !== "off" ? " " + b.level : "");
       $("bzh-state").textContent = b.text;
       $("bzh-details").textContent = b.details;
@@ -2755,7 +2758,7 @@
       bzhControls(b.effectsOff);
       if (b.effectsOff && sx && scr.tx) {                                          // Breizh et scrambler d'émission exclusifs
         scr.tx = false;
-        ui.log("Breizh Audio Box en service : scrambler d'émission coupé (exclusifs).", "warn");
+        ui.log(I18N.t("voicehub.breizh_scrambler_off"), "warn");
         scrApplyTx();
       }
       if (!bzhLogLoaded) { bzhLogLoaded = true; bzhLoadLog(); }
@@ -2767,7 +2770,7 @@
     }
     function bzhSet(changes) {
       client.breizhSet(changes).then((res) => {
-        if (res && !res.ok) ui.log("Breizh : " + web.reasonText(res.reason, res.detail, res.ort), "warn");
+        if (res && !res.ok) ui.log(I18N.t("rigsession.breizh_refused", { detail: web.reasonText(res.reason, res.detail, res.ort) }), "warn");
       }).catch(fail);
     }
     $("bzh-gain").addEventListener("input", (ev) => {
@@ -2778,8 +2781,8 @@
     $("bzh-bypass").addEventListener("change", (ev) => bzhSet({ bypass: !!ev.target.checked }));
     $("bzh-reactivate").addEventListener("click", () => {
       client.breizhReactivate().then((res) => {
-        if (!res || !res.ok) { ui.log("Breizh : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn"); return; }
-        ui.log(res.pending ? "Breizh sera repris dès qu'il répondra (à la prochaine émission)." : "Breizh repris : la prochaine émission passera par Breizh.", "");
+        if (!res || !res.ok) { ui.log(I18N.t("rigsession.breizh_refused", { detail: web.reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn"); return; }
+        ui.log(res.pending ? I18N.t("rigsession.breizh_pending") : I18N.t("rigsession.breizh_resumed"), "");
       }).catch(fail);
     });
     $("bzh-log-refresh").addEventListener("click", bzhLoadLog);
@@ -2798,21 +2801,22 @@
       if (!f) return;
       fdvOn = f.on;
       const lvl = f.level !== "off" ? " " + f.level : "";
-      $("fdv-ind").className = "chip fdv-ind" + lvl;
-      $("fdv-ind").title = f.text + (f.lastCall ? " · dernier indicatif " + f.lastCall.callsign : "") + ". Touche : sa rubrique";
+      $("fdv-ind").className = "chip fdv-ind" + lvl;  // i18n-ok (classes CSS)
+      $("fdv-ind").title = f.lastCall ? I18N.t("ui.fdv_title_call", { text: f.text, callsign: f.lastCall.callsign }) : I18N.t("ui.fdv_title", { text: f.text });
       $("fdv-state").className = "fdv-state" + lvl;
       $("fdv-state").textContent = f.text;
       const details = [];
-      if (f.lastCall) details.push("Dernier indicatif : " + f.lastCall.callsign + (f.lastCall.snrText ? " (" + f.lastCall.snrText + ")" : "") + (f.lastCall.when ? ", " + f.lastCall.when : ""));
-      if (f.restarts) details.push(f.restarts + " relance(s) des décodeurs");
-      if (f.cause) details.push("dernière panne : " + f.cause);
+      if (f.lastCall) details.push(I18N.t("freedv.last_call", { callsign: f.lastCall.callsign, snr: f.lastCall.snrText ? " (" + f.lastCall.snrText + ")" : "",
+        when: f.lastCall.when ? ", " + f.lastCall.when : "" }));
+      if (f.restarts) details.push(I18N.t("freedv.restarts", { restarts: f.restarts }));
+      if (f.cause) details.push(I18N.t("freedv.last_fault", { cause: f.cause }));
       $("fdv-details").textContent = details.join(" · ");
-      $("fdv-toggle").textContent = f.on ? "Revenir au son du poste" : "Passer en FreeDV";
+      $("fdv-toggle").textContent = f.on ? I18N.t("freedvdialog.back_to_rig") : I18N.t("freedvdialog.switch_on");
       $("fdv-toggle").disabled = v.pttState !== "RX";
       const calls = $("fdv-calls");
       calls.textContent = "";
       for (const c of f.calls) calls.appendChild(el("li", "", c.callsign + (c.snrText ? " · " + c.snrText : "") + (c.when ? " · " + c.when : "")));
-      if (!f.calls.length) calls.appendChild(el("li", "note", "aucun pour l'instant"));
+      if (!f.calls.length) calls.appendChild(el("li", "note", I18N.t("freedvdialog.calls_none")));
       const seqs = $("fdv-seqs");
       seqs.textContent = "";
       for (const s of f.sequences) {
@@ -2823,13 +2827,13 @@
         li.appendChild(el("span", "", " " + s.duration + (s.callsigns ? " · " + s.callsigns : "") + (s.when ? " · " + s.when : "")));
         seqs.appendChild(li);
       }
-      if (!f.sequences.length) seqs.appendChild(el("li", "note", "aucune pour l'instant"));
+      if (!f.sequences.length) seqs.appendChild(el("li", "note", I18N.t("freedvdialog.sequences_none")));
     }
     $("fdv-toggle").addEventListener("click", () => {
       const want = !fdvOn;
       $("fdv-toggle").disabled = true;
       client.freedvSet(want).then((res) => {
-        if (res && res.ok) ui.log(want ? "Mode FreeDV : voix décodée par la station." : "Mode FreeDV quitté : son du poste.", "");
+        if (res && res.ok) ui.log(want ? I18N.t("rigsession.freedv_on") : I18N.t("rigsession.freedv_off"), "");
       }).catch(fail);
     });
     $("fdv-ind").addEventListener("click", () => { $("sec-freedv").open = true; $("sec-freedv").scrollIntoView({ block: "start" }); });
@@ -2847,8 +2851,8 @@
       const operator = !client.isListener();
       for (const r of a.rows) {
         const tr = el("tr", (operator ? "go" : "") + (r.here ? " here" : ""));
-        if (operator) { tr.title = "Aller sur " + r.freqText; tr.addEventListener("click", () => fdvaQsy(r.hz)); }
-        tr.appendChild(el("td", "f", r.freqText + (r.here ? " ◀ poste" : "")));
+        if (operator) { tr.title = I18N.t("ui.fdva_go", { freq: r.freqText }); tr.addEventListener("click", () => fdvaQsy(r.hz)); }
+        tr.appendChild(el("td", "f", r.freqText + (r.here ? I18N.t("freedvactivity.here") : "")));
         tr.appendChild(el("td", "", String(r.note).replace(".", ",")));
         const tx = el("td", "");
         r.tx.forEach((t, i) => { tx.appendChild(el("span", t.on ? "on" : "", (i ? ", " : "") + t.text)); });
@@ -2859,14 +2863,14 @@
       }
       if (!a.rows.length) {
         const tr = el("tr", "");
-        tr.appendChild(el("td", "note", a.status === "ok" ? "aucune activité HF" : "—"));
+        tr.appendChild(el("td", "note", a.status === "ok" ? I18N.t("freedvactivity.empty") : "—"));
         body.appendChild(tr);
       }
     }
     function fdvaQsy(hz) {
       if (client.isListener()) return;
       client.freedvQsy(hz).then((res) => {
-        if (res && res.ok) ui.log("QSY FreeDV : " + web.freedvFreqText(hz) + ".", "");
+        if (res && res.ok) ui.log(I18N.t("rigsession.freedv_qsy", { freq: web.freedvFreqText(hz) }), "");
         else if (res) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
       }).catch(fail);
     }
@@ -2897,7 +2901,7 @@
       $("sdr-load").hidden = !loadLine;
       $("sdr-load").textContent = loadLine;
       $("sdr-badge").textContent = state && state.state === "running" ? sdrx.formatMHz(state.center, 3) + " MHz"
-        : state && state.state === "error" ? "en panne" : "";
+        : state && state.state === "error" ? I18N.t("ui.sdr_fault") : "";
       if (state && state.state) {
         if (document.activeElement !== $("sdr-center") && Number.isFinite(state.center)) $("sdr-center").value = sdrx.formatMHz(state.center, 4);
         if (document.activeElement !== $("sdr-dfreq") && Number.isFinite(state.dfreq)) $("sdr-dfreq").value = sdrx.formatMHz(state.dfreq, 4);
@@ -2909,7 +2913,7 @@
         sdrSliderLabels();
       }
       $("sdr-range").textContent = "DYN " + sdrView.range + " dB";
-      $("sdr-palette").textContent = "Couleurs : " + sdrx.paletteName(sdrPalette);
+      $("sdr-palette").textContent = I18N.t("ui.sdr_colors", { palette: sdrx.paletteName(sdrPalette) });
       const hwOk = !!(state && Array.isArray(state.fs_choices));                    // station 0.155.0+ : largeur et antenne
       $("sdr-hw-box").hidden = !hwOk;
       if (hwOk) {
@@ -2993,14 +2997,14 @@
       if (!offered) return;
       const listening = !!client.sdrListening;
       $("sdr-listen").setAttribute("aria-pressed", listening ? "true" : "false");
-      $("sdr-listen").textContent = listening ? "🔊 Écoute en cours" : "🔈 Écouter";
+      $("sdr-listen").textContent = listening ? I18N.t("ui.sdr_listening") : I18N.t("ui.sdr_listen");
       if (state && state.mode) {
         sdrModeOptions(state.mode);
         $("sdr-mode").value = state.mode;
         $("sdr-dbw").value = String(state.dbw);
         if (!sdrDragging("sdr-sql")) $("sdr-sql").value = String(state.sql || 0);
       }
-      $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert";
+      $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : I18N.t("stationtab.squelch_open");
       $("sdr-listen-info").textContent = sdrx.listenText(state, listening);
       const left = state && sdrLast ? sdrx.markerLeft(state.dfreq, sdrLast.c, sdrLast.s) : null;
       $("sdr-marker").hidden = left === null;
@@ -3073,7 +3077,7 @@
       const visible = sdrSpotBook.visible(low, high);
       const width = layer.clientWidth || $("sdr-wf").clientWidth || 0;
       for (const s of visible) {
-        const line = el("div", "spot-line k-" + s.kind);
+        const line = el("div", "spot-line k-" + s.kind);  // i18n-ok (classe CSS)
         line.style.left = (((s.hz - low) / sdrLast.s) * 100).toFixed(2) + "%";
         line.style.opacity = String(sp.opacity(sp.ageSeconds(s, now)) * 0.7);
         layer.appendChild(line);
@@ -3081,14 +3085,14 @@
       for (const tag of sp.layoutLabels(visible, low, high, width, { rows: 2, charPx: 7, padPx: 12 })) {
         const first = sdrSpotBook.get(tag.ids[0]);
         const age = first ? sp.ageSeconds(first, now) : 0;
-        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")
+        const button = el("button", "spot-tag k-" + (first ? first.kind : "cluster") + (tag.group ? " group" : "")  // i18n-ok (classe CSS)
                                     + (!tag.group && age <= sp.FRESH_S ? " fresh" : ""), tag.text);
         button.style.left = tag.x.toFixed(1) + "px";
         button.style.top = (2 + tag.row * 18) + "px";
         if (!tag.group) button.style.opacity = String(sp.opacity(age));
         const spots = tag.ids.map((id) => sdrSpotBook.get(id)).filter(Boolean);
         button.title = spots.map((s) => s.dx + " " + s.khz.toFixed(1) + " kHz " + sp.modeLabel(s)).join("\n")
-                       + "\nToucher : le SDR écoute" + (spots.length > 1 ? " le premier" : "") + " (le TRX ne bouge pas)";
+                       + "\n" + I18N.t(spots.length > 1 ? "ui.sdr_spot_touch_first" : "ui.sdr_spot_touch");
         button.addEventListener("pointerdown", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });
         button.addEventListener("dblclick", (ev) => { if (ev.stopPropagation) ev.stopPropagation(); });
         button.addEventListener("click", (ev) => {
@@ -3097,7 +3101,7 @@
           const args = s ? sdrx.spotListen(s, st.center, st.fs) : null;
           if (!args) return;
           sdrSend(args);
-          ui.log("SDR sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz" + (args.mode ? " " + args.mode : "") + ").", "");
+          ui.log(I18N.t("ui.sdr_on_spot", { dx: s.dx, khz: s.khz.toFixed(1), mode: args.mode ? " " + args.mode : "" }), "");
         });
         layer.appendChild(button);
       }
@@ -3118,7 +3122,7 @@
       try {
         const res = await client.sdrSet(args);
         if (!res.ok) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
-      } catch (e) { ui.log("SDR : réglage non envoyé.", "warn"); }
+      } catch (e) { ui.log(I18N.t("ui.sdr_not_sent"), "warn"); }
     }
     if (sdrx) {
       $("sec-sdr").addEventListener("toggle", () => {
@@ -3128,18 +3132,18 @@
       });
       const sdrCenterSet = () => {
         const hz = sdrx.parseMHz($("sdr-center").value);
-        if (hz === null) { ui.log("SDR : fréquence centrale illisible (ex. 14.100 en MHz).", "warn"); return; }
+        if (hz === null) { ui.log(I18N.t("ui.sdr_center_invalid"), "warn"); return; }
         sdrSend({ center_hz: hz });
       };
       const sdrDfreqSet = () => {                  // fréquence à écouter ; le centre suit si elle sort de la fenêtre
         const hz = sdrx.parseMHz($("sdr-dfreq").value);
-        if (hz === null) { ui.log("SDR : fréquence écoutée illisible (ex. 7.093 en MHz).", "warn"); return; }
+        if (hz === null) { ui.log(I18N.t("ui.sdr_dfreq_invalid"), "warn"); return; }
         sdrSend(sdrTune(hz));
       };
       $("sdr-center-set").addEventListener("click", sdrCenterSet);
       $("sdr-dfreq-set").addEventListener("click", sdrDfreqSet);
-      $("sdr-center").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrCenterSet(); } });
-      $("sdr-dfreq").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrDfreqSet(); } });
+      $("sdr-center").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrCenterSet(); } });  // i18n-ok (touche)
+      $("sdr-dfreq").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); sdrDfreqSet(); } });  // i18n-ok (touche)
       for (const id of ["sdr-rf", "sdr-if"]) {
         const send = () => {
           sdrSliderLabels();
@@ -3180,7 +3184,7 @@
         if (!sdrLast) return;
         const cv = $("sdr-wf"), width = cv.clientWidth || cv.width;
         sdrPicked = sdrx.freqAt(ev.offsetX, width, sdrLast.c, sdrLast.s);
-        $("sdr-pick").textContent = sdrPicked ? "Fréquence : " + sdrx.formatMHz(sdrPicked, 4) + " MHz" : "";
+        $("sdr-pick").textContent = sdrPicked ? I18N.t("ui.sdr_picked", { mhz: sdrx.formatMHz(sdrPicked, 4) }) : "";
         $("sdr-here").hidden = !sdrPicked || !client.sdrAudioOffered;
       });
       $("sdr-here").addEventListener("click", () => { if (sdrPicked) sdrSend({ dfreq_hz: sdrPicked }); });
@@ -3194,14 +3198,14 @@
         const on = !client.sdrListening;
         client.sdrListen(on).then((res) => {
           if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); return; }
-          if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log("Son du SDR bloqué par le navigateur : touche l'écran.", "warn")); else sdrSound.pause(); }
+          if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log(I18N.t("ui.sdr_audio_blocked"), "warn")); else sdrSound.pause(); }
           sdrEarsChanged();
           sdrRender(null);
         }).catch(() => {});
       });
       $("sdr-mode").addEventListener("change", () => sdrSend({ mode: $("sdr-mode").value }));
       $("sdr-dbw").addEventListener("change", () => sdrSend({ dbw: Number($("sdr-dbw").value) }));
-      $("sdr-sql").addEventListener("input", () => { sdrSlide.held["sdr-sql"] = true; $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : "ouvert"; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
+      $("sdr-sql").addEventListener("input", () => { sdrSlide.held["sdr-sql"] = true; $("sdr-sql-val").textContent = Number($("sdr-sql").value) ? $("sdr-sql").value + " dB" : I18N.t("stationtab.squelch_open"); sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
       $("sdr-sql").addEventListener("change", () => { sdrSlide.held["sdr-sql"] = false; sdrSlideSend({ sql: Number($("sdr-sql").value) }); });
       $("sdr-vol").addEventListener("input", () => { sdrVolume(); });
       for (const [value, label] of sdrx.SPLITS) $("sdr-split").appendChild(Object.assign(el("option", "", label), { value: String(value) }));
@@ -3216,7 +3220,7 @@
         sdrSplit = Number($("sdr-split").value) || 0;
         try { store.set("trx.sdr.split", String(sdrSplit)); } catch (e) { /* sans stockage */ }
         if (sdrSplit && stSet && stSet.on) {                                          // séparation et spatialisation ST exclusives
-          ui.log("Séparation TRX / SDR choisie : spatialisation ST coupée.", "");
+          ui.log(I18N.t("ui.sdr_split_st_off"), "");
           stChange(Object.assign({}, stSet, { on: false }));
         }
         sdrEarsChanged();
@@ -3224,18 +3228,18 @@
       $("sdr-qsy").addEventListener("click", () => {                     // QSY SDR -> TRX : la fréquence ÉCOUTÉE sur le SDR
         const st = client.sdrState || {};
         const hz = Number.isFinite(st.dfreq) ? st.dfreq : null;
-        if (!hz) { ui.log("QSY SDR → TRX : fréquence écoutée du SDR inconnue.", "warn"); return; }
+        if (!hz) { ui.log(I18N.t("ui.sdr_qsy_unknown"), "warn"); return; }
         client.qsy(hz).then((res) => {
-          if (res && res.ok) ui.log("QSY SDR → TRX : TRX sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
+          if (res && res.ok) ui.log(I18N.t("ui.sdr_qsy_done", { mhz: sdrx.formatMHz(hz, 4) }), "");
           else if (res) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn");
         }).catch(() => {});
       });
       $("sdr-qsy-rev").addEventListener("click", () => {                 // QSY TRX -> SDR : le SDR écoute la fréquence du TRX
         const rig = (client.state && client.state.rig) || {};
         const hz = rig.frequency_hz;
-        if (!Number.isFinite(hz)) { ui.log("QSY TRX → SDR : fréquence du TRX inconnue.", "warn"); return; }
+        if (!Number.isFinite(hz)) { ui.log(I18N.t("ui.sdr_qsy_rev_unknown"), "warn"); return; }
         sdrSend(sdrTune(hz));
-        ui.log("QSY TRX → SDR : SDR sur " + sdrx.formatMHz(hz, 4) + " MHz.", "");
+        ui.log(I18N.t("ui.sdr_qsy_rev_done", { mhz: sdrx.formatMHz(hz, 4) }), "");
       });
     }
 
@@ -3254,7 +3258,7 @@
     function frElapsed() { return client.friendsAt ? Math.max(0, (client.env.now() - client.friendsAt) / 1000) : 0; }
     function frPtt() { return typeof client._ptt === "function" && client._ptt() ? client._ptt().state : "RX"; }
     function frRigHz() { return client.state && client.state.rig ? client.state.rig.frequency_hz : NaN; }
-    function frFail(res) { if (res && !res.ok) ui.log("Amis : " + web.reasonText(res.reason, res.detail, res.ort), "warn"); return res; }
+    function frFail(res) { if (res && !res.ok) ui.log(I18N.t("rigsession.friends_refused", { detail: web.reasonText(res.reason, res.detail, res.ort) }), "warn"); return res; }
 
     function frChip(label, fn, doc, cls) {
       const b = (doc || document).createElement("button");
@@ -3279,10 +3283,10 @@
       const d = doc || document;
       box.textContent = "";
       const note = (text) => { const p = d.createElement("p"); p.className = "note"; p.textContent = text; box.appendChild(p); };
-      if (!v.groups.length) { note("Aucun groupe : créez-en un, ou rejoignez celui d'un ami avec son invitation."); return; }
+      if (!v.groups.length) { note(I18N.t("friendsviews.no_groups")); return; }
       if (v.by === "member") {
         for (const m of v.members) box.appendChild(frMemberButton(m, null, d));
-        if (!v.members.length) note("Personne d'autre dans vos groupes pour l'instant.");
+        if (!v.members.length) note(I18N.t("friendsviews.nobody_in_groups"));
         return;
       }
       for (const g of v.groups) {
@@ -3292,13 +3296,13 @@
         sec.appendChild(sum);
         if (!compact) {
           const row = d.createElement("div"); row.className = "row";
-          if (g.status === "member") row.appendChild(frChip("Partage", () => frShare(g), d));
-          if (g.admin && g.status === "member") { row.appendChild(frChip("Inviter", () => frInvite(g), d)); row.appendChild(frChip("Statistiques", () => frStats(g), d)); }
-          row.appendChild(frChip(g.role === "a" ? "Quitter ou supprimer" : "Quitter", () => frLeave(g), d));
+          if (g.status === "member") row.appendChild(frChip(I18N.t("friendsviews.share"), () => frShare(g), d));
+          if (g.admin && g.status === "member") { row.appendChild(frChip(I18N.t("friendsviews.invite"), () => frInvite(g), d)); row.appendChild(frChip(I18N.t("friendsviews.stats"), () => frStats(g), d)); }
+          row.appendChild(frChip(g.role === "a" ? I18N.t("friendsviews.leave_or_delete") : I18N.t("friendsviews.leave"), () => frLeave(g), d));
           sec.appendChild(row);
         }
         for (const m of g.members) sec.appendChild(frMemberButton(m, g, d));
-        if (!g.members.length && g.status === "member") { const p = d.createElement("p"); p.className = "note"; p.textContent = "Personne d'autre pour l'instant."; sec.appendChild(p); }
+        if (!g.members.length && g.status === "member") { const p = d.createElement("p"); p.className = "note"; p.textContent = I18N.t("friendsviews.nobody_yet"); sec.appendChild(p); }
         box.appendChild(sec);
       }
     }
@@ -3316,9 +3320,9 @@
       $("sec-friends").hidden = !on;
       if (!on) { frStopTimer(); frClosePip(); frApplyMode("section", false); $("fr-badges").textContent = ""; frCloseDialog(); return; }
       const v = fx.buildView(view || {}, frNowS(), frElapsed(), frBy);
-      const st = view ? [view.pseudo ? "Pseudo " + view.pseudo : "Pas encore de pseudo (ci-dessous)",
-                         view.registered ? "station enregistrée auprès du relais" : "pas encore enregistrée auprès du relais",
-                         view.problem ? "problème : " + view.problem : ""].filter(Boolean).join(" · ") : "Lecture…";
+      const st = view ? [view.pseudo ? I18N.t("friendsviews.pseudo_is", { pseudo: view.pseudo }) : I18N.t("monitoring.no_pseudo"),
+                         view.registered ? I18N.t("monitoring.registered") : I18N.t("monitoring.not_registered"),
+                         view.problem ? I18N.t("friendsviews.problem", { problem: view.problem }) : ""].filter(Boolean).join(" · ") : I18N.t("friendsviews.reading");
       $("fr-status").textContent = st;
       // Mon statut (étape 297) : sans lui, « Au shack 1 h » ne montrait rien ; null sur une station sans le champ `me`
       const me = view ? fx.myStatus(view.me, frNowS()) : null;
@@ -3333,7 +3337,7 @@
       $("fr-back").hidden = !client.friendsBackPoint;
       frBadges(view);
       frList($("fr-list"), v, false);
-      $("fr-updated").textContent = client.friendsAt ? "Mis à jour il y a " + fx.freshness(frElapsed()) : "";
+      $("fr-updated").textContent = client.friendsAt ? I18N.t("friends.updated", { age: fx.freshness(frElapsed()) }) : "";
       if (frPip) frPipRender();
       if (!frTimer) frTimer = setInterval(() => { if (frOffered()) client.friendsRefresh().catch(() => {}); }, FR_REFRESH_MS);
     }
@@ -3351,7 +3355,7 @@
           parent.insertBefore(sec, parent.firstChild);
         }
         sec.open = true;
-        sec.className = "listener-hide fr-big";
+        sec.className = "listener-hide fr-big";  // i18n-ok (classes CSS)
       } else {
         if (frHome) { frHome.parent.insertBefore(sec, frHome.next || null); frHome = null; }
         sec.className = "listener-hide";
@@ -3370,14 +3374,14 @@
         win.document.head.appendChild(link);
         const theme = document.documentElement.getAttribute("data-theme");
         if (theme) win.document.documentElement.setAttribute("data-theme", theme);
-        win.document.title = "Amis";
+        win.document.title = I18N.t("friendsviews.friends");
         const box = win.document.createElement("div"); box.className = "fr-list"; box.id = "fr-pip-list";
         win.document.body.appendChild(box);
         win.addEventListener("pagehide", () => { frPip = null; if (frMode === "pip") frApplyMode("section", true); });
         frPip = { win: win, box: box };
         frPipRender();
       } catch (e) {
-        ui.log("Fenêtre détachée refusée par le navigateur : la rubrique reste dans la page.", "warn");
+        ui.log(I18N.t("ui.fr_pip_refused"), "warn");
         frApplyMode("section", true);
       }
     }
@@ -3428,96 +3432,94 @@
         else {
           nodes.push(el("p", "", plan.text));
           for (const w of plan.warnings.filter((x) => x.level !== "info")) nodes.push(el("p", w.level === "strong" ? "fr-strong" : "fr-warn", w.text));
-          buttons.push(["Aller sur cette fréquence", "primary", async () => {
+          buttons.push([I18N.t("friendsviews.go_to_frequency"), "primary", async () => {
             const res = await client.friendsQsy(m);
             frFail(res);
           }]);
         }
       }
       if (g && g.admin && g.status === "member" && m.raw && m.raw.role !== "a") {
-        buttons.push([m.raw.role === "c" ? "Retirer co-administrateur" : "Nommer co-administrateur", "chip", async () => {
+        buttons.push([m.raw.role === "c" ? I18N.t("friendsviews.remove_coadmin") : I18N.t("friendsviews.name_coadmin"), "chip", async () => {
           frFail(await client.friendsAction("role", { g: g.g, member: m.id, role: m.raw.role === "c" ? "m" : "c" }));
         }]);
-        buttons.push(["Exclure du groupe…", "chip", async () => { frConfirmExclude(g, m); return true; }]);
+        buttons.push([I18N.t("friendsviews.exclude_ask"), "chip", async () => { frConfirmExclude(g, m); return true; }]);
       }
-      buttons.push(["Fermer", "chip", null]);
+      buttons.push([I18N.t("common.close"), "chip", null]);
       frDialog(m.pseudo + (g ? " · " + g.name : ""), nodes, buttons);
     }
     function frConfirmExclude(g, m) {
-      frDialog("Exclure " + m.pseudo, ["Exclure " + m.pseudo + " du groupe « " + g.name + " » ? Une nouvelle clé est remise aux autres membres : "
-        + m.pseudo + " ne lira plus rien du groupe."], [
-        ["Exclure", "danger", async () => { frFail(await client.friendsAction("exclude", { g: g.g, member: m.id })); }],
-        ["Annuler", "chip", null]]);
+      frDialog(I18N.t("ui.fr_exclude_title", { pseudo: m.pseudo }), [I18N.t("ui.fr_exclude_confirm", { pseudo: m.pseudo, group: g.name })], [
+        [I18N.t("friendsviews.exclude"), "danger", async () => { frFail(await client.friendsAction("exclude", { g: g.g, member: m.id })); }],
+        [I18N.t("common.cancel"), "chip", null]]);
     }
     function frShare(g) {
       const share = g.share || {};
       const level = frLevelSelect(share.level);
       const text = frInput(share.text || "", 16);
       const presets = (frView && frView.texts) || [];
-      const invisible = frCheck("Invisible dans ce groupe (les autres me voient hors ligne)", share.invisible);
-      const hide = frCheck("Ne pas montrer depuis quand je suis absent", share.hide_absence);
-      const nodes = [frField("Je partage", level), frField("Texte (si « un court texte »)", text)];
-      if (presets.length) nodes.push(el("p", "note", "Textes enregistrés : " + presets.join(", ")));
-      nodes.push(invisible.label, hide.label, el("p", "note", "Pris à la prochaine requête de la station (moins de 2 minutes)."));
-      frDialog("Partage · " + g.name, nodes, [
-        ["Enregistrer", "primary", async () => {
+      const invisible = frCheck(I18N.t("friendsviews.invisible"), share.invisible);
+      const hide = frCheck(I18N.t("friendsviews.hide_absence"), share.hide_absence);
+      const nodes = [frField(I18N.t("friendsviews.i_share"), level), frField(I18N.t("ui.fr_text_field"), text)];
+      if (presets.length) nodes.push(el("p", "note", I18N.t("ui.fr_saved_texts", { texts: presets.join(", ") })));
+      nodes.push(invisible.label, hide.label, el("p", "note", I18N.t("friendsviews.next_request")));
+      frDialog(I18N.t("friendsviews.share_title", { name: g.name }), nodes, [
+        [I18N.t("common.save"), "primary", async () => {
           const args = { g: g.g, level: level.value, invisible: invisible.input.checked, hide_absence: hide.input.checked };
           if (level.value === "x") {
             const t = fx.cleanText(text.value);
-            if (!t) { ui.log("Texte refusé : 16 caractères, lettres sans accent, chiffres, espace, . / -", "warn"); return true; }
+            if (!t) { ui.log(I18N.t("ui.fr_text_refused"), "warn"); return true; }
             args.text = t;
           }
           frFail(await client.friendsAction("share", args));
         }],
-        ["Annuler", "chip", null]]);
+        [I18N.t("common.cancel"), "chip", null]]);
     }
     async function frInvite(g) {
       const res = frFail(await client.friendsAction("invite", { g: g.g, days: 7 }));
       if (!res || !res.ok) return;
       const url = res.data.url;
-      const buttons = [["Copier", "primary", async () => {
-        try { await navigator.clipboard.writeText(url); ui.log("Invitation copiée.", ""); } catch (e) { ui.log("Copie refusée par le navigateur : sélectionnez le lien.", "warn"); }
+      const buttons = [[I18N.t("common.copy"), "primary", async () => {
+        try { await navigator.clipboard.writeText(url); ui.log(I18N.t("ui.fr_invite_copied"), ""); } catch (e) { ui.log(I18N.t("ui.fr_copy_refused"), "warn"); }
         return true;
       }]];
-      if (navigator.share) buttons.push(["Partager", "chip", async () => { try { await navigator.share({ title: "Invitation openRemoteTRX", url: url }); } catch (e) { /* annulé */ } return true; }]);
-      buttons.push(["Fermer", "chip", null]);
-      frDialog("Invitation · " + g.name, [
-        "Valable " + res.data.days + " jours, pour UNE seule station. Elle contient la clé du groupe : à transmettre seulement à la personne invitée (en main propre, messagerie, courriel).",
+      if (navigator.share) buttons.push([I18N.t("common.share"), "chip", async () => { try { await navigator.share({ title: I18N.t("friendsviews.invite_subject"), url: url }); } catch (e) { /* annulé */ } return true; }]);
+      buttons.push([I18N.t("common.close"), "chip", null]);
+      frDialog(I18N.t("ui.fr_invite_title", { name: g.name }), [
+        I18N.t("ui.fr_invite_valid", { days: res.data.days }),
         el("p", "fr-url", url),
-        el("p", "note", "Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 5.3.")], buttons);
+        el("p", "note", I18N.t("friendsviews.invite_auto"))], buttons);
     }
     function frJoin() {
       const url = document.createElement("textarea"); url.rows = 3;
       const name = frInput("", 24);
       const level = frLevelSelect("o");
-      const nodes = [frField("Invitation reçue", url), frField("Nom du groupe chez moi (facultatif)", name)]
-        .concat(fx.CONSENT.map((c) => el("p", "note", c)), [frField("Je partage", level)]);
-      frDialog("Rejoindre un groupe", nodes, [
-        ["J'accepte et je rejoins", "primary", async () => {
+      const nodes = [frField(I18N.t("friendsviews.invitation_received"), url), frField(I18N.t("friendsviews.group_name_local"), name)]
+        .concat(fx.CONSENT.map((c) => el("p", "note", c)), [frField(I18N.t("friendsviews.i_share"), level)]);
+      frDialog(I18N.t("friendsviews.join_title"), nodes, [
+        [I18N.t("friendsviews.accept_join"), "primary", async () => {
           const link = fx.cleanInvitation(url.value);
-          if (!link) { ui.log("Collez l'invitation complète reçue de l'administrateur du groupe.", "warn"); return true; }
+          if (!link) { ui.log(I18N.t("ui.fr_paste_invitation"), "warn"); return true; }
           const res = frFail(await client.friendsAction("join", { url: link, name: name.value.trim() }));
           if (!res || !res.ok) return true;
           if (level.value !== "o") frFail(await client.friendsAction("share", { g: res.data.g, level: level.value }));
-          ui.log("Demande d'adhésion envoyée : validée dès que la station de l'administrateur la voit.", "");
+          ui.log(I18N.t("rigsession.friends_join_sent"), "");
         }],
-        ["Annuler", "chip", null]]);
+        [I18N.t("common.cancel"), "chip", null]]);
     }
     function frCreate() {
       const name = frInput("", 24);
-      frDialog("Créer un groupe", [frField("Nom du groupe", name), el("p", "note", "Vous en serez l'administrateur ; invitez ensuite vos amis (bouton « Inviter » du groupe).")], [
-        ["Créer", "primary", async () => {
+      frDialog(I18N.t("friendsviews.create_group"), [frField(I18N.t("friendsviews.group_name"), name), el("p", "note", I18N.t("ui.fr_create_note"))], [
+        [I18N.t("friendsviews.create"), "primary", async () => {
           if (!name.value.trim()) return true;
           frFail(await client.friendsAction("create", { name: name.value.trim() }));
         }],
-        ["Annuler", "chip", null]]);
+        [I18N.t("common.cancel"), "chip", null]]);
     }
     function frLeave(g) {
-      const buttons = [["Quitter le groupe", "chip", async () => { frFail(await client.friendsAction("leave", { g: g.g })); }]];
-      if (g.role === "a") buttons.unshift(["Supprimer pour tous", "danger", async () => { frFail(await client.friendsAction("delete", { g: g.g })); }]);
-      buttons.push(["Annuler", "chip", null]);
-      frDialog(g.name, [g.role === "a" ? "Vous êtes administrateur : supprimer le groupe pour tout le monde, ou seulement le quitter ?"
-                                       : "Quitter ce groupe ? Il faudra une nouvelle invitation pour y revenir."], buttons);
+      const buttons = [[I18N.t("friendsviews.leave_group"), "chip", async () => { frFail(await client.friendsAction("leave", { g: g.g })); }]];
+      if (g.role === "a") buttons.unshift([I18N.t("ui.fr_delete_all"), "danger", async () => { frFail(await client.friendsAction("delete", { g: g.g })); }]);
+      buttons.push([I18N.t("common.cancel"), "chip", null]);
+      frDialog(g.name, [g.role === "a" ? I18N.t("friendsviews.leave_admin") : I18N.t("friendsviews.leave_question")], buttons);
     }
     async function frStats(g) {
       const res = await client.friends("stats", { g: g.g });
@@ -3525,11 +3527,11 @@
       const pseudos = {};
       for (const m of g.members) pseudos[m.id] = m.pseudo;
       const rows = fx.statsRows(res.data.stats, pseudos);
-      const nodes = rows.length ? rows.map((r) => el("p", "", r.pseudo + " : dernier jour actif " + r.lastActive + ", " + r.days
-        + " jour(s) actif(s) ce mois ; cette semaine QSO " + r.qsoMin + " min, RX " + r.rxMin + " min"))
-        : [el("p", "note", "Pas encore de statistiques : elles se remplissent pendant que votre station est en marche.")];
-      nodes.push(el("p", "note", "Agrégées par jour, 6 mois au plus, calculées sur votre station ; les heures où elle était éteinte ne sont pas comptées."));
-      frDialog("Statistiques · " + g.name, nodes, [["Fermer", "chip", null]]);
+      const nodes = rows.length ? rows.map((r) => el("p", "", I18N.t("friendsviews.stats_row", { pseudo: r.pseudo, last_active: r.lastActive, days: r.days,
+        qso_min: r.qsoMin, rx_min: r.rxMin })))
+        : [el("p", "note", I18N.t("friendsviews.no_stats"))];
+      nodes.push(el("p", "note", I18N.t("friendsviews.stats_note")));
+      frDialog(I18N.t("ui.fr_stats_title", { name: g.name }), nodes, [[I18N.t("common.close"), "chip", null]]);
     }
 
     if (fx) {
@@ -3548,7 +3550,7 @@
       $("fr-shack-cancel").addEventListener("click", () => client.friendsAction("shack_cancel", {}).catch(fail));
       $("fr-pseudo-save").addEventListener("click", () => {
         const p = fx.cleanPseudo($("fr-pseudo").value);
-        if (!p) { ui.log("Pseudo refusé : 16 caractères, lettres sans accent, chiffres, espace, . / _ -", "warn"); return; }
+        if (!p) { ui.log(I18N.t("ui.pseudo_refused"), "warn"); return; }
         client.friendsAction("pseudo", { pseudo: p }).catch(fail);
       });
       $("fr-create").addEventListener("click", frCreate);
@@ -3587,23 +3589,25 @@
       box.textContent = "";
       const links = (view && view.links) || [];
       const waiting = links.filter((l) => mx.level(l) === "warn").length;
-      $("mo-badge").textContent = links.length ? " " + links.length + (waiting ? " · " + waiting + " à voir" : "") : "";
-      if (view && !links.length) box.appendChild(el("p", "note", "Aucune liaison : aidez quelqu'un (code à lui dicter) ou faites-vous aider (code reçu)."));
+      $("mo-badge").textContent = links.length ? " " + links.length + (waiting ? " · " + I18N.t("ui.mo_to_see", { n: waiting }) : "") : "";
+      if (view && !links.length) box.appendChild(el("p", "note", I18N.t("monitoringscreen.no_link")));
       for (const l of links) box.appendChild(moCard(mx.linkView(l)));
       if (!moTimer) moTimer = setInterval(() => { if (moOffered() && $("sec-monitoring").open) client.monitoringRefresh().catch(() => {}); }, MO_REFRESH_MS);
     }
 
     function moCard(v) {
-      const card = el("div", "mo-card mo-" + v.level);
+      const card = el("div", "mo-card mo-" + v.level);  // i18n-ok (classes CSS)
       card.appendChild(el("p", "mo-title", v.title));
       if (v.details.length) card.appendChild(el("p", "note", v.details.join(" · ")));
       if (v.raw.role === "receiver" && v.raw.state !== "confirm") for (const line of mx.stationLines(v.raw)) card.appendChild(el("p", "note", line));
       const row = el("div", "row");
-      const LABELS = { fingerprint: "Comparer l'empreinte", assist: "Demander l'assistance", report: "Demander le rapport",
-                       download: "Télécharger le rapport", answer: "Répondre à la demande", send_report: "Envoyer mon rapport",
-                       profile: "Ce qui est envoyé", pause: "Pause", resume: "Reprendre", end: "Terminer", events: "Événements" };
+      const LABELS = { fingerprint: "monitoringscreen.action_fingerprint", assist: "monitoringscreen.action_assist",       // clés des textes
+                       report: "monitoringscreen.action_report", download: "monitoringscreen.action_download",
+                       answer: "monitoringscreen.action_answer", send_report: "monitoringscreen.action_send_report",
+                       profile: "monitoringscreen.action_profile", pause: "monitoringscreen.action_pause",
+                       resume: "monitoringscreen.action_resume", end: "common.finish", events: "monitoringscreen.action_events" };
       const acts = v.raw.role === "receiver" && v.raw.state !== "confirm" ? ["events"].concat(v.actions) : v.actions;
-      for (const a of acts) row.appendChild(frChip(LABELS[a] || a, () => moAct(a, v.raw).catch(fail), document, a === "end" ? "danger" : "chip"));
+      for (const a of acts) row.appendChild(frChip(LABELS[a] ? I18N.t(LABELS[a]) : a, () => moAct(a, v.raw).catch(fail), document, a === "end" ? "danger" : "chip"));
       card.appendChild(row);
       return card;
     }
@@ -3612,32 +3616,32 @@
       const sel = document.createElement("select");
       for (const key of Object.keys(mx.PROFILES)) { const o = el("option", "", mx.PROFILES[key].label); o.value = key; sel.appendChild(o); }
       sel.value = "diagnostic";
-      const fm = frCheck("Envoyer aussi la fréquence et le mode du poste", false);
-      return { nodes: [frField("Ce que vous envoyez", sel), fm.label], get: () => mx.profile(sel.value, fm.input.checked) };
+      const fm = frCheck(I18N.t("monitoringscreen.send_frequency"), false);
+      return { nodes: [frField(I18N.t("ui.mo_what_you_send"), sel), fm.label], get: () => mx.profile(sel.value, fm.input.checked) };
     }
 
     function moFingerprint(link) {
       /* Les 6 chiffres comparés de vive voix ; différents = liaison refusée et effacée. Station aidée : profil ensuite. */
       const nodes = [el("p", "mo-fp", link.fingerprint || "?"),
-                     "Comparez ces 6 chiffres avec ceux de votre correspondant, de vive voix ou par message."];
+                     I18N.t("monitoringscreen.compare_digits")];
       let prof = null;
       if (link.role === "emitter") {
         prof = moProfileNodes();
-        nodes.push("Si les chiffres sont les mêmes, choisissez ce que vous envoyez (rien ne part avant) :");
+        nodes.push(I18N.t("monitoringscreen.choose_profile"));
         nodes.push(...prof.nodes);
       }
-      frDialog("Empreinte de la liaison avec " + (link.pseudo || "?"), nodes, [
-        ["Mêmes chiffres : confirmer", "chip", async () => {
+      frDialog(I18N.t("monitoringscreen.fingerprint_title", { pseudo: link.pseudo || "?" }), nodes, [
+        [I18N.t("monitoringscreen.same_digits"), "chip", async () => {
           const args = { peer: link.peer };
           if (prof) args.profile = prof.get();
           const res = await moDo("confirm", args);
-          if (res && res.ok) ui.log("Monitoring : liaison active avec " + (link.pseudo || "?") + ".", "");
+          if (res && res.ok) ui.log(I18N.t("ui.mo_link_active", { pseudo: link.pseudo || "?" }), "");
         }],
-        ["Chiffres différents : refuser", "danger", async () => {
+        [I18N.t("monitoringscreen.different_digits"), "danger", async () => {
           await moDo("end", { peer: link.peer });
-          ui.log("Monitoring : chiffres différents, liaison refusée et effacée. Recommencez avec un nouveau code.", "warn");
+          ui.log(I18N.t("ui.mo_digits_differ"), "warn");
         }],
-        ["Plus tard", "chip", null]]);
+        [I18N.t("ui.mo_later"), "chip", null]]);
     }
 
     async function moAct(action, link) {
@@ -3645,22 +3649,22 @@
       if (action === "events") {
         const res = await client.monitoring("received", { peer: link.peer, limit: 20 });
         const list = res && res.ok && Array.isArray(res.data) ? res.data : [];
-        frDialog("Derniers événements de " + (link.pseudo || "?"),
-                 list.length ? list.map((e) => el("p", "note", mx.eventLine(e))) : ["Aucun événement reçu."], [["Fermer", "chip", null]]);
+        frDialog(I18N.t("ui.mo_events_title", { pseudo: link.pseudo || "?" }),
+                 list.length ? list.map((e) => el("p", "note", mx.eventLine(e))) : [I18N.t("monitoringscreen.no_events")], [[I18N.t("common.close"), "chip", null]]);
         return;
       }
       if (action === "assist") {
         const sel = document.createElement("select");
-        for (const h of mx.HOURS) { const o = el("option", "", h + (h > 1 ? " heures" : " heure")); o.value = String(h); sel.appendChild(o); }
+        for (const h of mx.HOURS) { const o = el("option", "", I18N.plural("ui.hours", h)); o.value = String(h); sel.appendChild(o); }
         sel.value = "2";
-        frDialog("Demander le mode assistance", ["Nouvelles toutes les 30 secondes et tous les événements, pendant la durée choisie. L'opérateur aidé doit l'accepter.", frField("Durée", sel)],
-                 [["Demander", "chip", async () => { await moDo("request_assist", { peer: link.peer, duration_s: Number(sel.value) * 3600 }); }], ["Annuler", "chip", null]]);
+        frDialog(I18N.t("monitoringscreen.assist_title"), [I18N.t("monitoringscreen.assist_text"), frField(I18N.t("diffusiondialog.duration"), sel)],
+                 [[I18N.t("monitoringscreen.request"), "chip", async () => { await moDo("request_assist", { peer: link.peer, duration_s: Number(sel.value) * 3600 }); }], [I18N.t("common.cancel"), "chip", null]]);
         return;
       }
-      if (action === "report") { await moDo("request_report", { peer: link.peer }); ui.log("Monitoring : rapport demandé ; l'opérateur aidé doit l'accepter.", ""); return; }
+      if (action === "report") { await moDo("request_report", { peer: link.peer }); ui.log(I18N.t("ui.mo_report_requested"), ""); return; }
       if (action === "download") {
         const res = await client.monitoringReport(link.peer);
-        if (!res || !res.ok) { ui.log("Monitoring : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn"); return; }
+        if (!res || !res.ok) { ui.log(I18N.t("rigsession.monitoring_refused", { detail: web.reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn"); return; }
         const url = URL.createObjectURL(new Blob([res.bytes], { type: "application/zip" }));
         const a = el("a"); a.href = url; a.download = res.name; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 10000);
@@ -3669,49 +3673,47 @@
       if (action === "answer") {
         const req = link.request || {};
         const text = req.snapshot
-          ? (link.pseudo || "?") + " demande votre rapport de dépannage (diagnostic, configuration sans mot de passe, journaux), entièrement masqué avant l'envoi (nom de la machine, adresses, comptes, numéros de série)."
-          : (link.pseudo || "?") + " demande le mode assistance pendant " + Math.round((req.assist || 0) / 360) / 10 + " h : des nouvelles toutes les 30 secondes et tous les événements. Fréquence et mode restent comme dans votre choix.";
-        frDialog("Demande de " + (link.pseudo || "?"), [text],
-                 [["Accepter", "chip", async () => { await moDo("answer", { peer: link.peer, accept: true }); }],
-                  ["Refuser", "danger", async () => { await moDo("answer", { peer: link.peer, accept: false }); }]]);
+          ? I18N.t("monitoring.request_report", { pseudo: link.pseudo || "?" })
+          : I18N.t("monitoring.request_assist", { pseudo: link.pseudo || "?", hours: Math.round((req.assist || 0) / 360) / 10 });
+        frDialog(I18N.t("monitoringscreen.request_from", { pseudo: link.pseudo || "?" }), [text],
+                 [[I18N.t("monitoringscreen.accept"), "chip", async () => { await moDo("answer", { peer: link.peer, accept: true }); }],
+                  [I18N.t("monitoringscreen.refuse"), "danger", async () => { await moDo("answer", { peer: link.peer, accept: false }); }]]);
         return;
       }
-      if (action === "send_report") { await moDo("send_report", { peer: link.peer }); ui.log("Monitoring : rapport en préparation, il part dans la minute.", ""); return; }
+      if (action === "send_report") { await moDo("send_report", { peer: link.peer }); ui.log(I18N.t("ui.mo_report_preparing"), ""); return; }
       if (action === "profile") {
         const prof = moProfileNodes();
-        frDialog("Ce que vous envoyez à " + (link.pseudo || "?"), prof.nodes,
-                 [["Enregistrer", "chip", async () => { await moDo("profile", { peer: link.peer, profile: prof.get() }); }], ["Annuler", "chip", null]]);
+        frDialog(I18N.t("monitoringscreen.profile_title", { pseudo: link.pseudo || "?" }), prof.nodes,
+                 [[I18N.t("common.save"), "chip", async () => { await moDo("profile", { peer: link.peer, profile: prof.get() }); }], [I18N.t("common.cancel"), "chip", null]]);
         return;
       }
       if (action === "pause" || action === "resume") { await moDo("pause", { peer: link.peer, paused: action === "pause" }); return; }
       if (action === "end") {
-        const purge = frCheck("Effacer aussi ce qui a été reçu de cette station", true);
-        const nodes = ["Terminer la liaison avec " + (link.pseudo || "?") + " ? Immédiat ; la reprendre demandera un nouveau code."];
+        const purge = frCheck(I18N.t("monitoringscreen.purge"), true);
+        const nodes = [I18N.t("monitoringscreen.end_text", { pseudo: link.pseudo || "?" })];
         if (link.role === "receiver") nodes.push(purge.label);
-        frDialog("Terminer la liaison", nodes,
-                 [["Terminer", "danger", async () => { await moDo("end", { peer: link.peer, purge: link.role === "receiver" && purge.input.checked }); }], ["Annuler", "chip", null]]);
+        frDialog(I18N.t("monitoringscreen.end_title"), nodes,
+                 [[I18N.t("common.finish"), "danger", async () => { await moDo("end", { peer: link.peer, purge: link.role === "receiver" && purge.input.checked }); }], [I18N.t("common.cancel"), "chip", null]]);
       }
     }
 
     function moInvite() {
       moDo("invite").then((res) => {
         if (!res || !res.ok || !res.data) return;
-        frDialog("Aider quelqu'un", [el("p", "mo-fp", res.data.code),
-                 "Dictez ce code à l'opérateur que vous aidez (valable 15 minutes, une seule fois). Quand il l'a tapé, sa station apparaît ici : comparez alors les 6 chiffres de l'empreinte."],
-                 [["Fermer", "chip", null]]);
+        frDialog(I18N.t("monitoringscreen.help_someone"), [el("p", "mo-fp", res.data.code), I18N.t("monitoringscreen.dictate_code")],
+                 [[I18N.t("common.close"), "chip", null]]);
       }).catch(fail);
     }
 
     function moJoin() {
       const code = frInput("", 16);
-      frDialog("Être aidé", ["La station qui vous aide recevra ce que VOUS choisissez (santé de la machine, état du poste, codes d'erreur), toujours masqué. Elle ne pourra RIEN commander. Vous pourrez tout arrêter à tout moment.",
-                             frField("Code dicté par la personne qui vous aide", code)],
-               [["Rejoindre", "chip", async () => {
+      frDialog(I18N.t("monitoringscreen.be_helped"), [I18N.t("monitoringscreen.join_text"), frField(I18N.t("monitoringscreen.code_label"), code)],
+               [[I18N.t("monitoringscreen.join"), "chip", async () => {
                  const c = mx.normalizeCode(code.value);
-                 if (!c) { ui.log("Monitoring : code mal formé (10 caractères).", "warn"); return true; }
+                 if (!c) { ui.log(I18N.t("ui.mo_code_invalid"), "warn"); return true; }
                  const res = await moDo("join", { code: c });
                  if (res && res.ok && res.data) setTimeout(() => moFingerprint({ peer: res.data.peer, pseudo: res.data.pseudo, role: "emitter", fingerprint: res.data.fingerprint }), 0);
-               }], ["Annuler", "chip", null]]);
+               }], [I18N.t("common.cancel"), "chip", null]]);
     }
 
     if (mx) {
@@ -3720,7 +3722,7 @@
       $("mo-join").addEventListener("click", moJoin);
       $("mo-pseudo-save").addEventListener("click", () => {
         const p = fx ? fx.cleanPseudo($("mo-pseudo").value) : $("mo-pseudo").value.trim();
-        if (!p) { ui.log("Pseudo refusé : 16 caractères, lettres sans accent, chiffres, espace, . / _ -", "warn"); return; }
+        if (!p) { ui.log(I18N.t("ui.pseudo_refused"), "warn"); return; }
         moDo("pseudo", { pseudo: p }).catch(fail);
       });
       $("sec-monitoring").addEventListener("toggle", () => { if ($("sec-monitoring").open && moOffered()) client.monitoringRefresh().catch(() => {}); });
@@ -3745,7 +3747,7 @@
         sel.appendChild(o);
       }
       const box = $("dif-meta");
-      box.replaceChildren(el("span", "note", "Informations diffusées :"));
+      box.replaceChildren(el("span", "note", I18N.t("ui.dif_meta_title")));
       difMetaBoxes.length = 0;
       for (const [key, label] of dfx.META) {
         const lab = el("label", "check", "");
@@ -3767,13 +3769,13 @@
       $("dif-ind").hidden = !ind;
       if (ind) {
         $("dif-ind").textContent = ind.text;
-        $("dif-ind").className = "chip dif-ind listener-hide " + ind.level;
+        $("dif-ind").className = "chip dif-ind listener-hide " + ind.level;  // i18n-ok (classes CSS)
         $("dif-ind").title = ind.title;
       }
       if (!d) return;
       if (!difFormReady) difBuildForm();
       $("dif-status").textContent = dfx.status(d);
-      $("dif-badge").textContent = d.active ? "● en direct" : "";
+      $("dif-badge").textContent = d.active ? I18N.t("ui.dif_live") : "";
       $("dif-form").hidden = !!d.active || d.enabled === false || !!d.problem;
       $("dif-stop").hidden = !d.active;
       $("dif-page").textContent = d.listen_page || "—";
@@ -3783,7 +3785,7 @@
 
     function difReport(res, okText) {
       if (res && res.ok) { if (okText) ui.log(okText, ""); return true; }
-      ui.log("Diffusion : " + web.reasonText(res && res.reason, res && res.detail, res && res.ort), "warn");
+      ui.log(I18N.t("rigsession.diffusion_refused", { detail: web.reasonText(res && res.reason, res && res.detail, res && res.ort) }), "warn");
       return false;
     }
 
@@ -3792,39 +3794,39 @@
                      voice: $("dif-voice").checked, meta: difMetaBoxes.filter((b) => b.checked).map((b) => b.value),
                      pseudo: $("dif-pseudo").value, indicatif: $("dif-indicatif").value, message: $("dif-message").value };
       const r = dfx.startArgs(form);
-      if (r.error) { ui.log("Diffusion : " + r.error, "warn"); return; }
+      if (r.error) { ui.log(I18N.t("rigsession.diffusion_refused", { detail: r.error }), "warn"); return; }
       let res = await client.diffusion("start", r.args);
       if (res && !res.ok && res.reason === "diffusion_confirm_required") {
         if (!window.confirm(dfx.WARNING)) return;
         res = await client.diffusion("start", Object.assign({}, r.args, { confirm: true }));
       }
-      difReport(res, "Diffusion lancée.");
+      difReport(res, I18N.t("rigsession.diffusion_started"));
     }
 
     function difShowPassword(data) {
       if (!data) return;
       $("dif-user").textContent = data.listener_user || "—";
-      $("dif-password").textContent = data.listener_password || "(aucun : généré au premier lancement privé)";
+      $("dif-password").textContent = data.listener_password || I18N.t("diffusiondialog.password_none");
     }
 
     if (dfx) {
       $("dif-ind").addEventListener("click", () => { $("sec-diffusion").open = true; $("sec-diffusion").scrollIntoView({ block: "start" }); });
       $("dif-start").addEventListener("click", () => { difStart().catch(fail); });
       $("dif-stop").addEventListener("click", () => {
-        if (!window.confirm("Arrêter la diffusion en direct ?")) return;
-        client.diffusion("stop").then((res) => difReport(res, "Diffusion arrêtée.")).catch(fail);
+        if (!window.confirm(I18N.t("diffusiondialog.stop_question"))) return;
+        client.diffusion("stop").then((res) => difReport(res, I18N.t("rigsession.diffusion_stopped"))).catch(fail);
       });
       $("dif-reveal").addEventListener("click", () => {
         client.diffusion("reveal").then((res) => { if (difReport(res, "")) difShowPassword(res.data); }).catch(fail);
       });
       $("dif-generate").addEventListener("click", () => {
-        if (!window.confirm("Générer un nouveau mot de passe pour les auditeurs ? L'ancien ne servira plus (ceux qui écoutent ne sont pas coupés) : à retransmettre à vos auditeurs.")) return;
+        if (!window.confirm(I18N.t("diffusiondialog.new_question"))) return;
         client.diffusion("listener", { generate: true })
-          .then((res) => { if (difReport(res, "Nouveau mot de passe des auditeurs.")) difShowPassword(res.data); }).catch(fail);
+          .then((res) => { if (difReport(res, I18N.t("rigsession.diffusion_new_password"))) difShowPassword(res.data); }).catch(fail);
       });
       $("dif-copy").addEventListener("click", async () => {
         const a = $("dif-page").textContent;
-        try { await navigator.clipboard.writeText(a); ui.log("Adresse de la page des auditeurs copiée.", ""); } catch (e) { fail(e); }
+        try { await navigator.clipboard.writeText(a); ui.log(I18N.t("ui.dif_page_copied"), ""); } catch (e) { fail(e); }
       });
     }
 
@@ -3836,7 +3838,7 @@
     function stActive() { return !!(spx && stSet.on && !stSet.monoOut && !stFailed); }
     function stParams() { return spx.params(stSet, stAb); }
     function stWorklet(ctx) {
-      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error("AudioWorklet absent de ce navigateur"));
+      if (!ctx.audioWorklet || typeof AudioWorkletNode === "undefined") return Promise.reject(new Error(I18N.t("ui.no_audioworklet")));
       if (!ctx.trxSpatial) ctx.trxSpatial = ctx.audioWorklet.addModule("spatial.js");
       return ctx.trxSpatial;
     }
@@ -3854,12 +3856,12 @@
         if (typeof sdrSplit !== "undefined" && sdrSplit) {                        // séparation TRX / SDR et ST exclusives
           sdrSplit = 0;
           try { store.set("trx.sdr.split", "0"); $("sdr-split").value = "0"; } catch (e) { /* sans stockage */ }
-          ui.log("Spatialisation ST en service : séparation TRX / SDR coupée.", "");
+          ui.log(I18N.t("ui.st_split_off"), "");
           if (typeof sdrRoute === "function") sdrRoute();
         }
         if (sx && scr.rx) {                                                         // débrouillage et ST exclusifs (2026-11-03)
           scr.rx = false; scrRender();
-          ui.log("Spatialisation ST en service : débrouillage du scrambler coupé.", "");
+          ui.log(I18N.t("spatialhub.descrambler_off"), "");
           if (!before) { stSet = spx.validate(next); stSave(); rxApply(); return; }  // chaîne refaite sans le débrouillage
         }
       }
@@ -3880,19 +3882,21 @@
     function stRender() {
       if (!spx) return;
       const chip = $("st-direct");
-      chip.className = "chip st-direct" + (stActive() ? " on" : "") + (stSet.monoOut ? " dim" : "");
+      chip.className = "chip st-direct" + (stActive() ? " on" : "") + (stSet.monoOut ? " dim" : "");  // i18n-ok (classes CSS)
       chip.textContent = stSet.on && !stSet.monoOut ? "ST ON" : "ST";
       $("st-on").checked = stSet.on; $("st-mono").checked = stSet.monoOut;
       for (const b of $("st-presets").children) b.className = "chip" + (b.value === stSet.preset ? " on" : "");
       $("st-width").value = stSet.width; $("st-width-text").textContent = " " + stSet.width + " %";
       $("st-presence").value = stSet.presence; $("st-presence-text").textContent = " " + stSet.presence + " %";
       $("st-balance").value = stSet.balance;
-      $("st-balance-text").textContent = " " + (stSet.balance === 0 ? "centre" : (stSet.balance < 0 ? "G " : "D ") + Math.abs(stSet.balance));
-      const state = stFailed ? "indisponible dans ce navigateur (son mono)" : !stSet.on ? "éteinte (son mono)"
-        : stSet.monoOut ? "sortie mono déclarée : pas d'effet" : stSet.preset === "mono" ? "préréglage Mono (comparaison)"
-        : !rxMedia ? "« " + spx.label(stSet) + " » dès la réception du son" : rxGraph && rxGraph.st ? "« " + spx.label(stSet) + " »" + (stAb ? " — A/B : MONO" : "")
-        : "« " + spx.label(stSet) + " » : mise en route…";
-      $("st-state").textContent = "État : " + state + ".";
+      $("st-balance-text").textContent = " " + (stSet.balance === 0 ? I18N.t("spatialdialog.balance_center")
+        : I18N.t(stSet.balance < 0 ? "spatialdialog.balance_left" : "spatialdialog.balance_right", { amount: Math.abs(stSet.balance) }));
+      const preset = { preset: stFailed || !stSet.on ? "" : spx.label(stSet) };
+      const state = stFailed ? I18N.t("ui.st_unavailable") : !stSet.on ? I18N.t("spatialdialog.state_off")
+        : stSet.monoOut ? I18N.t("ui.st_mono_out") : stSet.preset === "mono" ? I18N.t("spatialdialog.state_mono")
+        : !rxMedia ? I18N.t("ui.st_waiting", preset) : rxGraph && rxGraph.st ? I18N.t(stAb ? "spatialdialog.state_playing_ab" : "spatialdialog.state_playing", preset)
+        : I18N.t("ui.st_starting", preset);
+      $("st-state").textContent = I18N.t("spatialdialog.state", { state: state });
       stRenderMeter();
     }
     if (spx) {
@@ -3932,7 +3936,7 @@
         const on = !stSet.on;
         if (on && store.get("trx.spatial.seen", "") !== "1") {
           store.set("trx.spatial.seen", "1");
-          ui.log("Spatialisation : mettez un casque pour profiter de l'effet (sur un haut-parleur unique, il ne s'entend pas).", "");
+          ui.log(I18N.t("ui.st_headphones"), "");
         }
         stChange(Object.assign({}, stSet, { on }));
       });
@@ -3951,9 +3955,9 @@
 
     $("connect").addEventListener("click", async () => {
       const clientId = $("client-id").value.trim(), password = $("password").value;
-      if (!clientId || !password) { ui.log("Renseigne l'identifiant et le mot de passe.", "warn"); return; }
+      if (!clientId || !password) { ui.log(I18N.t("ui.login_missing"), "warn"); return; }
       audio.muted = $("mute").checked; sdrMirrorOutput();
-      if (alertLevel !== "off") alertContext();          // le navigateur n'autorise le son qu'après un geste : on le prépare ici
+      if (alertLevel !== "off") alertContext();          // le navigateur n'autorise le son qu'après un geste : on le prépare ici  // i18n-ok
       try {
         store.set("trx.mic", $("mic-select").value);
         store.set("trx.out", $("out-select").value);
@@ -3984,7 +3988,7 @@
         .then((r) => { $("ca-hint").hidden = !(r && r.ok); }).catch(() => {});
     }
     $("login-form").addEventListener("submit", (ev) => { if (ev && ev.preventDefault) ev.preventDefault(); $("connect").click(); });
-    $("password").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { if (ev.preventDefault) ev.preventDefault(); $("connect").click(); } });
+    $("password").addEventListener("keydown", (ev) => { if (ev.key === "Enter") { if (ev.preventDefault) ev.preventDefault(); $("connect").click(); } });  // i18n-ok (touche)
     $("disconnect").addEventListener("click", () => client.disconnect());
     $("reconnect-cancel").addEventListener("click", () => client.cancelReconnect());
     $("reconnect-select").value = ["0", "15", "30", "60"].includes(store.get("trx.reconnect", "15")) ? store.get("trx.reconnect", "15") : "15";
@@ -3998,7 +4002,7 @@
     // STOP maintenu 3 s : fenêtre « Se déconnecter » / « Arrêter le TRX à distance » (lot P2 de l'alimentation, décision
     // de l'utilisateur du 2026-11-19 ; avant : déconnexion directe, étape 194). Le premier appui a déjà remis en réception.
     const STOP_HOLD_MS = 3000;
-    const stopSub = () => client.powerOffered ? "appui long : déconnexion ou arrêt du TRX" : "appui long : déconnecter";
+    const stopSub = () => client.powerOffered ? I18N.t("powerviews.hold_power") : I18N.t("powerviews.hold_disconnect");
     let stopHold = null;
     function stopHoldCancel() {
       if (!stopHold) return;
@@ -4017,10 +4021,10 @@
       }
       const t0 = Date.now();
       $("stop").classList.add("holding");
-      $("stop-sub").textContent = "choix dans 3 s…";
+      $("stop-sub").textContent = I18N.t("powerviews.hold_left", { seconds: 3 });
       stopHold = window.setInterval(() => {
         const left = STOP_HOLD_MS - (Date.now() - t0);
-        if (left > 0) { $("stop-sub").textContent = "choix dans " + Math.ceil(left / 1000) + " s…"; return; }
+        if (left > 0) { $("stop-sub").textContent = I18N.t("powerviews.hold_left", { seconds: Math.ceil(left / 1000) }); return; }
         stopHoldCancel();
         if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) { /* sans vibreur */ } }
         openStopHold();
@@ -4035,14 +4039,14 @@
     }
     function openStopHold() {
       const choices = client.stopHoldChoices();
-      $("stophold-title").textContent = "STOP maintenu : que voulez-vous faire ?";
-      $("stophold-text").textContent = "La station est déjà revenue en réception.";
+      $("stophold-title").textContent = I18N.t("powerviews.hold_question");
+      $("stophold-text").textContent = I18N.t("powerviews.already_rx");
       $("stophold-disconnect").hidden = false; $("stophold-power").hidden = false;
       $("stophold-power").disabled = !choices.powerOff;
       $("stophold-reason").hidden = !choices.powerReason;
       $("stophold-reason").textContent = choices.powerReason;
       $("stophold-confirm").hidden = true; $("stophold-confirm").disabled = false;
-      $("stophold-cancel").textContent = "Annuler";
+      $("stophold-cancel").textContent = I18N.t("common.cancel");
       $("stophold-dialog").hidden = false;
       $("stophold-cancel").focus();
       armStopHoldTimer();
@@ -4054,12 +4058,12 @@
     $("stophold-cancel").addEventListener("click", closeStopHold);
     $("stophold-disconnect").addEventListener("click", () => {
       closeStopHold();
-      ui.log("STOP maintenu 3 s : déconnexion de la station.", "");
+      ui.log(I18N.t("ui.stop_hold_disconnect"), "");
       client.stop().catch(() => {}).then(() => client.disconnect());
     });
     $("stophold-power").addEventListener("click", () => {
-      $("stophold-title").textContent = "Confirmer l'arrêt à distance de votre TRX ?";
-      $("stophold-text").textContent = "Plus personne ne pourra l'écouter ; il se rallumera à la prochaine connexion d'un opérateur.";
+      $("stophold-title").textContent = I18N.t("power.confirm_title");
+      $("stophold-text").textContent = I18N.t("power.confirm_text");
       $("stophold-disconnect").hidden = true; $("stophold-power").hidden = true; $("stophold-reason").hidden = true;
       $("stophold-confirm").hidden = false;
       $("stophold-cancel").focus();
@@ -4071,10 +4075,10 @@
       let res;
       try { res = await client.powerOff(); } catch (e) { res = { ok: false, reason: "no_reply", detail: String(e && e.message || e) }; }
       if (res && res.ok) { closeStopHold(); return; }
-      $("stophold-title").textContent = "Arrêt du TRX refusé";
+      $("stophold-title").textContent = I18N.t("powerviews.off_refused");
       $("stophold-text").textContent = web.reasonText(res && res.reason, res && res.detail, res && res.ort);
       $("stophold-confirm").hidden = true;
-      $("stophold-cancel").textContent = "Fermer";
+      $("stophold-cancel").textContent = I18N.t("common.close");
     });
     // -- fenêtre « Allumage du TRX » (étapes envoyées par la station) et bandeau « POSTE ÉTEINT »
     let powerCloseTimer = null;
@@ -4092,7 +4096,7 @@
       $("power-retry").hidden = !view.canRetry;
       $("power-continue").hidden = !view.canContinue;
       $("power-hide").hidden = !view.canHide && view.status !== "done";
-      $("power-hide").textContent = view.status === "done" ? "Fermer" : "Masquer";
+      $("power-hide").textContent = view.status === "done" ? I18N.t("common.close") : I18N.t("common.hide");
       $("power-dialog").hidden = false;
       if (view.autoCloseMs) powerCloseTimer = window.setTimeout(() => client.powerHide(), view.autoCloseMs);
     }
@@ -4111,13 +4115,13 @@
     function renderRecent() {
       const box = $("cluster-recent");
       box.hidden = !recentOpen;
-      $("cluster-all").textContent = recentOpen ? "Masquer la liste" : "Tout afficher";
+      $("cluster-all").textContent = recentOpen ? I18N.t("ui.cluster_hide_list") : I18N.t("memoriestab.show_all");
       if (!recentOpen) return;
       box.textContent = "";
       const list = sp && recentData ? sp.recentList(recentData, recentAt) : [];
       if (!list.length) {
-        box.appendChild(el("div", "note", client.hello && client.hello.spectrum ? "Aucun spot reçu pour l'instant."
-          : "Cette station n'envoie les spots qu'avec le spectre HF (second port CI-V)."));
+        box.appendChild(el("div", "note", client.hello && client.hello.spectrum ? I18N.t("ui.cluster_no_spot")
+          : I18N.t("clusterandbeeps.needs_spectrum")));
         return;
       }
       const locked = frequencyLocked();
@@ -4125,7 +4129,7 @@
         const at = new Date(sp.arrivalMs(s));
         const row = el("button", "");
         row.disabled = locked;
-        row.title = locked ? "QSY impossible : émission en cours ou station déconnectée" : "Mettre le poste sur ce spot";
+        row.title = locked ? I18N.t("ui.spot_qsy_locked") : I18N.t("ui.spot_qsy");
         row.appendChild(el("span", "mono", at.toLocaleTimeString("fr-FR")));
         row.appendChild(el("span", "", s.dx));
         row.appendChild(el("span", "mono", s.khz.toFixed(1)));
@@ -4134,8 +4138,8 @@
           const target = sp.qsyTarget(s, (mode) => client.adaptSpotMode(mode));
           if (!target || frequencyLocked()) return;
           client.qsy(target.hz, target.mode).then((res) => {
-            if (res && res.ok) ui.log("QSY sur " + s.dx + " (" + s.khz.toFixed(1) + " kHz).", "");
-            else ui.log("QSY refusé" + (res && res.reason ? " : " + web.reasonText(res.reason, res.detail, res.ort) : "."), "warn");
+            if (res && res.ok) ui.log(I18N.t("ui.qsy_done", { dx: s.dx, khz: s.khz.toFixed(1) }), "");
+            else ui.log(res && res.reason ? I18N.t("ui.qsy_refused_reason", { reason: web.reasonText(res.reason, res.detail, res.ort) }) : I18N.t("ui.qsy_refused"), "warn");
           }).catch(fail);
         });
         box.appendChild(row);
@@ -4157,7 +4161,7 @@
       const view = web.clusterStatusView(clusterData, (performance.now() - clusterAt) / 1000);
       $("sec-cluster").hidden = false;
       $("cluster-dot").className = "cluster-dot " + (view.stale ? "red" : view.health);
-      $("cluster-title").textContent = view.stale ? "État inconnu" : view.title;
+      $("cluster-title").textContent = view.stale ? I18N.t("ui.cluster_unknown") : view.title;
       const list = $("cluster-sources");
       list.textContent = "";
       for (const line of view.lines) {
@@ -4166,7 +4170,7 @@
         item.appendChild(el("span", "", line.text));
         list.appendChild(item);
       }
-      $("cluster-age").textContent = view.staleText || "État reçu de la station toutes les 15 s.";
+      $("cluster-age").textContent = view.staleText || I18N.t("ui.cluster_every_15s");
     }
     window.setInterval(() => { if (clusterData) renderCluster(); }, 5000);
 
@@ -4174,8 +4178,8 @@
     let bugText = "";
     const deviceInfo = () => ({
       userAgent: navigator.userAgent || "", layout: $("app").className,
-      screen: window.innerWidth + "×" + window.innerHeight + " (densité " + (window.devicePixelRatio || 1) + ")",
-      theme: (document.documentElement.getAttribute && document.documentElement.getAttribute("data-theme")) || "défaut",
+      screen: I18N.t("ui.report_screen", { width: window.innerWidth, height: window.innerHeight, density: window.devicePixelRatio || 1 }),
+      theme: (document.documentElement.getAttribute && document.documentElement.getAttribute("data-theme")) || I18N.t("ui.report_theme_default"),
     });
     $("bug-prepare").addEventListener("click", () => {
       bugText = client.problemReport($("bug-text").value, deviceInfo());
@@ -4186,19 +4190,19 @@
     $("bug-share").addEventListener("click", async () => {
       if (!bugText) return;
       if (navigator.share) {
-        try { await navigator.share({ title: "Rapport de problème TRX distant", text: bugText }); return; }
+        try { await navigator.share({ title: I18N.t("ui.report_share_title"), text: bugText }); return; }
         catch (e) { if (e && e.name === "AbortError") return; }                     // partage annulé par l'utilisateur
       }
-      try { await navigator.clipboard.writeText(bugText); ui.log("Rapport copié : colle-le dans un e-mail ou un message.", ""); }
-      catch (e) { ui.log("Copie impossible : sélectionne le texte du rapport et copie-le.", "warn"); }
+      try { await navigator.clipboard.writeText(bugText); ui.log(I18N.t("ui.report_copied"), ""); }
+      catch (e) { ui.log(I18N.t("ui.report_copy_failed"), "warn"); }
     });
-    window.addEventListener("error", (ev) => client.recordError((ev && ev.message) || "erreur inconnue"));
-    window.addEventListener("unhandledrejection", (ev) => client.recordError("promesse rejetée : " + ((ev && ev.reason && ev.reason.message) || (ev && ev.reason) || "?")));
+    window.addEventListener("error", (ev) => client.recordError((ev && ev.message) || I18N.t("ui.error_unknown")));
+    window.addEventListener("unhandledrejection", (ev) => client.recordError(I18N.t("ui.promise_rejected", { reason: (ev && ev.reason && ev.reason.message) || (ev && ev.reason) || "?" })));
 
     $("local-release").addEventListener("click", () => {                             // confirmation en deux temps
       if (!releaseArmed) {
         releaseArmed = true;
-        $("local-release").textContent = "Confirmer : reprendre la main";
+        $("local-release").textContent = I18N.t("ui.release_confirm");
         releaseTimer = window.setTimeout(resetRelease, 4000);
         return;
       }
@@ -4217,7 +4221,7 @@
     });
     $("freq-set").addEventListener("click", () => {
       const hz = parseKilohertz($("freq-input").value);
-      if (hz === null) { ui.log("Fréquence invalide (en kHz, ex. 14200 ou 7074,5).", "warn"); return; }
+      if (hz === null) { ui.log(I18N.t("ui.freq_invalid_14200"), "warn"); return; }
       client.setFrequency(hz).catch(fail);
     });
     for (const [key, id] of CONTROLS) {
@@ -4242,7 +4246,7 @@
     }
     // ---- fenêtre de réglage NR / NB / Notch (refusée par la station pendant l'émission, verrouillée ici aussi)
     let dialogKey = null, levelTimer = null, levelTouched = 0;
-    const DIALOG_TITLES = { NR: "Réducteur de bruit (NR)", NB: "Antiparasite (NB)", NOTCH: "Notch" };
+    const DIALOG_TITLES = { NR: "rigdialogs.nr_label", NB: "rigdialogs.nb_label", NOTCH: "ui.notch_title" };   // clés des textes
     function levelRange(name) {
       const caps = client.hello && client.hello.capabilities;
       const range = caps && caps.level_ranges ? caps.level_ranges[name] : null;
@@ -4262,7 +4266,7 @@
       const fn = (v.rig && v.rig.functions) || {}, lv = (v.rig && v.rig.levels) || {};
       const locked = !v.connected || v.controlsLocked;
       const notch = dialogKey === "NOTCH";
-      $("ctl-dialog-title").textContent = DIALOG_TITLES[dialogKey];
+      $("ctl-dialog-title").textContent = I18N.t(DIALOG_TITLES[dialogKey]);
       $("ctl-dialog-onrow").hidden = notch; $("ctl-notch-row").hidden = !notch;
       if (notch) {
         const current = fn.MN ? "manual" : fn.ANF ? "auto" : "off";
@@ -4271,7 +4275,7 @@
           $(id).disabled = locked || (needs !== null && !(needs in fn));
         }
       } else {
-        $("ctl-dialog-toggle").textContent = fn[dialogKey] ? "En marche" : "Arrêté";
+        $("ctl-dialog-toggle").textContent = fn[dialogKey] ? I18N.t("ui.ctl_on") : I18N.t("ui.ctl_off");
         $("ctl-dialog-toggle").className = "chip" + (fn[dialogKey] ? " on" : "");
         $("ctl-dialog-toggle").disabled = locked || !(dialogKey in fn);
       }
@@ -4285,8 +4289,8 @@
         if (performance.now() - levelTouched > 1500) slider.value = String(lv[dialogKey]);   // pas de saut pendant que le doigt règle
         $("ctl-level-text").textContent = levelText(Number(slider.value), range);
       }
-      $("ctl-dialog-note").textContent = locked ? "Réglages verrouillés pendant l'émission." :
-        (notch ? "" : has ? "" : "Le poste ne déclare pas de niveau réglable pour cette fonction.");
+      $("ctl-dialog-note").textContent = locked ? I18N.t("rigdialogs.locked_tx") :
+        (notch ? "" : has ? "" : I18N.t("ui.ctl_no_level"));
     }
     $("ctl-dialog-toggle").addEventListener("click", () => { if (dialogKey) client.pressControl(dialogKey).catch(fail); });
     for (const [kind, id] of [["off", "ctl-notch-off"], ["auto", "ctl-notch-auto"], ["manual", "ctl-notch-manual"]]) {
@@ -4322,9 +4326,9 @@
     $("mem-cancel").addEventListener("click", closeForm);
     $("mem-save").addEventListener("click", async () => {
       const name = $("mem-name").value.trim(), hz = parseKilohertz($("mem-khz").value), mode = $("mem-mode").value;
-      if (!name) { ui.log("Donne un nom à la mémoire.", "warn"); return; }
-      if (hz === null) { ui.log("Fréquence invalide (en kHz, ex. 7100 ou 7074,5).", "warn"); return; }
-      if (!mode) { ui.log("Choisis un mode.", "warn"); return; }
+      if (!name) { ui.log(I18N.t("ui.mem_name_missing"), "warn"); return; }
+      if (hz === null) { ui.log(I18N.t("ui.freq_invalid_7100"), "warn"); return; }
+      if (!mode) { ui.log(I18N.t("ui.mem_mode_missing"), "warn"); return; }
       try {
         const res = await client.saveMemory({ memoryId: editingId, name: name, hz: hz, mode: mode, favorite: $("mem-fav").checked });
         if (res.ok) closeForm();
@@ -4334,7 +4338,7 @@
       if (!editingId) return;
       if (!deleteArmed) {                                                        // confirmation en deux temps
         deleteArmed = true;
-        $("mem-delete").textContent = "Confirmer la suppression";
+        $("mem-delete").textContent = I18N.t("rigdialogs.confirm_delete");
         deleteTimer = window.setTimeout(resetDelete, 4000);
         return;
       }
@@ -4345,7 +4349,7 @@
 
     $("mute").addEventListener("change", (ev) => { audio.muted = ev.target.checked || outputIsRig; sdrMirrorOutput(); });
     $("out-select").addEventListener("change", () => { store.set("trx.out", $("out-select").value); applyOutput(); });
-    $("mic-select").addEventListener("change", () => { store.set("trx.mic", $("mic-select").value); ui.log("Le micro choisi s'appliquera à la prochaine connexion.", ""); });
+    $("mic-select").addEventListener("change", () => { store.set("trx.mic", $("mic-select").value); ui.log(I18N.t("ui.mic_next_connection"), ""); });
     $("volume").addEventListener("input", () => trxVolume());                        // balance TRX / SDR comprise
     $("text-size").addEventListener("change", (ev) => { store.set("trx.text", ev.target.value); applyDisplay(); });
     $("layout-select").addEventListener("change", (ev) => { store.set("trx.layout", ev.target.value); applyDisplay(); });
@@ -4365,7 +4369,7 @@
     $("layout-factory").addEventListener("click", async () => {
       try {
         const res = await client.resetLayout();
-        if (res && res.ok) { profile = res.profile || null; profileSource = "factory"; profileVersion += 1; renderLayout(true); ui.log("Interface d'usine rétablie.", "ok"); }
+        if (res && res.ok) { profile = res.profile || null; profileSource = "factory"; profileVersion += 1; renderLayout(true); ui.log(I18N.t("ui.layout_factory_restored"), "ok"); }
       } catch (err) { fail(err); }
     });
     window.addEventListener("resize", applyDisplay);
@@ -4383,7 +4387,7 @@
   }
 
   // Textes de la langue choisie chargés avant d'afficher quoi que ce soit (i18n.js ; immédiat dans les tests)
-  const I18N = root.TrxI18n;
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
   document.addEventListener("DOMContentLoaded", () => {
     if (!I18N || I18N.loaded) initUi(); else I18N.ready.then(initUi, initUi);
   });

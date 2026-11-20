@@ -3,27 +3,31 @@
 /* Présence de groupe « Amis » (docs/presence-cahier-des-charges.md, docs/protocole.md § 16) : calculs purs de la page,
    testés sous Node (tests/js/friends_test.js) ; âges, pseudo et texte libre vérifiés sur les vecteurs de la station
    (tests/protocol/presence_vectors.json). Rien ici n'agit sur le poste : le QSY vers un ami est confirmé par
-   l'opérateur, refusé pendant l'émission, et passe par les commandes habituelles (mode puis fréquence). */
+   l'opérateur, refusé pendant l'émission, et passe par les commandes habituelles (mode puis fréquence). */   // i18n-ok (commentaire)
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const OFFLINE_AFTER_S = 240;
   const ORDER = { Q: 0, R: 1, S: 2, A: 3, O: 4 };
-  const CODES = {
-    Q: { label: "En QSO", cls: "q" }, R: { label: "En RX", cls: "r" }, S: { label: "Au shack", cls: "s" },
-    A: { label: "Absent", cls: "a" }, O: { label: "Hors ligne", cls: "o" },
-  };
-  const ROLES = { a: "administrateur", c: "co-administrateur", m: "membre" };
-  const STATUS = { member: "", pending: "adhésion en attente de validation", removed: "exclu ou groupe supprimé" };
-  const LEVELS = { f: "Fréquence et mode", o: "« On Air » seulement", x: "Un court texte" };
+  // Textes relus à l'affichage (catalogues chargés après ce script dans le navigateur).
+  function codes() {
+    const out = {};
+    for (const c of ["Q", "R", "S", "A", "O"]) out[c] = { label: I18N.t("friends.label_" + c.toLowerCase()), cls: c.toLowerCase() };
+    return out;
+  }
+  function roles() { return { a: I18N.t("friends.role_a"), c: I18N.t("friends.role_c"), m: I18N.t("friends.role_m") }; }
+  function statuses() {
+    return { member: "", pending: I18N.t("friends.status_pending"), removed: I18N.t("friends.status_removed") };
+  }
+  function levels() { return { f: I18N.t("friends.level_f"), o: I18N.t("friends.level_o"), x: I18N.t("friends.level_x") }; }
   const DISPLAY_MODES = ["section", "big", "pip"];
   const PSEUDO_RE = /^[A-Za-z0-9](?:[A-Za-z0-9 ./_-]{0,14}[A-Za-z0-9./_-])?$/;
   const TEXT_RE = /^[A-Za-z0-9./-](?:[A-Za-z0-9 ./-]{0,14}[A-Za-z0-9./-])?$/;
-  const CONSENT = [
-    "L'administrateur du groupe verra des statistiques d'activité AGRÉGÉES de votre station : jours actifs, temps approximatif en QSO et en réception par semaine, date d'adhésion, version de la station. Jamais un emploi du temps détaillé.",
-    "Les membres du groupe verront votre statut (en QSO, en réception, au shack, absent, hors ligne) et ce que vous choisissez de partager ci-dessous ; vous pourrez le changer, ou devenir invisible, à tout moment.",
-    "Le relais de présence ne voit que des états chiffrés : ni fréquence, ni mode, ni texte, ni statut.",
-  ];
+  function consent() {
+    return [I18N.t("friends.consent_admin"), I18N.t("friends.consent_members"), I18N.t("friends.consent_relay")];
+  }
 
   /* Mêmes règles que trxstation/presence/wire.py (vecteurs « pseudo » et « text ») : null si refusé. */
   function squeeze(s) { return s.split(/\s+/).filter(Boolean).join(" "); }
@@ -35,7 +39,7 @@
     const s = Math.max(0, Math.floor(seconds));
     if (s < 3600) return Math.max(1, Math.floor(s / 60)) + " min";
     if (s < 86400) return Math.floor(s / 3600) + " h";
-    return Math.floor(s / 86400) + " j";
+    return I18N.t("friends.age_days", { days: Math.floor(s / 86400) });
   }
 
   /* Âge court pour « mis à jour il y a … » : secondes sous la minute. */
@@ -57,23 +61,24 @@
   /* Un membre tel qu'affiché. `elapsedS` : secondes depuis la lecture de la vue (les âges avancent sans redemander). */
   function memberView(m, nowS, elapsedS) {
     const e = Math.max(0, elapsedS || 0);
+    const CODES = codes();
     let code = CODES[m.code] ? m.code : "O";
     if ((m.age || 0) + e > OFFLINE_AFTER_S) code = "O";                // plus de nouvelles : hors ligne, sans attendre la vue
     const c = CODES[code];
     let detail;
-    if (code === "O") detail = "Hors ligne";
-    else if (code === "S") detail = Number.isFinite(m.su) ? "Au shack jusqu'à " + clock(m.su) : "Au shack";
-    else if (code === "A") detail = Number.isFinite(m.sd) ? "Absent depuis " + formatAge(nowS - m.sd) : "Absent";
+    if (code === "O") detail = I18N.t("friends.label_o");
+    else if (code === "S") detail = Number.isFinite(m.su) ? I18N.t("friends.shack_until", { time: clock(m.su) }) : I18N.t("friends.label_s");
+    else if (code === "A") detail = Number.isFinite(m.sd) ? I18N.t("friends.absent_since", { age: formatAge(nowS - m.sd) }) : I18N.t("friends.label_a");
     else if (m.lv === "f" && Number.isFinite(m.f)) detail = frequencyText(m.f) + (m.m ? " " + m.m : "");   // En QSO, En RX
-    else if (m.lv === "x" && m.x) detail = "« " + m.x + " »";
-    else detail = code === "Q" ? "On Air" : c.label;
+    else if (m.lv === "x" && m.x) detail = I18N.t("friends.quoted", { text: m.x });
+    else detail = code === "Q" ? I18N.t("friends.on_air") : c.label;
     const lines = [];
     if (code !== "O") {
-      if (Number.isFinite(m.sd)) lines.push(c.label + " depuis " + formatAge(nowS - m.sd));
-      if (Number.isFinite(m.lt)) lines.push("Dernière émission il y a " + formatAge(nowS - m.lt));
-      if (Number.isFinite(m.updated)) lines.push("Mis à jour il y a " + freshness(m.updated + e));
+      if (Number.isFinite(m.sd)) lines.push(I18N.t("friends.since", { label: c.label, age: formatAge(nowS - m.sd) }));
+      if (Number.isFinite(m.lt)) lines.push(I18N.t("friends.last_tx", { age: formatAge(nowS - m.lt) }));
+      if (Number.isFinite(m.updated)) lines.push(I18N.t("friends.updated", { age: freshness(m.updated + e) }));
     } else {
-      lines.push("Dernière nouvelle il y a " + formatAge((m.age || 0) + e));
+      lines.push(I18N.t("friends.last_news", { age: formatAge((m.age || 0) + e) }));
     }
     return { id: m.id, pseudo: m.pseudo || "?", code: code, letter: code === "O" ? "" : code, cls: c.cls, label: c.label,
              detail: detail, lines: lines, qsy: code !== "O" && m.lv === "f" && Number.isFinite(m.f) && !!m.m,
@@ -86,6 +91,7 @@
 
   /* Vue complète : par groupe (défaut) ou par membre (un membre de plusieurs groupes une seule fois, avec ses groupes). */
   function buildView(view, nowS, elapsedS, by) {
+    const ROLES = roles(), STATUS = statuses();
     const groups = (view && Array.isArray(view.groups) ? view.groups : []).map((g) => ({
       g: g.g, name: g.name, role: g.role, roleText: ROLES[g.role] || "", status: g.status, statusText: STATUS[g.status] || "",
       share: g.share || {}, admin: g.role === "a" || g.role === "c", count: g.count,
@@ -123,16 +129,16 @@
      ctx : { pttState, rigHz, selfCode, nowS }. */
   function qsyPlan(member, ctx) {
     const c = ctx || {};
-    if (c.pttState && c.pttState !== "RX") return { ok: false, reason: "tx_active", text: "Émission en cours : pas de QSY." };
-    if (!member || !member.qsy) return { ok: false, reason: "no_frequency", text: "Ce membre ne partage pas sa fréquence." };
+    if (c.pttState && c.pttState !== "RX") return { ok: false, reason: "tx_active", text: I18N.t("friends.qsy_tx") };
+    if (!member || !member.qsy) return { ok: false, reason: "no_frequency", text: I18N.t("friends.qsy_no_frequency") };
     const warnings = [];
-    if (c.selfCode === "Q") warnings.push({ level: "strong", text: "Vous êtes en QSO : votre correspondant ne vous entendra plus sur votre fréquence actuelle." });
+    if (c.selfCode === "Q") warnings.push({ level: "strong", text: I18N.t("friends.warn_qso") });
     if (member.lines.length) warnings.push({ level: "info", text: member.lines.join(" · ") });
     if (Number.isFinite(c.rigHz) && bandOf(c.rigHz) !== bandOf(member.f)) {
-      warnings.push({ level: "warn", text: "Changement de bande : vérifiez l'accord de l'antenne avant d'émettre." });
+      warnings.push({ level: "warn", text: I18N.t("friends.warn_band") });
     }
-    if (member.txOk === false) warnings.push({ level: "warn", text: "Hors des bandes d'émission de cette station : réception seulement." });
-    return { ok: true, text: "Aller sur " + frequencyText(member.f) + " " + member.m + " ?", hz: member.f, mode: member.m,
+    if (member.txOk === false) warnings.push({ level: "warn", text: I18N.t("friends.warn_rx_only") });
+    return { ok: true, text: I18N.t("friends.qsy_confirm", { frequency: frequencyText(member.f), mode: member.m }), hz: member.f, mode: member.m,
              warnings: warnings };
   }
 
@@ -159,21 +165,21 @@
   /* Invitation collée : on garde l'URL entière (ou le seul code après #), sans espaces. */
   /* Mon statut (champ `me` de la vue, station 0.228.0+ ; null avant) : choix de l'opérateur (`choice` : « auto »,
      « 60 » ou « 120 », d'après le temps restant) et UNE phrase qui dit ce que voient les amis. Priorités de la station
-     (cahier § 9.1, gardées par l'utilisateur à l'étape 299) : En QSO > En RX > Au shack > Absent : un « Au shack »
+     (cahier § 9.1, gardées par l'utilisateur à l'étape 299) : En QSO > En RX > Au shack > Absent : un « Au shack »   // i18n-ok (commentaire)
      déclaré ne se voit qu'une fois la station inactive. */
   function myStatus(me, nowS) {
+    const CODES = codes();
     if (!me || typeof me !== "object" || !CODES[me.code] || me.code === "O") return null;
     const label = CODES[me.code].label;
     const once = Number.isFinite(me.once) && me.once > nowS ? me.once : null;
     let text;
     if (once === null) {
-      text = "Automatique : vos amis vous voient « " + label + " »"
-        + (me.code === "S" && Number.isFinite(me.su) ? " jusqu'à " + clock(me.su) : "") + ".";
+      text = me.code === "S" && Number.isFinite(me.su) ? I18N.t("friends.me_auto_until", { label: label, time: clock(me.su) })
+        : I18N.t("friends.me_auto", { label: label });
     } else if (me.code === "S") {
-      text = "Au shack jusqu'à " + clock(once) + " : vos amis vous voient « Au shack ».";
+      text = I18N.t("friends.me_shack", { time: clock(once) });
     } else {
-      text = "Au shack jusqu'à " + clock(once) + " : vos amis vous voient « " + label
-        + " » tant que la station est active, puis « Au shack ».";
+      text = I18N.t("friends.me_shack_active", { time: clock(once), label: label });
     }
     const choice = once === null ? "auto" : (once - nowS > 3600 ? "120" : "60");
     return { code: me.code, cls: CODES[me.code].cls, label: label, text: text, choice: choice, shack: once !== null };
@@ -185,7 +191,9 @@
     return t.length >= 20 && t.length <= 1000 ? t : null;
   }
 
-  const api = { OFFLINE_AFTER_S, ORDER, CODES, ROLES, STATUS, LEVELS, DISPLAY_MODES, CONSENT, cleanPseudo, cleanText,
+  const api = { OFFLINE_AFTER_S, ORDER, get CODES() { return codes(); }, get ROLES() { return roles(); },
+                get STATUS() { return statuses(); }, get LEVELS() { return levels(); }, DISPLAY_MODES,
+                get CONSENT() { return consent(); }, cleanPseudo, cleanText,
                 formatAge, freshness, frequencyText, memberView, sortMembers, buildView, badges, bandOf, qsyPlan, statsRows,
                 pipSupported, displayMode, cleanInvitation, myStatus };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

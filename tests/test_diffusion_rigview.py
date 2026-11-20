@@ -84,8 +84,8 @@ def test_info_packet_reaches_the_module_by_udp(tmp_path):
 
 def test_page_choice_list_matches_the_protocol():
     js = (ROOT / "trxstation" / "gateway" / "api" / "static" / "diffusion.js").read_text(encoding="utf-8")
-    block = js[js.index("const META = ["):js.index("];", js.index("const META = ["))]
-    assert tuple(re.findall(r'\["(\w+)", "', block)) == p.CHOICE_FIELDS
+    block = js[js.index("const META_KEYS = ["):js.index("];", js.index("const META_KEYS = ["))]
+    assert tuple(re.findall(r'"(\w+)"', block)) == p.CHOICE_FIELDS
 
 
 def test_gateway_sends_info_every_10_frames():

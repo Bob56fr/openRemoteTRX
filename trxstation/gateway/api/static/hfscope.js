@@ -3,7 +3,9 @@
 /* Spectre HF du poste (second port CI-V) : calculs purs de la vue plein écran. Le dessin est dans ui.js, les couleurs
    viennent du thème (variables CSS) ; aucune couleur ici. Trames reçues : voir parseSpectrumFrame (client.js). */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const GAINS = [-12, -6, 0, 6, 12, 18];             // décalage de sensibilité des couleurs, en dB (2 niveaux du poste par dB)
   const LEVELS_PER_DB = 2;                           // Icom : 0..160 pour -80..0 dB
@@ -35,10 +37,10 @@
   function waitText(state) {
     /* Texte affiché à la place du spectre tant qu'aucun balayage n'arrive. */
     const sp = (state && state.spectrum) || {};
-    if (sp.state === "ok") return "En attente du spectre du poste…";
-    if (sp.state === "waiting" || sp.state === "starting") return "Mise en route du spectre du poste…";
-    const why = typeof sp.message === "string" && sp.message ? sp.message.slice(0, 300) : (sp.code || "raison inconnue");
-    return "Le poste n'envoie pas de spectre : " + why + " Nouvel essai à chaque ouverture de cette vue.";
+    if (sp.state === "ok") return I18N.t("hfscope.wait_ok");
+    if (sp.state === "waiting" || sp.state === "starting") return I18N.t("hfscope.wait_starting");
+    const why = typeof sp.message === "string" && sp.message ? sp.message.slice(0, 300) : (sp.code || I18N.t("hfscope.reason_unknown"));
+    return I18N.t("hfscope.no_spectrum", { why: why });
   }
 
   function levelT(value, levelMax, gainDb) {
@@ -56,7 +58,7 @@
 
   function colorWindow(points, levelMax, rangeDb, previousFloor) {
     /* Fenêtre de niveaux colorée du noir au blanc : { bottom, span, floor }. Pleine échelle (80 dB) : 0..level_max ;
-       sinon elle part juste sous le plancher de bruit (lissé d'un balayage à l'autre) et couvre `rangeDb`. */
+       sinon elle part juste sous le plancher de bruit (lissé d'un balayage à l'autre) et couvre `rangeDb`. */   // i18n-ok (commentaire)
     const max = levelMax > 0 ? levelMax : 160;
     const span = Math.min(max, (RANGES_DB.includes(rangeDb) ? rangeDb : DEFAULT_RANGE_DB) * LEVELS_PER_DB);
     if (span >= max) return { bottom: 0, span: max, floor: null };
@@ -74,7 +76,7 @@
 
   function interpolateRow(points, width, out) {
     /* `width` valeurs par interpolation linéaire entre les points du poste (dessin à la résolution de l'écran,
-       sans marches d'escalier). Le poste ne fournit pas plus de détail : on lisse, on n'invente pas de signal. */
+       sans marches d'escalier). Le poste ne fournit pas plus de détail : on lisse, on n'invente pas de signal. */   // i18n-ok (commentaire)
     const result = out && out.length === width ? out : new Float32Array(width);
     const n = points.length;
     if (n === 1) { result.fill(points[0]); return result; }
@@ -147,7 +149,7 @@
 
   function sCalibrate(previous, points, fraction, strengthDb, receiving) {
     /* Décalage (dB) tel que niveau / 2 + décalage = dB par rapport à S9 ; lissé. Inchangé en émission, hors écran,
-       sans S-mètre ou sous S1. null tant qu'aucun recalage n'a pu se faire (couleurs chaudes absentes). */
+       sans S-mètre ou sous S1. null tant qu'aucun recalage n'a pu se faire (couleurs chaudes absentes). */   // i18n-ok (commentaire)
     const v = levelNear(points, fraction);
     if (!receiving || v === null || !Number.isFinite(strengthDb) || strengthDb < S_CAL_MIN_DB) return Number.isFinite(previous) ? previous : null;
     const measured = strengthDb - v / LEVELS_PER_DB;
@@ -177,7 +179,7 @@
   }
 
   const gainLabel = (v) => "GAIN " + (v > 0 ? "+" + v : v);
-  const rangeLabel = (v) => (v >= 80 ? "PLAGE 80 dB" : "PLAGE " + v + " dB");
+  const rangeLabel = (v) => I18N.t("hfscope.range", { db: v >= 80 ? 80 : v });
 
   function normalizeSettings(raw) {
     const r = raw && typeof raw === "object" ? raw : {};
@@ -194,7 +196,7 @@
   // ---- réglages du spectre DU POSTE (envoyés à la station : spectrum_set ; mêmes listes fermées que spectrum/civ.py)
   const SPANS_HZ = [2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000];
   const MODE_LABELS = { center: "CENT", fixed: "FIX", scroll_center: "SCR-C", scroll_fixed: "SCR-F" };
-  const SPEED_LABELS = { fast: "VIT RAP", mid: "VIT MOY", slow: "VIT LENT" };
+  const SPEED_LABELS = { fast: "hfscope.speed_fast", mid: "hfscope.speed_mid", slow: "hfscope.speed_slow" };   // clés des textes
   const SPEED_ORDER = ["fast", "mid", "slow"];
   const REF_MIN = -20, REF_MAX = 20, REF_UI_STEP = 1;
 
@@ -208,7 +210,7 @@
     const i = SPANS_HZ.indexOf(hz);
     return SPANS_HZ[(i + 1) % SPANS_HZ.length];
   }
-  const speedSettingLabel = (s) => SPEED_LABELS[s] || "VIT ?";
+  const speedSettingLabel = (s) => I18N.t(SPEED_LABELS[s] || "hfscope.speed_unknown");
   function nextSpeed(s) {
     const i = SPEED_ORDER.indexOf(s);
     return SPEED_ORDER[(i + 1) % SPEED_ORDER.length];

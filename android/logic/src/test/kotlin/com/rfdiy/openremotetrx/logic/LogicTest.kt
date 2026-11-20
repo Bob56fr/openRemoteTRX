@@ -115,8 +115,8 @@ class TextsTest {
 
     @Test
     fun `memes causes de perte de liaison que la page`() {
-        val body = Regex("const LOSS_REASONS = \\{(.*?)\\n  \\};", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        val codes = Regex("^\\s*([a-z_]+): \\{", RegexOption.MULTILINE).findAll(body).map { it.groupValues[1] }.toSet()
+        val body = Regex("""function lossReasons\(\) \{(.*?)\n  \}""", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
+        val codes = Regex("""^\s*([a-z_]+): \{""", RegexOption.MULTILINE).findAll(body).map { it.groupValues[1] }.toSet()
         assertTrue(codes.isNotEmpty())
         assertEquals(emptySet(), codes - Texts.LOSSES.keys)
     }

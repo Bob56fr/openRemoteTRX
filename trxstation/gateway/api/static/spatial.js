@@ -13,7 +13,10 @@
 
    Même fichier : module Node (tests), script de la page et module AudioWorklet (registerProcessor). */
 (function (root) {
-  "use strict";
+  "use strict";   // i18n-ok
+
+  // Absent dans le module AudioWorklet (aucun texte n'y est lu).
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   const SMOOTH_S = 0.02, FADE_S = 0.05, CEILING = Math.pow(10, -1 / 20), RELEASE_S = 0.1;
   const VOICE_LO_HZ = 300, VOICE_HI_HZ = 2700, FIR_TAPS = 255, LATENCY = (FIR_TAPS - 1) / 2;
@@ -24,10 +27,10 @@
   const DECOR_MS = [1.3, 2.1, 2.9, 3.7, 4.9, 6.7], DECOR_G = 0.5;
   const ENGINES = ["decor", "binaural"];
   const PRESETS = {
-    mono: { label: "Mono", engine: null, width: 0, presence: 0 },
-    comfort: { label: "Confort", engine: "decor", width: 70, presence: 40 },
-    dx: { label: "DX BLU", engine: "binaural", width: 80, presence: 25 },
-    cw: { label: "CW binaural", engine: "binaural", width: 100, presence: 0 },
+    mono: { get label() { return I18N.t("spatial.preset_mono"); }, engine: null, width: 0, presence: 0 },
+    comfort: { get label() { return I18N.t("spatial.preset_comfort"); }, engine: "decor", width: 70, presence: 40 },
+    dx: { get label() { return I18N.t("spatial.preset_dx"); }, engine: "binaural", width: 80, presence: 25 },
+    cw: { get label() { return I18N.t("spatial.preset_cw"); }, engine: "binaural", width: 100, presence: 0 },
   };
   const WIDTH_MAX = 150;
 
@@ -66,7 +69,7 @@
     return !!p && p.engine !== null && (s.width !== p.width || s.presence !== p.presence);
   }
 
-  function label(s) { const p = PRESETS[s.preset]; return p ? p.label + (isModified(s) ? " (modifié)" : "") : "?"; }
+  function label(s) { const p = PRESETS[s.preset]; return p ? (isModified(s) ? I18N.t("spatial.label_modified", { label: p.label }) : p.label) : "?"; }
 
   function params(s, abMono) {
     /* Réglages -> paramètres du traitement. Bypass : ST éteint, préréglage Mono, sortie mono, ou A/B maintenu. */
@@ -217,9 +220,9 @@
 
   function sharedTable() {
     /* tests/protocol/spatial_presets.json : préréglages et réponses impulsionnelles de référence (48 kHz, 64
-       échantillons après le retard commun) que la page et l'application doivent trouver à l'identique. */
+       échantillons après le retard commun) que la page et l'application doivent trouver à l'identique. */   // i18n-ok (commentaire)
     const out = {
-      _note: "Spatialisation (spatial.js) : préréglages et réponses à une impulsion de 0,5 à 48 kHz (64 échantillons à partir du retard commun de 127), valeurs atteintes d'emblée. La page et l application (logic/Spatial.kt) doivent trouver ces échantillons à 1e-6 près. Fabriqué par spatial.js.",
+      _note: "Spatialisation (spatial.js) : préréglages et réponses à une impulsion de 0,5 à 48 kHz (64 échantillons à partir du retard commun de 127), valeurs atteintes d'emblée. La page et l application (logic/Spatial.kt) doivent trouver ces échantillons à 1e-6 près. Fabriqué par spatial.js.",   // i18n-ok (note du fichier de vecteurs)
       rate: 48000, presets: {}, impulse: {},
     };
     for (const [key, p] of Object.entries(PRESETS)) {

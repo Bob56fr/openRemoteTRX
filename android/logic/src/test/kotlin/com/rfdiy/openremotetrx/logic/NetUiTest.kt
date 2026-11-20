@@ -26,11 +26,8 @@ class NetUiTest {
     }
 
     @Test
-    fun `textes communs avec la page`() {
-        assertEquals(pageTable("NET_DIAGNOSES"), NetUi.DIAGNOSES)
-        assertEquals(pageTable("NET_TYPES"), NetUi.TYPES)
-        assertEquals(pageTable("NET_LEVELS"), NetUi.LEVELS)
-    }
+    fun `textes communs avec la page`() =
+        PageI18n.assertSameTexts("client.js", "NetUi.kt", "netui.diag_", "netui.type_", "netui.level_")
 
     @Test
     fun `state net d'exemple - meme vue que la page`() {

@@ -282,7 +282,7 @@ def test_reconnect_banner_replaces_the_frequency_area_and_the_duration_is_adjust
     header = HTML[HTML.index('<header id="top">'):HTML.index("</header>")]
     assert header.index('id="freq"') < header.index('id="reconnect"') < header.index('class="meters"')     # même emplacement que la fréquence
     assert re.search(r'<div id="reconnect" class="reconnect" hidden>', header) and 'id="reconnect-cancel"' in header
-    options = re.findall(r'<option value="(\d+)">', HTML[HTML.index('id="reconnect-select"'):HTML.index("</select>", HTML.index('id="reconnect-select"'))])
+    options = re.findall(r'<option value="(\d+)"[^>]*>', HTML[HTML.index('id="reconnect-select"'):HTML.index("</select>", HTML.index('id="reconnect-select"'))])
     assert options == ["0", "15", "30", "60"]
     assert re.search(r"\.reconnect-text\s*\{[^}]*animation:\s*blink", CSS) and "@keyframes blink" in CSS     # le texte clignote
     assert re.search(r"@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.reconnect-text\s*\{\s*animation:\s*none", CSS)   # sauf si l'utilisateur a demandé moins d'animation
