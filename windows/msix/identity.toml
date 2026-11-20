@@ -1,0 +1,8 @@
+# Identité du paquet MSIX de la station (Microsoft Store), relevée dans Partner Center le 2026-11-20 :
+# Applications et jeux > openRemoteTRX > Gestion des produits > Identité du produit.
+# Valeurs publiques (elles figurent dans tout paquet publié). Ne JAMAIS les changer sans Partner Center :
+# le Store refuse un paquet dont l'identité diffère de celle du produit réservé.
+name = "RF-DIY.COM.openRemoteTRX"
+publisher = "CN=4DBA8C0D-D395-454A-A7A5-5CB99996408C"
+publisher_display_name = "RF-DIY.COM"
+display_name = "openRemoteTRX"

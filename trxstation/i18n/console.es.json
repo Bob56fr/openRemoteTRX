@@ -663,6 +663,8 @@
   "indicator.win.on": "El indicador arrancará en cada inicio de sesión.",
   "indicator.win.off": "El indicador ya no arrancará al iniciar sesión.",
   "indicator.win.failed_link": "No se puede cambiar el acceso directo de inicio ({exc}).",
+  "updates.store": "Versión de la Microsoft Store {installed}: las actualizaciones llegan por la Microsoft Store (ficha de openRemoteTRX: {link}). Detén la estación (menú 1.2) antes de lanzar la actualización, equipo en recepción: se conserva la configuración. No se puede volver a una versión anterior.",
+  "store.zip_installed": "La versión zip de la estación está instalada en este PC (tarea programada «TRX distant»): la estación de la Microsoft Store no arranca (ORT-8029). Desinstala la versión zip en Configuración > Aplicaciones > TRX distant; tu configuración se conserva.",
   "updates.windows": "En Windows, una nueva versión se instala ejecutando installer.cmd del nuevo zip (página de versiones del proyecto): se conserva la configuración. Volver atrás: ejecutar de nuevo installer.cmd de la versión anterior.",
   "tui.quit": "Salir",
   "tui.refresh": "Actualizar",

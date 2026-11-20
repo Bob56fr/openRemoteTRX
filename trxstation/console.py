@@ -184,8 +184,9 @@ def windows_tray_startup() -> Path:
 
 def windows_pythonw() -> str:
     """pythonw.exe du même environnement (aucune fenêtre) ; à défaut, l'interpréteur courant."""
-    candidate = Path(sys.executable).with_name("pythonw.exe")
-    return str(candidate if candidate.exists() else Path(sys.executable))
+    from .packaging import python_executable
+    candidate = Path(python_executable()).with_name("pythonw.exe")
+    return str(candidate if candidate.exists() else Path(python_executable()))
 
 
 def console_url(host: str, port: int) -> str:
@@ -406,13 +407,16 @@ class Console:
 
     def __init__(self, config: Path = CONFIG_PATH, runner: Runner | None = None,
                  ask: Callable[[str], str] = input, say: Callable[[str], None] = print,
-                 python: str = sys.executable, update_state: Callable[[], UpdateState | None] | None = None,
+                 python: str | None = None, update_state: Callable[[], UpdateState | None] | None = None,
                  previous: Callable[[], str | None] = previous_version, installed: str = __version__,
                  home: Path | None = None, editor: str | None = None, app_dir: Path = upd.APP_DIR,
                  desktop: Callable[[], Path] | None = None, color: bool | None = None,
                  addresses: Callable[[], list[str]] | None = None, lang: str | None = None,
                  lang_file: Path | None = None, level: str | None = None) -> None:
-        self.config, self.runner, self.ask, self.say, self.python = config, runner or Runner(), ask, say, python
+        self.config, self.runner, self.ask, self.say = config, runner or Runner(), ask, say
+        # Version Store lancée par un alias : sys.executable = l'alias (qui ajoute ses paramètres) : vrai Python du paquet
+        from .packaging import python_executable
+        self.python = python or python_executable(windowed=False)
         self.color = color if color is not None else (say is print and sys.stdout.isatty())
         self.update_state = update_state or (lambda: read_state(state_path(config_state_dir(self.config))))
         self.previous, self.installed = previous, installed
@@ -509,6 +513,13 @@ class Console:
     def _start_station(self, verb: str = "restart") -> int:
         """Debian : systemd. Windows : tâche planifiée de l'installation (pas de sudo ni de systemctl)."""
         if IS_WINDOWS:
+            from . import packaging
+            if packaging.is_store():                     # version Microsoft Store : comme la tâche de démarrage
+                from .store_boot import zip_installed
+                if zip_installed():
+                    self.say(self.t("store.zip_installed"))
+                    return 1
+                return self.runner.run(packaging.app_launch_command("Supervisor"))
             return self.runner.run(["schtasks", "/Run", "/TN", WINDOWS_TASK])
         return self.runner.run(["systemctl", verb, TARGET], admin=True)
 
@@ -559,7 +570,9 @@ class Console:
     def _windows_updates(self) -> bool:
         """Windows : pas de mise à jour par la console (on lance installer.cmd du nouveau zip). Vrai si dit."""
         if IS_WINDOWS:
-            self.say(self.t("updates.windows"))
+            from . import packaging
+            link = packaging.store_page_link() if packaging.is_store() else None
+            self.say(self.t("updates.store", installed=self.installed, link=link) if link else self.t("updates.windows"))
         return IS_WINDOWS
 
     def stop_for_exclusive_use(self, why: str) -> bool:
@@ -3534,6 +3547,11 @@ def main(argv: list[str] | None = None) -> int:
         from .report import make_report
         print(f"Rapport créé : {make_report(config_path=args.config)}")
         return 0
+    if IS_WINDOWS:
+        from . import packaging
+        if packaging.is_store():                         # pas d'installateur : dossier des données créé ici
+            from .store_boot import prepare_data_dir
+            prepare_data_dir()
     try:
         console = Console(args.config)
         if not args.texte and sys.stdin.isatty() and sys.stdout.isatty():

@@ -239,6 +239,12 @@ if (-not [Environment]::Is64BitOperatingSystem) { Fail "Windows 64 bits requis."
 $os = [Environment]::OSVersion.Version
 if ($os.Major -lt 10) { Fail "Windows 10 ou 11 requis." }
 Ok "Windows $($os.Major).$($os.Minor) build $($os.Build), 64 bits"
+# Version Microsoft Store déjà installée (même superviseur, même rigctld, même port) : deux stations se disputeraient
+# le poste (cahier du Store § 5). Identité : windows/msix/identity.toml.
+$StorePackage = Get-AppxPackage -Name "RF-DIY.COM.openRemoteTRX" -ErrorAction SilentlyContinue
+if ($StorePackage) {
+    Fail "openRemoteTRX du Microsoft Store est déjà installé sur ce PC (version $($StorePackage.Version)) : le zip ne s'installe pas à côté. Gardez la version du Store, ou désinstallez-la d'abord par Paramètres > Applications (la configuration de $DataDir est gardée)."
+}
 
 $Python = Find-Python
 if (-not $Python) {

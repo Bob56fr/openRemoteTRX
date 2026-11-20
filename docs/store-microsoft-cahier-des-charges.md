@@ -218,9 +218,11 @@ Store, qui signe lui-même). Fichier produit dans `dist/`.
   neuf ou machine virtuelle).
 - **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), GARDE DE FIN (§ 4.1) et ses tests de panne,
   messages Hamlib (§ 3.1), tests.
-- **S2** : `scripts/build_msix.py`, test de fabrication.
+- **S2** : `scripts/build_msix.py`, test de fabrication. FAIT (étape 335, avec la fin de S1a).
 - **S3 (utilisateur)** : compte Partner Center particulier, réservation du nom, identité du paquet reportée dans la
-  fabrication.
+  fabrication. FAIT le 2026-11-20 : `windows/msix/identity.toml` (Name RF-DIY.COM.openRemoteTRX, Publisher
+  CN=4DBA8C0D-D395-454A-A7A5-5CB99996408C, PublisherDisplayName RF-DIY.COM ; famille
+  RF-DIY.COM.openRemoteTRX_5fxpmskyjpc1g), groupe de testeurs créé.
 - **S4** : fiche, captures, notes de certification ; première soumission en visibilité privée.
 - **S5** : essais réels (installation depuis le Store sur un PC propre, IC-7300MK2 sur charge fictive, mise à jour
   du Store) puis publication publique ; guide de l'opérateur (partie installation Windows).

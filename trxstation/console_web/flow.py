@@ -13,7 +13,6 @@ import json
 import os
 import signal
 import subprocess
-import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -23,8 +22,10 @@ MAX_LINE = 1 << 20                # une ligne du worker (sortie d'une commande d
 
 class Flow:
     def __init__(self, key: str, label: str, config: Path, on_event: Callable[[dict], None],
-                 python: str = sys.executable, network: bool = False) -> None:
-        self.key, self.label, self.config, self.on_event, self.python = key, label, config, on_event, python
+                 python: str | None = None, network: bool = False) -> None:
+        self.key, self.label, self.config, self.on_event = key, label, config, on_event
+        from ..packaging import python_executable
+        self.python = python or python_executable(windowed=False)     # paquet du Store : jamais un alias
         self.network = network                      # console sur le réseau (service relancé après une installation)
         self.events: list[dict] = []
         self.proc: asyncio.subprocess.Process | None = None

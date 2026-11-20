@@ -24,6 +24,7 @@ from pathlib import Path
 
 from .. import __version__
 from .. import config as cfgmod
+from ..packaging import python_executable
 from ..paths import default_config_path
 from .status import WINDOWS_HINTS, summarize
 
@@ -124,7 +125,7 @@ class Tray:
         webbrowser.open(f"https://localhost:{self.cfg.network.gateway_port}")
 
     def open_dashboard(self, *_):
-        python = Path(sys.executable).with_name("python.exe")          # pythonw n'a pas de console
+        python = Path(python_executable(windowed=False)).with_name("python.exe")   # pythonw n'a pas de console
         subprocess.Popen([str(python), "-m", "trxstation.monitor.main", "--config", str(self.config_path)],
                          creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
 

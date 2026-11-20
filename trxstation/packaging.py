@@ -43,6 +43,46 @@ def is_store() -> bool:
     return package_full_name() is not None
 
 
+# Nom de famille d'un paquet = « <Name>_<identifiant de l'éditeur> » ; l'identifiant est calculé par Windows à partir
+# du champ Publisher : SHA-256 de son texte en UTF-16 LE, 8 premiers octets, 13 caractères de 5 bits (65 bits).
+_PUBLISHER_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz"
+
+
+def publisher_id(publisher: str) -> str:
+    """Identifiant d'éditeur de 13 caractères (ex. « 8wekyb3d8bbwe » pour Microsoft)."""
+    import hashlib
+    value = int.from_bytes(hashlib.sha256(publisher.encode("utf-16-le")).digest()[:8], "big") << 1
+    return "".join(_PUBLISHER_ALPHABET[(value >> (60 - 5 * i)) & 0x1F] for i in range(13))
+
+
+def family_name(name: str, publisher: str) -> str:
+    return f"{name}_{publisher_id(publisher)}"
+
+
+def package_family_name() -> str | None:
+    """Nom de famille du paquet courant (« RF-DIY.COM.openRemoteTRX_… »), None hors paquet."""
+    full = package_full_name()
+    if not full:
+        return None
+    parts = full.split("_")                       # Name_Version_Arch_ResourceId_PublisherId
+    return f"{parts[0]}_{parts[-1]}" if len(parts) >= 5 else None
+
+
+def store_page_link(family: str | None = None) -> str | None:
+    """Lien qui ouvre la fiche du paquet dans l'application Microsoft Store (mises à jour)."""
+    family = family or package_family_name()
+    return f"ms-windows-store://pdp/?PFN={family}" if family else None
+
+
+def app_launch_command(app_id: str, family: str | None = None) -> list[str] | None:
+    """Lance une application du paquet comme le fait Windows (tâche de démarrage, menu Démarrer) : seul moyen sûr de
+    démarrer la station HORS de la fenêtre de TRX Console (essai S0)."""
+    family = family or package_family_name()
+    if not family:
+        return None
+    return ["explorer.exe", f"shell:AppsFolder\\{family}!{app_id}"]
+
+
 def _is_alias(path: Path) -> bool:
     """Alias d'exécution d'une application empaquetée : fichier de `%LOCALAPPDATA%\\Microsoft\\WindowsApps`."""
     local = os.environ.get("LOCALAPPDATA")

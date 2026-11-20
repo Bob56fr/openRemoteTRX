@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Callable
 
 from .. import __version__
+from ..packaging import python_executable
 from ..answers import yes_no
 from .bus import CHOICE, DONE, YES_NO, Bus, KeyboardClient, QuestionStopped, ask_typed, ask_word, bus_of
 from .texts import _t
@@ -759,7 +760,7 @@ def spectrum_check(cfg, folder: Path, *, run=None) -> dict:
     port = cfg.spectrum.port or cfg.rig.port
     which = "second port" if cfg.spectrum.port else "port CAT"
     out = folder / "spectre"
-    cmd = [sys.executable, "-m", "trxstation.devtools.civ_scope", "--port", port, "--duree", "8", "--sortie", str(out)]
+    cmd = [python_executable(windowed=False), "-m", "trxstation.devtools.civ_scope", "--port", port, "--duree", "8", "--sortie", str(out)]
     if cfg.spectrum.civ_address:
         cmd += ["--adresse", cfg.spectrum.civ_address]
     run = run or (lambda c: subprocess.run(c, capture_output=True, text=True, timeout=60))
@@ -894,7 +895,7 @@ def station_control(config_path: Path | None, start: bool) -> int:
         # 2026-11-18 : tâche absente ; Debian : limite levée le 2026-11-19). Superviseur lancé directement, en
         # « mode géré » (il lance lui-même rigctld et la passerelle) ; arrêt par `--stop --config`.
         folder = config_path.resolve().parent
-        base = [sys.executable, "-m", "trxstation.supervisor.main", "--config", str(config_path.resolve())]
+        base = [python_executable(), "-m", "trxstation.supervisor.main", "--config", str(config_path.resolve())]
         if not start:
             try:
                 return subprocess.run(base + ["--stop"], check=False).returncode
@@ -919,7 +920,7 @@ def station_control(config_path: Path | None, start: bool) -> int:
         if start:
             cmd = ["schtasks", "/Run", "/TN", WINDOWS_TASK]
         else:
-            cmd = [sys.executable, "-m", "trxstation.supervisor.main", "--stop"]
+            cmd = [python_executable(), "-m", "trxstation.supervisor.main", "--stop"]
             if config_path is not None:
                 cmd[3:3] = ["--config", str(config_path)]
     else:

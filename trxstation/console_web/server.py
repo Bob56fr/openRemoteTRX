@@ -33,6 +33,7 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 from .. import __version__
+from ..packaging import python_executable
 from ..console import MENU_THEMES, Console, load_help, menu_level, menu_number
 from ..i18n import LANGS, LEVELS, NAMES, load_lang, load_level, prefs_path, save_lang, save_level
 from ..errors import codes
@@ -528,7 +529,7 @@ class WebConsole:
         if self.terminal is not None and self.terminal.alive:
             return
         env = dict(os.environ, TRX_CONSOLE_WEB="1", TERM="xterm-256color", COLORTERM="truecolor")
-        cmd = [sys.executable, "-m", "trxstation.console", "--texte", "--config", str(self.config)]
+        cmd = [python_executable(windowed=False), "-m", "trxstation.console", "--texte", "--config", str(self.config)]
         self.idle = False
         self.terminal = self.terminal_factory(cmd, env, self.on_output, self.on_exit)
         self.terminal.start(asyncio.get_running_loop())

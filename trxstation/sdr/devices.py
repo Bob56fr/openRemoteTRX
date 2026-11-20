@@ -42,7 +42,8 @@ def core_path(configured: str = "") -> str | None:
     if configured:
         return configured if (os.path.sep in configured or "/" in configured) else shutil.which(configured)
     name = "sdr-core.exe" if os.name == "nt" else "sdr-core"
-    local = Path(sys.executable).with_name(name)
+    from ..packaging import python_executable
+    local = Path(python_executable()).with_name(name)
     if local.is_file():
         return str(local)
     return shutil.which(name)

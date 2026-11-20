@@ -24,6 +24,7 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Static, Tree
 
 from .console import MENU_THEMES, Console, menu_level
+from .packaging import python_executable
 
 
 class MenuTree(Tree):
@@ -228,7 +229,7 @@ class ConsoleApp(App):
         if os.environ.get("SSH_CONNECTION"):               # pas de navigateur de ce côté : la commande à taper
             self.notify(self.con.t("tui.web_ssh"), timeout=12)
             return
-        cmd = [sys.executable, "-m", "trxstation.console", "--web", "--config", str(self.con.config)]
+        cmd = [python_executable(windowed=False), "-m", "trxstation.console", "--web", "--config", str(self.con.config)]
         started = self.con.runner.spawn(cmd)
         self.notify(self.con.t("tui.web_started") if started else self.con.t("tui.web_failed"), timeout=8)
 

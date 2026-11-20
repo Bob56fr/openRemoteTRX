@@ -15193,6 +15193,45 @@ ORT-8028:
     - Equipo que ya no responde a la orden «T 0»
     preconisation: Corta la emisión EN EL EQUIPO (o su alimentación) enseguida y luego vuelve a arrancar la estación.
 
+ORT-8029:
+  gravite: erreur
+  titre: Version zip déjà installée, station du Microsoft Store non démarrée
+  message: 'La version zip de la station est installée sur ce PC (tâche planifiée « TRX distant ») : la station du
+    Microsoft Store ne démarre pas, deux stations se disputeraient le poste.'
+  causes:
+  - Station installée d'abord par le zip Windows, puis depuis le Microsoft Store
+  preconisation: Désinstaller la version zip par Paramètres > Applications > TRX distant (la configuration de
+    C:\ProgramData\trx-remote est gardée et reprise telle quelle), puis rouvrir openRemoteTRX.
+  action_auto: refus
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8029/
+  depuis_version: 0.253.0
+  en:
+    titre: Zip version already installed, Microsoft Store station not started
+    message: 'The zip version of the station is installed on this PC (scheduled task "TRX distant"): the Microsoft
+      Store station does not start, two stations would fight over the radio.'
+    causes:
+    - Station first installed from the Windows zip, then from the Microsoft Store
+    preconisation: Uninstall the zip version from Settings > Apps > TRX distant (the configuration in
+      C:\ProgramData\trx-remote is kept and reused as is), then open openRemoteTRX again.
+  de:
+    titre: Zip-Version bereits installiert, Station aus dem Microsoft Store nicht gestartet
+    message: 'Die Zip-Version der Station ist auf diesem PC installiert (geplante Aufgabe „TRX distant“): Die Station
+      aus dem Microsoft Store startet nicht, zwei Stationen würden um das Funkgerät streiten.'
+    causes:
+    - Station zuerst mit dem Windows-Zip installiert, dann aus dem Microsoft Store
+    preconisation: Deinstallieren Sie die Zip-Version über Einstellungen > Apps > TRX distant (die Konfiguration in
+      C:\ProgramData\trx-remote bleibt erhalten und wird übernommen), und öffnen Sie dann openRemoteTRX erneut.
+  es:
+    titre: Versión zip ya instalada, estación de la Microsoft Store no arrancada
+    message: 'La versión zip de la estación está instalada en este PC (tarea programada «TRX distant»): la estación de
+      la Microsoft Store no arranca, dos estaciones se disputarían el equipo.'
+    causes:
+    - Estación instalada primero con el zip de Windows y luego desde la Microsoft Store
+    preconisation: Desinstala la versión zip en Configuración > Aplicaciones > TRX distant (la configuración de
+      C:\ProgramData\trx-remote se conserva y se reutiliza tal cual) y vuelve a abrir openRemoteTRX.
+
 
 # ====================================================================================================
 # 9000–9999 : Configuration et installation

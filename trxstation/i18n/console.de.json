@@ -663,6 +663,8 @@
   "indicator.win.on": "Die Anzeige startet bei jeder Anmeldung.",
   "indicator.win.off": "Die Anzeige startet nicht mehr bei der Anmeldung.",
   "indicator.win.failed_link": "Autostart-Verknüpfung kann nicht geändert werden ({exc}).",
+  "updates.store": "Microsoft-Store-Version {installed}: Updates kommen über den Microsoft Store (Seite von openRemoteTRX: {link}). Halten Sie die Station an (Menü 1.2), bevor Sie das Update starten, Funkgerät auf Empfang: Die Konfiguration bleibt erhalten. Keine Rückkehr zu einer früheren Version.",
+  "store.zip_installed": "Die Zip-Version der Station ist auf diesem PC installiert (geplante Aufgabe „TRX distant“): Die Station aus dem Microsoft Store startet nicht (ORT-8029). Deinstallieren Sie die Zip-Version über Einstellungen > Apps > TRX distant; Ihre Konfiguration bleibt erhalten.",
   "updates.windows": "Unter Windows wird eine neue Version installiert, indem man installer.cmd aus dem neuen Zip startet (Versionsseite des Projekts): die Konfiguration bleibt erhalten. Zurück: installer.cmd der älteren Version erneut starten.",
   "tui.quit": "Beenden",
   "tui.refresh": "Aktualisieren",

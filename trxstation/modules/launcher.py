@@ -23,7 +23,6 @@ import asyncio
 import logging
 import os
 import subprocess
-import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path, PurePath
@@ -89,7 +88,7 @@ class ModuleLauncher:
     def __init__(self, manifests: list[Manifest],
                  secrets: dict[str, str] | SecretsSource, *,
                  bus_port: int, bus_host: str = DEFAULT_BUS_HOST,
-                 python: str = sys.executable, cwd: Path | None = None,
+                 python: str | None = None, cwd: Path | None = None,
                  policy: RestartPolicy | None = None,
                  notify: Notify | None = None, poll_s: float = 0.5,
                  run_as: str = "", is_root: Callable[[], bool] = _is_root,
@@ -105,7 +104,8 @@ class ModuleLauncher:
         self._user_exists = user_exists
         self._pending: set[str] = set()
         self.bus_host, self.bus_port = bus_host, bus_port
-        self.python = python
+        from ..packaging import python_executable
+        self.python = python or python_executable()     # paquet du Store : jamais un alias
         self.cwd = Path(cwd) if cwd else Path.cwd()
         self.policy = policy or RestartPolicy()
         self.notify = notify
