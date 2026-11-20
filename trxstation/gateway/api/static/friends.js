@@ -157,6 +157,20 @@
   }
 
   /* Invitation collée : on garde l'URL entière (ou le seul code après #), sans espaces. */
+  /* Mon statut, tel que mes amis le voient (champ `me` de la vue, station 0.228.0+ ; null avant). Priorités de la
+     station : En QSO > En RX > Au shack > Absent : un « Au shack » déclaré reste caché tant que la station est active. */
+  function myStatus(me, nowS) {
+    if (!me || typeof me !== "object" || !CODES[me.code] || me.code === "O") return null;
+    const label = CODES[me.code].label;
+    const once = Number.isFinite(me.once) && me.once > nowS ? me.once : null;
+    const main = "Vos amis vous voient : " + label
+      + (me.code === "S" && Number.isFinite(me.su) ? " jusqu'à " + clock(me.su) : "");
+    const note = once !== null && me.code !== "S"
+      ? "« Au shack » déclaré jusqu'à " + clock(once) + " : il s'affichera quand la station sera inactive (« " + label + " » passe devant)."
+      : null;
+    return { code: me.code, cls: CODES[me.code].cls, label: label, text: main, note: note, shack: once !== null };
+  }
+
   function cleanInvitation(text) {
     if (typeof text !== "string") return null;
     const t = text.trim().replace(/\s+/g, "");
@@ -165,7 +179,7 @@
 
   const api = { OFFLINE_AFTER_S, ORDER, CODES, ROLES, STATUS, LEVELS, DISPLAY_MODES, CONSENT, cleanPseudo, cleanText,
                 formatAge, freshness, frequencyText, memberView, sortMembers, buildView, badges, bandOf, qsyPlan, statsRows,
-                pipSupported, displayMode, cleanInvitation };
+                pipSupported, displayMode, cleanInvitation, myStatus };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TrxFriends = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -23,7 +23,15 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.VisualTransformation
+import com.rfdiy.openremotetrx.logic.LogLevel
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,6 +89,7 @@ fun StationScreen(
     var fingerprint by remember { mutableStateOf(initial?.fingerprint ?: "") }
     var window by remember { mutableStateOf(initial?.reconnectWindowS ?: 60) }
     var error by remember { mutableStateOf("") }
+    var detailsOpen by remember { mutableStateOf(false) }
 
     fun select(a: StationAccount?) {
         editing = a
@@ -131,8 +140,8 @@ fun StationScreen(
     }
 
     Column(
-        modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
@@ -140,8 +149,8 @@ fun StationScreen(
         }
         // Tablette ou grande fenêtre (≥ 840 dp) : boutons QR côte à côte, champs sur deux colonnes, sans défilement
         val wide = LocalConfiguration.current.screenWidthDp >= com.rfdiy.openremotetrx.logic.ScreenLayouts.WIDE_MIN_DP
-        val qrButtons: @Composable () -> Unit = {
-            OutlinedButton(onClick = {
+        val qrButtons: @Composable (Modifier) -> Unit = { m ->
+            OutlinedButton(modifier = m, contentPadding = PaddingValues(horizontal = 8.dp), onClick = {
                 scan.launch(
                     ScanOptions()
                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
@@ -150,48 +159,54 @@ fun StationScreen(
                         .setOrientationLocked(false)
                         .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
                 )
-            }) { Text("Scanner le QR code de la station") }
-            OutlinedButton(onClick = {
+            }) { Text(if (wide) "Scanner le QR code de la station" else "Scanner le QR code") }
+            OutlinedButton(modifier = m, contentPadding = PaddingValues(horizontal = 8.dp), onClick = {
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }) { Text("Lire le QR code depuis une image") }
+            }) { Text(if (wide) "Lire le QR code depuis une image" else "QR code d'une image") }
         }
-        if (wide) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { qrButtons() } else qrButtons()
-        if (notice.isNotEmpty()) Text(notice, color = MaterialTheme.colorScheme.primary)
+        Row(horizontalArrangement = Arrangement.spacedBy(if (wide) 12.dp else 8.dp)) {
+            qrButtons(if (wide) Modifier else Modifier.weight(1f))
+        }
+        if (notice.isNotEmpty()) Text(notice, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
         if (accounts.isNotEmpty()) {
-            Text("Stations", style = MaterialTheme.typography.titleMedium)
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("Stations", style = MaterialTheme.typography.titleSmall)
                 for (a in accounts) FilterChip(selected = editing?.id == a.id, onClick = { select(a) }, label = { Text(a.name) })
                 FilterChip(selected = editing == null, onClick = { select(null) }, label = { Text("+ Nouvelle") })
             }
         }
+        // Champs compacts (demande de l'utilisateur, étape 297) : « Connecter » et le message d'erreur restent visibles
+        // sans défilement sur un téléphone ; l'empreinte et la reconnexion, rarement changées, sont repliées.
         val identity: @Composable () -> Unit = {
-            OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(
-                address, { address = it }, label = { Text("Adresse (ex. 192.168.1.10:8443)") }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(user, { user = it }, label = { Text("Identifiant") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(
-                password, { password = it; onTyped(it) }, label = { Text("Mot de passe") }, singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth(),
-            )
+            CompactField(name, { name = it }, "Nom")
+            CompactField(address, { address = it }, "Adresse (ex. 192.168.1.10:8443)",
+                         keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri))
+            CompactField(user, { user = it }, "Identifiant")
+            CompactField(password, { password = it; onTyped(it) }, "Mot de passe", password = true,
+                         keyboard = KeyboardOptions(keyboardType = KeyboardType.Password))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(keepPassword, { keepPassword = it })
-                Text("Mémoriser le mot de passe (chiffré sur cet appareil)")
+                Checkbox(keepPassword, { keepPassword = it }, modifier = Modifier.size(32.dp))
+                Text("Mémoriser le mot de passe (chiffré sur cet appareil)", style = MaterialTheme.typography.bodySmall)
             }
         }
-        val security: @Composable () -> Unit = {
-            OutlinedTextField(
-                fingerprint, { fingerprint = it }, label = { Text("Empreinte du certificat (TRX Console, menu 4.1)") },
-                supportingText = { Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.") },
-                minLines = 2, modifier = Modifier.fillMaxWidth(),
-            )
+        val details: @Composable () -> Unit = {
+            CompactField(fingerprint, { fingerprint = it }, "Empreinte du certificat (TRX Console, menu 4.1)", singleLine = false)
+            Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.", style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Reconnexion automatique après une coupure", style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (w in WINDOWS) FilterChip(selected = window == w, onClick = { window = w }, label = { Text(if (w == 0) "non" else "$w s") })
             }
+        }
+        val connect: @Composable () -> Unit = {
+            // Erreur de saisie et dernier message de la connexion AU-DESSUS du bouton : toujours vus après un échec
             if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
+            val last = ui.rig.log.lastOrNull()
+            if (last != null && error.isEmpty()) {
+                Text("Dernier message : " + last.text, style = MaterialTheme.typography.bodyMedium,
+                     color = if (last.level == LogLevel.BAD) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
                     val url = StationAddress.normalize(address)
@@ -223,21 +238,51 @@ fun StationScreen(
                     select(accounts.firstOrNull())
                 }) { Text("Supprimer") }
             }
-            val last = ui.rig.log.lastOrNull()
-            if (last != null) {
-                Text("Dernier message", style = MaterialTheme.typography.titleSmall)
-                Text(last.text, style = MaterialTheme.typography.bodyMedium)
-            }
         }
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) { identity() }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) { security() }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { identity(); connect() }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { details() }
             }
         } else {
             identity()
-            security()
+            connect()
+            // Détails ouverts d'office quand il faut les remplir : nouvelle station sans QR code, empreinte refusée
+            val needed = (editing == null && fingerprint.isBlank()) || error.startsWith("Empreinte")
+            TextButton(onClick = { detailsOpen = !detailsOpen }, enabled = !needed,
+                       contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
+                Text((if (detailsOpen || needed) "▾ " else "▸ ") + "Empreinte du certificat et reconnexion")
+            }
+            if (detailsOpen || needed) details()
         }
+    }
+}
+
+/**
+ * Champ de saisie compact (environ 40 dp au lieu des 56 dp d'un OutlinedTextField) : même apparence Material,
+ * étiquette flottante sur le cadre, marges intérieures réduites.
+ */
+@Composable
+private fun CompactField(
+    value: String, onChange: (String) -> Unit, label: String,
+    password: Boolean = false, singleLine: Boolean = true, keyboard: KeyboardOptions = KeyboardOptions.Default,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val visual = if (password) PasswordVisualTransformation() else VisualTransformation.None
+    val colors = MaterialTheme.colorScheme
+    BasicTextField(
+        value, onChange, singleLine = singleLine, maxLines = if (singleLine) 1 else 3,
+        visualTransformation = visual, keyboardOptions = keyboard, interactionSource = interaction,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
+        cursorBrush = SolidColor(colors.primary),
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    ) { inner ->
+        OutlinedTextFieldDefaults.DecorationBox(
+            value = value, innerTextField = inner, enabled = true, singleLine = singleLine,
+            visualTransformation = visual, interactionSource = interaction,
+            label = { Text(label) },
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+        )
     }
 }
 

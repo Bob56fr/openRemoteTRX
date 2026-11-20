@@ -173,10 +173,16 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
         if (!compact) {
             HorizontalDivider(color = Page.LIGNE)
             Text("Mon statut", style = MaterialTheme.typography.labelLarge)
+            // Statut publié (étape 297) : sans lui, « Au shack 1 h » ne montrait rien ; absent d'une station ancienne
+            view?.me?.let { me ->
+                Text(me.text, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                me.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2) }
+            }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 CompactChip("Au shack 1 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 60)) })
                 CompactChip("Au shack 2 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 120)) })
-                CompactChip("Fin du « shack »", onClick = { RigHub.friendsAction("shack_cancel") })
+                CompactChip("Fin du « shack »", onClick = { RigHub.friendsAction("shack_cancel") },
+                            enabled = view?.me?.shack != false, selected = view?.me?.shack == true)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(pseudo, { pseudo = it.take(16) }, label = { Text("Pseudo") }, singleLine = true, modifier = Modifier.weight(1f))

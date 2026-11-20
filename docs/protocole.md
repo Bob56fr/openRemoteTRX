@@ -249,7 +249,9 @@ ni la commande ni les avis.
   `exclude` (`g`, `member`) ; `role` (`g`, `member`, `role` a / c / m) ; `share` (`g`, `level` f / o / x, `text`
   si x, `invisible`, `hide_absence`) ; `rename` (`g`, `name`) ; `qsy_mark` -> `back` (fréquence et mode ACTUELS,
   retenus avant un QSY vers un ami) ; `qsy_back` -> `back` (rendu une fois, puis oublié).
-- **Vue** (`view`) : `station`, `pseudo`, `registered`, `problem`, `last_sync`, `texts`, `groups` : `g`, `name`,
+- **Vue** (`view`) : `station`, `pseudo`, `registered`, `problem`, `last_sync`, `texts`, `me` (station 0.228.0+ :
+  statut que CETTE station publie : `code` Q / R / S / A, `since`, `su` fin de la plage « Au shack » en cours, `once`
+  fin du « Au shack » déclaré à la main s'il est à venir, même quand En QSO / En RX passe devant), `groups` : `g`, `name`,
   `role` (a / c / m), `status` (`member`, `pending`, `removed`), `share`, `members` triés (actifs d'abord) : `id`,
   `pseudo`, `code` (Q En QSO, R En RX, S Au shack, A Absent, O Hors ligne), `age` (s depuis la dernière requête du
   membre), `role` (a / c / m, d'après la liste signée ; station 0.119.0+), `tx_ok` (ajouté par la PASSERELLE quand

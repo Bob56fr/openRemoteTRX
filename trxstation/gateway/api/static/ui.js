@@ -3320,6 +3320,10 @@
                          view.registered ? "station enregistrée auprès du relais" : "pas encore enregistrée auprès du relais",
                          view.problem ? "problème : " + view.problem : ""].filter(Boolean).join(" · ") : "Lecture…";
       $("fr-status").textContent = st;
+      // Mon statut (étape 297) : sans lui, « Au shack 1 h » ne montrait rien ; null sur une station sans le champ `me`
+      const me = view ? fx.myStatus(view.me, frNowS()) : null;
+      $("fr-me").textContent = me ? me.text + (me.note ? " — " + me.note : "") : "";
+      $("fr-shack-cancel").disabled = !!me && !me.shack;
       if (view && document.activeElement !== $("fr-pseudo")) $("fr-pseudo").value = view.pseudo || "";
       $("fr-back").hidden = !client.friendsBackPoint;
       frBadges(view);

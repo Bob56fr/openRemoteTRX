@@ -350,6 +350,26 @@ def test_profile_texts_shack_and_names(world):
         run(a.create_group("<script>"))
 
 
+def test_the_view_gives_my_own_published_status_and_the_declared_shack(world):
+    """Étape 297 : « Au shack 1 h » depuis l'application ne montrait rien ; la vue dit ce que la station publie, et
+    le « Au shack » déclaré même quand « En RX » passe devant (opérateur connecté)."""
+    clock, relay, make = world
+    a = make("a")
+    me = a.view()["me"]
+    assert me["code"] == "A" and me["su"] is None and me["once"] is None
+    a.shack_for(3600)
+    me = a.view()["me"]
+    assert me["code"] == "S" and me["su"] == int(clock.t + 3600) and me["once"] == int(clock.t + 3600)
+    a.on_activity()                                   # client opérateur actif : En RX passe devant
+    me = a.view()["me"]
+    assert me["code"] == "R" and me["su"] is None and me["once"] == int(clock.t + 3600)
+    a.shack_cancel()
+    assert a.view()["me"]["once"] is None
+    a.shack_for(60)
+    clock.t += 120                                    # déclaration passée : plus rien à annuler
+    assert a.view()["me"]["once"] is None
+
+
 # ------------------------------------------------------------------ service et configuration
 def test_service_creates_its_keys_writes_a_status_and_reads_the_bus(tmp_path):
     clock = Clock()

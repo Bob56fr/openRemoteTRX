@@ -72,6 +72,8 @@ object Friends {
         val pseudo: String, val registered: Boolean, val problem: String?, val texts: List<String>, val groups: List<Group>,
         /** Vue par membre : un membre de plusieurs groupes une seule fois (avec ses groupes). */
         val members: List<Member>,
+        /** Mon statut (champ `me`, station 0.228.0+), null sur une station plus ancienne. */
+        val me: Me? = null,
     )
 
     private fun JsonObject.str(k: String) = (this[k] as? JsonPrimitive)?.contentOrNull
@@ -114,6 +116,26 @@ object Friends {
         )
     }
 
+    data class Me(val code: String, val label: String, val text: String, val note: String?, val shack: Boolean)
+
+    /**
+     * Mon statut, tel que mes amis le voient (champ `me` de la vue, station 0.228.0+ ; null avant). Mêmes textes que
+     * friends.js. Priorités de la station : En QSO > En RX > Au shack > Absent : un « Au shack » déclaré reste caché
+     * tant que la station est active.
+     */
+    fun myStatus(me: JsonObject?, nowS: Long, zone: ZoneId = ZoneId.systemDefault()): Me? {
+        me ?: return null
+        val code = me.str("code")?.takeIf { it in ORDER && it != "O" } ?: return null
+        val label = LABELS.getValue(code)
+        val once = me.long("once")?.takeIf { it > nowS }
+        val su = me.long("su")
+        val main = "Vos amis vous voient : " + label + (if (code == "S" && su != null) " jusqu'à " + clock(su, zone) else "")
+        val note = if (once != null && code != "S")
+            "« Au shack » déclaré jusqu'à " + clock(once, zone) + " : il s'affichera quand la station sera inactive (« $label » passe devant)."
+        else null
+        return Me(code, label, main, note, once != null)
+    }
+
     private fun sorted(list: List<Member>) =
         list.sortedWith(compareBy<Member>({ ORDER.getValue(it.code) }, { it.pseudo.lowercase(Locale.FRENCH) }))
 
@@ -139,7 +161,7 @@ object Friends {
         }
         return View(data.str("pseudo").orEmpty(), data.bool("registered") == true, data.str("problem"),
                     (data["texts"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.contentOrNull }, groups,
-                    sorted(byId.values.toList()))
+                    sorted(byId.values.toList()), myStatus(data["me"] as? JsonObject, nowS, zone))
     }
 
     data class Badges(val list: List<Member>, val active: Int, val total: Int)

@@ -601,7 +601,17 @@ class Engine:
                            "share": dict(rec["share"]), "members": members})
         return {"station": self.me, "pseudo": self.pseudo, "registered": bool(self.store.data.get("registered")),
                 "problem": self.problem, "last_sync": int(self.last_sync) if self.last_sync else None,
-                "texts": list(self.store.data.get("texts") or []), "groups": groups}
+                "texts": list(self.store.data.get("texts") or []), "me": self.my_status(now), "groups": groups}
+
+    def my_status(self, now: float) -> dict:
+        """Statut que CETTE station publie (étape 297) : sans lui, « Au shack 1 h » ne se voyait nulle part chez
+        l'opérateur, et la priorité En QSO / En RX le masque aussi chez les amis tant que l'opérateur est actif.
+        `once` = fin du « Au shack » déclaré à la main (encore à venir), même si un autre statut passe devant."""
+        status = self.tracker.status(now)
+        once = self.tracker.once
+        return {"code": status.code, "since": int(status.since),
+                "su": int(status.shack_until) if status.shack_until else None,
+                "once": int(once[1]) if once and once[1] > now else None}
 
     def admin_stats(self, g: str) -> dict:
         rec = self._group(g)

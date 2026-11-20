@@ -179,4 +179,22 @@ class FriendsTest {
         s.friendsDismiss(32072); assertNull(s.snapshot.friends!!.invite)
         assertTrue(link.sent.none { (Json.parseToJsonElement(it).jsonObject["cmd"] as JsonPrimitive).content == "toggle" })   // jamais d'émission
     }
+
+    @Test
+    fun `mon statut comme la page, Au shack declare cache par En RX, rien sur une station ancienne`() {
+        val now = 1794000000L
+        fun me(vararg kv: Pair<String, Any?>) = JsonObject(kv.associate { (k, v) ->
+            k to when (v) { null -> JsonNull; is Number -> JsonPrimitive(v); else -> JsonPrimitive(v.toString()) } })
+        assertNull(Friends.myStatus(null, now))
+        assertNull(Friends.myStatus(me("code" to "O"), now))
+        val a = Friends.myStatus(me("code" to "A", "su" to null, "once" to null), now, ZoneOffset.UTC)!!
+        assertEquals("Vos amis vous voient : Absent", a.text); assertNull(a.note); assertFalse(a.shack)
+        val s = Friends.myStatus(me("code" to "S", "su" to now + 3600, "once" to now + 3600), now, ZoneOffset.UTC)!!
+        assertEquals("Vos amis vous voient : Au shack jusqu'à 22:20", s.text); assertNull(s.note); assertTrue(s.shack)
+        val r = Friends.myStatus(me("code" to "R", "once" to now + 3600), now, ZoneOffset.UTC)!!
+        assertEquals("Vos amis vous voient : En RX", r.text)
+        assertEquals("« Au shack » déclaré jusqu'à 22:20 : il s'affichera quand la station sera inactive (« En RX » passe devant).", r.note)
+        assertFalse(Friends.myStatus(me("code" to "R", "once" to now - 1), now)!!.shack)
+        assertTrue(page.contains("function myStatus(me, nowS)"))              // même calcul dans la page
+    }
 }
