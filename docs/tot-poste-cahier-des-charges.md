@@ -1,6 +1,6 @@
 # TOT du poste : rappel à la connexion et essai de qualification
 
-Cahier des charges v1 (étape 322, 2026-11-20). Aucun code.
+Cahier des charges v2 (étape 322, 2026-11-20 ; relevés du lot TP0 au § 11, étape 324). Aucun code.
 
 ## 1. Objet
 
@@ -154,3 +154,35 @@ conflit avec `local_tx_max_s` (300 s) à expliquer dans la console.
 | TP4 | Valise : essai « TOT du poste » (§ 7), rapport, fiches |
 
 Textes de sécurité en 4 langues : relus par l'utilisateur avant livraison.
+
+## 11. Lot TP0 : relevés (2026-11-20)
+
+### 11.1 Icom IC-7300MK2 (PC Windows, COM8, adresse CI-V B6h, Hamlib 4.7.2) : RÉUSSI
+
+- Commande (manuel CI-V, « SET > Function ») : `1A 05 00 32`, données 00 = OFF, 01 = 3 min, 02 = 5 min,
+  03 = 10 min, 04 = 20 min, 05 = 30 min. Le manuel précise : **valable seulement pour une émission lancée par
+  une commande CI-V ou la touche TRANSMIT** (donc pas pour le PTT du micro ni, à vérifier, pour un PTT par
+  les lignes RTS / DTR « USB SEND » : la station ne doit annoncer le TOT du poste comme une sécurité que si
+  sa méthode PTT est CAT).
+- Lecture directe (port série) : trame `FE FE B6 E0 1A 05 00 32 FD`, écho puis réponse
+  `FE FE E0 B6 1A 05 00 32 xx FD` en 50 à 65 ms.
+- Lecture par rigctld (chemin de la station) : `W  xFE xFE xB6 xE0 x1A x05 x00 x32 xFD 19`
+  (19 octets = écho de 9 + réponse de 10) ; rigctld rend les octets sous la forme ` xFE xFE…` ; avec
+  `0xFD` comme fin de réponse, rigctld s'arrête sur l'ÉCHO (réponse vide) : lire un nombre d'octets et
+  chercher la trame adressée au contrôleur (E0 <- B6), jamais prendre la première. `\send_raw` : RPRT -5.
+  Le nombre 19 suppose l'écho CI-V en marche (réglage du poste) : TP1 doit gérer l'écho absent (10 octets).
+- Partie A : OFF puis 3, 5, 10, 20, 30, 3 min choisis au menu par l'opérateur, chaque valeur lue juste en
+  moins de 6 s, aucun écart avec l'afficheur ; poste ÉTEINT : délai dépassé = « inconnu », jamais OFF ;
+  rallumé : 3 min relu.
+- Partie B (charge fictive, USB sans audio, puissance mesurée 0, émission par `T 1` de rigctld) : le poste
+  coupe SEUL à **180,0 s** (TOT 3 min), PTT lu par Hamlib (`t`) ET état TX CI-V (`1C 00`) retombés à 0 dans la
+  même seconde ; aucune reprise seule pendant 15 s ; une nouvelle prise `T 1` est acceptée normalement.
+  Conséquence pour la station : la coupure par le poste se VOIT par la lecture du PTT (pas de PTT figé à 1).
+- Le poste de l'utilisateur était sur OFF au départ ; laissé sur 3 min.
+
+### 11.2 Yaesu FTDX10 : À FAIRE (poste absent)
+
+- D'après le manuel CAT (2308-F, table 2) : menu 03 OPERATION SETTING / 01 GENERAL / 16 TX TIME OUT TIMER,
+  P4 = 00 (OFF) à 30 (min), 2 chiffres : lecture `EX030116;`, réponse attendue `EX030116xx;`.
+- À vérifier : réponse par la commande brute de rigctld (`w EX030116;`), poste muet (« ?; » ou rien), et
+  partie B avec la valeur 1 min.
