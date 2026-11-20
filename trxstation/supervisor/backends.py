@@ -30,9 +30,18 @@ from ..errors import codes
 from ..errors.emit import emit_event
 from ..hamlib import rigctld_command
 from ..logsetup import log_dir
+from ..packaging import python_executable
+from . import guard as guard_mod
 from .usb import reset_usb_sysfs
 
 log = logging.getLogger(__name__)
+
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+GUARD_READY_S = 0.5                      # la garde doit être encore en vie après ce délai
+
+
+class GuardUnavailable(RuntimeError):
+    """La garde de fin n'a pas pu être lancée : la station ne démarre pas (ORT-8026)."""
 
 
 class Backend(Protocol):
@@ -109,13 +118,18 @@ class ManagedBackend:
                  clock: Callable[[], float] = time.monotonic, restart_delay_s: float = 1.0,
                  rigctld_wait_s: float = 3.0, platform: str | None = None,
                  runner: Callable[..., object] = subprocess.run,
-                 port_open: Callable[[], bool] | None = None):
+                 port_open: Callable[[], bool] | None = None, guard: bool | None = None):
         self.cfg, self.config_path, self._safe_mode = cfg, config_path, safe_mode
         self._clock, self.restart_delay_s, self.rigctld_wait_s = clock, restart_delay_s, rigctld_wait_s
         self.platform, self._run = platform or sys.platform, runner
         self._commands = commands or {}
         self._port_open = port_open or self._rigctld_answers
         self.children = {"rigctld": _Child("rigctld"), "gateway": _Child("gateway")}
+        # Garde de fin (Windows, cahier du Microsoft Store § 4.1) : remet le poste en réception si le superviseur est
+        # tué (mise à jour forcée, désinstallation, Gestionnaire des tâches). Lancée la PREMIÈRE, arrêtée la dernière.
+        self.guard = (self.platform == "win32") if guard is None else guard
+        if self.guard:
+            self.children["guard"] = _Child("guard")
         # TRX Console sur le réseau (étape 233, menu 4.6) : sous Windows, c'est le superviseur qui la lance (Debian :
         # service systemd à part). Indépendante du mode sûr : c'est justement par elle qu'on dépanne.
         if getattr(getattr(cfg, "remote_console", None), "enabled", False) is True:
@@ -129,10 +143,17 @@ class ManagedBackend:
             return self._commands[name]
         if name == "rigctld":
             return rigctld_command(self.cfg)         # résolu à la demande : pas besoin de Hamlib si adopté
+        if name == "guard":
+            command = [python_executable(windowed=True), "-m", "trxstation.supervisor.guard", "--parent", str(os.getpid()),
+                       "--host", self.cfg.network.rigctld_host, "--port", str(self.cfg.network.rigctld_port),
+                       "--state-dir", str(self.cfg.supervisor.state_dir)]
+            if self.cfg.supervisor.notify_url:
+                command += ["--notify-lang", self.cfg.supervisor.notify_lang]
+            return command
         if name == "console_web":
-            command = [sys.executable, "-m", "trxstation.console", "--reseau"]
+            command = [python_executable(), "-m", "trxstation.console", "--reseau"]
             return command + (["--config", str(self.config_path)] if self.config_path is not None else [])
-        command = [sys.executable, "-m", "trxstation.gateway.main", "--parent-pid", str(os.getpid())]
+        command = [python_executable(), "-m", "trxstation.gateway.main", "--parent-pid", str(os.getpid())]
         if self.config_path is not None:
             command += ["--config", str(self.config_path)]
         return command
@@ -146,7 +167,30 @@ class ManagedBackend:
 
     # ------------------------------------------------------------------ processus
 
+    def _spawn_guard(self, child: _Child) -> None:
+        """Garde lancée HORS DU TRAVAIL de l'application (elle survit à la fermeture d'un paquet MSIX, essai S0 bis),
+        sans fenêtre, jamais avec DETACHED_PROCESS (powershell et pythonw s'y arrêtent). L'adresse ntfy passe par
+        l'environnement, pas par la ligne de commande (lisible par tous les comptes du PC)."""
+        command = self._command("guard")
+        env = dict(os.environ)
+        if self.cfg.supervisor.notify_url:
+            env[guard_mod.NOTIFY_URL_ENV] = self.cfg.supervisor.notify_url
+        base = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW) if os.name == "nt" else 0
+        kwargs = dict(stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+        try:
+            child.proc = subprocess.Popen(command, creationflags=base | (CREATE_BREAKAWAY_FROM_JOB if os.name == "nt" else 0),
+                                          **kwargs)
+        except OSError:
+            if os.name != "nt":
+                raise
+            child.proc = subprocess.Popen(command, creationflags=base, **kwargs)   # travail sans « breakaway » permis
+        child.last_start, child.stopped, child.safe_mode_hold = self._clock(), False, False
+        log.info("garde de fin lancée (pid %d)", child.proc.pid)
+
     def _spawn(self, child: _Child) -> None:
+        if child.name == "guard":
+            self._spawn_guard(child)
+            return
         flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0  # permet CTRL_BREAK ciblé
         output = None
         if os.name == "nt" and sys.stdout is None:
@@ -168,6 +212,8 @@ class ManagedBackend:
                                           stdout=output, stderr=subprocess.STDOUT)
         child.last_start, child.stopped, child.safe_mode_hold = self._clock(), False, False
         log.info("%s lancé (pid %d)", child.name, child.proc.pid)
+        if child.name == "rigctld" and self.guard:
+            guard_mod.write_rigctld_pid(self.cfg.supervisor.state_dir, child.proc.pid, None)
 
     @staticmethod
     def _alive(child: _Child) -> bool:
@@ -211,7 +257,22 @@ class ManagedBackend:
 
     # ------------------------------------------------------------------ cycle de vie
 
+    def start_guard(self) -> None:
+        """Lance la garde et vérifie qu'elle tient : sinon GuardUnavailable (la station ne démarre pas, fail-safe)."""
+        child = self.children["guard"]
+        try:
+            self._spawn(child)
+        except OSError as exc:
+            raise GuardUnavailable(f"lancement refusé : {exc}") from exc
+        deadline = time.monotonic() + GUARD_READY_S
+        while time.monotonic() < deadline:
+            if child.proc is not None and child.proc.poll() is not None:
+                raise GuardUnavailable(f"arrêtée aussitôt (code {child.proc.returncode})")
+            time.sleep(0.05)
+
     def start(self) -> None:
+        if self.guard:
+            self.start_guard()                     # AVANT rigctld : aucune émission possible sans garde
         rig = self.children["rigctld"]
         if self._port_open():
             self.rigctld_adopted = True
@@ -249,7 +310,15 @@ class ManagedBackend:
             emit_event(codes.ORT_8001, logger=log, niveau="-", action=f"relance de {child.name}",
                        problemes=f"{child.name} arrêté (code {child.proc.returncode})")
             child.restarts += 1
-            self._spawn(child)
+            try:
+                self._spawn(child)
+            except OSError as exc:
+                if child.name != "guard":
+                    raise
+                # Plus de garde : plus d'émission à distance possible (fail-safe), la réception continue.
+                child.stopped = True
+                emit_event(codes.ORT_8026, logger=log, raison=f"relance refusée : {exc}")
+                self.stop_gateway()
 
     def stop_all(self, force_rx: Callable[[], object] | None = None) -> None:
         """La passerelle d'abord (elle coupe le PTT), puis « T 0 » envoyé par le superviseur lui-même, puis rigctld.
@@ -272,6 +341,10 @@ class ManagedBackend:
         if "console_web" in self.children:
             self.children["console_web"].stopped = True
             self._terminate(self.children["console_web"])
+        if "guard" in self.children:
+            # En DERNIER, après le « T 0 » et l'arrêt de rigctld : tuée, elle n'agit pas (arrêt normal).
+            self.children["guard"].stopped = True
+            self._kill(self.children["guard"])
 
     # ------------------------------------------------------------------ actions du superviseur
 

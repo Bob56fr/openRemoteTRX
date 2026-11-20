@@ -15061,6 +15061,138 @@ ORT-8025:
     - Prueba pedida en TRX Console (menú 3.5)
     preconisation: Ninguna.
 
+ORT-8026:
+  gravite: critique
+  titre: Garde de fin impossible à lancer
+  message: 'La garde de fin n''a pas pu être lancée ({raison}) : la station ne démarre pas.'
+  causes:
+  - Programme Python de la station absent ou endommagé
+  - Lancement bloqué par un antivirus ou une stratégie de l'administrateur du PC (AppLocker, WDAC, Smart App Control)
+  - Garde arrêtée aussitôt après son lancement
+  preconisation: Réinstaller la station ; vérifier qu'aucun antivirus ni stratégie du PC ne bloque ses programmes. Sans
+    garde, une station fermée de force pendant une émission laisserait le poste émettre.
+  action_auto: refus
+  ntfy_defaut: true
+  priorite_ntfy: 5
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8026/
+  depuis_version: 0.252.0
+  en:
+    titre: End guard cannot be started
+    message: 'The end guard could not be started ({raison}): the station does not start.'
+    causes:
+    - Station Python program missing or damaged
+    - Start blocked by an antivirus or a policy of the PC administrator (AppLocker, WDAC, Smart App Control)
+    - Guard stopped right after being started
+    preconisation: Reinstall the station; check that no antivirus or PC policy blocks its programs. Without the guard,
+      a station closed by force during a transmission would leave the radio transmitting.
+  de:
+    titre: Endwächter kann nicht gestartet werden
+    message: 'Der Endwächter konnte nicht gestartet werden ({raison}): Die Station startet nicht.'
+    causes:
+    - Python-Programm der Station fehlt oder ist beschädigt
+    - Start durch ein Virenschutzprogramm oder eine Richtlinie des PC-Administrators blockiert (AppLocker, WDAC, Smart
+      App Control)
+    - Wächter gleich nach dem Start beendet
+    preconisation: Installieren Sie die Station neu; prüfen Sie, dass kein Virenschutz und keine Richtlinie des PCs ihre
+      Programme blockiert. Ohne Wächter würde eine während einer Aussendung gewaltsam geschlossene Station das Funkgerät
+      weiter senden lassen.
+  es:
+    titre: Guarda de fin imposible de lanzar
+    message: 'La guarda de fin no se ha podido lanzar ({raison}): la estación no arranca.'
+    causes:
+    - Programa Python de la estación ausente o dañado
+    - Lanzamiento bloqueado por un antivirus o una directiva del administrador del PC (AppLocker, WDAC, Smart App Control)
+    - Guarda detenida justo después de lanzarse
+    preconisation: Reinstala la estación; comprueba que ningún antivirus ni directiva del PC bloquea sus programas. Sin
+      guarda, una estación cerrada a la fuerza durante una emisión dejaría el equipo transmitiendo.
+
+ORT-8027:
+  gravite: erreur
+  titre: Station fermée de force, poste remis en réception par la garde
+  message: 'Le superviseur a disparu sans s''arrêter (mise à jour forcée, désinstallation ou processus tué) ; la garde
+    a remis le poste en réception (PTT avant : {ptt_avant} ; {rigctld}).'
+  causes:
+  - Mise à jour ou désinstallation de la station par le Microsoft Store pendant qu'elle tournait
+  - Processus de la station tués (Gestionnaire des tâches, fermeture de session forcée)
+  - Plantage du superviseur
+  preconisation: Relancer la station (TRX Console, menu 1.1, ou rouvrir la session) ; si une émission était en cours,
+    vérifier le poste.
+  action_auto: retour_rx
+  ntfy_defaut: true
+  priorite_ntfy: 4
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8027/
+  depuis_version: 0.252.0
+  en:
+    titre: Station closed by force, radio put back to receive by the guard
+    message: 'The supervisor disappeared without stopping (forced update, uninstallation or killed process); the guard
+      put the radio back to receive (PTT before: {ptt_avant}; {rigctld}).'
+    causes:
+    - Station updated or uninstalled by the Microsoft Store while it was running
+    - Station processes killed (Task Manager, forced sign-out)
+    - Supervisor crash
+    preconisation: Restart the station (TRX Console, menu 1.1, or sign in again); if a transmission was in progress,
+      check the radio.
+  de:
+    titre: Station gewaltsam geschlossen, Funkgerät vom Wächter auf Empfang gesetzt
+    message: 'Der Supervisor ist verschwunden, ohne anzuhalten (erzwungenes Update, Deinstallation oder beendeter
+      Prozess); der Wächter hat das Funkgerät wieder auf Empfang gesetzt (PTT vorher: {ptt_avant}; {rigctld}).'
+    causes:
+    - Station wurde vom Microsoft Store während des Betriebs aktualisiert oder deinstalliert
+    - Prozesse der Station beendet (Task-Manager, erzwungene Abmeldung)
+    - Absturz des Supervisors
+    preconisation: Starten Sie die Station neu (TRX Console, Menü 1.1, oder melden Sie sich erneut an); falls eine
+      Aussendung lief, prüfen Sie das Funkgerät.
+  es:
+    titre: Estación cerrada a la fuerza, equipo devuelto a recepción por la guarda
+    message: 'El supervisor ha desaparecido sin detenerse (actualización forzada, desinstalación o proceso terminado);
+      la guarda ha devuelto el equipo a recepción (PTT antes: {ptt_avant}; {rigctld}).'
+    causes:
+    - Estación actualizada o desinstalada por la Microsoft Store mientras funcionaba
+    - Procesos de la estación terminados (Administrador de tareas, cierre de sesión forzado)
+    - Fallo del supervisor
+    preconisation: Vuelve a arrancar la estación (TRX Console, menú 1.1, o abre de nuevo la sesión); si había una emisión
+      en curso, comprueba el equipo.
+
+ORT-8028:
+  gravite: critique
+  titre: Station fermée de force, réception NON confirmée par la garde
+  message: 'Le superviseur a disparu sans s''arrêter et la garde n''a pas pu confirmer la réception du poste (PTT avant :
+    {ptt_avant} ; {rigctld}) : LE POSTE PEUT ÊTRE EN ÉMISSION.'
+  causes:
+  - rigctld arrêté en même temps que la station, ou injoignable
+  - Poste qui ne répond plus à la commande « T 0 »
+  preconisation: Couper l'émission AU POSTE (ou son alimentation) tout de suite, puis relancer la station.
+  action_auto: retour_rx
+  ntfy_defaut: true
+  priorite_ntfy: 5
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-8028/
+  depuis_version: 0.252.0
+  en:
+    titre: Station closed by force, receive NOT confirmed by the guard
+    message: 'The supervisor disappeared without stopping and the guard could not confirm that the radio is receiving
+      (PTT before: {ptt_avant}; {rigctld}): THE RADIO MAY BE TRANSMITTING.'
+    causes:
+    - rigctld stopped at the same time as the station, or unreachable
+    - Radio no longer answering the "T 0" command
+    preconisation: Stop the transmission AT THE RADIO (or its power supply) right away, then restart the station.
+  de:
+    titre: Station gewaltsam geschlossen, Empfang vom Wächter NICHT bestätigt
+    message: 'Der Supervisor ist verschwunden, ohne anzuhalten, und der Wächter konnte den Empfang des Funkgeräts nicht
+      bestätigen (PTT vorher: {ptt_avant}; {rigctld}): DAS FUNKGERÄT KANN SENDEN.'
+    causes:
+    - rigctld gleichzeitig mit der Station beendet oder nicht erreichbar
+    - Funkgerät antwortet nicht mehr auf den Befehl „T 0“
+    preconisation: Beenden Sie die Aussendung sofort AM FUNKGERÄT (oder an seiner Stromversorgung) und starten Sie dann
+      die Station neu.
+  es:
+    titre: Estación cerrada a la fuerza, recepción NO confirmada por la guarda
+    message: 'El supervisor ha desaparecido sin detenerse y la guarda no ha podido confirmar la recepción del equipo (PTT
+      antes: {ptt_avant}; {rigctld}): EL EQUIPO PUEDE ESTAR TRANSMITIENDO.'
+    causes:
+    - rigctld detenido al mismo tiempo que la estación, o inalcanzable
+    - Equipo que ya no responde a la orden «T 0»
+    preconisation: Corta la emisión EN EL EQUIPO (o su alimentación) enseguida y luego vuelve a arrancar la estación.
+
 
 # ====================================================================================================
 # 9000–9999 : Configuration et installation

@@ -22,7 +22,7 @@ from ..procutil import acquire_instance_lock
 from ..modules.supervisor_glue import build_launcher, make_tick, start_modules
 from ..status import read_status
 from .actions import SystemActions
-from .backends import choose_backend
+from .backends import GuardUnavailable, choose_backend
 from .core import Supervisor, default_read_host
 from .rigctl import RigctlProbe
 from .sdnotify import sd_notify
@@ -145,6 +145,10 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError as exc:
         print(exc, file=sys.stderr)
         return 3
+    except GuardUnavailable as exc:
+        # Fail-safe (cahier du Microsoft Store § 4.1) : sans garde de fin, aucune station ; rien n'a été lancé.
+        sup.actions.notifier.alert(codes.ORT_8026, raison=str(exc))
+        return 5
     launcher = None
     try:
         launcher = build_launcher(cfg, alert=sup.actions.notifier.alert, config_path=args.config)   # [modules] run vide : None

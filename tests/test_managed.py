@@ -81,6 +81,7 @@ def backend(commands, *, safe_mode=lambda: None, **kw):
     cfg.network.rigctld_port = kw.pop("rigctld_port", free_port())
     kw.setdefault("restart_delay_s", 0.0)
     kw.setdefault("rigctld_wait_s", 0.0)
+    kw.setdefault("guard", False)          # garde de fin : essayée dans tests/test_guard.py
     return ManagedBackend(cfg, commands=commands, safe_mode=safe_mode, port_open=kw.pop("port_open", lambda: False), **kw)
 
 
