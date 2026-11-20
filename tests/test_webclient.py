@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 RF-DIY.COM
 """Client web de référence : cohérence avec le serveur, hygiène de sécurité de la page, logique JavaScript (Node)."""
+import json
 import re
 import shutil
 import subprocess
@@ -21,9 +22,10 @@ PTT = (ROOT / "trxstation" / "gateway" / "safety" / "ptt.py").read_text(encoding
 SESSION = (ROOT / "trxstation" / "gateway" / "api" / "session.py").read_text(encoding="utf-8")
 
 
-def js_table(name):
-    block = re.search(rf"const {name} = \{{(.*?)\n  \}};", LOGIC, re.S).group(1)
-    return set(re.findall(r"^\s+([a-z_]+):", block, re.M))
+def catalog_codes(prefix):
+    """Codes du tronc commun des textes (trxstation/i18n/client.fr.json) : « refus.<code> », « coupure.<code> »."""
+    data = json.loads((ROOT / "trxstation" / "i18n" / "client.fr.json").read_text(encoding="utf-8"))
+    return {key[len(prefix) + 1:] for key in data if key.startswith(prefix + ".") and not key.startswith(prefix + "._")}
 
 
 def test_page_has_no_inline_code_and_no_external_resource():
@@ -52,10 +54,10 @@ def test_script_only_sends_commands_the_server_knows():
 
 
 def test_every_refusal_and_cut_reason_of_the_server_has_a_french_message():
-    reasons = js_table("REASONS")
+    reasons = catalog_codes("refus")
     refused = set(re.findall(r'Refused\("([a-z_]+)"', PTT)) | set(re.findall(r'reason="([a-z_]+)"', SESSION))
     assert refused <= reasons, refused - reasons
-    cuts = js_table("CUT_REASONS")
+    cuts = catalog_codes("coupure")
     produced = (set(re.findall(r'force_rx\("([a-z_]+)"', PTT + SESSION)) | set(re.findall(r'return "([a-z_]+)"', PTT))
                 | set(re.findall(r'reason = "([a-z_]+)"', PTT)))
     assert produced and produced <= cuts, produced - cuts

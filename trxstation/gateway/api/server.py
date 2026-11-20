@@ -24,12 +24,17 @@ from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
 from .webrtc import PeerLimitError, PeerManager
 from ...errors import codes
+from ...i18n import LANGS
 from ...errors.emit import by_machine, emit_event
 
 log = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
-WEB_FILES = {"/": ("index.html", "text/html"), "/client.js": ("client.js", "text/javascript"),
+# Catalogues de textes de la page (i18n.js), liste FERMÉE : tronc commun « client » dans chaque langue de la station
+I18N_DIR = Path(__file__).resolve().parents[2] / "i18n"
+I18N_DOMAINS = ("client",)
+I18N_FILES = tuple(f"{domain}.{lang}.json" for domain in I18N_DOMAINS for lang in LANGS)
+WEB_FILES = {"/": ("index.html", "text/html"), "/client.js": ("client.js", "text/javascript"), "/i18n.js": ("i18n.js", "text/javascript"),
              "/client.css": ("client.css", "text/css"), "/ui.js": ("ui.js", "text/javascript"),
              "/waterfall.js": ("waterfall.js", "text/javascript"), "/layout.js": ("layout.js", "text/javascript"), "/theme.js": ("theme.js", "text/javascript"), "/hfscope.js": ("hfscope.js", "text/javascript"), "/spots.js": ("spots.js", "text/javascript"), "/voice.js": ("voice.js", "text/javascript"), "/swr.js": ("swr.js", "text/javascript"), "/netprobe.js": ("netprobe.js", "text/javascript"), "/selcall.js": ("selcall.js", "text/javascript"), "/scrambler.js": ("scrambler.js", "text/javascript"), "/spatial.js": ("spatial.js", "text/javascript"), "/friends.js": ("friends.js", "text/javascript"), "/monitoring.js": ("monitoring.js", "text/javascript"), "/diffusion.js": ("diffusion.js", "text/javascript"), "/sdr.js": ("sdr.js", "text/javascript"), "/splash.webp": ("splash.webp", "image/webp"),
              "/logo-96.png": ("logo-96.png", "image/png")}   # logo OpenRemoteTRX (pied de l'image d'une mesure de TOS)
@@ -95,8 +100,8 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
     async def config(_: web.Request) -> web.Response:
         return web.json_response({"protocol": PROTOCOL_VERSION, "ice_servers": ice, "rig_audio": rig}, headers=SECURITY_HEADERS)
 
-    def static_handler(filename: str, content_type: str):
-        body = (STATIC_DIR / filename).read_bytes()
+    def static_handler(filename: str, content_type: str, folder: Path = STATIC_DIR):
+        body = (folder / filename).read_bytes()
 
         async def handler(_: web.Request) -> web.Response:
             return web.Response(body=body, content_type=content_type, charset="utf-8", headers=SECURITY_HEADERS)
@@ -106,6 +111,9 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
     if web_client:
         for url, (filename, content_type) in WEB_FILES.items():
             app.router.add_get(url, static_handler(filename, content_type))
+        for filename in I18N_FILES:
+            if (I18N_DIR / filename).is_file():
+                app.router.add_get("/i18n/" + filename, static_handler(filename, "application/json", I18N_DIR))
     app.router.add_get("/config", config)
     app.router.add_post("/offer", offer)
     app.router.add_get("/health", health)

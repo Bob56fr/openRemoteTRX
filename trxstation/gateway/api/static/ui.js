@@ -4382,5 +4382,9 @@
     ui.connected(false);
   }
 
-  document.addEventListener("DOMContentLoaded", initUi);
+  // Textes de la langue choisie chargés avant d'afficher quoi que ce soit (i18n.js ; immédiat dans les tests)
+  const I18N = root.TrxI18n;
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!I18N || I18N.loaded) initUi(); else I18N.ready.then(initUi, initUi);
+  });
 })(typeof window !== "undefined" ? window : globalThis);

@@ -1824,7 +1824,7 @@ test("FreeDV : commande, refus en français, indicatif et abandon dans le journa
   assert.deepEqual(w.sentCommands("freedv_set")[0].on, true);
   w.answer(false, { reason: "freedv_tx" });
   assert.equal((await pending).ok, false);
-  assert.ok(w.ui.logs.some(([t, l]) => t === "FreeDV : " + web.REASONS.freedv_tx && l === "warn"));
+  assert.ok(w.ui.logs.some(([t, l]) => t === "FreeDV : " + web.refusalOnly("freedv_tx") && l === "warn"));
   w.dc().onmessage({ data: JSON.stringify({ type: "freedv_event", kind: "callsign", callsign: "W6GOK", snr_db: 9, t: 1 }) });
   w.dc().onmessage({ data: JSON.stringify({ type: "freedv_event", kind: "fault", cause: "radae_rx gelé" }) });
   assert.ok(w.ui.logs.some(([t]) => t === "FreeDV : indicatif W6GOK décodé (SNR 9 dB)."));

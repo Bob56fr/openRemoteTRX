@@ -237,7 +237,7 @@ def test_page_and_station_share_the_same_lists_and_every_refusal_is_translated()
     hf = (STATIC / "hfscope.js").read_text(encoding="utf-8")
     spans = [int(v) for v in re.search(r"const SPANS_HZ = \[([^\]]+)\]", hf).group(1).split(",")]
     assert tuple(spans) == civ.SPANS_HZ
-    logic = (STATIC / "client.js").read_text(encoding="utf-8")
-    block = re.search(r"const REASONS = \{(.*?)\n  \};", logic, re.S).group(1)
-    reasons = set(re.findall(r"^\s+([a-z_]+):", block, re.M))
+    # refus traduits : tronc commun des textes des clients (trxstation/i18n/client.fr.json, étape 305)
+    catalog = json.loads((ROOT / "trxstation" / "i18n" / "client.fr.json").read_text(encoding="utf-8"))
+    reasons = {key[len("refus."):] for key in catalog if key.startswith("refus.")}
     assert set(SETTING_REASONS) <= reasons, set(SETTING_REASONS) - reasons

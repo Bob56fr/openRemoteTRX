@@ -17,6 +17,7 @@ Référence pour tout client de la passerelle : la page web (`gateway/api/static
 |---|---|---|
 | Paramètres | `GET /config` | `{"protocol": 1, "ice_servers": [...], "rig_audio": [...]}` (`rig_audio` : noms des cartes son du poste, à ne pas choisir comme micro ou sortie) |
 | Vie | `GET /health` | `{"ok": true}` (n'expose aucun état) |
+| Textes (station 0.235.0+) | `GET /i18n/client.<langue>.json` (`fr`, `en`, `de`, `es`) | tronc commun des textes des clients : `{"refus.<code>": texte, "coupure.<code>": texte, …}`, champs `{nom}` ; liste fermée, sans authentification (aucun secret) ; l'application en embarque une copie |
 | Offre WebRTC | `POST /offer {"client_id", "password", "sdp", "type"}` | `{"sdp", "type"}` ; `400 bad_request`, `401 unauthorized` (même réponse quelle que soit la cause), `503 busy` (4 clients au plus, station sans `[access]`), `500 server_error` ; mot de passe JUSTE mais accès refusé (station 0.71.0+, § 13) : `403` ou `503` avec `{"error": motif, "message": texte à afficher}` |
 
 - HTTPS obligatoire hors de la boucle locale (`docs/acces-distant.md`). Certificat auto-signé : le client l'**épingle** par son empreinte SHA-256, affichée par `trx-setup --empreinte` et TRX Console menu 4.1 (format `AB:CD:…`, 32 octets). Jamais de « faire confiance à tout ».

@@ -49,98 +49,9 @@
   const NET_DEGRADED_PCT = 1;            // plus de 1 % d'échantillons masqués par le décodeur : son dégradé
   const NP = root.TrxNetProbe || (typeof require === "function" ? require("./netprobe.js") : null);
 
-  const REASONS = {
-    spectrum_unavailable: "Spectre HF indisponible pour le moment.",
-    spectrum_busy: "Réglage du spectre déjà en cours : réessaie.",
-    spectrum_timeout: "Le poste n'a pas confirmé le réglage du spectre.",
-    spectrum_refused: "Le poste a refusé ce réglage du spectre (en mode fixe, la largeur ne se règle pas).",
-    bad_setting: "Réglage du spectre invalide.",
-    out_of_band: "Fréquence hors des bandes d'émission autorisées.",
-    split_unreadable: "Split illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
-    xit_unreadable: "ΔTX (XIT) illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
-    cooldown: "Trop rapproché : attends une seconde avant de réémettre.",
-    unknown_client: "Client non reconnu par la passerelle.",
-    tx_disabled: "Aucune bande d'émission autorisée dans la configuration.",
-    cat_down: "Liaison avec le poste perdue.",
-    cat_error: "Le poste ne répond pas correctement.",
-    ptt_unreadable: "L'état du PTT n'est pas lisible sur ce poste : émission refusée par sécurité.",
-    rig_already_tx: "Le poste est déjà en émission.",
-    local_active: "Poste utilisé sur place (micro, bouton ou mode du poste) : PTT à distance bloqué. « Reprendre la main » pour le débloquer.",
-    local_tx: "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
-    rig_hot: "Poste trop chaud : émission refusée jusqu'à ce qu'il refroidisse.",
-    audio_missing: "Carte son du poste absente (poste débranché ou éteint ?) : émission refusée. La station la retrouve toute seule.",
-    power_disabled: "Allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8).",
-    power_unsupported: "Ce poste ne peut pas être allumé ou éteint par la CAT.",
-    power_busy: "Allumage ou extinction du poste en cours : patiente quelques secondes.",
-    rig_off: "Poste éteint : rallume-le (nouvelle connexion) avant de le régler ou d'émettre.",
-    rig_on: "Le poste n'est pas éteint : rien à allumer.",
-    power_off_failed: "Le poste a refusé l'ordre d'extinction.",
-    report_empty: "Le rapport est vide.",
-    report_too_soon: "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
-    report_storage_error: "La station n'a pas pu enregistrer le rapport (disque ?).",
-    reports_unavailable: "Cette station ne reçoit pas les rapports : utilise « Partager / e-mail ».",
-    fault_latched: "Défaut verrouillé : intervention sur la station requise.",
-    starting: "La station démarre : réessaie dans un instant.",
-    not_idle: "Une coupure ou une émission est en cours.",
-    cancelled: "Prise d'émission annulée par une coupure.",
-    ptt_write_failed: "L'ordre d'émission a échoué ; retour en réception.",
-    rig_did_not_key: "Le poste n'est pas passé en émission ; retour en réception.",
-    tx_active: "Impossible pendant l'émission (fréquence, mode et réglages du poste sont verrouillés).",
-    mode_not_allowed: "Émission refusée dans ce mode : le poste ne module par l'USB qu'en mode données (USB-D...). Change de mode.",
-    unknown_memory: "Cette mémoire n'existe plus (supprimée depuis un autre appareil ?).",
-    memories_unavailable: "Les mémoires ne sont pas disponibles sur cette station.",
-    storage_error: "La station n'a pas pu enregistrer les mémoires (disque ?).",
-    layouts_unavailable: "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
-    beeps_unavailable: "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
-    selcall_unavailable: "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
-    selcall_not_armed: "Armez d'abord le SELCALL sur un code : l'appel émet le code armé.",
-    selcall_too_long: "Appel SELCALL plus long que la durée maximale d'émission (TOT) : réduisez manual_repeat sur la station.",
-    beeps_storage_error: "La station n'a pas pu enregistrer le réglage des bips.",
-    layout_invalid: "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
-    layout_storage_error: "La station n'a pas pu enregistrer la mise en page (disque ?).",
-    invalid: "Valeur refusée par le poste.",
-    rig_error: "Erreur du poste.",
-    forbidden: "Compte visiteur : réception seule, aucune commande vers la station.",
-    unknown_listener: "Ce visiteur n'est plus connecté.",
-    still_overloaded: "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
-    listeners_off: "Écoute des visiteurs fermée sur la station (TRX Console, menu 4.2 : nombre maximal de visiteurs).",
-    listeners_unavailable: "Cette station ne gère pas les visiteurs.",
-    voice_profiles_unavailable: "Cette station ne range pas les profils d'égaliseur.",
-    no_back: "Pas de fréquence de retour mémorisée.",
-    friends_unavailable: "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
-    sdr_unavailable: "SDR indisponible sur cette station (module « sdr » arrêté ou désactivé).",
-    sdr_invalid: "Réglage du SDR refusé (valeur hors limites).",
-    sdr_error: "Le module SDR n'a pas pu traiter la demande.",
-    sdr_audio_unavailable: "Son du SDR indisponible sur cette connexion (recharger la page).",
-    friends_error: "La présence de groupe n'a pas pu traiter la demande.",
-    monitoring_unavailable: "Monitoring indisponible sur cette station (module « monlink » arrêté ou désactivé).",
-    monitoring_error: "Le monitoring n'a pas pu traiter la demande.",
-    diffusion_unavailable: "Diffusion indisponible sur cette station (module « diffusion » arrêté ou hors service).",
-    diffusion_error: "La diffusion n'a pas pu traiter la demande.",
-    diffusion_busy: "Une diffusion est déjà en cours : l'arrêter d'abord.",
-    diffusion_disabled: "Diffusion hors service ([diffusion] enabled = false, menu 8.1).",
-    diffusion_no_secrets: "Secrets de la diffusion absents ou illisibles (serveur, mot de passe source, clé) : régler la fonction.",
-    diffusion_confirm_required: "Avertissement de responsabilité à confirmer avant la première diffusion.",
-    diffusion_malformed: "Réglage de la diffusion refusé (durée, texte ou mot de passe).",
-    diffusion_unknown_action: "Action de diffusion inconnue de la station (mise à jour ?).",
-    voice_profiles_storage_error: "Profil d'égaliseur non enregistré sur la station (disque ?).",
-    voice_profile_refused: "Profil d'égaliseur refusé par la station.",
-    swr_busy: "Mesure de TOS en cours : STOP pour l'arrêter.",
-    swr_unavailable: "Mesure de TOS indisponible sur cette station.",
-    breizh_unavailable: "Breizh Audio Box n'est pas utilisé par cette station.",
-    breizh_storage_error: "Réglage de Breizh non enregistré sur la station (disque ?).",
-    freedv_unavailable: "FreeDV n'est pas en service sur cette station.",
-    freedv_tx: "Émission en cours : le mode FreeDV se change en réception.",
-    freedv_missing: "Décodeur FreeDV introuvable sur la station (voir [freedv] de station.toml).",
-    freedv_storage_error: "Dossier de travail de FreeDV inaccessible sur la station.",
-    netprobe_unavailable: "Sonde de qualité réseau absente de cette station.",
-    netprobe_error: "Sonde de qualité réseau : erreur sur la station (voir son journal).",
-    swr_no_fm_mode: "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
-    swr_out_of_band: "Aucun point de la mesure dans les bandes autorisées de la station.",
-    swr_bad_range: "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
-    swr_too_many_points: "Trop de points pour la mesure de TOS.",
-    swr_unreadable: "Réglages du poste non relus : mesure de TOS arrêtée.",
-  };
+  // Refus et coupures : TRONC COMMUN des textes (trxstation/i18n/client.<langue>.json, clés « refus.<code> » et
+  // « coupure.<code> »), lu aussi par la station et l'application Android.
+  const I18N = root.TrxI18n || (typeof require === "function" ? require("./i18n.js") : null);
 
   // Visiteurs (docs/visiteurs-cahier-des-charges.md) : seules commandes qu'un compte visiteur envoie ; tout le reste est
   // refusé ICI, avant d'atteindre la station (qui le refuserait aussi).
@@ -197,34 +108,6 @@
     };
   }
 
-  const CUT_REASONS = {
-    tot: "durée maximale d'émission atteinte",
-    power_on_tx: "poste allumé en émission : remis en réception",
-    heartbeat: "perte du signal de vie du client",
-    selcall_sent: "appel SELCALL envoyé",
-    swr_point: "point de mesure de TOS terminé",
-    swr_cancel: "mesure de TOS annulée",
-    swr_end: "fin de la mesure de TOS",
-    selcall_timeout: "appel SELCALL trop long : coupé",
-    selcall_failed: "appel SELCALL en erreur : coupé",
-    toggle: "demande d'un client",
-    stop: "bouton STOP",
-    client_disconnected: "déconnexion du client émetteur",
-    frequency_changed: "fréquence modifiée sur le poste",
-    mode_changed: "mode modifié sur le poste pendant l'émission",
-    split_changed: "split modifié sur le poste pendant l'émission",
-    xit_changed: "ΔTX (XIT) modifié sur le poste pendant l'émission",
-    rig_reported_rx: "le poste est repassé en réception",
-    cat_down: "liaison avec le poste perdue",
-    rig_silent: "poste muet",
-    rig_overheat: "poste trop chaud",
-    audio_lost: "carte son du poste perdue",
-    ptt_write_failed: "échec de l'ordre d'émission",
-    rig_did_not_key: "le poste n'a pas émis",
-    shutdown: "arrêt de la station",
-    startup: "démarrage de la station",
-  };
-
   const PTT_LABELS = { RX: "RÉCEPTION", KEYING: "PRISE D'ÉMISSION", TX: "ÉMISSION", UNKEYING: "COUPURE EN COURS" };
 
   // ------------------------------------------------------------------ fonctions pures
@@ -253,8 +136,14 @@
 
   // `ort` : code du catalogue d'erreurs joint par la station à ses refus (étape 215), affiché entre crochets ; la page
   // publique du code se trouve en cherchant ce code sur le site des codes d'erreur du projet.
+  function refusalOnly(code) {
+    /* Texte connu d'un code de refus, sinon null. */
+    return typeof code === "string" && code && I18N.has("refus." + code) ? I18N.t("refus." + code) : null;
+  }
+
   function reasonText(code, detail, ort) {
-    const text = REASONS[code] || ("Refusé (" + code + (detail ? " : " + detail : "") + ")");
+    const text = refusalOnly(code) !== null ? refusalOnly(code)
+      : I18N.t(detail ? "refus._inconnu_detail" : "refus._inconnu", { code: code, detail: detail });
     return typeof ort === "string" && /^ORT-\d{4}$/.test(ort) ? text + " [" + ort + "]" : text;
   }
 
@@ -317,7 +206,7 @@
   }
 
   function cutText(code) {
-    return code ? (CUT_REASONS[code] || code) : "";
+    return code ? (I18N.has("coupure." + code) ? I18N.t("coupure." + code) : code) : "";
   }
 
   // ---- état des flux du Cluster DX (message « cluster_status » du module, toutes les 15 s)
@@ -2325,7 +2214,7 @@
     async kickListener(account) {
       /* Opérateur : déconnecter un visiteur (il peut revenir ; pour l'en empêcher, désactiver son compte sur la station). */
       const res = await this.send("listener_kick", { account: account });
-      if (!res.ok) this.ui.log("Déconnexion du visiteur refusée : " + (REASONS[res.reason] || res.reason), "warn");
+      if (!res.ok) this.ui.log("Déconnexion du visiteur refusée : " + (refusalOnly(res.reason) || res.reason), "warn");
       return res;
     }
 
@@ -2333,14 +2222,14 @@
       /* Opérateur : commutateur « Écoute des visiteurs » (mémorisé sur la station ; fermer déconnecte les visiteurs). */
       const res = await this.send("listeners_open", { on: !!on });
       this.ui.log(res.ok ? (on ? "Écoute des visiteurs ouverte." : "Écoute des visiteurs fermée : visiteurs déconnectés.")
-        : "Écoute des visiteurs : " + (REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
+        : "Écoute des visiteurs : " + (refusalOnly(res.reason) || res.reason), res.ok ? "" : "warn");
       return res;
     }
 
     _voiceProfilesResult(res) {
       /* Liste à jour des profils d'égaliseur de CE compte, ou null si la station refuse (motif dans le journal). */
       if (res && res.ok && Array.isArray(res.profiles)) { this.voiceProfileList = res.profiles; return res.profiles; }
-      if (res && !res.ok) this.ui.log("Profils de voix : " + (res.detail || REASONS[res.reason] || res.reason), "warn");
+      if (res && !res.ok) this.ui.log("Profils de voix : " + (res.detail || refusalOnly(res.reason) || res.reason), "warn");
       return null;
     }
 
@@ -2700,7 +2589,7 @@
 
     async reopenListeners() {
       const res = await this.send("listeners_reopen");
-      this.ui.log(res.ok ? "Écoute des visiteurs rouverte." : (res.detail || REASONS[res.reason] || res.reason), res.ok ? "" : "warn");
+      this.ui.log(res.ok ? "Écoute des visiteurs rouverte." : (res.detail || refusalOnly(res.reason) || res.reason), res.ok ? "" : "warn");
       return res;
     }
 
@@ -2766,7 +2655,7 @@
              points: bytes.subarray(SPECTRUM_HEADER) };
   }
 
-  const api = { REASONS, CUT_REASONS, TrxClient, formatFrequency, sMeterText, sMeterFraction, levelFraction,
+  const api = { I18N, refusalOnly, TrxClient, formatFrequency, sMeterText, sMeterFraction, levelFraction,
                 powerStepsView, powerBannerView, stopHoldChoices, POWER_STEPS_SHOWN,
                 reasonText, cutText, parseKilohertz, matchesRigDevice, dataModeHint, dataModeFor, DATA_MODES, MODE_LABELS,
                 modeLabel, txModeHint, formatIcomFrequency, shortMode, sortMemories, chooseLayout, preampText, AGC_LABELS,

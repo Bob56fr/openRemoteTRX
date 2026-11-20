@@ -1,0 +1,90 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 RF-DIY.COM
+/* Textes de la page dans la langue de l'opérateur (cahier docs/application-traduction-cahier-des-charges.md).
+ *
+ * Catalogues : trxstation/i18n/<domaine>.<langue>.json, objets {clé: texte} avec des champs {nom} ; le TRONC COMMUN
+ * (domaine « client » : refus, coupures) est lu aussi par la station et copié dans l'application Android. Le français
+ * est la référence : une clé absente d'une langue retombe sur le français, une clé absente partout s'affiche telle
+ * quelle (jamais d'exception : la page doit toujours s'afficher).
+ *
+ * Navigateur : catalogues servis par la station (/i18n/<domaine>.<langue>.json, liste fermée), chargés au démarrage
+ * (`ready`) ; Node (tests) : lus sur le disque, prêts tout de suite.
+ */
+(function (root) {
+  "use strict";
+
+  const LANGS = ["fr", "en", "de", "es"];
+  const DOMAINS = ["client"];
+  // Langues PROPOSÉES par la page : la page elle-même n'est traduite qu'au lot T5 ; d'ici là elle reste en français
+  // (refus et coupures traduits ailleurs, mais pas mélangés à une page française).
+  const OFFERED = ["fr"];
+  const STORE_KEY = "trx.lang";
+
+  const catalogs = {};                  // langue -> {clé: texte}
+  let current = "fr";
+  let loaded = false;
+
+  function chooseLang(stored, wanted, offered) {
+    /* Langue retenue : celle enregistrée par l'opérateur, sinon la première du navigateur proposée, sinon l'anglais
+     * (décision de l'utilisateur du 2026-11-20), sinon le français. */
+    const ok = (l) => typeof l === "string" && offered.indexOf(l) >= 0;
+    if (ok(stored)) return stored;
+    for (const raw of wanted || []) {
+      const l = typeof raw === "string" ? raw.toLowerCase().split(/[-_]/)[0] : "";
+      if (ok(l)) return l;
+    }
+    return ok("en") ? "en" : "fr";
+  }
+
+  function merge(lang, data) {
+    if (!data || typeof data !== "object") return;
+    const into = catalogs[lang] || (catalogs[lang] = {});
+    for (const [k, v] of Object.entries(data)) if (typeof v === "string") into[k] = v;
+  }
+
+  function fill(text, fields) {
+    if (!fields) return text;
+    return text.replace(/\{([a-z_]+)\}/g, (all, name) => (name in fields && fields[name] !== undefined && fields[name] !== null ? String(fields[name]) : all));
+  }
+
+  function lookup(key) {
+    const own = catalogs[current] && catalogs[current][key];
+    if (typeof own === "string") return own;
+    const fr = catalogs.fr && catalogs.fr[key];
+    return typeof fr === "string" ? fr : null;
+  }
+
+  function t(key, fields) { const text = lookup(key); return fill(text === null ? key : text, fields); }
+  function has(key) { return lookup(key) !== null; }
+
+  function use(lang, data) {
+    /* Tests : remplace les catalogues d'une langue et la rend courante. */
+    catalogs[lang] = {}; merge(lang, data); current = lang; loaded = true;
+  }
+
+  let ready;
+  if (typeof module !== "undefined" && module.exports && typeof require === "function") {
+    const fs = require("node:fs"), path = require("node:path");
+    const folder = path.join(__dirname, "..", "..", "..", "i18n");
+    for (const lang of LANGS) for (const domain of DOMAINS) {
+      try { merge(lang, JSON.parse(fs.readFileSync(path.join(folder, domain + "." + lang + ".json"), "utf-8"))); } catch (e) { /* langue absente */ }
+    }
+    loaded = true;
+    ready = Promise.resolve();
+  } else {
+    let stored = null;
+    try { stored = root.localStorage && root.localStorage.getItem(STORE_KEY); } catch (e) { stored = null; }
+    const nav = root.navigator ? (root.navigator.languages || [root.navigator.language]) : [];
+    current = chooseLang(stored, nav, OFFERED);
+    const wanted = current === "fr" ? ["fr"] : ["fr", current];
+    const fetchOne = (lang, domain) => root.fetch("i18n/" + domain + "." + lang + ".json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null)).then((data) => merge(lang, data)).catch(() => {});
+    ready = typeof root.fetch === "function"
+      ? Promise.all(wanted.flatMap((lang) => DOMAINS.map((domain) => fetchOne(lang, domain)))).then(() => { loaded = true; })
+      : Promise.resolve().then(() => { loaded = true; });
+  }
+
+  const api = { LANGS, OFFERED, chooseLang, t, has, use, ready,
+                get lang() { return current; }, get loaded() { return loaded; } };
+  if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxI18n = api; }
+})(typeof window !== "undefined" ? window : globalThis);

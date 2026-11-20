@@ -3,130 +3,15 @@
 package com.rfdiy.openremotetrx.logic
 
 /**
- * Textes en français des codes de la station (docs/protocole.md § 5 et § 7), repris de la page web (client.js :
- * REASONS, CUT_REASONS). TextsTest vérifie que les deux listes gardent les mêmes codes.
+ * Textes des codes de la station (docs/protocole.md § 5 et § 7). Refus et coupures : tronc commun partagé avec la
+ * station et la page web (trxstation/i18n/client.<langue>.json, lu par [Tr]) ; le reste encore en français (lot T2).
  */
 object Texts {
-    val REFUSALS: Map<String, String> = mapOf(
-        "spectrum_unavailable" to "Spectre HF indisponible pour le moment.",
-        "spectrum_busy" to "Réglage du spectre déjà en cours : réessaie.",
-        "spectrum_timeout" to "Le poste n'a pas confirmé le réglage du spectre.",
-        "spectrum_refused" to "Le poste a refusé ce réglage du spectre (en mode fixe, la largeur ne se règle pas).",
-        "bad_setting" to "Réglage du spectre invalide.",
-        "out_of_band" to "Fréquence hors des bandes d'émission autorisées.",
-        "split_unreadable" to "Split illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
-        "xit_unreadable" to "ΔTX (XIT) illisible sur le poste : émission refusée par sécurité (la fréquence d'émission est inconnue).",
-        "cooldown" to "Trop rapproché : attends une seconde avant de réémettre.",
-        "unknown_client" to "Client non reconnu par la passerelle.",
-        "tx_disabled" to "Aucune bande d'émission autorisée dans la configuration.",
-        "cat_down" to "Liaison avec le poste perdue.",
-        "cat_error" to "Le poste ne répond pas correctement.",
-        "ptt_unreadable" to "L'état du PTT n'est pas lisible sur ce poste : émission refusée par sécurité.",
-        "rig_already_tx" to "Le poste est déjà en émission.",
-        "local_active" to "Poste utilisé sur place (micro, bouton ou mode du poste) : PTT à distance bloqué. « Reprendre la main » pour le débloquer.",
-        "local_tx" to "Le poste émet en ce moment depuis son micro : impossible de reprendre la main.",
-        "rig_hot" to "Poste trop chaud : émission refusée jusqu'à ce qu'il refroidisse.",
-        "audio_missing" to "Carte son du poste absente (poste débranché ou éteint ?) : émission refusée. La station la retrouve toute seule.",
-        "power_disabled" to "Allumage et extinction à distance hors service sur cette station (TRX Console, menu 2.8).",
-        "power_unsupported" to "Ce poste ne peut pas être allumé ou éteint par la CAT.",
-        "power_busy" to "Allumage ou extinction du poste en cours : patiente quelques secondes.",
-        "rig_off" to "Poste éteint : rallume-le (nouvelle connexion) avant de le régler ou d'émettre.",
-        "rig_on" to "Le poste n'est pas éteint : rien à allumer.",
-        "power_off_failed" to "Le poste a refusé l'ordre d'extinction.",
-        "report_empty" to "Le rapport est vide.",
-        "report_too_soon" to "Un rapport vient déjà d'être envoyé : réessaie dans quelques secondes.",
-        "report_storage_error" to "La station n'a pas pu enregistrer le rapport (disque ?).",
-        "reports_unavailable" to "Cette station ne reçoit pas les rapports : utilise « Partager / e-mail ».",
-        "fault_latched" to "Défaut verrouillé : intervention sur la station requise.",
-        "starting" to "La station démarre : réessaie dans un instant.",
-        "not_idle" to "Une coupure ou une émission est en cours.",
-        "cancelled" to "Prise d'émission annulée par une coupure.",
-        "ptt_write_failed" to "L'ordre d'émission a échoué ; retour en réception.",
-        "rig_did_not_key" to "Le poste n'est pas passé en émission ; retour en réception.",
-        "tx_active" to "Impossible pendant l'émission (fréquence, mode et réglages du poste sont verrouillés).",
-        "mode_not_allowed" to "Émission refusée dans ce mode : le poste ne module par l'USB qu'en mode données (USB-D...). Change de mode.",
-        "unknown_memory" to "Cette mémoire n'existe plus (supprimée depuis un autre appareil ?).",
-        "memories_unavailable" to "Les mémoires ne sont pas disponibles sur cette station.",
-        "storage_error" to "La station n'a pas pu enregistrer les mémoires (disque ?).",
-        "layouts_unavailable" to "Les mises en page personnalisées ne sont pas disponibles sur cette station.",
-        "beeps_unavailable" to "Les bips de fin d'émission ne sont pas disponibles sur cette station.",
-        "selcall_unavailable" to "Le SELCALL n'est pas en service sur cette station ([selcall] enabled = true dans station.toml).",
-        "selcall_not_armed" to "Armez d'abord le SELCALL sur un code : l'appel émet le code armé.",
-        "selcall_too_long" to "Appel SELCALL plus long que la durée maximale d'émission (TOT) : réduisez manual_repeat sur la station.",
-        "beeps_storage_error" to "La station n'a pas pu enregistrer le réglage des bips.",
-        "layout_invalid" to "Mise en page refusée par la station (règles de sécurité ou de lisibilité non respectées).",
-        "layout_storage_error" to "La station n'a pas pu enregistrer la mise en page (disque ?).",
-        "invalid" to "Valeur refusée par le poste.",
-        "rig_error" to "Erreur du poste.",
-        "forbidden" to "Compte visiteur : réception seule, aucune commande vers la station.",
-        "unknown_listener" to "Ce visiteur n'est plus connecté.",
-        "still_overloaded" to "La station n'est pas encore revenue à la normale : l'écoute des visiteurs reste suspendue.",
-        "listeners_off" to "Écoute des visiteurs fermée sur la station (TRX Console, menu 4.2 : nombre maximal de visiteurs).",
-        "listeners_unavailable" to "Cette station ne gère pas les visiteurs.",
-        "voice_profiles_unavailable" to "Cette station ne range pas les profils d'égaliseur.",
-        "no_back" to "Pas de fréquence de retour mémorisée.",
-        "friends_unavailable" to "Présence de groupe indisponible sur cette station (module « presence » arrêté ou désactivé).",
-        "sdr_unavailable" to "SDR indisponible sur cette station (module « sdr » arrêté ou désactivé).",
-        "sdr_invalid" to "Réglage du SDR refusé (valeur hors limites).",
-        "sdr_error" to "Le module SDR n'a pas pu traiter la demande.",
-        "sdr_audio_unavailable" to "Son du SDR indisponible sur cette connexion (recharger la page).",
-        "friends_error" to "La présence de groupe n'a pas pu traiter la demande.",
-        "monitoring_unavailable" to "Monitoring indisponible sur cette station (module « monlink » arrêté ou désactivé).",
-        "monitoring_error" to "Le monitoring n'a pas pu traiter la demande.",
-        "diffusion_unavailable" to "Diffusion indisponible sur cette station (module « diffusion » arrêté ou hors service).",
-        "diffusion_error" to "La diffusion n'a pas pu traiter la demande.",
-        "diffusion_busy" to "Une diffusion est déjà en cours : l'arrêter d'abord.",
-        "diffusion_disabled" to "Diffusion hors service ([diffusion] enabled = false, menu 8.1).",
-        "diffusion_no_secrets" to "Secrets de la diffusion absents ou illisibles (serveur, mot de passe source, clé) : régler la fonction.",
-        "diffusion_confirm_required" to "Avertissement de responsabilité à confirmer avant la première diffusion.",
-        "diffusion_malformed" to "Réglage de la diffusion refusé (durée, texte ou mot de passe).",
-        "diffusion_unknown_action" to "Action de diffusion inconnue de la station (mise à jour ?).",
-        "voice_profiles_storage_error" to "Profil d'égaliseur non enregistré sur la station (disque ?).",
-        "voice_profile_refused" to "Profil d'égaliseur refusé par la station.",
-        "swr_busy" to "Mesure de TOS en cours : STOP pour l'arrêter.",
-        "swr_unavailable" to "Mesure de TOS indisponible sur cette station.",
-        "breizh_unavailable" to "Breizh Audio Box n'est pas utilisé par cette station.",
-        "breizh_storage_error" to "Réglage de Breizh non enregistré sur la station (disque ?).",
-        "freedv_unavailable" to "FreeDV n'est pas en service sur cette station.",
-        "freedv_tx" to "Émission en cours : le mode FreeDV se change en réception.",
-        "freedv_missing" to "Décodeur FreeDV introuvable sur la station (voir [freedv] de station.toml).",
-        "freedv_storage_error" to "Dossier de travail de FreeDV inaccessible sur la station.",
-        "netprobe_unavailable" to "Sonde de qualité réseau absente de cette station.",
-        "netprobe_error" to "Sonde de qualité réseau : erreur sur la station (voir son journal).",
-        "swr_no_fm_mode" to "Aucun mode FM permis pour la mesure de TOS (ajouter FM-D aux modes d'émission de la station).",
-        "swr_out_of_band" to "Aucun point de la mesure dans les bandes autorisées de la station.",
-        "swr_bad_range" to "Plage de mesure impossible (au moins 2 points, FreqHaute au-dessus de FreqBasse).",
-        "swr_too_many_points" to "Trop de points pour la mesure de TOS.",
-        "swr_unreadable" to "Réglages du poste non relus : mesure de TOS arrêtée.",
-    )
+    /** Refus de la station, par code (tronc commun `refus.<code>` de trxstation/i18n/client.<langue>.json). */
+    val REFUSALS: Map<String, String> get() = Tr.section("refus")
 
-    val CUTS: Map<String, String> = mapOf(
-        "tot" to "durée maximale d'émission atteinte",
-        "power_on_tx" to "poste allumé en émission : remis en réception",
-        "heartbeat" to "perte du signal de vie du client",
-        "selcall_sent" to "appel SELCALL envoyé",
-        "swr_point" to "point de mesure de TOS terminé",
-        "swr_cancel" to "mesure de TOS annulée",
-        "swr_end" to "fin de la mesure de TOS",
-        "selcall_timeout" to "appel SELCALL trop long : coupé",
-        "selcall_failed" to "appel SELCALL en erreur : coupé",
-        "toggle" to "demande d'un client",
-        "stop" to "bouton STOP",
-        "client_disconnected" to "déconnexion du client émetteur",
-        "frequency_changed" to "fréquence modifiée sur le poste",
-        "mode_changed" to "mode modifié sur le poste pendant l'émission",
-        "split_changed" to "split modifié sur le poste pendant l'émission",
-        "xit_changed" to "ΔTX (XIT) modifié sur le poste pendant l'émission",
-        "rig_reported_rx" to "le poste est repassé en réception",
-        "cat_down" to "liaison avec le poste perdue",
-        "rig_silent" to "poste muet",
-        "rig_overheat" to "poste trop chaud",
-        "audio_lost" to "carte son du poste perdue",
-        "ptt_write_failed" to "échec de l'ordre d'émission",
-        "rig_did_not_key" to "le poste n'a pas émis",
-        "shutdown" to "arrêt de la station",
-        "startup" to "démarrage de la station",
-    )
+    /** Motifs d'une coupure de l'émission, par code (tronc commun `coupure.<code>`). */
+    val CUTS: Map<String, String> get() = Tr.section("coupure")
 
     /**
      * Causes d'une connexion perdue ou impossible (client.js : LOSS_REASONS, titres). « pin » et « untrusted » sont
@@ -153,13 +38,15 @@ object Texts {
 
     /** Refus d'une commande : texte connu, sinon le détail donné par la station, sinon le code. */
     fun refusal(reason: String, detail: String = ""): String =
-        REFUSALS[reason] ?: detail.ifBlank { "Refusé par la station ($reason)." }
+        (if (reason.isNotEmpty() && !reason.startsWith("_")) Tr.find("refus.$reason") else null)
+            ?: detail.ifBlank { Tr.t("refus._inconnu", "code" to reason) }
 
     /** Texte d'un refus suivi du code du catalogue (« … [ORT-5116] ») ; tout autre texte que ORT-NNNN est ignoré. */
     fun withCode(text: String, ort: String?): String =
         if (ort != null && Regex("^ORT-\\d{4}$").matches(ort)) "$text [$ort]" else text
 
-    fun cut(reason: String): String = CUTS[reason] ?: reason
+    fun cut(reason: String): String =
+        (if (reason.isNotEmpty() && !reason.startsWith("_")) Tr.find("coupure.$reason") else null) ?: reason
 
     fun loss(code: String): String = LOSSES[code] ?: LOSSES.getValue("client_error")
 }

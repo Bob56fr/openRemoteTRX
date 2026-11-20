@@ -96,17 +96,21 @@ class LinkTest {
 }
 
 class TextsTest {
-    private val page = File(System.getProperty("trx.repo") ?: "../..", "trxstation/gateway/api/static/client.js").readText()
+    private val repo = File(System.getProperty("trx.repo") ?: "../..")
+    private val page = File(repo, "trxstation/gateway/api/static/client.js").readText()
 
-    private fun pageCodes(table: String): Set<String> {
-        val body = Regex("const $table = \\{(.*?)\\n  \\};", RegexOption.DOT_MATCHES_ALL).find(page)!!.groupValues[1]
-        return Regex("^\\s*([a-z_]+):", RegexOption.MULTILINE).findAll(body).map { it.groupValues[1] }.toSet()
-    }
+    /** Tronc commun de la station (trxstation/i18n/client.<langue>.json), sans passer par la copie de Gradle. */
+    private fun stationKeys(lang: String): Set<String> =
+        Regex("""^\s*"([^"]+)":""", RegexOption.MULTILINE).findAll(File(repo, "trxstation/i18n/client.$lang.json").readText())
+            .map { it.groupValues[1] }.toSet()
 
     @Test
-    fun `memes codes que la page`() {
-        assertEquals(pageCodes("REASONS"), Texts.REFUSALS.keys)
-        assertEquals(pageCodes("CUT_REASONS"), Texts.CUTS.keys)
+    fun `refus et coupures lus dans le tronc commun copie a la compilation`() {
+        for (lang in Tr.LANGS) assertEquals(stationKeys(lang), Tr.catalog(lang).keys, lang)
+        val fr = stationKeys("fr")
+        assertEquals(fr.filter { it.startsWith("refus.") && !it.startsWith("refus._") }.map { it.removePrefix("refus.") }.toSet(),
+            Texts.REFUSALS.keys)
+        assertEquals(fr.filter { it.startsWith("coupure.") }.map { it.removePrefix("coupure.") }.toSet(), Texts.CUTS.keys)
     }
 
     @Test
@@ -122,6 +126,33 @@ class TextsTest {
         assertEquals("Fréquence hors des bandes d'émission autorisées.", Texts.refusal("out_of_band"))
         assertEquals("détail", Texts.refusal("nouveau", "détail"))
         assertEquals("Refusé par la station (nouveau).", Texts.refusal("nouveau"))
+        assertEquals("Refusé par la station (_inconnu).", Texts.refusal("_inconnu"))
+        assertEquals("durée maximale d'émission atteinte", Texts.cut("tot"))
+        assertEquals("nouveau", Texts.cut("nouveau"))
+    }
+
+    @Test
+    fun `langue choisie - repli sur le francais puis la cle`() {
+        try {
+            Tr.lang = "de"
+            assertEquals("Frequenz außerhalb der erlaubten Sendebänder.", Texts.refusal("out_of_band"))
+            assertEquals("Von der Station abgelehnt (x).", Texts.refusal("x"))
+            assertEquals("cle.absente", Tr.t("cle.absente"))
+            Tr.lang = "xx"
+            assertEquals("fr", Tr.lang)
+        } finally {
+            Tr.lang = "fr"
+        }
+    }
+
+    @Test
+    fun `choix de la langue - telephone, puis anglais, puis francais`() {
+        val all = Tr.LANGS
+        assertEquals("de", Tr.chooseLang(null, listOf("de-DE", "en-US"), all))
+        assertEquals("es", Tr.chooseLang("es", listOf("de-DE"), all))
+        assertEquals("en", Tr.chooseLang(null, listOf("it-IT"), all))
+        assertEquals("fr", Tr.chooseLang(null, listOf("de-DE"), listOf("fr")))
+        assertEquals("fr", Tr.chooseLang("de", emptyList()))                       // proposé aujourd'hui : français seul
     }
 }
 
