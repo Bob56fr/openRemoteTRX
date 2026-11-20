@@ -236,7 +236,7 @@ internal fun TabBar(current: Tab, tabs: List<Tab> = Tab.entries, onSelect: (Tab)
 internal fun Panel(content: @Composable ColumnScope.() -> Unit) {
     Surface(
         shape = RoundedCornerShape(14.dp), color = Page.PANNEAU, contentColor = Page.TEXTE,
-        border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth(),
+        border = BorderStroke(1.dp, Page.CADRE), modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }

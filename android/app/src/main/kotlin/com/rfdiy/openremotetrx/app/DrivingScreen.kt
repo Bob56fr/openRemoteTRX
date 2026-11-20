@@ -97,7 +97,7 @@ fun DrivingScreen(ui: RigUi, reason: DrivingReason, modifier: Modifier, onLeaveM
         Box(Modifier.weight(1f))
         if (reason == DrivingReason.CAR) {
             Surface(
-                shape = RoundedCornerShape(12.dp), color = Color.Transparent, border = BorderStroke(1.dp, Page.LIGNE),
+                shape = RoundedCornerShape(12.dp), color = Color.Transparent, border = BorderStroke(1.dp, Page.CADRE),
                 modifier = Modifier.fillMaxWidth().height(48.dp).combinedClickable(onClick = {}, onLongClick = { RigHub.setPassenger(true) }),
             ) {
                 Box(contentAlignment = Alignment.Center) {

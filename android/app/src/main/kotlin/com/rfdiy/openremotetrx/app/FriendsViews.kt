@@ -173,22 +173,23 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
         if (!compact) {
             HorizontalDivider(color = Page.LIGNE)
             Text("Mon statut", style = MaterialTheme.typography.labelLarge)
-            // Statut publié (étape 297) : sans lui, « Au shack 1 h » ne montrait rien ; absent d'une station ancienne
-            view?.me?.let { me ->
-                Text(me.text, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                me.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2) }
-            }
+            // Choix unique, le bouton en cours allumé, puis UNE phrase : ce que voient les amis (étapes 297 et 299)
+            val choice = view?.me?.choice
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CompactChip("Au shack 1 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 60)) })
-                CompactChip("Au shack 2 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 120)) })
-                CompactChip("Fin du « shack »", onClick = { RigHub.friendsAction("shack_cancel") },
-                            enabled = view?.me?.shack != false, selected = view?.me?.shack == true)
+                CompactChip("Automatique", onClick = { RigHub.friendsAction("shack_cancel") }, selected = choice == "auto")
+                CompactChip("Au shack 1 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 60)) }, selected = choice == "60")
+                CompactChip("Au shack 2 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 120)) }, selected = choice == "120")
             }
+            view?.me?.let { Text(it.text, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2) }
+            HorizontalDivider(color = Page.LIGNE)
+            Text("Pseudo dans les groupes", style = MaterialTheme.typography.labelLarge)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(pseudo, { pseudo = it.take(16) }, label = { Text("Pseudo") }, singleLine = true, modifier = Modifier.weight(1f))
+                Box(Modifier.weight(1f)) { CompactField(pseudo, { pseudo = it.take(16) }, "Pseudo") }
                 TextButton(onClick = { Friends.cleanPseudo(pseudo)?.let { RigHub.friendsAction("pseudo", mapOf("pseudo" to it)) } },
-                           enabled = Friends.cleanPseudo(pseudo) != null) { Text("Enregistrer") }
+                           enabled = Friends.cleanPseudo(pseudo) != null && Friends.cleanPseudo(pseudo) != view?.pseudo) { Text("Enregistrer le pseudo") }
             }
+            HorizontalDivider(color = Page.LIGNE)
+            Text("Groupes", style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 CompactChip("Créer un groupe", onClick = { create = true })
                 CompactChip("Rejoindre (invitation)", onClick = { join = true })

@@ -3322,8 +3322,13 @@
       $("fr-status").textContent = st;
       // Mon statut (étape 297) : sans lui, « Au shack 1 h » ne montrait rien ; null sur une station sans le champ `me`
       const me = view ? fx.myStatus(view.me, frNowS()) : null;
-      $("fr-me").textContent = me ? me.text + (me.note ? " — " + me.note : "") : "";
-      $("fr-shack-cancel").disabled = !!me && !me.shack;
+      // Choix unique (étape 299) : le bouton en cours allumé, une phrase qui dit ce que voient les amis
+      $("fr-me").textContent = me ? me.text : "";
+      for (const [id, c] of [["fr-shack-cancel", "auto"], ["fr-shack-60", "60"], ["fr-shack-120", "120"]]) {
+        const on = !!me && me.choice === c;
+        $(id).className = "chip" + (on ? " on" : "");
+        $(id).setAttribute("aria-checked", on ? "true" : "false");
+      }
       if (view && document.activeElement !== $("fr-pseudo")) $("fr-pseudo").value = view.pseudo || "";
       $("fr-back").hidden = !client.friendsBackPoint;
       frBadges(view);

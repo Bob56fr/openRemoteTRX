@@ -87,17 +87,17 @@ test("affichage choisi, fenêtre détachée seulement si le navigateur la permet
   assert.equal(fx.CONSENT.length, 3);
 });
 
-test("mon statut (étape 297) : texte vu par les amis, « Au shack » déclaré caché par En RX, rien sur une station ancienne", () => {
+test("mon statut (étapes 297 et 299) : choix en cours et une phrase, « Au shack » déclaré caché par En RX, rien sur une station ancienne", () => {
   assert.equal(fx.myStatus(undefined, NOW), null);
   assert.equal(fx.myStatus({ code: "O" }, NOW), null);
   const a = fx.myStatus({ code: "A", since: NOW - 60, su: null, once: null }, NOW);
-  assert.deepEqual([a.text, a.note, a.shack], ["Vos amis vous voient : Absent", null, false]);
+  assert.deepEqual([a.text, a.choice, a.shack], ["Automatique : vos amis vous voient « Absent ».", "auto", false]);
   const s = fx.myStatus({ code: "S", since: NOW, su: NOW + 3600, once: NOW + 3600 }, NOW);
-  assert.ok(/^Vos amis vous voient : Au shack jusqu'à \d\d:\d\d$/.test(s.text)); assert.equal(s.note, null); assert.equal(s.shack, true);
-  const r = fx.myStatus({ code: "R", since: NOW, su: null, once: NOW + 3600 }, NOW);
-  assert.equal(r.text, "Vos amis vous voient : En RX");
-  assert.ok(/^« Au shack » déclaré jusqu'à \d\d:\d\d : il s'affichera quand la station sera inactive \(« En RX » passe devant\)\.$/.test(r.note));
-  assert.equal(fx.myStatus({ code: "R", once: NOW - 1 }, NOW).shack, false);
+  assert.ok(/^Au shack jusqu'à \d\d:\d\d : vos amis vous voient « Au shack »\.$/.test(s.text)); assert.equal(s.choice, "60");
+  const r = fx.myStatus({ code: "R", since: NOW, su: null, once: NOW + 7000 }, NOW);
+  assert.ok(/^Au shack jusqu'à \d\d:\d\d : vos amis vous voient « En RX » tant que la station est active, puis « Au shack »\.$/.test(r.text));
+  assert.equal(r.choice, "120");
+  assert.equal(fx.myStatus({ code: "R", once: NOW - 1 }, NOW).choice, "auto");
 });
 
 (async () => {

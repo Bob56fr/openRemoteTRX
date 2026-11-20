@@ -157,18 +157,26 @@
   }
 
   /* Invitation collée : on garde l'URL entière (ou le seul code après #), sans espaces. */
-  /* Mon statut, tel que mes amis le voient (champ `me` de la vue, station 0.228.0+ ; null avant). Priorités de la
-     station : En QSO > En RX > Au shack > Absent : un « Au shack » déclaré reste caché tant que la station est active. */
+  /* Mon statut (champ `me` de la vue, station 0.228.0+ ; null avant) : choix de l'opérateur (`choice` : « auto »,
+     « 60 » ou « 120 », d'après le temps restant) et UNE phrase qui dit ce que voient les amis. Priorités de la station
+     (cahier § 9.1, gardées par l'utilisateur à l'étape 299) : En QSO > En RX > Au shack > Absent : un « Au shack »
+     déclaré ne se voit qu'une fois la station inactive. */
   function myStatus(me, nowS) {
     if (!me || typeof me !== "object" || !CODES[me.code] || me.code === "O") return null;
     const label = CODES[me.code].label;
     const once = Number.isFinite(me.once) && me.once > nowS ? me.once : null;
-    const main = "Vos amis vous voient : " + label
-      + (me.code === "S" && Number.isFinite(me.su) ? " jusqu'à " + clock(me.su) : "");
-    const note = once !== null && me.code !== "S"
-      ? "« Au shack » déclaré jusqu'à " + clock(once) + " : il s'affichera quand la station sera inactive (« " + label + " » passe devant)."
-      : null;
-    return { code: me.code, cls: CODES[me.code].cls, label: label, text: main, note: note, shack: once !== null };
+    let text;
+    if (once === null) {
+      text = "Automatique : vos amis vous voient « " + label + " »"
+        + (me.code === "S" && Number.isFinite(me.su) ? " jusqu'à " + clock(me.su) : "") + ".";
+    } else if (me.code === "S") {
+      text = "Au shack jusqu'à " + clock(once) + " : vos amis vous voient « Au shack ».";
+    } else {
+      text = "Au shack jusqu'à " + clock(once) + " : vos amis vous voient « " + label
+        + " » tant que la station est active, puis « Au shack ».";
+    }
+    const choice = once === null ? "auto" : (once - nowS > 3600 ? "120" : "60");
+    return { code: me.code, cls: CODES[me.code].cls, label: label, text: text, choice: choice, shack: once !== null };
   }
 
   function cleanInvitation(text) {

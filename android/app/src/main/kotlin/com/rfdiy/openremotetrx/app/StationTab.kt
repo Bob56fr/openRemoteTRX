@@ -117,7 +117,7 @@ internal fun RigScope.StationTab(miniWaterfall: Boolean = true) {
 @Composable
 internal fun RigScope.StationDisplay() {
             // Afficheur : fréquence (toucher = saisie), mode, S-mètre
-            Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.LIGNE), modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(12.dp), color = Page.INSTRUMENT, contentColor = Page.TEXTE, border = BorderStroke(1.dp, Page.CADRE), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(

@@ -21,6 +21,7 @@ object Page {
     val MESURE = Color(0xFF7CC0FF)          // --mesure
     val BORD = Color(0xFF33465C)            // --bouton-bord
     val LIGNE = Color(0xFF1A2532)           // --ligne : séparateurs doux
+    val CADRE = Color(0xFF2D3E53)           // liseré des cartes, plus clair que --ligne (demande de l'utilisateur, étape 299)
     val SELECTION = Color(0xFF14304F)       // --selection-fond
     val TX = Color(0xFFE5484D)              // --tx, --erreur
     val TX_FOND = Color(0xFF2A1012)         // --tx-fond

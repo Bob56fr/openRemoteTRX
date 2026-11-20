@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -180,19 +181,36 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
             if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
-                OutlinedButton(onClick = { swrOpen = true }) { Text("Mesure de TOS de l'antenne") }
+                SettingsAction("Mesure de TOS de l'antenne", onClick = { swrOpen = true })
             }
             if (rig.net != null && !listener) {                             // sonde réseau (opérateur, station 0.106.0+)
-                OutlinedButton(onClick = { netOpen = true }) { Text("Qualité du réseau (30 jours)") }
+                SettingsAction("Qualité du réseau (30 jours)", onClick = { netOpen = true })
             }
             if (rig.monitoring != null && !listener) {                      // monitoring inter-stations (opérateur, 0.164.0+)
-                OutlinedButton(onClick = { monitoringOpen = true }) { Text("Monitoring entre stations (aider, être aidé)") }
+                SettingsAction("Monitoring entre stations (aider, être aidé)", onClick = { monitoringOpen = true })
             }
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
-                OutlinedButton(onClick = { hostDialog = true; RigHub.hostInfo() }) { Text("Synthèse du matériel de la station") }
+                SettingsAction("Synthèse du matériel de la station", onClick = { hostDialog = true; RigHub.hostInfo() })
             }
             if (hello?.offers("bug_report") == true && !listener && connected) {   // comme la page ; jamais un visiteur
-                OutlinedButton(onClick = { reportOpen = true }) { Text("Signaler un problème") }
+                SettingsAction("Signaler un problème", onClick = { reportOpen = true })
             }
-            OutlinedButton(onClick = onDisconnect) { Text("Déconnecter") }
+            SettingsAction("Déconnecter", onClick = onDisconnect, danger = true)
+}
+
+/**
+ * Bouton d'action de la fin des Réglages (étape 299) : toute la largeur, fond et liseré visibles, texte à gauche et « › »
+ * (avant : OutlinedButton de largeurs différentes, liseré à peine visible sur le thème sombre).
+ */
+@Composable
+private fun SettingsAction(label: String, onClick: () -> Unit, danger: Boolean = false) {
+    OutlinedButton(
+        onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, if (danger) Page.TX.copy(alpha = 0.8f) else Page.ACCENT.copy(alpha = 0.7f)),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = Page.COMMANDE, contentColor = if (danger) Page.TX else Page.TEXTE),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        Text("›", color = if (danger) Page.TX else Page.MESURE)
+    }
 }

@@ -116,12 +116,13 @@ object Friends {
         )
     }
 
-    data class Me(val code: String, val label: String, val text: String, val note: String?, val shack: Boolean)
+    /** Mon statut : `choice` = « auto », « 60 » ou « 120 » (bouton allumé), `text` = ce que voient les amis. */
+    data class Me(val code: String, val label: String, val text: String, val choice: String, val shack: Boolean)
 
     /**
-     * Mon statut, tel que mes amis le voient (champ `me` de la vue, station 0.228.0+ ; null avant). Mêmes textes que
-     * friends.js. Priorités de la station : En QSO > En RX > Au shack > Absent : un « Au shack » déclaré reste caché
-     * tant que la station est active.
+     * Mon statut (champ `me` de la vue, station 0.228.0+ ; null avant). Mêmes textes que friends.js. Priorités de la
+     * station (cahier § 9.1, gardées par l'utilisateur à l'étape 299) : En QSO > En RX > Au shack > Absent : un
+     * « Au shack » déclaré ne se voit qu'une fois la station inactive.
      */
     fun myStatus(me: JsonObject?, nowS: Long, zone: ZoneId = ZoneId.systemDefault()): Me? {
         me ?: return null
@@ -129,11 +130,14 @@ object Friends {
         val label = LABELS.getValue(code)
         val once = me.long("once")?.takeIf { it > nowS }
         val su = me.long("su")
-        val main = "Vos amis vous voient : " + label + (if (code == "S" && su != null) " jusqu'à " + clock(su, zone) else "")
-        val note = if (once != null && code != "S")
-            "« Au shack » déclaré jusqu'à " + clock(once, zone) + " : il s'affichera quand la station sera inactive (« $label » passe devant)."
-        else null
-        return Me(code, label, main, note, once != null)
+        val text = when {
+            once == null -> "Automatique : vos amis vous voient « $label »" +
+                (if (code == "S" && su != null) " jusqu'à " + clock(su, zone) else "") + "."
+            code == "S" -> "Au shack jusqu'à " + clock(once, zone) + " : vos amis vous voient « Au shack »."
+            else -> "Au shack jusqu'à " + clock(once, zone) + " : vos amis vous voient « $label » tant que la station est active, puis « Au shack »."
+        }
+        val choice = when { once == null -> "auto"; once - nowS > 3600 -> "120"; else -> "60" }
+        return Me(code, label, text, choice, once != null)
     }
 
     private fun sorted(list: List<Member>) =

@@ -263,7 +263,7 @@ fun StationScreen(
  * étiquette flottante sur le cadre, marges intérieures réduites.
  */
 @Composable
-private fun CompactField(
+internal fun CompactField(
     value: String, onChange: (String) -> Unit, label: String,
     password: Boolean = false, singleLine: Boolean = true, keyboard: KeyboardOptions = KeyboardOptions.Default,
 ) {
