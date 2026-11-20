@@ -157,7 +157,7 @@
   "cli.starting_rigctld": "rigctld wird gestartet...",
   "cli.rts_dtr_warning": "  (PTT über RTS/DTR: das Öffnen des Ports kann kurz senden: Dummy-Load angeschlossen)",
   "cli.rigctld_failed": "rigctld ist nicht gestartet (Modell, COM-Port oder Baudrate falsch? Funkgerät aus?).",
-  "cli.stop_station": "TRX Console Menü 1.2 oder die Windows-Verknüpfung „4 - Arrêter la station“ (Station anhalten)",
+  "cli.stop_station": "TRX Console Menü 1.2 (unter Windows öffnet sich TRX Console über die Verknüpfung „TRX distant“)",
   "cli.rigctld_running": "rigctld läuft bereits (außerhalb der Station gestartet): wird so verwendet.",
   "cli.config_invalid": "Ungültige Konfiguration:",
   "cli.config_unreadable": "Konfiguration nicht lesbar ({path}): {error}. Gib sie mit --config station.toml an.",

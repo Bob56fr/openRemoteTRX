@@ -15,7 +15,7 @@
   "main.rigctld_busy": "rigctld ya responde en {host}:{port}: ¿está en marcha la estación? Detenla (TRX Console, menú 1.2) o añade --no-spawn para usar ese rigctld.",
   "main.rigctld_absent": "rigctld no responde en {host}:{port}: arráncalo (trx-rigctld) o quita --no-spawn.",
   "main.rigctld_failed": "rigctld no ha arrancado (¿modelo, puerto COM o velocidad incorrectos? ¿equipo apagado?).",
-  "main.stop_station_how": "TRX Console menú 1.2, o el acceso directo de Windows «4 - Arrêter la station»",
+  "main.stop_station_how": "TRX Console menú 1.2 (en Windows, TRX Console se abre con el acceso directo «TRX distant»)",
   "main.catalogue_count": "{count} ficha(s) válida(s) en {directory}",
   "main.catalogue_rejected": "  DESCARTADA {name}:",
   "main.report": "\nInforme: {directory}",

@@ -15,7 +15,7 @@
   "main.rigctld_busy": "rigctld already answers on {host}:{port}: is the station running? Stop it (TRX Console, menu 1.2), or add --no-spawn to use this rigctld.",
   "main.rigctld_absent": "rigctld does not answer on {host}:{port}: start it (trx-rigctld) or remove --no-spawn.",
   "main.rigctld_failed": "rigctld did not start (wrong model, COM port or baud rate? rig switched off?).",
-  "main.stop_station_how": "TRX Console menu 1.2, or the Windows shortcut \"4 - Arrêter la station\"",
+  "main.stop_station_how": "TRX Console menu 1.2 (on Windows, TRX Console opens from the \"TRX distant\" shortcut)",
   "main.catalogue_count": "{count} valid sheet(s) in {directory}",
   "main.catalogue_rejected": "  REJECTED {name}:",
   "main.report": "\nReport: {directory}",

@@ -16871,8 +16871,8 @@ ORT-9313:
   message: '{outil} a besoin du poste pour lui seul, mais la station est en marche : arrête-la d''abord ({comment}).'
   causes:
   - 'Essai du poste ou qualification lancé sans arrêter la station'
-  preconisation: 'Arrêter la station (TRX Console menu 1.2, ou raccourci Windows « 4 - Arrêter la station »), lancer
-    l''essai, puis redémarrer la station.'
+  preconisation: Arrêter la station (TRX Console menu 1.2 ; sous Windows, TRX Console s'ouvre par le raccourci
+    « TRX distant »), lancer l'essai, puis redémarrer la station.
   action_auto: refus
   ntfy_defaut: false
   priorite_ntfy: 3
@@ -16883,22 +16883,22 @@ ORT-9313:
     message: '{outil} needs the rig for itself, but the station is running: stop it first ({comment}).'
     causes:
     - 'Rig test or qualification started without stopping the station'
-    preconisation: 'Stop the station (TRX Console menu 1.2, or the Windows shortcut « 4 - Arrêter la station »), run
-      the test, then restart the station.'
+    preconisation: Stop the station (TRX Console menu 1.2; on Windows, TRX Console opens from the “TRX distant”
+      shortcut), run the test, then restart the station.
   de:
     titre: 'Station läuft: Test des Funkgeräts abgelehnt'
     message: '{outil} braucht das Funkgerät für sich allein, aber die Station läuft: stoppen Sie sie zuerst ({comment}).'
     causes:
     - Test des Funkgeräts oder Qualifikation gestartet, ohne die Station zu stoppen
-    preconisation: Stoppen Sie die Station (TRX Console Menü 1.2, oder Windows-Verknüpfung „4 - Arrêter la station“), starten
-      Sie den Test und starten Sie dann die Station neu.
+    preconisation: Stoppen Sie die Station (TRX Console Menü 1.2; unter Windows öffnet sich TRX Console über die
+      Verknüpfung „TRX distant“), starten Sie den Test und starten Sie dann die Station neu.
   es:
     titre: 'Estación en marcha: prueba del transceptor rechazada'
     message: '{outil} necesita el transceptor solo para él, pero la estación está en marcha: detenla primero ({comment}).'
     causes:
     - Prueba del transceptor o cualificación lanzada sin detener la estación
-    preconisation: Detén la estación (TRX Console menú 1.2, o acceso directo de Windows «4 - Arrêter la station»), lanza la
-      prueba y vuelve a iniciar la estación.
+    preconisation: Detén la estación (TRX Console menú 1.2; en Windows, TRX Console se abre con el acceso directo
+      «TRX distant»), lanza la prueba y vuelve a iniciar la estación.
 
 ORT-9501:
   gravite: erreur
