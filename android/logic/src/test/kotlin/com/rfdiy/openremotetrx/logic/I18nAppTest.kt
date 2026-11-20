@@ -159,6 +159,13 @@ class I18nAppTest {
     }
 
     @Test
+    fun `langues declarees a Android 13+ = langues proposees`() {
+        val xml = File("../app/src/main/res/xml/locales_config.xml").readText(Charsets.UTF_8)
+        val declared = Regex("""<locale android:name="([a-z]{2})"""").findAll(xml).map { it.groupValues[1] }.toList()
+        assertEquals(Tr.OFFERED, declared)
+    }
+
+    @Test
     fun `pluriel - regle de la langue`() {
         try {
             Tr.lang = "fr"

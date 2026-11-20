@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<!-- Langues de l'application (lot T9) : proposées par Android 13+ dans Réglages > Applications > Langue ; la même
+     liste que Tr.OFFERED (I18nAppTest le vérifie). L'application lit ce choix comme la langue du téléphone (AppLang). -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="fr" />
+    <locale android:name="en" />
+    <locale android:name="de" />
+    <locale android:name="es" />
+</locale-config>

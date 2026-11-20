@@ -1,0 +1,13 @@
+openRemoteTRX controla TU estación de radioaficionado desde el teléfono: escucha del receptor, transmisión (PTT alternado), frecuencia, modo, filtros, S-meter, espectro HF, memorias, DX Cluster, medida de ROE.
+
+Necesitas una estación openRemoteTRX: el software libre (AGPL-3.0) instalado en el PC conectado a tu equipo (Windows, Debian; cualquier equipo compatible con Hamlib). https://github.com/Bob56fr/openRemoteTRX
+
+La seguridad de transmisión la garantiza la estación: PTT solo alternado, corte al alcanzar el tiempo máximo (TOT), vuelta a recepción si el teléfono deja de responder, una sola persona transmite a la vez, botón STOP siempre visible.
+
+Modo conducción y Android Auto: escucha, memorias, control por voz; transmitir conduciendo está sujeto a las normas de tu país.
+
+Aplicación en español, inglés, francés y alemán.
+
+Solo para radioaficionados con licencia: eres responsable de tus transmisiones.
+
+Sin publicidad, sin cuenta, sin rastreadores: la aplicación solo habla con tu estación.

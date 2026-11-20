@@ -87,31 +87,29 @@ version du Play Store s'essaie sur un AUTRE téléphone.
 - **Images** : `docs/play-store/icone-512.png`, `docs/play-store/banniere-1024x500.png` ; captures du téléphone
   (au moins 2, format portrait), prises sur le S25 : onglet Station, Spectre, Mémoires.
 
-### Textes de la fiche
+### Textes de la fiche (4 langues, lot T9)
 
-Description courte (80 caractères au plus) :
+Les textes sont dans `docs/play-store/listing/<langue>/` (format « supply » de fastlane, pour un envoi automatique
+plus tard) : `title.txt`, `short_description.txt` (80 caractères au plus), `full_description.txt` (4 000 au plus),
+`changelogs/default.txt` (notes de version, 500 au plus). Langues : `fr-FR` (langue par défaut de la fiche), `en-US`,
+`de-DE`, `es-ES`. `tests/test_play_listing.py` vérifie les limites de Google, le lien vers les sources (AGPL) et que
+chaque langue de l'application a sa fiche.
 
-> Écoutez et pilotez votre station radioamateur à distance (station openRemoteTRX).
+Dans la Play Console (une seule fois, puis à chaque changement des textes) :
 
-Description complète :
+1. Développer la croissance > Présence sur le Play Store > Fiche Play Store principale : coller les textes de `fr-FR`.
+2. « Gérer les traductions » > « Ajouter vos propres traductions » : cocher anglais (États-Unis) `en-US`, allemand
+   `de-DE`, espagnol (Espagne) `es-ES` (ne PAS choisir la traduction automatique de Google), puis coller les textes de
+   chaque dossier.
+3. Captures d'écran PAR LANGUE (facultatif : sinon celles du français sont montrées partout) : sur le téléphone de
+   test, Réglages > Langue (ou Réglages d'Android > Applications > openRemoteTRX > Langue, Android 13+), puis les
+   mêmes écrans qu'en français (Station, Spectre, Mémoires) ; les déposer dans la langue correspondante. L'icône et la
+   bannière (`docs/play-store/`) n'ont pas de texte : communes à toutes les langues.
+4. À chaque envoi : notes de version dans les 4 langues (`changelogs/default.txt` de chaque dossier, ou un texte
+   propre à la version).
 
-> openRemoteTRX pilote VOTRE station radioamateur depuis le téléphone : écoute du récepteur, émission en
-> alternat, fréquence, mode, filtres, S-mètre, spectre HF, mémoires, Cluster DX.
->
-> Il faut une station openRemoteTRX : le logiciel libre (AGPL-3.0) installé sur le PC relié au poste (Windows,
-> Debian ; tout poste reconnu par Hamlib). https://github.com/Bob56fr/openRemoteTRX
->
-> Sécurité d'émission assurée par la station : PTT en alternat seulement, coupure au bout du temps maximal
-> (TOT), retour en réception si le téléphone ne répond plus, une seule personne émet à la fois.
->
-> Mode conduite et Android Auto : écoute, mémoires, commande vocale ; l'émission en roulant obéit aux règles de
-> votre pays.
->
-> Réservé aux radioamateurs titulaires d'une licence : vous êtes responsable de vos émissions.
->
-> Aucune publicité, aucun compte, aucun traceur : l'application ne parle qu'à votre station.
-
-Notes de version (exemple) : « Première version de test. Merci de signaler tout problème. »
+Règles de confidentialité : une seule page (`docs/site/android/confidentialite.html`), en français, anglais, allemand
+et espagnol.
 
 ## À savoir
 

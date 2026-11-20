@@ -1,0 +1,1 @@
+Escucha y controla tu estación de radioaficionado a distancia (openRemoteTRX).

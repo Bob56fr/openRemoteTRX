@@ -1,0 +1,13 @@
+openRemoteTRX controls YOUR amateur radio station from your phone: receiver audio, transmit (toggle PTT), frequency, mode, filters, S-meter, HF spectrum, memories, DX Cluster, SWR measurement.
+
+You need an openRemoteTRX station: the free software (AGPL-3.0) installed on the PC connected to your transceiver (Windows, Debian; any transceiver supported by Hamlib). https://github.com/Bob56fr/openRemoteTRX
+
+Transmit safety is enforced by the station: toggle PTT only, cut-off after the maximum time (TOT), back to receive if the phone stops answering, only one person transmits at a time, STOP button always visible.
+
+Driving mode and Android Auto: listening, memories, voice commands; transmitting while driving is subject to the rules of your country.
+
+App in English, French, German and Spanish.
+
+For licensed radio amateurs only: you are responsible for your transmissions.
+
+No ads, no account, no tracker: the app only talks to your station.

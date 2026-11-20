@@ -1,0 +1,13 @@
+openRemoteTRX pilote VOTRE station radioamateur depuis le téléphone : écoute du récepteur, émission en alternat, fréquence, mode, filtres, S-mètre, spectre HF, mémoires, Cluster DX, mesure de TOS.
+
+Il faut une station openRemoteTRX : le logiciel libre (AGPL-3.0) installé sur le PC relié au poste (Windows, Debian ; tout poste reconnu par Hamlib). https://github.com/Bob56fr/openRemoteTRX
+
+Sécurité d'émission assurée par la station : PTT en alternat seulement, coupure au bout du temps maximal (TOT), retour en réception si le téléphone ne répond plus, une seule personne émet à la fois, bouton STOP toujours visible.
+
+Mode conduite et Android Auto : écoute, mémoires, commande vocale ; l'émission en roulant obéit aux règles de votre pays.
+
+Application en français, anglais, allemand et espagnol.
+
+Réservé aux radioamateurs titulaires d'une licence : vous êtes responsable de vos émissions.
+
+Aucune publicité, aucun compte, aucun traceur : l'application ne parle qu'à votre station.

@@ -43,4 +43,5 @@ tasks.test {
     inputs.dir(rootProject.file("core/src/main/assets/pochettes"))     // ArtworkTest : une image par clé
     inputs.dir(rootProject.file("core/src/main/kotlin"))               // I18nAppTest : cliquet de :core et :app
     inputs.dir(rootProject.file("app/src/main/kotlin"))
+    inputs.file(rootProject.file("app/src/main/res/xml/locales_config.xml"))   // I18nAppTest : langues d'Android 13+
 }

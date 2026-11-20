@@ -1,0 +1,13 @@
+openRemoteTRX steuert IHRE Amateurfunkstation vom Telefon aus: Empfang hören, Senden (PTT im Wechsel), Frequenz, Betriebsart, Filter, S-Meter, HF-Spektrum, Speicher, DX-Cluster, SWR-Messung.
+
+Sie benötigen eine openRemoteTRX-Station: die freie Software (AGPL-3.0), installiert auf dem PC, der mit Ihrem Funkgerät verbunden ist (Windows, Debian; jedes von Hamlib unterstützte Funkgerät). https://github.com/Bob56fr/openRemoteTRX
+
+Die Sendesicherheit gewährleistet die Station: PTT nur im Wechsel, Abschaltung nach der Höchstdauer (TOT), zurück auf Empfang, wenn das Telefon nicht mehr antwortet, immer nur eine Person sendet, STOP-Taste immer sichtbar.
+
+Fahrmodus und Android Auto: Hören, Speicher, Sprachsteuerung; für das Senden während der Fahrt gelten die Regeln Ihres Landes.
+
+App auf Deutsch, Englisch, Französisch und Spanisch.
+
+Nur für lizenzierte Funkamateure: Sie sind für Ihre Aussendungen verantwortlich.
+
+Keine Werbung, kein Konto, kein Tracking: Die App spricht nur mit Ihrer Station.

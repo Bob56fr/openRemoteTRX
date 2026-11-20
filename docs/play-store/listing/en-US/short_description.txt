@@ -1,0 +1,1 @@
+Listen to and control your amateur radio station remotely (openRemoteTRX).
