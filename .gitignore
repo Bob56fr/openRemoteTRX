@@ -50,3 +50,7 @@ docs/site/guide/**/*.pdf
 
 # Machine de test (scripts/tests.py) : compte@adresse, propre à chaque développeur, jamais publié
 .tests-host
+
+# Mode d'emploi Word de la valise (gardé hors dépôt) et verrous de Word / Office
+docs/valise-mode-emploi.docx
+~$*
