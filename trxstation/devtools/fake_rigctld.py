@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 import time
 
 from .loop_noise import install_quiet_reset_handler
@@ -59,6 +60,11 @@ class FakeRigctld:
         self.boot_s = 0.0                 # après « \set_powerstat 1 » : muet encore ce délai (le poste démarre)
         self.ptt_at_boot = 0              # 1 : le poste s'allume EN ÉMISSION (ligne RTS d'un PTT série, test de panne)
         self.off_refuses = False          # True : éteint, « \get_powerstat » REFUSÉ (RPRT -9) comme un IC-7300MK2
+        # Menus Icom lus par une trame CI-V brute (« W », TOT du poste, trxstation/rigtot.py) : trame de demande (octets
+        # FE FE … FD) -> valeur ; trame absente = aucune réponse (RPRT -5, comme un poste muet). `civ_echo` : le poste
+        # renvoie d'abord la demande (écho CI-V en marche), comme l'IC-7300MK2 relevé le 2026-11-20.
+        self.civ_menus: dict[bytes, int] = {}
+        self.civ_echo = True
         self._booting_until = 0.0
         self.port = 0
         self._server: asyncio.AbstractServer | None = None
@@ -220,6 +226,14 @@ class FakeRigctld:
                     self.ptt = value
                 self._ptt_cache = (value, time.monotonic())                       # valeur COMMANDÉE, comme Hamlib
                 return f"set_ptt: {args[0]}\nRPRT 0\n"
+            if key == "W" and len(args) == 2:
+                frame = bytes(int(h, 16) for h in re.findall(r"\\0x([0-9A-Fa-f]{2})", args[0]))
+                if frame not in self.civ_menus:
+                    return "RPRT -5\n"
+                answer = bytes([0xFE, 0xFE, frame[3], frame[2]]) + frame[4:-1] + bytes([self.civ_menus[frame], 0xFD])
+                data = (frame if self.civ_echo else b"") + answer
+                shown = "".join(f"\\0x{b:02X}" for b in data)
+                return f"send_cmd_rx: {args[0]} {args[1]}\nReply: {shown} {args[1]}\nRPRT 0\n"
             if key == "\\set_cache" and args:
                 self.cache_timeout_ms = int(args[0])
                 return f"set_cache: {args[0]}\nRPRT 0\n"

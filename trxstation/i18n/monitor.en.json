@@ -211,5 +211,9 @@
   "label.console": "Console",
   "console.network": "{account} (TRX Console over the network, {source}, {duration})",
   "console.local": "TRX Console in the station's browser",
-  "net.silent": "no measurement (client without network probe)"
+  "net.silent": "no measurement (client without network probe)",
+  "label.rig_tot": "Rig TOT",
+  "rig_tot.on": "{minutes} min",
+  "rig_tot.off": "OFF: set it on the rig",
+  "rig_tot.unknown": "unknown"
 }

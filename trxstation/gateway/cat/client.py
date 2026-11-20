@@ -204,6 +204,15 @@ class RigctldClient:
         except ValueError:
             raise CatProtocolError(f"délai de cache illisible : {raw!r}") from None
 
+    async def send_raw(self, command: str) -> str:
+        """Commande brute « W » de rigctld, LISTE FERMÉE : seulement une lecture de la table `trxstation/rigtot.py`
+        (TOT du poste). Renvoie les octets reçus tels que rigctld les écrit (« \\0xFE\\0xFE… »)."""
+        from ...rigtot import RIG_TOT, civ_command
+        if command not in {civ_command(entry) for entry in RIG_TOT.values()}:
+            raise ValueError("commande brute hors de la liste fermée")
+        values = await self._command(command)
+        return self._pick(values, "Reply", "#2", command="W")
+
     async def get_ptt(self) -> bool:
         """État du PTT, LECTURE SEULE. Toute valeur non nulle (1, 2, 3) signifie émission."""
         raw = self._pick(await self._command("t"), "PTT", "#1", command="t")

@@ -211,5 +211,9 @@
   "label.console": "Consola",
   "console.network": "{account} (TRX Console en red, {source}, {duration})",
   "console.local": "TRX Console en el navegador de la estación",
-  "net.silent": "sin medida (cliente sin sonda de red)"
+  "net.silent": "sin medida (cliente sin sonda de red)",
+  "label.rig_tot": "TOT del equipo",
+  "rig_tot.on": "{minutes} min",
+  "rig_tot.off": "APAGADO: ajústalo en el equipo",
+  "rig_tot.unknown": "desconocido"
 }

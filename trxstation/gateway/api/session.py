@@ -152,6 +152,8 @@ class ControlSession:
         self.on_operator_activity: Callable[[], None] | None = None
         # Allumage et extinction du poste (gateway/power.py, PowerControl) : posé par webrtc pour un OPÉRATEUR ; None sinon
         self.power = None
+        # TOT du poste (trxstation/rigtot.py, RigTotStore) : posé par webrtc pour un OPÉRATEUR si [safety] rig_tot_warn
+        self.rig_tot = None
         self.capabilities, self._send = capabilities, send
         self.memories = memories
         self.layouts = layouts
@@ -239,6 +241,32 @@ class ControlSession:
             await self._tuner_check(render)
         except Exception:                                # noqa: BLE001
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"réglages du coupleur pour {self.client_id}")
+        try:
+            await self._rig_tot_check(render)
+        except Exception:                                # noqa: BLE001
+            emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"TOT du poste pour {self.client_id}")
+
+    async def _rig_tot_check(self, render) -> None:
+        """TOT du poste (docs/tot-poste-cahier-des-charges.md, décisions du 2026-11-20) : LU à la connexion d'un
+        opérateur, poste en réception, jamais écrit ; sur OFF « à coup sûr » => `rig_notice` « rig_tot_off » une fois
+        par jour et par compte. Lecture incertaine : rien (rappel à la configuration). L'émission n'est jamais bloquée."""
+        store = self.rig_tot
+        if store is None or self.listener or self.closed:
+            return
+        snap = self.ctrl.snapshot()
+        if snap.state != "RX" or self.link.state.ptt is not False or self.link.state.power == "off":
+            return                                       # pas pendant une émission (locale comprise) ni poste éteint
+        from ...rigtot import read_tot
+        cfg = self.ctrl.config
+        reading = await read_tot(self.link.client, cfg.rig.model, cfg.rig.ptt_type)
+        store.record(reading)
+        if reading.state != "off" or self.closed or not store.due(self.client_id):
+            return
+        store.shown(self.client_id)
+        ctx = {"client": self.client_id}
+        emit_event(codes.ORT_5041, logger=log, **ctx)
+        _, text = render(codes.ORT_5041, errors_lang(self.lang), **ctx)
+        self.send({"type": "rig_notice", "event": "rig_tot_off", "detail": text, "ort": codes.ORT_5041})
 
     async def _tuner_check(self, render) -> None:
         """Décisions de l'utilisateur (2026-11-19) : réglages de menu du poste LUS à la connexion (second port CI-V, table

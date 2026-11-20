@@ -398,6 +398,13 @@ niveau = "courant"
 securite = "Rediffuser l'émission d'une station à des tiers est en général INTERDIT au service amateur : n'activez qu'en connaissance de cause, sous votre responsabilité."
 depuis = "0.91.0"
 
+[reglages."safety.rig_tot_warn"]
+role = "TOT du poste (minuterie d'émission interne) LU à la connexion d'un opérateur : s'il est sur OFF, la page et l'application le disent, une fois par jour et par compte. Seulement pour un poste dont la lecture a été qualifiée (aujourd'hui l'Icom IC-7300MK2, PTT par la CAT) ; pour les autres, l'assistant rappelle de le régler."
+niveau = "courant"
+securite = "LECTURE seule : la station ne change jamais le TOT du poste et n'empêche pas d'émettre. Une lecture incertaine (poste muet, réponse inattendue) ne donne jamais « OFF » : aucun avis."
+exemple = "true (défaut)."
+depuis = "0.245.0"
+
 # ---------------------------------------------------------------- bands
 
 [reglages."bands.name"]

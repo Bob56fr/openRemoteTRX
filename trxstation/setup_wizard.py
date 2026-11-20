@@ -527,6 +527,18 @@ def ask_rig(cfg: Config, keep_offer: bool) -> None:
                 if ask_yes_no(_t("link.skip"), False):
                     break
                 raise SystemExit(_t("link.abandon"))
+    if cfg.rig.model != DUMMY_MODEL:
+        print(rig_tot_advice(cfg.rig.model, cfg.rig.ptt_type))
+
+
+def rig_tot_advice(model: int, ptt_type: str) -> str:
+    """Rappel du TOT du poste à la configuration (docs/tot-poste-cahier-des-charges.md § 6) : lecture qualifiée pour ce
+    poste => la station préviendra à la connexion ; sinon, l'opérateur doit le régler lui-même, sérieusement."""
+    from .rigtot import RIG_TOT
+    entry = RIG_TOT.get(model)
+    if entry is not None and ptt_type in entry.ptt_types:
+        return _t("rig_tot.known")
+    return _t("rig_tot.unknown")
 
 
 def record_usb_identity(cfg: Config, identity=None) -> None:

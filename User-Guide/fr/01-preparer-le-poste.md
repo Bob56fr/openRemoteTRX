@@ -45,6 +45,9 @@ indispensables :
   des bandes radioamateur, le poste ne garantit pas l'accord au PTT. Pendant une émission, si le TOS dépasse 2
   plus d'une seconde, la page affiche un bandeau rouge et bipe (elle ne coupe pas) ;
 - **minuterie d'émission du poste** (TX TIME OUT TIMER) : une seconde sécurité, indépendante de la station.
+  Réglez-la (3 min conseillé) : si la station, le réseau ou le PC tombent pendant une émission, c'est elle qui coupe.
+  Pour un poste dont la lecture est qualifiée, la station la lit à chaque connexion et vous prévient si elle est sur
+  OFF ; pour les autres (dont le FTDX10 aujourd'hui), elle ne peut pas la vérifier.
 
 > **Sécurité.** Une sécurité en plus ne coûte rien : règle aussi une **puissance maximale** raisonnable dans le
 > poste (HF MAX POWER). La station ne peut pas la dépasser, quoi qu'il arrive.

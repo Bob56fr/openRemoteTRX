@@ -114,6 +114,19 @@ def format_duration(seconds: float | None, t: Translator | None = None) -> str:
 
 # --------------------------------------------------------------------------- panneaux
 
+def _rig_tot_row(rig_tot: dict, t: Translator) -> Row | None:
+    """TOT du poste (trxstation/rigtot.py), dernière lecture : « 3 min », « ARRÊT » (orange) ou « inconnu » ; rien
+    avant la première connexion d'un opérateur ni pour un poste dont la lecture n'est pas qualifiée."""
+    state = rig_tot.get("state") if isinstance(rig_tot, dict) else None
+    if state == "on" and isinstance(rig_tot.get("minutes"), int):
+        return Row(t("label.rig_tot"), t("rig_tot.on", minutes=rig_tot["minutes"]), "info")
+    if state == "off":
+        return Row(t("label.rig_tot"), t("rig_tot.off"), "warn")
+    if state == "unknown" and rig_tot.get("reason") not in ("model", "ptt"):
+        return Row(t("label.rig_tot"), t("rig_tot.unknown"), "dim")
+    return None
+
+
 def _power_row(rig: dict, power: dict, t: Translator) -> Row | None:
     """Alimentation du poste (fonction « power ») : « éteint par X depuis HH:MM », éteint hors de la station, ou
     allumage / extinction en cours ; None quand le poste est allumé (ou ne dit rien)."""
@@ -162,6 +175,9 @@ def _radio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         rows.append(Row("TOT", t("tot.remaining", seconds=f"{ptt['tot_remaining_s']:.0f}"),
                         "warn" if ptt.get("tot_warning") else "info"))
     dim = "info" if snap.gateway_fresh else "dim"
+    tot_row = _rig_tot_row(getattr(status, "rig_tot", None) or {}, t)   # TOT du poste lu à la connexion d'un opérateur
+    if tot_row is not None:
+        rows.append(tot_row)
     rows += [
         Row(t("label.frequency"), format_frequency(rig.get("frequency_hz")), dim),
         Row(t("label.mode"), str(rig.get("mode") or "--"), dim),

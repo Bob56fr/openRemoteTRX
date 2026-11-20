@@ -197,6 +197,7 @@ class PeerManager:
         self.on_sdr_view = None                 # (session, ouverte) -> None : état du SDR rejoué (ModuleBridge.on_sdr_view)
         self.on_operator_activity = None        # () -> None : ModuleBridge.operator_activity
         self.power = None                       # PowerControl (gateway/power.py) : allumage / extinction, opérateurs seulement
+        self.rig_tot = None                     # RigTotStore (rigtot.py) : TOT du poste lu à la connexion, opérateurs seulement
         self.peers: dict[str, _Peer] = {}
         self._tasks: set[asyncio.Task] = set()
 
@@ -259,6 +260,7 @@ class PeerManager:
                 session.on_sdr_listen = self._sdr_listeners_changed
                 session.on_operator_activity = self.on_operator_activity
                 session.power = self.power
+                session.rig_tot = self.rig_tot
             peer.session = session
             if self.power is not None:
                 self.power.touch()                      # connexion : l'extinction automatique repart de zéro

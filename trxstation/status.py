@@ -56,6 +56,7 @@ class GatewayStatus:
     selcall: dict = field(default_factory=dict)   # SELCALL (selcall/receiver.py summary) : état, code, dernier appel, trames
     freedv: dict = field(default_factory=dict)    # FreeDV (freedv/service.py summary) : mode, moteur, synchro, SNR, indicatif
     power: dict = field(default_factory=dict)     # alimentation (gateway/power.py snapshot) : state, by, how, since
+    rig_tot: dict = field(default_factory=dict)   # TOT du poste (rigtot.py) : state on/off/unknown, minutes, reason, at
 
 
 def write_status(path: str | Path, status: GatewayStatus) -> None:
@@ -90,7 +91,7 @@ def read_status(path: str | Path) -> GatewayStatus | None:
         audio, spectrum, presence = data.get("audio", {}), data.get("spectrum", {}), data.get("presence", {})
         swr, breizh, net = data.get("swr", {}), data.get("breizh", {}), data.get("net", {})
         selcall, freedv = data.get("selcall", {}), data.get("freedv", {})
-        power = data.get("power", {})
+        power, rig_tot = data.get("power", {}), data.get("rig_tot", {})
         return GatewayStatus(pid=pid, seq=seq, written_at=float(data.get("written_at", 0.0)),
                              ptt=ptt, rig=rig, clients=[str(c) for c in clients],
                              audio=audio if isinstance(audio, dict) else {},
@@ -101,7 +102,8 @@ def read_status(path: str | Path) -> GatewayStatus | None:
                              net=net if isinstance(net, dict) else {},
                              selcall=selcall if isinstance(selcall, dict) else {},
                              freedv=freedv if isinstance(freedv, dict) else {},
-                             power=power if isinstance(power, dict) else {})
+                             power=power if isinstance(power, dict) else {},
+                             rig_tot=rig_tot if isinstance(rig_tot, dict) else {})
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

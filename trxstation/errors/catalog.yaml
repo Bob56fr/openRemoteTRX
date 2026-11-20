@@ -7841,6 +7841,47 @@ ORT-5040:
     - DATA MOD ajustado en MIC, ACC o LAN en lugar de USB
     - Toma USB reservada a DATA OFF MOD (el equipo solo la acepta en uno de los dos ajustes)
     preconisation: 'En el equipo: MENU > SET > Connectors > MOD Input > DATA MOD = USB; la estación nunca lo cambia.'
+ORT-5041:
+  gravite: avertissement
+  titre: 'TOT du poste désactivé'
+  message: 'Le TOT (minuterie d''émission) du poste est désactivé, lu à la connexion de {client} : si la station, le
+    réseau ou le PC tombent pendant une émission, le poste peut rester en émission jusqu''à une intervention sur place.'
+  causes:
+  - Time-Out Timer (Icom) ou TX TIME OUT TIMER (Yaesu) réglé sur OFF dans le menu du poste
+  preconisation: 'Régler le TOT dans le menu du poste (3 min conseillé ; Icom : MENU > SET > Function > Time-Out Timer
+    (CI-V)). La station le lit seulement, ne le change jamais et n''empêche pas d''émettre.'
+  action_auto: aucune
+  ntfy_defaut: false
+  priorite_ntfy: 3
+  codes_machine:
+  - rig_tot_off
+  doc: https://bob56fr.github.io/openRemoteTRX/erreurs/ORT-5041/
+  depuis_version: 0.245.0
+  en:
+    titre: Rig TOT disabled
+    message: 'The rig TOT (transmit time-out timer) is disabled, read when {client} connected: if the station, the network
+      or the PC fails during a transmission, the rig may keep transmitting until someone intervenes on site.'
+    causes:
+    - Time-Out Timer (Icom) or TX TIME OUT TIMER (Yaesu) set to OFF in the rig menu
+    preconisation: 'Set the TOT in the rig menu (3 min recommended; Icom: MENU > SET > Function > Time-Out Timer (CI-V)).
+      The station only reads it, never changes it and does not prevent transmitting.'
+  de:
+    titre: TOT des Transceivers deaktiviert
+    message: 'Der TOT (Sendezeitbegrenzung) des Transceivers ist deaktiviert, gelesen bei der Verbindung von {client}: Fallen
+      Station, Netzwerk oder PC während einer Aussendung aus, kann der Transceiver auf Sendung bleiben, bis jemand vor
+      Ort eingreift.'
+    causes:
+    - Time-Out Timer (Icom) oder TX TIME OUT TIMER (Yaesu) im Menü des Transceivers auf OFF
+    preconisation: 'Stellen Sie den TOT im Menü des Transceivers ein (3 min empfohlen; Icom: MENU > SET > Function >
+      Time-Out Timer (CI-V)). Die Station liest ihn nur, ändert ihn nie und verhindert das Senden nicht.'
+  es:
+    titre: TOT del equipo desactivado
+    message: 'El TOT (temporizador de transmisión) del equipo está desactivado, leído al conectarse {client}: si la estación,
+      la red o el PC fallan durante una transmisión, el equipo puede quedarse transmitiendo hasta una intervención in situ.'
+    causes:
+    - Time-Out Timer (Icom) o TX TIME OUT TIMER (Yaesu) en OFF en el menú del equipo
+    preconisation: 'Ajusta el TOT en el menú del equipo (3 min recomendado; Icom: MENU > SET > Function > Time-Out Timer
+      (CI-V)). La estación solo lo lee, nunca lo cambia y no impide transmitir.'
 ORT-5101:
   gravite: erreur
   titre: 'Émission refusée : défaut verrouillé'

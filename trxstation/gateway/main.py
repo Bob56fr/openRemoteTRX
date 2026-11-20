@@ -121,6 +121,10 @@ async def run(cfg: Config, *, stop: asyncio.Event | None = None, parent_pid: int
                 return "diffusion" if isinstance(status, dict) and status.get("active") else ""
             if power.available and cfg.power.idle_off:
                 tasks.append(asyncio.create_task(power.run_idle(stop, lambda: len(manager.peers), diffusing)))
+        if manager is not None and cfg.safety.rig_tot_warn:
+            from ..rigtot import RigTotStore
+            manager.rig_tot = RigTotStore(Path(cfg.supervisor.state_dir) / "rig_tot.json")   # TOT du poste (lecture)
+            publisher.rig_tot_status = manager.rig_tot.snapshot                 # trx-monitor : TOT du poste
         if manager is not None and getattr(manager, "swr", None) is not None:
             publisher.swr_status = manager.swr.status                           # trx-monitor : mesure de TOS en cours
         selcall = getattr(pipeline, "selcall", None)

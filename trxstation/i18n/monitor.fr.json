@@ -211,5 +211,9 @@
   "label.console": "Console",
   "console.network": "{account} (TRX Console sur le réseau, {source}, {duration})",
   "console.local": "TRX Console dans le navigateur de la station",
-  "net.silent": "mesure indisponible (client sans sonde réseau)"
+  "net.silent": "mesure indisponible (client sans sonde réseau)",
+  "label.rig_tot": "TOT du poste",
+  "rig_tot.on": "{minutes} min",
+  "rig_tot.off": "ARRÊT : à régler sur le poste",
+  "rig_tot.unknown": "inconnu"
 }

@@ -198,5 +198,7 @@
   "cli_spectrum.ok": "OK: espectro HF activado en {port} (dirección CI-V {address}h). Reinicia la estación; volverá a comprobar este puerto en cada arranque y volverá al modo normal si hay un problema.",
   "transmit.tuner": "¿Usas el acoplador de antena integrado del equipo?",
   "transmit.tuner_settings": "  A distancia, la sintonía debe arrancar sola al transmitir en una frecuencia nueva. Ajusta en el equipo (menú del acoplador): {settings}. La estación los comprobará en cada conexión y avisará si son incorrectos (nunca los cambia). Fuera de las bandas de radioaficionado, el equipo no garantiza la sintonía al PTT.",
-  "transmit.tuner_generic": "  A distancia, la sintonía debe arrancar sola al transmitir en una frecuencia nueva: ajusta el equipo en consecuencia (en un Icom: sintonía al PTT, « PTT Start », activada). La estación aún no conoce los ajustes de este modelo: no podrá comprobarlos."
+  "transmit.tuner_generic": "  A distancia, la sintonía debe arrancar sola al transmitir en una frecuencia nueva: ajusta el equipo en consecuencia (en un Icom: sintonía al PTT, « PTT Start », activada). La estación aún no conoce los ajustes de este modelo: no podrá comprobarlos.",
+  "rig_tot.known": "  TOT del equipo: la estación lo leerá en cada conexión de un operador y avisará si está en OFF. Ajústalo en el menú del equipo (3 min recomendado): es la última seguridad si la estación falla durante una transmisión.",
+  "rig_tot.unknown": "  IMPORTANTE: ajusta el TOT (temporizador de transmisión) en el menú de tu equipo, 3 min recomendado. La estación no sabe leerlo en este equipo: si está en OFF y la estación, la red o el PC fallan durante una transmisión, el equipo puede quedarse transmitiendo hasta una intervención in situ."
 }

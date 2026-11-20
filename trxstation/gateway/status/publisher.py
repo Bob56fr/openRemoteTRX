@@ -33,6 +33,7 @@ class StatusPublisher:
         self.swr_status = None            # () -> dict : mesure de TOS en cours (branché par gateway/main une fois créée)
         self.net_status = None            # () -> dict : sonde réseau (NetProbeHub.summary), branchée par gateway/main
         self.power_status = None          # () -> dict : alimentation (PowerControl.snapshot), branchée par gateway/main
+        self.rig_tot_status = None        # () -> dict : TOT du poste, dernière lecture (RigTotStore.snapshot)
         self._seq = 0
         self._stop = asyncio.Event()
         self._failures = 0                # écritures refusées de suite (journal limité : pas une ligne par refus)
@@ -48,7 +49,16 @@ class StatusPublisher:
                              swr=self.swr_status() if self.swr_status is not None else {},
                              breizh=self.pipeline.route.snapshot()
                              if getattr(self.pipeline, "route", None) is not None else {},
-                             net=self._net(), selcall=self._selcall(), freedv=self._freedv(), power=self._power())
+                             net=self._net(), selcall=self._selcall(), freedv=self._freedv(), power=self._power(),
+                             rig_tot=self._rig_tot())
+
+    def _rig_tot(self) -> dict:
+        if self.rig_tot_status is None:
+            return {}
+        try:
+            return self.rig_tot_status()
+        except Exception:                 # jamais d'obstacle à l'écriture de l'état (superviseur)
+            return {}
 
     def _power(self) -> dict:
         if self.power_status is None:

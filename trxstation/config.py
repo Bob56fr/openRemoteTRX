@@ -331,6 +331,9 @@ class Safety:
     # expresse de l'opérateur (responsabilité réglementaire : rediffuser une station à des tiers est en général interdit)
     allow_replay: bool = False
     swr_alert: float = 2.0            # TOS au-dessus pendant plus d'1 s d'émission : alerte à l'opérateur (jamais de coupure) ; 0 = arrêt
+    # TOT du poste (minuterie d'émission interne) LU à la connexion d'un opérateur, jamais écrit ; sur OFF : avis une fois
+    # par jour et par compte (docs/tot-poste-cahier-des-charges.md). Seulement pour un modèle de trxstation/rigtot.py.
+    rig_tot_warn: bool = True
 
 
 TEMP_MIN_C, TEMP_MAX_C = 20, 90      # bornes des seuils de température du poste
@@ -682,6 +685,8 @@ def validate(cfg: Config) -> list[str]:
         p.append(_t("safety.heartbeat"))
     if not isinstance(s.allow_replay, bool):
         p.append(_t("bool", where="[safety]", name="allow_replay"))
+    if not isinstance(s.rig_tot_warn, bool):
+        p.append(_t("bool", where="[safety]", name="rig_tot_warn"))
     if isinstance(s.swr_alert, bool) or not isinstance(s.swr_alert, (int, float)) \
             or not (s.swr_alert == 0 or 1.2 <= s.swr_alert <= 10):
         p.append(_t("safety.swr_alert", value=s.swr_alert))
@@ -1371,6 +1376,7 @@ def render_toml(cfg: Config) -> str:
         f"rig_temp_cut_c = {s.rig_temp_cut_c}   # émission à distance coupée, reprise sous rig_temp_warn_c",
         f"allow_replay = {str(s.allow_replay).lower()}   # rediffusion d'un enregistrement de l'audio reçu (accordée par l'assistant, responsabilité de l'opérateur)",
         f"swr_alert = {s.swr_alert:g}   # TOS au-dessus pendant plus d'1 s d'émission : alerte à l'opérateur, jamais de coupure ; 0 = arrêt",
+        f"rig_tot_warn = {str(s.rig_tot_warn).lower()}   # TOT du poste lu à la connexion (jamais écrit) : avis s'il est sur OFF, une fois par jour",
         "",
         "[supervisor]",
         f"tot_abs_s = {v.tot_abs_s}",
