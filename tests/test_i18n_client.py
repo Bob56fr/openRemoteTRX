@@ -112,6 +112,24 @@ def test_refusals_and_goodbye_are_sent_in_the_language_of_the_client():
     assert _session("it", sent).lang == "fr"
 
 
+def test_set_lang_changes_the_language_of_the_texts_without_reconnecting():
+    """Station 0.243.0+ : `set_lang` change la langue de CE client en cours de connexion (application : Réglages >
+    Langue), visiteurs compris ; liste fermée ; n'agit sur rien d'autre."""
+    sent = []
+    session = _session("fr", sent)
+    asyncio.run(session.on_message('{"cmd":"set_lang","id":7,"lang":"de"}'))
+    assert sent[-1]["ok"] is True and sent[-1]["lang"] == "de" and session.lang == "de"
+    asyncio.run(session.on_message('{"cmd":"spectrum_watch","id":8,"on":true}'))
+    assert sent[-1]["detail"] == load("de")["refus.spectrum_unavailable"]
+    asyncio.run(session.on_message('{"cmd":"set_lang","id":9,"lang":"it"}'))
+    assert sent[-1]["type"] == "error" and sent[-1]["code"] == "invalid_params" and session.lang == "de"
+    asyncio.run(session.on_message('{"cmd":"set_lang","id":10,"lang":"fr"}'))
+    assert session.lang == "fr"
+    from trxstation.gateway.api.access import LISTENER_COMMANDS
+    from trxstation.gateway.api.protocol import BASE_FEATURES
+    assert "set_lang" in LISTENER_COMMANDS and "set_lang" in BASE_FEATURES
+
+
 def test_access_refusal_of_the_offer_is_sent_in_the_language_of_the_client():
     from aiohttp.test_utils import TestClient, TestServer
 

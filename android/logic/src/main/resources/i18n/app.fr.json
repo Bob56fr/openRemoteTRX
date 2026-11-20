@@ -516,5 +516,6 @@
   "swrscreen.image_saved": "Image enregistrée dans Images/OpenRemoteTRX.",
   "swrscreen.save_failed": "Enregistrement impossible.",
   "swrscreen.image_failed": "Image impossible : {error}",
-  "settings.language_next": "Les écrans changent tout de suite ; la station reçoit la nouvelle langue à la prochaine connexion."
+  "settings.language_next": "Les écrans changent tout de suite ; la station reçoit la nouvelle langue à la prochaine connexion.",
+  "settings.language_now": "Les écrans et les messages de la station changent tout de suite."
 }

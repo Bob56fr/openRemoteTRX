@@ -35,6 +35,11 @@ sealed class Command(val name: String) {
     data object LayoutGet : Command("layout_get")
     data object LayoutReset : Command("layout_reset")
 
+    /** Langue des textes que la station envoie à ce client, changée sans se reconnecter (station 0.243.0+). */
+    data class SetLang(val lang: String) : Command("set_lang") {
+        override fun JsonObjectBuilder.params() { put("lang", lang) }
+    }
+
     data class SetFrequency(val hz: Long) : Command("set_frequency") {
         override fun JsonObjectBuilder.params() { put("hz", hz) }
     }
@@ -284,9 +289,10 @@ sealed class Command(val name: String) {
             "breizh_set", "breizh_reactivate", "breizh_log",
             "net_ping", "net_pong", "net_report", "net_backlog", "net_stats", "net_clear", "net_thresholds", "net_vpn_ignore",
             "net_export", "friends", "freedv_set", "sdr", "monitoring", "diffusion", "power_on", "power_off",
+            "set_lang",
         )
 
         /** Seules commandes qu'un compte VISITEUR envoie (la station refuserait le reste). */
-        val LISTENER = setOf("get_state", "spectrum_watch", "net_ping", "net_pong", "net_report")
+        val LISTENER = setOf("get_state", "spectrum_watch", "net_ping", "net_pong", "net_report", "set_lang")
     }
 }

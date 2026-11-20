@@ -78,8 +78,9 @@ def test_every_command_is_classified_for_the_listener_role():
     """Une commande ajoutée au protocole doit être classée : autorisée ou refusée à un visiteur."""
     assert LISTENER_COMMANDS | LISTENER_REFUSED == set(COMMANDS)
     assert not LISTENER_COMMANDS & LISTENER_REFUSED
-    # rien qui touche au poste ni à la station ; sonde réseau : la qualité du lien du visiteur, rien d'enregistré
-    assert LISTENER_COMMANDS == {"get_state", "spectrum_watch", "net_ping", "net_pong", "net_report"}
+    # rien qui touche au poste ni à la station ; sonde réseau : la qualité du lien du visiteur, rien d'enregistré ;
+    # set_lang : la langue des textes que la station envoie à CE visiteur (0.243.0)
+    assert LISTENER_COMMANDS == {"get_state", "spectrum_watch", "net_ping", "net_pong", "net_report", "set_lang"}
 
 
 def _rig_writes(fake):

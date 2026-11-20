@@ -225,6 +225,7 @@ class ContractTest {
             "diffusion" -> Command.Diffusion(p("action").content, e["args"]?.jsonObject)
             "power_on" -> Command.PowerOn(e["how"]?.jsonPrimitive?.content)
             "power_off" -> Command.PowerOff
+            "set_lang" -> Command.SetLang(p("lang").content)
             else -> fail("commande sans équivalent dans l'application : $name")
         }
     }

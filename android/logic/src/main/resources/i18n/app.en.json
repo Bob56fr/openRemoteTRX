@@ -516,5 +516,6 @@
   "swrscreen.image_saved": "Image saved in Pictures/OpenRemoteTRX.",
   "swrscreen.save_failed": "Cannot save.",
   "swrscreen.image_failed": "Cannot create image: {error}",
-  "settings.language_next": "Screens change right away; the station gets the new language at the next connection."
+  "settings.language_next": "Screens change right away; the station gets the new language at the next connection.",
+  "settings.language_now": "Screens and the station's messages change right away."
 }

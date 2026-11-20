@@ -178,6 +178,9 @@ object RigHub {
 
     fun releaseLocal() { service?.onRig { session, now -> session.releaseLocal(now) } }
 
+    /** Nouvelle langue de l'application annoncée à la station connectée (`set_lang`, station 0.243.0+). */
+    fun announceLang(lang: String) { service?.onRig { session, now -> session.setLang(now, lang) } }
+
     /** Visiteurs (opérateur seulement) : déconnecter, rouvrir après une surcharge, commutateur « Écoute des visiteurs ». */
     fun kickListener(account: String) { service?.onRig { session, now -> session.kickListener(now, account) } }
 

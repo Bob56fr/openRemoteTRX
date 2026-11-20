@@ -123,7 +123,10 @@ data class RigState(
     val stopHold: StopHoldChoices = StopHoldChoices(false, ""),
     val powerOffNotice: String = "",
     val powerCarTitle: String? = null,
-)
+) {
+    /** Station connectée qui connaît `set_lang` (0.243.0+) : un changement de langue lui est annoncé aussitôt. */
+    val stationSetsLang: Boolean get() = status == LinkStatus.CONNECTED && hello?.offers("set_lang") == true
+}
 
 /**
  * Présence de groupe telle que reçue : `data` = vue de la station (action « view »), lue à `atWallMs` (heure du
@@ -904,6 +907,20 @@ class RigSession(
         if (!connected) return
         send(now, Command.LocalRelease)
         publish(now)
+    }
+
+    /** La station connaît-elle `set_lang` (langue changée sans se reconnecter, station 0.243.0+) ? */
+    val stationSetsLang: Boolean get() = connected && hello?.offers("set_lang") == true
+
+    /**
+     * Langue choisie dans Réglages > Langue : annoncée tout de suite à une station qui connaît `set_lang` (ses refus,
+     * coupures et messages suivent sans reconnexion) ; une station plus ancienne la reçoit à la connexion suivante.
+     * Vrai si la commande est partie.
+     */
+    fun setLang(now: Long, lang: String): Boolean {
+        if (!stationSetsLang) return false
+        send(now, Command.SetLang(lang))
+        return true
     }
 
     /** « Signaler un problème » : texte complet, montré AVANT l'envoi (même format que la page). */

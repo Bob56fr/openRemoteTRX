@@ -122,7 +122,7 @@ private val LANG_FLAGS = mapOf("" to "📱", "fr" to "🇫🇷", "en" to "🇬�
  * avec la nouvelle langue ; la station envoie ses textes dans cette langue à la connexion suivante.
  */
 @Composable
-private fun LanguageSection(transmitting: Boolean) {
+private fun LanguageSection(transmitting: Boolean, stationSetsLang: Boolean) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var chosen by remember { mutableStateOf(AppLang.stored(context)) }
     Text(Tr.t("settings.language"), style = MaterialTheme.typography.titleSmall)
@@ -137,6 +137,7 @@ private fun LanguageSection(transmitting: Boolean) {
                     // Écrans redessinés dans la nouvelle langue ; la station la reçoit à la prochaine connexion
                     if (lang != chosen && AppLang.choose(context, lang, transmitting)) {
                         chosen = lang
+                        RigHub.announceLang(Tr.stationLang)          // station 0.243.0+ : textes de la station aussitôt
                         (context as? android.app.Activity)?.recreate()
                     }
                 },
@@ -149,7 +150,12 @@ private fun LanguageSection(transmitting: Boolean) {
             )
         }
     }
-    Text(Tr.t(if (transmitting) "settings.language_tx" else "settings.language_next"), style = MaterialTheme.typography.bodySmall)
+    val note = when {
+        transmitting -> "settings.language_tx"
+        stationSetsLang -> "settings.language_now"            // station 0.243.0+ : sans reconnexion
+        else -> "settings.language_next"
+    }
+    Text(Tr.t(note), style = MaterialTheme.typography.bodySmall)
 }
 
 /** Onglet Réglages : journal, préférences, sections du téléphone, outils de la station. */
@@ -170,7 +176,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                 )
             }
             // Langue (lot T2) : montrée dès que l'application en propose plus d'une (lot T5)
-            if (Tr.OFFERED.size > 1) Panel { LanguageSection(transmitting = rig.ptt?.transmitting == true) }
+            if (Tr.OFFERED.size > 1) Panel { LanguageSection(transmitting = rig.ptt?.transmitting == true, stationSetsLang = rig.stationSetsLang) }
             // Journal
             Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {

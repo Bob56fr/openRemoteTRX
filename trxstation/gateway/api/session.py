@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 # Commandes qui ne disent pas qu'un opérateur est actif (présence de groupe) : battement, état, consultations.
 PASSIVE_COMMANDS = frozenset({"heartbeat", "get_state", "layout_get", "spectrum_watch", "host_info", "voice_profiles",
-                              "swr_last", "swr_plan", "breizh_log"})
+                              "swr_last", "swr_plan", "breizh_log", "set_lang"})
 _hamlib_version: str | None = None                # version de Hamlib (synthèse host_info), lue une fois
 FORBIDDEN_LIMIT, FORBIDDEN_WINDOW_S = 20, 60.0
 # Pendant une mesure de TOS, aucun client ne change les réglages du poste (la mesure les a pris et les remettra) ;
@@ -882,6 +882,11 @@ class ControlSession:
             return
         if cmd.name.startswith("net_"):
             self._net_command(cmd)                               # sonde réseau : n'agit JAMAIS sur le poste
+            return
+        if cmd.name == "set_lang":
+            # Langue des textes envoyés à CE client désormais (lot T5 bis) ; textes fabriqués à l'envoi : rien à refaire
+            self.lang = clean_lang(cmd.params["lang"])
+            self._result(cmd.id, True, lang=self.lang)
             return
         if (not self.listener and self.on_operator_activity is not None and cmd.name not in PASSIVE_COMMANDS
                 and not (cmd.name == "friends" and cmd.params.get("action") in ("view", "stats"))

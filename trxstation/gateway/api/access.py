@@ -35,7 +35,8 @@ log = logging.getLogger(__name__)
 # est refusé, y compris une commande ajoutée plus tard. LISTENER_REFUSED n'est là que pour le test qui oblige à
 # classer chaque nouvelle commande (tests/test_access.py) : le refus ne dépend PAS de cette liste.
 # net_ping / net_pong / net_report : sonde réseau, la qualité de SON lien (rien n'est enregistré pour un visiteur)
-LISTENER_COMMANDS = frozenset({"get_state", "spectrum_watch", "net_ping", "net_pong", "net_report"})
+LISTENER_COMMANDS = frozenset({"get_state", "spectrum_watch", "net_ping", "net_pong", "net_report",
+                               "set_lang"})                    # sa propre langue : n'agit ni sur le poste ni sur les autres
 LISTENER_REFUSED = frozenset({
     "toggle", "stop", "heartbeat", "set_frequency", "set_mode", "set_squelch", "set_function", "set_level",
     "set_offset", "memory_save", "memory_delete", "memory_recall", "layout_get", "layout_save", "layout_reset",

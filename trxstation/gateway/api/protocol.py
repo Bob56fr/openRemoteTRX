@@ -18,6 +18,7 @@ import math
 import re
 from dataclasses import dataclass, field
 
+from ...i18n import LANGS
 from ...layout.catalog import MAX_PROFILE_BYTES
 from ..cat.client import FLOAT_LEVELS, INT_LEVELS, OFFSET_MAX_HZ, POWER_STEPS, WRITABLE_FUNCS
 from ..memories import ID_RE, validate_fields
@@ -87,11 +88,15 @@ COMMANDS = ("toggle", "stop", "heartbeat", "set_frequency", "set_mode", "get_sta
             "diffusion",
             # allumage et extinction du poste à distance (docs/alimentation-poste-cahier-des-charges.md) : OPÉRATEURS ;
             # power_off exige confirm: true ; power_on suit ses étapes par des messages power_progress ; n'émettent jamais
-            "power_on", "power_off")
+            "power_on", "power_off",
+            # langue des textes que la station envoie à CE client (refus, coupures, messages), changée en cours de
+            # connexion (lot T5 bis) : lang dans la liste fermée ; tout compte, visiteurs compris ; n'agit pas sur le poste
+            "set_lang")
 # hello.features : fonctions toujours offertes ; la session ajoute memories, layouts, spectrum, beeps, bug_report
 # selon la station. Ajouter une fonction = un nouveau mot ici (ou dans la session), SANS changer PROTOCOL_VERSION.
 BASE_FEATURES = ("ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
-                 "i18n")                 # textes (`detail`, `message`) dans la langue annoncée par /offer `lang` (0.236.0+)
+                 "i18n",                 # textes (`detail`, `message`) dans la langue annoncée par /offer `lang` (0.236.0+)
+                 "set_lang")             # langue changée en cours de connexion, sans se reconnecter (0.243.0+)
 OPTIONAL_FEATURES = ("memories", "layouts", "spectrum", "beeps", "bug_report", "selcall",
                      "selcall_send",              # appel SELCALL manuel et trame de fin (0.62.0+) : le client n'offre le bouton que si annoncé
                      "selcall_calibrate",         # niveau de la trame et réglage automatique d'après l'ALC (0.64.0+)
@@ -172,6 +177,11 @@ def parse_command(raw: str | bytes) -> Command:
     params: dict = {}
     if name == "set_frequency":
         params["hz"] = _int(data.get("hz"), "hz", 1, 10_000_000_000)
+    elif name == "set_lang":
+        lang = data.get("lang")
+        if lang not in LANGS:
+            raise ProtocolError("invalid_params", "lang : " + ", ".join(LANGS))
+        params["lang"] = lang
     elif name == "set_mode":
         mode = data.get("mode")
         if not isinstance(mode, str) or not MODE_RE.fullmatch(mode):
