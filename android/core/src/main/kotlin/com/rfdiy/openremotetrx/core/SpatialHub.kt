@@ -9,6 +9,8 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import com.rfdiy.openremotetrx.logic.Spatial
 import com.rfdiy.openremotetrx.logic.SpatialSettings
 import com.rfdiy.openremotetrx.logic.Spatials
@@ -56,6 +58,10 @@ object SpatialHub {
     @Volatile private var link: RtcLink? = null
     @Volatile private var post: (() -> Unit) -> Unit = { it() }
     private val out = StereoOut()
+    private val main by lazy { Handler(Looper.getMainLooper()) }
+    /** Rouvertures de la sortie stéréo après une émission (ms après le retour en réception). */
+    private val AFTER_TX_MS = longArrayOf(800L, 2500L)
+    private var txEnd = 0                                          // numéro de la dernière fin d'émission
 
     private var watching = false
 
@@ -99,7 +105,29 @@ object SpatialHub {
     /** `run` : fil de la liaison (RigService), seul à toucher la piste reçue. */
     internal fun attach(rtc: RtcLink, run: (() -> Unit) -> Unit) { link = rtc; post = run; apply() }
     internal fun detach(rtc: RtcLink) { if (link === rtc) { out.stop(); link = null; apply() } }
-    internal fun setTx(on: Boolean) { tx = on; if (!on) apply() }
+    internal fun setTx(on: Boolean) {
+        val ended = tx && !on
+        tx = on
+        if (on) return
+        apply()
+        // Fin d'émission : le micro a mis le téléphone en mode appel ; juste après, la sortie peut encore paraître mono
+        // (ST coupée, jamais relancée) ou la sortie stéréo rester figée sur le chemin du mode appel. La sortie stéréo est
+        // donc ROUVERTE une fois le mode appel fini, puis revérifiée (essai réel du 2026-11-20 : ST perdue après une
+        // émission).
+        if (!ended) return
+        val end = ++txEnd
+        AFTER_TX_MS.forEachIndexed { i, delay -> main.postDelayed({ reopenAfterTx(end, reopen = i == 0) }, delay) }
+    }
+
+    @Synchronized
+    private fun reopenAfterTx(end: Int, reopen: Boolean) {
+        if (tx || end != txEnd) return                              // nouvelle émission entre-temps : rien
+        if (reopen && out.running) {                                // nouvelle sortie = chemin audio relu
+            out.stop()
+            link?.let { rtc -> post { rtc.useStereo(null) } }
+        }
+        apply()
+    }
     internal fun setMuted(on: Boolean) { muted = on }
     internal fun setCar(on: Boolean) { car = on; apply() }
     /** Sortie audio changée (casque branché, Bluetooth…). */
