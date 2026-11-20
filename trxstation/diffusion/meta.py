@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 import aiohttp
 
+from ..httpread import read_capped
 from . import protocol as p
 
 TIMEOUT_S = 10.0
@@ -38,7 +39,7 @@ class MetaClient:
         try:
             async with self._session.post(self.base_url + path, data=body,
                                           headers=p.signed_headers(self.key, path, body)) as rep:
-                raw = await rep.content.read(p.MAX_BODY)
+                raw = await read_capped(rep.content, p.MAX_BODY)
                 try:
                     obj = json.loads(raw) if raw else None
                 except ValueError:

@@ -12,6 +12,7 @@ import json
 import time
 from urllib.parse import urlsplit
 
+from ..httpread import read_capped
 from .wire import Counter, build_request
 
 MAX_REPLY = 1024 * 1024
@@ -45,7 +46,7 @@ class HttpRelay:
         try:
             session = await self._http()
             async with session.post(self.base + path, data=body, headers=headers, allow_redirects=False) as resp:
-                raw = await resp.content.read(MAX_REPLY + 1)
+                raw = await read_capped(resp.content, MAX_REPLY)
                 status = resp.status
         except asyncio.CancelledError:
             raise

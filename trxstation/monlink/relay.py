@@ -13,6 +13,7 @@ import asyncio
 import json
 import time
 
+from ..httpread import read_capped
 from ..presence.wire import Counter
 from . import wire
 
@@ -58,7 +59,7 @@ class HttpRelay:
                                                  n=self.counter.next(), prefix=self.prefix)
         session = await self._http()
         async with session.post(self.origin + path, data=body, headers=headers, allow_redirects=False) as resp:
-            raw = await resp.content.read(MAX_REPLY + 1)
+            raw = await read_capped(resp.content, MAX_REPLY)
             status = resp.status
         if len(raw) > MAX_REPLY:
             raise RelayUnavailable("réponse trop grande")
