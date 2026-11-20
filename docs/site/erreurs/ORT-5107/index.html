@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5107</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Émission refusée : hors des bandes autorisées <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Émission refusée : <code>{frequence_mhz}</code> MHz est hors des bandes autorisées<code>{precision}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Fréquence d&#x27;émission hors des [[bands]] de station.toml</li><li>Split actif : l&#x27;autre VFO est hors bande</li><li>ΔTX (XIT) qui pousse la fréquence d&#x27;émission hors bande</li></ul></dd><dt>Que faire</dt><dd>Revenir dans une bande autorisée, vérifier split et ΔTX ; ou compléter [[bands]] sur la station si la licence le permet.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>out_of_band</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Transmit refused: out of allowed bands <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Transmit refused: <code>{frequence_mhz}</code> MHz is outside the allowed bands<code>{precision}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Transmit frequency outside the station.toml [[bands]]</li><li>Split on: the other VFO is out of band</li><li>XIT pushing the transmit frequency out of band</li></ul></dd><dt>What to do</dt><dd>Move back into an allowed band, check split and XIT; or extend [[bands]] on the station if your licence allows it.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>out_of_band</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Senden abgelehnt: außerhalb der erlaubten Bänder <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Senden abgelehnt: <code>{frequence_mhz}</code> MHz liegt außerhalb der erlaubten Bänder<code>{precision}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Sendefrequenz außerhalb der [[bands]] von station.toml</li><li>Split aktiv: Der andere VFO liegt außerhalb des Bandes</li><li>ΔTX (XIT) schiebt die Sendefrequenz aus dem Band</li></ul></dd><dt>Was zu tun ist</dt><dd>Kehren Sie in ein erlaubtes Band zurück, prüfen Sie Split und ΔTX; oder ergänzen Sie [[bands]] auf der Station, wenn die Lizenz es erlaubt.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>out_of_band</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Transmisión rechazada: fuera de las bandas permitidas <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Transmisión rechazada: <code>{frequence_mhz}</code> MHz está fuera de las bandas permitidas<code>{precision}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Frecuencia de transmisión fuera de las [[bands]] de station.toml</li><li>Split activo: el otro VFO está fuera de banda</li><li>ΔTX (XIT) que lleva la frecuencia de transmisión fuera de banda</li></ul></dd><dt>Qué hacer</dt><dd>Vuelve a una banda permitida, comprueba split y ΔTX; o completa [[bands]] en la estación si la licencia lo permite.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>out_of_band</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-2605</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Essai : endurance de la liaison CAT en échec <span class="g g-erreur">erreur</span></h2>
 <dl><dt>Message</dt><dd>Endurance de la liaison CAT : <code>{reussies}</code>/<code>{total}</code> lectures réussies, <code>{erreurs}</code> erreur(s) (1re : <code>{premiere}</code>).</dd><dt>Causes possibles</dt><dd><ul><li>Câble USB ou port série instable</li><li>Débit trop élevé pour le câble</li><li>Logiciel concurrent sur le port</li><li>Perturbations HF</li></ul></dd><dt>Que faire</dt><dd>Changer de câble ou de port USB, baisser le débit (poste et station.toml), fermer les autres logiciels, puis recommencer.</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>cat_endurance</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Test: CAT link endurance failed <span class="g g-erreur">error</span></h2>
 <dl><dt>Message</dt><dd>CAT link endurance: <code>{reussies}</code>/<code>{total}</code> reads succeeded, <code>{erreurs}</code> error(s) (first: <code>{premiere}</code>).</dd><dt>Possible causes</dt><dd><ul><li>Unstable USB cable or serial port</li><li>Baud rate too high for the cable</li><li>Competing software on the port</li><li>RF interference</li></ul></dd><dt>What to do</dt><dd>Change the cable or USB port, lower the baud rate (rig and station.toml), close other software, then try again.</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>cat_endurance</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Test: Dauertest der CAT-Verbindung fehlgeschlagen <span class="g g-erreur">Fehler</span></h2>
+<dl><dt>Meldung</dt><dd>Dauertest der CAT-Verbindung: <code>{reussies}</code>/<code>{total}</code> erfolgreiche Abfragen, <code>{erreurs}</code> Fehler (erster: <code>{premiere}</code>).</dd><dt>Mögliche Ursachen</dt><dd><ul><li>USB-Kabel oder serieller Port instabil</li><li>Baudrate zu hoch für das Kabel</li><li>Konkurrierende Software am Port</li><li>HF-Störungen</li></ul></dd><dt>Was zu tun ist</dt><dd>Wechseln Sie Kabel oder USB-Port, senken Sie die Baudrate (Transceiver und station.toml), schließen Sie andere Software und versuchen Sie es erneut.</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>cat_endurance</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Prueba: resistencia del enlace CAT en fallo <span class="g g-erreur">error</span></h2>
+<dl><dt>Mensaje</dt><dd>Resistencia del enlace CAT: <code>{reussies}</code>/<code>{total}</code> lecturas correctas, <code>{erreurs}</code> error(es) (1.º: <code>{premiere}</code>).</dd><dt>Causas posibles</dt><dd><ul><li>Cable USB o puerto serie inestable</li><li>Velocidad demasiado alta para el cable</li><li>Programa concurrente en el puerto</li><li>Perturbaciones de HF</li></ul></dd><dt>Qué hacer</dt><dd>Cambia de cable o de puerto USB, baja la velocidad (equipo y station.toml), cierra los demás programas y vuelve a empezar.</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>cat_endurance</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

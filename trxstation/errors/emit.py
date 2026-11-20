@@ -23,8 +23,9 @@ from typing import Any, Callable
 
 CATALOG_JSON = Path(__file__).with_name("catalog.json")
 LEVELS = {"info": logging.INFO, "avertissement": logging.WARNING, "erreur": logging.ERROR, "critique": logging.CRITICAL}
-LANGS = ("fr", "en")
-UNKNOWN_TITLE = {"fr": "Code d'erreur absent du catalogue", "en": "Error code missing from the catalogue"}
+LANGS = ("fr", "en", "de", "es")          # blocs `en`, `de`, `es` du catalogue (lot T8 : allemand et espagnol)
+UNKNOWN_TITLE = {"fr": "Code d'erreur absent du catalogue", "en": "Error code missing from the catalogue",
+                 "de": "Fehlercode nicht im Katalog", "es": "Código de error ausente del catálogo"}
 
 log = logging.getLogger("trxstation.errors")
 _lock = threading.Lock()
@@ -110,7 +111,7 @@ def render(code: str, lang: str = "fr", **contexte: Any) -> tuple[str, str]:
     lang = lang if lang in LANGS else "fr"
     if e is None:
         return UNKNOWN_TITLE[lang], f"{code} {contexte}" if contexte else code
-    texts = e if lang == "fr" else e.get("en", e)
+    texts = e if lang == "fr" else e.get(lang) or e.get("en", e)
     return texts["titre"], _format(texts["message"], contexte)
 
 

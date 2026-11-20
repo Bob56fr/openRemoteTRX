@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-8019</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Erreur inattendue d&#x27;un composant (la station continue) <span class="g g-erreur">erreur</span></h2>
 <p class="note">Code abandonné, gardé pour les anciens journaux. Remplacé par <a href="../ORT-4018/">ORT-4018</a>, <a href="../ORT-4509/">ORT-4509</a>, <a href="../ORT-5028/">ORT-5028</a>, <a href="../ORT-6541/">ORT-6541</a>, <a href="../ORT-6567/">ORT-6567</a>, <a href="../ORT-6922/">ORT-6922</a>, <a href="../ORT-8018/">ORT-8018</a> (une erreur inattendue par domaine).</p>
@@ -87,6 +87,16 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <h2>Unexpected component error (station carries on) <span class="g g-erreur">error</span></h2>
 <p class="note">Retired code, kept for old logs. Replaced by <a href="../ORT-4018/">ORT-4018</a>, <a href="../ORT-4509/">ORT-4509</a>, <a href="../ORT-5028/">ORT-5028</a>, <a href="../ORT-6541/">ORT-6541</a>, <a href="../ORT-6567/">ORT-6567</a>, <a href="../ORT-6922/">ORT-6922</a>, <a href="../ORT-8018/">ORT-8018</a> (une erreur inattendue par domaine).</p>
 <dl><dt>Message</dt><dd><code>{composant}</code>: unexpected error (<code>{erreur}</code>); the station carries on without it.</dd><dt>Possible causes</dt><dd><ul><li>Software defect</li><li>Unexpected data from a client or a module</li></ul></dd><dt>What to do</dt><dd>Send a problem report with the gateway log (TRX Console menu 8).</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>netprobe_error</code>, <code>friends_error</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Unerwarteter Fehler einer Komponente (die Station läuft weiter) <span class="g g-erreur">Fehler</span></h2>
+<p class="note">Aufgegebener Code, für alte Protokolle beibehalten. Ersetzt durch <a href="../ORT-4018/">ORT-4018</a>, <a href="../ORT-4509/">ORT-4509</a>, <a href="../ORT-5028/">ORT-5028</a>, <a href="../ORT-6541/">ORT-6541</a>, <a href="../ORT-6567/">ORT-6567</a>, <a href="../ORT-6922/">ORT-6922</a>, <a href="../ORT-8018/">ORT-8018</a> (une erreur inattendue par domaine).</p>
+<dl><dt>Meldung</dt><dd><code>{composant}</code>: unerwarteter Fehler (<code>{erreur}</code>); die Station läuft ohne diese Komponente weiter.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Softwarefehler</li><li>Unerwartete Daten von einem Client oder Modul empfangen</li></ul></dd><dt>Was zu tun ist</dt><dd>Senden Sie einen Problembericht mit dem Protokoll des Gateways (TRX Console Menü 8).</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>netprobe_error</code>, <code>friends_error</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Error inesperado de un componente (la estación continúa) <span class="g g-erreur">error</span></h2>
+<p class="note">Código abandonado, conservado para los registros antiguos. Sustituido por <a href="../ORT-4018/">ORT-4018</a>, <a href="../ORT-4509/">ORT-4509</a>, <a href="../ORT-5028/">ORT-5028</a>, <a href="../ORT-6541/">ORT-6541</a>, <a href="../ORT-6567/">ORT-6567</a>, <a href="../ORT-6922/">ORT-6922</a>, <a href="../ORT-8018/">ORT-8018</a> (une erreur inattendue par domaine).</p>
+<dl><dt>Mensaje</dt><dd><code>{composant}</code>: error inesperado (<code>{erreur}</code>); la estación continúa sin él.</dd><dt>Causas posibles</dt><dd><ul><li>Defecto del software</li><li>Dato inesperado recibido de un cliente o de un módulo</li></ul></dd><dt>Qué hacer</dt><dd>Envía un informe de problema con el registro de la pasarela (TRX Console menú 8).</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>netprobe_error</code>, <code>friends_error</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

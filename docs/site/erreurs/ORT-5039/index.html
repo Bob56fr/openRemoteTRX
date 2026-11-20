@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5039</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>TOS élevé pendant l&#x27;émission <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>TOS <code>{tos}</code> sur <code>{frequence}</code> MHz pendant l&#x27;émission de <code>{client}</code> (seuil <code>{seuil}</code>) : antenne désaccordée, coupleur sans accord ou câble en cause.</dd><dt>Causes possibles</dt><dd><ul><li>Antenne désaccordée sur cette fréquence</li><li>Coupleur à l&#x27;arrêt, ou accord automatique pas parti (fréquence nouvelle hors des bandes radioamateur)</li><li>Câble, connecteur ou commutateur d&#x27;antenne en défaut</li></ul></dd><dt>Que faire</dt><dd>Arrêter l&#x27;émission, vérifier l&#x27;antenne et le coupleur ; la station ne coupe pas pour un TOS élevé (le poste réduit sa puissance de lui-même).</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>swr_high</code></dd><dt>Depuis la version</dt><dd>0.212.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>High SWR while transmitting <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>SWR <code>{tos}</code> on <code>{frequence}</code> MHz while <code>{client}</code> was transmitting (threshold <code>{seuil}</code>): mistuned antenna, tuner not tuned or cable at fault.</dd><dt>Possible causes</dt><dd><ul><li>Antenna mistuned on this frequency</li><li>Tuner off, or automatic tuning did not start (new frequency outside amateur bands)</li><li>Faulty cable, connector or antenna switch</li></ul></dd><dt>What to do</dt><dd>Stop transmitting, check the antenna and the tuner; the station does not cut for a high SWR (the rig reduces its power by itself).</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>swr_high</code></dd><dt>Since version</dt><dd>0.212.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Hohes SWR während des Sendens <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>SWR <code>{tos}</code> auf <code>{frequence}</code> MHz während des Sendens von <code>{client}</code> (Schwelle <code>{seuil}</code>): Antenne verstimmt, Tuner ohne Abstimmung oder Kabel betroffen.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Antenne auf dieser Frequenz verstimmt</li><li>Tuner ausgeschaltet, oder automatische Abstimmung nicht gestartet (neue Frequenz außerhalb der Amateurfunkbänder)</li><li>Kabel, Stecker oder Antennenumschalter defekt</li></ul></dd><dt>Was zu tun ist</dt><dd>Beenden Sie das Senden, prüfen Sie Antenne und Tuner; die Station schaltet bei hohem SWR nicht ab (der Transceiver verringert seine Leistung selbst).</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>swr_high</code></dd><dt>Seit Version</dt><dd>0.212.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>ROE elevada durante la transmisión <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>ROE <code>{tos}</code> en <code>{frequence}</code> MHz durante la transmisión de <code>{client}</code> (umbral <code>{seuil}</code>): antena desajustada, acoplador sin sintonía o cable en causa.</dd><dt>Causas posibles</dt><dd><ul><li>Antena desajustada en esta frecuencia</li><li>Acoplador desactivado, o sintonía automática que no ha arrancado (frecuencia nueva fuera de las bandas de radioaficionado)</li><li>Cable, conector o conmutador de antena defectuoso</li></ul></dd><dt>Qué hacer</dt><dd>Detén la transmisión, comprueba la antena y el acoplador; la estación no corta por una ROE elevada (el equipo reduce su potencia por sí mismo).</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>swr_high</code></dd><dt>Desde la versión</dt><dd>0.212.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

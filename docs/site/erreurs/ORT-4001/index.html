@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-4001</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Pertes réseau d&#x27;un client élevées <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Perte de <code>{perte_pct}</code> % des battements sur 60 s (<code>{appareil}</code>).</dd><dt>Causes possibles</dt><dd><ul><li>Wi-Fi saturé ou trop loin</li><li>Couverture 4G/5G faible</li><li>VPN surchargé ou profil partagé</li></ul></dd><dt>Que faire</dt><dd>Voir la sonde de qualité réseau (maillon faible) ; changer de réseau ou de place.</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>oui par défaut, priorité 3</dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>High client packet loss <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd><code>{perte_pct}</code> % of heartbeats lost over 60 s (<code>{appareil}</code>).</dd><dt>Possible causes</dt><dd><ul><li>Saturated or distant Wi-Fi</li><li>Weak 4G/5G coverage</li><li>Overloaded VPN or shared profile</li></ul></dd><dt>What to do</dt><dd>Check the network quality probe (weak link); change network or location.</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>yes by default, priority 3</dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Hohe Netzverluste eines Clients <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Verlust von <code>{perte_pct}</code> % der Heartbeats über 60 s (<code>{appareil}</code>).</dd><dt>Mögliche Ursachen</dt><dd><ul><li>WLAN überlastet oder zu weit entfernt</li><li>Schwache 4G/5G-Abdeckung</li><li>VPN überlastet oder Profil geteilt</li></ul></dd><dt>Was zu tun ist</dt><dd>Sehen Sie sich die Netzwerksonde an (schwächstes Glied); wechseln Sie das Netz oder den Standort.</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig ja, Priorität 3</dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Pérdidas de red de un cliente elevadas <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Pérdida del <code>{perte_pct}</code> % de los latidos en 60 s (<code>{appareil}</code>).</dd><dt>Causas posibles</dt><dd><ul><li>Wi-Fi saturado o demasiado lejos</li><li>Cobertura 4G/5G débil</li><li>VPN sobrecargada o perfil compartido</li></ul></dd><dt>Qué hacer</dt><dd>Mira la sonda de calidad de la red (eslabón débil); cambia de red o de sitio.</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>sí por defecto, prioridad 3</dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

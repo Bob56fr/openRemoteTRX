@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-6913</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Invitation refusée <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Invitation refusée : <code>{motif}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Lien d&#x27;invitation abîmé ou incomplet</li><li>Invitation expirée</li><li>Invitation pour un autre relais</li><li>Déjà membre de ce groupe ou demande en attente</li></ul></dd><dt>Que faire</dt><dd>Demander un nouveau lien d&#x27;invitation à l&#x27;administrateur du groupe (menu 5.3 ou « Inviter » de la page).</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>invitation_expired</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Invitation refused <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Invitation refused: <code>{motif}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Damaged or incomplete invitation link</li><li>Invitation expired</li><li>Invitation for another relay</li><li>Already a member of this group or request pending</li></ul></dd><dt>What to do</dt><dd>Ask the group administrator for a new invitation link (menu 5.3 or &quot;Invite&quot; on the page).</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>invitation_expired</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Einladung abgelehnt <span class="g g-info">Info</span></h2>
+<dl><dt>Meldung</dt><dd>Einladung abgelehnt: <code>{motif}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Einladungslink beschädigt oder unvollständig</li><li>Einladung abgelaufen</li><li>Einladung für ein anderes Relais</li><li>Bereits Mitglied dieser Gruppe oder Anfrage ausstehend</li></ul></dd><dt>Was zu tun ist</dt><dd>Bitten Sie den Administrator der Gruppe um einen neuen Einladungslink (Menü 5.3 oder „Einladen“ auf der Seite).</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>invitation_expired</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Invitación rechazada <span class="g g-info">info</span></h2>
+<dl><dt>Mensaje</dt><dd>Invitación rechazada: <code>{motif}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Enlace de invitación dañado o incompleto</li><li>Invitación caducada</li><li>Invitación para otro relé</li><li>Ya eres miembro de este grupo o tienes una solicitud pendiente</li></ul></dd><dt>Qué hacer</dt><dd>Pide un nuevo enlace de invitación al administrador del grupo (menú 5.3 o «Invitar» en la página).</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>invitation_expired</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

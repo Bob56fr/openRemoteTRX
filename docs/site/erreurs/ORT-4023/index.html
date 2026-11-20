@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-4023</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Connexions à TRX Console bloquées <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Trop d&#x27;échecs de connexion à TRX Console depuis <code>{source}</code> : connexions refusées pendant <code>{minutes}</code> minutes.</dd><dt>Causes possibles</dt><dd><ul><li>Mot de passe oublié ou mal tapé plusieurs fois</li><li>Quelqu&#x27;un essaie de deviner un mot de passe sur le réseau</li></ul></dd><dt>Que faire</dt><dd>Si ce n&#x27;est pas toi : vérifie qui a accès à ton réseau ou à ton VPN, et change les mots de passe des comptes administrateurs (menu 4.3).</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>oui par défaut, priorité 4</dd><dt>Depuis la version</dt><dd>0.178.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>TRX Console logins blocked <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Too many failed TRX Console logins from <code>{source}</code>: logins refused for <code>{minutes}</code> minutes.</dd><dt>Possible causes</dt><dd><ul><li>Password forgotten or mistyped several times</li><li>Someone is trying to guess a password on the network</li></ul></dd><dt>What to do</dt><dd>If it was not you: check who can reach your network or VPN, and change the administrator account passwords (menu 4.3).</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>yes by default, priority 4</dd><dt>Since version</dt><dd>0.178.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Verbindungen mit TRX Console gesperrt <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Zu viele fehlgeschlagene Verbindungen mit TRX Console von <code>{source}</code>: Verbindungen für <code>{minutes}</code> Minuten abgelehnt.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Passwort vergessen oder mehrmals falsch eingegeben</li><li>Jemand versucht, ein Passwort im Netzwerk zu erraten</li></ul></dd><dt>Was zu tun ist</dt><dd>Wenn Sie es nicht waren: Prüfen Sie, wer Zugang zu Ihrem Netzwerk oder Ihrem VPN hat, und ändern Sie die Passwörter der Administratorkonten (Menü 4.3).</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig ja, Priorität 4</dd><dt>Seit Version</dt><dd>0.178.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Conexiones a TRX Console bloqueadas <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Demasiados fallos de conexión a TRX Console desde <code>{source}</code>: conexiones rechazadas durante <code>{minutes}</code> minutos.</dd><dt>Causas posibles</dt><dd><ul><li>Contraseña olvidada o mal escrita varias veces</li><li>Alguien intenta adivinar una contraseña en la red</li></ul></dd><dt>Qué hacer</dt><dd>Si no has sido tú: comprueba quién tiene acceso a tu red o a tu VPN, y cambia las contraseñas de las cuentas de administrador (menú 4.3).</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>sí por defecto, prioridad 4</dd><dt>Desde la versión</dt><dd>0.178.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

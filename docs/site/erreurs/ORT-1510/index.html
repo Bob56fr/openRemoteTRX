@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-1510</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Installation de la nouvelle version échouée <span class="g g-erreur">erreur</span></h2>
 <dl><dt>Message</dt><dd>L&#x27;installation a échoué (code <code>{code_sortie}</code>) : la version <code>{version_active}</code> reste active. Détails : <code>{journal}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Échec du script d&#x27;installation (modules Python, Internet, disque)</li><li>Arrêt de la station impossible</li><li>Retour à la version précédente échoué ou aucune version précédente</li></ul></dd><dt>Que faire</dt><dd>Lire le compte-rendu d&#x27;installation, corriger la cause, puis recommencer ; la version active n&#x27;a pas changé.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>EXIT_FAILED</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Installing the new version failed <span class="g g-erreur">error</span></h2>
 <dl><dt>Message</dt><dd>Installation failed (code <code>{code_sortie}</code>): version <code>{version_active}</code> stays active. Details: <code>{journal}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Install script failure (Python modules, Internet, disk)</li><li>Station could not be stopped</li><li>Rollback failed or no previous version</li></ul></dd><dt>What to do</dt><dd>Read the installation log, fix the cause, then try again; the active version did not change.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>EXIT_FAILED</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Installation der neuen Version fehlgeschlagen <span class="g g-erreur">Fehler</span></h2>
+<dl><dt>Meldung</dt><dd>Die Installation ist fehlgeschlagen (Code <code>{code_sortie}</code>): Version <code>{version_active}</code> bleibt aktiv. Details: <code>{journal}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Installationsskript fehlgeschlagen (Python-Module, Internet, Festplatte)</li><li>Station konnte nicht gestoppt werden</li><li>Rückkehr zur vorherigen Version fehlgeschlagen oder keine vorherige Version</li></ul></dd><dt>Was zu tun ist</dt><dd>Lesen Sie das Installationsprotokoll, beheben Sie die Ursache und versuchen Sie es erneut; die aktive Version hat sich nicht geändert.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>EXIT_FAILED</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Instalación de la nueva versión fallida <span class="g g-erreur">error</span></h2>
+<dl><dt>Mensaje</dt><dd>La instalación ha fallado (código <code>{code_sortie}</code>): la versión <code>{version_active}</code> sigue activa. Detalles: <code>{journal}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Fallo del script de instalación (módulos Python, Internet, disco)</li><li>Imposible detener la estación</li><li>Vuelta a la versión anterior fallida o sin versión anterior</li></ul></dd><dt>Qué hacer</dt><dd>Lee el informe de instalación, corrige la causa y vuelve a empezar; la versión activa no ha cambiado.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>EXIT_FAILED</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

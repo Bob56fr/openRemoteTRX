@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-7010</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Échec ICE, bascule en port UDP <span class="g g-avertissement">avertissement</span></h2>
 <p class="note">Code réservé : pas encore produit par la station.</p>
@@ -87,6 +87,16 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <h2>ICE failed, falling back to UDP port <span class="g g-avertissement">warning</span></h2>
 <p class="note">Reserved code: not produced by the station yet.</p>
 <dl><dt>Message</dt><dd>The link with <code>{station}</code> could not be set up through ICE; falling back to UDP port <code>{port}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Router or firewall blocking NAT traversal</li><li>STUN server unreachable</li></ul></dd><dt>What to do</dt><dd>Open the UDP port on the receiving side if needed.</dd><dt>What the station does</dt><dd><code>repli_udp</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>ICE gescheitert, Wechsel auf UDP-Port <span class="g g-avertissement">Warnung</span></h2>
+<p class="note">Reservierter Code: wird von der Station noch nicht erzeugt.</p>
+<dl><dt>Meldung</dt><dd>Die Verbindung mit <code>{station}</code> konnte nicht über ICE hergestellt werden; Wechsel auf UDP-Port <code>{port}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Router oder Firewall blockiert die NAT-Traversierung</li><li>STUN-Server nicht erreichbar</li></ul></dd><dt>Was zu tun ist</dt><dd>Öffnen Sie bei Bedarf den UDP-Port auf der Empfängerseite.</dd><dt>Was die Station tut</dt><dd><code>repli_udp</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Fallo de ICE, cambio al puerto UDP <span class="g g-avertissement">aviso</span></h2>
+<p class="note">Código reservado: la estación aún no lo produce.</p>
+<dl><dt>Mensaje</dt><dd>El enlace con <code>{station}</code> no ha podido establecerse por ICE; cambio al puerto UDP <code>{port}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Router o cortafuegos que bloquea el paso a través del NAT</li><li>Servidor STUN inaccesible</li></ul></dd><dt>Qué hacer</dt><dd>Abre el puerto UDP en el lado receptor si hace falta.</dd><dt>Qué hace la estación</dt><dd><code>repli_udp</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

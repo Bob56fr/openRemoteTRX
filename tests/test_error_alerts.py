@@ -130,6 +130,15 @@ def test_alert_in_english_for_the_phone_while_the_journal_stays_in_french(caplog
     assert "aucune nouvelle de F4XYZ" in caplog.text                   # journal en français
     n.alert(codes.ORT_7052, "mesure de la station", key="k", station="x", code_recu="ORT-5024", titre="t")
     assert sent[-1][2].startswith("mesure de la station")
-    assert Notifier(lang="de").lang == "fr"                            # langue absente du catalogue : français
-    _, problems = cfgmod.build({"rig": {"model": 1}, "supervisor": {"notify_lang": "de"}})
+    assert Notifier(lang="it").lang == "fr"                            # langue absente du catalogue : français
+    _, problems = cfgmod.build({"rig": {"model": 1}, "supervisor": {"notify_lang": "it"}})
     assert any("notify_lang" in p for p in problems)
+    # Lot T8 : allemand et espagnol (blocs `de` / `es` du catalogue)
+    for lang in ("de", "es"):
+        _, problems = cfgmod.build({"rig": {"model": 1}, "supervisor": {"notify_lang": lang}})
+        assert not any("notify_lang" in p for p in problems), lang
+        n = Notifier("https://ntfy.sh/x", post=lambda *a: sent.append(a), threaded=False, lang=lang)
+        e = emit.entry(codes.ORT_7050)
+        assert n.alert(codes.ORT_7050, station="F4XYZ", minutes=16) is True
+        assert sent[-1][1] == f"ORT-7050 {e[lang]['titre']}"
+        assert e[lang]["preconisation"] in sent[-1][2]

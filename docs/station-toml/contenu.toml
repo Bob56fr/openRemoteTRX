@@ -1167,7 +1167,7 @@ securite = "Choisissez un sujet difficile à deviner : quiconque le connaît lit
 [reglages."supervisor.notify_lang"]
 role = "Langue des alertes ntfy envoyées au téléphone : titre, message et marche à suivre du catalogue d'erreurs. Le journal de la station reste en français ; une valeur mesurée (détail) reste telle que la station l'écrit."
 niveau = "courant"
-bornes = "<code>fr</code> (défaut) ou <code>en</code> : les langues du catalogue d'erreurs."
+bornes = "<code>fr</code> (défaut), <code>en</code>, <code>de</code> ou <code>es</code> : les langues du catalogue d'erreurs (allemand et espagnol depuis la version 0.241.0)."
 exemple = "<code>en</code>"
 depuis = "0.165.0"
 

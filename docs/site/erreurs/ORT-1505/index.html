@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-1505</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Mise à jour refusée : émission en cours ou état inconnu <span class="g g-erreur">erreur</span></h2>
 <dl><dt>Message</dt><dd>Mise à jour refusée : <code>{raison}</code>. Rien n&#x27;a été installé.</dd><dt>Causes possibles</dt><dd><ul><li>Émission en cours (passerelle ou micro du poste)</li><li>Passerelle muette : état d&#x27;émission inconnu</li><li>rigctld ne répond pas : poste non relisible</li><li>État du PTT illisible</li></ul></dd><dt>Que faire</dt><dd>Couper l&#x27;émission, ou arrêter la station (menu « Arrêter »), puis recommencer. Dans le doute, la station refuse.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>EXIT_TX</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Update refused: transmitting or unknown state <span class="g g-erreur">error</span></h2>
 <dl><dt>Message</dt><dd>Update refused: <code>{raison}</code>. Nothing was installed.</dd><dt>Possible causes</dt><dd><ul><li>Transmission in progress (gateway or radio mic)</li><li>Gateway silent: transmit state unknown</li><li>rigctld not answering: radio cannot be read</li><li>PTT state unreadable</li></ul></dd><dt>What to do</dt><dd>Stop transmitting, or stop the station (&quot;Stop&quot; menu), then try again. When in doubt, the station refuses.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>EXIT_TX</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Update abgelehnt: Senden läuft oder Zustand unbekannt <span class="g g-erreur">Fehler</span></h2>
+<dl><dt>Meldung</dt><dd>Update abgelehnt: <code>{raison}</code>. Es wurde nichts installiert.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Senden läuft (Gateway oder Mikrofon des Transceivers)</li><li>Gateway stumm: Sendezustand unbekannt</li><li>rigctld antwortet nicht: Transceiver nicht lesbar</li><li>PTT-Zustand nicht lesbar</li></ul></dd><dt>Was zu tun ist</dt><dd>Beenden Sie das Senden oder stoppen Sie die Station (Menü „Stoppen“) und versuchen Sie es erneut. Im Zweifel lehnt die Station ab.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>EXIT_TX</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Actualización rechazada: transmisión en curso o estado desconocido <span class="g g-erreur">error</span></h2>
+<dl><dt>Mensaje</dt><dd>Actualización rechazada: <code>{raison}</code>. No se ha instalado nada.</dd><dt>Causas posibles</dt><dd><ul><li>Transmisión en curso (pasarela o micrófono del equipo)</li><li>Pasarela muda: estado de transmisión desconocido</li><li>rigctld no responde: equipo no relegible</li><li>Estado del PTT ilegible</li></ul></dd><dt>Qué hacer</dt><dd>Corta la transmisión, o detén la estación (menú «Detener»), y vuelve a empezar. En caso de duda, la estación se niega.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>EXIT_TX</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

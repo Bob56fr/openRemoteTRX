@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-4503</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Profil VPN probablement partagé <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Deux appareils (<code>{appareils}</code>) arrivent par la même adresse <code>{adresse}</code> : ils partagent probablement le même profil VPN.</dd><dt>Causes possibles</dt><dd><ul><li>Même profil WireGuard sur le PC et le téléphone</li><li>Coupures très régulières (toutes les 15 à 30 s) sur un appareil au signal correct</li></ul></dd><dt>Que faire</dt><dd>Créer un profil VPN par appareil ; ou « Ignorer » cette adresse si c&#x27;est voulu.</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>oui par défaut, priorité 3</dd><dt>Codes du protocole</dt><dd><code>net_event vpn_shared</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>VPN profile probably shared <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Two devices (<code>{appareils}</code>) arrive through the same address <code>{adresse}</code>: they probably share one VPN profile.</dd><dt>Possible causes</dt><dd><ul><li>Same WireGuard profile on the PC and the phone</li><li>Very regular drops (every 15 to 30 s) on a device with good signal</li></ul></dd><dt>What to do</dt><dd>Create one VPN profile per device; or &quot;Ignore&quot; this address if intended.</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>yes by default, priority 3</dd><dt>Protocol codes</dt><dd><code>net_event vpn_shared</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>VPN-Profil vermutlich geteilt <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Zwei Geräte (<code>{appareils}</code>) kommen über dieselbe Adresse <code>{adresse}</code>: Beide teilen vermutlich dasselbe VPN-Profil.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Gleiches WireGuard-Profil auf PC und Telefon</li><li>Sehr regelmäßige Ausfälle (alle 15 bis 30 s) bei einem Gerät mit gutem Signal</li></ul></dd><dt>Was zu tun ist</dt><dd>Legen Sie ein VPN-Profil pro Gerät an; oder „Ignorieren“ Sie diese Adresse, wenn es so gewollt ist.</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig ja, Priorität 3</dd><dt>Protokollcodes</dt><dd><code>net_event vpn_shared</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Perfil VPN probablemente compartido <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Dos aparatos (<code>{appareils}</code>) llegan por la misma dirección <code>{adresse}</code>: probablemente comparten el mismo perfil VPN.</dd><dt>Causas posibles</dt><dd><ul><li>Mismo perfil WireGuard en el PC y en el teléfono</li><li>Cortes muy regulares (cada 15 a 30 s) en un aparato con buena señal</li></ul></dd><dt>Qué hacer</dt><dd>Crea un perfil VPN por aparato; o «Ignorar» esta dirección si es intencionado.</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>sí por defecto, prioridad 3</dd><dt>Códigos del protocolo</dt><dd><code>net_event vpn_shared</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

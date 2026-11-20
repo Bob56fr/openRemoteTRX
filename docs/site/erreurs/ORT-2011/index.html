@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-2011</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Commande refusée par le poste (RPRT) <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>rigctld a refusé « <code>{commande}</code> » : RPRT <code>{code_rprt}</code> (<code>{signification}</code>).</dd><dt>Causes possibles</dt><dd><ul><li>Fonction ou valeur que le poste n&#x27;accepte pas dans son état actuel (mode, bande)</li><li>Backend Hamlib incomplet pour ce poste</li><li>Poste occupé ou en émission</li></ul></dd><dt>Que faire</dt><dd>Réessayer dans un autre mode ou une autre bande ; si le refus persiste, lancer trx-qualif pour vérifier ce que Hamlib sait faire avec ce poste.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>rig_error</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Command rejected by the rig (RPRT) <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>rigctld rejected &quot;<code>{commande}</code>&quot;: RPRT <code>{code_rprt}</code> (<code>{signification}</code>).</dd><dt>Possible causes</dt><dd><ul><li>Function or value the rig does not accept in its current state (mode, band)</li><li>Incomplete Hamlib backend for this rig</li><li>Rig busy or transmitting</li></ul></dd><dt>What to do</dt><dd>Try another mode or band; if it keeps failing, run trx-qualif to check what Hamlib can do with this rig.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>rig_error</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Befehl vom Transceiver abgelehnt (RPRT) <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>rigctld hat „<code>{commande}</code>“ abgelehnt: RPRT <code>{code_rprt}</code> (<code>{signification}</code>).</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Funktion oder Wert, den der Transceiver in seinem aktuellen Zustand (Mode, Band) nicht annimmt</li><li>Unvollständiges Hamlib-Backend für diesen Transceiver</li><li>Transceiver beschäftigt oder auf Senden</li></ul></dd><dt>Was zu tun ist</dt><dd>Versuchen Sie es in einem anderen Mode oder Band erneut; wenn die Ablehnung bleibt, starten Sie trx-qualif, um zu prüfen, was Hamlib mit diesem Transceiver kann.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>rig_error</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Comando rechazado por el equipo (RPRT) <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>rigctld ha rechazado «<code>{commande}</code>»: RPRT <code>{code_rprt}</code> (<code>{signification}</code>).</dd><dt>Causas posibles</dt><dd><ul><li>Función o valor que el equipo no acepta en su estado actual (modo, banda)</li><li>Backend de Hamlib incompleto para este equipo</li><li>Equipo ocupado o en transmisión</li></ul></dd><dt>Qué hacer</dt><dd>Vuelve a intentarlo en otro modo u otra banda; si el rechazo persiste, lanza trx-qualif para comprobar lo que Hamlib sabe hacer con este equipo.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>rig_error</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

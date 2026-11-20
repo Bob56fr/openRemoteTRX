@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5035</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>État du VOX du poste inconnu <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>État du VOX illisible à la connexion de <code>{client}</code> (<code>{erreur}</code>) : vérifier sur le poste que le VOX est à l&#x27;arrêt.</dd><dt>Causes possibles</dt><dd><ul><li>Poste qui ne donne pas l&#x27;état de son VOX par la CAT</li><li>Liaison CAT perturbée à ce moment</li></ul></dd><dt>Que faire</dt><dd>Vérifier sur le poste que le VOX est à l&#x27;arrêt (indicateur VOX éteint).</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>vox_unknown</code></dd><dt>Depuis la version</dt><dd>0.208.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Rig VOX state unknown <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>VOX state unreadable when <code>{client}</code> connected (<code>{erreur}</code>): check on the rig that VOX is off.</dd><dt>Possible causes</dt><dd><ul><li>Rig that does not report its VOX state over CAT</li><li>CAT link disturbed at that moment</li></ul></dd><dt>What to do</dt><dd>Check on the rig that VOX is off (VOX indicator dark).</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>vox_unknown</code></dd><dt>Since version</dt><dd>0.208.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Zustand der VOX des Transceivers unbekannt <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Zustand der VOX bei der Verbindung von <code>{client}</code> unlesbar (<code>{erreur}</code>): Prüfen Sie am Transceiver, ob die VOX ausgeschaltet ist.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Transceiver gibt den Zustand seiner VOX nicht über CAT aus</li><li>CAT-Verbindung in diesem Moment gestört</li></ul></dd><dt>Was zu tun ist</dt><dd>Prüfen Sie am Transceiver, ob die VOX ausgeschaltet ist (VOX-Anzeige aus).</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>vox_unknown</code></dd><dt>Seit Version</dt><dd>0.208.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Estado del VOX del equipo desconocido <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Estado del VOX ilegible al conectarse <code>{client}</code> (<code>{erreur}</code>): comprueba en el equipo que el VOX está desactivado.</dd><dt>Causas posibles</dt><dd><ul><li>Equipo que no da el estado de su VOX por CAT</li><li>Enlace CAT perturbado en ese momento</li></ul></dd><dt>Qué hacer</dt><dd>Comprueba en el equipo que el VOX está desactivado (indicador VOX apagado).</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>vox_unknown</code></dd><dt>Desde la versión</dt><dd>0.208.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

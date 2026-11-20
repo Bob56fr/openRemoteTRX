@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-2310</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Réglage du spectre ou du filtre FIL refusé <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Réglage du spectre <code>{nom}</code> = <code>{valeur}</code> refusé : <code>{raison}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Le poste refuse ce réglage (en mode fixe, la largeur ne se règle pas)</li><li>Le poste n&#x27;a pas confirmé à temps (3 s)</li><li>Réglage déjà en cours</li><li>Spectre HF indisponible pour le moment</li><li>Valeur hors de la liste permise</li></ul></dd><dt>Que faire</dt><dd>Réessayer ; vérifier le mode du spectre sur le poste (centré ou fixe).</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>spectrum_refused</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Spectrum or FIL filter setting refused <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Spectrum setting <code>{nom}</code> = <code>{valeur}</code> refused: <code>{raison}</code>.</dd><dt>Possible causes</dt><dd><ul><li>The rig rejects this setting (in fixed mode the span cannot be set)</li><li>The rig did not confirm in time (3 s)</li><li>A setting is already in progress</li><li>HF spectrum unavailable for now</li><li>Value not in the allowed list</li></ul></dd><dt>What to do</dt><dd>Try again; check the scope mode on the rig (centre or fixed).</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>spectrum_refused</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Einstellung des Spektrums oder des FIL-Filters abgelehnt <span class="g g-info">Info</span></h2>
+<dl><dt>Meldung</dt><dd>Spektrumeinstellung <code>{nom}</code> = <code>{valeur}</code> abgelehnt: <code>{raison}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Der Transceiver lehnt diese Einstellung ab (im festen Modus lässt sich die Breite nicht einstellen)</li><li>Der Transceiver hat nicht rechtzeitig bestätigt (3 s)</li><li>Einstellung läuft bereits</li><li>HF-Spektrum derzeit nicht verfügbar</li><li>Wert nicht in der zulässigen Liste</li></ul></dd><dt>Was zu tun ist</dt><dd>Versuchen Sie es erneut; prüfen Sie den Spektrummodus am Transceiver (zentriert oder fest).</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>spectrum_refused</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Ajuste del espectro o del filtro FIL rechazado <span class="g g-info">info</span></h2>
+<dl><dt>Mensaje</dt><dd>Ajuste del espectro <code>{nom}</code> = <code>{valeur}</code> rechazado: <code>{raison}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>El equipo rechaza este ajuste (en modo fijo, el ancho no se ajusta)</li><li>El equipo no ha confirmado a tiempo (3 s)</li><li>Ajuste ya en curso</li><li>Espectro HF no disponible por el momento</li><li>Valor fuera de la lista permitida</li></ul></dd><dt>Qué hacer</dt><dd>Vuelve a intentarlo; comprueba el modo del espectro en el equipo (centrado o fijo).</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>spectrum_refused</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

@@ -19,6 +19,12 @@ prefixes:
     en:
       nom: openRemoteTRX (core)
       role: reserved for the station core (gateway, supervisor, tools, built-in modules)
+    de:
+      nom: openRemoteTRX (Kern)
+      role: dem Kern der Station vorbehalten (Gateway, Supervisor, Werkzeuge, eingebaute Module)
+    es:
+      nom: openRemoteTRX (núcleo)
+      role: reservado al núcleo de la estación (pasarela, supervisor, herramientas, módulos internos)
 
   BZA:
     nom: Breizh Audio Box
@@ -30,6 +36,12 @@ prefixes:
     en:
       nom: Breizh Audio Box
       role: processing of the transmitted voice between the client microphone and the radio (station transmit route)
+    de:
+      nom: Breizh Audio Box
+      role: Verarbeitung der gesendeten Stimme zwischen dem Mikrofon des Clients und dem Transceiver (Senderoute der Station)
+    es:
+      nom: Breizh Audio Box
+      role: procesamiento de la voz transmitida entre el micrófono del cliente y el equipo (ruta de transmisión de la estación)
 
   FDV:
     nom: FreeDV
@@ -41,6 +53,12 @@ prefixes:
     en:
       nom: FreeDV
       role: digital voice encoding and decoding on the gateway (RADE V1 receive today)
+    de:
+      nom: FreeDV
+      role: digitale Sprachkodierung und -dekodierung auf dem Gateway (derzeit RADE V1 im Empfang)
+    es:
+      nom: FreeDV
+      role: codificación y decodificación digital en la pasarela (hoy, RADE V1 en recepción)
 
   AND:
     nom: application Android OpenRemoteTRX
@@ -52,3 +70,9 @@ prefixes:
     en:
       nom: OpenRemoteTRX Android app
       role: station client on phone, tablet and Android Auto
+    de:
+      nom: Android-App OpenRemoteTRX
+      role: Client der Station auf Telefon, Tablet und Android Auto
+    es:
+      nom: aplicación Android OpenRemoteTRX
+      role: cliente de la estación en teléfono, tableta y Android Auto

@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5037</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Réglages du coupleur du poste à revoir <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Réglages du coupleur du poste à revoir à la connexion de <code>{client}</code> : <code>{reglages}</code>. Sans eux, pas d&#x27;accord automatique à la prise d&#x27;émission sur une nouvelle fréquence : émission à vos risques.</dd><dt>Causes possibles</dt><dd><ul><li>Accord à la prise d&#x27;émission (PTT Start) à l&#x27;arrêt dans le menu du coupleur</li><li>État du coupleur commun à toutes les bandes ([TUNER] Switch = Manual)</li></ul></dd><dt>Que faire</dt><dd>Régler le menu du coupleur sur le poste (IC-7300MK2 : SET &gt; Function &gt; Tuner) ; la station ne le change jamais.</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>tuner_settings</code></dd><dt>Depuis la version</dt><dd>0.210.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Rig tuner settings to be checked <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Rig tuner settings to be checked when <code>{client}</code> connected: <code>{reglages}</code>. Without them, no automatic tuning when transmitting on a new frequency: transmit at your own risk.</dd><dt>Possible causes</dt><dd><ul><li>Tuning on transmit (PTT Start) off in the tuner menu</li><li>Tuner state common to all bands ([TUNER] Switch = Manual)</li></ul></dd><dt>What to do</dt><dd>Set the tuner menu on the rig (IC-7300MK2: SET &gt; Function &gt; Tuner); the station never changes it.</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>tuner_settings</code></dd><dt>Since version</dt><dd>0.210.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Tuner-Einstellungen des Transceivers zu überprüfen <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Tuner-Einstellungen des Transceivers bei der Verbindung von <code>{client}</code> zu überprüfen: <code>{reglages}</code>. Ohne sie keine automatische Abstimmung bei der Tastung auf einer neuen Frequenz: Senden auf eigenes Risiko.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Abstimmung bei der Tastung (PTT Start) im Tuner-Menü ausgeschaltet</li><li>Tuner-Zustand für alle Bänder gemeinsam ([TUNER] Switch = Manual)</li></ul></dd><dt>Was zu tun ist</dt><dd>Stellen Sie das Tuner-Menü am Transceiver ein (IC-7300MK2: SET &gt; Function &gt; Tuner); die Station ändert es nie.</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>tuner_settings</code></dd><dt>Seit Version</dt><dd>0.210.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Ajustes del acoplador del equipo a revisar <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Ajustes del acoplador del equipo a revisar al conectarse <code>{client}</code>: <code>{reglages}</code>. Sin ellos, no hay sintonía automática al conmutar a TX en una frecuencia nueva: transmisión bajo tu responsabilidad.</dd><dt>Causas posibles</dt><dd><ul><li>Sintonía al conmutar a TX (PTT Start) desactivada en el menú del acoplador</li><li>Estado del acoplador común a todas las bandas ([TUNER] Switch = Manual)</li></ul></dd><dt>Qué hacer</dt><dd>Ajusta el menú del acoplador en el equipo (IC-7300MK2: SET &gt; Function &gt; Tuner); la estación nunca lo cambia.</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>tuner_settings</code></dd><dt>Desde la versión</dt><dd>0.210.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

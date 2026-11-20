@@ -343,7 +343,7 @@ class Supervisor:
     poll_interval_s: float = 1.0      # cadence au repos (0,25 s pendant une émission)
     max_reboots_per_hour: int = 3     # au-delà : mode sûr (RX, passerelle arrêtée)
     notify_url: str = ""              # ex. https://ntfy.sh/mon-sujet (optionnel)
-    notify_lang: str = "fr"           # langue des alertes ntfy : fr ou en (celles du catalogue d'erreurs)
+    notify_lang: str = "fr"           # langue des alertes ntfy : fr, en, de ou es (celles du catalogue d'erreurs)
     status_path: str = field(default_factory=lambda: str(default_status_path()))  # écrit par la passerelle
     state_dir: str = field(default_factory=lambda: str(default_state_dir()))      # mode sûr, reboots
     service_mode: str = "auto"        # auto | systemd | managed (le superviseur lance les processus)
@@ -719,7 +719,7 @@ def validate(cfg: Config) -> list[str]:
         p.append(_t("supervisor.paths"))
     if v.notify_url and not v.notify_url.startswith(("https://", "http://")):
         p.append(_t("supervisor.notify_url"))
-    if v.notify_lang not in ("fr", "en"):
+    if v.notify_lang not in ("fr", "en", "de", "es"):
         p.append(_t("supervisor.notify_lang"))
 
     m = cfg.modules
@@ -1377,7 +1377,7 @@ def render_toml(cfg: Config) -> str:
         f"poll_interval_s = {v.poll_interval_s}",
         f"max_reboots_per_hour = {v.max_reboots_per_hour}",
         f"notify_url = {_s(v.notify_url)}",
-        f"notify_lang = {_s(v.notify_lang)}   # langue des alertes : fr ou en",
+        f"notify_lang = {_s(v.notify_lang)}   # langue des alertes : fr, en, de ou es",
         f"status_path = {_s(v.status_path)}",
         f"state_dir = {_s(v.state_dir)}",
         f"service_mode = {_s(v.service_mode)}   # auto | systemd | managed",

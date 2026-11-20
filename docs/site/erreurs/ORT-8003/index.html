@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-8003</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Passerelle muette <span class="g g-erreur">erreur</span></h2>
 <dl><dt>Message</dt><dd>Le fichier d&#x27;état de la passerelle est figé ou absent depuis <code>{age_s}</code> s : redémarrage de la passerelle.</dd><dt>Causes possibles</dt><dd><ul><li>Passerelle arrêtée, plantée ou gelée</li><li>Passerelle qui ne démarre pas (audio absent, configuration)</li><li>Disque plein ou droits : fichier d&#x27;état non écrit</li></ul></dd><dt>Que faire</dt><dd>Consulter le journal de la passerelle ; vérifier l&#x27;espace disque et les périphériques audio.</dd><dt>Ce que fait la station</dt><dd><code>redemarrer_passerelle</code></dd><dt>Alerte ntfy</dt><dd>oui par défaut, priorité 3</dd><dt>Codes du protocole</dt><dd><code>gateway_silent</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Gateway silent <span class="g g-erreur">error</span></h2>
 <dl><dt>Message</dt><dd>The gateway status file has been frozen or missing for <code>{age_s}</code> s: restarting the gateway.</dd><dt>Possible causes</dt><dd><ul><li>Gateway stopped, crashed or frozen</li><li>Gateway failing to start (audio missing, configuration)</li><li>Disk full or permissions: status file not written</li></ul></dd><dt>What to do</dt><dd>Read the gateway log; check disk space and audio devices.</dd><dt>What the station does</dt><dd><code>redemarrer_passerelle</code></dd><dt>ntfy alert</dt><dd>yes by default, priority 3</dd><dt>Protocol codes</dt><dd><code>gateway_silent</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Gateway stumm <span class="g g-erreur">Fehler</span></h2>
+<dl><dt>Meldung</dt><dd>Die Zustandsdatei des Gateways ist seit <code>{age_s}</code> s eingefroren oder fehlt: Neustart des Gateways.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Gateway gestoppt, abgestürzt oder eingefroren</li><li>Gateway startet nicht (Audio fehlt, Konfiguration)</li><li>Datenträger voll oder Rechte: Zustandsdatei nicht geschrieben</li></ul></dd><dt>Was zu tun ist</dt><dd>Sehen Sie in das Protokoll des Gateways; prüfen Sie den freien Speicherplatz und die Audiogeräte.</dd><dt>Was die Station tut</dt><dd><code>redemarrer_passerelle</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig ja, Priorität 3</dd><dt>Protokollcodes</dt><dd><code>gateway_silent</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Pasarela muda <span class="g g-erreur">error</span></h2>
+<dl><dt>Mensaje</dt><dd>El archivo de estado de la pasarela está congelado o ausente desde hace <code>{age_s}</code> s: reinicio de la pasarela.</dd><dt>Causas posibles</dt><dd><ul><li>Pasarela detenida, caída o bloqueada</li><li>Pasarela que no arranca (audio ausente, configuración)</li><li>Disco lleno o permisos: archivo de estado no escrito</li></ul></dd><dt>Qué hacer</dt><dd>Consulta el registro de la pasarela; comprueba el espacio en disco y los dispositivos de audio.</dd><dt>Qué hace la estación</dt><dd><code>redemarrer_passerelle</code></dd><dt>Alerta ntfy</dt><dd>sí por defecto, prioridad 3</dd><dt>Códigos del protocolo</dt><dd><code>gateway_silent</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

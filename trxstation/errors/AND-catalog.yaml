@@ -25,6 +25,20 @@ AND-1001:
     - Uncaught exception in the app (Kotlin)
     - 'Native crash (WebRTC, audio): signal from native code'
     preconisation: Send the HTML report (no personal data) with the app version.
+  de:
+    titre: 'Android-App: Absturz'
+    message: '{type} der App: {exception}.'
+    causes:
+    - Nicht abgefangene Ausnahme in der App (Kotlin)
+    - 'Nativer Absturz (WebRTC, Audio): Signal des nativen Codes'
+    preconisation: Senden Sie den HTML-Bericht (ohne persönliche Daten) mit der Version der App.
+  es:
+    titre: 'Aplicación Android: fallo'
+    message: '{type} de la aplicación: {exception}.'
+    causes:
+    - Excepción no capturada en la aplicación (Kotlin)
+    - 'Fallo nativo (WebRTC, audio): señal del código nativo'
+    preconisation: Envía el informe HTML (sin datos personales) con la versión de la aplicación.
 
 AND-1002:
   gravite: erreur
@@ -46,6 +60,18 @@ AND-1002:
     causes:
     - App main thread blocked (network, audio, disk)
     preconisation: Send the HTML report with what was being done when it froze.
+  de:
+    titre: Android-App blockiert (ANR)
+    message: 'App blockiert (ANR): {detail}.'
+    causes:
+    - Hauptthread der App blockiert (Netzwerk, Audio, Datenträger)
+    preconisation: Senden Sie den HTML-Bericht mit dem, was zum Zeitpunkt der Blockade gemacht wurde.
+  es:
+    titre: Aplicación Android bloqueada (ANR)
+    message: 'Aplicación bloqueada (ANR): {detail}.'
+    causes:
+    - Hilo principal de la aplicación bloqueado (red, audio, disco)
+    preconisation: Envía el informe HTML con lo que se estaba haciendo en el momento del bloqueo.
 
 AND-1003:
   gravite: avertissement
@@ -71,6 +97,22 @@ AND-1003:
     - Damaged APK
     - Play Store error (DF-…)
     preconisation: Uninstall the old (debug) version then reinstall from the Store.
+  de:
+    titre: 'Android-App: Installation gescheitert'
+    message: 'Installation (Play Store): {detail}.'
+    causes:
+    - Installierte Debug-Version blockiert die Version aus dem Store (andere Signatur)
+    - APK-Datei beschädigt
+    - Fehler des Play Store (DF-…)
+    preconisation: Deinstallieren Sie die alte (Debug-)Version und installieren Sie dann neu aus dem Store.
+  es:
+    titre: 'Aplicación Android: instalación fallida'
+    message: 'Instalación (Play Store): {detail}.'
+    causes:
+    - Versión debug instalada que bloquea la de la Store (otra firma)
+    - Archivo APK dañado
+    - Error de Play Store (DF-…)
+    preconisation: Desinstala la versión anterior (debug) y vuelve a instalar desde la Store.
 
 AND-1004:
   gravite: avertissement
@@ -94,6 +136,20 @@ AND-1004:
     - Phone low on memory (lowmemorykiller)
     - Battery saver killing the service
     preconisation: Exclude the app from battery optimisation; close heavy apps.
+  de:
+    titre: Android-App von Android beendet
+    message: 'App von Android beendet: {detail}.'
+    causes:
+    - Zu wenig Speicher im Telefon (lowmemorykiller)
+    - Energiesparfunktion beendet den Dienst
+    preconisation: Nehmen Sie die App von der Akku-Optimierung aus; schließen Sie ressourcenhungrige Apps.
+  es:
+    titre: Aplicación Android detenida por Android
+    message: 'Aplicación detenida por Android: {detail}.'
+    causes:
+    - Falta de memoria del teléfono (lowmemorykiller)
+    - Ahorro de batería que mata el servicio
+    preconisation: Excluye la aplicación de la optimización de batería; cierra las aplicaciones que consumen mucho.
 
 AND-1005:
   gravite: info
@@ -115,4 +171,16 @@ AND-1005:
     causes:
     - Errors logged by the app or by WebRTC in its process
     preconisation: Read the most frequent ones in the HTML report; attach them to a problem report.
+  de:
+    titre: Von der Android-App geschriebene Fehler
+    message: 'Von der App geschriebene Fehler: {tag}: {message} ({nombre}-mal).'
+    causes:
+    - Von der App oder von WebRTC in ihrem Prozess protokollierte Fehler
+    preconisation: Lesen Sie die häufigsten im HTML-Bericht; einem Problembericht beilegen.
+  es:
+    titre: Errores escritos por la aplicación Android
+    message: 'Errores escritos por la aplicación: {tag}: {message} ({nombre} veces).'
+    causes:
+    - Errores registrados por la aplicación o por WebRTC en su proceso
+    preconisation: Lee los más frecuentes en el informe HTML; adjúntalos a un informe de problema.
 

@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-1006</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Machine de la station chargée <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Machine de la station <code>{niveau}</code> : <code>{mesure}</code> à <code>{valeur}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Processeur &gt; 75 % (rouge 90 %)</li><li>Mémoire &gt; 80 % (rouge 90 %)</li><li>Disque &gt; 85 % (rouge 95 %)</li><li>Température &gt; 75 °C (rouge 85 °C)</li><li>Raspberry Pi ralenti (alimentation)</li></ul></dd><dt>Que faire</dt><dd>Voir la synthèse du matériel (bargraph de l&#x27;onglet Station ou Réglages) et réduire la charge.</dd><dt>Ce que fait la station</dt><dd>rien d&#x27;automatique</dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>warn</code>, <code>bad</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Station machine under load <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Station machine <code>{niveau}</code>: <code>{mesure}</code> at <code>{valeur}</code>.</dd><dt>Possible causes</dt><dd><ul><li>CPU &gt; 75 % (red 90 %)</li><li>Memory &gt; 80 % (red 90 %)</li><li>Disk &gt; 85 % (red 95 %)</li><li>Temperature &gt; 75 °C (red 85 °C)</li><li>Raspberry Pi throttled (power supply)</li></ul></dd><dt>What to do</dt><dd>See the hardware summary (bar graph on the Station tab or in Settings) and reduce the load.</dd><dt>What the station does</dt><dd>nothing automatic</dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>warn</code>, <code>bad</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Rechner der Station ausgelastet <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Rechner der Station <code>{niveau}</code>: <code>{mesure}</code> bei <code>{valeur}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Prozessor &gt; 75 % (rot 90 %)</li><li>Arbeitsspeicher &gt; 80 % (rot 90 %)</li><li>Festplatte &gt; 85 % (rot 95 %)</li><li>Temperatur &gt; 75 °C (rot 85 °C)</li><li>Raspberry Pi gedrosselt (Stromversorgung)</li></ul></dd><dt>Was zu tun ist</dt><dd>Sehen Sie sich die Hardware-Übersicht an (Balkenanzeige im Reiter Station oder in den Einstellungen) und verringern Sie die Last.</dd><dt>Was die Station tut</dt><dd>nichts Automatisches</dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>warn</code>, <code>bad</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Máquina de la estación cargada <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Máquina de la estación <code>{niveau}</code>: <code>{mesure}</code> a <code>{valeur}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Procesador &gt; 75 % (rojo 90 %)</li><li>Memoria &gt; 80 % (rojo 90 %)</li><li>Disco &gt; 85 % (rojo 95 %)</li><li>Temperatura &gt; 75 °C (rojo 85 °C)</li><li>Raspberry Pi ralentizada (alimentación)</li></ul></dd><dt>Qué hacer</dt><dd>Mira el resumen del hardware (gráfico de barras de la pestaña Estación o Ajustes) y reduce la carga.</dd><dt>Qué hace la estación</dt><dd>nada automático</dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>warn</code>, <code>bad</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

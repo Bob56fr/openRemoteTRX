@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5016</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Émission coupée par un autre client <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Émission coupée à la demande de <code>{client}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Un autre client a appuyé sur le PTT pendant l&#x27;émission (couper est toujours permis)</li></ul></dd><dt>Que faire</dt><dd>Se coordonner entre opérateurs de la station.</dd><dt>Ce que fait la station</dt><dd><code>retour_rx</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>toggle</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Transmission cut by another client <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Transmission cut at the request of <code>{client}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Another client pressed PTT during the transmission (cutting is always allowed)</li></ul></dd><dt>What to do</dt><dd>Coordinate between the station&#x27;s operators.</dd><dt>What the station does</dt><dd><code>retour_rx</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>toggle</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Senden von einem anderen Client abgeschaltet <span class="g g-info">Info</span></h2>
+<dl><dt>Meldung</dt><dd>Senden auf Anforderung von <code>{client}</code> abgeschaltet.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Ein anderer Client hat während des Sendens die PTT gedrückt (Abschalten ist immer erlaubt)</li></ul></dd><dt>Was zu tun ist</dt><dd>Stimmen Sie sich zwischen den Operatoren der Station ab.</dd><dt>Was die Station tut</dt><dd><code>retour_rx</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>toggle</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Transmisión cortada por otro cliente <span class="g g-info">info</span></h2>
+<dl><dt>Mensaje</dt><dd>Transmisión cortada a petición de <code>{client}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Otro cliente ha pulsado el PTT durante la transmisión (cortar siempre está permitido)</li></ul></dd><dt>Qué hacer</dt><dd>Coordinaos entre los operadores de la estación.</dd><dt>Qué hace la estación</dt><dd><code>retour_rx</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>toggle</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

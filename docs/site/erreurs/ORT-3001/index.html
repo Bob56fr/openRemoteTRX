@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-3001</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Périphérique audio du poste absent <span class="g g-critique">critique</span></h2>
 <p class="note">Code abandonné, gardé pour les anciens journaux. Remplacé par <a href="../ORT-3012/">ORT-3012</a> (la passerelle ne s&#x27;arrête plus, émission refusée, carte recherchée).</p>
@@ -87,6 +87,16 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <h2>Rig audio device missing <span class="g g-critique">critical</span></h2>
 <p class="note">Retired code, kept for old logs. Replaced by <a href="../ORT-3012/">ORT-3012</a> (la passerelle ne s&#x27;arrête plus, émission refusée, carte recherchée).</p>
 <dl><dt>Message</dt><dd>No audio device &quot;<code>{peripherique}</code>&quot; (<code>{sens}</code>): the gateway stops.</dd><dt>Possible causes</dt><dd><ul><li>Rig USB sound card (TRX codec, Digirig, SignaLink) unplugged or rig switched off</li><li>Device name changed (other USB port, driver update) or mistyped in station.toml</li><li>Audio driver missing</li></ul></dd><dt>What to do</dt><dd>Check the USB cable and rig power, then run trx-setup again and pick the device from the list ([audio] capture_device / playback_device).</dd><dt>What the station does</dt><dd><code>arreter_passerelle</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Audiogerät des Transceivers fehlt <span class="g g-critique">kritisch</span></h2>
+<p class="note">Aufgegebener Code, für alte Protokolle beibehalten. Ersetzt durch <a href="../ORT-3012/">ORT-3012</a> (la passerelle ne s&#x27;arrête plus, émission refusée, carte recherchée).</p>
+<dl><dt>Meldung</dt><dd>Kein Audiogerät „<code>{peripherique}</code>“ (<code>{sens}</code>): Das Gateway wird beendet.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Audio-Interface des Transceivers (USB-Soundkarte des TRX, Digirig, SignaLink) abgezogen oder Transceiver ausgeschaltet</li><li>Gerätename geändert (anderer USB-Port, Treiberupdate) oder falsch in station.toml übernommen</li><li>Audiotreiber fehlt</li></ul></dd><dt>Was zu tun ist</dt><dd>Prüfen Sie USB-Kabel und Stromversorgung des Transceivers und starten Sie trx-setup erneut, um das Gerät aus der Liste zu wählen ([audio] capture_device / playback_device).</dd><dt>Was die Station tut</dt><dd><code>arreter_passerelle</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Dispositivo de audio del equipo ausente <span class="g g-critique">crítico</span></h2>
+<p class="note">Código abandonado, conservado para los registros antiguos. Sustituido por <a href="../ORT-3012/">ORT-3012</a> (la passerelle ne s&#x27;arrête plus, émission refusée, carte recherchée).</p>
+<dl><dt>Mensaje</dt><dd>Ningún dispositivo de audio «<code>{peripherique}</code>» (<code>{sens}</code>): la pasarela se detiene.</dd><dt>Causas posibles</dt><dd><ul><li>Interfaz de audio del equipo (tarjeta de sonido USB del TRX, Digirig, SignaLink) desconectada o equipo apagado</li><li>Nombre del dispositivo cambiado (otro puerto USB, actualización del controlador) o mal copiado en station.toml</li><li>Controlador de audio ausente</li></ul></dd><dt>Qué hacer</dt><dd>Comprueba el cable USB y la alimentación del equipo, y vuelve a lanzar trx-setup para elegir el dispositivo en la lista ([audio] capture_device / playback_device).</dd><dt>Qué hace la estación</dt><dd><code>arreter_passerelle</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

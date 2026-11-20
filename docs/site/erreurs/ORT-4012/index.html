@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-4012</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Paramètres de commande refusés <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Commande « <code>{commande}</code> » refusée : <code>{detail}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Valeur hors bornes ou de mauvais type (fréquence, niveau, puissance, code SELCALL…)</li><li>Réglage refusé par la station (profil de voix en trop, mise en page invalide, morceau d&#x27;export inexistant)</li><li>Client incompatible</li></ul></dd><dt>Que faire</dt><dd>Corriger la valeur saisie ; si le message vient d&#x27;un bouton, mettre à jour le client et signaler le problème.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>invalid_params</code>, <code>invalid</code>, <code>voice_profile_refused</code>, <code>layout_invalid</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Command parameters refused <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Command &quot;<code>{commande}</code>&quot; refused: <code>{detail}</code>.</dd><dt>Possible causes</dt><dd><ul><li>Value out of range or wrong type (frequency, level, power, SELCALL code…)</li><li>Setting refused by the station (too many voice profiles, invalid layout, export part out of range)</li><li>Incompatible client</li></ul></dd><dt>What to do</dt><dd>Fix the entered value; if it came from a button, update the client and report the problem.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>invalid_params</code>, <code>invalid</code>, <code>voice_profile_refused</code>, <code>layout_invalid</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Befehlsparameter abgelehnt <span class="g g-info">Info</span></h2>
+<dl><dt>Meldung</dt><dd>Befehl „<code>{commande}</code>“ abgelehnt: <code>{detail}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Wert außerhalb der Grenzen oder vom falschen Typ (Frequenz, Pegel, Leistung, SELCALL-Code…)</li><li>Einstellung von der Station abgelehnt (Sprachprofil zu viel, ungültiges Layout, nicht vorhandener Exportteil)</li><li>Inkompatibler Client</li></ul></dd><dt>Was zu tun ist</dt><dd>Korrigieren Sie den eingegebenen Wert; kommt die Meldung von einer Schaltfläche, aktualisieren Sie den Client und melden Sie das Problem.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>invalid_params</code>, <code>invalid</code>, <code>voice_profile_refused</code>, <code>layout_invalid</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Parámetros del comando rechazados <span class="g g-info">info</span></h2>
+<dl><dt>Mensaje</dt><dd>Comando «<code>{commande}</code>» rechazado: <code>{detail}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Valor fuera de límites o de tipo erróneo (frecuencia, nivel, potencia, código SELCALL…)</li><li>Ajuste rechazado por la estación (perfil de voz de más, diseño no válido, fragmento de exportación inexistente)</li><li>Cliente incompatible</li></ul></dd><dt>Qué hacer</dt><dd>Corrige el valor introducido; si el mensaje viene de un botón, actualiza el cliente e informa del problema.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>invalid_params</code>, <code>invalid</code>, <code>voice_profile_refused</code>, <code>layout_invalid</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

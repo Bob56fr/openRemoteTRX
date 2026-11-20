@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-1501</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Recherche de mise à jour impossible <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Recherche de mise à jour impossible : <code>{detail}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>Pas d&#x27;accès Internet ou GitHub injoignable</li><li>Limite de requêtes de GitHub atteinte</li><li>Réponse de GitHub inattendue ou trop grande</li><li>Adresse non https://</li></ul></dd><dt>Que faire</dt><dd>Vérifier la connexion Internet ; nouvel essai automatique dans 24 h (ou menu 7.1, « Chercher maintenant »).</dd><dt>Ce que fait la station</dt><dd><code>nouvel_essai</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Update check failed <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>Update check failed: <code>{detail}</code>.</dd><dt>Possible causes</dt><dd><ul><li>No Internet access or GitHub unreachable</li><li>GitHub rate limit reached</li><li>Unexpected or oversized GitHub answer</li><li>Non-https address</li></ul></dd><dt>What to do</dt><dd>Check the Internet connection; automatic retry in 24 h (or menu 7.1, &quot;Check now&quot;).</dd><dt>What the station does</dt><dd><code>nouvel_essai</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Suche nach Updates nicht möglich <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Suche nach Updates nicht möglich: <code>{detail}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Kein Internetzugang oder GitHub nicht erreichbar</li><li>Anfragelimit von GitHub erreicht</li><li>Unerwartete oder zu große Antwort von GitHub</li><li>Adresse nicht https://</li></ul></dd><dt>Was zu tun ist</dt><dd>Prüfen Sie die Internetverbindung; neuer automatischer Versuch in 24 h (oder Menü 7.1, „Jetzt suchen“).</dd><dt>Was die Station tut</dt><dd><code>nouvel_essai</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Imposible buscar actualizaciones <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Imposible buscar actualizaciones: <code>{detail}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>Sin acceso a Internet o GitHub inalcanzable</li><li>Límite de peticiones de GitHub alcanzado</li><li>Respuesta de GitHub inesperada o demasiado grande</li><li>Dirección que no es https://</li></ul></dd><dt>Qué hacer</dt><dd>Comprueba la conexión a Internet; nuevo intento automático en 24 h (o menú 7.1, «Buscar ahora»).</dd><dt>Qué hace la estación</dt><dd><code>nouvel_essai</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

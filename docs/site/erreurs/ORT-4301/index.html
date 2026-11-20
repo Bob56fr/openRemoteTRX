@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-4301</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Écoute des visiteurs coupée sur la station <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>L&#x27;écoute des visiteurs n&#x27;est pas ouverte sur cette station.</dd><dt>Causes possibles</dt><dd><ul><li>[access] max_listeners = 0 dans station.toml</li><li>Fonction coupée pendant que des visiteurs écoutaient (déconnectés)</li></ul></dd><dt>Que faire</dt><dd>Administrateur : régler max_listeners (TRX Console menu 4.2) si l&#x27;écoute des visiteurs est voulue.</dd><dt>Ce que fait la station</dt><dd><code>refus</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>listeners_off</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Listener access disabled on the station <span class="g g-info">info</span></h2>
 <dl><dt>Message</dt><dd>Listener access is not open on this station.</dd><dt>Possible causes</dt><dd><ul><li>[access] max_listeners = 0 in station.toml</li><li>Feature turned off while listeners were connected (disconnected)</li></ul></dd><dt>What to do</dt><dd>Administrator: set max_listeners (TRX Console menu 4.2) if listener access is wanted.</dd><dt>What the station does</dt><dd><code>refus</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>listeners_off</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Besucherempfang auf der Station abgeschaltet <span class="g g-info">Info</span></h2>
+<dl><dt>Meldung</dt><dd>Der Besucherempfang ist auf dieser Station nicht geöffnet.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>[access] max_listeners = 0 in station.toml</li><li>Funktion abgeschaltet, während Besucher zuhörten (getrennt)</li></ul></dd><dt>Was zu tun ist</dt><dd>Administrator: Stellen Sie max_listeners ein (TRX Console Menü 4.2), wenn der Besucherempfang gewünscht ist.</dd><dt>Was die Station tut</dt><dd><code>refus</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>listeners_off</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Escucha de los visitantes desactivada en la estación <span class="g g-info">info</span></h2>
+<dl><dt>Mensaje</dt><dd>La escucha de los visitantes no está abierta en esta estación.</dd><dt>Causas posibles</dt><dd><ul><li>[access] max_listeners = 0 en station.toml</li><li>Función desactivada mientras había visitantes escuchando (desconectados)</li></ul></dd><dt>Qué hacer</dt><dd>Administrador: ajusta max_listeners (menú 4.2 de TRX Console) si quieres la escucha de los visitantes.</dd><dt>Qué hace la estación</dt><dd><code>refus</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>listeners_off</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

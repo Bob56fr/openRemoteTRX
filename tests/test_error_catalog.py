@@ -20,7 +20,8 @@ MODULES = ERRORS_DIR / "modules.yaml"
 
 GRAVITES = {"info", "avertissement", "erreur", "critique"}
 REQUIRED = ("gravite", "titre", "message", "causes", "preconisation", "action_auto",
-            "ntfy_defaut", "priorite_ntfy", "depuis_version", "en")
+            "ntfy_defaut", "priorite_ntfy", "depuis_version", "en", "de", "es")
+TRANSLATIONS = ("en", "de", "es")          # blocs traduits de chaque entrée (de / es : lot T8)
 REQUIRED_EN = ("titre", "message", "causes", "preconisation")
 CODE_RE = re.compile(r"^(?P<prefix>[A-Z]{3})-(?P<num>\d{4})$")
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -126,23 +127,25 @@ def test_every_entry_has_the_required_fields(catalog: dict) -> None:
             assert isinstance(entry["deprecated"], bool), f"{code} : deprecated doit être true/false"
 
 
-def test_every_entry_has_a_complete_english_translation(catalog: dict) -> None:
+def test_every_entry_has_a_complete_translation_in_every_language(catalog: dict) -> None:
     for code, entry in catalog.items():
-        en = entry["en"]
-        assert isinstance(en, dict), f"{code} : bloc en absent"
-        for f in REQUIRED_EN:
-            assert f in en, f"{code} : en.{f} manquant"
-        for f in ("titre", "message", "preconisation"):
-            assert isinstance(en[f], str) and en[f].strip(), f"{code} : en.{f} vide"
-        assert isinstance(en["causes"], list) and len(en["causes"]) == len(entry["causes"]), \
-            f"{code} : en.causes doit traduire chacune des {len(entry['causes'])} causes"
-        assert all(isinstance(c, str) and c.strip() for c in en["causes"]), f"{code} : en.causes vide"
+        for lang in TRANSLATIONS:
+            tr = entry[lang]
+            assert isinstance(tr, dict), f"{code} : bloc {lang} absent"
+            assert set(tr) == set(REQUIRED_EN), f"{code} : {lang} = {sorted(tr)}, attendu {sorted(REQUIRED_EN)}"
+            for f in ("titre", "message", "preconisation"):
+                assert isinstance(tr[f], str) and tr[f].strip(), f"{code} : {lang}.{f} vide"
+            assert isinstance(tr["causes"], list) and len(tr["causes"]) == len(entry["causes"]), \
+                f"{code} : {lang}.causes doit traduire chacune des {len(entry['causes'])} causes"
+            assert all(isinstance(c, str) and c.strip() for c in tr["causes"]), f"{code} : {lang}.causes vide"
 
 
-def test_message_variables_are_the_same_in_both_languages(catalog: dict) -> None:
+def test_message_variables_are_the_same_in_every_language(catalog: dict) -> None:
     for code, entry in catalog.items():
-        fr, en = _fields(entry["message"]), _fields(entry["en"]["message"])
-        assert fr == en, f"{code} : variables {sorted(fr)} (fr) != {sorted(en)} (en)"
+        fr = _fields(entry["message"])
+        for lang in TRANSLATIONS:
+            other = _fields(entry[lang]["message"])
+            assert fr == other, f"{code} : variables {sorted(fr)} (fr) != {sorted(other)} ({lang})"
         for name in fr:
             assert re.fullmatch(r"[a-z][a-z0-9_]*", name), f"{code} : variable {{{name}}} mal nommée"
 
@@ -154,7 +157,7 @@ def test_message_variables_never_collide_with_the_parameters_of_emit_and_alert(c
     mesuré que `Notifier.alert` met à la place du message."""
     reserved = {"code", "logger", "prefixe", "trace", "key", "lang"}
     for code, entry in catalog.items():
-        clash = (_fields(entry["message"]) | _fields(entry["en"]["message"])) & reserved
+        clash = (_fields(entry["message"]) | set().union(*(_fields(entry[lang]["message"]) for lang in TRANSLATIONS))) & reserved
         assert not clash, f"{code} : variable(s) {sorted(clash)} réservée(s) : la renommer (ex. code_recu)"
 
 
@@ -168,7 +171,8 @@ def test_module_registry(registry: dict) -> None:
     assert registry["ORT"]["catalogue"] == "catalog.yaml"
     for prefix, entry in registry.items():
         assert re.fullmatch(r"[A-Z]{3}", prefix), f"préfixe {prefix!r} : 3 lettres majuscules"
-        for f in ("nom", "role", "interaction", "contact", "version_min", "catalogue", "en"):
+        for f in ("nom", "role", "interaction", "contact", "version_min", "catalogue", *TRANSLATIONS):
             assert f in entry, f"{prefix} : champ {f} manquant"
         assert VERSION_RE.match(str(entry["version_min"])), f"{prefix} : version_min"
-        assert entry["en"].get("nom") and entry["en"].get("role"), f"{prefix} : traduction anglaise"
+        for lang in TRANSLATIONS:
+            assert entry[lang].get("nom") and entry[lang].get("role"), f"{prefix} : traduction {lang}"

@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-5003</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>L&#x27;ouverture du second port met le poste en émission <span class="g g-critique">critique</span></h2>
 <dl><dt>Message</dt><dd>L&#x27;ouverture de <code>{port}</code> a mis le poste en ÉMISSION : un réglage « USB SEND » ou « USB Keying » du poste utilise ce port. Coupure faite ; spectre désactivé jusqu&#x27;au redémarrage de la station.</dd><dt>Causes possibles</dt><dd><ul><li>« USB SEND », « USB Keying (CW) » ou « USB Keying (RTTY) » affecté à une ligne RTS/DTR du port B</li></ul></dd><dt>Que faire</dt><dd>Sur le poste (MENU &gt; SET &gt; Connecteurs), mettre USB SEND et USB Keying sur OFF ou sur le port CAT seulement, puis redémarrer la station.</dd><dt>Ce que fait la station</dt><dd><code>retour_rx</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>spectrum_port_keyed</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>Opening the second port keys the rig <span class="g g-critique">critical</span></h2>
 <dl><dt>Message</dt><dd>Opening <code>{port}</code> put the rig into TRANSMIT: a &quot;USB SEND&quot; or &quot;USB Keying&quot; rig setting uses this port. Unkeyed; spectrum disabled until the station restarts.</dd><dt>Possible causes</dt><dd><ul><li>&quot;USB SEND&quot;, &quot;USB Keying (CW)&quot; or &quot;USB Keying (RTTY)&quot; mapped to an RTS/DTR line of port B</li></ul></dd><dt>What to do</dt><dd>On the rig (MENU &gt; SET &gt; Connectors), set USB SEND and USB Keying to OFF or to the CAT port only, then restart the station.</dd><dt>What the station does</dt><dd><code>retour_rx</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>spectrum_port_keyed</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Das Öffnen des zweiten Ports schaltet den Transceiver auf Senden <span class="g g-critique">kritisch</span></h2>
+<dl><dt>Meldung</dt><dd>Das Öffnen von <code>{port}</code> hat den Transceiver auf SENDEN geschaltet: Eine Einstellung „USB SEND“ oder „USB Keying“ des Transceivers nutzt diesen Port. Abschaltung erfolgt; Spektrum bis zum Neustart der Station deaktiviert.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>„USB SEND“, „USB Keying (CW)“ oder „USB Keying (RTTY)“ einer RTS/DTR-Leitung des Ports B zugeordnet</li></ul></dd><dt>Was zu tun ist</dt><dd>Stellen Sie am Transceiver (MENU &gt; SET &gt; Anschlüsse) USB SEND und USB Keying auf OFF oder nur auf den CAT-Port und starten Sie die Station neu.</dd><dt>Was die Station tut</dt><dd><code>retour_rx</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>spectrum_port_keyed</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Abrir el segundo puerto pone el equipo en transmisión <span class="g g-critique">crítico</span></h2>
+<dl><dt>Mensaje</dt><dd>Abrir <code>{port}</code> ha puesto el equipo en TRANSMISIÓN: un ajuste «USB SEND» o «USB Keying» del equipo usa este puerto. Corte hecho; espectro desactivado hasta el reinicio de la estación.</dd><dt>Causas posibles</dt><dd><ul><li>«USB SEND», «USB Keying (CW)» o «USB Keying (RTTY)» asignado a una línea RTS/DTR del puerto B</li></ul></dd><dt>Qué hacer</dt><dd>En el equipo (MENU &gt; SET &gt; Conectores), pon USB SEND y USB Keying en OFF o solo en el puerto CAT, y reinicia la estación.</dd><dt>Qué hace la estación</dt><dd><code>retour_rx</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>spectrum_port_keyed</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

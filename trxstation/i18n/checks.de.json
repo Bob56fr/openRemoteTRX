@@ -55,7 +55,7 @@
   "supervisor.service_mode": "[supervisor] service_mode muss auto, systemd oder managed sein",
   "supervisor.paths": "[supervisor] status_path und state_dir sind erforderlich",
   "supervisor.notify_url": "[supervisor] notify_url muss mit http:// oder https:// beginnen",
-  "supervisor.notify_lang": "[supervisor] notify_lang muss fr oder en sein (Sprachen des Fehlerkatalogs)",
+  "supervisor.notify_lang": "[supervisor] notify_lang muss fr, en, de oder es sein (Sprachen des Fehlerkatalogs)",
   "modules.run_name": "[modules] run: „{name}“ ist kein gültiger Modulname",
   "modules.run_twice": "[modules] run: ein Modul ist zweimal aufgeführt",
   "modules.bus_port_range": "[modules] bus_port außerhalb des Bereichs (1024 bis 65535)",

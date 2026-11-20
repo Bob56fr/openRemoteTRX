@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-2302</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Aucune réponse CI-V sur le second port <span class="g g-avertissement">avertissement</span></h2>
 <dl><dt>Message</dt><dd>Aucune réponse CI-V sur <code>{port}</code> : le second port n&#x27;est pas (ou plus) réglé en CI-V dans le menu du poste, ou son débit a changé. Mode normal : sans waterfall HF.</dd><dt>Causes possibles</dt><dd><ul><li>Fonction du second port du poste autre que CI-V</li><li>Débit du port B changé</li><li>Poste qui ne répond plus à son adresse pendant la lecture</li></ul></dd><dt>Que faire</dt><dd>Régler le second port en CI-V (MENU &gt; SET &gt; Connecteurs), vérifier le débit, ou relancer trx-setup --spectre.</dd><dt>Ce que fait la station</dt><dd><code>repli_mode_normal</code></dd><dt>Alerte ntfy</dt><dd>non par défaut</dd><dt>Codes du protocole</dt><dd><code>no_answer</code></dd><dt>Depuis la version</dt><dd>0.123.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>No CI-V answer on the second port <span class="g g-avertissement">warning</span></h2>
 <dl><dt>Message</dt><dd>No CI-V answer on <code>{port}</code>: the second port is not (or no longer) set to CI-V in the rig menu, or its baud rate changed. Normal mode: no HF waterfall.</dd><dt>Possible causes</dt><dd><ul><li>Rig second port function other than CI-V</li><li>Port B baud rate changed</li><li>Rig stops answering at its address while streaming</li></ul></dd><dt>What to do</dt><dd>Set the second port to CI-V (MENU &gt; SET &gt; Connectors), check the baud rate, or run trx-setup --spectre again.</dd><dt>What the station does</dt><dd><code>repli_mode_normal</code></dd><dt>ntfy alert</dt><dd>no by default</dd><dt>Protocol codes</dt><dd><code>no_answer</code></dd><dt>Since version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Keine CI-V-Antwort am zweiten Port <span class="g g-avertissement">Warnung</span></h2>
+<dl><dt>Meldung</dt><dd>Keine CI-V-Antwort an <code>{port}</code>: Der zweite Port ist im Menü des Transceivers nicht (mehr) auf CI-V eingestellt, oder seine Baudrate hat sich geändert. Normalbetrieb: ohne HF-Wasserfall.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>Funktion des zweiten Ports des Transceivers nicht CI-V</li><li>Baudrate des Ports B geändert</li><li>Transceiver antwortet während der Abfrage nicht mehr auf seine Adresse</li></ul></dd><dt>Was zu tun ist</dt><dd>Stellen Sie den zweiten Port auf CI-V ein (MENU &gt; SET &gt; Anschlüsse), prüfen Sie die Baudrate oder starten Sie trx-setup --spectre erneut.</dd><dt>Was die Station tut</dt><dd><code>repli_mode_normal</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig nein</dd><dt>Protokollcodes</dt><dd><code>no_answer</code></dd><dt>Seit Version</dt><dd>0.123.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Ninguna respuesta CI-V en el segundo puerto <span class="g g-avertissement">aviso</span></h2>
+<dl><dt>Mensaje</dt><dd>Ninguna respuesta CI-V en <code>{port}</code>: el segundo puerto no está (o ya no está) ajustado en CI-V en el menú del equipo, o su velocidad ha cambiado. Modo normal: sin cascada HF.</dd><dt>Causas posibles</dt><dd><ul><li>Función del segundo puerto del equipo distinta de CI-V</li><li>Velocidad del puerto B cambiada</li><li>Equipo que ya no responde en su dirección durante la lectura</li></ul></dd><dt>Qué hacer</dt><dd>Ajusta el segundo puerto en CI-V (MENU &gt; SET &gt; Conectores), comprueba la velocidad o vuelve a lanzar trx-setup --spectre.</dd><dt>Qué hace la estación</dt><dd><code>repli_mode_normal</code></dd><dt>Alerta ntfy</dt><dd>no por defecto</dd><dt>Códigos del protocolo</dt><dd><code>no_answer</code></dd><dt>Desde la versión</dt><dd>0.123.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>

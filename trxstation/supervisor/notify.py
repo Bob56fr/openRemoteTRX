@@ -42,7 +42,7 @@ class Notifier:
                  clock: Callable[[], float] = time.monotonic, min_interval_s: float = 60.0,
                  threaded: bool = True, lang: str = "fr"):
         self.url, self._post, self._clock = url, post or _default_post, clock
-        self.lang = lang if lang in ("fr", "en") else "fr"   # langue du TÉLÉPHONE ; le journal reste en français
+        self.lang = lang if lang in emit.LANGS else "fr"     # langue du TÉLÉPHONE (fr, en, de, es) ; le journal reste en français
         self.min_interval_s, self.threaded = min_interval_s, threaded
         self._last: dict[str, float] = {}
 
@@ -66,7 +66,7 @@ class Notifier:
                     message = detail                               # valeur mesurée : texte de la station
             body = message
             if e is not None:
-                texts = e if self.lang == "fr" else e.get("en", e)
+                texts = e if self.lang == "fr" else e.get(self.lang) or e.get("en", e)
                 body += f"\n\n{texts['preconisation']}" + (f"\n{e['doc']}" if e.get("doc") else "")
             priority = str(e["priorite_ntfy"]) if e is not None and e.get("priorite_ntfy") else ""
             return self._deliver(f"{code}:{key}", f"{code} {titre}", body, priority)

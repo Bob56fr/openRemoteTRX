@@ -164,7 +164,7 @@ comme pour la console. Rien de visible avant T5 sauf le champ `lang` du protocol
 | **T5** (code FAIT, étape 310 ; essais réels à faire) | Anglais complet (application, page, station) + essais réels (téléphone, tablette, DHU, PC). | tout | Oui |
 | **T6** (FAIT, étape 311 ; relectures et essais à faire) | Allemand (vouvoiement) et espagnol, glossaire, pseudo-langue longue, ajustements de place. | tout | Oui |
 | **T7** (FAIT, étape 312) | Voix d'Android Auto en 4 langues, textes partagés, formats des dates et nombres. | application, page | Oui |
-| **T8** | Catalogue d'erreurs ORT / AND en DE / ES, pages publiques des codes, `notify_lang` de / es. | station, site | Oui |
+| **T8** (FAIT, étape 313) | Catalogue d'erreurs ORT / AND en DE / ES, pages publiques des codes, `notify_lang` de / es. | station, site | Oui |
 | **T9** | Fiche Google Play en EN / DE / ES (titre, descriptions, captures d'écran par langue), notes de version. | Store | Store |
 
 Volume : environ 2 900 chaînes à déplacer (application + page ; une partie passe dans le tronc commun) ;

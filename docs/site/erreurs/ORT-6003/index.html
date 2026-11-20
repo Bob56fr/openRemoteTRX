@@ -69,7 +69,7 @@ footer{margin-top:2.5rem;color:var(--doux);font-size:.9rem;border-top:1px solid 
   color:var(--texte);font:inherit;margin:.6rem 0}
 .choix button{background:var(--carte);color:var(--texte);border:1px solid var(--ligne);border-radius:2rem;
   padding:.2rem .9rem;font:inherit;cursor:pointer}.choix button[aria-pressed=true]{border-color:var(--accent);color:var(--accent)}
-.en-t{display:none}body.en .fr-t{display:none}body.en .en-t{display:inline}
+.lt{display:none}body.l-fr .lt[lang=fr],body.l-en .lt[lang=en],body.l-de .lt[lang=de],body.l-es .lt[lang=es]{display:inline}
 section.langue{background:var(--carte);border:1px solid var(--ligne);border-radius:.6rem;padding:.4rem 1rem .8rem;margin:1rem 0}
 .note{border-left:.3rem solid var(--emission);padding:.3rem .8rem;background:var(--carte);border-radius:.4rem}
 @media (max-width:30rem){.liste li{grid-template-columns:5.6rem 1fr}.liste li .g{display:none}}</style>
@@ -77,7 +77,7 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <body>
 <main>
 <h1><span class="code">ORT-6003</span></h1>
-<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a></p>
+<p class="version"><a href="../">← Tous les codes</a> · <a href="#en">English ↓</a> · <a href="#de">Deutsch ↓</a> · <a href="#es">Español ↓</a></p>
 <section class="langue" lang="fr" id="fr">
 <h2>Programme sdr-core introuvable ou inutilisable <span class="g g-erreur">erreur</span></h2>
 <dl><dt>Message</dt><dd>sdr-core introuvable ou inutilisable (<code>{chemin}</code>) : <code>{detail}</code>.</dd><dt>Causes possibles</dt><dd><ul><li>sdr-core non compilé à l&#x27;installation (API du fabricant ou liquid-dsp absents à ce moment-là)</li><li>Chemin faux dans [sdr] core_path</li><li>Réglage refusé par sdr-core (valeur hors limites)</li></ul></dd><dt>Que faire</dt><dd>Installer l&#x27;API du fabricant puis relancer l&#x27;installation de la station (elle compile sdr-core), ou corriger [sdr] core_path.</dd><dt>Ce que fait la station</dt><dd><code>nouvel_essai</code></dd><dt>Alerte ntfy</dt><dd>oui par défaut, priorité 3</dd><dt>Codes du protocole</dt><dd><code>core_missing</code>, <code>config</code></dd><dt>Depuis la version</dt><dd>0.140.0</dd></dl>
@@ -85,6 +85,14 @@ section.langue{background:var(--carte);border:1px solid var(--ligne);border-radi
 <section class="langue" lang="en" id="en">
 <h2>sdr-core program missing or unusable <span class="g g-erreur">error</span></h2>
 <dl><dt>Message</dt><dd>sdr-core missing or unusable (<code>{chemin}</code>): <code>{detail}</code>.</dd><dt>Possible causes</dt><dd><ul><li>sdr-core not built at install time (vendor API or liquid-dsp missing at that time)</li><li>Wrong path in [sdr] core_path</li><li>Setting refused by sdr-core (value out of range)</li></ul></dd><dt>What to do</dt><dd>Install the vendor API then run the station installation again (it builds sdr-core), or fix [sdr] core_path.</dd><dt>What the station does</dt><dd><code>nouvel_essai</code></dd><dt>ntfy alert</dt><dd>yes by default, priority 3</dd><dt>Protocol codes</dt><dd><code>core_missing</code>, <code>config</code></dd><dt>Since version</dt><dd>0.140.0</dd></dl>
+</section>
+<section class="langue" lang="de" id="de">
+<h2>Programm sdr-core nicht gefunden oder unbrauchbar <span class="g g-erreur">Fehler</span></h2>
+<dl><dt>Meldung</dt><dd>sdr-core nicht gefunden oder unbrauchbar (<code>{chemin}</code>): <code>{detail}</code>.</dd><dt>Mögliche Ursachen</dt><dd><ul><li>sdr-core bei der Installation nicht kompiliert (Hersteller-API oder liquid-dsp damals nicht vorhanden)</li><li>Falscher Pfad in [sdr] core_path</li><li>Einstellung von sdr-core abgelehnt (Wert außerhalb der Grenzen)</li></ul></dd><dt>Was zu tun ist</dt><dd>Installieren Sie die Hersteller-API und starten Sie dann die Installation der Station erneut (sie kompiliert sdr-core), oder korrigieren Sie [sdr] core_path.</dd><dt>Was die Station tut</dt><dd><code>nouvel_essai</code></dd><dt>ntfy-Alarm</dt><dd>standardmäßig ja, Priorität 3</dd><dt>Protokollcodes</dt><dd><code>core_missing</code>, <code>config</code></dd><dt>Seit Version</dt><dd>0.140.0</dd></dl>
+</section>
+<section class="langue" lang="es" id="es">
+<h2>Programa sdr-core no encontrado o inutilizable <span class="g g-erreur">error</span></h2>
+<dl><dt>Mensaje</dt><dd>sdr-core no encontrado o inutilizable (<code>{chemin}</code>): <code>{detail}</code>.</dd><dt>Causas posibles</dt><dd><ul><li>sdr-core no compilado en la instalación (API del fabricante o liquid-dsp ausentes en ese momento)</li><li>Ruta errónea en [sdr] core_path</li><li>Ajuste rechazado por sdr-core (valor fuera de límites)</li></ul></dd><dt>Qué hacer</dt><dd>Instala la API del fabricante y vuelve a lanzar la instalación de la estación (compila sdr-core), o corrige [sdr] core_path.</dd><dt>Qué hace la estación</dt><dd><code>nouvel_essai</code></dd><dt>Alerta ntfy</dt><dd>sí por defecto, prioridad 3</dd><dt>Códigos del protocolo</dt><dd><code>core_missing</code>, <code>config</code></dd><dt>Desde la versión</dt><dd>0.140.0</dd></dl>
 </section>
 <footer>
 <p><a href="../">Tous les codes / All codes</a> · <a href="../../console/">TRX Console</a> · <a href="../../station-toml/">station.toml</a> · <a href="https://github.com/Bob56fr/openRemoteTRX" target="_blank" rel="noopener noreferrer">code source</a> · <a href="https://www.rf-diy.com" target="_blank" rel="noopener noreferrer">rf-diy.com</a></p>
