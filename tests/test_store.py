@@ -84,31 +84,34 @@ def test_manifest_aliases_are_the_commands_of_the_zip():
     assert aliases == {c + ".exe" for c in zip_commands}
 
 
-def test_manifest_applications():
+def test_manifest_applications_pass_the_store_validation():
     _, root = _manifest()
     apps = root.findall("m:Applications/m:Application", NS)
-    ids = [a.get("Id") for a in apps]
-    assert ids[0] == "Console" and len(set(ids)) == len(ids)
-    assert all(re.fullmatch(r"[A-Za-z][A-Za-z0-9]{0,63}", i) for i in ids)
-    shown = [a for a in apps if a.find("uap:VisualElements", NS).get("AppListEntry") != "none"]
-    assert [a.get("Id") for a in shown] == ["Console"], "une seule entrée du menu Démarrer : TRX Console"
-    console = apps[0]
-    assert console.get(f"{{{NS['uap10']}}}Parameters") == "-m trxstation.console"
-    station = next(a for a in apps if a.get("Id") == "Supervisor")
+    assert [a.get("Id") for a in apps] == ["Console", "Supervisor"]
+    assert len(apps) <= 8, "le Store refuse plus de 8 applications par paquet"
+    assert all(a.find("uap:VisualElements", NS).get("AppListEntry") is None for a in apps), \
+        "le Store refuse une application cachée du menu Démarrer sans dérogation (HeadlessAppBypass)"
+    console, station = apps
+    assert console.get(f"{{{NS['uap10']}}}Parameters") == "-m trxstation.store_cli"
     assert station.get("Executable") == "python\\trx-station.exe"
     assert station.get(f"{{{NS['uap10']}}}Parameters") is None, "la tâche de démarrage ignore les paramètres"
     assert station.find(".//desktop:StartupTask", NS) is not None
     assert not list(station.iter(f"{{{NS['uap5']}}}ExecutionAlias")), "jamais d'alias pour pythonw avec paramètres"
-    for app in apps:
-        params = app.get(f"{{{NS['uap10']}}}Parameters")
-        if params:
-            module = params.split()[-1]
-            source = ROOT / (module.replace(".", "/") + ".py")
-            assert '__name__ == "__main__"' in source.read_text(encoding="utf-8"), module
     rules = root.findall(".//desktop2:FirewallRules", NS)
     assert {r.get("Executable") for r in rules} == {"python\\python.exe", "python\\pythonw.exe", "python\\trx-station.exe"}
     assert all(rule.get("Profile") == "private" for r in rules for rule in r.findall("desktop2:Rule", NS))
     assert root.find("m:Capabilities", NS)[0].get("Name") == "runFullTrust"
+
+
+def test_every_alias_reaches_its_command():
+    from trxstation import store_cli
+    assert store_cli.COMMANDS == build_msix().commands(), "même liste que [project.scripts] moins les services"
+    aliases = Path(r"C:\Users\x\AppData\Local\Microsoft\WindowsApps")
+    for command, module in store_cli.COMMANDS.items():
+        source = ROOT / (module.replace(".", "/") + ".py")
+        assert '__name__ == "__main__"' in source.read_text(encoding="utf-8"), module
+        assert store_cli.module_for(str(aliases / f"{command}.exe")) == module
+    assert store_cli.module_for(r"C:\Program Files\WindowsApps\pkg\python\python.exe") == "trxstation.console"
 
 
 def test_boot_module_only_acts_for_the_launcher_without_arguments():

@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -86,35 +85,29 @@ def commands() -> dict[str, str]:
     return {name: target.split(":")[0] for name, target in scripts.items() if name not in SERVICES}
 
 
-def app_id(command: str) -> str:
-    """Identifiant d'application MSIX (lettres et chiffres, commence par une lettre) : trx-setup -> TrxSetup."""
-    return "".join(part.capitalize() for part in re.split(r"[^A-Za-z0-9]+", command) if part)
-
-
 def manifest(ident: dict[str, str], version: str) -> str:
     vis = ('Square150x150Logo="Assets\\Square150x150Logo.png" Square44x44Logo="Assets\\Square44x44Logo.png" '
            'BackgroundColor="transparent"')
     display = escape(ident["display_name"])
-    apps: list[str] = []
-    for command, module in sorted(commands().items(), key=lambda item: item[0] != CONSOLE):
-        main = command == CONSOLE
-        ident_app = "Console" if main else app_id(command)
-        description = DESCRIPTIONS.get(command, f"{command} (openRemoteTRX)")
-        entry = "" if main else ' AppListEntry="none"'
-        name = display if main else escape(f"{ident['display_name']} {command}")
-        apps.append(f"""    <Application Id="{ident_app}" Executable="python\\python.exe" EntryPoint="Windows.FullTrustApplication"
-      uap10:Parameters={quoteattr("-m " + module)}>
-      <uap:VisualElements DisplayName="{name}" Description={quoteattr(description)}{entry} {vis}/>
+    # Le Store refuse plus de 8 applications et toute application cachée du menu Démarrer (AppListEntry="none") :
+    # UNE application porte TOUS les alias (aiguillage par le nom de l'alias, trxstation/store_cli.py) et la station
+    # a sa propre entrée visible « openRemoteTRX station » (un clic = démarrer la station).
+    aliases = "\n".join(f'            <uap5:ExecutionAlias Alias="{command}.exe"/>' for command in commands())
+    apps = [f"""    <Application Id="Console" Executable="python\\python.exe" EntryPoint="Windows.FullTrustApplication"
+      uap10:Parameters="-m trxstation.store_cli">
+      <uap:VisualElements DisplayName="{display}" Description={quoteattr(DESCRIPTIONS[CONSOLE])} {vis}/>
       <Extensions>
         <uap5:Extension Category="windows.appExecutionAlias">
-          <uap5:AppExecutionAlias><uap5:ExecutionAlias Alias="{command}.exe"/></uap5:AppExecutionAlias>
+          <uap5:AppExecutionAlias>
+{aliases}
+          </uap5:AppExecutionAlias>
         </uap5:Extension>
       </Extensions>
-    </Application>""")
+    </Application>"""]
     # Station : lanceur SANS paramètre (la tâche de démarrage ignore uap10:Parameters), jamais d'alias (un alias de
-    # pythonw avec paramètres ne lance rien) ; démarrée aussi par TRX Console (shell:AppsFolder\…!Supervisor).
+    # pythonw avec paramètres ne lance rien) ; démarrée aussi par TRX Console (shell:AppsFolder\\…!Supervisor).
     apps.append(f"""    <Application Id="Supervisor" Executable="python\\{LAUNCHER}" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="{display} station" Description="Station openRemoteTRX (sans fenêtre)" AppListEntry="none" {vis}/>
+      <uap:VisualElements DisplayName="{display} station" Description="Démarre la station openRemoteTRX (sans fenêtre ; déjà en marche = rien)" {vis}/>
       <Extensions>
         <desktop:Extension Category="windows.startupTask">
           <desktop:StartupTask TaskId="openRemoteTRXStation" Enabled="true" DisplayName="{display} station"/>

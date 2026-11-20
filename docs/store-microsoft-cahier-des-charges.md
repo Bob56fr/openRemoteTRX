@@ -218,7 +218,12 @@ Store, qui signe lui-même). Fichier produit dans `dist/`.
   neuf ou machine virtuelle).
 - **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), GARDE DE FIN (§ 4.1) et ses tests de panne,
   messages Hamlib (§ 3.1), tests.
-- **S2** : `scripts/build_msix.py`, test de fabrication. FAIT (étape 335, avec la fin de S1a).
+- **S2** : `scripts/build_msix.py`, test de fabrication. FAIT (étape 335, avec la fin de S1a). CORRIGÉ (étape
+  336) après le refus de validation de Partner Center (2026-11-21 : 9 applications pour 8 au plus, applications
+  cachées `AppListEntry="none"` interdites sans la dérogation HeadlessAppBypass) : deux applications visibles,
+  « openRemoteTRX » (TRX Console, porte tous les alias, aiguillage `trxstation/store_cli.py`) et « openRemoteTRX
+  station » (lanceur et tâche de démarrage). Le § 3.2 (une application par alias, `AppListEntry="none"`) est
+  remplacé par ceci.
 - **S3 (utilisateur)** : compte Partner Center particulier, réservation du nom, identité du paquet reportée dans la
   fabrication. FAIT le 2026-11-20 : `windows/msix/identity.toml` (Name RF-DIY.COM.openRemoteTRX, Publisher
   CN=4DBA8C0D-D395-454A-A7A5-5CB99996408C, PublisherDisplayName RF-DIY.COM ; famille
