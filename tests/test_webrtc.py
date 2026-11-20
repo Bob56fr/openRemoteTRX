@@ -79,6 +79,25 @@ def test_webrtc_end_to_end():
     asyncio.run(asyncio.wait_for(scenario(), 90))
 
 
+def test_login_typed_with_capitals_opens_the_account_and_owns_the_transmission():
+    """Identifiant sans casse (2026-11-20) : « PHONE » tapé ouvre le compte « phone » ; la station renvoie le VRAI
+    identifiant dans hello et c'est lui que porte ptt.owner (la page et l'application s'y comparent)."""
+    if not _available():
+        return
+    from trxstation.devtools.fake_client import FakeClient
+    from trxstation.devtools.loopback import PASSWORDS, Loopback
+
+    async def scenario():
+        async with Loopback() as lb:
+            phone = FakeClient(lb.url, "PHONE", PASSWORDS["phone"])
+            await phone.connect()
+            await until(lambda: phone.state is not None, 5)
+            assert phone.hello["client_id"] == "phone"
+            assert lb.ctrl.clients == ["phone"]
+            await phone.close()
+    asyncio.run(asyncio.wait_for(scenario(), 60))
+
+
 def test_spectrum_channel_end_to_end():
     """Canal « spectrum » réel (aiortc) : capacité annoncée, balayages reçus en binaire, rien en retour."""
     if not _available():

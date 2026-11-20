@@ -1968,7 +1968,7 @@ class Console:
         login = self.ask(self.t("visitor_create.1")).strip()
         if not login:
             return False
-        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id == login for c in cfg.clients):
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", login) or any(c.id.casefold() == login.casefold() for c in cfg.clients):
             self.say(self.t("visitor_create.2"))
             return False
         pseudo = self._ask_pseudo(cfg, login=login)

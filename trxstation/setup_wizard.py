@@ -852,7 +852,7 @@ def _form_password(prompt: str) -> str:
 def _check_login_and_password(cfg: Config, name: str, password: str, existing: bool) -> None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name):
         raise SetupError(_t("clients.invalid_id", name=repr(name)))
-    if existing != any(c.id == name for c in cfg.clients):
+    if existing != any(c.id.casefold() == name.casefold() for c in cfg.clients):
         raise SetupError(_t("clients.unknown" if existing else "clients.duplicate", name=name))
     problem = password_problem(password, name)
     if problem:
@@ -871,7 +871,7 @@ def set_password(cfg: Config, name: str, password: str | None = None) -> str:
     """Remplace le secret d'un client existant (et supprime un éventuel ancien jeton en clair)."""
     password = password or generate_password()
     _check_login_and_password(cfg, name, password, existing=True)
-    client = next(c for c in cfg.clients if c.id == name)
+    client = next(c for c in cfg.clients if c.id.casefold() == name.casefold())
     client.password_hash, client.token = hash_password(password), ""
     return password
 
@@ -882,7 +882,7 @@ def ask_clients(cfg: Config) -> None:
         name = ask(_t("clients.ask"), "")
         if not name:
             return
-        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name) or any(c.id == name for c in cfg.clients):
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", name) or any(c.id.casefold() == name.casefold() for c in cfg.clients):
             print(_t("clients.invalid"))
             continue
         add_client(cfg, name, choose_password(name))

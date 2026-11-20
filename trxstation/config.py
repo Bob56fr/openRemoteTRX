@@ -637,9 +637,9 @@ def validate(cfg: Config) -> list[str]:
     for client in cfg.clients:
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,32}", client.id):
             p.append(_t("clients.id_invalid", id=repr(client.id)))
-        elif client.id in seen:
+        elif client.id.casefold() in seen:           # identifiant accepté sans tenir compte des majuscules (0.247.0)
             p.append(_t("clients.id_duplicate", id=client.id))
-        seen.add(client.id)
+        seen.add(client.id.casefold())
         if bool(client.password_hash) == bool(client.token):
             p.append(_t("clients.one_secret", id=client.id))
         elif client.password_hash and not is_valid_hash(client.password_hash):

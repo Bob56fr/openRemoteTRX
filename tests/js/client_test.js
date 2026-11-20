@@ -103,6 +103,15 @@ test("fonctions pures", () => {
   assert.equal(web.cutText("tot"), "durée maximale d'émission atteinte"); assert.equal(web.cutText(""), "");
 });
 
+test("identifiant tapé avec des majuscules : la page prend celui de la station (ptt.owner)", async () => {
+  const w = makeWorld();
+  await w.client.connect({ clientId: "PHONE", password: "mot de passe de test", useMic: true });
+  w.hello();                                                   // la station renvoie le vrai compte : « phone »
+  assert.equal(w.client.clientId, "phone");
+  w.state({ state: "TX", owner: "phone" });
+  assert.ok(w.client._mineTx());
+});
+
 test("reconnaissance des périphériques du poste", () => {
   const rig = ["Microphone (USB Audio Device)", "Haut-parleurs (USB Audio Device)"];
   assert.equal(web.matchesRigDevice("Microphone (USB Audio Device)", rig), true);

@@ -73,6 +73,7 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
         if not allowed:
             emit_event(codes.ORT_4004, logger=log, compte=client_id[:32], source=source[:64])
             return web.json_response({"error": "unauthorized"}, status=401)    # même réponse quelle que soit la cause
+        client_id = registry.canonical(client_id)    # « PC » tapé = compte « pc » : la session porte le vrai identifiant
         lang = clean_lang(data.get("lang"))          # langue des textes envoyés à ce client (station 0.236.0+, lot T1)
         try:
             # device : identifiant tiré au hasard par le client, agent : « page Windows »... (sonde réseau, facultatifs)

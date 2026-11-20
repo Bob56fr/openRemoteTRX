@@ -140,6 +140,9 @@ def test_access_refusal_of_the_offer_is_sent_in_the_language_of_the_client():
         def verify(self, client_id, secret, source):
             return True
 
+        def canonical(self, client_id):
+            return client_id
+
     class Manager:
         langs: list[str] = []
 
@@ -320,6 +323,9 @@ def test_overload_message_is_sent_in_the_language_of_the_client():
     class Registry:
         def verify(self, client_id, secret, source):
             return True
+
+        def canonical(self, client_id):
+            return client_id
 
     class Manager:
         async def handle_offer(self, client_id, sdp, sdp_type, source="", device="", agent="", lang="fr"):

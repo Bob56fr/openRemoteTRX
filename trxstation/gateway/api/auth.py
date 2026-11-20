@@ -60,6 +60,7 @@ class ClientRegistry:
                  max_failures: int = 5, window_s: float = 60.0,
                  account_max_failures: int = 30, account_window_s: float = 900.0):
         self._secrets = {c.id: ("hash", c.password_hash) if c.password_hash else ("token", c.token) for c in clients}
+        self._ids = {c.id.casefold(): c.id for c in clients}      # identifiant tapé sans tenir compte des majuscules
         self._clock = clock
         self.max_failures, self.window_s = max_failures, window_s
         self.account_max_failures, self.account_window_s = account_max_failures, account_window_s
@@ -76,6 +77,16 @@ class ClientRegistry:
         secrets = {c.id: ("hash", c.password_hash) if c.password_hash else ("token", c.token) for c in clients}
         with self._lock:
             self._secrets = secrets
+            self._ids = {c.id.casefold(): c.id for c in clients}
+
+    def canonical(self, client_id: str) -> str:
+        """Identifiant du compte tel qu'écrit dans station.toml pour un identifiant tapé (majuscules indifférentes,
+        décision de l'utilisateur du 2026-11-20 : le clavier d'un téléphone met une majuscule) ; inconnu : inchangé.
+        Deux comptes qui ne diffèrent que par la casse sont refusés par la validation de station.toml."""
+        if not isinstance(client_id, str):
+            return client_id
+        with self._lock:
+            return self._ids.get(client_id.strip().casefold(), client_id)
 
     @staticmethod
     def _recent(failures: deque, now: float, window: float) -> deque:
@@ -101,6 +112,7 @@ class ClientRegistry:
         if not isinstance(client_id, str) or not isinstance(secret, str) or len(secret) > 256 or len(client_id) > 64:
             self._record_failure(source, "")
             return False
+        client_id = self.canonical(client_id)
         if self.locked(source, client_id):
             return False                                     # verrouillé : on refuse sans calculer de hachage
         kind, stored = self._secrets.get(client_id, ("hash", self._dummy_hash))

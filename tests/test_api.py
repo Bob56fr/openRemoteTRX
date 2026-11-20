@@ -83,6 +83,33 @@ def test_registry_accepts_only_the_right_password():
     assert not ClientRegistry([])
 
 
+def test_login_ignores_case_and_the_session_gets_the_real_account_name():
+    # décision de l'utilisateur (2026-11-20) : le clavier du téléphone met une majuscule, « S25 » doit ouvrir « s25 »
+    registry = ClientRegistry([ClientAuth("phone", password_hash=hash_password(PASSWORD)),
+                               ClientAuth("Car_1", "token-phone-0123456789")])
+    assert registry.verify("PHONE", PASSWORD, "1.2.3.4") and registry.verify("Phone", PASSWORD, "1.2.3.4")
+    assert registry.verify(" phone ", PASSWORD, "1.2.3.4")
+    assert registry.verify("car_1", "token-phone-0123456789", "1.2.3.4")
+    assert registry.canonical("PHONE") == "phone" and registry.canonical("CAR_1") == "Car_1"
+    assert registry.canonical("inconnu") == "inconnu"
+    assert not registry.verify("PHONE", "Un mot de passe faux 4242", "1.2.3.4")   # le mot de passe, lui, compte
+
+
+def test_accounts_differing_only_by_case_are_refused():
+    cfg = dummy_config()
+    add_client(cfg, "phone", "Une phrase de passe très longue")
+    try:
+        add_client(cfg, "PHONE", "Une autre phrase de passe longue")
+        assert False, "SetupError attendue"
+    except SetupError:
+        pass
+    cfg.clients.append(ClientAuth("Phone", password_hash=cfg.clients[0].password_hash))
+    assert any("Phone" in problem for problem in cfgmod.validate(cfg))
+    from trxstation.setup_wizard import set_password
+    cfg.clients.pop()
+    assert set_password(cfg, "PHONE", "Encore une phrase de passe longue")       # compte retrouvé sans la casse
+
+
 def test_legacy_plaintext_token_is_still_accepted():
     registry = ClientRegistry([ClientAuth("phone", "token-phone-0123456789")])
     assert registry.verify("phone", "token-phone-0123456789", "1.2.3.4")

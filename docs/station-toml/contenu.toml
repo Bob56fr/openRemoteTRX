@@ -425,7 +425,7 @@ exemple = "7.200"
 # ---------------------------------------------------------------- clients
 
 [reglages."clients.id"]
-role = "Identifiant de connexion du compte, saisi dans la page ou l'application."
+role = "Identifiant de connexion du compte, saisi dans la page ou l'application. Depuis la 0.247.0, les majuscules ne comptent pas à la connexion (« PC » ouvre le compte « pc ») : deux comptes qui ne diffèrent que par les majuscules sont refusés."
 niveau = "courant"
 exemple = "\"telephone\", \"voiture\""
 

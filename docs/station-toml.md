@@ -2,7 +2,7 @@
 
 # Réglages de la station : station.toml
 
-TRX distant version 0.246.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
+TRX distant version 0.247.0. Page du site : https://bob56fr.github.io/openRemoteTRX/station-toml/
 
 `station.toml` est le fichier de configuration de la station : le poste, les cartes son, le réseau, les sécurités d'émission, les comptes, les fonctions facultatives. Il est écrit par l'assistant de TRX Console et se modifie ensuite par TRX Console (menu 8.1, et les menus spécialisés cités pour chaque section). La station le **vérifie** à chaque démarrage : une valeur incohérente est refusée avec un message précis, jamais ignorée en silence.
 
@@ -102,7 +102,7 @@ Se modifie : Assistant (menu 2.1), visiteurs (menu 4.2), commande `trx-setup --a
 
 | Clé | Niveau | Par défaut | À quoi il sert |
 |---|---|---|---|
-| `id` | courant | `""` | Identifiant de connexion du compte, saisi dans la page ou l'application. Exemple : "telephone", "voiture" |
+| `id` | courant | `""` | Identifiant de connexion du compte, saisi dans la page ou l'application. Depuis la 0.247.0, les majuscules ne comptent pas à la connexion (« PC » ouvre le compte « pc ») : deux comptes qui ne diffèrent que par les majuscules sont refusés. Exemple : "telephone", "voiture" |
 | `token` | expert | `""` | Ancien secret en clair (anciennes versions). Toujours accepté, mais à remplacer par un mot de passe (`password_hash`). **Sécurité** : Un secret en clair dans le fichier est lisible par qui lit le fichier : remplacez-le. |
 | `password_hash` | courant | `""` | Empreinte du mot de passe (scrypt) ; jamais le mot de passe lui-même. Écrite par l'assistant, le menu 4.2 ou `trx-setup --set-password`. |
 | `role` | courant | `"operator"` | `operator` : contrôle complet ; `listener` : visiteur en écoute seule, aucune commande vers le poste. |

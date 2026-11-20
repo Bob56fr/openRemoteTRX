@@ -135,6 +135,13 @@ def test_admin_operator_logs_in_and_gets_an_alert(tmp_path):
     scenario(tmp_path, body)
 
 
+def test_console_login_ignores_case(tmp_path):
+    async def body(wc, client, alerts, clock):
+        r, _ = await login(wc, client, "PC")
+        assert r.status == 200 and wc.session["account"] == "pc"
+    scenario(tmp_path, body)
+
+
 def test_non_admin_operator_visitor_and_wrong_password_are_refused(tmp_path):
     async def body(wc, client, alerts, clock):
         for account, password in (("s25", "bon mot de passe 42"), ("club", "bon mot de passe 42"),

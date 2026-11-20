@@ -212,7 +212,7 @@ class WebConsole:
         except (OSError, cfgmod.ConfigError):
             verify_password(password, _dummy_hash())
             return None
-        client = next((c for c in cfg.clients if c.id == login), None)
+        client = next((c for c in cfg.clients if c.id.casefold() == login.strip().casefold()), None)   # majuscules indifférentes
         usable = (client is not None and cfg.remote_console.enabled is True and client.admin is True
                   and client.role == "operator" and client.enabled is True and bool(client.password_hash)
                   and not client.expired(date.today()))

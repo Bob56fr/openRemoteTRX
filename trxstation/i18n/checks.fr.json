@@ -28,7 +28,7 @@
   "audio.gain": "[audio] {name} doit rester entre -40 et +20 dB",
   "audio.rx_limiter": "[audio] rx_limiter : true ou false attendu (limiteur du son reçu)",
   "clients.id_invalid": "[[clients]] identifiant invalide : {id} (lettres, chiffres, _ et -, 32 max)",
-  "clients.id_duplicate": "[[clients]] identifiant en double : {id}",
+  "clients.id_duplicate": "[[clients]] identifiant en double (les majuscules ne comptent pas) : {id}",
   "clients.one_secret": "[[clients]] {id} : il faut exactement un secret (password_hash, ou à défaut token)",
   "clients.bad_hash": "[[clients]] {id} : password_hash invalide (refais trx-setup --set-password {id})",
   "clients.short_token": "[[clients]] {id} : jeton trop court (16 caractères minimum)",

@@ -1467,6 +1467,9 @@
       if (msg.type === "hello") {
         if (this._helloTimer !== null) { this.env.clearTimeout(this._helloTimer); this._helloTimer = null; }
         this.hello = msg;
+        // identifiant du compte tel que la station le connaît (tapé sans tenir compte des majuscules, station 0.247.0+) :
+        // c'est lui que porte `ptt.owner`
+        if (typeof msg.client_id === "string" && msg.client_id) this.clientId = msg.client_id;
         this.connected = true;
         this.connectedAt = this.env.now(); this.pingFailures = 0; this.lastRttMs = null;
         if (this.timer !== null) this.env.clearInterval(this.timer);                // un second « hello » ne doit pas doubler la minuterie
