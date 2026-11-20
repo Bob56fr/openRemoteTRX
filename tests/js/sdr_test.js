@@ -98,6 +98,19 @@ test("bridage, balance et séparation gauche / droite", () => {
   assert.ok(sdr.stateText({ state: "running", serial: "X", center: 7e6, fs: 2e6, cpu_total: 40.5, mem_mb: 61.2 }).includes("61 Mo"));
 });
 
+test("fenêtre affichée et en-tête : zoom décalé, fréquence écoutée", () => {
+  // essai du 2026-11-20 : récepteur à 6,650 MHz, zoom ×8 décalé de 380 kHz, écoute à 7,050 MHz
+  const st = { state: "running", serial: "X", center: 6650000, fs: 2000000, zoom: 8, zoom_off: 380000, dfreq: 7050000 };
+  assert.deepStrictEqual(sdr.viewWindow(st), { center: 7030000, span: 250000 });
+  assert.ok(sdr.stateText(st).includes("affiché 6.905 à 7.155 MHz"), sdr.stateText(st));
+  assert.strictEqual(sdr.badgeText(st), "7.0500 MHz");
+  const plain = { state: "running", center: 6650000, fs: 2000000, zoom: 1, zoom_off: 380000 };
+  assert.deepStrictEqual(sdr.viewWindow(plain), { center: 6650000, span: 2000000 });
+  assert.ok(!sdr.stateText(plain).includes("affiché"));
+  assert.strictEqual(sdr.badgeText(plain), "6.650 MHz");
+  assert.strictEqual(sdr.badgeText({ state: "error" }), "");
+});
+
 test("graduations plus nombreuses et décimales suivant le pas", () => {
   const marks = sdr.ticks(7093000, 1536000, 15);
   assert.ok(marks.length >= 10, "au moins dix graduations sur 1,5 MHz");

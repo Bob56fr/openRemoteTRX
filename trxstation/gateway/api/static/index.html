@@ -302,63 +302,72 @@
         <p id="sdr-load" class="note sdr-load" hidden></p>
         <div class="sdr-plot"><canvas id="sdr-wf" class="sdr-wf" title="Toucher : fréquence lue sous le doigt ; double clic : le SDR écoute cette fréquence" data-t-title="index.sdr_wf_title"></canvas><div id="sdr-marker" class="sdr-marker" hidden></div><div id="sdr-spot-layer" class="hf-spots"></div></div>
         <div id="sdr-axis" class="wf-axis"></div>
-        <div class="row">
+        <div class="sdr-bar">
           <span id="sdr-pick" class="note"></span>
           <button id="sdr-here" class="chip" hidden title="Écouter cette fréquence avec le SDR" data-t="index.sdr_here" data-t-title="index.sdr_here_title">Écouter ici</button>
           <button id="sdr-qsy" class="chip" title="Le TRX passe sur la fréquence ÉCOUTÉE sur le SDR (refusé pendant l'émission)" data-t-title="index.sdr_qsy_title">QSY SDR → TRX</button> <!-- i18n-ok -->
           <button id="sdr-qsy-rev" class="chip" title="Le SDR écoute la fréquence du TRX (le waterfall suit si elle sort de la fenêtre)" data-t-title="index.sdr_qsy_rev_title">QSY TRX → SDR</button> <!-- i18n-ok -->
+          <span class="grow"></span>
+          <span id="sdr-zoom-box" class="sdr-zoom" hidden>
+            <button id="sdr-pan-down" class="chip" title="Fenêtre zoomée vers le bas (demi-largeur)" data-t-title="index.sdr_pan_down_title">◄</button>
+            <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur" data-t-title="index.sdr_zoom_out_title">Zoom −</button>
+            <span id="sdr-zoom" class="note"></span>
+            <button id="sdr-zoom-in" class="chip" title="Zoom avant autour de la fréquence écoutée" data-t-title="index.sdr_zoom_in_title">Zoom +</button>
+            <button id="sdr-pan-up" class="chip" title="Fenêtre zoomée vers le haut (demi-largeur)" data-t-title="index.sdr_pan_up_title">►</button>
+          </span>
         </div>
-        <div id="sdr-listen-box">
-          <div class="row">
+        <div id="sdr-listen-box" class="sdr-group">
+          <div class="sdr-group-title" data-t="index.sdr_grp_listen">Écoute</div>
+          <div class="sdr-line">
             <button id="sdr-listen" class="chip" aria-pressed="false" title="Son du SDR ; coupé par la station pendant toute émission" data-t="index.sdr_listen" data-t-title="index.sdr_listen_title">🔈 Écouter</button>
             <label><span data-t="index.sdr_mode_label">Mode</span> <select id="sdr-mode"></select></label>
             <label><span data-t="index.sdr_dbw_label">Filtre</span> <select id="sdr-dbw"></select></label>
-            <label class="grow" title="Squelch du SDR : dB au-dessus du bruit ; 0 = toujours ouvert" data-t-title="index.sdr_sql_label_title"><span data-t="index.sdr_sql_label">Squelch</span>
-              <input id="sdr-sql" type="range" min="0" max="30" step="1"> <span id="sdr-sql-val" class="sdr-val"></span></label>
-            <label class="grow"><span data-t="index.sdr_vol_label">Volume</span> <input id="sdr-vol" type="range" min="0" max="100" step="1" value="80"></label>
-          </div>
-          <div class="row">
-            <label title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre" data-t-title="index.sdr_dfreq_label_title"><span data-t="index.sdr_dfreq_label">Fréquence écoutée (MHz)</span>
+            <label class="sdr-freq" title="Fréquence à écouter ; le centre du waterfall suit si elle sort de la fenêtre" data-t-title="index.sdr_dfreq_label_title"><span data-t="index.sdr_dfreq_label">Fréquence écoutée (MHz)</span>
               <input id="sdr-dfreq" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
             <button id="sdr-dfreq-set" class="chip" data-t="index.sdr_dfreq_set">Écouter cette fréquence</button>
           </div>
-          <div class="row">
-            <label class="grow" title="Équilibre des deux sources quand on écoute le SDR : à gauche le TRX seul, à droite le SDR seul" data-t-title="index.sdr_bal_label_title"><span data-t="index.sdr_bal_label">TRX ◄ Balance ► SDR</span>
+          <div class="sdr-sliders">
+            <label class="sdr-slider" title="Squelch du SDR : dB au-dessus du bruit ; 0 = toujours ouvert" data-t-title="index.sdr_sql_label_title"><span class="sdr-head"><span data-t="index.sdr_sql_label">Squelch</span> <span id="sdr-sql-val" class="sdr-val"></span></span>
+              <input id="sdr-sql" type="range" min="0" max="30" step="1"></label>
+            <label class="sdr-slider"><span class="sdr-head"><span data-t="index.sdr_vol_label">Volume</span></span>
+              <input id="sdr-vol" type="range" min="0" max="100" step="1" value="80"></label>
+            <label class="sdr-slider" title="Équilibre des deux sources quand on écoute le SDR : à gauche le TRX seul, à droite le SDR seul" data-t-title="index.sdr_bal_label_title"><span class="sdr-head"><span data-t="index.sdr_bal_label">TRX ◄ Balance ► SDR</span></span>
               <input id="sdr-bal" type="range" min="-100" max="100" step="5" value="0"></label>
             <label title="Au casque : chaque source sur une oreille (exclusif avec la spatialisation ST)" data-t-title="index.sdr_split_label_title"><span data-t="index.sdr_split_label">Oreilles</span>
               <select id="sdr-split"></select></label>
           </div>
           <p id="sdr-listen-info" class="note"></p>
         </div>
-        <div class="row">
-          <label><span data-t="index.sdr_center_label">Centre (MHz)</span> <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
-          <button id="sdr-center-set" class="chip" data-t="index.sdr_center_set">Appliquer</button>
-          <label><span data-t="index.sdr_rate_label">Lignes/s</span> <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
-          <button id="sdr-range" class="chip" title="Dynamique des couleurs" data-t-title="index.sdr_range_title" data-t="index.sdr_range">DYN 50 dB</button>
-          <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)" data-t="index.sdr_palette" data-t-title="index.sdr_palette_title">Couleurs : Thème</button>
-          <button id="sdr-spots" class="chip on" title="Spots du Cluster DX sur le waterfall du SDR ; toucher un spot : le SDR l'écoute (le TRX ne bouge pas)" data-t-title="index.sdr_spots_title" data-t="index.sdr_spots">Spots</button>
+        <div class="sdr-group">
+          <div class="sdr-group-title" data-t="index.sdr_grp_view">Fenêtre du waterfall</div>
+          <div class="sdr-line">
+            <label class="sdr-freq"><span data-t="index.sdr_center_label">Centre (MHz)</span> <input id="sdr-center" inputmode="decimal" size="10" autocomplete="off" spellcheck="false"></label>
+            <button id="sdr-center-set" class="chip" data-t="index.sdr_center_set">Appliquer</button>
+            <span id="sdr-hw-box" class="sdr-line" hidden>
+              <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 2.4). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_fs_label_title"><span data-t="index.sdr_fs_label">Largeur</span>
+                <select id="sdr-fs"></select></label>
+              <label id="sdr-ant-box" title="Entrée d'antenne du SDR (RSP2). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_ant_box_title"><span data-t="index.sdr_ant_box">Antenne</span>
+                <select id="sdr-ant"><option value="A">A</option><option value="B">B</option></select></label>
+            </span>
+            <label><span data-t="index.sdr_rate_label">Lignes/s</span> <select id="sdr-rate"><option>2</option><option>4</option><option>8</option><option>12</option><option>15</option></select></label>
+          </div>
+          <div class="sdr-line">
+            <button id="sdr-range" class="chip" title="Dynamique des couleurs" data-t-title="index.sdr_range_title" data-t="index.sdr_range">DYN 50 dB</button>
+            <button id="sdr-palette" class="chip" title="Couleurs du waterfall du SDR (gardées dans ce navigateur)" data-t="index.sdr_palette" data-t-title="index.sdr_palette_title">Couleurs : Thème</button>
+            <button id="sdr-spots" class="chip on" title="Spots du Cluster DX sur le waterfall du SDR ; toucher un spot : le SDR l'écoute (le TRX ne bouge pas)" data-t-title="index.sdr_spots_title" data-t="index.sdr_spots">Spots</button>
+          </div>
         </div>
-        <div id="sdr-hw-box" class="row" hidden>
-          <label title="Largeur couverte par le SDR ; la plus grande se règle sur la station (menu 2.4). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_fs_label_title"><span data-t="index.sdr_fs_label">Largeur</span>
-            <select id="sdr-fs"></select></label>
-          <label id="sdr-ant-box" title="Entrée d'antenne du SDR (RSP2). Le SDR redémarre (une à deux secondes)." data-t-title="index.sdr_ant_box_title"><span data-t="index.sdr_ant_box">Antenne</span>
-            <select id="sdr-ant"><option value="A">A</option><option value="B">B</option></select></label>
+        <div class="sdr-group">
+          <div class="sdr-group-title" data-t="index.sdr_grp_gain">Gain du récepteur</div>
+          <div class="sdr-sliders">
+            <label class="sdr-slider" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser." data-t-title="index.sdr_rf_label_title"><span class="sdr-head"><span data-t="index.sdr_rf_label">Gain RF</span> <span id="sdr-rf-val" class="sdr-val"></span></span>
+              <input id="sdr-rf" type="range" min="0" max="8" step="1"></label>
+            <label id="sdr-if-box" class="sdr-slider" title="Gain de la FI, réglé à la main quand « FI auto » est coupé" data-t-title="index.sdr_if_box_title"><span class="sdr-head"><span data-t="index.sdr_if_box">Gain FI</span> <span id="sdr-if-val" class="sdr-val"></span></span>
+              <input id="sdr-if" type="range" min="0" max="39" step="1"></label>
+            <label class="check sdr-agc" title="AGC de la FI : le SDR règle lui-même le gain FI" data-t-title="index.sdr_agc_label_title"><input id="sdr-agc" type="checkbox"> <span data-t="index.sdr_agc_label">FI auto</span></label>
+          </div>
+          <p id="sdr-gain" class="note"></p>
         </div>
-        <div id="sdr-zoom-box" class="row" hidden>
-          <button id="sdr-zoom-out" class="chip" title="Zoom arrière : plus de largeur" data-t-title="index.sdr_zoom_out_title">Zoom −</button>
-          <span id="sdr-zoom" class="note"></span>
-          <button id="sdr-zoom-in" class="chip" title="Zoom avant autour de la fréquence écoutée" data-t-title="index.sdr_zoom_in_title">Zoom +</button>
-          <button id="sdr-pan-down" class="chip" title="Fenêtre zoomée vers le bas (demi-largeur)" data-t-title="index.sdr_pan_down_title">◄</button>
-          <button id="sdr-pan-up" class="chip" title="Fenêtre zoomée vers le haut (demi-largeur)" data-t-title="index.sdr_pan_up_title">►</button>
-        </div>
-        <div class="row">
-          <label class="grow" title="Préamplificateur du SDR (LNA) : 8 = gain maximal. Surcharge : baisser." data-t-title="index.sdr_rf_label_title"><span data-t="index.sdr_rf_label">Gain RF</span>
-            <input id="sdr-rf" type="range" min="0" max="8" step="1"> <span id="sdr-rf-val" class="sdr-val"></span></label>
-          <label title="AGC de la FI : le SDR règle lui-même le gain FI" data-t-title="index.sdr_agc_label_title"><input id="sdr-agc" type="checkbox"> <span data-t="index.sdr_agc_label">FI auto</span></label>
-          <label id="sdr-if-box" class="grow" title="Gain de la FI, réglé à la main quand « FI auto » est coupé" data-t-title="index.sdr_if_box_title"><span data-t="index.sdr_if_box">Gain FI</span>
-            <input id="sdr-if" type="range" min="0" max="39" step="1"> <span id="sdr-if-val" class="sdr-val"></span></label>
-        </div>
-        <p id="sdr-gain" class="note"></p>
         <p class="note" data-t="index.sdr_intro">Récepteur SDR en parallèle du TRX, en réception seule. Les curseurs s'appliquent pendant qu'on les
           fait glisser ; en cas de SURCHARGE, baisser le gain RF. Le SDR n'agit jamais sur le poste.</p>
       </div>

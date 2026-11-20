@@ -187,11 +187,28 @@
     return out;
   }
 
+  function viewWindow(st) {
+    /* Fenêtre affichée par le waterfall : centre du récepteur + décalage du zoom, largeur / zoom ; null si inconnue. */
+    if (!st || !Number.isFinite(st.center) || !(st.fs > 0)) return null;
+    const z = st.zoom > 1 ? st.zoom : 1;
+    return { center: st.center + (z > 1 && Number.isFinite(st.zoom_off) ? st.zoom_off : 0), span: st.fs / z };
+  }
+
+  function badgeText(st) {
+    /* En-tête repliable de la rubrique : la fréquence ÉCOUTÉE (sinon le centre de la fenêtre affichée). */
+    if (!st || st.state !== "running") return "";
+    if (Number.isFinite(st.dfreq)) return formatMHz(st.dfreq, 4) + " MHz";
+    const v = viewWindow(st);
+    return v ? formatMHz(v.center, 3) + " MHz" : "";
+  }
+
   function stateText(st) {
     /* Ligne d'état de la rubrique. */
     if (!st || typeof st !== "object") return I18N.t("sdr.state_waiting");
     if (st.state === "running") {
       let t = I18N.t("sdr.state_running", { serial: st.serial || "", center: formatMHz(st.center, 3), fs: formatMHz(st.fs, 0) });
+      const v = viewWindow(st);                                // zoom : la fenêtre MONTRÉE n'est pas centrée sur le récepteur
+      if (v && st.zoom > 1) t += I18N.t("sdr.state_view", { lo: formatMHz(v.center - v.span / 2, 3), hi: formatMHz(v.center + v.span / 2, 3) });
       if (st.overload) t += I18N.t("sdr.state_overload");
       if (st.drops || st.gaps) t += I18N.t("sdr.state_losses", { drops: st.drops || 0, gaps: st.gaps || 0 });
       if (Number.isFinite(st.cpu_total)) t += " — CPU " + st.cpu_total + " %";
@@ -299,7 +316,7 @@
   }
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
-                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
+                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, viewWindow, badgeText, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
                 PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, get SPLITS() { return splits(); }, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }

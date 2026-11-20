@@ -2933,7 +2933,7 @@
       const loadLine = state && state.state !== "suspended" ? sdrx.loadText(state) : "";
       $("sdr-load").hidden = !loadLine;
       $("sdr-load").textContent = loadLine;
-      $("sdr-badge").textContent = state && state.state === "running" ? sdrx.formatMHz(state.center, 3) + " MHz"
+      $("sdr-badge").textContent = state && state.state === "running" ? sdrx.badgeText(state)
         : state && state.state === "error" ? I18N.t("ui.sdr_fault") : "";
       if (state && state.state) {
         if (document.activeElement !== $("sdr-center") && Number.isFinite(state.center)) $("sdr-center").value = sdrx.formatMHz(state.center, 4);
@@ -2988,14 +2988,42 @@
     }
     function sdrVolume() {
       if (rxGraph && rxGraph.sdrGain) rxGraph.sdrGain.gain.value = sdrLevel();
-      if (sdrSound) sdrSound.volume = sdrLevel();
+      if (sdrMono) { sdrMono.gain.gain.value = sdrLevel(); if (sdrSound) sdrSound.volume = 1; }
+      else if (sdrSound) sdrSound.volume = sdrLevel();
+    }
+    // Mélange : le volume passe par un GainNode (Web Audio) ; le volume d'un élément audio sur une piste WebRTC
+    // distante n'est pas fiable selon les navigateurs (curseur « Volume » presque sans effet, essai du 2026-11-20).
+    let sdrMono = null;
+    function sdrMonoStop() {
+      if (!sdrMono) return;
+      try { sdrMono.raw.pause(); sdrMono.raw.srcObject = null; sdrMono.ctx.close(); } catch (e) { /* rien */ }
+      sdrMono = null;
+    }
+    function sdrMonoStream() {
+      /* Flux à lire par sdrSound : piste du SDR passée par un gain ; le flux brut si Web Audio manque. */
+      if (sdrMono && sdrMono.media === sdrMedia) return sdrMono.dest.stream;
+      sdrMonoStop();
+      const Ctx = typeof window !== "undefined" && (window.AudioContext || window.webkitAudioContext);
+      if (!Ctx) return sdrMedia;
+      try {
+        const ctx = audioContext48(Ctx);
+        const raw = new Audio(); raw.muted = true; raw.srcObject = sdrMedia; raw.play().catch(() => {});   // Chrome : piste distante lue par un élément
+        const gain = ctx.createGain(), dest = ctx.createMediaStreamDestination();
+        ctx.createMediaStreamSource(sdrMedia).connect(gain); gain.connect(dest);
+        sdrMono = { ctx, raw, gain, dest, media: sdrMedia };
+        gain.gain.value = sdrLevel();
+        if (ctx.resume) ctx.resume().catch(() => {});
+        return dest.stream;
+      } catch (e) { sdrMonoStop(); return sdrMedia; }
     }
     function sdrRoute() {
       /* Son du SDR : lu par son élément (mélange), ou dans la chaîne du TRX (séparation : rxStream) et l'élément se tait. */
       if (!sdrSound || !sdrMedia) return;
       try {
-        if (sdrSplitActive()) { sdrSound.pause(); sdrSound.srcObject = null; return; }
-        if (sdrSound.srcObject !== sdrMedia) sdrSound.srcObject = sdrMedia;
+        if (sdrSplitActive()) { sdrSound.pause(); sdrSound.srcObject = null; sdrMonoStop(); return; }
+        const want = sdrMonoStream();
+        if (sdrSound.srcObject !== want) sdrSound.srcObject = want;
+        if (sdrMono && client.sdrListening && sdrMono.ctx.resume) sdrMono.ctx.resume().catch(() => {});
         sdrVolume(); sdrMirrorOutput();
         if (client.sdrListening) sdrSound.play().catch(() => {});
       } catch (e) { /* navigateur sans seconde piste : le waterfall reste */ }
@@ -3231,6 +3259,7 @@
         const on = !client.sdrListening;
         client.sdrListen(on).then((res) => {
           if (!res.ok) { ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); return; }
+          if (on && sdrMono && sdrMono.ctx.resume) sdrMono.ctx.resume().catch(() => {});   // geste de l'opérateur : contexte audio permis
           if (sdrSound) { if (on) sdrSound.play().catch(() => ui.log(I18N.t("ui.sdr_audio_blocked"), "warn")); else sdrSound.pause(); }
           sdrEarsChanged();
           sdrRender(null);

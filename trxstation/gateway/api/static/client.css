@@ -449,6 +449,27 @@ button.danger { background: var(--danger-fond); color: var(--texte-sur-danger); 
 .sdr-wf { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .sdr-val { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; }
 .sdr-load { color: var(--alerte); }
+/* commandes rangées par blocs (écoute, fenêtre du waterfall, gain) ; champs et boutons à la même hauteur */
+.sdr-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .35rem 0 .5rem; }
+.sdr-zoom { display: inline-flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.sdr-zoom .note { min-width: 6.5rem; text-align: center; margin: 0; }
+.sdr-group { margin-top: .6rem; padding: .5rem .6rem .4rem; border: 1px solid var(--ligne); border-radius: .35rem; }
+.sdr-group-title { margin-bottom: .4rem; font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--texte-secondaire); }
+.sdr-line { display: flex; flex-wrap: wrap; gap: .5rem .6rem; align-items: end; }
+.sdr-line + .sdr-line, .sdr-line + .sdr-sliders, .sdr-sliders + .sdr-line { margin-top: .5rem; }
+.sdr-line > label { min-width: 0; }
+.sdr-line select { width: auto; min-width: 4.5rem; }
+.sdr-freq input { width: 8.5rem; }
+.sdr-line .chip, .sdr-line input:not([type=checkbox]):not([type=range]), .sdr-line select { height: 2.3rem; min-height: 2.3rem; }
+.sdr-line input:not([type=checkbox]):not([type=range]), .sdr-line select { padding-top: 0; padding-bottom: 0; }
+.sdr-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem 1rem; align-items: end; }
+.sdr-sliders select { height: 2.3rem; padding-top: 0; padding-bottom: 0; }
+.sdr-slider input[type=range] { width: 100%; margin: .35rem 0 .2rem; }
+.sdr-head { display: flex; justify-content: space-between; gap: .5rem; }
+.sdr-head .sdr-val { min-width: 0; text-align: right; color: var(--texte); }
+.sdr-agc { align-self: center; }
+.sdr-group > .note:empty { display: none; }
+.sdr-group > .note { margin: .4rem 0 0; }
 /* fréquence écoutée : pointillé vert et orange, lisible sur toutes les couleurs du waterfall */
 .sdr-marker { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; pointer-events: none;
   background: repeating-linear-gradient(to bottom, var(--succes) 0 6px, var(--alerte) 6px 12px); box-shadow: 0 0 2px var(--contour); }
