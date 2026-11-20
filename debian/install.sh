@@ -354,6 +354,15 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -q || fail "mise à jour de la liste des paquets impossible (apt-get update)."
 apt-get install -y -q --no-install-recommends "${APT_PACKAGES[@]}" || fail "installation des paquets Debian impossible."
 ok "paquets installés"
+# Pictogrammes de TRX Console (écran plein) dans un terminal du BUREAU : police d'emoji en couleur, absente de Raspberry
+# Pi OS (étape 302). Sans bureau, rien : la police est celle du terminal qui affiche (SSH) ; console texte = sans pictogramme.
+if [[ $HAS_DESKTOP -eq 1 ]]; then
+  if apt-get install -y -q --no-install-recommends fonts-noto-color-emoji >>"$LOG" 2>&1; then
+    ok "police des pictogrammes de TRX Console installée (fonts-noto-color-emoji)"
+  else
+    warn "police des pictogrammes absente (fonts-noto-color-emoji) : TRX Console sans pictogramme (TRX_CONSOLE_SANS_ICONES=1)"
+  fi
+fi
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
   || fail "Python 3.11 ou plus récent est nécessaire (Debian 12 et plus)."
 hamlib_too_old() {   # vrai si le rigctld du PATH est antérieur à Hamlib 4.7 (IC-7300MK2 et postes récents absents)
