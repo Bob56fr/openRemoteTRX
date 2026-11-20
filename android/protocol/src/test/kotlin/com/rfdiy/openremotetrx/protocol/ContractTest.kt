@@ -58,6 +58,7 @@ class ContractTest {
         assertTrue((Protocol.BASE_FEATURES + Protocol.OPTIONAL_FEATURES).containsAll(hello.features))
         assertEquals("a1b2c3", hello.memories.single().id)
         assertEquals(10, hello.spectrum?.maxFps)
+        assertEquals("fr", hello.lang)                                         // langue des textes de la station (lot T1)
     }
 
     @Test

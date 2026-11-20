@@ -22,6 +22,7 @@ from .access import AccessRefused
 from ...netprobe.report import clean_agent, clean_device
 from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
+from .texts import clean_lang, client_text
 from .webrtc import PeerLimitError, PeerManager
 from ...errors import codes
 from ...i18n import LANGS
@@ -71,15 +72,17 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
         if not allowed:
             emit_event(codes.ORT_4004, logger=log, compte=client_id[:32], source=source[:64])
             return web.json_response({"error": "unauthorized"}, status=401)    # même réponse quelle que soit la cause
+        lang = clean_lang(data.get("lang"))          # langue des textes envoyés à ce client (station 0.236.0+, lot T1)
         try:
             # device : identifiant tiré au hasard par le client, agent : « page Windows »... (sonde réseau, facultatifs)
             return web.json_response(await manager.handle_offer(client_id, sdp, sdp_type, source=source,
                                                                 device=clean_device(data.get("device")),
-                                                                agent=clean_agent(data.get("agent"))))
+                                                                agent=clean_agent(data.get("agent")), lang=lang))
         except AccessRefused as exc:
             emit_event(codes.ORT_4021, logger=log, compte=client_id[:32], source=source[:64], detail=exc.message,
                        raison=exc.reason, code_cause=by_machine(exc.reason))
-            return web.json_response({"error": exc.reason, "message": exc.message}, status=exc.status)
+            message = exc.message if lang == "fr" else (client_text(lang, "acces." + exc.reason) or exc.message)
+            return web.json_response({"error": exc.reason, "message": message}, status=exc.status)
         except PeerLimitError:
             return web.json_response({"error": "busy"}, status=503)
         except Exception:

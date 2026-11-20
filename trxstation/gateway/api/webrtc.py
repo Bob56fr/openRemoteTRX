@@ -164,6 +164,7 @@ class _Peer:
     tx_task: asyncio.Task | None = None
     spectrum_channel: object | None = None
     closed: bool = False
+    lang: str = "fr"
 
 
 class PeerManager:
@@ -206,7 +207,7 @@ class PeerManager:
         return task
 
     async def handle_offer(self, client_id: str, sdp: str, sdp_type: str, source: str = "", device: str = "",
-                           agent: str = "") -> dict:
+                           agent: str = "", lang: str = "fr") -> dict:
         """AccessRefused (access.py) : compte désactivé, quota atteint, opérateur absent..."""
         await self.close_peer(client_id)                        # reconnexion : l'ancienne connexion est remplacée
         if self.access is not None:
@@ -224,6 +225,7 @@ class PeerManager:
                 self.access.closed(client_id)                   # admis mais jamais créé : la place est rendue
             raise
         peer = _Peer(client_id, pc, role)
+        peer.lang = lang                                        # langue des textes de ce client (lot T1)
         self.peers[client_id] = peer
 
         @pc.on("datachannel")
@@ -243,7 +245,7 @@ class PeerManager:
                                      spectrum_watch=lambda on: self._watch_spectrum(client_id, peer, on),
                                      reports=self.reports, role=role, access=self.access, alert=self.alert,
                                      kick_listener=self._kick_listener, voices=self.voices, swr=self.swr,
-                                     netprobe=self.netprobe, device=device, agent=agent, source=source,
+                                     netprobe=self.netprobe, device=device, agent=agent, source=source, lang=peer.lang,
                                      disconnect=lambda reason: self._spawn(self.kick(client_id, reason, peer)))
             session.on_hf_view = self.on_hf_view        # vue HF ouverte : messages retenus des modules rejoués
             if role != LISTENER:                        # présence de groupe : jamais pour un visiteur

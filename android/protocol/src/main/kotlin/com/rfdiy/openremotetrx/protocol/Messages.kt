@@ -86,6 +86,8 @@ data class Hello(
     val replay: ReplayInfo? = null,
     /** FreeDV RADE V1 en réception (station 0.122.0+, comme `state.freedv`) ; null sans `[freedv] enabled`. */
     val freedv: FreedvStatus? = null,
+    /** Langue retenue par la station pour ses textes (`detail`, `message`) ; vide sur une station antérieure à 0.236.0. */
+    val lang: String = "",
     val features: List<String> = emptyList(),
 ) : ServerMessage {
     fun offers(feature: String): Boolean = feature in features

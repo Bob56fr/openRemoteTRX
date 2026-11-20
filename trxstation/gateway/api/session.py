@@ -31,6 +31,7 @@ from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
 from ..voice_profiles import VoiceProfileError
 from ..safety import PttController, Refused
+from .texts import clean_lang, client_text, errors_lang
 from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
 from ...modules.bus import CommandRefused
 from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, Command, ProtocolError, parse_command
@@ -116,8 +117,9 @@ class ControlSession:
                  role: str = OPERATOR, access=None, disconnect: Callable[[str], None] | None = None,
                  alert: Callable[[str, str], None] | None = None,
                  kick_listener: Callable[[str], bool] | None = None, voices=None, swr=None,
-                 netprobe=None, device: str = "", agent: str = "", source: str = ""):
+                 netprobe=None, device: str = "", agent: str = "", source: str = "", lang: str = "fr"):
         self.client_id, self.ctrl, self.link, self.pipeline = client_id, ctrl, link, pipeline
+        self.lang = clean_lang(lang)             # langue des textes envoyés à CE client (`detail`, lot T1) ; codes inchangés
         self.role = LISTENER if role == LISTENER else OPERATOR
         self.access = access                     # AccessControl (access.py) ou None : tout client est opérateur
         self.disconnect = disconnect             # (motif) -> None : la couche réseau ferme CETTE connexion
@@ -214,7 +216,7 @@ class ControlSession:
         freq = self.link.state.frequency_hz or 0
         ctx = {"client": self.client_id, "tos": f"{swr:.1f}", "frequence": f"{freq / 1e6:.4f}", "seuil": f"{limit:g}"}
         emit_event(codes.ORT_5039, logger=log, **ctx)
-        _, text = render(codes.ORT_5039, "fr", **ctx)
+        _, text = render(codes.ORT_5039, errors_lang(self.lang), **ctx)
         self.send({"type": "rig_notice", "event": "swr_high", "detail": text, "ort": codes.ORT_5039,
                    "swr": round(float(swr), 2)})
 
@@ -228,7 +230,7 @@ class ControlSession:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"vérification du VOX pour {self.client_id}")
             event = ""
         if event and not self.closed:
-            _, text = render(code, "fr", **ctx)
+            _, text = render(code, errors_lang(self.lang), **ctx)
             self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
         try:
             await self._tuner_check(render)
@@ -270,7 +272,7 @@ class ControlSession:
             code = codes_of[event]
             ctx = {"client": self.client_id, **ctx}
             emit_event(code, logger=log, **ctx)
-            _, text = render(code, "fr", **ctx)
+            _, text = render(code, errors_lang(self.lang), **ctx)
             self.send({"type": "rig_notice", "event": event, "detail": text, "ort": code})
 
     @property
@@ -299,6 +301,7 @@ class ControlSession:
                    "replay": {"max_s": max(0, int(self.ctrl.limits.tot_s) - 5)} if self._replay_allowed() else None,
                    # TRX Console sur le réseau (étape 233) : lien pour les opérateurs administrateurs seulement
                    "remote_console": self._remote_console(),
+                   "lang": self.lang,                                 # langue retenue pour les textes de ce client
                    "features": self.features()})
         if not self.listener:
             self._vox_task = asyncio.ensure_future(self._vox_guard())   # VOX du poste coupé s'il est en marche
@@ -691,6 +694,8 @@ class ControlSession:
     def bye(self, reason: str, message: str = "") -> None:
         """Dernier message avant que la station ferme cette connexion : le client affiche le motif et ne se
         reconnecte pas tout seul."""
+        if self.lang != "fr":                    # motif connu : texte dans la langue du client (le détail français cède)
+            message = client_text(self.lang, "acces." + reason) or message
         self.send({"type": "bye", "reason": reason, "message": message or MESSAGES.get(reason, reason)})
 
     def _forbid(self, name: str, ident) -> None:
@@ -836,6 +841,11 @@ class ControlSession:
                     member["tx_ok"] = bool(self.ctrl.config.tx_allowed(f))
 
     def _result(self, ident, ok: bool, **extra) -> None:
+        reason = extra.get("reason")
+        if not ok and self.lang != "fr" and isinstance(reason, str):
+            text = client_text(self.lang, "refus." + reason)          # refus connu : texte dans la langue du client
+            if text is not None:
+                extra["detail"] = text
         self.send({"type": "result", "id": ident, "ok": ok, **extra})
 
     def _rate_limited(self) -> bool:

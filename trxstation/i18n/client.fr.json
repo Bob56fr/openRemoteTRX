@@ -115,5 +115,16 @@
   "coupure.ptt_write_failed": "échec de l'ordre d'émission",
   "coupure.rig_did_not_key": "le poste n'a pas émis",
   "coupure.shutdown": "arrêt de la station",
-  "coupure.startup": "démarrage de la station"
+  "coupure.startup": "démarrage de la station",
+  "acces.account_disabled": "Ce compte est désactivé sur la station.",
+  "acces.account_expired": "Ce compte a expiré.",
+  "acces.account_changed": "Compte modifié sur la station : reconnecte-toi.",
+  "acces.listeners_off": "L'écoute des visiteurs n'est pas ouverte sur cette station.",
+  "acces.listeners_full": "Nombre maximal de visiteurs atteint.",
+  "acces.operators_full": "La station est occupée (trop de connexions).",
+  "acces.operator_absent": "L'opérateur n'est pas connecté à la station : l'écoute des visiteurs n'est possible qu'en sa présence.",
+  "acces.too_many_forbidden": "Trop de commandes refusées : connexion fermée.",
+  "acces.kicked": "Déconnecté par l'opérateur de la station.",
+  "acces.station_overload": "Station surchargée : écoute des visiteurs suspendue pour protéger la station.",
+  "acces.listeners_closed": "L'opérateur a fermé l'écoute des visiteurs."
 }

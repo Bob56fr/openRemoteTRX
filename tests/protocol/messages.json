@@ -25,7 +25,8 @@
                 "last_call": null, "send_on_tx_end": false, "sending": "", "tx_level_dbfs": -6.0, "calibration": ""},
     "freedv": {"on": false, "engine": "arret", "sync": "search", "confirmed": false, "snr_db": null, "foff_hz": null,
                "restarts": 0, "cause": null, "fault": null, "calls": [], "sequences": []},
-    "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release",
+    "lang": "fr",
+    "features": ["ptt", "frequency", "mode", "squelch", "functions", "levels", "local_release", "i18n",
                  "memories", "layouts", "spectrum", "beeps", "bug_report", "selcall", "selcall_send", "selcall_calibrate", "host", "voice_profiles", "replay"],
     "replay": {"max_s": 85},
     "remote_console": null

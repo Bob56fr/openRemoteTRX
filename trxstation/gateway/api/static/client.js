@@ -1178,7 +1178,8 @@
           res = await this.env.postOffer({
             client_id: opts.clientId, password: opts.password,
             sdp: pc.localDescription.sdp, type: pc.localDescription.type,
-            device: this.device, agent: this.env.agent || "page" });
+            device: this.device, agent: this.env.agent || "page",
+            lang: I18N.lang });                                        // textes de la station dans cette langue (lot T1)
         } catch (netErr) {
           throw Object.assign(new Error("La station est injoignable (réseau, VPN ou adresse incorrecte)."), { code: "network", detail: String(netErr && netErr.message || netErr) });
         }

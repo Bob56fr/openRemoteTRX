@@ -115,5 +115,16 @@
   "coupure.ptt_write_failed": "transmit command failed",
   "coupure.rig_did_not_key": "the radio did not transmit",
   "coupure.shutdown": "station shutting down",
-  "coupure.startup": "station starting"
+  "coupure.startup": "station starting",
+  "acces.account_disabled": "This account is disabled on the station.",
+  "acces.account_expired": "This account has expired.",
+  "acces.account_changed": "Account changed on the station: log in again.",
+  "acces.listeners_off": "Listening for listeners is not open on this station.",
+  "acces.listeners_full": "Maximum number of listeners reached.",
+  "acces.operators_full": "The station is busy (too many connections).",
+  "acces.operator_absent": "The operator is not connected to the station: listeners can only listen while the operator is there.",
+  "acces.too_many_forbidden": "Too many refused commands: connection closed.",
+  "acces.kicked": "Disconnected by the station's operator.",
+  "acces.station_overload": "Station overloaded: listening for listeners suspended to protect the station.",
+  "acces.listeners_closed": "The operator has closed listening for listeners."
 }

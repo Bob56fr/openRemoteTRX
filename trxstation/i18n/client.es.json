@@ -115,5 +115,16 @@
   "coupure.ptt_write_failed": "fallo de la orden de transmisión",
   "coupure.rig_did_not_key": "el equipo no ha transmitido",
   "coupure.shutdown": "parada de la estación",
-  "coupure.startup": "arranque de la estación"
+  "coupure.startup": "arranque de la estación",
+  "acces.account_disabled": "Esta cuenta está desactivada en la estación.",
+  "acces.account_expired": "Esta cuenta ha caducado.",
+  "acces.account_changed": "Cuenta modificada en la estación: vuelve a conectarte.",
+  "acces.listeners_off": "La escucha de los oyentes no está abierta en esta estación.",
+  "acces.listeners_full": "Número máximo de oyentes alcanzado.",
+  "acces.operators_full": "La estación está ocupada (demasiadas conexiones).",
+  "acces.operator_absent": "El operador no está conectado a la estación: los oyentes solo pueden escuchar en su presencia.",
+  "acces.too_many_forbidden": "Demasiadas órdenes rechazadas: conexión cerrada.",
+  "acces.kicked": "Desconectado por el operador de la estación.",
+  "acces.station_overload": "Estación sobrecargada: escucha de los oyentes suspendida para proteger la estación.",
+  "acces.listeners_closed": "El operador ha cerrado la escucha de los oyentes."
 }

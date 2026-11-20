@@ -316,7 +316,8 @@ test("connexion avec micro : micro fermé, mot de passe envoyé une seule fois",
   const w = makeWorld();
   await w.connected();
   assert.equal(w.env.offers.length, 1);
-  assert.deepEqual(Object.keys(w.env.offers[0]).sort(), ["agent", "client_id", "device", "password", "sdp", "type"]);
+  assert.deepEqual(Object.keys(w.env.offers[0]).sort(), ["agent", "client_id", "device", "lang", "password", "sdp", "type"]);
+  assert.equal(w.env.offers[0].lang, "fr");                                         // langue des textes de la station (lot T1)
   assert.match(w.env.offers[0].device, /^[0-9a-f]{32}$/); assert.equal(w.env.offers[0].agent, "page");   // sonde réseau
   assert.equal(w.env.offers[0].password, "mot de passe de test"); assert.equal(JSON.stringify(w.env.offers[0]).includes("token"), false);
   assert.equal(w.pc().dc.label, "control"); assert.equal(w.pc().tracks.length, 1);

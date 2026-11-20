@@ -115,5 +115,16 @@
   "coupure.ptt_write_failed": "Sendebefehl fehlgeschlagen",
   "coupure.rig_did_not_key": "das Funkgerät hat nicht gesendet",
   "coupure.shutdown": "Station wird beendet",
-  "coupure.startup": "Station startet"
+  "coupure.startup": "Station startet",
+  "acces.account_disabled": "Dieses Konto ist auf der Station deaktiviert.",
+  "acces.account_expired": "Dieses Konto ist abgelaufen.",
+  "acces.account_changed": "Konto auf der Station geändert: melden Sie sich erneut an.",
+  "acces.listeners_off": "Das Mithören für Zuhörer ist auf dieser Station nicht geöffnet.",
+  "acces.listeners_full": "Maximale Zahl der Zuhörer erreicht.",
+  "acces.operators_full": "Die Station ist belegt (zu viele Verbindungen).",
+  "acces.operator_absent": "Der Operator ist nicht mit der Station verbunden: Zuhörer können nur in seiner Anwesenheit mithören.",
+  "acces.too_many_forbidden": "Zu viele abgelehnte Befehle: Verbindung geschlossen.",
+  "acces.kicked": "Vom Operator der Station getrennt.",
+  "acces.station_overload": "Station überlastet: Mithören für Zuhörer zum Schutz der Station ausgesetzt.",
+  "acces.listeners_closed": "Der Operator hat das Mithören für Zuhörer geschlossen."
 }
