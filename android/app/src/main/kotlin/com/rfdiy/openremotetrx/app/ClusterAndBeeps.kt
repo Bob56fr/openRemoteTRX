@@ -93,7 +93,7 @@ fun BeepsSection(beeps: BeepSettings?, connected: Boolean) {
     val context = LocalContext.current
     val sounds = remember { LinkSounds(context) }
     var confirmLost by remember { mutableStateOf(false) }
-    Text("Bips de fin d'émission", style = MaterialTheme.typography.titleSmall)
+    Text("Bips de fin d'émission (réglage de la station)", style = MaterialTheme.typography.titleSmall)
     if (beeps == null) {
         if (connected) Text("Cette station ne propose pas les bips de fin.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         return

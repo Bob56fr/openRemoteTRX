@@ -186,7 +186,7 @@ internal fun RigScope.TabletLayout(
             ) {
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail {
-                        for (s in SECTIONS.filter { it != Tab.AMIS || Friends.inGroup(rig.friends) }) {
+                        for (s in SECTIONS.filter { it != Tab.AMIS || friendsTab(rig) }) {
                             NavigationRailItem(selected = s == section, onClick = { section = s },
                                 icon = { TabIcon(s, if (s == section) Page.MESURE else Page.TEXTE_2) },
                                 label = { Text(s.label) })
@@ -203,12 +203,13 @@ internal fun RigScope.TabletLayout(
                                     transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles,
                                     replayAllowed = hello?.replay != null && !listener, canBroadcast = pttEnabled && !mineTx,
                                     onBroadcast = {},                       // la diffusion se suit à gauche, toujours visible
+                                    beeps = rig.beeps, beepsConnected = connected && rig.protocolOk,
                                 ) { content -> Panel(content) }
                                 Tab.REGLAGES -> SettingsTab(textPct) { pct ->
                                     textPct = pct
                                     prefs.edit().putInt(PREF_TEXT_PCT, pct).apply()
                                 }
-                                Tab.AMIS -> if (Friends.inGroup(rig.friends)) FriendsPanel(rig, canSet, compact = false, prefs = prefs)
+                                Tab.AMIS -> if (friendsTab(rig)) FriendsPanel(rig, canSet, compact = false, prefs = prefs)
                                             else MemoriesTab(mini = false)
                                 else -> MemoriesTab(mini = false)
                             }

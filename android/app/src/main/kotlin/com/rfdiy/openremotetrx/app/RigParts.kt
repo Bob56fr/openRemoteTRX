@@ -227,38 +227,43 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                         Spacer(Modifier.width(10.dp))
                     }
                     // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
-                    if (wfChip && HfScope.configured(hello)) {
+                    if (wfChip && HfScope.configured(hello) && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.WATERFALL, miniWf)) {
                         CompactChip(if (miniWf) "WF ●" else "WF", onClick = { setMiniWf(!miniWf) }, selected = miniWf, help = com.rfdiy.openremotetrx.logic.Help.client("WF"))
                         Spacer(Modifier.width(6.dp))
                     }
                     // SELCALL de la station : « SEL 4721 » (veille), « SEL OUVERT » (allumé) ; toucher = panneau ; même style que EQ
-                    rig.selcall?.let { sel ->
+                    rig.selcall?.takeIf { Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.SELCALL, it.indicator != null) }?.let { sel ->
                         CompactChip(sel.indicator ?: "SEL", onClick = { selcallDialog = true }, selected = sel.open, help = com.rfdiy.openremotetrx.logic.Help.client("SEL"))
                         Spacer(Modifier.width(6.dp))
                     }
                     // Égaliseur : marche/arrêt d'accès direct (réglages dans l'onglet « Audio »)
+                    // « Fonctionnalités mobiles » (étape 300) : chaque bouton peut être masqué, jamais s'il est en service
                     val eqOn = voice.settings.enabled && !voice.breizh          // voix par Breizh : EQ coupé, bouton grisé
-                    CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !voice.settings.enabled) }, selected = eqOn,
-                        onLongClick = { tab = Tab.EQ }, enabled = !voice.breizh)
+                    if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.EQ, voice.settings.enabled)) {
+                        CompactChip(if (eqOn) "EQ ●" else "EQ", onClick = { VoiceHub.setEnabled(context, !voice.settings.enabled) }, selected = eqOn,
+                            onLongClick = { tab = Tab.EQ }, enabled = !voice.breizh)
+                        Spacer(Modifier.width(6.dp))
+                    }
                     // Spatialisation stéréo de la réception : appui = marche / arrêt, appui long = réglages
-                    Spacer(Modifier.width(6.dp))
                     val stOn = spatial.settings.on
-                    CompactChip(if (stOn) "ST ●" else "ST", onClick = { com.rfdiy.openremotetrx.core.SpatialHub.setEnabled(context, !stOn) },
-                        selected = stOn && spatial.monoReason.isEmpty(), onLongClick = { spatialDialog = true })
+                    if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.SPATIAL, stOn)) {
+                        CompactChip(if (stOn) "ST ●" else "ST", onClick = { com.rfdiy.openremotetrx.core.SpatialHub.setEnabled(context, !stOn) },
+                            selected = stOn && spatial.monoReason.isEmpty(), onLongClick = { spatialDialog = true })
+                    }
                     // Breizh Audio Box (station qui l'emploie) : voyant BZH vert / orange / gris ; toucher = sa fenêtre
-                    rig.breizh?.let { bzh ->
+                    rig.breizh?.takeIf { Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.BREIZH, it.level != BreizhLevel.OFF) }?.let { bzh ->
                         Spacer(Modifier.width(6.dp))
                         CompactChip("BZH", onClick = { breizhDialog = true }, selected = bzh.level == BreizhLevel.OK, dot = breizhColor(bzh.level),
                             help = com.rfdiy.openremotetrx.logic.Help.client("BZH"))
                     }
                     // FreeDV (station qui l'offre, TOUS les comptes) : voyant FDV vert / orange / rouge / gris ; toucher = sa fenêtre
-                    rig.freedv?.let { fdv ->
+                    rig.freedv?.takeIf { Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.FREEDV, it.level != FreeDvLevel.OFF) }?.let { fdv ->
                         Spacer(Modifier.width(6.dp))
                         CompactChip("FDV", onClick = { freedvDialog = true }, selected = fdv.level == FreeDvLevel.OK, dot = freedvColor(fdv.level),
                             help = com.rfdiy.openremotetrx.logic.Help.client("FDV"))
                     }
                     // Diffusion en direct (station qui l'offre, opérateurs) : voyant DIF, rouge en direct ; toucher = sa fenêtre
-                    rig.diffusion?.let { dif ->
+                    rig.diffusion?.takeIf { Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.DIFFUSION, com.rfdiy.openremotetrx.logic.Diffusions.indicator(it.status) != null) }?.let { dif ->
                         Spacer(Modifier.width(6.dp))
                         val live = com.rfdiy.openremotetrx.logic.Diffusions.indicator(dif.status) != null
                         CompactChip("DIF", onClick = { diffusionDialog = true }, selected = live,
@@ -274,7 +279,8 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val canShowBig = !listener && BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false)
+                    val canShowBig = !listener && BigPtt.canShow(connected, rig.protocolOk, ui.micAllowed, driving = false) &&
+                        Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.BIG_PTT, bigPttRequested)
                     val pttColors = if (mineTx) ButtonDefaults.buttonColors(containerColor = TX_RED, contentColor = Color.White) else ButtonDefaults.buttonColors()
                     Surface(
                         shape = RoundedCornerShape(16.dp),

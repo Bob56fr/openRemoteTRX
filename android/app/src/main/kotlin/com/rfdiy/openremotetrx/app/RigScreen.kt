@@ -128,6 +128,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
     val voice by VoiceHub.ui.collectAsState()
     val spatial by com.rfdiy.openremotetrx.core.SpatialHub.ui.collectAsState()
     val prefs = remember { context.getSharedPreferences("ui", Context.MODE_PRIVATE) }
+    remember(prefs) { Features.load(prefs); true }                      // « Fonctionnalités mobiles » (étape 300)
     val keepScreenOnS = remember { mutableStateOf(prefs.getBoolean("keep_screen_on", true)) }
     var keepScreenOn by keepScreenOnS
     val keepTxS = remember { mutableStateOf(prefs.getBoolean("keep_tx_background", false)) }
@@ -240,7 +241,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
         scope.RigDialogsHost()
         return
     }
-    if (tab == Tab.AMIS && !Friends.inGroup(rig.friends)) tab = Tab.MEMOIRES
+    if (tab == Tab.AMIS && !friendsTab(rig)) tab = Tab.MEMOIRES
     Column(modifier.fillMaxSize()) {
       Box(Modifier.weight(1f).fillMaxWidth()) {
         Column(
@@ -263,6 +264,7 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
                     transmitting = ptt?.transmitting == true, profiles = rig.voiceProfiles,
                     replayAllowed = hello?.replay != null && !listener, canBroadcast = pttEnabled && !mineTx,
                     onBroadcast = { tab = Tab.STATION },                           // la diffusion se suit sur l'onglet Station
+                    beeps = rig.beeps, beepsConnected = connected && rig.protocolOk,
                 ) { content -> Panel(content) }
                 Tab.REGLAGES -> {
                     scope.SettingsTab()
@@ -280,4 +282,8 @@ fun RigScreen(ui: RigUi, modifier: Modifier, onDisconnect: () -> Unit) {
 }
 
 /** Onglets du téléphone : « Amis » seulement quand la station fait partie d'un groupe. */
-internal fun phoneTabs(rig: RigState): List<Tab> = Tab.entries.filter { it != Tab.AMIS || Friends.inGroup(rig.friends) }
+internal fun phoneTabs(rig: RigState): List<Tab> = Tab.entries.filter { it != Tab.AMIS || friendsTab(rig) }
+
+/** Onglet « Amis » : station dans un groupe et fonction affichée (« Fonctionnalités mobiles », étape 300). */
+internal fun friendsTab(rig: RigState): Boolean =
+    Friends.inGroup(rig.friends) && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.FRIENDS)

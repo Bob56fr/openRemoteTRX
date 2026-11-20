@@ -65,6 +65,9 @@ fun VoiceTab(
     replayAllowed: Boolean = false,
     canBroadcast: Boolean = false,
     onBroadcast: () -> Unit = {},
+    /** Bips de fin d'émission (réglage de la STATION, déplacé des Réglages à l'étape 300) ; `beepsConnected` : modifiables. */
+    beeps: com.rfdiy.openremotetrx.logic.BeepSettings? = null,
+    beepsConnected: Boolean = false,
     panel: @Composable (@Composable ColumnScope.() -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
@@ -121,7 +124,10 @@ fun VoiceTab(
     // Voix par Breizh Audio Box : égaliseur et effets contournés par le traitement => leurs commandes sont grisées (réglages
     // gardés pour le retour en direct : « Direct » ou repli) ; gain du micro et porte de bruit restent actifs
     val fx = !ui.breizh
-    panel {
+    // « Fonctionnalités mobiles » (étape 300) : rubriques masquables, jamais une fonction en service ; micro toujours visible
+    val eqShown = Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.EQ, s.enabled)
+    val fxShown = Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.CHORUS_REVERB, s.chorus.on || s.reverb.on)
+    if (eqShown || fxShown) panel {
         if (ui.breizh) Text("Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés et non modifiables tant " +
             "que la voix passe par Breizh (réglages gardés pour le retour en direct). Gain du micro, porte de bruit et limiteur restent actifs.",
             color = WARN, style = MaterialTheme.typography.bodySmall)
@@ -174,7 +180,7 @@ fun VoiceTab(
         if (s.mic.gateOn) SliderRow("Seuil", s.mic.gateDb, -80.0..-20.0, 1.0, "dBFS") { save(s.copy(mic = s.mic.copy(gateDb = it))) }
     }
 
-    panel {
+    if (eqShown) panel {
         Text("Filtres et égaliseur 10 bandes", style = MaterialTheme.typography.titleSmall)
         SliderRow("Coupe-bas", s.highpassHz, 20.0..1000.0, 10.0, "Hz", enabled = fx) { save(s.copy(highpassHz = it)) }
         SliderRow("Coupe-haut", s.lowpassHz, 1500.0..8000.0, 50.0, "Hz", enabled = fx) { save(s.copy(lowpassHz = it)) }
@@ -198,7 +204,7 @@ fun VoiceTab(
         TextButton(onClick = { details = !details }) { Text(if (details) "Masquer fréquence et Q" else "Fréquence et Q de chaque bande") }
     }
 
-    panel {
+    if (fxShown) panel {
         Text("Chorus et réverbération", style = MaterialTheme.typography.titleSmall)
         Text("Déconseillés en BLU : ils réduisent la compréhension. Coupés net à la fin de chaque émission.",
             color = WARN, style = MaterialTheme.typography.bodySmall)
@@ -231,7 +237,10 @@ fun VoiceTab(
         }
     }
 
-    panel {
+    // Bips de fin d'émission : produits et émis par la STATION (réglage commun à tous les appareils)
+    if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.ROGER, beeps?.let { it.rogerEnabled || it.linkLostEnabled } == true)) panel { BeepsSection(beeps, beepsConnected) }
+
+    if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.LISTEN, ui.recording || ui.playing)) panel {
         Text("S'écouter sans émettre", style = MaterialTheme.typography.titleSmall)
         Text(
             "Enregistrez quelques secondes (30 s au plus), puis relisez-les avec les réglages en cours, modifiables pendant " +
@@ -249,11 +258,11 @@ fun VoiceTab(
         }
     }
 
-    if (BuildConfig.SCRAMBLER) ScramblerPanel(ui.scrambler, panel)   // absent de la version Google Play
+    if (BuildConfig.SCRAMBLER && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.SCRAMBLER, ui.scrambler.tx || ui.scrambler.rx)) ScramblerPanel(ui.scrambler, panel)   // absent de la version Google Play
 
-    if (replayAllowed) ReplayPanel(transmitting, canBroadcast, onBroadcast, panel)
+    if (replayAllowed && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.REPLAY)) ReplayPanel(transmitting, canBroadcast, onBroadcast, panel)
 
-    panel {
+    if (eqShown || fxShown) panel {
         Text("Partager les réglages", style = MaterialTheme.typography.titleSmall)
         Text("Format commun avec la page web : la même voix sur le PC et le téléphone.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

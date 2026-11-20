@@ -2,6 +2,8 @@
 // Copyright (C) 2026 RF-DIY.COM
 package com.rfdiy.openremotetrx.app
 
+import com.rfdiy.openremotetrx.logic.MobileFeature
+import com.rfdiy.openremotetrx.logic.FreeDvLevel
 import android.content.Context
 import android.content.res.Configuration
 import android.os.SystemClock
@@ -178,8 +180,29 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             Panel { MicSection() }
             Panel { HeadsetSection(ui.headsetMic) }
             if (BuildConfig.CELL_INFO && rig.net != null) Panel { NetCellsSection() }   // absent de la version Google Play
-            Panel { BeepsSection(rig.beeps, connected && rig.protocolOk) }
             rig.presence?.takeIf { it.switchShown }?.let { p -> Panel { ListenersSwitch(p) } }   // opérateur seulement
+            // « Fonctionnalités mobiles » (étape 300) : affichage des fonctions ; une fonction en service reste affichée
+            val voiceNow by com.rfdiy.openremotetrx.core.VoiceHub.ui.collectAsState()
+            val spatialNow by com.rfdiy.openremotetrx.core.SpatialHub.ui.collectAsState()
+            Panel {
+                FeaturesSection(prefs) { f ->
+                    when (f) {
+                        MobileFeature.ROGER -> rig.beeps?.let { it.rogerEnabled || it.linkLostEnabled } == true
+                        MobileFeature.EQ -> voiceNow.settings.enabled
+                        MobileFeature.CHORUS_REVERB -> voiceNow.settings.chorus.on || voiceNow.settings.reverb.on
+                        MobileFeature.SELCALL -> rig.selcall?.indicator != null
+                        MobileFeature.WATERFALL -> miniWf
+                        MobileFeature.SPATIAL -> spatialNow.settings.on
+                        MobileFeature.BREIZH -> rig.breizh?.level?.let { it != BreizhLevel.OFF } == true
+                        MobileFeature.FREEDV -> rig.freedv?.level?.let { it != FreeDvLevel.OFF } == true
+                        MobileFeature.DIFFUSION -> rig.diffusion?.let { com.rfdiy.openremotetrx.logic.Diffusions.indicator(it.status) != null } == true
+                        MobileFeature.LISTEN -> voiceNow.recording || voiceNow.playing
+                        MobileFeature.SCRAMBLER -> voiceNow.scrambler.tx || voiceNow.scrambler.rx
+                        MobileFeature.BIG_PTT -> bigPttRequested
+                        MobileFeature.REPLAY, MobileFeature.FRIENDS -> false
+                    }
+                }
+            }
             if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
                 SettingsAction("Mesure de TOS de l'antenne", onClick = { swrOpen = true })
             }
