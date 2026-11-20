@@ -1,8 +1,13 @@
 # Station « TRX distant » sur le Microsoft Store : cahier des charges
 
-Version 1 (2026-11-20, étape 317). Demande de l'utilisateur : « Déploiement du package d'installation sur le Store
-Microsoft ; j'ai un compte particulier ». Produit choisi : la STATION Windows complète (pas l'Autotest). Aucun code
-dans cette version : décisions à prendre (§ 9), puis lots (§ 10).
+Version 2 (2026-11-20, étape 320 ; v1 : étape 317). Demande de l'utilisateur : « Déploiement du package
+d'installation sur le Store Microsoft ; j'ai un compte particulier ». Produit choisi : la STATION Windows complète (pas
+l'Autotest). v2 : décisions de l'utilisateur (§ 9) et résultats de l'essai S0 (§ 11) ; aucun code de la station.
+
+**Résumé de S0** : un MSIX avec Python embarqué fait tourner la station telle quelle ; pare-feu (réseaux privés),
+alias, tâche de démarrage et écriture dans ProgramData fonctionnent ; une mise à jour normale est REFUSÉE tant que la
+station tourne, mais une mise à jour forcée ou une désinstallation TUE la station et laisse rigctld orphelin, poste EN
+ÉMISSION : la GARDE DE FIN (§ 4.1) est OBLIGATOIRE, essayée avec succès dans les trois cas.
 
 Les points marqués **[à vérifier]** viennent de la documentation de Microsoft telle que connue au moment de
 l'écriture ; ils se vérifient par l'essai S0 (§ 10) avant tout code, jamais par supposition.
@@ -53,9 +58,12 @@ l'écriture ; ils se vérifient par l'essai S0 (§ 10) avant tout code, jamais p
   `site-packages` déjà rempli depuis `requirements.lock` À LA FABRICATION (empreintes vérifiées comme aujourd'hui).
   Pas de Nuitka : la station lance ses services et modules par `python -m …` (superviseur -> passerelle, modules,
   outils de TRX Console) ; Nuitka obligerait à tout réécrire en exécutables séparés pour un gain nul.
-- **Hamlib** : `rigctld.exe` et ses DLL d'une version FIGÉE (dernière Release publique, empreinte SHA-256 comme
-  `compiler-hamlib.sh`), dans le paquet. L'opérateur n'installe plus rien à part. Hamlib est LGPL / GPL : sources
-  et offre écrite citées dans la fiche et dans `LICENSE` du paquet.
+- **Hamlib À CÔTÉ, pas dans le paquet** (décision 3) : l'opérateur installe Hamlib lui-même, comme aujourd'hui
+  (`[tools] hamlib_dir`). Messages qui vont bien, au bon moment : premier lancement de TRX Console et assistant 2.1
+  (« Hamlib introuvable : téléchargez … puis indiquez son dossier »), refus de démarrer la station sans rigctld
+  (code ORT existant ou nouveau), lien vers la page de Hamlib dans la fiche. Effet de bord UTILE vu en S0 : un
+  rigctld hors du paquet SURVIT à la fermeture forcée du paquet, ce qui permet la garde de fin (§ 4.1). La
+  certification doit le savoir (notes : « Hamlib requis, gratuit, installé à part »).
 - **Décodeurs FreeDV** (`freedv/`), comme le zip.
 - Code de la station, `LICENSE`, catalogues `i18n`, pages statiques.
 
@@ -65,14 +73,15 @@ l'écriture ; ils se vérifient par l'essai S0 (§ 10) avant tout code, jamais p
 - **Alias d'exécution** (`uap5:AppExecutionAlias`) : `trx-console`, `trx-setup`, `trx-monitor`, `trx-hwtest`,
   `trx-qualif`, `trx-journal-android`… = la liste `$Commands` d'installer.ps1, tapables dans tout terminal (remplace
   les relais `.cmd` et la modification du PATH). Applications secondaires sans entrée de menu
-  (`AppListEntry="none"`) **[à vérifier : paramètres passés à python.exe par l'alias]**.
+  (`AppListEntry="none"`). VU EN S0 : un alias de python.exe marche (avec ou sans paramètres du manifeste), mais un
+  alias de pythonw.exe AVEC paramètres ne lance rien : la STATION ne se lance jamais par un alias.
 - **Démarrage à l'ouverture de session** : `desktop:StartupTask` qui lance le superviseur (pythonw). L'opérateur
   peut le couper dans Paramètres > Applications > Démarrage : TRX Console doit le DIRE (état du démarrage
-  automatique en tête, comme l'état de la station).
-- **Pare-feu** : `desktop2:FirewallRules` (règles posées à l'installation, retirées à la désinstallation) pour le
-  python.exe / pythonw.exe du paquet, entrées sur réseaux PRIVÉS seulement, comme aujourd'hui **[à vérifier :
-  attribut Profile, besoin d'élévation]**. Règle par programme = tout port (8443 ou `gateway_port` changé, 8444 de
-  la console réseau, WebRTC).
+  automatique en tête, comme l'état de la station). Menu 1.1 (démarrer) : `explorer.exe
+  shell:AppsFolder\<famille>!Supervisor`, exactement comme le menu Démarrer et la tâche de démarrage (essayé en S0).
+- **Pare-feu** : `desktop2:FirewallRules` pour le python.exe / pythonw.exe du paquet, TCP et UDP, `Profile="private"`
+  : posées à l'installation SANS droits d'administrateur, retirées à la désinstallation (essayé en S0). Règle par
+  programme = tout port (8443 ou `gateway_port` changé, 8444 de la console réseau, WebRTC).
 - `runFullTrust` (ports série, cartes son, sous-processus, réseau).
 
 ### 3.3 Données
@@ -80,9 +89,10 @@ l'écriture ; ils se vérifient par l'essai S0 (§ 10) avant tout code, jamais p
 Configuration, clés, certificats, état, journaux : HORS du paquet, sinon perdus à chaque désinstallation (et la
 virtualisation MSIX de `%APPDATA%` les cacherait aux autres outils). Proposition : MÊME dossier que le zip,
 `C:\ProgramData\trx-remote`, droits restreints au compte comme aujourd'hui, créé au premier lancement par la station
-elle-même (plus par l'installateur) **[à vérifier : écriture dans ProgramData depuis une application MSIX non
-virtualisée]**. Repli si l'essai S0 échoue : `LocalState` du paquet, avec un avertissement clair « désinstaller =
-configuration effacée, exportez-la d'abord » et un export par TRX Console.
+elle-même (plus par l'installateur). RETENU (décision 4, avis de Claude) : S0 montre que l'écriture dans ProgramData
+depuis le paquet est RÉELLE (aucune copie virtualisée) et que la configuration SURVIT à la désinstallation ; la
+migration depuis le zip est immédiate. Attention : un dossier créé par un administrateur n'est pas modifiable par le
+compte (vu en S0) : la station crée le dossier sous le compte de l'opérateur, puis restreint les droits.
 
 ### 3.4 Version Store dans le code
 
@@ -91,7 +101,13 @@ configuration effacée, exportez-la d'abord » et un export par TRX Console.
 - Mises à jour : menus 7.1, 7.2, 7.3 et vérification `trx-update-check` REMPLACÉS par « Mises à jour : par le
   Microsoft Store » (version installée, lien `ms-windows-store://pdp/?productid=…`). Aucun retour arrière (le Store
   n'en propose pas).
-- Chemins : Python, rigctld, freedv cherchés DANS le paquet, jamais dans le PATH du système.
+- Mise à jour proposée par TRX Console (décision 5) : `StoreContext` lit la mise à jour disponible ; l'installation
+  n'est lancée que poste en RÉCEPTION et station arrêtée proprement (« T 0 » relu), sinon le message « une nouvelle
+  version vous attend sur le Microsoft Store » avec le lien de la fiche.
+- Chemins : Python et freedv cherchés DANS le paquet, rigctld par `[tools] hamlib_dir` (Hamlib à côté).
+- `sys.executable` vaut le chemin de l'ALIAS quand un programme est lancé par un alias (vu en S0 :
+  `…\WindowsApps\trx-s0-python.exe`) : les sous-processus de la station (passerelle, modules, outils) se lancent
+  avec le VRAI python.exe / pythonw.exe du paquet (`Path(sys.prefix)`), jamais avec l'alias.
 - Le paquet zip et la page de la console continuent d'exister ; Debian / Pi inchangés.
 
 ## 4. Sécurité d'émission (priorité absolue)
@@ -101,16 +117,35 @@ l'application (superviseur, passerelle, rigctld) pendant une émission par la CA
 le poste peut RESTER EN ÉMISSION. C'est le même risque qu'un processus tué à la main aujourd'hui, mais déclenché
 sans l'opérateur.
 
+CONSTATÉ EN S0 (§ 11) : une mise à jour normale est refusée tant que la station tourne (aucun effet), une mise à jour
+différée attend sa fermeture (aucun effet), mais une mise à jour FORCÉE ou une DÉSINSTALLATION tue net le superviseur
+et la passerelle (aucune ligne au journal) ; rigctld (hors du paquet) survit, orphelin, et garde le poste factice EN
+ÉMISSION indéfiniment. On ne sait pas laquelle des façons le Store emploie : on suppose la pire.
+
+### 4.1 Garde de fin (obligatoire)
+
+Le superviseur lance, à chaque démarrage, une GARDE hors du paquet : `powershell.exe` de Windows (survit à la
+fermeture du paquet, comme rigctld), script lu dans le paquet, paramètres : numéro du superviseur, port et numéro de
+rigctld. Elle attend la mort du superviseur (`Wait-Process`), lit le PTT, envoie « T 0 », relit, puis arrête
+rigctld. Essayée en S0 dans les trois cas (station tuée net, mise à jour forcée, désinstallation) : PTT 1 lu, « T 0 »,
+PTT 0 relu, 0,6 s après la mort du superviseur. Règles :
+- lancée SANS `DETACHED_PROCESS` (powershell quitte aussitôt avec ce drapeau, vu en S0), avec `CREATE_NO_WINDOW` ;
+- un arrêt NORMAL de la station la laisse faire (« T 0 » de plus, sans effet) ;
+- une garde absente ou morte = station refusée au démarrage (fail-safe), test de panne ;
+- au démarrage, le superviseur ADOPTE un rigctld orphelin (déjà le cas, vu en S0) et le remet en réception ;
+- [à vérifier en S4] la certification du Store accepte qu'une application lance powershell.exe ; repli : même garde
+  par `rigctl.exe` de Hamlib (hors du paquet aussi) piloté par un court script `cmd`.
+- La même garde sert aussi au zip Windows (station tuée par le Gestionnaire des tâches) : à proposer.
+
 Exigences avant toute publication :
-1. Essai S0 : mise à jour d'un paquet local (même identité, version +1) pendant une émission du modèle factice,
-   puis sur charge fictive avec l'IC-7300MK2 : savoir si Windows reporte la mise à jour (application en marche) ou
-   ferme les processus **[à vérifier]**. Même essai pour la désinstallation.
-2. S'il ferme : le paquet n'est PAS publié tant qu'une parade n'est pas trouvée et essayée (pistes : mise à jour
-   seulement poste en réception, déclenchée par TRX Console par l'API `StoreContext` ; TOT INTERNE du poste
-   recommandé dans le guide ; mise à jour « non obligatoire » dans Partner Center).
+1. Garde de fin (§ 4.1) codée et ses tests de panne (superviseur tué, garde tuée, rigctld absent).
+2. Essai réel sur charge fictive avec l'IC-7300MK2 : désinstallation et mise à jour forcée pendant une émission ;
+   poste relu en réception à l'afficheur.
 3. Toujours RX au démarrage (règle existante) : vérifié après une mise à jour du Store.
 4. Tests de panne existants inchangés ; nouveau test : `is_store()` vrai => aucun chemin de mise à jour de la
    station.
+5. S4 (visibilité privée) : vraie mise à jour par le Store pendant une émission sur charge fictive, pour connaître
+   le comportement réel du Store.
 
 ## 5. Coexistence avec le zip
 
@@ -141,27 +176,63 @@ téléchargé avec empreinte, `pip install --require-hashes --target`, Hamlib et
 (Windows SDK). Pour les essais locaux seulement : `signtool` avec un certificat d'essai auto-signé (jamais envoyé au
 Store, qui signe lui-même). Fichier produit dans `dist/`.
 
-## 9. Décisions à prendre par l'utilisateur
+## 9. Décisions de l'utilisateur (2026-11-20)
 
-1. MSIX (proposé) ou EXE / MSI signé.
-2. Python embarqué (proposé) ou Nuitka.
-3. Hamlib inclus et figé dans le paquet (proposé).
-4. Données dans `C:\ProgramData\trx-remote` (proposé, si S0 le permet) ou dans le paquet.
-5. Mises à jour : Store seulement, retour arrière perdu (imposé par le Store) ; mise à jour lancée par TRX Console
-   poste en réception, si S0 montre que Windows ferme les processus.
-6. Nom réservé : « openRemoteTRX » (comme Google Play, proposé) ou « TRX distant ».
-7. Visibilité : PRIVÉE d'abord (liste de comptes de bêta-testeurs), publique après les essais.
-8. Marchés et langues de la fiche (4 langues proposées).
+1. « Le plus fiable des deux » : **MSIX** (signé par le Store, installation et retrait propres, sans droits
+   d'administrateur ; vérifié en S0).
+2. « Le plus fiable, sans installer Python ni venv » : **Python embarqué** (les deux évitent l'installation ; Python
+   embarqué garde le code et les modules essayés tels quels, Nuitka devrait recompiler aiortc / PyAV et réécrire les
+   lancements `python -m` ; vérifié en S0 : la station tourne sans changement).
+3. **Hamlib à côté**, installé par l'opérateur, avec des messages qui le guident au bon moment (§ 3.1).
+4. Avis demandé, retenu : **`C:\ProgramData\trx-remote`** (§ 3.3, vérifié en S0).
+5. **Store seulement** ; mise à jour lancée par TRX Console poste en réception, sinon message « nouvelle version sur
+   le Microsoft Store » (§ 3.4).
+6. Nom réservé : **openRemoteTRX**.
+7. Visibilité **privée** d'abord, publique après les essais.
+8. Fiche en **français, anglais, allemand, espagnol**.
 
 ## 10. Lots
 
-- **S0 (essai, aucun code livré)** : paquet MSIX fait à la main sur ce PC, installé en local (mode développeur) :
-  Python embarqué + station + modèle factice ; vérifier les points [à vérifier] (alias, StartupTask, pare-feu
-  privé, ProgramData, mise à jour et désinstallation pendant une émission, § 4) ; relevé dans ce cahier.
-- **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), tests.
+- **S0 FAIT** le 2026-11-20 sur le PC « tour radio » (§ 11) ; reste : démarrage à l'ouverture de session (paquet
+  0.0.2.0 laissé installé, tâche de démarrage en service), puis nettoyage.
+- **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), GARDE DE FIN (§ 4.1) et ses tests de panne,
+  messages Hamlib (§ 3.1), tests.
 - **S2** : `scripts/build_msix.py`, test de fabrication.
 - **S3 (utilisateur)** : compte Partner Center particulier, réservation du nom, identité du paquet reportée dans la
   fabrication.
 - **S4** : fiche, captures, notes de certification ; première soumission en visibilité privée.
 - **S5** : essais réels (installation depuis le Store sur un PC propre, IC-7300MK2 sur charge fictive, mise à jour
   du Store) puis publication publique ; guide de l'opérateur (partie installation Windows).
+
+## 11. Essai S0 (2026-11-20, PC « tour radio », Windows 11)
+
+Paquet d'essai `RFDIY.openRemoteTRX.S0` (0.0.1.0 et 0.0.2.0, 90 Mo) : Python 3.12.10 embarqué, station 0.244.0
+installée depuis une copie propre du commit (`git archive`, `pip --require-hashes --target`), manifeste de trois
+applications (Console, Supervisor avec StartupTask, Python), pare-feu du manifeste ; makeappx et signtool du paquet
+NuGet `Microsoft.Windows.SDK.BuildTools` 10.0.28000 (sans installer le SDK) ; signé par un certificat d'essai
+`CN=openRemoteTRX-S0` (approuvé dans `LocalMachine\TrustedPeople` de tour radio). Poste factice (modèle 1), ports à
+part (rigctld 4632, page 8543), configuration `C:\ProgramData\trx-remote-s0`, Hamlib 4.7.2 À CÔTÉ du paquet.
+
+| Point | Résultat |
+|---|---|
+| Installation par SSH (même administrateur) | REFUSÉE (0x80070005) : un MSIX s'installe dans la session de bureau de l'utilisateur (essais : tâche planifiée ponctuelle « Interactive ») |
+| Installation dans la session | 8 s, sans droits d'administrateur, `SignatureKind` Developer |
+| Pare-feu | 4 règles (python / pythonw, TCP / UDP), entrantes, profil PRIVÉ seulement ; retirées à la désinstallation |
+| Alias | les trois présents dans `%LOCALAPPDATA%\Microsoft\WindowsApps` ; alias de python.exe OK ; alias de pythonw.exe avec paramètres : rien ne démarre |
+| `sys.executable` | chemin de l'ALIAS si lancé par alias (§ 3.4) ; vrai chemin du paquet si lancé par le menu / `shell:AppsFolder` |
+| ProgramData | écriture RÉELLE depuis le paquet (aucune copie virtualisée) ; configuration et état GARDÉS après désinstallation |
+| Station | superviseur, rigctld (hors paquet) et passerelle démarrés, état publié, journaux écrits ; aucun changement de code |
+| Tâche de démarrage | enregistrée, état 2 (en service) ; essai à l'ouverture de session À FAIRE |
+| Mise à jour sans option, station en marche | REFUSÉE (0x80073D02, ressources utilisées) : station intacte |
+| Mise à jour différée | acceptée, appliquée à la fermeture : station intacte |
+| Mise à jour FORCÉE | 34 à 42 s ; superviseur et passerelle TUÉS sans journal ; rigctld SURVIT, poste factice resté EN ÉMISSION |
+| Désinstallation, station en marche | 33 à 36 s ; même effet : rigctld orphelin, PTT = 1 relu après coup |
+| Relance après une fermeture forcée | rigctld orphelin ADOPTÉ, poste remis en réception (PTT 0) |
+| Garde de fin (§ 4.1), trois cas | PTT 1 lu, « T 0 », PTT 0 relu, rigctld arrêté, 0,6 s après la mort du superviseur |
+| Garde lancée avec `DETACHED_PROCESS` | powershell quitte aussitôt (code 0) : drapeau interdit |
+
+Fichiers gardés pour les prochaines fabrications (hors dépôt, sur tour radio) : `C:\dev\openRemoteTRX-msix\`
+(`outils\sdk-buildtools-10.0.28000` = makeappx / signtool, `outils\python-embed\python-3.12.10-embed-amd64.zip`,
+`outils\hamlib-w64-4.7.2`, `scripts\build_s0.py`, `s0\` : paquets, certificat d'essai, scripts des essais, garde,
+`s0run.ps1` = lancer un script dans la session de bureau). Le certificat d'essai (clé privée) est dans le magasin
+« Personnel » du compte du PC de développement ; le vrai paquet est signé par le Store.
