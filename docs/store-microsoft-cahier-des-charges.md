@@ -1,6 +1,7 @@
 # Station « TRX distant » sur le Microsoft Store : cahier des charges
 
-Version 2 (2026-11-20, étape 320 ; v1 : étape 317). Demande de l'utilisateur : « Déploiement du package
+Version 3 (2026-11-20, étape 321 : versions de Windows § 12, garde Python et essais S0 bis § 11.1 ; v2 : étape 320 ;
+v1 : étape 317). Demande de l'utilisateur : « Déploiement du package
 d'installation sur le Store Microsoft ; j'ai un compte particulier ». Produit choisi : la STATION Windows complète (pas
 l'Autotest). v2 : décisions de l'utilisateur (§ 9) et résultats de l'essai S0 (§ 11) ; aucun code de la station.
 
@@ -124,18 +125,22 @@ et la passerelle (aucune ligne au journal) ; rigctld (hors du paquet) survit, or
 
 ### 4.1 Garde de fin (obligatoire)
 
-Le superviseur lance, à chaque démarrage, une GARDE hors du paquet : `powershell.exe` de Windows (survit à la
-fermeture du paquet, comme rigctld), script lu dans le paquet, paramètres : numéro du superviseur, port et numéro de
-rigctld. Elle attend la mort du superviseur (`Wait-Process`), lit le PTT, envoie « T 0 », relit, puis arrête
-rigctld. Essayée en S0 dans les trois cas (station tuée net, mise à jour forcée, désinstallation) : PTT 1 lu, « T 0 »,
-PTT 0 relu, 0,6 s après la mort du superviseur. Règles :
+Le superviseur lance, à chaque démarrage, une GARDE qui survit à la fermeture du paquet. Paramètres : numéro du
+superviseur, port et numéro de rigctld. Elle attend la mort du superviseur, lit le PTT, envoie « T 0 », relit, puis
+arrête rigctld. RETENUE (S0 bis, § 11.1) : **garde en Python, par le pythonw.exe DU PAQUET, lancée HORS DU TRAVAIL de
+l'application** (`CREATE_BREAKAWAY_FROM_JOB`) : elle survit à la mise à jour forcée ET à la désinstallation (essayé),
+sans PowerShell, donc sans stratégie d'exécution ni heuristique d'antivirus. Repli si Windows refuse le
+« breakaway » : `powershell.exe` 5.1 par son chemin COMPLET (`%SystemRoot%\System32\WindowsPowerShell\v1.0\`),
+script passé en TEXTE par `-Command` (jamais `-File`, bloqué par une stratégie « AllSigned » imposée, essayé),
+jamais `-EncodedCommand`, jamais PowerShell 7 (`pwsh`, absent par défaut). Essais : station tuée net, mise à jour
+forcée, désinstallation, avec chacune des deux gardes : PTT 1 lu, « T 0 », PTT 0 relu, moins d'une seconde après la
+mort du superviseur. Règles :
 - lancée SANS `DETACHED_PROCESS` (powershell quitte aussitôt avec ce drapeau, vu en S0), avec `CREATE_NO_WINDOW` ;
 - un arrêt NORMAL de la station la laisse faire (« T 0 » de plus, sans effet) ;
 - une garde absente ou morte = station refusée au démarrage (fail-safe), test de panne ;
 - au démarrage, le superviseur ADOPTE un rigctld orphelin (déjà le cas, vu en S0) et le remet en réception ;
-- [à vérifier en S4] la certification du Store accepte qu'une application lance powershell.exe ; repli : même garde
-  par `rigctl.exe` de Hamlib (hors du paquet aussi) piloté par un court script `cmd`.
-- La même garde sert aussi au zip Windows (station tuée par le Gestionnaire des tâches) : à proposer.
+- [à vérifier en S4] la certification accepte la garde (processus hors du travail de l'application) ;
+- la même garde sert aussi au zip Windows (station tuée par le Gestionnaire des tâches) : à proposer.
 
 Exigences avant toute publication :
 1. Garde de fin (§ 4.1) codée et ses tests de panne (superviseur tué, garde tuée, rigctld absent).
@@ -193,8 +198,9 @@ Store, qui signe lui-même). Fichier produit dans `dist/`.
 
 ## 10. Lots
 
-- **S0 FAIT** le 2026-11-20 sur le PC « tour radio » (§ 11) ; reste : démarrage à l'ouverture de session (paquet
-  0.0.2.0 laissé installé, tâche de démarrage en service), puis nettoyage.
+- **S0 FAIT** le 2026-11-20 sur le PC « tour radio » (§ 11) et **S0 bis** (§ 11.1) ; restent : démarrage à
+  l'ouverture de session (paquet 0.0.2.0 laissé installé, tâche de démarrage en service), puis nettoyage ;
+  Windows 10 22H2 dans une machine virtuelle (§ 12) ; Smart App Control en marche (PC neuf ou machine virtuelle).
 - **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), GARDE DE FIN (§ 4.1) et ses tests de panne,
   messages Hamlib (§ 3.1), tests.
 - **S2** : `scripts/build_msix.py`, test de fabrication.
@@ -236,3 +242,36 @@ Fichiers gardés pour les prochaines fabrications (hors dépôt, sur tour radio)
 `outils\hamlib-w64-4.7.2`, `scripts\build_s0.py`, `s0\` : paquets, certificat d'essai, scripts des essais, garde,
 `s0run.ps1` = lancer un script dans la session de bureau). Le certificat d'essai (clé privée) est dans le magasin
 « Personnel » du compte du PC de développement ; le vrai paquet est signé par le Store.
+
+### 11.1 Essai S0 bis (2026-11-20, tour radio : Windows 11 Famille 25H2, build 26200, x64)
+
+| Point | Résultat |
+|---|---|
+| Stratégie « AllSigned » imposée (`HKCU\Software\Policies\…\PowerShell`, compte chris seul, retirée ensuite) | garde `powershell -File` BLOQUÉE (rien ne tourne) ; garde `powershell -Command` (texte) : fonctionne ; garde Python : fonctionne |
+| Lancement hors du travail de l'application (`CREATE_BREAKAWAY_FROM_JOB`) depuis le Python du paquet | accepté |
+| Garde Python du paquet (hors du travail), mise à jour FORCÉE pendant une émission | survit : PTT 1 lu, « T 0 », PTT 0 relu, rigctld arrêté, ~1 s après la mort du superviseur |
+| Garde Python du paquet (hors du travail), DÉSINSTALLATION pendant une émission | survit : même résultat |
+| Garde PowerShell 5.1 `-Command` (chemin complet), désinstallation pendant une émission | même résultat (0,6 s) |
+| Defender (temps réel, comportement, AMSI en marche) | aucune détection pendant tous les essais (gardes cachées comprises) |
+| Smart App Control | ARRÊTÉ sur tour radio (installation ancienne) : non essayé |
+| Mode S | absent : non essayé (voir § 12) |
+
+## 12. Versions de Windows
+
+| Système | Pris en charge | Pourquoi |
+|---|---|---|
+| Windows 7, 8, 8.1 | NON | ni MSIX ni Store pour une application de bureau ; Python 3.11+ exigé par la station ne tourne plus sous Windows 7 (dernier : 3.8) ; aucun correctif de sécurité, alors que la station ouvre des ports. Même le zip ne peut pas y tourner. |
+| Windows 10 avant 2004 (build 19041) | NON | `uap10:Parameters` du manifeste (paramètres des applications) inexistant ; le Store ne propose pas le paquet (`MinVersion`) |
+| Windows 10 22H2, x64 | OUI, avec avertissement | plus de correctifs depuis octobre 2025 (extension grand public finie en octobre 2026) sauf éditions LTSC / entreprise : la page d'installation et TRX Console le signalent sans bloquer ; console noire (conhost) : pictogrammes de TRX Console illisibles, `TRX_CONSOLE_SANS_ICONES=1` (étape 223) ; ESSAI À FAIRE (machine virtuelle) |
+| Windows 11, x64 (Famille, Pro) | OUI | essayé (S0, S0 bis) |
+| Windows 10 / 11 en mode S | NON, refus expliqué | programmes hors Store (rigctld de Hamlib) et PowerShell interdits : la station le détecte (`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy`, `SkuPolicyRequired = 1`) et refuse de démarrer avec un message (sortir du mode S : gratuit, sans retour) |
+| Windows 11 ARM (Snapdragon) | NON pour l'instant | paquet x64 en émulation : à essayer avant de le promettre ; pilotes USB des postes en ARM64 à vérifier ; Windows 10 ARM n'émule pas le x64 |
+
+Autres règles :
+- PowerShell : seul **Windows PowerShell 5.1** est garanti (identique sous Windows 10 et 11) ; PowerShell 7 (`pwsh`)
+  s'installe à part : jamais exigé. Tout script lancé par la station : syntaxe 5.1, chemin complet, `-Command`.
+- Smart App Control (Windows 11 installé neuf) : peut bloquer un programme non signé ou peu connu (rigctld de Hamlib,
+  pythonw du paquet ?) : essai à faire sur un PC neuf ou une machine virtuelle ; s'il bloque, message qui l'explique.
+- Stratégies d'entreprise (GPO, AppLocker, WDAC) : la station ne cherche pas à les contourner ; une garde qui ne
+  démarre pas = station refusée (fail-safe), message clair.
+- Guide de l'opérateur et fiche du Store : « Windows 10 22H2 ou Windows 11, 64 bits (x64) ».
