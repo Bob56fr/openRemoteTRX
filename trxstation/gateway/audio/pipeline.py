@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections.abc import Callable
 
 from ...config import Audio
@@ -13,13 +14,16 @@ from .gate import TxAudioGate
 from .hub import RxHub
 from .levels import LevelMeter
 from .listeners import TapSink, TxTap
+from .rxadvice import RxAdvice
 
 log = logging.getLogger(__name__)
 
 
 class AudioPipeline:
     def __init__(self, cfg: Audio, *, source=None, sink=None, sd=None,
-                 owner_provider: Callable[[], str | None] = lambda: None):
+                 owner_provider: Callable[[], str | None] = lambda: None, clock: Callable[[], float] = time.monotonic):
+        self._clock = clock
+        self.rx_advice = RxAdvice()               # avis trop fort / trop faible sur 30 s (trx-monitor, menu 2.9)
         self.source = source if source is not None else make_source(cfg.capture_device, sd)
         self.sink = sink if sink is not None else make_sink(cfg.playback_device, sd)
         self.rx_meter, self.tx_meter = LevelMeter(), LevelMeter()
@@ -52,6 +56,8 @@ class AudioPipeline:
 
     def stats(self) -> dict:
         """Chiffres publiés dans l'état (fichier d'état, clients, trx-monitor)."""
+        if not self.gate.is_open:                 # pendant une émission, le son reçu ne dit rien du réglage
+            self.rx_advice.feed(self._clock(), self.rx_meter.value, self.hub.limited, self.hub.frames)
         return {"rx_db": round(self.rx_meter.value), "tx_db": round(self.tx_meter.value),
                 "gate_open": self.gate.is_open, "listeners": self.hub.subscribers,
                 "rx_dropped": self.hub.dropped, "tx_dropped_not_owner": self.gate.dropped_not_owner,
@@ -59,6 +65,7 @@ class AudioPipeline:
                 "rx_gain_db": self.hub.gain_db,            # gain du son reçu ([audio] rx_gain_db), compris dans rx_db
                 "rx_limiter": self.hub.limiter is not None,     # limiteur du son reçu en service
                 "rx_limited": self.hub.limited,            # trames baissées par ce limiteur (crête au-delà de -1 dBFS)
+                "rx_advice": self.rx_advice.verdict(),     # niveau reçu sur 30 s : high / low / ok, ou None (étape 301)
                 "tx_frames": self.gate.passed,             # trames du micro d'un client passées au poste (porte ouverte)
                 "tx_dropped_closed": self.gate.dropped_closed,   # trames jetées porte fermée (normal en réception)
                 "tx_dropped_stale": self.gate.dropped_stale,     # son revenu de Breizh après la coupure : jeté

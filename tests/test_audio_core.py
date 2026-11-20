@@ -431,7 +431,7 @@ def test_pipeline_streams_rx_and_reports_stats():
         stats = pipeline.stats()
         assert set(stats) == {"rx_db", "tx_db", "gate_open", "listeners", "rx_dropped", "tx_dropped_not_owner",
                               "rx_frames", "tx_frames", "tx_dropped_closed", "tx_dropped_stale", "tx_underruns", "tx_overruns", "rig_card",
-                              "rx_gain_db", "rx_limiter", "rx_limited"}
+                              "rx_gain_db", "rx_limiter", "rx_limited", "rx_advice"}
         assert stats["rx_frames"] >= 3 and stats["tx_frames"] == 0
         assert stats["rx_db"] > -20 and stats["listeners"] == 1 and stats["gate_open"] is False
         pipeline.gate.owner_provider = lambda: "phone"

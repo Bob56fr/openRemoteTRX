@@ -89,7 +89,8 @@ def test_every_key_used_by_the_monitor_exists_in_french():
     used = set()
     for path in MONITOR.glob("*.py"):
         used |= set(re.findall(r'\bt\("([\w.]+)"', path.read_text(encoding="utf-8")))
-    for table in (model.PTT_LABELS, model.SELCALL_LABELS, model.FREEDV_ENGINE, model.BREIZH_LABELS, model.NET_LEVELS):
+    for table in (model.PTT_LABELS, model.SELCALL_LABELS, model.FREEDV_ENGINE, model.BREIZH_LABELS, model.NET_LEVELS,
+                  model.RX_ADVICE_LABELS):
         used |= {key for key, _ in table.values()}
     used |= set(model.CUT_REASONS.values()) | set(model.NET_TYPES.values()) | set(model.NET_DIAGNOSES.values())
     used |= {f"swr.{s}" for s in ("preparing", "calibrating", "measuring", "restoring")}

@@ -371,6 +371,7 @@ def _audio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
     dim = "info" if snap.gateway_fresh else "dim"
     return Panel("audio", title, (
         Row(t("label.rx"), f"{rx:>4} dBFS  {_db_bar(rx)}" if rx is not None else "--", dim),
+        *_rx_advice_rows(audio, t),
         Row(t("label.tx"), f"{tx:>4} dBFS  {_db_bar(tx)}" if tx is not None else "--", "bad" if gate else dim),
         Row(t("label.mic_gate"), t("gate.open") if gate else t("gate.closed"), "bad" if gate else "ok"),
         Row(t("label.listeners"), str(audio.get("listeners", 0)), "info"),
@@ -382,6 +383,23 @@ def _audio_panel(snap: Snapshot, t: Translator | None = None) -> Panel:
         *_freedv_rows(snap, t),
         *_spectrum_rows(snap, t),
     ))
+
+
+RX_ADVICE_LABELS = {"high": ("rx_advice.high", "warn"), "low": ("rx_advice.low", "warn"), "ok": ("rx_advice.ok", "ok")}
+
+
+def _rx_advice_rows(audio: dict, t: Translator | None = None) -> tuple[Row, ...]:
+    """Niveau reçu jugé sur 30 s par la passerelle (`rx_advice`, étape 301) : trop fort / trop faible renvoie au
+    menu 2.9 ; rien pour une passerelle qui ne publie pas l'avis."""
+    if "rx_advice" not in audio:
+        return ()
+    t = translator(t)
+    advice = audio.get("rx_advice")
+    label = t("label.rx_advice")
+    if not isinstance(advice, dict) or advice.get("verdict") not in ("high", "low", "ok"):
+        return (Row(label, t("rx_advice.wait"), "dim"),)
+    key, level = RX_ADVICE_LABELS[advice["verdict"]]
+    return (Row(label, t(key, level=advice.get("typical_db", "?"), pct=advice.get("limited_pct", 0)), level),)
 
 
 SELCALL_LABELS = {"disabled": ("selcall.disabled", "dim"), "standby": ("selcall.standby", "info"),
