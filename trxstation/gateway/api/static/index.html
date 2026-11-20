@@ -368,6 +368,11 @@
               <select id="sdr-split"></select></label>
           </div>
           <p id="sdr-listen-info" class="note"></p>
+          <div class="sdr-line sdr-cal">
+            <button id="sdr-cal" class="chip" title="Le SDR écoute la fréquence du TRX (« QSY TRX → SDR ») sur un signal stable : le S-SDR est aligné sur le S-mètre du poste (gardé dans ce navigateur)" data-t="index.sdr_cal" data-t-title="index.sdr_cal_title">Caler le S-SDR sur le TRX</button>
+            <button id="sdr-cal-clear" class="chip" hidden data-t="index.sdr_cal_clear">Effacer le calage</button>
+            <span id="sdr-cal-info" class="note"></span>
+          </div>
         </div>
         <div class="sdr-group">
           <div class="sdr-group-title" data-t="index.sdr_grp_view">Fenêtre du waterfall</div>

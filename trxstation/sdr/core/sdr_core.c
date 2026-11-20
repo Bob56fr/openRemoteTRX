@@ -738,7 +738,10 @@ int main(int argc, char **argv) {
                 }
                 (void)group;
                 double lcenter = g_freq + (start + shown / 2.0 - N / 2.0) * g_fs / N, lspan = g_fs / zoom;
-                struct { double center, span; uint16_t bins, reserved; } __attribute__((packed)) h = { lcenter, lspan, (uint16_t)B, 0 };
+                // niveau du canal écouté (S-SDR de la page) : (dBFS + 200) x 10, 0 = pas d'écoute (station 0.250.0)
+                double cdb = g_chan_db;
+                uint16_t clevel = (g_audio && cdb > -190.0) ? (uint16_t)fmin(65535.0, fmax(1.0, (cdb + 200.0) * 10.0 + 0.5)) : 0;
+                struct { double center, span; uint16_t bins, level; } __attribute__((packed)) h = { lcenter, lspan, (uint16_t)B, clevel };
                 write_frame(FRAME_LINE, &h, sizeof h, line, (uint32_t)B);
                 memset(acc, 0, sizeof(float) * N); nacc = 0;
                 next_line_at = consumed + per_line;

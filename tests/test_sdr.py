@@ -52,6 +52,19 @@ def test_line_message_is_base64_for_the_page() -> None:
                    "d": base64.b64encode(bytes([0, 128, 255])).decode(), "t": 12500}
 
 
+def test_line_carries_the_listened_channel_level_only_while_listening() -> None:
+    """S-SDR de la page (étape 332) : niveau du canal dans le champ libre de l'en-tête ; 0 = pas d'écoute."""
+    reader = frames.FrameReader()
+    [line] = reader.feed(frames.encode_line(7.05e6, 250e3, bytes([1, 2, 3]), -63.27))
+    assert line.chan_db is not None and abs(line.chan_db - -63.3) < 0.051
+    assert line_message(line, 1.0)["l"] == -63.3
+    [silent] = reader.feed(frames.encode_line(7.05e6, 250e3, bytes([1, 2, 3])))
+    assert silent.chan_db is None and "l" not in line_message(silent, 1.0)
+    # sdr-core d'avant la station 0.250.0 : champ « réservé » à 0 = pas de niveau
+    [old] = reader.feed(frames.encode_frame(1, frames.LINE_HEAD.pack(1.0, 1.0, 3, 0) + bytes(3)))
+    assert old.chan_db is None
+
+
 # ------------------------------------------------------------------ configuration
 def _problems(**sdr) -> list[str]:
     cfg = cfgmod.Config()

@@ -89,7 +89,8 @@ def main(argv: list[str] | None = None) -> int:
             if 0 <= carrier < a.bins:
                 values = values[:carrier] + bytes([int((-40 - DB_MIN) / DB_STEP)]) + values[carrier + 1:]
             zoom = max(1, state["zoom"])               # zoom : même ligne, centre et largeur de la fenêtre
-            out.write(encode_line(state["freq"] + (state["zoom_off"] if zoom > 1 else 0), a.fs / zoom, values))
+            out.write(encode_line(state["freq"] + (state["zoom_off"] if zoom > 1 else 0), a.fs / zoom, values,
+                                  -60.0 + rng.uniform(-3, 3) if state["audio"] else None))   # niveau du canal écouté
             if state["audio"]:                              # son : 1 kHz à -20 dBFS, 20 ms par trame
                 import math
                 import struct

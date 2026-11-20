@@ -127,6 +127,26 @@ test("afficheur avec le SDR : ligne de fréquence, niveaux du mélange (étape 3
   assert.strictEqual(sdr.mixShown(null), false);
 });
 
+test("S-SDR : conversion, aiguille, calage sur le TRX (étape 332)", () => {
+  // -60 dBFS dans le canal, 41,6 dB de gain : -101,6 dBm = S9 - 28,6 dB (≈ S4) ; calage +12 dB : S9 - 16,6
+  assert.strictEqual(sdr.sdrStrengthDb(-60, 41.6, 0), -28.6);
+  assert.strictEqual(sdr.sdrStrengthDb(-60, 41.6, 12), -16.6);
+  assert.strictEqual(sdr.sdrStrengthDb(-60, null, 0), 13);           // gain inconnu : compté 0
+  assert.strictEqual(sdr.sdrStrengthDb(undefined, 41.6, 0), null);
+  assert.strictEqual(sdr.meterSmooth(-30, -10, 0.1), -10);             // monte tout de suite
+  assert.strictEqual(sdr.meterSmooth(-10, -40, 0.1), -12);             // redescend de 20 dB/s
+  assert.strictEqual(sdr.meterSmooth(-10, null, 0.1), null);
+  const st = { dfreq: 7074000 }, rig = { frequency_hz: 7074500 };
+  assert.strictEqual(sdr.calRefusal(st, rig, true, true), null);
+  assert.strictEqual(sdr.calRefusal(st, rig, false, true), "listen");
+  assert.strictEqual(sdr.calRefusal(st, rig, true, false), "tx");
+  assert.strictEqual(sdr.calRefusal(st, { frequency_hz: 7080000 }, true, true), "freq");
+  const pairs = Array.from({ length: 12 }, (_, i) => [-6 + (i % 2), -18]);
+  assert.strictEqual(sdr.calOffset(pairs), 12.5);
+  assert.strictEqual(sdr.calOffset(pairs.slice(0, 3)), null);         // trop peu de mesures
+  assert.strictEqual(sdr.calOffset([...pairs, [null, -18], [-6, NaN]]), 12.5);
+});
+
 test("graduations plus nombreuses et décimales suivant le pas", () => {
   const marks = sdr.ticks(7093000, 1536000, 15);
   assert.ok(marks.length >= 10, "au moins dix graduations sur 1,5 MHz");

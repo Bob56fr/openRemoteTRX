@@ -34,6 +34,7 @@ class Line:
     center_hz: float
     span_hz: float
     values: bytes              # une valeur uint8 par case
+    chan_db: float | None = None   # niveau du canal écouté (dBFS), None sans écoute ou sdr-core ancien
 
     @property
     def bins(self) -> int:
@@ -53,11 +54,11 @@ def parse_payload(kind: int, payload: bytes) -> Line | dict | Audio:
     if kind == TYPE_LINE:
         if len(payload) < LINE_HEAD.size:
             raise FrameError("ligne trop courte")
-        center, span, bins, _ = LINE_HEAD.unpack_from(payload)
+        center, span, bins, level = LINE_HEAD.unpack_from(payload)
         values = payload[LINE_HEAD.size:]
         if bins != len(values) or not bins:
             raise FrameError(f"ligne de {len(values)} cases annoncée {bins}")
-        return Line(center, span, bytes(values))
+        return Line(center, span, bytes(values), level / 10.0 - 200.0 if level else None)
     if kind == TYPE_AUDIO:
         if len(payload) != 2 * AUDIO_BLOCK:
             raise FrameError(f"son de {len(payload)} octets (attendu {2 * AUDIO_BLOCK})")
@@ -101,8 +102,9 @@ def encode_frame(kind: int, payload: bytes) -> bytes:
     return HEADER.pack(MAGIC, kind, len(payload)) + payload
 
 
-def encode_line(center_hz: float, span_hz: float, values: bytes) -> bytes:
-    return encode_frame(TYPE_LINE, LINE_HEAD.pack(center_hz, span_hz, len(values), 0) + bytes(values))
+def encode_line(center_hz: float, span_hz: float, values: bytes, chan_db: float | None = None) -> bytes:
+    level = 0 if chan_db is None else max(1, min(65535, round((chan_db + 200.0) * 10)))
+    return encode_frame(TYPE_LINE, LINE_HEAD.pack(center_hz, span_hz, len(values), level) + bytes(values))
 
 
 def encode_json(obj: dict) -> bytes:

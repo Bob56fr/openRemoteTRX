@@ -4,7 +4,8 @@
 
 Il lance sdr-core (programme natif, processus enfant), lit ses trames (frames.py) et publie par le bus des modules :
 - aux OPÉRATEURS qui affichent la rubrique SDR (scope « sdr_view »), chaque ligne de waterfall :
-    {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz, "s": largeur Hz, "d": cases uint8 en base64, "t": ms}
+    {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz, "s": largeur Hz, "d": cases uint8 en base64, "t": ms,
+     "l": niveau du canal écouté en dBFS (seulement pendant l'écoute ; S-SDR de la page, station 0.250.0)}
 - aux OPÉRATEURS, l'état (retenu, rejoué à l'ouverture de la rubrique) :
     {"kind": "sdr_state", "retain": "snapshot", "scope": "operators", "state": "starting"|"running"|"error"|"stopped",
      "code": ..., "detail": ..., "serial", "fs", "center", "lna", "gr", "ant", "rate", "bins", "overload", "drops",
@@ -195,8 +196,11 @@ def core_args(sd: cfgmod.Sdr, s: Settings, level: int = 0) -> list[str]:
 
 
 def line_message(line: Line, now: float) -> dict:
-    return {"kind": "sdr_line", "scope": "sdr_view", "c": round(line.center_hz), "s": round(line.span_hz),
-            "d": base64.b64encode(line.values).decode("ascii"), "t": int(now * 1000)}
+    msg = {"kind": "sdr_line", "scope": "sdr_view", "c": round(line.center_hz), "s": round(line.span_hz),
+           "d": base64.b64encode(line.values).decode("ascii"), "t": int(now * 1000)}
+    if line.chan_db is not None:                       # S-SDR de la page : niveau du canal écouté (dBFS), écoute seulement
+        msg["l"] = round(line.chan_db, 1)
+    return msg
 
 
 def proc_rss_mb(pid: int) -> float | None:

@@ -211,6 +211,37 @@
     return Math.max(0, Math.min(MIX_SEGMENTS, Math.round((db - MIX_FLOOR_DB) / (-MIX_FLOOR_DB / MIX_SEGMENTS))));
   }
 
+  // S-SDR (étape 332) : niveau du canal écouté (« l » des lignes, dBFS) ramené à l'antenne par le gain du SDR
+  // (« gain_db » de l'état), en dB par rapport à S9 (S9 = -73 dBm, 6 dB par point S), plus le calage sur le TRX.
+  // Sans calage, valeur APPROCHÉE (« ≈ ») : la conversion dBFS -> dBm d'un SDR n'est pas étalonnée.
+  const S9_DBM = -73;
+  function sdrStrengthDb(level, gainDb, calDb) {
+    if (!Number.isFinite(level)) return null;
+    const dbm = level - (Number.isFinite(gainDb) ? gainDb : 0) + (Number.isFinite(calDb) ? calDb : 0);
+    return Math.round((dbm - S9_DBM) * 10) / 10;
+  }
+  function meterSmooth(prev, next, dtS) {
+    /* Aiguille : monte tout de suite, redescend de 20 dB par seconde au plus. */
+    if (!Number.isFinite(next)) return null;
+    if (!Number.isFinite(prev) || next >= prev) return next;
+    return Math.max(next, prev - 20 * Math.max(0, dtS || 0));
+  }
+  const CAL_MAX_OFFSET_HZ = 2000, CAL_MIN_SAMPLES = 10;
+  function calRefusal(st, rig, listening, receiving) {
+    /* Raison de refuser un calage, ou null : écoute lancée, TRX en réception, SDR sur la fréquence du TRX. */
+    if (!listening || !st || !Number.isFinite(st.dfreq)) return "listen";
+    if (!receiving) return "tx";
+    if (!rig || !Number.isFinite(rig.frequency_hz) || Math.abs(st.dfreq - rig.frequency_hz) > CAL_MAX_OFFSET_HZ) return "freq";
+    return null;
+  }
+  function calOffset(pairs) {
+    /* Écart moyen TRX - SDR (dB, au demi-dB) sur des couples [S du TRX, S du SDR non calé] ; null s'il en manque. */
+    const ok = (pairs || []).filter((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    if (ok.length < CAL_MIN_SAMPLES) return null;
+    const mean = ok.reduce((a, p) => a + p[0] - p[1], 0) / ok.length;
+    return Math.round(mean * 2) / 2;
+  }
+
   function mixShown(st) {
     /* Bargraphs, ligne du SDR et S-SDR : seulement quand le module SDR tourne vraiment sur la station. */
     return !!(st && st.state === "running");
@@ -338,7 +369,7 @@
   }
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
-                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, viewWindow, badgeText, lineFreq, mixSegments, mixShown, MIX_SEGMENTS, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
+                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, viewWindow, badgeText, lineFreq, mixSegments, mixShown, MIX_SEGMENTS, sdrStrengthDb, meterSmooth, calRefusal, calOffset, CAL_MIN_SAMPLES, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
                 PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, get SPLITS() { return splits(); }, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }

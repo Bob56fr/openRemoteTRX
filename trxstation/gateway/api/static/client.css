@@ -507,6 +507,9 @@ button.danger { background: var(--danger-fond); color: var(--texte-sur-danger); 
 .sdr-dual .scale { margin-left: 3.3rem; }
 .ssdr .mlabel { color: var(--sdr-teinte); }
 .ssdr { opacity: .5; margin: .15rem 0 .4rem; }
+.ssdr.live { opacity: 1; }
+.sdr-cal { align-items: center; margin-top: .4rem; }
+.sdr-cal .note { margin: 0; }
 /* fréquence écoutée : pointillé vert et orange, lisible sur toutes les couleurs du waterfall */
 .sdr-marker { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; pointer-events: none;
   background: repeating-linear-gradient(to bottom, var(--succes) 0 6px, var(--alerte) 6px 12px); box-shadow: 0 0 2px var(--contour); }

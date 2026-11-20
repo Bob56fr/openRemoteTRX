@@ -372,12 +372,14 @@ visiteur ne reçoit ni la commande ni les messages (lot S1b : accès des visiteu
   l'envoie reçoit `invalid_params` (liste fermée des actions). Codes ORT-6006 (bridé), ORT-6007 (revenu à la normale),
   ORT-6008 (le module se bride lui-même au-delà de `[sdr] max_cpu_pct` / `max_mem_mb`).
 - **Ligne** `{"type": "module", "module": "sdr", "data": {"kind": "sdr_line", "scope": "sdr_view", "c": centre Hz,
-  "s": largeur Hz, "d": "<base64>", "t": ms}}` : `d` = une valeur par case (uint8), de la fréquence la plus basse à la
+  "s": largeur Hz, "d": "<base64>", "t": ms, "l": dBFS}}` : `d` = une valeur par case (uint8), de la fréquence la plus basse à la
   plus haute ; niveau en dBFS = -150 + 0,5 × valeur (0 = -150 dBFS, 255 = -22,5 dBFS). Fréquence d'une case
-  i sur n : `c - s/2 + (i + 0,5) × s / n`.
+  i sur n : `c - s/2 + (i + 0,5) × s / n`. Station 0.250.0+ : `l` = niveau du canal ÉCOUTÉ (dBFS, après le filtre du
+  mode), présent seulement pendant l'écoute du SDR ; la page en tire le S-SDR (≈ dBm = `l` - `gain_db` de l'état,
+  S9 = -73 dBm, 6 dB par point S, plus le calage sur le TRX gardé dans le navigateur). Absent = « — ».
 - **Trames de sdr-core** (interne à la station, `trxstation/sdr/frames.py`) : en-tête de 12 octets `ORS1`, type
-  (uint32 petit-boutiste : 1 ligne, 2 JSON), longueur ; ligne = centre et largeur (float64), cases (uint16), réservé
-  (uint16), valeurs ; JSON = `started`, `status`, `event` (`overload`, `refused`), `error` (`absent`, `busy`,
+  (uint32 petit-boutiste : 1 ligne, 2 JSON), longueur ; ligne = centre et largeur (float64), cases (uint16), niveau
+  du canal écouté (uint16 : (dBFS + 200) × 10, 0 = pas d'écoute ; « réservé » à 0 avant la station 0.250.0), valeurs ; JSON = `started`, `status`, `event` (`overload`, `refused`), `error` (`absent`, `busy`,
   `service`, `init`, `removed`, `file`), `stopped` ; type 3 (0.142.0+) : son démodulé, 960 int16 à 48 kHz, seulement
   après `audio 1`. Option `--driver sdrplay|rtlsdr` (0.149.0+) ; `--list` rend `{"devices": [{"serial", "hw",
   "driver", "product"?}], "api", "error"?}` (SDRplay LIBRES et clés RTL-SDR). Commandes sur son entrée : `freq HZ`, `gain LNA GR`, `rate N`, `agc 0|1`, `demod HZ MODE LARGEUR`,

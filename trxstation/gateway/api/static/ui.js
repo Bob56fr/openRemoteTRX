@@ -3102,6 +3102,73 @@
       mixBar("mix-trx-bar", heard ? sdrx.mixSegments(mixRms(mixTap("trx", rxMedia)), trxLevel()) : 0);
       const sdrOn = !!client.sdrListening;
       mixBar("mix-sdr-bar", heard && sdrOn ? sdrx.mixSegments(mixRms(mixTap("sdr", sdrMedia)), sdrLevel()) : 0);
+      ssdrTick(sdrOn);
+    }
+    // ---- S-SDR (étape 332) : niveau « l » des lignes du SDR (envoyées pendant l'écoute même rubrique fermée),
+    // aiguille lissée, calage sur le TRX gardé dans ce navigateur PAR SDR (numéro de série).
+    const ssdr = { raw: null, at: 0, shown: null, tickAt: 0, cal: null, calSerial: null, sampling: null };
+    function ssdrCalKey() { return "trx.sdr.cal." + (((client.sdrState || {}).serial) || "sdr"); }
+    function ssdrCalLoad() {
+      const key = ssdrCalKey();
+      if (ssdr.calSerial === key) return;
+      ssdr.calSerial = key; ssdr.cal = null;
+      try { const v = JSON.parse(store.get(key, "") || "null"); if (v && Number.isFinite(v.db)) ssdr.cal = v; } catch (e) { ssdr.cal = null; }
+    }
+    function ssdrUncal() { return sdrx.sdrStrengthDb(ssdr.raw, (client.sdrState || {}).gain_db, 0); }
+    function ssdrTick(listening) {
+      const now = Date.now(), dt = ssdr.tickAt ? (now - ssdr.tickAt) / 1000 : 0;
+      ssdr.tickAt = now;
+      ssdrCalLoad();
+      const fresh = listening && ssdr.raw !== null && now - ssdr.at < 1500;     // émission ou écoute arrêtée : plus de niveau
+      const target = fresh ? sdrx.sdrStrengthDb(ssdr.raw, (client.sdrState || {}).gain_db, ssdr.cal ? ssdr.cal.db : 0) : null;
+      ssdr.shown = fresh ? sdrx.meterSmooth(ssdr.shown, target, dt) : null;
+      $("ssdr-row").className = "meter ssdr" + (fresh ? " live" : "");                // i18n-ok (classes CSS)
+      $("ssdr-text").textContent = ssdr.shown === null ? "—" : (ssdr.cal ? "" : "≈") + web.sMeterText(ssdr.shown);   // i18n-ok (≈ : valeur approchée)
+      $("ssdr-mask").style.width = (100 - Math.round(web.sMeterFraction(ssdr.shown) * 100)) + "%";
+      if (ssdr.sampling) ssdrCalSample(fresh);
+    }
+    function ssdrCalSample(fresh) {
+      const rig = (client.state && client.state.rig) || {}, ptt = (client.state && client.state.ptt) || {};
+      const why = sdrx.calRefusal(client.sdrState, rig, !!client.sdrListening, (ptt.state || "RX") === "RX");
+      if (why) { ssdr.sampling = null; ui.log(I18N.t("ui.sdr_cal_refused_" + why), "warn"); ssdrCalRender(); return; }
+      if (fresh) ssdr.sampling.pairs.push([rig.strength_db, ssdrUncal()]);
+      if (Date.now() < ssdr.sampling.until) return;
+      const db = sdrx.calOffset(ssdr.sampling.pairs);
+      ssdr.sampling = null;
+      if (db === null) ui.log(I18N.t("ui.sdr_cal_no_signal"), "warn");
+      else {
+        ssdr.cal = { db, f: (client.sdrState || {}).dfreq, at: Date.now() };
+        try { store.set(ssdrCalKey(), JSON.stringify(ssdr.cal)); } catch (e) { /* sans stockage : calage pour cette page */ }
+        ui.log(I18N.t("ui.sdr_cal_done", { db: (db > 0 ? "+" : "") + db }), "ok");
+      }
+      ssdrCalRender();
+    }
+    function ssdrCalRender() {
+      ssdrCalLoad();
+      const c = ssdr.cal;
+      $("sdr-cal").disabled = !!ssdr.sampling;
+      $("sdr-cal-clear").hidden = !c || !!ssdr.sampling;
+      $("sdr-cal-info").textContent = ssdr.sampling ? I18N.t("ui.sdr_cal_running")
+        : c ? I18N.t("ui.sdr_cal_info", { db: (c.db > 0 ? "+" : "") + c.db, freq: Number.isFinite(c.f) ? sdrx.formatMHz(c.f, 3) : "?" })
+        : I18N.t("ui.sdr_cal_none");
+    }
+    $("sdr-cal").addEventListener("click", () => {
+      const rig = (client.state && client.state.rig) || {}, ptt = (client.state && client.state.ptt) || {};
+      const why = sdrx.calRefusal(client.sdrState, rig, !!client.sdrListening, (ptt.state || "RX") === "RX");
+      if (why) { ui.log(I18N.t("ui.sdr_cal_refused_" + why), "warn"); return; }
+      ssdr.sampling = { until: Date.now() + 3000, pairs: [] };               // 3 s de mesures des deux côtés
+      ssdrCalRender();
+    });
+    $("sdr-cal-clear").addEventListener("click", () => {
+      ssdr.cal = null;
+      try { store.set(ssdrCalKey(), ""); } catch (e) { /* sans stockage */ }
+      ssdrCalRender();
+    });
+    function sdrWatchSync() {
+      /* Lignes du SDR reçues si la rubrique est ouverte (waterfall) OU pendant l'écoute (S-SDR de l'afficheur). */
+      if (!sdrOffered()) return;
+      client.sdrWatch($("sec-sdr").open || !!client.sdrListening)
+        .then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); }).catch(() => {});
     }
     function mixRender(state) {
       /* Affiche ou retire les éléments du SDR dans l'afficheur, selon l'état du module et de l'écoute. */
@@ -3135,6 +3202,8 @@
       $("mix-sdr-icon").hidden = listening;
       const sdrTip = I18N.t(listening ? "ui.mix_sdr_stop" : "ui.mix_sdr_start");
       $("mix-sdr").title = sdrTip; $("mix-sdr").setAttribute("aria-label", sdrTip);
+      ssdrCalRender();
+      sdrWatchSync();
       if (!mix.timer) mix.timer = setInterval(mixTick, 100);
     }
     $("mix-trx").addEventListener("click", () => {
@@ -3205,6 +3274,7 @@
       }
     }
     function sdrDraw(data) {
+      if (data && Number.isFinite(data.l)) { ssdr.raw = data.l; ssdr.at = Date.now(); }   // S-SDR (écoute seulement)
       if (!sdrOffered() || !$("sec-sdr").open || !wf) return;
       const values = sdrx.decodeLine(data.d);
       if (!values || !values.length) return;
@@ -3288,7 +3358,7 @@
       $("sec-sdr").addEventListener("toggle", () => {
         if (!sdrOffered()) return;
         if (sdrSpotBook && $("sec-sdr").open) sdrSpotBook.clear();                  // la station rejoue les spots à l'ouverture
-        client.sdrWatch($("sec-sdr").open).then((res) => { if (res && !res.ok) ui.log(web.reasonText(res.reason, res.detail, res.ort), "warn"); }).catch(() => {});
+        sdrWatchSync();                                                              // écoute en cours : lignes gardées (S-SDR)
       });
       const sdrCenterSet = () => {
         const hz = sdrx.parseMHz($("sdr-center").value);
