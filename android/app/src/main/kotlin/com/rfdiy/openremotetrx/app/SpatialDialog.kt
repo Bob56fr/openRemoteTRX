@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.SpatialHub
 import com.rfdiy.openremotetrx.logic.Spatials
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlin.math.roundToInt
 
 /** Réglages de la spatialisation stéréo de la réception (appui long sur ST), comme la rubrique de la page. */
@@ -41,17 +42,16 @@ fun SpatialDialog(onDismiss: () -> Unit) {
     fun save(next: com.rfdiy.openremotetrx.logic.SpatialSettings) = SpatialHub.save(context, next)
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
-        title = { Text("Spatialisation (stéréo)") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
+        title = { Text(Tr.t("spatialdialog.title")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    "Rend l'audio reçu stéréo au casque : confort d'écoute, voix au centre, souffle autour. Traité sur ce " +
-                        "téléphone seulement : la station n'envoie toujours qu'un son mono.",
+                    Tr.t("spatialdialog.intro"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Spatialisation en service", Modifier.weight(1f))
+                    Text(Tr.t("spatialdialog.enabled"), Modifier.weight(1f))
                     AppSwitch(checked = s.on, onCheckedChange = { save(s.copy(on = it)) })
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -59,36 +59,37 @@ fun SpatialDialog(onDismiss: () -> Unit) {
                         CompactChip(p.label, onClick = { save(Spatials.choose(s, key).copy(on = true)) }, selected = s.preset == key)
                     }
                 }
-                Text("Intensité ${s.width} %")
+                Text(Tr.t("spatialdialog.width", "value" to s.width))
                 Slider(s.width.toFloat(), { save(s.copy(width = it.roundToInt())) }, valueRange = 0f..Spatials.WIDTH_MAX.toFloat())
-                Text("Présence voix ${s.presence} %")
+                Text(Tr.t("spatialdialog.presence", "value" to s.presence))
                 Slider(s.presence.toFloat(), { save(s.copy(presence = it.roundToInt())) }, valueRange = 0f..100f)
-                Text("Équilibre G/D " + if (s.balance == 0) "centre" else (if (s.balance < 0) "G " else "D ") + kotlin.math.abs(s.balance))
+                Text(Tr.t("spatialdialog.balance", "value" to (if (s.balance == 0) Tr.t("spatialdialog.balance_center")
+                    else Tr.t(if (s.balance < 0) "spatialdialog.balance_left" else "spatialdialog.balance_right", "amount" to kotlin.math.abs(s.balance)))))
                 Slider(s.balance.toFloat(), { save(s.copy(balance = it.roundToInt())) }, valueRange = -100f..100f)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = {}, modifier = Modifier.pointerInput(Unit) {
                         detectTapGestures(onPress = { SpatialHub.setAb(true); tryAwaitRelease(); SpatialHub.setAb(false) })
-                    }) { Text(if (ui.ab) "MONO" else "A/B (maintenir)") }
+                    }) { Text(if (ui.ab) "MONO" else Tr.t("spatialdialog.ab_hold")) }
                     Spacer(Modifier.width(8.dp))
-                    OutlinedButton(onClick = { save(Spatials.choose(s, s.preset)) }, enabled = Spatials.isModified(s)) { Text("Valeurs du préréglage") }
+                    OutlinedButton(onClick = { save(Spatials.choose(s, s.preset)) }, enabled = Spatials.isModified(s)) { Text(Tr.t("spatialdialog.preset_values")) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Sortie mono (pas de casque)", Modifier.weight(1f))
+                    Text(Tr.t("spatialdialog.mono_out"), Modifier.weight(1f))
                     AppSwitch(checked = s.monoOut, onCheckedChange = { save(s.copy(monoOut = it)) })
                 }
                 if (ui.playing) {
-                    Text("Corrélation G/D ${"%.2f".format(ui.correlation)} (1 = mono)", style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("spatialdialog.correlation", "value" to "%.2f".format(ui.correlation)), style = MaterialTheme.typography.bodySmall)
                     LinearProgressIndicator(progress = { (1 - ui.correlation).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                 }
                 Text(
-                    "État : " + when {
+                    Tr.t("spatialdialog.state", "state" to when {
                         ui.failed.isNotEmpty() -> ui.failed
-                        !s.on -> "éteinte (son mono)"
+                        !s.on -> Tr.t("spatialdialog.state_off")
                         ui.monoReason.isNotEmpty() -> ui.monoReason
-                        s.preset == "mono" -> "préréglage Mono (comparaison)"
-                        ui.playing -> "« ${Spatials.label(s)} »" + if (ui.ab) " — A/B : MONO" else ""
-                        else -> "« ${Spatials.label(s)} » dès la connexion"
-                    } + ".",
+                        s.preset == "mono" -> Tr.t("spatialdialog.state_mono")
+                        ui.playing -> Tr.t(if (ui.ab) "spatialdialog.state_playing_ab" else "spatialdialog.state_playing", "preset" to Spatials.label(s))
+                        else -> Tr.t("spatialdialog.state_waiting", "preset" to Spatials.label(s))
+                    }),
                     style = MaterialTheme.typography.titleSmall,
                 )
             }

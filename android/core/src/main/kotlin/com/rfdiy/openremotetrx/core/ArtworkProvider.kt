@@ -30,7 +30,7 @@ class ArtworkProvider : ContentProvider() {
     }
 
     override fun openAssetFile(uri: Uri, mode: String): AssetFileDescriptor {
-        if (mode != "r") throw SecurityException("lecture seule")
+        if (mode != "r") throw SecurityException("lecture seule") // i18n-ok
         val ctx = context ?: throw FileNotFoundException()
         val key = uri.lastPathSegment?.takeIf { Artwork.isKey(it) } ?: throw FileNotFoundException()
         for (k in listOf(key, Artwork.LOGO).distinct()) {
@@ -66,7 +66,7 @@ class ArtworkProvider : ContentProvider() {
          */
         fun uri(context: Context, key: String): Uri {
             val v = userFile(context, key)?.lastModified() ?: 0L
-            return Uri.parse("content://${context.packageName}.artwork/$key?v=$v")
+            return Uri.parse("content://${context.packageName}.artwork/$key?v=$v") // i18n-ok
         }
     }
 }

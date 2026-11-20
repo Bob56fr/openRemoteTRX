@@ -44,6 +44,7 @@ import androidx.core.content.FileProvider
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.Monitoring
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import java.io.File
 
 /**
@@ -68,47 +69,45 @@ fun MonitoringScreen(rig: RigState, onClose: () -> Unit) {
         Surface(Modifier.fillMaxSize(), color = Page.FOND) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Monitoring", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    Text(Tr.t("monitoringscreen.title"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                     CompactChip("⟳", onClick = { RigHub.monitoringRefresh() })
-                    TextButton(onClick = onClose) { Text("Fermer") }
+                    TextButton(onClick = onClose) { Text(Tr.t("common.close")) }
                 }
                 Text(m.status, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
                 if (m.notice.isNotEmpty()) Text(m.notice, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedTextField(pseudo, { pseudo = it.take(16) }, label = { Text("Pseudo") }, singleLine = true, modifier = Modifier.weight(1f))
-                    CompactChip("Enregistrer", onClick = { RigHub.monitoringAction("pseudo", mapOf("pseudo" to pseudo.trim())) })
+                    OutlinedTextField(pseudo, { pseudo = it.take(16) }, label = { Text(Tr.t("monitoringscreen.pseudo")) }, singleLine = true, modifier = Modifier.weight(1f))
+                    CompactChip(Tr.t("common.save"), onClick = { RigHub.monitoringAction("pseudo", mapOf("pseudo" to pseudo.trim())) })
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedButton(onClick = { RigHub.monitoringAction("invite") }) { Text("Aider quelqu'un") }
-                    OutlinedButton(onClick = { join = true }) { Text("Être aidé : j'ai un code") }
+                    OutlinedButton(onClick = { RigHub.monitoringAction("invite") }) { Text(Tr.t("monitoringscreen.help_someone")) }
+                    OutlinedButton(onClick = { join = true }) { Text(Tr.t("monitoringscreen.be_helped_code")) }
                 }
                 if (m.loaded && links.isEmpty()) {
-                    Text("Aucune liaison : aidez quelqu'un (code à lui dicter) ou faites-vous aider (code reçu).", color = Page.TEXTE_2)
+                    Text(Tr.t("monitoringscreen.no_link"), color = Page.TEXTE_2)
                 }
                 for (l in links) LinkCard(l) { action -> onAction(action, l) { dialog = it } }
-                Text("La station aidée envoie ce que SON opérateur a choisi, toujours masqué et chiffré par le relais. La station " +
-                     "qui aide ne peut que lire et demander ; rien ne commande le poste.", style = MaterialTheme.typography.bodySmall,
+                Text(Tr.t("monitoringscreen.privacy_note"), style = MaterialTheme.typography.bodySmall,
                      color = Page.TEXTE_2)
             }
         }
     }
 
     m.code?.let { code ->
-        AlertDialog(onDismissRequest = { RigHub.monitoringDismiss() }, title = { Text("Aider quelqu'un") },
+        AlertDialog(onDismissRequest = { RigHub.monitoringDismiss() }, title = { Text(Tr.t("monitoringscreen.help_someone")) },
             text = {
                 Column {
                     Text(code, fontSize = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    Text("Dictez ce code à l'opérateur que vous aidez (valable 15 minutes, une seule fois). Quand il l'a tapé, " +
-                         "sa station apparaît ici : comparez alors les 6 chiffres de l'empreinte.")
+                    Text(Tr.t("monitoringscreen.dictate_code"))
                 }
-            }, confirmButton = { TextButton(onClick = { RigHub.monitoringDismiss() }) { Text("Fermer") } })
+            }, confirmButton = { TextButton(onClick = { RigHub.monitoringDismiss() }) { Text(Tr.t("common.close")) } })
     }
     if (join) JoinDialog { join = false }
     m.joined?.let { link -> FingerprintDialog(link) { RigHub.monitoringDismiss() } }
     m.events?.let { list ->
-        AlertDialog(onDismissRequest = { RigHub.monitoringDismiss() }, title = { Text("Derniers événements") },
-            text = { Column { if (list.isEmpty()) Text("Aucun événement reçu.") else list.forEach { Text(it, style = MaterialTheme.typography.bodySmall) } } },
-            confirmButton = { TextButton(onClick = { RigHub.monitoringDismiss() }) { Text("Fermer") } })
+        AlertDialog(onDismissRequest = { RigHub.monitoringDismiss() }, title = { Text(Tr.t("monitoringscreen.last_events")) },
+            text = { Column { if (list.isEmpty()) Text(Tr.t("monitoringscreen.no_events")) else list.forEach { Text(it, style = MaterialTheme.typography.bodySmall) } } },
+            confirmButton = { TextButton(onClick = { RigHub.monitoringDismiss() }) { Text(Tr.t("common.close")) } })
     }
     dialog?.let { (kind, link) ->
         val close = { dialog = null }
@@ -133,10 +132,13 @@ private fun onAction(action: String, l: Monitoring.Link, open: (Pair<String, Mon
     }
 }
 
-private val LABELS = mapOf(
-    "fingerprint" to "Comparer l'empreinte", "assist" to "Demander l'assistance", "report" to "Demander le rapport",
-    "download" to "Télécharger le rapport", "answer" to "Répondre à la demande", "send_report" to "Envoyer mon rapport",
-    "profile" to "Ce qui est envoyé", "pause" to "Pause", "resume" to "Reprendre", "end" to "Terminer", "events" to "Événements",
+/** Libellés des actions, relus à l'affichage (langue en cours). */
+private val LABELS: Map<String, String> get() = mapOf(
+    "fingerprint" to Tr.t("monitoringscreen.action_fingerprint"), "assist" to Tr.t("monitoringscreen.action_assist"),
+    "report" to Tr.t("monitoringscreen.action_report"), "download" to Tr.t("monitoringscreen.action_download"),
+    "answer" to Tr.t("monitoringscreen.action_answer"), "send_report" to Tr.t("monitoringscreen.action_send_report"),
+    "profile" to Tr.t("monitoringscreen.action_profile"), "pause" to Tr.t("monitoringscreen.action_pause"),
+    "resume" to Tr.t("monitoringscreen.action_resume"), "end" to Tr.t("common.finish"), "events" to Tr.t("monitoringscreen.action_events"),
 )
 
 @Composable
@@ -169,7 +171,7 @@ private fun ProfileChoice(onChange: (Map<String, Any>) -> Unit) {
             RadioButton(choice == key, onClick = { choice = key }); Text(label, style = MaterialTheme.typography.bodySmall)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(freq, onCheckedChange = { freq = it }); Text("Envoyer aussi la fréquence et le mode du poste", style = MaterialTheme.typography.bodySmall)
+            Checkbox(freq, onCheckedChange = { freq = it }); Text(Tr.t("monitoringscreen.send_frequency"), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -177,13 +179,13 @@ private fun ProfileChoice(onChange: (Map<String, Any>) -> Unit) {
 @Composable
 private fun FingerprintDialog(link: Monitoring.Link, onClose: () -> Unit) {
     var profile by remember { mutableStateOf(Monitoring.profileMap("diagnostic", false)) }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Empreinte de la liaison avec ${link.pseudo}") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.fingerprint_title", "pseudo" to link.pseudo)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(link.fingerprint.ifEmpty { "?" }, fontSize = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                Text("Comparez ces 6 chiffres avec ceux de votre correspondant, de vive voix ou par message.")
+                Text(Tr.t("monitoringscreen.compare_digits"))
                 if (link.role == "emitter") {
-                    Text("Si les chiffres sont les mêmes, choisissez ce que vous envoyez (rien ne part avant) :")
+                    Text(Tr.t("monitoringscreen.choose_profile"))
                     ProfileChoice { profile = it }
                 }
             }
@@ -195,10 +197,10 @@ private fun FingerprintDialog(link: Monitoring.Link, onClose: () -> Unit) {
                     if (link.role == "emitter") put("profile", profile)
                 })
                 onClose()
-            }) { Text("Mêmes chiffres : confirmer") }
+            }) { Text(Tr.t("monitoringscreen.same_digits")) }
         },
         dismissButton = {
-            TextButton(onClick = { RigHub.monitoringAction("end", mapOf("peer" to link.peer)); onClose() }) { Text("Chiffres différents : refuser") }
+            TextButton(onClick = { RigHub.monitoringAction("end", mapOf("peer" to link.peer)); onClose() }) { Text(Tr.t("monitoringscreen.different_digits")) }
         })
 }
 
@@ -206,67 +208,66 @@ private fun FingerprintDialog(link: Monitoring.Link, onClose: () -> Unit) {
 private fun JoinDialog(onClose: () -> Unit) {
     var code by remember { mutableStateOf("") }
     val ok = Monitoring.normalizeCode(code)
-    AlertDialog(onDismissRequest = onClose, title = { Text("Être aidé") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.be_helped")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("La station qui vous aide recevra ce que VOUS choisissez (santé de la machine, état du poste, codes d'erreur), " +
-                     "toujours masqué. Elle ne pourra RIEN commander. Vous pourrez tout arrêter à tout moment.")
-                OutlinedTextField(code, { code = it.take(16) }, label = { Text("Code dicté par la personne qui vous aide") }, singleLine = true)
+                Text(Tr.t("monitoringscreen.join_text"))
+                OutlinedTextField(code, { code = it.take(16) }, label = { Text(Tr.t("monitoringscreen.code_label")) }, singleLine = true)
             }
         },
-        confirmButton = { TextButton(enabled = ok != null, onClick = { RigHub.monitoringAction("join", mapOf("code" to ok)); onClose() }) { Text("Rejoindre") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } })
+        confirmButton = { TextButton(enabled = ok != null, onClick = { RigHub.monitoringAction("join", mapOf("code" to ok)); onClose() }) { Text(Tr.t("monitoringscreen.join")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } })
 }
 
 @Composable
 private fun AssistDialog(link: Monitoring.Link, onClose: () -> Unit) {
     var hours by remember { mutableStateOf(2) }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Demander le mode assistance") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.assist_title")) },
         text = {
             Column {
-                Text("Nouvelles toutes les 30 secondes et tous les événements, pendant la durée choisie. L'opérateur aidé doit l'accepter.")
+                Text(Tr.t("monitoringscreen.assist_text"))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     for (h in Monitoring.HOURS) CompactChip("$h h", onClick = { hours = h }, selected = hours == h)
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("request_assist", mapOf("peer" to link.peer, "duration_s" to hours * 3600)); onClose() }) { Text("Demander") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } })
+        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("request_assist", mapOf("peer" to link.peer, "duration_s" to hours * 3600)); onClose() }) { Text(Tr.t("monitoringscreen.request")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } })
 }
 
 @Composable
 private fun AnswerDialog(link: Monitoring.Link, onClose: () -> Unit) {
     val req = link.requestText
     if (req == null) { LaunchedEffect(Unit) { onClose() }; return }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Demande de ${link.pseudo}") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.request_from", "pseudo" to link.pseudo)) },
         text = { Text(req) },
-        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("answer", mapOf("peer" to link.peer, "accept" to true)); onClose() }) { Text("Accepter") } },
-        dismissButton = { TextButton(onClick = { RigHub.monitoringAction("answer", mapOf("peer" to link.peer, "accept" to false)); onClose() }) { Text("Refuser") } })
+        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("answer", mapOf("peer" to link.peer, "accept" to true)); onClose() }) { Text(Tr.t("monitoringscreen.accept")) } },
+        dismissButton = { TextButton(onClick = { RigHub.monitoringAction("answer", mapOf("peer" to link.peer, "accept" to false)); onClose() }) { Text(Tr.t("monitoringscreen.refuse")) } })
 }
 
 @Composable
 private fun ProfileDialog(link: Monitoring.Link, onClose: () -> Unit) {
     var profile by remember { mutableStateOf(Monitoring.profileMap("diagnostic", false)) }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Ce que vous envoyez à ${link.pseudo}") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.profile_title", "pseudo" to link.pseudo)) },
         text = { ProfileChoice { profile = it } },
-        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("profile", mapOf("peer" to link.peer, "profile" to profile)); onClose() }) { Text("Enregistrer") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } })
+        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("profile", mapOf("peer" to link.peer, "profile" to profile)); onClose() }) { Text(Tr.t("common.save")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } })
 }
 
 @Composable
 private fun EndDialog(link: Monitoring.Link, onClose: () -> Unit) {
     var purge by remember { mutableStateOf(true) }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Terminer la liaison") },
+    AlertDialog(onDismissRequest = onClose, title = { Text(Tr.t("monitoringscreen.end_title")) },
         text = {
             Column {
-                Text("Terminer la liaison avec ${link.pseudo} ? Immédiat ; la reprendre demandera un nouveau code.")
+                Text(Tr.t("monitoringscreen.end_text", "pseudo" to link.pseudo))
                 if (link.role == "receiver") Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(purge, onCheckedChange = { purge = it }); Text("Effacer aussi ce qui a été reçu de cette station")
+                    Checkbox(purge, onCheckedChange = { purge = it }); Text(Tr.t("monitoringscreen.purge"))
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("end", mapOf("peer" to link.peer, "purge" to (link.role == "receiver" && purge))); onClose() }) { Text("Terminer") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } })
+        confirmButton = { TextButton(onClick = { RigHub.monitoringAction("end", mapOf("peer" to link.peer, "purge" to (link.role == "receiver" && purge))); onClose() }) { Text(Tr.t("common.finish")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } })
 }
 
 /** Rapport de dépannage reçu : partagé par les applications du téléphone (courriel, messagerie, fichiers). */
@@ -277,6 +278,6 @@ private fun shareReport(context: Context, name: String, bytes: ByteArray) {
     file.writeBytes(bytes)
     val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
     val send = Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_SUBJECT, "Rapport de dépannage OpenRemoteTRX").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Ouvrir ou envoyer le rapport"))
+        .putExtra(Intent.EXTRA_SUBJECT, Tr.t("monitoringscreen.report_subject")).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(send, Tr.t("monitoringscreen.report_chooser")))
 }

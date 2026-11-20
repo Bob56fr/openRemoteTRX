@@ -93,6 +93,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -128,24 +129,24 @@ internal fun LevelsDialog(ranges: Map<String, List<Double>>, levels: Map<String,
     val dragging = remember { mutableStateMapOf<String, Float>() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Niveaux du poste") },
+        title = { Text(Tr.t("rigdialogs.levels_title")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 for ((name, range) in ranges) {
                     val value = dragging[name] ?: (levels[name] ?: range[0]).toFloat()
                     val steps = if (range[2] > 0) (((range[1] - range[0]) / range[2]).roundToInt() - 1).coerceAtLeast(0) else 0
-                    Text("${if (name == "NR") "Réducteur de bruit (NR)" else "Antiparasite (NB)"} : ${levelText(value.toDouble(), range)}")
+                    Text(Tr.t("rigdialogs.level_line", "name" to (if (name == "NR") Tr.t("rigdialogs.nr_label") else Tr.t("rigdialogs.nb_label")), "value" to levelText(value.toDouble(), range)))
                     Slider(
                         value = value, onValueChange = { dragging[name] = it }, enabled = enabled,
                         valueRange = range[0].toFloat()..range[1].toFloat(), steps = steps,
                         onValueChangeFinished = { dragging.remove(name)?.let { RigHub.setLevel(name, it.toDouble()) } },
                     )
                 }
-                if (ranges.isEmpty()) Text("Le poste ne déclare pas de niveau réglable pour NR ni NB.")
-                if (!enabled) Text("Réglages verrouillés pendant l'émission.", color = WARN)
+                if (ranges.isEmpty()) Text(Tr.t("rigdialogs.no_levels"))
+                if (!enabled) Text(Tr.t("rigdialogs.locked_tx"), color = WARN)
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
     )
 }
 
@@ -161,14 +162,14 @@ internal fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -
     val nameOk = name.isNotBlank() && name.trim().length <= RigSession.MEMORY_NAME_MAX
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (edit.id == null) "Nouvelle mémoire" else "Mémoire") },
+        title = { Text(if (edit.id == null) Tr.t("rigdialogs.new_memory") else Tr.t("rigdialogs.memory")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Nom") }, singleLine = true)
+                OutlinedTextField(name, { name = it }, label = { Text(Tr.t("rigdialogs.name")) }, singleLine = true)
                 OutlinedTextField(
-                    freq, { freq = it }, label = { Text("Fréquence (7074 kHz, 14.205 MHz)") }, singleLine = true,
+                    freq, { freq = it }, label = { Text(Tr.t("rigdialogs.frequency_label")) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    supportingText = { Text(hz?.let { Format.frequency(it) } ?: "Fréquence invalide") },
+                    supportingText = { Text(hz?.let { Format.frequency(it) } ?: Tr.t("rigdialogs.invalid_frequency")) },
                 )
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (m in modes.ifEmpty { listOfNotNull(edit.mode) }) {
@@ -178,12 +179,12 @@ internal fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AppSwitch(checked = favorite, onCheckedChange = { favorite = it })
                     Spacer(Modifier.width(8.dp))
-                    Text("Favorite (en tête de liste)")
+                    Text(Tr.t("rigdialogs.favorite"))
                 }
                 if (edit.id != null) {
                     TextButton(onClick = {
                         if (deleteArmed) { RigHub.deleteMemory(edit.id); onDismiss() } else deleteArmed = true
-                    }) { Text(if (deleteArmed) "Confirmer la suppression" else "Supprimer", color = MaterialTheme.colorScheme.error) }
+                    }) { Text(if (deleteArmed) Tr.t("rigdialogs.confirm_delete") else Tr.t("common.delete"), color = MaterialTheme.colorScheme.error) }
                 }
             }
         },
@@ -191,9 +192,9 @@ internal fun MemoryDialog(edit: MemoryEdit, modes: List<String>, onDismiss: () -
             TextButton(onClick = {
                 RigHub.saveMemory(name.trim(), hz!!, mode, favorite, edit.id)
                 onDismiss()
-            }, enabled = nameOk && hz != null && mode.isNotEmpty()) { Text("Enregistrer") }
+            }, enabled = nameOk && hz != null && mode.isNotEmpty()) { Text(Tr.t("common.save")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -210,22 +211,22 @@ internal fun FrequencyDialog(current: Long?, onDismiss: () -> Unit, onSet: (Long
     val parsed = Radio.parseFrequencyEntry(text)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Fréquence") },
+        title = { Text(Tr.t("rigdialogs.frequency")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Actuelle : ${Radio.formatIcom(current)}", style = MaterialTheme.typography.bodySmall)
+                Text(Tr.t("rigdialogs.current", "frequency" to Radio.formatIcom(current)), style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(
-                    text, { text = it }, singleLine = true, label = { Text("7074 (kHz) ou 14.205 (MHz)") },
+                    text, { text = it }, singleLine = true, label = { Text(Tr.t("rigdialogs.frequency_hint")) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
                 Text(
-                    if (text.isBlank()) "" else parsed?.let { "= ${Format.frequency(it)}" } ?: "Fréquence invalide",
+                    if (text.isBlank()) "" else parsed?.let { "= ${Format.frequency(it)}" } ?: Tr.t("rigdialogs.invalid_frequency"),
                     color = if (parsed == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { parsed?.let(onSet) }, enabled = parsed != null) { Text("Aller") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        confirmButton = { TextButton(onClick = { parsed?.let(onSet) }, enabled = parsed != null) { Text(Tr.t("rigdialogs.go")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -238,10 +239,10 @@ internal fun BandsDialog(current: List<Band>, onDismiss: () -> Unit, onSave: (Li
     val checked = remember { mutableStateMapOf<String, Boolean>().apply { for (b in Radio.BANDS) put(b.key, b in current && current.size < Radio.BANDS.size) } }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Bandes affichées") },
+        title = { Text(Tr.t("rigdialogs.bands_title")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text("Cochez vos bandes et mettez-les dans l'ordre voulu. Aucune cochée : toutes.", style = MaterialTheme.typography.bodySmall)
+                Text(Tr.t("rigdialogs.bands_hint"), style = MaterialTheme.typography.bodySmall)
                 for ((i, band) in order.withIndex()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = checked[band.key] == true, onCheckedChange = { checked[band.key] = it })
@@ -252,7 +253,7 @@ internal fun BandsDialog(current: List<Band>, onDismiss: () -> Unit, onSave: (Li
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(order.filter { checked[it.key] == true }) }) { Text("Enregistrer") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        confirmButton = { TextButton(onClick = { onSave(order.filter { checked[it.key] == true }) }) { Text(Tr.t("common.save")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.cancel")) } },
     )
 }

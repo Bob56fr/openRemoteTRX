@@ -12,6 +12,7 @@ import android.os.Build
 import com.rfdiy.openremotetrx.logic.Spatial
 import com.rfdiy.openremotetrx.logic.SpatialSettings
 import com.rfdiy.openremotetrx.logic.Spatials
+import com.rfdiy.openremotetrx.logic.Tr
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,7 +83,7 @@ object SpatialHub {
         val scr = VoiceHub.ui.value.scrambler
         if (s.on && !wasOn && scr.rx) {
             VoiceHub.setScrambler(context, scr.copy(rx = false))
-            RigHub.service?.onRig { session, now -> session.note(now, "Spatialisation ST en service : débrouillage du scrambler coupé.") }
+            RigHub.service?.onRig { session, now -> session.note(now, Tr.t("spatialhub.descrambler_off")) }
         }
         apply()
     }
@@ -109,8 +110,8 @@ object SpatialHub {
 
     private fun monoReason(): String {
         val s = _ui.value.settings
-        if (s.monoOut) return "sortie mono choisie"
-        if (car) return "voiture : toujours mono"
+        if (s.monoOut) return Tr.t("spatialhub.mono_chosen")
+        if (car) return Tr.t("spatialhub.car_mono")
         val am = app?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return ""
         val devices: List<AudioDeviceInfo> = if (Build.VERSION.SDK_INT >= 33) {
             am.getAudioDevicesForAttributes(StereoOut.ATTRIBUTES)
@@ -119,9 +120,9 @@ object SpatialHub {
                 .sortedByDescending { it.type in StereoOut.HEADPHONES }.take(1)
         }
         val d = devices.firstOrNull() ?: return ""
-        if (d.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) return "casque Bluetooth en mode appel : stéréo indisponible"
+        if (d.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) return Tr.t("spatialhub.bt_call_mode")
         val counts = d.channelCounts
-        if (counts.isNotEmpty() && counts.max() < 2) return "sortie mono (${d.productName})"
+        if (counts.isNotEmpty() && counts.max() < 2) return Tr.t("spatialhub.mono_output", "device" to d.productName)
         return ""
     }
 
@@ -184,7 +185,7 @@ object SpatialHub {
                     .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
                     .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
-                if (t.state != AudioTrack.STATE_INITIALIZED) { t.release(); return "Sortie stéréo indisponible sur ce téléphone." }
+                if (t.state != AudioTrack.STATE_INITIALIZED) { t.release(); return Tr.t("spatialhub.stereo_unavailable") }
                 spatial = Spatial(RATE, wanted).also { it.startDry() }
                 val prefill = FloatArray(RATE / 50 * 2)                      // 20 ms de silence : marge contre les trous
                 t.write(prefill, 0, prefill.size, AudioTrack.WRITE_NON_BLOCKING)
@@ -192,10 +193,10 @@ object SpatialHub {
                 track = t
                 running = true
                 dropped = 0; blocks = 0; sumSq = 0.0; lastLog = System.nanoTime()
-                android.util.Log.i("SpatialHub", "sortie stéréo ouverte (tampon ${t.bufferSizeInFrames} échantillons)")
+                android.util.Log.i("SpatialHub", "sortie stéréo ouverte (tampon ${t.bufferSizeInFrames} échantillons)") // i18n-ok
                 null
             } catch (e: RuntimeException) {
-                "Sortie stéréo indisponible (${e.javaClass.simpleName})."
+                Tr.t("spatialhub.stereo_failed", "error" to e.javaClass.simpleName)
             }
         }
 
@@ -204,7 +205,7 @@ object SpatialHub {
             val t = track ?: return
             track = null
             runCatching { t.pause(); t.flush(); t.release() }
-            android.util.Log.i("SpatialHub", "sortie stéréo fermée")
+            android.util.Log.i("SpatialHub", "sortie stéréo fermée") // i18n-ok
         }
 
         /** Fil audio de WebRTC, blocs de 10 ms, 16 bits ; avant le volume de la piste. */
@@ -213,7 +214,7 @@ object SpatialHub {
             val sp = spatial
             if (!running || t == null || sp == null || bits != 16 || channels < 1 || frames <= 0) return@AudioTrackSink
             try {
-                if (rate != RATE) { logOnce("débit $rate Hz inattendu : bloc ignoré"); return@AudioTrackSink }
+                if (rate != RATE) { logOnce("débit $rate Hz inattendu : bloc ignoré"); return@AudioTrackSink } // i18n-ok
                 val pcm = data.duplicate().order(ByteOrder.nativeOrder())
                 if (mono.size < frames) { mono = FloatArray(frames); stereo = FloatArray(2 * frames) }
                 for (f in 0 until frames) {
@@ -232,12 +233,12 @@ object SpatialHub {
                 if (now - lastPublish > 250_000_000L) { lastPublish = now; publishCorrelation(sp.correlation) }
                 if (now - lastLog > 5_000_000_000L) {
                     val rms = if (blocks > 0) kotlin.math.sqrt(sumSq / (blocks * frames)) else 0.0
-                    android.util.Log.i("SpatialHub", "blocs $blocks, $channels voie(s), niveau reçu ${"%.4f".format(rms)}, " +
-                        "échantillons perdus $dropped, trous ${t.underrunCount}, corrélation ${"%.2f".format(sp.correlation)}")
+                    android.util.Log.i("SpatialHub", "blocs $blocks, $channels voie(s), niveau reçu ${"%.4f".format(rms)}, " + // i18n-ok
+                        "échantillons perdus $dropped, trous ${t.underrunCount}, corrélation ${"%.2f".format(sp.correlation)}") // i18n-ok
                     lastLog = now; sumSq = 0.0; blocks = 0
                 }
             } catch (e: RuntimeException) {
-                logOnce("bloc perdu : ${e.javaClass.simpleName}")
+                logOnce("bloc perdu : ${e.javaClass.simpleName}") // i18n-ok
             }
         }
 

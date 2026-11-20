@@ -61,6 +61,7 @@ import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.Palette
 import com.rfdiy.openremotetrx.logic.SpotLabel
 import com.rfdiy.openremotetrx.logic.Spots
+import com.rfdiy.openremotetrx.logic.Tr
 import java.util.Locale
 import com.rfdiy.openremotetrx.protocol.SpectrumFrame
 
@@ -158,14 +159,14 @@ fun HfScopeView(
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Spectre HF", style = MaterialTheme.typography.titleSmall)
-            frame?.let { Text(HfScope.spanLabel(it.lowHz, it.highHz) + if (it.outOfRange) " — hors plage" else "", style = MaterialTheme.typography.labelMedium) }
+            Text(Tr.t("hfscopeview.title"), style = MaterialTheme.typography.titleSmall)
+            frame?.let { Text(HfScope.spanLabel(it.lowHz, it.highHz) + if (it.outOfRange) Tr.t("hfscopeview.out_of_range") else "", style = MaterialTheme.typography.labelMedium) }
             Spacer(Modifier.weight(1f))
             // Cluster DX (seulement si le module parle) : voyant de santé, spots affichés ou non, liste de la bande
             if (health != null) {
                 Box(Modifier.size(12.dp).background(HEALTH_COLORS[health] ?: Color.Gray, CircleShape))
-                CompactChip("SPOTS", onClick = { spotsOn = !spotsOn; prefs.edit().putBoolean("spots_on", spotsOn).apply() }, selected = spotsOn)
-                CompactChip("LISTE", onClick = { listAll = true })
+                CompactChip(Tr.t("hfscopeview.spots"), onClick = { spotsOn = !spotsOn; prefs.edit().putBoolean("spots_on", spotsOn).apply() }, selected = spotsOn)
+                CompactChip(Tr.t("hfscopeview.list"), onClick = { listAll = true })
             }
             CompactChip("VFO", onClick = { vfo = !vfo }, selected = vfo)
         }
@@ -299,8 +300,8 @@ fun HfScopeView(
             CompactChip("REF +", onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
             CompactChip(HfScope.gainLabel(gain), onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() })
             CompactChip(HfScope.rangeLabel(range), onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() })
-            CompactChip("Couleurs S", selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
-            if (onClose != null) CompactChip("Fermer", onClick = onClose)
+            CompactChip(Tr.t("hfscopeview.s_colors"), selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
+            if (onClose != null) CompactChip(Tr.t("common.close"), onClick = onClose)
         }
     }
 
@@ -309,26 +310,26 @@ fun HfScopeView(
         val s = spots.firstOrNull { it.id == id }
         AlertDialog(
             onDismissRequest = { cardId = null },
-            title = { Text(s?.dx ?: "Spot") },
+            title = { Text(s?.dx ?: Tr.t("hfscopeview.spot")) },
             text = {
-                if (s == null) Text("Spot expiré ou hors de la bande.")
+                if (s == null) Text(Tr.t("hfscopeview.spot_gone"))
                 else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(Spots.kindLabel(s.kind) + if (s.count > 1) " · ${s.count} spotteurs" else "")
+                    Text(if (s.count > 1) Tr.t("hfscopeview.kind_spotters", "kind" to Spots.kindLabel(s.kind), "count" to s.count) else Spots.kindLabel(s.kind))
                     Text(String.format(Locale.ROOT, "%.1f kHz", s.khz) + " · " + Spots.modeLabel(s), style = MaterialTheme.typography.titleMedium)
                     Text(listOfNotNull(
                         s.country.takeIf { it.isNotEmpty() }?.let { it + if (s.continent.isNotEmpty()) " (${s.continent})" else "" },
-                        "de " + s.de.ifEmpty { "?" },
+                        Tr.t("hfscopeview.from", "call" to s.de.ifEmpty { "?" }),
                         s.time.takeIf { it.length == 4 }?.let { it.take(2) + ":" + it.drop(2) + " UTC" },
                         Spots.ageLabel(Spots.ageSeconds(s, System.currentTimeMillis())),
                     ).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
                     if (s.comment.isNotEmpty()) Text(s.comment, style = MaterialTheme.typography.bodySmall)
-                    if (!canSet) Text("QSY impossible : émission en cours ou station déconnectée.", color = MaterialTheme.colorScheme.error)
+                    if (!canSet) Text(Tr.t("hfscopeview.qsy_impossible"), color = MaterialTheme.colorScheme.error)
                 }
             },
             confirmButton = {
                 TextButton(onClick = { RigHub.qsySpot(id); cardId = null }, enabled = s != null && canSet) { Text("QSY") }
             },
-            dismissButton = { TextButton(onClick = { cardId = null }) { Text("Fermer") } },
+            dismissButton = { TextButton(onClick = { cardId = null }) { Text(Tr.t("common.close")) } },
         )
     }
     if (listAll) {
@@ -337,12 +338,12 @@ fun HfScopeView(
         val band = if (f != null) ui.rig.spots.filter { it.hz in f.lowHz..f.highHz } else ui.rig.spots
         AlertDialog(
             onDismissRequest = { listAll = false },
-            title = { Text("Spots de la bande (${band.size})") },
+            title = { Text(Tr.t("hfscopeview.band_spots", "count" to band.size)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     if (health != null) Text(Spots.healthLabel(health), style = MaterialTheme.typography.bodySmall)
-                    TextButton(onClick = { sortByAge = !sortByAge }) { Text("Tri : " + if (sortByAge) "âge" else "fréquence") }
-                    if (band.isEmpty()) Text("Aucun spot pour l'instant.")
+                    TextButton(onClick = { sortByAge = !sortByAge }) { Text(if (sortByAge) Tr.t("hfscopeview.sort_age") else Tr.t("hfscopeview.sort_freq")) }
+                    if (band.isEmpty()) Text(Tr.t("hfscopeview.no_spot"))
                     for (s in Spots.sortList(band, sortByAge, System.currentTimeMillis())) {
                         Text(
                             String.format(Locale.ROOT, "%.1f", s.khz) + "  " + s.dx + "  " + s.mode.ifEmpty { "?" } + "  " +
@@ -353,13 +354,13 @@ fun HfScopeView(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { listAll = false }) { Text("Fermer") } },
+            confirmButton = { TextButton(onClick = { listAll = false }) { Text(Tr.t("common.close")) } },
         )
     }
     listIds?.let { ids ->
         AlertDialog(
             onDismissRequest = { listIds = null },
-            title = { Text("${ids.size} spots proches") },
+            title = { Text(Tr.t("hfscopeview.near_spots", "count" to ids.size)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     for (s in spots.filter { it.id in ids }) {
@@ -370,7 +371,7 @@ fun HfScopeView(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { listIds = null }) { Text("Fermer") } },
+            confirmButton = { TextButton(onClick = { listIds = null }) { Text(Tr.t("common.close")) } },
         )
     }
 }
@@ -451,11 +452,11 @@ fun MiniWaterfall(ui: RigUi, canSet: Boolean, onHide: () -> Unit) {
     if (settingsOpen) {
         AlertDialog(
             onDismissRequest = { settingsOpen = false },
-            title = { Text("Petit waterfall") },
+            title = { Text(Tr.t("hfscopeview.mini_title")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    frame?.let { Text("Largeur affichée : " + HfScope.spanLabel(it.lowHz, it.highHz), style = MaterialTheme.typography.bodySmall) }
-                    Text("Spectre du poste (réception seulement)", style = MaterialTheme.typography.labelLarge)
+                    frame?.let { Text(Tr.t("hfscopeview.width_shown", "span" to HfScope.spanLabel(it.lowHz, it.highHz)), style = MaterialTheme.typography.bodySmall) }
+                    Text(Tr.t("hfscopeview.rig_spectrum"), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         CompactChip(HfScope.spanSettingLabel(settings.spanHz), onClick = { RigHub.spectrumSet("span", HfScope.nextSpan(settings.spanHz)) }, enabled = canSet)
                         CompactChip(HfScope.modeSettingLabel(settings.mode), onClick = { RigHub.spectrumSet("mode", HfScope.nextMode(settings.mode)) }, enabled = canSet)
@@ -466,18 +467,18 @@ fun MiniWaterfall(ui: RigUi, canSet: Boolean, onHide: () -> Unit) {
                         Text(HfScope.refLabel(settings.refDb), style = MaterialTheme.typography.labelLarge)
                         CompactChip("REF +", onClick = { HfScope.stepRef(settings.refDb, 1.0)?.let { RigHub.spectrumSet("ref", it) } }, enabled = canSet && settings.refDb != null)
                     }
-                    Text("Affichage (téléphone, commun avec le grand spectre)", style = MaterialTheme.typography.labelLarge)
+                    Text(Tr.t("hfscopeview.display"), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         CompactChip(HfScope.gainLabel(gain), onClick = { gain = HfScope.nextGain(gain); prefs.edit().putInt("scope_gain", gain).apply() })
                         CompactChip(HfScope.rangeLabel(range), onClick = { range = HfScope.nextRange(range); prefs.edit().putInt("scope_range", range).apply() })
-                        CompactChip("Couleurs S", selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
+                        CompactChip(Tr.t("hfscopeview.s_colors"), selected = hot, onClick = { hot = !hot; prefs.edit().putBoolean("scope_hot", hot).apply() })
                     }
-                    Text("Couleurs S : jaune au-dessus de S7, orange au-dessus de S9, rouge au-dessus de S9+20 (recalées sur le S-mètre, approximatif).",
+                    Text(Tr.t("hfscopeview.s_colors_help"),
                         style = MaterialTheme.typography.bodySmall)
                 }
             },
-            confirmButton = { TextButton(onClick = { settingsOpen = false }) { Text("Fermer") } },
-            dismissButton = { TextButton(onClick = { settingsOpen = false; onHide() }) { Text("Masquer") } },
+            confirmButton = { TextButton(onClick = { settingsOpen = false }) { Text(Tr.t("common.close")) } },
+            dismissButton = { TextButton(onClick = { settingsOpen = false; onHide() }) { Text(Tr.t("common.hide")) } },
         )
     }
 }

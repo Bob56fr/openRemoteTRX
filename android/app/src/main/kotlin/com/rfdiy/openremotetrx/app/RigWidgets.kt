@@ -93,6 +93,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -135,10 +136,10 @@ internal fun LandscapeScope(ui: RigUi, canSet: Boolean, onTune: (Long) -> Unit, 
             Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleSmall)
             Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.weight(1f))
-            rig.reconnect?.let { Text("LIAISON PERDUE : reconnexion…", color = TX_RED, fontWeight = FontWeight.Bold) }
+            rig.reconnect?.let { Text(Tr.t("rigwidgets.link_lost"), color = TX_RED, fontWeight = FontWeight.Bold) }
             if (ptt != null) {
                 Text(
-                    if (ptt.mine && ptt.transmitting) "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else ptt.label,
+                    if (ptt.mine && ptt.transmitting) ptt.totSeconds?.let { Tr.t("rigwidgets.tx_in_progress_time", "time" to Format.duration(it)) } ?: Tr.t("rigwidgets.tx_in_progress") else ptt.label,
                     color = if (ptt.transmitting) Color.White else MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.background(if (ptt.transmitting) TX_RED else Color.Transparent, RoundedCornerShape(6.dp))
@@ -185,11 +186,14 @@ internal fun Banner(text: String, color: Color, big: Boolean = false, textColor:
 }
 
 /** Onglets de l'écran de la station (choix de l'utilisateur, 2026-10-29). */
-internal enum class Tab(val symbol: String, val label: String) {
-    STATION("◉", "Station"), SPECTRE("≋", "Spectre"), MEMOIRES("★", "Mémoires"),
+internal enum class Tab(val symbol: String, private val key: String) {
+    STATION("◉", "rigwidgets.tab_station"), SPECTRE("≋", "rigwidgets.tab_spectre"), MEMOIRES("★", "rigwidgets.tab_memories"),
     /** Présence de groupe : seulement quand la station fait partie d'un groupe (pictogramme dessiné : tête stylisée). */
-    AMIS("", "Amis"),
-    EQ("♫", "Audio"), REGLAGES("⚙", "Réglages"),
+    AMIS("", "rigwidgets.tab_friends"),
+    EQ("♫", "rigwidgets.tab_audio"), REGLAGES("⚙", "rigwidgets.tab_settings");
+
+    /** Libellé lu à l'affichage (langue en cours). */
+    val label: String get() = Tr.t(key)
 }
 
 /** Pictogramme d'un onglet : le symbole, ou pour « Amis » une tête stylisée (cercle et épaules), comme la pièce jointe
@@ -258,7 +262,7 @@ internal fun MiniDisplay(rig: RigState, shownHz: Long?, mineTx: Boolean) {
             Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.labelLarge)
             Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             if (ptt != null) Text(
-                if (mineTx) "TX" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else if (ptt.transmitting) "TX autre" else "RX",
+                if (mineTx) "TX" + (ptt.totSeconds?.let { " " + Format.duration(it) } ?: "") else if (ptt.transmitting) Tr.t("rigwidgets.tx_other") else "RX",
                 fontWeight = FontWeight.Bold, color = if (ptt.transmitting) TX_RED else Page.SUCCES,
             )
         }

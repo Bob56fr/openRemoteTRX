@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.PresenceUi
+import com.rfdiy.openremotetrx.logic.Tr
 
 /** Visiteurs (docs/visiteurs-cahier-des-charges.md) : liste des connectés ; « Déconnecter » et « Rouvrir » pour l'opérateur. */
 @Composable
@@ -34,7 +35,7 @@ fun PresenceDialog(p: PresenceUi, onDismiss: () -> Unit) {
     var confirm by remember { mutableStateOf<PresenceUi.Kick?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Connectés à la station") },
+        title = { Text(Tr.t("presenceviews.title")) },
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (person in p.people) {
@@ -49,23 +50,23 @@ fun PresenceDialog(p: PresenceUi, onDismiss: () -> Unit) {
                             Text(visitor.text, style = MaterialTheme.typography.bodyMedium)
                             Text(visitor.detail, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                         }
-                        OutlinedButton(onClick = { confirm = visitor }) { Text("Déconnecter") }
+                        OutlinedButton(onClick = { confirm = visitor }) { Text(Tr.t("common.disconnect")) }
                     }
                 }
-                val note = p.suspended.ifEmpty { p.grace }.ifEmpty { if (p.people.isEmpty()) "Personne d'autre n'est connecté." else "" }
+                val note = p.suspended.ifEmpty { p.grace }.ifEmpty { if (p.people.isEmpty()) Tr.t("presenceviews.nobody") else "" }
                 if (note.isNotEmpty()) Text(note, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
-                if (p.canReopen) OutlinedButton(onClick = { RigHub.reopenListeners() }) { Text("Rouvrir l'écoute des visiteurs") }
+                if (p.canReopen) OutlinedButton(onClick = { RigHub.reopenListeners() }) { Text(Tr.t("presenceviews.reopen")) }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
     )
     confirm?.let { visitor ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text("Déconnecter « ${visitor.text} » ?") },
-            text = { Text("Il peut se reconnecter ; pour l'en empêcher, désactive son compte sur la station (TRX Console, menu 4.2).") },
-            confirmButton = { TextButton(onClick = { RigHub.kickListener(visitor.account); confirm = null }) { Text("Déconnecter") } },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text("Annuler") } },
+            title = { Text(Tr.t("presenceviews.kick_title", "name" to visitor.text)) },
+            text = { Text(Tr.t("presenceviews.kick_text")) },
+            confirmButton = { TextButton(onClick = { RigHub.kickListener(visitor.account); confirm = null }) { Text(Tr.t("common.disconnect")) } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(Tr.t("common.cancel")) } },
         )
     }
 }
@@ -80,15 +81,15 @@ fun ListenersSwitch(p: PresenceUi) {
                 if (!on && p.count > 0) confirmClose = true else RigHub.setListenersOpen(on)
             })
             Spacer(Modifier.width(8.dp))
-            Text("Écoute des visiteurs (réception seule)", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("presenceviews.switch"), style = MaterialTheme.typography.bodyMedium)
         }
         Text(p.switchNote, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall, modifier = Modifier.fillMaxWidth())
     }
     if (confirmClose) AlertDialog(
         onDismissRequest = { confirmClose = false },
-        title = { Text("Fermer l'écoute des visiteurs ?") },
-        text = { Text("Les ${p.count} visiteur(s) connecté(s) seront déconnectés.") },
-        confirmButton = { TextButton(onClick = { RigHub.setListenersOpen(false); confirmClose = false }) { Text("Fermer l'écoute") } },
-        dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Annuler") } },
+        title = { Text(Tr.t("presenceviews.close_title")) },
+        text = { Text(Tr.t("presenceviews.close_text", "count" to p.count)) },
+        confirmButton = { TextButton(onClick = { RigHub.setListenersOpen(false); confirmClose = false }) { Text(Tr.t("presenceviews.close_listening")) } },
+        dismissButton = { TextButton(onClick = { confirmClose = false }) { Text(Tr.t("common.cancel")) } },
     )
 }

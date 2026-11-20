@@ -35,6 +35,7 @@ import com.rfdiy.openremotetrx.logic.BeepSettings
 import com.rfdiy.openremotetrx.logic.MicProfiles
 import com.rfdiy.openremotetrx.logic.Spot
 import com.rfdiy.openremotetrx.logic.Spots
+import com.rfdiy.openremotetrx.logic.Tr
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -57,13 +58,13 @@ fun RecentSpotsDialog(recentSpots: List<Spot>, bandSpots: List<Spot>, hasSpectru
     val recent = recentSpots.ifEmpty { Spots.recent(bandSpots) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
-        title = { Text("Derniers spots (${recent.size})") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
+        title = { Text(Tr.t("clusterandbeeps.recent_title", "count" to recent.size)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 when {
-                    !hasSpectrum -> Text("Cette station n'envoie les spots qu'avec le spectre HF (second port CI-V).", style = MaterialTheme.typography.bodySmall)
-                    recent.isEmpty() -> Text("Aucun spot actif pour l'instant (spots de moins de 15 min).", style = MaterialTheme.typography.bodySmall)
+                    !hasSpectrum -> Text(Tr.t("clusterandbeeps.needs_spectrum"), style = MaterialTheme.typography.bodySmall)
+                    recent.isEmpty() -> Text(Tr.t("clusterandbeeps.no_spot"), style = MaterialTheme.typography.bodySmall)
                 }
                 for (s in recent) {
                     Row(
@@ -93,17 +94,17 @@ fun BeepsSection(beeps: BeepSettings?, connected: Boolean) {
     val context = LocalContext.current
     val sounds = remember { LinkSounds(context) }
     var confirmLost by remember { mutableStateOf(false) }
-    Text("Bips de fin d'émission (réglage de la station)", style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("clusterandbeeps.beeps_title"), style = MaterialTheme.typography.titleSmall)
     if (beeps == null) {
-        if (connected) Text("Cette station ne propose pas les bips de fin.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        if (connected) Text(Tr.t("clusterandbeeps.no_beeps"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         return
     }
-    Text("Produits et ÉMIS par la station ; réglage commun à tous les appareils.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+    Text(Tr.t("clusterandbeeps.beeps_intro"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
         AppSwitch(checked = beeps.rogerEnabled, enabled = connected, onCheckedChange = { RigHub.setBeep("roger_enabled", it) })
         Spacer(Modifier.width(8.dp))
-        Text("Roger bip quand je relâche le PTT", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = { sounds.playSequence(beeps.rogerSequence) }) { Text("Écouter") }
+        Text(Tr.t("clusterandbeeps.roger"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        TextButton(onClick = { sounds.playSequence(beeps.rogerSequence) }) { Text(Tr.t("clusterandbeeps.listen")) }
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         for (t in beeps.tones) {
@@ -120,27 +121,23 @@ fun BeepsSection(beeps: BeepSettings?, connected: Boolean) {
             if (on) confirmLost = true else RigHub.setBeep("link_lost_enabled", false)
         })
         Spacer(Modifier.width(8.dp))
-        Text("Bip de liaison perdue (émis si la liaison tombe pendant mon émission)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = { sounds.playSequence(beeps.linkLostSequence) }) { Text("Écouter") }
+        Text(Tr.t("clusterandbeeps.link_lost"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        TextButton(onClick = { sounds.playSequence(beeps.linkLostSequence) }) { Text(Tr.t("clusterandbeeps.listen")) }
     }
     if (beeps.linkLostEnabled) {
         Text(
-            "Bip de liaison perdue ACTIF : si la liaison tombe pendant votre émission, la station émet trois tons descendants " +
-                "avant de couper (émission automatique, sous votre responsabilité).",
+            Tr.t("clusterandbeeps.link_lost_active"),
             color = Page.ALERTE, style = MaterialTheme.typography.bodySmall,
         )
     }
     if (confirmLost) AlertDialog(
         onDismissRequest = { confirmLost = false },
-        title = { Text("Bip de liaison perdue") },
+        title = { Text(Tr.t("clusterandbeeps.link_lost_title")) },
         text = {
-            Text(
-                "Ce bip est ÉMIS par la station quand la liaison avec ce téléphone tombe pendant votre émission : " +
-                    "une émission automatique de 0,4 s, sous votre responsabilité. L'activer ?"
-            )
+            Text(Tr.t("clusterandbeeps.link_lost_confirm"))
         },
-        confirmButton = { TextButton(onClick = { confirmLost = false; RigHub.setBeep("link_lost_enabled", true) }) { Text("Activer") } },
-        dismissButton = { TextButton(onClick = { confirmLost = false }) { Text("Annuler") } },
+        confirmButton = { TextButton(onClick = { confirmLost = false; RigHub.setBeep("link_lost_enabled", true) }) { Text(Tr.t("common.enable")) } },
+        dismissButton = { TextButton(onClick = { confirmLost = false }) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -151,7 +148,7 @@ fun HeadsetSection(headsetMicState: String) {
     val prefs = remember { context.getSharedPreferences(RigHub.PREFS, android.content.Context.MODE_PRIVATE) }
     var mediaPtt by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_MEDIA_PTT, false)) }
     var headsetMic by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_HEADSET_MIC, false)) }
-    Text("Casque et volant", style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("clusterandbeeps.headset_title"), style = MaterialTheme.typography.titleSmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
         AppSwitch(checked = mediaPtt, onCheckedChange = {
             mediaPtt = it
@@ -160,10 +157,9 @@ fun HeadsetSection(headsetMicState: String) {
         })
         Spacer(Modifier.width(8.dp))
         Column {
-            Text("PTT par le bouton du casque ou les touches du volant (Lecture/Pause)", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("clusterandbeeps.media_ptt"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Appui = prise ou fin d'émission, jamais un maintien ; « Émission autorisée » reste exigée ; " +
-                    "la lecture automatique à la connexion d'un casque est ignorée.",
+                Tr.t("clusterandbeeps.media_ptt_hint"),
                 color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -175,11 +171,9 @@ fun HeadsetSection(headsetMicState: String) {
         })
         Spacer(Modifier.width(8.dp))
         Column {
-            Text("Micro du casque Bluetooth", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("clusterandbeeps.headset_mic"), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Pris pendant l'émission seulement (le casque passe en mode appel : parlez après le bip). " +
-                    "Pendant l'émission, le bouton du casque la termine. Sans casque, émission refusée. " +
-                    "Prend effet à la prochaine connexion.",
+                Tr.t("clusterandbeeps.headset_mic_hint"),
                 color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
             )
             if (headsetMicState.isNotEmpty()) {
@@ -187,13 +181,9 @@ fun HeadsetSection(headsetMicState: String) {
             }
         }
     }
-    Text("Android Auto", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+    Text("Android Auto", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))   // i18n-ok
     Text(
-        "Dans la voiture : lecteur « openRemoteTRX » (Lecture = écoute, Pause = muet), boutons ÉMETTRE / STOP / " +
-            "Autoriser l'émission, Parcourir > Stations, Mémoires, Bandes, et la voix (« mémoire 40 mètres », " +
-            "« fréquence 7 074 », « bande 20 mètres » : jamais d'émission par la voix). Les touches du volant ne font " +
-            "PTT qu'avec le réglage ci-dessus. Application installée à la main : dans Android Auto, Paramètres > " +
-            "version (10 appuis) > Paramètres pour les développeurs > « Sources inconnues ».",
+        Tr.t("clusterandbeeps.android_auto_hint"),
         color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
     )
 }
@@ -206,7 +196,7 @@ fun MicSection() {
     var profile by remember { mutableStateOf(prefs.getString(RigHub.PREF_MIC_PROFILE, MicProfiles.DEFAULT) ?: MicProfiles.DEFAULT) }
     var echo by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_MIC_ECHO, true)) }
     var noise by remember { mutableStateOf(prefs.getBoolean(RigHub.PREF_MIC_NOISE, false)) }
-    Text("Micro : environnement", style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("clusterandbeeps.mic_title"), style = MaterialTheme.typography.titleSmall)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         for (p in MicProfiles.ALL) {
             CompactChip(p.label, onClick = { profile = p.key; prefs.edit().putString(RigHub.PREF_MIC_PROFILE, p.key).apply() }, selected = p.key == profile)
@@ -216,17 +206,16 @@ fun MicSection() {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = echo, onCheckedChange = { echo = it; prefs.edit().putBoolean(RigHub.PREF_MIC_ECHO, it).apply() })
             Spacer(Modifier.width(8.dp))
-            Text("Annulation d'écho", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("clusterandbeeps.echo"), style = MaterialTheme.typography.bodyMedium)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = noise, onCheckedChange = { noise = it; prefs.edit().putBoolean(RigHub.PREF_MIC_NOISE, it).apply() })
             Spacer(Modifier.width(8.dp))
-            Text("Réduction de bruit", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("clusterandbeeps.noise"), style = MaterialTheme.typography.bodyMedium)
         }
     }
     Text(
-        "Coupures de la voix en émission : essayez « pièce calme » ou un profil « micro-casque » (réduction de bruit coupée). " +
-            "Pris en compte à la prochaine connexion.",
+        Tr.t("clusterandbeeps.mic_hint"),
         color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
     )
 }

@@ -33,17 +33,17 @@ class AttemptException(val code: String, val detail: String = "") : Exception(co
 class StationHttp(private val baseUrl: String, fingerprint: String) {
     private val pin = fingerprint.takeIf { it.isNotEmpty() }
 
-    private class PinMismatch(val seen: String) : CertificateException("empreinte différente")
+    private class PinMismatch(val seen: String) : CertificateException("empreinte différente") // i18n-ok
 
     // Épinglage voulu (alerte « CustomX509TrustManager » de lint) : seul le certificat dont l'empreinte SHA-256 est
     // exactement celle de l'appairage passe ; tout autre certificat, même valide ailleurs, est refusé.
     private val pinnedTrust: X509TrustManager? = pin?.let { expected ->
         object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) =
-                throw CertificateException("non utilisé")
+                throw CertificateException("non utilisé") // i18n-ok
 
             override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
-                val leaf = chain?.firstOrNull() ?: throw CertificateException("aucun certificat")
+                val leaf = chain?.firstOrNull() ?: throw CertificateException("aucun certificat") // i18n-ok
                 val seen = Fingerprint.of(leaf.encoded)
                 if (seen != expected) throw PinMismatch(seen)
             }
@@ -91,8 +91,8 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
             503 -> throw AttemptException("busy", said)
             else -> throw AttemptException("http", "HTTP $status")
         }
-        val obj = try { Json.parseToJsonElement(text).jsonObject } catch (e: Exception) { throw AttemptException("http", "réponse illisible") }
-        return (obj["sdp"] as? JsonPrimitive)?.contentOrNull ?: throw AttemptException("http", "réponse sans SDP")
+        val obj = try { Json.parseToJsonElement(text).jsonObject } catch (e: Exception) { throw AttemptException("http", Tr.t("stationhttp.unreadable_reply")) }
+        return (obj["sdp"] as? JsonPrimitive)?.contentOrNull ?: throw AttemptException("http", Tr.t("stationhttp.reply_without_sdp"))
     }
 
     /** Sonde réseau : GET /health (HTTPS, hors WebRTC), 3 s au plus ; vrai si la station répond. */
@@ -128,12 +128,12 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
             return status to text
         } catch (e: SSLHandshakeException) {
             val mismatch = generateSequence(e as Throwable) { it.cause }.filterIsInstance<PinMismatch>().firstOrNull()
-            if (mismatch != null) throw AttemptException("pin", "reçue ${mismatch.seen.take(23)}…")
+            if (mismatch != null) throw AttemptException("pin", Tr.t("stationhttp.pin_seen", "fingerprint" to mismatch.seen.take(23)))
             // Sans empreinte, un certificat auto-signé (cas normal de la station) est refusé par Android.
             if (pin == null && generateSequence(e as Throwable) { it.cause }.any { it is CertPathValidatorException }) {
                 throw AttemptException("untrusted")
             }
-            throw AttemptException("network", "TLS : ${e.message ?: ""}".take(160))
+            throw AttemptException("network", Tr.t("stationhttp.tls_error", "error" to (e.message ?: "")).take(160))
         } catch (e: IOException) {
             throw AttemptException("network", (e.message ?: e.javaClass.simpleName).take(160))
         } finally {

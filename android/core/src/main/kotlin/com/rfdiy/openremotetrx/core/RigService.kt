@@ -36,6 +36,7 @@ import com.rfdiy.openremotetrx.logic.MediaKeys
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
 import com.rfdiy.openremotetrx.logic.SessionLink
+import com.rfdiy.openremotetrx.logic.Tr
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
@@ -354,7 +355,7 @@ class RigService : Service() {
      */
     private fun goForeground(request: RigHub.Request): RigHub.Request? {
         var req = request
-        val note = buildNotification(req.account.name, "Connexion…", "", false)
+        val note = buildNotification(req.account.name, Tr.t("rigservice.connecting"), "", false)
         val media = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         val withMic = if (Build.VERSION.SDK_INT >= 30) media or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else media
         try {
@@ -367,7 +368,7 @@ class RigService : Service() {
                 return refuseStart()
             }
             req = req.copy(useMic = false)
-            RigHub.carNotice("Réception seule : Android refuse le micro depuis la voiture (ouvrez l'application sur le téléphone pour émettre).")
+            RigHub.carNotice(Tr.t("rigservice.car_rx_only"))
         }
         foreground = true
         acquireLocks()
@@ -379,7 +380,7 @@ class RigService : Service() {
     }
 
     private fun refuseStart(): RigHub.Request? {
-        RigHub.carNotice("Android refuse la connexion depuis la voiture : ouvrez openRemoteTRX sur le téléphone.")
+        RigHub.carNotice(Tr.t("rigservice.car_start_refused"))
         if (!foreground) stopSelf()
         return null
     }
@@ -434,11 +435,11 @@ class RigService : Service() {
         val action = MediaKeys.decide(key, repeat, mine, sinceDevice, sinceLast)
         val name = key.name.lowercase()
         if (action != MediaAction.TOGGLE) {
-            if (repeat == 0) session.note(t, "Bouton du casque ou du volant ($name) ignoré : ${MediaKeys.ignoredWhy(key, repeat, mine, sinceDevice, sinceLast)}.")
+            if (repeat == 0) session.note(t, Tr.t("rigservice.media_key_ignored", "name" to name, "why" to MediaKeys.ignoredWhy(key, repeat, mine, sinceDevice, sinceLast)))
             return
         }
         lastMediaKeyAt = t
-        session.note(t, "Bouton du casque ou du volant ($name) : " + if (mine) "fin d'émission." else "demande d'émission.")
+        session.note(t, if (mine) Tr.t("rigservice.media_key_end", "name" to name) else Tr.t("rigservice.media_key_request", "name" to name))
         if (!mine && (!snap.armed || request?.useMic != true || snap.ptt?.transmitting == true)) {
             sounds.refused()                                       // refus audible : l'écran n'est peut-être pas visible
         }
@@ -452,11 +453,11 @@ class RigService : Service() {
     private fun useHeadsetMic() {
         val am = getSystemService(AudioManager::class.java) ?: return
         val text = if (Build.VERSION.SDK_INT < 31) {
-            "Android 12 ou plus récent requis : émission refusée tant que ce réglage est actif"
+            Tr.t("rigservice.headset_needs_android12")
         } else {
             watchCommunicationDevice(am)
-            headsetDevice(am)?.let { "casque prêt : ${it.productName} (micro pris pendant l'émission seulement)" }
-                ?: "aucun casque Bluetooth connecté : émission refusée tant que ce réglage est actif"
+            headsetDevice(am)?.let { Tr.t("rigservice.headset_ready", "device" to it.productName) }
+                ?: Tr.t("rigservice.no_headset")
         }
         RigHub.publish { it.copy(headsetMic = text) }
     }
@@ -489,7 +490,7 @@ class RigService : Service() {
             HeadsetMicStep.OpenMic -> {
                 sounds.txBeep(true)                                    // « parlez après le bip »
                 openMicAfterBeep()                                     // micro ouvert une fois le bip fini
-                RigHub.publish { it.copy(headsetMic = "micro du casque : $headsetName (émission)") }
+                RigHub.publish { it.copy(headsetMic = Tr.t("rigservice.headset_mic_tx", "device" to headsetName)) }
             }
             HeadsetMicStep.Release -> {
                 closeMic()
@@ -508,18 +509,18 @@ class RigService : Service() {
     private fun routeToHeadset() {
         val am = getSystemService(AudioManager::class.java)
         if (am == null || Build.VERSION.SDK_INT < 31) {
-            headsetStep(headsetCall.routeFailed("Micro du casque : Android 12 ou plus récent requis : retour en réception."))
+            headsetStep(headsetCall.routeFailed(Tr.t("rigservice.route_needs_android12")))
             return
         }
         val device = headsetDevice(am)
         if (device == null) {
-            headsetStep(headsetCall.routeFailed("Micro du casque choisi, mais aucun casque Bluetooth connecté : retour en réception."))
+            headsetStep(headsetCall.routeFailed(Tr.t("rigservice.route_no_headset")))
             return
         }
         headsetName = device.productName.toString()
         am.mode = AudioManager.MODE_IN_COMMUNICATION
         if (!am.setCommunicationDevice(device)) {
-            headsetStep(headsetCall.routeFailed("Android refuse le micro du casque : retour en réception."))
+            headsetStep(headsetCall.routeFailed(Tr.t("rigservice.route_refused")))
         } else if (isHeadset(am.communicationDevice)) {
             headsetStep(headsetCall.routed(true))                  // déjà en place : aucun changement ne sera signalé
         }
@@ -602,10 +603,10 @@ class RigService : Service() {
             if (!focusLost && focus != null) return@execute
             abandonFocus()
             if (!requestFocus()) {
-                session.note(now(), "Son occupé par un appel ou une autre application : réception muette en attendant.")
+                session.note(now(), Tr.t("rigservice.focus_busy"))
                 return@execute
             }
-            if (focusLost) session.note(now(), "Son repris (lecture demandée).", false)
+            if (focusLost) session.note(now(), Tr.t("rigservice.focus_back"), false)
             focusLost = false
             applyMute()
         }
@@ -616,14 +617,14 @@ class RigService : Service() {
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 if (change == AudioManager.AUDIOFOCUS_LOSS) focus = null     // demande morte : la prochaine lecture la refait
-                if (session.snapshot.ptt?.let { it.mine && it.transmitting } == true) session.stop(now(), "Son pris par un appel ou une autre application : retour en réception.")
+                if (session.snapshot.ptt?.let { it.mine && it.transmitting } == true) session.stop(now(), Tr.t("rigservice.focus_lost_tx"))
                 // Appel (perte passagère) : réception muette jusqu'au retour du son. Perte définitive (autre application de
                 // musique) : la réception continue, sinon elle resterait muette sans raison visible (essai du 2026-10-29).
                 if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
                     focusLost = true
-                    session.note(now(), "Son pris par un appel ou une autre application : réception muette en attendant.")
+                    session.note(now(), Tr.t("rigservice.focus_lost_muted"))
                 } else {
-                    session.note(now(), "Une autre application a pris le son : la réception continue.")
+                    session.note(now(), Tr.t("rigservice.focus_lost_continue"))
                 }
                 applyMute()
             }
@@ -643,8 +644,8 @@ class RigService : Service() {
     // ------------------------------------------------------------------ notification
 
     private fun createChannel() {
-        val channel = NotificationChannel(CHANNEL, "Liaison avec la station", NotificationManager.IMPORTANCE_LOW).apply {
-            description = "État de la liaison et de l'émission, bouton STOP"
+        val channel = NotificationChannel(CHANNEL, Tr.t("rigservice.channel_name"), NotificationManager.IMPORTANCE_LOW).apply {
+            description = Tr.t("rigservice.channel_description")
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
@@ -652,21 +653,21 @@ class RigService : Service() {
 
     private fun updateNotification(state: RigState) {
         if (!foreground) return
-        val name = request?.account?.name ?: "Station"
+        val name = request?.account?.name ?: Tr.t("rigservice.station")
         val ptt = state.ptt
         val status = when (state.status) {
             LinkStatus.CONNECTED -> when {
-                ptt == null -> "Connecté"
-                ptt.mine && ptt.transmitting -> "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " — ${Format.duration(it)}" } ?: "")
-                ptt.transmitting -> "${ptt.label} (autre client)"
+                ptt == null -> Tr.t("rigservice.connected")
+                ptt.mine && ptt.transmitting -> ptt.totSeconds?.let { Tr.t("rigservice.tx_in_progress_time", "time" to Format.duration(it)) } ?: Tr.t("rigservice.tx_in_progress")
+                ptt.transmitting -> Tr.t("rigservice.other_client", "label" to ptt.label)
                 else -> ptt.label
             }
-            LinkStatus.RECONNECTING -> "Reconnexion…" + (state.reconnect?.let { " ${it.remainingS} s" } ?: "")
-            LinkStatus.CONNECTING -> "Connexion…"
-            LinkStatus.DISCONNECTED -> "Déconnecté"
+            LinkStatus.RECONNECTING -> state.reconnect?.let { Tr.t("rigservice.reconnecting_time", "seconds" to it.remainingS) } ?: Tr.t("rigservice.reconnecting")
+            LinkStatus.CONNECTING -> Tr.t("rigservice.connecting")
+            LinkStatus.DISCONNECTED -> Tr.t("rigservice.disconnected")
         }
         val rig = state.state?.rig
-        val detail = if (rig != null && state.status == LinkStatus.CONNECTED) "${Format.frequency(rig.frequencyHz)} ${rig.mode ?: ""}".trim() else ""
+        val detail = if (rig != null && state.status == LinkStatus.CONNECTED) "${Format.frequency(rig.frequencyHz)} ${rig.mode ?: ""}".trim() else "" // i18n-ok
         val key = "$name|$status|$detail"
         if (key == lastNotification) return
         lastNotification = key
@@ -688,7 +689,7 @@ class RigService : Service() {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(open)
         if (canStop) builder.addAction(0, "STOP", servicePending(ACTION_STOP, 1))
-        builder.addAction(0, "Déconnecter", servicePending(ACTION_DISCONNECT, 2))
+        builder.addAction(0, Tr.t("common.disconnect"), servicePending(ACTION_DISCONNECT, 2))
         return builder.build()
     }
 

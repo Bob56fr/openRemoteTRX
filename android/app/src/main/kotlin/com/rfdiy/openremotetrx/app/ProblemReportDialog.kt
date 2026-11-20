@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.ProblemReport
+import com.rfdiy.openremotetrx.logic.Tr
 
 /**
  * « Signaler un problème » (lot A3, comme la page) : description, puis le texte COMPLET montré avant l'envoi ; rien ne
@@ -39,23 +40,22 @@ fun ProblemReportDialog(onClose: () -> Unit) {
     val report by RigHub.problemText.collectAsState()
     var description by rememberSaveable { mutableStateOf("") }
     val config = LocalConfiguration.current
-    val device = "${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}"
+    val device = "${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE}"   // i18n-ok
     val screen = "${config.screenWidthDp}×${config.screenHeightDp} dp, " +
-        if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) "paysage" else "portrait"
+        if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) Tr.t("problemreportdialog.landscape") else Tr.t("problemreportdialog.portrait")
     DisposableEffect(Unit) { onDispose { RigHub.problemReportClosed() } }
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Signaler un problème") },
+        title = { Text(Tr.t("problemreportdialog.title")) },
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 val text = report
                 if (text == null) {
-                    Text("Décris ce qui s'est passé (ce que tu faisais, ce que tu attendais, ce qui est arrivé). " +
-                        "Le rapport te sera montré en entier avant l'envoi.", style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("problemreportdialog.describe"), style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(description, { description = it.take(ProblemReport.DESCRIPTION_MAX) },
-                        modifier = Modifier.fillMaxWidth(), minLines = 4, label = { Text("Ce qui s'est passé") })
+                        modifier = Modifier.fillMaxWidth(), minLines = 4, label = { Text(Tr.t("problemreportdialog.what_happened")) })
                 } else {
-                    Text("Voici EXACTEMENT ce qui sera envoyé à la station (aucun mot de passe) :", style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("problemreportdialog.exactly"), style = MaterialTheme.typography.bodySmall)
                     Text(text, fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 14.sp)
                 }
             }
@@ -63,11 +63,11 @@ fun ProblemReportDialog(onClose: () -> Unit) {
         confirmButton = {
             val text = report
             if (text == null) {
-                TextButton(onClick = { RigHub.prepareProblemReport(description, device, screen) }) { Text("Voir le rapport") }
+                TextButton(onClick = { RigHub.prepareProblemReport(description, device, screen) }) { Text(Tr.t("problemreportdialog.show_report")) }
             } else {
-                TextButton(onClick = { RigHub.sendProblemReport(text); onClose() }) { Text("Envoyer") }
+                TextButton(onClick = { RigHub.sendProblemReport(text); onClose() }) { Text(Tr.t("problemreportdialog.send")) }
             }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } },
     )
 }

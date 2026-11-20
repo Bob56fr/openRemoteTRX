@@ -51,6 +51,7 @@ import androidx.core.content.FileProvider
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.NetUi
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -97,27 +98,27 @@ private fun Rows(rows: List<Pair<String, String>>, firstBad: Boolean = false) {
 fun NetDialog(view: NetUi.View, operator: Boolean, radio: String?, onStats: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Liaison avec la station") },
+        title = { Text(Tr.t("netviews.title")) },
         text = {
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(view.title.removeSuffix(". Touche : détail"), style = MaterialTheme.typography.bodySmall, color = netColor(view.level))
-                Rows(view.rows + listOfNotNull(radio?.let { "Radio du téléphone" to it }), view.outage)
+                Text(view.title.removeSuffix(Tr.t("netviews.title_suffix")), style = MaterialTheme.typography.bodySmall, color = netColor(view.level))
+                Rows(view.rows + listOfNotNull(radio?.let { Tr.t("netviews.phone_radio") to it }), view.outage)
                 if (view.probes.isNotEmpty()) {
-                    Text("Sondes de la station", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
+                    Text(Tr.t("netviews.station_probes"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 6.dp))
                     Rows(view.probes)
                 }
                 for (w in view.vpn) {
                     Column(Modifier.fillMaxWidth().background(Color(0xFF5A4208), RoundedCornerShape(6.dp)).padding(8.dp)) {
                         Text(w.text, style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFD88A))
-                        TextButton(onClick = { RigHub.netVpnIgnore(w.address) }) { Text("Ignorer pour cette adresse") }
+                        TextButton(onClick = { RigHub.netVpnIgnore(w.address) }) { Text(Tr.t("netviews.ignore_address")) }
                     }
                 }
                 if (view.thresholds.isNotEmpty()) Text(view.thresholds, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
-        dismissButton = if (operator) ({ TextButton(onClick = onStats) { Text("Statistiques 30 jours") } }) else null,
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
+        dismissButton = if (operator) ({ TextButton(onClick = onStats) { Text(Tr.t("netviews.stats_30")) } }) else null,
     )
 }
 
@@ -128,8 +129,8 @@ private fun shareZip(context: Context, name: String, bytes: ByteArray) {
     file.writeBytes(bytes)
     val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
     val send = Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_SUBJECT, "Qualité du réseau OpenRemoteTRX (export anonyme)").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Envoyer l'export à l'équipe de développement"))
+        .putExtra(Intent.EXTRA_SUBJECT, Tr.t("netviews.export_subject")).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(send, Tr.t("netviews.export_chooser")))
 }
 
 @Composable
@@ -166,20 +167,20 @@ fun NetScreen(rig: RigState, onClose: () -> Unit) {
         Surface(Modifier.fillMaxSize(), color = Page.FOND) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Qualité du réseau", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onClose) { Text("Fermer") }
+                    Text(Tr.t("netviews.network_quality"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onClose) { Text(Tr.t("common.close")) }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    for ((d, label) in listOf(1 to "24 h", 7 to "7 jours", 30 to "30 jours")) CompactChip(label, onClick = { days = d }, selected = days == d)
-                    CompactChip("Actualiser", onClick = { RigHub.netStats(days) })
+                    for ((d, label) in listOf(1 to "24 h", 7 to Tr.t("netviews.days_7"), 30 to Tr.t("netviews.days_30"))) CompactChip(label, onClick = { days = d }, selected = days == d)
+                    CompactChip(Tr.t("common.refresh"), onClick = { RigHub.netStats(days) })
                 }
                 if (rig.netStatus.isNotEmpty()) Text(rig.netStatus, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
                 if (m != null) {
-                    Title("Synthèse"); Rows(m.summary)
-                    Title("Coupures par jour")
-                    if (m.days.isEmpty()) Text("Aucune mesure sur la période.", style = MaterialTheme.typography.bodySmall)
+                    Title(Tr.t("netviews.summary")); Rows(m.summary)
+                    Title(Tr.t("netviews.outages_per_day"))
+                    if (m.days.isEmpty()) Text(Tr.t("netviews.no_measure_period"), style = MaterialTheme.typography.bodySmall)
                     for (d in m.days) Bar(d.date, d.fraction, d.short)
-                    Title("Heures les plus touchées")
+                    Title(Tr.t("netviews.worst_hours"))
                     for (d in m.days) {
                         Row(Modifier.fillMaxWidth().padding(vertical = 1.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(d.date.takeLast(5), style = MaterialTheme.typography.labelSmall, color = Page.TEXTE_2, modifier = Modifier.width(44.dp))
@@ -189,34 +190,33 @@ fun NetScreen(rig: RigState, onClose: () -> Unit) {
                             }
                         }
                     }
-                    Text("0 h à 23 h, heure de la station", style = MaterialTheme.typography.labelSmall, color = Page.TEXTE_2)
-                    Title("Tronçon probable")
-                    if (m.diagnoses.isEmpty()) Text("Aucune coupure.", style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("netviews.hours_note"), style = MaterialTheme.typography.labelSmall, color = Page.TEXTE_2)
+                    Title(Tr.t("netviews.likely_segment"))
+                    if (m.diagnoses.isEmpty()) Text(Tr.t("netviews.no_outage"), style = MaterialTheme.typography.bodySmall)
                     for (d in m.diagnoses) Bar(d.label, d.fraction, "${d.count} (${(d.fraction * 100).toInt()} %)")
-                    Title("Par réseau"); Rows(m.types.ifEmpty { listOf("—" to "aucune mesure") })
-                    Title("Dernières coupures")
+                    Title(Tr.t("netviews.per_network")); Rows(m.types.ifEmpty { listOf("—" to Tr.t("netviews.no_measure")) })
+                    Title(Tr.t("netviews.last_outages"))
                     val fmt = SimpleDateFormat("dd/MM HH:mm:ss", Locale.FRANCE)
-                    if (m.outages.isEmpty()) Text("Aucune coupure sur la période.", style = MaterialTheme.typography.bodySmall)
+                    if (m.outages.isEmpty()) Text(Tr.t("netviews.no_outage_period"), style = MaterialTheme.typography.bodySmall)
                     for (o in m.outages) {
                         Text(fmt.format(Date(o.whenMs)) + " — ${o.duration} — ${o.diagnosis}" + (if (o.agent.isNotEmpty()) " — ${o.agent}" else "") +
-                            (if (o.net.isNotEmpty()) " (${o.net})" else "") + " — ${o.kind}" + (if (o.basis.isNotEmpty()) " ; d'après : ${o.basis}" else ""),
+                            (if (o.net.isNotEmpty()) " (${o.net})" else "") + " — ${o.kind}" + (if (o.basis.isNotEmpty()) Tr.t("netviews.based_on", "basis" to o.basis) else ""),
                             style = MaterialTheme.typography.bodySmall)
                         HorizontalDivider(color = Page.LIGNE)
                     }
-                    Title("Seuils de l'indicateur")
-                    Text("Les seuils ne changent que la couleur de l'indicateur et les alertes, jamais l'émission. Déplacez les curseurs : " +
-                        "le texte dit ce qu'ils auraient donné sur l'historique, sans rien changer. « Appliquer » les garde sur la station pour ce type de réseau.",
+                    Title(Tr.t("netviews.thresholds"))
+                    Text(Tr.t("netviews.thresholds_note"),
                         style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
-                    if (m.thresholds.isEmpty()) Text("Pas encore de mesures par type de réseau.", style = MaterialTheme.typography.bodySmall)
+                    if (m.thresholds.isEmpty()) Text(Tr.t("netviews.no_thresholds"), style = MaterialTheme.typography.bodySmall)
                     for (t in m.thresholds) ThresholdCard(t, m.rttEdges, m.lossEdges)
                 }
                 Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { RigHub.netExport() }) { Text("Exporter (anonyme)") }
-                    OutlinedButton(onClick = { confirmClear = !confirmClear }) { Text("Tout effacer…") }
+                    OutlinedButton(onClick = { RigHub.netExport() }) { Text(Tr.t("netviews.export")) }
+                    OutlinedButton(onClick = { confirmClear = !confirmClear }) { Text(Tr.t("netviews.clear_all")) }
                 }
                 if (confirmClear) {
                     OutlinedButton(onClick = { confirmClear = false; RigHub.netClear() }) {
-                        Text("Effacer l'historique réseau", color = Page.TX)
+                        Text(Tr.t("netviews.clear_history"), color = Page.TX)
                     }
                 }
                 Spacer(Modifier.height(24.dp))
@@ -232,11 +232,12 @@ private fun ThresholdCard(t: NetUi.Thresholds, rttEdges: List<Double>, lossEdges
     var lossWarn by remember(t) { mutableFloatStateOf((t.inForce["loss_warn"] ?: 2.0).toFloat()) }
     var lossAlert by remember(t) { mutableFloatStateOf((t.inForce["loss_alert"] ?: 10.0).toFloat()) }
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp).border(1.dp, Page.LIGNE, RoundedCornerShape(6.dp)).padding(8.dp)) {
-        Text(t.label + if (t.chosen) " — seuils choisis" else " — seuils de station.toml", style = MaterialTheme.typography.titleSmall)
+        Text(if (t.chosen) Tr.t("netviews.chosen", "label" to t.label) else Tr.t("netviews.from_toml", "label" to t.label), style = MaterialTheme.typography.titleSmall)
         val pr = t.proposedRtt; val pl = t.proposedLoss
-        Text(if (pr != null || pl != null) "Proposé d'après vos mesures : " + listOfNotNull(
-                pr?.let { "aller-retour ${it.warn.toInt()} / ${it.alert?.toInt() ?: "—"} ms" }, pl?.let { "perte ${NetUi.number(it.warn, "%")} / ${NetUi.number(it.alert, "%")}" }).joinToString(", ")
-             else "Pas encore de proposition (7 jours et 2 000 mesures de 10 s de ce réseau ; ${t.days.toInt()} jour(s) aujourd'hui).",
+        Text(if (pr != null || pl != null) Tr.t("netviews.proposed", "list" to listOfNotNull(
+                pr?.let { Tr.t("netviews.proposed_rtt", "warn" to it.warn.toInt(), "alert" to (it.alert?.toInt() ?: "—")) },
+                pl?.let { Tr.t("netviews.proposed_loss", "warn" to NetUi.number(it.warn, "%"), "alert" to NetUi.number(it.alert, "%")) }).joinToString(", "))
+             else Tr.t("netviews.no_proposal", "days" to t.days.toInt()),
             style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         @Composable
         fun line(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, unit: String, set: (Float) -> Unit) {
@@ -246,24 +247,24 @@ private fun ThresholdCard(t: NetUi.Thresholds, rttEdges: List<Double>, lossEdges
                 Text(NetUi.number(value.toDouble(), unit), style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(56.dp))
             }
         }
-        line("Aller-retour orange", rttWarn, 50f..1500f, 50f, "ms") { rttWarn = it }
-        line("Aller-retour rouge", rttAlert, 100f..3000f, 50f, "ms") { rttAlert = it }
-        line("Perte orange", lossWarn, 0.5f..20f, 0.5f, "%") { lossWarn = it }
-        line("Perte rouge", lossAlert, 1f..50f, 1f, "%") { lossAlert = it }
+        line(Tr.t("netviews.rtt_orange"), rttWarn, 50f..1500f, 50f, "ms") { rttWarn = it }
+        line(Tr.t("netviews.rtt_red"), rttAlert, 100f..3000f, 50f, "ms") { rttAlert = it }
+        line(Tr.t("netviews.loss_orange"), lossWarn, 0.5f..20f, 0.5f, "%") { lossWarn = it }
+        line(Tr.t("netviews.loss_red"), lossAlert, 1f..50f, 1f, "%") { lossAlert = it }
         Text(NetUi.simulationText(t, rttEdges, lossEdges, rttWarn.toDouble(), rttAlert.toDouble(), lossWarn.toDouble(), lossAlert.toDouble()),
             style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         val ok = rttWarn < rttAlert && lossWarn < lossAlert
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (pr != null || pl != null) CompactChip("Prendre la proposition", onClick = {
+            if (pr != null || pl != null) CompactChip(Tr.t("netviews.take_proposal"), onClick = {
                 pr?.let { rttWarn = it.warn.toFloat(); it.alert?.let { a -> rttAlert = a.toFloat() } }
                 pl?.let { lossWarn = it.warn.toFloat(); it.alert?.let { a -> lossAlert = a.toFloat() } }
             })
-            CompactChip("Appliquer", enabled = ok, onClick = {
+            CompactChip(Tr.t("netviews.apply"), enabled = ok, onClick = {
                 RigHub.netThresholds(t.netType, rttWarn.toDouble(), rttAlert.toDouble(), lossWarn.toDouble(), lossAlert.toDouble())
             })
-            if (t.chosen) CompactChip("Revenir à station.toml", onClick = { RigHub.netThresholdsReset(t.netType) })
+            if (t.chosen) CompactChip(Tr.t("netviews.back_to_toml"), onClick = { RigHub.netThresholdsReset(t.netType) })
         }
-        if (!ok) Text("L'orange doit être plus petit que le rouge.", style = MaterialTheme.typography.labelSmall, color = Page.ALERTE,
+        if (!ok) Text(Tr.t("netviews.orange_lt_red"), style = MaterialTheme.typography.labelSmall, color = Page.ALERTE,
             modifier = Modifier.alpha(0.9f))
     }
 }
@@ -283,9 +284,9 @@ fun NetCellsSection() {
         val ok = granted[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
         on = ok
         prefs.edit().putBoolean(RigHub.PREF_NET_CELLS, ok).apply()
-        if (!ok) android.widget.Toast.makeText(context, "Autorisation refusée : seuls les niveaux du signal sont relevés.", android.widget.Toast.LENGTH_LONG).show()
+        if (!ok) android.widget.Toast.makeText(context, Tr.t("netviews.permission_denied"), android.widget.Toast.LENGTH_LONG).show()
     }
-    Text("Qualité du réseau", style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("netviews.network_quality"), style = MaterialTheme.typography.titleSmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
         AppSwitch(checked = on, onCheckedChange = { wanted ->
             if (wanted) {
@@ -297,10 +298,8 @@ fun NetCellsSection() {
         })
         Spacer(Modifier.width(8.dp))
         Column {
-            Text("Repérer les changements d'antenne-relais", style = MaterialTheme.typography.bodyMedium)
-            Text("Aide à expliquer une coupure en voiture. Android l'exige : autorisation de localisation, qui ne sert qu'à " +
-                "l'identifiant de l'antenne ; aucune position n'est lue ni envoyée. Application ouverte seulement. " +
-                "Sans elle, le type de réseau et le niveau du signal sont relevés quand même.",
+            Text(Tr.t("netviews.cells"), style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("netviews.cells_note"),
                 color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         }
     }

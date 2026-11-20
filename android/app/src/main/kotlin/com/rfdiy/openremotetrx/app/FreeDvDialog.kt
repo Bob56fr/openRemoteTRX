@@ -27,6 +27,7 @@ import com.rfdiy.openremotetrx.logic.FreeDvActivities
 import com.rfdiy.openremotetrx.logic.FreeDvActivityView
 import com.rfdiy.openremotetrx.logic.FreeDvLevel
 import com.rfdiy.openremotetrx.logic.FreeDvView
+import com.rfdiy.openremotetrx.logic.Tr
 
 /** Couleur du voyant FDV et du texte d'état (vert, orange, rouge, gris), comme la page. */
 fun freedvColor(level: FreeDvLevel): Color = when (level) {
@@ -46,40 +47,36 @@ fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitti
                  activity: FreeDvActivityView? = null, activityNotice: String = "", onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
         title = { Text("FreeDV") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    "FreeDV RADE V1 : voix numérique décodée par la station. En mode FreeDV, tous les connectés entendent la voix " +
-                        "décodée à la place du son du poste, et du silence tant qu'aucun signal FreeDV n'est accroché. Le poste reste " +
-                        "réglé comme il l'est : FreeDV se reçoit en BLU supérieure (USB ou PKTUSB), avec un filtre d'au moins 2,4 kHz.",
+                    Tr.t("freedvdialog.intro"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 Text(view.text, color = freedvColor(view.level), fontWeight = FontWeight.Bold)
                 if (view.details.isNotEmpty()) Text(view.details, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 if (operator) {
                     OutlinedButton(onClick = { RigHub.freedvSet(!view.on) }, enabled = !transmitting) {
-                        Text(if (view.on) "Revenir au son du poste" else "Passer en FreeDV")
+                        Text(if (view.on) Tr.t("freedvdialog.back_to_rig") else Tr.t("freedvdialog.switch_on"))
                     }
-                    if (transmitting) Text("Refusé pendant une émission.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                    if (transmitting) Text(Tr.t("freedvdialog.refused_tx"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                     if (notice.isNotEmpty()) Text(notice, color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 }
                 if (activity != null) FreeDvActivitySection(activity, activityNotice, operator)
-                Text("Indicatifs décodés", style = MaterialTheme.typography.titleSmall)
-                if (view.calls.isEmpty()) Text("aucun pour l'instant", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                Text(Tr.t("freedvdialog.calls_title"), style = MaterialTheme.typography.titleSmall)
+                if (view.calls.isEmpty()) Text(Tr.t("freedvdialog.calls_none"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 for (c in view.calls) {
                     Text(c.callsign + (if (c.snrText.isNotEmpty()) " · ${c.snrText}" else "") + (if (c.whenText.isNotEmpty()) " · ${c.whenText}" else ""),
                         style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("Séquences reçues", style = MaterialTheme.typography.titleSmall)
+                Text(Tr.t("freedvdialog.sequences_title"), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Qualité probable à l'écoute, de 1 à 5 étoiles : SNR médian pendant la synchro (5 dès +6 dB, 4 dès +3, 3 dès 0, " +
-                        "2 dès −3), une étoile de moins si la synchro tient moins de 80 % du temps ou se perd souvent ; 2 au plus sous " +
-                        "3 s. La station n'enregistre pas la voix.",
+                    Tr.t("freedvdialog.sequences_help"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
-                if (view.sequences.isEmpty()) Text("aucune pour l'instant", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                if (view.sequences.isEmpty()) Text(Tr.t("freedvdialog.sequences_none"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 for (s in view.sequences) {
                     Text(buildAnnotatedString {
                         withStyle(SpanStyle(color = if (s.note >= 4) Page.SUCCES else Page.ALERTE)) { append(s.stars) }
@@ -100,11 +97,9 @@ fun FreeDvDialog(view: FreeDvView, notice: String, operator: Boolean, transmitti
  */
 @Composable
 private fun FreeDvActivitySection(a: FreeDvActivityView, notice: String, operator: Boolean) {
-    Text("Activité FreeDV", style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("freedvdialog.activity_title"), style = MaterialTheme.typography.titleSmall)
     Text(
-        "D'après FreeDV Reporter (qso.freedv.org), lu par la station en simple observateur : rien n'est envoyé. " +
-            "Note = chance de réception ici (RADE V1) : stations qui émettent, voisins qui décodent." +
-            (if (operator) " Touchez une fréquence pour y aller (USB si le poste n'est pas en BLU supérieure)." else ""),
+        if (operator) Tr.t("freedvdialog.activity_intro_operator") else Tr.t("freedvdialog.activity_intro"),
         color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
     )
     Text(a.text, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
@@ -119,17 +114,17 @@ private fun FreeDvActivitySection(a: FreeDvActivityView, notice: String, operato
                 withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = if (r.here) Page.SUCCES else Color.Unspecified)) {
                     append(r.freqText + (if (r.here) FreeDvActivities.HERE else ""))
                 }
-                append("  · note " + r.noteText)
+                append(Tr.t("freedvdialog.note", "note" to r.noteText))
             }, style = MaterialTheme.typography.bodyMedium)
             Text(buildAnnotatedString {
-                append("Émettent : ")
+                append(Tr.t("freedvdialog.transmitting"))
                 if (r.tx.isEmpty()) append("—")
                 r.tx.forEachIndexed { i, t ->
                     if (i > 0) append(", ")
                     if (t.on) withStyle(SpanStyle(color = Page.SUCCES, fontWeight = FontWeight.Bold)) { append(t.text) } else append(t.text)
                 }
             }, style = MaterialTheme.typography.bodySmall)
-            Text("Reçoivent : " + (r.rx.joinToString(", ").ifEmpty { "—" }), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+            Text(Tr.t("freedvdialog.receiving", "list" to r.rx.joinToString(", ").ifEmpty { "—" }), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

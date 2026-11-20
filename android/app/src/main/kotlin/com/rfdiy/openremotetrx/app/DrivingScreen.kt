@@ -36,6 +36,7 @@ import com.rfdiy.openremotetrx.logic.DrivingReason
 import com.rfdiy.openremotetrx.logic.Format
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Radio
+import com.rfdiy.openremotetrx.logic.Tr
 
 private val TX_RED = Page.TX
 
@@ -66,13 +67,13 @@ fun DrivingScreen(ui: RigUi, reason: DrivingReason, modifier: Modifier, onLeaveM
                 Text(
                     when {
                         !connected -> when (rig.status) {
-                            LinkStatus.RECONNECTING -> "RECONNEXION…"
-                            LinkStatus.CONNECTING -> "CONNEXION…"
-                            else -> "DÉCONNECTÉ"
+                            LinkStatus.RECONNECTING -> Tr.t("drivingscreen.reconnecting")
+                            LinkStatus.CONNECTING -> Tr.t("drivingscreen.connecting")
+                            else -> Tr.t("drivingscreen.disconnected")
                         }
-                        mineTx -> "ÉMISSION" + (ptt?.totSeconds?.let { " " + Format.duration(it) } ?: "")
-                        ptt?.transmitting == true -> "ÉMISSION (autre)"
-                        else -> "RÉCEPTION"
+                        mineTx -> ptt?.totSeconds?.let { Tr.t("drivingscreen.tx_tot", "time" to Format.duration(it)) } ?: Tr.t("drivingscreen.tx")
+                        ptt?.transmitting == true -> Tr.t("drivingscreen.tx_other")
+                        else -> Tr.t("drivingscreen.rx")
                     },
                     fontSize = 30.sp, fontWeight = FontWeight.Bold,
                     color = if (ptt?.transmitting == true) TX_RED else Page.SUCCES,
@@ -91,7 +92,7 @@ fun DrivingScreen(ui: RigUi, reason: DrivingReason, modifier: Modifier, onLeaveM
             shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().height(110.dp),
         ) { Text("STOP", fontSize = 40.sp, fontWeight = FontWeight.Bold) }
         OutlinedButton(onClick = { RigHub.setMuted(!ui.muted) }, modifier = Modifier.fillMaxWidth().height(64.dp)) {
-            Text(if (ui.muted) "Remettre le son" else "Couper le son", fontSize = 20.sp)
+            Text(if (ui.muted) Tr.t("drivingscreen.unmute") else Tr.t("drivingscreen.mute"), fontSize = 20.sp)
         }
         Text(Driving.PTT_HINT, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
         Box(Modifier.weight(1f))
@@ -101,11 +102,11 @@ fun DrivingScreen(ui: RigUi, reason: DrivingReason, modifier: Modifier, onLeaveM
                 modifier = Modifier.fillMaxWidth().height(48.dp).combinedClickable(onClick = {}, onLongClick = { RigHub.setPassenger(true) }),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("Je suis passager (appui long)", color = Page.TEXTE_2)
+                    Text(Tr.t("drivingscreen.passenger"), color = Page.TEXTE_2)
                 }
             }
         } else {
-            OutlinedButton(onClick = onLeaveManual, modifier = Modifier.fillMaxWidth()) { Text("Quitter le mode conduite") }
+            OutlinedButton(onClick = onLeaveManual, modifier = Modifier.fillMaxWidth()) { Text(Tr.t("drivingscreen.leave")) }
         }
     }
 }

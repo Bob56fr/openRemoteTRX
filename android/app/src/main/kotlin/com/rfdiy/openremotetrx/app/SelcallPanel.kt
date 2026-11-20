@@ -40,6 +40,7 @@ import androidx.core.content.FileProvider
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.SelcallStatus
 import com.rfdiy.openremotetrx.logic.SelcallTones
+import com.rfdiy.openremotetrx.logic.Tr
 import java.io.File
 import java.time.Instant
 import java.time.ZoneId
@@ -68,27 +69,28 @@ fun SelcallDialog(
     DisposableEffect(Unit) { onDispose { player?.release() } }
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
         title = { Text("SELCALL") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Squelch numérique de la station par appel de groupe : armé sur un code, il coupe le son reçu jusqu'à ce " +
-                        "qu'une station du groupe envoie ce code, puis le laisse ouvert jusqu'à ce que vous réarmiez.",
+                    Tr.t("selcallpanel.intro"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 Text(
-                    "État : " + (SelcallStatus.STATE_LABELS[status.state] ?: status.state) +
-                        if (!status.disabled) " (code ${status.code})" else "",
+                    (SelcallStatus.STATE_LABELS[status.state] ?: status.state).let { label ->
+                        if (!status.disabled) Tr.t("selcallpanel.state_code", "state" to label, "code" to status.code)
+                        else Tr.t("selcallpanel.state", "state" to label)
+                    },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        code, { v -> code = v.filter { it.isDigit() }.take(8) }, label = { Text("Code (3 à 8 chiffres)") },
+                        code, { v -> code = v.filter { it.isDigit() }.take(8) }, label = { Text(Tr.t("selcallpanel.code_label")) },
                         singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         modifier = Modifier.weight(1f),
                     )
-                    Button(onClick = { RigHub.selcallActivate(code) }, enabled = connected && SelcallTones.validCode(code)) { Text("Activer") }
+                    Button(onClick = { RigHub.selcallActivate(code) }, enabled = connected && SelcallTones.validCode(code)) { Text(Tr.t("common.enable")) }
                 }
                 if (status.history.isNotEmpty()) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -99,10 +101,10 @@ fun SelcallDialog(
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { RigHub.selcallRearm() }, enabled = connected && !status.disabled) { Text("Réarmer") }
-                    OutlinedButton(onClick = { RigHub.selcallDeactivate() }, enabled = connected && !status.disabled) { Text("Désactiver") }
+                    OutlinedButton(onClick = { RigHub.selcallRearm() }, enabled = connected && !status.disabled) { Text(Tr.t("selcallpanel.rearm")) }
+                    OutlinedButton(onClick = { RigHub.selcallDeactivate() }, enabled = connected && !status.disabled) { Text(Tr.t("selcallpanel.deactivate")) }
                 }
-                Text("Tonalités dans le son reçu", style = MaterialTheme.typography.bodyMedium)
+                Text(Tr.t("selcallpanel.tones"), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for ((mode, label) in SelcallStatus.FILTER_MODES) {
                         CompactChip(label, onClick = { RigHub.selcallOptions(filterMode = mode) }, enabled = connected,
@@ -112,7 +114,7 @@ fun SelcallDialog(
                 if (status.filterMode == "attenuate") {
                     val shown = attDrag ?: status.attenuationDb.toFloat()
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Atténuation", style = MaterialTheme.typography.bodySmall)
+                        Text(Tr.t("selcallpanel.attenuation"), style = MaterialTheme.typography.bodySmall)
                         Slider(
                             value = shown, onValueChange = { attDrag = it }, valueRange = 6f..60f, enabled = connected,
                             onValueChangeFinished = { attDrag?.let { RigHub.selcallOptions(attenuationDb = it.roundToInt()) }; attDrag = null },
@@ -121,14 +123,14 @@ fun SelcallDialog(
                         Text("${shown.roundToInt()} dB", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                if (!sendOffered) Text("Appel SELCALL et trame de fin : station à mettre à jour (0.63.0 ou plus).",
+                if (!sendOffered) Text(Tr.t("selcallpanel.update_station"),
                     color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 if (sendOffered) Row(verticalAlignment = Alignment.CenterVertically) {
                     AppSwitch(
                         checked = status.sendOnTxEnd, enabled = connected,
                         onCheckedChange = { RigHub.selcallOptions(sendOnTxEnd = it) },
                     )
-                    Text("  Envoyer la trame en fin d'émission (à la place du roger bip ; émise par la station)",
+                    Text(Tr.t("selcallpanel.send_on_tx_end"),
                         style = MaterialTheme.typography.bodySmall)
                 }
                 // Appel manuel : une ÉMISSION (« Émission autorisée » exigée) ; pendant l'appel, le bouton annule (STOP)
@@ -139,29 +141,29 @@ fun SelcallDialog(
                     colors = if (sending) androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Page.TX) else
                         androidx.compose.material3.ButtonDefaults.buttonColors(),
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (sending) "Annuler" + (status.sending.takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: "") else "Envoyer SELCALL") }
-                if (sendOffered && !sending && !armed) Text("Activez « Émission autorisée » : l'appel SELCALL est une émission.",
+                ) { Text(if (sending) (status.sending.takeIf { it.isNotEmpty() }?.let { Tr.t("selcallpanel.cancel_sending", "sending" to it) } ?: Tr.t("common.cancel")) else Tr.t("selcallpanel.send")) }
+                if (sendOffered && !sending && !armed) Text(Tr.t("selcallpanel.arm_first"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 if (calibrateOffered) {
                     // Niveau de la trame émise ; réglage automatique d'après l'ALC (une émission d'un ton par paliers)
                     val shown = levelDrag ?: status.txLevelDbfs.toFloat()
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Niveau", style = MaterialTheme.typography.bodySmall)
+                        Text(Tr.t("selcallpanel.level"), style = MaterialTheme.typography.bodySmall)
                         Slider(
                             value = shown, onValueChange = { levelDrag = it }, valueRange = -30f..-1f, enabled = connected && status.sending.isEmpty(),
                             onValueChangeFinished = { levelDrag?.let { RigHub.selcallOptions(txLevelDbfs = (it * 2).roundToInt() / 2.0) }; levelDrag = null },
                             modifier = Modifier.weight(1f),
                         )
-                        Text("${"%.1f".format(shown).replace('.', ',')} dBFS", style = MaterialTheme.typography.bodySmall)
+                        Text("${"%.1f".format(shown).replace('.', ',')} dBFS", style = MaterialTheme.typography.bodySmall) // i18n-ok
                     }
                     OutlinedButton(
                         onClick = { RigHub.selcallCalibrate() },
                         enabled = connected && armed && !transmitting && status.sending.isEmpty(),
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Réglage automatique du niveau (ALC)") }
+                    ) { Text(Tr.t("selcallpanel.calibrate")) }
                     Text(
-                        "Émet un ton jusqu'à 18 s (puissance du poste) : sur charge fictive ou fréquence libre. Annuler = STOP." +
-                            if (status.calibration.isNotEmpty()) "\nDernier réglage : ${status.calibration}" else "",
+                        if (status.calibration.isNotEmpty()) Tr.t("selcallpanel.calibrate_help_last", "calibration" to status.calibration)
+                        else Tr.t("selcallpanel.calibrate_help"),
                         color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -169,20 +171,20 @@ fun SelcallDialog(
                 if (lastMessage.isNotEmpty()) Text(lastMessage, color = Page.MESURE, style = MaterialTheme.typography.bodySmall)
                 Text(
                     status.lastCall?.let {
-                        "Dernier appel : ${it.code} à ${CALL_TIME.format(Instant.ofEpochMilli((it.at * 1000).toLong()))} " +
-                            "(décalage ${if (it.deltaHz > 0) "+" else ""}${it.deltaHz} Hz, SNR ${it.snrDb} dB)"
-                    } ?: "Aucun appel reçu.",
+                        Tr.t("selcallpanel.last_call", "code" to it.code,
+                             "time" to CALL_TIME.format(Instant.ofEpochMilli((it.at * 1000).toLong())),
+                             "delta" to "${if (it.deltaHz > 0) "+" else ""}${it.deltaHz}", "snr" to it.snrDb) // i18n-ok
+                    } ?: Tr.t("selcallpanel.no_call"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 HorizontalDivider(color = Page.LIGNE)
-                Text("Fichier de test (pour un correspondant)", style = MaterialTheme.typography.titleSmall)
+                Text(Tr.t("selcallpanel.test_title"), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Fabriqué ici : 2 s de silence puis la trame 3 fois. À envoyer comme DOCUMENT (pas en message vocal) ; " +
-                        "le correspondant le joue au micro de son poste, volume moyen, en émission, et s'identifie.",
+                    Tr.t("selcallpanel.test_help"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedTextField(
-                    testCode, { v -> testCode = v.filter { it.isDigit() }.take(8) }, label = { Text("Code du fichier") },
+                    testCode, { v -> testCode = v.filter { it.isDigit() }.take(8) }, label = { Text(Tr.t("selcallpanel.test_code")) },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -196,9 +198,9 @@ fun SelcallDialog(
                             setOnCompletionListener { mp -> mp.release(); player = null }
                             prepare(); start()                         // sur le téléphone seulement, jamais émis
                         }
-                    }, enabled = ok) { Text(if (player != null) "Arrêter" else "Écouter") }
-                    Button(onClick = { note = share(context, testCode) }, enabled = ok) { Text("Partager") }
-                    OutlinedButton(onClick = { note = saveToDownloads(context, testCode) }, enabled = ok) { Text("Téléchargements") }
+                    }, enabled = ok) { Text(if (player != null) Tr.t("common.stop") else Tr.t("selcallpanel.listen")) }
+                    Button(onClick = { note = share(context, testCode) }, enabled = ok) { Text(Tr.t("common.share")) }
+                    OutlinedButton(onClick = { note = saveToDownloads(context, testCode) }, enabled = ok) { Text(Tr.t("selcallpanel.downloads")) }
                 }
                 if (note.isNotEmpty()) Text(note, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
             }
@@ -209,31 +211,31 @@ fun SelcallDialog(
 /** Fichier de test dans le cache de l'application (partagé par FileProvider, jamais lisible par une autre application sans lui). */
 private fun testFile(context: Context, code: String): File {
     val dir = File(context.cacheDir, "selcall").apply { mkdirs() }
-    return File(dir, "selcall-$code.wav").apply { writeBytes(SelcallTones.testWav(code)) }
+    return File(dir, "selcall-$code.wav").apply { writeBytes(SelcallTones.testWav(code)) } // i18n-ok
 }
 
 private fun share(context: Context, code: String): String = try {
     val uri = FileProvider.getUriForFile(context, context.packageName + ".files", testFile(context, code))
     val send = Intent(Intent.ACTION_SEND).setType("audio/wav").putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_SUBJECT, "SELCALL $code (fichier de test openRemoteTRX)")
+        .putExtra(Intent.EXTRA_SUBJECT, Tr.t("selcallpanel.share_subject", "code" to code))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Envoyer le fichier SELCALL $code").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    context.startActivity(Intent.createChooser(send, Tr.t("selcallpanel.share_chooser", "code" to code)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     ""
 } catch (e: Exception) {
-    "Partage impossible : ${e.message}"
+    Tr.t("selcallpanel.share_failed", "error" to "${e.message}")
 }
 
 /** Copie dans Téléchargements (Android 10+, sans autorisation) : retrouvable ensuite par n'importe quelle application. */
 private fun saveToDownloads(context: Context, code: String): String = try {
     val values = ContentValues().apply {
-        put(MediaStore.Downloads.DISPLAY_NAME, "selcall-$code.wav")
+        put(MediaStore.Downloads.DISPLAY_NAME, "selcall-$code.wav") // i18n-ok
         put(MediaStore.Downloads.MIME_TYPE, "audio/wav")
         put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
     }
     val resolver = context.contentResolver
-    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("emplacement refusé")
-    resolver.openOutputStream(uri)?.use { it.write(SelcallTones.testWav(code)) } ?: error("écriture refusée")
-    "Enregistré dans Téléchargements : selcall-$code.wav"
+    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error(Tr.t("selcallpanel.place_refused"))
+    resolver.openOutputStream(uri)?.use { it.write(SelcallTones.testWav(code)) } ?: error(Tr.t("selcallpanel.write_refused"))
+    Tr.t("selcallpanel.saved", "code" to code)
 } catch (e: Exception) {
-    "Enregistrement impossible : ${e.message}"
+    Tr.t("selcallpanel.save_failed", "error" to "${e.message}")
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.logic.MobileFeature
 import com.rfdiy.openremotetrx.logic.MobileFeatures
+import com.rfdiy.openremotetrx.logic.Tr
 
 /**
  * Choix d'affichage des « Fonctionnalités mobiles » (logic/MobileFeatures.kt), gardés dans les préférences « ui » du
@@ -46,8 +47,8 @@ object Features {
 /** Rubrique « Fonctionnalités mobiles » des Réglages : un interrupteur d'affichage par fonction. */
 @Composable
 internal fun FeaturesSection(prefs: SharedPreferences, inService: (MobileFeature) -> Boolean) {
-    Text("Fonctionnalités mobiles", style = MaterialTheme.typography.titleSmall)
-    Text("Ce qui s'affiche dans l'application, sur ce téléphone seulement. Masquer n'arrête rien : une fonction en service reste affichée.",
+    Text(Tr.t("featuresviews.title"), style = MaterialTheme.typography.titleSmall)
+    Text(Tr.t("featuresviews.hint"),
          color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     for (f in MobileFeature.entries) {
         val busy = inService(f)

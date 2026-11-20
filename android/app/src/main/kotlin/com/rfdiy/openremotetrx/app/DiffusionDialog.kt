@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.DiffusionState
 import com.rfdiy.openremotetrx.logic.Diffusions
+import com.rfdiy.openremotetrx.logic.Tr
 
 /** Couleur de l'indicateur DIFFUSION : rouge en direct, orange pendant la connexion ou une reprise, gris sinon. */
 fun diffusionColor(d: DiffusionState?): Color {
@@ -76,15 +77,12 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
     val close = { RigHub.diffusionForget(); onDismiss() }
     AlertDialog(
         onDismissRequest = close,
-        confirmButton = { TextButton(onClick = close) { Text("Fermer") } },
-        title = { Text("Diffusion en direct") },
+        confirmButton = { TextButton(onClick = close) { Text(Tr.t("common.close")) } },
+        title = { Text(Tr.t("diffusiondialog.title")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    "Faire entendre le son du TRX à quelques internautes sans compte sur la station, par un serveur de " +
-                        "diffusion : ils ne joignent jamais la station. Privée par défaut (c'est vous qui transmettez l'adresse et " +
-                        "l'identifiant), 1 heure par défaut ; pendant vos émissions, silence sauf si vous cochez « Diffuser aussi ma " +
-                        "voix ». Tout opérateur peut arrêter une diffusion ; elle ne reprend jamais seule.",
+                    Tr.t("diffusiondialog.intro"),
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
                 Text(Diffusions.status(st), color = if (st?.active == true) diffusionColor(d) else Page.TEXTE,
@@ -94,13 +92,13 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
                 val canStart = st != null && st.enabled && st.problem.isNullOrEmpty() && !st.active
                 if (canStart) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(!public, onClick = { public = false }); Text("Privée (identifiant et mot de passe)")
+                        RadioButton(!public, onClick = { public = false }); Text(Tr.t("diffusiondialog.private"))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(public, onClick = { public = true }); Text("Publique")
+                        RadioButton(public, onClick = { public = true }); Text(Tr.t("diffusiondialog.public"))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Durée")
+                        Text(Tr.t("diffusiondialog.duration"))
                         Spacer(Modifier.width(8.dp))
                         Box {
                             OutlinedButton(onClick = { hoursMenu = true }) { Text(Diffusions.hoursLabel(hours)) }
@@ -113,9 +111,9 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         AppSwitch(checked = voice, onCheckedChange = { voice = it })
                         Spacer(Modifier.width(8.dp))
-                        Text("Diffuser aussi ma voix pendant mes émissions")
+                        Text(Tr.t("diffusiondialog.voice"))
                     }
-                    Text("Informations diffusées", style = MaterialTheme.typography.titleSmall)
+                    Text(Tr.t("diffusiondialog.meta_title"), style = MaterialTheme.typography.titleSmall)
                     FlowRow {
                         for ((key, label) in Diffusions.META) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,11 +122,11 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
                             }
                         }
                     }
-                    OutlinedTextField(pseudo, { pseudo = it.take(32) }, label = { Text("Pseudo") }, singleLine = true,
+                    OutlinedTextField(pseudo, { pseudo = it.take(32) }, label = { Text(Tr.t("diffusiondialog.pseudo")) }, singleLine = true,
                                       modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(indicatif, { indicatif = it.take(16) }, label = { Text("Indicatif") }, singleLine = true,
+                    OutlinedTextField(indicatif, { indicatif = it.take(16) }, label = { Text(Tr.t("diffusiondialog.callsign")) }, singleLine = true,
                                       modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(message, { message = it.take(140) }, label = { Text("Message") },
+                    OutlinedTextField(message, { message = it.take(140) }, label = { Text(Tr.t("diffusiondialog.message")) },
                                       modifier = Modifier.fillMaxWidth())
                     if (error.isNotEmpty()) Text(error, color = Page.TX, style = MaterialTheme.typography.bodySmall)
                     Button(onClick = {
@@ -136,44 +134,44 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
                                                    pseudo, indicatif, message)
                         error = Diffusions.formError(form).orEmpty()
                         if (error.isEmpty()) RigHub.diffusionStart(form)
-                    }) { Text("Lancer la diffusion") }
+                    }) { Text(Tr.t("diffusiondialog.start")) }
                 }
                 if (st?.active == true) {
                     Button(onClick = { askStop = true },
                            colors = ButtonDefaults.buttonColors(containerColor = Page.TX, contentColor = Color.White)) {
-                        Text("Arrêter la diffusion")
+                        Text(Tr.t("diffusiondialog.stop"))
                     }
                 }
                 val page = st?.listenPage
                 if (!page.isNullOrEmpty()) {
-                    Text("Page des auditeurs", style = MaterialTheme.typography.titleSmall)
+                    Text(Tr.t("diffusiondialog.listen_page"), style = MaterialTheme.typography.titleSmall)
                     Text(page, color = Page.MESURE, style = MaterialTheme.typography.bodySmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = {
                             runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(page))) }
-                        }) { Text("Ouvrir") }
+                        }) { Text(Tr.t("diffusiondialog.open")) }
                         OutlinedButton(onClick = {
                             val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, page)
-                                .putExtra(Intent.EXTRA_SUBJECT, "Écoute en direct")
-                            context.startActivity(Intent.createChooser(send, "Envoyer l'adresse"))
-                        }) { Text("Partager") }
+                                .putExtra(Intent.EXTRA_SUBJECT, Tr.t("diffusiondialog.share_subject"))
+                            context.startActivity(Intent.createChooser(send, Tr.t("diffusiondialog.share_chooser")))
+                        }) { Text(Tr.t("common.share")) }
                         OutlinedButton(onClick = {
                             (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)
-                                ?.setPrimaryClip(ClipData.newPlainText("Page des auditeurs", page))
-                        }) { Text("Copier") }
+                                ?.setPrimaryClip(ClipData.newPlainText(Tr.t("diffusiondialog.listen_page"), page))
+                        }) { Text(Tr.t("common.copy")) }
                     }
                 }
                 if (st != null && st.enabled) {
-                    Text("Auditeurs de la diffusion privée", style = MaterialTheme.typography.titleSmall)
-                    Text("Identifiant : " + (d.user ?: "—"), style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("diffusiondialog.private_listeners"), style = MaterialTheme.typography.titleSmall)
+                    Text(Tr.t("diffusiondialog.user", "user" to (d.user ?: "—")), style = MaterialTheme.typography.bodySmall)
                     val password = d.password
                     if (password != null) {
-                        Text("Mot de passe : " + password.ifEmpty { "(aucun : généré au premier lancement privé)" },
+                        Text(Tr.t("diffusiondialog.password", "password" to password.ifEmpty { Tr.t("diffusiondialog.password_none") }),
                              fontWeight = FontWeight.Bold)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { RigHub.diffusionReveal() }) { Text("Voir le mot de passe") }
-                        OutlinedButton(onClick = { askNew = true }) { Text("En générer un") }
+                        OutlinedButton(onClick = { RigHub.diffusionReveal() }) { Text(Tr.t("diffusiondialog.reveal")) }
+                        OutlinedButton(onClick = { askNew = true }) { Text(Tr.t("diffusiondialog.new_password")) }
                     }
                 }
             }
@@ -182,29 +180,28 @@ fun DiffusionDialog(d: DiffusionState, onDismiss: () -> Unit) {
     if (d.confirm) {
         AlertDialog(
             onDismissRequest = { RigHub.diffusionConfirm(false) },
-            title = { Text("Avant la première diffusion") },
+            title = { Text(Tr.t("diffusiondialog.first_title")) },
             text = { Text(Diffusions.WARNING) },
-            confirmButton = { TextButton(onClick = { RigHub.diffusionConfirm(true) }) { Text("Continuer") } },
-            dismissButton = { TextButton(onClick = { RigHub.diffusionConfirm(false) }) { Text("Annuler") } },
+            confirmButton = { TextButton(onClick = { RigHub.diffusionConfirm(true) }) { Text(Tr.t("common.continue")) } },
+            dismissButton = { TextButton(onClick = { RigHub.diffusionConfirm(false) }) { Text(Tr.t("common.cancel")) } },
         )
     }
     if (askStop) {
         AlertDialog(
             onDismissRequest = { askStop = false },
-            text = { Text("Arrêter la diffusion en direct ?") },
-            confirmButton = { TextButton(onClick = { askStop = false; RigHub.diffusionStop() }) { Text("Arrêter") } },
-            dismissButton = { TextButton(onClick = { askStop = false }) { Text("Annuler") } },
+            text = { Text(Tr.t("diffusiondialog.stop_question")) },
+            confirmButton = { TextButton(onClick = { askStop = false; RigHub.diffusionStop() }) { Text(Tr.t("common.stop")) } },
+            dismissButton = { TextButton(onClick = { askStop = false }) { Text(Tr.t("common.cancel")) } },
         )
     }
     if (askNew) {
         AlertDialog(
             onDismissRequest = { askNew = false },
             text = {
-                Text("Générer un nouveau mot de passe pour les auditeurs ? L'ancien ne servira plus (ceux qui écoutent ne sont " +
-                     "pas coupés) : à retransmettre à vos auditeurs.")
+                Text(Tr.t("diffusiondialog.new_question"))
             },
-            confirmButton = { TextButton(onClick = { askNew = false; RigHub.diffusionNewPassword() }) { Text("Générer") } },
-            dismissButton = { TextButton(onClick = { askNew = false }) { Text("Annuler") } },
+            confirmButton = { TextButton(onClick = { askNew = false; RigHub.diffusionNewPassword() }) { Text(Tr.t("diffusiondialog.generate")) } },
+            dismissButton = { TextButton(onClick = { askNew = false }) { Text(Tr.t("common.cancel")) } },
         )
     }
 }

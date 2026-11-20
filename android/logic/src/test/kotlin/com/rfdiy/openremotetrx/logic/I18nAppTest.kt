@@ -21,6 +21,13 @@ class I18nAppTest {
     private val resources = File("src/main/resources/i18n")
     private val common = File(System.getProperty("trx.repo"), "trxstation/i18n")
 
+    /** `:core` et `:app` (lot T3) : TOUS leurs fichiers sont convertis, un nouveau fichier l'est d'office. */
+    private val otherModules = listOf(
+        File("../core/src/main/kotlin/com/rfdiy/openremotetrx/core"),
+        File("../app/src/main/kotlin/com/rfdiy/openremotetrx/app"),
+    )
+    private fun kotlinFiles(dir: File) = dir.listFiles()!!.filter { it.extension == "kt" }.sortedBy { it.name }
+
     /**
      * Fichiers de `:logic` passés par [Tr] : un nouveau fichier y entre dès qu'il est converti, et n'en sort jamais.
      * Voice.kt (mots de la commande vocale) attend le lot T7.
@@ -110,7 +117,7 @@ class I18nAppTest {
     fun `chaque cle ecrite dans le code existe en francais`() {
         val known = load(File(resources, "app.fr.json")).keys + load(File(common, "client.fr.json")).keys
         val call = Regex("""Tr\.(?:t|find|has|plural)\(\s*"([a-z0-9_.]+)"\s*[,)]""")
-        val missing = sources.listFiles()!!.filter { it.extension == "kt" }.flatMap { f ->
+        val missing = (listOf(sources) + otherModules).flatMap(::kotlinFiles).flatMap { f ->
             call.findAll(f.readText(Charsets.UTF_8)).map { it.groupValues[1] }
                 .filter { k -> k !in known && "${k}_one" !in known }
                 .map { "${f.name} : $it" }.toList()
@@ -138,6 +145,8 @@ class I18nAppTest {
             val f = File(sources, name)
             assertTrue(f.exists(), "fichier converti absent : $name")
             humanStrings(f).map { (line, text) -> "$name:$line : \"$text\"" }
+        } + otherModules.flatMap(::kotlinFiles).flatMap { f ->
+            humanStrings(f).map { (line, text) -> "${f.parentFile.name}/${f.name}:$line : \"$text\"" }
         }
         assertEquals(emptyList(), found, "textes à passer par Tr (ou marque // i18n-ok)")
     }

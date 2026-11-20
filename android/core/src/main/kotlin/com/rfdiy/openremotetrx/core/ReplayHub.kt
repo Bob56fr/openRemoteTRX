@@ -8,6 +8,7 @@ import android.media.AudioTrack
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,8 +69,8 @@ object ReplayHub {
 
     fun startRecording(): String? {
         val maxS = _ui.value.maxS
-        if (maxS <= 0) return "Rediffusion non accordée par la station."
-        if (tx || pending || playing) return "Pas d'enregistrement pendant une émission."
+        if (maxS <= 0) return Tr.t("replayhub.not_granted")
+        if (tx || pending || playing) return Tr.t("replayhub.no_record_during_tx")
         maxLen = maxS * rate
         if (buf.size < maxLen) buf = ShortArray(maxLen)
         len = 0
@@ -85,9 +86,9 @@ object ReplayHub {
 
     /** Diffuser : demande d'émission normale ; la diffusion commence à la confirmation (onTx). */
     fun broadcast(): String? {
-        if (_ui.value.maxS <= 0) return "Rediffusion non accordée par la station."
-        if (len <= 0) return "Rien n'a été enregistré."
-        if (tx || pending || playing) return "Une émission est déjà en cours."
+        if (_ui.value.maxS <= 0) return Tr.t("replayhub.not_granted")
+        if (len <= 0) return Tr.t("replayhub.nothing_recorded")
+        if (tx || pending || playing) return Tr.t("replayhub.tx_in_progress")
         recording = false
         pending = true
         pendingAt = SystemClock.elapsedRealtime()

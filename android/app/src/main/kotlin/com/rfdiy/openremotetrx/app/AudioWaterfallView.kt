@@ -41,6 +41,7 @@ import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.AudioWaterfall
 import com.rfdiy.openremotetrx.logic.Palette
 import com.rfdiy.openremotetrx.logic.PeakTracker
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.logic.WaterfallSettings
 import java.util.Locale
 
@@ -125,8 +126,8 @@ fun AudioWaterfallView(onClose: (() -> Unit)?, plotHeight: androidx.compose.ui.u
     val top = AudioWaterfall.strongest(peaks ?: values, settings.width)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Spectre audio", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Text(top?.let { "pic " + String.format(Locale.ROOT, "%.2f", it.hz / 1000.0) } ?: "", style = MaterialTheme.typography.labelMedium)
+            Text(Tr.t("audiowaterfallview.title"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(top?.let { Tr.t("audiowaterfallview.peak", "khz" to String.format(Locale.ROOT, "%.2f", it.hz / 1000.0)) } ?: "", style = MaterialTheme.typography.labelMedium)
         }
         Canvas(Modifier.fillMaxWidth().height(plotHeight)) {
             drawn.let { }                                          // redessin à chaque analyse
@@ -166,7 +167,7 @@ fun AudioWaterfallView(onClose: (() -> Unit)?, plotHeight: androidx.compose.ui.u
             CompactChip(AudioWaterfall.widthLabel(settings.width), onClick = { save(AudioWaterfall.nextWidth(settings)) })
             CompactChip(AudioWaterfall.gainLabel(settings.gain), onClick = { save(AudioWaterfall.nextGain(settings)) })
             CompactChip(AudioWaterfall.peakLabel(settings.peak), onClick = { save(AudioWaterfall.nextPeak(settings)) })
-            if (onClose != null) CompactChip("Fermer", onClick = onClose)       // tablette : toujours affiché, sans « Fermer »
+            if (onClose != null) CompactChip(Tr.t("common.close"), onClick = onClose)       // tablette : toujours affiché, sans « Fermer »
         }
     }
 }

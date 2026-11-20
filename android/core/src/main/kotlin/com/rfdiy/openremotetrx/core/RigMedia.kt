@@ -19,6 +19,7 @@ import com.rfdiy.openremotetrx.logic.CarScreen
 import com.rfdiy.openremotetrx.logic.FavoriteStepper
 import com.rfdiy.openremotetrx.logic.Favorites
 import com.rfdiy.openremotetrx.logic.LinkStatus
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.logic.Voice
 import com.rfdiy.openremotetrx.logic.VoiceAction
 import kotlinx.coroutines.CoroutineScope
@@ -209,7 +210,7 @@ internal object RigMedia {
         if (rig.status != LinkStatus.CONNECTED || rig.listener) return
         if (rig.ptt?.transmitting == true) {
             stepper.cancel()
-            note("Changement refusé : émission en cours")
+            note(Tr.t("rigmedia.change_refused_tx"))
             return
         }
         val r = rig.state?.rig
@@ -229,7 +230,7 @@ internal object RigMedia {
             val rig = RigHub.ui.value.rig
             when {
                 rig.status != LinkStatus.CONNECTED -> Unit
-                rig.ptt?.transmitting == true -> note("Changement refusé : émission en cours")
+                rig.ptt?.transmitting == true -> note(Tr.t("rigmedia.change_refused_tx"))
                 else -> RigHub.recallMemory(m.id)
             }
             refresh(force = true)
@@ -255,9 +256,9 @@ internal object RigMedia {
     private fun lockInfo(): String {
         val rig = RigHub.ui.value.rig
         return when {
-            rig.status != LinkStatus.CONNECTED -> "Voiture : état d'émission inconnu (station non connectée)."
-            rig.ptt?.let { it.mine && it.transmitting } == true -> "Voiture : en émission ; FIN D'ÉMISSION par le bouton micro, ou STOP."
-            else -> "Voiture : réception seule, l'émission est impossible depuis ce téléphone."
+            rig.status != LinkStatus.CONNECTED -> Tr.t("rigmedia.lock_unknown")
+            rig.ptt?.let { it.mine && it.transmitting } == true -> Tr.t("rigmedia.lock_tx")
+            else -> Tr.t("rigmedia.lock_rx_only")
         }
     }
 
@@ -302,7 +303,7 @@ internal object RigMedia {
             val who = caller()
             val mine = RigHub.ui.value.rig.ptt?.mine == true
             if (!Car.allowed(a, who, mine)) {
-                note("Voiture : « ${a.id} » refusé (demandé par ${who ?: "une application inconnue"}).")
+                note(Tr.t("rigmedia.action_refused", "action" to a.id, "caller" to (who ?: Tr.t("rigmedia.unknown_app"))))
                 return
             }
             when (a) {
@@ -333,7 +334,7 @@ internal object RigMedia {
                 is VoiceAction.RecallMemory -> RigHub.recallMemory(v.memory.id)
                 is VoiceAction.SelectBand -> RigHub.selectBand(v.key)
                 is VoiceAction.SetFrequency -> RigHub.setFrequency(v.hz)
-                is VoiceAction.Unknown -> note("Voiture : « ${v.text} » non compris (mémoire, bande ou fréquence).")
+                is VoiceAction.Unknown -> note(Tr.t("rigmedia.voice_not_understood", "text" to v.text))
             }
         }
     }

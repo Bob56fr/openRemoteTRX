@@ -159,7 +159,7 @@ comme pour la console. Rien de visible avant T5 sauf le champ `lang` du protocol
 | **T0** (FAIT, étape 305) | Mécanisme et tronc commun : format des catalogues, `client.fr.json` (refus, coupures, motifs, aides), `Tr` de `:logic`, copie Gradle, `i18n.js` de la page, tests (mêmes clés, mêmes variables, JSON valide, clés de sécurité). | station, application, page | Non |
 | **T1** | Station : `lang` dans `/offer` et `hello`, `detail` / `message` fabriqués dans la langue du client, modules par code + variables, protocole et exemples. FAIT (étape 306) pour les refus, l'accès, `bye` et `rig_notice` ; restent `power_progress`, `breizh_event`, `freedv_event`, messages des modules. | station | Non (français) |
 | **T2** (FAIT, étape 307) | Extraction de `:logic` vers `app.fr.json` / tronc commun ; cliquet « aucune chaîne française dans un fichier converti » (liste `CONVERTED`, comme `test_error_free_text.py`). Réglage de langue. | application (gelée) | Non |
-| **T3** | Extraction de `:core` (notifications, RigService, RigMedia, Android Auto) et de `:app` (écrans, dialogues). | application (gelée) | Non |
+| **T3** (FAIT, étape 308) | Extraction de `:core` (notifications, RigService, RigMedia, Android Auto) et de `:app` (écrans, dialogues). | application (gelée) | Non |
 | **T4** | Extraction de la page (`client.js`, `ui.js`, `index.html`, puis les autres fichiers) vers `page.fr.json` / tronc commun ; sélecteur de langue. | page (gelée) | Non |
 | **T5** | Anglais complet (application, page, station) + essais réels (téléphone, tablette, DHU, PC). | tout | Oui |
 | **T6** | Allemand (vouvoiement) et espagnol, glossaire, pseudo-langue longue, ajustements de place. | tout | Oui |

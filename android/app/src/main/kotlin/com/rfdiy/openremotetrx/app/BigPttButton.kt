@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.logic.BigPtt
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -74,7 +75,7 @@ fun BigPttOverlay(look: BigPtt.Look, totSeconds: Int?, enabled: Boolean, onToggl
         val side = min(maxWidth * 0.9f, maxHeight * 0.92f)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             BigPttButton(look, totSeconds, enabled, onToggle, Modifier.size(side))
-            Text("STOP masque ce bouton", color = Page.TEXTE_2, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(Tr.t("bigpttbutton.stop_hides"), color = Page.TEXTE_2, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         }
     }
 }
@@ -95,7 +96,7 @@ fun BigPttButton(look: BigPtt.Look, totSeconds: Int?, enabled: Boolean, onToggle
 
     BoxWithConstraints(
         modifier.scale(press).clip(CircleShape)
-            .semantics { contentDescription = "PTT : $caption" }
+            .semantics { contentDescription = Tr.t("bigpttbutton.description", "caption" to caption) }
             .clickable(interactionSource = source, indication = null, enabled = enabled, role = Role.Button) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onToggle()

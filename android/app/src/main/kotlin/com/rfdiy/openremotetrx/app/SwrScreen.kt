@@ -55,6 +55,7 @@ import com.rfdiy.openremotetrx.logic.Swr
 import com.rfdiy.openremotetrx.logic.SwrPoint
 import com.rfdiy.openremotetrx.logic.SwrResult
 import com.rfdiy.openremotetrx.logic.SwrUi
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlinx.coroutines.delay
 import java.io.File
 import java.text.DateFormat
@@ -151,8 +152,8 @@ private fun shareImage(context: Context, bmp: Bitmap, name: String) {
     file.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     val uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
     val send = Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_TITLE, name.ifBlank { "Mesure de TOS" }).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(send, "Partager la mesure de TOS"))
+        .putExtra(Intent.EXTRA_TITLE, name.ifBlank { Tr.t("swrscreen.title") }).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    context.startActivity(Intent.createChooser(send, Tr.t("swrscreen.share_chooser")))
 }
 
 /** « Enregistrer dans Images » : Images/OpenRemoteTRX (Android 10+, sans autorisation). */
@@ -224,55 +225,59 @@ fun SwrScreen(rig: RigState, onClose: () -> Unit) {
         Surface(Modifier.fillMaxSize(), color = Page.FOND) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Mesure de TOS", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { close() }) { Text("Fermer") }
+                    Text(Tr.t("swrscreen.title"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { close() }) { Text(Tr.t("common.close")) }
                 }
-                Text("Une courte porteuse FM par point (émission normale : « Émission autorisée », STOP toujours possible), coupleur arrêté, " +
-                    "puis le poste est remis en état.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                Text(Tr.t("swrscreen.intro"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = useBand, onClick = { useBand = true }, enabled = tableBand != null && !running)
-                    Text("Bande du poste" + (tableBand?.let { " (${it.name} : ${SwrUi.freqLabel(it.lowHz)} à ${SwrUi.freqLabel(it.highHz)} MHz)" } ?: " (hors table)"),
+                    Text(tableBand?.let { Tr.t("swrscreen.band_named", "name" to it.name, "low" to SwrUi.freqLabel(it.lowHz), "high" to SwrUi.freqLabel(it.highHz)) } ?: Tr.t("swrscreen.band_none"),
                         style = MaterialTheme.typography.bodyMedium)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = !useBand, onClick = { useBand = false }, enabled = !running)
-                    Text("Centre et largeur", style = MaterialTheme.typography.bodyMedium)
+                    Text(Tr.t("swrscreen.center_width"), style = MaterialTheme.typography.bodyMedium)
                 }
                 if (!useBand) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(center, { center = it }, label = { Text("Centre (kHz)") }, singleLine = true, modifier = Modifier.weight(1f),
+                    OutlinedTextField(center, { center = it }, label = { Text(Tr.t("swrscreen.center")) }, singleLine = true, modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), enabled = !running)
-                    OutlinedTextField(width, { width = it }, label = { Text("Largeur (kHz)") }, singleLine = true, modifier = Modifier.weight(1f),
+                    OutlinedTextField(width, { width = it }, label = { Text(Tr.t("swrscreen.width")) }, singleLine = true, modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), enabled = !running)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(points, { points = it.filter(Char::isDigit).take(3) }, label = { Text("Points") }, singleLine = true,
+                    OutlinedTextField(points, { points = it.filter(Char::isDigit).take(3) }, label = { Text(Tr.t("swrscreen.points")) }, singleLine = true,
                         modifier = Modifier.width(96.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = !running)
-                    Text("Puissance ${power.roundToInt()} %", modifier = Modifier.width(110.dp))
+                    Text(Tr.t("swrscreen.power", "pct" to power.roundToInt()), modifier = Modifier.width(110.dp))
                     Slider(power, { power = it.coerceAtMost(maxPct) }, valueRange = 5f..50f, steps = 44, enabled = !running, modifier = Modifier.weight(1f))
                 }
                 // Calcul affiché : FreqBasse et FreqHaute, pas lisible, nombre réel de points, puis le plan de la station
                 val planText = when {
-                    range == null -> "Choisis une plage."
+                    range == null -> Tr.t("swrscreen.choose_range")
                     plan?.error != null -> com.rfdiy.openremotetrx.logic.Texts.refusal(plan.error!!)
-                    else -> (if (!useBand) "$center kHz ± ${(width.replace(',', '.').toDoubleOrNull() ?: 0.0) / 2} kHz = " else "") +
-                        "${SwrUi.freqLabel(plan!!.lowHz)} à ${SwrUi.freqLabel(plan.highHz)} MHz, pas de ${plan.stepHz / 1000} kHz, ${plan.freqs.size} points" +
-                        (if (plan.amateurOnly) "" else " — HORS des bandes radioamateur") + (stationPlan?.text ?: "")
+                    else -> {
+                        val fields = arrayOf<Pair<String, Any?>>("low" to SwrUi.freqLabel(plan!!.lowHz), "high" to SwrUi.freqLabel(plan.highHz),
+                                                                 "step" to plan.stepHz / 1000, "count" to plan.freqs.size)
+                        (if (!useBand) Tr.t("swrscreen.plan_center", "center" to center,
+                                            "half" to (width.replace(',', '.').toDoubleOrNull() ?: 0.0) / 2, *fields)
+                         else Tr.t("swrscreen.plan", *fields)) +
+                            (if (plan.amateurOnly) "" else Tr.t("swrscreen.plan_outside")) + (stationPlan?.text ?: "")
+                    }
                 }
                 Text(planText, style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { if (plan?.amateurOnly == false) confirmOutside = true else RigHub.swrStart(range!!.first, range.second, wanted, power.roundToInt().toDouble()) },
                         enabled = !running && rig.armed && range != null && plan?.error == null,
-                    ) { Text("Lancer la mesure") }
-                    if (running) OutlinedButton(onClick = { RigHub.swrCancel() }) { Text("Annuler") }
+                    ) { Text(Tr.t("swrscreen.start")) }
+                    if (running) OutlinedButton(onClick = { RigHub.swrCancel() }) { Text(Tr.t("common.cancel")) }
                 }
-                if (!rig.armed) Text("« Émission autorisée » doit être allumé (en bas de l'écran principal).", color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
+                if (!rig.armed) Text(Tr.t("swrscreen.arm_first"), color = Page.ALERTE, style = MaterialTheme.typography.bodySmall)
                 progress?.let { p ->
                     val text = when (p.state) {
-                        "preparing" -> "Préparation du poste…"
-                        "calibrating" -> "Étalonnage du temps de lecture du poste…"
-                        "measuring" -> "Point ${p.points.count { it.swr != null }} sur ${p.total}"
-                        "restoring" -> "Remise en état du poste…"
+                        "preparing" -> Tr.t("swrscreen.preparing")
+                        "calibrating" -> Tr.t("swrscreen.calibrating")
+                        "measuring" -> Tr.t("swrscreen.measuring", "done" to p.points.count { it.swr != null }, "total" to p.total)
+                        "restoring" -> Tr.t("swrscreen.restoring")
                         else -> ""
                     }
                     if (text.isNotEmpty()) Text(text, style = MaterialTheme.typography.bodyMedium)
@@ -286,10 +291,10 @@ fun SwrScreen(rig: RigState, onClose: () -> Unit) {
                 if (shown != null && !running) {
                     Text(SwrUi.summary(shown), style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { naming = lastName to true }) { Text("Partager") }
-                        OutlinedButton(onClick = { naming = lastName to false }) { Text("Enregistrer dans Images") }
+                        Button(onClick = { naming = lastName to true }) { Text(Tr.t("common.share")) }
+                        OutlinedButton(onClick = { naming = lastName to false }) { Text(Tr.t("swrscreen.save_images")) }
                     }
-                    TextButton(onClick = { restoredOpen = shown }) { Text("État du poste remis") }
+                    TextButton(onClick = { restoredOpen = shown }) { Text(Tr.t("swrscreen.restored")) }
                 }
             }
         }
@@ -297,31 +302,31 @@ fun SwrScreen(rig: RigState, onClose: () -> Unit) {
 
     if (confirmOutside) AlertDialog(
         onDismissRequest = { confirmOutside = false },
-        title = { Text("Hors des bandes radioamateur") },
-        text = { Text("Cette plage sort des bandes radioamateur : tu vas émettre hors de ces bandes, sous ta seule responsabilité.") },
-        confirmButton = { TextButton(onClick = { confirmOutside = false; range?.let { RigHub.swrStart(it.first, it.second, wanted, power.roundToInt().toDouble()) } }) { Text("Continuer") } },
-        dismissButton = { TextButton(onClick = { confirmOutside = false }) { Text("Annuler") } },
+        title = { Text(Tr.t("swrscreen.outside_title")) },
+        text = { Text(Tr.t("swrscreen.outside_text")) },
+        confirmButton = { TextButton(onClick = { confirmOutside = false; range?.let { RigHub.swrStart(it.first, it.second, wanted, power.roundToInt().toDouble()) } }) { Text(Tr.t("common.continue")) } },
+        dismissButton = { TextButton(onClick = { confirmOutside = false }) { Text(Tr.t("common.cancel")) } },
     )
     restoredOpen?.let { r ->
         val (lines, diffs) = SwrUi.restoredLines(r)
         AlertDialog(
             onDismissRequest = { restoredOpen = null },
-            title = { Text("État du poste remis") },
+            title = { Text(Tr.t("swrscreen.restored")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     for (l in lines) Text(l)
                     for (d in diffs) Text(d, color = Page.TX)
-                    Text("Si un réglage n'a pas été remis, corrige-le à la main.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+                    Text(Tr.t("swrscreen.fix_by_hand"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
                 }
             },
-            confirmButton = { TextButton(onClick = { restoredOpen = null }) { Text("Fermer") } },
+            confirmButton = { TextButton(onClick = { restoredOpen = null }) { Text(Tr.t("common.close")) } },
         )
     }
     naming?.let { (name, share) ->
         AlertDialog(
             onDismissRequest = { naming = null },
-            title = { Text("Nom de la mesure") },
-            text = { OutlinedTextField(name, { naming = it.take(60) to share }, singleLine = true, label = { Text("Légende de l'image") }) },
+            title = { Text(Tr.t("swrscreen.name_title")) },
+            text = { OutlinedTextField(name, { naming = it.take(60) to share }, singleLine = true, label = { Text(Tr.t("swrscreen.caption")) }) },
             confirmButton = {
                 TextButton(onClick = {
                     naming = null
@@ -330,11 +335,11 @@ fun SwrScreen(rig: RigState, onClose: () -> Unit) {
                     val bmp = swrImage(context, result, name)
                     runCatching {
                         if (share) shareImage(context, bmp, name)
-                        else say(if (saveImage(context, bmp, name)) "Image enregistrée dans Images/OpenRemoteTRX." else "Enregistrement impossible.")
-                    }.onFailure { say("Image impossible : ${it.message}") }
-                }) { Text(if (share) "Partager" else "Enregistrer") }
+                        else say(if (saveImage(context, bmp, name)) Tr.t("swrscreen.image_saved") else Tr.t("swrscreen.save_failed"))
+                    }.onFailure { say(Tr.t("swrscreen.image_failed", "error" to "${it.message}")) }
+                }) { Text(if (share) Tr.t("common.share") else Tr.t("common.save")) }
             },
-            dismissButton = { TextButton(onClick = { naming = null }) { Text("Annuler") } },
+            dismissButton = { TextButton(onClick = { naming = null }) { Text(Tr.t("common.cancel")) } },
         )
     }
 }

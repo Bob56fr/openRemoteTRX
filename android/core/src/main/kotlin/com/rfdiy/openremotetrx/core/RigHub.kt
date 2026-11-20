@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.SpectrumFrame
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -133,20 +134,20 @@ object RigHub {
      */
     internal fun connectFromCar(context: Context, accountId: String) {
         val store = AccountStore(context)
-        val account = store.list().firstOrNull { it.id == accountId } ?: return carNotice("Station inconnue.")
+        val account = store.list().firstOrNull { it.id == accountId } ?: return carNotice(Tr.t("righub.unknown_station"))
         val busy = _ui.value.rig.status != com.rfdiy.openremotetrx.logic.LinkStatus.DISCONNECTED && service != null
         if (busy) {
-            if (_ui.value.station?.id != accountId) carNotice("Déconnectez d'abord ${_ui.value.station?.name ?: "la station"}.")
+            if (_ui.value.station?.id != accountId) carNotice(Tr.t("righub.disconnect_first", "name" to (_ui.value.station?.name ?: Tr.t("righub.the_station"))))
             return
         }
-        val password = store.password(account) ?: return carNotice("Mot de passe à saisir sur le téléphone.")
+        val password = store.password(account) ?: return carNotice(Tr.t("righub.password_on_phone"))
         val mic = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         pending = Request(account, password, mic)
         publish { it.copy(carNotice = "") }
         val intent = Intent(context, RigService::class.java).setAction(RigService.ACTION_CONNECT)
         if (!RigMedia.startService(context, intent)) {
             pending = null
-            carNotice("Android refuse la connexion depuis la voiture : ouvrez openRemoteTRX sur le téléphone.")
+            carNotice(Tr.t("righub.car_start_refused"))
         }
     }
 
@@ -170,7 +171,7 @@ object RigHub {
     fun leaving(keepTransmitting: Boolean) {
         val ptt = _ui.value.rig.ptt ?: return
         if (keepTransmitting || !(ptt.mine && ptt.transmitting)) return
-        service?.onRig { session, now -> session.stop(now, "Application quittée pendant l'émission : retour en réception.") }
+        service?.onRig { session, now -> session.stop(now, Tr.t("righub.left_during_tx")) }
     }
 
     fun setArmed(on: Boolean) { service?.onRig { session, now -> session.setArmed(now, on) } }

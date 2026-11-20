@@ -56,6 +56,7 @@ import com.rfdiy.openremotetrx.logic.DrivingReason
 import com.rfdiy.openremotetrx.logic.Help
 import com.rfdiy.openremotetrx.logic.HfScope
 import com.rfdiy.openremotetrx.logic.ScreenLayouts
+import com.rfdiy.openremotetrx.logic.Tr
 
 private const val PREF_TEXT_PCT = "tablet_text_pct"
 private const val PREF_HF = "tablet_hf_on"
@@ -138,10 +139,10 @@ internal fun RigScope.TabletLayout(
                     if (hf) CompactChip(if (showHf) "HF ●" else "HF", selected = showHf, help = Help.client("HF"), onClick = {
                         showHf = !showHf; prefs.edit().putBoolean(PREF_HF, showHf).apply()
                     })
-                    CompactChip(if (showAudio) "Son ●" else "Son", selected = showAudio, help = Help.client("SON"), onClick = {
+                    CompactChip(if (showAudio) Tr.t("tabletlayout.sound_on") else Tr.t("tabletlayout.sound"), selected = showAudio, help = Help.client("SON"), onClick = {
                         showAudio = !showAudio; prefs.edit().putBoolean(PREF_AUDIO, showAudio).apply()
                     })
-                    if (hf && !showHf) Text("Spectre HF masqué : la station ne l'envoie plus (économie de données).",
+                    if (hf && !showHf) Text(Tr.t("tabletlayout.hf_hidden"),
                         style = MaterialTheme.typography.labelSmall, color = Page.TEXTE_2)
                 }
                 if (hfShown || audioShown) {

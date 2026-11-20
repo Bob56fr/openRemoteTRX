@@ -41,4 +41,6 @@ tasks.test {
     inputs.dir(rootProject.file("../tests/protocol"))
     inputs.dir(rootProject.file("../trxstation/i18n"))                  // TextsTest : tronc commun des textes
     inputs.dir(rootProject.file("core/src/main/assets/pochettes"))     // ArtworkTest : une image par clé
+    inputs.dir(rootProject.file("core/src/main/kotlin"))               // I18nAppTest : cliquet de :core et :app
+    inputs.dir(rootProject.file("app/src/main/kotlin"))
 }

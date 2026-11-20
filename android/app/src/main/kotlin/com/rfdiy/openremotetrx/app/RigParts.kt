@@ -94,6 +94,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -123,13 +124,13 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
                     Spacer(Modifier.width(10.dp))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(ui.station?.name ?: "Station", style = MaterialTheme.typography.titleLarge)
+                    Text(ui.station?.name ?: Tr.t("rigparts.station"), style = MaterialTheme.typography.titleLarge)
                     Text(
                         when (rig.status) {
-                            LinkStatus.CONNECTED -> "Connecté" + (rig.rttMs?.let { " · $it ms" } ?: "")
-                            LinkStatus.CONNECTING -> "Connexion…"
-                            LinkStatus.RECONNECTING -> "Reconnexion…"
-                            LinkStatus.DISCONNECTED -> "Déconnecté"
+                            LinkStatus.CONNECTED -> rig.rttMs?.let { Tr.t("rigparts.connected_rtt", "ms" to it) } ?: Tr.t("rigparts.connected")
+                            LinkStatus.CONNECTING -> Tr.t("rigparts.connecting")
+                            LinkStatus.RECONNECTING -> Tr.t("rigparts.reconnecting")
+                            LinkStatus.DISCONNECTED -> Tr.t("rigparts.disconnected")
                         },
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -142,11 +143,11 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
                     CompactChip(p.label, onClick = { presenceDialog = true })
                     Spacer(Modifier.width(6.dp))
                 }
-                Text("Muet", style = MaterialTheme.typography.labelLarge)
+                Text(Tr.t("rigparts.mute"), style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.width(6.dp))
                 AppSwitch(checked = ui.muted, onCheckedChange = { RigHub.setMuted(it) })
             }
-            if (listener) Banner("Visiteur — réception seule", Page.SELECTION, textColor = Page.TEXTE)
+            if (listener) Banner(Tr.t("rigparts.visitor"), Page.SELECTION, textColor = Page.TEXTE)
             if (presenceBanner) PresenceBanner()
             RigNoticeBanner()
             PowerBannerRow()
@@ -159,36 +160,36 @@ internal fun RigScope.HeaderAndBanners(replay: ReplayUi, driving: DrivingReason,
 
             rig.reconnect?.let { r ->
                 Banner(
-                    "LIAISON PERDUE : reconnexion encore ${r.remainingS} s (essai ${r.attempts})" +
-                        (if (r.lastError.isNotEmpty()) "\n${r.lastError}" else "") + "\nL'émission éventuelle est coupée par la station.",
+                    Tr.t("rigparts.link_lost", "seconds" to r.remainingS, "attempts" to r.attempts) +
+                        (if (r.lastError.isNotEmpty()) "\n${r.lastError}" else "") + "\n" + Tr.t("rigparts.link_lost_tx_cut"),
                     TX_RED,
                 )
             }
-            if (!rig.protocolOk) Banner("Version de protocole inconnue : réception et STOP seulement.", WARN)
+            if (!rig.protocolOk) Banner(Tr.t("rigparts.protocol_unknown"), WARN)
 
             if (replay.playing || replay.pending) {
-                Banner(if (replay.playing) "DIFFUSION DE L'ENREGISTREMENT : ${replay.positionS.toInt()} / ${replay.recordedS.toInt()} s — STOP pour arrêter"
-                       else "Diffusion de l'enregistrement : émission demandée…", TX_RED, textColor = Color.White)
+                Banner(if (replay.playing) Tr.t("rigparts.replay_playing", "position" to replay.positionS.toInt(), "length" to replay.recordedS.toInt())
+                       else Tr.t("rigparts.replay_pending"), TX_RED, textColor = Color.White)
             }
             // Avertissements de l'émission (l'état lui-même est dans l'afficheur)
             if (ptt != null) {
-                if (ptt.totWarning) Banner("Fin du temps d'émission proche (TOT).", WARN)
+                if (ptt.totWarning) Banner(Tr.t("rigparts.tot_warning"), WARN)
                 ptt.local?.let { local ->
                     Banner(local, WARN)
-                    if (ptt.canReleaseLocal) OutlinedButton(onClick = { RigHub.releaseLocal() }) { Text("Reprendre la main") }
+                    if (ptt.canReleaseLocal) OutlinedButton(onClick = { RigHub.releaseLocal() }) { Text(Tr.t("rigparts.release_local")) }
                 }
                 when (ptt.tempAlert) {
-                    "hot" -> Banner("Poste TROP CHAUD : émission refusée.", TX_RED)
-                    "warn" -> Banner("Poste chaud : surveille la température.", WARN)
+                    "hot" -> Banner(Tr.t("rigparts.too_hot"), TX_RED)
+                    "warn" -> Banner(Tr.t("rigparts.hot"), WARN)
                 }
-                if (ptt.fault.isNotEmpty()) Banner("DÉFAUT à la station (${ptt.fault}) : intervention nécessaire.", TX_RED)
-                if (ptt.lastCut.isNotEmpty() && !ptt.transmitting) Text("Dernière coupure : ${ptt.lastCut}", style = MaterialTheme.typography.bodySmall)
+                if (ptt.fault.isNotEmpty()) Banner(Tr.t("rigparts.fault", "fault" to ptt.fault), TX_RED)
+                if (ptt.lastCut.isNotEmpty() && !ptt.transmitting) Text(Tr.t("rigparts.last_cut", "cut" to ptt.lastCut), style = MaterialTheme.typography.bodySmall)
             }
 
             if (driving == DrivingReason.PASSENGER) Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Voiture connectée : mode passager (PTT de l'écran permis).", color = WARN, style = MaterialTheme.typography.bodySmall,
+                Text(Tr.t("rigparts.passenger"), color = WARN, style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f))
-                TextButton(onClick = { RigHub.setPassenger(false) }) { Text("Mode conduite") }
+                TextButton(onClick = { RigHub.setPassenger(false) }) { Text(Tr.t("rigparts.driving_mode")) }
             }
 }
 
@@ -215,7 +216,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                 if (!compact) Row(verticalAlignment = Alignment.CenterVertically) {
                     AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                     Spacer(Modifier.width(8.dp))
-                    Text("Émission autorisée" + if (!ui.micAllowed) " (micro refusé : réception seule)" else "", modifier = Modifier.weight(1f))
+                    Text(if (!ui.micAllowed) Tr.t("rigparts.armed_no_mic") else Tr.t("rigparts.armed"), modifier = Modifier.weight(1f))
                 }
                 // Boutons du client sur leur propre ligne (WF, SEL, EQ, ST, voyant du scrambler)
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +224,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                     if (compact) {
                         AppSwitch(checked = rig.armed, onCheckedChange = { RigHub.setArmed(it) }, enabled = connected && rig.protocolOk && !listener)
                         Spacer(Modifier.width(6.dp))
-                        Text(if (!ui.micAllowed) "Réception seule" else "Émission\nautorisée", style = MaterialTheme.typography.labelMedium)
+                        Text(if (!ui.micAllowed) Tr.t("rigparts.rx_only") else Tr.t("rigparts.armed_short"), style = MaterialTheme.typography.labelMedium)
                         Spacer(Modifier.width(10.dp))
                     }
                     // Petit waterfall de l'onglet Station : affiché ou masqué (station avec spectre HF)
@@ -273,7 +274,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                     if (voice.scrambler.tx || voice.scrambler.rx) {
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            if (voice.scrambler.tx) "SCRAMBLER" else "DÉBROUILL.", color = TX_RED, fontWeight = FontWeight.Bold,
+                            if (voice.scrambler.tx) "SCRAMBLER" else Tr.t("rigparts.descrambling"), color = TX_RED, fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelMedium, modifier = Modifier.clickable { tab = Tab.EQ },
                         )
                     }
@@ -295,11 +296,11 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
                       Box(contentAlignment = Alignment.Center) {
                         Text(
                             when {
-                                mineTx -> "FIN D'ÉMISSION"
-                                ptt?.mine == true -> "COUPURE…"
-                                ptt?.other == true -> "Autre client en émission"
-                                !rig.armed -> "PTT\n(autoriser d'abord)"
-                                else -> "ÉMETTRE"
+                                mineTx -> Tr.t("rigparts.ptt_end")
+                                ptt?.mine == true -> Tr.t("rigparts.ptt_cutting")
+                                ptt?.other == true -> Tr.t("rigparts.ptt_other")
+                                !rig.armed -> Tr.t("rigparts.ptt_arm_first")
+                                else -> Tr.t("rigparts.ptt_transmit")
                             },
                             fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
                         )
@@ -360,7 +361,7 @@ internal fun RigScope.RigDialogsHost() {
 @Composable
 internal fun RigScope.RigNoticeBanner() {
     rig.rigNotice.takeIf { it.isNotEmpty() }?.let { text ->
-        Box(Modifier.clickable { RigHub.dismissRigNotice() }) { Banner("$text  (toucher pour fermer)", if (rig.rigNoticeBad) TX_RED else WARN) }
+        Box(Modifier.clickable { RigHub.dismissRigNotice() }) { Banner(Tr.t("rigparts.notice_tap_close", "text" to text), if (rig.rigNoticeBad) TX_RED else WARN) }
     }
 }
 

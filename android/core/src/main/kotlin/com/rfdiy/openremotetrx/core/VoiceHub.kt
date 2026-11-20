@@ -11,6 +11,7 @@ import android.media.AudioTrack
 import com.rfdiy.openremotetrx.logic.Scrambler
 import com.rfdiy.openremotetrx.logic.ScramblerSettings
 import com.rfdiy.openremotetrx.logic.Scramblers
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.logic.VoiceDsp
 import com.rfdiy.openremotetrx.logic.VoiceEq
 import com.rfdiy.openremotetrx.logic.VoiceSettings
@@ -79,7 +80,7 @@ object VoiceHub {
         if (s.tx && !_ui.value.scrambler.tx && _ui.value.breizh) {               // Breizh et scrambler d'émission exclusifs
             s = s.copy(tx = false)
             RigHub.service?.onRig { session, now ->
-                session.note(now, "Breizh Audio Box en service : scrambler d'émission impossible (exclusifs). Choisissez « Direct » dans Breizh pour brouiller.", warn = true)
+                session.note(now, Tr.t("voicehub.breizh_scrambler_refused"), warn = true)
             }
         }
         context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).edit()
@@ -90,11 +91,13 @@ object VoiceHub {
         // Débrouillage et spatialisation ST : exclusifs (décision de l'utilisateur du 2026-11-03)
         if (s.rx && !before.rx && SpatialHub.ui.value.settings.on) {
             SpatialHub.setEnabled(context, false)
-            RigHub.service?.onRig { session, now -> session.note(now, "Débrouillage en service : spatialisation ST coupée.") }
+            RigHub.service?.onRig { session, now -> session.note(now, Tr.t("voicehub.spatial_off")) }
         }
         if (before.tx != s.tx || before.rx != s.rx) {
-            val text = "Scrambler : émission " + (if (s.tx) "BROUILLÉE" else "en clair") + ", réception " + (if (s.rx) "débrouillée" else "en clair") +
-                " (mode « ${Scramblers.MODES.getValue(s.mode).label} »)."
+            val text = Tr.t("voicehub.scrambler_state",
+                "tx" to (if (s.tx) Tr.t("voicehub.tx_scrambled") else Tr.t("voicehub.in_clear")),
+                "rx" to (if (s.rx) Tr.t("voicehub.rx_descrambled") else Tr.t("voicehub.in_clear")),
+                "mode" to Scramblers.MODES.getValue(s.mode).label)
             RigHub.service?.onRig { session, now -> session.note(now, text, warn = s.tx) }
         }
     }
@@ -143,7 +146,7 @@ object VoiceHub {
         _ui.value = before.copy(breizh = on, scrambler = if (on) before.scrambler.copy(tx = false) else before.scrambler)
         if (on && before.scrambler.tx) {
             applyScrambler()
-            RigHub.service?.onRig { session, now -> session.note(now, "Breizh Audio Box en service : scrambler d'émission coupé (exclusifs).", warn = true) }
+            RigHub.service?.onRig { session, now -> session.note(now, Tr.t("voicehub.breizh_scrambler_off"), warn = true) }
         }
     }
 
@@ -166,7 +169,7 @@ object VoiceHub {
      * l'ouvre qu'en émission) ; refusé en émission, arrêté par toute prise d'émission.
      */
     fun startRecording(): String? {
-        if (tx) return "Pas d'enregistrement pendant une émission."
+        if (tx) return Tr.t("voicehub.no_record_during_tx")
         stopPlayback()
         stopRecording()
         val rate = RECORD_RATE
@@ -174,13 +177,13 @@ object VoiceHub {
         val rec = try {
             AudioRecord(MediaRecorder.AudioSource.MIC, rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_FLOAT, maxOf(min, rate / 5 * 4))
         } catch (e: SecurityException) {
-            return "Micro non autorisé : autorisez-le dans les réglages d'Android."
+            return Tr.t("voicehub.mic_denied")
         } catch (e: IllegalArgumentException) {
-            return "Micro indisponible."
+            return Tr.t("voicehub.mic_unavailable")
         }
         if (rec.state != AudioRecord.STATE_INITIALIZED) {
             rec.release()
-            return "Micro indisponible (occupé par une autre application ?)."
+            return Tr.t("voicehub.mic_busy")
         }
         recordRate = rate
         record = FloatArray(rate * VoiceEq.RECORD_MAX_S)
@@ -224,8 +227,8 @@ object VoiceHub {
 
     /** Relecture de la prise à travers les réglages EN COURS, sur le téléphone seulement (jamais vers la station). */
     fun play(): String? {
-        if (tx) return "Pas de relecture pendant une émission."
-        if (recordLen == 0) return "Enregistrez d'abord quelques secondes."
+        if (tx) return Tr.t("voicehub.no_playback_during_tx")
+        if (recordLen == 0) return Tr.t("voicehub.record_first")
         stopPlayback()
         recording = false
         val rate = recordRate
@@ -299,7 +302,7 @@ object VoiceHub {
             scrambler = null
             applied = null
             scale = 1f
-            android.util.Log.i("VoiceHub", "traitement de la réception : $sampleRateHz Hz, $numChannels canal(aux)")
+            android.util.Log.i("VoiceHub", "traitement de la réception : $sampleRateHz Hz, $numChannels canal(aux)") // i18n-ok
         }
 
         override fun reset(sampleRateHz: Int) = initialize(sampleRateHz, 1)
@@ -377,7 +380,7 @@ object VoiceHub {
             scale = 1f
             seen = 0
             peak = 0f
-            android.util.Log.i("VoiceHub", "traitement du micro : $sampleRateHz Hz, $numChannels canal(aux)")
+            android.util.Log.i("VoiceHub", "traitement du micro : $sampleRateHz Hz, $numChannels canal(aux)") // i18n-ok
             publish()
         }
 
@@ -396,7 +399,7 @@ object VoiceHub {
                 if (scale == 1f) for (i in 0 until n) if (abs(work[i]) > 4f) { scale = 32768f; break }
                 if (seen < 500) {                                    // 5 premières secondes : échelle constatée (journal)
                     for (i in 0 until n) peak = maxOf(peak, abs(work[i]))
-                    if (++seen == 500) android.util.Log.i("VoiceHub", "échelle ${if (scale == 1f) "-1..1" else "FloatS16"}, crête brute $peak, bandes $numBands, $numFrames échantillons par bloc")
+                    if (++seen == 500) android.util.Log.i("VoiceHub", "échelle ${if (scale == 1f) "-1..1" else "FloatS16"}, crête brute $peak, bandes $numBands, $numFrames échantillons par bloc") // i18n-ok
                 }
                 if (scale != 1f) for (i in 0 until n) work[i] /= scale
                 // Rediffusion : l'enregistrement remplace le micro (ni égaliseur ni effets), sinon traitement habituel

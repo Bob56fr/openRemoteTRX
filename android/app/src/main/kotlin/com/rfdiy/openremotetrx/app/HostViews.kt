@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.logic.HostHealth
 import com.rfdiy.openremotetrx.logic.HostSection
+import com.rfdiy.openremotetrx.logic.Tr
 
 private fun hostColor(level: String) = when (level) {
     "bad" -> Page.TX
@@ -58,7 +59,7 @@ private fun Modifier.clip6(): Modifier = this.background(Page.INSTRUMENT, Rounde
 fun HostDialog(health: HostHealth?, sections: List<HostSection>?, onRefresh: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Matériel de la station") },
+        title = { Text(Tr.t("hostviews.title")) },
         text = {
             Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 health?.let {
@@ -68,8 +69,8 @@ fun HostDialog(health: HostHealth?, sections: List<HostSection>?, onRefresh: () 
                     }
                 }
                 when {
-                    sections == null -> Text("Lecture…")
-                    sections.isEmpty() -> Text("Synthèse indisponible (station plus ancienne ou déconnectée).")
+                    sections == null -> Text(Tr.t("hostviews.reading"))
+                    sections.isEmpty() -> Text(Tr.t("hostviews.unavailable"))
                     else -> for (section in sections) {
                         Text(section.title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = 8.dp))
@@ -84,7 +85,7 @@ fun HostDialog(health: HostHealth?, sections: List<HostSection>?, onRefresh: () 
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fermer") } },
-        dismissButton = { TextButton(onClick = onRefresh) { Text("Actualiser") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Tr.t("common.close")) } },
+        dismissButton = { TextButton(onClick = onRefresh) { Text(Tr.t("common.refresh")) } },
     )
 }

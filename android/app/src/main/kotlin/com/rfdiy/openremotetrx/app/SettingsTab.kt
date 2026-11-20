@@ -112,7 +112,7 @@ private val HEALTH = mapOf("green" to Page.SUCCES, "orange" to Page.ALERTE, "red
 private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX)    // pastilles des bandes (page : lvl1..3)
 
 /** Noms des langues dans leur propre langue (jamais traduits). */
-private val LANG_NAMES = mapOf("fr" to "Français", "en" to "English", "de" to "Deutsch", "es" to "Español")
+private val LANG_NAMES = mapOf("fr" to "Français", "en" to "English", "de" to "Deutsch", "es" to "Español") // i18n-ok
 
 /**
  * Réglages > Langue : langue du téléphone ou une langue proposée ; refusée pendant une émission. L'écran se redessine
@@ -145,7 +145,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             // Tablette : taille du texte (mémorisée sur l'appareil ; le PTT et le STOP gardent leur taille)
             if (textPct != null) Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Taille du texte (tablette)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(Tr.t("settingstab.text_size"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     Text("$textPct %", style = MaterialTheme.typography.labelLarge)
                 }
                 Slider(
@@ -159,8 +159,8 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
             // Journal
             Panel {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Journal", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                TextButton(onClick = { showLog = !showLog }) { Text(if (showLog) "Réduire" else "Tout voir") }
+                Text(Tr.t("settingstab.log"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                TextButton(onClick = { showLog = !showLog }) { Text(if (showLog) Tr.t("settingstab.log_less") else Tr.t("settingstab.log_all")) }
             }
             for (line in rig.log.asReversed().take(if (showLog) 60 else 3)) {
                 Text(
@@ -180,7 +180,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                     prefs.edit().putBoolean("keep_screen_on", it).apply()
                 })
                 Spacer(Modifier.width(8.dp))
-                Text("Écran toujours allumé pendant la connexion", style = MaterialTheme.typography.bodyMedium)
+                Text(Tr.t("settingstab.keep_screen_on"), style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AppSwitch(checked = keepTx, onCheckedChange = {
@@ -188,7 +188,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                     prefs.edit().putBoolean("keep_tx_background", it).apply()
                 })
                 Spacer(Modifier.width(8.dp))
-                Text("Rester en émission en quittant l'application (sinon : retour en réception)", style = MaterialTheme.typography.bodyMedium)
+                Text(Tr.t("settingstab.keep_tx"), style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AppSwitch(checked = drivingManual, onCheckedChange = {
@@ -196,7 +196,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                     prefs.edit().putBoolean(RigHub.PREF_DRIVING, it).apply()
                 })
                 Spacer(Modifier.width(8.dp))
-                Text("Mode conduite (écran réduit, PTT tactile désactivé)", style = MaterialTheme.typography.bodyMedium)
+                Text(Tr.t("settingstab.driving"), style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AppSwitch(checked = drivingAuto, onCheckedChange = {
@@ -204,7 +204,7 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                     prefs.edit().putBoolean(RigHub.PREF_DRIVING_AUTO, it).apply()
                 })
                 Spacer(Modifier.width(8.dp))
-                Text("Mode conduite automatique quand une voiture est connectée (Android Auto)", style = MaterialTheme.typography.bodyMedium)
+                Text(Tr.t("settingstab.driving_auto"), style = MaterialTheme.typography.bodyMedium)
             }
             }
             Panel { MicSection() }
@@ -234,21 +234,21 @@ internal fun RigScope.SettingsTab(textPct: Int? = null, onTextPct: (Int) -> Unit
                 }
             }
             if (hello?.offers("swr") == true && !listener) {                // mesure de TOS (opérateur, station 0.90.0+)
-                SettingsAction("Mesure de TOS de l'antenne", onClick = { swrOpen = true })
+                SettingsAction(Tr.t("settingstab.swr"), onClick = { swrOpen = true })
             }
             if (rig.net != null && !listener) {                             // sonde réseau (opérateur, station 0.106.0+)
-                SettingsAction("Qualité du réseau (30 jours)", onClick = { netOpen = true })
+                SettingsAction(Tr.t("settingstab.network"), onClick = { netOpen = true })
             }
             if (rig.monitoring != null && !listener) {                      // monitoring inter-stations (opérateur, 0.164.0+)
-                SettingsAction("Monitoring entre stations (aider, être aidé)", onClick = { monitoringOpen = true })
+                SettingsAction(Tr.t("settingstab.monitoring"), onClick = { monitoringOpen = true })
             }
             if (rig.host != null) {                                         // opérateur, station 0.83.0+
-                SettingsAction("Synthèse du matériel de la station", onClick = { hostDialog = true; RigHub.hostInfo() })
+                SettingsAction(Tr.t("settingstab.host"), onClick = { hostDialog = true; RigHub.hostInfo() })
             }
             if (hello?.offers("bug_report") == true && !listener && connected) {   // comme la page ; jamais un visiteur
-                SettingsAction("Signaler un problème", onClick = { reportOpen = true })
+                SettingsAction(Tr.t("settingstab.report"), onClick = { reportOpen = true })
             }
-            SettingsAction("Déconnecter", onClick = onDisconnect, danger = true)
+            SettingsAction(Tr.t("common.disconnect"), onClick = onDisconnect, danger = true)
 }
 
 /**

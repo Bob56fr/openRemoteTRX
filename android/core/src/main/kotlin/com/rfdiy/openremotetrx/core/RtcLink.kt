@@ -4,6 +4,7 @@ package com.rfdiy.openremotetrx.core
 
 import android.content.Context
 import android.media.AudioAttributes
+import com.rfdiy.openremotetrx.logic.Tr
 import java.nio.ByteBuffer
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -125,7 +126,7 @@ class RtcLink(
                     stereo?.let { track.addSink(it); track.setVolume(0.0) }
                 }
             }
-        }) ?: throw AttemptException("client_error", "WebRTC indisponible")
+        }) ?: throw AttemptException("client_error", Tr.t("rtclink.webrtc_unavailable"))
         pc = peer
 
         if (useMic) {
@@ -150,7 +151,7 @@ class RtcLink(
         }
 
         val channel = peer.createDataChannel("control", DataChannel.Init())
-            ?: throw fail("client_error", "canal de contrôle impossible")
+            ?: throw fail("client_error", Tr.t("rtclink.no_control_channel"))
         dc = channel
         channel.registerObserver(object : DataChannel.Observer {
             override fun onBufferedAmountChange(amount: Long) {}
@@ -184,9 +185,9 @@ class RtcLink(
             val offer = sdp { peer.createOffer(it, MediaConstraints()) }
             sdpSet { peer.setLocalDescription(it, offer) }
             withTimeoutOrNull(3000) { gathered.await() }            // la station attend un SDP complet
-            val local = peer.localDescription?.description ?: throw AttemptException("client_error", "offre vide")
+            val local = peer.localDescription?.description ?: throw AttemptException("client_error", Tr.t("rtclink.empty_offer"))
             val answer = withContext(Dispatchers.IO) { http.offer(account.user, password, local, device, agent) }
-            if (gen != generation) throw AttemptException("client_error", "essai annulé")
+            if (gen != generation) throw AttemptException("client_error", Tr.t("rtclink.attempt_cancelled"))
             sdpSet { peer.setRemoteDescription(it, SessionDescription(SessionDescription.Type.ANSWER, answer)) }
         } catch (e: AttemptException) {
             if (gen == generation) close()
@@ -277,7 +278,7 @@ class RtcLink(
     private suspend fun sdp(call: (SdpObserver) -> Unit): SessionDescription = suspendCancellableCoroutine { cont ->
         call(object : SdpObserver {
             override fun onCreateSuccess(d: SessionDescription?) {
-                if (d != null) cont.resume(d) else cont.resumeWithException(AttemptException("client_error", "offre vide"))
+                if (d != null) cont.resume(d) else cont.resumeWithException(AttemptException("client_error", Tr.t("rtclink.empty_offer")))
             }
             override fun onSetSuccess() {}
             override fun onCreateFailure(e: String?) = cont.resumeWithException(AttemptException("client_error", e ?: "offre"))
@@ -290,7 +291,7 @@ class RtcLink(
             override fun onCreateSuccess(d: SessionDescription?) {}
             override fun onSetSuccess() = cont.resume(Unit)
             override fun onCreateFailure(e: String?) {}
-            override fun onSetFailure(e: String?) = cont.resumeWithException(AttemptException("client_error", e ?: "SDP refusé"))
+            override fun onSetFailure(e: String?) = cont.resumeWithException(AttemptException("client_error", e ?: Tr.t("rtclink.sdp_refused")))
         })
     }
 
@@ -317,7 +318,7 @@ class RtcLink(
                     setBypassFlagForRenderPre(false)
                 }
             } catch (e: Throwable) {                               // UnsatisfiedLinkError compris
-                VoiceHub.unavailable("Égaliseur indisponible sur ce téléphone (${e.javaClass.simpleName}) : voix sans traitement.")
+                VoiceHub.unavailable(Tr.t("rtclink.eq_unavailable", "error" to e.javaClass.simpleName))
                 null
             }
             return voiceFx

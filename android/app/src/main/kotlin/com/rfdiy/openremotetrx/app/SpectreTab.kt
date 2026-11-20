@@ -93,6 +93,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -115,6 +116,6 @@ internal fun RigScope.SpectreTab(mini: Boolean = true, hf: Boolean = true) {
             // Spectre du son reçu (calculé sur le téléphone, seulement pendant l'affichage)
             Panel {
                 if (showWaterfall) AudioWaterfallView(onClose = { showWaterfall = false })
-                else OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text("Spectre audio") }
+                else OutlinedButton(onClick = { showWaterfall = true }, enabled = connected) { Text(Tr.t("spectretab.audio_spectrum")) }
             }
 }

@@ -93,6 +93,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -141,7 +142,7 @@ internal fun RigScope.StationDisplay() {
                         Text(Radio.modeLabel(radio?.mode), style = MaterialTheme.typography.titleMedium)
                         Radio.bandOf(shownHz)?.let { Text("${it.key} m", style = MaterialTheme.typography.titleMedium) }
                         Text(Format.sMeter(radio?.strengthDb), style = MaterialTheme.typography.titleMedium)
-                        if (radio != null && !radio.connected) Text("liaison CAT PERDUE", color = WARN)
+                        if (radio != null && !radio.connected) Text(Tr.t("stationtab.cat_lost"), color = WARN)
                     }
                     // Voyants (comme sur un poste) : vert = actif, gris = éteint
                     val lights = Indicators.of(hello, rig.state)
@@ -191,8 +192,8 @@ internal fun RigScope.StationDisplay() {
                     if (ptt != null) {
                         Banner(
                             when {
-                                mineTx -> "ÉMISSION EN COURS" + (ptt.totSeconds?.let { " — coupure dans ${Format.duration(it)}" } ?: "")
-                                ptt.other -> "${ptt.label} : autre client (${rig.state?.ptt?.owner ?: "?"})"
+                                mineTx -> ptt.totSeconds?.let { Tr.t("stationtab.tx_in_progress_tot", "time" to Format.duration(it)) } ?: Tr.t("stationtab.tx_in_progress")
+                                ptt.other -> Tr.t("stationtab.other_client", "label" to ptt.label, "owner" to (rig.state?.ptt?.owner ?: "?"))
                                 else -> ptt.label
                             },
                             if (ptt.transmitting) TX_RED else Page.SELECTION, big = true,
@@ -213,7 +214,7 @@ internal fun RigScope.StationDisplay() {
                                 modifier = Modifier.weight(1f),
                             )
                             val percent = (shown * 100).roundToInt()
-                            Text(if (percent == 0) "ouvert" else "$percent %", style = MaterialTheme.typography.labelLarge,
+                            Text(if (percent == 0) Tr.t("stationtab.squelch_open") else "$percent %", style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.width(56.dp), textAlign = TextAlign.End)
                         }
                     }
@@ -284,7 +285,7 @@ internal fun RigScope.StationControls(miniWaterfall: Boolean = true) {
                     }
                 }
                 if (hello?.txModes?.isNotEmpty() == true) {
-                    Text("Émission permise en : " + hello.txModes.joinToString(", ") { Radio.modeLabel(it) },
+                    Text(Tr.t("stationtab.tx_modes", "modes" to hello.txModes.joinToString(", ") { Radio.modeLabel(it) }),
                         style = MaterialTheme.typography.bodySmall)
                 }
             }

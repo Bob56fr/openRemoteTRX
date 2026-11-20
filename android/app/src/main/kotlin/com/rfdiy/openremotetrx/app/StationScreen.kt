@@ -55,6 +55,7 @@ import com.rfdiy.openremotetrx.protocol.PairingCode
 import com.rfdiy.openremotetrx.core.RigUi
 import com.rfdiy.openremotetrx.core.StationAccount
 import com.rfdiy.openremotetrx.logic.QrImage
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -105,15 +106,15 @@ fun StationScreen(
         val pairing = PairingCode.parse(text)
         if (pairing == null) {
             notice = ""
-            error = "Ce QR code n'est pas un QR code d'appairage openRemoteTRX (TRX Console, menu 4.1)."
+            error = Tr.t("stationscreen.not_pairing_qr")
             return
         }
         val known = accounts.firstOrNull { it.url == pairing.url && (pairing.user.isEmpty() || it.user == pairing.user) }
         select(known)
         notice = when {
-            known == null -> "Station lue sur le QR code : saisis le mot de passe puis « Connecter »."
-            known.fingerprint != pairing.fingerprint -> "Station déjà connue : empreinte du certificat MISE À JOUR depuis le QR code."
-            else -> "Station déjà connue : rien n'a changé."
+            known == null -> Tr.t("stationscreen.qr_read")
+            known.fingerprint != pairing.fingerprint -> Tr.t("stationscreen.qr_fingerprint_updated")
+            else -> Tr.t("stationscreen.qr_unchanged")
         }
         name = known?.name ?: pairing.name
         address = pairing.url
@@ -126,13 +127,13 @@ fun StationScreen(
     val scope = rememberCoroutineScope()
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        notice = "Lecture de l'image…"
+        notice = Tr.t("stationscreen.reading_image")
         error = ""
         scope.launch {
             val text = withContext(Dispatchers.Default) { qrFromImage(context, uri) }
             if (text == null) {
                 notice = ""
-                error = "Aucun QR code trouvé dans cette image : recadre-la sur le QR code (net, entier, sans reflet) ou scanne-le."
+                error = Tr.t("stationscreen.no_qr_in_image")
             } else {
                 applyPairing(text)
             }
@@ -145,7 +146,7 @@ fun StationScreen(
     ) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("openRemoteTRX", style = MaterialTheme.typography.headlineSmall)
-            Text("version $version", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text(Tr.t("stationscreen.version", "version" to version), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         // Tablette ou grande fenêtre (≥ 840 dp) : boutons QR côte à côte, champs sur deux colonnes, sans défilement
         val wide = LocalConfiguration.current.screenWidthDp >= com.rfdiy.openremotetrx.logic.ScreenLayouts.WIDE_MIN_DP
@@ -154,15 +155,15 @@ fun StationScreen(
                 scan.launch(
                     ScanOptions()
                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                        .setPrompt("QR code du menu 4.1 de TRX Console")
+                        .setPrompt(Tr.t("stationscreen.scan_prompt"))
                         .setBeepEnabled(false)
                         .setOrientationLocked(false)
                         .addExtra(Intents.Scan.SCAN_TYPE, Intents.Scan.MIXED_SCAN)   // terminal sombre (inversé) ou clair
                 )
-            }) { Text(if (wide) "Scanner le QR code de la station" else "Scanner le QR code") }
+            }) { Text(if (wide) Tr.t("stationscreen.scan_wide") else Tr.t("stationscreen.scan")) }
             OutlinedButton(modifier = m, contentPadding = PaddingValues(horizontal = 8.dp), onClick = {
                 pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }) { Text(if (wide) "Lire le QR code depuis une image" else "QR code d'une image") }
+            }) { Text(if (wide) Tr.t("stationscreen.image_wide") else Tr.t("stationscreen.image")) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(if (wide) 12.dp else 8.dp)) {
             qrButtons(if (wide) Modifier else Modifier.weight(1f))
@@ -171,32 +172,32 @@ fun StationScreen(
         if (accounts.isNotEmpty()) {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                Text("Stations", style = MaterialTheme.typography.titleSmall)
+                Text(Tr.t("stationscreen.stations"), style = MaterialTheme.typography.titleSmall)
                 for (a in accounts) FilterChip(selected = editing?.id == a.id, onClick = { select(a) }, label = { Text(a.name) })
-                FilterChip(selected = editing == null, onClick = { select(null) }, label = { Text("+ Nouvelle") })
+                FilterChip(selected = editing == null, onClick = { select(null) }, label = { Text(Tr.t("stationscreen.new")) })
             }
         }
         // Champs compacts (demande de l'utilisateur, étape 297) : « Connecter » et le message d'erreur restent visibles
         // sans défilement sur un téléphone ; l'empreinte et la reconnexion, rarement changées, sont repliées.
         val identity: @Composable () -> Unit = {
-            CompactField(name, { name = it }, "Nom")
-            CompactField(address, { address = it }, "Adresse (ex. 192.168.1.10:8443)",
+            CompactField(name, { name = it }, Tr.t("stationscreen.name"))
+            CompactField(address, { address = it }, Tr.t("stationscreen.address"),
                          keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri))
-            CompactField(user, { user = it }, "Identifiant")
-            CompactField(password, { password = it; onTyped(it) }, "Mot de passe", password = true,
+            CompactField(user, { user = it }, Tr.t("stationscreen.user"))
+            CompactField(password, { password = it; onTyped(it) }, Tr.t("stationscreen.password"), password = true,
                          keyboard = KeyboardOptions(keyboardType = KeyboardType.Password))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(keepPassword, { keepPassword = it }, modifier = Modifier.size(32.dp))
-                Text("Mémoriser le mot de passe (chiffré sur cet appareil)", style = MaterialTheme.typography.bodySmall)
+                Text(Tr.t("stationscreen.keep_password"), style = MaterialTheme.typography.bodySmall)
             }
         }
         val details: @Composable () -> Unit = {
-            CompactField(fingerprint, { fingerprint = it }, "Empreinte du certificat (TRX Console, menu 4.1)", singleLine = false)
-            Text("Vide seulement derrière un proxy HTTPS à certificat reconnu.", style = MaterialTheme.typography.bodySmall,
+            CompactField(fingerprint, { fingerprint = it }, Tr.t("stationscreen.fingerprint"), singleLine = false)
+            Text(Tr.t("stationscreen.fingerprint_hint"), style = MaterialTheme.typography.bodySmall,
                  color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Reconnexion automatique après une coupure", style = MaterialTheme.typography.titleSmall)
+            Text(Tr.t("stationscreen.reconnect_title"), style = MaterialTheme.typography.titleSmall)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (w in WINDOWS) FilterChip(selected = window == w, onClick = { window = w }, label = { Text(if (w == 0) "non" else "$w s") })
+                for (w in WINDOWS) FilterChip(selected = window == w, onClick = { window = w }, label = { Text(if (w == 0) Tr.t("stationscreen.reconnect_off") else Tr.t("stationscreen.reconnect_seconds", "seconds" to w)) })
             }
         }
         val connect: @Composable () -> Unit = {
@@ -204,7 +205,7 @@ fun StationScreen(
             if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
             val last = ui.rig.log.lastOrNull()
             if (last != null && error.isEmpty()) {
-                Text("Dernier message : " + last.text, style = MaterialTheme.typography.bodyMedium,
+                Text(Tr.t("stationscreen.last_message", "message" to last.text), style = MaterialTheme.typography.bodyMedium,
                      color = if (last.level == LogLevel.BAD) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -212,11 +213,11 @@ fun StationScreen(
                     val url = StationAddress.normalize(address)
                     val pin = if (fingerprint.isBlank()) "" else Fingerprint.normalize(fingerprint)
                     error = when {
-                        name.isBlank() -> "Donne un nom à la station."
-                        url == null -> "Adresse invalide : hôte ou IP, port facultatif (8443), HTTPS uniquement."
-                        user.isBlank() -> "Identifiant manquant."
-                        password.isEmpty() -> "Mot de passe manquant."
-                        pin == null -> "Empreinte invalide : 32 octets en hexadécimal (AB:CD:…)."
+                        name.isBlank() -> Tr.t("stationscreen.err_name")
+                        url == null -> Tr.t("stationscreen.err_address")
+                        user.isBlank() -> Tr.t("stationscreen.err_user")
+                        password.isEmpty() -> Tr.t("stationscreen.err_password")
+                        pin == null -> Tr.t("stationscreen.err_fingerprint")
                         else -> ""
                     }
                     if (error.isEmpty()) {
@@ -230,13 +231,13 @@ fun StationScreen(
                         editing = account
                         onConnect(account, password)
                     }
-                }) { Text("Connecter") }
+                }) { Text(Tr.t("stationscreen.connect")) }
                 val current = editing
                 if (current != null) OutlinedButton(onClick = {
                     store.delete(current.id)
                     accounts = store.list()
                     select(accounts.firstOrNull())
-                }) { Text("Supprimer") }
+                }) { Text(Tr.t("common.delete")) }
             }
         }
         if (wide) {
@@ -248,10 +249,10 @@ fun StationScreen(
             identity()
             connect()
             // Détails ouverts d'office quand il faut les remplir : nouvelle station sans QR code, empreinte refusée
-            val needed = (editing == null && fingerprint.isBlank()) || error.startsWith("Empreinte")
+            val needed = (editing == null && fingerprint.isBlank()) || error == Tr.t("stationscreen.err_fingerprint")
             TextButton(onClick = { detailsOpen = !detailsOpen }, enabled = !needed,
                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                Text((if (detailsOpen || needed) "▾ " else "▸ ") + "Empreinte du certificat et reconnexion")
+                Text((if (detailsOpen || needed) "▾ " else "▸ ") + Tr.t("stationscreen.details"))
             }
             if (detailsOpen || needed) details()
         }

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.rfdiy.openremotetrx.core.VoiceHub
 import com.rfdiy.openremotetrx.logic.ScramblerSettings
 import com.rfdiy.openremotetrx.logic.Scramblers
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.logic.VoiceEq
 import com.rfdiy.openremotetrx.logic.VoiceSettings
 import java.util.Locale
@@ -80,15 +81,15 @@ fun VoiceTab(
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(VoiceEq.exportJson(s).toByteArray()) } }
-            .onSuccess { say("Réglages exportés.") }.onFailure { say("Export impossible : ${it.message}") }
+            .onSuccess { say(Tr.t("voicescreen.exported")) }.onFailure { say(Tr.t("voicescreen.export_failed", "error" to "${it.message}")) }
     }
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         runCatching {
-            val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } ?: error("fichier illisible")
-            require(text.length < 64_000) { "fichier trop gros" }
+            val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } ?: error(Tr.t("voicescreen.file_unreadable"))
+            require(text.length < 64_000) { Tr.t("voicescreen.file_too_big") }
             VoiceEq.importJson(text)
-        }.onSuccess { save(it); say("Réglages importés.") }.onFailure { say("Import refusé : ${it.message}") }
+        }.onSuccess { save(it); say(Tr.t("voicescreen.imported")) }.onFailure { say(Tr.t("voicescreen.import_refused", "error" to "${it.message}")) }
     }
 
     var naming by remember { mutableStateOf<String?>(null) }       // nom du profil à enregistrer (fenêtre ouverte)
@@ -96,28 +97,28 @@ fun VoiceTab(
     naming?.let { name ->
         AlertDialog(
             onDismissRequest = { naming = null },
-            title = { Text("Enregistrer comme profil") },
+            title = { Text(Tr.t("voicescreen.save_profile_title")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Égaliseur, chorus et réverbération actuels, rangés sur la station pour ce compte (même nom = remplacé).",
+                    Text(Tr.t("voicescreen.save_profile_hint"),
                         style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(value = name, onValueChange = { naming = it.take(32) }, singleLine = true, label = { Text("Nom") })
+                    OutlinedTextField(value = name, onValueChange = { naming = it.take(32) }, singleLine = true, label = { Text(Tr.t("voicescreen.profile_name")) })
                 }
             },
             confirmButton = {
                 TextButton(onClick = { RigHub.saveVoiceProfile(name, s); naming = null },
-                    enabled = name.isNotBlank()) { Text("Enregistrer") }
+                    enabled = name.isNotBlank()) { Text(Tr.t("common.save")) }
             },
-            dismissButton = { TextButton(onClick = { naming = null }) { Text("Annuler") } },
+            dismissButton = { TextButton(onClick = { naming = null }) { Text(Tr.t("common.cancel")) } },
         )
     }
     deleting?.let { name ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Supprimer le profil « $name » ?") },
-            text = { Text("Il disparaît de la station, pour la page et l'application de ce compte.") },
-            confirmButton = { TextButton(onClick = { RigHub.deleteVoiceProfile(name); deleting = null }) { Text("Supprimer") } },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Annuler") } },
+            title = { Text(Tr.t("voicescreen.delete_profile_title", "name" to name)) },
+            text = { Text(Tr.t("voicescreen.delete_profile_hint")) },
+            confirmButton = { TextButton(onClick = { RigHub.deleteVoiceProfile(name); deleting = null }) { Text(Tr.t("common.delete")) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(Tr.t("common.cancel")) } },
         )
     }
 
@@ -128,19 +129,18 @@ fun VoiceTab(
     val eqShown = Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.EQ, s.enabled)
     val fxShown = Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.CHORUS_REVERB, s.chorus.on || s.reverb.on)
     if (eqShown || fxShown) panel {
-        if (ui.breizh) Text("Traitement par Breizh Audio Box : égaliseur, chorus et réverbération coupés et non modifiables tant " +
-            "que la voix passe par Breizh (réglages gardés pour le retour en direct). Gain du micro, porte de bruit et limiteur restent actifs.",
+        if (ui.breizh) Text(Tr.t("voicescreen.breizh_bypass"),
             color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = s.enabled && fx, onCheckedChange = { save(s.copy(enabled = it)) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text("Égaliseur et effets de voix", style = MaterialTheme.typography.titleSmall)
+                Text(Tr.t("voicescreen.eq_title"), style = MaterialTheme.typography.titleSmall)
                 Text(
                     when {
-                        !fx -> "Coupé : la voix passe par Breizh Audio Box."
-                        s.enabled -> "Allumé : appliqué à votre voix en émission."
-                        else -> "Éteint : voix envoyée telle quelle (limiteur seul)."
+                        !fx -> Tr.t("voicescreen.eq_breizh")
+                        s.enabled -> Tr.t("voicescreen.eq_on")
+                        else -> Tr.t("voicescreen.eq_off")
                     },
                     color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
                 )
@@ -149,82 +149,82 @@ fun VoiceTab(
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((_, preset) in VoiceEq.PRESETS) CompactChip(preset.first, onClick = { save(preset.second().copy(mic = s.mic)) }, enabled = fx)
             // Profils de l'opérateur rangés sur la station, après les trois préréglages ; appui long = supprimer
-            for (p in profiles.orEmpty()) CompactChip("★ " + p.name, onClick = { save(p.voiceSettings()); say("Profil « ${p.name} » appliqué.") },
+            for (p in profiles.orEmpty()) CompactChip("★ " + p.name, onClick = { save(p.voiceSettings()); say(Tr.t("voicescreen.profile_applied", "name" to p.name)) },
                 onLongClick = { deleting = p.name }, enabled = fx)
         }
         if (profiles != null) {
-            TextButton(onClick = { naming = "" }) { Text("Enregistrer comme profil (sur la station)") }
+            TextButton(onClick = { naming = "" }) { Text(Tr.t("voicescreen.save_profile")) }
         }
         // Graphique de l'égaliseur : courbe de toute la chaîne (chaud = renforcé, froid = atténué) et conseils
         VoiceGraph(s)
         for (hint in VoiceEq.hints(s)) Text("• " + hint, color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         if (ui.failed.isNotEmpty()) Text(ui.failed, color = WARN, style = MaterialTheme.typography.bodySmall)
         Text(
-            "Limiteur toujours actif (crêtes à ${VoiceEq.LIMIT_DBFS.toInt()} dBFS). Vérifiez l'ALC sur charge fictive après un réglage.",
+            Tr.t("voicescreen.limiter", "limit" to VoiceEq.LIMIT_DBFS.toInt()),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
         )
     }
 
     panel {
-        Text("Micro", style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.mic"), style = MaterialTheme.typography.titleSmall)
         Text(
-            if (ui.live) "Niveau : ${dbText(ui.micLevelDb)}" else "Niveau affiché pendant un enregistrement (ci-dessous) ou une émission.",
+            if (ui.live) Tr.t("voicescreen.mic_level", "level" to dbText(ui.micLevelDb)) else Tr.t("voicescreen.mic_level_hint"),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
         )
-        SliderRow("Gain", s.mic.gainDb, -12.0..20.0, 0.5, "dB") { save(s.copy(mic = s.mic.copy(gainDb = it))) }
+        SliderRow(Tr.t("voicescreen.gain"), s.mic.gainDb, -12.0..20.0, 0.5, "dB") { save(s.copy(mic = s.mic.copy(gainDb = it))) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = s.mic.gateOn, onCheckedChange = { save(s.copy(mic = s.mic.copy(gateOn = it))) })
             Spacer(Modifier.width(8.dp))
-            Text("Porte de bruit (atténue de 30 dB sous le seuil, jamais muette)", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("voicescreen.gate"), style = MaterialTheme.typography.bodyMedium)
         }
-        if (s.mic.gateOn) SliderRow("Seuil", s.mic.gateDb, -80.0..-20.0, 1.0, "dBFS") { save(s.copy(mic = s.mic.copy(gateDb = it))) }
+        if (s.mic.gateOn) SliderRow(Tr.t("voicescreen.threshold"), s.mic.gateDb, -80.0..-20.0, 1.0, "dBFS") { save(s.copy(mic = s.mic.copy(gateDb = it))) }
     }
 
     if (eqShown) panel {
-        Text("Filtres et égaliseur 10 bandes", style = MaterialTheme.typography.titleSmall)
-        SliderRow("Coupe-bas", s.highpassHz, 20.0..1000.0, 10.0, "Hz", enabled = fx) { save(s.copy(highpassHz = it)) }
-        SliderRow("Coupe-haut", s.lowpassHz, 1500.0..8000.0, 50.0, "Hz", enabled = fx) { save(s.copy(lowpassHz = it)) }
+        Text(Tr.t("voicescreen.filters_title"), style = MaterialTheme.typography.titleSmall)
+        SliderRow(Tr.t("voicescreen.highpass"), s.highpassHz, 20.0..1000.0, 10.0, "Hz", enabled = fx) { save(s.copy(highpassHz = it)) }
+        SliderRow(Tr.t("voicescreen.lowpass"), s.lowpassHz, 1500.0..8000.0, 50.0, "Hz", enabled = fx) { save(s.copy(lowpassHz = it)) }
         var details by remember { mutableStateOf(false) }
         s.bands.forEachIndexed { i, b ->
-            val name = (if (b.hz >= 1000) String.format(Locale.FRANCE, "%.2f kHz", b.hz / 1000) else "${b.hz.roundToInt()} Hz") +
-                if (b.shelf) " (plateau)" else ""
+            val hz = if (b.hz >= 1000) String.format(Locale.FRANCE, "%.2f kHz", b.hz / 1000) else "${b.hz.roundToInt()} Hz"   // i18n-ok
+            val name = if (b.shelf) Tr.t("voicescreen.band_shelf", "band" to hz) else hz
             SliderRow(name, b.gainDb, -VoiceEq.GAIN_MAX_DB..VoiceEq.GAIN_MAX_DB, 0.5, "dB", enabled = fx) { v ->
                 save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(gainDb = v) else x }))
             }
             if (details) {
                 val base = VoiceEq.BANDS_HZ[i]
-                SliderRow("   fréquence", b.hz, base / 1.5..base * 1.5, 5.0, "Hz", enabled = fx) { v ->
+                SliderRow("   " + Tr.t("voicescreen.band_frequency"), b.hz, base / 1.5..base * 1.5, 5.0, "Hz", enabled = fx) { v ->
                     save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(hz = v) else x }))
                 }
-                SliderRow("   largeur Q", b.q, VoiceEq.Q_MIN..VoiceEq.Q_MAX, 0.1, "", enabled = fx) { v ->
+                SliderRow("   " + Tr.t("voicescreen.band_q"), b.q, VoiceEq.Q_MIN..VoiceEq.Q_MAX, 0.1, "", enabled = fx) { v ->
                     save(s.copy(bands = s.bands.mapIndexed { j, x -> if (j == i) x.copy(q = v) else x }))
                 }
             }
         }
-        TextButton(onClick = { details = !details }) { Text(if (details) "Masquer fréquence et Q" else "Fréquence et Q de chaque bande") }
+        TextButton(onClick = { details = !details }) { Text(if (details) Tr.t("voicescreen.hide_details") else Tr.t("voicescreen.show_details")) }
     }
 
     if (fxShown) panel {
-        Text("Chorus et réverbération", style = MaterialTheme.typography.titleSmall)
-        Text("Déconseillés en BLU : ils réduisent la compréhension. Coupés net à la fin de chaque émission.",
+        Text(Tr.t("voicescreen.fx_title"), style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.fx_warning"),
             color = WARN, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = s.chorus.on, onCheckedChange = { save(s.copy(chorus = s.chorus.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
-            Text("Chorus", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("voicescreen.chorus"), style = MaterialTheme.typography.bodyMedium)
         }
         if (s.chorus.on) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for ((key, t) in VoiceEq.CHORUS_TYPES) CompactChip(t.label, onClick = { save(s.copy(chorus = s.chorus.copy(type = key))) }, selected = s.chorus.type == key, enabled = fx)
             }
-            SliderRow("Dosage", s.chorus.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(chorus = s.chorus.copy(mix = it))) }
-            SliderRow("Vitesse", s.chorus.rateHz, 0.1..5.0, 0.1, "Hz", enabled = fx) { save(s.copy(chorus = s.chorus.copy(rateHz = it))) }
-            SliderRow("Profondeur", s.chorus.depthMs, 0.5..8.0, 0.5, "ms", enabled = fx) { save(s.copy(chorus = s.chorus.copy(depthMs = it))) }
+            SliderRow(Tr.t("voicescreen.mix"), s.chorus.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(chorus = s.chorus.copy(mix = it))) }
+            SliderRow(Tr.t("voicescreen.rate"), s.chorus.rateHz, 0.1..5.0, 0.1, "Hz", enabled = fx) { save(s.copy(chorus = s.chorus.copy(rateHz = it))) }
+            SliderRow(Tr.t("voicescreen.depth"), s.chorus.depthMs, 0.5..8.0, 0.5, "ms", enabled = fx) { save(s.copy(chorus = s.chorus.copy(depthMs = it))) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = s.reverb.on, onCheckedChange = { save(s.copy(reverb = s.reverb.copy(on = it))) }, enabled = fx)
             Spacer(Modifier.width(8.dp))
-            Text("Réverbération", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("voicescreen.reverb"), style = MaterialTheme.typography.bodyMedium)
         }
         if (s.reverb.on) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -232,8 +232,8 @@ fun VoiceTab(
                     save(s.copy(reverb = s.reverb.copy(type = key, seconds = t.seconds)))
                 }, selected = s.reverb.type == key, enabled = fx)
             }
-            SliderRow("Dosage", s.reverb.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(reverb = s.reverb.copy(mix = it))) }
-            SliderRow("Durée", s.reverb.seconds, 0.2..4.0, 0.1, "s", enabled = fx) { save(s.copy(reverb = s.reverb.copy(seconds = it))) }
+            SliderRow(Tr.t("voicescreen.mix"), s.reverb.mix, 0.0..100.0, 5.0, "%", enabled = fx) { save(s.copy(reverb = s.reverb.copy(mix = it))) }
+            SliderRow(Tr.t("voicescreen.duration"), s.reverb.seconds, 0.2..4.0, 0.1, "s", enabled = fx) { save(s.copy(reverb = s.reverb.copy(seconds = it))) }
         }
     }
 
@@ -241,19 +241,19 @@ fun VoiceTab(
     if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.ROGER, beeps?.let { it.rogerEnabled || it.linkLostEnabled } == true)) panel { BeepsSection(beeps, beepsConnected) }
 
     if (Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.LISTEN, ui.recording || ui.playing)) panel {
-        Text("S'écouter sans émettre", style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.listen_title"), style = MaterialTheme.typography.titleSmall)
         Text(
-            "Enregistrez quelques secondes (30 s au plus), puis relisez-les avec les réglages en cours, modifiables pendant " +
-                "la relecture. Jamais envoyé à la station ; impossible pendant une émission (toute prise l'arrête). Casque conseillé.",
+            Tr.t("voicescreen.listen_hint"),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { if (ui.recording) VoiceHub.stopRecording() else say(VoiceHub.startRecording()) }, enabled = !transmitting) {
-                Text(if (ui.recording) "Arrêter (${ui.recordedS.roundToInt()} s)" else "Enregistrer")
+                Text(if (ui.recording) Tr.t("voicescreen.stop_recording", "seconds" to ui.recordedS.roundToInt()) else Tr.t("voicescreen.record"))
             }
             OutlinedButton(onClick = { if (ui.playing) VoiceHub.stopPlayback() else say(VoiceHub.play()) },
                 enabled = !transmitting && !ui.recording && ui.recordedS > 0) {
-                Text(if (ui.playing) "Arrêter la relecture" else "Relire" + if (ui.recordedS > 0) " (${ui.recordedS.roundToInt()} s)" else "")
+                Text(if (ui.playing) Tr.t("voicescreen.stop_playback")
+                    else if (ui.recordedS > 0) Tr.t("voicescreen.replay_seconds", "seconds" to ui.recordedS.roundToInt()) else Tr.t("voicescreen.replay"))
             }
         }
     }
@@ -263,12 +263,12 @@ fun VoiceTab(
     if (replayAllowed && Features.shown(com.rfdiy.openremotetrx.logic.MobileFeature.REPLAY)) ReplayPanel(transmitting, canBroadcast, onBroadcast, panel)
 
     if (eqShown || fxShown) panel {
-        Text("Partager les réglages", style = MaterialTheme.typography.titleSmall)
-        Text("Format commun avec la page web : la même voix sur le PC et le téléphone.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        Text(Tr.t("voicescreen.share_title"), style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.share_hint"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { exporter.launch("voix-openremotetrx.json") }) { Text("Exporter") }
-            OutlinedButton(onClick = { importer.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("Importer") }
-            TextButton(onClick = { save(VoiceSettings()) }) { Text("Réinitialiser") }
+            OutlinedButton(onClick = { exporter.launch("voix-openremotetrx.json") }) { Text(Tr.t("voicescreen.export")) }
+            OutlinedButton(onClick = { importer.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text(Tr.t("voicescreen.import")) }
+            TextButton(onClick = { save(VoiceSettings()) }) { Text(Tr.t("voicescreen.reset")) }
         }
     }
 }
@@ -297,10 +297,7 @@ private fun SliderRow(label: String, value: Double, range: ClosedFloatingPointRa
 }
 
 /** Texte montré avant toute mise en service (décision de l'utilisateur du 2026-10-29 : message clair et confirmation). */
-const val SCRAMBLER_WARNING = "Le scrambler rend votre voix incompréhensible pour qui n'a pas le même réglage. Ce n'est PAS un " +
-    "chiffrement : tout possesseur d'un scrambler identique vous entend.\n\nEn bandes radioamateur, le Règlement des " +
-    "radiocommunications (UIT, art. 25) et la réglementation nationale interdisent les émissions destinées à masquer le sens " +
-    "des messages. Vous en prenez l'ENTIÈRE responsabilité."
+val SCRAMBLER_WARNING: String get() = Tr.t("voicescreen.scrambler_warning")
 
 /** Rubrique « Scrambler » : brouiller l'émission, débrouiller la réception, mode commun avec la page, décalage fin. */
 @Composable
@@ -312,38 +309,36 @@ private fun ScramblerPanel(scr: ScramblerSettings, panel: @Composable (@Composab
         if (!refusedByBreizh && ((next.tx && !scr.tx) || (next.rx && !scr.rx))) asking = next else VoiceHub.setScrambler(context, next)
     }
     panel {
-        Text("Scrambler (voix brouillée)", style = MaterialTheme.typography.titleSmall)
-        Text("Désactivé à chaque démarrage. Même mode des deux côtés ; retard ajouté : environ 43 ms. Les tonalités SELCALL et les " +
-            "bips de la station ne sont pas brouillés.", color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
+        Text(Tr.t("voicescreen.scrambler_title"), style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.scrambler_hint"), color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
             val breizh = VoiceHub.ui.value.breizh                         // Breizh et scrambler d'émission exclusifs
             AppSwitch(checked = scr.tx, onCheckedChange = { change(scr.copy(tx = it)) }, enabled = !breizh)
             Spacer(Modifier.width(8.dp))
-            Text(if (breizh) "Brouiller mon émission (impossible : la voix passe par Breizh)" else "Brouiller mon émission",
+            Text(if (breizh) Tr.t("voicescreen.scramble_tx_breizh") else Tr.t("voicescreen.scramble_tx"),
                 style = MaterialTheme.typography.bodyMedium, color = if (scr.tx) WARN else if (breizh) Page.TEXTE_2 else Page.TEXTE)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppSwitch(checked = scr.rx, onCheckedChange = { change(scr.copy(rx = it)) })
             Spacer(Modifier.width(8.dp))
-            Text("Débrouiller la réception", style = MaterialTheme.typography.bodyMedium)
+            Text(Tr.t("voicescreen.descramble_rx"), style = MaterialTheme.typography.bodyMedium)
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for ((key, m) in Scramblers.MODES) CompactChip(m.label, onClick = { VoiceHub.setScrambler(context, scr.copy(mode = key)) }, selected = scr.mode == key)
         }
-        SliderRow("Décalage fin", scr.offsetHz.toDouble(), -Scramblers.OFFSET_MAX_HZ.toDouble()..Scramblers.OFFSET_MAX_HZ.toDouble(), 5.0, "Hz") {
+        SliderRow(Tr.t("voicescreen.fine_offset"), scr.offsetHz.toDouble(), -Scramblers.OFFSET_MAX_HZ.toDouble()..Scramblers.OFFSET_MAX_HZ.toDouble(), 5.0, "Hz") {
             VoiceHub.setScrambler(context, scr.copy(offsetHz = it.roundToInt()))
         }
-        Text("Réception BLU encore brouillée : ajustez le décalage fin (ou le RIT du poste). Essai sans émettre : « Relire » "+
-            "(ci-dessus) fait entendre votre voix brouillée ; avec « Débrouiller » aussi, elle doit redevenir claire.",
+        Text(Tr.t("voicescreen.scrambler_tuning"),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall)
     }
     asking?.let { next ->
         AlertDialog(
             onDismissRequest = { asking = null },
-            title = { Text(if (next.tx && !scr.tx) "Brouiller votre émission ?" else "Débrouiller la réception ?") },
+            title = { Text(if (next.tx && !scr.tx) Tr.t("voicescreen.confirm_scramble") else Tr.t("voicescreen.confirm_descramble")) },
             text = { Text(SCRAMBLER_WARNING) },
-            confirmButton = { TextButton(onClick = { VoiceHub.setScrambler(context, next); asking = null }) { Text("J'ai compris, activer") } },
-            dismissButton = { TextButton(onClick = { asking = null }) { Text("Annuler") } },
+            confirmButton = { TextButton(onClick = { VoiceHub.setScrambler(context, next); asking = null }) { Text(Tr.t("voicescreen.confirm_enable")) } },
+            dismissButton = { TextButton(onClick = { asking = null }) { Text(Tr.t("common.cancel")) } },
         )
     }
 }
@@ -386,18 +381,18 @@ private fun VoiceGraph(s: VoiceSettings) {
             drawCircle(Color.hsl((i * 32f) % 360f, 0.85f, 0.6f), 4.5.dp.toPx(), Offset(x(b.hz), y(near.db)))
         }
         label.textSize = 11.dp.toPx()
-        for ((hz, t) in listOf(100.0 to "100", 300.0 to "300", 1000.0 to "1 k", 3000.0 to "3 k Hz")) {
+        for ((hz, t) in listOf(100.0 to "100", 300.0 to "300", 1000.0 to "1 k", 3000.0 to "3 k Hz")) {   // i18n-ok
             drawContext.canvas.nativeCanvas.drawText(t, x(hz) + 3.dp.toPx(), h - 4.dp.toPx(), label)
         }
         for (db in listOf(12.0, -12.0)) drawContext.canvas.nativeCanvas.drawText((if (db > 0) "+" else "") + db.toInt() + " dB", 3.dp.toPx(), y(db) - 3.dp.toPx(), label)
-        val badges = listOfNotNull(if (s.chorus.on) "♫ chorus" else null, if (s.reverb.on) "≋ réverb" else null)
+        val badges = listOfNotNull(if (s.chorus.on) Tr.t("voicescreen.graph_chorus") else null, if (s.reverb.on) Tr.t("voicescreen.graph_reverb") else null)
         label.color = android.graphics.Color.rgb(255, 216, 74)
         badges.forEachIndexed { i, t -> drawContext.canvas.nativeCanvas.drawText(t, w - 80.dp.toPx(), (16 + 15 * i).dp.toPx(), label) }
         label.color = android.graphics.Color.rgb(138, 155, 181)
         if (!s.enabled) {
             drawRect(Color(0, 0, 0, 115))
             label.color = android.graphics.Color.WHITE
-            drawContext.canvas.nativeCanvas.drawText("ÉTEINT", w / 2 - 22.dp.toPx(), h / 2, label)
+            drawContext.canvas.nativeCanvas.drawText(Tr.t("voicescreen.graph_off"), w / 2 - 22.dp.toPx(), h / 2, label)
             label.color = android.graphics.Color.rgb(138, 155, 181)
         }
     }
@@ -416,19 +411,18 @@ private fun ReplayPanel(transmitting: Boolean, canBroadcast: Boolean, onBroadcas
     val r by com.rfdiy.openremotetrx.core.ReplayHub.ui.collectAsState()
     fun say(text: String?) { text?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() } }
     panel {
-        Text("Rediffusion d'un enregistrement", style = MaterialTheme.typography.titleSmall)
+        Text(Tr.t("voicescreen.replay_title"), style = MaterialTheme.typography.titleSmall)
         Text(
-            "Enregistre l'audio reçu (${r.maxS} s au plus), puis renvoie-le en émission. Micro coupé pendant la diffusion, " +
-                "écoute sur le téléphone. Rediffuser une station à des tiers est en général interdit : sous ta responsabilité.",
+            Tr.t("voicescreen.replay_hint", "seconds" to r.maxS),
             color = Page.TEXTE_2, style = MaterialTheme.typography.bodySmall,
         )
         Text(
             when {
-                r.recording -> "Enregistrement : ${r.recordedS.roundToInt()} / ${r.maxS} s   ${dbText(r.levelDb)}"
-                r.playing -> "Diffusion : ${r.positionS.roundToInt()} / ${r.recordedS.roundToInt()} s"
-                r.pending -> "Émission demandée…"
-                r.recordedS > 0 -> "Enregistré : ${r.recordedS.roundToInt()} s"
-                else -> "Rien d'enregistré."
+                r.recording -> Tr.t("voicescreen.replay_recording", "seconds" to r.recordedS.roundToInt(), "max" to r.maxS, "level" to dbText(r.levelDb))
+                r.playing -> Tr.t("voicescreen.replay_playing", "position" to r.positionS.roundToInt(), "seconds" to r.recordedS.roundToInt())
+                r.pending -> Tr.t("voicescreen.replay_pending")
+                r.recordedS > 0 -> Tr.t("voicescreen.replay_recorded", "seconds" to r.recordedS.roundToInt())
+                else -> Tr.t("voicescreen.replay_empty")
             },
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -436,16 +430,16 @@ private fun ReplayPanel(transmitting: Boolean, canBroadcast: Boolean, onBroadcas
             OutlinedButton(
                 onClick = { if (r.recording) com.rfdiy.openremotetrx.core.ReplayHub.stopRecording() else say(com.rfdiy.openremotetrx.core.ReplayHub.startRecording()) },
                 enabled = !transmitting && !r.playing && !r.pending,
-            ) { Text(if (r.recording) "Arrêter" else "Enregistrer") }
+            ) { Text(if (r.recording) Tr.t("common.stop") else Tr.t("voicescreen.record")) }
             Button(
                 onClick = {
                     val refused = com.rfdiy.openremotetrx.core.ReplayHub.broadcast()
                     if (refused == null) onBroadcast() else say(refused)
                 },
                 enabled = canBroadcast && !transmitting && !r.recording && !r.playing && !r.pending && r.recordedS > 0,
-            ) { Text("Diffuser en émission") }
+            ) { Text(Tr.t("voicescreen.broadcast")) }
         }
-        if (!canBroadcast) Text("« Émission autorisée » doit être allumé.", color = WARN, style = MaterialTheme.typography.bodySmall)
+        if (!canBroadcast) Text(Tr.t("voicescreen.armed_needed"), color = WARN, style = MaterialTheme.typography.bodySmall)
     }
 }
 

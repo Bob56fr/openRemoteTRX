@@ -11,6 +11,7 @@ import com.rfdiy.openremotetrx.logic.Car
 import com.rfdiy.openremotetrx.logic.Favorites
 import com.rfdiy.openremotetrx.logic.LinkStatus
 import com.rfdiy.openremotetrx.logic.Radio
+import com.rfdiy.openremotetrx.logic.Tr
 
 /**
  * Android Auto (lot A2) : lecteur standard (toutes les voitures compatibles, filaire ou sans fil, aucun code propre à
@@ -52,16 +53,16 @@ class RigAutoService : MediaBrowserService() {
         val items: List<MediaBrowser.MediaItem> = when (parentId) {
             // Seules les mémoires FAVORITES existent sur la voiture (demande de l'utilisateur).
             ROOT -> listOf(
-                folder(FAVORITES, "Favoris", if (connected) "${Favorites.list(ui.rig.memories).size} favoris : ◀★ ★▶ ou volant" else "Station non connectée"),
-                folder(STATIONS, "Stations", ui.station?.name?.let { "Connecté : $it" } ?: "Se connecter"),
-                folder(BANDS, "Bandes", "Dernière fréquence de la bande"),
+                folder(FAVORITES, Tr.t("rigautoservice.favorites"), if (connected) Tr.t("rigautoservice.favorites_hint", "count" to Favorites.list(ui.rig.memories).size) else Tr.t("rigautoservice.not_connected")),
+                folder(STATIONS, Tr.t("rigautoservice.stations"), ui.station?.name?.let { Tr.t("rigautoservice.connected_to", "name" to it) } ?: Tr.t("rigautoservice.connect")),
+                folder(BANDS, Tr.t("rigautoservice.bands"), Tr.t("rigautoservice.bands_hint")),
             )
             STATIONS -> buildList {
                 for (account in AccountStore(this@RigAutoService).list()) {
                     val current = ui.station?.id == account.id && ui.rig.status != LinkStatus.DISCONNECTED
-                    add(playable("$STATION:${account.id}", account.name, if (current) "connectée" else account.url))
+                    add(playable("$STATION:${account.id}", account.name, if (current) Tr.t("rigautoservice.station_connected") else account.url))
                 }
-                if (ui.rig.status != LinkStatus.DISCONNECTED) add(playable("$DISCONNECT:", "Déconnecter", ui.station?.name ?: ""))
+                if (ui.rig.status != LinkStatus.DISCONNECTED) add(playable("$DISCONNECT:", Tr.t("common.disconnect"), ui.station?.name ?: ""))
             }
             FAVORITES -> if (!connected) emptyList() else Favorites.list(ui.rig.memories).map { m ->
                 playable("$MEMORY:${m.id}", "★ ${m.name}", "${Car.frequency(m.hz)} ${Radio.modeLabel(m.mode)}", Artwork.key(true, m.hz))

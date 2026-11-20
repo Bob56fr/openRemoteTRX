@@ -93,6 +93,7 @@ import com.rfdiy.openremotetrx.logic.Meter
 import com.rfdiy.openremotetrx.logic.Radio
 import com.rfdiy.openremotetrx.logic.RigSession
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import com.rfdiy.openremotetrx.protocol.Hello
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -117,9 +118,9 @@ internal fun RigScope.MemoriesTab(mini: Boolean = true) {
             // Mémoires partagées de la station
             if (hello?.offers("memories") == true || rig.memories.isNotEmpty()) Panel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Mémoires", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text(Tr.t("memoriestab.memories"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     TextButton(onClick = { memoryDialog = MemoryEdit(null, "", shownHz, radio?.mode, false) }, enabled = connected) {
-                        Text("+ Mémoriser ici")
+                        Text(Tr.t("memoriestab.store_here"))
                     }
                 }
                 // Lignes de 40 dp (assez pour le doigt) : ★ favori, nom + fréquence = rappel, ✎ = modifier ; bloc sans
@@ -151,8 +152,8 @@ internal fun RigScope.MemoriesTab(mini: Boolean = true) {
             rig.clusterView(System.currentTimeMillis())?.let { cv -> Panel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.size(10.dp).background(HEALTH[cv.health] ?: Page.TEXTE_2, CircleShape))
-                    Text("Cluster DX : " + cv.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { spotsDialog = true }) { Text("Tout afficher") }
+                    Text(Tr.t("memoriestab.cluster_title", "title" to cv.title), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { spotsDialog = true }) { Text(Tr.t("memoriestab.show_all")) }
                 }
                 for (line in cv.lines) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

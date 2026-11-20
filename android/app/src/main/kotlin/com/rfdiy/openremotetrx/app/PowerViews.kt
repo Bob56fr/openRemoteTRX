@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.Power
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -64,8 +65,8 @@ internal fun RigScope.StopButton(modifier: Modifier, height: Dp, onStopped: () -
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     var holdLeft by remember { mutableStateOf<Int?>(null) }
-    val sub = holdLeft?.let { "choix dans $it s…" }
-        ?: if (rig.stopHold.powerOff || hello?.offers("power") == true) "appui long : déconnexion ou arrêt du TRX" else "appui long : déconnecter"
+    val sub = holdLeft?.let { Tr.t("powerviews.hold_left", "seconds" to it) }
+        ?: if (rig.stopHold.powerOff || hello?.offers("power") == true) Tr.t("powerviews.hold_power") else Tr.t("powerviews.hold_disconnect")
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = if (enabled) TX_COLOR else TX_COLOR.copy(alpha = 0.35f),
@@ -113,9 +114,9 @@ internal fun RigScope.PowerBannerRow() {
     Surface(color = TX_COLOR, contentColor = Color.White, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(banner.text, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            if (banner.canPowerOn || banner.text.contains("en cours")) {
+            if (banner.canPowerOn || banner.text == Tr.t("power.banner_running")) {
                 OutlinedButton(onClick = { RigHub.powerOn() }, enabled = banner.canPowerOn) {
-                    Text("Allumer le poste", color = Color.White)
+                    Text(Tr.t("powerviews.power_on"), color = Color.White)
                 }
             }
         }
@@ -155,12 +156,12 @@ internal fun RigScope.PowerDialogs() {
             },
             confirmButton = {
                 when {
-                    view.canRetry -> Button(onClick = { RigHub.powerOn() }) { Text("Réessayer") }
-                    view.canHide -> Button(onClick = { RigHub.powerHide() }) { Text("Masquer") }
-                    else -> Button(onClick = { RigHub.powerHide() }) { Text("Fermer") }
+                    view.canRetry -> Button(onClick = { RigHub.powerOn() }) { Text(Tr.t("common.retry")) }
+                    view.canHide -> Button(onClick = { RigHub.powerHide() }) { Text(Tr.t("common.hide")) }
+                    else -> Button(onClick = { RigHub.powerHide() }) { Text(Tr.t("common.close")) }
                 }
             },
-            dismissButton = { if (view.canContinue) TextButton(onClick = { RigHub.powerHide() }) { Text("Continuer sans le poste") } },
+            dismissButton = { if (view.canContinue) TextButton(onClick = { RigHub.powerHide() }) { Text(Tr.t("powerviews.continue_without")) } },
         )
     }
 }
@@ -175,20 +176,20 @@ private fun RigScope.StopHoldDialog(onClose: () -> Unit) {
     val refused = sent && rig.powerOffNotice.isNotEmpty()
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(when { refused -> "Arrêt du TRX refusé"; confirming -> Power.CONFIRM_TITLE; else -> "STOP maintenu : que voulez-vous faire ?" }) },
+        title = { Text(when { refused -> Tr.t("powerviews.off_refused"); confirming -> Power.CONFIRM_TITLE; else -> Tr.t("powerviews.hold_question") }) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 when {
                     refused -> Text(rig.powerOffNotice)
-                    sent -> Text("Arrêt demandé à la station…")
+                    sent -> Text(Tr.t("powerviews.off_sent"))
                     confirming -> Text(Power.CONFIRM_TEXT)
                     else -> {
-                        Text("La station est déjà revenue en réception.", style = MaterialTheme.typography.bodySmall)
+                        Text(Tr.t("powerviews.already_rx"), style = MaterialTheme.typography.bodySmall)
                         OutlinedButton(onClick = { onClose(); RigHub.stop(); onDisconnect() }, modifier = Modifier.fillMaxWidth()) {
-                            Text("Se déconnecter")
+                            Text(Tr.t("powerviews.disconnect"))
                         }
                         OutlinedButton(onClick = { confirming = true }, enabled = choices.powerOff, modifier = Modifier.fillMaxWidth()) {
-                            Text("Arrêter le TRX à distance")
+                            Text(Tr.t("powerviews.power_off_remote"))
                         }
                         if (choices.powerReason.isNotEmpty()) Text(choices.powerReason, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
                     }
@@ -197,9 +198,9 @@ private fun RigScope.StopHoldDialog(onClose: () -> Unit) {
         },
         confirmButton = {
             if (confirming && !sent) Button(onClick = { sent = true; RigHub.powerOff() },
-                colors = ButtonDefaults.buttonColors(containerColor = TX_COLOR, contentColor = Color.White)) { Text("Arrêter le TRX") }
+                colors = ButtonDefaults.buttonColors(containerColor = TX_COLOR, contentColor = Color.White)) { Text(Tr.t("powerviews.power_off")) }
         },
-        dismissButton = { Button(onClick = onClose) { Text(if (refused) "Fermer" else "Annuler") } },
+        dismissButton = { Button(onClick = onClose) { Text(if (refused) Tr.t("common.close") else Tr.t("common.cancel")) } },
     )
 }
 

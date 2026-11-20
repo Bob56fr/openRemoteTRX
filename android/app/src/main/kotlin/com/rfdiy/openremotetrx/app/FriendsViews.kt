@@ -55,6 +55,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.rfdiy.openremotetrx.core.RigHub
 import com.rfdiy.openremotetrx.logic.Friends
 import com.rfdiy.openremotetrx.logic.RigState
+import com.rfdiy.openremotetrx.logic.Tr
 import kotlinx.coroutines.delay
 
 /*
@@ -99,9 +100,9 @@ internal fun FriendsBanner(rig: RigState, onOpen: () -> Unit) {
         Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("Amis", style = MaterialTheme.typography.labelLarge, color = Page.TEXTE_2)
+        Text(Tr.t("friendsviews.friends"), style = MaterialTheme.typography.labelLarge, color = Page.TEXTE_2)
         for (m in b.list) FriendDot(m, 20.dp)
-        Text(if (b.total == 0) "aucun" else "${b.active}/${b.total}", style = MaterialTheme.typography.labelMedium, color = Page.TEXTE_2)
+        Text(if (b.total == 0) Tr.t("friendsviews.none") else "${b.active}/${b.total}", style = MaterialTheme.typography.labelMedium, color = Page.TEXTE_2)
     }
 }
 
@@ -127,79 +128,79 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
 
     Panel {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Amis", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            if (f.back) CompactChip("↩ Retour", onClick = { RigHub.friendsBack() }, enabled = canSet)
-            CompactChip("Veille", onClick = { watch = true })
+            Text(Tr.t("friendsviews.friends"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            if (f.back) CompactChip(Tr.t("friendsviews.back"), onClick = { RigHub.friendsBack() }, enabled = canSet)
+            CompactChip(Tr.t("friendsviews.watch"), onClick = { watch = true })
             CompactChip("⟳", onClick = { RigHub.friendsRefresh() })
         }
         if (view != null) {
-            val status = listOf(if (view.pseudo.isNotEmpty()) "Pseudo ${view.pseudo}" else "Pas encore de pseudo",
-                                if (view.registered) "enregistrée auprès du relais" else "pas encore enregistrée",
-                                view.problem?.let { "problème : $it" }).filterNotNull().joinToString(" · ")
+            val status = listOf(if (view.pseudo.isNotEmpty()) Tr.t("friendsviews.pseudo_is", "pseudo" to view.pseudo) else Tr.t("friendsviews.no_pseudo"),
+                                if (view.registered) Tr.t("friendsviews.registered") else Tr.t("friendsviews.not_registered"),
+                                view.problem?.let { Tr.t("friendsviews.problem", "problem" to it) }).filterNotNull().joinToString(" · ")
             Text(status, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
-        } else Text("Lecture…", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+        } else Text(Tr.t("friendsviews.reading"), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         if (f.notice.isNotEmpty()) Text(f.notice, style = MaterialTheme.typography.bodySmall, color = WARN,
                                         modifier = Modifier.clickable { RigHub.friendsDismiss() })
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            CompactChip("Par groupe", onClick = { byMember = false; prefs.edit().putString(PREF_FRIENDS_BY, "group").apply() }, selected = !byMember)
-            CompactChip("Par membre", onClick = { byMember = true; prefs.edit().putString(PREF_FRIENDS_BY, "member").apply() }, selected = byMember)
+            CompactChip(Tr.t("friendsviews.by_group"), onClick = { byMember = false; prefs.edit().putString(PREF_FRIENDS_BY, "group").apply() }, selected = !byMember)
+            CompactChip(Tr.t("friendsviews.by_member"), onClick = { byMember = true; prefs.edit().putString(PREF_FRIENDS_BY, "member").apply() }, selected = byMember)
         }
         val groups = view?.groups.orEmpty()
-        if (groups.isEmpty()) Text("Aucun groupe : créez-en un, ou rejoignez celui d'un ami avec son invitation.",
+        if (groups.isEmpty()) Text(Tr.t("friendsviews.no_groups"),
                                    style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         else if (byMember) {
             // Bloc de l'accueil : les amis JOIGNABLES seulement (demande de l'utilisateur, 2026-11-11)
             val shown = if (compact) view!!.members.filter { it.code != "O" } else view!!.members
             for (m in shown) FriendRow(m) { member = m to null }
             if (compact && shown.size < view.members.size) OfflineCount(view.members.size - shown.size)
-            if (view.members.isEmpty()) Text("Personne d'autre dans vos groupes pour l'instant.", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+            if (view.members.isEmpty()) Text(Tr.t("friendsviews.nobody_in_groups"), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         } else for (g in groups) {
             HorizontalDivider(color = Page.LIGNE)
             Text(g.name + (if (g.role != "m") " · ${g.roleText}" else "") + (if (g.statusText.isNotEmpty()) " · ${g.statusText}" else ""),
                  style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             if (!compact) FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (g.status == "member") CompactChip("Partage", onClick = { share = g })
+                if (g.status == "member") CompactChip(Tr.t("friendsviews.share"), onClick = { share = g })
                 if (g.admin && g.status == "member") {
-                    CompactChip("Inviter", onClick = { RigHub.friendsAction("invite", mapOf("g" to g.g, "days" to 7)) })
-                    CompactChip("Statistiques", onClick = { RigHub.friendsAction("stats", mapOf("g" to g.g)) })
+                    CompactChip(Tr.t("friendsviews.invite"), onClick = { RigHub.friendsAction("invite", mapOf("g" to g.g, "days" to 7)) })
+                    CompactChip(Tr.t("friendsviews.stats"), onClick = { RigHub.friendsAction("stats", mapOf("g" to g.g)) })
                 }
-                CompactChip(if (g.role == "a") "Quitter ou supprimer" else "Quitter", onClick = { leave = g })
+                CompactChip(if (g.role == "a") Tr.t("friendsviews.leave_or_delete") else Tr.t("friendsviews.leave"), onClick = { leave = g })
             }
             val shown = if (compact) g.members.filter { it.code != "O" } else g.members
             for (m in shown) FriendRow(m) { member = m to g }
             if (compact && shown.size < g.members.size) OfflineCount(g.members.size - shown.size)
-            if (g.members.isEmpty() && g.status == "member") Text("Personne d'autre pour l'instant.", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+            if (g.members.isEmpty() && g.status == "member") Text(Tr.t("friendsviews.nobody_yet"), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         }
         if (!compact) {
             HorizontalDivider(color = Page.LIGNE)
-            Text("Mon statut", style = MaterialTheme.typography.labelLarge)
+            Text(Tr.t("friendsviews.my_status"), style = MaterialTheme.typography.labelLarge)
             // Choix unique, le bouton en cours allumé, puis UNE phrase : ce que voient les amis (étapes 297 et 299)
             val choice = view?.me?.choice
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CompactChip("Automatique", onClick = { RigHub.friendsAction("shack_cancel") }, selected = choice == "auto")
-                CompactChip("Au shack 1 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 60)) }, selected = choice == "60")
-                CompactChip("Au shack 2 h", onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 120)) }, selected = choice == "120")
+                CompactChip(Tr.t("friendsviews.automatic"), onClick = { RigHub.friendsAction("shack_cancel") }, selected = choice == "auto")
+                CompactChip(Tr.t("friendsviews.shack_1h"), onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 60)) }, selected = choice == "60")
+                CompactChip(Tr.t("friendsviews.shack_2h"), onClick = { RigHub.friendsAction("shack_for", mapOf("minutes" to 120)) }, selected = choice == "120")
             }
             view?.me?.let { Text(it.text, style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2) }
             HorizontalDivider(color = Page.LIGNE)
-            Text("Pseudo dans les groupes", style = MaterialTheme.typography.labelLarge)
+            Text(Tr.t("friendsviews.pseudo_in_groups"), style = MaterialTheme.typography.labelLarge)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Box(Modifier.weight(1f)) { CompactField(pseudo, { pseudo = it.take(16) }, "Pseudo") }
+                Box(Modifier.weight(1f)) { CompactField(pseudo, { pseudo = it.take(16) }, Tr.t("friendsviews.pseudo")) }
                 TextButton(onClick = { Friends.cleanPseudo(pseudo)?.let { RigHub.friendsAction("pseudo", mapOf("pseudo" to it)) } },
-                           enabled = Friends.cleanPseudo(pseudo) != null && Friends.cleanPseudo(pseudo) != view?.pseudo) { Text("Enregistrer le pseudo") }
+                           enabled = Friends.cleanPseudo(pseudo) != null && Friends.cleanPseudo(pseudo) != view?.pseudo) { Text(Tr.t("friendsviews.save_pseudo")) }
             }
             HorizontalDivider(color = Page.LIGNE)
-            Text("Groupes", style = MaterialTheme.typography.labelLarge)
+            Text(Tr.t("friendsviews.groups"), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CompactChip("Créer un groupe", onClick = { create = true })
-                CompactChip("Rejoindre (invitation)", onClick = { join = true })
+                CompactChip(Tr.t("friendsviews.create_group"), onClick = { create = true })
+                CompactChip(Tr.t("friendsviews.join_invitation"), onClick = { join = true })
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Bloc « Amis » sur l'onglet Station (à la place du petit waterfall et des bandes)",
+                Text(Tr.t("friendsviews.block_switch"),
                      style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
                 Switch(block, { block = it; prefs.edit().putBoolean(PREF_FRIENDS_BLOCK, it).apply() })
             }
-            Text("Le relais de présence ne voit que des états chiffrés ; un QSY vers un ami se fait en réception, après confirmation, jamais pendant une émission.",
+            Text(Tr.t("friendsviews.relay_note"),
                  style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
         }
     }
@@ -216,7 +217,7 @@ internal fun FriendsPanel(rig: RigState, canSet: Boolean, compact: Boolean, pref
 
 @Composable
 private fun OfflineCount(n: Int) {
-    Text("$n hors ligne", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+    Text(Tr.t("friendsviews.offline", "n" to n), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
 }
 
 @Composable
@@ -254,21 +255,21 @@ private fun MemberDialog(rig: RigState, m: Friends.Member, g: Friends.Group?, ca
                     HorizontalDivider(color = Page.LIGNE)
                     TextButton(onClick = {
                         RigHub.friendsAction("role", mapOf("g" to g.g, "member" to m.id, "role" to if (m.role == "c") "m" else "c")); onClose()
-                    }) { Text(if (m.role == "c") "Retirer co-administrateur" else "Nommer co-administrateur") }
-                    if (!confirmExclude) TextButton(onClick = { confirmExclude = true }) { Text("Exclure du groupe…") }
+                    }) { Text(if (m.role == "c") Tr.t("friendsviews.remove_coadmin") else Tr.t("friendsviews.name_coadmin")) }
+                    if (!confirmExclude) TextButton(onClick = { confirmExclude = true }) { Text(Tr.t("friendsviews.exclude_ask")) }
                     else {
-                        Text("Exclure ${m.pseudo} ? Une nouvelle clé est remise aux autres membres : ${m.pseudo} ne lira plus rien du groupe.", color = WARN)
-                        TextButton(onClick = { RigHub.friendsAction("exclude", mapOf("g" to g.g, "member" to m.id)); onClose() }) { Text("Exclure", color = Page.TX) }
+                        Text(Tr.t("friendsviews.exclude_confirm", "pseudo" to m.pseudo), color = WARN)
+                        TextButton(onClick = { RigHub.friendsAction("exclude", mapOf("g" to g.g, "member" to m.id)); onClose() }) { Text(Tr.t("friendsviews.exclude"), color = Page.TX) }
                     }
                 }
             }
         },
         confirmButton = {
             if (m.qsy && plan.ok) TextButton(onClick = { RigHub.friendsQsy(plan.hz!!, plan.mode!!); onClose() }, enabled = canSet) {
-                Text("Aller sur cette fréquence")
+                Text(Tr.t("friendsviews.go_to_frequency"))
             }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Fermer") } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.close")) } },
     )
 }
 
@@ -288,20 +289,20 @@ private fun ShareDialog(g: Friends.Group, presets: List<String>, onClose: () -> 
     val clean = Friends.cleanText(text)
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Partage · ${g.name}") },
+        title = { Text(Tr.t("friendsviews.share_title", "name" to g.name)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 LevelChips(level) { level = it }
                 if (level == "x") {
-                    OutlinedTextField(text, { text = it.take(16) }, label = { Text("Texte (16 caractères)") }, singleLine = true,
+                    OutlinedTextField(text, { text = it.take(16) }, label = { Text(Tr.t("friendsviews.text_16")) }, singleLine = true,
                                       isError = clean == null)
                     if (presets.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         for (p in presets) CompactChip(p, onClick = { text = p })
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(invisible, { invisible = it }); Text("Invisible dans ce groupe (les autres me voient hors ligne)") }
-                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(hide, { hide = it }); Text("Ne pas montrer depuis quand je suis absent") }
-                Text("Pris à la prochaine requête de la station (moins de 2 minutes).", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(invisible, { invisible = it }); Text(Tr.t("friendsviews.invisible")) }
+                Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(hide, { hide = it }); Text(Tr.t("friendsviews.hide_absence")) }
+                Text(Tr.t("friendsviews.next_request"), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },
         confirmButton = {
@@ -309,9 +310,9 @@ private fun ShareDialog(g: Friends.Group, presets: List<String>, onClose: () -> 
                 RigHub.friendsAction("share", mapOf("g" to g.g, "level" to level, "invisible" to invisible, "hide_absence" to hide,
                                                     "text" to if (level == "x") clean else null))
                 onClose()
-            }, enabled = level != "x" || clean != null) { Text("Enregistrer") }
+            }, enabled = level != "x" || clean != null) { Text(Tr.t("common.save")) }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -323,20 +324,20 @@ private fun JoinDialog(onClose: () -> Unit) {
     val link = Friends.cleanInvitation(url)
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Rejoindre un groupe") },
+        title = { Text(Tr.t("friendsviews.join_title")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(url, { url = it }, label = { Text("Invitation reçue") }, minLines = 2)
-                OutlinedTextField(name, { name = it.take(24) }, label = { Text("Nom du groupe chez moi (facultatif)") }, singleLine = true)
+                OutlinedTextField(url, { url = it }, label = { Text(Tr.t("friendsviews.invitation_received")) }, minLines = 2)
+                OutlinedTextField(name, { name = it.take(24) }, label = { Text(Tr.t("friendsviews.group_name_local")) }, singleLine = true)
                 for (c in Friends.CONSENT) Text(c, style = MaterialTheme.typography.bodySmall)
-                Text("Je partage", style = MaterialTheme.typography.labelLarge)
+                Text(Tr.t("friendsviews.i_share"), style = MaterialTheme.typography.labelLarge)
                 LevelChips(level) { level = it }
             }
         },
         confirmButton = {
-            TextButton(onClick = { RigHub.friendsJoin(link!!, name.trim(), level); onClose() }, enabled = link != null) { Text("J'accepte et je rejoins") }
+            TextButton(onClick = { RigHub.friendsJoin(link!!, name.trim(), level); onClose() }, enabled = link != null) { Text(Tr.t("friendsviews.accept_join")) }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -345,15 +346,15 @@ private fun CreateDialog(onClose: () -> Unit) {
     var name by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Créer un groupe") },
+        title = { Text(Tr.t("friendsviews.create_group")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(name, { name = it.take(24) }, label = { Text("Nom du groupe") }, singleLine = true)
-                Text("Vous en serez l'administrateur ; invitez ensuite vos amis (« Inviter »).", style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
+                OutlinedTextField(name, { name = it.take(24) }, label = { Text(Tr.t("friendsviews.group_name")) }, singleLine = true)
+                Text(Tr.t("friendsviews.create_note"), style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },
-        confirmButton = { TextButton(onClick = { RigHub.friendsAction("create", mapOf("name" to name.trim())); onClose() }, enabled = name.isNotBlank()) { Text("Créer") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+        confirmButton = { TextButton(onClick = { RigHub.friendsAction("create", mapOf("name" to name.trim())); onClose() }, enabled = name.isNotBlank()) { Text(Tr.t("friendsviews.create")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -365,16 +366,16 @@ private fun LeaveDialog(g: Friends.Group, onClose: () -> Unit) {
         title = { Text(g.name) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(if (g.role == "a") "Vous êtes administrateur : supprimer le groupe pour tout le monde, ou seulement le quitter ?"
-                     else "Quitter ce groupe ? Il faudra une nouvelle invitation pour y revenir.")
+                Text(if (g.role == "a") Tr.t("friendsviews.leave_admin")
+                     else Tr.t("friendsviews.leave_question"))
                 if (g.role == "a") {
-                    if (!sure) TextButton(onClick = { sure = true }) { Text("Supprimer pour tous…", color = Page.TX) }
-                    else TextButton(onClick = { RigHub.friendsAction("delete", mapOf("g" to g.g)); onClose() }) { Text("Confirmer la suppression", color = Page.TX) }
+                    if (!sure) TextButton(onClick = { sure = true }) { Text(Tr.t("friendsviews.delete_all"), color = Page.TX) }
+                    else TextButton(onClick = { RigHub.friendsAction("delete", mapOf("g" to g.g)); onClose() }) { Text(Tr.t("friendsviews.confirm_delete"), color = Page.TX) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { RigHub.friendsAction("leave", mapOf("g" to g.g)); onClose() }) { Text("Quitter le groupe") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annuler") } },
+        confirmButton = { TextButton(onClick = { RigHub.friendsAction("leave", mapOf("g" to g.g)); onClose() }) { Text(Tr.t("friendsviews.leave_group")) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(Tr.t("common.cancel")) } },
     )
 }
 
@@ -383,28 +384,28 @@ private fun InviteDialog(url: String) {
     val context = LocalContext.current
     AlertDialog(
         onDismissRequest = { RigHub.friendsDismiss() },
-        title = { Text("Invitation") },
+        title = { Text(Tr.t("friendsviews.invitation")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Valable 7 jours, pour UNE seule station. Elle contient la clé du groupe : à transmettre seulement à la personne invitée.")
+                Text(Tr.t("friendsviews.invite_valid"))
                 Text(url, style = MaterialTheme.typography.bodySmall)
-                Text("Son adhésion sera validée automatiquement par votre station. QR code : TRX Console, menu 5.3.",
+                Text(Tr.t("friendsviews.invite_auto"),
                      style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url)
-                    .putExtra(Intent.EXTRA_SUBJECT, "Invitation openRemoteTRX")
-                context.startActivity(Intent.createChooser(send, "Envoyer l'invitation"))
-            }) { Text("Partager") }
+                    .putExtra(Intent.EXTRA_SUBJECT, Tr.t("friendsviews.invite_subject"))
+                context.startActivity(Intent.createChooser(send, Tr.t("friendsviews.send_invite")))
+            }) { Text(Tr.t("common.share")) }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = {
-                    (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(ClipData.newPlainText("Invitation", url))
-                }) { Text("Copier") }
-                TextButton(onClick = { RigHub.friendsDismiss() }) { Text("Fermer") }
+                    (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(ClipData.newPlainText(Tr.t("friendsviews.invitation"), url))
+                }) { Text(Tr.t("common.copy")) }
+                TextButton(onClick = { RigHub.friendsDismiss() }) { Text(Tr.t("common.close")) }
             }
         },
     )
@@ -414,16 +415,16 @@ private fun InviteDialog(url: String) {
 private fun StatsDialog(g: Friends.Group?, rows: List<Friends.StatsRow>) {
     AlertDialog(
         onDismissRequest = { RigHub.friendsDismiss() },
-        title = { Text("Statistiques" + (g?.let { " · ${it.name}" } ?: "")) },
+        title = { Text(Tr.t("friendsviews.stats") + (g?.let { " · ${it.name}" } ?: "")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (rows.isEmpty()) Text("Pas encore de statistiques : elles se remplissent pendant que votre station est en marche.")
-                for (r in rows) Text("${r.pseudo} : dernier jour actif ${r.lastActive}, ${r.days} jour(s) actif(s) ce mois ; cette semaine QSO ${r.qsoMin} min, RX ${r.rxMin} min")
-                Text("Agrégées par jour, 6 mois au plus, calculées sur votre station ; les heures où elle était éteinte ne sont pas comptées.",
+                if (rows.isEmpty()) Text(Tr.t("friendsviews.no_stats"))
+                for (r in rows) Text(Tr.t("friendsviews.stats_row", "pseudo" to r.pseudo, "last_active" to r.lastActive, "days" to r.days, "qso_min" to r.qsoMin, "rx_min" to r.rxMin))
+                Text(Tr.t("friendsviews.stats_note"),
                      style = MaterialTheme.typography.bodySmall, color = Page.TEXTE_2)
             }
         },
-        confirmButton = { TextButton(onClick = { RigHub.friendsDismiss() }) { Text("Fermer") } },
+        confirmButton = { TextButton(onClick = { RigHub.friendsDismiss() }) { Text(Tr.t("common.close")) } },
     )
 }
 
@@ -450,9 +451,9 @@ private fun ShackWatch(rig: RigState, onClose: () -> Unit) {
         }
         Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClick = onClose).padding(24.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Amis", color = Page.TEXTE_2, fontSize = 22.sp)
+                Text(Tr.t("friendsviews.friends"), color = Page.TEXTE_2, fontSize = 22.sp)
                 val members = view?.members.orEmpty()
-                if (members.isEmpty()) Text("Personne pour l'instant.", color = Page.TEXTE_2, fontSize = 26.sp)
+                if (members.isEmpty()) Text(Tr.t("friendsviews.nobody"), color = Page.TEXTE_2, fontSize = 26.sp)
                 for (m in members.take(12)) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     FriendDot(m, 34.dp)
                     Column {
@@ -460,7 +461,7 @@ private fun ShackWatch(rig: RigState, onClose: () -> Unit) {
                         Text(m.detail, color = Page.TEXTE_2, fontSize = 20.sp)
                     }
                 }
-                Text("Toucher pour fermer", color = Page.TEXTE_2.copy(alpha = 0.5f), fontSize = 14.sp)
+                Text(Tr.t("friendsviews.touch_to_close"), color = Page.TEXTE_2.copy(alpha = 0.5f), fontSize = 14.sp)
             }
         }
     }
