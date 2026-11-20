@@ -1,0 +1,1 @@
+Poste radioamateur relié au PC (câble CAT USB ou interface audio/CAT). Hamlib pour Windows installé à part (gratuit). Réseau local ou accès distant (VPN de votre choix ou port exposé avec TLS).

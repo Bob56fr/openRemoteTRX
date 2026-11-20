@@ -1,0 +1,9 @@
+Écoute et pilotage du poste depuis un téléphone ou un navigateur
+Son dans les deux sens (WebRTC, Opus), chiffré
+Tout poste reconnu par Hamlib (environ 300 modèles)
+PTT en alternat, TOT, retour en réception automatique, bouton STOP
+Superviseur indépendant et garde de fin : le poste revient en réception en cas de panne
+Spectre HF, S-mètre, mémoires, Cluster DX, mesure de TOS
+FreeDV RADE en réception
+Comptes des opérateurs et visiteurs en réception seule
+TRX Console en français, anglais, allemand et espagnol

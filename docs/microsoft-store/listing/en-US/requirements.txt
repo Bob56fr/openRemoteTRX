@@ -1,0 +1,1 @@
+Amateur radio transceiver connected to the PC (USB CAT cable or audio/CAT interface). Hamlib for Windows installed separately (free). Local network or remote access (VPN of your choice or exposed port with TLS).

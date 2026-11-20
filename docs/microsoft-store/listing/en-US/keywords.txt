@@ -1,0 +1,7 @@
+amateur radio
+ham radio
+remote station
+Hamlib
+CAT
+transceiver
+SDR

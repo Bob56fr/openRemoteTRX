@@ -1,0 +1,14 @@
+openRemoteTRX transforme votre PC Windows en STATION DISTANTE pour votre poste radioamateur : écoutez et pilotez votre émetteur-récepteur depuis votre téléphone (application openRemoteTRX pour Android, Android Auto) ou depuis un navigateur, chez vous ou en déplacement.
+
+La station installée par ce paquet pilote le poste par Hamlib (environ 300 modèles reconnus : Icom, Yaesu, Kenwood, Elecraft…), transmet le son dans les deux sens (WebRTC, Opus) et sert une page web sécurisée (HTTPS) : fréquence, mode, filtres, S-mètre, spectre HF, mémoires, Cluster DX, mesure de TOS, FreeDV en réception.
+
+SÉCURITÉ D'ÉMISSION, assurée par la station elle-même : PTT en alternat seulement, coupure au bout du temps maximal (TOT), retour en réception si l'appareil distant ne répond plus, un seul opérateur émet à la fois, bouton STOP toujours visible, superviseur indépendant qui remet le poste en réception en cas de panne, même si la station est fermée de force.
+
+TRX Console guide la mise en service : choix du poste, du port série et de la carte son, comptes des opérateurs (un par appareil), bandes autorisées, alertes sur le téléphone, essais du poste.
+
+Il faut : un poste radioamateur relié au PC (câble CAT USB ou interface type Digirig / SignaLink), et Hamlib pour Windows (gratuit, installé à part ; TRX Console vous guide).
+
+Réservé aux radioamateurs titulaires d'une licence : vous êtes responsable de vos émissions et du respect des règles de votre pays.
+
+Logiciel libre (AGPL-3.0) : https://github.com/Bob56fr/openRemoteTRX
+Aucune publicité, aucun compte chez l'éditeur, aucun traceur.

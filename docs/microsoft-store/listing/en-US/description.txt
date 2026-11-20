@@ -1,0 +1,14 @@
+openRemoteTRX turns your Windows PC into a REMOTE STATION for your amateur radio transceiver: listen to and control your radio from your phone (openRemoteTRX app for Android, Android Auto) or from a web browser, at home or on the move.
+
+The station installed by this package controls the radio through Hamlib (about 300 supported models: Icom, Yaesu, Kenwood, Elecraft…), carries audio both ways (WebRTC, Opus) and serves a secure web page (HTTPS): frequency, mode, filters, S-meter, HF spectrum, memories, DX Cluster, SWR measurement, FreeDV reception.
+
+TRANSMIT SAFETY, enforced by the station itself: toggle PTT only, cut-off after the maximum time (TOT), back to receive when the remote device stops answering, a single operator transmits at a time, STOP button always visible, independent supervisor that puts the radio back to receive on failure, even when the station is closed by force.
+
+TRX Console guides the setup: radio, serial port and sound card, operator accounts (one per device), allowed bands, phone alerts, radio tests.
+
+You need: an amateur radio transceiver connected to the PC (USB CAT cable or an interface such as Digirig / SignaLink), and Hamlib for Windows (free, installed separately; TRX Console guides you).
+
+For licensed radio amateurs only: you are responsible for your transmissions and for following the rules of your country.
+
+Free software (AGPL-3.0): https://github.com/Bob56fr/openRemoteTRX
+No ads, no account with the publisher, no tracker.

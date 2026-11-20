@@ -1,0 +1,9 @@
+Escucha y control del equipo desde un teléfono o un navegador
+Sonido en ambos sentidos (WebRTC, Opus), cifrado
+Cualquier equipo reconocido por Hamlib (unos 300 modelos)
+PTT en alternancia, TOT, vuelta automática a recepción, botón STOP
+Supervisor independiente y guarda de fin: el equipo vuelve a recepción en caso de fallo
+Espectro HF, S-metro, memorias, Cluster DX, medida de ROE
+Recepción FreeDV RADE
+Cuentas de operadores y visitantes solo en recepción
+TRX Console en español, inglés, francés y alemán

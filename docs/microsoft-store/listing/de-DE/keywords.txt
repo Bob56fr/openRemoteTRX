@@ -1,0 +1,7 @@
+Amateurfunk
+Funkamateur
+Fernstation
+Hamlib
+CAT
+Transceiver
+SDR

@@ -1,0 +1,22 @@
+Notes for certification (paste into Partner Center > Submission options > Notes for certification)
+
+openRemoteTRX is the station software of an open-source amateur radio remote-control system (AGPL-3.0,
+https://github.com/Bob56fr/openRemoteTRX). It needs an amateur radio transceiver connected to the PC and Hamlib for
+Windows (installed separately) to do its main job. Without a radio, the app can still be reviewed:
+
+1. Start "openRemoteTRX" from the Start menu: TRX Console opens in a terminal window (text interface, keyboard and mouse).
+2. Menu 0 changes the language (French, English, German, Spanish).
+3. Menu 6.1 runs a diagnostic: it reports that no station is configured and that Hamlib is missing; this is expected.
+4. Menu 2.1 is the setup wizard; without a radio it stops at the radio selection, which is expected.
+5. The commands trx-console, trx-setup, trx-monitor... are available in any terminal (execution aliases).
+
+The background station (supervisor, Hamlib rigctld, web gateway) only starts once a radio is configured; it starts at
+sign-in (startup task, can be disabled in Settings > Apps > Startup).
+
+Restricted capability runFullTrust: required. The app is a classic desktop Python application that opens serial ports
+(CAT control of the radio), sound cards (audio to and from the radio), starts child processes (Hamlib rigctld, web
+gateway, decoders) and listens on the local network (HTTPS web page and WebRTC audio for the operator's own devices;
+firewall rules limited to the private profile).
+
+No account, no advertising, no telemetry. Privacy policy:
+https://bob56fr.github.io/openRemoteTRX/station/confidentialite.html

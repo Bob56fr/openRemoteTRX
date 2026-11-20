@@ -1,0 +1,14 @@
+openRemoteTRX macht Ihren Windows-PC zur FERNSTATION für Ihr Amateurfunkgerät: Hören und steuern Sie Ihren Transceiver vom Telefon aus (openRemoteTRX-App für Android, Android Auto) oder im Browser, zu Hause oder unterwegs.
+
+Die mit diesem Paket installierte Station steuert das Funkgerät über Hamlib (etwa 300 unterstützte Modelle: Icom, Yaesu, Kenwood, Elecraft…), überträgt den Ton in beide Richtungen (WebRTC, Opus) und stellt eine gesicherte Webseite bereit (HTTPS): Frequenz, Betriebsart, Filter, S-Meter, KW-Spektrum, Speicher, DX-Cluster, SWR-Messung, FreeDV-Empfang.
+
+SENDESICHERHEIT, durch die Station selbst gewährleistet: PTT nur als Umschalter, Abschaltung nach der Höchstzeit (TOT), Rückkehr auf Empfang, wenn das entfernte Gerät nicht mehr antwortet, nur ein Bediener sendet gleichzeitig, STOP-Taste immer sichtbar, unabhängiger Supervisor, der das Funkgerät bei einer Störung auf Empfang zurücksetzt, auch wenn die Station gewaltsam geschlossen wird.
+
+TRX Console führt durch die Einrichtung: Funkgerät, serieller Anschluss und Soundkarte, Bedienerkonten (eines pro Gerät), erlaubte Bänder, Warnungen auf dem Telefon, Tests des Funkgeräts.
+
+Sie benötigen: ein mit dem PC verbundenes Amateurfunkgerät (USB-CAT-Kabel oder Interface wie Digirig / SignaLink) und Hamlib für Windows (kostenlos, separat installiert; TRX Console führt Sie).
+
+Nur für lizenzierte Funkamateure: Sie sind für Ihre Aussendungen und die Einhaltung der Vorschriften Ihres Landes verantwortlich.
+
+Freie Software (AGPL-3.0): https://github.com/Bob56fr/openRemoteTRX
+Keine Werbung, kein Konto beim Herausgeber, kein Tracker.

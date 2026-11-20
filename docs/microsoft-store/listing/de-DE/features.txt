@@ -1,0 +1,9 @@
+Funkgerät vom Telefon oder Browser aus hören und steuern
+Ton in beide Richtungen (WebRTC, Opus), verschlüsselt
+Jedes von Hamlib unterstützte Funkgerät (etwa 300 Modelle)
+PTT als Umschalter, TOT, automatische Rückkehr auf Empfang, STOP-Taste
+Unabhängiger Supervisor und Endwächter: das Funkgerät geht bei einer Störung auf Empfang
+KW-Spektrum, S-Meter, Speicher, DX-Cluster, SWR-Messung
+FreeDV-RADE-Empfang
+Bedienerkonten und Besucher nur mit Empfang
+TRX Console auf Deutsch, Englisch, Französisch und Spanisch

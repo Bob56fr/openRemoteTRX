@@ -1,0 +1,7 @@
+radioaficionado
+radioafición
+estación remota
+Hamlib
+CAT
+transceptor
+SDR

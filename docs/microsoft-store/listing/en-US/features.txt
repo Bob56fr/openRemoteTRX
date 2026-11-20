@@ -1,0 +1,9 @@
+Listen to and control the radio from a phone or a web browser
+Two-way audio (WebRTC, Opus), encrypted
+Any radio supported by Hamlib (about 300 models)
+Toggle PTT, TOT, automatic return to receive, STOP button
+Independent supervisor and end guard: the radio goes back to receive on failure
+HF spectrum, S-meter, memories, DX Cluster, SWR measurement
+FreeDV RADE reception
+Operator accounts and receive-only visitors
+TRX Console in English, French, German and Spanish

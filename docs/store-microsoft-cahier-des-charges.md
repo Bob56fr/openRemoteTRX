@@ -224,6 +224,10 @@ Store, qui signe lui-même). Fichier produit dans `dist/`.
   CN=4DBA8C0D-D395-454A-A7A5-5CB99996408C, PublisherDisplayName RF-DIY.COM ; famille
   RF-DIY.COM.openRemoteTRX_5fxpmskyjpc1g), groupe de testeurs créé.
 - **S4** : fiche, captures, notes de certification ; première soumission en visibilité privée.
+  PRÉPARÉ (étape 335) : fiche en 4 langues `docs/microsoft-store/listing/<langue>/` (description, fonctions,
+  mots-clés, configuration requise), notes de certification en anglais `docs/microsoft-store/notes-certification.txt`
+  (justification de runFullTrust, parcours sans poste), règles de confidentialité de la station
+  `docs/site/station/confidentialite.html` ; captures (1366 x 768 au moins) à faire par l'utilisateur.
 - **S5** : essais réels (installation depuis le Store sur un PC propre, IC-7300MK2 sur charge fictive, mise à jour
   du Store) puis publication publique ; guide de l'opérateur (partie installation Windows).
 

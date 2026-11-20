@@ -1,0 +1,1 @@
+Equipo de radioaficionado conectado al PC (cable CAT USB o interfaz de audio/CAT). Hamlib para Windows instalado aparte (gratuito). Red local o acceso remoto (VPN de tu elección o puerto expuesto con TLS).

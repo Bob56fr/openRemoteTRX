@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 RF-DIY.COM -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openRemoteTRX : confidentialité de la station</title>
+<style>
+  :root { --fond: #0f141c; --texte: #dbe3ee; --texte-2: #9fb0c4; --lien: #4c9be8; --trait: #26303d; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 16px/1.55 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5em; } h2 { font-size: 1.15em; margin-top: 1.8em; }
+  a { color: var(--lien); } .petit { color: var(--texte-2); font-size: .9em; }
+  hr { border: 0; border-top: 1px solid var(--trait); margin: 40px 0; }
+</style>
+</head>
+<body><main>
+<p class="petit">Français · <a href="#en">English</a> · <a href="#de">Deutsch</a> · <a href="#es">Español</a></p>
+
+<h1>Station openRemoteTRX : règles de confidentialité</h1>
+<p class="petit">Version du 21 novembre 2026. Logiciel de la station (Windows, dont la version du Microsoft Store, Debian,
+Raspberry Pi), logiciel libre (AGPL-3.0), sources : <a href="https://github.com/Bob56fr/openRemoteTRX">github.com/Bob56fr/openRemoteTRX</a>.</p>
+
+<h2>En bref</h2>
+<p>La station tourne sur VOTRE ordinateur, relié à VOTRE poste radio. Elle n'envoie rien à l'éditeur : ni compte chez
+nous, ni publicité, ni statistiques, ni traceur. Seules les fonctions que vous mettez vous-même en service contactent un
+serveur, celui que vous avez choisi.</p>
+
+<h2>Données traitées et où elles vont</h2>
+<ul>
+  <li><b>Configuration</b> (poste, comptes des opérateurs avec leurs mots de passe HACHÉS, certificats, clés) :
+  sur l'ordinateur seulement, dans un dossier réservé à votre compte (Windows : <code>C:\ProgramData\trx-remote</code>).</li>
+  <li><b>Son et commandes</b> : entre la station et VOS appareils (page web, application), chiffrés (HTTPS, WebRTC
+  DTLS-SRTP).</li>
+  <li><b>Journaux et rapports de dépannage</b> : sur l'ordinateur ; un rapport ne part que si vous l'envoyez vous-même.</li>
+  <li><b>Fonctions facultatives</b>, hors service tant que vous ne les réglez pas : alertes sur votre téléphone (serveur
+  ntfy de votre choix), Cluster DX (serveurs de spots choisis), présence de groupe et monitoring entre stations
+  (relais du projet, contenus chiffrés de bout en bout), diffusion en direct (serveur que vous indiquez), activité
+  FreeDV (lecture de FreeDV Reporter). Chacune ne transmet que ce qui lui est nécessaire.</li>
+</ul>
+
+<h2>Partage, conservation, suppression</h2>
+<p>Aucune donnée n'est vendue ni partagée. La configuration est gardée après une désinstallation (pour une
+réinstallation) ; supprimez le dossier de la configuration pour tout effacer.</p>
+
+<h2>Contact</h2>
+<p>Par les <a href="https://github.com/Bob56fr/openRemoteTRX/issues">tickets du projet sur GitHub</a>.</p>
+
+<hr>
+<h1 id="en" lang="en">openRemoteTRX station: privacy policy</h1>
+<div lang="en">
+<p class="petit">Version of 21 November 2026. Station software (Windows, including the Microsoft Store version, Debian,
+Raspberry Pi), free software (AGPL-3.0).</p>
+<p>The station runs on YOUR computer, connected to YOUR radio. It sends nothing to the publisher: no account with us, no
+advertising, no statistics, no tracker. Only the features you switch on yourself contact a server, the one you chose.</p>
+<ul>
+  <li><b>Configuration</b> (radio, operator accounts with HASHED passwords, certificates, keys): on the computer only, in
+  a folder reserved to your account (Windows: <code>C:\ProgramData\trx-remote</code>).</li>
+  <li><b>Audio and commands</b>: between the station and YOUR devices (web page, app), encrypted (HTTPS, WebRTC
+  DTLS-SRTP).</li>
+  <li><b>Logs and troubleshooting reports</b>: on the computer; a report only leaves if you send it yourself.</li>
+  <li><b>Optional features</b>, off until you set them up: alerts on your phone (ntfy server of your choice), DX Cluster
+  (chosen spot servers), group presence and station-to-station monitoring (project relay, end-to-end encrypted content),
+  live broadcast (server you specify), FreeDV activity (reading FreeDV Reporter). Each one only sends what it needs.</li>
+</ul>
+<p>No data is sold or shared. The configuration is kept after uninstalling (for a reinstall); delete the configuration
+folder to erase everything. Contact: <a href="https://github.com/Bob56fr/openRemoteTRX/issues">GitHub issues</a>.</p>
+</div>
+
+<hr>
+<h1 id="de" lang="de">openRemoteTRX-Station: Datenschutzerklärung</h1>
+<div lang="de">
+<p class="petit">Fassung vom 21. November 2026. Stationssoftware (Windows, einschließlich der Version aus dem Microsoft
+Store, Debian, Raspberry Pi), freie Software (AGPL-3.0).</p>
+<p>Die Station läuft auf IHREM Computer, verbunden mit IHREM Funkgerät. Sie sendet nichts an den Herausgeber: kein Konto
+bei uns, keine Werbung, keine Statistiken, kein Tracker. Nur die Funktionen, die Sie selbst einschalten, verbinden sich
+mit einem Server, dem von Ihnen gewählten.</p>
+<ul>
+  <li><b>Konfiguration</b> (Funkgerät, Bedienerkonten mit GEHASHTEN Passwörtern, Zertifikate, Schlüssel): nur auf dem
+  Computer, in einem Ihrem Konto vorbehaltenen Ordner (Windows: <code>C:\ProgramData\trx-remote</code>).</li>
+  <li><b>Ton und Befehle</b>: zwischen der Station und IHREN Geräten (Webseite, App), verschlüsselt (HTTPS, WebRTC
+  DTLS-SRTP).</li>
+  <li><b>Protokolle und Fehlerberichte</b>: auf dem Computer; ein Bericht wird nur versendet, wenn Sie ihn selbst
+  senden.</li>
+  <li><b>Optionale Funktionen</b>, ausgeschaltet, bis Sie sie einrichten: Warnungen auf Ihrem Telefon (ntfy-Server
+  Ihrer Wahl), DX-Cluster (gewählte Spot-Server), Gruppenpräsenz und Überwachung zwischen Stationen (Relais des
+  Projekts, Ende-zu-Ende verschlüsselte Inhalte), Live-Übertragung (von Ihnen angegebener Server), FreeDV-Aktivität
+  (Lesen von FreeDV Reporter). Jede sendet nur, was sie braucht.</li>
+</ul>
+<p>Es werden keine Daten verkauft oder weitergegeben. Die Konfiguration bleibt nach der Deinstallation erhalten (für eine
+Neuinstallation); löschen Sie den Konfigurationsordner, um alles zu entfernen. Kontakt:
+<a href="https://github.com/Bob56fr/openRemoteTRX/issues">GitHub-Tickets</a>.</p>
+</div>
+
+<hr>
+<h1 id="es" lang="es">Estación openRemoteTRX: política de privacidad</h1>
+<div lang="es">
+<p class="petit">Versión del 21 de noviembre de 2026. Software de la estación (Windows, incluida la versión de la
+Microsoft Store, Debian, Raspberry Pi), software libre (AGPL-3.0).</p>
+<p>La estación funciona en TU ordenador, conectado a TU equipo de radio. No envía nada al editor: ni cuenta con
+nosotros, ni publicidad, ni estadísticas, ni rastreador. Solo las funciones que tú mismo activas contactan con un
+servidor, el que tú has elegido.</p>
+<ul>
+  <li><b>Configuración</b> (equipo, cuentas de operadores con contraseñas en HASH, certificados, claves): solo en el
+  ordenador, en una carpeta reservada a tu cuenta (Windows: <code>C:\ProgramData\trx-remote</code>).</li>
+  <li><b>Sonido y órdenes</b>: entre la estación y TUS dispositivos (página web, aplicación), cifrados (HTTPS, WebRTC
+  DTLS-SRTP).</li>
+  <li><b>Registros e informes de diagnóstico</b>: en el ordenador; un informe solo sale si lo envías tú mismo.</li>
+  <li><b>Funciones opcionales</b>, desactivadas hasta que las configures: alertas en tu teléfono (servidor ntfy de tu
+  elección), Cluster DX (servidores de spots elegidos), presencia de grupo y monitorización entre estaciones (relé del
+  proyecto, contenido cifrado de extremo a extremo), difusión en directo (servidor que indiques), actividad FreeDV
+  (lectura de FreeDV Reporter). Cada una solo envía lo que necesita.</li>
+</ul>
+<p>No se vende ni se comparte ningún dato. La configuración se conserva tras desinstalar (para reinstalar); borra la
+carpeta de configuración para eliminarlo todo. Contacto:
+<a href="https://github.com/Bob56fr/openRemoteTRX/issues">incidencias en GitHub</a>.</p>
+</div>
+</main></body>
+</html>

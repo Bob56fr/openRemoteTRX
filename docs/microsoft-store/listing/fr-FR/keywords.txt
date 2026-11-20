@@ -1,0 +1,7 @@
+radioamateur
+TRX
+station distante
+Hamlib
+CAT
+remote
+SDR

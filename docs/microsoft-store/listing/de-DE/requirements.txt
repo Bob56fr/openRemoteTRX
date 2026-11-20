@@ -1,0 +1,1 @@
+Mit dem PC verbundenes Amateurfunkgerät (USB-CAT-Kabel oder Audio/CAT-Interface). Hamlib für Windows separat installiert (kostenlos). Lokales Netz oder Fernzugriff (VPN Ihrer Wahl oder freigegebener Port mit TLS).
