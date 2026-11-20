@@ -115,6 +115,9 @@ data class RigState(
     val rigNotice: String = "",
     /** L'avis est grave (VOX impossible à couper ou illisible, TOS élevé) : bandeau rouge, sinon orange. */
     val rigNoticeBad: Boolean = false,
+    /** TOT du poste lu sur OFF à la connexion (rig_notice « rig_tot_off », station 0.245.0+) : fenêtre « J'ai compris » /
+     *  « Quitter » en attente ; jamais montrée en mode conduite (elle attend l'écran du téléphone). */
+    val rigTotOff: Boolean = false,
     /** Allumage et extinction du poste (fonction « power », lot P3) : fenêtre « Allumage du TRX » (null = rien à
      *  montrer), bandeau « POSTE ÉTEINT » (null = poste allumé ou inconnu), choix de STOP maintenu 3 s, dernier refus
      *  de l'arrêt (montré dans sa fenêtre), titre d'Android Auto (null = titre habituel). */
@@ -223,6 +226,7 @@ class RigSession(
     private var freedvActivityNotice = ""
     private var rigNotice = ""
     private var rigNoticeBad = false
+    private var rigTotOff = false
     private val net = NetClient()
     private var netOffered = false                   // la station a annoncé « netprobe » à la dernière connexion
     private var netStats: NetUi.Stats? = null
@@ -617,11 +621,23 @@ class RigSession(
     private fun onRigNotice(msg: RigNotice) {
         if (msg.event.isEmpty() || msg.detail.isEmpty()) return
         val text = msg.detail.take(300) + (if (msg.ort.isNotEmpty()) " [" + msg.ort.take(12) + "]" else "")
+        if (msg.event == "rig_tot_off") {                // fenêtre à deux choix au lieu du bandeau (comme la page)
+            rigTotOff = true
+            log(text, LogLevel.WARN)
+            return
+        }
         val bad = msg.event in setOf("vox_still_on", "vox_unknown", "swr_high")
         rigNotice = text
         rigNoticeBad = bad
         log(text, if (bad) LogLevel.BAD else LogLevel.WARN)
         if (msg.event == "swr_high") link.alert(LinkAlert.SWR_HIGH)
+    }
+
+    /** Fenêtre du TOT du poste fermée (« J'ai compris » ou « Quitter ») : la station ne le redit pas avant demain. */
+    fun dismissRigTot(now: Long) {
+        if (!rigTotOff) return
+        rigTotOff = false
+        publish(now)
     }
 
     /** Bandeau de l'avis fermé par l'opérateur. */
@@ -1622,7 +1638,7 @@ class RigSession(
         breizhEvents = emptyList()
         freedvNotice = ""
         freedvActivity = null; freedvActivityNotice = ""
-        rigNotice = ""; rigNoticeBad = false
+        rigNotice = ""; rigNoticeBad = false; rigTotOff = false
         powerRun = null; powerOffNotice = ""; powerOffered = false
         powerOnConnect = false                                    // une reconnexion automatique n'allume jamais le poste
         protocolOk = true
@@ -1687,6 +1703,7 @@ class RigSession(
             freedvActivityNotice = freedvActivityNotice,
             rigNotice = rigNotice,
             rigNoticeBad = rigNoticeBad,
+            rigTotOff = rigTotOff && !listener,
             powerDialog = if (listener) null else Power.dialog(powerRun),
             powerBanner = if (connected) Power.banner(state?.rig?.power, hello, powerRun?.status == "running") else null,
             stopHold = Power.stopHold(hello, state?.rig?.power),

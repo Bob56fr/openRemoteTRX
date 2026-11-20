@@ -221,6 +221,8 @@ object RigHub {
 
     /** Avis de la station sur le poste (VOX, coupleur, TOS) : bandeau fermé par l'opérateur. */
     fun dismissRigNotice() { service?.onRig { session, now -> session.dismissRigNotice(now) } }
+    /** Fenêtre du TOT du poste fermée (docs/tot-poste-cahier-des-charges.md). */
+    fun dismissRigTot() { service?.onRig { session, now -> session.dismissRigTot(now) } }
     // Allumage et extinction du poste (fonction « power », lot P3) : la station vérifie et fait tout
     fun powerOn() { service?.onRig { session, now -> session.powerOn(now, "button") } }
     fun powerOff() { service?.onRig { session, now -> session.powerOff(now) } }

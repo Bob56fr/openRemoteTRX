@@ -28,6 +28,25 @@ class RigNoticeTest {
     }
 
     @Test
+    fun `TOT du poste sur OFF - fenetre a deux choix au lieu du bandeau, fermee par l'operateur`() {
+        val (s, link) = session()
+        s.onMessage(1, """{"type":"rig_notice","event":"rig_tot_off","ort":"ORT-5041","detail":"TOT du poste désactivé"}""")
+        assertTrue(s.snapshot.rigTotOff)
+        assertEquals("", s.snapshot.rigNotice)                 // pas de bandeau en plus de la fenêtre
+        assertTrue(link.alerts.isEmpty())
+        s.dismissRigTot(2)
+        assertFalse(s.snapshot.rigTotOff)
+    }
+
+    @Test
+    fun `TOT du poste - fenetre oubliee a la deconnexion`() {
+        val (s, _) = session()
+        s.onMessage(1, """{"type":"rig_notice","event":"rig_tot_off","ort":"ORT-5041","detail":"TOT du poste désactivé"}""")
+        s.disconnect(2)
+        assertFalse(s.snapshot.rigTotOff)
+    }
+
+    @Test
     fun `avis du VOX coupe - bandeau orange, journal, code, sans bip`() {
         val (s, link) = session()
         s.onMessage(1, """{"type":"rig_notice","event":"vox_off","detail":"Le VOX du poste était en marche : coupé","ort":"ORT-5034"}""")

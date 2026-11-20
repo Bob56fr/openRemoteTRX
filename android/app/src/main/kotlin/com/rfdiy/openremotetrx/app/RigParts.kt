@@ -319,6 +319,7 @@ internal fun RigScope.ControlBar(pttEnabled: Boolean, voice: VoiceUi, spatial: S
 @Composable
 internal fun RigScope.RigDialogsHost() {
     PowerDialogs()                                                     // alimentation du poste (lot P3)
+    RigTotDialog()                                                     // TOT du poste sur OFF (lot TP3)
     HelpDialog()                                                      // aide courte par appui long
     if (entry) FrequencyDialog(shownHz, onDismiss = { entry = false }) { hz ->
         entry = false
