@@ -270,6 +270,19 @@ def address_line(bind: str, port: int, tls: bool, addresses: list[str], t: Trans
     return "  " + t("head.address", urls=", ".join(f"{scheme}://{host}:{port}" for host in hosts))
 
 
+def console_line(enabled: bool, bind: str, port: int, tls: bool, addresses: list[str],
+                 t: Translator | None = None) -> str:
+    """En-tête de la console : adresse(s) de TRX Console sur le réseau ([remote_console], menu 4.6)."""
+    t = t or Translator()
+    menu = menu_number("remote_console")
+    if not enabled or not tls or bind in ("", "127.0.0.1", "localhost", "::1"):
+        return "  " + t("head.console_off", menu=menu)
+    hosts = addresses if bind in ("0.0.0.0", "::") else [bind]
+    if not hosts:
+        return "  " + t("head.console_unknown", port=port)
+    return "  " + t("head.console", urls=", ".join(console_url(host, port).rstrip("/") for host in hosts))
+
+
 def rig_vitals_line(rig: dict | None, t: Translator | None = None) -> str:
     """En-tête de la console : tension d'alimentation et température du poste, telles que la passerelle les publie
     (aucune connexion de plus à rigctld). `rig` None = passerelle arrêtée. « — » = valeur non fournie par le poste
@@ -3293,7 +3306,9 @@ class Console:
         except Exception:                               # en-tête : une adresse introuvable ne bloque pas la console
             found = []
         status = self._gateway_status()
+        rc = cfg.remote_console
         return [address_line(n.gateway_bind, n.gateway_port, bool(n.tls_cert), found, self.t),
+                console_line(rc.enabled is True, n.gateway_bind, rc.port, bool(n.tls_cert), found, self.t),
                 rig_vitals_line(status.rig if status is not None else None, self.t)]
 
     def menu_label(self, key: str, label: str) -> str:

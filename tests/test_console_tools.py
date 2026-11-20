@@ -305,10 +305,16 @@ def test_header_shows_version_and_station_id(tmp_path, monkeypatch):
 
 def test_header_lines_for_the_address_and_the_rig_vitals():
     from trxstation.console import address_line, rig_vitals_line
-    assert address_line("127.0.0.1", 8443, True, ["192.168.1.19"]) == "  Adresse : https://127.0.0.1:8443 (cette machine seulement)"
-    assert address_line("0.0.0.0", 8443, True, ["192.168.1.19", "100.64.0.7"]) ==         "  Adresse : https://192.168.1.19:8443, https://100.64.0.7:8443"
-    assert address_line("100.64.0.7", 8080, False, ["192.168.1.19"]) == "  Adresse : http://100.64.0.7:8080"
+    assert address_line("127.0.0.1", 8443, True, ["192.168.1.19"]) == "  Application Web : https://127.0.0.1:8443 (cette machine seulement)"
+    assert address_line("0.0.0.0", 8443, True, ["192.168.1.19", "100.64.0.7"]) ==         "  Application Web : https://192.168.1.19:8443, https://100.64.0.7:8443"
+    assert address_line("100.64.0.7", 8080, False, ["192.168.1.19"]) == "  Application Web : http://100.64.0.7:8080"
     assert "introuvable" in address_line("0.0.0.0", 8443, True, [])
+    from trxstation.console import console_line
+    assert console_line(True, "0.0.0.0", 8444, True, ["192.168.1.19", "100.64.0.7"]) == \
+        "  Console Web : https://192.168.1.19:8444, https://100.64.0.7:8444"
+    assert console_line(False, "0.0.0.0", 8444, True, ["192.168.1.19"]) == "  Console Web : désactivée (menu 4.6)"
+    assert console_line(True, "127.0.0.1", 8444, True, ["192.168.1.19"]).endswith("désactivée (menu 4.6)")
+    assert console_line(True, "0.0.0.0", 8444, False, ["192.168.1.19"]).endswith("désactivée (menu 4.6)")
     assert rig_vitals_line(None) == "  Poste : mesures indisponibles (station arrêtée)"
     assert "liaison CAT" in rig_vitals_line({"connected": False, "levels": {"VD_METER": 13.8}})
     assert rig_vitals_line({"connected": True, "levels": {"VD_METER": 13.84, "TEMP_METER": 41.6}}) ==         "  Poste : alimentation 13,8 V, température 42 °C"
@@ -329,7 +335,7 @@ def test_header_shows_the_rig_vitals_published_by_the_gateway(tmp_path):
                                                            rig={"connected": True, "levels": {"VD_METER": 13.8}}))
     header = con.header()
     assert "alimentation 13,8 V, température —" in header
-    assert "Adresse : " in header and header.index("Adresse") < header.index("Identifiant de la station")
+    assert "Application Web : " in header and "Console Web : " in header and header.index("Application Web") < header.index("Identifiant de la station")
     con.addresses = lambda: 1 / 0                                                     # jamais d'exception dans l'en-tête
     assert "Poste : alimentation 13,8 V" in con.header()
 
