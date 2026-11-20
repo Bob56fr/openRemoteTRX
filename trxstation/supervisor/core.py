@@ -34,8 +34,12 @@ distinguer une station vivante derrière un accès coupé d'une station éteinte
 
 Poste ABSENT (port du poste disparu : éteint ou débranché) sans émission connue : aucune reprise n'y peut rien
 (on ne réinitialise pas un périphérique absent) et rien ne peut émettre. Alerte « rig_absent » seulement, aucune
-action, jamais de mode sûr ; au retour du port, la reprise normale relance rigctld. Si la dernière émission connue
-était en cours, l'escalade complète reste due (poste qui émet sans liaison).
+action sur le poste ni sur rigctld, jamais de mode sûr ; au retour du port, la reprise normale relance rigctld. Si la
+dernière émission connue était en cours, l'escalade complète reste due (poste qui émet sans liaison). SEULE EXCEPTION
+(étape 304) : une passerelle MUETTE pendant l'absence est relancée (la passerelle n'est pas le périphérique absent),
+au plus une fois toutes les ABSENT_GATEWAY_RESTART_S, hors de l'échelle (jamais de montée vers rigctld, l'USB, le
+redémarrage ni le mode sûr). Station d'un bêta-testeur (Raspberry Pi, 18 et 19/11) : le câble du poste disparaît, la
+passerelle se fige au même instant, la page reste morte une heure jusqu'au retour du poste.
 """
 from __future__ import annotations
 
@@ -62,6 +66,7 @@ LADDER = ("restart_gateway", "restart_rigctld", "reset_usb", "reboot")
 LADDER_CODES = {"restart_gateway": codes.ORT_8001, "restart_rigctld": codes.ORT_8001,
                 "reset_usb": codes.ORT_8004, "reboot": codes.ORT_8006}
 STUCK_S = 5.0              # émission non expliquée qui RÉSISTE à « T 0 » depuis ce délai : alors seulement, échelle de reprise
+ABSENT_GATEWAY_RESTART_S = 600.0   # poste absent : passerelle muette relancée au plus une fois par période (étape 304)
 RIG_LOST_TX_S = 1.0        # rigctld injoignable depuis ce délai pendant une émission : panne (sinon connexion ratée)
 RENOTIFY_S = 600.0
 HOST_EVERY_S = 30.0         # mémoire, disque, ralentissement du Pi : relevés toutes les 30 s (vcgencmd est un processus)
@@ -151,6 +156,7 @@ class Supervisor:
         self._notified: dict[str, float] = {}
         self._had_problems = False
         self._last_stop_gateway = -1e9
+        self._absent_restart_at = -1e9          # dernière relance d'une passerelle muette, poste absent
         self._next_alive_at = self._started + self.sup.startup_grace_s   # premier battement après le délai de grâce
 
     @property
@@ -193,6 +199,7 @@ class Supervisor:
         if (rig_tx or lost_tx) and any(p.tx for p in problems):
             self._act(report, "force_rx", self.actions.force_rx)   # à chaque passage tant que le poste émet
         self._escalate(now, problems, report)
+        self._restart_silent_gateway_while_absent(now, problems, report)
         self._notify(now, problems)
         self._alive(now, rig, gateway_fresh, "", report.problems)
         return report
@@ -362,6 +369,19 @@ class Supervisor:
         self._run_level(level, actionable, report)
         self._level = min(level + 1, len(LADDER) - 1)
         self._next_action_at = now + self.sup.recovery_wait_s
+
+    def _restart_silent_gateway_while_absent(self, now: float, problems: list[Problem], report: StepReport) -> None:
+        """Poste absent (aucune émission connue) et passerelle muette : relance de la passerelle SEULE, hors échelle (le
+        niveau de l'échelle ne monte pas), au plus une fois toutes les ABSENT_GATEWAY_RESTART_S."""
+        names = {p.name for p in problems}
+        if "rig_absent" not in names or "gateway_silent" not in names:
+            return
+        if now - self._absent_restart_at < ABSENT_GATEWAY_RESTART_S:
+            return
+        self._absent_restart_at = now
+        self._alert(codes.ORT_8001, "reprise niveau 0 (restart_gateway) : gateway_silent, poste absent", key="restart_gateway")
+        self._act(report, "kill_gateway", self.actions.kill_gateway)
+        self._act(report, "restart_gateway", self.actions.restart_gateway)
 
     def _run_level(self, level: int, problems: list[Problem], report: StepReport) -> None:
         name = LADDER[level]

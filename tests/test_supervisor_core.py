@@ -566,11 +566,38 @@ def test_rig_switched_off_is_awaited_never_escalated_to_safe_mode(tmp_path):
     w.port_present, w.gateway_up = False, False
     w.rig = RigProbe(False, error="TimeoutError('timed out')")
     w.run(600)                                                       # dix minutes poste éteint
-    assert w.calls == [] and w.store.safe_mode() is None
+    # passerelle muette : relancée seule (étape 304), jamais rigctld, l'USB, le redémarrage ni le mode sûr
+    assert set(w.calls) <= {"kill_gateway", "restart_gateway"} and w.store.safe_mode() is None
     assert "rig_absent" in w.alerts and codes.ORT_8008 not in w.alerts and codes.ORT_2015 in w.codes
     w.port_present, w.gateway_up = True, True                       # poste rallumé : rigctld relancé par la reprise normale
     w.run(30)
     assert "restart_rigctld" in w.calls and w.store.safe_mode() is None
+
+
+def test_gateway_frozen_while_rig_absent_is_restarted_alone_and_rarely(tmp_path):
+    """Station d'un bêta-testeur (Pi, 18 et 19/11) : câble du poste disparu, passerelle figée au même instant ; avant,
+    aucune reprise pendant une heure (page morte). Maintenant : la passerelle seule, une fois par période, sans échelle."""
+    w = W(tmp_path, real_rig=True, max_reboots_per_hour=0)
+    w.run(5)
+    w.port_present = False
+    w.rig = RigProbe(False, error="TimeoutError('timed out')")
+    w.heals = False                                                  # elle se refige à chaque relance
+    w.freeze_gateway()
+    w.run(3 * 600 + 60)
+    restarts = w.calls.count("restart_gateway")
+    assert 2 <= restarts <= 4                                        # une par période de 10 min, pas une par passage
+    assert set(w.calls) <= {"kill_gateway", "restart_gateway"}       # jamais rigctld, USB, redémarrage
+    assert w.store.safe_mode() is None and codes.ORT_8008 not in w.alerts
+
+
+def test_gateway_restarted_while_rig_absent_comes_back_once(tmp_path):
+    w = W(tmp_path, real_rig=True)
+    w.run(5)
+    w.port_present = False
+    w.rig = RigProbe(False, error="TimeoutError('timed out')")
+    w.freeze_gateway()
+    w.run(900)
+    assert w.calls.count("restart_gateway") == 1                     # relancée, elle publie de nouveau : plus rien
 
 
 def test_rig_lost_while_transmitting_still_escalates(tmp_path):

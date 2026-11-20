@@ -705,3 +705,26 @@ def test_declared_attenuator_values_win_over_an_inconsistent_range():
         link.stop()
         await asyncio.wait_for(task, 3)
     run(scenario)
+
+
+def test_a_lost_link_is_reported_once_then_reminded_every_ten_minutes(monkeypatch):
+    """Poste disparu de l'USB chez un bêta-testeur (19/11) : rigctld répond, chaque lecture expire, et la passerelle
+    écrivait ORT-2005 toutes les 8 s (620 lignes en 1 h 30). Maintenant : une ligne par panne, un rappel par 10 min."""
+    from trxstation.gateway.cat import link as link_mod
+    from trxstation.errors import codes as error_codes
+
+    clock = [1000.0]
+    said: list[str] = []
+    monkeypatch.setattr(link_mod.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(link_mod, "emit_event", lambda code, **kw: said.append(kw.get("detail", "")) if code == error_codes.ORT_2005 else None)
+    cat = link_mod.CatLink()
+    for _ in range(675):                                  # 1 h 30, un essai toutes les 8 s, connexion faite puis lecture expirée
+        connected_at = clock[0]
+        clock[0] += 8.0
+        cat._report_lost("liaison rigctld perdue : TimeoutError()", connected_at)
+    assert len(said) == 1 + 8                              # la première, puis un rappel toutes les 10 min
+    assert "essais" in said[-1] and "min" in said[-1]
+    connected_at = clock[0]
+    clock[0] += 3600.0                                    # liaison revenue une heure, puis nouvelle panne
+    cat._report_lost("liaison rigctld perdue : TimeoutError()", connected_at)
+    assert len(said) == 10 and "essais" not in said[-1]

@@ -33,6 +33,8 @@ MAX_TRANSIENT_FAILURES = 5
 SLOW_REFUSAL_S = 1.5        # lecture facultative REFUSÉE après plus de 1,5 s (Hamlib a réessayé) : abandonnée aussitôt
 OFF_REFUSED = (-9,)         # Icom éteint (IC-7300MK2, 2026-11-19) : « get_powerstat » REFUSÉ (RPRT -9) au lieu de « 0 »
 OFF_POLL_S = 5.0            # poste éteint : seule l'alimentation (get_powerstat) est lue, toutes les 5 s (docs/alimentation-poste-cahier-des-charges.md)
+LINK_STABLE_S = 30.0        # liaison tenue ce délai : la panne suivante est une NOUVELLE panne (journal)
+LOST_REMIND_S = 600.0       # même panne : ORT-2005 rappelé au plus toutes les 10 min (étape 304 : 620 lignes en 1 h 30)
 POWER_SETTLE_S = 15.0       # poste qui vient de s'allumer : aucune lecture facultative abandonnée pendant ce délai
 
 
@@ -94,6 +96,10 @@ class CatLink:
         # (PowerControl lit lui-même) ; `_settle_until` = poste tout juste allumé, lectures lentes NON abandonnées.
         self.paused = False
         self._settle_until = 0.0
+        # Panne de liaison en cours (journal seulement) : début, essais ratés, dernier message ORT-2005.
+        self._lost_since: float | None = None
+        self._lost_tries = 0
+        self._lost_said_at = 0.0
 
     @property
     def power_readable(self) -> bool:
@@ -180,15 +186,17 @@ class CatLink:
     async def run(self) -> None:
         backoff = self.backoff_min_s
         while not self._stop.is_set():
+            connected_at: float | None = None
             try:
                 await self.client.connect()
+                connected_at = time.monotonic()
                 await self._disable_cache()
                 backoff = self.backoff_min_s
                 self._refresh_now = True
                 self._update(connected=True, last_error="")
                 await self._poll_loop()
             except (CatConnectionError, CatProtocolError, OSError) as exc:
-                emit_event(codes.ORT_2005, logger=log, detail=str(exc))
+                self._report_lost(str(exc), connected_at)
                 # Poste éteint : il le reste à travers une connexion refaite (sinon la reprise relirait tout un poste
                 # éteint, lentement) ; `connected` = False dit quand même au superviseur que rigctld ne répond plus.
                 off = "off" if self._state.power == "off" else None
@@ -201,6 +209,24 @@ class CatLink:
                 break
             backoff = min(backoff * 2, self.backoff_max_s)
         self._set_state(RigState(connected=False, updated_at=time.time()))
+
+    def _report_lost(self, detail: str, connected_at: float | None) -> None:
+        """ORT-2005 UNE fois par panne, puis un rappel toutes les LOST_REMIND_S avec le nombre d'essais : poste disparu
+        de l'USB (rigctld répond, chaque lecture expire), la passerelle écrivait la même ligne toutes les 8 s."""
+        now = time.monotonic()
+        if self._lost_since is not None and connected_at is not None and now - connected_at >= LINK_STABLE_S:
+            self._lost_since = None                         # la liaison a tenu entre-temps : nouvelle panne
+        if self._lost_since is None:
+            self._lost_since, self._lost_said_at, self._lost_tries = now, now, 1
+            emit_event(codes.ORT_2005, logger=log, detail=detail)
+            return
+        self._lost_tries += 1
+        log.debug("liaison rigctld toujours perdue (%d essais) : %s", self._lost_tries, detail)
+        if now - self._lost_said_at >= LOST_REMIND_S:
+            self._lost_said_at = now
+            minutes = round((now - self._lost_since) / 60)
+            emit_event(codes.ORT_2005, logger=log,
+                       detail=f"{detail} ; toujours perdue depuis {minutes} min, {self._lost_tries} essais")
 
     async def _disable_cache(self) -> None:
         """Cache de rigctld coupé (étape 176) : sinon, après « T 0 », la relecture du PTT renvoie pendant 0,5 à 1 s la
