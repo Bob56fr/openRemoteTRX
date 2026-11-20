@@ -111,6 +111,22 @@ test("fenêtre affichée et en-tête : zoom décalé, fréquence écoutée", () 
   assert.strictEqual(sdr.badgeText({ state: "error" }), "");
 });
 
+test("afficheur avec le SDR : ligne de fréquence, niveaux du mélange (étape 331)", () => {
+  assert.strictEqual(sdr.lineFreq(7050000), "7.050.00");
+  assert.strictEqual(sdr.lineFreq(27430000), "27.430.00");
+  assert.strictEqual(sdr.lineFreq(7305125), "7.305.13");
+  assert.strictEqual(sdr.lineFreq(null), "");
+  assert.strictEqual(sdr.mixSegments(0, 1), 0);
+  assert.strictEqual(sdr.mixSegments(1, 1), 10);                // 0 dBFS : tout allumé
+  assert.strictEqual(sdr.mixSegments(1, 0), 0);                 // muet : rien
+  assert.strictEqual(sdr.mixSegments(0.1, 1), 6);               // -20 dBFS
+  assert.ok(sdr.mixSegments(0.1, 0.25) < sdr.mixSegments(0.1, 1)); // volume baissé : moins de segments
+  assert.strictEqual(sdr.mixSegments(5, 1), 10);                // jamais plus de 10
+  assert.strictEqual(sdr.mixShown({ state: "running" }), true);
+  assert.strictEqual(sdr.mixShown({ state: "error" }), false);
+  assert.strictEqual(sdr.mixShown(null), false);
+});
+
 test("graduations plus nombreuses et décimales suivant le pas", () => {
   const marks = sdr.ticks(7093000, 1536000, 15);
   assert.ok(marks.length >= 10, "au moins dix graduations sur 1,5 MHz");

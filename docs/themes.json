@@ -65,7 +65,10 @@
     "texte-sur-primaire",
     "texte-sur-danger",
     "stop-texte",
-    "ptt-texte"
+    "ptt-texte",
+    "sdr-teinte",
+    "sdr-fond",
+    "sdr-sur"
   ],
   "themes": {
     "defaut": {
@@ -136,7 +139,10 @@
         "texte-sur-primaire": "#e9f1fb",
         "texte-sur-danger": "#e9f1fb",
         "stop-texte": "#ffffff",
-        "ptt-texte": "#ffffff"
+        "ptt-texte": "#ffffff",
+        "sdr-teinte": "#b49ffa",
+        "sdr-fond": "#5c4c8a",
+        "sdr-sur": "#ffffff"
       }
     },
     "icom": {
@@ -205,6 +211,9 @@
         "spectre-remplissage": "rgba(127, 212, 255, .35)",
         "spectre-grille": "rgba(230, 238, 248, .11)",
         "spectre-grille-forte": "rgba(230, 238, 248, .24)",
+        "sdr-teinte": "#b49ffa",
+        "sdr-fond": "#5c4c8a",
+        "sdr-sur": "#ffffff",
         "waterfall-degrade": "#0c0f17 #262d38 #026f9f #7fd4ff #cceeff #ffffff"
       }
     },
@@ -274,6 +283,9 @@
         "spectre-remplissage": "rgba(255, 179, 92, .35)",
         "spectre-grille": "rgba(240, 240, 240, .11)",
         "spectre-grille-forte": "rgba(240, 240, 240, .24)",
+        "sdr-teinte": "#b69ff8",
+        "sdr-fond": "#5c4c8a",
+        "sdr-sur": "#ffffff",
         "waterfall-degrade": "#080808 #282828 #995300 #ffb35c #ffe1be #ffffff"
       }
     },
@@ -343,6 +355,9 @@
         "spectre-remplissage": "rgba(255, 210, 122, .35)",
         "spectre-grille": "rgba(255, 182, 39, .11)",
         "spectre-grille-forte": "rgba(255, 182, 39, .24)",
+        "sdr-teinte": "#b994d0",
+        "sdr-fond": "#5c4c8a",
+        "sdr-sur": "#ffffff",
         "waterfall-degrade": "#120d02 #382808 #9c6200 #ffd27a #ffedca #ffffff"
       }
     }

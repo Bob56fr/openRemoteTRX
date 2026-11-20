@@ -49,7 +49,32 @@
     <div id="presence-banner" class="alert warn" hidden></div>
     <div id="replay-banner" class="alert" hidden></div>
     <div id="rig-alert" class="alert" hidden title="Toucher pour fermer" data-t-title="index.rig_alert_title"></div>
-    <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler" data-t-title="index.freq_title">—</div>
+    <div id="freqrow" class="freqrow">
+      <div class="freqcol">
+        <div id="freq" class="freq listener-off" title="Touche pour saisir une fréquence ; glisse un chiffre vers le haut ou le bas pour le régler" data-t-title="index.freq_title">—</div>
+        <!-- fréquence écoutée par le SDR (module SDR en marche) : toucher = rubrique SDR ouverte sur son waterfall -->
+        <button id="sdr-line" class="sdr-line" type="button" hidden title="Rubrique SDR : waterfall et réglages" data-t-title="index.sdr_line_title">
+          <span class="sdr-pill">SDR</span> <!-- i18n-ok -->
+          <span id="sdr-line-freq" class="sdr-line-freq"></span>
+          <span id="sdr-line-mode" class="sdr-line-mode"></span>
+          <span id="sdr-line-bw" class="sdr-line-bw"></span>
+          <span id="sdr-line-off" class="sdr-line-off" hidden data-t="index.sdr_line_off">écoute arrêtée</span>
+        </button>
+      </div>
+      <!-- niveaux du mélange entendu : TRX (toucher = muet dans cette page), SDR (toucher = écoute lancée / arrêtée) -->
+      <div id="mixvu" class="mixvu" hidden>
+        <button id="mix-trx" class="vu-btn" type="button">
+          <span id="mix-trx-bar" class="vu-bar"></span>
+          <span id="mix-trx-icon" class="vu-icon vu-muted" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m23 9-6 6"/><path d="m17 9 6 6"/></svg></span>
+          <span class="vu-lab">TRX</span> <!-- i18n-ok -->
+        </button>
+        <button id="mix-sdr" class="vu-btn" type="button">
+          <span id="mix-sdr-bar" class="vu-bar"></span>
+          <span id="mix-sdr-icon" class="vu-icon vu-play" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg></span>
+          <span class="vu-lab">SDR</span> <!-- i18n-ok -->
+        </button>
+      </div>
+    </div>
     <div id="voyants" class="voyants listener-off" title="Voyants du poste : allumé = en service" data-t-title="index.voyants_title"></div>
     <div id="reconnect" class="reconnect" hidden>
       <div id="reconnect-text" class="reconnect-text" data-t="drivingscreen.reconnecting">RECONNEXION…</div>
@@ -59,11 +84,17 @@
 
     <div id="blk-smeter" class="meters">
       <div class="meter">
-        <span class="mlabel">S</span>
+        <span id="smeter-label" class="mlabel">S</span>
         <div class="mtrack s-track"><div id="sql-marker" class="sqlmark" title="Niveau du squelch" hidden data-t-title="index.sql_marker_title"></div><div id="smeter-mask" class="mmask"></div></div>
         <span id="smeter-text" class="mval">—</span>
       </div>
       <div class="scale s-scale"><span class="at-1">1</span><span class="at-3">3</span><span class="at-5">5</span><span class="at-7">7</span><span class="at-9">9</span><span class="at-20">+20</span><span class="at-40">+40</span><span class="at-60">+60dB</span></div>
+      <!-- S-mètre du SDR sur sa fréquence écoutée (module SDR en marche ; valeur au lot 2) -->
+      <div id="ssdr-row" class="meter ssdr" hidden>
+        <span class="mlabel">S-SDR</span> <!-- i18n-ok -->
+        <div class="mtrack s-track"><div id="ssdr-mask" class="mmask"></div></div>
+        <span id="ssdr-text" class="mval">—</span>
+      </div>
     </div>
 
     <div id="txzone" class="txzone" title="Touche (ou double-touche) pour afficher le waterfall de l'audio reçu" data-t-title="index.txzone_title">

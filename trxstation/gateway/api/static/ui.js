@@ -1949,6 +1949,7 @@
       remoteStream(stream, track) {
         const media = stream || new MediaStream([track]);
         rxMedia = media;
+        if (trxMuted) { trxMuted = false; trxVolume(); }                              // nouvelle connexion : TRX jamais muet
         audio.srcObject = rxStream(media);                                          // débrouillage et spatialisation éventuels
         setupAnalysis(media);
         applyOutput().finally(() => audio.play().catch(() => ui.log(I18N.t("ui.audio_blocked"), "warn")));
@@ -2926,6 +2927,7 @@
       if (!on) {
         sdrPicked = null; $("sdr-here").hidden = true;
         if (sdrSound) { try { sdrSound.pause(); } catch (e) { /* rien */ } }
+        mixRender(null);                                                             // afficheur du TRX seul
         return;
       }
       const state = st || client.sdrState;
@@ -2972,6 +2974,7 @@
       }
       $("sdr-gain").textContent = sdrx.gainText(state);
       sdrListenRender(state);
+      mixRender(state);
     }
     // ---- écoute du SDR (station 0.142.0+) : seconde piste, lue par son propre élément audio (sdrSound, plus haut) ;
     // en séparation gauche / droite, elle entre dans la chaîne Web Audio du TRX (rxStream) et l'élément se tait
@@ -2980,7 +2983,8 @@
     try { sdrSplit = Number(store.get("trx.sdr.split", "0")) || 0; } catch (e) { sdrSplit = 0; }
     function sdrBalance() { return sdrx ? sdrx.balanceGains(client.sdrListening ? $("sdr-bal").value : 0) : { trx: 1, sdr: 1 }; }
     function sdrSplitActive() { return !!(sdrx && sdrSplit && client.sdrListening && !stActive()); }
-    function trxLevel() { return Math.max(0, Math.min(1, parseFloat($("volume").value) * sdrBalance().trx)); }
+    let trxMuted = false;                                // muet du TRX par son bargraph : cette page seulement, jamais mémorisé
+    function trxLevel() { return trxMuted ? 0 : Math.max(0, Math.min(1, parseFloat($("volume").value) * sdrBalance().trx)); }
     function sdrLevel() { return sdrx ? sdrx.volumeOf($("sdr-vol").value) * sdrBalance().sdr : 1; }
     function trxVolume() {
       if (rxGraph && rxGraph.trxGain) { rxGraph.trxGain.gain.value = trxLevel(); audio.volume = 1; }
@@ -3052,6 +3056,101 @@
         dbw.dataset.mode = mode;
       }
     }
+    // ---- afficheur avec un SDR en marche (étape 331) : ligne du SDR sous la fréquence du TRX, niveaux du mélange
+    // ENTENDU (après volume, balance et muets), S-TRX / S-SDR. Mesures dans un contexte audio à part, jamais relié
+    // à la sortie : le son part toujours par les éléments audio.
+    const mix = { ctx: null, trx: null, sdr: null, buf: null, timer: null, shown: false };
+    function mixTap(slot, media) {
+      /* Analyseur du flux `media` (TRX ou SDR), refait quand le flux change. */
+      const cur = mix[slot];
+      if (cur && cur.media === media) return cur.an;
+      if (cur) { try { cur.src.disconnect(); } catch (e) { /* déjà détaché */ } mix[slot] = null; }
+      if (!media) return null;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        if (!mix.ctx) mix.ctx = new Ctx();
+        if (mix.ctx.state === "suspended" && mix.ctx.resume) mix.ctx.resume().catch(() => {});
+        const src = mix.ctx.createMediaStreamSource(media), an = mix.ctx.createAnalyser();
+        an.fftSize = 1024; src.connect(an);
+        mix[slot] = { media, src, an };
+        return an;
+      } catch (e) { return null; }
+    }
+    function mixRms(an) {
+      if (!an) return 0;
+      if (!mix.buf || mix.buf.length !== an.fftSize) mix.buf = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(mix.buf);
+      let sum = 0;
+      for (let i = 0; i < mix.buf.length; i++) sum += mix.buf[i] * mix.buf[i];
+      return Math.sqrt(sum / mix.buf.length);
+    }
+    function mixBar(id, lit) {
+      const bar = $(id);
+      if (!bar.children || bar.children.length !== sdrx.MIX_SEGMENTS) {
+        bar.textContent = "";
+        for (let i = 0; i < sdrx.MIX_SEGMENTS; i++) bar.appendChild(el("i", "", ""));
+      }
+      for (let i = 0; i < sdrx.MIX_SEGMENTS; i++) {
+        const on = i < lit;
+        bar.children[i].className = on ? (i >= 9 ? "on top" : i >= 7 ? "on hi" : "on") : "";   // i18n-ok (classes CSS)
+      }
+    }
+    function mixTick() {
+      if (!mix.shown) return;
+      const heard = !audio.muted;
+      mixBar("mix-trx-bar", heard ? sdrx.mixSegments(mixRms(mixTap("trx", rxMedia)), trxLevel()) : 0);
+      const sdrOn = !!client.sdrListening;
+      mixBar("mix-sdr-bar", heard && sdrOn ? sdrx.mixSegments(mixRms(mixTap("sdr", sdrMedia)), sdrLevel()) : 0);
+    }
+    function mixRender(state) {
+      /* Affiche ou retire les éléments du SDR dans l'afficheur, selon l'état du module et de l'écoute. */
+      const shown = sdrOffered() && sdrx.mixShown(state || client.sdrState);
+      if (!shown && trxMuted) { trxMuted = false; trxVolume(); }          // plus de bargraph : jamais un TRX muet sans repère
+      mix.shown = shown;
+      $("mixvu").hidden = !shown;
+      $("sdr-line").hidden = !shown;
+      $("ssdr-row").hidden = !shown;
+      $("freqrow").className = "freqrow" + (shown ? " vu" : "");
+      $("blk-smeter").className = "meters" + (shown ? " sdr-dual" : "");            // libellés S-TRX / S-SDR plus larges
+      $("txzone").className = "txzone" + (shown ? " sdr-dual" : "");              // Po, SWR, ALC alignés sur eux
+      $("smeter-label").textContent = shown ? "S-TRX" : "S";                         // i18n-ok (noms des mesures)
+      if (!shown) {
+        if (mix.timer) { clearInterval(mix.timer); mix.timer = null; }
+        mixTap("trx", null); mixTap("sdr", null);
+        return;
+      }
+      const st = state || client.sdrState || {};
+      const listening = !!client.sdrListening;
+      $("sdr-line-freq").textContent = sdrx.lineFreq(st.dfreq);
+      $("sdr-line-mode").textContent = st.mode || "";
+      $("sdr-line-bw").textContent = st.dbw ? sdrx.widthLabel(st.dbw) : "";
+      $("sdr-line-off").hidden = listening;
+      $("sdr-line").className = "sdr-line" + (listening ? "" : " off");
+      $("mix-trx").className = "vu-btn" + (trxMuted ? " muted" : "");
+      $("mix-trx-icon").hidden = !trxMuted;
+      const trxTip = I18N.t(trxMuted ? "ui.mix_trx_unmute" : "ui.mix_trx_mute");
+      $("mix-trx").title = trxTip; $("mix-trx").setAttribute("aria-label", trxTip);
+      $("mix-sdr").className = "vu-btn" + (listening ? "" : " idle");
+      $("mix-sdr-icon").hidden = listening;
+      const sdrTip = I18N.t(listening ? "ui.mix_sdr_stop" : "ui.mix_sdr_start");
+      $("mix-sdr").title = sdrTip; $("mix-sdr").setAttribute("aria-label", sdrTip);
+      if (!mix.timer) mix.timer = setInterval(mixTick, 100);
+    }
+    $("mix-trx").addEventListener("click", () => {
+      trxMuted = !trxMuted;
+      if (mix.ctx && mix.ctx.resume) mix.ctx.resume().catch(() => {});        // geste de l'opérateur : mesures permises
+      trxVolume(); mixRender(null);
+    });
+    $("mix-sdr").addEventListener("click", () => {                               // même chose que « Écouter » de la rubrique SDR
+      if (mix.ctx && mix.ctx.resume) mix.ctx.resume().catch(() => {});
+      $("sdr-listen").click();
+    });
+    $("sdr-line").addEventListener("click", () => {                              // rubrique SDR ouverte, waterfall en vue
+      const sec = $("sec-sdr");
+      sec.open = true;
+      if (sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     function sdrListenRender(state) {
       const offered = !!client.sdrAudioOffered;
       $("sdr-listen-box").hidden = !offered;

@@ -194,6 +194,28 @@
     return { center: st.center + (z > 1 && Number.isFinite(st.zoom_off) ? st.zoom_off : 0), span: st.fs / z };
   }
 
+  function lineFreq(hz) {
+    /* Fréquence de la ligne du SDR sous celle du TRX, même écriture : 7050000 -> « 7.050.00 » (MHz.kHz.dizaines de Hz). */
+    if (!Number.isFinite(hz) || hz <= 0) return "";
+    const d = Math.round(hz / 10);
+    return Math.floor(d / 100000) + "." + String(Math.floor(d / 100) % 1000).padStart(3, "0") + "." + String(d % 100).padStart(2, "0");
+  }
+
+  // Niveaux du mélange (bargraphs verticaux) : 10 segments de 5,4 dB, de -54 dBFS (rien) à 0 dBFS (tout allumé).
+  const MIX_SEGMENTS = 10, MIX_FLOOR_DB = -54;
+  function mixSegments(rms, gain) {
+    /* Nombre de segments allumés pour un niveau efficace (0..1) entendu après un gain (volume, balance, muet). */
+    const v = (Number(rms) || 0) * (Number(gain) || 0);
+    if (!(v > 0)) return 0;
+    const db = 20 * Math.log10(v);
+    return Math.max(0, Math.min(MIX_SEGMENTS, Math.round((db - MIX_FLOOR_DB) / (-MIX_FLOOR_DB / MIX_SEGMENTS))));
+  }
+
+  function mixShown(st) {
+    /* Bargraphs, ligne du SDR et S-SDR : seulement quand le module SDR tourne vraiment sur la station. */
+    return !!(st && st.state === "running");
+  }
+
   function badgeText(st) {
     /* En-tête repliable de la rubrique : la fréquence ÉCOUTÉE (sinon le centre de la fenêtre affichée). */
     if (!st || st.state !== "running") return "";
@@ -316,7 +338,7 @@
   }
 
   const api = { DB_MIN, DB_STEP, LIMITS, BOOLS, LNA_MAX, RANGES, DEFAULT_VIEW, decodeLine, levelDb, floorDb, colorIndex,
-                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, viewWindow, badgeText, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
+                binFreq, freqAt, ticks, tickDigits, formatMHz, parseMHz, checkSettings, stateText, viewWindow, badgeText, lineFreq, mixSegments, mixShown, MIX_SEGMENTS, nextRange, get CODE_TEXTS() { return codeTexts(); }, rfFromLna,
                 lnaFromRf, ifFromGr, grFromIf, gainText, MODES, WIDTHS, ZOOMS, zoomStep, panArgs, zoomLabel,
                 PALETTES, paletteLut, nextPalette, paletteName, rateLabel, spotListen, markerLeft, widthLabel, listenText, volumeOf, tuneArgs, loadText, balanceGains, get SPLITS() { return splits(); }, splitPans };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxSdr = api; }

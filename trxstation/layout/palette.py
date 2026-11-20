@@ -19,6 +19,7 @@ from .theme import MIN_EMISSION_DISTANCE, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAS
 
 THEMES_FILE = Path(__file__).resolve().parents[2] / "docs" / "themes.json"
 WHITE, BLACK = "#ffffff", "#000000"
+VIOLET = "#a78bfa"                     # teinte du SDR (ligne sous la fréquence, S-SDR, bargraph)
 HEX = re.compile(r"#[0-9a-f]{6}")
 
 ROLES = ("fond", "fond-entete", "fond-panneau", "fond-champ", "texte", "texte-secondaire", "texte-sur-accent", "frequence",
@@ -32,7 +33,8 @@ TEXT_PAIRS = (("texte", "fond"), ("texte", "fond-panneau"), ("texte", "fond-cham
               ("texte-sur-danger", "danger-fond"), ("texte-sur-tx", "tx"), ("tx-texte", "tx-fond"), ("stop-texte", "stop-fond"),
               ("succes", "succes-fond"), ("succes-sur", "succes"), ("alerte", "alerte-sombre"), ("alerte-sur", "alerte"),
               ("alerte-texte", "alerte-fond"), ("selection-texte", "selection-fond"), ("texte", "memoire-active"),
-              ("alerte", "securite-fond"))
+              ("alerte", "securite-fond"), ("sdr-teinte", "fond"), ("sdr-teinte", "fond-entete"),
+              ("sdr-sur", "sdr-fond"))
 # grands textes en gras (WCAG : 3:1 suffit) : l'étiquette du PTT en émission
 GRAPHIC_PAIRS = (("ptt-texte", "tx"), ("frequence", "fond-entete"), ("bouton-bord", "fond-entete"), ("accent", "fond-panneau"),
                  ("mesure", "fond-entete"), ("smetre-bas", "fond-entete"), ("smetre-haut", "fond-entete"),
@@ -62,6 +64,15 @@ def readable_on(background: str) -> str:
     return WHITE if contrast(WHITE, background) >= contrast(BLACK, background) else BLACK
 
 
+def sdr_tint(c: dict[str, str]) -> str:
+    """Violet du SDR lisible sur ce thème : rapproché du texte du thème tant que le contraste manque (thème clair)."""
+    for weight in (.80, .65, .50, .35, .20, .0):
+        tint = mix(VIOLET, c["texte"], weight)
+        if min(contrast(tint, c["fond"]), contrast(tint, c["fond-entete"])) >= MIN_TEXT_CONTRAST:
+            return tint
+    return c["texte"]
+
+
 def derive(c: dict[str, str]) -> dict[str, str]:
     """Teintes dérivées d'un thème (mêmes noms que le thème d'usine)."""
     tx, fond, alerte = c["tx"], c["fond"], c["alerte"]
@@ -81,6 +92,8 @@ def derive(c: dict[str, str]) -> dict[str, str]:
         "texte-sur-primaire": c["texte-sur-accent"], "texte-sur-danger": readable_on(mix(c["erreur"], fond, .40)),
         "spectre-remplissage": rgba(c["mesure"], .35), "spectre-grille": rgba(c["texte"], .11),
         "spectre-grille-forte": rgba(c["texte"], .24),
+        "sdr-teinte": sdr_tint(c), "sdr-fond": mix(VIOLET, BLACK, .55),
+        "sdr-sur": readable_on(mix(VIOLET, BLACK, .55)),
         "waterfall-degrade": " ".join((mix(c["texte-secondaire"], fond, .05), mix(c["texte-secondaire"], fond, .25),
                                        mix(c["accent"], fond, .60), c["mesure"], mix(c["mesure"], WHITE, .40), WHITE)),
     }
