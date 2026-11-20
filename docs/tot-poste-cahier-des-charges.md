@@ -166,8 +166,8 @@ Textes de sécurité en 4 langues : relus par l'utilisateur avant livraison.
   sa méthode PTT est CAT).
 - Lecture directe (port série) : trame `FE FE B6 E0 1A 05 00 32 FD`, écho puis réponse
   `FE FE E0 B6 1A 05 00 32 xx FD` en 50 à 65 ms.
-- Lecture par rigctld (chemin de la station) : `W  xFE xFE xB6 xE0 x1A x05 x00 x32 xFD 19`
-  (19 octets = écho de 9 + réponse de 10) ; rigctld rend les octets sous la forme ` xFE xFE…` ; avec
+- Lecture par rigctld (chemin de la station) : `W \0xFE\0xFE\0xB6\0xE0\0x1A\0x05\0x00\0x32\0xFD 19`
+  (19 octets = écho de 9 + réponse de 10) ; rigctld rend les octets sous la forme `\0xFE\0xFE…` ; avec
   `0xFD` comme fin de réponse, rigctld s'arrête sur l'ÉCHO (réponse vide) : lire un nombre d'octets et
   chercher la trame adressée au contrôleur (E0 <- B6), jamais prendre la première. `\send_raw` : RPRT -5.
   Le nombre 19 suppose l'écho CI-V en marche (réglage du poste) : TP1 doit gérer l'écho absent (10 octets).
