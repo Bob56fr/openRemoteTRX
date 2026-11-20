@@ -2695,6 +2695,7 @@
     function rxApply() {
       if (rxMedia) {
         audio.srcObject = rxStream(rxMedia);
+        mixRetap("trx");                                                             // bargraph TRX : analyseur refait
         audio.play().catch(() => {});
         trxVolume();                                                                // gain de chaîne ou volume de l'élément
       }
@@ -3026,7 +3027,7 @@
       try {
         if (sdrSplitActive()) { sdrSound.pause(); sdrSound.srcObject = null; sdrMonoStop(); return; }
         const want = sdrMonoStream();
-        if (sdrSound.srcObject !== want) sdrSound.srcObject = want;
+        if (sdrSound.srcObject !== want) { sdrSound.srcObject = want; mixRetap("sdr"); }   // bargraph SDR : analyseur refait
         if (sdrMono && client.sdrListening && sdrMono.ctx.resume) sdrMono.ctx.resume().catch(() => {});
         sdrVolume(); sdrMirrorOutput();
         if (client.sdrListening) sdrSound.play().catch(() => {});
@@ -3059,11 +3060,18 @@
     // ---- afficheur avec un SDR en marche (étape 331) : ligne du SDR sous la fréquence du TRX, niveaux du mélange
     // ENTENDU (après volume, balance et muets), S-TRX / S-SDR. Mesures dans un contexte audio à part, jamais relié
     // à la sortie : le son part toujours par les éléments audio.
-    const mix = { ctx: null, trx: null, sdr: null, buf: null, timer: null, shown: false };
+    // Chrome : un flux WebRTC distant n'arrive à Web Audio que s'il est lu par un élément ; quand la chaîne du son est
+    // refaite (écoute du SDR lancée / arrêtée, ST, débrouillage : rxApply, sdrRoute), l'analyseur créé avant peut ne plus
+    // rien recevoir alors que le son continue (bargraph TRX figé après l'arrêt du SDR, essai du 2026-11-21) : il est
+    // refait à chaque reconstruction (`gen`), et aussi après 2 s de zéros exacts (`zero`).
+    const mix = { ctx: null, trx: null, sdr: null, buf: null, timer: null, shown: false, gen: { trx: 0, sdr: 0 }, zero: { trx: 0, sdr: 0 } };
+    function mixRetap(slot) {
+      try { mix.gen[slot]++; mix.zero[slot] = 0; } catch (e) { /* appelé avant l'initialisation de `mix` : rien à refaire */ }
+    }
     function mixTap(slot, media) {
-      /* Analyseur du flux `media` (TRX ou SDR), refait quand le flux change. */
+      /* Analyseur du flux `media` (TRX ou SDR), refait quand le flux ou la chaîne change. */
       const cur = mix[slot];
-      if (cur && cur.media === media) return cur.an;
+      if (cur && cur.media === media && cur.gen === mix.gen[slot]) return cur.an;
       if (cur) { try { cur.src.disconnect(); } catch (e) { /* déjà détaché */ } mix[slot] = null; }
       if (!media) return null;
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -3073,7 +3081,7 @@
         if (mix.ctx.state === "suspended" && mix.ctx.resume) mix.ctx.resume().catch(() => {});
         const src = mix.ctx.createMediaStreamSource(media), an = mix.ctx.createAnalyser();
         an.fftSize = 1024; src.connect(an);
-        mix[slot] = { media, src, an };
+        mix[slot] = { media, src, an, gen: mix.gen[slot] };
         return an;
       } catch (e) { return null; }
     }
@@ -3099,9 +3107,17 @@
     function mixTick() {
       if (!mix.shown) return;
       const heard = !audio.muted;
-      mixBar("mix-trx-bar", heard ? sdrx.mixSegments(mixRms(mixTap("trx", rxMedia)), trxLevel()) : 0);
       const sdrOn = !!client.sdrListening;
-      mixBar("mix-sdr-bar", heard && sdrOn ? sdrx.mixSegments(mixRms(mixTap("sdr", sdrMedia)), sdrLevel()) : 0);
+      const level = (slot, media, on) => {
+        if (!on) { mix.zero[slot] = 0; return 0; }
+        const rms = mixRms(mixTap(slot, media));
+        if (rms === 0 && ++mix.zero[slot] >= 20) mixRetap(slot);              // 2 s de zéros exacts : analyseur refait
+        else if (rms > 0) mix.zero[slot] = 0;
+        return rms;
+      };
+      const trxRms = level("trx", rxMedia, !!rxMedia), sdrRms = level("sdr", sdrMedia, sdrOn && !!sdrMedia);
+      mixBar("mix-trx-bar", heard ? sdrx.mixSegments(trxRms, trxLevel()) : 0);
+      mixBar("mix-sdr-bar", heard && sdrOn ? sdrx.mixSegments(sdrRms, sdrLevel()) : 0);
       ssdrTick(sdrOn);
     }
     // ---- S-SDR (étape 332) : niveau « l » des lignes du SDR (envoyées pendant l'écoute même rubrique fermée),
