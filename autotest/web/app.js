@@ -5,9 +5,9 @@
    Node) ; ici, les COUPURES D'URGENCE de la page : STOP, Échap, onglet caché, fermeture, erreur, port perdu. */
 (function () {
   "use strict";
-  const { AtI18n: I18N, AtCiv: civ, AtYaesu: yaesu, AtKenwood: kenwood, AtModels: models, AtRunner: R, AtReport: rep } = window;
+  const { AtI18n: I18N, AtCiv: civ, AtYaesu: yaesu, AtKenwood: kenwood, AtHamlib: hamlib, AtModels: models, AtRunner: R, AtReport: rep } = window;
   const $ = id => document.getElementById(id);
-  const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
+  const show = id => { for (const s of ["s-home", "s-brand", "s-model", "s-port", "s-hamlib", "s-run", "s-report"]) $(s).hidden = s !== id; document.body.classList.toggle("compact", id !== "s-home"); window.scrollTo(0, 0); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
   const S = { brand: null, model: null, chosen: null, port: null, detected: null, runner: null, startedAt: null, audio: null, report: null };
@@ -16,8 +16,10 @@
   // ---------- Accueil, marque, modèle ----------
   const T = I18N.T;
   I18N.apply(document);
+  // Mode B : page servie par le programme local openRemoteTRX-Autotest (Hamlib), qui le dit par une balise meta.
+  const modeB = !!document.querySelector('meta[name="autotest-mode"][content="hamlib"]');
   const hasSerial = "serial" in navigator;
-  if (!hasSerial) { $("noserial").hidden = false; $("b-start").disabled = true; }
+  if (!hasSerial && !modeB) { $("noserial").hidden = false; $("b-start").disabled = true; }
   $("b-start").onclick = () => { buildBrands(); show("s-brand"); };
   // Conditions d'utilisation : à CHAQUE visite (rien n'est retenu), le bouton n'agit que case cochée.
   $("terms-ok").checked = false; $("terms-go").disabled = true;
@@ -25,15 +27,21 @@
   $("terms-go").onclick = () => {
     if (!$("terms-ok").checked) return;
     $("o-terms").hidden = true;
-    if (hasSerial) { buildBrands(); show("s-brand"); }                 // sinon l'accueil montre pourquoi (Chrome ou Edge)
+    if (hasSerial || modeB) { buildBrands(); show("s-brand"); }        // sinon l'accueil montre pourquoi (Chrome ou Edge)
   };
 
   function buildBrands() {
     const box = $("brands"); box.textContent = "";
+    if (modeB) {                                                       // mode B en tête : tous les postes de Hamlib
+      const c = el("button", "choice", T("Tous les postes (Hamlib)")); c.type = "button";
+      c.appendChild(el("small", null, T("mode B, automatique")));
+      c.onclick = () => { S.brand = { id: "hamlib", name: "Hamlib", family: "hamlib" }; openHamlib(); };
+      box.appendChild(c);
+    }
     for (const b of models.BRANDS) {
       const c = el("button", "choice", b.name); c.type = "button";
       c.appendChild(el("small", null, b.ready ? T("prêt") : T("bientôt")));
-      c.disabled = !b.ready;
+      c.disabled = !b.ready || !hasSerial;
       c.onclick = () => { S.brand = b; buildModels(); show("s-model"); };
       box.appendChild(c);
     }
@@ -100,6 +108,49 @@
     if (!S.model && d.guess) S.model = d.guess;
     startRun();
   };
+
+  // ---------- Mode B : Hamlib ----------
+  const HL = modeB ? hamlib.httpApi("") : null;
+  let hlModels = [], hlInfo = null;
+  async function openHamlib() {
+    show("s-hamlib");
+    const status = $("hl-status");
+    try {
+      if (!hlInfo) hlInfo = await HL.info();
+      if (!hlModels.length) { status.textContent = T("Lecture de la liste des postes de Hamlib…"); hlModels = await HL.models(); }
+      const dl = $("hl-models"); dl.textContent = "";
+      for (const m of hlModels) { const o = el("option"); o.value = `${m.n} · ${m.fabricant} ${m.modele}`; dl.appendChild(o); }
+      const pl = $("hl-ports"); pl.textContent = "";
+      for (const p of await HL.ports()) { const o = el("option"); o.value = p.port; o.label = p.description; pl.appendChild(o); }
+      status.textContent = hlModels.length ? T("Hamlib {v} : {n} postes connus.", { v: hlInfo.hamlib || "?", n: hlModels.length }) : T("Hamlib introuvable sur ce PC : installez-le, ou indiquez son dossier au lancement (--hamlib-dir).");
+    } catch (e) { status.textContent = T("Le programme openRemoteTRX-Autotest ne répond plus : relancez-le."); }
+  }
+  $("b-back-hl").onclick = () => show("s-brand");
+  $("b-hl").onclick = async () => {
+    const status = $("hl-status");
+    const n = parseInt(($("hl-model").value.match(/^\s*(\d+)/) || [])[1], 10);
+    const m = hlModels.find(x => x.n === n);
+    if (!m) { status.textContent = T("Choisissez le modèle dans la liste (son numéro Hamlib)."); return; }
+    const port = $("hl-port").value.trim(), speed = parseInt($("hl-speed").value, 10) || null;
+    if (!port && n !== 1) { status.textContent = T("Indiquez le port série du poste."); return; }
+    $("b-hl").disabled = true; status.textContent = T("Lancement de Hamlib et lecture du poste…");
+    let r;
+    try { r = await HL.connect(n, port, speed); } catch (e) { r = { ok: false, erreur: "programme" }; }
+    $("b-hl").disabled = false;
+    if (!r.ok) { status.textContent = hamlibError(r); return; }
+    const p = r.profil || {};
+    const link = new hamlib.HamlibLink(HL, p);
+    S.model = models.byHamlib(n); S.chosen = S.model;
+    S.detected = { baud: r.vitesse || null, transport: { close: () => HL.disconnect() }, link, guess: S.model,
+                   hamlib: { n, nom: p.nom || `${m.fabricant} ${m.modele}`, version: p.hamlib || (hlInfo && hlInfo.hamlib) || null, statut: p.statut_backend || null } };
+    startRun();
+  };
+  function hamlibError(r) {
+    const why = { hamlib_absent: T("Hamlib introuvable sur ce PC."), rigctld_arrete: T("Hamlib s'est arrêté : port déjà utilisé par un autre logiciel, ou mauvais port."),
+                  rigctld_muet: T("Hamlib ne répond pas."), silence: T("Le poste ne répond pas : allumé ? bon port ? bonne vitesse (celle du menu CAT du poste) ?"),
+                  reglage: T("Réglage refusé : vérifiez le modèle, le port et la vitesse.") }[r.erreur] || T("Connexion impossible.");
+    return r.detail && typeof r.detail === "string" ? why + " (" + r.detail.slice(-160) + ")" : why;
+  }
 
   // ---------- Carte son ----------
   const audio = {
@@ -258,7 +309,7 @@
   $("b-stop").onclick = () => emergency("stop");
   document.addEventListener("keydown", e => { if (e.key === "Escape") emergency("stop"); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && S.runner && S.runner.guard.on) emergency("onglet_cache"); });
-  window.addEventListener("pagehide", () => emergency(T("fermeture")));
+  window.addEventListener("pagehide", () => { emergency(T("fermeture")); if (HL) HL.pttOff(true).catch(() => {}); });
   window.addEventListener("beforeunload", e => { if (S.runner && S.runner.guard.on) { emergency(T("fermeture")); e.preventDefault(); e.returnValue = ""; } });
   window.addEventListener("error", () => emergency("erreur"));
   window.addEventListener("unhandledrejection", () => emergency("erreur"));
@@ -276,7 +327,7 @@
     setStep("R1", "cur");
     const out = await S.runner.run();
     $("progbar").style.width = "100%"; $("b-stop").hidden = true;
-    S.report = await rep.build({ brand: S.brand, model: S.model, chosenModel: S.chosen, detected: S.detected, usb: S.port.getInfo ? S.port.getInfo() : null,
+    S.report = await rep.build({ brand: S.brand, model: S.model, chosenModel: S.chosen, detected: S.detected, usb: S.port && S.port.getInfo ? S.port.getInfo() : null,
                                  audio, run: out, trace: S.detected.link.trace, startedAt: S.startedAt, platform: platform() });
     try { await S.detected.transport.close(); } catch (e) { /* rien */ }
     showReport();
@@ -314,5 +365,5 @@
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   };
   $("b-print").onclick = () => window.print();
-  $("b-again").onclick = () => { S.runner = null; S.detected = null; show("s-brand"); buildBrands(); };
+  $("b-again").onclick = () => { S.runner = null; S.detected = null; S.port = null; show("s-brand"); buildBrands(); };
 })();

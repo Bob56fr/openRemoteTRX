@@ -86,6 +86,25 @@
     <p class="now" id="port-status"></p>
   </section>
 
+  <!-- 4 bis. Mode B : poste piloté par Hamlib (programme local openRemoteTRX-Autotest) -->
+  <section id="s-hamlib" class="card" hidden>
+    <h2 data-t="hl.t">Poste piloté par Hamlib</h2>
+    <p data-t="hl.what">Le programme openRemoteTRX-Autotest lance Hamlib sur ce PC : tous les postes que Hamlib connaît
+      peuvent être essayés. Fermez avant tout logiciel qui utilise le port du poste.</p>
+    <label class="field"><span data-t="hl.model">Modèle (numéro ou nom)</span>
+      <input id="hl-model" list="hl-models" autocomplete="off" spellcheck="false"></label>
+    <datalist id="hl-models"></datalist>
+    <label class="field"><span data-t="hl.port">Port série du poste (CAT)</span>
+      <input id="hl-port" list="hl-ports" autocomplete="off" spellcheck="false"></label>
+    <datalist id="hl-ports"></datalist>
+    <label class="field"><span data-t="hl.speed">Vitesse</span>
+      <select id="hl-speed"><option value="" data-t="hl.speed0">par défaut du modèle (Hamlib)</option>
+        <option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option></select></label>
+    <div class="row"><button data-t="hl.go" type="button" class="btn primary" id="b-hl">Se connecter au poste</button>
+      <button type="button" class="btn" id="b-back-hl" data-t="hl.back">Retour</button></div>
+    <p class="now" id="hl-status"></p>
+  </section>
+
   <!-- 5. Essais -->
   <section id="s-run" hidden>
     <div class="wrap">
@@ -246,6 +265,7 @@
 <script src="civ.js"></script>
 <script src="yaesu.js"></script>
 <script src="kenwood.js"></script>
+<script src="hamlib.js"></script>
 <script src="models.js"></script>
 <script src="runner.js"></script>
 <script src="report.js"></script>

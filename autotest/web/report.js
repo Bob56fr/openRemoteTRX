@@ -6,7 +6,7 @@
 (function (root) {
   "use strict";
 
-  const VERSION = "0.6.0";
+  const VERSION = "0.7.0";
   const SCHEMA = "openremotetrx-autotest/1";
   const STATUS_TEXT = { ok: "réussi", avert: "à vérifier", echec: "échec", na: "non disponible", saute: "sauté" };
 
@@ -29,7 +29,7 @@
     const traceText = JSON.stringify(trace || []);
     return {
       schema: SCHEMA,
-      outil: { nom: "openRemoteTRX-Autotest", version: VERSION, mode: "A" },
+      outil: { nom: "openRemoteTRX-Autotest", version: VERSION, mode: detected && detected.hamlib ? "B" : "A" },
       niveau: "prequalification_navigateur",
       date: startedAt || new Date().toISOString(),
       systeme: platform || null,
@@ -38,7 +38,9 @@
         modele_choisi: chosenModel ? chosenModel.name : null,
         modele_reconnu: model ? model.name : null,
         modele_verifie: model ? !!model.verifie : false,
-        hamlib_model: model && model.hamlib || null,
+        hamlib_model: detected && detected.hamlib ? detected.hamlib.n : model && model.hamlib || null,
+        // Mode B : modèle Hamlib lancé, version, statut du backend (jamais le port ni la machine).
+        hamlib: detected && detected.hamlib ? { nom: detected.hamlib.nom || null, version: detected.hamlib.version || null, statut_backend: detected.hamlib.statut || null } : null,
         adresse_civ: detected && detected.addr != null ? detected.addr.toString(16).toUpperCase().padStart(2, "0") : null,
         identifiant: detected && detected.ident || null,                     // Yaesu : réponse à « ID; »
         vitesse: detected ? detected.baud : null,

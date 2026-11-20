@@ -125,7 +125,8 @@
 
     async run() {
       const d = this.detected;
-      this.result("R1", "ok", T("Le poste répond à {baud} bauds.", { baud: d.baud }), { baud: d.baud });
+      if (d.hamlib) this.result("R1", "ok", d.baud ? T("Le poste répond par Hamlib à {baud} bauds.", { baud: d.baud }) : T("Le poste répond par Hamlib (vitesse par défaut du modèle)."), { baud: d.baud || null });
+      else this.result("R1", "ok", T("Le poste répond à {baud} bauds.", { baud: d.baud }), { baud: d.baud });
       this._r2();
       try {
         await this._reception();
@@ -147,6 +148,12 @@
 
     _r2() {
       const d = this.detected, m = this.model, hexA = a => a.toString(16).toUpperCase().padStart(2, "0") + "h";
+      if (d.hamlib) {                                               // mode B : modèle choisi dans la liste de Hamlib
+        const h = d.hamlib, stable = !h.statut || /^stable$/i.test(h.statut);
+        this.result("R2", stable ? "ok" : "avert", stable ? T("Hamlib : {name} (modèle {n}, Hamlib {v}).", { name: h.nom, n: h.n, v: h.version || "?" })
+          : T("Hamlib : {name} (modèle {n}, Hamlib {v}), pilote Hamlib au statut « {s} » : des fonctions peuvent manquer.", { name: h.nom, n: h.n, v: h.version || "?", s: h.statut }), { hamlib_model: h.n });
+        return;
+      }
       if (d.ident != null) {                                         // Yaesu : identité « ID; »
         if (m && m.ident === d.ident) this.result("R2", "ok", T("{name} reconnu (identité {id}).", { name: m.name, id: d.ident }), { ident: d.ident });
         else if (d.guess) this.result("R2", "ok", T("Poste reconnu : {name} (identité {id}).", { name: d.guess.name, id: d.ident }), { ident: d.ident });

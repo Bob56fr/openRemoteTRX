@@ -335,8 +335,30 @@ TOUTES TRANCHÉES (v4).
 | PQ2 | Famille ASCII : Yaesu nouveau, Kenwood, Elecraft ; E5 (RTS / DTR) | FTDX10 |
 | PQ3 | Xiegu (dialecte CI-V) et Yaesu ancien, marqués « non vérifié » sans poste | bêta-testeur |
 | PQ4 | Liste des modèles de Hamlib embarquée (§ 7) | — |
-| PQ5 | Mode B : `trx-autotest`, page servie, transport « API locale », comparaison A / B | IC-7300MK2, FTDX10 |
+| PQ5 (partie 1 FAITE, étape 337, Autotest 0.7.0 : `python -m trxstation.autotest`, page servie, `hamlib.js` ; restent l'exploration de tout `dump_caps`, la comparaison A / B, la commande `trx-autotest` et l'EXE) | Mode B : `trx-autotest`, page servie, transport « API locale », comparaison A / B | IC-7300MK2, FTDX10 |
 | PQ6 (FAIT en partie, étape 296, Autotest 0.6.0 : anglais, GitHub Pages, lien WordPress ; reste le guide) | Publication (GitHub Pages, lien plutôt qu'iframe : Web Serial), langues, guide de l'opérateur | — |
+
+### 12.1 Lot PQ5, partie 1 (étape 337, Autotest 0.7.0)
+
+- Programme local `python -m trxstation.autotest` (`trxstation/autotest/` : `main.py`, `server.py`, `rig.py`) :
+  refuse de démarrer si la station tourne ; sert la page de `autotest/web/` sur 127.0.0.1 (port 8767 par défaut) avec
+  un jeton à usage unique échangé contre un cookie ; Host et Origin vérifiés ; fichiers en liste fermée ; la CSP de
+  index.html est ouverte à la SEULE API de même origine (`connect-src 'self'`) et la balise
+  `<meta name="autotest-mode" content="hamlib">` annonce le mode B à la page. La page publiée (mode A) reste fermée.
+- rigctld PROPRE à l'Autotest, sur un port libre, `cache_timeout=0`, lancé à « Se connecter au poste » (modèle choisi
+  dans la liste de `rigctl -l`, port série, vitesse) ; capacités lues par `rigctl -m N -u` ; relancé s'il tombe
+  (commande fautive retenue).
+- LISTE FERMÉE des commandes rigctld (`rig.check_command`) : lectures f, m, t, s, j, niveaux et fonctions nommés ;
+  écritures F, M <mode> 0 (largeur TOUJOURS 0), T 0 / 1, L (RFPOWER, ATT, PREAMP, NR, NB, COMP, bornés), U (NB, NB2,
+  NR, ANF, COMP, MN, APF, RIT), G XCHG. JAMAIS : VOX, coupleur (un accord = une émission sur certains postes), split
+  (piège de l'IC-7300MK2), XIT, alimentation, commandes brutes, menus.
+- GARDE DU PROGRAMME, indépendante de la page : après un « T 1 », « T 0 » par une connexion à part si l'émission dure
+  plus de 12 s, si la page ne fait plus aucune requête pendant 3 s, à la déconnexion et à l'arrêt du programme ; la
+  page garde ses coupures (10 s, STOP, Échap, onglet caché, fermeture : « T 0 » envoyé aussi au programme).
+- Page : choix « Tous les postes (Hamlib) » en tête des marques en mode B ; écran « Poste piloté par Hamlib »
+  (modèle, port, vitesse) ; pilote `hamlib.js` à la même interface que les pilotes du mode A (runner.js inchangé
+  hormis R1 / R2) ; fonctions de R9 tirées des capacités déclarées ; rapport : `outil.mode` = B, bloc `poste.hamlib`
+  (nom, version, statut du backend).
 
 ## 13. Limites assumées
 

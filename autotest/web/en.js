@@ -5,6 +5,25 @@
 (function (root) {
   "use strict";
   const EN = {
+  "Le poste répond par Hamlib à {baud} bauds.": "The radio answers through Hamlib at {baud} baud.",
+  "Le poste répond par Hamlib (vitesse par défaut du modèle).": "The radio answers through Hamlib (default speed of the model).",
+  "Hamlib : {name} (modèle {n}, Hamlib {v}).": "Hamlib: {name} (model {n}, Hamlib {v}).",
+  "Hamlib : {name} (modèle {n}, Hamlib {v}), pilote Hamlib au statut « {s} » : des fonctions peuvent manquer.": "Hamlib: {name} (model {n}, Hamlib {v}), Hamlib driver status \"{s}\": some functions may be missing.",
+  "Tous les postes (Hamlib)": "All radios (Hamlib)",
+  "mode B, automatique": "mode B, automatic",
+  "Lecture de la liste des postes de Hamlib…": "Reading Hamlib's list of radios…",
+  "Hamlib {v} : {n} postes connus.": "Hamlib {v}: {n} known radios.",
+  "Hamlib introuvable sur ce PC : installez-le, ou indiquez son dossier au lancement (--hamlib-dir).": "Hamlib not found on this PC: install it, or give its folder at start-up (--hamlib-dir).",
+  "Le programme openRemoteTRX-Autotest ne répond plus : relancez-le.": "The openRemoteTRX-Autotest program no longer answers: start it again.",
+  "Choisissez le modèle dans la liste (son numéro Hamlib).": "Choose the model from the list (its Hamlib number).",
+  "Indiquez le port série du poste.": "Give the radio's serial port.",
+  "Lancement de Hamlib et lecture du poste…": "Starting Hamlib and reading the radio…",
+  "Hamlib introuvable sur ce PC.": "Hamlib not found on this PC.",
+  "Hamlib s'est arrêté : port déjà utilisé par un autre logiciel, ou mauvais port.": "Hamlib stopped: port already used by another program, or wrong port.",
+  "Hamlib ne répond pas.": "Hamlib does not answer.",
+  "Le poste ne répond pas : allumé ? bon port ? bonne vitesse (celle du menu CAT du poste) ?": "The radio does not answer: switched on? right port? right speed (the one in the radio's CAT menu)?",
+  "Réglage refusé : vérifiez le modèle, le port et la vitesse.": "Setting refused: check the model, the port and the speed.",
+  "Connexion impossible.": "Connection impossible.",
   " (hors de la zone ALC : baissez le niveau USB MOD)": " (outside the ALC zone: lower the USB MOD level)",
   " ({w} W sur {max} W)": " ({w} W of {max} W)",
   " : {what}. Puissance {pct} % du poste{w}, charge fictive.": ": {what}. Power {pct} % of the radio{w}, dummy load.",
@@ -168,6 +187,14 @@
   "— aucune —": "— none —"
 };
   const EN_PAGE = {
+  "hl.t": "Radio controlled by Hamlib",
+  "hl.what": "The openRemoteTRX-Autotest program runs Hamlib on this PC: every radio Hamlib knows can be tested. First close any program that uses the radio's port.",
+  "hl.model": "Model (number or name)",
+  "hl.port": "Radio's serial port (CAT)",
+  "hl.speed": "Speed",
+  "hl.speed0": "model default (Hamlib)",
+  "hl.go": "Connect to the radio",
+  "hl.back": "Back",
   "audio.in": "Input (sound received from the radio)<select id=\"a-in\"></select>",
   "audio.ok": "Continue",
   "audio.out": "Output (to the radio, for the test tone)<select id=\"a-out\"></select>",

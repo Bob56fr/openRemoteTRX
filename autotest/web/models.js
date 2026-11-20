@@ -49,8 +49,10 @@
   function byAddr(addr) { return ICOM.find(m => m.addr === addr) || null; }
   function byIdent(id) { return YAESU.find(m => m.ident === id) || null; }
   function byKenwood(id) { return KENWOOD.find(m => m.ident === id) || null; }
+  // Mode B : modèle de la table d'après le numéro Hamlib (puissance maximale pour l'affichage en watts).
+  function byHamlib(n) { return ICOM.concat(YAESU, KENWOOD).find(m => m.hamlib === n) || null; }
 
-  const api = { BRANDS, ICOM, ICOM_BAUDS, YAESU, YAESU_BAUDS, KENWOOD, KENWOOD_BAUDS, modelsOf, byAddr, byIdent, byKenwood };
+  const api = { BRANDS, ICOM, ICOM_BAUDS, YAESU, YAESU_BAUDS, KENWOOD, KENWOOD_BAUDS, modelsOf, byAddr, byIdent, byKenwood, byHamlib };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.AtModels = api;
 })(typeof window !== "undefined" ? window : globalThis);

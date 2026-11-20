@@ -37,6 +37,14 @@ def test_the_page_contacts_no_server_during_the_test() -> None:
     assert "connect-src 'none'" in html and "default-src 'self'" in html
     for f in CODE:
         text = f.read_text(encoding="utf-8")
+        if f.name == "hamlib.js":
+            # Mode B (lot PQ5) : SEULE exception, l'API du programme local qui SERT la page (même origine, chemins
+            # relatifs « api/… ») ; la CSP de la page publiée (connect-src 'none') l'empêche de toute façon.
+            calls = re.findall(r'fetch\(\(base \|\| ""\) \+ ("api/[a-z_]+"|path)', text)
+            assert len(calls) == text.count("fetch(") and calls, calls
+            assert set(re.findall(r'"(api/[a-z_]+)"', text)) <= {"api/cmd", "api/ptt_off", "api/connect", "api/disconnect",
+                                                                  "api/info", "api/models", "api/ports"}
+            text = text.replace("fetch(", "")
         for bad in ("fetch(", "XMLHttpRequest", "WebSocket", "sendBeacon", "EventSource", "@import", "googleapis"):
             assert bad not in text, (f.name, bad)
         urls = re.findall(r"https?://[^\s\"'<>)]+", text)

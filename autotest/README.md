@@ -6,7 +6,10 @@ Préqualification d'un poste depuis le navigateur : cahier des charges `docs/pre
   https://bob56fr.github.io/openRemoteTRX/autotest/ (copiée par `.github/workflows/pages.yml`) ; bloc WordPress
   `docs/wordpress/autotest-lien.html`. Pilotes : Icom CI-V (`civ.js`), Yaesu FTDX10 (`yaesu.js`), Kenwood TS-890S
   (`kenwood.js`) ; traductions `i18n.js` + `en.js`.
-- Tests : `node tests/js/autotest_test.js` (logique, garde d'émission, pannes) et `tests/test_autotest_page.py`.
+- Mode B (lot PQ5) : `python -m trxstation.autotest` sert la MÊME page avec Hamlib (`trxstation/autotest/`, pilote
+  `web/hamlib.js`) ; station arrêtée, Hamlib installé (sinon `--hamlib-dir`).
+- Tests : `node tests/js/autotest_test.js` (logique, garde d'émission, pannes), `tests/test_autotest_page.py` et
+  `tests/test_autotest_mode_b.py`.
 
 ## Essayer la page sur ce PC
 

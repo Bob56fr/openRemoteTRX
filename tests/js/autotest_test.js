@@ -355,6 +355,64 @@ test("Kenwood : sans annonces AI, PTT illisible = aucune émission ; STOP pendan
   assert.ok(Date.now() - t0 < 1500); assert.equal(res(out, "RS").status, "ok");
 });
 
+// ---------- Mode B : Hamlib par le programme local ----------
+const hamlib = require(path.join(W, "hamlib.js"));
+const { FakeHamlib, PROFILE, allowed } = require("./autotest_fake_hamlib.js");
+function setupH(rigOpts, uiOver, opts, profile) {
+  const rig = new FakeHamlib(rigOpts);
+  const link = new hamlib.HamlibLink(rig, profile || PROFILE);
+  const d = { baud: null, link, transport: { close: async () => {} }, hamlib: { n: 3094, nom: PROFILE.nom, version: "4.7.2", statut: (profile || PROFILE).statut_backend } };
+  const u = ui(uiOver);
+  const r = new Runner({ link, model: MK2, audio: fakeAudio(rig), ui: u, opts: Object.assign({}, FAST, opts), detected: d });
+  return { rig, link, d, u, r };
+}
+
+test("Hamlib : fonctions retenues d'après les capacités (jamais VOX, coupleur, XIT, split)", () => {
+  const codes = hamlib.buildFuncs(PROFILE).map(f => f.code);
+  assert.deepEqual(codes, ["ATT", "P.AMP", "NB", "NR", "ANF", "COMP", "MN", "RIT", "NR niv.", "NB niv."]);
+  for (const bad of ["VOX", "TUNER", "XIT", "SPLIT"]) assert.ok(!codes.includes(bad), bad);
+  assert.deepEqual(hamlib.buildFuncs({}), []);
+  assert.equal(hamlib.scale.sText(0), "S9"); assert.equal(hamlib.scale.sText(-54), "S0"); assert.equal(hamlib.scale.sText(20), "S9+20 dB");
+  assert.ok(!allowed("U VOX 1") && !allowed("U TUNER 1") && !allowed("S 1 VFOB") && !allowed("M USB 2400") && allowed("M USB 0"));
+});
+
+test("Hamlib : parcours complet réussi, état d'origine remis, émissions courtes à 10 %, aucune commande hors liste", async () => {
+  const { rig, r } = setupH();
+  const out = await r.run();
+  for (const c of ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "E1", "E2", "E3", "E4", "E6", "RS"]) assert.equal(res(out, c).status, "ok", c + " : " + res(out, c).text);
+  assert.deepEqual(rig.refused, []);
+  assert.equal(rig.freq, 7074000); assert.equal(rig.mode, "USB"); assert.equal(rig.levels.RFPOWER, 1); assert.equal(rig.ptt, 0);
+  assert.equal(rig.state(), rig.initial);
+  assert.equal(rig.txLog.length, 4); assert.ok(rig.maxTx() < 1000);
+  assert.ok(rig.lines.includes("L RFPOWER 0.1"), "puissance à 10 %");
+  assert.ok(rig.lines.includes("M PKTUSB 0"), "tonalité en PKTUSB");
+  assert.ok(rig.lines.every(l => !/^M \S+ [1-9]/.test(l)), "largeur toujours 0");
+  assert.ok(/Hamlib/.test(res(out, "R1").text) && /IC-7300MK2/.test(res(out, "R2").text));
+});
+
+test("Hamlib : aucune émission sans autorisation ; STOP pendant la porteuse = coupure par le programme", async () => {
+  const a = setupH({}, { authorize: async () => false });
+  await a.r.run(); assert.equal(a.rig.txLog.length, 0); assert.ok(!a.rig.lines.includes("T 1"));
+  const b = setupH({}, {}, { e2: 3000 });
+  let t0 = null;
+  b.r.ui.event = e => { if (e.type === "tx" && e.on && e.label === "E2") setTimeout(() => { t0 = Date.now(); b.r.stop("stop"); }, 60); };
+  const out = await b.r.run();
+  assert.equal(b.rig.ptt, 0); assert.equal(b.rig.txLog.length, 2); assert.ok(b.rig.txLog[1] < 400); assert.ok(b.rig.pttOffs >= 1);
+  assert.ok(Date.now() - t0 < 1500); assert.equal(res(out, "RS").status, "ok");
+});
+
+test("Hamlib : poste déjà en émission, fonction refusée, niveau figé, backend non stable", async () => {
+  const busy = setupH({ alreadyTx: true });
+  const o1 = await busy.r.run();
+  assert.equal(res(o1, "R6").status, "echec"); assert.ok(!busy.rig.lines.some(l => /^[FMLUT] /.test(l)));
+  const odd = setupH({ ng: ["U ANF"], stuck: ["NB"] }, {}, {}, Object.assign({}, PROFILE, { statut_backend: "Beta" }));
+  const o2 = await odd.r.run();
+  const rows = res(o2, "R9").values.fonctions, row = c => rows.find(x => x.code === c);
+  assert.equal(row("ANF").statut, "refus"); assert.equal(row("NB niv.").statut, "ecart"); assert.equal(row("NR niv.").statut, "ok");
+  assert.equal(res(o2, "R9").status, "avert"); assert.equal(res(o2, "R2").status, "avert");
+  assert.equal(odd.rig.ptt, 0);
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of tests) {
