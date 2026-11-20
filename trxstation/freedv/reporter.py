@@ -23,6 +23,7 @@ from .activity import ReporterState
 
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..i18n.text import Text
 log = logging.getLogger("trx.freedv.reporter")
 
 URL = "https://qso.freedv.org/socket.io/?EIO=4&transport=polling"
@@ -89,7 +90,8 @@ class ReporterClient:
                  post: Callable[[str, str, str], None] = http_post) -> None:
         self.state, self.lock, self.url, self.user_agent = state, lock, url, user_agent
         self._get, self._post = get, post
-        self.status, self.message = CONNECTING, "connexion à FreeDV Reporter…"
+        # `message` : texte français (un Text : sa clé et ses variables partent aussi, la passerelle le traduit, § 3.3)
+        self.status, self.message = CONNECTING, Text("station.freedv_reporter_connecting")
 
     def _set(self, status: str, message: str) -> None:
         with self.lock:
@@ -128,5 +130,5 @@ class ReporterClient:
                 emit_event(codes.ORT_6568, logger=log, detail=text, delai_s=round(delay))
                 with self.lock:
                     self.state.clear()
-                self._set(ERROR, f"FreeDV Reporter injoignable ({text}) ; nouvel essai dans {delay:.0f} s")
+                self._set(ERROR, Text("station.freedv_reporter_error", error=text, seconds=f"{delay:.0f}"))
                 stop.wait(delay)

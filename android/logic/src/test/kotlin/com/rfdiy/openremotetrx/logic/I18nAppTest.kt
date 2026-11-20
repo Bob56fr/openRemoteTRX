@@ -127,6 +127,20 @@ class I18nAppTest {
     }
 
     @Test
+    fun `langue proposee - catalogues complets, aucun texte humain laisse en francais`() {
+        val files = listOf(resources to "app", common to "shared", common to "client")
+        val identical = Json.parseToJsonElement(File(common, "identical.json").readText(Charsets.UTF_8)) as JsonObject
+        for (lang in Tr.OFFERED - "fr") for ((dir, domain) in files) {
+            val allowed = (identical[lang] as? kotlinx.serialization.json.JsonArray)?.map { (it as JsonPrimitive).content }?.toSet() ?: emptySet()
+            val fr = load(File(dir, "$domain.fr.json"))
+            val other = load(File(dir, "$domain.$lang.json"))
+            assertEquals(fr.keys, other.keys, "$domain.$lang.json")
+            val same = fr.filter { (k, v) -> other[k] == v && isHuman(v) && v !in allowed }.keys
+            assertEquals(emptySet(), same, "$domain.$lang.json : textes laissés en français")
+        }
+    }
+
+    @Test
     fun `pluriel - regle de la langue`() {
         try {
             Tr.lang = "fr"

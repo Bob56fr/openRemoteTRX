@@ -706,5 +706,8 @@
   "ui.freq_invalid_7100": "Fréquence invalide (en kHz, ex. 7100 ou 7074,5).",
   "ui.mem_mode_missing": "Choisis un mode.",
   "ui.mic_next_connection": "Le micro choisi s'appliquera à la prochaine connexion.",
-  "ui.layout_factory_restored": "Interface d'usine rétablie."
+  "ui.layout_factory_restored": "Interface d'usine rétablie.",
+  "index.lang_label": "Langue",
+  "index.lang_connected": "Langue : se déconnecter pour la changer.",
+  "index.lang_auto": "Langue du navigateur"
 }

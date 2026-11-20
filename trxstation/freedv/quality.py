@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..i18n.text import Text
+
 
 class SyncFilter:
     """Synchro confirmée après min_sync_s de synchro continue ; perdue après hold_s hors synchro.
@@ -50,7 +52,7 @@ def quality_note(samples: list[tuple[bool, float]], resyncs: int, duration_s: fl
     """Note de 1 à 5 d'une séquence ; samples = [(synchronisé, SNR estimé)]."""
     sy = sorted(s for ok, s in samples if ok)
     if not samples or not sy:
-        return 1, "jamais synchronisé"
+        return 1, Text("station.freedv_never_synced")
     m = sy[len(sy) // 2]
     f = len(sy) / len(samples)
     n = 5 if m >= 6 else 4 if m >= 3 else 3 if m >= 0 else 2 if m >= -3 else 1
@@ -63,7 +65,7 @@ def quality_note(samples: list[tuple[bool, float]], resyncs: int, duration_s: fl
     if duration_s < 3:
         n = min(n, 2)
     n = max(1, min(5, n))
-    return n, f"SNR médian {m:+.1f} dB, synchro {round(100 * f)} %, {resyncs} perte(s) de synchro"
+    return n, Text("station.freedv_sequence", snr=f"{m:+.1f}", sync=str(round(100 * f)), losses=str(resyncs))
 
 
 @dataclass

@@ -161,7 +161,7 @@ comme pour la console. Rien de visible avant T5 sauf le champ `lang` du protocol
 | **T2** (FAIT, étape 307) | Extraction de `:logic` vers `app.fr.json` / tronc commun ; cliquet « aucune chaîne française dans un fichier converti » (liste `CONVERTED`, comme `test_error_free_text.py`). Réglage de langue. | application (gelée) | Non |
 | **T3** (FAIT, étape 308) | Extraction de `:core` (notifications, RigService, RigMedia, Android Auto) et de `:app` (écrans, dialogues). | application (gelée) | Non |
 | **T4** (FAIT, étape 309) | Extraction de la page (`client.js`, `ui.js`, `index.html`, puis les autres fichiers) vers `page.fr.json` / tronc commun ; sélecteur de langue. | page (gelée) | Non |
-| **T5** | Anglais complet (application, page, station) + essais réels (téléphone, tablette, DHU, PC). | tout | Oui |
+| **T5** (code FAIT, étape 310 ; essais réels à faire) | Anglais complet (application, page, station) + essais réels (téléphone, tablette, DHU, PC). | tout | Oui |
 | **T6** | Allemand (vouvoiement) et espagnol, glossaire, pseudo-langue longue, ajustements de place. | tout | Oui |
 | **T7** | Voix d'Android Auto en 4 langues, textes partagés, formats des dates et nombres. | application, page | Oui |
 | **T8** | Catalogue d'erreurs ORT / AND en DE / ES, pages publiques des codes, `notify_lang` de / es. | station, site | Oui |

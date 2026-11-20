@@ -152,7 +152,8 @@ class TextsTest {
         assertEquals("es", Tr.chooseLang("es", listOf("de-DE"), all))
         assertEquals("en", Tr.chooseLang(null, listOf("it-IT"), all))
         assertEquals("fr", Tr.chooseLang(null, listOf("de-DE"), listOf("fr")))
-        assertEquals("fr", Tr.chooseLang("de", emptyList()))                       // proposé aujourd'hui : français seul
+        assertEquals("en", Tr.chooseLang("de", emptyList()))                       // proposé aujourd'hui : français et anglais
+        assertEquals("fr", Tr.chooseLang(null, listOf("fr-BE", "en-GB")))
     }
 }
 

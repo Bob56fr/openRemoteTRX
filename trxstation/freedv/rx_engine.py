@@ -33,6 +33,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable
 
+from ..i18n.text import Text
 from .parse import DemodState, parse_ka9q_line, parse_radae_line
 from .quality import Sequence, SyncFilter
 from .resample import ToRadaeIQ
@@ -279,7 +280,8 @@ class RadeRxEngine:
                 stdout=asyncio.subprocess.PIPE if read_stdout else asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.PIPE)
         except OSError as e:
-            raise _Fault(f"lancement impossible de {Path(args[0]).name} : {e.strerror or e}") from None
+            raise _Fault(Text("station.freedv_spawn_failed", program=Path(args[0]).name,
+                              error=str(e.strerror or e))) from None
 
     async def _session(self) -> str | None:
         """Une vie des deux processus ; rend la cause de la fin (None si arrêt demandé)."""
@@ -300,7 +302,7 @@ class RadeRxEngine:
             self.procs.append(radae)
         except _Fault as e:
             await self._kill_all()
-            return str(e)
+            return e.args[0] if e.args and isinstance(e.args[0], str) else str(e)   # Text gardé (traduit)
         self._take_all()                      # pas de son d'avant la (re)prise
         iq = ToRadaeIQ(cfg.in_rate)
         t0 = self._clock()
@@ -351,11 +353,11 @@ class RadeRxEngine:
                     stdin.write(data)
                     await asyncio.wait_for(stdin.drain(), timeout)
                 except asyncio.TimeoutError:
-                    fail(f"gel de {names[k]} (entrée bloquée)")
+                    fail(Text("station.freedv_input_frozen", program=names[k]))
                     return
                 except (BrokenPipeError, ConnectionResetError, OSError):
                     await asyncio.sleep(0.5)            # laisser waiter() donner le code de sortie
-                    fail(f"{names[k]} ne lit plus son entrée")
+                    fail(Text("station.freedv_not_reading", program=names[k]))
                     return
 
         async def voice_reader() -> None:
@@ -378,7 +380,7 @@ class RadeRxEngine:
             try:
                 await _ka9q_err()
             except (ValueError, asyncio.LimitOverrunError, UnicodeError) as e:
-                fail(f"lecture impossible de freedv-ka9q : {e}")
+                fail(Text("station.freedv_read_failed", program="freedv-ka9q", error=str(e)))
 
         async def _ka9q_err() -> None:
             async for raw in ka9q.stderr:
@@ -397,7 +399,7 @@ class RadeRxEngine:
             try:
                 await _radae_err()
             except (ValueError, asyncio.LimitOverrunError, UnicodeError) as e:
-                fail(f"lecture impossible de radae_rx : {e}")
+                fail(Text("station.freedv_read_failed", program="radae_rx", error=str(e)))
 
         async def _radae_err() -> None:
             async for raw in radae.stderr:
@@ -411,7 +413,7 @@ class RadeRxEngine:
 
         async def waiter(p: asyncio.subprocess.Process, name: str) -> None:
             code = await p.wait()
-            fail(f"{name} s'est arrêté (code {code})")
+            fail(Text("station.freedv_exited", program=name, code=str(code)))
 
         async def watchdog() -> None:
             while True:
@@ -419,7 +421,7 @@ class RadeRxEngine:
                 now = self._clock()
                 fed = now - self._last_feed < 1.0
                 if fed and now - t0 > cfg.startup_grace_s and now - self._last_radae > cfg.freeze_s:
-                    fail("radae_rx gelé (plus aucune ligne d'état)")
+                    fail(Text("station.freedv_radae_frozen"))
                     return
                 if self._pending_text and now - self._pending_text[1] > 1.0:
                     cs, _ = self._pending_text

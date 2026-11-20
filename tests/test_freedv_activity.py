@@ -181,7 +181,9 @@ def test_shared_example_has_exactly_the_fields_published_by_the_station():
     client = rep.ReporterClient(st, lock)
     client.status = rep.OK
     m = build_message(client, st, lock, "IN87", NOW)
-    assert set(m) == set(ex["data"])
+    # `_texts` (code du texte, lot T5) ne va que jusqu'à la passerelle, qui le retire : le client reçoit `localize(m)`
+    from trxstation.gateway.api.texts import localize
+    assert set(localize("fr", m)) == set(localize("en", m)) == set(ex["data"])
     assert set(m["freqs"][0]) == set(ex["data"]["freqs"][0])
     assert set(m["freqs"][0]["tx"][0]) == set(ex["data"]["freqs"][0]["tx"][0])
     assert set(m["freqs"][0]["rx"][0]) == set(ex["data"]["freqs"][0]["rx"][0])

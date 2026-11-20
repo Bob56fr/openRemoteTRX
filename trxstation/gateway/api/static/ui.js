@@ -297,6 +297,30 @@
         t = end + gap / 1000;
       }
     }
+    // Langue de la page (lot T5) : choisie HORS connexion (la page se recharge dans la nouvelle langue)
+    const LANG_NAMES = { fr: "Français", en: "English", de: "Deutsch", es: "Español" };   // i18n-ok : noms des langues
+    function langControl() {
+      const offered = I18N ? I18N.OFFERED : [];
+      $("lang-label").hidden = offered.length < 2;
+      $("lang-select").disabled = connectedFlag;
+      $("lang-hint").hidden = offered.length < 2 || !connectedFlag;
+    }
+    if (I18N && I18N.OFFERED.length > 1) {
+      const sel = $("lang-select");
+      for (const code of [""].concat(I18N.OFFERED)) {
+        const o = document.createElement("option");
+        o.value = code;
+        o.textContent = code ? LANG_NAMES[code] || code : I18N.t("index.lang_auto");
+        sel.appendChild(o);
+      }
+      sel.value = I18N.stored() || "";
+      sel.addEventListener("change", () => {
+        if (connectedFlag) { sel.value = I18N.stored() || ""; return; }
+        I18N.choose(sel.value || null);
+        root.location.reload();
+      });
+    }
+    langControl();
     $("alert-select").value = ["off", "low", "normal", "high"].includes(alertLevel) ? alertLevel : "normal";
     $("alert-select").addEventListener("change", (ev) => { alertLevel = ev.target.value; store.set("trx.alerts", alertLevel); });
     $("alert-test").addEventListener("click", () => {                                 // les trois sons à la suite, pour les reconnaître
@@ -1993,6 +2017,7 @@
       armed(value) { $("armed").checked = value; },
       connected(value) {
         connectedFlag = value;
+        langControl();
         if (!value) {                                                            // déconnecté : plus de mode visiteur ni de 🎧
           renderPresence({ listener: false, presence: null });
           bzhRender(null);                                                       // plus de rubrique ni de voyant Breizh

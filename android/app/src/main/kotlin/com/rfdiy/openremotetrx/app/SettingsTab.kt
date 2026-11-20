@@ -128,13 +128,19 @@ private fun LanguageSection(transmitting: Boolean) {
         for (lang in choices) {
             FilterChip(
                 selected = chosen == lang, enabled = !transmitting,
-                onClick = { if (AppLang.choose(context, lang, transmitting)) chosen = lang },
+                onClick = {
+                    // Écrans redessinés dans la nouvelle langue ; la station la reçoit à la prochaine connexion
+                    if (lang != chosen && AppLang.choose(context, lang, transmitting)) {
+                        chosen = lang
+                        (context as? android.app.Activity)?.recreate()
+                    }
+                },
                 label = { Text(lang?.let { LANG_NAMES[it] ?: it } ?: Tr.t("settings.language_phone")) },
             )
             Spacer(Modifier.width(6.dp))
         }
     }
-    if (transmitting) Text(Tr.t("settings.language_tx"), style = MaterialTheme.typography.bodySmall)
+    Text(Tr.t(if (transmitting) "settings.language_tx" else "settings.language_next"), style = MaterialTheme.typography.bodySmall)
 }
 
 /** Onglet Réglages : journal, préférences, sections du téléphone, outils de la station. */

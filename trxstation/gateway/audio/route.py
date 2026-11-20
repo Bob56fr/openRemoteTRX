@@ -20,6 +20,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 
 from ...breizh import protocol as bp
+from ...i18n.text import Text
 from .gate import TxAudioGate
 
 log = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class TxRoute:
             block = pcm[start:start + bp.BLOCK_BYTES]
             ref = self.link.send_audio(block, bp.FLAG_START if self._first else 0)
             if ref is None:
-                self._fall_back("Breizh injoignable au moment d'envoyer le son")
+                self._fall_back(Text("station.breizh_unreachable"))
                 return gate.write(pcm[start:], epoch, self._direct_gain)
             self._first = False
             self._pending[ref] = [now, block, None]
@@ -130,8 +131,8 @@ class TxRoute:
                 break
             del self._pending[ref]
         if self._unanswered_since is not None and now - self._unanswered_since >= self.cfg.lost_ms / 1000:
-            self._fall_back(f"Breizh ne répond plus depuis {self.cfg.lost_ms} ms : fin de l'émission en direct, "
-                            f"gain {self.cfg.fallback_gain_db:g} dB")
+            self._fall_back(Text("station.breizh_fallback", ms=str(self.cfg.lost_ms),
+                                 gain=f"{self.cfg.fallback_gain_db:g}"))
             return
         self._arm()
 

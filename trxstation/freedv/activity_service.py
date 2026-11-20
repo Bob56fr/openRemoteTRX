@@ -39,6 +39,7 @@ from .reporter import ReporterClient
 
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..i18n.text import Text
 log = logging.getLogger("trx.freedv.activity")
 PUBLISH_EVERY_S = 10.0
 FIRST_PUBLISH_S = 3.0
@@ -47,8 +48,12 @@ FIRST_PUBLISH_S = 3.0
 def build_message(client: ReporterClient, state: ReporterState, lock: threading.Lock, locator: str, now: float) -> dict:
     with lock:
         freqs = state.snapshot(now, locator) if client.status == "ok" else []
-        return {"kind": "freedv_activity", "retain": "snapshot", "status": client.status, "message": client.message,
-                "total": len(state.stations), "locator": bool(locator), "t": int(now), "freqs": freqs}
+        message = {"kind": "freedv_activity", "retain": "snapshot", "status": client.status, "message": client.message,
+                   "total": len(state.stations), "locator": bool(locator), "t": int(now), "freqs": freqs}
+        text = client.message
+        if isinstance(text, Text):         # code du texte et ses variables : la PASSERELLE le fabrique pour chaque client
+            message["_texts"] = {"message": {"key": text.key, "fields": {k: str(v) for k, v in text.fields.items()}}}
+        return message
 
 
 class ActivityService:

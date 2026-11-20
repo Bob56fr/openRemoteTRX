@@ -22,6 +22,7 @@ from .access import AccessRefused
 from ...netprobe.report import clean_agent, clean_device
 from .auth import DEFAULT_PROXIES, ClientRegistry, client_source
 from .protocol import PROTOCOL_VERSION
+from ...i18n.text import Text
 from .texts import clean_lang, client_text
 from .webrtc import PeerLimitError, PeerManager
 from ...errors import codes
@@ -81,7 +82,10 @@ def make_app(registry: ClientRegistry, manager: PeerManager, *, web_client: bool
         except AccessRefused as exc:
             emit_event(codes.ORT_4021, logger=log, compte=client_id[:32], source=source[:64], detail=exc.message,
                        raison=exc.reason, code_cause=by_machine(exc.reason))
-            message = exc.message if lang == "fr" else (client_text(lang, "acces." + exc.reason) or exc.message)
+            if isinstance(exc.message, Text):            # message précis (surcharge : cause et valeur) : traduit tel quel
+                message = exc.message.render(lang)
+            else:
+                message = exc.message if lang == "fr" else (client_text(lang, "acces." + exc.reason) or exc.message)
             return web.json_response({"error": exc.reason, "message": message}, status=exc.status)
         except PeerLimitError:
             return web.json_response({"error": "busy"}, status=503)

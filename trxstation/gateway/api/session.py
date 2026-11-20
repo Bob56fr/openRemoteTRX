@@ -31,7 +31,8 @@ from ..cat import Capabilities, CatConnectionError, CatLink, RigError
 from ..memories import MemoryStore, MemoryStoreError
 from ..voice_profiles import VoiceProfileError
 from ..safety import PttController, Refused
-from .texts import clean_lang, client_text, errors_lang
+from ...i18n.text import Text
+from .texts import clean_lang, client_text, errors_lang, localize, needs_localize
 from .access import LISTENER, LISTENER_COMMANDS, MESSAGES, OPERATOR
 from ...modules.bus import CommandRefused
 from .protocol import BASE_FEATURES, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, Command, ProtocolError, parse_command
@@ -185,6 +186,8 @@ class ControlSession:
 
     def send(self, message: dict) -> None:
         try:
+            if needs_localize(self.lang, message):
+                message = localize(self.lang, message)       # textes de la station dans la langue de CE client (T5)
             self._send(with_error_code(message))
         except Exception:
             emit_event(codes.ORT_4018, logger=log, trace=True, erreur=f"envoi vers {self.client_id}")
@@ -516,8 +519,8 @@ class ControlSession:
                 return
             if settings.bypass != before:
                 route.store.event("bypass" if settings.bypass else "unbypass",
-                                  f"« Direct » {'choisi' if settings.bypass else 'quitté'} par {self.client_id} "
-                                  "(à la prochaine émission)")
+                                  Text("station.breizh_bypass_on" if settings.bypass else "station.breizh_bypass_off",
+                                       client=self.client_id))
             self._result(cmd.id, True, breizh=route.snapshot())
 
     async def _memory_command(self, cmd) -> None:
@@ -694,8 +697,8 @@ class ControlSession:
     def bye(self, reason: str, message: str = "") -> None:
         """Dernier message avant que la station ferme cette connexion : le client affiche le motif et ne se
         reconnecte pas tout seul."""
-        if self.lang != "fr":                    # motif connu : texte dans la langue du client (le détail français cède)
-            message = client_text(self.lang, "acces." + reason) or message
+        if self.lang != "fr" and not isinstance(message, Text):   # motif connu : texte dans la langue du client
+            message = client_text(self.lang, "acces." + reason) or message   # (un Text précis est traduit par send)
         self.send({"type": "bye", "reason": reason, "message": message or MESSAGES.get(reason, reason)})
 
     def _forbid(self, name: str, ident) -> None:

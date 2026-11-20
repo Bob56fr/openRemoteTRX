@@ -213,3 +213,19 @@ def texts_read_at_load(path: Path) -> list[str]:
 def test_no_text_is_read_when_a_page_script_loads():
     found = [item for path in sorted(STATIC.glob("*.js")) for item in texts_read_at_load(path)]
     assert found == [], "table de textes calculée au chargement : la relire à l'affichage (fonction, getter)"
+
+
+def test_offered_languages_have_complete_catalogues_and_real_translations():
+    """Une langue PROPOSÉE par la page (OFFERED d'i18n.js) a ses trois catalogues ; un texte humain n'y est jamais
+    laissé en français (abréviations, noms propres, unités : permis, ils ne sont pas « humains » pour le cliquet)."""
+    script = (STATIC / "i18n.js").read_text(encoding="utf-8")
+    offered = re.findall(r'"([a-z]{2})"', re.search(r"const OFFERED = \[([^\]]*)\]", script).group(1))
+    assert offered[0] == "fr"
+    identical = json.loads((FOLDER / "identical.json").read_text(encoding="utf-8"))
+    for lang in offered[1:]:
+        allowed = set(identical.get(lang, []))
+        for domain in ("client", "shared", "page"):
+            fr, other = load(f"{domain}.fr.json"), load(f"{domain}.{lang}.json")
+            assert list(other) == list(fr), (domain, lang)
+            same = [k for k, v in fr.items() if other[k] == v and is_human(v) and v not in allowed]
+            assert same == [], (domain, lang, same)

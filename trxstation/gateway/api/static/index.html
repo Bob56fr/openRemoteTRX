@@ -178,6 +178,8 @@
         <label><span data-t="stationscreen.user">Identifiant</span> <input id="client-id" name="username" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
         <label><span data-t="stationscreen.password">Mot de passe</span> <input id="password" name="password" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false"></label>
         </form>
+        <label id="lang-label" hidden><span data-t="index.lang_label">Langue</span> <select id="lang-select"></select></label>
+        <p id="lang-hint" class="note" hidden data-t="index.lang_connected">Langue : se déconnecter pour la changer.</p>
         <p id="ca-hint" class="note" hidden><span data-t="index.ca_hint_part1">Avertissement du navigateur, mot de passe jamais retenu ?</span>
           <a id="ca-link" href="station-ca.crt" download data-t="index.ca_link">Installer le certificat de la station</a> <span data-t="index.ca_hint_part2">(une fois par appareil, guide de l'opérateur partie 4).</span></p>
         <p class="note" data-t="index.password_not_saved">Le mot de passe n'est jamais enregistré par cette page : utilise le gestionnaire de mots de passe de ton navigateur.</p>

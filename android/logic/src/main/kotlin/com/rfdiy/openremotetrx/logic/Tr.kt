@@ -21,10 +21,10 @@ object Tr {
     val LANGS = listOf("fr", "en", "de", "es")
 
     /**
-     * Langues PROPOSÉES par l'application : elle n'est traduite qu'au lot T5 ; d'ici là elle reste en français (refus
-     * et coupures déjà traduits, mais pas mélangés à des écrans français).
+     * Langues PROPOSÉES par l'application : une langue n'y entre que lorsque ses catalogues sont complets (lot T5 :
+     * anglais ; allemand et espagnol au lot T6) — I18nAppTest le vérifie.
      */
-    val OFFERED = listOf("fr")
+    val OFFERED = listOf("fr", "en")
 
     private val DOMAINS = listOf("client", "shared", "app")
     private val json = Json { ignoreUnknownKeys = true }

@@ -19,6 +19,7 @@ from collections.abc import Callable
 
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..i18n.text import Text
 from . import protocol as p
 
 log = logging.getLogger(__name__)
@@ -94,7 +95,7 @@ class BreizhLink(asyncio.DatagramProtocol):
             return False
         if self.state == "fallback" and self.session_key is not None:
             self.state = "ready"
-            self.notify("reactivated", "Breizh repris à la demande de l'opérateur")
+            self.notify("reactivated", Text("station.breizh_reactivated"))
             return False
         self._reactivate_requested = True
         if self.state == "refused":
@@ -125,7 +126,8 @@ class BreizhLink(asyncio.DatagramProtocol):
         self._new_attempt()
         if code != self._refused_code:
             self._refused_code = code
-            self.notify("refused", f"liaison refusée : {REFUSALS.get(code, code)} (nouvel essai dans 60 s)")
+            cause = Text("station.breizh_refusal_" + code) if code in REFUSALS else code
+            self.notify("refused", Text("station.breizh_refused", cause=cause))
 
     # ---------------------------------------------------------------- envoi
     def _send(self, kind: p.Type, *, ref: int = 0, payload: bytes = b"", flags: int = 0) -> bool:
@@ -224,7 +226,7 @@ class BreizhLink(asyncio.DatagramProtocol):
             self._last_valid = now
             self.rtt_ms = round((now - sent) * 1000)
         elif packet.type == p.Type.BYE:
-            self._lose("lost", f"Breizh a quitté le mode OpenRemoteTRX ({p.parse_bye(packet.payload)})")
+            self._lose("lost", Text("station.breizh_left", reason=p.parse_bye(packet.payload)))
         else:
             self.rejected["type"] += 1
 
@@ -245,7 +247,7 @@ class BreizhLink(asyncio.DatagramProtocol):
         now = self.clock()
         self._last_valid, self._stable_since, self._refused_code = now, now, ""
         self._silent_reported = False
-        detail = f"{ack.breizh or 'Breizh'} joint (traitement annoncé : {ack.latency_ms} ms)"
+        detail = Text("station.breizh_joined", name=ack.breizh or "Breizh", latency=str(ack.latency_ms))
         if self.state in ("connecting", "refused"):
             self.state = "ready"
             self._reactivate_requested = False
@@ -253,11 +255,11 @@ class BreizhLink(asyncio.DatagramProtocol):
         elif self._reactivate_requested:
             self.state = "ready"
             self._reactivate_requested = False
-            self.notify("reactivated", f"Breizh repris à la demande de l'opérateur : {detail}")
+            self.notify("reactivated", Text("station.breizh_reactivated_joined", detail=detail))
         else:
-            wait = f"repris dans {self.reactivate_after_s} s sans faute" if self.reactivate_after_s > 0 else \
-                "repris seulement à la demande de l'opérateur"
-            self.notify("back", f"Breizh répond de nouveau : {detail} ; {wait}")
+            wait = Text("station.breizh_back_after", seconds=str(self.reactivate_after_s)) \
+                if self.reactivate_after_s > 0 else Text("station.breizh_back_manual")
+            self.notify("back", Text("station.breizh_back", detail=detail, wait=wait))
 
     # ---------------------------------------------------------------- horloge
     def tick(self) -> None:
@@ -267,7 +269,8 @@ class BreizhLink(asyncio.DatagramProtocol):
             reasons = sorted(r for r in self.rejected if r not in NOT_BAD)
             bad = sum(self.rejected[r] for r in reasons)
             if bad > self._reported_bad:
-                self.notify("bad_packets", f"{bad - self._reported_bad} paquet(s) refusé(s) en une minute ({', '.join(reasons)})")
+                self.notify("bad_packets", Text("station.breizh_bad_packets", count=str(bad - self._reported_bad),
+                                                reasons=", ".join(reasons)))
             self._reported_bad = bad
         if self.transport is None:
             return
@@ -287,7 +290,7 @@ class BreizhLink(asyncio.DatagramProtocol):
                 self._send(p.Type.HELLO, payload=p.hello_payload(self._nonce, self.station_version))
             return
         if now - self._last_valid > IDLE_LOST_S:
-            self._lose("lost", f"Breizh ne répond plus depuis {IDLE_LOST_S:g} s : prochaines émissions en direct")
+            self._lose("lost", Text("station.breizh_idle_lost", seconds=f"{IDLE_LOST_S:g}"))
             return
         if now >= self._next_ping:
             self._next_ping = now + PING_EVERY_S

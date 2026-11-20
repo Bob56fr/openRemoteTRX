@@ -30,6 +30,7 @@ from .rx_engine import Callsign, EndOfOver, RadeRxEngine, RxEngineConfig, Sequen
 
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..i18n.text import Text
 log = logging.getLogger(__name__)
 
 RATE = 48000
@@ -153,7 +154,7 @@ class FreedvService:
             if not self.on:
                 return
             await self._stop_engine()
-            self.fault = cause or "décodeur en panne"
+            self.fault = cause or Text("station.freedv_fault")
         emit_event(codes.ORT_6563, logger=log, cause=self.fault)
         self._notify({"kind": "fault", "cause": self.fault})
 

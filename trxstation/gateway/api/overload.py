@@ -23,6 +23,8 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from ...i18n.text import Text
+
 HOLD_S = 10.0
 REOPEN_S = 300.0
 MAX_PER_HOUR = 3
@@ -44,15 +46,15 @@ class Limits:
     mem_pct: float = 10.0
 
     def over(self, s: Sample) -> str:
-        """Premier dépassement (texte pour l'humain), ou vide."""
+        """Premier dépassement (texte pour l'humain, Text traduit pour chaque client), ou vide."""
         if s.temp_c is not None and s.temp_c >= self.temp_c:
-            return f"processeur à {s.temp_c:.0f} °C"
+            return Text("station.overload_temp", value=f"{s.temp_c:.0f}")
         if s.cpu_pct is not None and s.cpu_pct >= self.cpu_pct:
-            return f"processeur occupé à {s.cpu_pct:.0f} %"
+            return Text("station.overload_cpu", value=f"{s.cpu_pct:.0f}")
         if s.lag_ms is not None and s.lag_ms > self.lag_ms:
-            return f"passerelle en retard de {s.lag_ms:.0f} ms"
+            return Text("station.overload_lag", value=f"{s.lag_ms:.0f}")
         if s.mem_free_pct is not None and s.mem_free_pct < self.mem_pct:
-            return f"mémoire libre à {s.mem_free_pct:.0f} %"
+            return Text("station.overload_mem", value=f"{s.mem_free_pct:.0f}")
         return ""
 
     def green(self, s: Sample) -> bool:
@@ -86,9 +88,7 @@ class OverloadGuard:
     def message(self) -> str:
         if not self._s.reason:
             return ""
-        tail = (" Trop de coupures en une heure : l'opérateur doit la rouvrir." if self._s.locked
-                else " Réouverture automatique après 5 minutes de fonctionnement normal.")
-        return f"Station surchargée ({self._s.reason}) : écoute des visiteurs suspendue pour protéger la station.{tail}"
+        return Text("station.overload_locked" if self._s.locked else "station.overload_auto", cause=self._s.reason)
 
     def step(self, listeners: int) -> bool:
         """Une mesure par seconde. Vrai = il faut déconnecter les visiteurs MAINTENANT (passage en surcharge)."""
@@ -138,7 +138,7 @@ class OverloadGuard:
         remaining = None
         if not s.locked:
             remaining = round(REOPEN_S - (self.clock() - s.green_since)) if s.green_since is not None else round(REOPEN_S)
-        return {"reason": s.reason, "message": self.message(), "since_s": int(self.clock() - s.since),
+        return {"reason": str(s.reason), "message": self.message(), "since_s": int(self.clock() - s.since),
                 "locked": s.locked, "reopen_in_s": remaining}
 
 

@@ -23,9 +23,9 @@
 
   const LANGS = ["fr", "en", "de", "es"];
   const DOMAINS = ["client", "shared", "page"];
-  // Langues PROPOSÉES par la page : la page elle-même n'est traduite qu'au lot T5 ; d'ici là elle reste en français
-  // (refus et coupures traduits ailleurs, mais pas mélangés à une page française).
-  const OFFERED = ["fr"];
+  // Langues PROPOSÉES par la page : une langue n'y entre que lorsque ses trois catalogues sont complets (lot T5 :
+  // anglais ; allemand et espagnol au lot T6) — tests/test_i18n_page.py le vérifie.
+  const OFFERED = ["fr", "en"];
   const STORE_KEY = "trx.lang";
 
   const catalogs = {};                  // langue -> {clé: texte}
@@ -88,6 +88,21 @@
     if (el.documentElement && el.documentElement.setAttribute) el.documentElement.setAttribute("lang", current);
   }
 
+  function choose(lang) {
+    /* Choix de l'opérateur (null = langue du navigateur), gardé par le navigateur ; la page se recharge ensuite
+     * (seulement hors connexion : ui.js). */
+    try {
+      if (root.localStorage) {
+        if (lang && OFFERED.indexOf(lang) >= 0) root.localStorage.setItem(STORE_KEY, lang);
+        else root.localStorage.removeItem(STORE_KEY);
+      }
+    } catch (e) { /* navigateur sans stockage : choix perdu au rechargement */ }
+  }
+
+  function stored() {
+    try { return (root.localStorage && root.localStorage.getItem(STORE_KEY)) || null; } catch (e) { return null; }
+  }
+
   function use(lang, data) {
     /* Tests : remplace les catalogues d'une langue et la rend courante. */
     catalogs[lang] = {}; merge(lang, data); current = lang; loaded = true;
@@ -115,7 +130,7 @@
       : Promise.resolve().then(() => { loaded = true; });
   }
 
-  const api = { LANGS, OFFERED, chooseLang, t, has, plural, use, apply, ready,
+  const api = { LANGS, OFFERED, chooseLang, t, has, plural, use, apply, choose, stored, ready,
                 get lang() { return current; }, get loaded() { return loaded; } };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxI18n = api; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -28,6 +28,8 @@ from .. import usbports
 from ..config import Config
 from ..errors import codes
 from ..errors.emit import emit_event
+from ..i18n import catalog
+from ..i18n.text import Text
 from .cat import CatConnectionError, CatLink, CatProtocolError, RigError
 from .safety import PttController, Refused
 
@@ -210,8 +212,7 @@ class PowerControl:
                 step("ports", "ok", warning)
                 step("check_off", "running")
                 if not self.link.state.connected:
-                    raise PowerError("check_off", "cat_down", codes.ORT_2803,
-                                     "pas de liaison avec rigctld : la station ne peut pas joindre le poste")
+                    raise PowerError("check_off", "cat_down", codes.ORT_2803, Text("station.power_cat_down"))
                 client = self.link.client
                 self.link.paused = True
                 try:
@@ -223,11 +224,11 @@ class PowerControl:
                     on = False
                 except _CAT_ERRORS as exc:
                     raise PowerError("check_off", "rig_silent", codes.ORT_2803,
-                                     f"le poste ne répond pas ({exc}) : câble USB, alimentation, interrupteur arrière") from exc
+                                     Text("station.power_rig_silent", error=str(exc))) from exc
                 if on:
-                    step("check_off", "ok", "poste déjà allumé")
+                    step("check_off", "ok", Text("station.power_already_on"))
                     self.link.mark_power(True)
-                    step("done", "ok", "poste déjà allumé")
+                    step("done", "ok", Text("station.power_already_on"))
                     return {"result": "already_on", "power": self.snapshot()}
                 if self.link.state.power != "off":
                     self.link.mark_power(False)
@@ -239,15 +240,15 @@ class PowerControl:
                         step("order", "ok")
                     except RigError as exc:
                         raise PowerError("order", "power_on_failed", codes.ORT_2803,
-                                         f"ordre d'allumage refusé par rigctld : {exc}") from exc
+                                         Text("station.power_on_refused", error=str(exc))) from exc
                     except (CatConnectionError, CatProtocolError, OSError) as exc:
-                        step("order", "ok", f"réponse de rigctld manquante ({exc}) : attente du poste quand même")
+                        step("order", "ok", Text("station.power_no_answer", error=str(exc)))
                     timeout = float(self.cfg.power.on_timeout_s)
                     step("wait", "running", remaining_s=timeout)
                     if not await self._wait_power(True, timeout,
                                                   lambda left: step("wait", "running", remaining_s=left)):
                         raise PowerError("wait", "power_on_timeout", codes.ORT_2803,
-                                         f"le poste ne s'est pas allumé en {timeout:.0f} s")
+                                         Text("station.power_on_timeout", seconds=f"{timeout:.0f}"))
                     step("wait", "ok")
                     step("readback", "running")
                     self.link.settle()
@@ -267,8 +268,7 @@ class PowerControl:
                         self.alert(codes.ORT_2808, f"poste allumé en émission par {by}, remis en réception")
                     except Exception:
                         emit_event(codes.ORT_8013, logger=log, trace=True, detail="ORT-2808 : alerte")
-                raise PowerError("readback", "power_on_tx", codes.ORT_2808,
-                                 "le poste s'est allumé EN ÉMISSION : remis en réception ; vérifier la ligne PTT (RTS / DTR)")
+                raise PowerError("readback", "power_on_tx", codes.ORT_2808, Text("station.power_on_tx"))
             try:
                 await self.ctrl.vox_guard(by)          # VOX coupé comme à une connexion (le poste vient de démarrer)
             except Exception:                           # jamais fatal
@@ -292,6 +292,8 @@ class PowerControl:
             raise
         except Refused as exc:
             detail = str(exc)
+            if "refus." + exc.reason in catalog("fr", "client"):      # refus connu : traduit pour le client
+                detail = Text("refus." + exc.reason, _fr=detail)
             step("order", "error", detail, ort=codes.ORT_2803)
             raise PowerError("order", exc.reason, codes.ORT_2803, detail) from exc
         finally:
@@ -305,19 +307,19 @@ class PowerControl:
             checks.append(("ptt_port", rig.ptt_port, rig.ptt_port_usb))
         warning = ""
         for name, port, expected_text in checks:
-            what = "du poste" if name == "port" else "du PTT"
+            what = Text("station.power_port_rig" if name == "port" else "station.power_port_ptt")
             if not port:
                 continue                                 # modèle factice : pas de port
             if not self.port_present(port):
                 raise PowerError("ports", "port_missing", codes.ORT_2809,
-                                 f"port {what} {port} absent : poste débranché ou câble USB ?")
+                                 Text("station.power_port_missing", what=what, port=port))
             if not expected_text:
-                warning = "identité du port non relevée : refaire la mise en service au menu 2.8 de TRX Console"
+                warning = Text("station.power_port_unchecked")
                 continue
             expected = usbports.parse_identity(expected_text)
             if expected is None:
                 raise PowerError("ports", "port_identity", codes.ORT_2809,
-                                 f"identité USB du port {what} illisible dans station.toml : menu 2.8 de TRX Console")
+                                 Text("station.power_port_identity", what=what))
             found = self.identity(port)
             if usbports.same_device(expected, found):
                 continue
@@ -325,12 +327,10 @@ class PowerControl:
                          if p != port and expected.serial and usbports.same_device(expected, self.identity(p))]
             if elsewhere:
                 raise PowerError("ports", "port_moved", codes.ORT_2809,
-                                 f"le poste est maintenant sur {', '.join(elsewhere)} (station.toml dit {port}) : "
-                                 "refaire le menu 2.5 de TRX Console sur la station")
-            seen = str(found) if found is not None else "aucun périphérique USB lisible"
+                                 Text("station.power_port_moved", ports=", ".join(elsewhere), port=port))
+            seen = str(found) if found is not None else Text("station.power_port_no_usb")
             raise PowerError("ports", "port_mismatch", codes.ORT_2809,
-                             f"le port {port} n'est plus celui {what} ({seen} au lieu de {expected}) : "
-                             "refaire le menu 2.5 de TRX Console sur la station")
+                             Text("station.power_port_mismatch", port=port, what=what, seen=seen, expected=str(expected)))
         return warning
 
     async def _wait_power(self, on: bool, timeout: float, tick: Callable[[float], None] | None = None) -> bool:
@@ -422,7 +422,10 @@ def _how_text(how: str) -> str:
 
 
 def _rig_text(readback: dict) -> str:
+    """« 7 074,00 kHz USB, en réception » (Text : traduit pour chaque client ; fréquence au format radio partout)."""
     freq, mode = readback.get("frequency_hz"), readback.get("mode")
     from ..power_trial import khz_text
-    shown = khz_text(freq) if isinstance(freq, int) else "fréquence non relue"
-    return f"{shown} {mode or ''}".strip() + ", en réception"
+    shown = khz_text(freq) if isinstance(freq, int) else Text("station.power_freq_unread")
+    if mode:
+        return Text("station.power_rig_rx", frequency=shown, mode=mode)
+    return Text("station.power_rig_rx_nomode", frequency=shown)
