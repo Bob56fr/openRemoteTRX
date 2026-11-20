@@ -124,7 +124,8 @@ private fun LanguageSection(transmitting: Boolean) {
     var chosen by remember { mutableStateOf(AppLang.stored(context)) }
     Text(Tr.t("settings.language"), style = MaterialTheme.typography.titleSmall)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        val choices = listOf<String?>(null) + Tr.OFFERED
+        // Pseudo-langue « xx » (textes allongés, débordements) : version de débogage seulement
+        val choices = listOf<String?>(null) + Tr.OFFERED + listOfNotNull(Tr.PSEUDO.takeIf { AppLang.debuggable(context) })
         for (lang in choices) {
             FilterChip(
                 selected = chosen == lang, enabled = !transmitting,

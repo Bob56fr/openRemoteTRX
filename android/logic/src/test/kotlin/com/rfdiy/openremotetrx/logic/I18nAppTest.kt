@@ -141,6 +141,23 @@ class I18nAppTest {
     }
 
     @Test
+    fun `pseudo-langue - champs intacts, texte allonge, station en francais`() {
+        val text = "Fréquence {freq} hors bande"
+        val p = Tr.pseudo(text)
+        assertTrue(p.startsWith("[") && p.endsWith("]") && "{freq}" in p && p.length >= text.length * 14 / 10, p)
+        assertTrue("Fréquence" !in p, p)
+        try {
+            Tr.lang = Tr.PSEUDO
+            assertEquals(Tr.PSEUDO, Tr.lang)
+            assertEquals("fr", Tr.stationLang)
+            assertEquals(Tr.pseudo(Tr.catalog("fr").getValue("refus.out_of_band")), Tr.t("refus.out_of_band"))
+            assertEquals("en", Tr.chooseLang(Tr.PSEUDO, emptyList()))                // jamais choisie par la langue du téléphone
+        } finally {
+            Tr.lang = "fr"
+        }
+    }
+
+    @Test
     fun `pluriel - regle de la langue`() {
         try {
             Tr.lang = "fr"

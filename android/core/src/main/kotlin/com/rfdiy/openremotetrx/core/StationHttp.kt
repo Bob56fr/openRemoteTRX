@@ -77,7 +77,7 @@ class StationHttp(private val baseUrl: String, fingerprint: String) {
             // sonde réseau (station 0.106.0+) : appareil tiré au hasard, nom affiché à l'opérateur ; ignorés par une station plus ancienne
             if (device.isNotEmpty()) put("device", device)
             if (agent.isNotEmpty()) put("agent", agent)
-            put("lang", Tr.lang)                                // textes de la station dans cette langue (0.236.0+, lot T1)
+            put("lang", Tr.stationLang)                                // textes de la station dans cette langue (0.236.0+, lot T1)
         }.toString()
         val (status, text) = request("POST", "/offer", body)
         // 403 / 503 avec {error, message} : accès refusé alors que le mot de passe est juste (visiteurs, station 0.71.0+)

@@ -25,7 +25,7 @@
   const DOMAINS = ["client", "shared", "page"];
   // Langues PROPOSÉES par la page : une langue n'y entre que lorsque ses trois catalogues sont complets (lot T5 :
   // anglais ; allemand et espagnol au lot T6) — tests/test_i18n_page.py le vérifie.
-  const OFFERED = ["fr", "en"];
+  const OFFERED = ["fr", "en", "de", "es"];
   const STORE_KEY = "trx.lang";
 
   const catalogs = {};                  // langue -> {clé: texte}
@@ -55,7 +55,21 @@
     return text.replace(/\{([a-z_]+)\}/g, (all, name) => (name in fields && fields[name] !== undefined && fields[name] !== null ? String(fields[name]) : all));
   }
 
+  // Pseudo-langue d'essai (cahier § 7, lot T6) : page ouverte avec « ?lang=xx » : le français aux lettres accentuées,
+  // allongé de 40 % et entre crochets, pour voir les débordements et les textes qui ne passent pas par t().
+  const PSEUDO = "xx";
+  const PLAIN = "AaCcEeIiNnOoUuYy", ACCENTED = "ÅåÇçÉéÎîÑñÖöÛûÝý";   // i18n-ok : lettres de la pseudo-langue
+  function pseudo(text) {
+    const body = text.split(/(\{[a-z_]+\})/).map((part, i) => (i % 2 ? part
+      : part.replace(/[AaCcEeIiNnOoUuYy]/g, (c) => ACCENTED[PLAIN.indexOf(c)]))).join("");
+    return "[" + body + "·".repeat(Math.ceil(text.length * 0.4)) + "]";
+  }
+
   function lookup(key) {
+    if (current === PSEUDO) {
+      const fr = catalogs.fr && catalogs.fr[key];
+      return typeof fr === "string" ? pseudo(fr) : null;
+    }
     const own = catalogs[current] && catalogs[current][key];
     if (typeof own === "string") return own;
     const fr = catalogs.fr && catalogs.fr[key];
@@ -66,7 +80,7 @@
   function has(key) { return lookup(key) !== null; }
   function plural(key, n, fields) {
     /* Clés `<clé>_one` / `<clé>_other` ; {n} rempli d'office. Français : 0 et 1 au singulier ; autres langues : ±1. */
-    const one = current === "fr" ? Math.abs(n) < 2 : Math.abs(n) === 1;
+    const one = current === "fr" || current === PSEUDO ? Math.abs(n) < 2 : Math.abs(n) === 1;
     return t(key + (one ? "_one" : "_other"), Object.assign({ n: n }, fields || {}));
   }
 
@@ -122,7 +136,8 @@
     try { stored = root.localStorage && root.localStorage.getItem(STORE_KEY); } catch (e) { stored = null; }
     const nav = root.navigator ? (root.navigator.languages || [root.navigator.language]) : [];
     current = chooseLang(stored, nav, OFFERED);
-    const wanted = current === "fr" ? ["fr"] : ["fr", current];
+    try { if (new URLSearchParams(root.location.search).get("lang") === PSEUDO) current = PSEUDO; } catch (e) { /* sans URL */ }
+    const wanted = current === "fr" || current === PSEUDO ? ["fr"] : ["fr", current];
     const fetchOne = (lang, domain) => root.fetch("i18n/" + domain + "." + lang + ".json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null)).then((data) => merge(lang, data)).catch(() => {});
     ready = typeof root.fetch === "function"
@@ -130,7 +145,7 @@
       : Promise.resolve().then(() => { loaded = true; });
   }
 
-  const api = { LANGS, OFFERED, chooseLang, t, has, plural, use, apply, choose, stored, ready,
+  const api = { LANGS, OFFERED, PSEUDO, chooseLang, t, has, plural, pseudo, use, apply, choose, stored, ready,
                 get lang() { return current; }, get loaded() { return loaded; } };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; } else { root.TrxI18n = api; }
 })(typeof window !== "undefined" ? window : globalThis);

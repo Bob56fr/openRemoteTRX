@@ -14,9 +14,14 @@ import com.rfdiy.openremotetrx.logic.Tr
 object AppLang {
     const val PREF = "lang"
 
+    /** Version de débogage (pseudo-langue permise). */
+    fun debuggable(context: Context): Boolean =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
     /** Langue choisie dans l'application, ou null (langue du téléphone). */
     fun stored(context: Context): String? =
-        context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).getString(PREF, null)?.takeIf { it in Tr.LANGS }
+        context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).getString(PREF, null)
+            ?.takeIf { it in Tr.LANGS || (it == Tr.PSEUDO && debuggable(context)) }
 
     /** Langues du téléphone, dans l'ordre de ses réglages (« de-DE », « en-US »…). */
     fun system(): List<String> {
@@ -25,7 +30,8 @@ object AppLang {
     }
 
     fun apply(context: Context) {
-        Tr.lang = Tr.chooseLang(stored(context), system())
+        val chosen = stored(context)
+        Tr.lang = if (chosen == Tr.PSEUDO) Tr.PSEUDO else Tr.chooseLang(chosen, system())
     }
 
     /**
@@ -35,7 +41,8 @@ object AppLang {
     fun choose(context: Context, lang: String?, transmitting: Boolean): Boolean {
         if (transmitting) return false
         val prefs = context.getSharedPreferences(RigHub.PREFS, Context.MODE_PRIVATE).edit()
-        if (lang == null || lang !in Tr.LANGS) prefs.remove(PREF) else prefs.putString(PREF, lang)
+        if (lang == null || (lang !in Tr.LANGS && !(lang == Tr.PSEUDO && debuggable(context)))) prefs.remove(PREF)
+        else prefs.putString(PREF, lang)
         prefs.apply()
         apply(context)
         return true

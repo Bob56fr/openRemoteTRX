@@ -24,17 +24,43 @@ object Tr {
      * Langues PROPOSÉES par l'application : une langue n'y entre que lorsque ses catalogues sont complets (lot T5 :
      * anglais ; allemand et espagnol au lot T6) — I18nAppTest le vérifie.
      */
-    val OFFERED = listOf("fr", "en")
+    val OFFERED = listOf("fr", "en", "de", "es")
 
     private val DOMAINS = listOf("client", "shared", "app")
     private val json = Json { ignoreUnknownKeys = true }
     private val cache = ConcurrentHashMap<String, Map<String, String>>()
     private val FIELD = Regex("""\{([a-z_]+)\}""")
 
+    /**
+     * Pseudo-langue d'essai (cahier § 7, lot T6) : le français aux lettres accentuées, allongé de 40 % et entre
+     * crochets, pour voir les textes qui débordent ou qui ne passent pas par [Tr]. Jamais proposée hors débogage.
+     */
+    const val PSEUDO = "xx"
+
     /** Langue en cours ; une langue inconnue devient le français. */
     @Volatile
     var lang: String = "fr"
-        set(value) { field = if (value in LANGS) value else "fr" }
+        set(value) { field = if (value in LANGS || value == PSEUDO) value else "fr" }
+
+    /** Langue annoncée à la station (la pseudo-langue y est du français). */
+    val stationLang: String get() = if (lang == PSEUDO) "fr" else lang
+
+    private const val PLAIN = "AaCcEeIiNnOoUuYy"
+    private const val ACCENTED = "ÅåÇçÉéÎîÑñÖöÛûÝý"   // i18n-ok : lettres de la pseudo-langue
+
+    /** Texte de la pseudo-langue : champs `{nom}` intacts, lettres accentuées, 40 % plus long. */
+    fun pseudo(text: String): String {
+        val parts = FIELD.split(text)
+        val names = FIELD.findAll(text).map { it.value }.toList()
+        val body = buildString {
+            parts.forEachIndexed { i, part ->
+                append(part.map { c -> PLAIN.indexOf(c).let { if (it < 0) c else ACCENTED[it] } }.joinToString(""))
+                if (i < names.size) append(names[i])
+            }
+        }
+        val pad = (text.length * 2 + 4) / 5
+        return "[" + body + "·".repeat(pad) + "]"
+    }
 
     /**
      * Langue retenue : celle choisie dans l'application, sinon la première du téléphone proposée, sinon l'anglais
@@ -51,6 +77,7 @@ object Tr {
 
     /** Tous les textes d'une langue (tous domaines) ; vide si la langue manque. */
     fun catalog(lang: String): Map<String, String> = cache.getOrPut(lang) {
+        if (lang == PSEUDO) return@getOrPut catalog("fr").mapValues { pseudo(it.value) }
         DOMAINS.flatMap { domain -> read("/i18n/$domain.$lang.json").entries }.associate { it.key to it.value }
     }
 
@@ -74,7 +101,7 @@ object Tr {
      * au singulier ; anglais, allemand, espagnol : 1 seul), champ `{n}` rempli d'office.
      */
     fun plural(key: String, n: Long, vararg fields: Pair<String, Any?>): String {
-        val one = if (lang == "fr") n in -1L..1L else n == 1L || n == -1L
+        val one = if (lang == "fr" || lang == PSEUDO) n in -1L..1L else n == 1L || n == -1L
         return t(if (one) "${key}_one" else "${key}_other", "n" to n, *fields)
     }
 

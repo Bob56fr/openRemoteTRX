@@ -2,7 +2,8 @@
 
 Termes communs à TRX Console, à l'application Android, à la page web et au guide (cahier
 `docs/application-traduction-cahier-des-charges.md`, § 6). Une notion = un mot dans chaque langue, partout. Les
-colonnes DE et ES reprennent la console ; elles seront relues au lot T6 (allemand VOUVOYÉ « Sie », espagnol « tú »).
+colonnes DE et ES reprennent la console et le lot T6 (allemand VOUVOYÉ « Sie », espagnol « tú ») ; à faire relire par
+quelqu'un dont c'est la langue. Guillemets : « … » en français et en espagnol, “…” en anglais, „…“ en allemand.
 Anglais : neutre, phrases courtes, impératif pour les actions (« Connect », « Stop transmitting »).
 
 ## Ne se traduit pas
@@ -88,3 +89,13 @@ OpenRemoteTRX, Breizh Audio Box, Android Auto, www.rf-diy.com, unités (kHz, dB,
 | porte de bruit | noise gate | Noise Gate | puerta de ruido | |
 | veille du shack (Amis) | watch | Wache | vigilancia | |
 | bridé (SDR) | throttled | gedrosselt | limitado | |
+| brouiller / débrouiller (scrambler), en clair | scramble / descramble, in clear | verschleiern / entschleiern, im Klartext | codificar / decodificar, en claro | jamais « chiffrer » : ce n'est pas un chiffrement |
+| spatialisation (ST) | spatialisation | Raumklang | espacialización | |
+| armer (SELCALL) | arm | schärfen | armar | |
+| reprendre la main | take back control | Kontrolle übernehmen | Recuperar el control | bouton et refus disent la même chose |
+| visiteur (compte en réception seule) | visitor | Besucher | visitante | « oyente » = auditeur de la diffusion seulement |
+| Direct (Breizh) | Direct | „Direkt“ | Direct | |
+| rubrique | section | Bereich | sección | |
+| antiparasite (NB) / réducteur de bruit (NR) | noise blanker / noise reduction | Störaustaster / Rauschminderung | supresor de ruido / reductor de ruido | |
+| coupe-bas / coupe-haut | low cut / high cut | Tiefensperre / Höhensperre | corte de graves / corte de agudos | |
+| onglet | tab | Reiter | pestaña | |

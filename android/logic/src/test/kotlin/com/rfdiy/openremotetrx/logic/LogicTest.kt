@@ -138,7 +138,7 @@ class TextsTest {
             assertEquals("Frequenz außerhalb der erlaubten Sendebänder.", Texts.refusal("out_of_band"))
             assertEquals("Von der Station abgelehnt (x).", Texts.refusal("x"))
             assertEquals("cle.absente", Tr.t("cle.absente"))
-            Tr.lang = "xx"
+            Tr.lang = "it"
             assertEquals("fr", Tr.lang)
         } finally {
             Tr.lang = "fr"
@@ -152,7 +152,8 @@ class TextsTest {
         assertEquals("es", Tr.chooseLang("es", listOf("de-DE"), all))
         assertEquals("en", Tr.chooseLang(null, listOf("it-IT"), all))
         assertEquals("fr", Tr.chooseLang(null, listOf("de-DE"), listOf("fr")))
-        assertEquals("en", Tr.chooseLang("de", emptyList()))                       // proposé aujourd'hui : français et anglais
+        assertEquals("de", Tr.chooseLang("de", emptyList()))                       // proposé : les quatre langues (lot T6)
+        assertEquals("en", Tr.chooseLang(null, listOf("it-IT")))
         assertEquals("fr", Tr.chooseLang(null, listOf("fr-BE", "en-GB")))
     }
 }
