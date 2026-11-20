@@ -822,6 +822,15 @@
     <div class="row"><button id="stophold-confirm" class="chip danger" hidden data-t="powerviews.power_off">Arrêter le TRX</button><button id="stophold-cancel" class="primary" data-t="common.cancel">Annuler</button></div>
   </div>
 </div>
+<div id="rigtot-dialog" class="keypad" hidden>
+  <div class="kp-panel">
+    <div class="kp-display ctl-title" data-t="rigtotdialog.title">TOT de votre poste désactivé</div>
+    <p class="note" data-t="rigtotdialog.text">Le TOT (minuterie d'émission) de votre poste est sur OFF. C'est la dernière sécurité à distance : si la station, le réseau ou le PC tombent pendant une émission, le poste peut rester en émission jusqu'à ce que quelqu'un intervienne sur place.</p>
+    <p class="note" data-t="rigtotdialog.how">Réglez-le dans le menu du poste (3 min conseillé). La station le lit seulement : elle ne le change jamais et ne vous empêche pas d'émettre. Ce rappel revient une fois par jour.</p>
+    <p id="rigtot-detail" class="note"></p>
+    <div class="row"><button id="rigtot-quit" class="chip" data-t="rigtotdialog.quit">Quitter</button><button id="rigtot-continue" class="primary" data-t="rigtotdialog.continue">J'ai compris, je continue</button></div>
+  </div>
+</div>
 <div id="power-dialog" class="keypad" hidden>
   <div class="kp-panel">
     <div class="kp-display ctl-title" data-t="power.dialog_title">Allumage du TRX</div>

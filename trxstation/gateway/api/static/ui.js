@@ -1996,6 +1996,14 @@
       beeps(settings) { renderBeeps(settings); },
       selcall(status, call) { renderSelcall(status); if (call) playSequence([[880, 120], [0, 40], [1320, 160]]); },
       rigNotice(event, text, level) {                // VOX coupé, coupleur, TOS élevé : bandeau fermé d'un toucher
+        if (event === "rig_tot_off") {               // TOT du poste sur OFF (station 0.245.0+) : fenêtre à deux choix
+          const code = /\[(ORT-\d+)\]$/.exec(text);    // le texte de la station redit la fenêtre : le code seul
+          $("rigtot-detail").textContent = code ? code[1] : "";
+          $("rigtot-dialog").hidden = false;
+          $("rigtot-continue").focus();
+          playSequence([[880, 150], [0, 80], [660, 200]]);
+          return;
+        }
         const box = $("rig-alert");
         box.textContent = text;
         box.className = "alert " + (level === "bad" || event === "swr_high" ? "bad" : "warn");
@@ -4081,6 +4089,13 @@
       $("stophold-dialog").hidden = true;
     }
     $("stophold-cancel").addEventListener("click", closeStopHold);
+    // TOT du poste sur OFF (docs/tot-poste-cahier-des-charges.md) : rappel seulement, l'émission n'est jamais bloquée ;
+    // « Quitter » = déconnexion (la station est en réception : aucune émission à couper).
+    $("rigtot-continue").addEventListener("click", () => { $("rigtot-dialog").hidden = true; });
+    $("rigtot-quit").addEventListener("click", () => {
+      $("rigtot-dialog").hidden = true;
+      client.disconnect();
+    });
     $("stophold-disconnect").addEventListener("click", () => {
       closeStopHold();
       ui.log(I18N.t("ui.stop_hold_disconnect"), "");

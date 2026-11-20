@@ -739,5 +739,10 @@
   "voicescreen.graph_reverb": "≋ reverb",
   "voicescreen.profile_applied": "Profile “{name}” applied.",
   "voicescreen.replay_pending": "Transmission requested…",
-  "voicescreen.replay_recorded": "Recorded: {seconds} s"
+  "voicescreen.replay_recorded": "Recorded: {seconds} s",
+  "rigtotdialog.title": "Your rig TOT is disabled",
+  "rigtotdialog.text": "Your rig TOT (transmit time-out timer) is OFF. It is the last safety for remote operation: if the station, the network or the PC fails during a transmission, the rig may keep transmitting until someone intervenes on site.",
+  "rigtotdialog.how": "Set it in the rig menu (3 min recommended). The station only reads it: it never changes it and does not prevent you from transmitting. This reminder comes back once a day.",
+  "rigtotdialog.continue": "Understood, continue",
+  "rigtotdialog.quit": "Quit"
 }

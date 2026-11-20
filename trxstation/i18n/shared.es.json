@@ -739,5 +739,10 @@
   "voicescreen.graph_reverb": "≋ reverb",
   "voicescreen.profile_applied": "Perfil « {name} » aplicado.",
   "voicescreen.replay_pending": "Transmisión solicitada…",
-  "voicescreen.replay_recorded": "Grabado: {seconds} s"
+  "voicescreen.replay_recorded": "Grabado: {seconds} s",
+  "rigtotdialog.title": "TOT de tu equipo desactivado",
+  "rigtotdialog.text": "El TOT (temporizador de transmisión) de tu equipo está en OFF. Es la última seguridad a distancia: si la estación, la red o el PC fallan durante una transmisión, el equipo puede quedarse transmitiendo hasta que alguien intervenga in situ.",
+  "rigtotdialog.how": "Ajústalo en el menú del equipo (3 min recomendado). La estación solo lo lee: nunca lo cambia y no te impide transmitir. Este recordatorio vuelve una vez al día.",
+  "rigtotdialog.continue": "Entendido, continúo",
+  "rigtotdialog.quit": "Salir"
 }
