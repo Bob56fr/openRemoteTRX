@@ -76,10 +76,25 @@ l'écriture ; ils se vérifient par l'essai S0 (§ 10) avant tout code, jamais p
   les relais `.cmd` et la modification du PATH). Applications secondaires sans entrée de menu
   (`AppListEntry="none"`). VU EN S0 : un alias de python.exe marche (avec ou sans paramètres du manifeste), mais un
   alias de pythonw.exe AVEC paramètres ne lance rien : la STATION ne se lance jamais par un alias.
-- **Démarrage à l'ouverture de session** : `desktop:StartupTask` qui lance le superviseur (pythonw). L'opérateur
-  peut le couper dans Paramètres > Applications > Démarrage : TRX Console doit le DIRE (état du démarrage
-  automatique en tête, comme l'état de la station). Menu 1.1 (démarrer) : `explorer.exe
-  shell:AppsFolder\<famille>!Supervisor`, exactement comme le menu Démarrer et la tâche de démarrage (essayé en S0).
+- **Démarrage à l'ouverture de session** : `desktop:StartupTask` qui lance le superviseur. L'opérateur peut le
+  couper dans Paramètres > Applications > Démarrage : TRX Console doit le DIRE (état du démarrage automatique en
+  tête, comme l'état de la station). Menu 1.1 (démarrer) : `explorer.exe shell:AppsFolder\<famille>!Supervisor`,
+  exactement comme la tâche de démarrage (essayé en S0). VU EN S0 (§ 11.2) :
+  - la tâche de démarrage IGNORE `uap10:Parameters` (pythonw lancé avec `argv = ['']`, qui quitte sans rien dire) :
+    l'application « Supervisor » est un LANCEUR SANS PARAMÈTRES, `python\trx-station.exe` (copie de pythonw.exe) +
+    un `.pth` de site-packages qui importe un petit module : exécutable `trx-station.exe` ET aucun argument = lancer
+    `trxstation.supervisor.main` avec la configuration par défaut ; les sous-processus (passerelle, modules), lancés
+    AVEC arguments, ne sont pas touchés. Les lignes « import » d'un `._pth` sont IGNORÉES (seul `import site`
+    compte) : passer par un `.pth` ;
+  - Windows n'exécute la tâche qu'après un PREMIER lancement de l'application par l'utilisateur (à chaque nouvelle
+    installation) : fin de l'installation depuis le Store = TRX Console ouverte une fois (bouton « Lancer » du
+    Store), qui démarre la station ; le guide le dit.
+- **Raccourcis du navigateur** (demande de l'utilisateur du 2026-11-20) : deux entrées de plus dans le menu
+  Démarrer, « Console TRX (navigateur) » et « openRemoteTRX (navigateur) ». Un MSIX ne pose pas de raccourci vers
+  une adresse : chacune est une application du paquet (lanceur comme ci-dessus) qui lit station.toml et ouvre le
+  navigateur par défaut sur `https://<station>:<gateway_port>/` ou `https://<station>:8444/` (adresse juste même si le
+  port ou le certificat changent) ; console réseau désactivée = message qui cite le menu 4.6 au lieu d'une page
+  morte. À vérifier en S1 : regroupement des trois entrées sous « openRemoteTRX » dans le menu Démarrer de Windows 11.
 - **Pare-feu** : `desktop2:FirewallRules` pour le python.exe / pythonw.exe du paquet, TCP et UDP, `Profile="private"`
   : posées à l'installation SANS droits d'administrateur, retirées à la désinstallation (essayé en S0). Règle par
   programme = tout port (8443 ou `gateway_port` changé, 8444 de la console réseau, WebRTC).
@@ -198,9 +213,9 @@ Store, qui signe lui-même). Fichier produit dans `dist/`.
 
 ## 10. Lots
 
-- **S0 FAIT** le 2026-11-20 sur le PC « tour radio » (§ 11) et **S0 bis** (§ 11.1) ; restent : démarrage à
-  l'ouverture de session (paquet 0.0.2.0 laissé installé, tâche de démarrage en service), puis nettoyage ;
-  Windows 10 22H2 dans une machine virtuelle (§ 12) ; Smart App Control en marche (PC neuf ou machine virtuelle).
+- **S0 TERMINÉ** le 2026-11-20 sur le PC « tour radio » (§ 11, § 11.1, § 11.2), paquet d'essai, certificat et
+  données retirés ; restent Windows 10 22H2 dans une machine virtuelle (§ 12) et Smart App Control en marche (PC
+  neuf ou machine virtuelle).
 - **S1** : `packaging.py`, version Store dans le code (§ 3.4, § 5), GARDE DE FIN (§ 4.1) et ses tests de panne,
   messages Hamlib (§ 3.1), tests.
 - **S2** : `scripts/build_msix.py`, test de fabrication.
@@ -228,7 +243,7 @@ part (rigctld 4632, page 8543), configuration `C:\ProgramData\trx-remote-s0`, Ha
 | `sys.executable` | chemin de l'ALIAS si lancé par alias (§ 3.4) ; vrai chemin du paquet si lancé par le menu / `shell:AppsFolder` |
 | ProgramData | écriture RÉELLE depuis le paquet (aucune copie virtualisée) ; configuration et état GARDÉS après désinstallation |
 | Station | superviseur, rigctld (hors paquet) et passerelle démarrés, état publié, journaux écrits ; aucun changement de code |
-| Tâche de démarrage | enregistrée, état 2 (en service) ; essai à l'ouverture de session À FAIRE |
+| Tâche de démarrage | enregistrée, état 2 (en service) ; à l'ouverture de session : voir § 11.2 |
 | Mise à jour sans option, station en marche | REFUSÉE (0x80073D02, ressources utilisées) : station intacte |
 | Mise à jour différée | acceptée, appliquée à la fermeture : station intacte |
 | Mise à jour FORCÉE | 34 à 42 s ; superviseur et passerelle TUÉS sans journal ; rigctld SURVIT, poste factice resté EN ÉMISSION |
@@ -255,6 +270,19 @@ Fichiers gardés pour les prochaines fabrications (hors dépôt, sur tour radio)
 | Defender (temps réel, comportement, AMSI en marche) | aucune détection pendant tous les essais (gardes cachées comprises) |
 | Smart App Control | ARRÊTÉ sur tour radio (installation ancienne) : non essayé |
 | Mode S | absent : non essayé (voir § 12) |
+
+### 11.2 Tâche de démarrage à l'ouverture de session (2026-11-20, trois reconnexions de l'utilisateur)
+
+Traceur : un `sitecustomize.py` du paquet d'essai notait chaque lancement de Python (heure, `sys.argv`).
+
+| Paquet | Ouverture de session | Résultat |
+|---|---|---|
+| 0.0.2.0, jamais lancé depuis sa réinstallation | 16:34:26 | RIEN lancé en 5 min (tâche pourtant en service) |
+| 0.0.2.0, lancé une fois à la main | 16:42:43 | Supervisor lancé à 16:42:51, arrêté dans la même seconde, aucun journal |
+| 0.0.3.0 (traceur), lancé une fois | 16:52:58 | pythonw lancé à 16:53:11 avec `argv = ['']` : paramètres du manifeste IGNORÉS |
+| 0.0.5.0 (lanceur `trx-station.exe` + `.pth`), lancé une fois | 17:03:47 | station DÉMARRÉE SEULE à 17:03:55 (superviseur, rigctld, passerelle en réception à 17:03:58) |
+
+(La 0.0.4.0, lanceur avec la ligne « import » dans le `._pth`, ne démarrait rien : ligne ignorée.)
 
 ## 12. Versions de Windows
 
