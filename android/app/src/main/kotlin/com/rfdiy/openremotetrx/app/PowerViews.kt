@@ -101,7 +101,9 @@ internal fun RigScope.StopButton(modifier: Modifier, height: Dp, onStopped: () -
         Box(Modifier.padding(vertical = 4.dp).then(Modifier), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("STOP", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(sub, fontSize = 10.sp, textAlign = TextAlign.Center)
+                // Deux lignes serrées au plus (langues plus longues : « … » plutôt qu'un texte coupé net en bas)
+                Text(sub, fontSize = 10.sp, lineHeight = 11.sp, textAlign = TextAlign.Center, maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }

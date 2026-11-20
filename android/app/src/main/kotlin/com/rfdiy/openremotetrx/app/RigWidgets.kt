@@ -228,8 +228,10 @@ internal fun TabBar(current: Tab, tabs: List<Tab> = Tab.entries, onSelect: (Tab)
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
             ) {
                 TabIcon(item, if (on) Page.MESURE else Page.TEXTE_2)
+                // Une seule ligne (langues plus longues que le français : « … » plutôt qu'une barre qui grandit)
                 Text(item.label, style = MaterialTheme.typography.labelSmall, color = if (on) Page.TEXTE else Page.TEXTE_2,
-                    fontWeight = if (on) FontWeight.Bold else FontWeight.Normal)
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }

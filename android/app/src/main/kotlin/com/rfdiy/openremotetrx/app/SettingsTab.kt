@@ -114,6 +114,9 @@ private val DOT_COLORS = mapOf(1 to Page.TEXTE_2, 2 to Page.ALERTE, 3 to Page.TX
 /** Noms des langues dans leur propre langue (jamais traduits). */
 private val LANG_NAMES = mapOf("fr" to "Français", "en" to "English", "de" to "Deutsch", "es" to "Español") // i18n-ok
 
+/** Drapeau devant chaque langue (anglais britannique, comme les textes) ; "" = langue du téléphone. */
+private val LANG_FLAGS = mapOf("" to "📱", "fr" to "🇫🇷", "en" to "🇬🇧", "de" to "🇩🇪", "es" to "🇪🇸", Tr.PSEUDO to "🧪")
+
 /**
  * Réglages > Langue : langue du téléphone ou une langue proposée ; refusée pendant une émission. L'écran se redessine
  * avec la nouvelle langue ; la station envoie ses textes dans cette langue à la connexion suivante.
@@ -123,7 +126,8 @@ private fun LanguageSection(transmitting: Boolean) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var chosen by remember { mutableStateOf(AppLang.stored(context)) }
     Text(Tr.t("settings.language"), style = MaterialTheme.typography.titleSmall)
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // Un bouton par langue, renvoyés à la ligne quand la place manque (téléphone en portrait : 6 boutons)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         // Pseudo-langue « xx » (textes allongés, débordements) : version de débogage seulement
         val choices = listOf<String?>(null) + Tr.OFFERED + listOfNotNull(Tr.PSEUDO.takeIf { AppLang.debuggable(context) })
         for (lang in choices) {
@@ -136,9 +140,13 @@ private fun LanguageSection(transmitting: Boolean) {
                         (context as? android.app.Activity)?.recreate()
                     }
                 },
-                label = { Text(lang?.let { LANG_NAMES[it] ?: it } ?: Tr.t("settings.language_phone")) },
+                label = {
+                    // Petit drapeau devant le nom (📱 = langue du téléphone ; 🧪 = pseudo-langue d'essai)
+                    val name = lang?.let { LANG_NAMES[it] ?: it } ?: Tr.t("settings.language_phone")
+                    val flag = LANG_FLAGS[lang.orEmpty()].orEmpty()
+                    Text(if (flag.isEmpty()) name else "$flag $name", maxLines = 1)
+                },
             )
-            Spacer(Modifier.width(6.dp))
         }
     }
     Text(Tr.t(if (transmitting) "settings.language_tx" else "settings.language_next"), style = MaterialTheme.typography.bodySmall)
